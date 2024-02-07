@@ -5,6 +5,7 @@ use crate::avm2::Activation;
 use crate::avm2::AvmString;
 use crate::avm2::Multiname;
 use crate::avm2::Value;
+use std::borrow::Cow;
 use std::fmt::Debug;
 use std::mem::size_of;
 
@@ -657,6 +658,12 @@ impl<'gc> std::fmt::Display for Error<'gc> {
 
 impl<'gc, 'a> From<&'a str> for Error<'gc> {
     fn from(val: &'a str) -> Error<'gc> {
+        Error::RustError(val.into())
+    }
+}
+
+impl<'gc, 'a> From<Cow<'a, str>> for Error<'gc> {
+    fn from(val: Cow<'a, str>) -> Error<'gc> {
         Error::RustError(val.into())
     }
 }

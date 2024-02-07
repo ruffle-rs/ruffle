@@ -16,8 +16,7 @@ use crate::bitmap::bitmap_data::{
 };
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::{is_size_valid, operations};
-use crate::character::Character;
-use crate::display_object::Bitmap;
+use crate::character::{Character, CompressedBitmap};
 use crate::display_object::TDisplayObject;
 use crate::ecma_conversions::round_to_even;
 use crate::swf::BlendMode;
@@ -67,18 +66,19 @@ fn get_rectangle_x_y_width_height<'gc>(
 /// class named by `name`.
 pub fn fill_bitmap_data_from_symbol<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    bd: &Bitmap<'gc>,
+    bd: &CompressedBitmap,
 ) -> BitmapDataWrapper<'gc> {
+    let bitmap = bd.decode().expect("Failed to decode BitmapData");
     let new_bitmap_data = GcCell::new(
         activation.context.gc_context,
         BitmapData::new_with_pixels(
-            Bitmap::width(*bd).into(),
-            Bitmap::height(*bd).into(),
+            bitmap.width(),
+            bitmap.height(),
             true,
-            bd.bitmap_data(activation.context.renderer)
-                .read()
-                .pixels()
-                .to_vec(),
+            bitmap
+                .as_colors()
+                .map(crate::bitmap::bitmap_data::Color::from)
+                .collect(),
         ),
     );
     BitmapDataWrapper::new(new_bitmap_data)
@@ -111,9 +111,14 @@ pub fn init<'gc>(
                 .cloned()
         });
 
-    let new_bitmap_data = if let Some(Character::Bitmap(bitmap)) = character {
+    let new_bitmap_data = if let Some(Character::Bitmap {
+        compressed,
+        avm2_bitmapdata_class: _,
+        handle: _,
+    }) = character
+    {
         // Instantiating BitmapData from an Animate-style bitmap asset
-        fill_bitmap_data_from_symbol(activation, &bitmap)
+        fill_bitmap_data_from_symbol(activation, &compressed)
     } else {
         if character.is_some() {
             //TODO: Determine if mismatched symbols will still work as a

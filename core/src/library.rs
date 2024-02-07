@@ -124,6 +124,7 @@ impl<'gc> Avm2ClassRegistry<'gc> {
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct MovieLibrary<'gc> {
+    swf: Arc<SwfMovie>,
     characters: HashMap<CharacterId, Character<'gc>>,
     export_characters: Avm1PropertyMap<'gc, CharacterId>,
     jpeg_tables: Option<Vec<u8>>,
@@ -132,8 +133,9 @@ pub struct MovieLibrary<'gc> {
 }
 
 impl<'gc> MovieLibrary<'gc> {
-    pub fn new() -> Self {
+    pub fn new(swf: Arc<SwfMovie>) -> Self {
         Self {
+            swf,
             characters: HashMap::new(),
             export_characters: Avm1PropertyMap::new(),
             jpeg_tables: None,
@@ -179,9 +181,12 @@ impl<'gc> MovieLibrary<'gc> {
         self.characters.get(&id)
     }
 
-    pub fn character_by_export_name(&self, name: AvmString<'gc>) -> Option<&Character<'gc>> {
+    pub fn character_by_export_name(
+        &self,
+        name: AvmString<'gc>,
+    ) -> Option<(CharacterId, &Character<'gc>)> {
         if let Some(id) = self.export_characters.get(name, false) {
-            return self.characters.get(id);
+            return Some((*id, self.characters.get(id).unwrap()));
         }
         None
     }
@@ -191,13 +196,13 @@ impl<'gc> MovieLibrary<'gc> {
     pub fn instantiate_by_id(
         &self,
         id: CharacterId,
-        gc_context: &Mutation<'gc>,
-    ) -> Result<DisplayObject<'gc>, &'static str> {
+        mc: &Mutation<'gc>,
+    ) -> Result<DisplayObject<'gc>, Cow<'static, str>> {
         if let Some(character) = self.characters.get(&id) {
-            self.instantiate_display_object(character, gc_context)
+            self.instantiate_display_object(id, character, mc)
         } else {
             tracing::error!("Tried to instantiate non-registered character ID {}", id);
-            Err("Character id doesn't exist")
+            Err("Character id doesn't exist".into())
         }
     }
 
@@ -206,16 +211,16 @@ impl<'gc> MovieLibrary<'gc> {
     pub fn instantiate_by_export_name(
         &self,
         export_name: AvmString<'gc>,
-        gc_context: &Mutation<'gc>,
-    ) -> Result<DisplayObject<'gc>, &'static str> {
-        if let Some(character) = self.character_by_export_name(export_name) {
-            self.instantiate_display_object(character, gc_context)
+        mc: &Mutation<'gc>,
+    ) -> Result<DisplayObject<'gc>, Cow<'static, str>> {
+        if let Some((id, character)) = self.character_by_export_name(export_name) {
+            self.instantiate_display_object(id, character, mc)
         } else {
             tracing::error!(
                 "Tried to instantiate non-registered character {}",
                 export_name
             );
-            Err("Character id doesn't exist")
+            Err("Character id doesn't exist".into())
         }
     }
 
@@ -223,28 +228,31 @@ impl<'gc> MovieLibrary<'gc> {
     /// The object must then be post-instantiated before being used.
     fn instantiate_display_object(
         &self,
+        id: CharacterId,
         character: &Character<'gc>,
-        gc_context: &Mutation<'gc>,
-    ) -> Result<DisplayObject<'gc>, &'static str> {
+        mc: &Mutation<'gc>,
+    ) -> Result<DisplayObject<'gc>, Cow<'static, str>> {
         match character {
-            Character::Bitmap(bitmap) => Ok(bitmap.instantiate(gc_context)),
-            Character::EditText(edit_text) => Ok(edit_text.instantiate(gc_context)),
-            Character::Graphic(graphic) => Ok(graphic.instantiate(gc_context)),
-            Character::MorphShape(morph_shape) => Ok(morph_shape.instantiate(gc_context)),
-            Character::MovieClip(movie_clip) => Ok(movie_clip.instantiate(gc_context)),
-            Character::Avm1Button(button) => Ok(button.instantiate(gc_context)),
-            Character::Avm2Button(button) => Ok(button.instantiate(gc_context)),
-            Character::Text(text) => Ok(text.instantiate(gc_context)),
-            Character::Video(video) => Ok(video.instantiate(gc_context)),
-            _ => Err("Not a DisplayObject"),
-        }
-    }
-
-    pub fn get_bitmap(&self, id: CharacterId) -> Option<Bitmap<'gc>> {
-        if let Some(&Character::Bitmap(bitmap)) = self.characters.get(&id) {
-            Some(bitmap)
-        } else {
-            None
+            Character::Bitmap {
+                compressed,
+                avm2_bitmapdata_class,
+                handle: _,
+            } => {
+                let bitmap = compressed.decode().unwrap();
+                let bitmap = Bitmap::new(mc, id, bitmap, self.swf.clone())
+                    .map_err(|e| Cow::Owned(format!("Failed to instantiate bitmap: {:?}", e)))?;
+                bitmap.set_avm2_bitmapdata_class(mc, *avm2_bitmapdata_class.read());
+                Ok(bitmap.instantiate(mc))
+            }
+            Character::EditText(edit_text) => Ok(edit_text.instantiate(mc)),
+            Character::Graphic(graphic) => Ok(graphic.instantiate(mc)),
+            Character::MorphShape(morph_shape) => Ok(morph_shape.instantiate(mc)),
+            Character::MovieClip(movie_clip) => Ok(movie_clip.instantiate(mc)),
+            Character::Avm1Button(button) => Ok(button.instantiate(mc)),
+            Character::Avm2Button(button) => Ok(button.instantiate(mc)),
+            Character::Text(text) => Ok(text.instantiate(mc)),
+            Character::Video(video) => Ok(video.instantiate(mc)),
+            _ => Err("Not a DisplayObject".into()),
         }
     }
 
@@ -344,26 +352,43 @@ pub struct MovieLibrarySource<'a, 'gc> {
 
 impl<'a, 'gc> ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'a, 'gc> {
     fn bitmap_size(&self, id: u16) -> Option<ruffle_render::bitmap::BitmapSize> {
-        self.library
-            .get_bitmap(id)
-            .map(|bitmap| ruffle_render::bitmap::BitmapSize {
-                width: bitmap.width(),
-                height: bitmap.height(),
-            })
+        if let Some(Character::Bitmap { compressed, .. }) = self.library.characters.get(&id) {
+            Some(compressed.size())
+        } else {
+            None
+        }
     }
 
     fn bitmap_handle(&self, id: u16, backend: &mut dyn RenderBackend) -> Option<BitmapHandle> {
-        self.library.get_bitmap(id).map(|bitmap| {
-            bitmap
-                .bitmap_data_wrapper()
-                .bitmap_handle(self.gc_context, backend)
-        })
-    }
-}
-
-impl Default for MovieLibrary<'_> {
-    fn default() -> Self {
-        Self::new()
+        let Some(Character::Bitmap {
+            compressed,
+            handle,
+            avm2_bitmapdata_class: _,
+        }) = self.library.characters.get(&id)
+        else {
+            return None;
+        };
+        let mut handle = handle.borrow_mut();
+        if let Some(handle) = &*handle {
+            return Some(handle.clone());
+        }
+        let decoded = match compressed.decode() {
+            Ok(decoded) => decoded,
+            Err(e) => {
+                tracing::error!("Failed to decode bitmap character {id:?}: {e:?}");
+                return None;
+            }
+        };
+        let new_handle = match backend.register_bitmap(decoded) {
+            Ok(handle) => handle,
+            Err(e) => {
+                tracing::error!("Failed to register bitmap character {id:?}: {e:?}");
+                return None;
+            }
+        };
+        // FIXME - do we ever want to release this handle, to avoid taking up GPU memory?
+        *handle = Some(new_handle.clone());
+        Some(new_handle)
     }
 }
 
@@ -431,8 +456,8 @@ impl<'gc> Library<'gc> {
         // NOTE(Clippy): Cannot use or_default() here as PtrWeakKeyHashMap does not have such a method on its Entry API
         #[allow(clippy::unwrap_or_default)]
         self.movie_libraries
-            .entry(movie)
-            .or_insert_with(MovieLibrary::new)
+            .entry(movie.clone())
+            .or_insert_with(|| MovieLibrary::new(movie))
     }
 
     pub fn known_movies(&self) -> Vec<Arc<SwfMovie>> {

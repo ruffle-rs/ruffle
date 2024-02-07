@@ -1498,20 +1498,20 @@ fn load_bitmap<'gc>(
         .library_for_movie(movie)
         .and_then(|l| l.character_by_export_name(name));
 
-    let Some(Character::Bitmap(bitmap)) = character else {
+    let Some((_id, Character::Bitmap { compressed, .. })) = character else {
         return Ok(Value::Undefined);
     };
+    let bitmap = compressed.decode().unwrap();
 
     let transparency = true;
     let bitmap_data = BitmapData::new_with_pixels(
-        bitmap.width().into(),
-        bitmap.height().into(),
+        bitmap.width(),
+        bitmap.height(),
         transparency,
         bitmap
-            .bitmap_data(activation.context.renderer)
-            .read()
-            .pixels()
-            .to_vec(),
+            .as_colors()
+            .map(crate::bitmap::bitmap_data::Color::from)
+            .collect(),
     );
     Ok(new_bitmap_data(
         activation.context.gc_context,

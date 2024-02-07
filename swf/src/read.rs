@@ -8,6 +8,7 @@ use crate::{
 use bitstream_io::BitRead;
 use byteorder::{LittleEndian, ReadBytesExt};
 use simple_asn1::ASN1Block;
+use std::borrow::Cow;
 use std::io::{self, Read};
 
 /// Parse a decompressed SWF.
@@ -2496,7 +2497,7 @@ impl<'a> Reader<'a> {
             format,
             width,
             height,
-            data,
+            data: Cow::Borrowed(data),
         })
     }
 

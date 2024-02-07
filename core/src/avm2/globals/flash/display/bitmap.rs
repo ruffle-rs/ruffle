@@ -44,14 +44,18 @@ pub fn bitmap_allocator<'gc>(
             .avm2_class_registry()
             .class_symbol(class)
         {
-            if let Some(Character::Bitmap(bitmap)) = activation
+            if let Some(Character::Bitmap {
+                compressed,
+                avm2_bitmapdata_class: _,
+                handle: _,
+            }) = activation
                 .context
                 .library
                 .library_for_movie_mut(movie)
                 .character_by_id(symbol)
                 .cloned()
             {
-                let new_bitmap_data = fill_bitmap_data_from_symbol(activation, &bitmap);
+                let new_bitmap_data = fill_bitmap_data_from_symbol(activation, &compressed);
                 let bitmap_data_obj = BitmapDataObject::from_bitmap_data_internal(
                     activation,
                     BitmapDataWrapper::dummy(activation.context.gc_context),
@@ -66,10 +70,9 @@ pub fn bitmap_allocator<'gc>(
                     new_bitmap_data,
                     false,
                     &activation.caller_movie_or_root(),
-                )
-                .into();
+                );
 
-                let obj = initialize_for_allocator(activation, child, orig_class)?;
+                let obj = initialize_for_allocator(activation, child.into(), orig_class)?;
                 obj.set_public_property("bitmapData", bitmap_data_obj.into(), activation)?;
                 return Ok(obj);
             }

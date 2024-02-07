@@ -79,7 +79,7 @@ fn attach_sound<'gc>(
             .owner()
             .unwrap_or_else(|| activation.base_clip().avm1_root())
             .movie();
-        if let Some(Character::Sound(sound)) = activation
+        if let Some((_, Character::Sound(sound))) = activation
             .context
             .library
             .library_for_movie_mut(movie)
@@ -439,7 +439,7 @@ fn stop<'gc>(
                 .owner()
                 .unwrap_or_else(|| activation.base_clip().avm1_root())
                 .movie();
-            if let Some(Character::Sound(sound)) = activation
+            if let Some((_, Character::Sound(sound))) = activation
                 .context
                 .library
                 .library_for_movie_mut(movie)
