@@ -40,6 +40,31 @@ fn object_to_index_map<'gc>(
     Ok(map)
 }
 
+fn parse_data<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    url: &String,
+    data: &Value<'gc>,
+) -> Result<(String, IndexMap<String, String>), Error<'gc>> {
+    let mut url = url.to_string();
+    let mut vars = IndexMap::new();
+    let urlvariables = activation
+        .avm2()
+        .classes()
+        .urlvariables
+        .inner_class_definition();
+    if data.is_of_type(activation, urlvariables) {
+        let obj = data.coerce_to_object(activation)?;
+        vars = object_to_index_map(activation, &obj).unwrap_or_default();
+    } else {
+        let str_data = data.coerce_to_string(activation)?.to_string();
+        if !url.contains('?') {
+            url.push('?');
+        }
+        url.push_str(&str_data);
+    }
+    Ok((url, vars))
+}
+
 /// Implements `flash.net.navigateToURL`
 pub fn navigate_to_url<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -63,21 +88,17 @@ pub fn navigate_to_url<'gc>(
             2007,
         )?)),
         url => {
-            let url = url.coerce_to_string(activation)?;
+            let url = url.coerce_to_string(activation)?.to_string();
             let method = request
                 .get_public_property("method", activation)?
                 .coerce_to_string(activation)?;
-            let method =
-                NavigationMethod::from_method_str(&method).unwrap();
-            let data = request
-                .get_public_property("data", activation)?
-                .coerce_to_object(activation)?;
-            // If data is byte array this will not work
-            let data = object_to_index_map(activation, &data).unwrap_or_default();
+            let method = NavigationMethod::from_method_str(&method).unwrap();
+            let data: Value<'gc> = request.get_public_property("data", activation)?;
+            let (url, vars) = parse_data(activation, &url, &data)?;
             activation.context.navigator.navigate_to_url(
-                &url.to_utf8_lossy(),
+                &url,
                 &target.to_utf8_lossy(),
-                Some((method, data)),
+                Some((method, vars)),
             );
             Ok(Value::Undefined)
         }
