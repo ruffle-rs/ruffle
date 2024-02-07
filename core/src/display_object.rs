@@ -46,7 +46,7 @@ pub use crate::display_object::container::{
 };
 pub use avm1_button::{Avm1Button, ButtonState, ButtonTracking};
 pub use avm2_button::Avm2Button;
-pub use bitmap::Bitmap;
+pub use bitmap::{Bitmap, BitmapClass};
 pub use edit_text::{AutoSizeMode, EditText, TextSelection};
 pub use graphic::Graphic;
 pub use interactive::{Avm2MousePick, InteractiveObject, TInteractiveObject};

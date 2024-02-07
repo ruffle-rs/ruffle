@@ -39,7 +39,7 @@ impl<'gc> BitmapWeak<'gc> {
 ///
 /// Bitmaps may be associated with either a `Bitmap` or a `BitmapData`
 /// subclass. Its superclass determines how the Bitmap will be constructed.
-#[derive(Clone, Collect, Copy)]
+#[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
 pub enum BitmapClass<'gc> {
     /// This Bitmap uses the stock Flash Player classes for itself.
@@ -59,6 +59,23 @@ pub enum BitmapClass<'gc> {
     /// This is the normal symbol class association for Adobe Animate image
     /// embeds.
     BitmapData(Avm2ClassObject<'gc>),
+}
+
+impl<'gc> BitmapClass<'gc> {
+    pub fn from_class_object(
+        class: Avm2ClassObject<'gc>,
+        context: &mut UpdateContext<'_, 'gc>,
+    ) -> Option<Self> {
+        if class.has_class_in_chain(context.avm2.classes().bitmap.inner_class_definition()) {
+            Some(BitmapClass::Bitmap(class))
+        } else if class
+            .has_class_in_chain(context.avm2.classes().bitmapdata.inner_class_definition())
+        {
+            Some(BitmapClass::BitmapData(class))
+        } else {
+            None
+        }
+    }
 }
 
 /// A Bitmap display object is a raw bitamp on the stage.
@@ -157,7 +174,7 @@ impl<'gc> Bitmap<'gc> {
 
     /// Create a `Bitmap` with static bitmap data only.
     pub fn new(
-        context: &mut UpdateContext<'_, 'gc>,
+        mc: &Mutation<'gc>,
         id: CharacterId,
         bitmap: ruffle_render::bitmap::Bitmap,
         movie: Arc<SwfMovie>,
@@ -179,9 +196,9 @@ impl<'gc> Bitmap<'gc> {
 
         let smoothing = true;
         Ok(Self::new_with_bitmap_data(
-            context.gc_context,
+            mc,
             id,
-            BitmapDataWrapper::new(GcCell::new(context.gc_context, bitmap_data)),
+            BitmapDataWrapper::new(GcCell::new(mc, bitmap_data)),
             smoothing,
             &movie,
         ))
@@ -259,24 +276,8 @@ impl<'gc> Bitmap<'gc> {
         }
     }
 
-    pub fn set_avm2_bitmapdata_class(
-        self,
-        context: &mut UpdateContext<'_, 'gc>,
-        class: Avm2ClassObject<'gc>,
-    ) {
-        let bitmap_class = if class
-            .has_class_in_chain(context.avm2.classes().bitmap.inner_class_definition())
-        {
-            BitmapClass::Bitmap(class)
-        } else if class
-            .has_class_in_chain(context.avm2.classes().bitmapdata.inner_class_definition())
-        {
-            BitmapClass::BitmapData(class)
-        } else {
-            return tracing::error!("Associated class {:?} for symbol {} must extend flash.display.Bitmap or BitmapData, does neither", class.inner_class_definition().read().name(), self.id());
-        };
-
-        self.0.write(context.gc_context).avm2_bitmap_class = bitmap_class;
+    pub fn set_avm2_bitmapdata_class(self, mc: &Mutation<'gc>, class: BitmapClass<'gc>) {
+        self.0.write(mc).avm2_bitmap_class = class;
     }
 
     pub fn smoothing(self) -> bool {

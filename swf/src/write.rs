@@ -562,7 +562,7 @@ impl<W: Write> Writer<W> {
                 if let BitmapFormat::ColorMap8 { num_colors } = tag.format {
                     self.write_u8(num_colors)?;
                 }
-                self.output.write_all(tag.data)?;
+                self.output.write_all(&tag.data)?;
             }
 
             Tag::DefineButton(ref button) => self.write_define_button(button)?,

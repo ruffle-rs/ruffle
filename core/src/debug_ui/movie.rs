@@ -261,7 +261,7 @@ pub fn open_character_button(ui: &mut Ui, character: &Character) {
         Character::EditText(_) => "EditText",
         Character::Graphic(_) => "Graphic",
         Character::MovieClip(_) => "MovieClip",
-        Character::Bitmap(_) => "Bitmap",
+        Character::Bitmap { .. } => "Bitmap",
         Character::Avm1Button(_) => "Avm1Button",
         Character::Avm2Button(_) => "Avm2Button",
         Character::Font(_) => "Font",
