@@ -28,4 +28,5 @@ debug-menu = أدوات التصحيح
 debug-menu-open-stage = عرض معلومات المرحلة
 debug-menu-open-movie = عرض الفيلم
 debug-menu-open-movie-list = عرض الأفلام المعروفة
+debug-menu-open-domain-list = إظهار النطاق
 debug-menu-search-display-objects = البحث عن عناصر العرض...
