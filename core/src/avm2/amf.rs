@@ -446,22 +446,14 @@ pub fn deserialize_value<'gc>(
                 let key = deserialize_value(activation, key)?;
                 let value = deserialize_value(activation, value)?;
 
-                match key {
-                    Value::Object(key) => {
-                        dict_obj.set_property_by_object(key, value, activation.context.gc_context);
-                    }
-                    Value::String(..)
-                    | Value::Bool(..)
-                    | Value::Number(..)
-                    | Value::Integer(..)
-                    | Value::Null
-                    | Value::Undefined => {
-                        let key_string = key.coerce_to_string(activation)?;
-                        dict_obj.set_public_property(key_string, value, activation)?;
-                    }
+                if let Value::Object(key) = key {
+                    dict_obj.set_property_by_object(key, value, activation.context.gc_context);
+                } else {
+                    let key_string = key.coerce_to_string(activation)?;
+                    dict_obj.set_public_property(key_string, value, activation)?;
                 }
             }
-            dict_obj.value_of(activation.context.gc_context)?
+            dict_obj.into()
         }
         AmfValue::Custom(..) => {
             tracing::error!("Deserialization not yet implemented for Custom: {:?}", val);
