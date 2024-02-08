@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use crate::avm2::bytearray::ByteArrayStorage;
+use crate::avm2::object::dictionary_allocator;
 use crate::avm2::object::{ByteArrayObject, TObject, VectorObject};
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::ArrayObject;
@@ -434,8 +435,52 @@ pub fn deserialize_value<'gc>(
             );
             VectorObject::from_vector(storage, activation)?.into()
         }
-        AmfValue::Dictionary(..) | AmfValue::Custom(..) | AmfValue::Reference(_) => {
-            tracing::error!("Deserialization not yet implemented: {:?}", val);
+        AmfValue::Dictionary(values, has_weak_keys) => {
+            if !has_weak_keys {
+                let obj = dictionary_allocator(activation.avm2().classes().dictionary, activation)?;
+                let dict_obj = obj.as_dictionary_object().unwrap();
+
+                for (key, value) in values {
+                    let key = deserialize_value(activation, key)?;
+                    let value = deserialize_value(activation, value)?;
+
+                    match key {
+                        Value::Object(key) => {
+                            dict_obj.set_property_by_object(
+                                key,
+                                value,
+                                activation.context.gc_context,
+                            );
+                        }
+                        Value::String(..)
+                        | Value::Bool(..)
+                        | Value::Number(..)
+                        | Value::Integer(..)
+                        | Value::Null
+                        | Value::Undefined => {
+                            let key_string = key.coerce_to_string(activation)?;
+                            dict_obj.set_public_property(key_string, value, activation)?;
+                        }
+                    }
+                }
+                dict_obj.value_of(activation.context.gc_context)?
+            } else {
+                tracing::error!(
+                    "Deserialization not yet implemented for weak keys Dictionary: {:?}",
+                    val
+                );
+                Value::Undefined
+            }
+        }
+        AmfValue::Custom(..) => {
+            tracing::error!("Deserialization not yet implemented for Custom: {:?}", val);
+            Value::Undefined
+        }
+        AmfValue::Reference(_) => {
+            tracing::error!(
+                "Deserialization not yet implemented for Reference: {:?}",
+                val
+            );
             Value::Undefined
         }
         AmfValue::AMF3(val) => deserialize_value(activation, val)?,

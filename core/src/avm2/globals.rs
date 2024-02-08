@@ -174,6 +174,7 @@ pub struct SystemClasses<'gc> {
     pub sampledataevent: ClassObject<'gc>,
     pub avm1movie: ClassObject<'gc>,
     pub focusevent: ClassObject<'gc>,
+    pub dictionary: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -306,6 +307,7 @@ impl<'gc> SystemClasses<'gc> {
             sampledataevent: object,
             avm1movie: object,
             focusevent: object,
+            dictionary: object,
         }
     }
 }
@@ -816,6 +818,7 @@ fn load_playerglobal<'gc>(
             ("flash.net", "FileReference", filereference),
             ("flash.net", "FileFilter", filefilter),
             ("flash.utils", "ByteArray", bytearray),
+            ("flash.utils", "Dictionary", dictionary),
             ("flash.system", "ApplicationDomain", application_domain),
             ("flash.text", "Font", font),
             ("flash.text", "StaticText", statictext),
