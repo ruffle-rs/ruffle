@@ -434,8 +434,36 @@ pub fn deserialize_value<'gc>(
             );
             VectorObject::from_vector(storage, activation)?.into()
         }
-        AmfValue::Dictionary(..) | AmfValue::Custom(..) | AmfValue::Reference(_) => {
-            tracing::error!("Deserialization not yet implemented: {:?}", val);
+        AmfValue::Dictionary(values, has_weak_keys) => {
+            let obj = activation
+                .avm2()
+                .classes()
+                .dictionary
+                .construct(activation, &[(*has_weak_keys).into()])?;
+            let dict_obj = obj.as_dictionary_object().unwrap();
+
+            for (key, value) in values {
+                let key = deserialize_value(activation, key)?;
+                let value = deserialize_value(activation, value)?;
+
+                if let Value::Object(key) = key {
+                    dict_obj.set_property_by_object(key, value, activation.context.gc_context);
+                } else {
+                    let key_string = key.coerce_to_string(activation)?;
+                    dict_obj.set_public_property(key_string, value, activation)?;
+                }
+            }
+            dict_obj.into()
+        }
+        AmfValue::Custom(..) => {
+            tracing::error!("Deserialization not yet implemented for Custom: {:?}", val);
+            Value::Undefined
+        }
+        AmfValue::Reference(_) => {
+            tracing::error!(
+                "Deserialization not yet implemented for Reference: {:?}",
+                val
+            );
             Value::Undefined
         }
         AmfValue::AMF3(val) => deserialize_value(activation, val)?,
