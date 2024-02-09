@@ -6,13 +6,11 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Avm2;
 use crate::avm2::Error;
-use crate::avm2::EventObject;
 use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::SoundTransform;
 use crate::string::AvmString;
 use crate::{avm2_stub_getter, avm2_stub_method};
-use id3::{Tag, TagLike};
 use swf::{SoundEvent, SoundInfo};
 
 pub use crate::avm2::object::sound_allocator;
@@ -283,6 +281,7 @@ pub fn load_compressed_data_from_byte_array<'gc>(
     let handle = activation.context.audio.register_mp3(bytes).map_err(|e| {
         Error::RustError(format!("Failed to register sound from bytearray: {e:?}").into())
     })?;
+
     let progress_evt = activation
         .avm2()
         .classes()
@@ -301,78 +300,10 @@ pub fn load_compressed_data_from_byte_array<'gc>(
 
     Avm2::dispatch_event(&mut activation.context, progress_evt, this);
 
-    let id3 = activation
-        .avm2()
-        .classes()
-        .id3info
-        .construct(activation, &[])
-        .expect("failed to construct ID3Info object");
-    let tag = Tag::read_from(bytes);
-    if let Ok(ref tag) = tag {
-        if let Some(v) = tag.album() {
-            id3.set_public_property(
-                "album",
-                AvmString::new_utf8(activation.gc(), v).into(),
-                activation,
-            )
-            .expect("failed set_public_property");
-        }
-        if let Some(v) = tag.artist() {
-            id3.set_public_property(
-                "artist",
-                AvmString::new_utf8(activation.gc(), v).into(),
-                activation,
-            )
-            .expect("failed set_public_property");
-        }
-        if let Some(v) = tag.comments().next() {
-            id3.set_public_property(
-                "comment",
-                AvmString::new_utf8(activation.gc(), v.text.clone()).into(),
-                activation,
-            )
-            .expect("failed set_public_property");
-        }
-        if let Some(v) = tag.genre() {
-            id3.set_public_property(
-                "genre",
-                AvmString::new_utf8(activation.gc(), v).into(),
-                activation,
-            )
-            .expect("failed set_public_property");
-        }
-        if let Some(v) = tag.title() {
-            id3.set_public_property(
-                "songName",
-                AvmString::new_utf8(activation.gc(), v).into(),
-                activation,
-            )
-            .expect("failed set_public_property");
-        }
-        if let Some(v) = tag.track() {
-            id3.set_public_property(
-                "track",
-                AvmString::new_utf8(activation.gc(), v.to_string()).into(),
-                activation,
-            )
-            .expect("failed set_public_property");
-        }
-        if let Some(v) = tag.year() {
-            id3.set_public_property(
-                "year",
-                AvmString::new_utf8(activation.gc(), v.to_string()).into(),
-                activation,
-            )
-            .expect("failed set_public_property");
-        }
-    }
     this.as_sound_object()
-        .expect("Not a sound object")
-        .set_id3(activation.context.gc_context, Some(id3));
-    if tag.is_ok() {
-        let id3_evt = EventObject::bare_default_event(&mut activation.context, "id3");
-        Avm2::dispatch_event(&mut activation.context, id3_evt, this);
-    }
+        .unwrap()
+        .read_and_call_id3_event(activation, bytes);
+
     this.as_sound_object()
         .unwrap()
         .set_sound(&mut activation.context, handle)?;
