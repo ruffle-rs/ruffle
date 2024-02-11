@@ -1,1 +1,4 @@
-connected
+Before call: socket.connected = false
+After call: socket.connected = false
+Event handler: socket.connected = true
+After close: socket.connected = false
