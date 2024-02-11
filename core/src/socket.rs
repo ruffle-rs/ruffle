@@ -15,7 +15,7 @@ use async_channel::{unbounded, Sender as AsyncSender};
 use gc_arena::Collect;
 use generational_arena::{Arena, Index};
 use std::{
-    cell::RefCell,
+    cell::{Cell, RefCell},
     sync::mpsc::{channel, Receiver, Sender},
     time::Duration,
 };
@@ -34,6 +34,7 @@ enum SocketKind<'gc> {
 struct Socket<'gc> {
     target: SocketKind<'gc>,
     sender: RefCell<AsyncSender<Vec<u8>>>,
+    connected: Cell<bool>,
 }
 
 impl<'gc> Socket<'gc> {
@@ -41,6 +42,7 @@ impl<'gc> Socket<'gc> {
         Self {
             target,
             sender: RefCell::new(sender),
+            connected: Cell::new(false),
         }
     }
 }
@@ -150,7 +152,11 @@ impl<'gc> Sockets<'gc> {
     }
 
     pub fn is_connected(&self, handle: SocketHandle) -> bool {
-        matches!(self.sockets.get(handle), Some(Socket { .. }))
+        if let Some(socket) = self.sockets.get(handle) {
+            socket.connected.get()
+        } else {
+            false
+        }
     }
 
     pub fn send(&mut self, handle: SocketHandle, data: Vec<u8>) {
@@ -164,7 +170,12 @@ impl<'gc> Sockets<'gc> {
     }
 
     pub fn close(&mut self, handle: SocketHandle) {
-        if let Some(Socket { sender, target }) = self.sockets.remove(handle) {
+        if let Some(Socket {
+            sender,
+            target,
+            connected: _,
+        }) = self.sockets.remove(handle)
+        {
             drop(sender); // NOTE: By dropping the sender, the reading task will close automatically.
 
             // Clear the buffers if the connection was closed.
@@ -194,7 +205,10 @@ impl<'gc> Sockets<'gc> {
             match action {
                 SocketAction::Connect(handle, ConnectionState::Connected) => {
                     let target = match context.sockets.sockets.get(handle) {
-                        Some(socket) => socket.target,
+                        Some(socket) => {
+                            socket.connected.set(true);
+                            socket.target
+                        }
                         // Socket must have been closed before we could send event.
                         None => continue,
                     };
@@ -377,7 +391,10 @@ impl<'gc> Sockets<'gc> {
                 }
                 SocketAction::Close(handle) => {
                     let target = match context.sockets.sockets.remove(handle) {
-                        Some(socket) => socket.target,
+                        Some(socket) => {
+                            socket.connected.set(false);
+                            socket.target
+                        }
                         // Socket must have been closed before we could send event.
                         None => continue,
                     };
