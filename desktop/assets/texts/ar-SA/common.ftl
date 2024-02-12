@@ -1,2 +1,2 @@
-start = إبدأ
-browse = استعراض
+start = أﺪﺑﺇ
+browse = ضﺍﺮﻌﺘﺳﺍ

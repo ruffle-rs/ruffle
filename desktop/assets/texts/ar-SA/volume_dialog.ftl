@@ -1,3 +1,3 @@
-volume-controls = التحكم بالصوت
-volume-controls-mute = كتم
-volume-controls-volume = مستوى الصوت
+volume-controls = تﻮﺼﻟﺎﺑ ﻢﻜﺤﺘﻟﺍ
+volume-controls-mute = ﻢﺘﻛ
+volume-controls-volume = تﻮﺼﻟﺍ ىﻮﺘﺴﻣ

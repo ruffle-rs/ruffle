@@ -1,2 +1,2 @@
-dialog-ok = نعم
-dialog-cancel = إلغاء
+dialog-ok = ﻖﻓﺍﻮﻣ
+dialog-cancel = ءﺎﻐﻟﺇ

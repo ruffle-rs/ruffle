@@ -8,25 +8,25 @@
 # Some items may be also be duplicated here, like "About Ruffle" in the menu and "About Ruffle" elsewhere as the header of the about menu.
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
-file-menu = الملف
-file-menu-open-quick = فتح...
-file-menu-open-advanced = استعراض متقدم...
-file-menu-close = إغلاق
-file-menu-reload = إعادة التحميل
-file-menu-exit = خروج
-controls-menu = عناصر التحكم
-controls-menu-suspend = تعليق
-controls-menu-resume = استئناف
-controls-menu-volume = التحكم بالصوت
-help-menu = التعليمات
-help-menu-join-discord = انضم لنا على الدسكورد
-help-menu-report-a-bug = الإبلاغ عن خطأ
-help-menu-sponsor-development = راعي التطوير
-help-menu-translate-ruffle = ترجمة رفل
-help-menu-about = حول رفل
-debug-menu = أدوات التصحيح
-debug-menu-open-stage = عرض معلومات المرحلة
-debug-menu-open-movie = عرض الفيلم
-debug-menu-open-movie-list = عرض الأفلام المعروفة
-debug-menu-open-domain-list = إظهار النطاق
-debug-menu-search-display-objects = البحث عن عناصر العرض...
+file-menu = ﻒﻠﻣ
+file-menu-open-quick = ...ﺢﺘﻓ
+file-menu-open-advanced = ...مﺪﻘﺘﻣ ضﺍﺮﻌﺘﺳﺍ
+file-menu-close = قﻼﻏﺇ
+file-menu-reload = ﻞﻴﻤﺤﺘﻟﺍ ةﺩﺎﻋﺇ
+file-menu-exit = جﻭﺮﺧ
+controls-menu = ﻢﻜﺤﺘﻟﺍ ﺮﺻﺎﻨﻋ
+controls-menu-suspend = ﻖﻴﻠﻌﺗ
+controls-menu-resume = فﺎﻨﺌﺘﺳﺍ
+controls-menu-volume = تﻮﺼﻟﺎﺑ ﻢﻜﺤﺘﻟﺍ
+help-menu = تﺎﻤﻴﻠﻌﺘﻟﺍ
+help-menu-join-discord = دﺭﻮﻜﺳﺪﻟﺍ ﻰﻠﻋ ﺎﻨﻟ ﻢﻀﻧﺍ
+help-menu-report-a-bug = ...ﺄﻄﺧ ﻦﻋ غﻼﺑﻹﺍ
+help-menu-sponsor-development = ...ﺮﻳﻮﻄﺘﻟﺍ ﻲﻋﺍﺭ
+help-menu-translate-ruffle = نﺍﺪﺒﻌﻟﺍ دﺎﻳﺍ ﻢﺟﺮﺘﻤﻟﺍ
+help-menu-about = ﻞﻓﺭ لﻮﺣ
+debug-menu = ﺢﻴﺤﺼﺘﻟﺍ تﺍﻭﺩﺃ
+debug-menu-open-stage = ﺔﻠﺣﺮﻤﻟﺍ تﺎﻣﻮﻠﻌﻣ ضﺮﻋ
+debug-menu-open-movie = ﻢﻠﻔﻟﺍ ضﺮﻋ
+debug-menu-open-movie-list = ﺔﻓﻭﺮﻌﻤﻟﺍ مﻼﻓﻷﺍ ضﺮﻋ
+debug-menu-open-domain-list = قﺎﻄﻨﻟﺍ رﺎﻬﻇﺇ
+debug-menu-search-display-objects = ...ضﺮﻌﻟﺍ ﺮﺻﺎﻨﻋ ﻦﻋ ﺚﺤﺒﻟﺍ

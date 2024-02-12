@@ -1,12 +1,12 @@
-context-menu-download-swf = تحميل .swf
-context-menu-copy-debug-info = نسخ معلومات التصحيح
-context-menu-open-save-manager = فتح مدير الحفظ
+context-menu-download-swf = ﻞﻴﻤﺤﺗ .swf
+context-menu-copy-debug-info = ﺢﻴﺤﺼﺘﻟﺍ تﺎﻣﻮﻠﻌﻣ ﺦﺴﻧ
+context-menu-open-save-manager = ﻆﻔﺤﻟﺍ ﺮﻳﺪﻣ ﺢﺘﻓ
 context-menu-about-ruffle =
     { $flavor ->
-        [extension] حول ملحق رفل ({ $version })
-       *[other] حول رفل ({ $version })
+        [extension] ﻞﻓﺭ ﻖﺤﻠﻣ لﻮﺣ ({ $version })
+       *[other] ﻞﻓﺭ لﻮﺣ ({ $version })
     }
-context-menu-hide = إخفاء هذه القائمة
-context-menu-exit-fullscreen = الخروج من وضعية الشاشة الكاملة
-context-menu-enter-fullscreen = تفعيل وضعية الشاشة الكاملة
-context-menu-volume-controls = التحكم بالصوت
+context-menu-hide = ﺔﻤﺋﺎﻘﻟﺍ هﺬﻫ ءﺎﻔﺧﺇ
+context-menu-exit-fullscreen = ﺔﻠﻣﺎﻜﻟﺍ ﺔﺷﺎﺸﻟﺍ ﻦﻣ جﻭﺮﺨﻟﺍ
+context-menu-enter-fullscreen = ﺔﻠﻣﺎﻜﻟﺍ ﺔﺷﺎﺸﻟﺍ ﻞﻴﻌﻔﺗ
+context-menu-volume-controls = تﻮﺼﻟﺎﺑ ﻢﻜﺤﺘﻟﺍ

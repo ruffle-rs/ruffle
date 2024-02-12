@@ -1,5 +1,5 @@
 open-dialog = فتح ملف أو موقع إلكتروني
 open-dialog-path = ملف أو موقع إلكتروني
-open-dialog-add-parameter = إضافة
-open-dialog-remove-parameter = إزالة
-open-dialog-remove-parameters = إزالة الكل
+open-dialog-add-parameter = ﺔﻓﺎﺿﺇ
+open-dialog-remove-parameter = ﺔﻟﺍﺯﺇ
+open-dialog-remove-parameters = ﻞﻜﻟﺍ ﺔﻟﺍﺯﺇ
