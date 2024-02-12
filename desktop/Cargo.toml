@@ -15,9 +15,9 @@ clap = { version = "4.4.18", features = ["derive"] }
 cpal = "0.15.2"
 egui = { workspace = true }
 egui_extras = { version = "0.26.0", features = ["image"] }
-egui-wgpu = { version = "0.26.0", features = ["winit"] }
+egui-wgpu = { version = "0.26.1", features = ["winit"] }
 image = { version = "0.24", features = ["png"] }
-egui-winit = "0.26.0"
+egui-winit = "0.26.1"
 fontdb = "0.16"
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymoser", "default_compatibility_rules", "egui"] }
 ruffle_render = { path = "../render", features = ["clap"] }
