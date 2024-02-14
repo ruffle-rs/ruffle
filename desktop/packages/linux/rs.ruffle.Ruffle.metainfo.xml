@@ -4,7 +4,7 @@
   <id>rs.ruffle.Ruffle</id>
   <metadata_license>CC0-1.0</metadata_license>
   <name>Ruffle</name>
-  <summary>A Flash Player emulator written in Rust</summary>
+  <summary>A Flash Player emulator</summary>
   <launchable type="desktop-id">rs.ruffle.Ruffle.desktop</launchable>
   <screenshots>
     <screenshot type="default">
@@ -46,7 +46,7 @@
   <url type="vcs-browser">https://github.com/ruffle-rs/ruffle</url>
   <url type="contribute">https://github.com/ruffle-rs/ruffle/blob/master/CONTRIBUTING.md</url>
   <releases>
-    <release version="nightly-2023-05-26" date="2022-05-26"/>
+    <release version="2024_02_13" date="2024-02-13"/>
   </releases>
   <provides>
     <mediatype>application/x-shockwave-flash</mediatype>
