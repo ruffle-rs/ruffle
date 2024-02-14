@@ -29,14 +29,12 @@ jobs:
   build:
     needs: changes
     if: needs.changes.outputs.should_run == 'true'
-    name: Test Node.js ${{ matrix.node_version }} / Rust ${{ matrix.rust_version }} / ${{ matrix.os }}
+    name: Test Node.js ${{ matrix.node_version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.rust_version == 'nightly' }}
     strategy:
       fail-fast: false
       matrix:
         node_version: ["20", "21"]
-        rust_version: [stable] # We most likely don't care about Rust versions here, we'll catch those issues in test_rust.yml.
         os: [ubuntu-22.04, windows-latest]
 
     steps:
@@ -52,7 +50,6 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ matrix.rust_version }}
           targets: wasm32-unknown-unknown
 
       - name: Cache Cargo output
