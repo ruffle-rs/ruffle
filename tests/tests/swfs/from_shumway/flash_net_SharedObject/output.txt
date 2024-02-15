@@ -1,0 +1,4 @@
+stored value of `x`: 10
+stored data's size: 24
+stored value of `x` after clear: undefined
+stored data's size after clear: 0
