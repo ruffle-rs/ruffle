@@ -1,0 +1,6 @@
+loading started
+service initialized
+loading complete
+content as Interface1 != null: true
+[object Service1]
+service: run()

@@ -1,0 +1,3 @@
+getSWFVersion: 9
+getBytesTotal OK: true
+getBytesLoaded OK: true

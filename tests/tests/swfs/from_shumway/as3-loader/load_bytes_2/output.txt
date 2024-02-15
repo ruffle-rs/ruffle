@@ -1,0 +1,4 @@
+loading progress 0 821 TODO: make sure this is dispatched twice before content is initialized
+from loadee: loaded
+loadee initialized, url relative to swf: /[[DYNAMIC]]/1
+loading of 821 bytes complete

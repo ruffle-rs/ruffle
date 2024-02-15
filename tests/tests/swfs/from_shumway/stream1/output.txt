@@ -1,0 +1,9 @@
+progress: 9/9
+start: 9
+byte BE: 18
+word BE: 13398
+byte LE: 18
+word LE: 22068
+mid: 3
+buf: 119,136,153
+end: 0
