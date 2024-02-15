@@ -449,7 +449,11 @@ fn capture_and_compare_image(
                 render_interface.name(),
                 known_failure,
             )?;
-        } else if !known_failure {
+        } else if known_failure {
+            return Err(anyhow!(
+                "No image to compare to, pretending this failed since we don't know if it worked."
+            ));
+        } else {
             // If we're expecting this to be wrong, don't save a likely wrong image
             write_image(&expected_image_path, &actual_image, ImageOutputFormat::Png)?;
         }
