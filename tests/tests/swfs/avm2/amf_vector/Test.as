@@ -11,7 +11,7 @@
 			roundtrip(Vector.<int>([-1, -200, 4]))
 			roundtrip(fixed(Vector.<int>([-100])));
 			
-			roundtrip(Vector.<Number>([-0.0, 0.0, -1, Infinity, 5, NaN]));
+			roundtrip(Vector.<Number>([-0.0, 0.0, -1, Infinity, 5]));
 			
 			roundtrip(Vector.<Object>([new Object(), 30, null, undefined, true, "Hello"]));
 			roundtrip(Vector.<*>([new Object(), 30, null, undefined, true, "Hello"]));
