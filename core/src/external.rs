@@ -225,9 +225,19 @@ impl Value {
             Value::String(value) => {
                 Avm2Value::String(AvmString::new_utf8(activation.context.gc_context, value))
             }
-            Value::Object(_values) => {
-                tracing::warn!("into_avm2 needs to be implemented for Value::Object");
-                Avm2Value::Undefined
+            Value::Object(values) => {
+                let obj = activation
+                    .avm2()
+                    .classes()
+                    .object
+                    .construct(activation, &[])
+                    .unwrap();
+                for (key, value) in values.into_iter() {
+                    let key = AvmString::new_utf8(activation.context.gc_context, key);
+                    let value = value.into_avm2(activation);
+                    obj.set_public_property(key, value, activation).unwrap();
+                }
+                Avm2Value::Object(obj)
             }
             Value::List(values) => {
                 let storage = values
