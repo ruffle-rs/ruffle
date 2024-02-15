@@ -110,7 +110,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: swf_images
+          name: swf_images_${{ matrix.rust_version }}_${{ matrix.os }}
           path: |
             tests*/**/*.actual*.png
             tests*/**/*.difference*.png
