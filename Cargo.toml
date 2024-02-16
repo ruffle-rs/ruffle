@@ -97,3 +97,10 @@ inherits = "release"
 
 [profile.web-wasm-extensions]
 inherits = "release"
+
+[profile.ci]
+inherits = "release"
+opt-level = 2
+debug-assertions = true
+overflow-checks = true
+incremental = true
