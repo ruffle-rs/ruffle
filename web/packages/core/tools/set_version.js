@@ -1,6 +1,7 @@
 const replace = require("replace-in-file");
 const childProcess = require("child_process");
 const fs = require("fs");
+const path = require("path");
 
 let buildDate = new Date().toISOString();
 let versionNumber = process.env.npm_package_version;
@@ -24,9 +25,11 @@ let versionName =
 let versionSeal = {};
 
 if (process.env.ENABLE_VERSION_SEAL === "true") {
-    if (fs.existsSync("version_seal.json")) {
+    const sealFile = path.resolve(__dirname, "../../../version_seal.json");
+    if (fs.existsSync(sealFile)) {
+        console.log("Using version seal");
         // Using the version seal stored previously.
-        versionSeal = JSON.parse(fs.readFileSync("version_seal.json"));
+        versionSeal = JSON.parse(fs.readFileSync(sealFile));
 
         versionNumber = versionSeal.version_number;
         versionName = versionSeal.version_name;
@@ -34,6 +37,7 @@ if (process.env.ENABLE_VERSION_SEAL === "true") {
         buildDate = versionSeal.build_date;
         commitHash = versionSeal.commitHash;
     } else {
+        console.log("Creating version seal");
         versionSeal = {
             version_number: versionNumber,
             version_name: versionName,
@@ -44,7 +48,7 @@ if (process.env.ENABLE_VERSION_SEAL === "true") {
             firefox_extension_id: firefoxExtensionId,
         };
 
-        fs.writeFileSync("version_seal.json", JSON.stringify(versionSeal));
+        fs.writeFileSync(sealFile, JSON.stringify(versionSeal));
     }
 }
 
