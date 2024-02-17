@@ -53,6 +53,7 @@ exports.config = {
             maxInstances: 5,
             //
             browserName: "chrome",
+            browserVersion: "121.0.6167.184", // [TODO] Remove once chromedriver & wdio are up to date...
             "goog:chromeOptions": {
                 args: ["--headless", "--disable-gpu"],
             },
