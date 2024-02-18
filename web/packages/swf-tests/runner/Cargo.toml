@@ -1,0 +1,35 @@
+[package]
+name = "web_test_runner"
+authors = ["Nathan Adams <dinnerbone@dinnerbone.com>"]
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen = "=0.2.91"
+js-sys = "0.3.67"
+ruffle_test_framework = { path = "../../../../tests/framework" }
+ruffle_render_wgpu = { path = "../../../../render/wgpu", features = ["webgl"] }
+vfs = { git = "https://github.com/manuel-woelker/rust-vfs", rev = "722ecc60b76c90fd7ce4c6dac6114bc13271cb65", features = ["embedded-fs"] }
+rust-embed = { version = "8.0.0", features = ["include-exclude"] }
+getrandom = { version = "0.2", features = ["js"] }
+anyhow = "1.0.79"
+chrono = { version = "0.4", default-features = false, features = ["wasmbind", "clock"] }
+tracing-subscriber = { workspace = true }
+tracing = { workspace = true }
+tracing-log = "0.2.0"
+tracing-wasm = "0.2.1"
+wasm-bindgen-futures = "0.4.40"
+image = { version = "0.24.8", default-features = false, features  = ["png"] }
+
+[dependencies.web-sys]
+version = "0.3.67"
+features = ["Window"]

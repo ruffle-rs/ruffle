@@ -27,7 +27,7 @@ serde = "1.0.196"
 toml = "0.8.9"
 anyhow = "1.0.79"
 async-channel = "2.1.1"
-vfs = "0.10.0"
+vfs = { git = "https://github.com/manuel-woelker/rust-vfs", rev = "722ecc60b76c90fd7ce4c6dac6114bc13271cb65" }
 percent-encoding = "2.3.1"
 
 [features]

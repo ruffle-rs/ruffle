@@ -8,6 +8,7 @@ members = [
     "flv",
     "web",
     "web/packages/extension/safari",
+    "web/packages/swf-tests/runner",
     "wstr",
     "scanner",
     "exporter",
