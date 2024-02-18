@@ -69,12 +69,8 @@ pub fn serialize_value<'gc>(
                     }
                 }
 
-                if sparse.is_empty() {
-                    Some(AmfValue::StrictArray(dense))
-                } else {
-                    let len = sparse.len() as u32;
-                    Some(AmfValue::ECMAArray(dense, sparse, len))
-                }
+                let len = o.as_array_storage().unwrap().length() as u32;
+                Some(AmfValue::ECMAArray(dense, sparse, len))
             } else if let Some(vec) = o.as_vector_storage() {
                 let val_type = vec.value_type();
                 if val_type == Some(activation.avm2().classes().int) {
