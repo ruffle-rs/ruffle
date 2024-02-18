@@ -1757,7 +1757,7 @@ checksum = "0ce7134b9999ecaf8bcd65542e436736ef32ddca1b3e06094cb6ec5755203b80"
 [[package]]
 name = "flash-lso"
 version = "0.6.0"
-source = "git+https://github.com/ruffle-rs/rust-flash-lso?rev=2f976fb15b30aa4c5cb398710dc5e31a21004e57#2f976fb15b30aa4c5cb398710dc5e31a21004e57"
+source = "git+https://github.com/ruffle-rs/rust-flash-lso?rev=2f770555ea49c6db49c57c1dd46c7cc686e8dacc#2f770555ea49c6db49c57c1dd46c7cc686e8dacc"
 dependencies = [
  "cookie-factory",
  "enumset",
