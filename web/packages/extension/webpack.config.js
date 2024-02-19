@@ -90,6 +90,7 @@ export default function (/** @type {Record<string, any>} */ env, _argv) {
             path: url.fileURLToPath(new URL("assets/dist/", import.meta.url)),
             publicPath: "",
             clean: true,
+            assetModuleFilename: "assets/[name][ext][query]",
         },
         module: {
             rules: [
