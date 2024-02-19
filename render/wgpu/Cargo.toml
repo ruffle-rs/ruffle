@@ -14,9 +14,9 @@ workspace = true
 wgpu = { workspace = true, features = ["naga-ir"] }
 tracing = { workspace = true }
 ruffle_render = { path = "..", features = ["tessellator", "wgpu"] }
-bytemuck = { version = "1.14.1", features = ["derive"] }
+bytemuck = { version = "1.14.3", features = ["derive"] }
 raw-window-handle = "0.6.0"
-clap = { version = "4.4.18", features = ["derive"], optional = true }
+clap = { version = "4.5.1", features = ["derive"], optional = true }
 enum-map = "2.7.3"
 fnv = "1.0.7"
 swf = { path = "../../swf" }
@@ -28,7 +28,7 @@ downcast-rs = "1.2.0"
 profiling = { version = "1.0", default-features = false, optional = true }
 lru = "0.12.2"
 naga = { workspace = true }
-indexmap = "2.2.2"
+indexmap = "2.2.3"
 
 # desktop
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]

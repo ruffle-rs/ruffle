@@ -53,7 +53,7 @@ getrandom = { version = "0.2", features = ["js"] }
 serde = { version = "1.0.196", features = ["derive"] }
 thiserror = "1.0"
 base64 = "0.21.7"
-async-channel = "2.1.1"
+async-channel = "2.2.0"
 futures-util = { version = "0.3.30", features = ["sink"] }
 gloo-net =  { version = "0.5.0", default-features = false, features = ["websocket"] }
 rfd = { version = "0.13.0", features = ["file-handle-inner"] }

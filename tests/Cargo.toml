@@ -26,10 +26,10 @@ ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug",
 ruffle_test_framework = { path = "framework" }
 libtest-mimic = "0.7.0"
 walkdir = "2.4.0"
-anyhow = "1.0.79"
+anyhow = "1.0.80"
 image = { version = "0.24.8", default-features = false, features  = ["png"] }
 futures = "0.3.30"
-env_logger = "0.11.1"
+env_logger = "0.11.2"
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
