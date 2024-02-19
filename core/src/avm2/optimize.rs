@@ -38,9 +38,8 @@ impl<'gc> Locals<'gc> {
         // after the ClassObject refactor
         self.0[index] = class
             .read()
-            .class_objects()
-            .get(0)
-            .map(|c| ValueType::Class(*c))
+            .class_object()
+            .map(ValueType::Class)
             .unwrap_or(ValueType::Any);
     }
 
@@ -79,9 +78,8 @@ impl<'gc> Stack<'gc> {
         self.0.push(
             class
                 .read()
-                .class_objects()
-                .get(0)
-                .map(|c| ValueType::Class(*c))
+                .class_object()
+                .map(ValueType::Class)
                 .unwrap_or(ValueType::Any),
         );
     }

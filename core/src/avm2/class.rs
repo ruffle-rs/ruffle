@@ -295,6 +295,14 @@ impl<'gc> Class<'gc> {
         &self.class_objects
     }
 
+    pub fn class_object(&self) -> Option<ClassObject<'gc>> {
+        if self.class_objects.len() == 1 {
+            Some(self.class_objects[0])
+        } else {
+            None
+        }
+    }
+
     /// Construct a class from a `TranslationUnit` and its class index.
     ///
     /// The returned class will be allocated, but no traits will be loaded. The
