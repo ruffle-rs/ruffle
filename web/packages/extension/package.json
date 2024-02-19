@@ -15,7 +15,7 @@
         "ruffle-core": "^0.1.0"
     },
     "devDependencies": {
-        "@tsconfig/strictest": "^2.0.2",
+        "@tsconfig/strictest": "^2.0.3",
         "@types/archiver": "^6.0.2",
         "@types/chrome": "^0.0.260",
         "@types/common-tags": "^1.8.4",

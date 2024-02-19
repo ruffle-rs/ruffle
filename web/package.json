@@ -8,13 +8,13 @@
         "./packages/*"
     ],
     "devDependencies": {
-        "@typescript-eslint/eslint-plugin": "^6.20.0",
-        "@typescript-eslint/parser": "^6.20.0",
-        "@wdio/cli": "^8.29.7",
-        "@wdio/local-runner": "^8.29.7",
-        "@wdio/mocha-framework": "^8.29.3",
-        "@wdio/spec-reporter": "^8.29.7",
-        "@wdio/static-server-service": "^8.29.1",
+        "@typescript-eslint/eslint-plugin": "^6.21.0",
+        "@typescript-eslint/parser": "^6.21.0",
+        "@wdio/cli": "^8.32.2",
+        "@wdio/local-runner": "^8.32.2",
+        "@wdio/mocha-framework": "^8.32.2",
+        "@wdio/spec-reporter": "^8.32.2",
+        "@wdio/static-server-service": "^8.32.2",
         "chai": "^4.4.1",
         "chai-html": "^2.1.0",
         "copy-webpack-plugin": "^12.0.2",
@@ -22,19 +22,19 @@
         "eslint": "^8.56.0",
         "eslint-config-prettier": "^9.1.0",
         "eslint-plugin-prettier": "^5.1.3",
-        "mocha": "^10.2.0",
-        "prettier": "^3.2.4",
+        "mocha": "^10.3.0",
+        "prettier": "^3.2.5",
         "stylelint": "^16.2.1",
         "stylelint-config-standard": "^36.0.0",
         "stylelint-prettier": "^5.0.0",
         "ts-loader": "^9.5.1",
         "typescript": "^5.3.3",
         "wdio-chromedriver-service": "^8.1.1",
-        "webpack": "^5.90.1",
+        "webpack": "^5.90.2",
         "webpack-cli": "^5.1.4"
     },
     "optionalDependencies": {
-        "chromedriver": "^121.0.0"
+        "chromedriver": "^121.0.2"
     },
     "scripts": {
         "build": "npm run build --workspace=ruffle-core && npm run build --workspace=ruffle-demo --workspace=ruffle-extension --workspace=ruffle-selfhosted",
