@@ -116,6 +116,12 @@ impl<'gc> Stack<'gc> {
         self.0.pop()
     }
 
+    fn popn(&mut self, count: u32) {
+        for _ in 0..count {
+            self.pop();
+        }
+    }
+
     fn clear(&mut self) {
         self.0 = Vec::new();
     }
@@ -437,17 +443,12 @@ pub fn optimize<'gc>(
                 stack.push_class_object(activation.avm2().classes().string);
             }
             Op::NewArray { num_args } => {
-                for _ in 0..*num_args {
-                    stack.pop();
-                }
+                stack.popn(*num_args);
 
                 stack.push_class_object(activation.avm2().classes().array);
             }
             Op::NewObject { num_args } => {
-                for _ in 0..*num_args {
-                    stack.pop();
-                    stack.pop();
-                }
+                stack.popn(*num_args * 2);
 
                 stack.push_class_object(activation.avm2().classes().object);
             }
@@ -467,9 +468,7 @@ pub fn optimize<'gc>(
                 stack.push_boolean();
             }
             Op::ApplyType { num_types } => {
-                for _ in 0..*num_types {
-                    stack.pop();
-                }
+                stack.popn(*num_types);
 
                 stack.pop();
 
@@ -747,9 +746,7 @@ pub fn optimize<'gc>(
             }
             Op::Construct { num_args } => {
                 // Arguments
-                for _ in 0..*num_args {
-                    stack.pop();
-                }
+                stack.popn(*num_args);
 
                 stack.pop();
 
@@ -758,9 +755,7 @@ pub fn optimize<'gc>(
             }
             Op::ConstructSuper { num_args } => {
                 // Arguments
-                for _ in 0..*num_args {
-                    stack.pop();
-                }
+                stack.popn(*num_args);
 
                 // Then receiver.
                 stack.pop();
@@ -770,9 +765,7 @@ pub fn optimize<'gc>(
                 num_args,
             } => {
                 // Arguments
-                for _ in 0..*num_args {
-                    stack.pop();
-                }
+                stack.popn(*num_args);
 
                 // Then receiver.
                 stack.pop();
@@ -795,9 +788,7 @@ pub fn optimize<'gc>(
                 num_args,
             } => {
                 // Arguments
-                for _ in 0..*num_args {
-                    stack.pop();
-                }
+                stack.popn(*num_args);
 
                 // Then receiver.
                 let stack_value = stack.pop();
@@ -835,9 +826,7 @@ pub fn optimize<'gc>(
             }
             Op::Call { num_args } => {
                 // Arguments
-                for _ in 0..*num_args {
-                    stack.pop();
-                }
+                stack.popn(*num_args);
 
                 stack.pop();
 
