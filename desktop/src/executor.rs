@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex, Weak};
 use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
 use winit::event_loop::EventLoopProxy;
 
-/// Exeuctor context passed to event sources.
+/// Executor context passed to event sources.
 ///
 /// All task handles are identical and interchangeable. Cloning a `TaskHandle`
 /// does not clone the underlying task.
@@ -20,12 +20,15 @@ struct TaskHandle {
     handle: Index,
 
     /// The executor the task belongs to.
-    executor: Arc<Mutex<WinitAsyncExecutor>>,
+    ///
+    /// Weak reference ensures that the executor along
+    /// with its tasks is dropped properly.
+    executor: Weak<Mutex<WinitAsyncExecutor>>,
 }
 
 impl TaskHandle {
     /// Construct a handle to a given task.
-    fn for_task(task: Index, executor: Arc<Mutex<WinitAsyncExecutor>>) -> Self {
+    fn for_task(task: Index, executor: Weak<Mutex<WinitAsyncExecutor>>) -> Self {
         Self {
             handle: task,
             executor,
@@ -47,10 +50,12 @@ impl TaskHandle {
 
     /// Wake the task this context refers to.
     fn wake(&self) {
-        self.executor
-            .lock()
-            .expect("able to lock executor")
-            .wake(self.handle);
+        if let Some(executor) = self.executor.upgrade() {
+            executor
+                .lock()
+                .expect("able to lock executor")
+                .wake(self.handle);
+        }
     }
 
     /// Convert a voidptr into an `TaskHandle` reference, if non-null.
@@ -167,12 +172,11 @@ impl WinitAsyncExecutor {
             self.task_queue.insert(Task::from_future(fut));
         }
 
-        let self_ref = self.self_ref.upgrade().expect("active self-reference");
         let mut completed_tasks = vec![];
 
         for (index, task) in self.task_queue.iter_mut() {
             if task.is_ready() {
-                let handle = TaskHandle::for_task(index, self_ref.clone());
+                let handle = TaskHandle::for_task(index, self.self_ref.clone());
                 let waker = handle.waker();
                 let mut context = Context::from_waker(&waker);
 
