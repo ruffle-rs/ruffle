@@ -71,4 +71,5 @@ unknown-git = "deny"
 #  github.com organizations to allow git sources for
 github = [
     "ruffle-rs",
+    "XAMPPRocky" # Remove once there's a new release of fluent-templates
 ]
