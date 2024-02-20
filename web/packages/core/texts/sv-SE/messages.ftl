@@ -31,7 +31,7 @@ error-wasm-mime-type =
     Denna webbserver serverar inte ".wasm"-filer med korrekt MIME-typ.
     Om du är serveradministratören konsultera vänligen Ruffle-wikin för hjälp.
 error-invalid-swf =
-    Ruffle kan ej läsa den begärda filen.
+    Ruffle kan inte läsa den begärda filen.
     Det mest sannolika skälet är att den begärda filen inte är en giltig SWF.
 error-swf-fetch =
     Ruffle misslyckades ladda SWF-filen.
@@ -56,7 +56,7 @@ error-wasm-download =
 error-wasm-disabled-on-edge =
     Ruffle misslyckades ladda ".wasm"-filkomponenten.
     För att åtgärda detta försök att öppna webbläsarens inställningar, klicka på "Sekretess, sökning och tjänster", bläddra ner och stäng av "Förbättra säkerheten på webben".
-    Detta tillåter din webbläsare ladda ".wasm"-filerna.
+    Detta tillåter din webbläsare att ladda ".wasm"-filerna.
     Om problemet kvarstår kan du behöva använda en annan webbläsare.
 error-javascript-conflict =
     Ruffle har stött på ett stort fel under initialiseringen.
@@ -65,7 +65,7 @@ error-javascript-conflict =
 error-javascript-conflict-outdated = Du kan också försöka ladda upp en nyare version av Ruffle, vilket kan kringgå problemet (nuvarande version är utdaterad: { $buildDate }).
 error-csp-conflict =
     Ruffle har stött på ett stort fel under initialiseringen.
-    Denna webbservers Content Security Policy tillåter inte ".wasm"-komponenten att köra.
+    Webbserverns Content Security Policy tillåter inte ".wasm"-komponenten att köra.
     Om du är serveradministratören konsultera vänligen Ruffle-wikin för hjälp.
 error-unknown =
     Ruffle har stött på ett stort fel medan den försökte visa Flashinnehållet.
