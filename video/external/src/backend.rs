@@ -1,4 +1,6 @@
 use crate::decoder::VideoDecoder;
+use bzip2::read::BzDecoder;
+use md5::{Digest, Md5};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, PixelRegion};
 use ruffle_video::backend::VideoBackend;
@@ -7,6 +9,9 @@ use ruffle_video::frame::{EncodedFrame, FrameDependency};
 use ruffle_video::VideoStreamHandle;
 use ruffle_video_software::backend::SoftwareVideoBackend;
 use slotmap::SlotMap;
+use std::fs::File;
+use std::io::{copy, Write};
+use std::path::PathBuf;
 use swf::{VideoCodec, VideoDeblocking};
 
 enum ProxyOrStream {
@@ -23,19 +28,99 @@ enum ProxyOrStream {
 /// except for H.264, for which it uses an external decoder.
 pub struct ExternalVideoBackend {
     streams: SlotMap<VideoStreamHandle, ProxyOrStream>,
+    openh264_lib_filepath: Option<PathBuf>,
     software: SoftwareVideoBackend,
 }
 
 impl Default for ExternalVideoBackend {
     fn default() -> Self {
-        Self::new()
+        Self::new(None)
     }
 }
 
+/// Source: https://www.openh264.org/BINARY_LICENSE.txt
+const BINARY_LICENSE: &[u8] = include_bytes!("BINARY_LICENSE.txt");
+
 impl ExternalVideoBackend {
-    pub fn new() -> Self {
+    fn get_openh264_data() -> Result<(&'static str, &'static str), Box<dyn std::error::Error>> {
+        // Source: https://github.com/cisco/openh264/releases/tag/v2.4.1
+        match (std::env::consts::OS, std::env::consts::ARCH) {
+            ("linux", "x86") => Ok((
+                "libopenh264-2.4.1-linux32.7.so",
+                "dd0743066117d63e1b2abc56a86506e5",
+            )),
+            ("linux", "x86_64") => Ok((
+                "libopenh264-2.4.1-linux64.7.so",
+                "19c561386a9564f8510fcb7586b9d402",
+            )),
+            ("linux", "arm") => Ok((
+                "libopenh264-2.4.1-linux-arm.7.so",
+                "2274a1bbd13f32b7afe22092e44fa2b5",
+            )),
+            ("linux", "aarch64") => Ok((
+                "libopenh264-2.4.1-linux-arm64.7.so",
+                "2aa205f08077aa2d049032e0b56c5b84",
+            )),
+            ("macos", "x86_64") => Ok((
+                "libopenh264-2.4.1-mac-x64.dylib",
+                "9fefa1e0279a49b8a4e9cf6fc148bc0c",
+            )),
+            ("macos", "aarch64") => Ok((
+                "libopenh264-2.4.1-mac-arm64.dylib",
+                "41f59bb5696ffeadbfba3a8a95ec39b7",
+            )),
+            ("windows", "x86") => Ok((
+                "openh264-2.4.1-win32.dll",
+                "a9360e6dd1e24320c3d65a0c65bf14a4",
+            )),
+            ("windows", "x86_64") => Ok((
+                "openh264-2.4.1-win64.dll",
+                "c85406e6b73812ec3fb9da5f898c6a9e",
+            )),
+            (os, arch) => Err(format!("Unsupported OS/ARCH: {} {}", os, arch).into()),
+        }
+    }
+
+    pub fn get_openh264() -> Result<PathBuf, Box<dyn std::error::Error>> {
+        const URL_BASE: &str = "http://ciscobinary.openh264.org/";
+        const URL_SUFFIX: &str = ".bz2";
+
+        let (filename, md5sum) = Self::get_openh264_data()?;
+
+        let filepath = std::env::current_exe()?
+            .parent()
+            .ok_or("Could not determine Ruffle location.")?
+            .join(filename);
+
+        // If the binary doesn't exist in the expected location, download it.
+        if !filepath.is_file() {
+            File::create("OpenH264-license.txt")?.write_all(BINARY_LICENSE)?;
+
+            let url = format!("{}{}{}", URL_BASE, filename, URL_SUFFIX);
+            let response = reqwest::blocking::get(url)?;
+            let bytes = response.bytes()?;
+            let mut bzip2_reader = BzDecoder::new(bytes.as_ref());
+
+            let mut file = File::create(filepath.clone())?;
+            copy(&mut bzip2_reader, &mut file)?;
+        }
+
+        // Regardless of whether the library was already there, or we just downloaded it, let's check the MD5 hash.
+        let mut md5 = Md5::new();
+        copy(&mut File::open(filepath.clone())?, &mut md5)?;
+        let result: [u8; 16] = md5.finalize().into();
+
+        if result[..] != hex::decode(md5sum)?[..] {
+            return Err(format!("MD5 checksum mismatch for {}", filename).into());
+        }
+
+        Ok(filepath)
+    }
+
+    pub fn new(openh264_lib_filepath: Option<PathBuf>) -> Self {
         Self {
             streams: SlotMap::with_key(),
+            openh264_lib_filepath,
             software: SoftwareVideoBackend::new(),
         }
     }
@@ -52,7 +137,15 @@ impl VideoBackend for ExternalVideoBackend {
         filter: VideoDeblocking,
     ) -> Result<VideoStreamHandle, Error> {
         let proxy_or_stream = if codec == VideoCodec::H264 {
-            todo!();
+            let openh264 = &self.openh264_lib_filepath;
+            if let Some(openh264) = openh264 {
+                tracing::info!("Using OpenH264 at {:?}", openh264);
+                let decoder = Box::new(crate::decoder::openh264::H264Decoder::new(openh264));
+                let stream = VideoStream::new(decoder);
+                ProxyOrStream::Owned(stream)
+            } else {
+                return Err(Error::DecoderError("No OpenH264".into()));
+            }
         } else {
             ProxyOrStream::Proxied(
                 self.software
