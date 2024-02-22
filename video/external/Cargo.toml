@@ -13,4 +13,14 @@ ruffle_video = { path = ".." }
 swf = { path = "../../swf" }
 slotmap = "1.0.7"
 thiserror = "1.0"
+tracing = "0.1"
 ruffle_video_software = { path = "../software" }
+
+# Needed for OpenH264:
+libloading = "0.8.1"
+md-5 = "0.10.6"
+isahc = "1.7.2"
+hex = "0.4.3"
+# TODO: Switch to "rustc_1_63" once a new release is cut.
+# See: https://github.com/paolobarbolini/bzip2-rs/issues/14
+bzip2-rs = { version = "0.1.2", features = ["rustc_1_51"] }

@@ -13,3 +13,9 @@ RECOVER_*.fla
 
 # Jetbrains tools (CLion, IntelliJ, etc)
 /.idea
+
+# These will be written into the root by video/external
+OpenH264-license.txt
+libopenh264-*-linux*.so
+libopenh264-*-mac*.dylib
+openh264-*-win*.dll
