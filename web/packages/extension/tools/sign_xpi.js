@@ -81,10 +81,7 @@ sudo docker cp $(sudo docker create ruffle-web-docker:latest):/ruffle/web/packag
 \n\
 These commands are run at the root of the project. The compiled XPI will be in web/docker/docker_builds/packages/extension/dist/firefox_unsigned.xpi. Please take care to use this file (and not the surrounding packages directory) when comparing against the extension submission.\n\
 \n\
-Alternatively, you may also attempt building using npm and cargo. However, this workflow is more complicated to set up. It is documented here:\n\
-https://github.com/ruffle-rs/ruffle/blob/master/web/README.md\n\
-\n\
-Note that the commands for the npm/cargo workflow are run in the web subdirectory. If you're working with the Dockerfile you should be in the root of the project.\n\
+Note that the wasm files will not match, but we have been informed previously by Mozilla that this is allowed. The JavaScript and all other files should match. 
 \n\
 The compiled version of this extension was built on Ubuntu 22.04 by our CI runner.\n\
 \n\

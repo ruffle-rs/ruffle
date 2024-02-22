@@ -1,5 +1,5 @@
 const { execFileSync } = require("child_process");
-const { copyFileSync } = require("fs");
+const { copyFileSync, mkdirSync, rmSync } = require("fs");
 const process = require("process");
 
 function runWasmOpt({ path, flags }) {
@@ -59,12 +59,7 @@ function cargoBuild({ profile, features, rustFlags }) {
         stdio: "inherit",
     });
 }
-function cargoClean() {
-    execFileSync("cargo", ["clean"], {
-        stdio: "inherit",
-    });
-}
-function buildWasm(profile, filename, optimise, extensions) {
+function buildWasm(profile, filename, optimise, extensions, wasmSource) {
     const rustFlags = ["--cfg=web_sys_unstable_apis", "-Aunknown_lints"];
     const wasmBindgenFlags = [];
     const wasmOptFlags = [];
@@ -77,22 +72,31 @@ function buildWasm(profile, filename, optimise, extensions) {
         wasmBindgenFlags.push("--reference-types");
         wasmOptFlags.push("--enable-reference-types");
     }
-    console.log(`Building ${flavor} with cargo...`);
-    cargoBuild({
-        profile,
-        rustFlags,
-    });
+    let originalWasmPath;
+    if (wasmSource === "cargo" || wasmSource === "cargo_and_store") {
+        console.log(`Building ${flavor} with cargo...`);
+        cargoBuild({
+            profile,
+            rustFlags,
+        });
+        originalWasmPath = `../../../target/wasm32-unknown-unknown/${profile}/ruffle_web.wasm`;
+        if (wasmSource === "cargo_and_store") {
+            copyFileSync(originalWasmPath, `../../dist/${filename}.wasm`);
+        }
+    } else if (wasmSource === "existing") {
+        originalWasmPath = `../../dist/${filename}.wasm`;
+    } else {
+        throw new Error(
+            "Invalid wasm source: must be one of 'cargo', 'cargo_and_store' or 'existing'",
+        );
+    }
     console.log(`Running wasm-bindgen on ${flavor}...`);
     runWasmBindgen({
-        path: `../../../target/wasm32-unknown-unknown/${profile}/ruffle_web.wasm`,
+        path: originalWasmPath,
         outName: filename,
         dir: "dist",
         flags: wasmBindgenFlags,
     });
-    if (process.env["ENABLE_CARGO_CLEAN"]) {
-        console.log(`Running cargo clean...`);
-        cargoClean();
-    }
     if (optimise) {
         console.log(`Running wasm-opt on ${flavor}...`);
         runWasmOpt({
@@ -117,19 +121,25 @@ function detectWasmOpt() {
     }
 }
 const buildExtensions = !!process.env["ENABLE_WASM_EXTENSIONS"];
+const wasmSource = process.env["WASM_SOURCE"] || "cargo";
 const hasWasmOpt = detectWasmOpt();
 if (!hasWasmOpt) {
     console.log(
         "NOTE: Since wasm-opt could not be found (or it failed), the resulting module might not perform that well, but it should still work.",
     );
 }
-buildWasm("web-vanilla-wasm", "ruffle_web", hasWasmOpt, false);
+if (wasmSource === "cargo_and_store") {
+    rmSync("../../dist", { recursive: true, force: true });
+    mkdirSync("../../dist");
+}
+buildWasm("web-vanilla-wasm", "ruffle_web", hasWasmOpt, false, wasmSource);
 if (buildExtensions) {
     buildWasm(
         "web-wasm-extensions",
         "ruffle_web-wasm_extensions",
         hasWasmOpt,
         true,
+        wasmSource,
     );
 } else {
     copyStandIn("ruffle_web", "ruffle_web-wasm_extensions");

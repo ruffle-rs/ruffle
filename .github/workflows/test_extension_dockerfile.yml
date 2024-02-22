@@ -46,8 +46,7 @@ jobs:
       - name: Install node packages
         working-directory: web
         shell: bash -l {0}
-        run: |
-          npm ci
+        run: npm ci
 
       - name: Seal version data
         shell: bash -l {0}
@@ -55,6 +54,14 @@ jobs:
         env:
           ENABLE_VERSION_SEAL: "true"
         run: npm run version-seal
+
+      - name: Build web normally
+        working-directory: web
+        shell: bash -l {0}
+        env:
+          CARGO_FEATURES: jpegxr
+          WASM_SOURCE: cargo_and_store
+        run: npm run build:repro
 
       - name: Build Docker image with Ruffle in it
         run: docker build --tag ruffle-web-docker -f web/docker/Dockerfile .
@@ -65,11 +72,6 @@ jobs:
       - name: Check that the Firefox extension was built
         run: test -f web/docker/docker_builds/packages/extension/dist/firefox_unsigned.xpi
 
-      - name: Build web normally
-        working-directory: web
-        shell: bash -l {0}
-        run: npm run build:repro
-
       - name: Compare the two extensions
         run: |
           mkdir firefox_extensions
@@ -77,12 +79,12 @@ jobs:
           mkdir firefox_extensions/normal_build
           unzip -d firefox_extensions/normal_build "./web/packages/extension/dist/firefox_unsigned.xpi"
           unzip -d firefox_extensions/docker_build "./web/docker/docker_builds/packages/extension/dist/firefox_unsigned.xpi"
-          fclones group --unique firefox_extensions/normal_build firefox_extensions/docker_build -o result.txt -f fdupes
-          fclones group --unique firefox_extensions/normal_build firefox_extensions/docker_build -o firefox_extensions/differences.txt
+          fclones group --unique firefox_extensions/normal_build firefox_extensions/docker_build --exclude "**.wasm" -o result.txt -f fdupes
+          fclones group --unique firefox_extensions/normal_build firefox_extensions/docker_build --exclude "**.wasm" -o firefox_extensions/differences.txt
           cat result.txt
 
       - name: Check that the comparison was identical
-        run: test -s firefox_extensions/result.txt
+        run: test ! -s result.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
