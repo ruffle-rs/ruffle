@@ -46,8 +46,7 @@ jobs:
       - name: Install node packages
         working-directory: web
         shell: bash -l {0}
-        run: |
-          npm ci
+        run: npm ci
 
       - name: Seal version data
         shell: bash -l {0}
@@ -68,6 +67,8 @@ jobs:
       - name: Build web normally
         working-directory: web
         shell: bash -l {0}
+        env:
+          CARGO_FEATURES: "jpegxr"
         run: npm run build:repro
 
       - name: Compare the two extensions
