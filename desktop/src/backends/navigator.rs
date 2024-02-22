@@ -181,7 +181,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
 
             /// The response's body comes from the network.
             ///
-            /// This has to be stored in shared ownerhsip so that we can return
+            /// This has to be stored in shared ownership so that we can return
             /// owned futures. A synchronous lock is used here as we do not
             /// expect contention on this lock.
             Network(Arc<Mutex<IsahcResponse<AsyncBody>>>),
