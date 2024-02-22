@@ -341,6 +341,17 @@ jobs:
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
         run: npm run version-seal
 
+      - name: Build web
+        env:
+          BUILD_ID: ${{ github.run_number }}
+          # Build web demo with WebGPU support for testing in Chrome origin trial on ruffle.rs
+          CARGO_FEATURES: jpegxr${{ matrix.demo && ',webgpu' || '' }}
+          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
+          WASM_SOURCE: cargo_and_store
+        working-directory: web
+        shell: bash -l {0}
+        run: npm run build:repro
+
       - name: Produce reproducible source archive
         if: ${{ !matrix.demo }}
         shell: bash -l {0}
@@ -358,17 +369,9 @@ jobs:
           package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-reproducible-source.zip"
           gh release upload "$tag_name" "$package_file"
 
-      - name: Build web
-        env:
-          BUILD_ID: ${{ github.run_number }}
-          # Build web demo with WebGPU support for testing in Chrome origin trial on ruffle.rs
-          CARGO_FEATURES: jpegxr${{ matrix.demo && ',webgpu' || '' }}
-          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
+      - name: Build web docs
         working-directory: web
-        shell: bash -l {0}
-        run: |
-          npm run build:repro
-          npm run docs
+        run: npm run docs
 
       - name: Publish npm package
         if: ${{ !matrix.demo }}
