@@ -4553,6 +4553,7 @@ dependencies = [
  "ruffle_input_format",
  "ruffle_render",
  "ruffle_socket_format",
+ "ruffle_video_external",
  "ruffle_video_software",
  "serde",
  "toml",
