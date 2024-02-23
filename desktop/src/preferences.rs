@@ -145,6 +145,13 @@ impl GlobalPreferences {
         })
     }
 
+    pub fn openh264_enabled(&self) -> bool {
+        self.preferences
+            .lock()
+            .expect("Preferences is not reentrant")
+            .enable_openh264
+    }
+
     pub fn log_filename_pattern(&self) -> FilenamePattern {
         self.preferences
             .lock()
@@ -229,6 +236,7 @@ pub struct SavedGlobalPreferences {
     pub output_device: Option<String>,
     pub mute: bool,
     pub volume: f32,
+    pub enable_openh264: bool,
     pub recent_limit: usize,
     pub log: LogPreferences,
     pub storage: StoragePreferences,
@@ -247,6 +255,7 @@ impl Default for SavedGlobalPreferences {
             output_device: None,
             mute: false,
             volume: 1.0,
+            enable_openh264: true,
             recent_limit: 10,
             log: Default::default(),
             storage: Default::default(),

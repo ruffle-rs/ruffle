@@ -23,6 +23,7 @@ ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymose
 ruffle_render = { path = "../render", features = ["clap"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
 ruffle_video_software = { path = "../video/software", optional = true }
+ruffle_video_external = { path = "../video/external", optional = true }
 ruffle_frontend_utils = { path = "../frontend-utils" }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
@@ -57,13 +58,14 @@ embed-resource = "2"
 vergen = { version = "8.3.1", features = ["build", "git", "gitcl", "cargo"] }
 
 [features]
-default = ["software_video"]
+default = ["software_video", "external_video"]
 jpegxr = ["ruffle_core/jpegxr"]
 
 # core features
 avm_debug = ["ruffle_core/avm_debug"]
 lzma = ["ruffle_core/lzma"]
 software_video = ["ruffle_video_software"]
+external_video = ["ruffle_video_external"]
 tracy = ["tracing-tracy", "ruffle_render_wgpu/profile-with-tracy"]
 
 # wgpu features

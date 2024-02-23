@@ -59,6 +59,13 @@ impl<'a> PreferencesWriter<'a> {
         })
     }
 
+    pub fn set_enable_openh264(&mut self, enable: bool) {
+        self.0.edit(|values, toml_document| {
+            toml_document["enable_openh264"] = value(enable);
+            values.enable_openh264 = enable;
+        })
+    }
+
     pub fn set_log_filename_pattern(&mut self, pattern: FilenamePattern) {
         self.0.edit(|values, toml_document| {
             toml_document["log"]["filename_pattern"] = value(pattern.as_str());
@@ -165,6 +172,20 @@ mod tests {
             "mute = true",
             |writer| writer.set_mute(false),
             "mute = false\n",
+        );
+    }
+
+    #[test]
+    fn set_enable_openh264() {
+        test(
+            "",
+            |writer| writer.set_enable_openh264(false),
+            "enable_openh264 = false\n",
+        );
+        test(
+            "enable_openh264 = false",
+            |writer| writer.set_enable_openh264(true),
+            "enable_openh264 = true\n",
         );
     }
 

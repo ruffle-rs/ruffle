@@ -51,6 +51,10 @@ pub fn read_preferences(input: &str) -> ParseDetails<SavedGlobalPreferences> {
         result.mute = value;
     };
 
+    if let Some(value) = document.get_bool(&mut cx, "enable_openh264") {
+        result.enable_openh264 = value;
+    };
+
     if let Some(value) = document.get_integer(&mut cx, "recent_limit") {
         result.recent_limit = value as usize;
     }
@@ -320,6 +324,46 @@ mod tests {
         assert_eq!(
             &SavedGlobalPreferences {
                 volume: 0.0,
+                ..Default::default()
+            },
+            result.values()
+        );
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
+    }
+
+    #[test]
+    fn enable_openh264() {
+        let result = read_preferences("enable_openh264 = \"true\"");
+        assert_eq!(
+            &SavedGlobalPreferences {
+                enable_openh264: true,
+                ..Default::default()
+            },
+            result.values()
+        );
+        assert_eq!(
+            vec![ParseWarning::UnexpectedType {
+                expected: "boolean",
+                actual: "string",
+                path: "enable_openh264".to_string()
+            }],
+            result.warnings
+        );
+
+        let result = read_preferences("enable_openh264 = false");
+        assert_eq!(
+            &SavedGlobalPreferences {
+                enable_openh264: false,
+                ..Default::default()
+            },
+            result.values()
+        );
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
+
+        let result = read_preferences("");
+        assert_eq!(
+            &SavedGlobalPreferences {
+                enable_openh264: true,
                 ..Default::default()
             },
             result.values()

@@ -4363,6 +4363,7 @@ dependencies = [
  "ruffle_frontend_utils",
  "ruffle_render",
  "ruffle_render_wgpu",
+ "ruffle_video_external",
  "ruffle_video_software",
  "sys-locale",
  "tokio",
