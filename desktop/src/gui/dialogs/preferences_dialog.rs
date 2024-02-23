@@ -2,7 +2,7 @@ use crate::gui::{available_languages, optional_text, text};
 use crate::log::FilenamePattern;
 use crate::preferences::{storage::StorageBackend, GlobalPreferences};
 use cpal::traits::{DeviceTrait, HostTrait};
-use egui::{Align2, Button, ComboBox, DragValue, Grid, Ui, Widget, Window};
+use egui::{Align2, Button, Checkbox, ComboBox, DragValue, Grid, Ui, Widget, Window};
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::borrow::Cow;
 use unic_langid::LanguageIdentifier;
@@ -25,6 +25,10 @@ pub struct PreferencesDialog {
     output_device: Option<String>,
     available_output_devices: Vec<String>,
     output_device_changed: bool,
+
+    enable_openh264: bool,
+    enable_openh264_changed: bool,
+    openh264_license_visible: bool,
 
     recent_limit: usize,
     recent_limit_changed: bool,
@@ -68,6 +72,10 @@ impl PreferencesDialog {
             available_output_devices,
             output_device_changed: false,
 
+            enable_openh264: preferences.openh264_enabled(),
+            enable_openh264_changed: false,
+            openh264_license_visible: false,
+
             recent_limit: preferences.recent_limit(),
             recent_limit_changed: false,
 
@@ -104,6 +112,8 @@ impl PreferencesDialog {
 
                             self.show_audio_preferences(locale, ui);
 
+                            self.show_video_preferences(egui_ctx, locale, ui);
+
                             self.show_log_preferences(locale, ui);
 
                             self.show_storage_preferences(locale, &locked_text, ui);
@@ -136,6 +146,7 @@ impl PreferencesDialog {
         self.graphics_backend != self.preferences.graphics_backends()
             || self.power_preference != self.preferences.graphics_power_preference()
             || self.output_device != self.preferences.output_device_name()
+            || self.enable_openh264 != self.preferences.openh264_enabled()
             || self.log_filename_pattern != self.preferences.log_filename_pattern()
             || self.storage_backend != self.preferences.storage_backend()
     }
@@ -261,6 +272,44 @@ impl PreferencesDialog {
         ui.end_row();
     }
 
+    fn show_video_preferences(
+        &mut self,
+        egui_ctx: &egui::Context,
+        locale: &LanguageIdentifier,
+        ui: &mut Ui,
+    ) {
+        #[cfg(feature = "external_video")]
+        {
+            ui.label(text(locale, "enable-openh264"));
+
+            let previous = self.enable_openh264;
+            ui.add(Checkbox::without_text(&mut self.enable_openh264));
+            ui.end_row();
+
+            ui.small("OpenH264 Video Codec provided by Cisco Systems, Inc.");
+            if self.enable_openh264 != previous {
+                self.enable_openh264_changed = true;
+            }
+            if ui.small_button(text(locale, "show-license")).clicked() {
+                self.openh264_license_visible = true;
+            };
+            let available_size = egui_ctx.available_rect().size();
+            egui::Window::new(text(locale, "openh264-license"))
+                .collapsible(false)
+                .resizable(false)
+                .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
+                .scroll(true)
+                .open(&mut self.openh264_license_visible)
+                .min_size(available_size * 0.8)
+                .max_size(available_size * 0.9)
+                .show(egui_ctx, |ui| {
+                    // Source: https://www.openh264.org/BINARY_LICENSE.txt
+                    ui.monospace(include_str!("../../../assets/OpenH264-license.txt"));
+                });
+            ui.end_row();
+        }
+    }
+
     fn show_log_preferences(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
         ui.label(text(locale, "log-filename-pattern"));
 
@@ -358,6 +407,9 @@ impl PreferencesDialog {
             if self.output_device_changed {
                 preferences.set_output_device(self.output_device.clone());
                 // [NA] TODO: Inform the running player that the device changed
+            }
+            if self.enable_openh264_changed {
+                preferences.set_enable_openh264(self.enable_openh264);
             }
             if self.log_filename_pattern_changed {
                 preferences.set_log_filename_pattern(self.log_filename_pattern);

@@ -220,9 +220,27 @@ impl ActivePlayer {
             RfdNavigatorInterface,
         );
 
-        if cfg!(feature = "software_video") {
-            builder =
-                builder.with_video(ruffle_video_software::backend::SoftwareVideoBackend::new());
+        if cfg!(feature = "external_video") && preferences.openh264_enabled() {
+            #[cfg(feature = "external_video")]
+            {
+                use ruffle_video_external::backend::ExternalVideoBackend;
+                let path = tokio::task::block_in_place(ExternalVideoBackend::get_openh264);
+                let openh264_path = match path {
+                    Ok(path) => Some(path),
+                    Err(e) => {
+                        tracing::error!("Couldn't get OpenH264: {}", e);
+                        None
+                    }
+                };
+
+                builder = builder.with_video(ExternalVideoBackend::new(openh264_path));
+            }
+        } else {
+            #[cfg(feature = "software_video")]
+            {
+                builder =
+                    builder.with_video(ruffle_video_software::backend::SoftwareVideoBackend::new());
+            }
         }
 
         let renderer = WgpuRenderBackend::new(descriptors, movie_view)

@@ -10,7 +10,7 @@ use ruffle_video::VideoStreamHandle;
 use ruffle_video_software::backend::SoftwareVideoBackend;
 use slotmap::SlotMap;
 use std::fs::File;
-use std::io::{copy, Write};
+use std::io::copy;
 use std::path::PathBuf;
 use swf::{VideoCodec, VideoDeblocking};
 
@@ -37,9 +37,6 @@ impl Default for ExternalVideoBackend {
         Self::new(None)
     }
 }
-
-/// Source: https://www.openh264.org/BINARY_LICENSE.txt
-const BINARY_LICENSE: &[u8] = include_bytes!("BINARY_LICENSE.txt");
 
 impl ExternalVideoBackend {
     fn get_openh264_data() -> Result<(&'static str, &'static str), Box<dyn std::error::Error>> {
@@ -82,6 +79,7 @@ impl ExternalVideoBackend {
     }
 
     pub fn get_openh264() -> Result<PathBuf, Box<dyn std::error::Error>> {
+        // See the license at: https://www.openh264.org/BINARY_LICENSE.txt
         const URL_BASE: &str = "http://ciscobinary.openh264.org/";
         const URL_SUFFIX: &str = ".bz2";
 
@@ -94,8 +92,6 @@ impl ExternalVideoBackend {
 
         // If the binary doesn't exist in the expected location, download it.
         if !filepath.is_file() {
-            File::create("OpenH264-license.txt")?.write_all(BINARY_LICENSE)?;
-
             let url = format!("{}{}{}", URL_BASE, filename, URL_SUFFIX);
             let response = reqwest::blocking::get(url)?;
             let bytes = response.bytes()?;
