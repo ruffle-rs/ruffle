@@ -58,6 +58,7 @@ pub struct PlayerOptions {
     pub dummy_external_interface: bool,
     pub gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
     pub avm2_optimizer_enabled: bool,
+    pub enable_openh264: bool,
 }
 
 impl From<&GlobalPreferences> for PlayerOptions {
@@ -87,6 +88,7 @@ impl From<&GlobalPreferences> for PlayerOptions {
             tcp_connections: value.cli.tcp_connections,
             gamepad_button_mapping: HashMap::from_iter(value.cli.gamepad_button.iter().cloned()),
             avm2_optimizer_enabled: !value.cli.no_avm2_optimizer,
+            enable_openh264: value.cli.enable_openh264.unwrap_or(true),
         }
     }
 }
@@ -132,7 +134,10 @@ impl ActivePlayer {
             opt.tcp_connections,
         );
 
-        if cfg!(feature = "software_video") {
+        if cfg!(feature = "external_video") && opt.enable_openh264 {
+            builder =
+                builder.with_video(ruffle_video_external::backend::ExternalVideoBackend::new());
+        } else if cfg!(feature = "software_video") {
             builder =
                 builder.with_video(ruffle_video_software::backend::SoftwareVideoBackend::new());
         }

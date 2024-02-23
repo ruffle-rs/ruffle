@@ -164,6 +164,12 @@ pub struct Opt {
     #[clap(long)]
     pub dummy_external_interface: bool,
 
+    /// Whether to allow downloading and using an external H.264 decoder binary.
+    ///
+    /// OpenH264 Video Codec provided by Cisco Systems, Inc.
+    #[clap(long, default_value = "true")]
+    pub enable_openh264: Option<bool>, // TODO: rename to "enable_external_video_backend" or something like that...?
+
     /// Hides the menu bar (the bar at the top of the window).
     #[clap(long)]
     pub no_gui: bool,
