@@ -30,6 +30,12 @@ pub enum PlayerEvent {
     MouseWheel {
         delta: MouseWheelDelta,
     },
+    GamepadButtonDown {
+        button: GamepadButton,
+    },
+    GamepadButtonUp {
+        button: GamepadButton,
+    },
     TextInput {
         codepoint: char,
     },
@@ -381,6 +387,7 @@ impl TextControlCode {
 }
 
 /// Flash virtual keycode.
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, FromPrimitive)]
 pub enum KeyCode {
     Unknown = 0,
@@ -673,4 +680,23 @@ pub fn key_code_to_button_key_code(key_code: KeyCode) -> Option<ButtonKeyCode> {
         _ => return None,
     };
     Some(out)
+}
+
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
+pub enum GamepadButton {
+    South,
+    East,
+    North,
+    West,
+    LeftTrigger,
+    LeftTrigger2,
+    RightTrigger,
+    RightTrigger2,
+    Select,
+    Start,
+    DPadUp,
+    DPadDown,
+    DPadLeft,
+    DPadRight,
 }
