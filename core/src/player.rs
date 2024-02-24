@@ -29,6 +29,7 @@ use crate::display_object::{
     EditText, InteractiveObject, Stage, StageAlign, StageDisplayState, StageScaleMode,
     TInteractiveObject, WindowMode,
 };
+use crate::events::GamepadButton;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, MouseButton, PlayerEvent};
 use crate::external::{ExternalInterface, ExternalInterfaceProvider, NullFsCommandProvider};
 use crate::external::{FsCommandProvider, Value as ExternalValue};
@@ -355,6 +356,9 @@ pub struct Player {
 
     /// Any compatibility rules to apply for this movie.
     compatibility_rules: CompatibilityRules,
+
+    /// A map from gamepad buttons to key codes.
+    gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
 
     /// Debug UI windows
     #[cfg(feature = "egui")]
@@ -842,6 +846,7 @@ impl Player {
     /// Event handling is a complicated affair, involving several different
     /// concerns that need to resolve with specific priority.
     ///
+    /// 0. Transform gamepad button events into key events.
     /// 1. (In `avm_debug` builds)
     ///    If Ctrl-Alt-V is pressed, dump all AVM1 variables in the player.
     ///    If Ctrl-Alt-D is pressed, toggle debug output for AVM1 and AVM2.
@@ -861,6 +866,33 @@ impl Player {
     /// 8. Mouse state is updated. This triggers button rollovers, which are a
     ///    second wave of event processing.
     pub fn handle_event(&mut self, event: PlayerEvent) {
+        // Optionally transform gamepad button events into key events.
+        let event = match event {
+            PlayerEvent::GamepadButtonDown { button } => {
+                if let Some(key_code) = self.gamepad_button_mapping.get(&button) {
+                    PlayerEvent::KeyDown {
+                        key_code: *key_code,
+                        key_char: None,
+                    }
+                } else {
+                    // Just ignore this event.
+                    return;
+                }
+            }
+            PlayerEvent::GamepadButtonUp { button } => {
+                if let Some(key_code) = self.gamepad_button_mapping.get(&button) {
+                    PlayerEvent::KeyUp {
+                        key_code: *key_code,
+                        key_char: None,
+                    }
+                } else {
+                    // Just ignore this event.
+                    return;
+                }
+            }
+            _ => event,
+        };
+
         let prev_is_mouse_down = self.input.is_mouse_down();
         self.input.handle_event(&event);
         let is_mouse_button_changed = self.input.is_mouse_down() != prev_is_mouse_down;
@@ -2113,6 +2145,7 @@ pub struct PlayerBuilder {
     load_behavior: LoadBehavior,
     spoofed_url: Option<String>,
     compatibility_rules: CompatibilityRules,
+    gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
     player_version: Option<u8>,
     player_runtime: PlayerRuntime,
     quality: StageQuality,
@@ -2163,6 +2196,7 @@ impl PlayerBuilder {
             load_behavior: LoadBehavior::Streaming,
             spoofed_url: None,
             compatibility_rules: CompatibilityRules::default(),
+            gamepad_button_mapping: HashMap::new(),
             player_version: None,
             player_runtime: PlayerRuntime::default(),
             quality: StageQuality::High,
@@ -2362,6 +2396,11 @@ impl PlayerBuilder {
         self
     }
 
+    pub fn with_gamepad_button_mapping(mut self, mapping: HashMap<GamepadButton, KeyCode>) -> Self {
+        self.gamepad_button_mapping = mapping;
+        self
+    }
+
     #[cfg(feature = "known_stubs")]
     /// Sets the output path for the stub report. When set, the player
     /// will write the report to this path and exit the process.
@@ -2507,6 +2546,7 @@ impl PlayerBuilder {
                 load_behavior: self.load_behavior,
                 spoofed_url: self.spoofed_url.clone(),
                 compatibility_rules: self.compatibility_rules.clone(),
+                gamepad_button_mapping: self.gamepad_button_mapping,
                 stub_tracker: StubCollection::new(),
                 #[cfg(feature = "egui")]
                 debug_ui: Default::default(),
