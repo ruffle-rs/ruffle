@@ -1,11 +1,12 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::BytecodeMethod;
+use crate::avm2::multiname::Multiname;
 use crate::avm2::object::ClassObject;
 use crate::avm2::op::Op;
 use crate::avm2::property::Property;
 
-use gc_arena::GcCell;
+use gc_arena::{Gc, GcCell};
 use std::collections::HashSet;
 use swf::avm2::types::Index;
 
@@ -116,6 +117,15 @@ impl<'gc> Stack<'gc> {
         self.0.pop()
     }
 
+    pub fn pop_for_multiname(&mut self, multiname: Gc<'gc, Multiname<'gc>>) {
+        if multiname.has_lazy_name() {
+            self.0.pop();
+        }
+        if multiname.has_lazy_ns() {
+            self.0.pop();
+        }
+    }
+
     fn popn(&mut self, count: u32) {
         for _ in 0..count {
             self.pop();
@@ -218,6 +228,23 @@ pub fn optimize<'gc>(
     }
 
     let mut stack = Stack::new();
+
+    macro_rules! stack_pop_multiname {
+        ($index: expr) => {{
+            let multiname = method
+                .translation_unit()
+                // note: ideally this should be a VerifyError here or earlier
+                .pool_maybe_uninitialized_multiname(*$index, &mut activation.context);
+
+            if let Ok(multiname) = multiname {
+                stack.pop_for_multiname(multiname);
+                Some(multiname)
+            } else {
+                None
+            }
+        }};
+    }
+
     let mut scope_stack = Stack::new();
     let mut local_types = initial_local_types.clone();
 
@@ -632,12 +659,11 @@ pub fn optimize<'gc>(
             }
             Op::GetProperty { index: name_index } => {
                 let mut stack_push_done = false;
+
+                let multiname = stack_pop_multiname!(name_index);
                 let stack_value = stack.pop();
 
-                let multiname = method
-                    .translation_unit()
-                    .pool_maybe_uninitialized_multiname(*name_index, &mut activation.context);
-                if let Ok(multiname) = multiname {
+                if let Some(multiname) = multiname {
                     if !multiname.has_lazy_component() {
                         if let Some(ValueType::Class(class)) = stack_value {
                             if !class.inner_class_definition().read().is_interface() {
@@ -677,10 +703,8 @@ pub fn optimize<'gc>(
                                 }
                             }
                         }
-                    } else {
-                        // Avoid handling lazy for now
-                        stack.clear();
                     }
+                    // `stack_pop_multiname` handled lazy
                 }
 
                 if !stack_push_done {
@@ -695,12 +719,11 @@ pub fn optimize<'gc>(
             }
             Op::InitProperty { index: name_index } => {
                 stack.pop();
+
+                let multiname = stack_pop_multiname!(name_index);
                 let stack_value = stack.pop();
 
-                let multiname = method
-                    .translation_unit()
-                    .pool_maybe_uninitialized_multiname(*name_index, &mut activation.context);
-                if let Ok(multiname) = multiname {
+                if let Some(multiname) = multiname {
                     if !multiname.has_lazy_component() {
                         if let Some(ValueType::Class(class)) = stack_value {
                             if !class.inner_class_definition().read().is_interface() {
@@ -713,20 +736,17 @@ pub fn optimize<'gc>(
                                 }
                             }
                         }
-                    } else {
-                        // Avoid handling lazy for now
-                        stack.clear();
                     }
+                    // `stack_pop_multiname` handled lazy
                 }
             }
             Op::SetProperty { index: name_index } => {
                 stack.pop();
+
+                let multiname = stack_pop_multiname!(name_index);
                 let stack_value = stack.pop();
 
-                let multiname = method
-                    .translation_unit()
-                    .pool_maybe_uninitialized_multiname(*name_index, &mut activation.context);
-                if let Ok(multiname) = multiname {
+                if let Some(multiname) = multiname {
                     if !multiname.has_lazy_component() {
                         if let Some(ValueType::Class(class)) = stack_value {
                             if !class.inner_class_definition().read().is_interface() {
@@ -738,10 +758,8 @@ pub fn optimize<'gc>(
                                 }
                             }
                         }
-                    } else {
-                        // Avoid handling lazy for now
-                        stack.clear();
                     }
+                    // `stack_pop_multiname` handled lazy
                 }
             }
             Op::Construct { num_args } => {
@@ -767,18 +785,10 @@ pub fn optimize<'gc>(
                 // Arguments
                 stack.popn(*num_args);
 
+                stack_pop_multiname!(name_index);
+
                 // Then receiver.
                 stack.pop();
-
-                let multiname = method
-                    .translation_unit()
-                    .pool_maybe_uninitialized_multiname(*name_index, &mut activation.context);
-                if let Ok(multiname) = multiname {
-                    if multiname.has_lazy_component() {
-                        // Avoid handling lazy for now
-                        stack.clear();
-                    }
-                }
 
                 // Avoid checking return value for now
                 stack.push_any();
@@ -790,13 +800,12 @@ pub fn optimize<'gc>(
                 // Arguments
                 stack.popn(*num_args);
 
+                let multiname = stack_pop_multiname!(name_index);
+
                 // Then receiver.
                 let stack_value = stack.pop();
 
-                let multiname = method
-                    .translation_unit()
-                    .pool_maybe_uninitialized_multiname(*name_index, &mut activation.context);
-                if let Ok(multiname) = multiname {
+                if let Some(multiname) = multiname {
                     if !multiname.has_lazy_component() {
                         if let Some(ValueType::Class(class)) = stack_value {
                             if !class.inner_class_definition().read().is_interface() {
@@ -811,10 +820,8 @@ pub fn optimize<'gc>(
                                 }
                             }
                         }
-                    } else {
-                        // Avoid handling lazy for now
-                        stack.clear();
                     }
+                    // `stack_pop_multiname` handled lazy
                 }
 
                 // Avoid checking return value for now
