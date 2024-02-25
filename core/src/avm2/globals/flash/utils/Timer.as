@@ -32,10 +32,11 @@ package flash.utils {
 			this.checkDelay(delay);
 			this._delay = value;
 			if (this.running) {
-				this.stop();
-				this.start();
+				this.updateDelay();
 			}
 		}
+
+		private native function updateDelay():void;
 
 		public function get repeatCount(): int {
 			return this._repeatCount;

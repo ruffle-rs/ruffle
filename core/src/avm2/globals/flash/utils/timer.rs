@@ -81,3 +81,32 @@ pub fn start<'gc>(
     }
     Ok(Value::Undefined)
 }
+
+/// Implements `Timer.updateDelay`
+pub fn update_delay<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let id = this
+        .get_property(
+            &Multiname::new(activation.avm2().flash_utils_internal, "_timerId"),
+            activation,
+        )
+        .unwrap()
+        .coerce_to_i32(activation)?;
+
+    let delay = this
+        .get_property(
+            &Multiname::new(activation.avm2().flash_utils_internal, "_delay"),
+            activation,
+        )
+        .unwrap()
+        .coerce_to_i32(activation)?;
+
+    if id != -1 {
+        activation.context.timers.set_delay(id, delay);
+    }
+
+    Ok(Value::Undefined)
+}
