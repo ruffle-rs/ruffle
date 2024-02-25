@@ -258,6 +258,29 @@ impl<'gc> Timers<'gc> {
         len < old_len
     }
 
+    /// Changes the delay of a timer.
+    pub fn set_delay(&mut self, id: i32, interval: i32) {
+        // SANITY: Set a minimum interval so we don't spam too much.
+        let interval = interval.max(Self::MIN_INTERVAL) as u64 * (Self::TIMER_SCALE as u64);
+
+        // Due to the limitations of `BinaryHeap`, we have to do this in a slightly roundabout way.
+        let mut timer = None;
+        for t in self.timers.iter() {
+            if t.id == id {
+                timer = Some(t.clone());
+                break;
+            }
+        }
+
+        if let Some(mut timer) = timer {
+            self.remove(id);
+            timer.interval = interval;
+            self.timers.push(timer);
+        } else {
+            panic!("Changing delay of non-existent timer");
+        }
+    }
+
     fn peek(&self) -> Option<&Timer<'gc>> {
         self.timers.peek()
     }
@@ -286,7 +309,7 @@ unsafe impl<'gc> Collect for Timers<'gc> {
 }
 /// A timer created via `setInterval`/`setTimeout`.
 /// Runs a callback when it ticks.
-#[derive(Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct Timer<'gc> {
     /// The ID of the timer.
