@@ -133,7 +133,7 @@ impl<'gc> Stack<'gc> {
     }
 
     fn clear(&mut self) {
-        self.0 = Vec::new();
+        self.0.clear();
     }
 }
 
@@ -188,12 +188,11 @@ pub fn optimize<'gc>(
         initial_local_types.set_class_object(0, this_class);
     }
 
-    let mut i = 1;
-    for argument_type in argument_types {
+    for (i, argument_type) in argument_types.iter().enumerate() {
         if let Some(argument_type) = argument_type {
-            initial_local_types.set_class(i, argument_type);
+            initial_local_types.set_class(i + 1, *argument_type);
+            // `i + 1` because the receiver takes up local #0
         }
-        i += 1;
     }
 
     // Logic to only allow for type-based optimizations on types that
@@ -272,9 +271,7 @@ pub fn optimize<'gc>(
             }
             Op::CoerceI => {
                 let stack_value = stack.pop();
-                if matches!(stack_value, Some(ValueType::Int))
-                    || matches!(stack_value, Some(ValueType::Uint))
-                {
+                if matches!(stack_value, Some(ValueType::Int | ValueType::Uint)) {
                     *op = Op::Nop;
                 }
                 stack.push_int();
@@ -287,6 +284,7 @@ pub fn optimize<'gc>(
                 stack.push_uint();
             }
             Op::CoerceA => {
+                // This does actually inhibit optimizations in FP
                 stack.pop();
                 stack.push_any();
             }
@@ -878,7 +876,12 @@ pub fn optimize<'gc>(
                 stack.pop();
                 stack.push_int();
             }
-            Op::ReturnVoid | Op::ReturnValue | Op::Jump { .. } | Op::LookupSwitch(_) => {
+            Op::ReturnVoid
+            | Op::ReturnValue
+            | Op::Throw
+            | Op::Jump { .. }
+            | Op::LookupSwitch(_) => {
+                // End of block
                 stack.clear();
                 scope_stack.clear();
                 local_types = initial_local_types.clone();
