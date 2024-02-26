@@ -20,13 +20,13 @@ clap = { version = "4.5.1", features = ["derive"], optional = true }
 enum-map = "2.7.3"
 fnv = "1.0.7"
 swf = { path = "../../swf" }
-image = { version = "0.24.8", default-features = false }
+image = { version = "0.24.9", default-features = false }
 naga_oil = { workspace = true }
 naga-agal = { path = "../naga-agal" }
 naga-pixelbender = { path = "../naga-pixelbender" }
 downcast-rs = "1.2.0"
 profiling = { version = "1.0", default-features = false, optional = true }
-lru = "0.12.2"
+lru = "0.12.3"
 naga = { workspace = true }
 indexmap = "2.2.3"
 

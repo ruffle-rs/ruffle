@@ -24,10 +24,10 @@ lyon_geom = "1.0.5"
 thiserror = "1.0"
 wasm-bindgen = { version = "=0.2.91", optional = true }
 enum-map = "2.7.3"
-serde = { version = "1.0.196", features = ["derive"] }
+serde = { version = "1.0.197", features = ["derive"] }
 clap = { version = "4.5.1", features = ["derive"], optional = true }
 h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "16700664e2b3334f0a930f99af86011aebee14cc"}
-lru = "0.12.2"
+lru = "0.12.3"
 num-traits = "0.2"
 num-derive = "0.4"
 byteorder = "1.5"
