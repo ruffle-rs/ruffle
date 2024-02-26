@@ -10,6 +10,13 @@ use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::path::Path;
 use url::Url;
 
+fn get_default_save_directory() -> std::path::PathBuf {
+    dirs::data_local_dir()
+        .expect("Couldn't find a valid data_local dir")
+        .join("ruffle")
+        .join("SharedObjects")
+}
+
 #[derive(Parser, Debug)]
 #[clap(
     name = "Ruffle",
@@ -81,6 +88,10 @@ pub struct Opt {
     #[clap(long)]
     #[cfg(feature = "render_trace")]
     trace_path: Option<std::path::PathBuf>,
+
+    /// Location to store save data for games.
+    #[clap(long, default_value_os_t=get_default_save_directory())]
+    pub save_directory: std::path::PathBuf,
 
     /// Proxy to use when loading movies via URL.
     #[clap(long)]
