@@ -70,7 +70,7 @@ unic-segment = "0.9.0"
 version = "0.3.30"
 
 [target.'cfg(target_family = "wasm")'.dependencies.wasm-bindgen-futures]
-version = "0.4.40"
+version = "0.4.41"
 
 [features]
 default = []
