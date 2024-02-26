@@ -2,7 +2,7 @@ use crate::backends::{
     CpalAudioBackend, DesktopExternalInterfaceProvider, DesktopFSCommandProvider, DesktopUiBackend,
     DiskStorageBackend, ExternalNavigatorBackend,
 };
-use crate::cli::Opt;
+use crate::config::GlobalPreferences;
 use crate::custom_event::RuffleEvent;
 use crate::executor::WinitAsyncExecutor;
 use crate::gui::MovieView;
@@ -58,33 +58,33 @@ pub struct PlayerOptions {
     pub gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
 }
 
-impl From<&Opt> for PlayerOptions {
-    fn from(value: &Opt) -> Self {
+impl From<&GlobalPreferences> for PlayerOptions {
+    fn from(value: &GlobalPreferences) -> Self {
         Self {
-            parameters: value.parameters().collect(),
-            max_execution_duration: value.max_execution_duration,
-            base: value.base.clone(),
-            quality: value.quality,
-            align: value.align.unwrap_or_default(),
-            force_align: value.force_align,
-            scale: value.scale,
-            volume: value.volume,
-            force_scale: value.force_scale,
-            proxy: value.proxy.clone(),
-            upgrade_to_https: value.upgrade_to_https,
-            fullscreen: value.fullscreen,
-            load_behavior: value.load_behavior,
-            save_directory: value.save_directory.clone(),
-            letterbox: value.letterbox,
-            spoof_url: value.spoof_url.clone(),
-            player_version: value.player_version.unwrap_or(32),
-            player_runtime: value.player_runtime,
-            frame_rate: value.frame_rate,
-            open_url_mode: value.open_url_mode,
-            dummy_external_interface: value.dummy_external_interface,
-            socket_allowed: HashSet::from_iter(value.socket_allow.iter().cloned()),
-            tcp_connections: value.tcp_connections,
-            gamepad_button_mapping: HashMap::from_iter(value.gamepad_button.iter().cloned()),
+            parameters: value.cli.parameters().collect(),
+            max_execution_duration: value.cli.max_execution_duration,
+            base: value.cli.base.clone(),
+            quality: value.cli.quality,
+            align: value.cli.align.unwrap_or_default(),
+            force_align: value.cli.force_align,
+            scale: value.cli.scale,
+            volume: value.cli.volume,
+            force_scale: value.cli.force_scale,
+            proxy: value.cli.proxy.clone(),
+            upgrade_to_https: value.cli.upgrade_to_https,
+            fullscreen: value.cli.fullscreen,
+            load_behavior: value.cli.load_behavior,
+            save_directory: value.cli.save_directory.clone(),
+            letterbox: value.cli.letterbox,
+            spoof_url: value.cli.spoof_url.clone(),
+            player_version: value.cli.player_version.unwrap_or(32),
+            player_runtime: value.cli.player_runtime,
+            frame_rate: value.cli.frame_rate,
+            open_url_mode: value.cli.open_url_mode,
+            dummy_external_interface: value.cli.dummy_external_interface,
+            socket_allowed: HashSet::from_iter(value.cli.socket_allow.iter().cloned()),
+            tcp_connections: value.cli.tcp_connections,
+            gamepad_button_mapping: HashMap::from_iter(value.cli.gamepad_button.iter().cloned()),
         }
     }
 }

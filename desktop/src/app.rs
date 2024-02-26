@@ -1,4 +1,5 @@
 use crate::cli::Opt;
+use crate::config::GlobalPreferences;
 use crate::custom_event::RuffleEvent;
 use crate::gui::{GuiController, MENU_HEIGHT};
 use crate::player::{PlayerController, PlayerOptions};
@@ -21,13 +22,18 @@ use winit::keyboard::{Key, NamedKey};
 use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
 
 pub struct App {
-    opt: Opt,
+    preferences: GlobalPreferences,
     window: Rc<Window>,
     event_loop: Option<EventLoop<RuffleEvent>>,
     gui: Rc<RefCell<GuiController>>,
     player: PlayerController,
     min_window_size: LogicalSize<u32>,
     max_window_size: PhysicalSize<u32>,
+    initial_movie_url: Option<Url>,
+    no_gui: bool,
+    preferred_width: Option<f64>,
+    preferred_height: Option<f64>,
+    start_fullscreen: bool,
 }
 
 impl App {
@@ -39,8 +45,12 @@ impl App {
 
         let event_loop = EventLoopBuilder::with_user_event().build()?;
 
-        let min_window_size = (16, if opt.no_gui { 16 } else { MENU_HEIGHT + 16 }).into();
+        let no_gui = opt.no_gui;
+        let min_window_size = (16, if no_gui { 16 } else { MENU_HEIGHT + 16 }).into();
         let max_window_size = get_screen_size(&event_loop);
+        let preferred_width = opt.width;
+        let preferred_height = opt.height;
+        let start_fullscreen = opt.fullscreen;
 
         let window = WindowBuilder::new()
             .with_visible(false)
@@ -54,7 +64,15 @@ impl App {
         let mut font_database = fontdb::Database::default();
         font_database.load_system_fonts();
 
-        let mut gui = GuiController::new(window.clone(), &event_loop, &opt, &font_database)?;
+        let preferences = GlobalPreferences::load(opt)?;
+        let mut gui = GuiController::new(
+            window.clone(),
+            &event_loop,
+            &preferences,
+            &font_database,
+            movie_url.clone(),
+            no_gui,
+        )?;
 
         let mut player = PlayerController::new(
             event_loop.create_proxy(),
@@ -63,20 +81,29 @@ impl App {
             font_database,
         );
 
-        if let Some(movie_url) = movie_url {
-            gui.create_movie(&mut player, PlayerOptions::from(&opt), movie_url);
+        if let Some(movie_url) = &movie_url {
+            gui.create_movie(
+                &mut player,
+                PlayerOptions::from(&preferences),
+                movie_url.clone(),
+            );
         } else {
             gui.show_open_dialog();
         }
 
         Ok(Self {
-            opt,
+            preferences,
             window,
             event_loop: Some(event_loop),
             gui: Rc::new(RefCell::new(gui)),
             player,
             min_window_size,
             max_window_size,
+            initial_movie_url: movie_url,
+            no_gui,
+            preferred_width,
+            preferred_height,
+            start_fullscreen,
         })
     }
 
@@ -94,7 +121,7 @@ impl App {
         let mut modifiers = Modifiers::default();
         let mut fullscreen_down = false;
 
-        if self.opt.movie_url.is_none() {
+        if self.initial_movie_url.is_none() {
             // No SWF provided on command line; show window with dummy movie immediately.
             self.window.set_visible(true);
             loaded = LoadingState::Loaded;
@@ -160,7 +187,7 @@ impl App {
                         // Event consumed by GUI.
                         return;
                     }
-                    let height_offset = if self.window.fullscreen().is_some() || self.opt.no_gui {
+                    let height_offset = if self.window.fullscreen().is_some() || self.no_gui {
                         0.0
                     } else {
                         MENU_HEIGHT as f64 * self.window.scale_factor()
@@ -204,7 +231,7 @@ impl App {
                             if let Ok(url) = parse_url(&file) {
                                 self.gui.borrow_mut().create_movie(
                                     &mut self.player,
-                                    PlayerOptions::from(&self.opt),
+                                    PlayerOptions::from(&self.preferences),
                                     url,
                                 );
                             }
@@ -351,13 +378,13 @@ impl App {
                 winit::event::Event::UserEvent(RuffleEvent::OnMetadata(swf_header)) => {
                     let movie_width = swf_header.stage_size().width().to_pixels();
                     let movie_height = swf_header.stage_size().height().to_pixels();
-                    let height_offset = if self.window.fullscreen().is_some() || self.opt.no_gui {
+                    let height_offset = if self.window.fullscreen().is_some() || self.no_gui {
                         0.0
                     } else {
                         MENU_HEIGHT as f64
                     };
 
-                    let window_size: Size = match (self.opt.width, self.opt.height) {
+                    let window_size: Size = match (self.preferred_width, self.preferred_height) {
                         (None, None) => {
                             LogicalSize::new(movie_width, movie_height + height_offset).into()
                         }
@@ -394,7 +421,7 @@ impl App {
                     );
 
                     let _ = self.window.request_inner_size(window_size);
-                    self.window.set_fullscreen(if self.opt.fullscreen {
+                    self.window.set_fullscreen(if self.start_fullscreen {
                         Some(Fullscreen::Borderless(None))
                     } else {
                         None

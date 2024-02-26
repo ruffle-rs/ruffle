@@ -17,6 +17,12 @@ fn get_default_save_directory() -> std::path::PathBuf {
         .join("SharedObjects")
 }
 
+fn get_default_config_directory() -> std::path::PathBuf {
+    dirs::config_local_dir()
+        .expect("Couldn't find a valid config_local dir")
+        .join("ruffle")
+}
+
 #[derive(Parser, Debug)]
 #[clap(
     name = "Ruffle",
@@ -92,6 +98,10 @@ pub struct Opt {
     /// Location to store save data for games.
     #[clap(long, default_value_os_t=get_default_save_directory())]
     pub save_directory: std::path::PathBuf,
+
+    /// Location of a directory to store Ruffle configuration.
+    #[clap(long, default_value_os_t=get_default_config_directory())]
+    pub config: std::path::PathBuf,
 
     /// Proxy to use when loading movies via URL.
     #[clap(long)]
