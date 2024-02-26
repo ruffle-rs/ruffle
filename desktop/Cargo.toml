@@ -32,7 +32,7 @@ url = "2.5.0"
 arboard = { version = "3.3.1", features = ["wayland-data-control"] }
 dirs = "5.0"
 isahc = { version = "1.7.2", features = ["cookies"] }
-rfd = "0.13.0"
+rfd = "0.14.0"
 anyhow = "1.0"
 bytemuck = "1.14.3"
 os_info = { version = "3", default-features = false }
