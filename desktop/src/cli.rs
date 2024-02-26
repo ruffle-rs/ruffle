@@ -40,14 +40,19 @@ pub struct Opt {
     parameters: Vec<String>,
 
     /// Type of graphics backend to use. Not all options may be supported by your current system.
+    ///
     /// Default will attempt to pick the most supported graphics backend.
-    #[clap(long, short, default_value = "default")]
-    pub graphics: GraphicsBackend,
+    /// This option temporarily overrides any stored preference.
+    #[clap(long, short)]
+    pub graphics: Option<GraphicsBackend>,
 
     /// Power preference for the graphics device used. High power usage tends to prefer dedicated GPUs,
     /// whereas a low power usage tends prefer integrated GPUs.
-    #[clap(long, short, default_value = "high")]
-    pub power: PowerPreference,
+    ///
+    /// Default preference is high (likely dedicated GPU).
+    /// This option temporarily overrides any stored preference.
+    #[clap(long, short)]
+    pub power: Option<PowerPreference>,
 
     /// Width of window in pixels.
     #[clap(long, display_order = 1)]

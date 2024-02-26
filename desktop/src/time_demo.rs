@@ -5,6 +5,7 @@ use isahc::HttpClient;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::PlayerBuilder;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
+use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::io::Read;
 use std::time::Instant;
 use url::Url;
@@ -57,8 +58,8 @@ pub fn run_timedemo(mut opt: Opt) -> Result<(), Error> {
 
     let renderer = WgpuRenderBackend::for_offscreen(
         (viewport_width, viewport_height),
-        opt.graphics.into(),
-        opt.power.into(),
+        opt.graphics.unwrap_or(GraphicsBackend::Default).into(),
+        opt.power.unwrap_or(PowerPreference::High).into(),
         opt.trace_path(),
     )
     .map_err(|e| anyhow!(e.to_string()))

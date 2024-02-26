@@ -29,6 +29,7 @@ profiling = { version = "1.0", default-features = false, optional = true }
 lru = "0.12.3"
 naga = { workspace = true }
 indexmap = "2.2.5"
+serde = { version = "1.0.197", features = ["derive"], optional = true }
 
 # desktop
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
