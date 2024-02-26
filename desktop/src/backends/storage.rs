@@ -6,7 +6,6 @@ use std::io::Write;
 use std::path::{Component, Path, PathBuf};
 
 pub struct DiskStorageBackend {
-    base_path: PathBuf,
     shared_objects_path: PathBuf,
 }
 
@@ -26,7 +25,6 @@ impl DiskStorageBackend {
         }
 
         Ok(DiskStorageBackend {
-            base_path,
             shared_objects_path,
         })
     }
@@ -39,13 +37,6 @@ impl DiskStorageBackend {
     fn get_shared_object_path(&self, name: &str) -> PathBuf {
         self.shared_objects_path.join(format!("{name}.sol"))
     }
-
-    fn get_back_compat_shared_object_path(&self, name: &str) -> PathBuf {
-        // Backwards compatibility with pre-05/09/2021:
-        // Search for data in old location, without .sol extension and # prefix.
-        // Remove this code eventually.
-        self.base_path.join(name.replacen("/#", "/", 1))
-    }
 }
 
 impl StorageBackend for DiskStorageBackend {
@@ -56,16 +47,6 @@ impl StorageBackend for DiskStorageBackend {
         }
         match std::fs::read(path) {
             Ok(data) => Some(data),
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-                let path = self.get_back_compat_shared_object_path(name);
-                match std::fs::read(path) {
-                    Ok(data) => Some(data),
-                    Err(e) => {
-                        tracing::warn!("Unable to read file \"{}\": {:?}", name, e);
-                        None
-                    }
-                }
-            }
             Err(e) => {
                 tracing::warn!("Unable to read file \"{}\": {:?}", name, e);
                 None
