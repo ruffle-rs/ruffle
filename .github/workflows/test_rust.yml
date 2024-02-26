@@ -31,7 +31,7 @@ jobs:
 
   build:
     needs: changes
-    if: needs.changes.outputs.should_run== 'true'
+    if: needs.changes.outputs.should_run == 'true'
     name: Test Rust ${{ matrix.rust_version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.rust_version == 'nightly' || matrix.rust_version == 'beta' }}
@@ -78,6 +78,7 @@ jobs:
         # See: https://github.com/nextest-rs/nextest/issues/1172
         run: cargo nextest run --cargo-profile ci --workspace --locked --no-fail-fast --retries 2 -j 4 --features imgtests,lzma,jpegxr
         env:
+          CARGO_NET_GIT_FETCH_WITH_CLI: 'true' # Makes "Updating crates.io index" faster on Windows
           XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
 
       - name: Run tests without image tests
@@ -97,7 +98,7 @@ jobs:
 
   lints:
     needs: changes
-    if: needs.changes.outputs.should_run== 'true'
+    if: needs.changes.outputs.should_run == 'true'
     name: Lints with Rust ${{ matrix.rust_version }}
     runs-on: ubuntu-22.04
     continue-on-error: ${{ matrix.rust_version == 'nightly' || matrix.rust_version == 'beta' }}
