@@ -9,6 +9,7 @@
 mod app;
 mod backends;
 mod cli;
+mod config;
 mod custom_event;
 mod executor;
 mod gui;

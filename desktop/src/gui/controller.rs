@@ -1,5 +1,5 @@
 use crate::backends::DesktopUiBackend;
-use crate::cli::Opt;
+use crate::config::GlobalPreferences;
 use crate::custom_event::RuffleEvent;
 use crate::gui::movie::{MovieView, MovieViewRenderer};
 use crate::gui::{RuffleGui, MENU_HEIGHT};
@@ -43,10 +43,12 @@ impl GuiController {
     pub fn new(
         window: Rc<Window>,
         event_loop: &EventLoop<RuffleEvent>,
-        opt: &Opt,
+        preferences: &GlobalPreferences,
         font_database: &Database,
+        initial_movie_url: Option<Url>,
+        no_gui: bool,
     ) -> anyhow::Result<Self> {
-        let backend: wgpu::Backends = opt.graphics.into();
+        let backend: wgpu::Backends = preferences.cli.graphics.into();
         if wgpu::Backends::SECONDARY.contains(backend) {
             tracing::warn!(
                 "{} graphics backend support may not be fully supported.",
@@ -65,8 +67,8 @@ impl GuiController {
             backend,
             &instance,
             Some(&surface),
-            opt.power.into(),
-            opt.trace_path(),
+            preferences.cli.power.into(),
+            preferences.cli.trace_path(),
         ))
         .map_err(|e| anyhow!(e.to_string()))?;
         let surface_format = surface
@@ -102,13 +104,17 @@ impl GuiController {
         let movie_view_renderer = Arc::new(MovieViewRenderer::new(
             &descriptors.device,
             surface_format,
-            window.fullscreen().is_none() && !opt.no_gui,
+            window.fullscreen().is_none() && !no_gui,
             size.height,
             window.scale_factor(),
         ));
         let egui_renderer = egui_wgpu::Renderer::new(&descriptors.device, surface_format, None, 1);
         let event_loop = event_loop.create_proxy();
-        let gui = RuffleGui::new(event_loop, opt.movie_url.clone(), PlayerOptions::from(opt));
+        let gui = RuffleGui::new(
+            event_loop,
+            initial_movie_url.clone(),
+            PlayerOptions::from(preferences),
+        );
         let system_fonts =
             load_system_fonts(font_database, gui.locale.to_owned()).unwrap_or_default();
         egui_winit.egui_ctx().set_fonts(system_fonts);
@@ -127,7 +133,7 @@ impl GuiController {
             surface_format,
             movie_view_renderer,
             size,
-            no_gui: opt.no_gui,
+            no_gui,
         })
     }
 

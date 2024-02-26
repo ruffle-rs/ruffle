@@ -23,7 +23,7 @@ ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymose
 ruffle_render = { path = "../render", features = ["clap"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
 ruffle_video_software = { path = "../video/software", optional = true }
-tracing = { workspace = true}
+tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 slotmap = { workspace = true }
 winit = "0.29.13"
@@ -46,6 +46,8 @@ futures-lite = "2.2.0"
 async-io = "2.3.1"
 async-net = "2.0.0"
 async-channel = "2.2.0"
+serde = { version = "1.0.197", features = ["derive"] }
+toml = "0.8.10"
 gilrs = "0.10"
 
 # Deliberately held back to match tracy client used by profiling crate
