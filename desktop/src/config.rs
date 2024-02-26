@@ -1,10 +1,11 @@
 use crate::cli::Opt;
 use anyhow::{Context, Error};
+use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use serde::{Deserialize, Serialize};
 
 pub struct GlobalPreferences {
     pub cli: Opt,
-    _preferences: SavedGlobalPreferences,
+    preferences: SavedGlobalPreferences,
 }
 
 impl GlobalPreferences {
@@ -21,12 +22,28 @@ impl GlobalPreferences {
             SavedGlobalPreferences::default()
         };
 
-        Ok(Self {
-            cli,
-            _preferences: preferences,
-        })
+        Ok(Self { cli, preferences })
+    }
+
+    pub fn graphics_backends(&self) -> wgpu::Backends {
+        self.cli
+            .graphics
+            .or(self.preferences.graphics_backend)
+            .unwrap_or(GraphicsBackend::Default)
+            .into()
+    }
+
+    pub fn graphics_power_preference(&self) -> wgpu::PowerPreference {
+        self.cli
+            .power
+            .or(self.preferences.graphics_power_preference)
+            .unwrap_or(PowerPreference::High)
+            .into()
     }
 }
 
 #[derive(Default, Deserialize, Serialize)]
-struct SavedGlobalPreferences {}
+struct SavedGlobalPreferences {
+    graphics_backend: Option<GraphicsBackend>,
+    graphics_power_preference: Option<PowerPreference>,
+}

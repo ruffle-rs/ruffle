@@ -48,7 +48,7 @@ impl GuiController {
         initial_movie_url: Option<Url>,
         no_gui: bool,
     ) -> anyhow::Result<Self> {
-        let backend: wgpu::Backends = preferences.cli.graphics.into();
+        let backend = preferences.graphics_backends();
         if wgpu::Backends::SECONDARY.contains(backend) {
             tracing::warn!(
                 "{} graphics backend support may not be fully supported.",
@@ -67,10 +67,17 @@ impl GuiController {
             backend,
             &instance,
             Some(&surface),
-            preferences.cli.power.into(),
+            preferences.graphics_power_preference(),
             preferences.cli.trace_path(),
         ))
         .map_err(|e| anyhow!(e.to_string()))?;
+        let adapter_info = adapter.get_info();
+        tracing::info!(
+            "Using graphics API {} on {} (type: {:?})",
+            adapter_info.backend.to_str(),
+            adapter_info.name,
+            adapter_info.device_type
+        );
         let surface_format = surface
             .get_capabilities(&adapter)
             .formats

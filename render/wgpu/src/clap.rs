@@ -1,4 +1,5 @@
 #[derive(clap::ValueEnum, Clone, Copy, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum GraphicsBackend {
     Default,
     Vulkan,
@@ -20,9 +21,10 @@ impl From<GraphicsBackend> for wgpu::Backends {
 }
 
 #[derive(clap::ValueEnum, Clone, Copy, Debug, Eq, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum PowerPreference {
-    Low = 1,
-    High = 2,
+    Low,
+    High,
 }
 
 impl From<PowerPreference> for wgpu::PowerPreference {

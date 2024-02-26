@@ -4625,6 +4625,7 @@ dependencies = [
  "profiling",
  "raw-window-handle 0.6.0",
  "ruffle_render",
+ "serde",
  "swf",
  "tracing",
  "web-sys",
