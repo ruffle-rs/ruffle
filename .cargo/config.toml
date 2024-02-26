@@ -5,3 +5,7 @@ rustflags = [
     # and our web code does not compile without this flag
     "--cfg=web_sys_unstable_apis",
 ]
+
+[target.x86_64-pc-windows-msvc]
+# Use the LLD linker, it's not as slow as the default.
+linker = "rust-lld.exe"
