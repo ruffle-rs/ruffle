@@ -20,6 +20,7 @@ use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::descriptors::Descriptors;
 use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
@@ -46,6 +47,7 @@ pub struct PlayerOptions {
     pub upgrade_to_https: bool,
     pub fullscreen: bool,
     pub load_behavior: LoadBehavior,
+    pub save_directory: PathBuf,
     pub letterbox: Letterbox,
     pub spoof_url: Option<Url>,
     pub player_version: u8,
@@ -72,6 +74,7 @@ impl From<&Opt> for PlayerOptions {
             upgrade_to_https: value.upgrade_to_https,
             fullscreen: value.fullscreen,
             load_behavior: value.load_behavior,
+            save_directory: value.save_directory.clone(),
             letterbox: value.letterbox,
             spoof_url: value.spoof_url.clone(),
             player_version: value.player_version.unwrap_or(32),
@@ -154,7 +157,7 @@ impl ActivePlayer {
         builder = builder
             .with_navigator(navigator)
             .with_renderer(renderer)
-            .with_storage(DiskStorageBackend::new().expect("Couldn't create storage backend"))
+            .with_storage(DiskStorageBackend::new(opt.save_directory.clone()))
             .with_fs_commands(Box::new(DesktopFSCommandProvider {
                 event_loop: event_loop.clone(),
                 window: window.clone(),
