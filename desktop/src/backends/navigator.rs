@@ -574,20 +574,20 @@ impl<F: FutureSpawner> NavigatorBackend for ExternalNavigatorBackend<F> {
                 let mut pending_write = vec![];
 
                 loop {
-                    loop {
+                    let close_connection = loop {
                         match receiver.try_recv() {
                             Ok(val) => {
                                 pending_write.extend(val);
                             }
+                            Err(TryRecvError::Empty) => break false,
                             Err(TryRecvError::Closed) => {
                                 //NOTE: Channel sender has been dropped.
-                                //      This means we have to close the connection.
-                                drop(write);
-                                return;
+                                //      This means we have to close the connection,
+                                //      but not here, as we might have a pending write.
+                                break true;
                             }
-                            Err(_) => break,
                         }
-                    }
+                    };
 
                     if !pending_write.is_empty() {
                         match write.write(&pending_write).await {
@@ -603,6 +603,9 @@ impl<F: FutureSpawner> NavigatorBackend for ExternalNavigatorBackend<F> {
                                 let _ = pending_write.drain(..written);
                             }
                         }
+                    } else if close_connection {
+                        drop(write);
+                        return;
                     } else {
                         //NOTE: We wait here as if the buffer is empty the syscall (at least on linux),
                         //      will return immediately, and because of that we get stuck in a infinite loop
@@ -870,5 +873,23 @@ mod tests {
             Data(dummy_handle!(), "from server 2".as_bytes().to_vec()),
         );
         assert_eq!(read_server(&mut server_socket).await, "from client 2");
+    }
+
+    #[macro_rules_attribute::apply(async_test)]
+    async fn test_socket_flush_before_close() {
+        let (accept_task, addr) = start_test_server().await;
+        let (client_write, client_read) = connect_test_socket(addr, TIMEOUT, true);
+
+        let mut server_socket = accept_task.await.unwrap();
+        assert_next_socket_actions!(
+            client_read;
+            Connect(dummy_handle!(), ConnectionState::Connected),
+        );
+
+        write_client(&client_write, "Sending some").await;
+        write_client(&client_write, " data").await;
+        client_write.close();
+
+        assert_eq!(read_server(&mut server_socket).await, "Sending some data");
     }
 }
