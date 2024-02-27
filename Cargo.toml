@@ -100,8 +100,13 @@ inherits = "release"
 
 [profile.ci]
 inherits = "release"
-opt-level = 2
 debug-assertions = true
 overflow-checks = true
+# "Not too slow to compile, fast enough to run."
+opt-level = 2
+# Takes too long, especially on Windows, with marginal benefit otherwise.
+lto = "off"
 # This is also set with higher authority in `test_rust.yml`.
 incremental = true
+# Right between the defaults of 16 and 256, for crate fragment caching.
+codegen-units = 64
