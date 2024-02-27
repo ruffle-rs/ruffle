@@ -48,18 +48,30 @@ impl GuiController {
         initial_movie_url: Option<Url>,
         no_gui: bool,
     ) -> anyhow::Result<Self> {
-        let backend: wgpu::Backends = preferences.graphics_backends().into();
+        let mut backend: wgpu::Backends = preferences.graphics_backends().into();
         if wgpu::Backends::SECONDARY.contains(backend) {
             tracing::warn!(
                 "{} graphics backend support may not be fully supported.",
                 format_list(&get_backend_names(backend), "and")
             );
         }
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        let mut instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: backend,
             flags: wgpu::InstanceFlags::default().with_env(),
             ..Default::default()
         });
+        if instance.enumerate_adapters(backend).is_empty() && backend != wgpu::Backends::all() {
+            tracing::warn!(
+                "Graphics backend {} is not available; falling back to any available backend",
+                format_list(&get_backend_names(backend), "and")
+            );
+            backend = wgpu::Backends::all();
+            instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+                backends: backend,
+                flags: wgpu::InstanceFlags::default().with_env(),
+                ..Default::default()
+            });
+        }
         let surface = unsafe {
             instance.create_surface_unsafe(wgpu::SurfaceTargetUnsafe::from_window(window.as_ref())?)
         }?;
