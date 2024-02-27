@@ -78,6 +78,9 @@ jobs:
         # See: https://github.com/nextest-rs/nextest/issues/1172
         run: cargo nextest run --cargo-profile ci --workspace --locked --no-fail-fast --retries 2 -j 4 --features imgtests,lzma,jpegxr
         env:
+          # Supposedly makes "Updating crates.io index" faster on Windows.
+          # See: https://github.com/rust-lang/cargo/issues/9167
+          CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
           XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
 
       - name: Run tests without image tests
