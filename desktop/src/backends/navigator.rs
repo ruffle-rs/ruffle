@@ -1,5 +1,6 @@
 //! Navigator backend for web
 
+use crate::executor::FutureSpawner;
 use async_channel::{Receiver, Sender, TryRecvError};
 use async_io::Timer;
 use async_net::TcpStream;
@@ -29,17 +30,12 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tracing::warn;
 use url::{ParseError, Url};
-use winit::event_loop::EventLoopProxy;
-use crate::custom_event::RuffleEvent;
 
 /// Implementation of `NavigatorBackend` for non-web environments that can call
 /// out to a web browser.
-pub struct ExternalNavigatorBackend {
+pub struct ExternalNavigatorBackend<F: FutureSpawner> {
     /// Sink for tasks sent to us through `spawn_future`.
-    channel: Sender<OwnedFuture<(), Error>>,
-
-    /// Event sink to trigger a new task poll.
-    event_loop: EventLoopProxy<RuffleEvent>,
+    future_spawner: F,
 
     /// The url to use for all relative fetches.
     base_url: Url,
@@ -56,13 +52,12 @@ pub struct ExternalNavigatorBackend {
     open_url_mode: OpenURLMode,
 }
 
-impl ExternalNavigatorBackend {
+impl<F: FutureSpawner> ExternalNavigatorBackend<F> {
     /// Construct a navigator backend with fetch and async capability.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         mut base_url: Url,
-        channel: Sender<OwnedFuture<(), Error>>,
-        event_loop: EventLoopProxy<RuffleEvent>,
+        future_spawner: F,
         proxy: Option<Url>,
         upgrade_to_https: bool,
         open_url_mode: OpenURLMode,
@@ -84,8 +79,7 @@ impl ExternalNavigatorBackend {
         }
 
         Self {
-            channel,
-            event_loop,
+            future_spawner,
             client,
             base_url,
             upgrade_to_https,
@@ -96,7 +90,7 @@ impl ExternalNavigatorBackend {
     }
 }
 
-impl NavigatorBackend for ExternalNavigatorBackend {
+impl<F: FutureSpawner> NavigatorBackend for ExternalNavigatorBackend<F> {
     fn navigate_to_url(
         &self,
         url: &str,
@@ -462,13 +456,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
     }
 
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {
-        self.channel.try_send(future).expect("working channel send");
-
-        if self.event_loop.send_event(RuffleEvent::TaskPoll).is_err() {
-            tracing::warn!(
-                "A task was queued on an event loop that has already ended. It will not be polled."
-            );
-        }
+        self.future_spawner.spawn(future);
     }
 
     fn pre_process_url(&self, mut url: Url) -> Url {

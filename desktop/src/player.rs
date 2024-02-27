@@ -111,11 +111,10 @@ impl ActivePlayer {
             }
         };
 
-        let (executor, channel) = WinitAsyncExecutor::new(event_loop.clone());
+        let (executor, future_spawner) = WinitAsyncExecutor::new(event_loop.clone());
         let navigator = ExternalNavigatorBackend::new(
             opt.base.to_owned().unwrap_or_else(|| movie_url.clone()),
-            channel,
-            event_loop.clone(),
+            future_spawner,
             opt.proxy.clone(),
             opt.upgrade_to_https,
             opt.open_url_mode,

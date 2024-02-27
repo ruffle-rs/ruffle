@@ -148,20 +148,21 @@ impl WinitAsyncExecutor {
     ///
     /// This function returns the executor itself, plus the `Sender` necessary
     /// to spawn new tasks.
-    pub fn new(
-        event_loop: EventLoopProxy<RuffleEvent>,
-    ) -> (Arc<Mutex<Self>>, Sender<OwnedFuture<(), Error>>) {
+    pub fn new(event_loop: EventLoopProxy<RuffleEvent>) -> (Arc<Mutex<Self>>, WinitFutureSpawner) {
         let (send, recv) = unbounded();
         let new_self = Arc::new_cyclic(|self_ref| {
             Mutex::new(Self {
                 task_queue: Arena::new(),
                 channel: recv,
                 self_ref: self_ref.clone(),
-                event_loop,
+                event_loop: event_loop.clone(),
                 waiting_for_poll: false,
             })
         });
-        (new_self, send)
+        (
+            new_self,
+            WinitFutureSpawner::send_and_poll(send, event_loop),
+        )
     }
 
     /// Poll all `Ready` futures.
@@ -218,6 +219,40 @@ impl WinitAsyncExecutor {
             }
         } else {
             tracing::warn!("Attempted to wake an already-finished task");
+        }
+    }
+}
+
+pub trait FutureSpawner {
+    fn spawn(&self, future: OwnedFuture<(), Error>);
+}
+
+pub struct WinitFutureSpawner {
+    channel: Sender<OwnedFuture<(), Error>>,
+    event_loop: EventLoopProxy<RuffleEvent>,
+}
+
+impl WinitFutureSpawner {
+    pub fn send_and_poll(
+        channel: Sender<OwnedFuture<(), Error>>,
+        event_loop: EventLoopProxy<RuffleEvent>,
+    ) -> WinitFutureSpawner {
+        WinitFutureSpawner {
+            channel,
+            event_loop,
+        }
+    }
+}
+
+impl FutureSpawner for WinitFutureSpawner {
+    fn spawn(&self, future: OwnedFuture<(), Error>) {
+        self.channel
+            .send_blocking(future)
+            .expect("working channel send");
+        if self.event_loop.send_event(RuffleEvent::TaskPoll).is_err() {
+            tracing::warn!(
+                "A task was queued on an event loop that has already ended. It will not be polled."
+            );
         }
     }
 }
