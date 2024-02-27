@@ -23,7 +23,7 @@ fn get_default_config_directory() -> std::path::PathBuf {
         .join("ruffle")
 }
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 #[clap(
     name = "Ruffle",
     author,

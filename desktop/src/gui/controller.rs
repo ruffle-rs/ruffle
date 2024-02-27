@@ -43,12 +43,12 @@ impl GuiController {
     pub fn new(
         window: Rc<Window>,
         event_loop: &EventLoop<RuffleEvent>,
-        preferences: &GlobalPreferences,
+        preferences: GlobalPreferences,
         font_database: &Database,
         initial_movie_url: Option<Url>,
         no_gui: bool,
     ) -> anyhow::Result<Self> {
-        let backend = preferences.graphics_backends();
+        let backend: wgpu::Backends = preferences.graphics_backends().into();
         if wgpu::Backends::SECONDARY.contains(backend) {
             tracing::warn!(
                 "{} graphics backend support may not be fully supported.",
@@ -67,7 +67,7 @@ impl GuiController {
             backend,
             &instance,
             Some(&surface),
-            preferences.graphics_power_preference(),
+            preferences.graphics_power_preference().into(),
             preferences.cli.trace_path(),
         ))
         .map_err(|e| anyhow!(e.to_string()))?;
@@ -120,7 +120,8 @@ impl GuiController {
         let gui = RuffleGui::new(
             event_loop,
             initial_movie_url.clone(),
-            PlayerOptions::from(preferences),
+            PlayerOptions::from(&preferences),
+            preferences.clone(),
         );
         let system_fonts =
             load_system_fonts(font_database, gui.locale.to_owned()).unwrap_or_default();
