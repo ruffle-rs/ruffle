@@ -1,6 +1,6 @@
 //! Navigator backend for web
 use crate::SocketProxy;
-use async_channel::Receiver;
+use async_channel::{Receiver, Sender};
 use futures_util::{SinkExt, StreamExt};
 use gloo_net::websocket::{futures::WebSocket, Message};
 use js_sys::{Array, Uint8Array};
@@ -15,7 +15,6 @@ use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use std::time::Duration;
 use tracing_subscriber::layer::Layered;
@@ -387,7 +386,7 @@ impl NavigatorBackend for WebNavigatorBackend {
         else {
             tracing::warn!("Missing WebSocket proxy for host {}, port {}", host, port);
             sender
-                .send(SocketAction::Connect(handle, ConnectionState::Failed))
+                .try_send(SocketAction::Connect(handle, ConnectionState::Failed))
                 .expect("working channel send");
             return;
         };
@@ -399,7 +398,7 @@ impl NavigatorBackend for WebNavigatorBackend {
             Err(e) => {
                 tracing::error!("Failed to create WebSocket, reason {:?}", e);
                 sender
-                    .send(SocketAction::Connect(handle, ConnectionState::Failed))
+                    .try_send(SocketAction::Connect(handle, ConnectionState::Failed))
                     .expect("working channel send");
                 return;
             }
@@ -407,7 +406,7 @@ impl NavigatorBackend for WebNavigatorBackend {
 
         let (mut sink, mut stream) = ws.split();
         sender
-            .send(SocketAction::Connect(handle, ConnectionState::Connected))
+            .try_send(SocketAction::Connect(handle, ConnectionState::Connected))
             .expect("working channel send");
 
         // Spawn future to handle incoming messages.
@@ -416,12 +415,12 @@ impl NavigatorBackend for WebNavigatorBackend {
             while let Some(msg) = stream.next().await {
                 match msg {
                     Ok(Message::Bytes(buf)) => stream_sender
-                        .send(SocketAction::Data(handle, buf))
+                        .try_send(SocketAction::Data(handle, buf))
                         .expect("working channel send"),
                     Ok(_) => tracing::warn!("Server sent unexpected text message"),
                     Err(_) => {
                         stream_sender
-                            .send(SocketAction::Close(handle))
+                            .try_send(SocketAction::Close(handle))
                             .expect("working channel send");
                         return Ok(());
                     }
@@ -437,7 +436,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                 if let Err(e) = sink.send(Message::Bytes(msg)).await {
                     tracing::warn!("Failed to send message to WebSocket {}", e);
                     sender
-                        .send(SocketAction::Close(handle))
+                        .try_send(SocketAction::Close(handle))
                         .expect("working channel send");
                 }
             }

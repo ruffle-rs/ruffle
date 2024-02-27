@@ -1,7 +1,6 @@
 //! Navigator backend for web
 
-use crate::custom_event::RuffleEvent;
-use async_channel::{Receiver, TryRecvError};
+use async_channel::{Receiver, Sender, TryRecvError};
 use async_io::Timer;
 use async_net::TcpStream;
 use futures::future::select;
@@ -26,12 +25,12 @@ use std::io::ErrorKind;
 use std::io::{self, Read};
 use std::rc::Rc;
 use std::str::FromStr;
-use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tracing::warn;
 use url::{ParseError, Url};
 use winit::event_loop::EventLoopProxy;
+use crate::custom_event::RuffleEvent;
 
 /// Implementation of `NavigatorBackend` for non-web environments that can call
 /// out to a web browser.
@@ -329,7 +328,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                             "Unable to create path out of URL",
                             response_url.as_str(),
                             "",
-                        )
+                        );
                     }
                 };
 
@@ -362,7 +361,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                             "Can't open file",
                             response_url.as_str(),
                             e,
-                        )
+                        );
                     }
                 };
 
@@ -463,7 +462,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
     }
 
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {
-        self.channel.send(future).expect("working channel send");
+        self.channel.try_send(future).expect("working channel send");
 
         if self.event_loop.send_event(RuffleEvent::TaskPoll).is_err() {
             tracing::warn!(
@@ -498,7 +497,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                 (false, SocketMode::Deny) => {
                     // Just fail the connection.
                     sender
-                        .send(SocketAction::Connect(handle, ConnectionState::Failed))
+                        .try_send(SocketAction::Connect(handle, ConnectionState::Failed))
                         .expect("working channel send");
 
                     tracing::warn!(
@@ -509,13 +508,13 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                 }
                 (false, SocketMode::Ask) => {
                     let attempt_sandbox_connect = AsyncMessageDialog::new().set_level(MessageLevel::Warning).set_description(format!("The current movie is attempting to connect to {:?} (port {}).\n\nTo allow it to do so, click Yes to grant network access to that host.\n\nOtherwise, click No to deny access.", host, port)).set_buttons(MessageButtons::YesNo)
-                    .show()
-                    .await == MessageDialogResult::Yes;
+                        .show()
+                        .await == MessageDialogResult::Yes;
 
                     if !attempt_sandbox_connect {
                         // fail the connection.
                         sender
-                            .send(SocketAction::Connect(handle, ConnectionState::Failed))
+                            .try_send(SocketAction::Connect(handle, ConnectionState::Failed))
                             .expect("working channel send");
 
                         return Ok(());
@@ -534,13 +533,13 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                 Err(e) if e.kind() == ErrorKind::TimedOut => {
                     warn!("Connection to {}:{} timed out", host2, port);
                     sender
-                        .send(SocketAction::Connect(handle, ConnectionState::TimedOut))
+                        .try_send(SocketAction::Connect(handle, ConnectionState::TimedOut))
                         .expect("working channel send");
                     return Ok(());
                 }
                 Ok(stream) => {
                     sender
-                        .send(SocketAction::Connect(handle, ConnectionState::Connected))
+                        .try_send(SocketAction::Connect(handle, ConnectionState::Connected))
                         .expect("working channel send");
 
                     stream
@@ -548,7 +547,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                 Err(err) => {
                     warn!("Failed to connect to {}:{}, error: {}", host2, port, err);
                     sender
-                        .send(SocketAction::Connect(handle, ConnectionState::Failed))
+                        .try_send(SocketAction::Connect(handle, ConnectionState::Failed))
                         .expect("working channel send");
                     return Ok(());
                 }
@@ -567,7 +566,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                         Err(e) if e.kind() == ErrorKind::TimedOut => {} // try again later.
                         Err(_) | Ok(0) => {
                             sender
-                                .send(SocketAction::Close(handle))
+                                .try_send(SocketAction::Close(handle))
                                 .expect("working channel send");
                             drop(read);
                             break;
@@ -576,7 +575,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                             let buffer = buffer.into_iter().take(read).collect::<Vec<_>>();
 
                             sender
-                                .send(SocketAction::Data(handle, buffer))
+                                .try_send(SocketAction::Data(handle, buffer))
                                 .expect("working channel send");
                         }
                     };
@@ -607,7 +606,7 @@ impl NavigatorBackend for ExternalNavigatorBackend {
                             Err(e) if e.kind() == ErrorKind::TimedOut => {} // try again later.
                             Err(_) => {
                                 sender2
-                                    .send(SocketAction::Close(handle))
+                                    .try_send(SocketAction::Close(handle))
                                     .expect("working channel send");
                                 drop(write);
                                 return;

@@ -3,7 +3,7 @@
 use crate::loader::Error;
 use crate::socket::{ConnectionState, SocketAction, SocketHandle};
 use crate::string::WStr;
-use async_channel::Receiver;
+use async_channel::{Receiver, Sender};
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
@@ -14,7 +14,6 @@ use std::future::Future;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
-use std::sync::mpsc::Sender;
 use std::time::Duration;
 use swf::avm1::types::SendVarsMethod;
 use url::{ParseError, Url};
@@ -455,7 +454,7 @@ impl NavigatorBackend for NullNavigatorBackend {
         sender: Sender<SocketAction>,
     ) {
         sender
-            .send(SocketAction::Connect(handle, ConnectionState::Failed))
+            .try_send(SocketAction::Connect(handle, ConnectionState::Failed))
             .expect("working channel send");
     }
 }
