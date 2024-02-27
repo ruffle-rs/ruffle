@@ -46,14 +46,14 @@ impl<'gc> Socket<'gc> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ConnectionState {
     Connected,
     Failed,
     TimedOut,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum SocketAction {
     Connect(SocketHandle, ConnectionState),
     Data(SocketHandle, Vec<u8>),
