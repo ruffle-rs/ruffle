@@ -607,10 +607,17 @@ impl<F: FutureSpawner> NavigatorBackend for ExternalNavigatorBackend<F> {
                         drop(write);
                         return;
                     } else {
-                        //NOTE: We wait here as if the buffer is empty the syscall (at least on linux),
-                        //      will return immediately, and because of that we get stuck in a infinite loop
-                        //      as we never yield to the executor.
-                        Timer::after(Duration::from_millis(10)).await;
+                        // Receiver is empty and there's no pending data,
+                        // we may block here and wait for new data.
+                        match receiver.recv().await {
+                            Ok(val) => {
+                                pending_write.extend(val);
+                            }
+                            Err(_) => {
+                                // Ignore the error here, it will be
+                                // reported again in try_recv.
+                            }
+                        }
                     }
                 }
             });
