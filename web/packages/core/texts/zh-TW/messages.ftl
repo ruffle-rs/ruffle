@@ -32,6 +32,9 @@ error-wasm-mime-type =
     目前Ruffle初始化時遇到重大問題。
     這網頁伺服器並沒有服務".wasm"檔案或正確的網際網路媒體類型。
     如果你是伺服器管理員，請查詢Ruffle wiki得到需求幫助。
+error-invalid-swf =
+    目前Ruffle無法讀取Flash的SWF檔案。
+    很有可能要讀取的檔案並一個不是有效的SWF。
 error-swf-fetch =
     目前Ruffle無法讀取Flash的SWF檔案。
     很有可能要讀取的檔案不存在，所以Ruffle讀不到東西。
