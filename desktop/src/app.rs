@@ -68,7 +68,7 @@ impl App {
         let mut gui = GuiController::new(
             window.clone(),
             &event_loop,
-            &preferences,
+            preferences.clone(),
             &font_database,
             movie_url.clone(),
             no_gui,

@@ -2,15 +2,18 @@ mod context_menu;
 mod controller;
 mod movie;
 mod open_dialog;
+mod preferences_dialog;
 
 pub use controller::GuiController;
 pub use movie::MovieView;
 use std::borrow::Cow;
 use url::Url;
 
+use crate::config::GlobalPreferences;
 use crate::custom_event::RuffleEvent;
 use crate::gui::context_menu::ContextMenu;
 use crate::gui::open_dialog::OpenDialog;
+use crate::gui::preferences_dialog::PreferencesDialog;
 use crate::player::PlayerOptions;
 use chrono::DateTime;
 use egui::*;
@@ -75,10 +78,12 @@ pub struct RuffleGui {
     is_open_dialog_visible: bool,
     context_menu: Option<ContextMenu>,
     open_dialog: OpenDialog,
+    preferences_dialog: Option<PreferencesDialog>,
     locale: LanguageIdentifier,
     default_player_options: PlayerOptions,
     currently_opened: Option<(Url, PlayerOptions)>,
     was_suspended_before_debug: bool,
+    preferences: GlobalPreferences,
 }
 
 impl RuffleGui {
@@ -86,6 +91,7 @@ impl RuffleGui {
         event_loop: EventLoopProxy<RuffleEvent>,
         default_path: Option<Url>,
         default_player_options: PlayerOptions,
+        preferences: GlobalPreferences,
     ) -> Self {
         // TODO: language negotiation + https://github.com/1Password/sys-locale/issues/14
         // This should also be somewhere else so it can be supplied through UiBackend too
@@ -109,11 +115,13 @@ impl RuffleGui {
                 event_loop.clone(),
                 locale.clone(),
             ),
+            preferences_dialog: None,
 
             event_loop,
             locale,
             default_player_options,
             currently_opened: None,
+            preferences,
         }
     }
 
@@ -131,6 +139,7 @@ impl RuffleGui {
 
         self.about_window(egui_ctx);
         self.open_dialog(egui_ctx);
+        self.preferences_dialog(egui_ctx);
 
         if let Some(player) = player {
             let was_suspended = player.debug_ui().should_suspend_player();
@@ -258,6 +267,14 @@ impl RuffleGui {
                         self.close_movie(ui);
                     }
 
+                    ui.separator();
+                    if Button::new(text(&self.locale, "file-menu-preferences"))
+                        .ui(ui)
+                        .clicked()
+                    {
+                        ui.close_menu();
+                        self.open_preferences();
+                    }
                     ui.separator();
 
                     shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::Q);
@@ -474,6 +491,13 @@ impl RuffleGui {
         self.is_open_dialog_visible = true;
     }
 
+    fn open_preferences(&mut self) {
+        self.preferences_dialog = Some(PreferencesDialog::new(
+            self.preferences.clone(),
+            self.locale.clone(),
+        ));
+    }
+
     fn close_movie(&mut self, ui: &mut egui::Ui) {
         let _ = self.event_loop.send_event(RuffleEvent::CloseFile);
         self.currently_opened = None;
@@ -494,6 +518,17 @@ impl RuffleGui {
         if self.is_open_dialog_visible {
             let keep_open = self.open_dialog.show(egui_ctx);
             self.is_open_dialog_visible = keep_open;
+        }
+    }
+
+    fn preferences_dialog(&mut self, egui_ctx: &egui::Context) {
+        let keep_open = if let Some(dialog) = &mut self.preferences_dialog {
+            dialog.show(egui_ctx)
+        } else {
+            true
+        };
+        if !keep_open {
+            self.preferences_dialog = None;
         }
     }
 
