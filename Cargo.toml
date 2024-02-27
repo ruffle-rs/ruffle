@@ -103,4 +103,5 @@ inherits = "release"
 opt-level = 2
 debug-assertions = true
 overflow-checks = true
+# This is also set with higher authority in `test_rust.yml`.
 incremental = true
