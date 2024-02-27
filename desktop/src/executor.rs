@@ -2,10 +2,10 @@
 
 use crate::custom_event::RuffleEvent;
 use crate::task::Task;
+use async_channel::{unbounded, Receiver, Sender};
 use generational_arena::{Arena, Index};
 use ruffle_core::backend::navigator::OwnedFuture;
 use ruffle_core::loader::Error;
-use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex, Weak};
 use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
 use winit::event_loop::EventLoopProxy;
@@ -151,7 +151,7 @@ impl WinitAsyncExecutor {
     pub fn new(
         event_loop: EventLoopProxy<RuffleEvent>,
     ) -> (Arc<Mutex<Self>>, Sender<OwnedFuture<(), Error>>) {
-        let (send, recv) = channel();
+        let (send, recv) = unbounded();
         let new_self = Arc::new_cyclic(|self_ref| {
             Mutex::new(Self {
                 task_queue: Arena::new(),

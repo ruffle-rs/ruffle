@@ -1,6 +1,6 @@
 use crate::backends::TestLogBackend;
 use crate::util::read_bytes;
-use async_channel::Receiver;
+use async_channel::{Receiver, Sender};
 use percent_encoding::percent_decode_str;
 use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::{
@@ -12,7 +12,6 @@ use ruffle_core::loader::Error;
 use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
 use ruffle_socket_format::SocketEvent;
 use std::borrow::Cow;
-use std::sync::mpsc::Sender;
 use std::time::Duration;
 use url::{ParseError, Url};
 use vfs::VfsPath;
@@ -282,22 +281,22 @@ impl NavigatorBackend for TestNavigatorBackend {
         if let Some(events) = self.socket_events.clone() {
             self.spawn_future(Box::pin(async move {
                 sender
-                                .send(SocketAction::Connect(handle, ConnectionState::Connected))
-                                .expect("working channel send");
+                    .try_send(SocketAction::Connect(handle, ConnectionState::Connected))
+                    .expect("working channel send");
 
                 for event in events {
                     match event {
                         SocketEvent::Disconnect => {
                             sender
-                                .send(SocketAction::Close(handle))
+                                .try_send(SocketAction::Close(handle))
                                 .expect("working channel send");
-                        },
+                        }
                         SocketEvent::WaitForDisconnect => {
                             match receiver.recv().await {
                                 Err(_) => break,
                                 Ok(_) => panic!("Expected client to disconnect, data was sent instead"),
                             }
-                        },
+                        }
                         SocketEvent::Receive { expected } => {
                             match receiver.recv().await {
                                 Ok(val) => {
@@ -307,9 +306,9 @@ impl NavigatorBackend for TestNavigatorBackend {
                                 }
                                 Err(_) => panic!("Expected client to send data, but connection was closed instead"),
                             }
-                        },
+                        }
                         SocketEvent::Send { payload } => {
-                            sender.send(SocketAction::Data(handle, payload)).expect("working channel send");
+                            sender.try_send(SocketAction::Data(handle, payload)).expect("working channel send");
                         }
                     }
                 }

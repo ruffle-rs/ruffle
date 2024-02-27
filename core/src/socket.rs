@@ -11,12 +11,11 @@ use crate::{
     context::UpdateContext,
     string::AvmString,
 };
-use async_channel::{unbounded, Sender as AsyncSender};
+use async_channel::{unbounded, Receiver, Sender as AsyncSender, Sender};
 use gc_arena::Collect;
 use generational_arena::{Arena, Index};
 use std::{
     cell::{Cell, RefCell},
-    sync::mpsc::{channel, Receiver, Sender},
     time::Duration,
 };
 
@@ -79,7 +78,7 @@ unsafe impl<'gc> Collect for Sockets<'gc> {
 
 impl<'gc> Sockets<'gc> {
     pub fn empty() -> Self {
-        let (sender, receiver) = channel();
+        let (sender, receiver) = unbounded();
 
         Self {
             sockets: Arena::new(),
