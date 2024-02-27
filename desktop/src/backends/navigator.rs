@@ -621,3 +621,254 @@ impl<F: FutureSpawner> NavigatorBackend for ExternalNavigatorBackend<F> {
         self.spawn_future(future);
     }
 }
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod tests {
+    use async_net::TcpListener;
+    use ruffle_core::socket::SocketAction::{Close, Connect, Data};
+    use std::net::SocketAddr;
+    use tokio::task;
+
+    use super::*;
+
+    const TIMEOUT_ZERO: Duration = Duration::ZERO;
+    // The timeout has to be large enough to allow "instantaneous" actions
+    // and local IO to execute, but small enough to fail tests quickly.
+    const TIMEOUT: Duration = Duration::from_secs(1);
+
+    struct TestFutureSpawner;
+
+    impl FutureSpawner for TestFutureSpawner {
+        fn spawn(&self, future: OwnedFuture<(), Error>) {
+            task::spawn_local(future);
+        }
+    }
+
+    macro_rules! async_timeout {
+        () => {
+            async {
+                Timer::after(TIMEOUT).await;
+                panic!("An action which should complete timed out")
+            }
+        };
+    }
+
+    macro_rules! async_test {
+        (
+            async fn $test_name:ident() $content:block
+        ) => {
+            #[tokio::test(flavor = "current_thread")]
+            async fn $test_name() {
+                task::LocalSet::new().run_until(async move $content).await;
+            }
+        }
+    }
+
+    macro_rules! dummy_handle {
+        () => {
+            SocketHandle::from_raw_parts(4, 2)
+        };
+    }
+
+    macro_rules! assert_next_socket_actions {
+        ($receiver:expr;) => {
+            // no more actions
+        };
+        ($receiver:expr; $action:expr, $($more:expr,)*) => {
+            assert_eq!($receiver.recv().or(async_timeout!()).await.expect("receive action"), $action);
+            assert_next_socket_actions!($receiver; $($more,)*);
+        };
+    }
+
+    fn new_test_backend(socket_allow: bool) -> ExternalNavigatorBackend<TestFutureSpawner> {
+        ExternalNavigatorBackend::new(
+            Url::parse("https://example.com/path/").unwrap(),
+            TestFutureSpawner,
+            None,
+            false,
+            OpenURLMode::Allow,
+            Default::default(),
+            if socket_allow {
+                SocketMode::Allow
+            } else {
+                SocketMode::Deny
+            },
+        )
+    }
+
+    async fn start_test_server() -> (task::JoinHandle<TcpStream>, SocketAddr) {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+
+        let accept_task = task::spawn_local(async move {
+            let (socket, _) = listener.accept().or(async_timeout!()).await.unwrap();
+            socket
+        });
+        (accept_task, addr)
+    }
+
+    fn connect_test_socket(
+        addr: SocketAddr,
+        timeout: Duration,
+        socket_allow: bool,
+    ) -> (Sender<Vec<u8>>, Receiver<SocketAction>) {
+        let mut backend = new_test_backend(socket_allow);
+
+        let (write, receiver) = async_channel::unbounded();
+        let (sender, read) = async_channel::unbounded();
+
+        backend.connect_socket(
+            addr.ip().to_string(),
+            addr.port(),
+            timeout,
+            dummy_handle!(),
+            receiver,
+            sender,
+        );
+
+        (write, read)
+    }
+
+    async fn write_server(server_socket: &mut TcpStream, data: &str) {
+        server_socket
+            .write(data.as_bytes())
+            .or(async_timeout!())
+            .await
+            .expect("server write");
+    }
+
+    async fn read_server(server_socket: &mut TcpStream) -> String {
+        let mut buffer = [0; 4096];
+
+        let read = match server_socket.read(&mut buffer).await {
+            Err(e) => {
+                panic!("server read error: {}", e);
+            }
+            Ok(read) => read,
+        };
+
+        let buffer = buffer.into_iter().take(read).collect::<Vec<_>>();
+        String::from_utf8(buffer).unwrap()
+    }
+
+    async fn write_client(client_write: &Sender<Vec<u8>>, data: &str) {
+        client_write
+            .send(data.as_bytes().to_vec())
+            .or(async_timeout!())
+            .await
+            .expect("client write");
+    }
+
+    #[macro_rules_attribute::apply(async_test)]
+    async fn test_socket_timeout() {
+        let (_accept_task, addr) = start_test_server().await;
+        let (_client_write, client_read) = connect_test_socket(addr, TIMEOUT_ZERO, true);
+        assert_next_socket_actions!(
+            client_read;
+            Connect(dummy_handle!(), ConnectionState::TimedOut),
+        );
+    }
+
+    #[macro_rules_attribute::apply(async_test)]
+    async fn test_socket_connect() {
+        let (accept_task, addr) = start_test_server().await;
+        let (_client_write, client_read) = connect_test_socket(addr, TIMEOUT, true);
+        let _server_socket = accept_task.await.unwrap();
+        assert_next_socket_actions!(
+            client_read;
+            Connect(dummy_handle!(), ConnectionState::Connected),
+        );
+    }
+
+    #[macro_rules_attribute::apply(async_test)]
+    async fn test_socket_deny() {
+        let (_accept_task, addr) = start_test_server().await;
+        let (_client_write, client_read) = connect_test_socket(addr, TIMEOUT, false);
+
+        assert_next_socket_actions!(
+            client_read;
+            Connect(dummy_handle!(), ConnectionState::Failed),
+        );
+    }
+
+    #[macro_rules_attribute::apply(async_test)]
+    async fn test_socket_fail() {
+        let addr = SocketAddr::from_str("[100::]:42").expect("black hole address");
+        let (_client_write, client_read) = connect_test_socket(addr, TIMEOUT, true);
+
+        assert_next_socket_actions!(
+            client_read;
+            Connect(dummy_handle!(), ConnectionState::Failed),
+        );
+    }
+
+    #[macro_rules_attribute::apply(async_test)]
+    async fn test_socket_server_close() {
+        let (accept_task, addr) = start_test_server().await;
+        let (_client_write, client_read) = connect_test_socket(addr, TIMEOUT, true);
+
+        let server_socket = accept_task.await.unwrap();
+        assert_next_socket_actions!(
+            client_read;
+            Connect(dummy_handle!(), ConnectionState::Connected),
+        );
+
+        drop(server_socket);
+
+        assert_next_socket_actions!(
+            client_read;
+            Close(dummy_handle!()),
+        );
+    }
+
+    #[macro_rules_attribute::apply(async_test)]
+    async fn test_socket_client_close() {
+        let (accept_task, addr) = start_test_server().await;
+        let (client_write, client_read) = connect_test_socket(addr, TIMEOUT, true);
+
+        let mut server_socket = accept_task.await.unwrap();
+        assert_next_socket_actions!(
+            client_read;
+            Connect(dummy_handle!(), ConnectionState::Connected),
+        );
+
+        drop(client_write);
+
+        assert_eq!(read_server(&mut server_socket).await, "");
+    }
+
+    #[macro_rules_attribute::apply(async_test)]
+    async fn test_socket_basic_communication() {
+        let (accept_task, addr) = start_test_server().await;
+        let (client_write, client_read) = connect_test_socket(addr, TIMEOUT, true);
+
+        let mut server_socket = accept_task.await.unwrap();
+        assert_next_socket_actions!(
+            client_read;
+            Connect(dummy_handle!(), ConnectionState::Connected),
+        );
+
+        write_server(&mut server_socket, "Hello ").await;
+        write_server(&mut server_socket, "World!").await;
+
+        assert_next_socket_actions!(
+            client_read;
+            Data(dummy_handle!(), "Hello World!".as_bytes().to_vec()),
+        );
+
+        write_client(&client_write, "Hello from").await;
+        write_client(&client_write, " client").await;
+
+        assert_eq!(read_server(&mut server_socket).await, "Hello from client");
+
+        write_server(&mut server_socket, "from server 2").await;
+        write_client(&client_write, "from client 2").await;
+
+        assert_next_socket_actions!(
+            client_read;
+            Data(dummy_handle!(), "from server 2".as_bytes().to_vec()),
+        );
+        assert_eq!(read_server(&mut server_socket).await, "from client 2");
+    }
+}
