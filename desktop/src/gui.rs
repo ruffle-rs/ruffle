@@ -23,9 +23,10 @@ use rfd::FileDialog;
 use ruffle_core::backend::ui::US_ENGLISH;
 use ruffle_core::debug_ui::Message as DebugMessage;
 use ruffle_core::Player;
+use ruffle_render_wgpu::descriptors::Descriptors;
 use std::collections::HashMap;
 use std::fs;
-use std::sync::MutexGuard;
+use std::sync::{Arc, MutexGuard};
 use sys_locale::get_locale;
 use unic_langid::LanguageIdentifier;
 use winit::event_loop::EventLoopProxy;
@@ -84,6 +85,7 @@ pub struct RuffleGui {
     currently_opened: Option<(Url, PlayerOptions)>,
     was_suspended_before_debug: bool,
     preferences: GlobalPreferences,
+    descriptors: Arc<Descriptors>,
 }
 
 impl RuffleGui {
@@ -92,6 +94,7 @@ impl RuffleGui {
         default_path: Option<Url>,
         default_player_options: PlayerOptions,
         preferences: GlobalPreferences,
+        descriptors: Arc<Descriptors>,
     ) -> Self {
         // TODO: language negotiation + https://github.com/1Password/sys-locale/issues/14
         // This should also be somewhere else so it can be supplied through UiBackend too
@@ -122,6 +125,7 @@ impl RuffleGui {
             default_player_options,
             currently_opened: None,
             preferences,
+            descriptors,
         }
     }
 
@@ -493,6 +497,7 @@ impl RuffleGui {
 
     fn open_preferences(&mut self) {
         self.preferences_dialog = Some(PreferencesDialog::new(
+            &self.descriptors,
             self.preferences.clone(),
             self.locale.clone(),
         ));

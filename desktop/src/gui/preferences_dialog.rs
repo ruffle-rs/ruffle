@@ -2,10 +2,12 @@ use crate::gui::text;
 use crate::preferences::GlobalPreferences;
 use egui::{Align2, Button, ComboBox, Grid, Ui, Widget, Window};
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
+use ruffle_render_wgpu::descriptors::Descriptors;
 use std::borrow::Cow;
 use unic_langid::LanguageIdentifier;
 
 pub struct PreferencesDialog {
+    available_backends: wgpu::Backends,
     preferences: GlobalPreferences,
     locale: LanguageIdentifier,
 
@@ -17,8 +19,20 @@ pub struct PreferencesDialog {
 }
 
 impl PreferencesDialog {
-    pub fn new(preferences: GlobalPreferences, locale: LanguageIdentifier) -> Self {
+    pub fn new(
+        descriptors: &Descriptors,
+        preferences: GlobalPreferences,
+        locale: LanguageIdentifier,
+    ) -> Self {
+        let mut available_backends = wgpu::Backends::empty();
+
+        available_backends |= backend_availability(descriptors, wgpu::Backends::VULKAN);
+        available_backends |= backend_availability(descriptors, wgpu::Backends::GL);
+        available_backends |= backend_availability(descriptors, wgpu::Backends::METAL);
+        available_backends |= backend_availability(descriptors, wgpu::Backends::DX12);
+
         Self {
+            available_backends,
             graphics_backend: preferences.graphics_backends(),
             graphics_backend_readonly: preferences.cli.graphics.is_some(),
 
@@ -89,26 +103,34 @@ impl PreferencesDialog {
                         GraphicsBackend::Default,
                         text(&self.locale, "graphics-backend-default"),
                     );
-                    ui.selectable_value(
-                        &mut self.graphics_backend,
-                        GraphicsBackend::Vulkan,
-                        text(&self.locale, "graphics-backend-vulkan"),
-                    );
-                    ui.selectable_value(
-                        &mut self.graphics_backend,
-                        GraphicsBackend::Metal,
-                        text(&self.locale, "graphics-backend-metal"),
-                    );
-                    ui.selectable_value(
-                        &mut self.graphics_backend,
-                        GraphicsBackend::Dx12,
-                        text(&self.locale, "graphics-backend-dx12"),
-                    );
-                    ui.selectable_value(
-                        &mut self.graphics_backend,
-                        GraphicsBackend::Gl,
-                        text(&self.locale, "graphics-backend-gl"),
-                    );
+                    if self.available_backends.contains(wgpu::Backends::VULKAN) {
+                        ui.selectable_value(
+                            &mut self.graphics_backend,
+                            GraphicsBackend::Vulkan,
+                            text(&self.locale, "graphics-backend-vulkan"),
+                        );
+                    }
+                    if self.available_backends.contains(wgpu::Backends::METAL) {
+                        ui.selectable_value(
+                            &mut self.graphics_backend,
+                            GraphicsBackend::Metal,
+                            text(&self.locale, "graphics-backend-metal"),
+                        );
+                    }
+                    if self.available_backends.contains(wgpu::Backends::DX12) {
+                        ui.selectable_value(
+                            &mut self.graphics_backend,
+                            GraphicsBackend::Dx12,
+                            text(&self.locale, "graphics-backend-dx12"),
+                        );
+                    }
+                    if self.available_backends.contains(wgpu::Backends::GL) {
+                        ui.selectable_value(
+                            &mut self.graphics_backend,
+                            GraphicsBackend::Gl,
+                            text(&self.locale, "graphics-backend-gl"),
+                        );
+                    }
                 });
         }
         ui.end_row();
@@ -165,5 +187,17 @@ fn graphics_power_name(locale: &LanguageIdentifier, power_preference: PowerPrefe
     match power_preference {
         PowerPreference::Low => text(locale, "graphics-power-low"),
         PowerPreference::High => text(locale, "graphics-power-high"),
+    }
+}
+
+fn backend_availability(descriptors: &Descriptors, backend: wgpu::Backends) -> wgpu::Backends {
+    if descriptors
+        .wgpu_instance
+        .enumerate_adapters(backend)
+        .is_empty()
+    {
+        wgpu::Backends::empty()
+    } else {
+        backend
     }
 }
