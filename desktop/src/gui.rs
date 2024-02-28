@@ -9,12 +9,12 @@ pub use movie::MovieView;
 use std::borrow::Cow;
 use url::Url;
 
-use crate::config::GlobalPreferences;
 use crate::custom_event::RuffleEvent;
 use crate::gui::context_menu::ContextMenu;
 use crate::gui::open_dialog::OpenDialog;
 use crate::gui::preferences_dialog::PreferencesDialog;
 use crate::player::PlayerOptions;
+use crate::preferences::GlobalPreferences;
 use chrono::DateTime;
 use egui::*;
 use fluent_templates::fluent_bundle::FluentValue;
