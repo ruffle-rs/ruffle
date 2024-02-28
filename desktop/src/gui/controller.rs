@@ -1,9 +1,9 @@
 use crate::backends::DesktopUiBackend;
-use crate::config::GlobalPreferences;
 use crate::custom_event::RuffleEvent;
 use crate::gui::movie::{MovieView, MovieViewRenderer};
 use crate::gui::{RuffleGui, MENU_HEIGHT};
 use crate::player::{PlayerController, PlayerOptions};
+use crate::preferences::GlobalPreferences;
 use anyhow::anyhow;
 use egui::{Context, ViewportId};
 use fontdb::{Database, Family, Query, Source};

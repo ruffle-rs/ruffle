@@ -1,8 +1,8 @@
 use crate::cli::Opt;
-use crate::config::GlobalPreferences;
 use crate::custom_event::RuffleEvent;
 use crate::gui::{GuiController, MENU_HEIGHT};
 use crate::player::{PlayerController, PlayerOptions};
+use crate::preferences::GlobalPreferences;
 use crate::util::{
     get_screen_size, gilrs_button_to_gamepad_button, parse_url, pick_file, plot_stats_in_tracy,
     winit_to_ruffle_key_code, winit_to_ruffle_text_control,

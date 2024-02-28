@@ -1,5 +1,5 @@
-use crate::config::GlobalPreferences;
 use crate::gui::text;
+use crate::preferences::GlobalPreferences;
 use egui::{Align2, Button, ComboBox, Grid, Ui, Widget, Window};
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::borrow::Cow;

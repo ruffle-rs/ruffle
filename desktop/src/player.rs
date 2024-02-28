@@ -2,10 +2,10 @@ use crate::backends::{
     CpalAudioBackend, DesktopExternalInterfaceProvider, DesktopFSCommandProvider, DesktopUiBackend,
     DiskStorageBackend, ExternalNavigatorBackend,
 };
-use crate::config::GlobalPreferences;
 use crate::custom_event::RuffleEvent;
 use crate::executor::WinitAsyncExecutor;
 use crate::gui::MovieView;
+use crate::preferences::GlobalPreferences;
 use crate::{CALLSTACK, RENDER_INFO, SWF_INFO};
 use anyhow::anyhow;
 use ruffle_core::backend::navigator::{OpenURLMode, SocketMode};
