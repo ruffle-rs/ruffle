@@ -129,11 +129,13 @@ impl GuiController {
         ));
         let egui_renderer = egui_wgpu::Renderer::new(&descriptors.device, surface_format, None, 1);
         let event_loop = event_loop.create_proxy();
+        let descriptors = Arc::new(descriptors);
         let gui = RuffleGui::new(
             event_loop,
             initial_movie_url.clone(),
             PlayerOptions::from(&preferences),
             preferences.clone(),
+            descriptors.clone(),
         );
         let system_fonts =
             load_system_fonts(font_database, gui.locale.to_owned()).unwrap_or_default();
@@ -142,7 +144,7 @@ impl GuiController {
         egui_extras::install_image_loaders(egui_winit.egui_ctx());
 
         Ok(Self {
-            descriptors: Arc::new(descriptors),
+            descriptors,
             egui_winit,
             egui_renderer,
             gui,
