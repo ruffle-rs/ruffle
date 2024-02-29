@@ -1,5 +1,6 @@
 use crate::avm2::error::{
-    make_error_1025, make_error_1032, make_error_1054, make_error_1107, verify_error,
+    make_error_1021, make_error_1025, make_error_1032, make_error_1054, make_error_1107,
+    verify_error,
 };
 use crate::avm2::method::BytecodeMethod;
 use crate::avm2::op::Op;
@@ -126,19 +127,11 @@ pub fn verify_method<'gc>(
                 let hash_map_info = byte_info.get(&target_position);
 
                 if matches!(hash_map_info, Some(ByteInfo::OpContinue)) {
-                    return Err(Error::AvmError(verify_error(
-                        activation,
-                        "Error #1021: At least one branch target was not on a valid instruction in the method.",
-                        1021,
-                    )?));
+                    return Err(make_error_1021(activation));
                 }
 
                 if target_position < 0 || target_position as usize >= body.code.len() {
-                    return Err(Error::AvmError(verify_error(
-                        activation,
-                        "Error #1021: At least one branch target was not on a valid instruction in the method.",
-                        1021,
-                    )?));
+                    return Err(make_error_1021(activation));
                 }
 
                 Ok(())
@@ -467,11 +460,7 @@ pub fn verify_method<'gc>(
                 let target = offset + i + 1;
                 let op = &new_code[target as usize];
                 if !matches!(op, AbcOp::Label) {
-                    return Err(Error::AvmError(verify_error(
-                        activation,
-                        "Error #1021: At least one branch target was not on a valid instruction in the method.",
-                        1021,
-                    )?));
+                    return Err(make_error_1021(activation));
                 }
             }
 
