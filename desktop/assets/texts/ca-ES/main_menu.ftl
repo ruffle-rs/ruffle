@@ -28,4 +28,5 @@ debug-menu = Eines de depuració
 debug-menu-open-stage = Mostra informació de l'escena
 debug-menu-open-movie = Mostra la pel·lícula
 debug-menu-open-movie-list = Mostra pel·lícules conegudes
+debug-menu-open-domain-list = Mostra els dominis
 debug-menu-search-display-objects = Cerca objectes mostrats...
