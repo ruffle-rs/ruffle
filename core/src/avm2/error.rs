@@ -206,6 +206,20 @@ pub fn make_error_1010<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1021<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = verify_error(
+        activation,
+        "Error #1021: At least one branch target was not on a valid instruction in the method.",
+        1021,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1025<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) -> Error<'gc> {
     let err = verify_error(
         activation,
