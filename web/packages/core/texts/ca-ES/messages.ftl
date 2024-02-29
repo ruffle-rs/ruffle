@@ -29,6 +29,9 @@ error-wasm-mime-type =
     Ruffle ha topat amb un problema greu mentre provava d'inicialitzar-se.
     Aquest servidor no està servint els fitxers ".wasm" amb el tipus MIME adequat.
     Si sou l'administrador del servidor, us preguem que consulteu la wiki de Ruffle per obtenir ajuda.
+error-invalid-swf =
+    Ruffle no ha pogut llegir el fitxer sol·licitat.
+    La raó més probable és que no sigui un fitxer SWF vàlid.
 error-swf-fetch =
     Ruffle no ha pogut carregar el fitxer SWF Flash.
     La raó més probable és que el fitxer ja no existeixi, així que no hi ha res que el Ruffle pugui carregar.
