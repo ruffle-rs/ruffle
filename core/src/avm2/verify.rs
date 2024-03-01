@@ -27,10 +27,12 @@ pub struct Exception {
     pub type_name: Index<AbcMultiname>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 enum ByteInfo {
     OpStart(AbcOp),
     OpContinue,
+
+    NotYetReached,
 }
 
 pub fn verify_method<'gc>(
@@ -63,8 +65,8 @@ pub fn verify_method<'gc>(
 
     let mut worklist = vec![0];
 
-    let mut byte_info = HashMap::new();
-    let mut verified_blocks = Vec::new();
+    let mut byte_info = vec![ByteInfo::NotYetReached; body.code.len()];
+    let mut seen_targets = HashSet::new();
 
     let mut reader = Reader::new(&body.code);
     while let Some(i) = worklist.pop() {
@@ -97,13 +99,11 @@ pub fn verify_method<'gc>(
                 // add the exception's target to the worklist.
                 if exception.from_offset as i32 <= previous_position
                     && previous_position < exception.to_offset as i32
-                    && op_can_throw_error(op.clone())
-                    && !verified_blocks
-                        .iter()
-                        .any(|o| *o == exception.target_offset as i32)
+                    && op_can_throw_error(&op)
+                    && !seen_targets.contains(&(exception.target_offset as i32))
                 {
                     worklist.push(exception.target_offset);
-                    verified_blocks.push(exception.target_offset as i32);
+                    seen_targets.insert(exception.target_offset as i32);
                 }
             }
 
@@ -112,26 +112,39 @@ pub fn verify_method<'gc>(
             let bytes_read = new_position - previous_position;
             assert!(bytes_read > 0);
 
-            byte_info.insert(previous_position, ByteInfo::OpStart(op.clone()));
+            byte_info[previous_position as usize] = ByteInfo::OpStart(op.clone());
             for j in 1..bytes_read {
-                byte_info.insert(previous_position + j, ByteInfo::OpContinue);
+                byte_info[(previous_position + j) as usize] = ByteInfo::OpContinue;
             }
 
-            let mut check_target = |offs: i32, is_jump: bool| {
+            let mut check_target = |seen_targets: &HashSet<i32>, offs: i32, is_jump: bool| {
                 let target_position = if is_jump {
                     offs + new_position
                 } else {
                     offs + previous_position
                 };
 
-                let hash_map_info = byte_info.get(&target_position);
+                let lookedup_target_info = byte_info.get(target_position as usize);
 
-                if matches!(hash_map_info, Some(ByteInfo::OpContinue)) {
+                if matches!(lookedup_target_info, Some(ByteInfo::OpContinue)) {
                     return Err(make_error_1021(activation));
                 }
 
                 if target_position < 0 || target_position as usize >= body.code.len() {
                     return Err(make_error_1021(activation));
+                }
+
+                // Ensure backwards jumps to not-yet-jumped-to code target a `Label` op
+                if !seen_targets.contains(&target_position) && offs < 0 {
+                    reader.seek_absolute(&body.code, target_position as usize);
+                    let read_op = reader.read_op();
+
+                    // Seek back to the original position
+                    reader.seek_absolute(&body.code, new_position as usize);
+
+                    if !matches!(read_op, Ok(AbcOp::Label)) {
+                        return Err(make_error_1021(activation));
+                    }
                 }
 
                 Ok(())
@@ -154,11 +167,12 @@ pub fn verify_method<'gc>(
                 | AbcOp::IfStrictNe { offset }
                 | AbcOp::IfTrue { offset }
                 | AbcOp::Jump { offset } => {
-                    check_target(offset, true)?;
+                    check_target(&seen_targets, offset, true)?;
+
                     let offset = offset + new_position;
-                    if !verified_blocks.iter().any(|o| *o == offset) {
+                    if !seen_targets.contains(&offset) {
                         worklist.push(offset as u32);
-                        verified_blocks.push(offset);
+                        seen_targets.insert(offset);
                     }
 
                     if matches!(op, AbcOp::Jump { .. }) {
@@ -172,20 +186,21 @@ pub fn verify_method<'gc>(
                 }
 
                 AbcOp::LookupSwitch(ref lookup_switch) => {
-                    check_target(lookup_switch.default_offset, false)?;
+                    check_target(&seen_targets, lookup_switch.default_offset, false)?;
                     let default_offset = lookup_switch.default_offset + previous_position;
 
-                    if !verified_blocks.iter().any(|o| *o == default_offset) {
-                        verified_blocks.push(default_offset);
+                    if !seen_targets.contains(&default_offset) {
+                        seen_targets.insert(default_offset);
 
                         worklist.push(default_offset as u32);
                     }
 
                     for case_offset in lookup_switch.case_offsets.iter() {
-                        check_target(*case_offset, false)?;
+                        check_target(&seen_targets, *case_offset, false)?;
+
                         let case_offset = case_offset + previous_position;
-                        if !verified_blocks.iter().any(|o| *o == case_offset) {
-                            verified_blocks.push(case_offset);
+                        if !seen_targets.contains(&case_offset) {
+                            seen_targets.insert(case_offset);
 
                             worklist.push(case_offset as u32);
                         }
@@ -312,8 +327,8 @@ pub fn verify_method<'gc>(
     let mut idx_to_byte_offset = Vec::new();
 
     let mut new_code = Vec::new();
-    for i in 0..body.code.len() {
-        if let Some(ByteInfo::OpStart(c)) = byte_info.get(&(i as i32)) {
+    for (i, info) in byte_info.iter().enumerate() {
+        if let ByteInfo::OpStart(c) = info {
             byte_offset_to_idx.insert(i, new_code.len() as i32);
             new_code.push(c.clone());
             idx_to_byte_offset.push(i);
@@ -373,7 +388,13 @@ pub fn verify_method<'gc>(
             .get(&(exception.target_offset as usize))
             .copied()
             .unwrap_or(0);
-        // If this `unwrap_or` is hit the verifier knows that the catch is unreachable
+
+        // NOTE: That `unwrap_or` is definitely reachable, e.g. in a case where
+        // the target offset is unreachable (see the test "verification"), but it
+        // might also be reachable in cases where the target offset will actually
+        // be jumped to. Any SWF that does this is extremely cursed and should
+        // VerifyError in FP (though I haven't been able to confirm that it does),
+        // so we probably don't need to worry about that case.
 
         if exception.target_offset < exception.to_offset {
             return Err(make_error_1054(activation));
@@ -392,13 +413,13 @@ pub fn verify_method<'gc>(
         });
     }
 
-    let adjust_jump_to_idx = |i, offset, is_jump| {
+    let mut adjust_jump_to_idx = |i, offset, is_jump| -> Result<(i32, i32), Error<'gc>> {
         const JUMP_INSTRUCTION_LENGTH: usize = 4;
 
         let mut byte_offset = idx_to_byte_offset
             .get(i as usize)
             .copied()
-            .expect("Reachable jumps should be valid");
+            .ok_or(make_error_1021(activation))?; // This is still reachable with some weird bytecode, see the `verify_jump_to_middle_of_op` test
 
         if is_jump {
             byte_offset += JUMP_INSTRUCTION_LENGTH;
@@ -408,9 +429,9 @@ pub fn verify_method<'gc>(
         let new_idx = byte_offset_to_idx
             .get(&(new_byte_offset as usize))
             .copied()
-            .expect("Reachable jumps should be valid");
+            .ok_or(make_error_1021(activation))?; // See above comment
 
-        (new_idx, new_idx - i - 1)
+        Ok((new_idx, new_idx - i - 1))
     };
 
     // Adjust jump offsets from byte-based to idx-based
@@ -433,65 +454,19 @@ pub fn verify_method<'gc>(
             | AbcOp::IfStrictNe { offset }
             | AbcOp::IfTrue { offset }
             | AbcOp::Jump { offset } => {
-                let adjusted_result = adjust_jump_to_idx(i, *offset, true);
+                let adjusted_result = adjust_jump_to_idx(i, *offset, true)?;
                 *offset = adjusted_result.1;
                 potential_jump_targets.insert(adjusted_result.0);
             }
             AbcOp::LookupSwitch(ref mut lookup_switch) => {
-                let adjusted_default = adjust_jump_to_idx(i, lookup_switch.default_offset, false);
+                let adjusted_default = adjust_jump_to_idx(i, lookup_switch.default_offset, false)?;
                 lookup_switch.default_offset = adjusted_default.1;
                 potential_jump_targets.insert(adjusted_default.0);
 
                 for case in lookup_switch.case_offsets.iter_mut() {
-                    let adjusted_case = adjust_jump_to_idx(i, *case, false);
+                    let adjusted_case = adjust_jump_to_idx(i, *case, false)?;
                     *case = adjusted_case.1;
                     potential_jump_targets.insert(adjusted_case.0);
-                }
-            }
-            _ => {}
-        }
-    }
-
-    // Ensure every backwards jump targets a `label` op
-    for (i, op) in new_code.iter().enumerate() {
-        let i = i as i32;
-        let mut check_target_late = |offset: i32| {
-            if offset < 0 {
-                let target = offset + i + 1;
-                let op = &new_code[target as usize];
-                if !matches!(op, AbcOp::Label) {
-                    return Err(make_error_1021(activation));
-                }
-            }
-
-            Ok(())
-        };
-
-        match op {
-            AbcOp::IfEq { offset }
-            | AbcOp::IfFalse { offset }
-            | AbcOp::IfGe { offset }
-            | AbcOp::IfGt { offset }
-            | AbcOp::IfLe { offset }
-            | AbcOp::IfLt { offset }
-            | AbcOp::IfNe { offset }
-            | AbcOp::IfNge { offset }
-            | AbcOp::IfNgt { offset }
-            | AbcOp::IfNle { offset }
-            | AbcOp::IfNlt { offset }
-            | AbcOp::IfStrictEq { offset }
-            | AbcOp::IfStrictNe { offset }
-            | AbcOp::IfTrue { offset }
-            | AbcOp::Jump { offset } => {
-                check_target_late(*offset)?;
-            }
-            AbcOp::LookupSwitch(ref lookup_switch) => {
-                let default_offset = lookup_switch.default_offset;
-                check_target_late(default_offset)?;
-
-                for case in lookup_switch.case_offsets.iter() {
-                    let case_offset = *case;
-                    check_target_late(case_offset)?;
                 }
             }
             _ => {}
@@ -518,7 +493,8 @@ pub fn verify_method<'gc>(
     })
 }
 
-fn op_can_throw_error(op: AbcOp) -> bool {
+// Taken from avmplus's opcodes.tbl
+fn op_can_throw_error(op: &AbcOp) -> bool {
     !matches!(
         op,
         AbcOp::Bkpt
