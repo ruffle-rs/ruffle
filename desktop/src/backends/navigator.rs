@@ -677,7 +677,7 @@ mod tests {
 
     macro_rules! dummy_handle {
         () => {
-            SocketHandle::from_raw_parts(4, 2)
+            SocketHandle::default()
         };
     }
 

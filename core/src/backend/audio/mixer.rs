@@ -3,7 +3,7 @@ use super::{SoundHandle, SoundInstanceHandle, SoundStreamInfo, SoundTransform};
 use crate::backend::audio::{DecodeError, RegisterError};
 use crate::buffer::Substream;
 use crate::tag_utils::SwfSlice;
-use generational_arena::Arena;
+use slotmap::SlotMap;
 use std::io::Cursor;
 use std::sync::{Arc, Mutex, RwLock};
 use swf::AudioCompression;
@@ -54,10 +54,10 @@ impl CircBuf {
 // all sounds and mix the audio into an output buffer audio stream.
 pub struct AudioMixer {
     /// The currently registered sounds.
-    sounds: Arena<Sound>,
+    sounds: SlotMap<SoundHandle, Sound>,
 
     /// The list of actively playing sound instances.
-    sound_instances: Arc<Mutex<Arena<SoundInstance>>>,
+    sound_instances: Arc<Mutex<SlotMap<SoundInstanceHandle, SoundInstance>>>,
 
     /// The master volume of the audio from [0.0, 1.0].
     volume: Arc<RwLock<f32>>,
@@ -239,8 +239,8 @@ impl AudioMixer {
     /// Creates a new `AudioMixer` with the given number of channels and sample rate.
     pub fn new(num_output_channels: u8, output_sample_rate: u32) -> Self {
         Self {
-            sounds: Arena::new(),
-            sound_instances: Arc::new(Mutex::new(Arena::new())),
+            sounds: SlotMap::new(),
+            sound_instances: Arc::new(Mutex::new(SlotMap::new())),
             volume: Arc::new(RwLock::new(1.0)),
             num_output_channels,
             output_sample_rate,
@@ -428,7 +428,7 @@ impl AudioMixer {
     /// Refill the output buffer by stepping through all active sounds
     /// and mixing in their output.
     fn mix_audio<'a, T>(
-        sound_instances: &mut Arena<SoundInstance>,
+        sound_instances: &mut SlotMap<SoundInstanceHandle, SoundInstance>,
         volume: f32,
         num_channels: u8,
         mut output_buffer: &mut [T],
@@ -724,7 +724,7 @@ impl AudioMixer {
 /// to perform audio mixing on a different thread.
 pub struct AudioMixerProxy {
     /// The list of actively playing sound instances.
-    sound_instances: Arc<Mutex<Arena<SoundInstance>>>,
+    sound_instances: Arc<Mutex<SlotMap<SoundInstanceHandle, SoundInstance>>>,
 
     /// The master volume of the audio from [0.0, 1.0].
     volume: Arc<RwLock<f32>>,

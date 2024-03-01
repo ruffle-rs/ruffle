@@ -3,9 +3,9 @@
 use crate::custom_event::RuffleEvent;
 use crate::task::Task;
 use async_channel::{unbounded, Receiver, Sender};
-use generational_arena::{Arena, Index};
 use ruffle_core::backend::navigator::OwnedFuture;
 use ruffle_core::loader::Error;
+use slotmap::{DefaultKey, SlotMap};
 use std::sync::{Arc, Mutex, Weak};
 use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
 use winit::event_loop::EventLoopProxy;
@@ -17,7 +17,7 @@ use winit::event_loop::EventLoopProxy;
 #[derive(Clone)]
 struct TaskHandle {
     /// The arena handle for a given task.
-    handle: Index,
+    handle: DefaultKey,
 
     /// The executor the task belongs to.
     ///
@@ -28,7 +28,7 @@ struct TaskHandle {
 
 impl TaskHandle {
     /// Construct a handle to a given task.
-    fn for_task(task: Index, executor: Weak<Mutex<WinitAsyncExecutor>>) -> Self {
+    fn for_task(task: DefaultKey, executor: Weak<Mutex<WinitAsyncExecutor>>) -> Self {
         Self {
             handle: task,
             executor,
@@ -128,7 +128,7 @@ impl TaskHandle {
 
 pub struct WinitAsyncExecutor {
     /// List of all spawned tasks.
-    task_queue: Arena<Task>,
+    task_queue: SlotMap<DefaultKey, Task>,
 
     /// Source of tasks sent to us by the `NavigatorBackend`.
     channel: Receiver<OwnedFuture<(), Error>>,
@@ -152,7 +152,7 @@ impl WinitAsyncExecutor {
         let (send, recv) = unbounded();
         let new_self = Arc::new_cyclic(|self_ref| {
             Mutex::new(Self {
-                task_queue: Arena::new(),
+                task_queue: SlotMap::new(),
                 channel: recv,
                 self_ref: self_ref.clone(),
                 event_loop: event_loop.clone(),
@@ -200,7 +200,7 @@ impl WinitAsyncExecutor {
     }
 
     /// Mark a task as ready to proceed.
-    fn wake(&mut self, task: Index) {
+    fn wake(&mut self, task: DefaultKey) {
         if let Some(task) = self.task_queue.get_mut(task) {
             if !task.is_completed() {
                 task.set_ready();

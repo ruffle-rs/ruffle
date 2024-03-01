@@ -17,7 +17,7 @@ bitstream-io = "2.2.0"
 flate2 = "1.0.28"
 fnv = "1.0.7"
 gc-arena = { package = "ruffle_gc_arena", path = "../ruffle_gc_arena" }
-generational-arena = "0.2.9"
+slotmap = { workspace = true }
 indexmap = "2.2.5"
 tracing = { workspace = true }
 ruffle_render = { path = "../render", features = ["tessellator"] }

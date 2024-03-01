@@ -2273,15 +2273,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "generational-arena"
-version = "0.2.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "877e94aff08e743b651baaea359664321055749b398adff8740a7399af7796e7"
-dependencies = [
- "cfg-if",
-]
-
-[[package]]
 name = "generator"
 version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4464,7 +4455,6 @@ dependencies = [
  "flv-rs",
  "fnv",
  "futures",
- "generational-arena",
  "hashbrown 0.14.3",
  "image",
  "indexmap",
@@ -4489,6 +4479,7 @@ dependencies = [
  "scopeguard",
  "serde",
  "serde_json",
+ "slotmap",
  "smallvec",
  "swf",
  "symphonia",
@@ -4525,7 +4516,6 @@ dependencies = [
  "fontdb",
  "futures",
  "futures-lite 2.2.0",
- "generational-arena",
  "gilrs",
  "image",
  "isahc",
@@ -4536,6 +4526,7 @@ dependencies = [
  "ruffle_render",
  "ruffle_render_wgpu",
  "ruffle_video_software",
+ "slotmap",
  "sys-locale",
  "tokio",
  "tracing",
@@ -4717,8 +4708,8 @@ dependencies = [
 name = "ruffle_video"
 version = "0.1.0"
 dependencies = [
- "generational-arena",
  "ruffle_render",
+ "slotmap",
  "swf",
  "thiserror",
 ]
@@ -4728,7 +4719,6 @@ name = "ruffle_video_software"
 version = "0.1.0"
 dependencies = [
  "flate2",
- "generational-arena",
  "h263-rs",
  "h263-rs-deblock",
  "log",
@@ -4737,6 +4727,7 @@ dependencies = [
  "nihav_duck",
  "ruffle_render",
  "ruffle_video",
+ "slotmap",
  "swf",
  "thiserror",
 ]
@@ -4751,7 +4742,6 @@ dependencies = [
  "console_error_panic_hook",
  "futures",
  "futures-util",
- "generational-arena",
  "getrandom",
  "gloo-net",
  "js-sys",
@@ -4765,6 +4755,7 @@ dependencies = [
  "ruffle_web_common",
  "serde",
  "serde-wasm-bindgen",
+ "slotmap",
  "thiserror",
  "tracing",
  "tracing-log",

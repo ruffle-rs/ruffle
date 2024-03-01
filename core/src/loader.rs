@@ -32,8 +32,8 @@ use crate::vminterface::Instantiator;
 use crate::{avm2_stub_method, avm2_stub_method_context};
 use encoding_rs::UTF_8;
 use gc_arena::{Collect, GcCell};
-use generational_arena::{Arena, Index};
 use ruffle_render::utils::{determine_jpeg_tag_format, JpegTagFormat};
+use slotmap::{DefaultKey, SlotMap};
 use std::borrow::Borrow;
 use std::fmt;
 use std::sync::{Arc, Mutex, Weak};
@@ -42,7 +42,7 @@ use swf::read::{extract_swz, read_compression_type};
 use thiserror::Error;
 use url::{form_urlencoded, ParseError, Url};
 
-pub type Handle = Index;
+pub type Handle = DefaultKey;
 
 /// The depth of AVM1 movies that AVM2 loads.
 const LOADER_INSERTED_AVM1_DEPTH: i32 = -0xF000;
@@ -224,7 +224,7 @@ impl From<crate::avm1::Error<'_>> for Error {
 }
 
 /// Holds all in-progress loads for the player.
-pub struct LoadManager<'gc>(Arena<Loader<'gc>>);
+pub struct LoadManager<'gc>(SlotMap<Handle, Loader<'gc>>);
 
 unsafe impl<'gc> Collect for LoadManager<'gc> {
     fn trace(&self, cc: &gc_arena::Collection) {
@@ -237,7 +237,7 @@ unsafe impl<'gc> Collect for LoadManager<'gc> {
 impl<'gc> LoadManager<'gc> {
     /// Construct a new `LoadManager`.
     pub fn new() -> Self {
-        Self(Arena::new())
+        Self(SlotMap::new())
     }
 
     /// Add a new loader to the `LoadManager`.
@@ -355,15 +355,24 @@ impl<'gc> LoadManager<'gc> {
     ///
     /// This also removes all movie loaders that have completed.
     pub fn movie_clip_on_load(&mut self, queue: &mut ActionQueue<'gc>) {
-        let mut invalidated_loaders = vec![];
+        // FIXME: This relies on the iteration order of the slotmap, which
+        // is not defined. The container should be replaced with something
+        // that preserves insertion order, such as `LinkedHashMap` -
+        // unfortunately that doesn't provide automatic key generation.
+        let mut loaders: Vec<_> = self.0.keys().collect();
+        // `SlotMap` doesn't provide reverse iteration, so reversing afterwards.
+        loaders.reverse();
 
-        for (index, loader) in self.0.iter_mut().rev() {
-            if loader.movie_clip_loaded(queue) {
-                invalidated_loaders.push(index);
-            }
-        }
+        // Removing the keys from `loaders` whose movie hasn't loaded yet.
+        loaders.retain(|handle| {
+            self.0
+                .get_mut(*handle)
+                .expect("valid key")
+                .movie_clip_loaded(queue)
+        });
 
-        for index in invalidated_loaders {
+        // Cleaning up the loaders that are done.
+        for index in loaders {
             self.0.remove(index);
         }
     }
@@ -1692,7 +1701,7 @@ impl<'gc> Loader<'gc> {
     }
 
     /// Report a movie loader start event to script code.
-    fn movie_loader_start(handle: Index, uc: &mut UpdateContext<'_, 'gc>) -> Result<(), Error> {
+    fn movie_loader_start(handle: Handle, uc: &mut UpdateContext<'_, 'gc>) -> Result<(), Error> {
         let me = uc.load_manager.get_loader_mut(handle);
         if me.is_none() {
             return Err(Error::Cancelled);
@@ -2080,7 +2089,7 @@ impl<'gc> Loader<'gc> {
     ///
     /// The current and total length are always reported as compressed lengths.
     fn movie_loader_progress(
-        handle: Index,
+        handle: Handle,
         uc: &mut UpdateContext<'_, 'gc>,
         cur_len: usize,
         total_len: usize,
@@ -2146,7 +2155,7 @@ impl<'gc> Loader<'gc> {
 
     /// Report a movie loader completion to script code.
     fn movie_loader_complete(
-        handle: Index,
+        handle: Handle,
         uc: &mut UpdateContext<'_, 'gc>,
         dobj: Option<DisplayObject<'gc>>,
         status: u16,
@@ -2315,7 +2324,7 @@ impl<'gc> Loader<'gc> {
     /// This is an associated function because we cannot borrow both the update
     /// context and one of it's loaders.
     fn movie_loader_error(
-        handle: Index,
+        handle: Handle,
         uc: &mut UpdateContext<'_, 'gc>,
         msg: AvmString<'gc>,
         status: u16,
