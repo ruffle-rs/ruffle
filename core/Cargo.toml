@@ -18,7 +18,7 @@ flate2 = "1.0.28"
 fnv = "1.0.7"
 gc-arena = { package = "ruffle_gc_arena", path = "../ruffle_gc_arena" }
 generational-arena = "0.2.9"
-indexmap = "2.2.3"
+indexmap = "2.2.5"
 tracing = { workspace = true }
 ruffle_render = { path = "../render", features = ["tessellator"] }
 ruffle_video = { path = "../video" }
@@ -42,11 +42,11 @@ rand = { version = "0.8.5", features = ["std", "small_rng"], default-features = 
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser", rev = "4a33521c29a918950df8ae9fe07e527ac65553f5", optional = true }
-regress = "0.8"
+regress = "0.9"
 flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "2f770555ea49c6db49c57c1dd46c7cc686e8dacc" }
 lzma-rs = {version = "0.3.0", optional = true }
 dasp = { version = "0.11.0", features = ["interpolate", "interpolate-linear", "signal"], optional = true }
-symphonia = { version = "0.5.3", default-features = false, features = ["mp3"], optional = true }
+symphonia = { version = "0.5.4", default-features = false, features = ["mp3"], optional = true }
 enumset = "1.1.3"
 bytemuck = "1.14.3"
 clap = { version = "4.5.1", features = ["derive"], optional=true }
