@@ -13,13 +13,13 @@ use crate::{
 };
 use async_channel::{unbounded, Receiver, Sender as AsyncSender, Sender};
 use gc_arena::Collect;
-use generational_arena::{Arena, Index};
+use slotmap::{DefaultKey, SlotMap};
 use std::{
     cell::{Cell, RefCell},
     time::Duration,
 };
 
-pub type SocketHandle = Index;
+pub type SocketHandle = DefaultKey;
 
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
@@ -62,7 +62,7 @@ pub enum SocketAction {
 
 /// Manages the collection of Sockets.
 pub struct Sockets<'gc> {
-    sockets: Arena<Socket<'gc>>,
+    sockets: SlotMap<SocketHandle, Socket<'gc>>,
 
     receiver: Receiver<SocketAction>,
     sender: Sender<SocketAction>,
@@ -81,7 +81,7 @@ impl<'gc> Sockets<'gc> {
         let (sender, receiver) = unbounded();
 
         Self {
-            sockets: Arena::new(),
+            sockets: SlotMap::new(),
             receiver,
             sender,
         }

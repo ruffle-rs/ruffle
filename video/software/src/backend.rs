@@ -1,17 +1,17 @@
 use crate::decoder::VideoDecoder;
-use generational_arena::Arena;
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, PixelRegion};
 use ruffle_video::backend::VideoBackend;
 use ruffle_video::error::Error;
 use ruffle_video::frame::{EncodedFrame, FrameDependency};
 use ruffle_video::VideoStreamHandle;
+use slotmap::SlotMap;
 use swf::{VideoCodec, VideoDeblocking};
 
 /// Software video backend that proxies to CPU-only codec implementations that
 /// ship with Ruffle.
 pub struct SoftwareVideoBackend {
-    streams: Arena<VideoStream>,
+    streams: SlotMap<VideoStreamHandle, VideoStream>,
 }
 
 impl Default for SoftwareVideoBackend {
@@ -23,7 +23,7 @@ impl Default for SoftwareVideoBackend {
 impl SoftwareVideoBackend {
     pub fn new() -> Self {
         Self {
-            streams: Arena::new(),
+            streams: SlotMap::new(),
         }
     }
 }

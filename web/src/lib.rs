@@ -7,7 +7,6 @@ mod navigator;
 mod storage;
 mod ui;
 
-use generational_arena::{Arena, Index};
 use js_sys::{Array, Error as JsError, Function, Object, Promise, Uint8Array};
 use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_core::backend::ui::FontDefinition;
@@ -29,6 +28,7 @@ use ruffle_render::quality::StageQuality;
 use ruffle_video_software::backend::SoftwareVideoBackend;
 use ruffle_web_common::JsResult;
 use serde::{Deserialize, Serialize};
+use slotmap::{DefaultKey, SlotMap};
 use std::collections::BTreeMap;
 use std::rc::Rc;
 use std::str::FromStr;
@@ -52,7 +52,7 @@ thread_local! {
     /// We store the actual instances of the ruffle core in a static pool.
     /// This gives us a clear boundary between the JS side and Rust side, avoiding
     /// issues with lifetimes and type parameters (which cannot be exported with wasm-bindgen).
-    static INSTANCES: RefCell<Arena<RefCell<RuffleInstance>>> = RefCell::new(Arena::new());
+    static INSTANCES: RefCell<SlotMap<DefaultKey, RefCell<RuffleInstance>>> = RefCell::new(SlotMap::new());
 
     static CURRENT_CONTEXT: RefCell<Option<*mut UpdateContext<'static, 'static>>> = const { RefCell::new(None) };
 }
@@ -339,7 +339,7 @@ struct MovieMetadata {
 /// This type is exported to JS, and is used to interact with the library.
 #[wasm_bindgen]
 #[derive(Clone, Copy)]
-pub struct Ruffle(Index);
+pub struct Ruffle(DefaultKey);
 
 #[wasm_bindgen]
 impl Ruffle {

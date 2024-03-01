@@ -32,7 +32,7 @@ profiling = []
 
 [dependencies]
 console_error_panic_hook = { version = "0.1.7", optional = true }
-generational-arena = "0.2.9"
+slotmap = { workspace = true }
 js-sys = "0.3.68"
 tracing = { workspace = true, features = ["log"] }
 tracing-subscriber = { version = "0.3.18", default-features = false, features = ["registry"] }

@@ -7,7 +7,7 @@ use crate::{
 };
 use downcast_rs::Downcast;
 use gc_arena::Collect;
-use generational_arena::{Arena, Index};
+use slotmap::{DefaultKey, Key, SlotMap};
 
 #[cfg(feature = "audio")]
 pub mod decoders;
@@ -35,8 +35,8 @@ mod decoders {
 use thiserror::Error;
 use web_time::Duration;
 
-pub type SoundHandle = Index;
-pub type SoundInstanceHandle = Index;
+pub type SoundHandle = DefaultKey;
+pub type SoundInstanceHandle = DefaultKey;
 pub type DecodeError = decoders::Error;
 
 #[derive(Eq, PartialEq, Clone, Copy, Debug)]
@@ -205,14 +205,14 @@ struct NullSound {
 
 /// Audio backend that ignores all audio.
 pub struct NullAudioBackend {
-    sounds: Arena<NullSound>,
+    sounds: SlotMap<SoundHandle, NullSound>,
     volume: f32,
 }
 
 impl NullAudioBackend {
     pub fn new() -> NullAudioBackend {
         NullAudioBackend {
-            sounds: Arena::new(),
+            sounds: SlotMap::new(),
             volume: 1.0,
         }
     }
@@ -259,7 +259,7 @@ impl AudioBackend for NullAudioBackend {
         _sound: SoundHandle,
         _sound_info: &swf::SoundInfo,
     ) -> Result<SoundInstanceHandle, DecodeError> {
-        Ok(SoundInstanceHandle::from_raw_parts(0, 0))
+        Ok(SoundInstanceHandle::null())
     }
 
     fn start_stream(
@@ -267,7 +267,7 @@ impl AudioBackend for NullAudioBackend {
         _clip_data: crate::tag_utils::SwfSlice,
         _handle: &swf::SoundStreamHead,
     ) -> Result<SoundInstanceHandle, DecodeError> {
-        Ok(SoundInstanceHandle::from_raw_parts(0, 0))
+        Ok(SoundInstanceHandle::null())
     }
 
     fn start_substream(
@@ -275,7 +275,7 @@ impl AudioBackend for NullAudioBackend {
         _stream_data: Substream,
         _handle: &SoundStreamInfo,
     ) -> Result<SoundInstanceHandle, DecodeError> {
-        Ok(SoundInstanceHandle::from_raw_parts(0, 0))
+        Ok(SoundInstanceHandle::null())
     }
 
     fn stop_sound(&mut self, _sound: SoundInstanceHandle) {}
