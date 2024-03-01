@@ -45,9 +45,9 @@ version = "0.1.0"
 [workspace.dependencies]
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-naga = { version = "0.19.0", features = ["wgsl-out"] }
+naga = { version = "0.19.2", features = ["wgsl-out"] }
 naga_oil = "0.13.0"
-wgpu = "0.19.1"
+wgpu = "0.19.3"
 egui = "0.26.2"
 clap = { version = "4.5.1", features = ["derive"] }
 anyhow = "1.0"
