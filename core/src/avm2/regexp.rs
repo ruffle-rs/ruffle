@@ -104,6 +104,7 @@ impl<'gc> RegExp<'gc> {
                     dot_all: self.flags.contains(RegExpFlags::DOTALL),
                     no_opt: false,
                     unicode: false,
+                    unicode_sets: false,
                 },
             );
             self.cached_regex = Some(re.map_err(drop));
