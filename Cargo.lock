@@ -489,29 +489,6 @@ checksum = "9d297deb1925b89f2ccc13d7635fa0714f12c87adce1c75356b39ca9b7178567"
 
 [[package]]
 name = "bindgen"
-version = "0.68.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "726e4313eb6ec35d2730258ad4e15b547ee75d6afaa1361a922e78e59b7d8078"
-dependencies = [
- "bitflags 2.4.2",
- "cexpr",
- "clang-sys",
- "lazy_static",
- "lazycell",
- "log",
- "peeking_take_while",
- "prettyplease",
- "proc-macro2",
- "quote",
- "regex",
- "rustc-hash",
- "shlex",
- "syn 2.0.51",
- "which",
-]
-
-[[package]]
-name = "bindgen"
 version = "0.69.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a00dc851838a2120612785d195287475a3ac45514741da670b735818822129a0"
@@ -522,12 +499,15 @@ dependencies = [
  "itertools 0.12.1",
  "lazy_static",
  "lazycell",
+ "log",
+ "prettyplease",
  "proc-macro2",
  "quote",
  "regex",
  "rustc-hash",
  "shlex",
  "syn 2.0.51",
+ "which",
 ]
 
 [[package]]
@@ -565,12 +545,6 @@ checksum = "ed570934406eb16438a4e976b1b4500774099c13b8cb96eec99f620f05090ddf"
 dependencies = [
  "serde",
 ]
-
-[[package]]
-name = "bitstream-io"
-version = "1.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e445576659fd04a57b44cbd00aa37aaa815ebefa0aa3cb677a6b5e63d883074f"
 
 [[package]]
 name = "bitstream-io"
@@ -1058,7 +1032,7 @@ version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f01585027057ff5f0a5bf276174ae4c1594a2c5bde93d5f46a016d76270f5a9"
 dependencies = [
- "bindgen 0.69.4",
+ "bindgen",
 ]
 
 [[package]]
@@ -2951,10 +2925,10 @@ dependencies = [
 
 [[package]]
 name = "jpegxr"
-version = "0.3.0"
-source = "git+https://github.com/ruffle-rs/jpegxr?branch=ruffle#d49988f40f220e3e9c90d9f3df1d4e3bc41f6ce2"
+version = "0.3.1"
+source = "git+https://github.com/ruffle-rs/jpegxr?branch=ruffle#688021cb0a4935295f9aa8b488ca05bb4f1e9b34"
 dependencies = [
- "bindgen 0.68.1",
+ "bindgen",
  "cc",
  "libc",
  "thiserror",
@@ -3519,9 +3493,9 @@ dependencies = [
 [[package]]
 name = "nellymoser-rs"
 version = "0.1.2"
-source = "git+https://github.com/ruffle-rs/nellymoser?rev=4a33521c29a918950df8ae9fe07e527ac65553f5#4a33521c29a918950df8ae9fe07e527ac65553f5"
+source = "git+https://github.com/ruffle-rs/nellymoser?rev=754b1184037aa9952a907107284fb73897e26adc#754b1184037aa9952a907107284fb73897e26adc"
 dependencies = [
- "bitstream-io 1.10.0",
+ "bitstream-io",
  "once_cell",
  "rustdct",
 ]
@@ -3973,12 +3947,6 @@ name = "path-slash"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e91099d4268b0e11973f036e885d652fb0b21fedcf69738c627f94db6a44f42"
-
-[[package]]
-name = "peeking_take_while"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "19b17cddbe7ec3f8bc800887bab5e717348c95ea2ca0b1bf0837fb964dc67099"
 
 [[package]]
 name = "percent-encoding"
@@ -4471,7 +4439,7 @@ version = "0.1.0"
 dependencies = [
  "async-channel 2.2.0",
  "bitflags 2.4.2",
- "bitstream-io 2.2.0",
+ "bitstream-io",
  "build_playerglobal",
  "bytemuck",
  "byteorder",
@@ -5289,7 +5257,7 @@ name = "swf"
 version = "0.2.0"
 dependencies = [
  "bitflags 2.4.2",
- "bitstream-io 2.2.0",
+ "bitstream-io",
  "byteorder",
  "encoding_rs",
  "enum-map",
