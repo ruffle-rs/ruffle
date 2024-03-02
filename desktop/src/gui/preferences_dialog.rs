@@ -1,5 +1,6 @@
 use crate::gui::{available_languages, optional_text, text};
 use crate::preferences::GlobalPreferences;
+use cpal::traits::{DeviceTrait, HostTrait};
 use egui::{Align2, Button, ComboBox, Grid, Ui, Widget, Window};
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use ruffle_render_wgpu::descriptors::Descriptors;
@@ -20,6 +21,10 @@ pub struct PreferencesDialog {
 
     language: LanguageIdentifier,
     language_changed: bool,
+
+    output_device: Option<String>,
+    available_output_devices: Vec<String>,
+    output_device_changed: bool,
 }
 
 impl PreferencesDialog {
@@ -30,6 +35,16 @@ impl PreferencesDialog {
         available_backends |= backend_availability(descriptors, wgpu::Backends::GL);
         available_backends |= backend_availability(descriptors, wgpu::Backends::METAL);
         available_backends |= backend_availability(descriptors, wgpu::Backends::DX12);
+
+        let audio_host = cpal::default_host();
+        let mut available_output_devices = Vec::new();
+        if let Ok(devices) = audio_host.output_devices() {
+            for device in devices {
+                if let Ok(name) = device.name() {
+                    available_output_devices.push(name);
+                }
+            }
+        }
 
         Self {
             available_backends,
@@ -43,6 +58,10 @@ impl PreferencesDialog {
 
             language: preferences.language(),
             language_changed: false,
+
+            output_device: preferences.output_device_name(),
+            available_output_devices,
+            output_device_changed: false,
 
             preferences,
         }
@@ -67,6 +86,8 @@ impl PreferencesDialog {
                             self.show_graphics_preferences(locale, &locked_text, ui);
 
                             self.show_language_preferences(locale, ui);
+
+                            self.show_audio_preferences(locale, ui);
                         });
 
                     if self.restart_required() {
@@ -93,6 +114,7 @@ impl PreferencesDialog {
     fn restart_required(&self) -> bool {
         self.graphics_backend != self.preferences.graphics_backends()
             || self.power_preference != self.preferences.graphics_power_preference()
+            || self.output_device != self.preferences.output_device_name()
     }
 
     fn show_graphics_preferences(
@@ -196,6 +218,25 @@ impl PreferencesDialog {
         ui.end_row();
     }
 
+    fn show_audio_preferences(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
+        ui.label(text(locale, "audio-output-device"));
+
+        let previous = self.output_device.clone();
+        let default = text(locale, "audio-output-device-default");
+        ComboBox::from_id_source("audio-output-device")
+            .selected_text(self.output_device.as_deref().unwrap_or(default.as_ref()))
+            .show_ui(ui, |ui| {
+                ui.selectable_value(&mut self.output_device, None, default);
+                for device in &self.available_output_devices {
+                    ui.selectable_value(&mut self.output_device, Some(device.to_string()), device);
+                }
+            });
+        if self.output_device != previous {
+            self.output_device_changed = true;
+        }
+        ui.end_row();
+    }
+
     fn save(&mut self) {
         if let Err(e) = self.preferences.write_preferences(|preferences| {
             if self.graphics_backend_changed {
@@ -206,6 +247,10 @@ impl PreferencesDialog {
             }
             if self.language_changed {
                 preferences.set_language(self.language.clone());
+            }
+            if self.output_device_changed {
+                preferences.set_output_device(self.output_device.clone());
+                // [NA] TODO: Inform the running player that the device changed
             }
         }) {
             // [NA] TODO: Better error handling... everywhere in desktop, really

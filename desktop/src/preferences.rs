@@ -73,6 +73,15 @@ impl GlobalPreferences {
             .clone()
     }
 
+    pub fn output_device_name(&self) -> Option<String> {
+        self.preferences
+            .lock()
+            .expect("Preferences is not reentrant")
+            .values
+            .output_device
+            .clone()
+    }
+
     pub fn write_preferences(&self, fun: impl FnOnce(&mut PreferencesWriter)) -> Result<(), Error> {
         let mut preferences = self
             .preferences
@@ -99,6 +108,7 @@ pub struct SavedGlobalPreferences {
     pub graphics_backend: GraphicsBackend,
     pub graphics_power_preference: PowerPreference,
     pub language: LanguageIdentifier,
+    pub output_device: Option<String>,
 }
 
 impl Default for SavedGlobalPreferences {
@@ -111,6 +121,7 @@ impl Default for SavedGlobalPreferences {
             graphics_backend: Default::default(),
             graphics_power_preference: Default::default(),
             language: locale,
+            output_device: None,
         }
     }
 }

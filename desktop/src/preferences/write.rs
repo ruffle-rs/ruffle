@@ -24,6 +24,15 @@ impl<'a> PreferencesWriter<'a> {
         self.0.document["language"] = value(language.to_string());
         self.0.values.language = language;
     }
+
+    pub fn set_output_device(&mut self, name: Option<String>) {
+        if let Some(name) = &name {
+            self.0.document["output_device"] = value(name);
+        } else {
+            self.0.document.remove("output_device");
+        }
+        self.0.values.output_device = name;
+    }
 }
 
 #[cfg(test)]
@@ -98,6 +107,21 @@ mod tests {
             "language = \"???\"",
             |writer| writer.set_language(langid!("en-Latn-US-valencia")),
             "language = \"en-Latn-US-valencia\"\n",
+        );
+    }
+
+    #[test]
+    fn set_output_device() {
+        test(
+            "",
+            |writer| writer.set_output_device(Some("Speakers".to_string())),
+            "output_device = \"Speakers\"\n",
+        );
+
+        test(
+            "output_device = \"Speakers\"",
+            |writer| writer.set_output_device(None),
+            "",
         );
     }
 }

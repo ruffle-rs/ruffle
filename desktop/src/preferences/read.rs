@@ -54,6 +54,12 @@ pub fn read_preferences(input: &str) -> (ParseResult, Document) {
         Err(e) => result.add_warning(format!("Invalid language: {e}")),
     };
 
+    match parse_item_from_str(document.get("output_device")) {
+        Ok(Some(value)) => result.result.output_device = Some(value),
+        Ok(None) => {}
+        Err(e) => result.add_warning(format!("Invalid output_device: {e}")),
+    };
+
     (result, document)
 }
 
@@ -218,6 +224,40 @@ mod tests {
                     ..Default::default()
                 },
                 warnings: vec![]
+            },
+            result
+        );
+    }
+
+    #[test]
+    fn correct_output_device() {
+        let result = read_preferences("output_device = \"Speakers\"").0;
+
+        assert_eq!(
+            ParseResult {
+                result: SavedGlobalPreferences {
+                    output_device: Some("Speakers".to_string()),
+                    ..Default::default()
+                },
+                warnings: vec![]
+            },
+            result
+        );
+    }
+
+    #[test]
+    fn invalid_output_device() {
+        let result = read_preferences("output_device = 5").0;
+
+        assert_eq!(
+            ParseResult {
+                result: SavedGlobalPreferences {
+                    output_device: None,
+                    ..Default::default()
+                },
+                warnings: vec![
+                    "Invalid output_device: expected string but found integer".to_string()
+                ]
             },
             result
         );
