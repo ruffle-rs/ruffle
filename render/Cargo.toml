@@ -36,7 +36,7 @@ indexmap = "2.2.5"
 
 # This crate has a `compile_error!` on apple platforms
 [target.'cfg(not(target_vendor = "apple"))'.dependencies.renderdoc]
-version = "0.11.0"
+version = "0.12.1"
 optional = true
 
 [dependencies.jpeg-decoder]
