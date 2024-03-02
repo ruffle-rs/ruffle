@@ -14,7 +14,7 @@ workspace = true
 ruffle_render = { path = "../../render" }
 ruffle_video = { path = ".." }
 swf = { path = "../../swf" }
-generational-arena = "0.2.9"
+slotmap = { workspace = true }
 thiserror = "1.0"
 flate2 = "1.0.28"
 log = "0.4"
