@@ -22,7 +22,7 @@ pub struct NullVideoBackend {
 impl NullVideoBackend {
     pub fn new() -> Self {
         Self {
-            streams: SlotMap::new(),
+            streams: SlotMap::with_key(),
         }
     }
 }

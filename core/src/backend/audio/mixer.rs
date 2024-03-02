@@ -239,8 +239,8 @@ impl AudioMixer {
     /// Creates a new `AudioMixer` with the given number of channels and sample rate.
     pub fn new(num_output_channels: u8, output_sample_rate: u32) -> Self {
         Self {
-            sounds: SlotMap::new(),
-            sound_instances: Arc::new(Mutex::new(SlotMap::new())),
+            sounds: SlotMap::with_key(),
+            sound_instances: Arc::new(Mutex::new(SlotMap::with_key())),
             volume: Arc::new(RwLock::new(1.0)),
             num_output_channels,
             output_sample_rate,

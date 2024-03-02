@@ -23,7 +23,7 @@ impl Default for SoftwareVideoBackend {
 impl SoftwareVideoBackend {
     pub fn new() -> Self {
         Self {
-            streams: SlotMap::new(),
+            streams: SlotMap::with_key(),
         }
     }
 }

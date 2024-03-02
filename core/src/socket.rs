@@ -13,13 +13,15 @@ use crate::{
 };
 use async_channel::{unbounded, Receiver, Sender as AsyncSender, Sender};
 use gc_arena::Collect;
-use slotmap::{DefaultKey, SlotMap};
+use slotmap::{new_key_type, SlotMap};
 use std::{
     cell::{Cell, RefCell},
     time::Duration,
 };
 
-pub type SocketHandle = DefaultKey;
+new_key_type! {
+    pub struct SocketHandle;
+}
 
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
@@ -81,7 +83,7 @@ impl<'gc> Sockets<'gc> {
         let (sender, receiver) = unbounded();
 
         Self {
-            sockets: SlotMap::new(),
+            sockets: SlotMap::with_key(),
             receiver,
             sender,
         }

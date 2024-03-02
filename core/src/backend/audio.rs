@@ -7,7 +7,7 @@ use crate::{
 };
 use downcast_rs::Downcast;
 use gc_arena::Collect;
-use slotmap::{DefaultKey, Key, SlotMap};
+use slotmap::{new_key_type, Key, SlotMap};
 
 #[cfg(feature = "audio")]
 pub mod decoders;
@@ -35,8 +35,11 @@ mod decoders {
 use thiserror::Error;
 use web_time::Duration;
 
-pub type SoundHandle = DefaultKey;
-pub type SoundInstanceHandle = DefaultKey;
+new_key_type! {
+    pub struct SoundHandle;
+    pub struct SoundInstanceHandle;
+}
+
 pub type DecodeError = decoders::Error;
 
 #[derive(Eq, PartialEq, Clone, Copy, Debug)]
@@ -212,7 +215,7 @@ pub struct NullAudioBackend {
 impl NullAudioBackend {
     pub fn new() -> NullAudioBackend {
         NullAudioBackend {
-            sounds: SlotMap::new(),
+            sounds: SlotMap::with_key(),
             volume: 1.0,
         }
     }
