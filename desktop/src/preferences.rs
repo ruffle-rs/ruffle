@@ -5,9 +5,12 @@ use crate::cli::Opt;
 use crate::preferences::read::read_preferences;
 use crate::preferences::write::PreferencesWriter;
 use anyhow::{Context, Error};
+use ruffle_core::backend::ui::US_ENGLISH;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::sync::{Arc, Mutex};
+use sys_locale::get_locale;
 use toml_edit::Document;
+use unic_langid::LanguageIdentifier;
 
 #[derive(Clone)]
 pub struct GlobalPreferences {
@@ -61,6 +64,15 @@ impl GlobalPreferences {
         )
     }
 
+    pub fn language(&self) -> LanguageIdentifier {
+        self.preferences
+            .lock()
+            .expect("Preferences is not reentrant")
+            .values
+            .language
+            .clone()
+    }
+
     pub fn write_preferences(&self, fun: impl FnOnce(&mut PreferencesWriter)) -> Result<(), Error> {
         let mut preferences = self
             .preferences
@@ -82,8 +94,23 @@ struct PreferencesAndDocument {
     values: SavedGlobalPreferences,
 }
 
-#[derive(Default, PartialEq, Debug)]
+#[derive(PartialEq, Debug)]
 pub struct SavedGlobalPreferences {
     pub graphics_backend: GraphicsBackend,
     pub graphics_power_preference: PowerPreference,
+    pub language: LanguageIdentifier,
+}
+
+impl Default for SavedGlobalPreferences {
+    fn default() -> Self {
+        let preferred_locale = get_locale();
+        let locale = preferred_locale
+            .and_then(|l| l.parse().ok())
+            .unwrap_or_else(|| US_ENGLISH.clone());
+        Self {
+            graphics_backend: Default::default(),
+            graphics_power_preference: Default::default(),
+            language: locale,
+        }
+    }
 }

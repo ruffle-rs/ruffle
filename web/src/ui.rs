@@ -253,8 +253,8 @@ impl UiBackend for WebUiBackend {
         self.js_player.open_virtual_keyboard()
     }
 
-    fn language(&self) -> &LanguageIdentifier {
-        &self.language
+    fn language(&self) -> LanguageIdentifier {
+        self.language.clone()
     }
 
     fn display_unsupported_video(&self, url: Url) {

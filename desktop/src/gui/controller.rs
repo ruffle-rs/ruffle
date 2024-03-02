@@ -138,7 +138,7 @@ impl GuiController {
             descriptors.clone(),
         );
         let system_fonts =
-            load_system_fonts(font_database, gui.locale.to_owned()).unwrap_or_default();
+            load_system_fonts(font_database, preferences.language().to_owned()).unwrap_or_default();
         egui_winit.egui_ctx().set_fonts(system_fonts);
 
         egui_extras::install_image_loaders(egui_winit.egui_ctx());

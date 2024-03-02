@@ -79,6 +79,7 @@ impl App {
             window.clone(),
             gui.descriptors().clone(),
             font_database,
+            preferences.clone(),
         );
 
         if let Some(movie_url) = &movie_url {
