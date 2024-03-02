@@ -13,9 +13,11 @@ pub struct PreferencesDialog {
 
     graphics_backend: GraphicsBackend,
     graphics_backend_readonly: bool,
+    graphics_backend_changed: bool,
 
     power_preference: PowerPreference,
     power_preference_readonly: bool,
+    power_preference_changed: bool,
 }
 
 impl PreferencesDialog {
@@ -35,9 +37,11 @@ impl PreferencesDialog {
             available_backends,
             graphics_backend: preferences.graphics_backends(),
             graphics_backend_readonly: preferences.cli.graphics.is_some(),
+            graphics_backend_changed: false,
 
             power_preference: preferences.graphics_power_preference(),
             power_preference_readonly: preferences.cli.power.is_some(),
+            power_preference_changed: false,
 
             preferences,
             locale,
@@ -95,6 +99,7 @@ impl PreferencesDialog {
             ui.label(graphics_backend_name(&self.locale, self.graphics_backend))
                 .on_hover_text(locked_text);
         } else {
+            let previous = self.graphics_backend;
             ComboBox::from_id_source("graphics-backend")
                 .selected_text(graphics_backend_name(&self.locale, self.graphics_backend))
                 .show_ui(ui, |ui| {
@@ -132,6 +137,9 @@ impl PreferencesDialog {
                         );
                     }
                 });
+            if self.graphics_backend != previous {
+                self.graphics_backend_changed = true;
+            }
         }
         ui.end_row();
 
@@ -140,6 +148,7 @@ impl PreferencesDialog {
             ui.label(graphics_power_name(&self.locale, self.power_preference))
                 .on_hover_text(locked_text);
         } else {
+            let previous = self.power_preference;
             ComboBox::from_id_source("graphics-power")
                 .selected_text(graphics_power_name(&self.locale, self.power_preference))
                 .show_ui(ui, |ui| {
@@ -154,17 +163,20 @@ impl PreferencesDialog {
                         text(&self.locale, "graphics-power-high"),
                     );
                 });
+            if self.power_preference != previous {
+                self.power_preference_changed = true;
+            }
         }
         ui.end_row();
     }
 
     fn save(&mut self) {
         if let Err(e) = self.preferences.write_preferences(|preferences| {
-            if !self.graphics_backend_readonly {
-                preferences.graphics_backend = self.graphics_backend;
+            if self.graphics_backend_changed {
+                preferences.set_graphics_backend(self.graphics_backend);
             }
-            if !self.power_preference_readonly {
-                preferences.graphics_power_preference = self.power_preference;
+            if self.power_preference_changed {
+                preferences.set_graphics_power_preference(self.power_preference);
             }
         }) {
             // [NA] TODO: Better error handling... everywhere in desktop, really
