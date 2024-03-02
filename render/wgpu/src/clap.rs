@@ -1,5 +1,6 @@
+use std::str::FromStr;
+
 #[derive(clap::ValueEnum, Clone, Copy, Debug, Eq, PartialEq, Default)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum GraphicsBackend {
     #[default]
     Default,
@@ -10,8 +11,29 @@ pub enum GraphicsBackend {
 }
 
 impl GraphicsBackend {
-    pub fn is_default(&self) -> bool {
-        self == &GraphicsBackend::Default
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            GraphicsBackend::Default => "default",
+            GraphicsBackend::Vulkan => "vulkan",
+            GraphicsBackend::Metal => "metal",
+            GraphicsBackend::Dx12 => "dx12",
+            GraphicsBackend::Gl => "gl",
+        }
+    }
+}
+
+impl FromStr for GraphicsBackend {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "default" => Ok(GraphicsBackend::Default),
+            "vulkan" => Ok(GraphicsBackend::Vulkan),
+            "metal" => Ok(GraphicsBackend::Metal),
+            "dx12" => Ok(GraphicsBackend::Dx12),
+            "gl" => Ok(GraphicsBackend::Gl),
+            _ => Err(()),
+        }
     }
 }
 
@@ -28,7 +50,6 @@ impl From<GraphicsBackend> for wgpu::Backends {
 }
 
 #[derive(clap::ValueEnum, Clone, Copy, Debug, Eq, PartialEq, Default)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum PowerPreference {
     Low,
     #[default]
@@ -36,8 +57,23 @@ pub enum PowerPreference {
 }
 
 impl PowerPreference {
-    pub fn is_default(&self) -> bool {
-        self == &PowerPreference::High
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            PowerPreference::High => "high",
+            PowerPreference::Low => "low",
+        }
+    }
+}
+
+impl FromStr for PowerPreference {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "high" => Ok(PowerPreference::High),
+            "low" => Ok(PowerPreference::Low),
+            _ => Err(()),
+        }
     }
 }
 

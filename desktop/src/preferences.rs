@@ -1,14 +1,18 @@
+mod read;
+mod write;
+
 use crate::cli::Opt;
+use crate::preferences::read::read_preferences;
+use crate::preferences::write::PreferencesWriter;
 use anyhow::{Context, Error};
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
-use serde::{Deserialize, Serialize};
-use std::ops::Deref;
 use std::sync::{Arc, Mutex};
+use toml_edit::Document;
 
 #[derive(Clone)]
 pub struct GlobalPreferences {
     pub cli: Opt,
-    preferences: Arc<Mutex<SavedGlobalPreferences>>,
+    preferences: Arc<Mutex<PreferencesAndDocument>>,
 }
 
 impl GlobalPreferences {
@@ -16,13 +20,19 @@ impl GlobalPreferences {
         std::fs::create_dir_all(&cli.config).context("Failed to create configuration directory")?;
         let preferences_path = cli.config.join("preferences.toml");
         let preferences = if preferences_path.exists() {
-            toml::from_str(
-                &std::fs::read_to_string(&preferences_path)
-                    .context("Failed to read saved preferences")?,
-            )
-            .context("Failed to parse saved preferences")?
+            let contents = std::fs::read_to_string(&preferences_path)
+                .context("Failed to read saved preferences")?;
+            let (result, document) = read_preferences(&contents);
+            for warning in result.warnings {
+                // TODO: A way to display warnings to users, generally
+                tracing::warn!("{warning}");
+            }
+            PreferencesAndDocument {
+                document,
+                values: result.result,
+            }
         } else {
-            SavedGlobalPreferences::default()
+            Default::default()
         };
 
         Ok(Self {
@@ -36,6 +46,7 @@ impl GlobalPreferences {
             self.preferences
                 .lock()
                 .expect("Preferences is not reentrant")
+                .values
                 .graphics_backend,
         )
     }
@@ -45,36 +56,34 @@ impl GlobalPreferences {
             self.preferences
                 .lock()
                 .expect("Preferences is not reentrant")
+                .values
                 .graphics_power_preference,
         )
     }
 
-    pub fn write_preferences(
-        &self,
-        writer: impl FnOnce(&mut SavedGlobalPreferences),
-    ) -> Result<(), Error> {
+    pub fn write_preferences(&self, fun: impl FnOnce(&mut PreferencesWriter)) -> Result<(), Error> {
         let mut preferences = self
             .preferences
             .lock()
             .expect("Preferences is not reentrant");
-        writer(&mut preferences);
-        let serialized =
-            toml::to_string(preferences.deref()).context("Could not serialize preferences")?;
+
+        let mut writer = PreferencesWriter::new(&mut preferences);
+        fun(&mut writer);
+
+        let serialized = preferences.document.to_string();
         std::fs::write(self.cli.config.join("preferences.toml"), serialized)
             .context("Could not write preferences to disk")
     }
 }
 
-// [NA] Deliberately not "deny_unknown" here, trying to keep this backwards & forwards compatible.
-// It's quite common to bisect, even users manually hop back and forth to test things.
-// Therefore, try to take care to not error out if something is totally wrong.
-// TODO: Maybe a custom deserializer?
-#[derive(Default, Deserialize, Serialize)]
-#[serde(default)]
-pub struct SavedGlobalPreferences {
-    #[serde(skip_serializing_if = "GraphicsBackend::is_default")]
-    pub graphics_backend: GraphicsBackend,
+#[derive(Default)]
+struct PreferencesAndDocument {
+    document: Document,
+    values: SavedGlobalPreferences,
+}
 
-    #[serde(skip_serializing_if = "PowerPreference::is_default")]
+#[derive(Default, PartialEq, Debug)]
+pub struct SavedGlobalPreferences {
+    pub graphics_backend: GraphicsBackend,
     pub graphics_power_preference: PowerPreference,
 }
