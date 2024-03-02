@@ -14,3 +14,6 @@ graphics-power-low = Low (e.g. iGPU)
 graphics-power-high = High (e.g. GPU)
 
 language = Language
+
+audio-output-device = Audio Output Device
+audio-output-device-default = System Default

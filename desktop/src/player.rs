@@ -110,7 +110,7 @@ impl ActivePlayer {
     ) -> Self {
         let mut builder = PlayerBuilder::new();
 
-        match CpalAudioBackend::new() {
+        match CpalAudioBackend::new(&preferences) {
             Ok(audio) => {
                 builder = builder.with_audio(audio);
             }

@@ -1,3 +1,4 @@
+use crate::preferences::GlobalPreferences;
 use anyhow::{anyhow, Context, Error};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use ruffle_core::backend::audio::{
@@ -16,11 +17,10 @@ pub struct CpalAudioBackend {
 }
 
 impl CpalAudioBackend {
-    pub fn new() -> Result<Self, Error> {
+    pub fn new(preferences: &GlobalPreferences) -> Result<Self, Error> {
         // Create CPAL audio device.
         let host = cpal::default_host();
-        let device = host
-            .default_output_device()
+        let device = get_suitable_output_device(preferences, &host)
             .ok_or_else(|| anyhow!("No audio devices available"))?;
 
         // Create audio stream for device.
@@ -88,4 +88,23 @@ impl AudioBackend for CpalAudioBackend {
     fn pause(&mut self) {
         self.stream.pause().expect("Error trying to pause CPAL audio stream. This feature may not be supported by your audio device.");
     }
+}
+
+fn get_suitable_output_device(
+    preferences: &GlobalPreferences,
+    host: &cpal::Host,
+) -> Option<cpal::Device> {
+    // First let's check for any user preference...
+    if let Some(preferred_device_name) = preferences.output_device_name() {
+        if let Ok(mut devices) = host.output_devices() {
+            if let Some(device) =
+                devices.find(|device| device.name().ok().as_deref() == Some(&preferred_device_name))
+            {
+                return Some(device);
+            }
+        }
+    }
+
+    // Then let's fall back to the device default
+    host.default_output_device()
 }
