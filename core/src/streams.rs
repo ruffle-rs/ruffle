@@ -434,7 +434,7 @@ impl<'gc> NetStream<'gc> {
         }
 
         if let Some(sound) = write.sound_instance {
-            context.stop_sounds_with_handle(sound);
+            context.stop_sound(sound);
             context.audio.stop_sound(sound);
 
             write.sound_instance = None;

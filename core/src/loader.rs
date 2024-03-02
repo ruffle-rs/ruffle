@@ -33,7 +33,7 @@ use crate::{avm2_stub_method, avm2_stub_method_context};
 use encoding_rs::UTF_8;
 use gc_arena::{Collect, GcCell};
 use ruffle_render::utils::{determine_jpeg_tag_format, JpegTagFormat};
-use slotmap::{DefaultKey, SlotMap};
+use slotmap::{new_key_type, SlotMap};
 use std::borrow::Borrow;
 use std::fmt;
 use std::sync::{Arc, Mutex, Weak};
@@ -42,7 +42,9 @@ use swf::read::{extract_swz, read_compression_type};
 use thiserror::Error;
 use url::{form_urlencoded, ParseError, Url};
 
-pub type LoaderHandle = DefaultKey;
+new_key_type! {
+    pub struct LoaderHandle;
+}
 
 /// The depth of AVM1 movies that AVM2 loads.
 const LOADER_INSERTED_AVM1_DEPTH: i32 = -0xF000;
@@ -237,7 +239,7 @@ unsafe impl<'gc> Collect for LoadManager<'gc> {
 impl<'gc> LoadManager<'gc> {
     /// Construct a new `LoadManager`.
     pub fn new() -> Self {
-        Self(SlotMap::new())
+        Self(SlotMap::with_key())
     }
 
     /// Add a new loader to the `LoadManager`.

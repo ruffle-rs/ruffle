@@ -10,12 +10,14 @@ use crate::Player;
 use flash_lso::packet::{Header, Message, Packet};
 use flash_lso::types::{AMFVersion, Value as AmfValue};
 use gc_arena::{Collect, DynamicRoot, Rootable};
-use slotmap::{DefaultKey, SlotMap};
+use slotmap::{new_key_type, SlotMap};
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 use std::sync::{Mutex, Weak};
 
-pub type NetConnectionHandle = DefaultKey;
+new_key_type! {
+    pub struct NetConnectionHandle;
+}
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum ResponderCallback {
@@ -90,7 +92,7 @@ unsafe impl<'gc> Collect for NetConnections<'gc> {
 impl<'gc> Default for NetConnections<'gc> {
     fn default() -> Self {
         Self {
-            connections: SlotMap::new(),
+            connections: SlotMap::with_key(),
         }
     }
 }
