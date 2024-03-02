@@ -1968,21 +1968,6 @@ dependencies = [
 [[package]]
 name = "fluent-template-macros"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dec7592cd1f45c1afe9084ce59c62a3a7c266c125c4c2ec97e95b0563c4aa914"
-dependencies = [
- "flume 0.10.14",
- "ignore",
- "once_cell",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
- "unic-langid",
-]
-
-[[package]]
-name = "fluent-template-macros"
-version = "0.8.0"
 source = "git+https://github.com/XAMPPRocky/fluent-templates?rev=4ed6eebae897c19c4bc7e80800f54d7b8e65a9cf#4ed6eebae897c19c4bc7e80800f54d7b8e65a9cf"
 dependencies = [
  "flume 0.10.14",
@@ -1997,30 +1982,6 @@ dependencies = [
 [[package]]
 name = "fluent-templates"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c3ef2c2152757885365abce32ddf682746062f1b6b3c0824a29fbed6ee4d080"
-dependencies = [
- "arc-swap",
- "fluent",
- "fluent-bundle",
- "fluent-langneg",
- "fluent-syntax",
- "fluent-template-macros 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "flume 0.10.14",
- "heck",
- "ignore",
- "intl-memoizer",
- "lazy_static",
- "log",
- "once_cell",
- "serde_json",
- "snafu",
- "unic-langid",
-]
-
-[[package]]
-name = "fluent-templates"
-version = "0.8.0"
 source = "git+https://github.com/XAMPPRocky/fluent-templates?rev=4ed6eebae897c19c4bc7e80800f54d7b8e65a9cf#4ed6eebae897c19c4bc7e80800f54d7b8e65a9cf"
 dependencies = [
  "arc-swap",
@@ -2028,7 +1989,7 @@ dependencies = [
  "fluent-bundle",
  "fluent-langneg",
  "fluent-syntax",
- "fluent-template-macros 0.8.0 (git+https://github.com/XAMPPRocky/fluent-templates?rev=4ed6eebae897c19c4bc7e80800f54d7b8e65a9cf)",
+ "fluent-template-macros",
  "flume 0.10.14",
  "heck",
  "ignore",
@@ -4451,7 +4412,7 @@ dependencies = [
  "enumset",
  "flash-lso",
  "flate2",
- "fluent-templates 0.8.0 (git+https://github.com/XAMPPRocky/fluent-templates?rev=4ed6eebae897c19c4bc7e80800f54d7b8e65a9cf)",
+ "fluent-templates",
  "flv-rs",
  "fnv",
  "futures",
@@ -4512,7 +4473,7 @@ dependencies = [
  "egui-winit",
  "egui_extras",
  "embed-resource",
- "fluent-templates 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fluent-templates",
  "fontdb",
  "futures",
  "futures-lite 2.2.0",

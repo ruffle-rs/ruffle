@@ -37,10 +37,13 @@ static_loader! {
 }
 
 pub fn text<'a>(locale: &LanguageIdentifier, id: &'a str) -> Cow<'a, str> {
-    TEXTS.lookup(locale, id).map(Cow::Owned).unwrap_or_else(|| {
-        tracing::error!("Unknown desktop text id '{id}'");
-        Cow::Borrowed(id)
-    })
+    TEXTS
+        .try_lookup(locale, id)
+        .map(Cow::Owned)
+        .unwrap_or_else(|| {
+            tracing::error!("Unknown desktop text id '{id}'");
+            Cow::Borrowed(id)
+        })
 }
 
 #[allow(dead_code)]
@@ -50,7 +53,7 @@ pub fn text_with_args<'a, T: AsRef<str>>(
     args: &HashMap<T, FluentValue>,
 ) -> Cow<'a, str> {
     TEXTS
-        .lookup_with_args(locale, id, args)
+        .try_lookup_with_args(locale, id, args)
         .map(Cow::Owned)
         .unwrap_or_else(|| {
             tracing::error!("Unknown desktop text id '{id}'");
