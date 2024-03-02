@@ -42,7 +42,7 @@ use swf::read::{extract_swz, read_compression_type};
 use thiserror::Error;
 use url::{form_urlencoded, ParseError, Url};
 
-pub type Handle = DefaultKey;
+pub type LoaderHandle = DefaultKey;
 
 /// The depth of AVM1 movies that AVM2 loads.
 const LOADER_INSERTED_AVM1_DEPTH: i32 = -0xF000;
@@ -224,7 +224,7 @@ impl From<crate::avm1::Error<'_>> for Error {
 }
 
 /// Holds all in-progress loads for the player.
-pub struct LoadManager<'gc>(SlotMap<Handle, Loader<'gc>>);
+pub struct LoadManager<'gc>(SlotMap<LoaderHandle, Loader<'gc>>);
 
 unsafe impl<'gc> Collect for LoadManager<'gc> {
     fn trace(&self, cc: &gc_arena::Collection) {
@@ -249,7 +249,7 @@ impl<'gc> LoadManager<'gc> {
     /// invalidated). This can be done with remove_loader.
     /// Movie loaders are removed automatically after the loader status is set
     /// accordingly.
-    pub fn add_loader(&mut self, loader: Loader<'gc>) -> Handle {
+    pub fn add_loader(&mut self, loader: Loader<'gc>) -> LoaderHandle {
         let handle = self.0.insert(loader);
         match self.get_loader_mut(handle).unwrap() {
             Loader::RootMovie { self_handle, .. }
@@ -272,17 +272,17 @@ impl<'gc> LoadManager<'gc> {
 
     /// Remove a completed loader.
     /// This is used to remove a loader after the loading or unloading process has completed.
-    pub fn remove_loader(&mut self, handle: Handle) {
+    pub fn remove_loader(&mut self, handle: LoaderHandle) {
         self.0.remove(handle);
     }
 
     /// Retrieve a loader by handle.
-    pub fn get_loader(&self, handle: Handle) -> Option<&Loader<'gc>> {
+    pub fn get_loader(&self, handle: LoaderHandle) -> Option<&Loader<'gc>> {
         self.0.get(handle)
     }
 
     /// Retrieve a loader by handle for mutation.
-    pub fn get_loader_mut(&mut self, handle: Handle) -> Option<&mut Loader<'gc>> {
+    pub fn get_loader_mut(&mut self, handle: LoaderHandle) -> Option<&mut Loader<'gc>> {
         self.0.get_mut(handle)
     }
 
@@ -648,14 +648,14 @@ pub enum Loader<'gc> {
     RootMovie {
         /// The handle to refer to this loader instance.
         #[collect(require_static)]
-        self_handle: Option<Handle>,
+        self_handle: Option<LoaderHandle>,
     },
 
     /// Loader that is loading a new movie into a MovieClip.
     Movie {
         /// The handle to refer to this loader instance.
         #[collect(require_static)]
-        self_handle: Option<Handle>,
+        self_handle: Option<LoaderHandle>,
 
         /// The target movie clip to load the movie into.
         target_clip: DisplayObject<'gc>,
@@ -689,7 +689,7 @@ pub enum Loader<'gc> {
     Form {
         /// The handle to refer to this loader instance.
         #[collect(require_static)]
-        self_handle: Option<Handle>,
+        self_handle: Option<LoaderHandle>,
 
         /// The target AVM1 object to load form data into.
         target_object: Object<'gc>,
@@ -699,7 +699,7 @@ pub enum Loader<'gc> {
     LoadVars {
         /// The handle to refer to this loader instance.
         #[collect(require_static)]
-        self_handle: Option<Handle>,
+        self_handle: Option<LoaderHandle>,
 
         /// The target AVM1 object to load form data into.
         target_object: Object<'gc>,
@@ -710,7 +710,7 @@ pub enum Loader<'gc> {
     LoadURLLoader {
         /// The handle to refer to this loader instance.
         #[collect(require_static)]
-        self_handle: Option<Handle>,
+        self_handle: Option<LoaderHandle>,
 
         /// The target `URLLoader` to load data into.
         target_object: Avm2Object<'gc>,
@@ -720,7 +720,7 @@ pub enum Loader<'gc> {
     SoundAvm1 {
         /// The handle to refer to this loader instance.
         #[collect(require_static)]
-        self_handle: Option<Handle>,
+        self_handle: Option<LoaderHandle>,
 
         /// The target AVM1 object to load the audio into.
         target_object: SoundObject<'gc>,
@@ -730,7 +730,7 @@ pub enum Loader<'gc> {
     SoundAvm2 {
         /// The handle to refer to this loader instance.
         #[collect(require_static)]
-        self_handle: Option<Handle>,
+        self_handle: Option<LoaderHandle>,
 
         /// The target AVM1 object to load the audio into.
         target_object: Avm2Object<'gc>,
@@ -740,7 +740,7 @@ pub enum Loader<'gc> {
     NetStream {
         /// The handle to refer to this loader instance.
         #[collect(require_static)]
-        self_handle: Option<Handle>,
+        self_handle: Option<LoaderHandle>,
 
         /// The stream to buffer data into.
         target_stream: NetStream<'gc>,
@@ -750,7 +750,7 @@ pub enum Loader<'gc> {
     MovieUnloader {
         /// The handle to refer to this loader instance.
         #[collect(require_static)]
-        self_handle: Option<Handle>,
+        self_handle: Option<LoaderHandle>,
 
         /// The target MovieClip to unload.
         target_clip: DisplayObject<'gc>,
@@ -760,7 +760,7 @@ pub enum Loader<'gc> {
     FileDialog {
         /// The handle to refer to this loader instance.
         #[collect(require_static)]
-        self_handle: Option<Handle>,
+        self_handle: Option<LoaderHandle>,
 
         /// The target AVM1 object to select a file path from.
         target_object: Object<'gc>,
@@ -770,7 +770,7 @@ pub enum Loader<'gc> {
     FileDialogAvm2 {
         /// The handle to refer to this loader instance.
         #[collect(require_static)]
-        self_handle: Option<Handle>,
+        self_handle: Option<LoaderHandle>,
 
         /// The target AVM2 object to set to the selected file path.
         target_object: FileReferenceObject<'gc>,
@@ -780,7 +780,7 @@ pub enum Loader<'gc> {
     SaveFileDialog {
         /// The handle to refer to this loader instance.
         #[collect(require_static)]
-        self_handle: Option<Handle>,
+        self_handle: Option<LoaderHandle>,
 
         /// The target AVM2 object to select a save location for.
         target_object: FileReferenceObject<'gc>,
@@ -790,7 +790,7 @@ pub enum Loader<'gc> {
     DownloadFileDialog {
         /// The handle to refer to this loader instance.
         #[collect(require_static)]
-        self_handle: Option<Handle>,
+        self_handle: Option<LoaderHandle>,
 
         /// The target AVM1 object to select a file path from.
         target_object: Object<'gc>,
@@ -800,7 +800,7 @@ pub enum Loader<'gc> {
     UploadFile {
         /// The handle to refer to this loader instance.
         #[collect(require_static)]
-        self_handle: Option<Handle>,
+        self_handle: Option<LoaderHandle>,
 
         /// The target AVM1 object to select a file path from.
         target_object: Object<'gc>,
@@ -819,7 +819,7 @@ impl<'gc> Loader<'gc> {
     ///
     /// Returns any AVM errors encountered while sending events to user code.
     fn preload_tick(
-        handle: Handle,
+        handle: LoaderHandle,
         context: &mut UpdateContext<'_, 'gc>,
         limit: &mut ExecutionLimit,
         status: u16,
@@ -1067,7 +1067,7 @@ impl<'gc> Loader<'gc> {
     }
 
     pub fn movie_loader_bytes(
-        handle: Handle,
+        handle: LoaderHandle,
         uc: &mut UpdateContext<'_, 'gc>,
         bytes: Vec<u8>,
     ) -> Result<(), Error> {
@@ -1706,7 +1706,10 @@ impl<'gc> Loader<'gc> {
     }
 
     /// Report a movie loader start event to script code.
-    fn movie_loader_start(handle: Handle, uc: &mut UpdateContext<'_, 'gc>) -> Result<(), Error> {
+    fn movie_loader_start(
+        handle: LoaderHandle,
+        uc: &mut UpdateContext<'_, 'gc>,
+    ) -> Result<(), Error> {
         let me = uc.load_manager.get_loader_mut(handle);
         if me.is_none() {
             return Err(Error::Cancelled);
@@ -1748,7 +1751,7 @@ impl<'gc> Loader<'gc> {
 
     /// Load data into a movie loader.
     fn movie_loader_data(
-        handle: Handle,
+        handle: LoaderHandle,
         uc: &mut UpdateContext<'_, 'gc>,
         data: &[u8],
         url: String,
@@ -2094,7 +2097,7 @@ impl<'gc> Loader<'gc> {
     ///
     /// The current and total length are always reported as compressed lengths.
     fn movie_loader_progress(
-        handle: Handle,
+        handle: LoaderHandle,
         uc: &mut UpdateContext<'_, 'gc>,
         cur_len: usize,
         total_len: usize,
@@ -2160,7 +2163,7 @@ impl<'gc> Loader<'gc> {
 
     /// Report a movie loader completion to script code.
     fn movie_loader_complete(
-        handle: Handle,
+        handle: LoaderHandle,
         uc: &mut UpdateContext<'_, 'gc>,
         dobj: Option<DisplayObject<'gc>>,
         status: u16,
@@ -2329,7 +2332,7 @@ impl<'gc> Loader<'gc> {
     /// This is an associated function because we cannot borrow both the update
     /// context and one of it's loaders.
     fn movie_loader_error(
-        handle: Handle,
+        handle: LoaderHandle,
         uc: &mut UpdateContext<'_, 'gc>,
         msg: AvmString<'gc>,
         status: u16,
