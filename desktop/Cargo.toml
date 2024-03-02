@@ -41,7 +41,7 @@ sys-locale = "0.3.1"
 wgpu = { workspace = true }
 futures = "0.3.30"
 chrono = { version = "0.4", default-features = false, features = [] }
-fluent-templates = "0.8.0"
+fluent-templates = { git = "https://github.com/XAMPPRocky/fluent-templates", rev = "4ed6eebae897c19c4bc7e80800f54d7b8e65a9cf" }
 futures-lite = "2.2.0"
 async-io = "2.3.1"
 async-net = "2.0.0"
