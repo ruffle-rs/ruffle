@@ -36,24 +36,32 @@ pub fn read_preferences(input: &str) -> (ParseResult, Document) {
         }
     };
 
-    match parse_enum_from_item(document.get("graphics_backend")) {
-        Ok(value) => result.result.graphics_backend = value,
+    match parse_item_from_str(document.get("graphics_backend")) {
+        Ok(Some(value)) => result.result.graphics_backend = value,
+        Ok(None) => {}
         Err(e) => result.add_warning(format!("Invalid graphics_backend: {e}")),
     };
 
-    match parse_enum_from_item(document.get("graphics_power_preference")) {
-        Ok(value) => result.result.graphics_power_preference = value,
+    match parse_item_from_str(document.get("graphics_power_preference")) {
+        Ok(Some(value)) => result.result.graphics_power_preference = value,
+        Ok(None) => {}
         Err(e) => result.add_warning(format!("Invalid graphics_power_preference: {e}")),
+    };
+
+    match parse_item_from_str(document.get("language")) {
+        Ok(Some(value)) => result.result.language = value,
+        Ok(None) => {}
+        Err(e) => result.add_warning(format!("Invalid language: {e}")),
     };
 
     (result, document)
 }
 
-fn parse_enum_from_item<T: FromStr + Default>(item: Option<&Item>) -> Result<T, String> {
+fn parse_item_from_str<T: FromStr + Default>(item: Option<&Item>) -> Result<Option<T>, String> {
     if let Some(item) = item {
         if let Some(str) = item.as_str() {
             if let Ok(value) = str.parse::<T>() {
-                Ok(value)
+                Ok(Some(value))
             } else {
                 Err(format!("unsupported value {str:?}"))
             }
@@ -61,13 +69,14 @@ fn parse_enum_from_item<T: FromStr + Default>(item: Option<&Item>) -> Result<T, 
             Err(format!("expected string but found {}", item.type_name()))
         }
     } else {
-        Ok(T::default())
+        Ok(None)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use fluent_templates::loader::langid;
     use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 
     #[test]
@@ -177,6 +186,35 @@ mod tests {
             ParseResult {
                 result: SavedGlobalPreferences {
                     graphics_power_preference: PowerPreference::Low,
+                    ..Default::default()
+                },
+                warnings: vec![]
+            },
+            result
+        );
+    }
+
+    #[test]
+    fn invalid_language_value() {
+        let result = read_preferences("language = \"???\"").0;
+
+        assert_eq!(
+            ParseResult {
+                result: Default::default(),
+                warnings: vec!["Invalid language: unsupported value \"???\"".to_string()]
+            },
+            result
+        );
+    }
+
+    #[test]
+    fn correct_language_value() {
+        let result = read_preferences("language = \"en-US\"").0;
+
+        assert_eq!(
+            ParseResult {
+                result: SavedGlobalPreferences {
+                    language: langid!("en-US"),
                     ..Default::default()
                 },
                 warnings: vec![]

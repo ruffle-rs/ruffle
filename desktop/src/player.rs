@@ -97,6 +97,7 @@ struct ActivePlayer {
 }
 
 impl ActivePlayer {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         opt: &PlayerOptions,
         event_loop: EventLoopProxy<RuffleEvent>,
@@ -105,6 +106,7 @@ impl ActivePlayer {
         descriptors: Arc<Descriptors>,
         movie_view: MovieView,
         font_database: Rc<fontdb::Database>,
+        preferences: GlobalPreferences,
     ) -> Self {
         let mut builder = PlayerBuilder::new();
 
@@ -163,8 +165,13 @@ impl ActivePlayer {
                 window: window.clone(),
             }))
             .with_ui(
-                DesktopUiBackend::new(window.clone(), opt.open_url_mode, font_database)
-                    .expect("Couldn't create ui backend"),
+                DesktopUiBackend::new(
+                    window.clone(),
+                    opt.open_url_mode,
+                    font_database,
+                    preferences,
+                )
+                .expect("Couldn't create ui backend"),
             )
             .with_autoplay(true)
             .with_letterbox(opt.letterbox)
@@ -274,6 +281,7 @@ pub struct PlayerController {
     window: Rc<Window>,
     descriptors: Arc<Descriptors>,
     font_database: Rc<fontdb::Database>,
+    preferences: GlobalPreferences,
 }
 
 impl PlayerController {
@@ -282,6 +290,7 @@ impl PlayerController {
         window: Rc<Window>,
         descriptors: Arc<Descriptors>,
         font_database: fontdb::Database,
+        preferences: GlobalPreferences,
     ) -> Self {
         Self {
             player: None,
@@ -289,6 +298,7 @@ impl PlayerController {
             window,
             descriptors,
             font_database: Rc::new(font_database),
+            preferences,
         }
     }
 
@@ -301,6 +311,7 @@ impl PlayerController {
             self.descriptors.clone(),
             movie_view,
             self.font_database.clone(),
+            self.preferences.clone(),
         ));
     }
 

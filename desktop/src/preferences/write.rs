@@ -1,6 +1,7 @@
 use crate::preferences::PreferencesAndDocument;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use toml_edit::value;
+use unic_langid::LanguageIdentifier;
 
 pub struct PreferencesWriter<'a>(&'a mut PreferencesAndDocument);
 
@@ -18,12 +19,18 @@ impl<'a> PreferencesWriter<'a> {
         self.0.document["graphics_power_preference"] = value(preference.as_str());
         self.0.values.graphics_power_preference = preference;
     }
+
+    pub fn set_language(&mut self, language: LanguageIdentifier) {
+        self.0.document["language"] = value(language.to_string());
+        self.0.values.language = language;
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::preferences::read::read_preferences;
+    use fluent_templates::loader::langid;
 
     fn parse(input: &str) -> PreferencesAndDocument {
         let (result, document) = read_preferences(input);
@@ -76,6 +83,21 @@ mod tests {
             "graphics_power_preference = \"fast\"",
             |writer| writer.set_graphics_power_preference(PowerPreference::Low),
             "graphics_power_preference = \"low\"\n",
+        );
+    }
+
+    #[test]
+    fn set_language() {
+        test(
+            "",
+            |writer| writer.set_language(langid!("en-US")),
+            "language = \"en-US\"\n",
+        );
+
+        test(
+            "language = \"???\"",
+            |writer| writer.set_language(langid!("en-Latn-US-valencia")),
+            "language = \"en-Latn-US-valencia\"\n",
         );
     }
 }

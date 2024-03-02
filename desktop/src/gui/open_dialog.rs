@@ -17,7 +17,6 @@ use winit::event_loop::EventLoopProxy;
 pub struct OpenDialog {
     options: PlayerOptions,
     event_loop: EventLoopProxy<RuffleEvent>,
-    locale: LanguageIdentifier,
 
     // These are outside of PlayerOptions as it can be an invalid value (ie URL) during typing,
     // and we don't want to clear the value if the user, ie, toggles the checkbox.
@@ -35,7 +34,6 @@ impl OpenDialog {
         defaults: PlayerOptions,
         default_url: Option<Url>,
         event_loop: EventLoopProxy<RuffleEvent>,
-        locale: LanguageIdentifier,
     ) -> Self {
         let spoof_url = OptionalUrlField::new(&defaults.spoof_url, "https://example.org/game.swf");
         let base_url = OptionalUrlField::new(&defaults.base, "https://example.org");
@@ -44,7 +42,6 @@ impl OpenDialog {
         Self {
             options: defaults,
             event_loop,
-            locale,
             spoof_url,
             base_url,
             proxy_url,
@@ -76,12 +73,12 @@ impl OpenDialog {
         false
     }
 
-    pub fn show(&mut self, egui_ctx: &egui::Context) -> bool {
+    pub fn show(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) -> bool {
         let mut keep_open = true;
         let mut should_close = false;
         let mut is_valid = true;
 
-        Window::new(text(&self.locale, "open-dialog"))
+        Window::new(text(locale, "open-dialog"))
             .open(&mut keep_open)
             .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
             .collapsible(false)
@@ -92,28 +89,28 @@ impl OpenDialog {
                         .num_columns(2)
                         .striped(true)
                         .show(ui, |ui| {
-                            ui.label(text(&self.locale, "open-dialog-path"));
-                            is_valid &= self.path.ui(&self.locale, ui).value().is_some();
+                            ui.label(text(locale, "open-dialog-path"));
+                            is_valid &= self.path.ui(locale, ui).value().is_some();
                             ui.end_row();
                         });
                 });
 
-                ui.collapsing(text(&self.locale, "network-settings"), |ui| {
-                    is_valid &= self.network_settings(ui);
+                ui.collapsing(text(locale, "network-settings"), |ui| {
+                    is_valid &= self.network_settings(locale, ui);
                 });
 
-                ui.collapsing(text(&self.locale, "player-settings"), |ui| {
-                    self.player_settings(ui);
+                ui.collapsing(text(locale, "player-settings"), |ui| {
+                    self.player_settings(locale, ui);
                 });
 
-                ui.collapsing(text(&self.locale, "movie-parameters"), |ui| {
-                    self.movie_parameters(ui);
+                ui.collapsing(text(locale, "movie-parameters"), |ui| {
+                    self.movie_parameters(locale, ui);
                 });
 
                 ui.horizontal(|ui| {
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         if ui
-                            .add_enabled(is_valid, Button::new(text(&self.locale, "start")))
+                            .add_enabled(is_valid, Button::new(text(locale, "start")))
                             .clicked()
                         {
                             should_close = self.start();
@@ -125,7 +122,7 @@ impl OpenDialog {
         keep_open && !should_close
     }
 
-    fn network_settings(&mut self, ui: &mut Ui) -> bool {
+    fn network_settings(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) -> bool {
         let mut is_valid = true;
 
         Grid::new("open-file-network-options")
@@ -133,103 +130,103 @@ impl OpenDialog {
             .striped(true)
             .spacing([40.0, 4.0])
             .show(ui, |ui| {
-                ui.label(text(&self.locale, "custom-base-url"));
+                ui.label(text(locale, "custom-base-url"));
                 is_valid &= self.base_url.ui(ui, &mut self.options.base).is_valid();
                 ui.end_row();
 
-                ui.label(text(&self.locale, "spoof-swf-url"));
+                ui.label(text(locale, "spoof-swf-url"));
                 is_valid &= self
                     .spoof_url
                     .ui(ui, &mut self.options.spoof_url)
                     .is_valid();
                 ui.end_row();
 
-                ui.label(text(&self.locale, "proxy"));
+                ui.label(text(locale, "proxy"));
                 is_valid &= self.proxy_url.ui(ui, &mut self.options.proxy).is_valid();
                 ui.end_row();
 
-                ui.label(text(&self.locale, "upgrade-http"));
+                ui.label(text(locale, "upgrade-http"));
                 ui.checkbox(
                     &mut self.options.upgrade_to_https,
-                    text(&self.locale, "upgrade-http-check"),
+                    text(locale, "upgrade-http-check"),
                 );
                 ui.end_row();
 
-                ui.label(text(&self.locale, "tcp-connections"));
+                ui.label(text(locale, "tcp-connections"));
                 ComboBox::from_id_source("open-file-advanced-options-tcp-connections")
                     .selected_text(match self.options.tcp_connections {
-                        SocketMode::Allow => text(&self.locale, "tcp-connections-allow"),
-                        SocketMode::Ask => text(&self.locale, "tcp-connections-ask"),
-                        SocketMode::Deny => text(&self.locale, "tcp-connections-deny"),
+                        SocketMode::Allow => text(locale, "tcp-connections-allow"),
+                        SocketMode::Ask => text(locale, "tcp-connections-ask"),
+                        SocketMode::Deny => text(locale, "tcp-connections-deny"),
                     })
                     .show_ui(ui, |ui| {
                         ui.selectable_value(
                             &mut self.options.tcp_connections,
                             SocketMode::Allow,
-                            text(&self.locale, "tcp-connections-allow"),
+                            text(locale, "tcp-connections-allow"),
                         );
                         ui.selectable_value(
                             &mut self.options.tcp_connections,
                             SocketMode::Ask,
-                            text(&self.locale, "tcp-connections-ask"),
+                            text(locale, "tcp-connections-ask"),
                         );
                         ui.selectable_value(
                             &mut self.options.tcp_connections,
                             SocketMode::Deny,
-                            text(&self.locale, "tcp-connections-deny"),
+                            text(locale, "tcp-connections-deny"),
                         );
                     });
                 ui.end_row();
 
                 // TODO: This should probably be a global setting somewhere, not per load
-                ui.label(text(&self.locale, "open-url-mode"));
+                ui.label(text(locale, "open-url-mode"));
                 ComboBox::from_id_source("open-file-advanced-options-open-url-mode")
                     .selected_text(match self.options.open_url_mode {
-                        OpenURLMode::Allow => text(&self.locale, "open-url-mode-allow"),
-                        OpenURLMode::Confirm => text(&self.locale, "open-url-mode-confirm"),
-                        OpenURLMode::Deny => text(&self.locale, "open-url-mode-deny"),
+                        OpenURLMode::Allow => text(locale, "open-url-mode-allow"),
+                        OpenURLMode::Confirm => text(locale, "open-url-mode-confirm"),
+                        OpenURLMode::Deny => text(locale, "open-url-mode-deny"),
                     })
                     .show_ui(ui, |ui| {
                         ui.selectable_value(
                             &mut self.options.open_url_mode,
                             OpenURLMode::Allow,
-                            text(&self.locale, "open-url-mode-allow"),
+                            text(locale, "open-url-mode-allow"),
                         );
                         ui.selectable_value(
                             &mut self.options.open_url_mode,
                             OpenURLMode::Confirm,
-                            text(&self.locale, "open-url-mode-confirm"),
+                            text(locale, "open-url-mode-confirm"),
                         );
                         ui.selectable_value(
                             &mut self.options.open_url_mode,
                             OpenURLMode::Deny,
-                            text(&self.locale, "open-url-mode-deny"),
+                            text(locale, "open-url-mode-deny"),
                         );
                     });
                 ui.end_row();
 
-                ui.label(text(&self.locale, "load-behavior"));
+                ui.label(text(locale, "load-behavior"));
                 ComboBox::from_id_source("open-file-advanced-options-load-behaviour")
                     .selected_text(match self.options.load_behavior {
-                        LoadBehavior::Streaming => text(&self.locale, "load-behavior-streaming"),
-                        LoadBehavior::Delayed => text(&self.locale, "load-behavior-delayed"),
-                        LoadBehavior::Blocking => text(&self.locale, "load-behavior-blocking"),
+                        LoadBehavior::Streaming => text(locale, "load-behavior-streaming"),
+                        LoadBehavior::Delayed => text(locale, "load-behavior-delayed"),
+                        LoadBehavior::Blocking => text(locale, "load-behavior-blocking"),
                     })
                     .show_ui(ui, |ui| {
                         ui.selectable_value(
                             &mut self.options.load_behavior,
                             LoadBehavior::Streaming,
-                            text(&self.locale, "load-behavior-streaming"),
+                            text(locale, "load-behavior-streaming"),
                         );
                         ui.selectable_value(
                             &mut self.options.load_behavior,
                             LoadBehavior::Delayed,
-                            text(&self.locale, "load-behavior-delayed"),
+                            text(locale, "load-behavior-delayed"),
                         );
                         ui.selectable_value(
                             &mut self.options.load_behavior,
                             LoadBehavior::Blocking,
-                            text(&self.locale, "load-behavior-blocking"),
+                            text(locale, "load-behavior-blocking"),
                         );
                     });
                 ui.end_row();
@@ -238,122 +235,120 @@ impl OpenDialog {
         is_valid
     }
 
-    fn player_settings(&mut self, ui: &mut Ui) {
+    fn player_settings(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
         Grid::new("open-file-player-options")
             .num_columns(2)
             .striped(true)
             .spacing([40.0, 4.0])
             .show(ui, |ui| {
-                ui.label(text(&self.locale, "max-execution-duration"));
+                ui.label(text(locale, "max-execution-duration"));
                 Slider::new(&mut self.options.max_execution_duration, 1.0..=600.0)
-                    .suffix(text(&self.locale, "max-execution-duration-suffix"))
+                    .suffix(text(locale, "max-execution-duration-suffix"))
                     .ui(ui);
                 ui.end_row();
 
-                ui.label(text(&self.locale, "quality"));
+                ui.label(text(locale, "quality"));
                 ComboBox::from_id_source("open-file-advanced-options-quality")
                     .selected_text(match self.options.quality {
-                        StageQuality::Low => text(&self.locale, "quality-low"),
-                        StageQuality::Medium => text(&self.locale, "quality-medium"),
-                        StageQuality::High => text(&self.locale, "quality-high"),
-                        StageQuality::Best => text(&self.locale, "quality-best"),
-                        StageQuality::High8x8 => text(&self.locale, "quality-high8x8"),
-                        StageQuality::High8x8Linear => text(&self.locale, "quality-high8x8linear"),
-                        StageQuality::High16x16 => text(&self.locale, "quality-high16x16"),
-                        StageQuality::High16x16Linear => {
-                            text(&self.locale, "quality-high16x16linear")
-                        }
+                        StageQuality::Low => text(locale, "quality-low"),
+                        StageQuality::Medium => text(locale, "quality-medium"),
+                        StageQuality::High => text(locale, "quality-high"),
+                        StageQuality::Best => text(locale, "quality-best"),
+                        StageQuality::High8x8 => text(locale, "quality-high8x8"),
+                        StageQuality::High8x8Linear => text(locale, "quality-high8x8linear"),
+                        StageQuality::High16x16 => text(locale, "quality-high16x16"),
+                        StageQuality::High16x16Linear => text(locale, "quality-high16x16linear"),
                     })
                     .show_ui(ui, |ui| {
                         ui.selectable_value(
                             &mut self.options.quality,
                             StageQuality::Low,
-                            text(&self.locale, "quality-low"),
+                            text(locale, "quality-low"),
                         );
                         ui.selectable_value(
                             &mut self.options.quality,
                             StageQuality::Medium,
-                            text(&self.locale, "quality-medium"),
+                            text(locale, "quality-medium"),
                         );
                         ui.selectable_value(
                             &mut self.options.quality,
                             StageQuality::High,
-                            text(&self.locale, "quality-high"),
+                            text(locale, "quality-high"),
                         );
                         ui.selectable_value(
                             &mut self.options.quality,
                             StageQuality::Best,
-                            text(&self.locale, "quality-best"),
+                            text(locale, "quality-best"),
                         );
                         ui.selectable_value(
                             &mut self.options.quality,
                             StageQuality::High8x8,
-                            text(&self.locale, "quality-high8x8"),
+                            text(locale, "quality-high8x8"),
                         );
                         ui.selectable_value(
                             &mut self.options.quality,
                             StageQuality::High8x8Linear,
-                            text(&self.locale, "quality-high8x8linear"),
+                            text(locale, "quality-high8x8linear"),
                         );
                         ui.selectable_value(
                             &mut self.options.quality,
                             StageQuality::High16x16,
-                            text(&self.locale, "quality-high16x16"),
+                            text(locale, "quality-high16x16"),
                         );
                         ui.selectable_value(
                             &mut self.options.quality,
                             StageQuality::High16x16Linear,
-                            text(&self.locale, "quality-high16x16linear"),
+                            text(locale, "quality-high16x16linear"),
                         );
                     });
                 ui.end_row();
 
-                ui.label(text(&self.locale, "letterbox"));
+                ui.label(text(locale, "letterbox"));
                 ComboBox::from_id_source("open-file-advanced-options-letterbox")
                     .selected_text(match self.options.letterbox {
-                        Letterbox::On => text(&self.locale, "letterbox-on"),
-                        Letterbox::Fullscreen => text(&self.locale, "letterbox-fullscreen"),
-                        Letterbox::Off => text(&self.locale, "letterbox-off"),
+                        Letterbox::On => text(locale, "letterbox-on"),
+                        Letterbox::Fullscreen => text(locale, "letterbox-fullscreen"),
+                        Letterbox::Off => text(locale, "letterbox-off"),
                     })
                     .show_ui(ui, |ui| {
                         ui.selectable_value(
                             &mut self.options.letterbox,
                             Letterbox::On,
-                            text(&self.locale, "letterbox-on"),
+                            text(locale, "letterbox-on"),
                         );
                         ui.selectable_value(
                             &mut self.options.letterbox,
                             Letterbox::Fullscreen,
-                            text(&self.locale, "letterbox-fullscreen"),
+                            text(locale, "letterbox-fullscreen"),
                         );
                         ui.selectable_value(
                             &mut self.options.letterbox,
                             Letterbox::Off,
-                            text(&self.locale, "letterbox-off"),
+                            text(locale, "letterbox-off"),
                         );
                     });
                 ui.end_row();
 
-                ui.label(text(&self.locale, "align"));
+                ui.label(text(locale, "align"));
                 ui.horizontal(|ui| {
                     ComboBox::from_id_source("open-file-advanced-options-align")
                         .selected_text(match self.options.align {
-                            StageAlign::TOP => text(&self.locale, "align-top"),
-                            StageAlign::BOTTOM => text(&self.locale, "align-bottom"),
-                            StageAlign::LEFT => text(&self.locale, "align-left"),
-                            StageAlign::RIGHT => text(&self.locale, "align-right"),
+                            StageAlign::TOP => text(locale, "align-top"),
+                            StageAlign::BOTTOM => text(locale, "align-bottom"),
+                            StageAlign::LEFT => text(locale, "align-left"),
+                            StageAlign::RIGHT => text(locale, "align-right"),
                             _ => {
                                 let align = self.options.align;
                                 if align == StageAlign::TOP | StageAlign::LEFT {
-                                    text(&self.locale, "align-top-left")
+                                    text(locale, "align-top-left")
                                 } else if align == StageAlign::TOP | StageAlign::RIGHT {
-                                    text(&self.locale, "align-top-right")
+                                    text(locale, "align-top-right")
                                 } else if align == StageAlign::BOTTOM | StageAlign::LEFT {
-                                    text(&self.locale, "align-bottom-left")
+                                    text(locale, "align-bottom-left")
                                 } else if align == StageAlign::BOTTOM | StageAlign::RIGHT {
-                                    text(&self.locale, "align-bottom-right")
+                                    text(locale, "align-bottom-right")
                                 } else {
-                                    text(&self.locale, "align-center")
+                                    text(locale, "align-center")
                                 }
                             }
                         })
@@ -361,108 +356,105 @@ impl OpenDialog {
                             ui.selectable_value(
                                 &mut self.options.align,
                                 StageAlign::default(),
-                                text(&self.locale, "align-center"),
+                                text(locale, "align-center"),
                             );
                             ui.selectable_value(
                                 &mut self.options.align,
                                 StageAlign::TOP,
-                                text(&self.locale, "align-top"),
+                                text(locale, "align-top"),
                             );
                             ui.selectable_value(
                                 &mut self.options.align,
                                 StageAlign::BOTTOM,
-                                text(&self.locale, "align-bottom"),
+                                text(locale, "align-bottom"),
                             );
                             ui.selectable_value(
                                 &mut self.options.align,
                                 StageAlign::LEFT,
-                                text(&self.locale, "align-left"),
+                                text(locale, "align-left"),
                             );
                             ui.selectable_value(
                                 &mut self.options.align,
                                 StageAlign::RIGHT,
-                                text(&self.locale, "align-right"),
+                                text(locale, "align-right"),
                             );
                             ui.selectable_value(
                                 &mut self.options.align,
                                 StageAlign::TOP | StageAlign::LEFT,
-                                text(&self.locale, "align-top-left"),
+                                text(locale, "align-top-left"),
                             );
                             ui.selectable_value(
                                 &mut self.options.align,
                                 StageAlign::TOP | StageAlign::RIGHT,
-                                text(&self.locale, "align-top-right"),
+                                text(locale, "align-top-right"),
                             );
                             ui.selectable_value(
                                 &mut self.options.align,
                                 StageAlign::BOTTOM | StageAlign::LEFT,
-                                text(&self.locale, "align-bottom-left"),
+                                text(locale, "align-bottom-left"),
                             );
                             ui.selectable_value(
                                 &mut self.options.align,
                                 StageAlign::BOTTOM | StageAlign::RIGHT,
-                                text(&self.locale, "align-bottom-right"),
+                                text(locale, "align-bottom-right"),
                             );
                         });
-                    ui.checkbox(
-                        &mut self.options.force_align,
-                        text(&self.locale, "align-force"),
-                    );
+                    ui.checkbox(&mut self.options.force_align, text(locale, "align-force"));
                 });
                 ui.end_row();
 
-                ui.label(text(&self.locale, "scale-mode"));
+                ui.label(text(locale, "scale-mode"));
                 ui.horizontal(|ui| {
                     ComboBox::from_id_source("open-file-advanced-options-scale")
                         .selected_text(match self.options.scale {
-                            StageScaleMode::ExactFit => text(&self.locale, "scale-mode-exactfit"),
-                            StageScaleMode::NoBorder => text(&self.locale, "scale-mode-noborder"),
-                            StageScaleMode::NoScale => text(&self.locale, "scale-mode-noscale"),
-                            StageScaleMode::ShowAll => text(&self.locale, "scale-mode-showall"),
+                            StageScaleMode::ExactFit => text(locale, "scale-mode-exactfit"),
+                            StageScaleMode::NoBorder => text(locale, "scale-mode-noborder"),
+                            StageScaleMode::NoScale => text(locale, "scale-mode-noscale"),
+                            StageScaleMode::ShowAll => text(locale, "scale-mode-showall"),
                         })
                         .show_ui(ui, |ui| {
                             ui.selectable_value(
                                 &mut self.options.scale,
                                 StageScaleMode::ExactFit,
-                                text(&self.locale, "scale-mode-exactfit"),
+                                text(locale, "scale-mode-exactfit"),
                             );
                             ui.selectable_value(
                                 &mut self.options.scale,
                                 StageScaleMode::NoBorder,
-                                text(&self.locale, "scale-mode-noborder"),
+                                text(locale, "scale-mode-noborder"),
                             );
                             ui.selectable_value(
                                 &mut self.options.scale,
                                 StageScaleMode::NoScale,
-                                text(&self.locale, "scale-mode-noscale"),
+                                text(locale, "scale-mode-noscale"),
                             );
                             ui.selectable_value(
                                 &mut self.options.scale,
                                 StageScaleMode::ShowAll,
-                                text(&self.locale, "scale-mode-showall"),
+                                text(locale, "scale-mode-showall"),
                             );
                         });
                     ui.checkbox(
                         &mut self.options.force_scale,
-                        text(&self.locale, "scale-mode-force"),
+                        text(locale, "scale-mode-force"),
                     );
                 });
                 ui.end_row();
 
-                ui.label(text(&self.locale, "dummy-external-interface"));
+                ui.label(text(locale, "dummy-external-interface"));
                 ui.checkbox(
                     &mut self.options.dummy_external_interface,
-                    text(&self.locale, "dummy-external-interface-check"),
+                    text(locale, "dummy-external-interface-check"),
                 );
                 ui.end_row();
 
-                ui.label(text(&self.locale, "player-version"));
+                ui.label(text(locale, "player-version"));
                 DragValue::new(&mut self.options.player_version)
                     .clamp_range(1..=32)
                     .ui(ui);
                 ui.end_row();
 
-                ui.label(text(&self.locale, "custom-framerate"));
+                ui.label(text(locale, "custom-framerate"));
                 ui.horizontal(|ui| {
                     Checkbox::without_text(&mut self.framerate_enabled).ui(ui);
                     ui.add_enabled_ui(self.framerate_enabled, |ui| {
@@ -470,7 +462,7 @@ impl OpenDialog {
                             ui.available_size(),
                             Slider::new(&mut self.framerate, 0.0..=100.0)
                                 .clamp_to_range(false)
-                                .suffix(text(&self.locale, "custom-framerate-suffix")),
+                                .suffix(text(locale, "custom-framerate-suffix")),
                         );
                     });
                 });
@@ -478,10 +470,10 @@ impl OpenDialog {
             });
     }
 
-    fn movie_parameters(&mut self, ui: &mut Ui) {
+    fn movie_parameters(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
         ui.horizontal(|ui| {
             if ui
-                .button(text(&self.locale, "open-dialog-add-parameter"))
+                .button(text(locale, "open-dialog-add-parameter"))
                 .clicked()
             {
                 self.options
@@ -492,7 +484,7 @@ impl OpenDialog {
             if ui
                 .add_enabled(
                     !self.options.parameters.is_empty(),
-                    Button::new(text(&self.locale, "open-dialog-remove-parameters")),
+                    Button::new(text(locale, "open-dialog-remove-parameters")),
                 )
                 .clicked()
             {
@@ -513,7 +505,7 @@ impl OpenDialog {
                         ui.text_edit_singleline(value);
                         if ui
                             .button("x")
-                            .on_hover_text(text(&self.locale, "open-dialog-remove-parameter"))
+                            .on_hover_text(text(locale, "open-dialog-remove-parameter"))
                             .clicked()
                         {
                             keep = false;

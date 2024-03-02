@@ -20,14 +20,12 @@ use egui::*;
 use fluent_templates::fluent_bundle::FluentValue;
 use fluent_templates::{static_loader, Loader};
 use rfd::FileDialog;
-use ruffle_core::backend::ui::US_ENGLISH;
 use ruffle_core::debug_ui::Message as DebugMessage;
 use ruffle_core::Player;
 use ruffle_render_wgpu::descriptors::Descriptors;
 use std::collections::HashMap;
 use std::fs;
 use std::sync::{Arc, MutexGuard};
-use sys_locale::get_locale;
 use unic_langid::LanguageIdentifier;
 use winit::event_loop::EventLoopProxy;
 
@@ -48,6 +46,16 @@ pub fn text<'a>(locale: &LanguageIdentifier, id: &'a str) -> Cow<'a, str> {
             tracing::error!("Unknown desktop text id '{id}'");
             Cow::Borrowed(id)
         })
+}
+
+pub fn optional_text(locale: &LanguageIdentifier, id: &str) -> Option<String> {
+    TEXTS.lookup_single_language::<&str>(locale, id, None)
+}
+
+pub fn available_languages() -> Vec<&'static LanguageIdentifier> {
+    let mut result: Vec<_> = TEXTS.locales().collect();
+    result.sort();
+    result
 }
 
 #[allow(dead_code)]
@@ -80,7 +88,6 @@ pub struct RuffleGui {
     context_menu: Option<ContextMenu>,
     open_dialog: OpenDialog,
     preferences_dialog: Option<PreferencesDialog>,
-    locale: LanguageIdentifier,
     default_player_options: PlayerOptions,
     currently_opened: Option<(Url, PlayerOptions)>,
     was_suspended_before_debug: bool,
@@ -96,14 +103,6 @@ impl RuffleGui {
         preferences: GlobalPreferences,
         descriptors: Arc<Descriptors>,
     ) -> Self {
-        // TODO: language negotiation + https://github.com/1Password/sys-locale/issues/14
-        // This should also be somewhere else so it can be supplied through UiBackend too
-
-        let preferred_locale = get_locale();
-        let locale = preferred_locale
-            .and_then(|l| l.parse().ok())
-            .unwrap_or_else(|| US_ENGLISH.clone());
-
         Self {
             is_about_visible: false,
             is_volume_visible: false,
@@ -116,12 +115,10 @@ impl RuffleGui {
                 default_player_options.clone(),
                 default_path,
                 event_loop.clone(),
-                locale.clone(),
             ),
             preferences_dialog: None,
 
             event_loop,
-            locale,
             default_player_options,
             currently_opened: None,
             preferences,
@@ -137,13 +134,15 @@ impl RuffleGui {
         mut player: Option<&mut Player>,
         menu_height_offset: f64,
     ) {
+        let locale = self.preferences.language();
+
         if show_menu {
-            self.main_menu_bar(egui_ctx, player.as_deref_mut());
+            self.main_menu_bar(&locale, egui_ctx, player.as_deref_mut());
         }
 
-        self.about_window(egui_ctx);
-        self.open_dialog(egui_ctx);
-        self.preferences_dialog(egui_ctx);
+        self.about_window(&locale, egui_ctx);
+        self.open_dialog(&locale, egui_ctx);
+        self.preferences_dialog(&locale, egui_ctx);
 
         if let Some(player) = player {
             let was_suspended = player.debug_ui().should_suspend_player();
@@ -172,9 +171,9 @@ impl RuffleGui {
                 });
             }
 
-            self.volume_window(egui_ctx, Some(player));
+            self.volume_window(&locale, egui_ctx, Some(player));
         } else {
-            self.volume_window(egui_ctx, None);
+            self.volume_window(&locale, egui_ctx, None);
         }
 
         if let Some(context_menu) = &mut self.context_menu {
@@ -205,18 +204,18 @@ impl RuffleGui {
 
         // Update dialog state to reflect the newly-opened movie's options.
         self.is_open_dialog_visible = false;
-        self.open_dialog = OpenDialog::new(
-            opt,
-            Some(movie_url),
-            self.event_loop.clone(),
-            self.locale.clone(),
-        );
+        self.open_dialog = OpenDialog::new(opt, Some(movie_url), self.event_loop.clone());
 
         player.set_volume(self.volume_controls.get_volume());
     }
 
     /// Renders the main menu bar at the top of the window.
-    fn main_menu_bar(&mut self, egui_ctx: &egui::Context, mut player: Option<&mut Player>) {
+    fn main_menu_bar(
+        &mut self,
+        locale: &LanguageIdentifier,
+        egui_ctx: &egui::Context,
+        mut player: Option<&mut Player>,
+    ) {
         egui::TopBottomPanel::top("menu_bar").show(egui_ctx, |ui| {
             // TODO(mike): Make some MenuItem struct with shortcut info to handle this more cleanly.
             if ui.ctx().input_mut(|input| {
@@ -243,11 +242,11 @@ impl RuffleGui {
             }
 
             menu::bar(ui, |ui| {
-                menu::menu_button(ui, text(&self.locale, "file-menu"), |ui| {
+                menu::menu_button(ui, text(locale, "file-menu"), |ui| {
                     let mut shortcut;
 
                     shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::O);
-                    if Button::new(text(&self.locale, "file-menu-open-quick"))
+                    if Button::new(text(locale, "file-menu-open-quick"))
                         .shortcut_text(ui.ctx().format_shortcut(&shortcut))
                         .ui(ui)
                         .clicked()
@@ -256,23 +255,23 @@ impl RuffleGui {
                     }
 
                     shortcut = KeyboardShortcut::new(Modifiers::COMMAND | Modifiers::SHIFT, Key::O);
-                    if Button::new(text(&self.locale, "file-menu-open-advanced"))
+                    if Button::new(text(locale, "file-menu-open-advanced"))
                         .shortcut_text(ui.ctx().format_shortcut(&shortcut))
                         .ui(ui).clicked() {
                         ui.close_menu();
                         self.open_file_advanced();
                     }
 
-                    if ui.add_enabled(player.is_some(), Button::new(text(&self.locale, "file-menu-reload"))).clicked() {
+                    if ui.add_enabled(player.is_some(), Button::new(text(locale, "file-menu-reload"))).clicked() {
                         self.reload_movie(ui);
                     }
 
-                    if ui.add_enabled(player.is_some(), Button::new(text(&self.locale, "file-menu-close"))).clicked() {
+                    if ui.add_enabled(player.is_some(), Button::new(text(locale, "file-menu-close"))).clicked() {
                         self.close_movie(ui);
                     }
 
                     ui.separator();
-                    if Button::new(text(&self.locale, "file-menu-preferences"))
+                    if Button::new(text(locale, "file-menu-preferences"))
                         .ui(ui)
                         .clicked()
                     {
@@ -282,7 +281,7 @@ impl RuffleGui {
                     ui.separator();
 
                     shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::Q);
-                    if Button::new(text(&self.locale, "file-menu-exit"))
+                    if Button::new(text(locale, "file-menu-exit"))
                         .shortcut_text(ui.ctx().format_shortcut(&shortcut))
                         .ui(ui)
                         .clicked()
@@ -290,48 +289,48 @@ impl RuffleGui {
                         self.request_exit(ui);
                     }
                 });
-                menu::menu_button(ui, text(&self.locale, "controls-menu"), |ui| {
+                menu::menu_button(ui, text(locale, "controls-menu"), |ui| {
                     ui.add_enabled_ui(player.is_some(), |ui| {
                         let playing = player.as_ref().map(|p| p.is_playing()).unwrap_or_default();
                         let pause_shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::P);
-                        if Button::new(text(&self.locale, if playing { "controls-menu-suspend" } else { "controls-menu-resume" })).shortcut_text(ui.ctx().format_shortcut(&pause_shortcut)).ui(ui).clicked() {
+                        if Button::new(text(locale, if playing { "controls-menu-suspend" } else { "controls-menu-resume" })).shortcut_text(ui.ctx().format_shortcut(&pause_shortcut)).ui(ui).clicked() {
                             ui.close_menu();
                             if let Some(player) = &mut player {
                                 player.set_is_playing(!player.is_playing());
                             }
                         }
                     });
-                    if Button::new(text(&self.locale, "controls-menu-volume")).ui(ui).clicked() {
+                    if Button::new(text(locale, "controls-menu-volume")).ui(ui).clicked() {
                         self.show_volume_screen(ui);
                     }
                 });
-                menu::menu_button(ui, text(&self.locale, "debug-menu"), |ui| {
+                menu::menu_button(ui, text(locale, "debug-menu"), |ui| {
                     ui.add_enabled_ui(player.is_some(), |ui| {
-                        if Button::new(text(&self.locale, "debug-menu-open-stage")).ui(ui).clicked() {
+                        if Button::new(text(locale, "debug-menu-open-stage")).ui(ui).clicked() {
                             ui.close_menu();
                             if let Some(player) = &mut player {
                                 player.debug_ui().queue_message(DebugMessage::TrackStage);
                             }
                         }
-                        if Button::new(text(&self.locale, "debug-menu-open-movie")).ui(ui).clicked() {
+                        if Button::new(text(locale, "debug-menu-open-movie")).ui(ui).clicked() {
                             ui.close_menu();
                             if let Some(player) = &mut player {
                                 player.debug_ui().queue_message(DebugMessage::TrackTopLevelMovie);
                             }
                         }
-                        if Button::new(text(&self.locale, "debug-menu-open-movie-list")).ui(ui).clicked() {
+                        if Button::new(text(locale, "debug-menu-open-movie-list")).ui(ui).clicked() {
                             ui.close_menu();
                             if let Some(player) = &mut player {
                                 player.debug_ui().queue_message(DebugMessage::ShowKnownMovies);
                             }
                         }
-                        if Button::new(text(&self.locale, "debug-menu-open-domain-list")).ui(ui).clicked() {
+                        if Button::new(text(locale, "debug-menu-open-domain-list")).ui(ui).clicked() {
                             ui.close_menu();
                             if let Some(player) = &mut player {
                                 player.debug_ui().queue_message(DebugMessage::ShowDomains);
                             }
                         }
-                        if Button::new(text(&self.locale, "debug-menu-search-display-objects")).ui(ui).clicked() {
+                        if Button::new(text(locale, "debug-menu-search-display-objects")).ui(ui).clicked() {
                             ui.close_menu();
                             if let Some(player) = &mut player {
                                 player.debug_ui().queue_message(DebugMessage::SearchForDisplayObject);
@@ -339,21 +338,21 @@ impl RuffleGui {
                         }
                     });
                 });
-                menu::menu_button(ui, text(&self.locale, "help-menu"), |ui| {
-                    if ui.button(text(&self.locale, "help-menu-join-discord")).clicked() {
+                menu::menu_button(ui, text(locale, "help-menu"), |ui| {
+                    if ui.button(text(locale, "help-menu-join-discord")).clicked() {
                         self.launch_website(ui, "https://discord.gg/ruffle");
                     }
-                    if ui.button(text(&self.locale, "help-menu-report-a-bug")).clicked() {
+                    if ui.button(text(locale, "help-menu-report-a-bug")).clicked() {
                         self.launch_website(ui, "https://github.com/ruffle-rs/ruffle/issues/new?assignees=&labels=bug&projects=&template=bug_report.yml");
                     }
-                    if ui.button(text(&self.locale, "help-menu-sponsor-development")).clicked() {
+                    if ui.button(text(locale, "help-menu-sponsor-development")).clicked() {
                         self.launch_website(ui, "https://opencollective.com/ruffle/");
                     }
-                    if ui.button(text(&self.locale, "help-menu-translate-ruffle")).clicked() {
+                    if ui.button(text(locale, "help-menu-translate-ruffle")).clicked() {
                         self.launch_website(ui, "https://crowdin.com/project/ruffle");
                     }
                     ui.separator();
-                    if ui.button(text(&self.locale, "help-menu-about")).clicked() {
+                    if ui.button(text(locale, "help-menu-about")).clicked() {
                         self.show_about_screen(ui);
                     }
                 });
@@ -362,8 +361,8 @@ impl RuffleGui {
     }
 
     /// Renders the About Ruffle window.
-    fn about_window(&mut self, egui_ctx: &egui::Context) {
-        egui::Window::new(text(&self.locale, "about-ruffle"))
+    fn about_window(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) {
+        egui::Window::new(text(locale, "about-ruffle"))
             .collapsible(false)
             .resizable(false)
             .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -377,17 +376,17 @@ impl RuffleGui {
                     Grid::new("about_ruffle_version_info")
                         .striped(true)
                         .show(ui, |ui| {
-                            ui.label(text(&self.locale, "about-ruffle-version"));
+                            ui.label(text(locale, "about-ruffle-version"));
                             ui.label(env!("CARGO_PKG_VERSION"));
                             ui.end_row();
 
-                            ui.label(text(&self.locale, "about-ruffle-channel"));
+                            ui.label(text(locale, "about-ruffle-channel"));
                             ui.label(env!("CFG_RELEASE_CHANNEL"));
                             ui.end_row();
 
                             let build_time = env!("VERGEN_BUILD_TIMESTAMP");
                             if build_time != VERGEN_UNKNOWN {
-                                ui.label(text(&self.locale, "about-ruffle-build-time"));
+                                ui.label(text(locale, "about-ruffle-build-time"));
                                 ui.label(
                                     DateTime::parse_from_rfc3339(build_time)
                                         .map(|t| t.format("%c").to_string())
@@ -398,7 +397,7 @@ impl RuffleGui {
 
                             let sha = env!("VERGEN_GIT_SHA");
                             if sha != VERGEN_UNKNOWN {
-                                ui.label(text(&self.locale, "about-ruffle-commit-ref"));
+                                ui.label(text(locale, "about-ruffle-commit-ref"));
                                 ui.hyperlink_to(
                                     sha,
                                     format!("https://github.com/ruffle-rs/ruffle/commit/{}", sha),
@@ -408,7 +407,7 @@ impl RuffleGui {
 
                             let commit_time = env!("VERGEN_GIT_COMMIT_TIMESTAMP");
                             if sha != VERGEN_UNKNOWN {
-                                ui.label(text(&self.locale, "about-ruffle-commit-time"));
+                                ui.label(text(locale, "about-ruffle-commit-time"));
                                 ui.label(
                                     DateTime::parse_from_rfc3339(commit_time)
                                         .map(|t| t.format("%c").to_string())
@@ -417,7 +416,7 @@ impl RuffleGui {
                                 ui.end_row();
                             }
 
-                            ui.label(text(&self.locale, "about-ruffle-build-features"));
+                            ui.label(text(locale, "about-ruffle-build-features"));
                             ui.horizontal_wrapped(|ui| {
                                 ui.label(env!("VERGEN_CARGO_FEATURES").replace(',', ", "));
                             });
@@ -426,19 +425,19 @@ impl RuffleGui {
 
                     ui.horizontal(|ui| {
                         ui.hyperlink_to(
-                            text(&self.locale, "about-ruffle-visit-website"),
+                            text(locale, "about-ruffle-visit-website"),
                             "https://ruffle.rs",
                         );
                         ui.hyperlink_to(
-                            text(&self.locale, "about-ruffle-visit-github"),
+                            text(locale, "about-ruffle-visit-github"),
                             "https://github.com/ruffle-rs/ruffle/",
                         );
                         ui.hyperlink_to(
-                            text(&self.locale, "about-ruffle-visit-discord"),
+                            text(locale, "about-ruffle-visit-discord"),
                             "https://discord.gg/ruffle",
                         );
                         ui.hyperlink_to(
-                            text(&self.locale, "about-ruffle-visit-sponsor"),
+                            text(locale, "about-ruffle-visit-sponsor"),
                             "https://opencollective.com/ruffle/",
                         );
                         ui.shrink_width_to_current();
@@ -448,8 +447,13 @@ impl RuffleGui {
     }
 
     /// Renders the volume controls window.
-    fn volume_window(&mut self, egui_ctx: &egui::Context, player: Option<&mut Player>) {
-        egui::Window::new(text(&self.locale, "volume-controls"))
+    fn volume_window(
+        &mut self,
+        locale: &LanguageIdentifier,
+        egui_ctx: &egui::Context,
+        player: Option<&mut Player>,
+    ) {
+        egui::Window::new(text(locale, "volume-controls"))
             .collapsible(false)
             .resizable(false)
             .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -460,13 +464,13 @@ impl RuffleGui {
                 let changed_checkbox = ui
                     .checkbox(
                         &mut self.volume_controls.is_muted,
-                        text(&self.locale, "volume-controls-mute"),
+                        text(locale, "volume-controls-mute"),
                     )
                     .changed();
 
                 ui.add_enabled_ui(!self.volume_controls.is_muted, |ui| {
                     ui.horizontal(|ui| {
-                        ui.label(text(&self.locale, "volume-controls-volume"));
+                        ui.label(text(locale, "volume-controls-volume"));
                         changed_slider = ui
                             .add(Slider::new(&mut self.volume_controls.volume, 0.0..=100.0))
                             .changed();
@@ -499,7 +503,6 @@ impl RuffleGui {
         self.preferences_dialog = Some(PreferencesDialog::new(
             &self.descriptors,
             self.preferences.clone(),
-            self.locale.clone(),
         ));
     }
 
@@ -519,16 +522,16 @@ impl RuffleGui {
         ui.close_menu();
     }
 
-    fn open_dialog(&mut self, egui_ctx: &egui::Context) {
+    fn open_dialog(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) {
         if self.is_open_dialog_visible {
-            let keep_open = self.open_dialog.show(egui_ctx);
+            let keep_open = self.open_dialog.show(locale, egui_ctx);
             self.is_open_dialog_visible = keep_open;
         }
     }
 
-    fn preferences_dialog(&mut self, egui_ctx: &egui::Context) {
+    fn preferences_dialog(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) {
         let keep_open = if let Some(dialog) = &mut self.preferences_dialog {
-            dialog.show(egui_ctx)
+            dialog.show(locale, egui_ctx)
         } else {
             true
         };

@@ -12,3 +12,5 @@ graphics-backend-default = Default
 graphics-power = Power Preference
 graphics-power-low = Low (e.g. iGPU)
 graphics-power-high = High (e.g. GPU)
+
+language = Language
