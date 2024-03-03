@@ -93,7 +93,7 @@ impl From<&GlobalPreferences> for PlayerOptions {
 /// which may be lost when this Player is closed (dropped)
 struct ActivePlayer {
     player: Arc<Mutex<Player>>,
-    executor: Arc<Mutex<WinitAsyncExecutor>>,
+    executor: Arc<WinitAsyncExecutor>,
 }
 
 impl ActivePlayer {
@@ -342,11 +342,7 @@ impl PlayerController {
 
     pub fn poll(&self) {
         if let Some(player) = &self.player {
-            player
-                .executor
-                .lock()
-                .expect("Executor lock must be available")
-                .poll_all()
+            player.executor.poll_all()
         }
     }
 }
