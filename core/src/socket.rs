@@ -170,27 +170,37 @@ impl<'gc> Sockets<'gc> {
         }
     }
 
+    pub fn close_all(&mut self) {
+        for (_, socket) in self.sockets.drain() {
+            Self::close_internal(socket);
+        }
+    }
+
     pub fn close(&mut self, handle: SocketHandle) {
-        if let Some(Socket {
+        if let Some(socket) = self.sockets.remove(handle) {
+            Self::close_internal(socket);
+        }
+    }
+
+    fn close_internal(socket: Socket) {
+        let Socket {
             sender,
             target,
             connected: _,
-        }) = self.sockets.remove(handle)
-        {
-            drop(sender); // NOTE: By dropping the sender, the reading task will close automatically.
+        } = socket;
 
-            // Clear the buffers if the connection was closed.
-            match target {
-                SocketKind::Avm1(target) => {
-                    let target =
-                        XmlSocket::cast(target.into()).expect("target should be XmlSocket");
+        drop(sender); // NOTE: By dropping the sender, the reading task will close automatically.
 
-                    target.read_buffer().clear();
-                }
-                SocketKind::Avm2(target) => {
-                    target.read_buffer().clear();
-                    target.write_buffer().clear();
-                }
+        // Clear the buffers if the connection was closed.
+        match target {
+            SocketKind::Avm1(target) => {
+                let target = XmlSocket::cast(target.into()).expect("target should be XmlSocket");
+
+                target.read_buffer().clear();
+            }
+            SocketKind::Avm2(target) => {
+                target.read_buffer().clear();
+                target.write_buffer().clear();
             }
         }
     }
