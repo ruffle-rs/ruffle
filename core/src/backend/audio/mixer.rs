@@ -636,13 +636,6 @@ impl AudioMixer {
             .sound_instances
             .lock()
             .expect("Cannot be called reentrant");
-        // This is a workaround for a bug in generational-arena:
-        // Arena::clear does not properly bump the generational index, allowing for stale references
-        // to continue to work (this caused #1315). Arena::remove will force a generation bump.
-        // See https://github.com/fitzgen/generational-arena/issues/30
-        if let Some((i, _)) = sound_instances.iter().next() {
-            sound_instances.remove(i);
-        }
         sound_instances.clear();
     }
 
