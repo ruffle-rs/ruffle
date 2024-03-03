@@ -518,11 +518,11 @@ impl<'gc> AudioManager<'gc> {
         audio.stop_all_sounds();
     }
 
-    pub fn is_sound_playing(&mut self, sound: SoundInstanceHandle) -> bool {
+    pub fn is_sound_playing(&self, sound: SoundInstanceHandle) -> bool {
         self.sounds.iter().any(|other| other.instance == sound)
     }
 
-    pub fn is_sound_playing_with_handle(&mut self, sound: SoundHandle) -> bool {
+    pub fn is_sound_playing_with_handle(&self, sound: SoundHandle) -> bool {
         self.sounds.iter().any(|other| other.sound == Some(sound))
     }
 

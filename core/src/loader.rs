@@ -1019,7 +1019,7 @@ impl<'gc> Loader<'gc> {
 
                     let movie = SwfMovie::from_data(&body, url.to_string(), loader_url)?;
                     player.lock().unwrap().mutate_with_update_context(|uc| {
-                        uc.set_root_movie(movie);
+                        uc.replace_root_movie(movie);
                     });
                     return Ok(());
                 }
@@ -1102,7 +1102,7 @@ impl<'gc> Loader<'gc> {
                 "loadBytes",
                 "replacing root movie"
             );
-            uc.set_root_movie(movie);
+            uc.replace_root_movie(movie);
             return Ok(());
         }
 
