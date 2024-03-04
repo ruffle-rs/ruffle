@@ -6,7 +6,7 @@ FROM node:20
 # Installing Rust using rustup:
 RUN wget 'https://sh.rustup.rs' --quiet -O- | sh -s -- -y --profile minimal --target wasm32-unknown-unknown
 ENV PATH="/root/.cargo/bin:$PATH"
-RUN cargo install wasm-bindgen-cli --version 0.2.91
+RUN cargo install wasm-bindgen-cli --version 0.2.92
 # Building Ruffle:
 COPY . ruffle
 WORKDIR ruffle/web
