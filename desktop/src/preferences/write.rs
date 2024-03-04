@@ -11,25 +11,25 @@ impl<'a> PreferencesWriter<'a> {
     }
 
     pub fn set_graphics_backend(&mut self, backend: GraphicsBackend) {
-        self.0.document["graphics_backend"] = value(backend.as_str());
+        self.0.toml_document["graphics_backend"] = value(backend.as_str());
         self.0.values.graphics_backend = backend;
     }
 
     pub fn set_graphics_power_preference(&mut self, preference: PowerPreference) {
-        self.0.document["graphics_power_preference"] = value(preference.as_str());
+        self.0.toml_document["graphics_power_preference"] = value(preference.as_str());
         self.0.values.graphics_power_preference = preference;
     }
 
     pub fn set_language(&mut self, language: LanguageIdentifier) {
-        self.0.document["language"] = value(language.to_string());
+        self.0.toml_document["language"] = value(language.to_string());
         self.0.values.language = language;
     }
 
     pub fn set_output_device(&mut self, name: Option<String>) {
         if let Some(name) = &name {
-            self.0.document["output_device"] = value(name);
+            self.0.toml_document["output_device"] = value(name);
         } else {
-            self.0.document.remove("output_device");
+            self.0.toml_document.remove("output_device");
         }
         self.0.values.output_device = name;
     }
@@ -44,13 +44,13 @@ mod tests {
     fn parse(input: &str) -> PreferencesAndDocument {
         let (result, document) = read_preferences(input);
         PreferencesAndDocument {
-            document,
+            toml_document: document,
             values: result.result,
         }
     }
 
     fn check_roundtrip(preferences: &mut PreferencesAndDocument) {
-        let read_result = read_preferences(&preferences.document.to_string());
+        let read_result = read_preferences(&preferences.toml_document.to_string());
         assert_eq!(
             preferences.values, read_result.0.result,
             "roundtrip failed: expected != actual"
@@ -62,7 +62,7 @@ mod tests {
         let mut writer = PreferencesWriter::new(&mut preferences);
         fun(&mut writer);
         check_roundtrip(&mut preferences);
-        assert_eq!(expected, preferences.document.to_string());
+        assert_eq!(expected, preferences.toml_document.to_string());
     }
 
     #[test]
