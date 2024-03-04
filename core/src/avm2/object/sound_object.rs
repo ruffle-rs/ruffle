@@ -15,6 +15,7 @@ use core::fmt;
 use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use id3::{Tag, TagLike};
 use std::cell::{Ref, RefMut};
+use std::io::Cursor;
 use swf::SoundInfo;
 
 use super::SoundChannelObject;
@@ -155,7 +156,7 @@ impl<'gc> SoundObject<'gc> {
             .id3info
             .construct(activation, &[])
             .expect("failed to construct ID3Info object");
-        let tag = Tag::read_from(bytes);
+        let tag = Tag::read_from2(Cursor::new(bytes));
         if let Ok(ref tag) = tag {
             if let Some(v) = tag.album() {
                 id3.set_public_property(
