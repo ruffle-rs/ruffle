@@ -207,9 +207,9 @@ dependencies = [
 
 [[package]]
 name = "arboard"
-version = "3.3.1"
+version = "3.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1faa3c733d9a3dd6fbaf85da5d162a2e03b2e0033a90dceb0e2a90fdd1e5380a"
+checksum = "a2041f1943049c7978768d84e6d0fd95de98b76d6c4727b09e78ec253d29fa58"
 dependencies = [
  "clipboard-win",
  "core-graphics",
@@ -2627,9 +2627,9 @@ dependencies = [
 
 [[package]]
 name = "id3"
-version = "1.12.0"
+version = "1.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2ba0a11a3cf6f08d58a5629531bdb4e7c3b8b595e9812a31a7058b1176c4631e"
+checksum = "79f41f7e5ad125c63d55b112a98afb753742fa7f97692bfbbc52544b89e1ff1f"
 dependencies = [
  "bitflags 2.4.2",
  "byteorder",
@@ -2732,9 +2732,9 @@ dependencies = [
 
 [[package]]
 name = "insta"
-version = "1.35.1"
+version = "1.36.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c985c1bef99cf13c58fade470483d81a2bfe846ebde60ed28cc2dddec2df9e2"
+checksum = "0a7c22c4d34ef4788c351e971c52bfdfe7ea2766f8c5466bc175dd46e52ac22e"
 dependencies = [
  "console",
  "lazy_static",
