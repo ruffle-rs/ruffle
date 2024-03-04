@@ -53,7 +53,7 @@ clap = { version = "4.5.1", features = ["derive"], optional=true }
 realfft = "3.3.0"
 hashbrown = { version = "0.14.3", features = ["raw"] }
 scopeguard = "1.2.0"
-fluent-templates = { git = "https://github.com/XAMPPRocky/fluent-templates", rev = "4ed6eebae897c19c4bc7e80800f54d7b8e65a9cf" }
+fluent-templates = "0.9.0"
 egui = { workspace = true, optional = true }
 egui_extras = { version = "0.26.2", optional = true }
 png = { version = "0.17.13", optional = true }

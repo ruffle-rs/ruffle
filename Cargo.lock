@@ -1967,8 +1967,9 @@ dependencies = [
 
 [[package]]
 name = "fluent-template-macros"
-version = "0.8.0"
-source = "git+https://github.com/XAMPPRocky/fluent-templates?rev=4ed6eebae897c19c4bc7e80800f54d7b8e65a9cf#4ed6eebae897c19c4bc7e80800f54d7b8e65a9cf"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c58fd7421bad2b89506827409317a3088b74d0d637202003f2e87efdc43ae8e"
 dependencies = [
  "flume 0.10.14",
  "ignore",
@@ -1981,8 +1982,9 @@ dependencies = [
 
 [[package]]
 name = "fluent-templates"
-version = "0.8.0"
-source = "git+https://github.com/XAMPPRocky/fluent-templates?rev=4ed6eebae897c19c4bc7e80800f54d7b8e65a9cf#4ed6eebae897c19c4bc7e80800f54d7b8e65a9cf"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc023356542b155925aa5e433806ddd33acb46f0218541f869b342676332cd79"
 dependencies = [
  "arc-swap",
  "fluent",
