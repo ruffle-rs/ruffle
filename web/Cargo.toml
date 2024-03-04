@@ -33,7 +33,7 @@ profiling = []
 [dependencies]
 console_error_panic_hook = { version = "0.1.7", optional = true }
 slotmap = { workspace = true }
-js-sys = "0.3.68"
+js-sys = "0.3.69"
 tracing = { workspace = true, features = ["log"] }
 tracing-subscriber = { version = "0.3.18", default-features = false, features = ["registry"] }
 tracing-log = "0.2.0"
@@ -65,7 +65,7 @@ path = "../core"
 features = ["audio", "mp3", "nellymoser", "default_compatibility_rules", "default_font"]
 
 [dependencies.web-sys]
-version = "0.3.68"
+version = "0.3.69"
 features = [
     "AddEventListenerOptions", "AudioBuffer", "AudioBufferSourceNode", "AudioContext",
     "AudioDestinationNode", "AudioNode", "AudioParam", "Blob", "BlobPropertyBag",
