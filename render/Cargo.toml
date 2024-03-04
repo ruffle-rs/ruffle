@@ -22,7 +22,7 @@ downcast-rs = "1.2.0"
 lyon = { version = "1.0.1", optional = true }
 lyon_geom = "1.0.5"
 thiserror = "1.0"
-wasm-bindgen = { version = "=0.2.91", optional = true }
+wasm-bindgen = { version = "=0.2.92", optional = true }
 enum-map = "2.7.3"
 serde = { version = "1.0.197", features = ["derive"] }
 clap = { version = "4.5.1", features = ["derive"], optional = true }
