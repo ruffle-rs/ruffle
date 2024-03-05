@@ -87,9 +87,9 @@ pub struct Opt {
     #[clap(long, short, default_value = "show-all")]
     pub scale: StageScaleMode,
 
-    /// Audio volume as a number between 0 (muted) and 1 (full volume)
-    #[clap(long, short, default_value = "1.0")]
-    pub volume: f32,
+    /// Audio volume as a number between 0 (muted) and 1 (full volume). Default is 1.
+    #[clap(long, short)]
+    pub volume: Option<f32>,
 
     /// Prevent movies from changing the stage scale mode.
     #[clap(long, action)]

@@ -33,6 +33,16 @@ impl<'a> PreferencesWriter<'a> {
         }
         self.0.values.output_device = name;
     }
+
+    pub fn set_mute(&mut self, mute: bool) {
+        self.0.toml_document["mute"] = value(mute);
+        self.0.values.mute = mute;
+    }
+
+    pub fn set_volume(&mut self, volume: f32) {
+        self.0.toml_document["volume"] = value(volume as f64);
+        self.0.values.volume = volume;
+    }
 }
 
 #[cfg(test)]
@@ -122,6 +132,21 @@ mod tests {
             "output_device = \"Speakers\"",
             |writer| writer.set_output_device(None),
             "",
+        );
+    }
+
+    #[test]
+    fn set_volume() {
+        test("", |writer| writer.set_volume(0.5), "volume = 0.5\n");
+    }
+
+    #[test]
+    fn set_mute() {
+        test("", |writer| writer.set_mute(true), "mute = true\n");
+        test(
+            "mute = true",
+            |writer| writer.set_mute(false),
+            "mute = false\n",
         );
     }
 }
