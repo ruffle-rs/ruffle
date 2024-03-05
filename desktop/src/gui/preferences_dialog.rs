@@ -141,28 +141,28 @@ impl PreferencesDialog {
                         ui.selectable_value(
                             &mut self.graphics_backend,
                             GraphicsBackend::Vulkan,
-                            text(locale, "graphics-backend-vulkan"),
+                            "Vulkan",
                         );
                     }
                     if self.available_backends.contains(wgpu::Backends::METAL) {
                         ui.selectable_value(
                             &mut self.graphics_backend,
                             GraphicsBackend::Metal,
-                            text(locale, "graphics-backend-metal"),
+                            "Metal",
                         );
                     }
                     if self.available_backends.contains(wgpu::Backends::DX12) {
                         ui.selectable_value(
                             &mut self.graphics_backend,
                             GraphicsBackend::Dx12,
-                            text(locale, "graphics-backend-dx12"),
+                            "DirectX 12",
                         );
                     }
                     if self.available_backends.contains(wgpu::Backends::GL) {
                         ui.selectable_value(
                             &mut self.graphics_backend,
                             GraphicsBackend::Gl,
-                            text(locale, "graphics-backend-gl"),
+                            "OpenGL",
                         );
                     }
                 });
@@ -262,10 +262,10 @@ impl PreferencesDialog {
 fn graphics_backend_name(locale: &LanguageIdentifier, backend: GraphicsBackend) -> Cow<str> {
     match backend {
         GraphicsBackend::Default => text(locale, "graphics-backend-default"),
-        GraphicsBackend::Vulkan => text(locale, "graphics-backend-vulkan"),
-        GraphicsBackend::Metal => text(locale, "graphics-backend-metal"),
-        GraphicsBackend::Dx12 => text(locale, "graphics-backend-dx12"),
-        GraphicsBackend::Gl => text(locale, "graphics-backend-gl"),
+        GraphicsBackend::Vulkan => Cow::Borrowed("Vulkan"),
+        GraphicsBackend::Metal => Cow::Borrowed("Metal"),
+        GraphicsBackend::Dx12 => Cow::Borrowed("DirectX 12"),
+        GraphicsBackend::Gl => Cow::Borrowed("OpenGL"),
     }
 }
 
