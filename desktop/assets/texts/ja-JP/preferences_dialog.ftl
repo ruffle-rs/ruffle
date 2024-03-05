@@ -1,0 +1,13 @@
+preferences-dialog = Ruffleの設定
+graphics-backend = グラフィック バックエンド
+graphics-backend-vulkan = Vulkan
+graphics-backend-gl = OpenGL
+graphics-backend-dx12 = DirectX 12
+graphics-backend-metal = Metal
+graphics-backend-default = デフォルト
+graphics-power = 電源設定
+graphics-power-low = 低(iGPU等の場合)
+graphics-power-high = 高(GPU等の場合)
+language = 言語
+audio-output-device = オーディオ出力デバイス
+audio-output-device-default = システムのデフォルト

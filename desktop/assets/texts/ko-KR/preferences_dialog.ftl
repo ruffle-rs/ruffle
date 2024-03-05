@@ -1,0 +1,14 @@
+preferences-dialog = Ruffle 환경설정
+preference-locked-by-cli = 읽기 전용 (CLI로 설정)
+graphics-backend = 그래픽 백엔드
+graphics-backend-vulkan = Vulkan
+graphics-backend-gl = OpenGL
+graphics-backend-dx12 = DirectX 12
+graphics-backend-metal = Metal
+graphics-backend-default = 기본
+graphics-power = 파워 환경설정
+graphics-power-low = 낮음 (예: iGPU)
+graphics-power-high = 높음 (예: GPU)
+language = 언어
+audio-output-device = 오디오 출력 장치
+audio-output-device-default = 시스템 기본
