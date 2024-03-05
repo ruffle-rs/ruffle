@@ -62,23 +62,23 @@ impl GlobalPreferences {
     }
 
     pub fn graphics_backends(&self) -> GraphicsBackend {
-        self.cli.graphics.unwrap_or(
+        self.cli.graphics.unwrap_or_else(|| {
             self.preferences
                 .lock()
                 .expect("Preferences is not reentrant")
                 .values
-                .graphics_backend,
-        )
+                .graphics_backend
+        })
     }
 
     pub fn graphics_power_preference(&self) -> PowerPreference {
-        self.cli.power.unwrap_or(
+        self.cli.power.unwrap_or_else(|| {
             self.preferences
                 .lock()
                 .expect("Preferences is not reentrant")
                 .values
-                .graphics_power_preference,
-        )
+                .graphics_power_preference
+        })
     }
 
     pub fn language(&self) -> LanguageIdentifier {
@@ -97,6 +97,24 @@ impl GlobalPreferences {
             .values
             .output_device
             .clone()
+    }
+
+    pub fn mute(&self) -> bool {
+        self.preferences
+            .lock()
+            .expect("Preferences is not reentrant")
+            .values
+            .mute
+    }
+
+    pub fn preferred_volume(&self) -> f32 {
+        self.cli.volume.unwrap_or_else(|| {
+            self.preferences
+                .lock()
+                .expect("Preferences is not reentrant")
+                .values
+                .volume
+        })
     }
 
     pub fn write_preferences(&self, fun: impl FnOnce(&mut PreferencesWriter)) -> Result<(), Error> {
@@ -138,6 +156,8 @@ pub struct SavedGlobalPreferences {
     pub graphics_power_preference: PowerPreference,
     pub language: LanguageIdentifier,
     pub output_device: Option<String>,
+    pub mute: bool,
+    pub volume: f32,
 }
 
 impl Default for SavedGlobalPreferences {
@@ -151,6 +171,8 @@ impl Default for SavedGlobalPreferences {
             graphics_power_preference: Default::default(),
             language: locale,
             output_device: None,
+            mute: false,
+            volume: 1.0,
         }
     }
 }

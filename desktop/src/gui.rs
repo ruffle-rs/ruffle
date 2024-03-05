@@ -106,7 +106,7 @@ impl RuffleGui {
         Self {
             is_about_visible: false,
             is_volume_visible: false,
-            volume_controls: VolumeControls::new(false, default_player_options.volume * 100.0),
+            volume_controls: VolumeControls::new(&preferences),
             is_open_dialog_visible: false,
             was_suspended_before_debug: false,
 
@@ -481,6 +481,19 @@ impl RuffleGui {
                     if let Some(player) = player {
                         player.set_volume(self.volume_controls.get_volume());
                     }
+                    // Don't update persisted volume if the CLI set it
+                    if self.preferences.cli.volume.is_none() {
+                        if let Err(e) = self.preferences.write_preferences(|writer| {
+                            if changed_checkbox {
+                                writer.set_mute(self.volume_controls.is_muted);
+                            }
+                            if changed_slider {
+                                writer.set_volume(self.volume_controls.volume / 100.0);
+                            }
+                        }) {
+                            tracing::warn!("Couldn't update volume preferences: {e}");
+                        }
+                    }
                 }
             });
     }
@@ -568,8 +581,11 @@ pub struct VolumeControls {
 }
 
 impl VolumeControls {
-    fn new(is_muted: bool, volume: f32) -> Self {
-        Self { is_muted, volume }
+    fn new(preferences: &GlobalPreferences) -> Self {
+        Self {
+            is_muted: preferences.mute(),
+            volume: preferences.preferred_volume() * 100.0,
+        }
     }
 
     /// Returns the volume between 0 and 1 (calculated out of the

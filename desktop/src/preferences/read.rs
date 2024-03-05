@@ -60,6 +60,18 @@ pub fn read_preferences(input: &str) -> (ParseResult, Document) {
         Err(e) => result.add_warning(format!("Invalid output_device: {e}")),
     };
 
+    match parse_item_from_float(document.get("volume")) {
+        Ok(Some(value)) => result.result.volume = value.clamp(0.0, 1.0) as f32,
+        Ok(None) => {}
+        Err(e) => result.add_warning(format!("Invalid volume: {e}")),
+    };
+
+    match parse_item_from_bool(document.get("mute")) {
+        Ok(Some(value)) => result.result.mute = value,
+        Ok(None) => {}
+        Err(e) => result.add_warning(format!("Invalid mute: {e}")),
+    };
+
     (result, document)
 }
 
@@ -73,6 +85,30 @@ fn parse_item_from_str<T: FromStr + Default>(item: Option<&Item>) -> Result<Opti
             }
         } else {
             Err(format!("expected string but found {}", item.type_name()))
+        }
+    } else {
+        Ok(None)
+    }
+}
+
+fn parse_item_from_float(item: Option<&Item>) -> Result<Option<f64>, String> {
+    if let Some(item) = item {
+        if let Some(value) = item.as_float() {
+            Ok(Some(value))
+        } else {
+            Err(format!("expected float but found {}", item.type_name()))
+        }
+    } else {
+        Ok(None)
+    }
+}
+
+fn parse_item_from_bool(item: Option<&Item>) -> Result<Option<bool>, String> {
+    if let Some(item) = item {
+        if let Some(value) = item.as_bool() {
+            Ok(Some(value))
+        } else {
+            Err(format!("expected boolean but found {}", item.type_name()))
         }
     } else {
         Ok(None)
@@ -260,6 +296,78 @@ mod tests {
                 ]
             },
             result
+        );
+    }
+
+    #[test]
+    fn mute() {
+        assert_eq!(
+            ParseResult {
+                result: SavedGlobalPreferences {
+                    mute: false,
+                    ..Default::default()
+                },
+                warnings: vec!["Invalid mute: expected boolean but found string".to_string()]
+            },
+            read_preferences("mute = \"false\"").0
+        );
+
+        assert_eq!(
+            ParseResult {
+                result: SavedGlobalPreferences {
+                    mute: true,
+                    ..Default::default()
+                },
+                warnings: vec![]
+            },
+            read_preferences("mute = true").0
+        );
+
+        assert_eq!(
+            ParseResult {
+                result: SavedGlobalPreferences {
+                    mute: false,
+                    ..Default::default()
+                },
+                warnings: vec![]
+            },
+            read_preferences("").0
+        );
+    }
+
+    #[test]
+    fn volume() {
+        assert_eq!(
+            ParseResult {
+                result: SavedGlobalPreferences {
+                    volume: 1.0,
+                    ..Default::default()
+                },
+                warnings: vec!["Invalid volume: expected float but found string".to_string()]
+            },
+            read_preferences("volume = \"0.5\"").0
+        );
+
+        assert_eq!(
+            ParseResult {
+                result: SavedGlobalPreferences {
+                    volume: 0.5,
+                    ..Default::default()
+                },
+                warnings: vec![]
+            },
+            read_preferences("volume = 0.5").0
+        );
+
+        assert_eq!(
+            ParseResult {
+                result: SavedGlobalPreferences {
+                    volume: 0.0,
+                    ..Default::default()
+                },
+                warnings: vec![]
+            },
+            read_preferences("volume = -1.0").0
         );
     }
 }
