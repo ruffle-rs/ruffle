@@ -553,30 +553,31 @@ pub fn optimize<'gc>(
 
                 let stack_value = stack.pop();
                 if let Some(resolved_type) = resolved_type {
-                    if matches!(stack_value, Some(ValueType::Null)) {
-                        // As long as this Coerce isn't coercing to one
-                        // of these special classes, we can remove it.
-                        if !GcCell::ptr_eq(
-                            resolved_type,
-                            activation.avm2().classes().int.inner_class_definition(),
-                        ) && !GcCell::ptr_eq(
-                            resolved_type,
-                            activation.avm2().classes().uint.inner_class_definition(),
-                        ) && !GcCell::ptr_eq(
-                            resolved_type,
-                            activation.avm2().classes().number.inner_class_definition(),
-                        ) && !GcCell::ptr_eq(
-                            resolved_type,
-                            activation.avm2().classes().boolean.inner_class_definition(),
-                        ) && !GcCell::ptr_eq(
-                            resolved_type,
-                            activation.avm2().classes().void.inner_class_definition(),
-                        ) {
+                    // As long as this Coerce isn't coercing to one
+                    // of these special classes, we could remove it.
+                    if !GcCell::ptr_eq(
+                        resolved_type,
+                        activation.avm2().classes().int.inner_class_definition(),
+                    ) && !GcCell::ptr_eq(
+                        resolved_type,
+                        activation.avm2().classes().uint.inner_class_definition(),
+                    ) && !GcCell::ptr_eq(
+                        resolved_type,
+                        activation.avm2().classes().number.inner_class_definition(),
+                    ) && !GcCell::ptr_eq(
+                        resolved_type,
+                        activation.avm2().classes().boolean.inner_class_definition(),
+                    ) && !GcCell::ptr_eq(
+                        resolved_type,
+                        activation.avm2().classes().void.inner_class_definition(),
+                    ) {
+                        if matches!(stack_value, Some(ValueType::Null)) {
                             *op = Op::Nop;
-                        }
-                    } else if let Some(ValueType::Class(class_object)) = stack_value {
-                        if GcCell::ptr_eq(resolved_type, class_object.inner_class_definition()) {
-                            *op = Op::Nop;
+                        } else if let Some(ValueType::Class(class_object)) = stack_value {
+                            if GcCell::ptr_eq(resolved_type, class_object.inner_class_definition())
+                            {
+                                *op = Op::Nop;
+                            }
                         }
                     }
 
