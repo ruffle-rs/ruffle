@@ -14,9 +14,6 @@ use web_sys::{HtmlCanvasElement, HtmlDocument, HtmlTextAreaElement};
 
 use chrono::{DateTime, Utc};
 
-#[cfg(target_arch = "wasm32")]
-use chrono::{NaiveDateTime, TimeZone};
-
 #[derive(Debug)]
 struct FullScreenError {
     jsval: String,
@@ -71,8 +68,7 @@ impl FileDialogResult for WebFileDialogResult {
     fn modification_time(&self) -> Option<DateTime<Utc>> {
         #[cfg(target_arch = "wasm32")]
         if let Some(handle) = &self.handle {
-            NaiveDateTime::from_timestamp_opt(handle.inner().last_modified() as i64, 0)
-                .map(|ts| Utc.from_utc_datetime(&ts))
+            DateTime::from_timestamp(handle.inner().last_modified() as i64, 0)
         } else {
             None
         }
