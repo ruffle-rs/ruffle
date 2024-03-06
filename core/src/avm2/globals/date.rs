@@ -196,11 +196,11 @@ impl<'builder, 'activation_a, 'gc, T: TimeZone> DateAdjustment<'builder, 'activa
         let second = self.check_value(self.second, current.second())?;
         let millisecond = self.check_value(self.millisecond, current.timestamp_subsec_millis())?;
 
-        let duration = Duration::days(day - 1)
-            + Duration::hours(hour)
-            + Duration::minutes(minute)
-            + Duration::seconds(second)
-            + Duration::milliseconds(millisecond);
+        let duration = Duration::try_days(day - 1)?
+            + Duration::try_hours(hour)?
+            + Duration::try_minutes(minute)?
+            + Duration::try_seconds(second)?
+            + Duration::try_milliseconds(millisecond)?;
 
         if let LocalResult::Single(Some(result)) = current
             .timezone()
