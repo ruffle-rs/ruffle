@@ -1,4 +1,5 @@
 preferences-dialog = Ruffleの設定
+preference-locked-by-cli = 読み取り専用 (CLIによる設定)
 graphics-backend = グラフィック バックエンド
 graphics-backend-vulkan = Vulkan
 graphics-backend-gl = OpenGL
