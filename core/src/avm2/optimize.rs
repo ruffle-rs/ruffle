@@ -10,48 +10,80 @@ use gc_arena::{Gc, GcCell};
 use std::collections::HashSet;
 
 #[derive(Clone, Copy, Debug)]
-enum ValueType<'gc> {
-    // Either a class, or null.
-    Class(ClassObject<'gc>),
-    Int,
-    Uint,
-    Number,
-    Boolean,
-    Null,
-    Any,
+struct OptValue<'gc> {
+    // This corresponds to the compile-time assumptions about the type:
+    // - primitive types can't be undefined or null,
+    // - Object (and any other non-primitive type) is non-undefined, but can be null
+    // - None (the * type) can be any value,
+    // - a value typed as int can be stored as a Number (and vice versa),
+    //   BUT an int-typed value should always pass `is int`
+    //   (say, a Value::Number above hardcoded int-range that's still representable as i32).
+    // Note that `null is Object` is still `false`. So think of this type more in terms of
+    // "could this value be a possible value of `var t: T`"
+    pub class: Option<ClassObject<'gc>>,
+
+    // true if the value is guaranteed to be Value::Integer
+    // should only be set if class is numeric.
+    pub contains_valid_integer: bool,
+    // true if the value is guaranteed to be Value::Integer AND is >=0
+    // should only be set if class is numeric.
+    pub contains_valid_unsigned: bool,
+
+    // true if value is guaranteed to be null.
+    // TODO: FP actually has a separate `null` type just for this, this can be observed in VerifyErrors
+    // (a separate type would also prevent accidental "null int" values)
+    pub guaranteed_null: bool,
+}
+impl<'gc> OptValue<'gc> {
+    pub fn any() -> Self {
+        Self {
+            class: None,
+            contains_valid_integer: false,
+            contains_valid_unsigned: false,
+            guaranteed_null: false,
+        }
+    }
+    pub fn null() -> Self {
+        Self {
+            class: None,
+            guaranteed_null: true,
+            ..Self::any()
+        }
+    }
+    pub fn of_type(class: ClassObject<'gc>) -> Self {
+        Self {
+            class: Some(class),
+            ..Self::any()
+        }
+    }
+    pub fn of_type_from_class(class: GcCell<'gc, Class<'gc>>) -> Self {
+        // FIXME: Getting the ClassObject this way should be unnecessary
+        // after the ClassObject refactor
+        if let Some(cls) = class.read().class_object() {
+            Self::of_type(cls)
+        } else {
+            Self::any()
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
-struct Locals<'gc>(Vec<ValueType<'gc>>);
+struct Locals<'gc>(Vec<OptValue<'gc>>);
 
 impl<'gc> Locals<'gc> {
     fn new(size: usize) -> Self {
-        Self(vec![ValueType::Any; size])
-    }
-
-    fn set_class_object(&mut self, index: usize, class: ClassObject<'gc>) {
-        self.0[index] = ValueType::Class(class);
-    }
-
-    fn set_class(&mut self, index: usize, class: GcCell<'gc, Class<'gc>>) {
-        // FIXME: Getting the ClassObject this way should be unnecessary
-        // after the ClassObject refactor
-        self.0[index] = class
-            .read()
-            .class_object()
-            .map(ValueType::Class)
-            .unwrap_or(ValueType::Any);
+        Self(vec![OptValue::any(); size])
     }
 
     fn set_any(&mut self, index: usize) {
-        self.0[index] = ValueType::Any;
+        self.0[index] = OptValue::any();
     }
 
-    fn set(&mut self, index: usize, value: ValueType<'gc>) {
+    fn set(&mut self, index: usize, value: OptValue<'gc>) {
         self.0[index] = value;
     }
 
-    fn at(&self, index: usize) -> Option<ValueType<'gc>> {
+    fn at(&self, index: usize) -> Option<OptValue<'gc>> {
         self.0.get(index).copied()
     }
 
@@ -61,7 +93,7 @@ impl<'gc> Locals<'gc> {
 }
 
 #[derive(Clone, Debug)]
-struct Stack<'gc>(Vec<ValueType<'gc>>);
+struct Stack<'gc>(Vec<OptValue<'gc>>);
 
 impl<'gc> Stack<'gc> {
     fn new() -> Self {
@@ -69,51 +101,29 @@ impl<'gc> Stack<'gc> {
     }
 
     fn push_class_object(&mut self, class: ClassObject<'gc>) {
-        self.0.push(ValueType::Class(class));
+        self.0.push(OptValue::of_type(class));
     }
 
     fn push_class(&mut self, class: GcCell<'gc, Class<'gc>>) {
-        // FIXME: Getting the ClassObject this way should be unnecessary
-        // after the ClassObject refactor
-        self.0.push(
-            class
-                .read()
-                .class_object()
-                .map(ValueType::Class)
-                .unwrap_or(ValueType::Any),
-        );
-    }
-
-    fn push_int(&mut self) {
-        self.0.push(ValueType::Int);
-    }
-
-    fn push_uint(&mut self) {
-        self.0.push(ValueType::Uint);
-    }
-
-    fn push_number(&mut self) {
-        self.0.push(ValueType::Number);
-    }
-
-    fn push_boolean(&mut self) {
-        self.0.push(ValueType::Boolean);
+        self.0.push(OptValue::of_type_from_class(class));
     }
 
     fn push_any(&mut self) {
-        self.0.push(ValueType::Any);
+        self.0.push(OptValue::any());
     }
 
-    fn push_null(&mut self) {
-        self.0.push(ValueType::Null);
-    }
-
-    fn push(&mut self, value: ValueType<'gc>) {
+    fn push(&mut self, value: OptValue<'gc>) {
         self.0.push(value);
     }
 
-    fn pop(&mut self) -> Option<ValueType<'gc>> {
+    fn pop(&mut self) -> Option<OptValue<'gc>> {
+        // the Option will not needed once we get cross-block stack verification
         self.0.pop()
+    }
+
+    fn pop_or_any(&mut self) -> OptValue<'gc> {
+        // the unwrap will not needed once we get cross-block stack verification
+        self.0.pop().unwrap_or(OptValue::any())
     }
 
     pub fn pop_for_multiname(&mut self, multiname: Gc<'gc, Multiname<'gc>>) {
@@ -145,6 +155,32 @@ pub fn optimize<'gc>(
     // These make the code less readable
     #![allow(clippy::manual_filter)]
     #![allow(clippy::single_match)]
+
+    // this is unfortunate, but way more convenient than grabbing types from Activation
+    struct Types<'gc> {
+        pub object: ClassObject<'gc>,
+        pub int: ClassObject<'gc>,
+        pub uint: ClassObject<'gc>,
+        pub number: ClassObject<'gc>,
+        pub boolean: ClassObject<'gc>,
+        pub class: ClassObject<'gc>,
+        pub string: ClassObject<'gc>,
+        pub array: ClassObject<'gc>,
+        pub function: ClassObject<'gc>,
+        pub void: ClassObject<'gc>,
+    }
+    let types = Types {
+        object: activation.avm2().classes().object,
+        int: activation.avm2().classes().int,
+        uint: activation.avm2().classes().uint,
+        number: activation.avm2().classes().number,
+        boolean: activation.avm2().classes().boolean,
+        class: activation.avm2().classes().class,
+        string: activation.avm2().classes().string,
+        array: activation.avm2().classes().array,
+        function: activation.avm2().classes().function,
+        void: activation.avm2().classes().void,
+    };
 
     let method_body = method
         .body()
@@ -184,12 +220,12 @@ pub fn optimize<'gc>(
     // Initial set of local types
     let mut initial_local_types = Locals::new(method_body.num_locals as usize);
     if let Some(this_class) = this_class {
-        initial_local_types.set_class_object(0, this_class);
+        initial_local_types.set(0, OptValue::of_type(this_class));
     }
 
     for (i, argument_type) in argument_types.iter().enumerate() {
         if let Some(argument_type) = argument_type {
-            initial_local_types.set_class(i + 1, *argument_type);
+            initial_local_types.set(i + 1, OptValue::of_type_from_class(*argument_type));
             // `i + 1` because the receiver takes up local #0
         }
     }
@@ -238,32 +274,37 @@ pub fn optimize<'gc>(
 
         match op {
             Op::CoerceB => {
-                let stack_value = stack.pop();
-                if matches!(stack_value, Some(ValueType::Boolean)) {
+                let stack_value = stack.pop_or_any();
+                if stack_value.class == Some(types.boolean) {
                     *op = Op::Nop;
                 }
-                stack.push_boolean();
+                stack.push_class_object(types.boolean);
             }
             Op::CoerceD => {
-                let stack_value = stack.pop();
-                if matches!(stack_value, Some(ValueType::Number)) {
+                let stack_value = stack.pop_or_any();
+                if stack_value.class == Some(types.number)
+                    || stack_value.class == Some(types.int)
+                    || stack_value.class == Some(types.uint)
+                {
                     *op = Op::Nop;
                 }
-                stack.push_number();
+                stack.push_class_object(types.number);
             }
             Op::CoerceI => {
-                let stack_value = stack.pop();
-                if matches!(stack_value, Some(ValueType::Int | ValueType::Uint)) {
+                let stack_value = stack.pop_or_any();
+                // TODO: maybe the type check is safe here...?
+                if stack_value.contains_valid_integer {
                     *op = Op::Nop;
                 }
-                stack.push_int();
+                stack.push_class_object(types.int);
             }
             Op::CoerceU => {
-                let stack_value = stack.pop();
-                if matches!(stack_value, Some(ValueType::Uint)) {
+                let stack_value = stack.pop_or_any();
+                // TODO: maybe the type check is safe here...?
+                if stack_value.contains_valid_unsigned {
                     *op = Op::Nop;
                 }
-                stack.push_uint();
+                stack.push_class_object(types.uint);
             }
             Op::CoerceA => {
                 // This does actually inhibit optimizations in FP
@@ -271,11 +312,11 @@ pub fn optimize<'gc>(
                 stack.push_any();
             }
             Op::CoerceS => {
-                let stack_value = stack.pop();
-                if matches!(stack_value, Some(ValueType::Null)) {
+                let stack_value = stack.pop_or_any();
+                if stack_value.guaranteed_null {
                     *op = Op::Nop;
                 }
-                stack.push_class_object(activation.avm2().classes().string);
+                stack.push_class_object(types.string);
             }
             Op::Equals
             | Op::StrictEquals
@@ -285,80 +326,84 @@ pub fn optimize<'gc>(
             | Op::GreaterEquals => {
                 stack.pop();
                 stack.pop();
-                stack.push_boolean();
+                stack.push_class_object(types.boolean);
             }
             Op::Not => {
                 stack.pop();
-                stack.push_boolean();
+                stack.push_class_object(types.boolean);
             }
             Op::PushTrue | Op::PushFalse => {
-                stack.push_boolean();
+                stack.push_class_object(types.boolean);
             }
             Op::PushNull => {
-                stack.push_null();
+                // TODO: we should push null type here
+                stack.push(OptValue::null());
             }
             Op::PushUndefined => {
-                stack.push_any();
+                stack.push_class_object(types.void);
             }
             Op::PushNaN => {
-                stack.push_number();
+                stack.push_class_object(types.number);
             }
             Op::PushByte { value } => {
+                let mut new_value = OptValue::of_type(types.int);
+                new_value.contains_valid_integer = true;
                 if *value >= 0 {
-                    stack.push_uint();
-                } else {
-                    stack.push_int();
+                    new_value.contains_valid_unsigned = true;
                 }
+                stack.push(new_value);
             }
             Op::PushShort { value } => {
+                let mut new_value = OptValue::of_type(types.int);
+                new_value.contains_valid_integer = true;
                 if *value >= 0 {
-                    stack.push_uint();
-                } else {
-                    stack.push_int();
+                    new_value.contains_valid_unsigned = true;
                 }
+                stack.push(new_value);
             }
             Op::PushInt { value } => {
+                let mut new_value = OptValue::of_type(types.int);
                 if *value < -(1 << 28) || *value >= (1 << 28) {
-                    stack.push_number();
-                } else if *value >= 0 {
-                    stack.push_uint();
+                    // will be coerced to Number
                 } else {
-                    stack.push_int();
+                    new_value.contains_valid_integer = true;
+                    if *value >= 0 {
+                        new_value.contains_valid_unsigned = true;
+                    }
                 }
+                stack.push(new_value);
             }
             Op::DecrementI => {
-                // This doesn't give any Number-int guarantees
+                // TODO (same for other I ops): analyze what _exactly_ the type int implies
+                // and whether we can use Number or (u)int here
                 stack.pop();
                 stack.push_any();
             }
             Op::IncrementI => {
-                // This doesn't give any Number-int guarantees
                 stack.pop();
                 stack.push_any();
             }
             Op::DecLocalI { index } => {
                 if (*index as usize) < local_types.len() {
-                    // This doesn't give any Number-int guarantees
                     local_types.set_any(*index as usize);
                 }
             }
             Op::IncLocalI { index } => {
                 if (*index as usize) < local_types.len() {
-                    // This doesn't give any Number-int guarantees
                     local_types.set_any(*index as usize);
                 }
             }
             Op::Increment => {
                 stack.pop();
-                stack.push_number();
+                stack.push_class_object(types.number);
             }
             Op::Decrement => {
                 stack.pop();
-                stack.push_number();
+                stack.push_class_object(types.number);
             }
             Op::Negate => {
                 stack.pop();
-                stack.push_number();
+                stack.push_class_object(types.number);
             }
             Op::AddI => {
                 stack.pop();
@@ -376,38 +421,39 @@ pub fn optimize<'gc>(
                 stack.push_any();
             }
             Op::Add => {
-                stack.pop();
-                stack.pop();
-                stack.push_any();
+                let value2 = stack.pop_or_any();
+                let value1 = stack.pop_or_any();
+                if (value1.class == Some(types.int)
+                    || value1.class == Some(types.uint)
+                    || value1.class == Some(types.number))
+                    && (value2.class == Some(types.int)
+                        || value2.class == Some(types.uint)
+                        || value2.class == Some(types.number))
+                {
+                    stack.push_class_object(types.number);
+                } else {
+                    stack.push_any();
+                }
             }
             Op::Subtract => {
                 stack.pop();
                 stack.pop();
-                stack.push_any();
+                stack.push_class_object(types.number);
             }
             Op::Multiply => {
                 stack.pop();
                 stack.pop();
-
-                // NOTE: In our current implementation, this is guaranteed,
-                // but it may not be after correctness fixes to match avmplus
-                stack.push_number();
+                stack.push_class_object(types.number);
             }
             Op::Divide => {
                 stack.pop();
                 stack.pop();
-
-                // NOTE: In our current implementation, this is guaranteed,
-                // but it may not be after correctness fixes to match avmplus
-                stack.push_number();
+                stack.push_class_object(types.number);
             }
             Op::Modulo => {
                 stack.pop();
                 stack.pop();
-
-                // NOTE: In our current implementation, this is guaranteed,
-                // but it may not be after correctness fixes to match avmplus
-                stack.push_number();
+                stack.push_class_object(types.number);
             }
             Op::BitNot => {
                 stack.pop();
@@ -444,35 +490,35 @@ pub fn optimize<'gc>(
                 stack.push_any();
             }
             Op::PushDouble { .. } => {
-                stack.push_number();
+                stack.push_class_object(types.number);
             }
             Op::PushString { .. } => {
-                stack.push_class_object(activation.avm2().classes().string);
+                stack.push_class_object(types.string);
             }
             Op::NewArray { num_args } => {
                 stack.popn(*num_args);
 
-                stack.push_class_object(activation.avm2().classes().array);
+                stack.push_class_object(types.array);
             }
             Op::NewObject { num_args } => {
                 stack.popn(*num_args * 2);
 
-                stack.push_class_object(activation.avm2().classes().object);
+                stack.push_class_object(types.object);
             }
             Op::NewFunction { .. } => {
-                stack.push_class_object(activation.avm2().classes().function);
+                stack.push_class_object(types.function);
             }
             Op::NewClass { .. } => {
-                stack.push_class_object(activation.avm2().classes().class);
+                stack.push_class_object(types.class);
             }
             Op::IsType { .. } => {
                 stack.pop();
-                stack.push_boolean();
+                stack.push_class_object(types.boolean);
             }
             Op::IsTypeLate => {
                 stack.pop();
                 stack.pop();
-                stack.push_boolean();
+                stack.push_class_object(types.boolean);
             }
             Op::ApplyType { num_types } => {
                 stack.popn(*num_types);
@@ -487,41 +533,38 @@ pub fn optimize<'gc>(
                 stack.push_any();
             }
             Op::AsType { class } => {
-                let stack_value = stack.pop();
-                stack.push_class(*class);
+                let stack_value = stack.pop_or_any();
 
-                if matches!(stack_value, Some(ValueType::Null)) {
+                let mut new_value = OptValue::any();
+                if let Some(class_object) = stack_value.class {
+                    if GcCell::ptr_eq(*class, class_object.inner_class_definition()) {
+                        // TODO: there are more cases when this can succeed,
+                        // like inheritance and numbers (`x: Number = 1; x as int;`)
+                        new_value = stack_value;
+                    }
+                }
+                if stack_value.guaranteed_null {
+                    // null always turns into null
                     *op = Op::Nop;
                 }
+                stack.push(new_value);
             }
             Op::Coerce { class } => {
-                let stack_value = stack.pop();
-                stack.push_class(*class);
-
-                // As long as this Coerce isn't coercing to one
-                // of these special classes, we could remove it.
-                if !GcCell::ptr_eq(
-                    *class,
-                    activation.avm2().classes().int.inner_class_definition(),
-                ) && !GcCell::ptr_eq(
-                    *class,
-                    activation.avm2().classes().uint.inner_class_definition(),
-                ) && !GcCell::ptr_eq(
-                    *class,
-                    activation.avm2().classes().number.inner_class_definition(),
-                ) && !GcCell::ptr_eq(
-                    *class,
-                    activation.avm2().classes().boolean.inner_class_definition(),
-                ) && !GcCell::ptr_eq(
-                    *class,
-                    activation.avm2().classes().void.inner_class_definition(),
-                ) {
-                    if matches!(stack_value, Some(ValueType::Null)) {
+                let stack_value = stack.pop_or_any();
+                if stack_value.guaranteed_null {
+                    // Coercing null to a non-primitive or void is a noop.
+                    if !GcCell::ptr_eq(*class, types.int.inner_class_definition())
+                        && !GcCell::ptr_eq(*class, types.uint.inner_class_definition())
+                        && !GcCell::ptr_eq(*class, types.number.inner_class_definition())
+                        && !GcCell::ptr_eq(*class, types.boolean.inner_class_definition())
+                        && !GcCell::ptr_eq(*class, types.void.inner_class_definition())
+                    {
                         *op = Op::Nop;
-                    } else if let Some(ValueType::Class(class_object)) = stack_value {
-                        if GcCell::ptr_eq(*class, class_object.inner_class_definition()) {
-                            *op = Op::Nop;
-                        }
+                    }
+                } else if let Some(class_object) = stack_value.class {
+                    // TODO: this could check for inheritance
+                    if GcCell::ptr_eq(*class, class_object.inner_class_definition()) {
+                        *op = Op::Nop;
                     }
                 }
             }
@@ -591,12 +634,11 @@ pub fn optimize<'gc>(
             }
             Op::GetProperty { multiname } => {
                 let mut stack_push_done = false;
-
                 stack.pop_for_multiname(*multiname);
-                let stack_value = stack.pop();
+                let stack_value = stack.pop_or_any();
 
                 if !multiname.has_lazy_component() {
-                    if let Some(ValueType::Class(class)) = stack_value {
+                    if let Some(class) = stack_value.class {
                         if !class.inner_class_definition().read().is_interface() {
                             match class.instance_vtable().get_trait(multiname) {
                                 Some(Property::Slot { slot_id })
@@ -649,12 +691,10 @@ pub fn optimize<'gc>(
             }
             Op::InitProperty { multiname } => {
                 stack.pop();
-
                 stack.pop_for_multiname(*multiname);
-                let stack_value = stack.pop();
-
+                let stack_value = stack.pop_or_any();
                 if !multiname.has_lazy_component() {
-                    if let Some(ValueType::Class(class)) = stack_value {
+                    if let Some(class) = stack_value.class {
                         if !class.inner_class_definition().read().is_interface() {
                             match class.instance_vtable().get_trait(multiname) {
                                 Some(Property::Slot { slot_id })
@@ -670,12 +710,10 @@ pub fn optimize<'gc>(
             }
             Op::SetProperty { multiname } => {
                 stack.pop();
-
                 stack.pop_for_multiname(*multiname);
-                let stack_value = stack.pop();
-
+                let stack_value = stack.pop_or_any();
                 if !multiname.has_lazy_component() {
-                    if let Some(ValueType::Class(class)) = stack_value {
+                    if let Some(class) = stack_value.class {
                         if !class.inner_class_definition().read().is_interface() {
                             match class.instance_vtable().get_trait(multiname) {
                                 Some(Property::Slot { slot_id }) => {
@@ -729,10 +767,10 @@ pub fn optimize<'gc>(
                 stack.pop_for_multiname(*multiname);
 
                 // Then receiver.
-                let stack_value = stack.pop();
+                let stack_value = stack.pop_or_any();
 
                 if !multiname.has_lazy_component() {
-                    if let Some(ValueType::Class(class)) = stack_value {
+                    if let Some(class) = stack_value.class {
                         if !class.inner_class_definition().read().is_interface() {
                             match class.instance_vtable().get_trait(multiname) {
                                 Some(Property::Method { disp_id }) => {
@@ -800,7 +838,9 @@ pub fn optimize<'gc>(
             }
             Op::Li8 => {
                 stack.pop();
-                stack.push_int();
+                let mut value = OptValue::of_type(types.int);
+                value.contains_valid_integer = true;
+                stack.push_class_object(types.int);
             }
             Op::ReturnVoid
             | Op::ReturnValue
