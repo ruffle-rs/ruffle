@@ -12,7 +12,7 @@ workspace = true
 
 [dependencies]
 anyhow = "1.0.80"
-clap = { version = "4.5.1", features = ["derive"] }
+clap = { version = "4.5.2", features = ["derive"] }
 tracing = { workspace = true}
 tracing-subscriber = { workspace = true }
 ruffle_socket_format = { path = "../socket-format" }
