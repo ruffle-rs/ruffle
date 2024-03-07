@@ -286,21 +286,6 @@ impl<'gc> ScriptObjectData<'gc> {
         }
     }
 
-    /// Initialize a slot by its index.
-    pub fn init_slot(
-        &mut self,
-        id: u32,
-        value: Value<'gc>,
-        _mc: &Mutation<'gc>,
-    ) -> Result<(), Error<'gc>> {
-        if let Some(slot) = self.slots.get_mut(id as usize) {
-            *slot = value;
-            Ok(())
-        } else {
-            Err(format!("Slot index {id} out of bounds!").into())
-        }
-    }
-
     pub fn install_instance_slots(&mut self) {
         use std::ops::Deref;
         let vtable = self.vtable.unwrap();
