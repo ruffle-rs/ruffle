@@ -140,7 +140,7 @@ impl<'gc> Stack<'gc> {
 pub fn optimize<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: &BytecodeMethod<'gc>,
-    code: &mut Vec<Op>,
+    code: &mut Vec<Op<'gc>>,
     jump_targets: HashSet<i32>,
 ) {
     // These make the code less readable
@@ -227,23 +227,6 @@ pub fn optimize<'gc>(
     }
 
     let mut stack = Stack::new();
-
-    macro_rules! stack_pop_multiname {
-        ($index: expr) => {{
-            let multiname = method
-                .translation_unit()
-                // note: ideally this should be a VerifyError here or earlier
-                .pool_maybe_uninitialized_multiname(*$index, &mut activation.context);
-
-            if let Ok(multiname) = multiname {
-                stack.pop_for_multiname(multiname);
-                Some(multiname)
-            } else {
-                None
-            }
-        }};
-    }
-
     let mut scope_stack = Stack::new();
     let mut local_types = initial_local_types.clone();
 
@@ -534,56 +517,35 @@ pub fn optimize<'gc>(
                     stack.push_any();
                 }
             }
-            Op::Coerce { index: name_index } => {
-                let multiname = method
-                    .translation_unit()
-                    .pool_maybe_uninitialized_multiname(*name_index, &mut activation.context);
-
-                let resolved_type = if let Ok(multiname) = multiname {
-                    if !multiname.has_lazy_component() {
-                        activation
-                            .domain()
-                            .get_class(&multiname, activation.context.gc_context)
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                };
-
+            Op::Coerce { class } => {
                 let stack_value = stack.pop();
-                if let Some(resolved_type) = resolved_type {
-                    // As long as this Coerce isn't coercing to one
-                    // of these special classes, we could remove it.
-                    if !GcCell::ptr_eq(
-                        resolved_type,
-                        activation.avm2().classes().int.inner_class_definition(),
-                    ) && !GcCell::ptr_eq(
-                        resolved_type,
-                        activation.avm2().classes().uint.inner_class_definition(),
-                    ) && !GcCell::ptr_eq(
-                        resolved_type,
-                        activation.avm2().classes().number.inner_class_definition(),
-                    ) && !GcCell::ptr_eq(
-                        resolved_type,
-                        activation.avm2().classes().boolean.inner_class_definition(),
-                    ) && !GcCell::ptr_eq(
-                        resolved_type,
-                        activation.avm2().classes().void.inner_class_definition(),
-                    ) {
-                        if matches!(stack_value, Some(ValueType::Null)) {
+                stack.push_class(*class);
+
+                // As long as this Coerce isn't coercing to one
+                // of these special classes, we could remove it.
+                if !GcCell::ptr_eq(
+                    *class,
+                    activation.avm2().classes().int.inner_class_definition(),
+                ) && !GcCell::ptr_eq(
+                    *class,
+                    activation.avm2().classes().uint.inner_class_definition(),
+                ) && !GcCell::ptr_eq(
+                    *class,
+                    activation.avm2().classes().number.inner_class_definition(),
+                ) && !GcCell::ptr_eq(
+                    *class,
+                    activation.avm2().classes().boolean.inner_class_definition(),
+                ) && !GcCell::ptr_eq(
+                    *class,
+                    activation.avm2().classes().void.inner_class_definition(),
+                ) {
+                    if matches!(stack_value, Some(ValueType::Null)) {
+                        *op = Op::Nop;
+                    } else if let Some(ValueType::Class(class_object)) = stack_value {
+                        if GcCell::ptr_eq(*class, class_object.inner_class_definition()) {
                             *op = Op::Nop;
-                        } else if let Some(ValueType::Class(class_object)) = stack_value {
-                            if GcCell::ptr_eq(resolved_type, class_object.inner_class_definition())
-                            {
-                                *op = Op::Nop;
-                            }
                         }
                     }
-
-                    stack.push_class(resolved_type);
-                } else {
-                    stack.push_any();
                 }
             }
             Op::PushScope => {
@@ -638,73 +600,63 @@ pub fn optimize<'gc>(
             Op::GetLex { .. } => {
                 stack.push_any();
             }
-            Op::FindPropStrict { index: name_index } => {
-                let multiname = method
-                    .translation_unit()
-                    .pool_maybe_uninitialized_multiname(*name_index, &mut activation.context);
-
-                if let Ok(multiname) = multiname {
-                    if !multiname.has_lazy_component() {
-                        stack.push_any();
-                    } else {
-                        // Avoid handling lazy for now
-                        stack.clear();
-                    }
+            Op::FindPropStrict { multiname } => {
+                if !multiname.has_lazy_component() {
+                    stack.push_any();
+                } else {
+                    // Avoid handling lazy for now
+                    stack.clear();
                 }
             }
             Op::FindProperty { .. } => {
                 // Avoid handling for now
                 stack.clear();
             }
-            Op::GetProperty { index: name_index } => {
+            Op::GetProperty { multiname } => {
                 let mut stack_push_done = false;
 
-                let multiname = stack_pop_multiname!(name_index);
+                stack.pop_for_multiname(*multiname);
                 let stack_value = stack.pop();
 
-                if let Some(multiname) = multiname {
-                    if !multiname.has_lazy_component() {
-                        if let Some(ValueType::Class(class)) = stack_value {
-                            if !class.inner_class_definition().read().is_interface() {
-                                match class.instance_vtable().get_trait(&multiname) {
-                                    Some(Property::Slot { slot_id })
-                                    | Some(Property::ConstSlot { slot_id }) => {
-                                        *op = Op::GetSlot { index: slot_id };
+                if !multiname.has_lazy_component() {
+                    if let Some(ValueType::Class(class)) = stack_value {
+                        if !class.inner_class_definition().read().is_interface() {
+                            match class.instance_vtable().get_trait(multiname) {
+                                Some(Property::Slot { slot_id })
+                                | Some(Property::ConstSlot { slot_id }) => {
+                                    *op = Op::GetSlot { index: slot_id };
 
-                                        let mut value_class =
-                                            class.instance_vtable().slot_classes()
-                                                [slot_id as usize];
-                                        let resolved_value_class =
-                                            value_class.get_class(activation);
-                                        if let Ok(class) = resolved_value_class {
-                                            stack_push_done = true;
+                                    let mut value_class =
+                                        class.instance_vtable().slot_classes()[slot_id as usize];
+                                    let resolved_value_class = value_class.get_class(activation);
+                                    if let Ok(class) = resolved_value_class {
+                                        stack_push_done = true;
 
-                                            if let Some(class) = class {
-                                                stack.push_class(class);
-                                            } else {
-                                                stack.push_any();
-                                            }
+                                        if let Some(class) = class {
+                                            stack.push_class(class);
+                                        } else {
+                                            stack.push_any();
                                         }
+                                    }
 
-                                        class.instance_vtable().set_slot_class(
-                                            activation.context.gc_context,
-                                            slot_id as usize,
-                                            value_class,
-                                        );
-                                    }
-                                    Some(Property::Virtual { get: Some(get), .. }) => {
-                                        *op = Op::CallMethod {
-                                            num_args: 0,
-                                            index: Index::new(get),
-                                        };
-                                    }
-                                    _ => {}
+                                    class.instance_vtable().set_slot_class(
+                                        activation.context.gc_context,
+                                        slot_id as usize,
+                                        value_class,
+                                    );
                                 }
+                                Some(Property::Virtual { get: Some(get), .. }) => {
+                                    *op = Op::CallMethod {
+                                        num_args: 0,
+                                        index: Index::new(get),
+                                    };
+                                }
+                                _ => {}
                             }
                         }
                     }
-                    // `stack_pop_multiname` handled lazy
                 }
+                // `stack_pop_multiname` handled lazy
 
                 if !stack_push_done {
                     stack.push_any();
@@ -716,50 +668,46 @@ pub fn optimize<'gc>(
                 // Avoid handling type for now
                 stack.push_any();
             }
-            Op::InitProperty { index: name_index } => {
+            Op::InitProperty { multiname } => {
                 stack.pop();
 
-                let multiname = stack_pop_multiname!(name_index);
+                stack.pop_for_multiname(*multiname);
                 let stack_value = stack.pop();
 
-                if let Some(multiname) = multiname {
-                    if !multiname.has_lazy_component() {
-                        if let Some(ValueType::Class(class)) = stack_value {
-                            if !class.inner_class_definition().read().is_interface() {
-                                match class.instance_vtable().get_trait(&multiname) {
-                                    Some(Property::Slot { slot_id })
-                                    | Some(Property::ConstSlot { slot_id }) => {
-                                        *op = Op::SetSlot { index: slot_id };
-                                    }
-                                    _ => {}
+                if !multiname.has_lazy_component() {
+                    if let Some(ValueType::Class(class)) = stack_value {
+                        if !class.inner_class_definition().read().is_interface() {
+                            match class.instance_vtable().get_trait(multiname) {
+                                Some(Property::Slot { slot_id })
+                                | Some(Property::ConstSlot { slot_id }) => {
+                                    *op = Op::SetSlot { index: slot_id };
                                 }
+                                _ => {}
                             }
                         }
                     }
-                    // `stack_pop_multiname` handled lazy
                 }
+                // `stack_pop_multiname` handled lazy
             }
-            Op::SetProperty { index: name_index } => {
+            Op::SetProperty { multiname } => {
                 stack.pop();
 
-                let multiname = stack_pop_multiname!(name_index);
+                stack.pop_for_multiname(*multiname);
                 let stack_value = stack.pop();
 
-                if let Some(multiname) = multiname {
-                    if !multiname.has_lazy_component() {
-                        if let Some(ValueType::Class(class)) = stack_value {
-                            if !class.inner_class_definition().read().is_interface() {
-                                match class.instance_vtable().get_trait(&multiname) {
-                                    Some(Property::Slot { slot_id }) => {
-                                        *op = Op::SetSlot { index: slot_id };
-                                    }
-                                    _ => {}
+                if !multiname.has_lazy_component() {
+                    if let Some(ValueType::Class(class)) = stack_value {
+                        if !class.inner_class_definition().read().is_interface() {
+                            match class.instance_vtable().get_trait(multiname) {
+                                Some(Property::Slot { slot_id }) => {
+                                    *op = Op::SetSlot { index: slot_id };
                                 }
+                                _ => {}
                             }
                         }
                     }
-                    // `stack_pop_multiname` handled lazy
                 }
+                // `stack_pop_multiname` handled lazy
             }
             Op::Construct { num_args } => {
                 // Arguments
@@ -778,13 +726,13 @@ pub fn optimize<'gc>(
                 stack.pop();
             }
             Op::ConstructProp {
-                index: name_index,
+                multiname,
                 num_args,
             } => {
                 // Arguments
                 stack.popn(*num_args);
 
-                stack_pop_multiname!(name_index);
+                stack.pop_for_multiname(*multiname);
 
                 // Then receiver.
                 stack.pop();
@@ -793,35 +741,33 @@ pub fn optimize<'gc>(
                 stack.push_any();
             }
             Op::CallProperty {
-                index: name_index,
+                multiname,
                 num_args,
             } => {
                 // Arguments
                 stack.popn(*num_args);
 
-                let multiname = stack_pop_multiname!(name_index);
+                stack.pop_for_multiname(*multiname);
 
                 // Then receiver.
                 let stack_value = stack.pop();
 
-                if let Some(multiname) = multiname {
-                    if !multiname.has_lazy_component() {
-                        if let Some(ValueType::Class(class)) = stack_value {
-                            if !class.inner_class_definition().read().is_interface() {
-                                match class.instance_vtable().get_trait(&multiname) {
-                                    Some(Property::Method { disp_id }) => {
-                                        *op = Op::CallMethod {
-                                            num_args: *num_args,
-                                            index: Index::new(disp_id),
-                                        };
-                                    }
-                                    _ => {}
+                if !multiname.has_lazy_component() {
+                    if let Some(ValueType::Class(class)) = stack_value {
+                        if !class.inner_class_definition().read().is_interface() {
+                            match class.instance_vtable().get_trait(multiname) {
+                                Some(Property::Method { disp_id }) => {
+                                    *op = Op::CallMethod {
+                                        num_args: *num_args,
+                                        index: Index::new(disp_id),
+                                    };
                                 }
+                                _ => {}
                             }
                         }
                     }
-                    // `stack_pop_multiname` handled lazy
                 }
+                // `stack_pop_multiname` handled lazy
 
                 // Avoid checking return value for now
                 stack.push_any();

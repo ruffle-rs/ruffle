@@ -3,9 +3,12 @@ use crate::avm2::error::{
     verify_error,
 };
 use crate::avm2::method::BytecodeMethod;
+use crate::avm2::multiname::Multiname;
 use crate::avm2::op::Op;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Activation, Error};
+
+use gc_arena::{Collect, Gc};
 use std::collections::{HashMap, HashSet};
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
@@ -13,8 +16,12 @@ use swf::avm2::types::{
 };
 use swf::error::Error as AbcReadError;
 
-pub struct VerifiedMethodInfo {
-    pub parsed_code: Vec<Op>,
+#[derive(Collect)]
+#[collect(no_drop)]
+pub struct VerifiedMethodInfo<'gc> {
+    pub parsed_code: Vec<Op<'gc>>,
+
+    #[collect(require_static)]
     pub exceptions: Vec<Exception>,
 }
 
@@ -38,7 +45,7 @@ enum ByteInfo {
 pub fn verify_method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: &BytecodeMethod<'gc>,
-) -> Result<VerifiedMethodInfo, Error<'gc>> {
+) -> Result<VerifiedMethodInfo<'gc>, Error<'gc>> {
     let body = method
         .body()
         .expect("Cannot verify non-native method without body!");
@@ -281,6 +288,7 @@ pub fn verify_method<'gc>(
                 AbcOp::AsType {
                     type_name: name_index,
                 }
+                | AbcOp::IsType { index: name_index }
                 | AbcOp::Coerce { index: name_index } => {
                     let multiname = method
                         .translation_unit()
@@ -586,11 +594,23 @@ fn pool_double<'gc>(
         .ok_or_else(|| make_error_1032(activation, index.0))
 }
 
+fn pool_multiname<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    translation_unit: TranslationUnit<'gc>,
+    index: Index<AbcMultiname>,
+) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
+    if index.0 == 0 {
+        return Err(make_error_1032(activation, 0));
+    }
+
+    translation_unit.pool_maybe_uninitialized_multiname(index, &mut activation.context)
+}
+
 fn resolve_op<'gc>(
     activation: &mut Activation<'_, 'gc>,
     translation_unit: TranslationUnit<'gc>,
     op: AbcOp,
-) -> Result<Op, Error<'gc>> {
+) -> Result<Op<'gc>, Error<'gc>> {
     Ok(match op {
         AbcOp::PushByte { value } => Op::PushByte { value: value as i8 },
         AbcOp::PushDouble { value } => {
@@ -623,18 +643,48 @@ fn resolve_op<'gc>(
         AbcOp::Kill { index } => Op::Kill { index },
         AbcOp::Call { num_args } => Op::Call { num_args },
         AbcOp::CallMethod { index, num_args } => Op::CallMethod { index, num_args },
-        AbcOp::CallProperty { index, num_args } => Op::CallProperty { index, num_args },
+        AbcOp::CallProperty { index, num_args } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::CallProperty {
+                multiname,
+                num_args,
+            }
+        }
         AbcOp::CallPropLex { index, num_args } => Op::CallPropLex { index, num_args },
-        AbcOp::CallPropVoid { index, num_args } => Op::CallPropVoid { index, num_args },
+        AbcOp::CallPropVoid { index, num_args } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::CallPropVoid {
+                multiname,
+                num_args,
+            }
+        }
         AbcOp::CallStatic { index, num_args } => Op::CallStatic { index, num_args },
         AbcOp::CallSuper { index, num_args } => Op::CallSuper { index, num_args },
         AbcOp::CallSuperVoid { index, num_args } => Op::CallSuperVoid { index, num_args },
         AbcOp::ReturnValue => Op::ReturnValue,
         AbcOp::ReturnVoid => Op::ReturnVoid,
-        AbcOp::GetProperty { index } => Op::GetProperty { index },
-        AbcOp::SetProperty { index } => Op::SetProperty { index },
-        AbcOp::InitProperty { index } => Op::InitProperty { index },
-        AbcOp::DeleteProperty { index } => Op::DeleteProperty { index },
+        AbcOp::GetProperty { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::GetProperty { multiname }
+        }
+        AbcOp::SetProperty { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::SetProperty { multiname }
+        }
+        AbcOp::InitProperty { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::InitProperty { multiname }
+        }
+        AbcOp::DeleteProperty { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::DeleteProperty { multiname }
+        }
         AbcOp::GetSuper { index } => Op::GetSuper { index },
         AbcOp::SetSuper { index } => Op::SetSuper { index },
         AbcOp::In => Op::In,
@@ -646,16 +696,37 @@ fn resolve_op<'gc>(
         AbcOp::GetScopeObject { index } => Op::GetScopeObject { index },
         AbcOp::GetGlobalScope => Op::GetGlobalScope,
         AbcOp::FindDef { index } => Op::FindDef { index },
-        AbcOp::FindProperty { index } => Op::FindProperty { index },
-        AbcOp::FindPropStrict { index } => Op::FindPropStrict { index },
-        AbcOp::GetLex { index } => Op::GetLex { index },
+        AbcOp::FindProperty { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::FindProperty { multiname }
+        }
+        AbcOp::FindPropStrict { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::FindPropStrict { multiname }
+        }
+        AbcOp::GetLex { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+            // Verifier guarantees that multiname was non-lazy
+
+            Op::GetLex { multiname }
+        }
         AbcOp::GetDescendants { index } => Op::GetDescendants { index },
         AbcOp::GetSlot { index } => Op::GetSlot { index },
         AbcOp::SetSlot { index } => Op::SetSlot { index },
         AbcOp::GetGlobalSlot { index } => Op::GetGlobalSlot { index },
         AbcOp::SetGlobalSlot { index } => Op::SetGlobalSlot { index },
         AbcOp::Construct { num_args } => Op::Construct { num_args },
-        AbcOp::ConstructProp { index, num_args } => Op::ConstructProp { index, num_args },
+        AbcOp::ConstructProp { index, num_args } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+            // Verifier guarantees that multiname was non-lazy
+
+            Op::ConstructProp {
+                multiname,
+                num_args,
+            }
+        }
         AbcOp::ConstructSuper { num_args } => Op::ConstructSuper { num_args },
         AbcOp::NewActivation => Op::NewActivation,
         AbcOp::NewObject { num_args } => Op::NewObject { num_args },
@@ -757,7 +828,18 @@ fn resolve_op<'gc>(
         AbcOp::Dxns { index } => Op::Dxns { index },
         AbcOp::DxnsLate => Op::DxnsLate,
         AbcOp::LookupSwitch(lookup_switch) => Op::LookupSwitch(lookup_switch),
-        AbcOp::Coerce { index } => Op::Coerce { index },
+        AbcOp::Coerce { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+            // Verifier guarantees that multiname was non-lazy
+
+            let class = activation
+                .domain()
+                .get_class(&multiname, activation.context.gc_context)
+                .unwrap();
+            // Verifier guarantees that class exists
+
+            Op::Coerce { class }
+        }
         AbcOp::CheckFilter => Op::CheckFilter,
         AbcOp::Si8 => Op::Si8,
         AbcOp::Si16 => Op::Si16,

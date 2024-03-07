@@ -740,17 +740,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     /// Retrieve a multiname from the current constant pool.
-    fn pool_maybe_uninitialized_multiname(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
-    ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
-        method
-            .translation_unit()
-            .pool_maybe_uninitialized_multiname(index, &mut self.context)
-    }
-
-    /// Retrieve a multiname from the current constant pool.
     /// The name is guaranteed to be fully initialized.
     fn pool_multiname_and_initialize(
         &mut self,
@@ -807,11 +796,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if method.verified_info.borrow().is_none() {
+        if method.verified_info.read().is_none() {
             method.verify(self)?;
         }
 
-        let verified_info = method.verified_info.borrow();
+        let verified_info = method.verified_info.read();
         let verified_code = verified_info.as_ref().unwrap().parsed_code.as_slice();
 
         if verified_code.is_empty() {
@@ -846,7 +835,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Error::RustError(_) => return Err(error),
         };
 
-        let verified_info = method.verified_info.borrow();
+        let verified_info = method.verified_info.read();
         let exception_list = &verified_info.as_ref().unwrap().exceptions;
 
         // Use `coerce_to_object` so that we handle primitives correctly.
@@ -885,7 +874,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn do_next_opcode(
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
-        opcodes: &[Op],
+        opcodes: &[Op<'gc>],
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         self.actions_since_timeout_check += 1;
         if self.actions_since_timeout_check >= 2000 {
@@ -923,15 +912,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::Kill { index } => self.op_kill(*index),
                 Op::Call { num_args } => self.op_call(*num_args),
                 Op::CallMethod { index, num_args } => self.op_call_method(*index, *num_args),
-                Op::CallProperty { index, num_args } => {
-                    self.op_call_property(method, *index, *num_args)
-                }
+                Op::CallProperty {
+                    multiname,
+                    num_args,
+                } => self.op_call_property(*multiname, *num_args),
                 Op::CallPropLex { index, num_args } => {
                     self.op_call_prop_lex(method, *index, *num_args)
                 }
-                Op::CallPropVoid { index, num_args } => {
-                    self.op_call_prop_void(method, *index, *num_args)
-                }
+                Op::CallPropVoid {
+                    multiname,
+                    num_args,
+                } => self.op_call_prop_void(*multiname, *num_args),
                 Op::CallStatic { index, num_args } => {
                     self.op_call_static(method, *index, *num_args)
                 }
@@ -941,10 +932,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 }
                 Op::ReturnValue => self.op_return_value(method),
                 Op::ReturnVoid => self.op_return_void(),
-                Op::GetProperty { index } => self.op_get_property(method, *index),
-                Op::SetProperty { index } => self.op_set_property(method, *index),
-                Op::InitProperty { index } => self.op_init_property(method, *index),
-                Op::DeleteProperty { index } => self.op_delete_property(method, *index),
+                Op::GetProperty { multiname } => self.op_get_property(*multiname),
+                Op::SetProperty { multiname } => self.op_set_property(*multiname),
+                Op::InitProperty { multiname } => self.op_init_property(*multiname),
+                Op::DeleteProperty { multiname } => self.op_delete_property(*multiname),
                 Op::GetSuper { index } => self.op_get_super(method, *index),
                 Op::SetSuper { index } => self.op_set_super(method, *index),
                 Op::In => self.op_in(),
@@ -956,18 +947,19 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::GetScopeObject { index } => self.op_get_scope_object(*index),
                 Op::GetGlobalScope => self.op_get_global_scope(),
                 Op::FindDef { index } => self.op_find_def(method, *index),
-                Op::FindProperty { index } => self.op_find_property(method, *index),
-                Op::FindPropStrict { index } => self.op_find_prop_strict(method, *index),
-                Op::GetLex { index } => self.op_get_lex(method, *index),
+                Op::FindProperty { multiname } => self.op_find_property(*multiname),
+                Op::FindPropStrict { multiname } => self.op_find_prop_strict(*multiname),
+                Op::GetLex { multiname } => self.op_get_lex(*multiname),
                 Op::GetDescendants { index } => self.op_get_descendants(method, *index),
                 Op::GetSlot { index } => self.op_get_slot(*index),
                 Op::SetSlot { index } => self.op_set_slot(*index),
                 Op::GetGlobalSlot { index } => self.op_get_global_slot(*index),
                 Op::SetGlobalSlot { index } => self.op_set_global_slot(*index),
                 Op::Construct { num_args } => self.op_construct(*num_args),
-                Op::ConstructProp { index, num_args } => {
-                    self.op_construct_prop(method, *index, *num_args)
-                }
+                Op::ConstructProp {
+                    multiname,
+                    num_args,
+                } => self.op_construct_prop(*multiname, *num_args),
                 Op::ConstructSuper { num_args } => self.op_construct_super(*num_args),
                 Op::NewActivation => self.op_new_activation(),
                 Op::NewObject { num_args } => self.op_new_object(*num_args),
@@ -1061,7 +1053,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::LookupSwitch(ref lookup_switch) => {
                     self.op_lookup_switch(lookup_switch.default_offset, &lookup_switch.case_offsets)
                 }
-                Op::Coerce { index } => self.op_coerce(method, *index),
+                Op::Coerce { class } => self.op_coerce(*class),
                 Op::CheckFilter => self.op_check_filter(),
                 Op::Si8 => self.op_si8(),
                 Op::Si16 => self.op_si16(),
@@ -1238,12 +1230,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_call_property(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
-        let multiname = self.pool_multiname_and_initialize(method, index)?;
+        let multiname = multiname.fill_with_runtime_params(self)?;
         let receiver = self
             .pop_stack()
             .coerce_to_object_or_typeerror(self, Some(&multiname))?;
@@ -1281,12 +1272,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_call_prop_void(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
-        let multiname = self.pool_multiname_and_initialize(method, index)?;
+        let multiname = multiname.fill_with_runtime_params(self)?;
         let receiver = self
             .pop_stack()
             .coerce_to_object_or_typeerror(self, Some(&multiname))?;
@@ -1370,11 +1360,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_get_property(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let multiname = self.pool_maybe_uninitialized_multiname(method, index)?;
-
         // default path for static names
         if !multiname.has_lazy_component() {
             let object = self.pop_stack();
@@ -1431,11 +1418,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_set_property(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack();
-        let multiname = self.pool_maybe_uninitialized_multiname(method, index)?;
 
         // default path for static names
         if !multiname.has_lazy_component() {
@@ -1480,11 +1465,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_init_property(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack();
-        let multiname = self.pool_multiname_and_initialize(method, index)?;
+
+        let multiname = multiname.fill_with_runtime_params(self)?;
+
         let object = self
             .pop_stack()
             .coerce_to_object_or_typeerror(self, Some(&multiname))?;
@@ -1496,11 +1482,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_delete_property(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let multiname = self.pool_maybe_uninitialized_multiname(method, index)?;
-
         // default path for static names
         if !multiname.has_lazy_component() {
             let object = self.pop_stack();
@@ -1695,11 +1678,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_find_property(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let multiname = self.pool_multiname_and_initialize(method, index)?;
         avm_debug!(self.context.avm2, "Resolving {:?}", *multiname);
+
+        let multiname = multiname.fill_with_runtime_params(self)?;
         let result = self
             .find_definition(&multiname)?
             .or_else(|| self.global_scope());
@@ -1711,11 +1694,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_find_prop_strict(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let multiname = self.pool_multiname_and_initialize(method, index)?;
         avm_debug!(self.context.avm2, "Resolving {:?}", *multiname);
+
+        let multiname = multiname.fill_with_runtime_params(self)?;
         let found: Result<Object<'gc>, Error<'gc>> =
             self.find_definition(&multiname)?.ok_or_else(|| {
                 make_reference_error(self, ReferenceErrorCode::InvalidLookup, &multiname, None)
@@ -1762,10 +1745,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_get_lex(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let multiname = self.pool_multiname_static(method, index)?;
+        // Verifier ensures that multiname is non-lazy
+
         avm_debug!(self.avm2(), "Resolving {:?}", *multiname);
         let found: Result<Value<'gc>, Error<'gc>> =
             self.resolve_definition(&multiname)?.ok_or_else(|| {
@@ -1830,12 +1813,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_construct_prop(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
-        let multiname = self.pool_multiname_and_initialize(method, index)?;
+        let multiname = multiname.fill_with_runtime_params(self)?;
         let source = self
             .pop_stack()
             .coerce_to_object_or_typeerror(self, Some(&multiname))?;
@@ -2845,12 +2827,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Implements `Op::Coerce`
     fn op_coerce(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        class: GcCell<'gc, Class<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.pop_stack();
-        let type_name = self.pool_multiname_static(method, index)?;
-        let x = val.coerce_to_type_name(self, &type_name)?;
+        let x = val.coerce_to_type(self, class)?;
 
         self.push_stack(x);
         Ok(FrameControl::Continue)

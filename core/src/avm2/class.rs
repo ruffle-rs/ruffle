@@ -166,6 +166,12 @@ pub struct Class<'gc> {
     class_objects: Vec<ClassObject<'gc>>,
 }
 
+impl<'gc> core::fmt::Debug for Class<'gc> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        f.debug_struct("Class").field("name", &self.name()).finish()
+    }
+}
+
 /// Allows using a `GcCell<'gc, Class<'gc>>` as a HashMap key,
 /// using the pointer address for hashing/equality.
 #[derive(Collect, Copy, Clone)]
