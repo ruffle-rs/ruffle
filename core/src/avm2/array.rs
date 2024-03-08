@@ -161,12 +161,15 @@ impl<'gc> ArrayStorage<'gc> {
     /// The length parameter indicates how big the array storage should start
     /// out as. All array storage consists of holes.
     pub fn new(length: usize) -> Self {
-        /*let storage = Vec::with_capacity(length);
-        let storage_type = ArrayStorageType::Dense(storage);*/
         
-        //convert to sparse
-        let storage = BTreeMap::new();
-        let storage_type = ArrayStorageType::Sparse(storage, 0);
+        if length > (1 << 28) {
+            let storage = BTreeMap::new();
+            let storage_type = ArrayStorageType::Sparse(storage, 0);
+            return Self { storage_type };
+        }
+        let storage = Vec::with_capacity(length);
+        let storage_type = ArrayStorageType::Dense(storage);
+        
         Self { storage_type }
     }
 
@@ -177,33 +180,33 @@ impl<'gc> ArrayStorage<'gc> {
             .map(|v| Some(*v))
             .collect::<Vec<Option<Value<'gc>>>>();
 
-        //let storage_type = ArrayStorageType::Dense(storage);
+        let storage_type = ArrayStorageType::Dense(storage);
         
         //convert to sparse
         //let storage = BTreeMap::new();
-        let mut new_storage = BTreeMap::new();
+        /*let mut new_storage = BTreeMap::new();
         for (i, v) in storage.iter().enumerate() {
             if let Some(v) = v {
                 new_storage.insert(i, *v);
             }
         }
-        let storage_type = ArrayStorageType::Sparse(new_storage, storage.len());
+        let storage_type = ArrayStorageType::Sparse(new_storage, storage.len());*/
         
         Self { storage_type }
     }
 
     /// Wrap an existing storage Vec in an `ArrayStorage`.
     pub fn from_storage(storage: Vec<Option<Value<'gc>>>) -> Self {
-        let temp_storage = storage.clone();
-        //let storage_type = ArrayStorageType::Dense(storage);
+        //let temp_storage = storage.clone();
+        let storage_type = ArrayStorageType::Dense(storage);
 
-        let mut new_storage = BTreeMap::new();
+        /*let mut new_storage = BTreeMap::new();
         for (i, v) in temp_storage.iter().enumerate() {
             if let Some(v) = v {
                 new_storage.insert(i, *v);
             }
         }
-        let storage_type = ArrayStorageType::Sparse(new_storage, temp_storage.len());
+        let storage_type = ArrayStorageType::Sparse(new_storage, temp_storage.len());*/
         
         Self { storage_type }
     }
@@ -331,7 +334,18 @@ impl<'gc> ArrayStorage<'gc> {
     pub fn set_length(&mut self, size: usize) {
         match &mut self.storage_type {
             ArrayStorageType::Dense(storage) => {
-                storage.resize(size, None);
+                if size < 1 << 28 {
+                    storage.resize(size, None);
+                } else {
+                    let mut new_storage = BTreeMap::new();
+                    for (i, v) in storage.iter().enumerate() {
+                        if let Some(v) = v {
+                            new_storage.insert(i, *v);
+                        }
+                    }
+                    self.storage_type = ArrayStorageType::Sparse(new_storage, size);
+                }
+                //storage.resize(size, None);
             }
             ArrayStorageType::Sparse(storage, length) => {
                 if size > *length {
@@ -376,13 +390,26 @@ impl<'gc> ArrayStorage<'gc> {
                 match &other_array.storage_type {
                     ArrayStorageType::Dense(other_storage) => {
                         for (i, v) in other_storage.iter().enumerate() {
-                            storage.insert(i + *length, v.unwrap());
+                            //storage.insert(i + *length, v.unwrap());
+                            match v {
+                                Some(v) => {
+                                    storage.insert(i + *length, *v);
+                                }
+                                None => {}
+                            }
                         }
                         *length += other_storage.len();
                     }
                     ArrayStorageType::Sparse(other_storage, other_length) => {
                         for i in 0..*other_length {
-                            storage.insert(i + *length, other_storage.get(&i).cloned().unwrap());
+                            let value = other_storage.get(&i).cloned();
+                            match value {
+                                Some(value) => {
+                                    storage.insert(i + *length, value);
+                                }
+                                None => {}
+                            }
+                            //storage.insert(i + *length, .unwrap());
                         }
                         *length += *other_length;
                     }

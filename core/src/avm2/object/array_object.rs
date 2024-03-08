@@ -229,7 +229,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             return Ok(Some(next_index.unwrap() as u32));
         }
 
-        //last_index = max(last_index, array_length);
+        last_index = max(last_index, array_length);
 
         drop(read);
 
