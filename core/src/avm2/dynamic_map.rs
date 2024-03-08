@@ -173,8 +173,8 @@ impl<K: Eq + PartialEq + Hash, V> DynamicMap<K, V> {
 }
 
 impl<K, V> DynamicMap<K, V>
-    where
-        K: Eq + Hash,
+where
+    K: Eq + Hash,
 {
     pub fn insert(&mut self, key: K, value: V) {
         self.values.insert(

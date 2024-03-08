@@ -27,7 +27,7 @@ pub fn array_allocator<'gc>(
             array: ArrayStorage::new(0),
         },
     ))
-        .into())
+    .into())
 }
 
 /// An Object which stores numerical properties in an array.
@@ -77,7 +77,7 @@ impl<'gc> ArrayObject<'gc> {
             activation.context.gc_context,
             ArrayObjectData { base, array },
         ))
-            .into();
+        .into();
         instance.install_instance_slots(activation.context.gc_context);
 
         class.call_native_init(instance.into(), &[], activation)?;
@@ -137,8 +137,8 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
                     // [NA] temporarily limit this. It may not be correct but it's better than 100GB arrays.
                     // TODO: sparse array support
                     /* if index > 1 << 28 {
-                         return Err("Ruffle does not support sparse arrays yet.".into());
-                     }*/
+                        return Err("Ruffle does not support sparse arrays yet.".into());
+                    }*/
                     write.array.set(index, value);
                     return Ok(());
                 }
