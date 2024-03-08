@@ -615,12 +615,9 @@ impl<W: Write> Writer<W> {
                 self.write_opcode(OpCode::Call)?;
                 self.write_u30(num_args)?;
             }
-            Op::CallMethod {
-                ref index,
-                num_args,
-            } => {
+            Op::CallMethod { index, num_args } => {
                 self.write_opcode(OpCode::CallMethod)?;
-                self.write_index(index)?;
+                self.write_u30(index)?;
                 self.write_u30(num_args)?;
             }
             Op::CallProperty {
@@ -1119,7 +1116,7 @@ pub mod tests {
 
         assert_eq!(
             write(Op::CallMethod {
-                index: Index::new(1),
+                index: 1,
                 num_args: 2
             }),
             b"\x43\x01\x02"

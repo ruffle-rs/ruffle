@@ -247,7 +247,7 @@ pub fn verify_method<'gc>(
 
                 // Misc opcode verification
                 AbcOp::CallMethod { index, .. } => {
-                    return Err(Error::AvmError(if index.as_u30() == 0 {
+                    return Err(Error::AvmError(if index == 0 {
                         verify_error(activation, "Error #1072: Disp_id 0 is illegal.", 1072)?
                     } else {
                         verify_error(

@@ -31,8 +31,7 @@ pub enum Op<'gc> {
         num_args: u32,
     },
     CallMethod {
-        #[collect(require_static)]
-        index: Index<Method>,
+        index: u32,
 
         num_args: u32,
     },

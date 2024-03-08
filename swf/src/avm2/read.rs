@@ -544,7 +544,7 @@ impl<'a> Reader<'a> {
                 num_args: self.read_u30()?,
             },
             OpCode::CallMethod => Op::CallMethod {
-                index: self.read_index()?,
+                index: self.read_u30()?,
                 num_args: self.read_u30()?,
             },
             OpCode::CallProperty => Op::CallProperty {
