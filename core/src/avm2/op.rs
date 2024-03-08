@@ -16,8 +16,7 @@ pub enum Op<'gc> {
         num_types: u32,
     },
     AsType {
-        #[collect(require_static)]
-        type_name: Index<AbcMultiname>,
+        class: GcCell<'gc, Class<'gc>>,
     },
     AsTypeLate,
     BitAnd,
@@ -228,8 +227,7 @@ pub enum Op<'gc> {
     },
     InstanceOf,
     IsType {
-        #[collect(require_static)]
-        index: Index<AbcMultiname>,
+        class: GcCell<'gc, Class<'gc>>,
     },
     IsTypeLate,
     Jump {

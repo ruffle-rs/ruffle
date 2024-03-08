@@ -819,9 +819,31 @@ fn resolve_op<'gc>(
         },
         AbcOp::NextName => Op::NextName,
         AbcOp::NextValue => Op::NextValue,
-        AbcOp::IsType { index } => Op::IsType { index },
+        AbcOp::IsType { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+            // Verifier guarantees that multiname was non-lazy
+
+            let class = activation
+                .domain()
+                .get_class(&multiname, activation.context.gc_context)
+                .unwrap();
+            // Verifier guarantees that class exists
+
+            Op::IsType { class }
+        }
         AbcOp::IsTypeLate => Op::IsTypeLate,
-        AbcOp::AsType { type_name } => Op::AsType { type_name },
+        AbcOp::AsType { type_name } => {
+            let multiname = pool_multiname(activation, translation_unit, type_name)?;
+            // Verifier guarantees that multiname was non-lazy
+
+            let class = activation
+                .domain()
+                .get_class(&multiname, activation.context.gc_context)
+                .unwrap();
+            // Verifier guarantees that class exists
+
+            Op::AsType { class }
+        }
         AbcOp::AsTypeLate => Op::AsTypeLate,
         AbcOp::InstanceOf => Op::InstanceOf,
         AbcOp::Label => Op::Nop,
