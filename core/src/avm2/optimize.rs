@@ -487,34 +487,12 @@ pub fn optimize<'gc>(
                 stack.pop();
                 stack.push_any();
             }
-            Op::AsType {
-                type_name: name_index,
-            } => {
-                let multiname = method
-                    .translation_unit()
-                    .pool_maybe_uninitialized_multiname(*name_index, &mut activation.context);
-
-                let resolved_type = if let Ok(multiname) = multiname {
-                    if !multiname.has_lazy_component() {
-                        activation
-                            .domain()
-                            .get_class(&multiname, activation.context.gc_context)
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                };
-
+            Op::AsType { class } => {
                 let stack_value = stack.pop();
-                if resolved_type.is_some() && matches!(stack_value, Some(ValueType::Null)) {
-                    *op = Op::Nop;
-                }
+                stack.push_class(*class);
 
-                if let Some(resolved_type) = resolved_type {
-                    stack.push_class(resolved_type);
-                } else {
-                    stack.push_any();
+                if matches!(stack_value, Some(ValueType::Null)) {
+                    *op = Op::Nop;
                 }
             }
             Op::Coerce { class } => {

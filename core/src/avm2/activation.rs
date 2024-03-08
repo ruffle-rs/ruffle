@@ -1021,9 +1021,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 } => self.op_has_next_2(*object_register, *index_register),
                 Op::NextName => self.op_next_name(),
                 Op::NextValue => self.op_next_value(),
-                Op::IsType { index } => self.op_is_type(method, *index),
+                Op::IsType { class } => self.op_is_type(*class),
                 Op::IsTypeLate => self.op_is_type_late(),
-                Op::AsType { type_name } => self.op_as_type(method, *type_name),
+                Op::AsType { class } => self.op_as_type(*class),
                 Op::AsTypeLate => self.op_as_type_late(),
                 Op::InstanceOf => self.op_instance_of(),
                 Op::Debug {
@@ -2602,15 +2602,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_is_type(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        type_name_index: Index<AbcMultiname>,
+        class: GcCell<'gc, Class<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack();
 
-        let multiname = self.pool_multiname_static(method, type_name_index)?;
-        let type_object = self.lookup_class_in_domain(&multiname)?;
-
-        let is_instance_of = value.is_of_type(self, type_object);
+        let is_instance_of = value.is_of_type(self, class);
         self.push_raw(is_instance_of);
 
         Ok(FrameControl::Continue)
@@ -2638,13 +2634,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_as_type(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        type_name_index: Index<AbcMultiname>,
+        class: GcCell<'gc, Class<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack();
-
-        let multiname = self.pool_multiname_static(method, type_name_index)?;
-        let class = self.lookup_class_in_domain(&multiname)?;
 
         if value.is_of_type(self, class) {
             self.push_stack(value);
