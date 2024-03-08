@@ -1,4 +1,3 @@
-use crate::cli::Opt;
 use crate::custom_event::RuffleEvent;
 use crate::gui::{GuiController, MENU_HEIGHT};
 use crate::player::{PlayerController, PlayerOptions};
@@ -37,20 +36,20 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(opt: Opt) -> Result<Self, Error> {
-        let movie_url = opt.movie_url.clone();
+    pub fn new(preferences: GlobalPreferences) -> Result<Self, Error> {
+        let movie_url = preferences.cli.movie_url.clone();
         let icon_bytes = include_bytes!("../assets/favicon-32.rgba");
         let icon =
             Icon::from_rgba(icon_bytes.to_vec(), 32, 32).context("Couldn't load app icon")?;
 
         let event_loop = EventLoopBuilder::with_user_event().build()?;
 
-        let no_gui = opt.no_gui;
+        let no_gui = preferences.cli.no_gui;
         let min_window_size = (16, if no_gui { 16 } else { MENU_HEIGHT + 16 }).into();
         let max_window_size = get_screen_size(&event_loop);
-        let preferred_width = opt.width;
-        let preferred_height = opt.height;
-        let start_fullscreen = opt.fullscreen;
+        let preferred_width = preferences.cli.width;
+        let preferred_height = preferences.cli.height;
+        let start_fullscreen = preferences.cli.fullscreen;
 
         let window = WindowBuilder::new()
             .with_visible(false)
@@ -64,7 +63,6 @@ impl App {
         let mut font_database = fontdb::Database::default();
         font_database.load_system_fonts();
 
-        let preferences = GlobalPreferences::load(opt)?;
         let mut gui = GuiController::new(
             window.clone(),
             &event_loop,
