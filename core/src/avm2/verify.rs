@@ -272,7 +272,7 @@ pub fn verify_method<'gc>(
                     }
                 }
 
-                AbcOp::GetLex { index } => {
+                AbcOp::GetLex { index } | AbcOp::FindDef { index } => {
                     let multiname = method
                         .translation_unit()
                         .pool_maybe_uninitialized_multiname(index, &mut activation.context)?;
@@ -712,7 +712,12 @@ fn resolve_op<'gc>(
         AbcOp::GetOuterScope { index } => Op::GetOuterScope { index },
         AbcOp::GetScopeObject { index } => Op::GetScopeObject { index },
         AbcOp::GetGlobalScope => Op::GetGlobalScope,
-        AbcOp::FindDef { index } => Op::FindDef { index },
+        AbcOp::FindDef { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+            // Verifier guarantees that multiname was non-lazy
+
+            Op::FindDef { multiname }
+        }
         AbcOp::FindProperty { index } => {
             let multiname = pool_multiname(activation, translation_unit, index)?;
 

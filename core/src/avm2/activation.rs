@@ -935,7 +935,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::GetOuterScope { index } => self.op_get_outer_scope(*index),
                 Op::GetScopeObject { index } => self.op_get_scope_object(*index),
                 Op::GetGlobalScope => self.op_get_global_scope(),
-                Op::FindDef { index } => self.op_find_def(method, *index),
+                Op::FindDef { multiname } => self.op_find_def(*multiname),
                 Op::FindProperty { multiname } => self.op_find_property(*multiname),
                 Op::FindPropStrict { multiname } => self.op_find_prop_strict(*multiname),
                 Op::GetLex { multiname } => self.op_get_lex(*multiname),
@@ -1649,10 +1649,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_find_def(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let multiname = self.pool_multiname_static(method, index)?;
+        // Verifier ensures that multiname is non-lazy
+
         avm_debug!(self.avm2(), "Resolving {:?}", *multiname);
         let (_, mut script) = self.domain().find_defining_script(self, &multiname)?;
         let obj = script.globals(&mut self.context)?;

@@ -125,8 +125,7 @@ pub enum Op<'gc> {
     EscXAttr,
     EscXElem,
     FindDef {
-        #[collect(require_static)]
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     },
     FindProperty {
         multiname: Gc<'gc, Multiname<'gc>>,
