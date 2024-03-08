@@ -2,6 +2,7 @@ mod read;
 mod write;
 
 use crate::cli::Opt;
+use crate::log::FilenamePattern;
 use crate::preferences::read::read_preferences;
 use crate::preferences::write::PreferencesWriter;
 use anyhow::{Context, Error};
@@ -117,6 +118,15 @@ impl GlobalPreferences {
         })
     }
 
+    pub fn log_filename_pattern(&self) -> FilenamePattern {
+        self.preferences
+            .lock()
+            .expect("Preferences is not reentrant")
+            .values
+            .log
+            .filename_pattern
+    }
+
     pub fn write_preferences(&self, fun: impl FnOnce(&mut PreferencesWriter)) -> Result<(), Error> {
         let mut preferences = self
             .preferences
@@ -158,6 +168,7 @@ pub struct SavedGlobalPreferences {
     pub output_device: Option<String>,
     pub mute: bool,
     pub volume: f32,
+    pub log: LogPreferences,
 }
 
 impl Default for SavedGlobalPreferences {
@@ -173,6 +184,12 @@ impl Default for SavedGlobalPreferences {
             output_device: None,
             mute: false,
             volume: 1.0,
+            log: Default::default(),
         }
     }
+}
+
+#[derive(PartialEq, Debug, Default)]
+pub struct LogPreferences {
+    pub filename_pattern: FilenamePattern,
 }

@@ -12,6 +12,7 @@ mod cli;
 mod custom_event;
 mod executor;
 mod gui;
+mod log;
 mod player;
 mod preferences;
 mod task;
@@ -155,7 +156,9 @@ fn main() -> Result<(), Error> {
 
     // [NA] `_guard` cannot be `_` or it'll immediately drop
     // https://docs.rs/tracing-appender/latest/tracing_appender/non_blocking/index.html
-    let log_path = preferences.cli.config.join("ruffle.log");
+    let log_path = preferences
+        .log_filename_pattern()
+        .create_path(&preferences.cli.config);
     let (non_blocking_file, _file_guard) = tracing_appender::non_blocking(File::create(log_path)?);
     let (non_blocking_stdout, _stdout_guard) = tracing_appender::non_blocking(std::io::stdout());
 
