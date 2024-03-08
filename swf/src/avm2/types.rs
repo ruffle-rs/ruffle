@@ -275,7 +275,7 @@ pub enum Op {
         num_args: u32,
     },
     CallMethod {
-        index: Index<Method>,
+        index: u32,
         num_args: u32,
     },
     CallProperty {

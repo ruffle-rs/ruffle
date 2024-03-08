@@ -8,7 +8,6 @@ use crate::avm2::property::Property;
 
 use gc_arena::{Gc, GcCell};
 use std::collections::HashSet;
-use swf::avm2::types::Index;
 
 #[derive(Clone, Copy, Debug)]
 enum ValueType<'gc> {
@@ -623,10 +622,10 @@ pub fn optimize<'gc>(
                                         value_class,
                                     );
                                 }
-                                Some(Property::Virtual { get: Some(get), .. }) => {
+                                Some(Property::Virtual { get: Some(disp_id), .. }) => {
                                     *op = Op::CallMethod {
                                         num_args: 0,
-                                        index: Index::new(get),
+                                        index: disp_id,
                                     };
                                 }
                                 _ => {}
@@ -737,7 +736,7 @@ pub fn optimize<'gc>(
                                 Some(Property::Method { disp_id }) => {
                                     *op = Op::CallMethod {
                                         num_args: *num_args,
-                                        index: Index::new(disp_id),
+                                        index: disp_id,
                                     };
                                 }
                                 _ => {}

@@ -1192,7 +1192,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_call_method(
         &mut self,
-        index: Index<AbcMethod>,
+        index: u32,
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         // The entire implementation of VTable assumes that
@@ -1205,7 +1205,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let args = self.pop_stack_args(arg_count);
         let receiver = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
 
-        let value = receiver.call_method(index.0, &args, self)?;
+        let value = receiver.call_method(index, &args, self)?;
 
         self.push_stack(value);
 
