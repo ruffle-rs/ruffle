@@ -20,7 +20,6 @@ use crate::avm2::script::Script;
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
-use crate::avm2::QName;
 use crate::avm2::{Avm2, Error};
 use crate::context::{GcContext, UpdateContext};
 use crate::string::{AvmAtom, AvmString};
@@ -746,20 +745,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
     }
 
-    /// Retrieve a static, or non-runtime, multiname from the current constant
-    /// pool.
-    ///
-    /// This version of the function treats index 0 as an error condition.
-    fn pool_multiname_static(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
-    ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
-        method
-            .translation_unit()
-            .pool_multiname_static(index, &mut self.context)
-    }
-
     /// Retrieve a method entry from the current ABC file's method table.
     fn table_method(
         &mut self,
@@ -835,13 +820,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 let mut matches = false;
                 // A typeless catch block (e.g. `catch(er) { ... }`) will
                 // always match.
-                if e.type_name.0 == 0 {
+                if e.target_class.is_none() {
                     matches = true;
                 } else if let Ok(err_object) = err_object {
-                    let type_name = self.pool_multiname_static(method, e.type_name)?;
-                    let ty_class = self.lookup_class_in_domain(&type_name)?;
+                    let target_class = e.target_class.expect("Just confirmed to be non-None");
 
-                    matches = err_object.is_of_type(ty_class, &mut self.context);
+                    matches = err_object.is_of_type(target_class, &mut self.context);
                 }
 
                 if matches {
@@ -1576,19 +1560,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<Exception>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        if let Some(body) = method.body() {
-            let ex = &body.exceptions[index.0 as usize];
-            let vname = ex.variable_name;
-            let so = if vname.0 == 0 {
-                // for `finally` scopes, FP just creates a bare object.
-                self.avm2().classes().object.construct(self, &[])?
-            } else {
-                let qname =
-                    QName::from_abc_multiname(method.translation_unit(), vname, &mut self.context)?;
-                ScriptObject::catch_scope(self.context.gc_context, &qname)
-            };
-            self.push_stack(so);
-        }
+        let verified_info = method.verified_info.read();
+        let exception_list = &verified_info.as_ref().unwrap().exceptions;
+
+        let ex = &exception_list[index.0 as usize];
+        let vname = ex.variable_name;
+
+        let so = if let Some(vname) = vname {
+            ScriptObject::catch_scope(self.context.gc_context, &vname)
+        } else {
+            // for `finally` scopes, FP just creates a bare object.
+            self.avm2().classes().object.construct(self, &[])?
+        };
+
+        self.push_stack(so);
 
         Ok(FrameControl::Continue)
     }

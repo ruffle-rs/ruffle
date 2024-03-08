@@ -1,3 +1,4 @@
+use crate::avm2::class::Class;
 use crate::avm2::error::{
     make_error_1021, make_error_1025, make_error_1032, make_error_1054, make_error_1107,
     verify_error,
@@ -6,10 +7,10 @@ use crate::avm2::method::BytecodeMethod;
 use crate::avm2::multiname::Multiname;
 use crate::avm2::op::Op;
 use crate::avm2::script::TranslationUnit;
-use crate::avm2::{Activation, Error};
+use crate::avm2::{Activation, Error, QName};
 use crate::string::AvmAtom;
 
-use gc_arena::{Collect, Gc};
+use gc_arena::{Collect, Gc, GcCell};
 use std::collections::{HashMap, HashSet};
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
@@ -22,17 +23,18 @@ use swf::error::Error as AbcReadError;
 pub struct VerifiedMethodInfo<'gc> {
     pub parsed_code: Vec<Op<'gc>>,
 
-    #[collect(require_static)]
-    pub exceptions: Vec<Exception>,
+    pub exceptions: Vec<Exception<'gc>>,
 }
 
-pub struct Exception {
+#[derive(Collect)]
+#[collect(no_drop)]
+pub struct Exception<'gc> {
     pub from_offset: u32,
     pub to_offset: u32,
     pub target_offset: u32,
 
-    pub variable_name: Index<AbcMultiname>,
-    pub type_name: Index<AbcMultiname>,
+    pub variable_name: Option<QName<'gc>>,
+    pub target_class: Option<GcCell<'gc, Class<'gc>>>,
 }
 
 #[derive(Clone, Debug)]
@@ -408,12 +410,80 @@ pub fn verify_method<'gc>(
             return Err(make_error_1054(activation));
         }
 
+        let target_class = if exception.type_name.0 == 0 {
+            None
+        } else {
+            let pooled_type_name = method
+                .translation_unit()
+                .pool_maybe_uninitialized_multiname(exception.type_name, &mut activation.context)?;
+
+            if pooled_type_name.has_lazy_component() {
+                // This matches FP's error message
+                return Err(Error::AvmError(verify_error(
+                    activation,
+                    "Error #1014: Class [] could not be found.",
+                    1014,
+                )?));
+            }
+
+            let resolved_type = activation
+                .domain()
+                .get_class(&pooled_type_name, activation.context.gc_context)
+                .ok_or_else(|| {
+                    Error::AvmError(
+                        verify_error(
+                            activation,
+                            &format!(
+                                "Error #1014: Class {} could not be found.",
+                                pooled_type_name.to_qualified_name(activation.context.gc_context)
+                            ),
+                            1014,
+                        )
+                        .expect("Error should construct"),
+                    )
+                })?;
+
+            Some(resolved_type)
+        };
+
+        let variable_name = if exception.variable_name.0 == 0 {
+            None
+        } else {
+            let pooled_variable_name = method
+                .translation_unit()
+                .pool_maybe_uninitialized_multiname(
+                    exception.variable_name,
+                    &mut activation.context,
+                )?;
+
+            // FIXME: avmplus also seems to check the namespace(s)?
+            if pooled_variable_name.has_lazy_component()
+                || pooled_variable_name.is_attribute()
+                || pooled_variable_name.is_any_name()
+            {
+                // This matches FP's error message
+                return Err(make_error_1107(activation));
+            }
+
+            let namespaces = pooled_variable_name.namespace_set();
+
+            if namespaces.is_empty() {
+                // NOTE: avmplus segfaults here
+                panic!("Should have at least one namespace for QName in exception variable name");
+            }
+
+            let name = pooled_variable_name.local_name().expect("Just checked");
+
+            // avmplus uses the first namespace, regardless of how many namespaces there are.
+            Some(QName::new(namespaces[0], name))
+        };
+
         new_exceptions.push(Exception {
             from_offset: new_from_offset,
             to_offset: new_to_offset,
             target_offset: new_target_offset as u32,
-            variable_name: exception.variable_name,
-            type_name: exception.type_name,
+            variable_name,
+            target_class,
         });
     }
 

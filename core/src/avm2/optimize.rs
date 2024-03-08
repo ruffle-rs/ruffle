@@ -622,7 +622,9 @@ pub fn optimize<'gc>(
                                         value_class,
                                     );
                                 }
-                                Some(Property::Virtual { get: Some(disp_id), .. }) => {
+                                Some(Property::Virtual {
+                                    get: Some(disp_id), ..
+                                }) => {
                                     *op = Op::CallMethod {
                                         num_args: 0,
                                         index: disp_id,
