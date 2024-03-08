@@ -717,17 +717,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             })
     }
 
-    /// Retrieve a string from the current constant pool.
-    fn pool_string<'b>(
-        &mut self,
-        method: &'b BytecodeMethod<'gc>,
-        index: Index<String>,
-    ) -> Result<AvmAtom<'gc>, Error<'gc>> {
-        method
-            .translation_unit()
-            .pool_string(index.0, &mut self.borrow_gc())
-    }
-
     /// Retrieve a namespace from the current constant pool.
     fn pool_namespace(
         &mut self,
@@ -901,7 +890,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::PushNaN => self.op_push_nan(),
                 Op::PushNull => self.op_push_null(),
                 Op::PushShort { value } => self.op_push_short(*value),
-                Op::PushString { value } => self.op_push_string(method, *value),
+                Op::PushString { string } => self.op_push_string(*string),
                 Op::PushTrue => self.op_push_true(),
                 Op::PushUint { value } => self.op_push_uint(*value),
                 Op::PushUndefined => self.op_push_undefined(),
@@ -1041,8 +1030,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     is_local_register,
                     register_name,
                     register,
-                } => self.op_debug(method, *is_local_register, *register_name, *register),
-                Op::DebugFile { file_name } => self.op_debug_file(method, *file_name),
+                } => self.op_debug(*is_local_register, *register_name, *register),
+                Op::DebugFile { file_name } => self.op_debug_file(*file_name),
                 Op::DebugLine { line_num } => self.op_debug_line(*line_num),
                 Op::Bkpt => self.op_bkpt(),
                 Op::BkptLine { line_num } => self.op_bkpt_line(*line_num),
@@ -1130,13 +1119,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_push_string(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        value: Index<String>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let s = self.pool_string(&method, value)?;
-        self.push_stack(s);
+    fn op_push_string(&mut self, string: AvmAtom<'gc>) -> Result<FrameControl<'gc>, Error<'gc>> {
+        self.push_stack(string);
         Ok(FrameControl::Continue)
     }
 
@@ -3085,13 +3069,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     #[cfg(feature = "avm_debug")]
     fn op_debug(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
         is_local_register: bool,
-        register_name: Index<String>,
+        register_name: AvmAtom<'gc>,
         register: u8,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         if is_local_register {
-            let register_name = self.pool_string(&method, register_name)?;
             if (register as usize) < self.local_registers.0.len() {
                 let value = self.local_register(register as u32);
 
@@ -3112,33 +3094,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     #[cfg(not(feature = "avm_debug"))]
     fn op_debug(
         &mut self,
-        _method: Gc<'gc, BytecodeMethod<'gc>>,
         _is_local_register: bool,
-        _register_name: Index<String>,
+        _register_name: AvmAtom<'gc>,
         _register: u8,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         Ok(FrameControl::Continue)
     }
 
     #[cfg(feature = "avm_debug")]
-    fn op_debug_file(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        file_name: Index<String>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let file_name = self.pool_string(&method, file_name)?;
-
+    fn op_debug_file(&mut self, file_name: AvmAtom<'gc>) -> Result<FrameControl<'gc>, Error<'gc>> {
         avm_debug!(self.avm2(), "File: {file_name}");
 
         Ok(FrameControl::Continue)
     }
 
     #[cfg(not(feature = "avm_debug"))]
-    fn op_debug_file(
-        &mut self,
-        _method: Gc<'gc, BytecodeMethod<'gc>>,
-        _file_name: Index<String>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn op_debug_file(&mut self, _file_name: AvmAtom<'gc>) -> Result<FrameControl<'gc>, Error<'gc>> {
         Ok(FrameControl::Continue)
     }
 
