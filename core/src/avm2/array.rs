@@ -26,6 +26,41 @@ struct ArrayStorageIterator<'a, 'gc> {
     index_back: usize,
 }
 
+/*struct ArrayStorageSpliceIterator<'a, 'gc, I: Iterator<Item = Value<'gc>>> {
+    storage: &'a mut ArrayStorage<'gc>,
+    range: Range<usize>,
+    replace_with: I,
+}
+
+
+impl <'a, 'gc, I: Iterator<Item = Value<'gc>>> Iterator for ArrayStorageSpliceIterator<'a, 'gc, I> {
+    type Item = Option<Value<'gc>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match &mut self.storage.storage_type {
+            ArrayStorageType::Dense(storage) => {
+                storage.splice(self.range.clone(), self.replace_with.by_ref().map(Some)).next()
+                None
+            }
+            ArrayStorageType::Sparse(storage, length) => {
+                let start_ptr = storage.as_mut_ptr().add(self.range.start);
+                let unyielded_ptr = start_ptr.add(self.replace_with.len());
+                let unyielded_len = self.range.end - self.range.start;
+                let tail = self.range.start + unyielded_len;
+                let tail_len = *length - tail;
+                let src = unyielded_ptr;
+                let dst = start_ptr;
+                ptr::copy(src, dst, unyielded_len);
+                let src = storage.as_ptr().add(tail);
+                let dst = start_ptr.add(unyielded_len);
+                ptr::copy(src, dst, tail_len);
+                storage.set_len(self.range.start + unyielded_len + tail_len);
+                None
+            }
+        }
+    }
+}*/
+
 impl<'a, 'gc> Iterator for ArrayStorageIterator<'a, 'gc> {
     type Item = Option<Value<'gc>>;
 
@@ -160,7 +195,7 @@ impl<'gc> ArrayStorage<'gc> {
     /// Wrap an existing storage Vec in an `ArrayStorage`.
     pub fn from_storage(storage: Vec<Option<Value<'gc>>>) -> Self {
         let temp_storage = storage.clone();
-        let storage_type = ArrayStorageType::Dense(storage);
+        //let storage_type = ArrayStorageType::Dense(storage);
 
         let mut new_storage = BTreeMap::new();
         for (i, v) in temp_storage.iter().enumerate() {
@@ -187,6 +222,31 @@ impl<'gc> ArrayStorage<'gc> {
             }
         }
         //self.storage.get(item).cloned().unwrap_or(None)
+    }
+    
+    pub fn get_next_enumerant(&self, last_index: usize) -> Option<usize> {
+        match &self.storage_type {
+            ArrayStorageType::Dense(storage) => {
+                let mut last_index = last_index;
+                while last_index < storage.len() {
+                    if storage[last_index].is_some() {
+                        return Some(last_index + 1);
+                    }
+                    last_index += 1;
+                }
+                None
+            }
+            ArrayStorageType::Sparse(storage, length) => {
+                let mut last_index = last_index;
+                //use range
+                for (&key, &value) in storage.range(last_index..) {
+                    //if value.is_some() {
+                        return Some(key + 1);
+                    //}
+                }
+                None
+            }
+        }
     }
     
     pub fn convert_to_sparse(&mut self) {
@@ -572,7 +632,8 @@ impl<'gc> ArrayStorage<'gc> {
         &'a mut self,
         range: R,
         replace_with: I,
-    ) -> impl Iterator<Item = Option<Value<'gc>>> + 'a
+    ) -> /*impl Iterator<Item = Option<Value<'gc>>> + 'a*/
+    Box<dyn Iterator<Item = Option<Value<'gc>>> + 'a>
         where
             R: RangeBounds<usize>,
             I: IntoIterator<Item = Value<'gc>>,
@@ -591,7 +652,7 @@ impl<'gc> ArrayStorage<'gc> {
                     std::ops::Bound::Unbounded => storage.len(),
                 };
                 let replace_with = replace_with.into_iter().map(Some);
-                storage.splice(range, replace_with)
+                Box::new(storage.splice(start..end, replace_with))
             }
             ArrayStorageType::Sparse(storage, length) => {
                 let start = match range.start_bound() {
@@ -606,7 +667,20 @@ impl<'gc> ArrayStorage<'gc> {
                 };
                 let replace_with = replace_with.into_iter().map(Some);
                 //storage.splice(range, replace_with)
-                todo!("splice sparse")
+                let storage_clone = storage.clone();
+                let mut new_storage = BTreeMap::new();
+                for (i, v) in storage_clone.iter() {
+                    if i < &start || i >= &end {
+                        new_storage.insert(i, *v);
+                    }
+                }
+                for (i, v) in replace_with.enumerate() {
+                    storage.insert(i, v.unwrap());
+                }
+                
+                let test = new_storage.into_iter().map(|(_, v)| Some(v)).collect::<Vec<Option<Value<'gc>>>>().into_iter();
+                Box::new(test)
+                
             }
         }
         /*self.storage

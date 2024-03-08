@@ -11,6 +11,7 @@ use crate::string::AvmString;
 use core::fmt;
 use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use std::cell::{Ref, RefMut};
+use std::cmp::max;
 
 /// A class instance allocator that allocates array objects.
 pub fn array_allocator<'gc>(
@@ -26,7 +27,7 @@ pub fn array_allocator<'gc>(
             array: ArrayStorage::new(0),
         },
     ))
-    .into())
+        .into())
 }
 
 /// An Object which stores numerical properties in an array.
@@ -76,7 +77,7 @@ impl<'gc> ArrayObject<'gc> {
             activation.context.gc_context,
             ArrayObjectData { base, array },
         ))
-        .into();
+            .into();
         instance.install_instance_slots(activation.context.gc_context);
 
         class.call_native_init(instance.into(), &[], activation)?;
@@ -135,9 +136,9 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
                 if let Ok(index) = name.parse::<usize>() {
                     // [NA] temporarily limit this. It may not be correct but it's better than 100GB arrays.
                     // TODO: sparse array support
-                    if index > 1 << 28 {
-                        return Err("Ruffle does not support sparse arrays yet.".into());
-                    }
+                    /* if index > 1 << 28 {
+                         return Err("Ruffle does not support sparse arrays yet.".into());
+                     }*/
                     write.array.set(index, value);
                     return Ok(());
                 }
@@ -160,9 +161,9 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
                 if let Ok(index) = name.parse::<usize>() {
                     // [NA] temporarily limit this. It may not be correct but it's better than 100GB arrays.
                     // TODO: sparse array support
-                    if index > 1 << 28 {
+                    /*if index > 1 << 28 {
                         return Err("Ruffle does not support sparse arrays yet.".into());
-                    }
+                    }*/
                     write.array.set(index, value);
                     return Ok(());
                 }
@@ -217,12 +218,18 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         let array_length = read.array.length() as u32;
 
         // Array enumeration skips over holes.
-        while last_index < array_length {
+        /*while last_index < array_length {
             if read.array.get(last_index as usize).is_some() {
                 return Ok(Some(last_index + 1));
             }
             last_index += 1;
+        }*/
+        let next_index = read.array.get_next_enumerant(last_index as usize);
+        if next_index.is_some() {
+            return Ok(Some(next_index.unwrap() as u32));
         }
+
+        //last_index = max(last_index, array_length);
 
         drop(read);
 
@@ -233,7 +240,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             .0
             .write(activation.context.gc_context)
             .base
-            .get_next_enumerant(last_index - array_length)
+            .get_next_enumerant(((last_index as u32) - array_length))
         {
             return Ok(Some(index + array_length));
         }
