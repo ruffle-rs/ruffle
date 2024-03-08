@@ -7,6 +7,7 @@ use crate::avm2::multiname::Multiname;
 use crate::avm2::op::Op;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Activation, Error};
+use crate::string::AvmAtom;
 
 use gc_arena::{Collect, Gc};
 use std::collections::{HashMap, HashSet};
@@ -606,6 +607,18 @@ fn pool_multiname<'gc>(
     translation_unit.pool_maybe_uninitialized_multiname(index, &mut activation.context)
 }
 
+fn pool_string<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    translation_unit: TranslationUnit<'gc>,
+    index: Index<String>,
+) -> Result<AvmAtom<'gc>, Error<'gc>> {
+    if index.0 == 0 {
+        return Err(make_error_1032(activation, 0));
+    }
+
+    translation_unit.pool_string(index.0, &mut activation.borrow_gc())
+}
+
 fn resolve_op<'gc>(
     activation: &mut Activation<'_, 'gc>,
     translation_unit: TranslationUnit<'gc>,
@@ -628,7 +641,11 @@ fn resolve_op<'gc>(
         AbcOp::PushNaN => Op::PushNaN,
         AbcOp::PushNull => Op::PushNull,
         AbcOp::PushShort { value } => Op::PushShort { value },
-        AbcOp::PushString { value } => Op::PushString { value },
+        AbcOp::PushString { value } => {
+            let string = pool_string(activation, translation_unit, value)?;
+
+            Op::PushString { string }
+        }
         AbcOp::PushTrue => Op::PushTrue,
         AbcOp::PushUint { value } => {
             let value = pool_uint(activation, translation_unit, value)?;
@@ -812,12 +829,20 @@ fn resolve_op<'gc>(
             is_local_register,
             register_name,
             register,
-        } => Op::Debug {
-            is_local_register,
-            register_name,
-            register,
-        },
-        AbcOp::DebugFile { file_name } => Op::DebugFile { file_name },
+        } => {
+            let register_name = pool_string(activation, translation_unit, register_name)?;
+
+            Op::Debug {
+                is_local_register,
+                register_name,
+                register,
+            }
+        }
+        AbcOp::DebugFile { file_name } => {
+            let file_name = pool_string(activation, translation_unit, file_name)?;
+
+            Op::DebugFile { file_name }
+        }
         AbcOp::DebugLine { line_num } => Op::DebugLine { line_num },
         AbcOp::Bkpt => Op::Bkpt,
         AbcOp::BkptLine { line_num } => Op::BkptLine { line_num },
@@ -825,7 +850,11 @@ fn resolve_op<'gc>(
         AbcOp::TypeOf => Op::TypeOf,
         AbcOp::EscXAttr => Op::EscXAttr,
         AbcOp::EscXElem => Op::EscXElem,
-        AbcOp::Dxns { index } => Op::Dxns { index },
+        AbcOp::Dxns { index } => {
+            let string = pool_string(activation, translation_unit, index)?;
+
+            Op::Dxns { string }
+        }
         AbcOp::DxnsLate => Op::DxnsLate,
         AbcOp::LookupSwitch(lookup_switch) => Op::LookupSwitch(lookup_switch),
         AbcOp::Coerce { index } => {

@@ -1,5 +1,6 @@
 use crate::avm2::class::Class;
 use crate::avm2::multiname::Multiname;
+use crate::string::AvmAtom;
 
 use gc_arena::{Collect, Gc, GcCell};
 use swf::avm2::types::{
@@ -95,13 +96,11 @@ pub enum Op<'gc> {
     ConvertS,
     Debug {
         is_local_register: bool,
-        #[collect(require_static)]
-        register_name: Index<String>,
+        register_name: AvmAtom<'gc>,
         register: u8,
     },
     DebugFile {
-        #[collect(require_static)]
-        file_name: Index<String>,
+        file_name: AvmAtom<'gc>,
     },
     DebugLine {
         line_num: u32,
@@ -120,8 +119,7 @@ pub enum Op<'gc> {
     Divide,
     Dup,
     Dxns {
-        #[collect(require_static)]
-        index: Index<String>,
+        string: AvmAtom<'gc>,
     },
     DxnsLate,
     Equals,
@@ -300,8 +298,7 @@ pub enum Op<'gc> {
         value: i16,
     },
     PushString {
-        #[collect(require_static)]
-        value: Index<String>,
+        string: AvmAtom<'gc>,
     },
     PushTrue,
     PushUint {
