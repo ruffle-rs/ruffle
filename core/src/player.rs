@@ -307,6 +307,9 @@ pub struct Player {
     frame_accumulator: f64,
     recent_run_frame_timings: VecDeque<f64>,
 
+    /// The previous fake time offset since calling `getTimer()`.
+    last_time_offset: u32,
+
     /// Faked time passage for fooling hand-written busy-loop FPS limiters.
     time_offset: u32,
 
@@ -1906,6 +1909,7 @@ impl Player {
                 max_execution_duration: self.max_execution_duration,
                 focus_tracker,
                 times_get_time_called: 0,
+                last_time_offset: &mut self.last_time_offset,
                 time_offset: &mut self.time_offset,
                 audio_manager,
                 frame_rate: &mut self.frame_rate,
@@ -2520,6 +2524,7 @@ impl PlayerBuilder {
                 frame_accumulator: 0.0,
                 recent_run_frame_timings: VecDeque::with_capacity(10),
                 start_time: Instant::now(),
+                last_time_offset: 0,
                 time_offset: 0,
                 time_til_next_timer: None,
                 max_execution_duration: self.max_execution_duration,
