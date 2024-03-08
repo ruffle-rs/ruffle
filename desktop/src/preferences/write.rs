@@ -1,3 +1,4 @@
+use crate::log::FilenamePattern;
 use crate::preferences::PreferencesAndDocument;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use toml_edit::value;
@@ -43,11 +44,17 @@ impl<'a> PreferencesWriter<'a> {
         self.0.toml_document["volume"] = value(volume as f64);
         self.0.values.volume = volume;
     }
+
+    pub fn set_log_filename_pattern(&mut self, pattern: FilenamePattern) {
+        self.0.toml_document["log"]["filename_pattern"] = value(pattern.as_str());
+        self.0.values.log.filename_pattern = pattern;
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::log::FilenamePattern;
     use crate::preferences::read::read_preferences;
     use fluent_templates::loader::langid;
 
@@ -147,6 +154,25 @@ mod tests {
             "mute = true",
             |writer| writer.set_mute(false),
             "mute = false\n",
+        );
+    }
+
+    #[test]
+    fn set_log_filename_pattern() {
+        test(
+            "",
+            |writer| writer.set_log_filename_pattern(FilenamePattern::WithTimestamp),
+            "log = { filename_pattern = \"with_timestamp\" }\n",
+        );
+        test(
+            "log = { filename_pattern = \"with_timestamp\" }\n",
+            |writer| writer.set_log_filename_pattern(FilenamePattern::SingleFile),
+            "log = { filename_pattern = \"single_file\" }\n",
+        );
+        test(
+            "[log]\nfilename_pattern = \"with_timestamp\"\n",
+            |writer| writer.set_log_filename_pattern(FilenamePattern::SingleFile),
+            "[log]\nfilename_pattern = \"single_file\"\n",
         );
     }
 }

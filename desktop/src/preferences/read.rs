@@ -72,6 +72,21 @@ pub fn read_preferences(input: &str) -> (ParseResult, Document) {
         Err(e) => result.add_warning(format!("Invalid mute: {e}")),
     };
 
+    if let Some(log_item) = document.get("log") {
+        if let Some(log) = log_item.as_table_like() {
+            match parse_item_from_str(log.get("filename_pattern")) {
+                Ok(Some(value)) => result.result.log.filename_pattern = value,
+                Ok(None) => {}
+                Err(e) => result.add_warning(format!("Invalid log.filename_pattern: {e}")),
+            };
+        } else {
+            result.add_warning(format!(
+                "Invalid log: expected table but found {}",
+                log_item.type_name()
+            ));
+        }
+    }
+
     (result, document)
 }
 
@@ -118,6 +133,8 @@ fn parse_item_from_bool(item: Option<&Item>) -> Result<Option<bool>, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::log::FilenamePattern;
+    use crate::preferences::LogPreferences;
     use fluent_templates::loader::langid;
     use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 
@@ -368,6 +385,65 @@ mod tests {
                 warnings: vec![]
             },
             read_preferences("volume = -1.0").0
+        );
+    }
+
+    #[test]
+    fn log_filename() {
+        assert_eq!(
+            ParseResult {
+                result: SavedGlobalPreferences {
+                    log: LogPreferences {
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                warnings: vec![
+                    "Invalid log.filename_pattern: expected string but found integer".to_string()
+                ]
+            },
+            read_preferences("log = {filename_pattern = 5}").0
+        );
+
+        assert_eq!(
+            ParseResult {
+                result: SavedGlobalPreferences {
+                    log: LogPreferences {
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                warnings: vec![
+                    "Invalid log.filename_pattern: unsupported value \"???\"".to_string()
+                ]
+            },
+            read_preferences("log = {filename_pattern = \"???\"}").0
+        );
+
+        assert_eq!(
+            ParseResult {
+                result: SavedGlobalPreferences {
+                    log: LogPreferences {
+                        filename_pattern: FilenamePattern::WithTimestamp,
+                    },
+                    ..Default::default()
+                },
+                warnings: vec![]
+            },
+            read_preferences("log = {filename_pattern = \"with_timestamp\"}").0
+        );
+    }
+
+    #[test]
+    fn log() {
+        assert_eq!(
+            ParseResult {
+                result: SavedGlobalPreferences {
+                    ..Default::default()
+                },
+                warnings: vec!["Invalid log: expected table but found string".to_string()]
+            },
+            read_preferences("log = \"yes\"").0
         );
     }
 }
