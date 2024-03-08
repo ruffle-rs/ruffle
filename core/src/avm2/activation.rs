@@ -2697,11 +2697,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         if let Some(class) = class.as_object() {
-            let class = class.as_class_object().ok_or(Error::AvmError(type_error(
-                self,
-                "Error #1041: The right-hand side of operator must be a class.",
-                1041,
-            )?))?;
+            let Some(class) = class.as_class_object() else {
+                return Err(Error::AvmError(type_error(
+                    self,
+                    "Error #1041: The right-hand side of operator must be a class.",
+                    1041,
+                )?));
+            };
             let value = self.pop_stack();
 
             if value.is_of_type(self, class.inner_class_definition()) {
@@ -2718,14 +2720,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_instance_of(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let type_object = self
-            .pop_stack()
-            .as_object()
-            .ok_or(Error::AvmError(type_error(
+        let Some(type_object) = self.pop_stack().as_object() else {
+            return Err(Error::AvmError(type_error(
                 self,
                 "Error #1040: The right-hand side of instanceof must be a class or function.",
                 1040,
-            )?))?;
+            )?));
+        };
 
         if type_object.as_class_object().is_none() && type_object.as_function_object().is_none() {
             return Err(Error::AvmError(type_error(

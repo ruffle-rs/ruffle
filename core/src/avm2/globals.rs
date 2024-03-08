@@ -175,6 +175,7 @@ pub struct SystemClasses<'gc> {
     pub avm1movie: ClassObject<'gc>,
     pub focusevent: ClassObject<'gc>,
     pub dictionary: ClassObject<'gc>,
+    pub id3info: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -308,6 +309,7 @@ impl<'gc> SystemClasses<'gc> {
             avm1movie: object,
             focusevent: object,
             dictionary: object,
+            id3info: object,
         }
     }
 }
@@ -811,6 +813,7 @@ fn load_playerglobal<'gc>(
             ("flash.geom", "Rectangle", rectangle),
             ("flash.geom", "Transform", transform),
             ("flash.geom", "ColorTransform", colortransform),
+            ("flash.media", "ID3Info", id3info),
             ("flash.media", "SoundChannel", soundchannel),
             ("flash.media", "SoundTransform", soundtransform),
             ("flash.media", "Video", video),

@@ -1,3 +1,4 @@
+use crate::preferences::GlobalPreferences;
 use anyhow::{Context, Error};
 use arboard::Clipboard;
 use chrono::{DateTime, Utc};
@@ -8,10 +9,9 @@ use rfd::{
 use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_core::backend::ui::{
     DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter, FontDefinition,
-    FullscreenError, LanguageIdentifier, MouseCursor, UiBackend, US_ENGLISH,
+    FullscreenError, LanguageIdentifier, MouseCursor, UiBackend,
 };
 use std::rc::Rc;
-use sys_locale::get_locale;
 use tracing::error;
 use url::Url;
 use winit::window::{Fullscreen, Window};
@@ -118,7 +118,7 @@ pub struct DesktopUiBackend {
     window: Rc<Window>,
     cursor_visible: bool,
     clipboard: Clipboard,
-    language: LanguageIdentifier,
+    preferences: GlobalPreferences,
     preferred_cursor: MouseCursor,
     open_url_mode: OpenURLMode,
     font_database: Rc<fontdb::Database>,
@@ -131,16 +131,13 @@ impl DesktopUiBackend {
         window: Rc<Window>,
         open_url_mode: OpenURLMode,
         font_database: Rc<fontdb::Database>,
+        preferences: GlobalPreferences,
     ) -> Result<Self, Error> {
-        let preferred_language = get_locale();
-        let language = preferred_language
-            .and_then(|l| l.parse().ok())
-            .unwrap_or_else(|| US_ENGLISH.clone());
         Ok(Self {
             window,
             cursor_visible: true,
             clipboard: Clipboard::new().context("Couldn't get platform clipboard")?,
-            language,
+            preferences,
             preferred_cursor: MouseCursor::Arrow,
             open_url_mode,
             dialog_open: false,
@@ -309,8 +306,8 @@ impl UiBackend for DesktopUiBackend {
     // Unused on desktop
     fn open_virtual_keyboard(&self) {}
 
-    fn language(&self) -> &LanguageIdentifier {
-        &self.language
+    fn language(&self) -> LanguageIdentifier {
+        self.preferences.language().clone()
     }
 
     fn display_file_open_dialog(&mut self, filters: Vec<FileFilter>) -> Option<DialogResultFuture> {

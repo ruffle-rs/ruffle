@@ -1,4 +1,3 @@
-use anyhow::{Context, Error};
 use ruffle_core::backend::storage::StorageBackend;
 use std::fs;
 use std::fs::File;
@@ -6,29 +5,22 @@ use std::io::Write;
 use std::path::{Component, Path, PathBuf};
 
 pub struct DiskStorageBackend {
-    base_path: PathBuf,
     shared_objects_path: PathBuf,
 }
 
 impl DiskStorageBackend {
-    pub fn new() -> Result<Self, Error> {
-        let base_path = dirs::data_local_dir()
-            .context("Couldn't find a valid data_local dir")?
-            .join("ruffle");
-        let shared_objects_path = base_path.join("SharedObjects");
-
+    pub fn new(shared_objects_path: PathBuf) -> Self {
         // Create a base dir if one doesn't exist yet
         if !shared_objects_path.exists() {
             tracing::info!("Creating storage dir");
-            if let Err(r) = fs::create_dir_all(&base_path) {
+            if let Err(r) = fs::create_dir_all(&shared_objects_path) {
                 tracing::warn!("Unable to create storage dir {}", r);
             }
         }
 
-        Ok(DiskStorageBackend {
-            base_path,
+        DiskStorageBackend {
             shared_objects_path,
-        })
+        }
     }
 
     /// Verifies that the path contains no `..` components to prevent accessing files outside of the Ruffle directory.
@@ -38,13 +30,6 @@ impl DiskStorageBackend {
 
     fn get_shared_object_path(&self, name: &str) -> PathBuf {
         self.shared_objects_path.join(format!("{name}.sol"))
-    }
-
-    fn get_back_compat_shared_object_path(&self, name: &str) -> PathBuf {
-        // Backwards compatibility with pre-05/09/2021:
-        // Search for data in old location, without .sol extension and # prefix.
-        // Remove this code eventually.
-        self.base_path.join(name.replacen("/#", "/", 1))
     }
 }
 
@@ -56,16 +41,6 @@ impl StorageBackend for DiskStorageBackend {
         }
         match std::fs::read(path) {
             Ok(data) => Some(data),
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-                let path = self.get_back_compat_shared_object_path(name);
-                match std::fs::read(path) {
-                    Ok(data) => Some(data),
-                    Err(e) => {
-                        tracing::warn!("Unable to read file \"{}\": {:?}", name, e);
-                        None
-                    }
-                }
-            }
             Err(e) => {
                 tracing::warn!("Unable to read file \"{}\": {:?}", name, e);
                 None

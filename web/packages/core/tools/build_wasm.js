@@ -60,7 +60,7 @@ function cargoBuild({ profile, features, rustFlags }) {
     });
 }
 function buildWasm(profile, filename, optimise, extensions, wasmSource) {
-    const rustFlags = ["--cfg=web_sys_unstable_apis", "-Aunknown_lints"];
+    const rustFlags = ["-Aunknown_lints"];
     const wasmBindgenFlags = [];
     const wasmOptFlags = [];
     const flavor = extensions ? "extensions" : "vanilla";

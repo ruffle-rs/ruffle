@@ -359,7 +359,6 @@ Ruffle depends on third-party libraries with compatible licenses.
 | [fxhash](https://github.com/cbreeden/fxhash) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) cbreeden <github@u.breeden.cc> | 
 | [gc-arena](https://github.com/kyren/gc-arena) | [MIT](#MIT) | Copyright (c) kyren <kerriganw@gmail.com> | 
 | [gc-arena-derive](https://github.com/kyren/gc-arena) | [MIT](#MIT) | Copyright (c) kyren <kerriganw@gmail.com> | 
-| [generational-arena](https://github.com/fitzgen/generational-arena) | [MPL-2.0](#MPL-20) | Copyright (c) Nick Fitzgerald <fitzgen@gmail.com> | 
 | [getrandom](https://github.com/rust-random/getrandom) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright 2018 Developers of the Rand project Copyright (c) 2014 The Rust Project Developers  | 
 | [gfx-auxil](https://github.com/gfx-rs/gfx) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) The Gfx-rs Developers | 
 | [gfx-backend-dx11](https://github.com/gfx-rs/gfx) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) The Gfx-rs Developers | 
@@ -527,7 +526,7 @@ Ruffle depends on third-party libraries with compatible licenses.
 | [sid](https://github.com/nical/sid) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) Nicolas Silva <nical@fastmail.com> | 
 | [slab](https://github.com/carllerche/slab) | [MIT](#MIT) | Copyright (c) 2019 Carl Lerche  | 
 | [slice-deque](https://github.com/gnzlbg/slice_deque) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2017 Gonzalo Brito Gadeschi Copyright (c) 2017 The Rust Project Developers  | 
-| [slotmap](https://github.com/orlp/slotmap) | [Zlib](#Zlib) | Copyright (c) 2018 Orson Peters <orsonpeters@gmail.com>  | 
+| [slotmap](https://github.com/orlp/slotmap) | [Zlib](#Zlib) | Copyright (c) 2021 Orson Peters <orsonpeters@gmail.com>  | 
 | [sluice](https://github.com/sagebind/sluice) | [MIT](#MIT) | Copyright (c) 2017 Stephen M. Coakley  | 
 | [smallvec](https://github.com/servo/rust-smallvec) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2018 The Servo Project Developers  | 
 | [smithay-client-toolkit](https://github.com/smithay/client-toolkit) | [MIT](#MIT) | Copyright (c) 2018 Victor Berger  | 

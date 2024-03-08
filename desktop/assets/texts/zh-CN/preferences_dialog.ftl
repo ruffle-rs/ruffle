@@ -1,0 +1,14 @@
+preferences-dialog = Ruffle 首选项
+preference-locked-by-cli = 只读（由 CLI 指定）
+graphics-backend = 图形后端
+graphics-backend-vulkan = Vulkan
+graphics-backend-gl = OpenGL
+graphics-backend-dx12 = DirectX 12
+graphics-backend-metal = Metal
+graphics-backend-default = 默认
+graphics-power = 性能偏好
+graphics-power-low = 低（例如，集成显卡）
+graphics-power-high = 高（例如，独立显卡）
+language = 语言
+audio-output-device = 音频输出设备
+audio-output-device-default = 系统默认

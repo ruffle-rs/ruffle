@@ -258,6 +258,10 @@ impl<'gc> Timers<'gc> {
         len < old_len
     }
 
+    pub fn remove_all(&mut self) {
+        self.timers.clear()
+    }
+
     /// Changes the delay of a timer.
     pub fn set_delay(&mut self, id: i32, interval: i32) {
         // SANITY: Set a minimum interval so we don't spam too much.

@@ -121,8 +121,8 @@ impl UiBackend for TestUiBackend {
 
     fn open_virtual_keyboard(&self) {}
 
-    fn language(&self) -> &LanguageIdentifier {
-        &US_ENGLISH
+    fn language(&self) -> LanguageIdentifier {
+        US_ENGLISH.clone()
     }
 
     fn display_unsupported_video(&self, _url: Url) {}

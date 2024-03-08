@@ -13,6 +13,7 @@ file-menu-open-quick = 開く
 file-menu-open-advanced = ファイルと設定
 file-menu-close = 閉じる
 file-menu-reload = 再読み込み
+file-menu-preferences = 設定..
 file-menu-exit = 終了
 controls-menu = 操作
 controls-menu-suspend = 一時停止

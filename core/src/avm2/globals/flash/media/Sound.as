@@ -17,6 +17,7 @@ package flash.media {
         public native function get isURLInaccessible():Boolean;
         public native function get url():String;
         public native function get length():Number;
+        public native function get id3():ID3Info;
         public native function play(startTime:Number = 0, loops:int = 0, sndTransform:SoundTransform = null):SoundChannel;
         public native function extract(target:ByteArray, length:Number, startPosition:Number = -1):Number;
         public native function close():void;

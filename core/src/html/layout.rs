@@ -840,9 +840,13 @@ impl<'gc> LayoutBox<'gc> {
                     };
 
                     match delimiter {
-                        Some(b'\n' | b'\r') => {
-                            layout_context.explicit_newline(context, text, 0, span, font_type)
-                        }
+                        Some(b'\n' | b'\r') => layout_context.explicit_newline(
+                            context,
+                            fs.displayed_text(),
+                            span_start + slice_start - 1,
+                            span,
+                            font_type,
+                        ),
                         Some(b'\t') => layout_context.tab(),
                         _ => {}
                     }
@@ -878,8 +882,8 @@ impl<'gc> LayoutBox<'gc> {
                             } else if breakpoint == 0 {
                                 layout_context.newline(
                                     context,
-                                    text,
-                                    next_breakpoint,
+                                    fs.displayed_text(),
+                                    start + next_breakpoint,
                                     span,
                                     font_type,
                                 );
@@ -908,7 +912,13 @@ impl<'gc> LayoutBox<'gc> {
                                 break;
                             }
 
-                            layout_context.newline(context, text, next_breakpoint, span, font_type);
+                            layout_context.newline(
+                                context,
+                                fs.displayed_text(),
+                                start + next_breakpoint,
+                                span,
+                                font_type,
+                            );
                             let next_dim = layout_context.wrap_dimensions(span);
 
                             width = next_dim.0;

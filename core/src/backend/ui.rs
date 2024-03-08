@@ -90,7 +90,7 @@ pub trait UiBackend: Downcast {
     // Only used on web.
     fn open_virtual_keyboard(&self);
 
-    fn language(&self) -> &LanguageIdentifier;
+    fn language(&self) -> LanguageIdentifier;
 
     fn display_unsupported_video(&self, url: Url);
 
@@ -293,8 +293,8 @@ impl UiBackend for NullUiBackend {
 
     fn open_virtual_keyboard(&self) {}
 
-    fn language(&self) -> &LanguageIdentifier {
-        &US_ENGLISH
+    fn language(&self) -> LanguageIdentifier {
+        US_ENGLISH.clone()
     }
 
     fn display_file_open_dialog(

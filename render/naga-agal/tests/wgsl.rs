@@ -24,7 +24,7 @@ macro_rules! test_shader {
     ($shader:expr, $attrs:expr, $shader_type:expr $(,)?) => {
         let module = agal_to_naga(&$shader, $attrs, &[Default::default(); 8]).unwrap();
         let output = to_wgsl(&module);
-        insta::assert_display_snapshot!(output);
+        insta::assert_snapshot!(output);
     };
 }
 

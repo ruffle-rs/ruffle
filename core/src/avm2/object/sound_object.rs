@@ -4,13 +4,18 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
+use crate::avm2::Avm2;
 use crate::avm2::Error;
+use crate::avm2::EventObject;
 use crate::backend::audio::SoundHandle;
 use crate::context::UpdateContext;
 use crate::display_object::SoundTransform;
+use crate::string::AvmString;
 use core::fmt;
 use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
+use id3::{Tag, TagLike};
 use std::cell::{Ref, RefMut};
+use std::io::Cursor;
 use swf::SoundInfo;
 
 use super::SoundChannelObject;
@@ -29,6 +34,7 @@ pub fn sound_allocator<'gc>(
             sound_data: SoundData::NotLoaded {
                 queued_plays: Vec::new(),
             },
+            id3: None,
         },
     ))
     .into())
@@ -58,6 +64,9 @@ pub struct SoundObjectData<'gc> {
 
     /// The sound this object holds.
     sound_data: SoundData<'gc>,
+
+    /// ID3Info Object
+    id3: Option<Object<'gc>>,
 }
 
 #[derive(Collect)]
@@ -128,6 +137,89 @@ impl<'gc> SoundObject<'gc> {
             }
         }
         Ok(())
+    }
+
+    pub fn id3(self) -> Option<Object<'gc>> {
+        let this = self.0.read();
+        this.id3
+    }
+
+    pub fn set_id3(self, mc: &Mutation<'gc>, id3: Option<Object<'gc>>) {
+        let mut this = self.0.write(mc);
+        this.id3 = id3;
+    }
+
+    pub fn read_and_call_id3_event(self, activation: &mut Activation<'_, 'gc>, bytes: &[u8]) {
+        let id3 = activation
+            .avm2()
+            .classes()
+            .id3info
+            .construct(activation, &[])
+            .expect("failed to construct ID3Info object");
+        let tag = Tag::read_from2(Cursor::new(bytes));
+        if let Ok(ref tag) = tag {
+            if let Some(v) = tag.album() {
+                id3.set_public_property(
+                    "album",
+                    AvmString::new_utf8(activation.gc(), v).into(),
+                    activation,
+                )
+                .expect("failed set_public_property");
+            }
+            if let Some(v) = tag.artist() {
+                id3.set_public_property(
+                    "artist",
+                    AvmString::new_utf8(activation.gc(), v).into(),
+                    activation,
+                )
+                .expect("failed set_public_property");
+            }
+            if let Some(v) = tag.comments().next() {
+                id3.set_public_property(
+                    "comment",
+                    AvmString::new_utf8(activation.gc(), v.text.clone()).into(),
+                    activation,
+                )
+                .expect("failed set_public_property");
+            }
+            if let Some(v) = tag.genre() {
+                id3.set_public_property(
+                    "genre",
+                    AvmString::new_utf8(activation.gc(), v).into(),
+                    activation,
+                )
+                .expect("failed set_public_property");
+            }
+            if let Some(v) = tag.title() {
+                id3.set_public_property(
+                    "songName",
+                    AvmString::new_utf8(activation.gc(), v).into(),
+                    activation,
+                )
+                .expect("failed set_public_property");
+            }
+            if let Some(v) = tag.track() {
+                id3.set_public_property(
+                    "track",
+                    AvmString::new_utf8(activation.gc(), v.to_string()).into(),
+                    activation,
+                )
+                .expect("failed set_public_property");
+            }
+            if let Some(v) = tag.year() {
+                id3.set_public_property(
+                    "year",
+                    AvmString::new_utf8(activation.gc(), v.to_string()).into(),
+                    activation,
+                )
+                .expect("failed set_public_property");
+            }
+        }
+        self.set_id3(activation.context.gc_context, Some(id3));
+        if tag.is_ok() {
+            let id3_evt = EventObject::bare_default_event(&mut activation.context, "id3");
+            Avm2::dispatch_event(&mut activation.context, id3_evt, self.into());
+        }
     }
 }
 

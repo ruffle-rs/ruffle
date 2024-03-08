@@ -1,0 +1,10 @@
+preferences-dialog = Preferências do Ruffle
+preference-locked-by-cli = Apenas leitura (Definido por CLI)
+graphics-backend = Saída Gráfica
+graphics-backend-default = Padrão
+graphics-power = Preferência de energia
+graphics-power-low = Baixo (por exemplo, iGPU)
+graphics-power-high = Alto (por exemplo, GPU)
+language = Idioma
+audio-output-device = Dispositivo de Saída de Áudio
+audio-output-device-default = Padrão do sistema

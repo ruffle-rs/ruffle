@@ -4,10 +4,12 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::{Object, QueuedPlay, SoundChannelObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
+use crate::avm2::Avm2;
 use crate::avm2::Error;
 use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::SoundTransform;
+use crate::string::AvmString;
 use crate::{avm2_stub_getter, avm2_stub_method};
 use swf::{SoundEvent, SoundInfo};
 
@@ -280,6 +282,28 @@ pub fn load_compressed_data_from_byte_array<'gc>(
         Error::RustError(format!("Failed to register sound from bytearray: {e:?}").into())
     })?;
 
+    let progress_evt = activation
+        .avm2()
+        .classes()
+        .progressevent
+        .construct(
+            activation,
+            &[
+                "progress".into(),
+                false.into(),
+                false.into(),
+                bytes.len().into(),
+                bytes.len().into(),
+            ],
+        )
+        .map_err(|e| Error::AvmError(AvmString::new_utf8(activation.gc(), e.to_string()).into()))?;
+
+    Avm2::dispatch_event(&mut activation.context, progress_evt, this);
+
+    this.as_sound_object()
+        .unwrap()
+        .read_and_call_id3_event(activation, bytes);
+
     this.as_sound_object()
         .unwrap()
         .set_sound(&mut activation.context, handle)?;
@@ -295,4 +319,17 @@ pub fn load_pcm_from_byte_array<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.media.Sound", "loadPCMFromByteArray");
     Ok(Value::Undefined)
+}
+
+/// Implements `Sound.id3`
+pub fn get_id3<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(id3) = this.as_sound_object().unwrap().id3() {
+        Ok(id3.into())
+    } else {
+        Ok(Value::Null)
+    }
 }

@@ -17,7 +17,7 @@ bitstream-io = "2.2.0"
 flate2 = "1.0.28"
 fnv = "1.0.7"
 gc-arena = { package = "ruffle_gc_arena", path = "../ruffle_gc_arena" }
-generational-arena = "0.2.9"
+slotmap = { workspace = true }
 indexmap = "2.2.5"
 tracing = { workspace = true }
 ruffle_render = { path = "../render", features = ["tessellator"] }
@@ -49,11 +49,11 @@ dasp = { version = "0.11.0", features = ["interpolate", "interpolate-linear", "s
 symphonia = { version = "0.5.4", default-features = false, features = ["mp3"], optional = true }
 enumset = "1.1.3"
 bytemuck = "1.14.3"
-clap = { version = "4.5.1", features = ["derive"], optional=true }
+clap = { version = "4.5.2", features = ["derive"], optional=true }
 realfft = "3.3.0"
 hashbrown = { version = "0.14.3", features = ["raw"] }
 scopeguard = "1.2.0"
-fluent-templates = { git = "https://github.com/XAMPPRocky/fluent-templates", rev = "4ed6eebae897c19c4bc7e80800f54d7b8e65a9cf" }
+fluent-templates = "0.9.0"
 egui = { workspace = true, optional = true }
 egui_extras = { version = "0.26.2", optional = true }
 png = { version = "0.17.13", optional = true }
@@ -65,12 +65,13 @@ enum-map = "2.7.3"
 ttf-parser = "0.20"
 num-bigint = "0.4"
 unic-segment = "0.9.0"
+id3 = "1.13.1"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 version = "0.3.30"
 
 [target.'cfg(target_family = "wasm")'.dependencies.wasm-bindgen-futures]
-version = "0.4.41"
+version = "0.4.42"
 
 [features]
 default = []

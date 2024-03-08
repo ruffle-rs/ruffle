@@ -36,6 +36,7 @@ use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::DrawCommand;
 use ruffle_render::transform::Transform;
 use ruffle_wstr::WStrToUtf8;
+use std::cmp::Ordering;
 use std::collections::VecDeque;
 use std::{cell::Ref, cell::RefMut, sync::Arc};
 use swf::{Color, ColorTransform, Twips};
@@ -1293,11 +1294,45 @@ impl<'gc> EditText<'gc> {
         position.x += Twips::from_pixels(Self::INTERNAL_PADDING) + Twips::from_pixels(text.hscroll);
         position.y += Twips::from_pixels(Self::INTERNAL_PADDING) + text.vertical_scroll_offset();
 
-        for layout_box in text.layout.iter().filter(|layout| {
-            layout
-                .bounds()
-                .contains(Position::from((position.x, position.y)))
-        }) {
+        // First determine which *row* of text is the closest match to the Y position...
+        let mut closest_row_extent_y = None;
+        for layout_box in text.layout.iter() {
+            if layout_box.is_text_box() {
+                if let Some(closest_extent_y) = closest_row_extent_y {
+                    if layout_box.bounds().extent_y() > closest_extent_y
+                        && position.y >= layout_box.bounds().offset_y()
+                    {
+                        closest_row_extent_y = Some(layout_box.bounds().extent_y());
+                    }
+                } else {
+                    closest_row_extent_y = Some(layout_box.bounds().extent_y());
+                }
+            }
+        }
+
+        // ...then find the box within that row that is the closest match to the X position.
+        let mut closest_layout_box: Option<&LayoutBox<'gc>> = None;
+        if let Some(closest_extent_y) = closest_row_extent_y {
+            for layout_box in text.layout.iter() {
+                if layout_box.is_text_box() {
+                    match layout_box.bounds().extent_y().cmp(&closest_extent_y) {
+                        Ordering::Less => {}
+                        Ordering::Equal => {
+                            if position.x >= layout_box.bounds().offset_x()
+                                || closest_layout_box.is_none()
+                            {
+                                closest_layout_box = Some(layout_box);
+                            } else {
+                                break;
+                            }
+                        }
+                        Ordering::Greater => break,
+                    }
+                }
+            }
+        }
+
+        if let Some(layout_box) = closest_layout_box {
             let origin = layout_box.bounds().origin();
             let mut matrix = Matrix::translate(origin.x(), origin.y());
             matrix = matrix.inverse().expect("Invertible layout matrix");
@@ -1306,7 +1341,7 @@ impl<'gc> EditText<'gc> {
             if let Some((text, _tf, font, params, color)) =
                 layout_box.as_renderable_text(text.text_spans.text())
             {
-                let mut result = None;
+                let mut result = 0;
                 let baseline_adjustment =
                     font.get_baseline_for_height(params.height()) - params.height();
                 font.evaluate(
@@ -1314,31 +1349,22 @@ impl<'gc> EditText<'gc> {
                     self.text_transform(color, baseline_adjustment),
                     params,
                     |pos, _transform, _glyph: &Glyph, advance, x| {
-                        if local_position.x >= x
-                            && local_position.x <= x + advance
-                            && local_position.y >= Twips::ZERO
-                            && local_position.y <= params.height()
-                        {
-                            if local_position.x >= x + (advance / 2) {
-                                result = Some(string_utils::next_char_boundary(text, pos));
+                        if local_position.x >= x {
+                            if local_position.x > x + (advance / 2) {
+                                result = string_utils::next_char_boundary(text, pos);
                             } else {
-                                result = Some(pos);
+                                result = pos;
                             }
                         }
                     },
                 );
-                if let Some(index_in_layout) = result {
-                    return Some(
-                        if let LayoutContent::Text { start, .. } = layout_box.content() {
-                            index_in_layout + start
-                        } else {
-                            index_in_layout // [NA] Not sure if it's possible to get here?
-                        },
-                    );
+                if let LayoutContent::Text { start, .. } = layout_box.content() {
+                    return Some(result + start);
                 }
             }
         }
 
+        // Should only be reached if there are no text layout boxes at all.
         None
     }
 

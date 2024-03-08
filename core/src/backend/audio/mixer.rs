@@ -3,7 +3,7 @@ use super::{SoundHandle, SoundInstanceHandle, SoundStreamInfo, SoundTransform};
 use crate::backend::audio::{DecodeError, RegisterError};
 use crate::buffer::Substream;
 use crate::tag_utils::SwfSlice;
-use generational_arena::Arena;
+use slotmap::SlotMap;
 use std::io::Cursor;
 use std::sync::{Arc, Mutex, RwLock};
 use swf::AudioCompression;
@@ -54,10 +54,10 @@ impl CircBuf {
 // all sounds and mix the audio into an output buffer audio stream.
 pub struct AudioMixer {
     /// The currently registered sounds.
-    sounds: Arena<Sound>,
+    sounds: SlotMap<SoundHandle, Sound>,
 
     /// The list of actively playing sound instances.
-    sound_instances: Arc<Mutex<Arena<SoundInstance>>>,
+    sound_instances: Arc<Mutex<SlotMap<SoundInstanceHandle, SoundInstance>>>,
 
     /// The master volume of the audio from [0.0, 1.0].
     volume: Arc<RwLock<f32>>,
@@ -239,8 +239,8 @@ impl AudioMixer {
     /// Creates a new `AudioMixer` with the given number of channels and sample rate.
     pub fn new(num_output_channels: u8, output_sample_rate: u32) -> Self {
         Self {
-            sounds: Arena::new(),
-            sound_instances: Arc::new(Mutex::new(Arena::new())),
+            sounds: SlotMap::with_key(),
+            sound_instances: Arc::new(Mutex::new(SlotMap::with_key())),
             volume: Arc::new(RwLock::new(1.0)),
             num_output_channels,
             output_sample_rate,
@@ -428,7 +428,7 @@ impl AudioMixer {
     /// Refill the output buffer by stepping through all active sounds
     /// and mixing in their output.
     fn mix_audio<'a, T>(
-        sound_instances: &mut Arena<SoundInstance>,
+        sound_instances: &mut SlotMap<SoundInstanceHandle, SoundInstance>,
         volume: f32,
         num_channels: u8,
         mut output_buffer: &mut [T],
@@ -636,13 +636,6 @@ impl AudioMixer {
             .sound_instances
             .lock()
             .expect("Cannot be called reentrant");
-        // This is a workaround for a bug in generational-arena:
-        // Arena::clear does not properly bump the generational index, allowing for stale references
-        // to continue to work (this caused #1315). Arena::remove will force a generation bump.
-        // See https://github.com/fitzgen/generational-arena/issues/30
-        if let Some((i, _)) = sound_instances.iter().next() {
-            sound_instances.remove(i);
-        }
         sound_instances.clear();
     }
 
@@ -724,7 +717,7 @@ impl AudioMixer {
 /// to perform audio mixing on a different thread.
 pub struct AudioMixerProxy {
     /// The list of actively playing sound instances.
-    sound_instances: Arc<Mutex<Arena<SoundInstance>>>,
+    sound_instances: Arc<Mutex<SlotMap<SoundInstanceHandle, SoundInstance>>>,
 
     /// The master volume of the audio from [0.0, 1.0].
     volume: Arc<RwLock<f32>>,

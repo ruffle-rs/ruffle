@@ -2,9 +2,11 @@ use crate::avm1::Object as Avm1Object;
 use crate::avm2::object::LocalConnectionObject;
 use crate::string::AvmString;
 use gc_arena::Collect;
-use generational_arena::{Arena, Index};
+use slotmap::{new_key_type, SlotMap};
 
-pub type LocalConnectionHandle = Index;
+new_key_type! {
+    pub struct LocalConnectionHandle;
+}
 
 #[derive(Collect)]
 #[collect(no_drop)]
@@ -41,7 +43,7 @@ impl<'gc> LocalConnection<'gc> {
 
 /// Manages the collection of local connections.
 pub struct LocalConnections<'gc> {
-    connections: Arena<LocalConnection<'gc>>,
+    connections: SlotMap<LocalConnectionHandle, LocalConnection<'gc>>,
 }
 
 unsafe impl<'gc> Collect for LocalConnections<'gc> {
@@ -55,7 +57,7 @@ unsafe impl<'gc> Collect for LocalConnections<'gc> {
 impl<'gc> LocalConnections<'gc> {
     pub fn empty() -> Self {
         Self {
-            connections: Arena::new(),
+            connections: SlotMap::with_key(),
         }
     }
 

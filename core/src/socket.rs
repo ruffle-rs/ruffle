@@ -13,13 +13,15 @@ use crate::{
 };
 use async_channel::{unbounded, Receiver, Sender as AsyncSender, Sender};
 use gc_arena::Collect;
-use generational_arena::{Arena, Index};
+use slotmap::{new_key_type, SlotMap};
 use std::{
     cell::{Cell, RefCell},
     time::Duration,
 };
 
-pub type SocketHandle = Index;
+new_key_type! {
+    pub struct SocketHandle;
+}
 
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
@@ -62,7 +64,7 @@ pub enum SocketAction {
 
 /// Manages the collection of Sockets.
 pub struct Sockets<'gc> {
-    sockets: Arena<Socket<'gc>>,
+    sockets: SlotMap<SocketHandle, Socket<'gc>>,
 
     receiver: Receiver<SocketAction>,
     sender: Sender<SocketAction>,
@@ -81,7 +83,7 @@ impl<'gc> Sockets<'gc> {
         let (sender, receiver) = unbounded();
 
         Self {
-            sockets: Arena::new(),
+            sockets: SlotMap::with_key(),
             receiver,
             sender,
         }
@@ -168,27 +170,37 @@ impl<'gc> Sockets<'gc> {
         }
     }
 
+    pub fn close_all(&mut self) {
+        for (_, socket) in self.sockets.drain() {
+            Self::close_internal(socket);
+        }
+    }
+
     pub fn close(&mut self, handle: SocketHandle) {
-        if let Some(Socket {
+        if let Some(socket) = self.sockets.remove(handle) {
+            Self::close_internal(socket);
+        }
+    }
+
+    fn close_internal(socket: Socket) {
+        let Socket {
             sender,
             target,
             connected: _,
-        }) = self.sockets.remove(handle)
-        {
-            drop(sender); // NOTE: By dropping the sender, the reading task will close automatically.
+        } = socket;
 
-            // Clear the buffers if the connection was closed.
-            match target {
-                SocketKind::Avm1(target) => {
-                    let target =
-                        XmlSocket::cast(target.into()).expect("target should be XmlSocket");
+        drop(sender); // NOTE: By dropping the sender, the reading task will close automatically.
 
-                    target.read_buffer().clear();
-                }
-                SocketKind::Avm2(target) => {
-                    target.read_buffer().clear();
-                    target.write_buffer().clear();
-                }
+        // Clear the buffers if the connection was closed.
+        match target {
+            SocketKind::Avm1(target) => {
+                let target = XmlSocket::cast(target.into()).expect("target should be XmlSocket");
+
+                target.read_buffer().clear();
+            }
+            SocketKind::Avm2(target) => {
+                target.read_buffer().clear();
+                target.write_buffer().clear();
             }
         }
     }

@@ -2,11 +2,11 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2008;
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{Object, TObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
+use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
-use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::display_object::{StageDisplayState, TDisplayObject};
 use crate::string::{AvmString, WString};
 use crate::{avm2_stub_getter, avm2_stub_setter};
@@ -417,15 +417,17 @@ pub fn get_stage3ds<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(stage) = this.as_display_object().and_then(|this| this.as_stage()) {
-        let storage = ArrayStorage::from_storage(
+        let storage = VectorStorage::from_values(
             stage
                 .stage3ds()
                 .iter()
-                .map(|obj| Some(Value::Object(*obj)))
+                .map(|obj| Value::Object(*obj))
                 .collect(),
+            false,
+            Some(activation.avm2().classes().stage3d),
         );
-        let stage3ds_array = ArrayObject::from_storage(activation, storage)?;
-        return Ok(stage3ds_array.into());
+        let stage3ds = VectorObject::from_vector(storage, activation)?;
+        return Ok(stage3ds.into());
     }
     Ok(Value::Undefined)
 }

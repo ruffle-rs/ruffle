@@ -11,8 +11,8 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-clap = { version = "4.5.1", features = ["derive"] }
-cpal = "0.15.2"
+clap = { version = "4.5.2", features = ["derive"] }
+cpal = "0.15.3"
 egui = { workspace = true }
 egui_extras = { version = "0.26.2", features = ["image"] }
 egui-wgpu = { version = "0.26.2", features = ["winit"] }
@@ -23,13 +23,13 @@ ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymose
 ruffle_render = { path = "../render", features = ["clap"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
 ruffle_video_software = { path = "../video/software", optional = true }
-tracing = { workspace = true}
+tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-generational-arena = "0.2.9"
-winit = "0.29.12"
-webbrowser = "0.8.12"
+slotmap = { workspace = true }
+winit = "0.29.14"
+webbrowser = "0.8.13"
 url = "2.5.0"
-arboard = { version = "3.3.1", features = ["wayland-data-control"] }
+arboard = { version = "3.3.2", features = ["wayland-data-control"] }
 dirs = "5.0"
 isahc = { version = "1.7.2", features = ["cookies"] }
 rfd = "0.14.0"
@@ -41,11 +41,12 @@ sys-locale = "0.3.1"
 wgpu = { workspace = true }
 futures = "0.3.30"
 chrono = { version = "0.4", default-features = false, features = [] }
-fluent-templates = "0.8.0"
+fluent-templates = "0.9.0"
 futures-lite = "2.2.0"
 async-io = "2.3.1"
 async-net = "2.0.0"
 async-channel = "2.2.0"
+toml_edit = { version = "0.22.6", features = ["parse"] }
 gilrs = "0.10"
 
 # Deliberately held back to match tracy client used by profiling crate

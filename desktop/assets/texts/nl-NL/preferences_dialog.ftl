@@ -1,0 +1,14 @@
+preferences-dialog = Ruffle voorkeuren
+preference-locked-by-cli = Alleen-lezen (via consoleinterface ingesteld)
+graphics-backend = Grafisch systeem
+graphics-backend-vulkan = Vulkan
+graphics-backend-gl = OpenGL
+graphics-backend-dx12 = DirectX 12
+graphics-backend-metal = Metal
+graphics-backend-default = Standaard
+graphics-power = Stroomverbruiksvoorkeur
+graphics-power-low = Laag (e.g. iGPU)
+graphics-power-high = Hoog (e.g. discrete GPU)
+language = Taal
+audio-output-device = Audio uitvoerapparaat
+audio-output-device-default = Systeemstandaard

@@ -321,11 +321,11 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
         self.audio_manager.stop_all_sounds(self.audio)
     }
 
-    pub fn is_sound_playing(&mut self, sound: SoundInstanceHandle) -> bool {
+    pub fn is_sound_playing(&self, sound: SoundInstanceHandle) -> bool {
         self.audio_manager.is_sound_playing(sound)
     }
 
-    pub fn is_sound_playing_with_handle(&mut self, sound: SoundHandle) -> bool {
+    pub fn is_sound_playing_with_handle(&self, sound: SoundHandle) -> bool {
         self.audio_manager.is_sound_playing_with_handle(sound)
     }
 
@@ -348,7 +348,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
     ///
     /// This should only be called once, as it makes no attempt at removing
     /// previous stage contents. If you need to load a new root movie, you
-    /// should destroy and recreate the player instance.
+    /// should use `replace_root_movie`.
     pub fn set_root_movie(&mut self, movie: SwfMovie) {
         if !self.forced_frame_rate {
             *self.frame_rate = movie.frame_rate().into();
@@ -452,6 +452,17 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
         drop(activation);
 
         self.audio.set_frame_rate(*self.frame_rate);
+    }
+
+    pub fn replace_root_movie(&mut self, movie: SwfMovie) {
+        // FIXME Use RAII here, e.g. destroy and recreate
+        //       the player instance instead of cleaning up.
+
+        // Clean up the stage before loading another root movie.
+        self.sockets.close_all();
+        self.timers.remove_all();
+
+        self.set_root_movie(movie);
     }
 }
 

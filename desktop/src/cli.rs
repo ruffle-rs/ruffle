@@ -10,7 +10,20 @@ use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::path::Path;
 use url::Url;
 
-#[derive(Parser, Debug)]
+fn get_default_save_directory() -> std::path::PathBuf {
+    dirs::data_local_dir()
+        .expect("Couldn't find a valid data_local dir")
+        .join("ruffle")
+        .join("SharedObjects")
+}
+
+fn get_default_config_directory() -> std::path::PathBuf {
+    dirs::config_local_dir()
+        .expect("Couldn't find a valid config_local dir")
+        .join("ruffle")
+}
+
+#[derive(Parser, Debug, Clone)]
 #[clap(
     name = "Ruffle",
     author,
@@ -27,14 +40,19 @@ pub struct Opt {
     parameters: Vec<String>,
 
     /// Type of graphics backend to use. Not all options may be supported by your current system.
+    ///
     /// Default will attempt to pick the most supported graphics backend.
-    #[clap(long, short, default_value = "default")]
-    pub graphics: GraphicsBackend,
+    /// This option temporarily overrides any stored preference.
+    #[clap(long, short)]
+    pub graphics: Option<GraphicsBackend>,
 
     /// Power preference for the graphics device used. High power usage tends to prefer dedicated GPUs,
     /// whereas a low power usage tends prefer integrated GPUs.
-    #[clap(long, short, default_value = "high")]
-    pub power: PowerPreference,
+    ///
+    /// Default preference is high (likely dedicated GPU).
+    /// This option temporarily overrides any stored preference.
+    #[clap(long, short)]
+    pub power: Option<PowerPreference>,
 
     /// Width of window in pixels.
     #[clap(long, display_order = 1)]
@@ -69,9 +87,9 @@ pub struct Opt {
     #[clap(long, short, default_value = "show-all")]
     pub scale: StageScaleMode,
 
-    /// Audio volume as a number between 0 (muted) and 1 (full volume)
-    #[clap(long, short, default_value = "1.0")]
-    pub volume: f32,
+    /// Audio volume as a number between 0 (muted) and 1 (full volume). Default is 1.
+    #[clap(long, short)]
+    pub volume: Option<f32>,
 
     /// Prevent movies from changing the stage scale mode.
     #[clap(long, action)]
@@ -81,6 +99,14 @@ pub struct Opt {
     #[clap(long)]
     #[cfg(feature = "render_trace")]
     trace_path: Option<std::path::PathBuf>,
+
+    /// Location to store save data for games.
+    #[clap(long, default_value_os_t=get_default_save_directory())]
+    pub save_directory: std::path::PathBuf,
+
+    /// Location of a directory to store Ruffle configuration.
+    #[clap(long, default_value_os_t=get_default_config_directory())]
+    pub config: std::path::PathBuf,
 
     /// Proxy to use when loading movies via URL.
     #[clap(long)]

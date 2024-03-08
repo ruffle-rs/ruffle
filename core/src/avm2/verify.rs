@@ -1,5 +1,6 @@
 use crate::avm2::error::{
-    make_error_1025, make_error_1032, make_error_1054, make_error_1107, verify_error,
+    make_error_1021, make_error_1025, make_error_1032, make_error_1054, make_error_1107,
+    verify_error,
 };
 use crate::avm2::method::BytecodeMethod;
 use crate::avm2::op::Op;
@@ -26,6 +27,14 @@ pub struct Exception {
     pub type_name: Index<AbcMultiname>,
 }
 
+#[derive(Clone, Debug)]
+enum ByteInfo {
+    OpStart(AbcOp),
+    OpContinue,
+
+    NotYetReached,
+}
+
 pub fn verify_method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: &BytecodeMethod<'gc>,
@@ -36,19 +45,13 @@ pub fn verify_method<'gc>(
     let translation_unit = method.translation_unit();
 
     let param_count = method.method().params.len();
-    let locals_count = body.num_locals;
+    let max_locals = body.num_locals;
 
     // Ensure there are enough local variables
     // to fit the parameters in.
-    if (locals_count as usize) < param_count + 1 {
+    if (max_locals as usize) < param_count + 1 {
         return Err(make_error_1107(activation));
     }
-
-    let mut new_code = Vec::new();
-
-    let mut byte_offset_to_idx = HashMap::new();
-    let mut idx_to_byte_offset = vec![0];
-    byte_offset_to_idx.insert(0, 0);
 
     use swf::extensions::ReadSwfExt;
 
@@ -60,266 +63,92 @@ pub fn verify_method<'gc>(
         )?));
     }
 
-    // FIXME: This is wrong, verification/control flow handling should happen at the same
-    // time as reading. A side effect of this is that avmplus allows for holes in bytecode,
-    // while this implementation throws errors #1011 or #1021 in those cases.
+    let mut worklist = vec![0];
+
+    let mut byte_info = vec![ByteInfo::NotYetReached; body.code.len()];
+    let mut seen_targets = HashSet::new();
+
     let mut reader = Reader::new(&body.code);
-    loop {
-        let op = match reader.read_op() {
-            Ok(op) => op,
+    while let Some(i) = worklist.pop() {
+        reader.seek_absolute(&body.code, i as usize);
+        loop {
+            let previous_position = reader.pos(&body.code) as i32;
 
-            Err(AbcReadError::InvalidData(_)) => {
-                return Err(Error::AvmError(verify_error(
-                    activation,
-                    "Error #1011: Method contained illegal opcode.",
-                    1011,
-                )?));
-            }
-            Err(AbcReadError::IoError(_)) => break,
-            Err(unknown) => {
-                tracing::error!(
-                    "Encountered unexpected error while verifying AVM2 method body: {unknown:?}"
-                );
-                break;
-            }
-        };
-        let byte_offset = reader.as_slice().as_ptr() as usize - body.code.as_ptr() as usize;
+            let op = match reader.read_op() {
+                Ok(op) => op,
 
-        new_code.push(op);
-
-        byte_offset_to_idx.insert(byte_offset as i32, new_code.len() as i32);
-        idx_to_byte_offset.push(byte_offset as i32);
-    }
-
-    // Avoid verifying the same blocks again.
-    let mut verified_blocks = Vec::new();
-
-    verify_code_starting_from(
-        activation,
-        method,
-        idx_to_byte_offset.as_slice(),
-        &byte_offset_to_idx,
-        &mut verified_blocks,
-        new_code.as_slice(),
-        0,
-    )?;
-
-    // Record a list of possible places the code could
-    // jump to- this will be used for optimization.
-    let mut potential_jump_targets = HashSet::new();
-
-    // Handle exceptions
-    let mut new_exceptions = Vec::new();
-    for exception in body.exceptions.iter() {
-        // FIXME: This is actually wrong, we should be using the byte offsets in
-        // `Activation::handle_err`, not the opcode offsets. avmplus allows for from/to
-        // (but not targets) that aren't on a opcode, and some obfuscated SWFs have them.
-        // FFDEC handles them correctly, stepping forward byte-by-byte until it reaches
-        // the next opcode. This does the same (stepping byte-by-byte), but it would
-        // be better to directly use the byte offsets when handling exceptions.
-        let mut from_offset = None;
-
-        let mut offs = 0;
-        while from_offset.is_none() {
-            from_offset = byte_offset_to_idx
-                .get(&((exception.from_offset + offs) as i32))
-                .copied();
-
-            offs += 1;
-            if (exception.from_offset + offs) as usize >= body.code.len() {
-                return Err(make_error_1054(activation));
-            }
-        }
-
-        // Now for the `to_offset`.
-        let mut to_offset = None;
-
-        let mut offs = 0;
-        while to_offset.is_none() {
-            to_offset = byte_offset_to_idx
-                .get(&((exception.to_offset + offs) as i32))
-                .copied();
-
-            offs += 1;
-            if (exception.to_offset + offs) as usize >= body.code.len() {
-                return Err(make_error_1054(activation));
-            }
-        }
-
-        let new_from_offset = from_offset.unwrap() as u32;
-        let new_to_offset = to_offset.unwrap() as u32;
-
-        if new_to_offset < new_from_offset {
-            return Err(make_error_1054(activation));
-        }
-
-        // FIXME: Use correct error instead of `.unwrap()`
-        let new_target_offset = byte_offset_to_idx
-            .get(&(exception.target_offset as i32))
-            .copied()
-            .unwrap();
-
-        if exception.target_offset < exception.to_offset {
-            return Err(make_error_1054(activation));
-        }
-
-        if new_target_offset as usize >= new_code.len() {
-            return Err(make_error_1054(activation));
-        }
-
-        new_exceptions.push(Exception {
-            from_offset: new_from_offset,
-            to_offset: new_to_offset,
-            target_offset: new_target_offset as u32,
-            variable_name: exception.variable_name,
-            type_name: exception.type_name,
-        });
-
-        if ops_can_throw_error(&new_code[new_from_offset as usize..new_to_offset as usize]) {
-            verify_code_starting_from(
-                activation,
-                method,
-                idx_to_byte_offset.as_slice(),
-                &byte_offset_to_idx,
-                &mut verified_blocks,
-                new_code.as_slice(),
-                new_target_offset,
-            )?;
-
-            potential_jump_targets.insert(new_target_offset);
-        }
-    }
-
-    // Adjust jump offsets from byte-based to idx-based
-    for (i, op) in new_code.iter_mut().enumerate() {
-        let i = i as i32;
-        let adjusted = |i, offset, one_off| {
-            let byte_offset = if one_off {
-                idx_to_byte_offset.get((i + 1) as usize).unwrap()
-            } else {
-                idx_to_byte_offset.get(i as usize).unwrap()
+                Err(AbcReadError::InvalidData(_)) => {
+                    return Err(Error::AvmError(verify_error(
+                        activation,
+                        "Error #1011: Method contained illegal opcode.",
+                        1011,
+                    )?));
+                }
+                Err(AbcReadError::IoError(_)) => {
+                    return Err(Error::AvmError(verify_error(
+                        activation,
+                        "Error #1020: Code cannot fall off the end of a method.",
+                        1020,
+                    )?));
+                }
+                Err(_) => unreachable!(),
             };
-            let new_byte_offset = byte_offset + offset;
-            let new_idx = byte_offset_to_idx
-                .get(&new_byte_offset)
-                .copied()
-                .unwrap_or(0);
-            // Verification should have confirmed that this `unwrap_or` is from an unreachable instruction;
-            // if it were reachable, then verification would have thrown a VerifyError
 
-            (new_idx, new_idx - i - 1)
-        };
-        match op {
-            AbcOp::IfEq { offset }
-            | AbcOp::IfFalse { offset }
-            | AbcOp::IfGe { offset }
-            | AbcOp::IfGt { offset }
-            | AbcOp::IfLe { offset }
-            | AbcOp::IfLt { offset }
-            | AbcOp::IfNe { offset }
-            | AbcOp::IfNge { offset }
-            | AbcOp::IfNgt { offset }
-            | AbcOp::IfNle { offset }
-            | AbcOp::IfNlt { offset }
-            | AbcOp::IfStrictEq { offset }
-            | AbcOp::IfStrictNe { offset }
-            | AbcOp::IfTrue { offset }
-            | AbcOp::Jump { offset } => {
-                let adjusted_result = adjusted(i, *offset, true);
-                *offset = adjusted_result.1;
-                potential_jump_targets.insert(adjusted_result.0);
-            }
-            AbcOp::LookupSwitch(ref mut lookup_switch) => {
-                let adjusted_default = adjusted(i, lookup_switch.default_offset, false);
-                lookup_switch.default_offset = adjusted_default.1;
-                potential_jump_targets.insert(adjusted_default.0);
-
-                for case in lookup_switch.case_offsets.iter_mut() {
-                    let adjusted_case = adjusted(i, *case, false);
-                    *case = adjusted_case.1;
-                    potential_jump_targets.insert(adjusted_case.0);
+            for exception in body.exceptions.iter() {
+                // If this op is in the to..from and it can throw an error,
+                // add the exception's target to the worklist.
+                if exception.from_offset as i32 <= previous_position
+                    && previous_position < exception.to_offset as i32
+                    && op_can_throw_error(&op)
+                    && !seen_targets.contains(&(exception.target_offset as i32))
+                {
+                    worklist.push(exception.target_offset);
+                    seen_targets.insert(exception.target_offset as i32);
                 }
             }
-            _ => {}
-        }
-    }
 
-    let mut verified_code = Vec::new();
-    for abc_op in new_code {
-        let resolved_op = resolve_op(activation, translation_unit, abc_op)?;
+            let new_position = reader.pos(&body.code) as i32;
 
-        verified_code.push(resolved_op);
-    }
+            let bytes_read = new_position - previous_position;
+            assert!(bytes_read > 0);
 
-    crate::avm2::optimize::optimize(
-        activation,
-        method,
-        &mut verified_code,
-        potential_jump_targets,
-    );
-
-    Ok(VerifiedMethodInfo {
-        parsed_code: verified_code,
-        exceptions: new_exceptions,
-    })
-}
-
-fn resolve_jump_target<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    i: i32,
-    offset: i32,
-    one_off: bool,
-    idx_to_byte_offset: &[i32],
-    byte_offset_to_idx: &HashMap<i32, i32>,
-) -> Result<i32, Error<'gc>> {
-    let byte_offset = if one_off {
-        idx_to_byte_offset.get((i + 1) as usize).unwrap()
-    } else {
-        idx_to_byte_offset.get(i as usize).unwrap()
-    };
-    let new_byte_offset = byte_offset + offset;
-    let new_idx = byte_offset_to_idx
-        .get(&new_byte_offset)
-        .copied()
-        .ok_or_else(|| {
-            Error::AvmError(verify_error(
-                activation,
-                "Error #1021: At least one branch target was not on a valid instruction in the method.",
-                1021,
-            ).expect("Error should construct"))
-        })?;
-
-    Ok(new_idx)
-}
-
-fn verify_code_starting_from<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    method: &BytecodeMethod<'gc>,
-    idx_to_byte_offset: &[i32],
-    byte_offset_to_idx: &HashMap<i32, i32>,
-    verified_blocks: &mut Vec<i32>,
-    ops: &[AbcOp],
-    start_idx: i32,
-) -> Result<(), Error<'gc>> {
-    let body = method
-        .body()
-        .expect("Cannot verify non-native method without body!");
-    let max_locals = body.num_locals;
-
-    let mut worklist = Vec::new();
-    worklist.push(start_idx);
-
-    while let Some(mut i) = worklist.pop() {
-        loop {
-            if (i as usize) >= ops.len() {
-                return Err(Error::AvmError(verify_error(
-                    activation,
-                    "Error #1020: Code cannot fall off the end of a method.",
-                    1020,
-                )?));
+            byte_info[previous_position as usize] = ByteInfo::OpStart(op.clone());
+            for j in 1..bytes_read {
+                byte_info[(previous_position + j) as usize] = ByteInfo::OpContinue;
             }
 
-            let op = &ops[i as usize];
+            let mut check_target = |seen_targets: &HashSet<i32>, offs: i32, is_jump: bool| {
+                let target_position = if is_jump {
+                    offs + new_position
+                } else {
+                    offs + previous_position
+                };
+
+                let lookedup_target_info = byte_info.get(target_position as usize);
+
+                if matches!(lookedup_target_info, Some(ByteInfo::OpContinue)) {
+                    return Err(make_error_1021(activation));
+                }
+
+                if target_position < 0 || target_position as usize >= body.code.len() {
+                    return Err(make_error_1021(activation));
+                }
+
+                // Ensure backwards jumps to not-yet-jumped-to code target a `Label` op
+                if !seen_targets.contains(&target_position) && offs < 0 {
+                    reader.seek_absolute(&body.code, target_position as usize);
+                    let read_op = reader.read_op();
+
+                    // Seek back to the original position
+                    reader.seek_absolute(&body.code, new_position as usize);
+
+                    if !matches!(read_op, Ok(AbcOp::Label)) {
+                        return Err(make_error_1021(activation));
+                    }
+                }
+
+                Ok(())
+            };
 
             // Special control flow ops
             match op {
@@ -338,19 +167,14 @@ fn verify_code_starting_from<'gc>(
                 | AbcOp::IfStrictNe { offset }
                 | AbcOp::IfTrue { offset }
                 | AbcOp::Jump { offset } => {
-                    let op_idx = resolve_jump_target(
-                        activation,
-                        i,
-                        *offset,
-                        true,
-                        idx_to_byte_offset,
-                        byte_offset_to_idx,
-                    )?;
+                    check_target(&seen_targets, offset, true)?;
 
-                    if !verified_blocks.iter().any(|o| *o == op_idx) {
-                        worklist.push(op_idx);
-                        verified_blocks.push(op_idx);
+                    let offset = offset + new_position;
+                    if !seen_targets.contains(&offset) {
+                        worklist.push(offset as u32);
+                        seen_targets.insert(offset);
                     }
+
                     if matches!(op, AbcOp::Jump { .. }) {
                         break;
                     }
@@ -362,36 +186,23 @@ fn verify_code_starting_from<'gc>(
                 }
 
                 AbcOp::LookupSwitch(ref lookup_switch) => {
-                    // A LookupSwitch is terminal
-                    let default_idx = resolve_jump_target(
-                        activation,
-                        i,
-                        lookup_switch.default_offset,
-                        false,
-                        idx_to_byte_offset,
-                        byte_offset_to_idx,
-                    )?;
+                    check_target(&seen_targets, lookup_switch.default_offset, false)?;
+                    let default_offset = lookup_switch.default_offset + previous_position;
 
-                    if !verified_blocks.iter().any(|o| *o == default_idx) {
-                        verified_blocks.push(default_idx);
+                    if !seen_targets.contains(&default_offset) {
+                        seen_targets.insert(default_offset);
 
-                        worklist.push(default_idx);
+                        worklist.push(default_offset as u32);
                     }
 
-                    for case in lookup_switch.case_offsets.iter() {
-                        let case_idx = resolve_jump_target(
-                            activation,
-                            i,
-                            *case,
-                            false,
-                            idx_to_byte_offset,
-                            byte_offset_to_idx,
-                        )?;
+                    for case_offset in lookup_switch.case_offsets.iter() {
+                        check_target(&seen_targets, *case_offset, false)?;
 
-                        if !verified_blocks.iter().any(|o| *o == case_idx) {
-                            verified_blocks.push(case_idx);
+                        let case_offset = case_offset + previous_position;
+                        if !seen_targets.contains(&case_offset) {
+                            seen_targets.insert(case_offset);
 
-                            worklist.push(case_idx);
+                            worklist.push(case_offset as u32);
                         }
                     }
 
@@ -409,8 +220,8 @@ fn verify_code_starting_from<'gc>(
                 | AbcOp::DecLocalI { index }
                 | AbcOp::IncLocal { index }
                 | AbcOp::IncLocalI { index } => {
-                    if *index >= max_locals {
-                        return Err(make_error_1025(activation, *index));
+                    if index >= max_locals {
+                        return Err(make_error_1025(activation, index));
                     }
                 }
 
@@ -419,10 +230,10 @@ fn verify_code_starting_from<'gc>(
                     index_register,
                 } => {
                     // NOTE: This is the correct order (first check object register, then check index register)
-                    if *object_register >= max_locals {
-                        return Err(make_error_1025(activation, *object_register));
-                    } else if *index_register >= max_locals {
-                        return Err(make_error_1025(activation, *index_register));
+                    if object_register >= max_locals {
+                        return Err(make_error_1025(activation, object_register));
+                    } else if index_register >= max_locals {
+                        return Err(make_error_1025(activation, index_register));
                     }
                 }
 
@@ -456,7 +267,7 @@ fn verify_code_starting_from<'gc>(
                 AbcOp::GetLex { index } => {
                     let multiname = method
                         .translation_unit()
-                        .pool_maybe_uninitialized_multiname(*index, &mut activation.context)?;
+                        .pool_maybe_uninitialized_multiname(index, &mut activation.context)?;
 
                     if multiname.has_lazy_component() {
                         return Err(Error::AvmError(verify_error(
@@ -473,54 +284,215 @@ fn verify_code_starting_from<'gc>(
                 | AbcOp::Coerce { index: name_index } => {
                     let multiname = method
                         .translation_unit()
-                        .pool_maybe_uninitialized_multiname(*name_index, &mut activation.context);
+                        .pool_maybe_uninitialized_multiname(name_index, &mut activation.context)?;
 
-                    if let Ok(multiname) = multiname {
-                        if multiname.has_lazy_component() {
-                            // This matches FP's error message
-                            return Err(Error::AvmError(verify_error(
-                                activation,
-                                "Error #1014: Class [] could not be found.",
-                                1014,
-                            )?));
-                        }
-
-                        activation
-                            .domain()
-                            .get_class(&multiname, activation.context.gc_context)
-                            .ok_or_else(|| {
-                                Error::AvmError(
-                                    verify_error(
-                                        activation,
-                                        &format!(
-                                            "Error #1014: Class {} could not be found.",
-                                            multiname
-                                                .to_qualified_name(activation.context.gc_context)
-                                        ),
-                                        1014,
-                                    )
-                                    .expect("Error should construct"),
-                                )
-                            })?;
-                    } else {
-                        return Err(make_error_1032(activation, name_index.0));
+                    if multiname.has_lazy_component() {
+                        // This matches FP's error message
+                        return Err(Error::AvmError(verify_error(
+                            activation,
+                            "Error #1014: Class [] could not be found.",
+                            1014,
+                        )?));
                     }
+
+                    activation
+                        .domain()
+                        .get_class(&multiname, activation.context.gc_context)
+                        .ok_or_else(|| {
+                            Error::AvmError(
+                                verify_error(
+                                    activation,
+                                    &format!(
+                                        "Error #1014: Class {} could not be found.",
+                                        multiname.to_qualified_name(activation.context.gc_context)
+                                    ),
+                                    1014,
+                                )
+                                .expect("Error should construct"),
+                            )
+                        })?;
                 }
 
                 _ => {}
             }
-
-            i += 1;
         }
     }
 
-    Ok(())
+    let mut byte_offset_to_idx = HashMap::new();
+    let mut idx_to_byte_offset = Vec::new();
+
+    let mut new_code = Vec::new();
+    for (i, info) in byte_info.iter().enumerate() {
+        if let ByteInfo::OpStart(c) = info {
+            byte_offset_to_idx.insert(i, new_code.len() as i32);
+            new_code.push(c.clone());
+            idx_to_byte_offset.push(i);
+        }
+    }
+
+    // Record a list of possible places the code could
+    // jump to- this will be used for optimization.
+    let mut potential_jump_targets = HashSet::new();
+
+    // Handle exceptions
+    let mut new_exceptions = Vec::new();
+    for exception in body.exceptions.iter() {
+        // NOTE: This is actually wrong, we should be using the byte offsets in
+        // `Activation::handle_err`, not the opcode offsets. avmplus allows for from/to
+        // (but not targets) that aren't on a opcode, and some obfuscated SWFs have them.
+        // FFDEC handles them correctly, stepping forward byte-by-byte until it reaches
+        // the next opcode. This does the same (stepping byte-by-byte), but it would
+        // be better to directly use the byte offsets when handling exceptions.
+        let mut from_offset = None;
+
+        let mut offs = 0;
+        while from_offset.is_none() {
+            from_offset = byte_offset_to_idx
+                .get(&((exception.from_offset + offs) as usize))
+                .copied();
+
+            offs += 1;
+            if (exception.from_offset + offs) as usize >= body.code.len() {
+                return Err(make_error_1054(activation));
+            }
+        }
+
+        // Now for the `to_offset`.
+        let mut to_offset = None;
+
+        let mut offs = 0;
+        while to_offset.is_none() {
+            to_offset = byte_offset_to_idx
+                .get(&((exception.to_offset + offs) as usize))
+                .copied();
+
+            offs += 1;
+            if (exception.to_offset + offs) as usize >= body.code.len() {
+                return Err(make_error_1054(activation));
+            }
+        }
+
+        let new_from_offset = from_offset.unwrap() as u32;
+        let new_to_offset = to_offset.unwrap() as u32;
+
+        if new_to_offset < new_from_offset {
+            return Err(make_error_1054(activation));
+        }
+
+        let new_target_offset = byte_offset_to_idx
+            .get(&(exception.target_offset as usize))
+            .copied()
+            .unwrap_or(0);
+
+        // NOTE: That `unwrap_or` is definitely reachable, e.g. in a case where
+        // the target offset is unreachable (see the test "verification"), but it
+        // might also be reachable in cases where the target offset will actually
+        // be jumped to. Any SWF that does this is extremely cursed and should
+        // VerifyError in FP (though I haven't been able to confirm that it does),
+        // so we probably don't need to worry about that case.
+
+        if exception.target_offset < exception.to_offset {
+            return Err(make_error_1054(activation));
+        }
+
+        if new_target_offset as usize >= new_code.len() {
+            return Err(make_error_1054(activation));
+        }
+
+        new_exceptions.push(Exception {
+            from_offset: new_from_offset,
+            to_offset: new_to_offset,
+            target_offset: new_target_offset as u32,
+            variable_name: exception.variable_name,
+            type_name: exception.type_name,
+        });
+    }
+
+    let mut adjust_jump_to_idx = |i, offset, is_jump| -> Result<(i32, i32), Error<'gc>> {
+        const JUMP_INSTRUCTION_LENGTH: usize = 4;
+
+        let mut byte_offset = idx_to_byte_offset
+            .get(i as usize)
+            .copied()
+            .ok_or(make_error_1021(activation))?; // This is still reachable with some weird bytecode, see the `verify_jump_to_middle_of_op` test
+
+        if is_jump {
+            byte_offset += JUMP_INSTRUCTION_LENGTH;
+        }
+
+        let new_byte_offset = byte_offset as i32 + offset;
+        let new_idx = byte_offset_to_idx
+            .get(&(new_byte_offset as usize))
+            .copied()
+            .ok_or(make_error_1021(activation))?; // See above comment
+
+        Ok((new_idx, new_idx - i - 1))
+    };
+
+    // Adjust jump offsets from byte-based to idx-based
+    for (i, op) in new_code.iter_mut().enumerate() {
+        let i = i as i32;
+
+        match op {
+            AbcOp::IfEq { offset }
+            | AbcOp::IfFalse { offset }
+            | AbcOp::IfGe { offset }
+            | AbcOp::IfGt { offset }
+            | AbcOp::IfLe { offset }
+            | AbcOp::IfLt { offset }
+            | AbcOp::IfNe { offset }
+            | AbcOp::IfNge { offset }
+            | AbcOp::IfNgt { offset }
+            | AbcOp::IfNle { offset }
+            | AbcOp::IfNlt { offset }
+            | AbcOp::IfStrictEq { offset }
+            | AbcOp::IfStrictNe { offset }
+            | AbcOp::IfTrue { offset }
+            | AbcOp::Jump { offset } => {
+                let adjusted_result = adjust_jump_to_idx(i, *offset, true)?;
+                *offset = adjusted_result.1;
+                potential_jump_targets.insert(adjusted_result.0);
+            }
+            AbcOp::LookupSwitch(ref mut lookup_switch) => {
+                let adjusted_default = adjust_jump_to_idx(i, lookup_switch.default_offset, false)?;
+                lookup_switch.default_offset = adjusted_default.1;
+                potential_jump_targets.insert(adjusted_default.0);
+
+                for case in lookup_switch.case_offsets.iter_mut() {
+                    let adjusted_case = adjust_jump_to_idx(i, *case, false)?;
+                    *case = adjusted_case.1;
+                    potential_jump_targets.insert(adjusted_case.0);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let mut verified_code = Vec::new();
+    for abc_op in new_code {
+        let resolved_op = resolve_op(activation, translation_unit, abc_op.clone())?;
+
+        verified_code.push(resolved_op);
+    }
+
+    crate::avm2::optimize::optimize(
+        activation,
+        method,
+        &mut verified_code,
+        potential_jump_targets,
+    );
+
+    Ok(VerifiedMethodInfo {
+        parsed_code: verified_code,
+        exceptions: new_exceptions,
+    })
 }
 
-fn ops_can_throw_error(ops: &[AbcOp]) -> bool {
-    for op in ops {
-        match op {
-            AbcOp::Bkpt
+// Taken from avmplus's opcodes.tbl
+fn op_can_throw_error(op: &AbcOp) -> bool {
+    !matches!(
+        op,
+        AbcOp::Bkpt
             | AbcOp::BkptLine { .. }
             | AbcOp::Timestamp
             | AbcOp::PushByte { .. }
@@ -556,12 +528,8 @@ fn ops_can_throw_error(ops: &[AbcOp]) -> bool {
             | AbcOp::Nop
             | AbcOp::Not
             | AbcOp::PopScope
-            | AbcOp::ReturnVoid => {}
-            _ => return true,
-        }
-    }
-
-    false
+            | AbcOp::ReturnVoid
+    )
 }
 
 fn pool_int<'gc>(

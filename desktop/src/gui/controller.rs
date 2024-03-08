@@ -1,9 +1,9 @@
 use crate::backends::DesktopUiBackend;
-use crate::cli::Opt;
 use crate::custom_event::RuffleEvent;
 use crate::gui::movie::{MovieView, MovieViewRenderer};
 use crate::gui::{RuffleGui, MENU_HEIGHT};
 use crate::player::{PlayerController, PlayerOptions};
+use crate::preferences::GlobalPreferences;
 use anyhow::anyhow;
 use egui::{Context, ViewportId};
 use fontdb::{Database, Family, Query, Source};
@@ -43,21 +43,35 @@ impl GuiController {
     pub fn new(
         window: Rc<Window>,
         event_loop: &EventLoop<RuffleEvent>,
-        opt: &Opt,
+        preferences: GlobalPreferences,
         font_database: &Database,
+        initial_movie_url: Option<Url>,
+        no_gui: bool,
     ) -> anyhow::Result<Self> {
-        let backend: wgpu::Backends = opt.graphics.into();
+        let mut backend: wgpu::Backends = preferences.graphics_backends().into();
         if wgpu::Backends::SECONDARY.contains(backend) {
             tracing::warn!(
                 "{} graphics backend support may not be fully supported.",
                 format_list(&get_backend_names(backend), "and")
             );
         }
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        let mut instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: backend,
             flags: wgpu::InstanceFlags::default().with_env(),
             ..Default::default()
         });
+        if instance.enumerate_adapters(backend).is_empty() && backend != wgpu::Backends::all() {
+            tracing::warn!(
+                "Graphics backend {} is not available; falling back to any available backend",
+                format_list(&get_backend_names(backend), "and")
+            );
+            backend = wgpu::Backends::all();
+            instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+                backends: backend,
+                flags: wgpu::InstanceFlags::default().with_env(),
+                ..Default::default()
+            });
+        }
         let surface = unsafe {
             instance.create_surface_unsafe(wgpu::SurfaceTargetUnsafe::from_window(window.as_ref())?)
         }?;
@@ -65,10 +79,17 @@ impl GuiController {
             backend,
             &instance,
             Some(&surface),
-            opt.power.into(),
-            opt.trace_path(),
+            preferences.graphics_power_preference().into(),
+            preferences.cli.trace_path(),
         ))
         .map_err(|e| anyhow!(e.to_string()))?;
+        let adapter_info = adapter.get_info();
+        tracing::info!(
+            "Using graphics API {} on {} (type: {:?})",
+            adapter_info.backend.to_str(),
+            adapter_info.name,
+            adapter_info.device_type
+        );
         let surface_format = surface
             .get_capabilities(&adapter)
             .formats
@@ -102,21 +123,28 @@ impl GuiController {
         let movie_view_renderer = Arc::new(MovieViewRenderer::new(
             &descriptors.device,
             surface_format,
-            window.fullscreen().is_none() && !opt.no_gui,
+            window.fullscreen().is_none() && !no_gui,
             size.height,
             window.scale_factor(),
         ));
         let egui_renderer = egui_wgpu::Renderer::new(&descriptors.device, surface_format, None, 1);
         let event_loop = event_loop.create_proxy();
-        let gui = RuffleGui::new(event_loop, opt.movie_url.clone(), PlayerOptions::from(opt));
+        let descriptors = Arc::new(descriptors);
+        let gui = RuffleGui::new(
+            event_loop,
+            initial_movie_url.clone(),
+            PlayerOptions::from(&preferences),
+            preferences.clone(),
+            descriptors.clone(),
+        );
         let system_fonts =
-            load_system_fonts(font_database, gui.locale.to_owned()).unwrap_or_default();
+            load_system_fonts(font_database, preferences.language().to_owned()).unwrap_or_default();
         egui_winit.egui_ctx().set_fonts(system_fonts);
 
         egui_extras::install_image_loaders(egui_winit.egui_ctx());
 
         Ok(Self {
-            descriptors: Arc::new(descriptors),
+            descriptors,
             egui_winit,
             egui_renderer,
             gui,
@@ -127,7 +155,7 @@ impl GuiController {
             surface_format,
             movie_view_renderer,
             size,
-            no_gui: opt.no_gui,
+            no_gui,
         })
     }
 
