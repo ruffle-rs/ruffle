@@ -1,7 +1,7 @@
 use crate::avm2::class::Class;
 use crate::avm2::error::{
-    make_error_1021, make_error_1025, make_error_1032, make_error_1054, make_error_1107,
-    verify_error,
+    make_error_1014, make_error_1021, make_error_1025, make_error_1032, make_error_1054,
+    make_error_1107, verify_error,
 };
 use crate::avm2::method::BytecodeMethod;
 use crate::avm2::multiname::Multiname;
@@ -299,27 +299,16 @@ pub fn verify_method<'gc>(
 
                     if multiname.has_lazy_component() {
                         // This matches FP's error message
-                        return Err(Error::AvmError(verify_error(
-                            activation,
-                            "Error #1014: Class [] could not be found.",
-                            1014,
-                        )?));
+                        return Err(make_error_1014(activation, "[]".into()));
                     }
 
                     activation
                         .domain()
                         .get_class(&multiname, activation.context.gc_context)
                         .ok_or_else(|| {
-                            Error::AvmError(
-                                verify_error(
-                                    activation,
-                                    &format!(
-                                        "Error #1014: Class {} could not be found.",
-                                        multiname.to_qualified_name(activation.context.gc_context)
-                                    ),
-                                    1014,
-                                )
-                                .expect("Error should construct"),
+                            make_error_1014(
+                                activation,
+                                multiname.to_qualified_name(activation.context.gc_context),
                             )
                         })?;
                 }
@@ -419,27 +408,16 @@ pub fn verify_method<'gc>(
 
             if pooled_type_name.has_lazy_component() {
                 // This matches FP's error message
-                return Err(Error::AvmError(verify_error(
-                    activation,
-                    "Error #1014: Class [] could not be found.",
-                    1014,
-                )?));
+                return Err(make_error_1014(activation, "[]".into()));
             }
 
             let resolved_type = activation
                 .domain()
                 .get_class(&pooled_type_name, activation.context.gc_context)
                 .ok_or_else(|| {
-                    Error::AvmError(
-                        verify_error(
-                            activation,
-                            &format!(
-                                "Error #1014: Class {} could not be found.",
-                                pooled_type_name.to_qualified_name(activation.context.gc_context)
-                            ),
-                            1014,
-                        )
-                        .expect("Error should construct"),
+                    make_error_1014(
+                        activation,
+                        pooled_type_name.to_qualified_name(activation.context.gc_context),
                     )
                 })?;
 
