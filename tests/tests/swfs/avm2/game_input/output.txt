@@ -1,0 +1,4 @@
+gameInput: [object GameInput]
+GameInput.numDevices: 0
+Caught error: RangeError: Error #1506: The specified range is invalid.
+Caught error: ArgumentError: Error #2012: GameInputControl$ class cannot be instantiated.
