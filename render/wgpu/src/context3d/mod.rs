@@ -10,7 +10,8 @@ use swf::{Rectangle, Twips};
 use wgpu::util::StagingBelt;
 use wgpu::{
     BindGroup, BufferDescriptor, BufferUsages, TextureDescriptor, TextureDimension, TextureFormat,
-    TextureUsages, TextureView, COPY_BUFFER_ALIGNMENT, COPY_BYTES_PER_ROW_ALIGNMENT,
+    TextureUsages, TextureView, TextureViewDescriptor, COPY_BUFFER_ALIGNMENT,
+    COPY_BYTES_PER_ROW_ALIGNMENT,
 };
 use wgpu::{CommandEncoder, Extent3d, RenderPass};
 
@@ -776,7 +777,7 @@ impl Context3D for WgpuContext3D {
                 texture,
                 enable_depth_and_stencil,
                 anti_alias,
-                surface_selector: _,
+                surface_selector,
             } => {
                 let mut sample_count = anti_alias;
                 if sample_count == 0 {
@@ -799,8 +800,15 @@ impl Context3D for WgpuContext3D {
                 self.current_texture_size = Some(Extent3d {
                     width: texture_wrapper.texture.width(),
                     height: texture_wrapper.texture.height(),
-                    depth_or_array_layers: 1,
+                    depth_or_array_layers: texture_wrapper.texture.depth_or_array_layers(),
                 });
+
+                let view_desc = TextureViewDescriptor {
+                    base_array_layer: surface_selector,
+                    array_layer_count: Some(1),
+                    dimension: Some(wgpu::TextureViewDimension::D2),
+                    ..Default::default()
+                };
 
                 if sample_count != 1 {
                     let texture_label = create_debug_label!("Render target texture MSAA");
@@ -813,11 +821,13 @@ impl Context3D for WgpuContext3D {
                                 size: Extent3d {
                                     width: texture_wrapper.texture.width(),
                                     height: texture_wrapper.texture.height(),
-                                    depth_or_array_layers: 1,
+                                    depth_or_array_layers: texture_wrapper
+                                        .texture
+                                        .depth_or_array_layers(),
                                 },
                                 mip_level_count: 1,
                                 sample_count,
-                                dimension: wgpu::TextureDimension::D2,
+                                dimension: texture_wrapper.texture.dimension(),
                                 format: texture_wrapper.texture.format(),
                                 view_formats: &[texture_wrapper.texture.format()],
                                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT
@@ -825,16 +835,13 @@ impl Context3D for WgpuContext3D {
                                     | wgpu::TextureUsages::TEXTURE_BINDING,
                             });
 
-                    self.current_texture_resolve_view = Some(Rc::new(
-                        texture_wrapper.texture.create_view(&Default::default()),
-                    ));
-                    self.current_texture_view =
-                        Some(Rc::new(msaa_texture.create_view(&Default::default())));
+                    self.current_texture_resolve_view =
+                        Some(Rc::new(texture_wrapper.texture.create_view(&view_desc)));
+                    self.current_texture_view = Some(Rc::new(msaa_texture.create_view(&view_desc)));
                 } else {
                     self.current_texture_resolve_view = None;
-                    self.current_texture_view = Some(Rc::new(
-                        texture_wrapper.texture.create_view(&Default::default()),
-                    ));
+                    self.current_texture_view =
+                        Some(Rc::new(texture_wrapper.texture.create_view(&view_desc)));
                 }
 
                 if enable_depth_and_stencil {
