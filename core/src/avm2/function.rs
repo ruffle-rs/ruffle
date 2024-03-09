@@ -178,8 +178,10 @@ impl<'gc> Executable<'gc> {
 
                 let subclass_object = bm.bound_superclass;
 
-                let mut activation = Activation::from_method(
-                    activation.context.reborrow(),
+                // This used to be a one step called Activation::from_method,
+                // but avoiding moving an Activation around helps perf
+                let mut activation = Activation::from_nothing(activation.context.reborrow());
+                activation.init_from_method(
                     bm.method,
                     bm.scope,
                     receiver,

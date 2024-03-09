@@ -386,15 +386,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Construct an activation for the execution of a particular bytecode
     /// method.
-    pub fn from_method(
-        mut context: UpdateContext<'a, 'gc>,
+    /// NOTE: this is intended to be used immediately after from_nothing(),
+    /// as a more efficient replacement for direct `Activation::from_method()`
+    pub fn init_from_method(
+        &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
         outer: ScopeChain<'gc>,
         this: Object<'gc>,
         user_arguments: &[Value<'gc>],
         subclass_object: Option<ClassObject<'gc>>,
         callee: Object<'gc>,
-    ) -> Result<Self, Error<'gc>> {
+    ) -> Result<(), Error<'gc>> {
         let body: Result<_, Error<'gc>> = method
             .body()
             .ok_or_else(|| "Cannot execute non-native method without body".into());
@@ -411,11 +413,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         *local_registers.get_unchecked_mut(0) = this.into();
 
         let activation_class =
-            BytecodeMethod::get_or_init_activation_class(method, context.gc_context, || {
+            BytecodeMethod::get_or_init_activation_class(method, self.context.gc_context, || {
                 let translation_unit = method.translation_unit();
                 let abc_method = method.method();
                 let mut dummy_activation =
-                    Activation::from_domain(context.reborrow(), outer.domain());
+                    Activation::from_domain(self.context.reborrow(), outer.domain());
                 dummy_activation.set_outer(outer);
                 let activation_class = Class::for_activation(
                     &mut dummy_activation,
@@ -426,25 +428,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 ClassObject::from_class(&mut dummy_activation, activation_class, None)
             })?;
 
-        let mut activation = Self {
-            ip: 0,
-            actions_since_timeout_check: 0,
-            local_registers,
-            outer,
-            caller_domain: Some(outer.domain()),
-            caller_movie: Some(method.owner_movie()),
-            subclass_object,
-            activation_class,
-            stack_depth: context.avm2.stack.len(),
-            scope_depth: context.avm2.scope_stack.len(),
-            max_stack_size: body.max_stack as usize,
-            max_scope_size: (body.max_scope_depth - body.init_scope_depth) as usize,
-            context,
-        };
+        self.ip = 0;
+        self.actions_since_timeout_check = 0;
+        self.local_registers = local_registers;
+        self.outer = outer;
+        self.caller_domain = Some(outer.domain());
+        self.caller_movie = Some(method.owner_movie());
+        self.subclass_object = subclass_object;
+        self.activation_class = activation_class;
+        self.stack_depth = self.context.avm2.stack.len();
+        self.scope_depth = self.context.avm2.scope_stack.len();
+        self.max_stack_size = body.max_stack as usize;
+        self.max_scope_size = (body.max_scope_depth - body.init_scope_depth) as usize;
 
         if user_arguments.len() > signature.len() && !has_rest_or_args {
             return Err(Error::AvmError(make_mismatch_error(
-                &mut activation,
+                self,
                 Method::Bytecode(method),
                 user_arguments,
                 Some(callee),
@@ -452,7 +451,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         // Statically verify all non-variadic, provided parameters.
-        let arguments_list = activation.resolve_parameters(
+        let arguments_list = self.resolve_parameters(
             Method::Bytecode(method),
             user_arguments,
             signature,
@@ -464,7 +463,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 .iter()
                 .enumerate()
             {
-                *activation.local_registers.get_unchecked_mut(1 + i as u32) = *arg;
+                *self.local_registers.get_unchecked_mut(1 + i as u32) = *arg;
             }
         }
 
@@ -486,27 +485,27 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 unreachable!();
             };
 
-            let args_object = ArrayObject::from_storage(&mut activation, args_array)?;
+            let args_object = ArrayObject::from_storage(self, args_array)?;
 
             if method
                 .method()
                 .flags
                 .contains(AbcMethodFlags::NEED_ARGUMENTS)
             {
-                args_object.set_string_property_local("callee", callee.into(), &mut activation)?;
+                args_object.set_string_property_local("callee", callee.into(), self)?;
                 args_object.set_local_property_is_enumerable(
-                    activation.context.gc_context,
+                    self.context.gc_context,
                     "callee".into(),
                     false,
                 );
             }
 
-            *activation
+            *self
                 .local_registers
                 .get_unchecked_mut(1 + num_declared_arguments) = args_object.into();
         }
 
-        Ok(activation)
+        Ok(())
     }
 
     /// Construct an activation for the execution of a builtin method.
