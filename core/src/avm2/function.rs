@@ -133,7 +133,7 @@ impl<'gc> Executable<'gc> {
                     bm.scope,
                     caller_domain,
                     caller_movie,
-                )?;
+                );
 
                 if arguments.len() > bm.method.signature.len() && !bm.method.is_variadic {
                     return Err(format!(

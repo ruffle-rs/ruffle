@@ -520,10 +520,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         outer: ScopeChain<'gc>,
         caller_domain: Option<Domain<'gc>>,
         caller_movie: Option<Arc<SwfMovie>>,
-    ) -> Result<Self, Error<'gc>> {
+    ) -> Self {
         let local_registers = RegisterSet::new(0);
 
-        Ok(Self {
+        Self {
             ip: 0,
             actions_since_timeout_check: 0,
             local_registers,
@@ -537,7 +537,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             max_stack_size: 0,
             max_scope_size: 0,
             context,
-        })
+        }
     }
 
     /// Call the superclass's instance initializer.
