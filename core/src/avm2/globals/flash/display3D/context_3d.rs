@@ -608,15 +608,6 @@ pub fn set_render_to_texture<'gc>(
         );
     }
 
-    if surface_selector != 0 {
-        avm2_stub_method!(
-            activation,
-            "flash.display3D.Context3D",
-            "setRenderToTexture",
-            "surfaceSelector != 0"
-        );
-    }
-
     if color_output_index != 0 {
         avm2_stub_method!(
             activation,
