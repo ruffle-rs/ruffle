@@ -12,8 +12,9 @@ use std::{cmp::max, ops::RangeBounds};
 /// the prototype.
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-pub struct ArrayStorage<'gc> {
-    storage_type: ArrayStorageType<'gc>,
+pub enum ArrayStorage<'gc> {
+    Dense(Vec<Option<Value<'gc>>>),
+    Sparse(BTreeMap<usize, Value<'gc>>, usize),
 }
 
 struct ArrayStorageIterator<'a, 'gc> {
@@ -26,8 +27,8 @@ impl<'a, 'gc> Iterator for ArrayStorageIterator<'a, 'gc> {
     type Item = Option<Value<'gc>>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match &self.storage.storage_type {
-            ArrayStorageType::Dense(storage) => {
+        match &self.storage {
+            ArrayStorage::Dense(storage) => {
                 if self.index >= self.index_back {
                     None
                 } else {
@@ -36,7 +37,7 @@ impl<'a, 'gc> Iterator for ArrayStorageIterator<'a, 'gc> {
                     Some(value)
                 }
             }
-            ArrayStorageType::Sparse(storage, _length) => {
+            ArrayStorage::Sparse(storage, _length) => {
                 if self.index >= self.index_back {
                     None
                 } else {
@@ -51,8 +52,8 @@ impl<'a, 'gc> Iterator for ArrayStorageIterator<'a, 'gc> {
 
 impl<'a, 'gc> DoubleEndedIterator for ArrayStorageIterator<'a, 'gc> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        match &self.storage.storage_type {
-            ArrayStorageType::Dense(storage) => {
+        match &self.storage {
+            ArrayStorage::Dense(storage) => {
                 if self.index >= self.index_back || self.index_back == 0 {
                     None
                 } else {
@@ -61,7 +62,7 @@ impl<'a, 'gc> DoubleEndedIterator for ArrayStorageIterator<'a, 'gc> {
                     Some(value)
                 }
             }
-            ArrayStorageType::Sparse(storage, _length) => {
+            ArrayStorage::Sparse(storage, _length) => {
                 if self.index >= self.index_back || self.index_back == 0 {
                     None
                 } else {
@@ -76,20 +77,11 @@ impl<'a, 'gc> DoubleEndedIterator for ArrayStorageIterator<'a, 'gc> {
 
 impl<'a, 'gc> ExactSizeIterator for ArrayStorageIterator<'a, 'gc> {
     fn len(&self) -> usize {
-        match &self.storage.storage_type {
-            ArrayStorageType::Dense(_) => self.index_back - self.index,
-            ArrayStorageType::Sparse(_, _) => self.index_back - self.index,
+        match &self.storage {
+            ArrayStorage::Dense(_) => self.index_back - self.index,
+            ArrayStorage::Sparse(_, _) => self.index_back - self.index,
         }
     }
-}
-
-impl<'a, 'gc> DoubleEndedExactSizeIterator for ArrayStorageIterator<'a, 'gc> {}
-
-#[derive(Clone, Collect)]
-#[collect(no_drop)]
-enum ArrayStorageType<'gc> {
-    Dense(Vec<Option<Value<'gc>>>),
-    Sparse(BTreeMap<usize, Value<'gc>>, usize),
 }
 
 impl<'gc> ArrayStorage<'gc> {
@@ -100,13 +92,13 @@ impl<'gc> ArrayStorage<'gc> {
     pub fn new(length: usize) -> Self {
         if length > (1 << 28) {
             let storage = BTreeMap::new();
-            let storage_type = ArrayStorageType::Sparse(storage, 0);
-            return Self { storage_type };
+            let storage_type = ArrayStorage::Sparse(storage, 0);
+            return storage_type;
         }
         let storage = Vec::with_capacity(length);
-        let storage_type = ArrayStorageType::Dense(storage);
+        let storage_type = ArrayStorage::Dense(storage);
 
-        Self { storage_type }
+        storage_type
     }
 
     /// Convert a set of arguments into array storage.
@@ -116,15 +108,15 @@ impl<'gc> ArrayStorage<'gc> {
             .map(|v| Some(*v))
             .collect::<Vec<Option<Value<'gc>>>>();
 
-        let storage_type = ArrayStorageType::Dense(storage);
+        let storage_type = ArrayStorage::Dense(storage);
 
-        Self { storage_type }
+        storage_type
     }
 
     /// Wrap an existing storage Vec in an `ArrayStorage`.
     pub fn from_storage(storage: Vec<Option<Value<'gc>>>) -> Self {
-        let storage_type = ArrayStorageType::Dense(storage);
-        Self { storage_type }
+        let storage_type = ArrayStorage::Dense(storage);
+        storage_type
     }
 
     /// Retrieve a value from array storage by index.
@@ -132,17 +124,17 @@ impl<'gc> ArrayStorage<'gc> {
     /// Array holes and out of bounds values will be treated the same way, by
     /// yielding `None`.
     pub fn get(&self, item: usize) -> Option<Value<'gc>> {
-        match &self.storage_type {
-            ArrayStorageType::Dense(storage) => {
+        match &self {
+            ArrayStorage::Dense(storage) => {
                 return storage.get(item).cloned().unwrap_or(None);
             }
-            ArrayStorageType::Sparse(storage, ..) => storage.get(&item).cloned(),
+            ArrayStorage::Sparse(storage, ..) => storage.get(&item).cloned(),
         }
     }
 
     pub fn get_next_enumerant(&self, last_index: usize) -> Option<usize> {
-        match &self.storage_type {
-            ArrayStorageType::Dense(storage) => {
+        match &self {
+            ArrayStorage::Dense(storage) => {
                 let mut last_index = last_index;
                 while last_index < storage.len() {
                     if storage[last_index].is_some() {
@@ -152,7 +144,7 @@ impl<'gc> ArrayStorage<'gc> {
                 }
                 None
             }
-            ArrayStorageType::Sparse(storage, _length) => {
+            ArrayStorage::Sparse(storage, _length) => {
                 if let Some((&key, &_value)) = storage.range(last_index..).next() {
                     return Some(key + 1);
                 }
@@ -162,17 +154,17 @@ impl<'gc> ArrayStorage<'gc> {
     }
 
     pub fn convert_to_sparse(&mut self) {
-        match &mut self.storage_type {
-            ArrayStorageType::Dense(storage) => {
+        match self {
+            ArrayStorage::Dense(storage) => {
                 let mut new_storage = BTreeMap::new();
                 for (i, v) in storage.iter().enumerate() {
                     if let Some(v) = v {
                         new_storage.insert(i, *v);
                     }
                 }
-                self.storage_type = ArrayStorageType::Sparse(new_storage, storage.len());
+                *self = ArrayStorage::Sparse(new_storage, storage.len());
             }
-            ArrayStorageType::Sparse(..) => {}
+            ArrayStorage::Sparse(..) => {}
         }
     }
 
@@ -181,8 +173,8 @@ impl<'gc> ArrayStorage<'gc> {
     /// If the item index extends beyond the length of the array, then the
     /// array will be extended with holes.
     pub fn set(&mut self, item: usize, value: Value<'gc>) {
-        match &mut self.storage_type {
-            ArrayStorageType::Dense(storage) => {
+        match self {
+            ArrayStorage::Dense(storage) => {
                 if storage.len() + 1 < (item) {
                     let mut new_storage = BTreeMap::new();
                     for (i, v) in storage.iter().enumerate() {
@@ -191,7 +183,7 @@ impl<'gc> ArrayStorage<'gc> {
                         }
                     }
                     new_storage.insert(item, value);
-                    self.storage_type = ArrayStorageType::Sparse(new_storage, item + 1);
+                    *self = ArrayStorage::Sparse(new_storage, item + 1);
                 } else {
                     if storage.len() < (item + 1) {
                         storage.resize(item + 1, None)
@@ -199,7 +191,7 @@ impl<'gc> ArrayStorage<'gc> {
                     *storage.get_mut(item).unwrap() = Some(value);
                 }
             }
-            ArrayStorageType::Sparse(storage, length) => {
+            ArrayStorage::Sparse(storage, length) => {
                 storage.insert(item, value);
                 if item >= *length {
                     *length = item + 1;
@@ -210,13 +202,13 @@ impl<'gc> ArrayStorage<'gc> {
 
     /// Delete an array storage slot, leaving a hole.
     pub fn delete(&mut self, item: usize) {
-        match &mut self.storage_type {
-            ArrayStorageType::Dense(storage) => {
+        match self {
+            ArrayStorage::Dense(storage) => {
                 if let Some(i) = storage.get_mut(item) {
                     *i = None;
                 }
             }
-            ArrayStorageType::Sparse(storage, ..) => {
+            ArrayStorage::Sparse(storage, ..) => {
                 storage.remove(&item);
             }
         }
@@ -224,16 +216,16 @@ impl<'gc> ArrayStorage<'gc> {
 
     /// Get the length of the array.
     pub fn length(&self) -> usize {
-        match &self.storage_type {
-            ArrayStorageType::Dense(storage) => storage.len(),
-            ArrayStorageType::Sparse(_storage, length) => *length,
+        match &self {
+            ArrayStorage::Dense(storage) => storage.len(),
+            ArrayStorage::Sparse(_storage, length) => *length,
         }
     }
 
     /// Set the length of the array.
     pub fn set_length(&mut self, size: usize) {
-        match &mut self.storage_type {
-            ArrayStorageType::Dense(storage) => {
+        match self {
+            ArrayStorage::Dense(storage) => {
                 if size < 1 << 28 {
                     storage.resize(size, None);
                 } else {
@@ -243,10 +235,10 @@ impl<'gc> ArrayStorage<'gc> {
                             new_storage.insert(i, *v);
                         }
                     }
-                    self.storage_type = ArrayStorageType::Sparse(new_storage, size);
+                    *self = ArrayStorage::Sparse(new_storage, size);
                 }
             }
-            ArrayStorageType::Sparse(storage, length) => {
+            ArrayStorage::Sparse(storage, length) => {
                 if size > *length {
                     *length = size;
                 } else {
@@ -270,21 +262,21 @@ impl<'gc> ArrayStorage<'gc> {
     ///
     /// Holes are copied as holes and not resolved at append time.
     pub fn append(&mut self, other_array: &Self) {
-        match &mut self.storage_type {
-            ArrayStorageType::Dense(storage) => match &other_array.storage_type {
-                ArrayStorageType::Dense(other_storage) => {
+        match self {
+            ArrayStorage::Dense(storage) => match &other_array {
+                ArrayStorage::Dense(other_storage) => {
                     for other_item in other_storage.iter() {
                         storage.push(*other_item)
                     }
                 }
-                ArrayStorageType::Sparse(other_storage, length) => {
+                ArrayStorage::Sparse(other_storage, length) => {
                     for i in 0..*length {
                         storage.push(other_storage.get(&i).cloned());
                     }
                 }
             },
-            ArrayStorageType::Sparse(storage, length) => match &other_array.storage_type {
-                ArrayStorageType::Dense(other_storage) => {
+            ArrayStorage::Sparse(storage, length) => match &other_array {
+                ArrayStorage::Dense(other_storage) => {
                     for (i, v) in other_storage.iter().enumerate() {
                         match v {
                             Some(v) => {
@@ -295,7 +287,7 @@ impl<'gc> ArrayStorage<'gc> {
                     }
                     *length += other_storage.len();
                 }
-                ArrayStorageType::Sparse(other_storage, other_length) => {
+                ArrayStorage::Sparse(other_storage, other_length) => {
                     for i in 0..*other_length {
                         let value = other_storage.get(&i).cloned();
                         if let Some(value) = value {
@@ -312,11 +304,11 @@ impl<'gc> ArrayStorage<'gc> {
     ///
     /// It is not possible to push a hole onto the array.
     pub fn push(&mut self, item: Value<'gc>) {
-        match &mut self.storage_type {
-            ArrayStorageType::Dense(storage) => {
+        match self {
+            ArrayStorage::Dense(storage) => {
                 storage.push(Some(item));
             }
-            ArrayStorageType::Sparse(storage, length) => {
+            ArrayStorage::Sparse(storage, length) => {
                 storage.insert(*length, item);
                 *length += 1;
             }
@@ -325,17 +317,17 @@ impl<'gc> ArrayStorage<'gc> {
 
     /// Push an array hole onto the end of this array.
     pub fn push_hole(&mut self) {
-        match &mut self.storage_type {
-            ArrayStorageType::Dense(storage) => {
+        match self {
+            ArrayStorage::Dense(storage) => {
                 let mut new_storage = BTreeMap::new();
                 for (i, v) in storage.iter().enumerate() {
                     if let Some(v) = v {
                         new_storage.insert(i, *v);
                     }
                 }
-                self.storage_type = ArrayStorageType::Sparse(new_storage, storage.len() + 1);
+                *self = ArrayStorage::Sparse(new_storage, storage.len() + 1);
             }
-            ArrayStorageType::Sparse(_storage, length) => {
+            ArrayStorage::Sparse(_storage, length) => {
                 *length += 1;
             }
         }
@@ -346,8 +338,8 @@ impl<'gc> ArrayStorage<'gc> {
     /// This method preferrentially pops non-holes from the array first. If a
     /// hole is popped, it will become `undefined`.
     pub fn pop(&mut self) -> Value<'gc> {
-        match &mut self.storage_type {
-            ArrayStorageType::Dense(storage) => {
+        match self {
+            ArrayStorage::Dense(storage) => {
                 let mut non_hole = None;
 
                 for (i, item) in storage.iter().enumerate().rev() {
@@ -363,7 +355,7 @@ impl<'gc> ArrayStorage<'gc> {
                     storage.pop().unwrap_or(None).unwrap_or(Value::Undefined)
                 }
             }
-            ArrayStorageType::Sparse(storage, length) => {
+            ArrayStorage::Sparse(storage, length) => {
                 let mut non_hole = None;
 
                 let storage_clone = storage.clone();
@@ -393,14 +385,14 @@ impl<'gc> ArrayStorage<'gc> {
     /// This method preferrentially pops non-holes from the array first. If a
     /// hole is popped, it will become `undefined`.
     pub fn shift(&mut self) -> Value<'gc> {
-        match &mut self.storage_type {
-            ArrayStorageType::Dense(storage) => {
+        match self {
+            ArrayStorage::Dense(storage) => {
                 if !storage.is_empty() {
                     return storage.remove(0).unwrap_or(Value::Undefined);
                 }
                 Value::Undefined
             }
-            ArrayStorageType::Sparse(storage, length) => {
+            ArrayStorage::Sparse(storage, length) => {
                 let value = storage.get(&0).cloned().unwrap_or(Value::Undefined);
                 storage.remove(&0);
 
@@ -422,11 +414,11 @@ impl<'gc> ArrayStorage<'gc> {
     ///
     /// It is not possible to push a hole onto the array.
     pub fn unshift(&mut self, item: Value<'gc>) {
-        match &mut self.storage_type {
-            ArrayStorageType::Dense(storage) => {
+        match self {
+            ArrayStorage::Dense(storage) => {
                 storage.insert(0, Some(item));
             }
-            ArrayStorageType::Sparse(storage, length) => {
+            ArrayStorage::Sparse(storage, length) => {
                 let mut new_storage = BTreeMap::new();
                 new_storage.insert(0, item);
                 for i in 0..*length {
@@ -436,13 +428,17 @@ impl<'gc> ArrayStorage<'gc> {
                     }
                 }
                 *length += 1;
-                self.storage_type = ArrayStorageType::Sparse(new_storage, *length);
+                *self = ArrayStorage::Sparse(new_storage, *length);
             }
         }
     }
 
     /// Iterate over array values.
-    pub fn iter<'a>(&'a self) -> impl DoubleEndedExactSizeIterator<Item = Option<Value<'gc>>> + 'a {
+    pub fn iter<'a>(
+        &'a self,
+    ) -> impl DoubleEndedIterator<Item = Option<Value<'gc>>>
+           + ExactSizeIterator<Item = Option<Value<'gc>>>
+           + 'a {
         ArrayStorageIterator {
             storage: self,
             index: 0,
@@ -458,8 +454,8 @@ impl<'gc> ArrayStorage<'gc> {
     /// Negative bounds are supported and treated as indexing from the end of
     /// the array, backwards.
     pub fn remove(&mut self, position: i32) -> Option<Value<'gc>> {
-        match &mut self.storage_type {
-            ArrayStorageType::Dense(storage) => {
+        match self {
+            ArrayStorage::Dense(storage) => {
                 let position = if position < 0 {
                     max(position + storage.len() as i32, 0) as usize
                 } else {
@@ -472,7 +468,7 @@ impl<'gc> ArrayStorage<'gc> {
                     storage.remove(position)
                 }
             }
-            ArrayStorageType::Sparse(storage, length) => {
+            ArrayStorage::Sparse(storage, length) => {
                 let position = if position < 0 {
                     max(position + *length as i32, 0) as usize
                 } else {
@@ -512,8 +508,8 @@ impl<'gc> ArrayStorage<'gc> {
             std::ops::Bound::Unbounded => 0,
         };
 
-        match &mut self.storage_type {
-            ArrayStorageType::Dense(storage) => {
+        match self {
+            ArrayStorage::Dense(storage) => {
                 let end = match range.end_bound() {
                     std::ops::Bound::Included(&end) => end + 1,
                     std::ops::Bound::Excluded(&end) => end,
@@ -522,7 +518,7 @@ impl<'gc> ArrayStorage<'gc> {
                 let replace_with = replace_with.into_iter().map(Some);
                 Box::new(storage.splice(start..end, replace_with))
             }
-            ArrayStorageType::Sparse(storage, length) => {
+            ArrayStorage::Sparse(storage, length) => {
                 let end = match range.end_bound() {
                     std::ops::Bound::Included(&end) => end + 1,
                     std::ops::Bound::Excluded(&end) => end,
@@ -553,8 +549,6 @@ impl<'gc> ArrayStorage<'gc> {
     }
 }
 
-pub trait DoubleEndedExactSizeIterator: DoubleEndedIterator + ExactSizeIterator {}
-
 impl<'gc, V> FromIterator<V> for ArrayStorage<'gc>
 where
     V: Into<Value<'gc>>,
@@ -565,7 +559,7 @@ where
     {
         let storage = values.into_iter().map(|v| Some(v.into())).collect();
 
-        let storage_type = ArrayStorageType::Dense(storage);
-        Self { storage_type }
+        let storage_type = ArrayStorage::Dense(storage);
+        storage_type
     }
 }

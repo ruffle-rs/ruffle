@@ -224,9 +224,12 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             }
             last_index += 1;
         }*/
-        let next_index = read.array.get_next_enumerant(last_index as usize);
-        if next_index.is_some() {
-            return Ok(Some(next_index.unwrap() as u32));
+        /*let next_index = read.array.get_next_enumerant(last_index as usize);
+        if let Some(..) = next_index {
+            return Ok(Some(next_index as u32));
+        }*/
+        if let Some(index) = read.array.get_next_enumerant(last_index as usize) {
+            return Ok(Some(index as u32));
         }
 
         last_index = max(last_index, array_length);
@@ -240,7 +243,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             .0
             .write(activation.context.gc_context)
             .base
-            .get_next_enumerant(((last_index as u32) - array_length))
+            .get_next_enumerant(last_index - array_length)
         {
             return Ok(Some(index + array_length));
         }
