@@ -4392,6 +4392,7 @@ dependencies = [
  "tracing-tracy",
  "unic-langid",
  "url",
+ "urlencoding",
  "vergen",
  "webbrowser",
  "wgpu",
