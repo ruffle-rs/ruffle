@@ -106,9 +106,7 @@ impl<'gc> ArrayStorage<'gc> {
             .map(|v| Some(*v))
             .collect::<Vec<Option<Value<'gc>>>>();
 
-        let storage_type = ArrayStorage::Dense(storage, values.len());
-
-        storage_type
+        ArrayStorage::Dense(storage, values.len())
     }
 
     /// Wrap an existing storage Vec in an `ArrayStorage`.
@@ -229,11 +227,8 @@ impl<'gc> ArrayStorage<'gc> {
                         *dense_used -= 1;
                         if *dense_used == 0 {
                             self.convert_to_dense();
-                        } else if *dense_used < (storage.len() / 4)
-                            && MIN_SPARSE_LENGTH < storage.len()
-                        {
-                            self.convert_to_sparse();
                         }
+                        self.maybe_convert_to_sparse();
                     }
                 }
             }
@@ -301,33 +296,26 @@ impl<'gc> ArrayStorage<'gc> {
     pub fn append(&mut self, other_array: &Self) {
         match self {
             ArrayStorage::Dense(storage, dense_used) => match &other_array {
-                ArrayStorage::Dense(other_storage, _other_dense_used) => {
+                ArrayStorage::Dense(other_storage, other_dense_used) => {
                     for other_item in other_storage.iter() {
                         storage.push(*other_item)
                     }
-                    *dense_used = storage.iter().filter(|v| v.is_some()).count();
-                    if *dense_used < (storage.len() / 4) && MIN_SPARSE_LENGTH < storage.len() {
-                        self.convert_to_sparse();
-                    }
+                    *dense_used += other_dense_used;
+                    self.maybe_convert_to_sparse();
                 }
                 ArrayStorage::Sparse(other_storage, length) => {
                     for i in 0..*length {
                         storage.push(other_storage.get(&i).cloned());
                     }
-                    *dense_used = storage.iter().filter(|v| v.is_some()).count();
-                    if *dense_used < (storage.len() / 4) && MIN_SPARSE_LENGTH < storage.len() {
-                        self.convert_to_sparse();
-                    }
+                    *dense_used += other_storage.len();
+                    self.maybe_convert_to_sparse();
                 }
             },
             ArrayStorage::Sparse(storage, length) => match &other_array {
                 ArrayStorage::Dense(other_storage, ..) => {
                     for (i, v) in other_storage.iter().enumerate() {
-                        match v {
-                            Some(v) => {
-                                storage.insert(i + *length, *v);
-                            }
-                            None => {}
+                        if let Some(v) = v {
+                            storage.insert(i + *length, *v);
                         }
                     }
                     *length += other_storage.len();
@@ -361,14 +349,23 @@ impl<'gc> ArrayStorage<'gc> {
         }
     }
 
-    /// Push an array hole onto the end of this array.
-    pub fn push_hole(&mut self) {
+    fn maybe_convert_to_sparse(&mut self) {
         match self {
             ArrayStorage::Dense(storage, dense_used) => {
-                storage.push(None);
                 if *dense_used < (storage.len() / 4) && MIN_SPARSE_LENGTH < storage.len() {
                     self.convert_to_sparse();
                 }
+            }
+            ArrayStorage::Sparse(..) => {}
+        }
+    }
+
+    /// Push an array hole onto the end of this array.
+    pub fn push_hole(&mut self) {
+        match self {
+            ArrayStorage::Dense(storage, ..) => {
+                storage.push(None);
+                self.maybe_convert_to_sparse();
             }
             ArrayStorage::Sparse(_storage, length) => {
                 *length += 1;
@@ -383,27 +380,25 @@ impl<'gc> ArrayStorage<'gc> {
     pub fn pop(&mut self) -> Value<'gc> {
         match self {
             ArrayStorage::Dense(storage, dense_used) => {
-                let mut non_hole = None;
-
-                for (i, item) in storage.iter().enumerate().rev() {
-                    if item.is_some() {
-                        non_hole = Some(i);
-                        break;
-                    }
-                }
+                let non_hole = storage
+                    .iter()
+                    .enumerate()
+                    .rposition(|(_, item)| item.is_some());
 
                 if let Some(non_hole) = non_hole {
                     *dense_used -= 1;
                     let value = storage.remove(non_hole).unwrap();
-                    if *dense_used < (storage.len() / 4) && MIN_SPARSE_LENGTH < storage.len() {
-                        self.convert_to_sparse();
-                    }
+                    self.maybe_convert_to_sparse();
                     value
                 } else {
                     storage.pop().unwrap_or(None).unwrap_or(Value::Undefined)
                 }
             }
             ArrayStorage::Sparse(storage, length) => {
+                if *length == 0 {
+                    return Value::Undefined;
+                }
+
                 let mut non_hole = None;
 
                 let storage_clone = storage.clone();
@@ -413,8 +408,6 @@ impl<'gc> ArrayStorage<'gc> {
                 if let Some(non_hole) = non_hole {
                     *length -= 1;
                     storage.remove(non_hole).unwrap()
-                } else if *length == 0 {
-                    Value::Undefined
                 } else {
                     let value = storage
                         .get(&(*length - 1))
@@ -440,9 +433,7 @@ impl<'gc> ArrayStorage<'gc> {
                     if value.is_some() {
                         *dense_used -= 1;
                     }
-                    if *dense_used < (storage.len() / 4) && MIN_SPARSE_LENGTH < storage.len() {
-                        self.convert_to_sparse();
-                    }
+                    self.maybe_convert_to_sparse();
                     return value.unwrap_or(Value::Undefined);
                 }
                 Value::Undefined
@@ -525,9 +516,7 @@ impl<'gc> ArrayStorage<'gc> {
                     if value.is_some() {
                         *dense_used -= 1;
                     }
-                    if *dense_used < (storage.len() / 4) && MIN_SPARSE_LENGTH < storage.len() {
-                        self.convert_to_sparse();
-                    }
+                    self.maybe_convert_to_sparse();
                     value
                 }
             }
