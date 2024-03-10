@@ -535,9 +535,19 @@ pub fn optimize<'gc>(
             Op::AsType { class } => {
                 let stack_value = stack.pop_or_any();
 
+                let class_is_primitive = GcCell::ptr_eq(*class, types.int.inner_class_definition())
+                    || GcCell::ptr_eq(*class, types.uint.inner_class_definition())
+                    || GcCell::ptr_eq(*class, types.number.inner_class_definition())
+                    || GcCell::ptr_eq(*class, types.boolean.inner_class_definition());
+
                 let mut new_value = OptValue::any();
+                if !class_is_primitive {
+                    // if T is non-nullable, we can assume the result is typed T
+                    new_value = OptValue::of_type_from_class(*class);
+                }
                 if let Some(class_object) = stack_value.class {
                     if GcCell::ptr_eq(*class, class_object.inner_class_definition()) {
+                        // If type check is guaranteed, preserve original type
                         // TODO: there are more cases when this can succeed,
                         // like inheritance and numbers (`x: Number = 1; x as int;`)
                         new_value = stack_value;
