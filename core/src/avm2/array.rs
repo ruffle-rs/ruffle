@@ -5,6 +5,8 @@ use gc_arena::Collect;
 use std::collections::BTreeMap;
 use std::{cmp::max, ops::RangeBounds};
 
+const MIN_SPARSE_LENGTH: usize = 32;
+
 /// The array storage portion of an array object.
 ///
 /// Array values may consist of either standard `Value`s or "holes": values
@@ -13,7 +15,7 @@ use std::{cmp::max, ops::RangeBounds};
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub enum ArrayStorage<'gc> {
-    Dense(Vec<Option<Value<'gc>>>),
+    Dense(Vec<Option<Value<'gc>>>, usize),
     Sparse(BTreeMap<usize, Value<'gc>>, usize),
 }
 
@@ -28,7 +30,7 @@ impl<'a, 'gc> Iterator for ArrayStorageIterator<'a, 'gc> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match &self.storage {
-            ArrayStorage::Dense(storage) => {
+            ArrayStorage::Dense(storage, ..) => {
                 if self.index >= self.index_back {
                     None
                 } else {
@@ -53,7 +55,7 @@ impl<'a, 'gc> Iterator for ArrayStorageIterator<'a, 'gc> {
 impl<'a, 'gc> DoubleEndedIterator for ArrayStorageIterator<'a, 'gc> {
     fn next_back(&mut self) -> Option<Self::Item> {
         match &self.storage {
-            ArrayStorage::Dense(storage) => {
+            ArrayStorage::Dense(storage, ..) => {
                 if self.index >= self.index_back || self.index_back == 0 {
                     None
                 } else {
@@ -78,7 +80,7 @@ impl<'a, 'gc> DoubleEndedIterator for ArrayStorageIterator<'a, 'gc> {
 impl<'a, 'gc> ExactSizeIterator for ArrayStorageIterator<'a, 'gc> {
     fn len(&self) -> usize {
         match &self.storage {
-            ArrayStorage::Dense(_) => self.index_back - self.index,
+            ArrayStorage::Dense(_, _) => self.index_back - self.index,
             ArrayStorage::Sparse(_, _) => self.index_back - self.index,
         }
     }
@@ -91,14 +93,10 @@ impl<'gc> ArrayStorage<'gc> {
     /// out as. All array storage consists of holes.
     pub fn new(length: usize) -> Self {
         if length > (1 << 28) {
-            let storage = BTreeMap::new();
-            let storage_type = ArrayStorage::Sparse(storage, 0);
-            return storage_type;
+            ArrayStorage::Sparse(BTreeMap::new(), 0)
+        } else {
+            ArrayStorage::Dense(Vec::with_capacity(length), 0)
         }
-        let storage = Vec::with_capacity(length);
-        let storage_type = ArrayStorage::Dense(storage);
-
-        storage_type
     }
 
     /// Convert a set of arguments into array storage.
@@ -108,14 +106,15 @@ impl<'gc> ArrayStorage<'gc> {
             .map(|v| Some(*v))
             .collect::<Vec<Option<Value<'gc>>>>();
 
-        let storage_type = ArrayStorage::Dense(storage);
+        let storage_type = ArrayStorage::Dense(storage, values.len());
 
         storage_type
     }
 
     /// Wrap an existing storage Vec in an `ArrayStorage`.
     pub fn from_storage(storage: Vec<Option<Value<'gc>>>) -> Self {
-        let storage_type = ArrayStorage::Dense(storage);
+        let dense_used = storage.iter().filter(|v| v.is_some()).count();
+        let storage_type = ArrayStorage::Dense(storage, dense_used);
         storage_type
     }
 
@@ -125,7 +124,7 @@ impl<'gc> ArrayStorage<'gc> {
     /// yielding `None`.
     pub fn get(&self, item: usize) -> Option<Value<'gc>> {
         match &self {
-            ArrayStorage::Dense(storage) => {
+            ArrayStorage::Dense(storage, ..) => {
                 return storage.get(item).cloned().unwrap_or(None);
             }
             ArrayStorage::Sparse(storage, ..) => storage.get(&item).cloned(),
@@ -134,7 +133,7 @@ impl<'gc> ArrayStorage<'gc> {
 
     pub fn get_next_enumerant(&self, last_index: usize) -> Option<usize> {
         match &self {
-            ArrayStorage::Dense(storage) => {
+            ArrayStorage::Dense(storage, ..) => {
                 let mut last_index = last_index;
                 while last_index < storage.len() {
                     if storage[last_index].is_some() {
@@ -155,7 +154,7 @@ impl<'gc> ArrayStorage<'gc> {
 
     pub fn convert_to_sparse(&mut self) {
         match self {
-            ArrayStorage::Dense(storage) => {
+            ArrayStorage::Dense(storage, ..) => {
                 let mut new_storage = BTreeMap::new();
                 for (i, v) in storage.iter().enumerate() {
                     if let Some(v) = v {
@@ -167,6 +166,21 @@ impl<'gc> ArrayStorage<'gc> {
             ArrayStorage::Sparse(..) => {}
         }
     }
+    
+    pub fn convert_to_dense(&mut self) {
+        match self {
+            ArrayStorage::Dense(..) => {}
+            ArrayStorage::Sparse(storage, length) => {
+                let mut new_storage = Vec::new();
+                for i in 0..*length {
+                    let value = storage.get(&i).cloned();
+                    new_storage.push(value);
+                }
+                let dense_used = new_storage.iter().filter(|v| v.is_some()).count();
+                *self = ArrayStorage::Dense(new_storage, dense_used);
+            }
+        }
+    }
 
     /// Set an array storage slot to a particular value.
     ///
@@ -174,19 +188,24 @@ impl<'gc> ArrayStorage<'gc> {
     /// array will be extended with holes.
     pub fn set(&mut self, item: usize, value: Value<'gc>) {
         match self {
-            ArrayStorage::Dense(storage) => {
-                if storage.len() + 1 < (item) {
-                    let mut new_storage = BTreeMap::new();
-                    for (i, v) in storage.iter().enumerate() {
-                        if let Some(v) = v {
-                            new_storage.insert(i, *v);
+            ArrayStorage::Dense(storage, dense_used) => {
+                if storage.len() < (item + 1) {
+                    //check if dense_used is less than quarter of item
+                    if *dense_used < (item / 4) && MIN_SPARSE_LENGTH < item {
+                        self.convert_to_sparse();
+                        if let ArrayStorage::Sparse(storage, length) = self {
+                            *length = item + 1;
+                            storage.insert(item, value);
                         }
+                    } else {
+                        storage.resize(item + 1, None);
+                        *storage.get_mut(item).unwrap() = Some(value);
+                        let new_holes = item as i32 - storage.len() as i32 + 1;
+                        *dense_used = (*dense_used + new_holes as usize) + 1;
                     }
-                    new_storage.insert(item, value);
-                    *self = ArrayStorage::Sparse(new_storage, item + 1);
                 } else {
-                    if storage.len() < (item + 1) {
-                        storage.resize(item + 1, None)
+                    if storage[item].is_none() {
+                        *dense_used += 1;
                     }
                     *storage.get_mut(item).unwrap() = Some(value);
                 }
@@ -203,9 +222,17 @@ impl<'gc> ArrayStorage<'gc> {
     /// Delete an array storage slot, leaving a hole.
     pub fn delete(&mut self, item: usize) {
         match self {
-            ArrayStorage::Dense(storage) => {
+            ArrayStorage::Dense(storage, dense_used) => {
                 if let Some(i) = storage.get_mut(item) {
                     *i = None;
+                    if *dense_used != 0 {
+                        *dense_used -= 1;
+                        if *dense_used == 0 {
+                            self.convert_to_dense();
+                        } else if *dense_used < (storage.len() / 4) && MIN_SPARSE_LENGTH < storage.len() {
+                            self.convert_to_sparse();
+                        }
+                    }
                 }
             }
             ArrayStorage::Sparse(storage, ..) => {
@@ -217,7 +244,7 @@ impl<'gc> ArrayStorage<'gc> {
     /// Get the length of the array.
     pub fn length(&self) -> usize {
         match &self {
-            ArrayStorage::Dense(storage) => storage.len(),
+            ArrayStorage::Dense(storage, ..) => storage.len(),
             ArrayStorage::Sparse(_storage, length) => *length,
         }
     }
@@ -225,17 +252,22 @@ impl<'gc> ArrayStorage<'gc> {
     /// Set the length of the array.
     pub fn set_length(&mut self, size: usize) {
         match self {
-            ArrayStorage::Dense(storage) => {
+            ArrayStorage::Dense(storage, dense_used) => {
                 if size < 1 << 28 {
-                    storage.resize(size, None);
-                } else {
-                    let mut new_storage = BTreeMap::new();
-                    for (i, v) in storage.iter().enumerate() {
-                        if let Some(v) = v {
-                            new_storage.insert(i, *v);
+                    let num_of_new_holes = (size as i32 - storage.len() as i32).max(0) as usize;
+                    if *dense_used + num_of_new_holes < (size / 4) && num_of_new_holes > 0 && MIN_SPARSE_LENGTH < size {
+                        self.convert_to_sparse();
+                        if let ArrayStorage::Sparse(_storage, length) = self {
+                            *length = size;
                         }
+                    } else {
+                        storage.resize(size, None);
                     }
-                    *self = ArrayStorage::Sparse(new_storage, size);
+                } else {
+                    self.convert_to_sparse();
+                    if let ArrayStorage::Sparse(_storage, length) = self {
+                        *length = size;
+                    }
                 }
             }
             ArrayStorage::Sparse(storage, length) => {
@@ -263,20 +295,28 @@ impl<'gc> ArrayStorage<'gc> {
     /// Holes are copied as holes and not resolved at append time.
     pub fn append(&mut self, other_array: &Self) {
         match self {
-            ArrayStorage::Dense(storage) => match &other_array {
-                ArrayStorage::Dense(other_storage) => {
+            ArrayStorage::Dense(storage, dense_used) => match &other_array {
+                ArrayStorage::Dense(other_storage, _other_dense_used) => {
                     for other_item in other_storage.iter() {
                         storage.push(*other_item)
+                    }
+                    *dense_used = storage.iter().filter(|v| v.is_some()).count();
+                    if *dense_used < (storage.len() / 4) && MIN_SPARSE_LENGTH < storage.len() {
+                        self.convert_to_sparse();
                     }
                 }
                 ArrayStorage::Sparse(other_storage, length) => {
                     for i in 0..*length {
                         storage.push(other_storage.get(&i).cloned());
                     }
+                    *dense_used = storage.iter().filter(|v| v.is_some()).count();
+                    if *dense_used < (storage.len() / 4) && MIN_SPARSE_LENGTH < storage.len() {
+                        self.convert_to_sparse();
+                    }
                 }
             },
             ArrayStorage::Sparse(storage, length) => match &other_array {
-                ArrayStorage::Dense(other_storage) => {
+                ArrayStorage::Dense(other_storage, ..) => {
                     for (i, v) in other_storage.iter().enumerate() {
                         match v {
                             Some(v) => {
@@ -305,8 +345,9 @@ impl<'gc> ArrayStorage<'gc> {
     /// It is not possible to push a hole onto the array.
     pub fn push(&mut self, item: Value<'gc>) {
         match self {
-            ArrayStorage::Dense(storage) => {
+            ArrayStorage::Dense(storage, dense_used) => {
                 storage.push(Some(item));
+                *dense_used += 1;
             }
             ArrayStorage::Sparse(storage, length) => {
                 storage.insert(*length, item);
@@ -318,14 +359,11 @@ impl<'gc> ArrayStorage<'gc> {
     /// Push an array hole onto the end of this array.
     pub fn push_hole(&mut self) {
         match self {
-            ArrayStorage::Dense(storage) => {
-                let mut new_storage = BTreeMap::new();
-                for (i, v) in storage.iter().enumerate() {
-                    if let Some(v) = v {
-                        new_storage.insert(i, *v);
-                    }
+            ArrayStorage::Dense(storage, dense_used) => {
+                storage.push(None);
+                if *dense_used < (storage.len() / 4) && MIN_SPARSE_LENGTH < storage.len() {
+                    self.convert_to_sparse();
                 }
-                *self = ArrayStorage::Sparse(new_storage, storage.len() + 1);
             }
             ArrayStorage::Sparse(_storage, length) => {
                 *length += 1;
@@ -339,7 +377,7 @@ impl<'gc> ArrayStorage<'gc> {
     /// hole is popped, it will become `undefined`.
     pub fn pop(&mut self) -> Value<'gc> {
         match self {
-            ArrayStorage::Dense(storage) => {
+            ArrayStorage::Dense(storage, dense_used) => {
                 let mut non_hole = None;
 
                 for (i, item) in storage.iter().enumerate().rev() {
@@ -350,7 +388,12 @@ impl<'gc> ArrayStorage<'gc> {
                 }
 
                 if let Some(non_hole) = non_hole {
-                    storage.remove(non_hole).unwrap()
+                    *dense_used -= 1;
+                    let value = storage.remove(non_hole).unwrap();
+                    if *dense_used < (storage.len() / 4) && MIN_SPARSE_LENGTH < storage.len() {
+                        self.convert_to_sparse();
+                    }
+                    value
                 } else {
                     storage.pop().unwrap_or(None).unwrap_or(Value::Undefined)
                 }
@@ -386,9 +429,16 @@ impl<'gc> ArrayStorage<'gc> {
     /// hole is popped, it will become `undefined`.
     pub fn shift(&mut self) -> Value<'gc> {
         match self {
-            ArrayStorage::Dense(storage) => {
+            ArrayStorage::Dense(storage, dense_used) => {
                 if !storage.is_empty() {
-                    return storage.remove(0).unwrap_or(Value::Undefined);
+                    let value = storage.remove(0);
+                    if value.is_some() {
+                        *dense_used -= 1;
+                    }
+                    if *dense_used < (storage.len() / 4) && MIN_SPARSE_LENGTH < storage.len() {
+                        self.convert_to_sparse();
+                    }
+                    return value.unwrap_or(Value::Undefined);
                 }
                 Value::Undefined
             }
@@ -415,8 +465,9 @@ impl<'gc> ArrayStorage<'gc> {
     /// It is not possible to push a hole onto the array.
     pub fn unshift(&mut self, item: Value<'gc>) {
         match self {
-            ArrayStorage::Dense(storage) => {
+            ArrayStorage::Dense(storage, dense_used) => {
                 storage.insert(0, Some(item));
+                *dense_used += 1;
             }
             ArrayStorage::Sparse(storage, length) => {
                 let mut new_storage = BTreeMap::new();
@@ -455,7 +506,7 @@ impl<'gc> ArrayStorage<'gc> {
     /// the array, backwards.
     pub fn remove(&mut self, position: i32) -> Option<Value<'gc>> {
         match self {
-            ArrayStorage::Dense(storage) => {
+            ArrayStorage::Dense(storage, dense_used) => {
                 let position = if position < 0 {
                     max(position + storage.len() as i32, 0) as usize
                 } else {
@@ -465,7 +516,14 @@ impl<'gc> ArrayStorage<'gc> {
                 if position >= storage.len() {
                     None
                 } else {
-                    storage.remove(position)
+                    let value = storage.remove(position);
+                    if value.is_some() {
+                        *dense_used -= 1;
+                    }
+                    if *dense_used < (storage.len() / 4) && MIN_SPARSE_LENGTH < storage.len() {
+                        self.convert_to_sparse();
+                    }
+                    value
                 }
             }
             ArrayStorage::Sparse(storage, length) => {
@@ -509,7 +567,7 @@ impl<'gc> ArrayStorage<'gc> {
         };
 
         match self {
-            ArrayStorage::Dense(storage) => {
+            ArrayStorage::Dense(storage, ..) => {
                 let end = match range.end_bound() {
                     std::ops::Bound::Included(&end) => end + 1,
                     std::ops::Bound::Excluded(&end) => end,
@@ -557,9 +615,10 @@ where
     where
         I: IntoIterator<Item = V>,
     {
-        let storage = values.into_iter().map(|v| Some(v.into())).collect();
+        let storage: Vec<Option<Value>> = values.into_iter().map(|v| Some(v.into())).collect();
 
-        let storage_type = ArrayStorage::Dense(storage);
+        let dense_used = storage.iter().filter(|v| v.is_some()).count();
+        let storage_type = ArrayStorage::Dense(storage, dense_used);
         storage_type
     }
 }
