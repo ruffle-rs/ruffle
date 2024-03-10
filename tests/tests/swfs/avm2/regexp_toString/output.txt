@@ -1,0 +1,10 @@
+// trace(regexp)
+/abc/gimsx
+// regexp.toString()
+/abc/gimsx
+// RegExp.prototype.toString.call(regexp)
+/abc/gimsx
+// Object.prototype.toString.call(regexp)
+[object RegExp]
+// RegExp.prototype.toString.call({})
+TypeError: Error #1034: Type Coercion failed: cannot convert Object@00000000000 to RegExp.
