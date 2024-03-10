@@ -1128,6 +1128,7 @@ async fn request_device(
     limits = limits.using_resolution(adapter.limits());
     limits = limits.using_alignment(adapter.limits());
     limits.max_uniform_buffer_binding_size = adapter.limits().max_uniform_buffer_binding_size;
+    limits.max_inter_stage_shader_components = adapter.limits().max_inter_stage_shader_components;
 
     let mut features = Default::default();
 

@@ -1,10 +1,6 @@
 preferences-dialog = Ruffle偏好設定
 preference-locked-by-cli = 唯讀 (CLI設定)
 graphics-backend = 圖形顯示後端
-graphics-backend-vulkan = Vulkan
-graphics-backend-gl = OpenGL
-graphics-backend-dx12 = OpenGL
-graphics-backend-metal = Metal
 graphics-backend-default = 預設
 graphics-power = 圖形顯示效能
 graphics-power-low = 低 (例如iGPU)

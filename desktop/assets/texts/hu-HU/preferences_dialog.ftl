@@ -1,10 +1,6 @@
 preferences-dialog = Ruffle beállítások
 preference-locked-by-cli = Csak olvasható (parancssorból beállítva)
 graphics-backend = Grafikus backend
-graphics-backend-vulkan = Vulkan
-graphics-backend-gl = OpenGL
-graphics-backend-dx12 = DirectX 12
-graphics-backend-metal = Metal
 graphics-backend-default = Alapértelmezett
 graphics-power = Teljesítmény preferencia
 graphics-power-low = Alacsony (pl. integrált GPU)

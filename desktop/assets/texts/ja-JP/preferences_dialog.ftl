@@ -1,10 +1,6 @@
 preferences-dialog = Ruffleの設定
 preference-locked-by-cli = 読み取り専用 (CLIによる設定)
 graphics-backend = グラフィック バックエンド
-graphics-backend-vulkan = Vulkan
-graphics-backend-gl = OpenGL
-graphics-backend-dx12 = DirectX 12
-graphics-backend-metal = Metal
 graphics-backend-default = デフォルト
 graphics-power = 電源設定
 graphics-power-low = 低(iGPU等の場合)
