@@ -27,6 +27,7 @@ use cli::Opt;
 use rfd::MessageDialogResult;
 use ruffle_core::StaticCallstack;
 use std::cell::RefCell;
+use std::env;
 use std::fs::File;
 use std::panic::PanicInfo;
 use tracing_subscriber::fmt::Layer;
@@ -162,7 +163,11 @@ fn main() -> Result<(), Error> {
     let (non_blocking_file, _file_guard) = tracing_appender::non_blocking(File::create(log_path)?);
     let (non_blocking_stdout, _stdout_guard) = tracing_appender::non_blocking(std::io::stdout());
 
-    let env_filter = tracing_subscriber::EnvFilter::from_default_env();
+    let env_filter = tracing_subscriber::EnvFilter::builder().parse_lossy(
+        env::var("RUST_LOG")
+            .as_deref()
+            .unwrap_or("warn,ruffle=info,avm_trace=info"),
+    );
 
     let subscriber = tracing_subscriber::registry()
         .with(env_filter)
