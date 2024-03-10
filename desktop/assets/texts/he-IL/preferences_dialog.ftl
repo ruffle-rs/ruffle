@@ -1,10 +1,6 @@
 preferences-dialog = העדפות עבור Ruffle
 preference-locked-by-cli = לקריאה בלבד (הוגדר על ידי ממשק שורת הפקודות)
 graphics-backend = גרפיקת צד שרת
-graphics-backend-vulkan = Vulkan
-graphics-backend-gl = OpenGL
-graphics-backend-dx12 = DirectX 12
-graphics-backend-metal = Metal
 graphics-backend-default = ברירת מחדל
 graphics-power = העדפות צריכת כוח
 graphics-power-low = נמוך (לדוגמא; יחידת עיבוד גרפית משולבת)

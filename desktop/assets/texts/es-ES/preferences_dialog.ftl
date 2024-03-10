@@ -1,0 +1,10 @@
+preferences-dialog = Menú de Preferencias
+preference-locked-by-cli = Leer solamente (puesto por la terminal de mandatos)
+graphics-backend = Mecanismo/motor de los gráficos
+graphics-backend-default = Predeterminado
+graphics-power = Preferencias de Poder
+graphics-power-low = Bajo (para gráficos integrados)
+graphics-power-high = Alto (para gráficos dedicados)
+language = Idioma
+audio-output-device = Dispositivo de reproducción de audio
+audio-output-device-default = Predeterminado del sistema
