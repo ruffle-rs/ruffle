@@ -17,9 +17,9 @@
     "devDependencies": {
         "@tsconfig/strictest": "^2.0.3",
         "@types/archiver": "^6.0.2",
-        "@types/chrome": "^0.0.262",
+        "@types/chrome": "^0.0.263",
         "@types/common-tags": "^1.8.4",
-        "@types/firefox-webext-browser": "^120.0.1",
+        "@types/firefox-webext-browser": "^120.0.3",
         "@types/jsonwebtoken": "^9.0.6",
         "@types/mz": "^2.7.8",
         "@types/request": "^2.48.12",
@@ -28,7 +28,7 @@
         "sign-addon": "^6.4.0",
         "temp-dir": "^3.0.0",
         "ts-loader": "^9.5.1",
-        "typescript": "^5.3.3",
+        "typescript": "^5.4.2",
         "webpack-cli": "^5.1.4"
     }
 }
