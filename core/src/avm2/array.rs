@@ -166,7 +166,7 @@ impl<'gc> ArrayStorage<'gc> {
             ArrayStorage::Sparse(..) => {}
         }
     }
-    
+
     pub fn convert_to_dense(&mut self) {
         match self {
             ArrayStorage::Dense(..) => {}
@@ -229,7 +229,9 @@ impl<'gc> ArrayStorage<'gc> {
                         *dense_used -= 1;
                         if *dense_used == 0 {
                             self.convert_to_dense();
-                        } else if *dense_used < (storage.len() / 4) && MIN_SPARSE_LENGTH < storage.len() {
+                        } else if *dense_used < (storage.len() / 4)
+                            && MIN_SPARSE_LENGTH < storage.len()
+                        {
                             self.convert_to_sparse();
                         }
                     }
@@ -255,7 +257,10 @@ impl<'gc> ArrayStorage<'gc> {
             ArrayStorage::Dense(storage, dense_used) => {
                 if size < 1 << 28 {
                     let num_of_new_holes = (size as i32 - storage.len() as i32).max(0) as usize;
-                    if *dense_used + num_of_new_holes < (size / 4) && num_of_new_holes > 0 && MIN_SPARSE_LENGTH < size {
+                    if *dense_used + num_of_new_holes < (size / 4)
+                        && num_of_new_holes > 0
+                        && MIN_SPARSE_LENGTH < size
+                    {
                         self.convert_to_sparse();
                         if let ArrayStorage::Sparse(_storage, length) = self {
                             *length = size;
