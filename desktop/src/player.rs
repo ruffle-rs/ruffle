@@ -19,6 +19,7 @@ use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::descriptors::Descriptors;
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -193,7 +194,7 @@ impl ActivePlayer {
             .unwrap_or_else(|| movie_url.as_str())
             .to_string();
 
-        let readable_name = decode(&name).expect("UTF-8");
+        let readable_name = decode(&name).unwrap_or(Cow::Borrowed(&name));
 
         window.set_title(&format!("Ruffle - {readable_name}"));
 
