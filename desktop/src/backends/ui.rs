@@ -1,5 +1,5 @@
 use crate::preferences::GlobalPreferences;
-use anyhow::{Context, Error};
+use anyhow::Error;
 use arboard::Clipboard;
 use chrono::{DateTime, Utc};
 use fontdb::Family;
@@ -117,7 +117,7 @@ impl FileDialogResult for DesktopFileDialogResult {
 pub struct DesktopUiBackend {
     window: Rc<Window>,
     cursor_visible: bool,
-    clipboard: Clipboard,
+    clipboard: Option<Clipboard>,
     preferences: GlobalPreferences,
     preferred_cursor: MouseCursor,
     open_url_mode: OpenURLMode,
@@ -136,7 +136,9 @@ impl DesktopUiBackend {
         Ok(Self {
             window,
             cursor_visible: true,
-            clipboard: Clipboard::new().context("Couldn't get platform clipboard")?,
+            clipboard: Clipboard::new()
+                .inspect_err(|err| tracing::error!("Failed to initialize clipboard: {err}"))
+                .ok(),
             preferences,
             preferred_cursor: MouseCursor::Arrow,
             open_url_mode,
@@ -175,12 +177,18 @@ impl UiBackend for DesktopUiBackend {
     }
 
     fn clipboard_content(&mut self) -> String {
-        self.clipboard.get_text().unwrap_or_default()
+        if let Some(ref mut clipboard) = self.clipboard {
+            clipboard.get_text().unwrap_or_default()
+        } else {
+            "".to_string()
+        }
     }
 
     fn set_clipboard_content(&mut self, content: String) {
-        if let Err(e) = self.clipboard.set_text(content) {
-            error!("Couldn't set clipboard contents: {:?}", e);
+        if let Some(ref mut clipboard) = self.clipboard {
+            if let Err(e) = clipboard.set_text(content) {
+                error!("Couldn't set clipboard contents: {:?}", e);
+            }
         }
     }
 
