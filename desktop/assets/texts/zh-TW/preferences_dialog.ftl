@@ -8,3 +8,6 @@ graphics-power-high = 高 (例如iGPU)
 language = 語言
 audio-output-device = 音訊輸出設備
 audio-output-device-default = 系統預設
+log-filename-pattern = 記錄檔名
+log-filename-pattern-single-file = 統一檔案 (ruffle.log)
+log-filename-pattern-with-timestamp = 包含時間點
