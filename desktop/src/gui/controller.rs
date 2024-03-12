@@ -17,7 +17,9 @@ use std::time::{Duration, Instant};
 use unic_langid::LanguageIdentifier;
 use url::Url;
 use winit::dpi::PhysicalSize;
+use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
+use winit::keyboard::{Key, NamedKey};
 use winit::window::{Theme, Window};
 
 /// Integration layer connecting wgpu+winit to egui.
@@ -140,8 +142,8 @@ impl GuiController {
     }
 
     #[must_use]
-    pub fn handle_event(&mut self, event: &winit::event::WindowEvent) -> bool {
-        if let winit::event::WindowEvent::Resized(size) = &event {
+    pub fn handle_event(&mut self, event: &WindowEvent) -> bool {
+        if let WindowEvent::Resized(size) = &event {
             if size.width > 0 && size.height > 0 {
                 self.surface.configure(
                     &self.descriptors.device,
@@ -166,12 +168,26 @@ impl GuiController {
             }
         }
 
-        if let winit::event::WindowEvent::ThemeChanged(theme) = &event {
+        if let WindowEvent::ThemeChanged(theme) = &event {
             let visuals = match theme {
                 Theme::Dark => egui::Visuals::dark(),
                 Theme::Light => egui::Visuals::light(),
             };
             self.egui_winit.egui_ctx().set_visuals(visuals);
+        }
+
+        if matches!(
+            &event,
+            WindowEvent::KeyboardInput {
+                event: winit::event::KeyEvent {
+                    logical_key: Key::Named(NamedKey::Tab),
+                    ..
+                },
+                ..
+            }
+        ) {
+            // Prevent egui from consuming the Tab key.
+            return false;
         }
 
         let response = self.egui_winit.on_window_event(&self.window, event);
