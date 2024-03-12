@@ -180,6 +180,11 @@ pub struct EditTextData<'gc> {
     /// Restrict what characters the user may input.
     #[collect(require_static)]
     restrict: EditTextRestrict,
+
+    // TODO Consider moving this to InteractiveObject along with
+    //      MovieClip's and Button's tab indices after AVM2 analysis
+    // NOTE: `tabIndex` is u32 in TextField, compared to i32 in Button and MovieClip
+    tab_index: Option<u32>,
 }
 
 impl<'gc> EditTextData<'gc> {
@@ -362,6 +367,7 @@ impl<'gc> EditText<'gc> {
                 mouse_wheel_enabled: true,
                 is_tlf: false,
                 restrict: EditTextRestrict::allow_all(),
+                tab_index: None,
             },
         ));
 
@@ -2028,6 +2034,18 @@ impl<'gc> EditText<'gc> {
                     .contains(Position::from((position.x, position.y)))
         })
     }
+
+    /// Get the value of `tabIndex` used in AS.
+    ///
+    /// Do not confuse it with `tab_index`, which returns the value used for ordering.
+    pub fn tab_index_value(&self) -> Option<u32> {
+        self.0.read().tab_index
+    }
+
+    /// Set the value of `tabIndex` used in AS.
+    pub fn set_tab_index_value(&self, context: &mut UpdateContext<'_, 'gc>, value: Option<u32>) {
+        self.0.write(context.gc()).tab_index = value;
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
@@ -2327,6 +2345,14 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     fn is_focusable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
         // Even if this isn't selectable or editable, a script can focus on it manually.
         true
+    }
+
+    fn is_tab_enabled(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        self.get_avm1_boolean_property(context, "tabEnabled", true)
+    }
+
+    fn tab_index(&self) -> Option<i64> {
+        self.0.read().tab_index.map(|i| i as i64)
     }
 }
 
