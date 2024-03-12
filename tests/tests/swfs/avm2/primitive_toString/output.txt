@@ -1,0 +1,61 @@
+// String.prototype.toString()
+
+// Boolean.prototype.toString()
+false
+// Number.prototype.toString()
+0
+
+// value
+abc
+// Object.prototype.toString.call(value)
+[object String]
+// String.prototype.toString.call(value)
+abc
+// Boolean.prototype.toString.call(value)
+TypeError: Error #1004: Method Boolean.prototype.toString was invoked on an incompatible object.
+// Number.prototype.toString.call(value)
+TypeError: Error #1004: Method Number.prototype.toString was invoked on an incompatible object.
+
+// value
+true
+// Object.prototype.toString.call(value)
+[object Boolean]
+// String.prototype.toString.call(value)
+TypeError: Error #1004: Method String.prototype.toString was invoked on an incompatible object.
+// Boolean.prototype.toString.call(value)
+true
+// Number.prototype.toString.call(value)
+TypeError: Error #1004: Method Number.prototype.toString was invoked on an incompatible object.
+
+// value
+1.5
+// Object.prototype.toString.call(value)
+[object Number]
+// String.prototype.toString.call(value)
+TypeError: Error #1004: Method String.prototype.toString was invoked on an incompatible object.
+// Boolean.prototype.toString.call(value)
+TypeError: Error #1004: Method Boolean.prototype.toString was invoked on an incompatible object.
+// Number.prototype.toString.call(value)
+1.5
+
+// value
+null
+// Object.prototype.toString.call(value)
+[object global]
+// String.prototype.toString.call(value)
+TypeError: Error #1004: Method String.prototype.toString was invoked on an incompatible object.
+// Boolean.prototype.toString.call(value)
+TypeError: Error #1004: Method Boolean.prototype.toString was invoked on an incompatible object.
+// Number.prototype.toString.call(value)
+TypeError: Error #1004: Method Number.prototype.toString was invoked on an incompatible object.
+
+// value
+undefined
+// Object.prototype.toString.call(value)
+[object global]
+// String.prototype.toString.call(value)
+TypeError: Error #1004: Method String.prototype.toString was invoked on an incompatible object.
+// Boolean.prototype.toString.call(value)
+TypeError: Error #1004: Method Boolean.prototype.toString was invoked on an incompatible object.
+// Number.prototype.toString.call(value)
+TypeError: Error #1004: Method Number.prototype.toString was invoked on an incompatible object.
