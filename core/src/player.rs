@@ -1179,6 +1179,17 @@ impl Player {
                 self.needs_render = true;
             }
         }
+
+        if let PlayerEvent::KeyDown {
+            key_code: KeyCode::Tab,
+            ..
+        } = event
+        {
+            self.mutate_with_update_context(|context| {
+                let tracker = context.focus_tracker;
+                tracker.cycle(context);
+            });
+        }
     }
 
     /// Update dragged object, if any.

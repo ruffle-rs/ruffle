@@ -189,6 +189,10 @@ pub struct MovieClipData<'gc> {
 
     /// Attached audio (AVM1)
     attached_audio: Option<NetStream<'gc>>,
+
+    // TODO Consider moving this to InteractiveObject along with
+    //      TextField's and Button's tab indices after AVM2 analysis
+    tab_index: Option<i32>,
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -226,6 +230,7 @@ impl<'gc> MovieClip<'gc> {
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
                 attached_audio: None,
+                tab_index: None,
             },
         ))
     }
@@ -269,6 +274,7 @@ impl<'gc> MovieClip<'gc> {
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
                 attached_audio: None,
+                tab_index: None,
             },
         ))
     }
@@ -313,6 +319,7 @@ impl<'gc> MovieClip<'gc> {
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
                 attached_audio: None,
+                tab_index: None,
             },
         ))
     }
@@ -382,6 +389,7 @@ impl<'gc> MovieClip<'gc> {
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
                 attached_audio: None,
+                tab_index: None,
             },
         ));
 
@@ -2320,34 +2328,6 @@ impl<'gc> MovieClip<'gc> {
         Ok(())
     }
 
-    /// Retrieve a named property from the AVM1 object.
-    ///
-    /// This is required as some boolean properties in AVM1 can in fact hold any value.
-    fn get_avm1_boolean_property(
-        self,
-        context: &mut UpdateContext<'_, 'gc>,
-        name: &'static str,
-        default: bool,
-    ) -> bool {
-        if let Avm1Value::Object(object) = self.object() {
-            let mut activation = Avm1Activation::from_nothing(
-                context.reborrow(),
-                ActivationIdentifier::root("[AVM1 Boolean Property]"),
-                self.avm1_root(),
-            );
-            if let Ok(value) = object.get(name, &mut activation) {
-                match value {
-                    Avm1Value::Undefined => default,
-                    _ => value.as_bool(activation.swf_version()),
-                }
-            } else {
-                default
-            }
-        } else {
-            false
-        }
-    }
-
     fn enabled(self, context: &mut UpdateContext<'_, 'gc>) -> bool {
         if !self.movie().is_action_script_3() {
             self.get_avm1_boolean_property(context, "enabled", true)
@@ -2581,6 +2561,18 @@ impl<'gc> MovieClip<'gc> {
                 netstream.was_attached(context, self);
             }
         }
+    }
+
+    /// Get the value of `tabIndex` used in AS.
+    ///
+    /// Do not confuse it with `tab_index`, which returns the value used for ordering.
+    pub fn tab_index_value(&self) -> Option<i32> {
+        self.0.read().tab_index
+    }
+
+    /// Set the value of `tabIndex` used in AS.
+    pub fn set_tab_index_value(&self, context: &mut UpdateContext<'_, 'gc>, value: Option<i32>) {
+        self.0.write(context.gc()).tab_index = value;
     }
 }
 
@@ -3037,6 +3029,17 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     ) {
         self.0.write(context.gc_context).has_focus = focused;
         self.call_focus_handler(context, focused, other);
+    }
+
+    fn is_tab_enabled(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        // TODO The default value here is more complicated.
+        //      It will be true when there's at least one movie clip handler defined.
+        let default_value = false;
+        self.get_avm1_boolean_property(context, "tabEnabled", default_value)
+    }
+
+    fn tab_index(&self) -> Option<i64> {
+        self.0.read().tab_index.map(|i| i as i64)
     }
 }
 
