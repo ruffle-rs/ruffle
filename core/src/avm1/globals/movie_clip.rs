@@ -116,6 +116,9 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "transform" => property(mc_getter!(transform), mc_setter!(set_transform); DONT_ENUM | VERSION_8);
     "useHandCursor" => bool(true; DONT_ENUM);
     // NOTE: `focusEnabled` is not a built-in property of MovieClip.
+    // NOTE: `tabEnabled` is not a built-in property of MovieClip.
+    // NOTE: `tabIndex` is not enumerable in MovieClip, contrary to Button and TextField
+    "tabIndex" => property(mc_getter!(tab_index), mc_setter!(set_tab_index); DONT_ENUM | VERSION_6);
 };
 
 /// Implements `MovieClip`
@@ -1817,5 +1820,38 @@ fn set_filters<'gc>(
         }
     }
     this.set_filters(activation.context.gc_context, filters);
+    Ok(())
+}
+
+fn tab_index<'gc>(
+    this: MovieClip<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(index) = this.tab_index_value() {
+        Ok(index.into())
+    } else {
+        Ok(Value::Undefined)
+    }
+}
+
+fn set_tab_index<'gc>(
+    this: MovieClip<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    match value {
+        Value::Undefined | Value::Null => {
+            this.set_tab_index_value(&mut activation.context, None);
+        }
+        Value::Bool(_) | Value::Number(_) => {
+            // FIXME This coercion is not perfect, as it wraps
+            //       instead of falling back to MIN, as FP does
+            let i32_value = value.coerce_to_i32(activation)?;
+            this.set_tab_index_value(&mut activation.context, Some(i32_value));
+        }
+        _ => {
+            this.set_tab_index_value(&mut activation.context, Some(i32::MIN));
+        }
+    };
     Ok(())
 }

@@ -47,6 +47,8 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "scale9Grid" => property(button_getter!(scale_9_grid), button_setter!(set_scale_9_grid); DONT_DELETE | DONT_ENUM | VERSION_8);
     "filters" => property(button_getter!(filters), button_setter!(set_filters); DONT_DELETE | DONT_ENUM | VERSION_8);
     "cacheAsBitmap" => property(button_getter!(cache_as_bitmap), button_setter!(set_cache_as_bitmap); DONT_DELETE | DONT_ENUM | VERSION_8);
+    // NOTE: `tabEnabled` is not a built-in property of Button.
+    "tabIndex" => property(button_getter!(tab_index), button_setter!(set_tab_index); VERSION_6);
 };
 
 pub fn create_proto<'gc>(
@@ -170,6 +172,39 @@ fn set_scale_9_grid<'gc>(
         }
     } else {
         this.set_scaling_grid(activation.context.gc_context, Default::default());
+    };
+    Ok(())
+}
+
+fn tab_index<'gc>(
+    this: Avm1Button<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(index) = this.tab_index_value() {
+        Ok(index.into())
+    } else {
+        Ok(Value::Undefined)
+    }
+}
+
+fn set_tab_index<'gc>(
+    this: Avm1Button<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    match value {
+        Value::Undefined | Value::Null => {
+            this.set_tab_index_value(&mut activation.context, None);
+        }
+        Value::Bool(_) | Value::Number(_) => {
+            // FIXME This coercion is not perfect, as it wraps
+            //       instead of falling back to MIN, as FP does
+            let i32_value = value.coerce_to_i32(activation)?;
+            this.set_tab_index_value(&mut activation.context, Some(i32_value));
+        }
+        _ => {
+            this.set_tab_index_value(&mut activation.context, Some(i32::MIN));
+        }
     };
     Ok(())
 }
