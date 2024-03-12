@@ -992,21 +992,11 @@ impl Player {
                 _ => None,
             };
 
-            let mut key_press_handled = false;
-            if let Some(button_event) = button_event {
-                for level in context.stage.iter_render_list() {
-                    let state = if let Some(interactive) = level.as_interactive() {
-                        interactive.handle_clip_event(context, button_event)
-                    } else {
-                        ClipEventResult::NotHandled
-                    };
-
-                    if state == ClipEventResult::Handled {
-                        key_press_handled = true;
-                        break;
-                    }
-                }
-            }
+            let key_press_handled = if let Some(button_event) = button_event {
+                context.stage.handle_clip_event(context, button_event) == ClipEventResult::Handled
+            } else {
+                false
+            };
 
             if let PlayerEvent::KeyDown { key_code, key_char }
             | PlayerEvent::KeyUp { key_code, key_char } = event
