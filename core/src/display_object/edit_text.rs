@@ -2339,18 +2339,25 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         _context: &mut UpdateContext<'_, 'gc>,
         event: ClipEvent,
     ) -> ClipEventResult {
-        if event != ClipEvent::Press {
-            return ClipEventResult::NotHandled;
+        match event {
+            ClipEvent::Press | ClipEvent::MouseWheel { .. } => ClipEventResult::Handled,
+            _ => ClipEventResult::NotHandled,
         }
-
-        ClipEventResult::Handled
     }
 
     fn event_dispatch(
         self,
         context: &mut UpdateContext<'_, 'gc>,
-        _event: ClipEvent<'gc>,
+        event: ClipEvent<'gc>,
     ) -> ClipEventResult {
+        if let ClipEvent::MouseWheel { delta } = event {
+            if self.is_mouse_wheel_enabled() {
+                let new_scroll = self.scroll() as f64 - delta.lines();
+                self.set_scroll(new_scroll, context);
+            }
+            return ClipEventResult::Handled;
+        }
+
         if self.is_editable() || self.is_selectable() {
             let tracker = context.focus_tracker;
             tracker.set(Some(self.into()), context);
