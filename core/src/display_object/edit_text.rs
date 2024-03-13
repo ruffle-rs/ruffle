@@ -167,6 +167,9 @@ pub struct EditTextData<'gc> {
     /// Doesn't affect script-triggered modifications.
     max_chars: i32,
 
+    /// Indicates if the text is scrollable using the mouse wheel.
+    mouse_wheel_enabled: bool,
+
     /// Flags indicating the text field's settings.
     #[collect(require_static)]
     flags: EditTextFlag,
@@ -356,6 +359,7 @@ impl<'gc> EditText<'gc> {
                 line_data,
                 scroll: 1,
                 max_chars: swf_tag.max_length().unwrap_or_default() as i32,
+                mouse_wheel_enabled: true,
                 is_tlf: false,
                 restrict: EditTextRestrict::allow_all(),
             },
@@ -508,6 +512,14 @@ impl<'gc> EditText<'gc> {
             .write(context.gc_context)
             .flags
             .set(EditTextFlag::READ_ONLY, !is_editable);
+    }
+
+    pub fn is_mouse_wheel_enabled(self) -> bool {
+        self.0.read().mouse_wheel_enabled
+    }
+
+    pub fn set_mouse_wheel_enabled(self, is_enabled: bool, context: &mut UpdateContext<'_, 'gc>) {
+        self.0.write(context.gc_context).mouse_wheel_enabled = is_enabled;
     }
 
     pub fn is_multiline(self) -> bool {

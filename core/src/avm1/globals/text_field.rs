@@ -76,6 +76,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "maxhscroll" => property(tf_getter!(maxhscroll));
     "maxscroll" => property(tf_getter!(maxscroll));
     "maxChars" => property(tf_getter!(max_chars), tf_setter!(set_max_chars));
+    "mouseWheelEnabled" => property(tf_getter!(mouse_wheel_enabled), tf_setter!(set_mouse_wheel_enabled));
     "multiline" => property(tf_getter!(multiline), tf_setter!(set_multiline));
     "password" => property(tf_getter!(password), tf_setter!(set_password));
     "restrict" => property(tf_getter!(restrict), tf_setter!(set_restrict));
@@ -493,6 +494,23 @@ pub fn text_height<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let metrics = this.measure_text(&mut activation.context);
     Ok(round_down_to_pixel(metrics.1).to_pixels().into())
+}
+
+pub fn mouse_wheel_enabled<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.is_mouse_wheel_enabled().into())
+}
+
+pub fn set_mouse_wheel_enabled<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let is_enabled = value.as_bool(activation.swf_version());
+    this.set_mouse_wheel_enabled(is_enabled, &mut activation.context);
+    Ok(())
 }
 
 pub fn multiline<'gc>(
