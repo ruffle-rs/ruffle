@@ -30,7 +30,6 @@ slotmap = { workspace = true }
 winit = "0.29.15"
 webbrowser = "0.8.13"
 url = "2.5.0"
-arboard = { version = "3.3.2", features = ["wayland-data-control"] }
 dirs = "5.0"
 isahc = { version = "1.7.2", features = ["cookies"] }
 rfd = "0.14.0"

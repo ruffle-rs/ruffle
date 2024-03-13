@@ -1,7 +1,7 @@
 use crate::preferences::GlobalPreferences;
 use anyhow::Error;
-use arboard::Clipboard;
 use chrono::{DateTime, Utc};
+use egui_winit::clipboard::Clipboard;
 use fontdb::Family;
 use rfd::{
     AsyncFileDialog, FileHandle, MessageButtons, MessageDialog, MessageDialogResult, MessageLevel,
@@ -14,6 +14,7 @@ use ruffle_core::backend::ui::{
 use std::rc::Rc;
 use tracing::error;
 use url::Url;
+use winit::raw_window_handle::HasDisplayHandle;
 use winit::window::{Fullscreen, Window};
 
 pub struct DesktopFileDialogResult {
@@ -117,7 +118,7 @@ impl FileDialogResult for DesktopFileDialogResult {
 pub struct DesktopUiBackend {
     window: Rc<Window>,
     cursor_visible: bool,
-    clipboard: Option<Clipboard>,
+    clipboard: Clipboard,
     preferences: GlobalPreferences,
     preferred_cursor: MouseCursor,
     open_url_mode: OpenURLMode,
@@ -133,12 +134,19 @@ impl DesktopUiBackend {
         font_database: Rc<fontdb::Database>,
         preferences: GlobalPreferences,
     ) -> Result<Self, Error> {
+        // The window handle is only relevant to linux/wayland
+        // If it fails it'll fallback to x11 or wlr-data-control
+        let clipboard = Clipboard::new(
+            window
+                .clone()
+                .display_handle()
+                .ok()
+                .map(|handle| handle.as_raw()),
+        );
         Ok(Self {
             window,
             cursor_visible: true,
-            clipboard: Clipboard::new()
-                .inspect_err(|err| tracing::error!("Failed to initialize clipboard: {err}"))
-                .ok(),
+            clipboard,
             preferences,
             preferred_cursor: MouseCursor::Arrow,
             open_url_mode,
@@ -177,19 +185,11 @@ impl UiBackend for DesktopUiBackend {
     }
 
     fn clipboard_content(&mut self) -> String {
-        if let Some(ref mut clipboard) = self.clipboard {
-            clipboard.get_text().unwrap_or_default()
-        } else {
-            "".to_string()
-        }
+        self.clipboard.get().unwrap_or_default()
     }
 
     fn set_clipboard_content(&mut self, content: String) {
-        if let Some(ref mut clipboard) = self.clipboard {
-            if let Err(e) = clipboard.set_text(content) {
-                error!("Couldn't set clipboard contents: {:?}", e);
-            }
-        }
+        self.clipboard.set(content);
     }
 
     fn set_fullscreen(&mut self, is_full: bool) -> Result<(), FullscreenError> {
