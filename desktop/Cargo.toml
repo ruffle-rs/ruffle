@@ -27,7 +27,7 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing-appender = "0.2.3"
 slotmap = { workspace = true }
-winit = "0.29.14"
+winit = "0.29.15"
 webbrowser = "0.8.13"
 url = "2.5.0"
 arboard = { version = "3.3.2", features = ["wayland-data-control"] }
