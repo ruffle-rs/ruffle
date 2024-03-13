@@ -3,7 +3,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
-use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
@@ -249,21 +248,6 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         } else {
             Ok(Value::Undefined)
         }
-    }
-
-    // Implements the special `Object.prototype.toString` behavior for Vector.
-    fn to_string(&self, activation: &mut Activation<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        let inner_name = if let Some(class_object) = self.0.read().vector.value_type() {
-            class_object
-                .inner_class_definition()
-                .read()
-                .name()
-                .to_qualified_name(activation.gc())
-        } else {
-            AvmString::new_utf8(activation.gc(), "*")
-        };
-
-        Ok(AvmString::new_utf8(activation.gc(), format!("[object Vector.<{inner_name}>]")).into())
     }
 
     fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
