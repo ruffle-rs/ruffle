@@ -977,11 +977,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             .map(|c| c.read().name().local_name())
             .unwrap_or_else(|| "Object".into());
 
-        Ok(AvmString::new_utf8(
-            activation.context.gc_context,
-            format!("[object {class_name}]"),
-        )
-        .into())
+        Ok(AvmString::new_utf8(activation.gc(), format!("[object {class_name}]")).into())
     }
 
     /// Implement the result of calling `Object.prototype.toLocaleString` on this
