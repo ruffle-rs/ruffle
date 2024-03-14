@@ -191,9 +191,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.80"
+version = "1.0.81"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ad32ce52e4161730f7098c077cd2ed6229b5804ccf99e5366be1ab72a98b4e1"
+checksum = "0952808a6c2afd1aa8947271f3a60f1a6763c7b912d210184c5149b5cf147247"
 
 [[package]]
 name = "approx"
@@ -337,9 +337,9 @@ dependencies = [
 
 [[package]]
 name = "async-io"
-version = "2.3.1"
+version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f97ab0c5b00a7cdbe5a371b9a782ee7be1316095885c8a4ea1daf490eb0ef65"
+checksum = "dcccb0f599cfa2f8ace422d3555572f47424da5648a4382a9dd0310ff8210884"
 dependencies = [
  "async-lock 3.3.0",
  "cfg-if",
@@ -631,9 +631,9 @@ checksum = "8ea184aa71bb362a1157c896979544cc23974e08fd265f29ea96b59f0b4a555b"
 
 [[package]]
 name = "bytemuck"
-version = "1.14.3"
+version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2ef034f05691a48569bd920a96c81b9d91bbad1ab5ac7c4616c1f6ef36cb79f"
+checksum = "5d6d68c57235a3a081186990eca2867354726650f42f7516ca50c28d6281fd15"
 dependencies = [
  "bytemuck_derive",
 ]
@@ -1828,6 +1828,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "filetime"
+version = "0.2.23"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ee447700ac8aa0b2f2bd7bc4462ad686ba06baa6727ac149a2d6277f0d240fd"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "redox_syscall 0.4.1",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
 name = "flash-lso"
 version = "0.6.0"
 source = "git+https://github.com/ruffle-rs/rust-flash-lso?rev=2f770555ea49c6db49c57c1dd46c7cc686e8dacc#2f770555ea49c6db49c57c1dd46c7cc686e8dacc"
@@ -1909,9 +1921,9 @@ dependencies = [
 
 [[package]]
 name = "fluent-template-macros"
-version = "0.9.0"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c58fd7421bad2b89506827409317a3088b74d0d637202003f2e87efdc43ae8e"
+checksum = "5659bd41653516a2e46d76a58e67aa4885024c78fb5d00303f0673bbd53ad781"
 dependencies = [
  "flume",
  "ignore",
@@ -1924,9 +1936,9 @@ dependencies = [
 
 [[package]]
 name = "fluent-templates"
-version = "0.9.0"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc023356542b155925aa5e433806ddd33acb46f0218541f869b342676332cd79"
+checksum = "8f755e319f6f8f836b94b28c6094c414d29a17cee76e24374c7cd61f7696b3f6"
 dependencies = [
  "arc-swap",
  "fluent",
@@ -3875,9 +3887,9 @@ checksum = "dc375e1527247fe1a97d8b7156678dfe7c1af2fc075c9a4db3690ecd2a148068"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.78"
+version = "1.0.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2422ad645d89c99f8f3e6b88a9fdeca7fabeac836b1002371c4367c8f984aae"
+checksum = "e835ff2298f5721608eb1a980ecaee1aef2c132bf95ecc026a11b7bf3c01c02e"
 dependencies = [
  "unicode-ident",
 ]
@@ -4247,7 +4259,7 @@ dependencies = [
  "slotmap",
  "sys-locale",
  "tokio",
- "toml_edit 0.22.6",
+ "toml_edit 0.22.7",
  "tracing",
  "tracing-appender",
  "tracing-subscriber",
@@ -5273,14 +5285,14 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "0.8.10"
+version = "0.8.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a9aad4a3066010876e8dcf5a8a06e70a558751117a145c6ce2b82c2e2054290"
+checksum = "af06656561d28735e9c1cd63dfd57132c8155426aa6af24f36a00a351f88c48e"
 dependencies = [
  "serde",
  "serde_spanned",
  "toml_datetime",
- "toml_edit 0.22.6",
+ "toml_edit 0.22.7",
 ]
 
 [[package]]
@@ -5305,9 +5317,9 @@ dependencies = [
 
 [[package]]
 name = "toml_edit"
-version = "0.22.6"
+version = "0.22.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c1b5fd4128cc8d3e0cb74d4ed9a9cc7c7284becd4df68f5f940e1ad123606f6"
+checksum = "18769cd1cec395d70860ceb4d932812a0b4d06b1a4bb336745a4d21b9496e992"
 dependencies = [
  "indexmap",
  "serde",
@@ -5704,9 +5716,12 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "vfs"
-version = "0.11.0"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e9ee7773dfb8ff183fba701ffdf4c74c50a2aecafad43b756ba7d0f5e307c85"
+checksum = "654cd097e182a71dbf899178e6b5662c2157dd0b8afd5975de18008f6fc173d1"
+dependencies = [
+ "filetime",
+]
 
 [[package]]
 name = "vswhom"
