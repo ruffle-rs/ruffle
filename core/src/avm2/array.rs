@@ -25,7 +25,7 @@ struct ArrayStorageIterator<'a, 'gc> {
     index_back: usize,
 }
 
-struct ArrayStorageMutableIterator<'a, 'gc> {
+pub struct ArrayStorageMutableIterator<'a, 'gc> {
     storage: &'a mut ArrayStorage<'gc>,
     index: usize,
     index_back: usize,
@@ -171,20 +171,20 @@ impl<'a, 'gc> Drop for ArrayStorageDrainIterator<'a, 'gc> {
             return;
         }
         match self.iter.storage {
-            ArrayStorage::Dense(storage, mut length) => {
+            ArrayStorage::Dense(storage, length) => {
                 let mut storage_clone = storage.clone();
                 storage_clone.drain(self.start..self.end);
                 *self.iter.storage =
-                    ArrayStorage::Dense(storage_clone, length - (self.end - self.start));
+                    ArrayStorage::Dense(storage_clone, *length - (self.end - self.start));
             }
-            ArrayStorage::Sparse(storage, mut length) => {
+            ArrayStorage::Sparse(storage, length) => {
                 let storage_clone = storage.clone();
                 let storage_range = storage_clone.range(self.start..self.end);
                 for (index, _) in storage_range {
                     storage.remove(index);
                 }
                 *self.iter.storage =
-                    ArrayStorage::Sparse(storage_clone, length - (self.end - self.start));
+                    ArrayStorage::Sparse(storage_clone, *length - (self.end - self.start));
             }
         }
     }
@@ -706,7 +706,7 @@ impl<'gc> ArrayStorage<'gc> {
         ArrayStorageMutableIterator {
             storage: self,
             index: 0,
-            index_back: index_back,
+            index_back,
         }
     }
 
@@ -719,7 +719,7 @@ impl<'gc> ArrayStorage<'gc> {
         ArrayStorageIterator {
             storage: self,
             index: 0,
-            index_back: index_back,
+            index_back,
         }
     }
 
@@ -781,18 +781,6 @@ impl<'gc> ArrayStorage<'gc> {
         iter
     }
 
-    fn drain(&mut self, start: usize, end: usize) -> ArrayStorageDrainIterator<'_, 'gc> {
-        //slice and clone
-        let iter = self.slice(start, end);
-
-        ArrayStorageDrainIterator {
-            iter,
-            start,
-            end,
-            has_to_drain: true,
-        }
-    }
-
     fn drain_without_drop(
         &mut self,
         start: usize,
@@ -829,7 +817,7 @@ impl<'gc> ArrayStorage<'gc> {
             std::ops::Bound::Excluded(&end) => end,
             std::ops::Bound::Unbounded => match self {
                 ArrayStorage::Dense(storage, ..) => storage.len(),
-                ArrayStorage::Sparse(storage, length) => *length,
+                ArrayStorage::Sparse(_storage, length) => *length,
             },
         };
         let drain = self.drain_without_drop(start, end);
