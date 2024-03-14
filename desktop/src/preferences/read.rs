@@ -1,6 +1,6 @@
 use crate::preferences::SavedGlobalPreferences;
 use std::str::FromStr;
-use toml_edit::{Document, Item};
+use toml_edit::{DocumentMut, Item};
 
 #[derive(Debug, PartialEq)]
 pub struct ParseResult {
@@ -23,16 +23,16 @@ impl ParseResult {
 /// Default values are used wherever an unknown or invalid value is found;
 /// this is to support the case of, for example, a later version having different supported
 /// backends than an older version.
-pub fn read_preferences(input: &str) -> (ParseResult, Document) {
+pub fn read_preferences(input: &str) -> (ParseResult, DocumentMut) {
     let mut result = ParseResult {
         result: Default::default(),
         warnings: vec![],
     };
-    let document = match input.parse::<Document>() {
+    let document = match input.parse::<DocumentMut>() {
         Ok(document) => document,
         Err(e) => {
             result.add_warning(format!("Invalid TOML: {e}"));
-            return (result, Document::default());
+            return (result, DocumentMut::default());
         }
     };
 

@@ -10,7 +10,7 @@ use ruffle_core::backend::ui::US_ENGLISH;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::sync::{Arc, Mutex};
 use sys_locale::get_locale;
-use toml_edit::Document;
+use toml_edit::DocumentMut;
 use unic_langid::LanguageIdentifier;
 
 /// The preferences that relate to the application itself.
@@ -154,7 +154,7 @@ impl GlobalPreferences {
 #[derive(Default)]
 struct PreferencesAndDocument {
     /// The original toml document
-    toml_document: Document,
+    toml_document: DocumentMut,
 
     /// The actual preferences stored within the toml document, as this version of Ruffle understands them.
     values: SavedGlobalPreferences,
