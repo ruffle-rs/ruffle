@@ -953,12 +953,27 @@ impl<'gc> EditText<'gc> {
     /// Render a layout box, plus its children.
     fn render_layout_box(self, context: &mut RenderContext<'_, 'gc>, lbox: &LayoutBox<'gc>) {
         let origin = lbox.bounds().origin();
+
+        let edit_text = self.0.read();
+
+        // If text's top is under the textbox's bottom, skip drawing.
+        // TODO: FP actually skips drawing a line as soon as its bottom is under the textbox;
+        //   Current logic is conservative for safety (and even of this I'm not 100% sure).
+        // TODO: we should also cull text that's above the textbox
+        //   (instead of culling, this can be implemented as having the loop start from `scrollY`th line)
+        //   (maybe we could cull-before-render all glyphs, thus removing the need for masking?)
+        // TODO: also cull text that's simply out of screen, just like we cull whole DOs in render_self().
+        if origin.y() + Twips::from_pixels(Self::INTERNAL_PADDING)
+            - edit_text.vertical_scroll_offset()
+            > edit_text.bounds.y_max
+        {
+            return;
+        }
+
         context.transform_stack.push(&Transform {
             matrix: Matrix::translate(origin.x(), origin.y()),
             ..Default::default()
         });
-
-        let edit_text = self.0.read();
 
         let visible_selection = if edit_text.flags.contains(EditTextFlag::HAS_FOCUS) {
             edit_text.selection
