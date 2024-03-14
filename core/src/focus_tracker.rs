@@ -100,6 +100,8 @@ impl<'gc> FocusTracker<'gc> {
             tab_order.first()
         };
 
-        self.set(next.copied(), context);
+        if next.is_some() {
+            self.set(next.copied(), context);
+        }
     }
 }

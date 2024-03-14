@@ -119,6 +119,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     // NOTE: `tabEnabled` is not a built-in property of MovieClip.
     // NOTE: `tabIndex` is not enumerable in MovieClip, contrary to Button and TextField
     "tabIndex" => property(mc_getter!(tab_index), mc_setter!(set_tab_index); DONT_ENUM | VERSION_6);
+    // NOTE: `tabChildren` is not a built-in property of MovieClip.
 };
 
 /// Implements `MovieClip`
