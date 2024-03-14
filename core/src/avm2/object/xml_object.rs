@@ -115,6 +115,37 @@ impl<'gc> XmlObject<'gc> {
         )
     }
 
+    pub fn elements(
+        &self,
+        name: &Multiname<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> XmlListObject<'gc> {
+        let children = if let E4XNodeKind::Element { children, .. } = &*self.node().kind() {
+            children
+                .iter()
+                .filter(|node| node.is_element() && node.matches_name(name))
+                .map(|node| E4XOrXml::E4X(*node))
+                .collect()
+        } else {
+            Vec::new()
+        };
+
+        let list = XmlListObject::new_with_children(
+            activation,
+            children,
+            Some(XmlOrXmlListObject::Xml(*self)),
+            // NOTE: Spec says to set target property here, but avmplus doesn't, so we do the same.
+            None,
+        );
+
+        if list.length() > 0 {
+            // NOTE: Since avmplus uses appendNode to build the list here, we need to set target dirty flag.
+            list.set_dirty_flag(activation.gc());
+        }
+
+        list
+    }
+
     pub fn length(&self) -> Option<usize> {
         self.node().length()
     }
