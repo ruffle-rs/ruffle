@@ -363,11 +363,7 @@ pub fn elements<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let xml = this.as_xml_object().unwrap();
-    let multiname = if args[0] == Value::Undefined {
-        Multiname::any(activation.context.gc_context)
-    } else {
-        name_to_multiname(activation, &args[0], false)?
-    };
+    let multiname = name_to_multiname(activation, &args[0], false)?;
 
     let list = xml.elements(&multiname, activation);
     Ok(list.into())
