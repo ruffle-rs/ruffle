@@ -70,7 +70,7 @@ package {
         AS3 native function children():XMLList;
         AS3 native function copy():XML;
         AS3 native function parent():*;
-        AS3 native function elements(name:*):XMLList;
+        AS3 native function elements(name:* = "*"):XMLList;
         AS3 native function attributes():XMLList;
         AS3 native function attribute(name:*):XMLList;
         AS3 native function nodeKind():String;
