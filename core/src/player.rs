@@ -2156,6 +2156,7 @@ pub struct PlayerBuilder {
     fs_command_provider: Box<dyn FsCommandProvider>,
     #[cfg(feature = "known_stubs")]
     stub_report_output: Option<std::path::PathBuf>,
+    avm2_optimizer_enabled: bool,
 }
 
 impl PlayerBuilder {
@@ -2207,6 +2208,7 @@ impl PlayerBuilder {
             fs_command_provider: Box::new(NullFsCommandProvider),
             #[cfg(feature = "known_stubs")]
             stub_report_output: None,
+            avm2_optimizer_enabled: true,
         }
     }
 
@@ -2409,6 +2411,11 @@ impl PlayerBuilder {
         self
     }
 
+    pub fn with_avm2_optimizer_enabled(mut self, value: bool) -> Self {
+        self.avm2_optimizer_enabled = value;
+        self
+    }
+
     fn create_gc_root<'gc>(
         gc_context: &'gc gc_arena::Mutation<'gc>,
         player_version: u8,
@@ -2591,7 +2598,11 @@ impl PlayerBuilder {
         }
 
         player_lock.mutate_with_update_context(|context| {
+            context
+                .avm2
+                .set_optimizer_enabled(self.avm2_optimizer_enabled);
             Avm2::load_player_globals(context).expect("Unable to load AVM2 globals");
+
             let stage = context.stage;
             stage.set_align(context, self.align);
             stage.set_forced_align(context, self.forced_align);

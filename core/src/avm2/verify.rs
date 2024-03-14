@@ -532,12 +532,14 @@ pub fn verify_method<'gc>(
         verified_code.push(resolved_op);
     }
 
-    crate::avm2::optimize::optimize(
-        activation,
-        method,
-        &mut verified_code,
-        potential_jump_targets,
-    );
+    if activation.avm2().optimizer_enabled() {
+        crate::avm2::optimize::optimize(
+            activation,
+            method,
+            &mut verified_code,
+            potential_jump_targets,
+        );
+    }
 
     Ok(VerifiedMethodInfo {
         parsed_code: verified_code,
