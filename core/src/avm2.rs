@@ -188,6 +188,8 @@ pub struct Avm2<'gc> {
 
     #[cfg(feature = "avm_debug")]
     pub debug_output: bool,
+
+    pub optimizer_enabled: bool,
 }
 
 impl<'gc> Avm2<'gc> {
@@ -257,6 +259,8 @@ impl<'gc> Avm2<'gc> {
 
             #[cfg(feature = "avm_debug")]
             debug_output: false,
+
+            optimizer_enabled: true,
         }
     }
 
@@ -727,6 +731,14 @@ impl<'gc> Avm2<'gc> {
     /// https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/AvmCore.cpp#L5809C25-L5809C25
     pub fn find_public_namespace(&self) -> Namespace<'gc> {
         self.public_namespaces[self.root_api_version as usize]
+    }
+
+    pub fn optimizer_enabled(&self) -> bool {
+        self.optimizer_enabled
+    }
+
+    pub fn set_optimizer_enabled(&mut self, value: bool) {
+        self.optimizer_enabled = value;
     }
 }
 
