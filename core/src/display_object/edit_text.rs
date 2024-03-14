@@ -1800,6 +1800,18 @@ impl<'gc> EditText<'gc> {
         }
     }
 
+    fn on_scroller(&self, activation: &mut Avm1Activation<'_, 'gc>) {
+        if let Avm1Value::Object(object) = self.object() {
+            let _ = object.call_method(
+                "broadcastMessage".into(),
+                &["onScroller".into(), object.into()],
+                activation,
+                ExecutionReason::Special,
+            );
+        }
+        //TODO: Implement this for Avm2
+    }
+
     /// Construct the text field's AVM1 representation.
     fn construct_as_avm1_object(&self, context: &mut UpdateContext<'_, 'gc>, run_frame: bool) {
         let mut text = self.0.write(context.gc_context);
@@ -2076,9 +2088,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             context
                 .avm1
                 .add_to_exec_list(context.gc_context, (*self).into());
-        }
-
-        if !self.movie().is_action_script_3() {
             self.construct_as_avm1_object(context, run_frame);
         }
     }
@@ -2354,6 +2363,13 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
             if self.is_mouse_wheel_enabled() {
                 let new_scroll = self.scroll() as f64 - delta.lines();
                 self.set_scroll(new_scroll, context);
+
+                let mut activation = Avm1Activation::from_nothing(
+                    context.reborrow(),
+                    ActivationIdentifier::root("[On Scroller]"),
+                    self.into(),
+                );
+                self.on_scroller(&mut activation);
             }
             return ClipEventResult::Handled;
         }
