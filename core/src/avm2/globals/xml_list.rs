@@ -93,6 +93,40 @@ pub fn call_handler<'gc>(
         .into())
 }
 
+// ECMA-357 13.5.4.11 XMLList.prototype.elements ([name])
+pub fn elements<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_xml_list_object().unwrap();
+    // 2. Let name = ToXMLName(name)
+    let multiname = name_to_multiname(activation, &args[0], false)?;
+
+    // 3. Let m = a new XMLList with m.[[TargetObject]] = list and m.[[TargetProperty]] = name
+    let list = XmlListObject::new(activation, Some(this.into()), Some(multiname.clone()));
+
+    // 4. For i = 0 to list.[[Length]]-1
+    let mut children = this.children_mut(activation.gc());
+    for child in &mut *children {
+        // 4.a. If list[i].[[Class]] == "element"
+        if child.node().is_element() {
+            // 4.a.i. Let r = list[i].elements(name)
+            let r = child
+                .get_or_create_xml(activation)
+                .elements(&multiname, activation);
+
+            // 4.a.ii. If r.[[Length]] > 0, call the [[Append]] method of m with argument r
+            if r.length() > 0 {
+                list.append(r.into(), activation.gc());
+            }
+        }
+    }
+
+    // 5. Return m
+    Ok(list.into())
+}
+
 pub fn has_complex_content<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
