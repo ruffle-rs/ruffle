@@ -85,10 +85,7 @@ impl<'a, 'gc> DoubleEndedIterator for ArrayStorageIterator<'a, 'gc> {
 
 impl<'a, 'gc> ExactSizeIterator for ArrayStorageIterator<'a, 'gc> {
     fn len(&self) -> usize {
-        match &self.storage {
-            ArrayStorage::Dense(_, _) => self.index_back - self.index,
-            ArrayStorage::Sparse(_, _) => self.index_back - self.index,
-        }
+        self.index_back - self.index
     }
 }
 
