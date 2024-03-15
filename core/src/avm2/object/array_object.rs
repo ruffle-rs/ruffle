@@ -11,7 +11,6 @@ use crate::string::AvmString;
 use core::fmt;
 use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use std::cell::{Ref, RefMut};
-use std::cmp::max;
 
 /// A class instance allocator that allocates array objects.
 pub fn array_allocator<'gc>(
@@ -212,7 +211,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             return Ok(Some(index as u32));
         }
 
-        last_index = max(last_index, array_length);
+        last_index = std::cmp::max(last_index, array_length);
 
         drop(read);
 
