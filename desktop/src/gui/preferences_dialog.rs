@@ -1,4 +1,5 @@
 use crate::gui::{available_languages, optional_text, text};
+use crate::log::FilenamePattern;
 use crate::preferences::GlobalPreferences;
 use cpal::traits::{DeviceTrait, HostTrait};
 use egui::{Align2, Button, ComboBox, Grid, Ui, Widget, Window};
@@ -25,6 +26,9 @@ pub struct PreferencesDialog {
     output_device: Option<String>,
     available_output_devices: Vec<String>,
     output_device_changed: bool,
+
+    log_filename_pattern: FilenamePattern,
+    log_filename_pattern_changed: bool,
 }
 
 impl PreferencesDialog {
@@ -63,6 +67,9 @@ impl PreferencesDialog {
             available_output_devices,
             output_device_changed: false,
 
+            log_filename_pattern: preferences.log_filename_pattern(),
+            log_filename_pattern_changed: false,
+
             preferences,
         }
     }
@@ -88,6 +95,8 @@ impl PreferencesDialog {
                             self.show_language_preferences(locale, ui);
 
                             self.show_audio_preferences(locale, ui);
+
+                            self.show_log_preferences(locale, ui);
                         });
 
                     if self.restart_required() {
@@ -115,6 +124,7 @@ impl PreferencesDialog {
         self.graphics_backend != self.preferences.graphics_backends()
             || self.power_preference != self.preferences.graphics_power_preference()
             || self.output_device != self.preferences.output_device_name()
+            || self.log_filename_pattern != self.preferences.log_filename_pattern()
     }
 
     fn show_graphics_preferences(
@@ -237,6 +247,30 @@ impl PreferencesDialog {
         ui.end_row();
     }
 
+    fn show_log_preferences(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
+        ui.label(text(locale, "log-filename-pattern"));
+
+        let previous = self.log_filename_pattern;
+        ComboBox::from_id_source("log-filename-pattern")
+            .selected_text(filename_pattern_name(locale, self.log_filename_pattern))
+            .show_ui(ui, |ui| {
+                ui.selectable_value(
+                    &mut self.log_filename_pattern,
+                    FilenamePattern::SingleFile,
+                    filename_pattern_name(locale, FilenamePattern::SingleFile),
+                );
+                ui.selectable_value(
+                    &mut self.log_filename_pattern,
+                    FilenamePattern::WithTimestamp,
+                    filename_pattern_name(locale, FilenamePattern::WithTimestamp),
+                );
+            });
+        if self.log_filename_pattern != previous {
+            self.log_filename_pattern_changed = true;
+        }
+        ui.end_row();
+    }
+
     fn save(&mut self) {
         if let Err(e) = self.preferences.write_preferences(|preferences| {
             if self.graphics_backend_changed {
@@ -251,6 +285,9 @@ impl PreferencesDialog {
             if self.output_device_changed {
                 preferences.set_output_device(self.output_device.clone());
                 // [NA] TODO: Inform the running player that the device changed
+            }
+            if self.log_filename_pattern_changed {
+                preferences.set_log_filename_pattern(self.log_filename_pattern);
             }
         }) {
             // [NA] TODO: Better error handling... everywhere in desktop, really
@@ -273,6 +310,13 @@ fn graphics_power_name(locale: &LanguageIdentifier, power_preference: PowerPrefe
     match power_preference {
         PowerPreference::Low => text(locale, "graphics-power-low"),
         PowerPreference::High => text(locale, "graphics-power-high"),
+    }
+}
+
+fn filename_pattern_name(locale: &LanguageIdentifier, pattern: FilenamePattern) -> Cow<str> {
+    match pattern {
+        FilenamePattern::SingleFile => text(locale, "log-filename-pattern-single-file"),
+        FilenamePattern::WithTimestamp => text(locale, "log-filename-pattern-with-timestamp"),
     }
 }
 

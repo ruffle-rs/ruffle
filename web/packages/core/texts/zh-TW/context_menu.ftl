@@ -1,6 +1,6 @@
 context-menu-download-swf = 下載SWF檔案
 context-menu-copy-debug-info = 複製除錯資訊
-context-menu-open-save-manager = 打開存檔管理器
+context-menu-open-save-manager = 開啟存檔管理器
 context-menu-about-ruffle =
     { $flavor ->
         [extension] 關於Ruffle擴充功能 ({ $version })

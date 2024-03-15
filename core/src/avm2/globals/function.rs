@@ -78,6 +78,30 @@ pub fn class_init<'gc>(
         .into(),
         activation,
     )?;
+    function_proto.set_string_property_local(
+        "toString",
+        FunctionObject::from_method(
+            activation,
+            Method::from_builtin(to_string, "toString", activation.context.gc_context),
+            scope,
+            None,
+            Some(this_class),
+        )
+        .into(),
+        activation,
+    )?;
+    function_proto.set_string_property_local(
+        "toLocaleString",
+        FunctionObject::from_method(
+            activation,
+            Method::from_builtin(to_string, "toLocaleString", activation.context.gc_context),
+            scope,
+            None,
+            Some(this_class),
+        )
+        .into(),
+        activation,
+    )?;
     function_proto.set_local_property_is_enumerable(
         activation.context.gc_context,
         "call".into(),
@@ -86,6 +110,16 @@ pub fn class_init<'gc>(
     function_proto.set_local_property_is_enumerable(
         activation.context.gc_context,
         "apply".into(),
+        false,
+    );
+    function_proto.set_local_property_is_enumerable(
+        activation.context.gc_context,
+        "toString".into(),
+        false,
+    );
+    function_proto.set_local_property_is_enumerable(
+        activation.context.gc_context,
+        "toLocaleString".into(),
         false,
     );
 
@@ -135,6 +169,15 @@ fn apply<'gc>(
     };
 
     func.call(this, &resolved_args, activation)
+}
+
+/// Implements `Function.prototype.toString` and `Function.prototype.toLocaleString`
+fn to_string<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok("function Function() {}".into())
 }
 
 fn length<'gc>(

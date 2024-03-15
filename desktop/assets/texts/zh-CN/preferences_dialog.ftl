@@ -8,3 +8,6 @@ graphics-power-high = 高（例如，独立显卡）
 language = 语言
 audio-output-device = 音频输出设备
 audio-output-device-default = 系统默认
+log-filename-pattern = 日志文件名
+log-filename-pattern-single-file = 单一文件 (ruffle.log)
+log-filename-pattern-with-timestamp = 带时间戳

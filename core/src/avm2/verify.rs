@@ -1,11 +1,16 @@
+use crate::avm2::class::Class;
 use crate::avm2::error::{
-    make_error_1021, make_error_1025, make_error_1032, make_error_1054, make_error_1107,
-    verify_error,
+    make_error_1014, make_error_1021, make_error_1025, make_error_1032, make_error_1054,
+    make_error_1107, verify_error,
 };
 use crate::avm2::method::BytecodeMethod;
+use crate::avm2::multiname::Multiname;
 use crate::avm2::op::Op;
 use crate::avm2::script::TranslationUnit;
-use crate::avm2::{Activation, Error};
+use crate::avm2::{Activation, Error, QName};
+use crate::string::AvmAtom;
+
+use gc_arena::{Collect, Gc, GcCell};
 use std::collections::{HashMap, HashSet};
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
@@ -13,18 +18,23 @@ use swf::avm2::types::{
 };
 use swf::error::Error as AbcReadError;
 
-pub struct VerifiedMethodInfo {
-    pub parsed_code: Vec<Op>,
-    pub exceptions: Vec<Exception>,
+#[derive(Collect)]
+#[collect(no_drop)]
+pub struct VerifiedMethodInfo<'gc> {
+    pub parsed_code: Vec<Op<'gc>>,
+
+    pub exceptions: Vec<Exception<'gc>>,
 }
 
-pub struct Exception {
+#[derive(Collect)]
+#[collect(no_drop)]
+pub struct Exception<'gc> {
     pub from_offset: u32,
     pub to_offset: u32,
     pub target_offset: u32,
 
-    pub variable_name: Index<AbcMultiname>,
-    pub type_name: Index<AbcMultiname>,
+    pub variable_name: Option<QName<'gc>>,
+    pub target_class: Option<GcCell<'gc, Class<'gc>>>,
 }
 
 #[derive(Clone, Debug)]
@@ -38,7 +48,7 @@ enum ByteInfo {
 pub fn verify_method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: &BytecodeMethod<'gc>,
-) -> Result<VerifiedMethodInfo, Error<'gc>> {
+) -> Result<VerifiedMethodInfo<'gc>, Error<'gc>> {
     let body = method
         .body()
         .expect("Cannot verify non-native method without body!");
@@ -239,7 +249,7 @@ pub fn verify_method<'gc>(
 
                 // Misc opcode verification
                 AbcOp::CallMethod { index, .. } => {
-                    return Err(Error::AvmError(if index.as_u30() == 0 {
+                    return Err(Error::AvmError(if index == 0 {
                         verify_error(activation, "Error #1072: Disp_id 0 is illegal.", 1072)?
                     } else {
                         verify_error(
@@ -264,7 +274,7 @@ pub fn verify_method<'gc>(
                     }
                 }
 
-                AbcOp::GetLex { index } => {
+                AbcOp::GetLex { index } | AbcOp::FindDef { index } => {
                     let multiname = method
                         .translation_unit()
                         .pool_maybe_uninitialized_multiname(index, &mut activation.context)?;
@@ -281,6 +291,7 @@ pub fn verify_method<'gc>(
                 AbcOp::AsType {
                     type_name: name_index,
                 }
+                | AbcOp::IsType { index: name_index }
                 | AbcOp::Coerce { index: name_index } => {
                     let multiname = method
                         .translation_unit()
@@ -288,27 +299,16 @@ pub fn verify_method<'gc>(
 
                     if multiname.has_lazy_component() {
                         // This matches FP's error message
-                        return Err(Error::AvmError(verify_error(
-                            activation,
-                            "Error #1014: Class [] could not be found.",
-                            1014,
-                        )?));
+                        return Err(make_error_1014(activation, "[]".into()));
                     }
 
                     activation
                         .domain()
                         .get_class(&multiname, activation.context.gc_context)
                         .ok_or_else(|| {
-                            Error::AvmError(
-                                verify_error(
-                                    activation,
-                                    &format!(
-                                        "Error #1014: Class {} could not be found.",
-                                        multiname.to_qualified_name(activation.context.gc_context)
-                                    ),
-                                    1014,
-                                )
-                                .expect("Error should construct"),
+                            make_error_1014(
+                                activation,
+                                multiname.to_qualified_name(activation.context.gc_context),
                             )
                         })?;
                 }
@@ -399,12 +399,69 @@ pub fn verify_method<'gc>(
             return Err(make_error_1054(activation));
         }
 
+        let target_class = if exception.type_name.0 == 0 {
+            None
+        } else {
+            let pooled_type_name = method
+                .translation_unit()
+                .pool_maybe_uninitialized_multiname(exception.type_name, &mut activation.context)?;
+
+            if pooled_type_name.has_lazy_component() {
+                // This matches FP's error message
+                return Err(make_error_1014(activation, "[]".into()));
+            }
+
+            let resolved_type = activation
+                .domain()
+                .get_class(&pooled_type_name, activation.context.gc_context)
+                .ok_or_else(|| {
+                    make_error_1014(
+                        activation,
+                        pooled_type_name.to_qualified_name(activation.context.gc_context),
+                    )
+                })?;
+
+            Some(resolved_type)
+        };
+
+        let variable_name = if exception.variable_name.0 == 0 {
+            None
+        } else {
+            let pooled_variable_name = method
+                .translation_unit()
+                .pool_maybe_uninitialized_multiname(
+                    exception.variable_name,
+                    &mut activation.context,
+                )?;
+
+            // FIXME: avmplus also seems to check the namespace(s)?
+            if pooled_variable_name.has_lazy_component()
+                || pooled_variable_name.is_attribute()
+                || pooled_variable_name.is_any_name()
+            {
+                // This matches FP's error message
+                return Err(make_error_1107(activation));
+            }
+
+            let namespaces = pooled_variable_name.namespace_set();
+
+            if namespaces.is_empty() {
+                // NOTE: avmplus segfaults here
+                panic!("Should have at least one namespace for QName in exception variable name");
+            }
+
+            let name = pooled_variable_name.local_name().expect("Just checked");
+
+            // avmplus uses the first namespace, regardless of how many namespaces there are.
+            Some(QName::new(namespaces[0], name))
+        };
+
         new_exceptions.push(Exception {
             from_offset: new_from_offset,
             to_offset: new_to_offset,
             target_offset: new_target_offset as u32,
-            variable_name: exception.variable_name,
-            type_name: exception.type_name,
+            variable_name,
+            target_class,
         });
     }
 
@@ -586,11 +643,35 @@ fn pool_double<'gc>(
         .ok_or_else(|| make_error_1032(activation, index.0))
 }
 
+fn pool_multiname<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    translation_unit: TranslationUnit<'gc>,
+    index: Index<AbcMultiname>,
+) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
+    if index.0 == 0 {
+        return Err(make_error_1032(activation, 0));
+    }
+
+    translation_unit.pool_maybe_uninitialized_multiname(index, &mut activation.context)
+}
+
+fn pool_string<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    translation_unit: TranslationUnit<'gc>,
+    index: Index<String>,
+) -> Result<AvmAtom<'gc>, Error<'gc>> {
+    if index.0 == 0 {
+        return Err(make_error_1032(activation, 0));
+    }
+
+    translation_unit.pool_string(index.0, &mut activation.borrow_gc())
+}
+
 fn resolve_op<'gc>(
     activation: &mut Activation<'_, 'gc>,
     translation_unit: TranslationUnit<'gc>,
     op: AbcOp,
-) -> Result<Op, Error<'gc>> {
+) -> Result<Op<'gc>, Error<'gc>> {
     Ok(match op {
         AbcOp::PushByte { value } => Op::PushByte { value: value as i8 },
         AbcOp::PushDouble { value } => {
@@ -608,7 +689,11 @@ fn resolve_op<'gc>(
         AbcOp::PushNaN => Op::PushNaN,
         AbcOp::PushNull => Op::PushNull,
         AbcOp::PushShort { value } => Op::PushShort { value },
-        AbcOp::PushString { value } => Op::PushString { value },
+        AbcOp::PushString { value } => {
+            let string = pool_string(activation, translation_unit, value)?;
+
+            Op::PushString { string }
+        }
         AbcOp::PushTrue => Op::PushTrue,
         AbcOp::PushUint { value } => {
             let value = pool_uint(activation, translation_unit, value)?;
@@ -623,18 +708,48 @@ fn resolve_op<'gc>(
         AbcOp::Kill { index } => Op::Kill { index },
         AbcOp::Call { num_args } => Op::Call { num_args },
         AbcOp::CallMethod { index, num_args } => Op::CallMethod { index, num_args },
-        AbcOp::CallProperty { index, num_args } => Op::CallProperty { index, num_args },
+        AbcOp::CallProperty { index, num_args } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::CallProperty {
+                multiname,
+                num_args,
+            }
+        }
         AbcOp::CallPropLex { index, num_args } => Op::CallPropLex { index, num_args },
-        AbcOp::CallPropVoid { index, num_args } => Op::CallPropVoid { index, num_args },
+        AbcOp::CallPropVoid { index, num_args } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::CallPropVoid {
+                multiname,
+                num_args,
+            }
+        }
         AbcOp::CallStatic { index, num_args } => Op::CallStatic { index, num_args },
         AbcOp::CallSuper { index, num_args } => Op::CallSuper { index, num_args },
         AbcOp::CallSuperVoid { index, num_args } => Op::CallSuperVoid { index, num_args },
         AbcOp::ReturnValue => Op::ReturnValue,
         AbcOp::ReturnVoid => Op::ReturnVoid,
-        AbcOp::GetProperty { index } => Op::GetProperty { index },
-        AbcOp::SetProperty { index } => Op::SetProperty { index },
-        AbcOp::InitProperty { index } => Op::InitProperty { index },
-        AbcOp::DeleteProperty { index } => Op::DeleteProperty { index },
+        AbcOp::GetProperty { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::GetProperty { multiname }
+        }
+        AbcOp::SetProperty { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::SetProperty { multiname }
+        }
+        AbcOp::InitProperty { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::InitProperty { multiname }
+        }
+        AbcOp::DeleteProperty { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::DeleteProperty { multiname }
+        }
         AbcOp::GetSuper { index } => Op::GetSuper { index },
         AbcOp::SetSuper { index } => Op::SetSuper { index },
         AbcOp::In => Op::In,
@@ -645,17 +760,43 @@ fn resolve_op<'gc>(
         AbcOp::GetOuterScope { index } => Op::GetOuterScope { index },
         AbcOp::GetScopeObject { index } => Op::GetScopeObject { index },
         AbcOp::GetGlobalScope => Op::GetGlobalScope,
-        AbcOp::FindDef { index } => Op::FindDef { index },
-        AbcOp::FindProperty { index } => Op::FindProperty { index },
-        AbcOp::FindPropStrict { index } => Op::FindPropStrict { index },
-        AbcOp::GetLex { index } => Op::GetLex { index },
+        AbcOp::FindDef { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+            // Verifier guarantees that multiname was non-lazy
+
+            Op::FindDef { multiname }
+        }
+        AbcOp::FindProperty { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::FindProperty { multiname }
+        }
+        AbcOp::FindPropStrict { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::FindPropStrict { multiname }
+        }
+        AbcOp::GetLex { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+            // Verifier guarantees that multiname was non-lazy
+
+            Op::GetLex { multiname }
+        }
         AbcOp::GetDescendants { index } => Op::GetDescendants { index },
         AbcOp::GetSlot { index } => Op::GetSlot { index },
         AbcOp::SetSlot { index } => Op::SetSlot { index },
         AbcOp::GetGlobalSlot { index } => Op::GetGlobalSlot { index },
         AbcOp::SetGlobalSlot { index } => Op::SetGlobalSlot { index },
         AbcOp::Construct { num_args } => Op::Construct { num_args },
-        AbcOp::ConstructProp { index, num_args } => Op::ConstructProp { index, num_args },
+        AbcOp::ConstructProp { index, num_args } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+            // Verifier guarantees that multiname was non-lazy
+
+            Op::ConstructProp {
+                multiname,
+                num_args,
+            }
+        }
         AbcOp::ConstructSuper { num_args } => Op::ConstructSuper { num_args },
         AbcOp::NewActivation => Op::NewActivation,
         AbcOp::NewObject { num_args } => Op::NewObject { num_args },
@@ -731,9 +872,31 @@ fn resolve_op<'gc>(
         },
         AbcOp::NextName => Op::NextName,
         AbcOp::NextValue => Op::NextValue,
-        AbcOp::IsType { index } => Op::IsType { index },
+        AbcOp::IsType { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+            // Verifier guarantees that multiname was non-lazy
+
+            let class = activation
+                .domain()
+                .get_class(&multiname, activation.context.gc_context)
+                .unwrap();
+            // Verifier guarantees that class exists
+
+            Op::IsType { class }
+        }
         AbcOp::IsTypeLate => Op::IsTypeLate,
-        AbcOp::AsType { type_name } => Op::AsType { type_name },
+        AbcOp::AsType { type_name } => {
+            let multiname = pool_multiname(activation, translation_unit, type_name)?;
+            // Verifier guarantees that multiname was non-lazy
+
+            let class = activation
+                .domain()
+                .get_class(&multiname, activation.context.gc_context)
+                .unwrap();
+            // Verifier guarantees that class exists
+
+            Op::AsType { class }
+        }
         AbcOp::AsTypeLate => Op::AsTypeLate,
         AbcOp::InstanceOf => Op::InstanceOf,
         AbcOp::Label => Op::Nop,
@@ -741,12 +904,20 @@ fn resolve_op<'gc>(
             is_local_register,
             register_name,
             register,
-        } => Op::Debug {
-            is_local_register,
-            register_name,
-            register,
-        },
-        AbcOp::DebugFile { file_name } => Op::DebugFile { file_name },
+        } => {
+            let register_name = pool_string(activation, translation_unit, register_name)?;
+
+            Op::Debug {
+                is_local_register,
+                register_name,
+                register,
+            }
+        }
+        AbcOp::DebugFile { file_name } => {
+            let file_name = pool_string(activation, translation_unit, file_name)?;
+
+            Op::DebugFile { file_name }
+        }
         AbcOp::DebugLine { line_num } => Op::DebugLine { line_num },
         AbcOp::Bkpt => Op::Bkpt,
         AbcOp::BkptLine { line_num } => Op::BkptLine { line_num },
@@ -754,10 +925,25 @@ fn resolve_op<'gc>(
         AbcOp::TypeOf => Op::TypeOf,
         AbcOp::EscXAttr => Op::EscXAttr,
         AbcOp::EscXElem => Op::EscXElem,
-        AbcOp::Dxns { index } => Op::Dxns { index },
+        AbcOp::Dxns { index } => {
+            let string = pool_string(activation, translation_unit, index)?;
+
+            Op::Dxns { string }
+        }
         AbcOp::DxnsLate => Op::DxnsLate,
         AbcOp::LookupSwitch(lookup_switch) => Op::LookupSwitch(lookup_switch),
-        AbcOp::Coerce { index } => Op::Coerce { index },
+        AbcOp::Coerce { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+            // Verifier guarantees that multiname was non-lazy
+
+            let class = activation
+                .domain()
+                .get_class(&multiname, activation.context.gc_context)
+                .unwrap();
+            // Verifier guarantees that class exists
+
+            Op::Coerce { class }
+        }
         AbcOp::CheckFilter => Op::CheckFilter,
         AbcOp::Si8 => Op::Si8,
         AbcOp::Si16 => Op::Si16,

@@ -26,12 +26,12 @@
         "@tsconfig/strictest": "^2.0.3",
         "@types/mocha": "^10.0.6",
         "eslint": "^8.57.0",
-        "eslint-plugin-jsdoc": "^48.2.0",
+        "eslint-plugin-jsdoc": "^48.2.1",
         "mocha": "^10.3.0",
         "replace-in-file": "^7.1.0",
         "ts-node": "^10.9.2",
-        "typedoc": "^0.25.9",
-        "typescript": "^5.3.3"
+        "typedoc": "^0.25.12",
+        "typescript": "^5.4.2"
     },
     "sideEffects": false
 }

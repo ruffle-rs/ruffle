@@ -24,6 +24,7 @@ package {
         AS3 native function comments():XMLList;
         AS3 native function parent():*;
         AS3 native function processingInstructions(name:* = "*"):XMLList;
+        AS3 native function elements(name:* = "*"):XMLList;
 
         // The following native methods are not declared in the documentation,
         // but still exist
@@ -123,6 +124,11 @@ package {
         prototype.processingInstructions = function(name:* = "*"):XMLList {
             var self:XMLList = this;
             return self.AS3::processingInstructions(name);
+        }
+
+        prototype.elements = function(name:* = "*"):XMLList {
+            var self:XMLList = this;
+            return self.AS3::elements(name);
         }
 
         public static const length:int = 1;

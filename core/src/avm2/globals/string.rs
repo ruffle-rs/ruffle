@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
+use crate::avm2::error::make_error_1004;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
 use crate::avm2::regexp::RegExpFlags;
@@ -619,9 +620,9 @@ fn to_lower_case<'gc>(
     .into())
 }
 
-/// Implements `String.toString`
+/// Implements `String.prototype.toString`
 fn to_string<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -631,7 +632,12 @@ fn to_string<'gc>(
         }
     }
 
-    Ok("".into())
+    let string_proto = activation.avm2().classes().string.prototype();
+    if Object::ptr_eq(string_proto, this) {
+        return Ok("".into());
+    }
+
+    Err(make_error_1004(activation, "String.prototype.toString"))
 }
 
 /// Implements `String.valueOf`

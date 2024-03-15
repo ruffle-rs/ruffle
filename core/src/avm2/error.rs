@@ -206,6 +206,24 @@ pub fn make_error_1010<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1014<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    class_name: AvmString<'gc>,
+) -> Error<'gc> {
+    let err = verify_error(
+        activation,
+        &format!("Error #1014: Class {} could not be found.", class_name),
+        1014,
+    );
+
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1021<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = verify_error(
         activation,

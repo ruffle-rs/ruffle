@@ -311,7 +311,7 @@ pub fn print_with_radix<'gc>(
     ))
 }
 
-/// Implements `Number.toString`
+/// Implements `Number.prototype.toString`
 fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,

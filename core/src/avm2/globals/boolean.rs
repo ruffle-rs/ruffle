@@ -2,6 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
+use crate::avm2::error::make_error_1004;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
@@ -95,9 +96,9 @@ pub fn call_handler<'gc>(
         .into())
 }
 
-/// Implements `Boolean.toString`
+/// Implements `Boolean.prototype.toString`
 fn to_string<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -109,7 +110,12 @@ fn to_string<'gc>(
         };
     }
 
-    Ok("false".into())
+    let boolean_proto = activation.avm2().classes().boolean.prototype();
+    if Object::ptr_eq(boolean_proto, this) {
+        return Ok("false".into());
+    }
+
+    Err(make_error_1004(activation, "Boolean.prototype.toString"))
 }
 
 /// Implements `Boolean.valueOf`

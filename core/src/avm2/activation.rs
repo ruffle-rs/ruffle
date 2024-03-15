@@ -20,7 +20,6 @@ use crate::avm2::script::Script;
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
-use crate::avm2::QName;
 use crate::avm2::{Avm2, Error};
 use crate::context::{GcContext, UpdateContext};
 use crate::string::{AvmAtom, AvmString};
@@ -387,15 +386,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Construct an activation for the execution of a particular bytecode
     /// method.
-    pub fn from_method(
-        mut context: UpdateContext<'a, 'gc>,
+    /// NOTE: this is intended to be used immediately after from_nothing(),
+    /// as a more efficient replacement for direct `Activation::from_method()`
+    pub fn init_from_method(
+        &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
         outer: ScopeChain<'gc>,
         this: Object<'gc>,
         user_arguments: &[Value<'gc>],
         subclass_object: Option<ClassObject<'gc>>,
         callee: Object<'gc>,
-    ) -> Result<Self, Error<'gc>> {
+    ) -> Result<(), Error<'gc>> {
         let body: Result<_, Error<'gc>> = method
             .body()
             .ok_or_else(|| "Cannot execute non-native method without body".into());
@@ -412,11 +413,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         *local_registers.get_unchecked_mut(0) = this.into();
 
         let activation_class =
-            BytecodeMethod::get_or_init_activation_class(method, context.gc_context, || {
+            BytecodeMethod::get_or_init_activation_class(method, self.context.gc_context, || {
                 let translation_unit = method.translation_unit();
                 let abc_method = method.method();
                 let mut dummy_activation =
-                    Activation::from_domain(context.reborrow(), outer.domain());
+                    Activation::from_domain(self.context.reborrow(), outer.domain());
                 dummy_activation.set_outer(outer);
                 let activation_class = Class::for_activation(
                     &mut dummy_activation,
@@ -427,25 +428,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 ClassObject::from_class(&mut dummy_activation, activation_class, None)
             })?;
 
-        let mut activation = Self {
-            ip: 0,
-            actions_since_timeout_check: 0,
-            local_registers,
-            outer,
-            caller_domain: Some(outer.domain()),
-            caller_movie: Some(method.owner_movie()),
-            subclass_object,
-            activation_class,
-            stack_depth: context.avm2.stack.len(),
-            scope_depth: context.avm2.scope_stack.len(),
-            max_stack_size: body.max_stack as usize,
-            max_scope_size: (body.max_scope_depth - body.init_scope_depth) as usize,
-            context,
-        };
+        self.ip = 0;
+        self.actions_since_timeout_check = 0;
+        self.local_registers = local_registers;
+        self.outer = outer;
+        self.caller_domain = Some(outer.domain());
+        self.caller_movie = Some(method.owner_movie());
+        self.subclass_object = subclass_object;
+        self.activation_class = activation_class;
+        self.stack_depth = self.context.avm2.stack.len();
+        self.scope_depth = self.context.avm2.scope_stack.len();
+        self.max_stack_size = body.max_stack as usize;
+        self.max_scope_size = (body.max_scope_depth - body.init_scope_depth) as usize;
 
         if user_arguments.len() > signature.len() && !has_rest_or_args {
             return Err(Error::AvmError(make_mismatch_error(
-                &mut activation,
+                self,
                 Method::Bytecode(method),
                 user_arguments,
                 Some(callee),
@@ -453,7 +451,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         // Statically verify all non-variadic, provided parameters.
-        let arguments_list = activation.resolve_parameters(
+        let arguments_list = self.resolve_parameters(
             Method::Bytecode(method),
             user_arguments,
             signature,
@@ -465,7 +463,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 .iter()
                 .enumerate()
             {
-                *activation.local_registers.get_unchecked_mut(1 + i as u32) = *arg;
+                *self.local_registers.get_unchecked_mut(1 + i as u32) = *arg;
             }
         }
 
@@ -487,27 +485,27 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 unreachable!();
             };
 
-            let args_object = ArrayObject::from_storage(&mut activation, args_array)?;
+            let args_object = ArrayObject::from_storage(self, args_array)?;
 
             if method
                 .method()
                 .flags
                 .contains(AbcMethodFlags::NEED_ARGUMENTS)
             {
-                args_object.set_string_property_local("callee", callee.into(), &mut activation)?;
+                args_object.set_string_property_local("callee", callee.into(), self)?;
                 args_object.set_local_property_is_enumerable(
-                    activation.context.gc_context,
+                    self.context.gc_context,
                     "callee".into(),
                     false,
                 );
             }
 
-            *activation
+            *self
                 .local_registers
                 .get_unchecked_mut(1 + num_declared_arguments) = args_object.into();
         }
 
-        Ok(activation)
+        Ok(())
     }
 
     /// Construct an activation for the execution of a builtin method.
@@ -522,10 +520,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         outer: ScopeChain<'gc>,
         caller_domain: Option<Domain<'gc>>,
         caller_movie: Option<Arc<SwfMovie>>,
-    ) -> Result<Self, Error<'gc>> {
+    ) -> Self {
         let local_registers = RegisterSet::new(0);
 
-        Ok(Self {
+        Self {
             ip: 0,
             actions_since_timeout_check: 0,
             local_registers,
@@ -539,7 +537,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             max_stack_size: 0,
             max_scope_size: 0,
             context,
-        })
+        }
     }
 
     /// Call the superclass's instance initializer.
@@ -717,17 +715,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             })
     }
 
-    /// Retrieve a string from the current constant pool.
-    fn pool_string<'b>(
-        &mut self,
-        method: &'b BytecodeMethod<'gc>,
-        index: Index<String>,
-    ) -> Result<AvmAtom<'gc>, Error<'gc>> {
-        method
-            .translation_unit()
-            .pool_string(index.0, &mut self.borrow_gc())
-    }
-
     /// Retrieve a namespace from the current constant pool.
     fn pool_namespace(
         &mut self,
@@ -737,17 +724,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         method
             .translation_unit()
             .pool_namespace(index, &mut self.context)
-    }
-
-    /// Retrieve a multiname from the current constant pool.
-    fn pool_maybe_uninitialized_multiname(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
-    ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
-        method
-            .translation_unit()
-            .pool_maybe_uninitialized_multiname(index, &mut self.context)
     }
 
     /// Retrieve a multiname from the current constant pool.
@@ -766,20 +742,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else {
             Ok(name)
         }
-    }
-
-    /// Retrieve a static, or non-runtime, multiname from the current constant
-    /// pool.
-    ///
-    /// This version of the function treats index 0 as an error condition.
-    fn pool_multiname_static(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
-    ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
-        method
-            .translation_unit()
-            .pool_multiname_static(index, &mut self.context)
     }
 
     /// Retrieve a method entry from the current ABC file's method table.
@@ -807,11 +769,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if method.verified_info.borrow().is_none() {
+        if method.verified_info.read().is_none() {
             method.verify(self)?;
         }
 
-        let verified_info = method.verified_info.borrow();
+        let verified_info = method.verified_info.read();
         let verified_code = verified_info.as_ref().unwrap().parsed_code.as_slice();
 
         if verified_code.is_empty() {
@@ -846,7 +808,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Error::RustError(_) => return Err(error),
         };
 
-        let verified_info = method.verified_info.borrow();
+        let verified_info = method.verified_info.read();
         let exception_list = &verified_info.as_ref().unwrap().exceptions;
 
         // Use `coerce_to_object` so that we handle primitives correctly.
@@ -857,13 +819,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 let mut matches = false;
                 // A typeless catch block (e.g. `catch(er) { ... }`) will
                 // always match.
-                if e.type_name.0 == 0 {
+                if e.target_class.is_none() {
                     matches = true;
                 } else if let Ok(err_object) = err_object {
-                    let type_name = self.pool_multiname_static(method, e.type_name)?;
-                    let ty_class = self.lookup_class_in_domain(&type_name)?;
+                    let target_class = e.target_class.expect("Just confirmed to be non-None");
 
-                    matches = err_object.is_of_type(ty_class, &mut self.context);
+                    matches = err_object.is_of_type(target_class, &mut self.context);
                 }
 
                 if matches {
@@ -885,7 +846,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn do_next_opcode(
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
-        opcodes: &[Op],
+        opcodes: &[Op<'gc>],
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         self.actions_since_timeout_check += 1;
         if self.actions_since_timeout_check >= 2000 {
@@ -912,7 +873,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::PushNaN => self.op_push_nan(),
                 Op::PushNull => self.op_push_null(),
                 Op::PushShort { value } => self.op_push_short(*value),
-                Op::PushString { value } => self.op_push_string(method, *value),
+                Op::PushString { string } => self.op_push_string(*string),
                 Op::PushTrue => self.op_push_true(),
                 Op::PushUint { value } => self.op_push_uint(*value),
                 Op::PushUndefined => self.op_push_undefined(),
@@ -923,15 +884,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::Kill { index } => self.op_kill(*index),
                 Op::Call { num_args } => self.op_call(*num_args),
                 Op::CallMethod { index, num_args } => self.op_call_method(*index, *num_args),
-                Op::CallProperty { index, num_args } => {
-                    self.op_call_property(method, *index, *num_args)
-                }
+                Op::CallProperty {
+                    multiname,
+                    num_args,
+                } => self.op_call_property(*multiname, *num_args),
                 Op::CallPropLex { index, num_args } => {
                     self.op_call_prop_lex(method, *index, *num_args)
                 }
-                Op::CallPropVoid { index, num_args } => {
-                    self.op_call_prop_void(method, *index, *num_args)
-                }
+                Op::CallPropVoid {
+                    multiname,
+                    num_args,
+                } => self.op_call_prop_void(*multiname, *num_args),
                 Op::CallStatic { index, num_args } => {
                     self.op_call_static(method, *index, *num_args)
                 }
@@ -941,10 +904,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 }
                 Op::ReturnValue => self.op_return_value(method),
                 Op::ReturnVoid => self.op_return_void(),
-                Op::GetProperty { index } => self.op_get_property(method, *index),
-                Op::SetProperty { index } => self.op_set_property(method, *index),
-                Op::InitProperty { index } => self.op_init_property(method, *index),
-                Op::DeleteProperty { index } => self.op_delete_property(method, *index),
+                Op::GetProperty { multiname } => self.op_get_property(*multiname),
+                Op::SetProperty { multiname } => self.op_set_property(*multiname),
+                Op::InitProperty { multiname } => self.op_init_property(*multiname),
+                Op::DeleteProperty { multiname } => self.op_delete_property(*multiname),
                 Op::GetSuper { index } => self.op_get_super(method, *index),
                 Op::SetSuper { index } => self.op_set_super(method, *index),
                 Op::In => self.op_in(),
@@ -955,19 +918,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::GetOuterScope { index } => self.op_get_outer_scope(*index),
                 Op::GetScopeObject { index } => self.op_get_scope_object(*index),
                 Op::GetGlobalScope => self.op_get_global_scope(),
-                Op::FindDef { index } => self.op_find_def(method, *index),
-                Op::FindProperty { index } => self.op_find_property(method, *index),
-                Op::FindPropStrict { index } => self.op_find_prop_strict(method, *index),
-                Op::GetLex { index } => self.op_get_lex(method, *index),
+                Op::FindDef { multiname } => self.op_find_def(*multiname),
+                Op::FindProperty { multiname } => self.op_find_property(*multiname),
+                Op::FindPropStrict { multiname } => self.op_find_prop_strict(*multiname),
+                Op::GetLex { multiname } => self.op_get_lex(*multiname),
                 Op::GetDescendants { index } => self.op_get_descendants(method, *index),
                 Op::GetSlot { index } => self.op_get_slot(*index),
                 Op::SetSlot { index } => self.op_set_slot(*index),
                 Op::GetGlobalSlot { index } => self.op_get_global_slot(*index),
                 Op::SetGlobalSlot { index } => self.op_set_global_slot(*index),
                 Op::Construct { num_args } => self.op_construct(*num_args),
-                Op::ConstructProp { index, num_args } => {
-                    self.op_construct_prop(method, *index, *num_args)
-                }
+                Op::ConstructProp {
+                    multiname,
+                    num_args,
+                } => self.op_construct_prop(*multiname, *num_args),
                 Op::ConstructSuper { num_args } => self.op_construct_super(*num_args),
                 Op::NewActivation => self.op_new_activation(),
                 Op::NewObject { num_args } => self.op_new_object(*num_args),
@@ -1040,17 +1004,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 } => self.op_has_next_2(*object_register, *index_register),
                 Op::NextName => self.op_next_name(),
                 Op::NextValue => self.op_next_value(),
-                Op::IsType { index } => self.op_is_type(method, *index),
+                Op::IsType { class } => self.op_is_type(*class),
                 Op::IsTypeLate => self.op_is_type_late(),
-                Op::AsType { type_name } => self.op_as_type(method, *type_name),
+                Op::AsType { class } => self.op_as_type(*class),
                 Op::AsTypeLate => self.op_as_type_late(),
                 Op::InstanceOf => self.op_instance_of(),
                 Op::Debug {
                     is_local_register,
                     register_name,
                     register,
-                } => self.op_debug(method, *is_local_register, *register_name, *register),
-                Op::DebugFile { file_name } => self.op_debug_file(method, *file_name),
+                } => self.op_debug(*is_local_register, *register_name, *register),
+                Op::DebugFile { file_name } => self.op_debug_file(*file_name),
                 Op::DebugLine { line_num } => self.op_debug_line(*line_num),
                 Op::Bkpt => self.op_bkpt(),
                 Op::BkptLine { line_num } => self.op_bkpt_line(*line_num),
@@ -1061,7 +1025,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::LookupSwitch(ref lookup_switch) => {
                     self.op_lookup_switch(lookup_switch.default_offset, &lookup_switch.case_offsets)
                 }
-                Op::Coerce { index } => self.op_coerce(method, *index),
+                Op::Coerce { class } => self.op_coerce(*class),
                 Op::CheckFilter => self.op_check_filter(),
                 Op::Si8 => self.op_si8(),
                 Op::Si16 => self.op_si16(),
@@ -1138,13 +1102,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_push_string(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        value: Index<String>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let s = self.pool_string(&method, value)?;
-        self.push_stack(s);
+    fn op_push_string(&mut self, string: AvmAtom<'gc>) -> Result<FrameControl<'gc>, Error<'gc>> {
+        self.push_stack(string);
         Ok(FrameControl::Continue)
     }
 
@@ -1216,7 +1175,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_call_method(
         &mut self,
-        index: Index<AbcMethod>,
+        index: u32,
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         // The entire implementation of VTable assumes that
@@ -1229,7 +1188,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let args = self.pop_stack_args(arg_count);
         let receiver = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
 
-        let value = receiver.call_method(index.0, &args, self)?;
+        let value = receiver.call_method(index, &args, self)?;
 
         self.push_stack(value);
 
@@ -1238,12 +1197,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_call_property(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
-        let multiname = self.pool_multiname_and_initialize(method, index)?;
+        let multiname = multiname.fill_with_runtime_params(self)?;
         let receiver = self
             .pop_stack()
             .coerce_to_object_or_typeerror(self, Some(&multiname))?;
@@ -1281,12 +1239,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_call_prop_void(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
-        let multiname = self.pool_multiname_and_initialize(method, index)?;
+        let multiname = multiname.fill_with_runtime_params(self)?;
         let receiver = self
             .pop_stack()
             .coerce_to_object_or_typeerror(self, Some(&multiname))?;
@@ -1370,11 +1327,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_get_property(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let multiname = self.pool_maybe_uninitialized_multiname(method, index)?;
-
         // default path for static names
         if !multiname.has_lazy_component() {
             let object = self.pop_stack();
@@ -1431,11 +1385,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_set_property(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack();
-        let multiname = self.pool_maybe_uninitialized_multiname(method, index)?;
 
         // default path for static names
         if !multiname.has_lazy_component() {
@@ -1480,11 +1432,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_init_property(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack();
-        let multiname = self.pool_multiname_and_initialize(method, index)?;
+
+        let multiname = multiname.fill_with_runtime_params(self)?;
+
         let object = self
             .pop_stack()
             .coerce_to_object_or_typeerror(self, Some(&multiname))?;
@@ -1496,11 +1449,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_delete_property(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let multiname = self.pool_maybe_uninitialized_multiname(method, index)?;
-
         // default path for static names
         if !multiname.has_lazy_component() {
             let object = self.pop_stack();
@@ -1609,19 +1559,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<Exception>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        if let Some(body) = method.body() {
-            let ex = &body.exceptions[index.0 as usize];
-            let vname = ex.variable_name;
-            let so = if vname.0 == 0 {
-                // for `finally` scopes, FP just creates a bare object.
-                self.avm2().classes().object.construct(self, &[])?
-            } else {
-                let qname =
-                    QName::from_abc_multiname(method.translation_unit(), vname, &mut self.context)?;
-                ScriptObject::catch_scope(self.context.gc_context, &qname)
-            };
-            self.push_stack(so);
-        }
+        let verified_info = method.verified_info.read();
+        let exception_list = &verified_info.as_ref().unwrap().exceptions;
+
+        let ex = &exception_list[index.0 as usize];
+        let vname = ex.variable_name;
+
+        let so = if let Some(vname) = vname {
+            ScriptObject::catch_scope(self.context.gc_context, &vname)
+        } else {
+            // for `finally` scopes, FP just creates a bare object.
+            self.avm2().classes().object.construct(self, &[])?
+        };
+
+        self.push_stack(so);
 
         Ok(FrameControl::Continue)
     }
@@ -1682,10 +1633,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_find_def(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let multiname = self.pool_multiname_static(method, index)?;
+        // Verifier ensures that multiname is non-lazy
+
         avm_debug!(self.avm2(), "Resolving {:?}", *multiname);
         let (_, mut script) = self.domain().find_defining_script(self, &multiname)?;
         let obj = script.globals(&mut self.context)?;
@@ -1695,11 +1646,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_find_property(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let multiname = self.pool_multiname_and_initialize(method, index)?;
         avm_debug!(self.context.avm2, "Resolving {:?}", *multiname);
+
+        let multiname = multiname.fill_with_runtime_params(self)?;
         let result = self
             .find_definition(&multiname)?
             .or_else(|| self.global_scope());
@@ -1711,11 +1662,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_find_prop_strict(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let multiname = self.pool_multiname_and_initialize(method, index)?;
         avm_debug!(self.context.avm2, "Resolving {:?}", *multiname);
+
+        let multiname = multiname.fill_with_runtime_params(self)?;
         let found: Result<Object<'gc>, Error<'gc>> =
             self.find_definition(&multiname)?.ok_or_else(|| {
                 make_reference_error(self, ReferenceErrorCode::InvalidLookup, &multiname, None)
@@ -1762,10 +1713,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_get_lex(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let multiname = self.pool_multiname_static(method, index)?;
+        // Verifier ensures that multiname is non-lazy
+
         avm_debug!(self.avm2(), "Resolving {:?}", *multiname);
         let found: Result<Value<'gc>, Error<'gc>> =
             self.resolve_definition(&multiname)?.ok_or_else(|| {
@@ -1830,12 +1781,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_construct_prop(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
-        let multiname = self.pool_multiname_and_initialize(method, index)?;
+        let multiname = multiname.fill_with_runtime_params(self)?;
         let source = self
             .pop_stack()
             .coerce_to_object_or_typeerror(self, Some(&multiname))?;
@@ -2636,15 +2586,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_is_type(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        type_name_index: Index<AbcMultiname>,
+        class: GcCell<'gc, Class<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack();
 
-        let multiname = self.pool_multiname_static(method, type_name_index)?;
-        let type_object = self.lookup_class_in_domain(&multiname)?;
-
-        let is_instance_of = value.is_of_type(self, type_object);
+        let is_instance_of = value.is_of_type(self, class);
         self.push_raw(is_instance_of);
 
         Ok(FrameControl::Continue)
@@ -2672,13 +2618,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_as_type(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        type_name_index: Index<AbcMultiname>,
+        class: GcCell<'gc, Class<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack();
-
-        let multiname = self.pool_multiname_static(method, type_name_index)?;
-        let class = self.lookup_class_in_domain(&multiname)?;
 
         if value.is_of_type(self, class) {
             self.push_stack(value);
@@ -2845,12 +2787,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Implements `Op::Coerce`
     fn op_coerce(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        class: GcCell<'gc, Class<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.pop_stack();
-        let type_name = self.pool_multiname_static(method, index)?;
-        let x = val.coerce_to_type_name(self, &type_name)?;
+        let x = val.coerce_to_type(self, class)?;
 
         self.push_stack(x);
         Ok(FrameControl::Continue)
@@ -3105,13 +3045,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     #[cfg(feature = "avm_debug")]
     fn op_debug(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
         is_local_register: bool,
-        register_name: Index<String>,
+        register_name: AvmAtom<'gc>,
         register: u8,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         if is_local_register {
-            let register_name = self.pool_string(&method, register_name)?;
             if (register as usize) < self.local_registers.0.len() {
                 let value = self.local_register(register as u32);
 
@@ -3132,33 +3070,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     #[cfg(not(feature = "avm_debug"))]
     fn op_debug(
         &mut self,
-        _method: Gc<'gc, BytecodeMethod<'gc>>,
         _is_local_register: bool,
-        _register_name: Index<String>,
+        _register_name: AvmAtom<'gc>,
         _register: u8,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         Ok(FrameControl::Continue)
     }
 
     #[cfg(feature = "avm_debug")]
-    fn op_debug_file(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        file_name: Index<String>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let file_name = self.pool_string(&method, file_name)?;
-
+    fn op_debug_file(&mut self, file_name: AvmAtom<'gc>) -> Result<FrameControl<'gc>, Error<'gc>> {
         avm_debug!(self.avm2(), "File: {file_name}");
 
         Ok(FrameControl::Continue)
     }
 
     #[cfg(not(feature = "avm_debug"))]
-    fn op_debug_file(
-        &mut self,
-        _method: Gc<'gc, BytecodeMethod<'gc>>,
-        _file_name: Index<String>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn op_debug_file(&mut self, _file_name: AvmAtom<'gc>) -> Result<FrameControl<'gc>, Error<'gc>> {
         Ok(FrameControl::Continue)
     }
 

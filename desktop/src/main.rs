@@ -12,12 +12,14 @@ mod cli;
 mod custom_event;
 mod executor;
 mod gui;
+mod log;
 mod player;
 mod preferences;
 mod task;
 mod time_demo;
 mod util;
 
+use crate::preferences::GlobalPreferences;
 use anyhow::Error;
 use app::App;
 use clap::Parser;
@@ -25,8 +27,13 @@ use cli::Opt;
 use rfd::MessageDialogResult;
 use ruffle_core::StaticCallstack;
 use std::cell::RefCell;
+use std::env;
+use std::fs::File;
 use std::panic::PanicInfo;
+use tracing_subscriber::fmt::Layer;
+use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
+
 use url::Url;
 
 thread_local! {
@@ -66,18 +73,6 @@ fn init() {
         prev_hook(info);
         panic_hook(info);
     }));
-
-    let subscriber = tracing_subscriber::fmt::Subscriber::builder()
-        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
-        .finish();
-
-    #[cfg(feature = "tracy")]
-    let subscriber = {
-        use tracing_subscriber::layer::SubscriberExt;
-        let tracy_subscriber = tracing_tracy::TracyLayer::new();
-        subscriber.with(tracy_subscriber)
-    };
-    subscriber.init();
 }
 
 fn panic_hook(info: &PanicInfo) {
@@ -156,12 +151,43 @@ fn shutdown() {
 
 fn main() -> Result<(), Error> {
     init();
+
     let opt = Opt::parse();
-    let result = if opt.timedemo {
-        time_demo::run_timedemo(opt)
-    } else {
-        App::new(opt).and_then(|app| app.run())
+    let preferences = GlobalPreferences::load(opt.clone())?;
+
+    // [NA] `_guard` cannot be `_` or it'll immediately drop
+    // https://docs.rs/tracing-appender/latest/tracing_appender/non_blocking/index.html
+    let log_path = preferences
+        .log_filename_pattern()
+        .create_path(&preferences.cli.config);
+    let (non_blocking_file, _file_guard) = tracing_appender::non_blocking(File::create(log_path)?);
+    let (non_blocking_stdout, _stdout_guard) = tracing_appender::non_blocking(std::io::stdout());
+
+    let env_filter = tracing_subscriber::EnvFilter::builder().parse_lossy(
+        env::var("RUST_LOG")
+            .as_deref()
+            .unwrap_or("warn,ruffle=info,avm_trace=info"),
+    );
+
+    let subscriber = tracing_subscriber::registry()
+        .with(env_filter)
+        .with(Layer::new().with_writer(non_blocking_stdout))
+        .with(Layer::new().with_writer(non_blocking_file).with_ansi(false));
+
+    #[cfg(feature = "tracy")]
+    let subscriber = {
+        let tracy_subscriber = tracing_tracy::TracyLayer::new();
+        subscriber.with(tracy_subscriber)
     };
+
+    subscriber.init();
+
+    let result = if opt.timedemo {
+        time_demo::run_timedemo(preferences.cli)
+    } else {
+        App::new(preferences).and_then(|app| app.run())
+    };
+
     #[cfg(windows)]
     if let Err(error) = &result {
         eprintln!("{:?}", error)

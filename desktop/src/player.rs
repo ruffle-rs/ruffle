@@ -19,12 +19,14 @@ use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::descriptors::Descriptors;
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
 use url::Url;
+use urlencoding::decode;
 use winit::event_loop::EventLoopProxy;
 use winit::window::Window;
 
@@ -192,7 +194,9 @@ impl ActivePlayer {
             .unwrap_or_else(|| movie_url.as_str())
             .to_string();
 
-        window.set_title(&format!("Ruffle - {name}"));
+        let readable_name = decode(&name).unwrap_or(Cow::Borrowed(&name));
+
+        window.set_title(&format!("Ruffle - {readable_name}"));
 
         SWF_INFO.with(|i| *i.borrow_mut() = Some(name.clone()));
 

@@ -1,14 +1,22 @@
-use swf::avm2::types::{Class, Exception, Index, LookupSwitch, Method, Multiname, Namespace};
+use crate::avm2::class::Class;
+use crate::avm2::multiname::Multiname;
+use crate::string::AvmAtom;
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum Op {
+use gc_arena::{Collect, Gc, GcCell};
+use swf::avm2::types::{
+    Class as AbcClass, Exception, Index, LookupSwitch, Method, Multiname as AbcMultiname, Namespace,
+};
+
+#[derive(Clone, Collect, Debug)]
+#[collect(no_drop)]
+pub enum Op<'gc> {
     Add,
     AddI,
     ApplyType {
         num_types: u32,
     },
     AsType {
-        type_name: Index<Multiname>,
+        class: GcCell<'gc, Class<'gc>>,
     },
     AsTypeLate,
     BitAnd,
@@ -23,36 +31,47 @@ pub enum Op {
         num_args: u32,
     },
     CallMethod {
-        index: Index<Method>,
+        index: u32,
+
         num_args: u32,
     },
     CallProperty {
-        index: Index<Multiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
+
         num_args: u32,
     },
     CallPropLex {
-        index: Index<Multiname>,
+        #[collect(require_static)]
+        index: Index<AbcMultiname>,
+
         num_args: u32,
     },
     CallPropVoid {
-        index: Index<Multiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
+
         num_args: u32,
     },
     CallStatic {
+        #[collect(require_static)]
         index: Index<Method>,
+
         num_args: u32,
     },
     CallSuper {
-        index: Index<Multiname>,
+        #[collect(require_static)]
+        index: Index<AbcMultiname>,
+
         num_args: u32,
     },
     CallSuperVoid {
-        index: Index<Multiname>,
+        #[collect(require_static)]
+        index: Index<AbcMultiname>,
+
         num_args: u32,
     },
     CheckFilter,
     Coerce {
-        index: Index<Multiname>,
+        class: GcCell<'gc, Class<'gc>>,
     },
     CoerceA,
     CoerceB,
@@ -65,7 +84,7 @@ pub enum Op {
         num_args: u32,
     },
     ConstructProp {
-        index: Index<Multiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
         num_args: u32,
     },
     ConstructSuper {
@@ -75,11 +94,11 @@ pub enum Op {
     ConvertS,
     Debug {
         is_local_register: bool,
-        register_name: Index<String>,
+        register_name: AvmAtom<'gc>,
         register: u8,
     },
     DebugFile {
-        file_name: Index<String>,
+        file_name: AvmAtom<'gc>,
     },
     DebugLine {
         line_num: u32,
@@ -93,35 +112,36 @@ pub enum Op {
     Decrement,
     DecrementI,
     DeleteProperty {
-        index: Index<Multiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     },
     Divide,
     Dup,
     Dxns {
-        index: Index<String>,
+        string: AvmAtom<'gc>,
     },
     DxnsLate,
     Equals,
     EscXAttr,
     EscXElem,
     FindDef {
-        index: Index<Multiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     },
     FindProperty {
-        index: Index<Multiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     },
     FindPropStrict {
-        index: Index<Multiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     },
     GetDescendants {
-        index: Index<Multiname>,
+        #[collect(require_static)]
+        index: Index<AbcMultiname>,
     },
     GetGlobalScope,
     GetGlobalSlot {
         index: u32,
     },
     GetLex {
-        index: Index<Multiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     },
     GetLocal {
         index: u32,
@@ -130,7 +150,7 @@ pub enum Op {
         index: u32,
     },
     GetProperty {
-        index: Index<Multiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     },
     GetScopeObject {
         index: u8,
@@ -139,7 +159,8 @@ pub enum Op {
         index: u32,
     },
     GetSuper {
-        index: Index<Multiname>,
+        #[collect(require_static)]
+        index: Index<AbcMultiname>,
     },
     GreaterEquals,
     GreaterThan,
@@ -200,11 +221,11 @@ pub enum Op {
     Increment,
     IncrementI,
     InitProperty {
-        index: Index<Multiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     },
     InstanceOf,
     IsType {
-        index: Index<Multiname>,
+        class: GcCell<'gc, Class<'gc>>,
     },
     IsTypeLate,
     Jump {
@@ -220,7 +241,7 @@ pub enum Op {
     Li16,
     Li32,
     Li8,
-    LookupSwitch(Box<LookupSwitch>),
+    LookupSwitch(#[collect(require_static)] Box<LookupSwitch>),
     LShift,
     Modulo,
     Multiply,
@@ -232,12 +253,15 @@ pub enum Op {
         num_args: u32,
     },
     NewCatch {
+        #[collect(require_static)]
         index: Index<Exception>,
     },
     NewClass {
-        index: Index<Class>,
+        #[collect(require_static)]
+        index: Index<AbcClass>,
     },
     NewFunction {
+        #[collect(require_static)]
         index: Index<Method>,
     },
     NewObject {
@@ -260,6 +284,7 @@ pub enum Op {
         value: i32,
     },
     PushNamespace {
+        #[collect(require_static)]
         value: Index<Namespace>,
     },
     PushNaN,
@@ -269,7 +294,7 @@ pub enum Op {
         value: i16,
     },
     PushString {
-        value: Index<String>,
+        string: AvmAtom<'gc>,
     },
     PushTrue,
     PushUint {
@@ -287,13 +312,14 @@ pub enum Op {
         index: u32,
     },
     SetProperty {
-        index: Index<Multiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     },
     SetSlot {
         index: u32,
     },
     SetSuper {
-        index: Index<Multiname>,
+        #[collect(require_static)]
+        index: Index<AbcMultiname>,
     },
     Sf32,
     Sf64,

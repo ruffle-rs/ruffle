@@ -68,7 +68,7 @@ Ruffle is a young project, and there is still much Flash functionality that is u
 
 ## Debugging ActionScript Content
 
-To enable debug logging, set `RUST_LOG=warn,ruffle_core=debug,avm_trace=trace` and run Ruffle from the command line. 
+To enable debug logging, set `RUST_LOG=warn,ruffle=info,ruffle_core=debug,avm_trace=info` and run Ruffle from the command line. 
 This will also enable printing `trace()` statements.
 
 Additionally, if you build Ruffle with `--features avm_debug` then you will activate a few more built-in debugging utilities inside Ruffle, listed below.

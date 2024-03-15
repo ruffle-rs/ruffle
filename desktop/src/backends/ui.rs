@@ -1,7 +1,7 @@
 use crate::preferences::GlobalPreferences;
-use anyhow::{Context, Error};
-use arboard::Clipboard;
+use anyhow::Error;
 use chrono::{DateTime, Utc};
+use egui_winit::clipboard::Clipboard;
 use fontdb::Family;
 use rfd::{
     AsyncFileDialog, FileHandle, MessageButtons, MessageDialog, MessageDialogResult, MessageLevel,
@@ -14,6 +14,7 @@ use ruffle_core::backend::ui::{
 use std::rc::Rc;
 use tracing::error;
 use url::Url;
+use winit::raw_window_handle::HasDisplayHandle;
 use winit::window::{Fullscreen, Window};
 
 pub struct DesktopFileDialogResult {
@@ -133,10 +134,19 @@ impl DesktopUiBackend {
         font_database: Rc<fontdb::Database>,
         preferences: GlobalPreferences,
     ) -> Result<Self, Error> {
+        // The window handle is only relevant to linux/wayland
+        // If it fails it'll fallback to x11 or wlr-data-control
+        let clipboard = Clipboard::new(
+            window
+                .clone()
+                .display_handle()
+                .ok()
+                .map(|handle| handle.as_raw()),
+        );
         Ok(Self {
             window,
             cursor_visible: true,
-            clipboard: Clipboard::new().context("Couldn't get platform clipboard")?,
+            clipboard,
             preferences,
             preferred_cursor: MouseCursor::Arrow,
             open_url_mode,
@@ -175,13 +185,11 @@ impl UiBackend for DesktopUiBackend {
     }
 
     fn clipboard_content(&mut self) -> String {
-        self.clipboard.get_text().unwrap_or_default()
+        self.clipboard.get().unwrap_or_default()
     }
 
     fn set_clipboard_content(&mut self, content: String) {
-        if let Err(e) = self.clipboard.set_text(content) {
-            error!("Couldn't set clipboard contents: {:?}", e);
-        }
+        self.clipboard.set(content);
     }
 
     fn set_fullscreen(&mut self, is_full: bool) -> Result<(), FullscreenError> {

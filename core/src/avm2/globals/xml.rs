@@ -363,28 +363,9 @@ pub fn elements<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let xml = this.as_xml_object().unwrap();
-    let multiname = if args[0] == Value::Undefined {
-        Multiname::any(activation.context.gc_context)
-    } else {
-        name_to_multiname(activation, &args[0], false)?
-    };
-    let children = if let E4XNodeKind::Element { children, .. } = &*xml.node().kind() {
-        children
-            .iter()
-            .filter(|node| node.is_element() && node.matches_name(&multiname))
-            .map(|node| E4XOrXml::E4X(*node))
-            .collect()
-    } else {
-        Vec::new()
-    };
+    let multiname = name_to_multiname(activation, &args[0], false)?;
 
-    let list = XmlListObject::new_with_children(activation, children, Some(xml.into()), None);
-
-    if list.length() > 0 {
-        // NOTE: Since avmplus uses appendNode to build the list here, we need to set target dirty flag.
-        list.set_dirty_flag(activation.gc());
-    }
-
+    let list = xml.elements(&multiname, activation);
     Ok(list.into())
 }
 
