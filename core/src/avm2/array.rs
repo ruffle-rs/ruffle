@@ -3,7 +3,7 @@
 use crate::avm2::value::Value;
 use gc_arena::Collect;
 use std::collections::BTreeMap;
-use std::{cmp::max, ops::RangeBounds};
+use std::ops::RangeBounds;
 
 const MIN_SPARSE_LENGTH: usize = 32;
 
@@ -36,7 +36,7 @@ impl<'a, 'gc> Iterator for ArrayStorageIterator<'a, 'gc> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match &self.storage {
-            ArrayStorage::Dense(storage, ..) => {
+            ArrayStorage::Dense(storage, _) => {
                 if self.index >= self.index_back {
                     None
                 } else {
@@ -45,11 +45,11 @@ impl<'a, 'gc> Iterator for ArrayStorageIterator<'a, 'gc> {
                     Some(value)
                 }
             }
-            ArrayStorage::Sparse(storage, _length) => {
+            ArrayStorage::Sparse(storage, _) => {
                 if self.index >= self.index_back {
                     None
                 } else {
-                    let value = storage.get(&self.index).cloned();
+                    let value = storage.get(&self.index).copied();
                     self.index += 1;
                     Some(value)
                 }
@@ -61,7 +61,7 @@ impl<'a, 'gc> Iterator for ArrayStorageIterator<'a, 'gc> {
 impl<'a, 'gc> DoubleEndedIterator for ArrayStorageIterator<'a, 'gc> {
     fn next_back(&mut self) -> Option<Self::Item> {
         match &self.storage {
-            ArrayStorage::Dense(storage, ..) => {
+            ArrayStorage::Dense(storage, _) => {
                 if self.index >= self.index_back || self.index_back == 0 {
                     None
                 } else {
@@ -70,12 +70,12 @@ impl<'a, 'gc> DoubleEndedIterator for ArrayStorageIterator<'a, 'gc> {
                     Some(value)
                 }
             }
-            ArrayStorage::Sparse(storage, _length) => {
+            ArrayStorage::Sparse(storage, _) => {
                 if self.index >= self.index_back || self.index_back == 0 {
                     None
                 } else {
                     self.index_back -= 1;
-                    let value = storage.get(&self.index_back).cloned();
+                    let value = storage.get(&self.index_back).copied();
                     Some(value)
                 }
             }
@@ -97,7 +97,7 @@ impl<'a, 'gc> Iterator for ArrayStorageMutableIterator<'a, 'gc> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match &self.storage {
-            ArrayStorage::Dense(storage, ..) => {
+            ArrayStorage::Dense(storage, _) => {
                 if self.index >= self.index_back {
                     None
                 } else {
@@ -106,11 +106,11 @@ impl<'a, 'gc> Iterator for ArrayStorageMutableIterator<'a, 'gc> {
                     Some(value)
                 }
             }
-            ArrayStorage::Sparse(storage, _length) => {
+            ArrayStorage::Sparse(storage, _) => {
                 if self.index >= self.index_back {
                     None
                 } else {
-                    let value = storage.get(&self.index).cloned();
+                    let value = storage.get(&self.index).copied();
                     self.index += 1;
                     Some(value)
                 }
@@ -122,7 +122,7 @@ impl<'a, 'gc> Iterator for ArrayStorageMutableIterator<'a, 'gc> {
 impl<'a, 'gc> DoubleEndedIterator for ArrayStorageMutableIterator<'a, 'gc> {
     fn next_back(&mut self) -> Option<Self::Item> {
         match &self.storage {
-            ArrayStorage::Dense(storage, ..) => {
+            ArrayStorage::Dense(storage, _) => {
                 if self.index >= self.index_back || self.index_back == 0 {
                     None
                 } else {
@@ -131,12 +131,12 @@ impl<'a, 'gc> DoubleEndedIterator for ArrayStorageMutableIterator<'a, 'gc> {
                     Some(value)
                 }
             }
-            ArrayStorage::Sparse(storage, _length) => {
+            ArrayStorage::Sparse(storage, _) => {
                 if self.index >= self.index_back || self.index_back == 0 {
                     None
                 } else {
                     self.index_back -= 1;
-                    let value = storage.get(&self.index_back).cloned();
+                    let value = storage.get(&self.index_back).copied();
                     Some(value)
                 }
             }
@@ -146,47 +146,7 @@ impl<'a, 'gc> DoubleEndedIterator for ArrayStorageMutableIterator<'a, 'gc> {
 
 impl<'a, 'gc> ExactSizeIterator for ArrayStorageMutableIterator<'a, 'gc> {
     fn len(&self) -> usize {
-        match &self.storage {
-            ArrayStorage::Dense(_, _) => self.index_back - self.index,
-            ArrayStorage::Sparse(_, _) => self.index_back - self.index,
-        }
-    }
-}
-
-struct ArrayStorageDrainIterator<'a, 'gc> {
-    iter: ArrayStorageMutableIterator<'a, 'gc>,
-    start: usize,
-    end: usize,
-    has_to_drain: bool,
-}
-
-impl<'a, 'gc> Drop for ArrayStorageDrainIterator<'a, 'gc> {
-    fn drop(&mut self) {
-        let iter = &mut self.iter;
-        let len = iter.len();
-        for _ in 0..len {
-            iter.next().unwrap();
-        }
-        if !self.has_to_drain {
-            return;
-        }
-        match self.iter.storage {
-            ArrayStorage::Dense(storage, length) => {
-                let mut storage_clone = storage.clone();
-                storage_clone.drain(self.start..self.end);
-                *self.iter.storage =
-                    ArrayStorage::Dense(storage_clone, *length - (self.end - self.start));
-            }
-            ArrayStorage::Sparse(storage, length) => {
-                let storage_clone = storage.clone();
-                let storage_range = storage_clone.range(self.start..self.end);
-                for (index, _) in storage_range {
-                    storage.remove(index);
-                }
-                *self.iter.storage =
-                    ArrayStorage::Sparse(storage_clone, *length - (self.end - self.start));
-            }
-        }
+        self.index_back - self.index
     }
 }
 
@@ -194,7 +154,7 @@ struct ArrayStorageSpliceIterator<'a, 'gc, I>
 where
     I: Iterator<Item = Option<Value<'gc>>> + 'a,
 {
-    drain: ArrayStorageDrainIterator<'a, 'gc>,
+    slice: ArrayStorageMutableIterator<'a, 'gc>,
     replace_with: I,
 }
 
@@ -203,21 +163,19 @@ where
     I: Iterator<Item = Option<Value<'gc>>> + 'a,
 {
     fn drop(&mut self) {
-        let iter = &mut self.drain.iter;
-        let len = iter.len();
-        for _ in 0..len {
-            iter.next().unwrap();
-        }
-        match self.drain.iter.storage {
+        match self.slice.storage {
             ArrayStorage::Dense(storage, mut length) => {
-                storage.splice(self.drain.start..self.drain.end, self.replace_with.by_ref());
+                storage.splice(
+                    self.slice.index..self.slice.index_back,
+                    self.replace_with.by_ref(),
+                );
                 let new_length = storage.len();
                 length = new_length;
-                *self.drain.iter.storage = ArrayStorage::Dense(storage.clone(), length);
+                *self.slice.storage = ArrayStorage::Dense(storage.clone(), length);
             }
             ArrayStorage::Sparse(storage, mut length) => {
                 let storage_clone = storage.clone();
-                let storage_range = storage_clone.range(self.drain.start..self.drain.end);
+                let storage_range = storage_clone.range(self.slice.index..self.slice.index_back);
                 for (index, _) in storage_range {
                     storage.remove(index);
                 }
@@ -234,22 +192,22 @@ where
                         }
                     }
                 }
-                let offset =
-                    self.drain.start as i32 - self.drain.end as i32 + replace_with_length as i32;
+                let offset = self.slice.index as i32 - self.slice.index_back as i32
+                    + replace_with_length as i32;
                 let storage_after_offset = storage_clone
-                    .range(self.drain.end..)
+                    .range(self.slice.index_back..)
                     .collect::<BTreeMap<_, _>>();
                 for (index, value) in storage_after_offset {
                     storage.remove(index);
                     storage.insert((*index as i32 + offset) as usize, *value);
                 }
 
-                length -= self.drain.end - self.drain.start;
+                length -= self.slice.index_back - self.slice.index;
                 length += replace_with_length;
                 for (index, value) in replace_with_tree {
-                    storage.insert(self.drain.start + index, value);
+                    storage.insert(self.slice.index + index, value);
                 }
-                *self.drain.iter.storage = ArrayStorage::Sparse(storage.clone(), length);
+                *self.slice.storage = ArrayStorage::Sparse(storage.clone(), length);
             }
         }
     }
@@ -262,7 +220,7 @@ where
     type Item = Option<Value<'gc>>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.drain.iter.next()
+        self.slice.next()
     }
 }
 
@@ -271,7 +229,7 @@ where
     I: Iterator<Item = Option<Value<'gc>>> + 'a,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.drain.iter.next_back()
+        self.slice.next_back()
     }
 }
 
@@ -280,29 +238,7 @@ where
     I: Iterator<Item = Option<Value<'gc>>> + 'a,
 {
     fn len(&self) -> usize {
-        self.drain.iter.len()
-    }
-}
-
-impl<'a, 'gc> ArrayStorageIterator<'a, 'gc> {}
-
-impl<'a, 'gc> Iterator for ArrayStorageDrainIterator<'a, 'gc> {
-    type Item = Option<Value<'gc>>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
-    }
-}
-
-impl<'a, 'gc> DoubleEndedIterator for ArrayStorageDrainIterator<'a, 'gc> {
-    fn next_back(&mut self) -> Option<Self::Item> {
-        self.iter.next_back()
-    }
-}
-
-impl<'a, 'gc> ExactSizeIterator for ArrayStorageDrainIterator<'a, 'gc> {
-    fn len(&self) -> usize {
-        self.iter.len()
+        self.slice.len()
     }
 }
 
@@ -342,16 +278,16 @@ impl<'gc> ArrayStorage<'gc> {
     /// yielding `None`.
     pub fn get(&self, item: usize) -> Option<Value<'gc>> {
         match &self {
-            ArrayStorage::Dense(storage, ..) => {
-                return storage.get(item).cloned().unwrap_or(None);
+            ArrayStorage::Dense(storage, _) => {
+                return storage.get(item).copied().unwrap_or(None);
             }
-            ArrayStorage::Sparse(storage, ..) => storage.get(&item).cloned(),
+            ArrayStorage::Sparse(storage, _) => storage.get(&item).copied(),
         }
     }
 
     pub fn get_next_enumerant(&self, last_index: usize) -> Option<usize> {
         match &self {
-            ArrayStorage::Dense(storage, ..) => {
+            ArrayStorage::Dense(storage, _) => {
                 let mut last_index = last_index;
                 while last_index < storage.len() {
                     if storage[last_index].is_some() {
@@ -361,8 +297,8 @@ impl<'gc> ArrayStorage<'gc> {
                 }
                 None
             }
-            ArrayStorage::Sparse(storage, _length) => {
-                if let Some((&key, &_value)) = storage.range(last_index..).next() {
+            ArrayStorage::Sparse(storage, _) => {
+                if let Some((&key, _)) = storage.range(last_index..).next() {
                     return Some(key + 1);
                 }
                 None
@@ -372,7 +308,7 @@ impl<'gc> ArrayStorage<'gc> {
 
     fn convert_to_sparse(&mut self) {
         match self {
-            ArrayStorage::Dense(storage, ..) => {
+            ArrayStorage::Dense(storage, _) => {
                 let mut new_storage = BTreeMap::new();
                 for (i, v) in storage.iter().enumerate() {
                     if let Some(v) = v {
@@ -391,7 +327,7 @@ impl<'gc> ArrayStorage<'gc> {
             ArrayStorage::Sparse(storage, length) => {
                 let mut new_storage = Vec::new();
                 for i in 0..*length {
-                    let value = storage.get(&i).cloned();
+                    let value = storage.get(&i).copied();
                     new_storage.push(value);
                 }
                 let dense_used = new_storage.iter().filter(|v| v.is_some()).count();
@@ -452,7 +388,7 @@ impl<'gc> ArrayStorage<'gc> {
                     }
                 }
             }
-            ArrayStorage::Sparse(storage, ..) => {
+            ArrayStorage::Sparse(storage, _) => {
                 storage.remove(&item);
             }
         }
@@ -461,8 +397,8 @@ impl<'gc> ArrayStorage<'gc> {
     /// Get the length of the array.
     pub fn length(&self) -> usize {
         match &self {
-            ArrayStorage::Dense(storage, ..) => storage.len(),
-            ArrayStorage::Sparse(_storage, length) => *length,
+            ArrayStorage::Dense(storage, _) => storage.len(),
+            ArrayStorage::Sparse(_, length) => *length,
         }
     }
 
@@ -477,7 +413,7 @@ impl<'gc> ArrayStorage<'gc> {
                         && MIN_SPARSE_LENGTH < size
                     {
                         self.convert_to_sparse();
-                        if let ArrayStorage::Sparse(_storage, length) = self {
+                        if let ArrayStorage::Sparse(_, length) = self {
                             *length = size;
                         }
                     } else {
@@ -485,7 +421,7 @@ impl<'gc> ArrayStorage<'gc> {
                     }
                 } else {
                     self.convert_to_sparse();
-                    if let ArrayStorage::Sparse(_storage, length) = self {
+                    if let ArrayStorage::Sparse(_, length) = self {
                         *length = size;
                     }
                 }
@@ -525,14 +461,14 @@ impl<'gc> ArrayStorage<'gc> {
                 }
                 ArrayStorage::Sparse(other_storage, length) => {
                     for i in 0..*length {
-                        storage.push(other_storage.get(&i).cloned());
+                        storage.push(other_storage.get(&i).copied());
                     }
                     *dense_used += other_storage.len();
                     self.maybe_convert_to_sparse();
                 }
             },
             ArrayStorage::Sparse(storage, length) => match &other_array {
-                ArrayStorage::Dense(other_storage, ..) => {
+                ArrayStorage::Dense(other_storage, _) => {
                     for (i, v) in other_storage.iter().enumerate() {
                         if let Some(v) = v {
                             storage.insert(i + *length, *v);
@@ -542,7 +478,7 @@ impl<'gc> ArrayStorage<'gc> {
                 }
                 ArrayStorage::Sparse(other_storage, other_length) => {
                     for i in 0..*other_length {
-                        let value = other_storage.get(&i).cloned();
+                        let value = other_storage.get(&i).copied();
                         if let Some(value) = value {
                             storage.insert(i + *length, value);
                         }
@@ -583,11 +519,11 @@ impl<'gc> ArrayStorage<'gc> {
     /// Push an array hole onto the end of this array.
     pub fn push_hole(&mut self) {
         match self {
-            ArrayStorage::Dense(storage, ..) => {
+            ArrayStorage::Dense(storage, _) => {
                 storage.push(None);
                 self.maybe_convert_to_sparse();
             }
-            ArrayStorage::Sparse(_storage, length) => {
+            ArrayStorage::Sparse(_, length) => {
                 *length += 1;
             }
         }
@@ -622,7 +558,7 @@ impl<'gc> ArrayStorage<'gc> {
                 let mut non_hole = None;
 
                 let storage_clone = storage.clone();
-                if let Some((i, _item)) = storage_clone.iter().next_back() {
+                if let Some((i, _)) = storage_clone.iter().next_back() {
                     non_hole = Some(i);
                 }
                 if let Some(non_hole) = non_hole {
@@ -631,7 +567,7 @@ impl<'gc> ArrayStorage<'gc> {
                 } else {
                     let value = storage
                         .get(&(*length - 1))
-                        .cloned()
+                        .copied()
                         .unwrap_or(Value::Undefined);
                     storage.remove(&(*length - 1));
                     *length -= 1;
@@ -659,7 +595,7 @@ impl<'gc> ArrayStorage<'gc> {
                 Value::Undefined
             }
             ArrayStorage::Sparse(storage, length) => {
-                let value = storage.get(&0).cloned().unwrap_or(Value::Undefined);
+                let value = storage.get(&0).copied().unwrap_or(Value::Undefined);
                 storage.remove(&0);
 
                 let storage_clone = storage.clone();
@@ -689,7 +625,7 @@ impl<'gc> ArrayStorage<'gc> {
                 let mut new_storage = BTreeMap::new();
                 new_storage.insert(0, item);
                 for i in 0..*length {
-                    let item_from_storage = storage.get(&i).cloned();
+                    let item_from_storage = storage.get(&i).copied();
                     if let Some(item) = item_from_storage {
                         new_storage.insert(i + 1, item);
                     }
@@ -734,7 +670,7 @@ impl<'gc> ArrayStorage<'gc> {
         match self {
             ArrayStorage::Dense(storage, dense_used) => {
                 let position = if position < 0 {
-                    max(position + storage.len() as i32, 0) as usize
+                    std::cmp::max(position + storage.len() as i32, 0) as usize
                 } else {
                     position as usize
                 };
@@ -752,7 +688,7 @@ impl<'gc> ArrayStorage<'gc> {
             }
             ArrayStorage::Sparse(storage, length) => {
                 let position = if position < 0 {
-                    max(position + *length as i32, 0) as usize
+                    std::cmp::max(position + *length as i32, 0) as usize
                 } else {
                     position as usize
                 };
@@ -760,7 +696,7 @@ impl<'gc> ArrayStorage<'gc> {
                 if position >= *length {
                     None
                 } else {
-                    let value = storage.get(&position).cloned();
+                    let value = storage.get(&position).copied();
                     storage.remove(&position);
                     *length -= 1;
                     let storage_clone = storage.clone();
@@ -779,22 +715,6 @@ impl<'gc> ArrayStorage<'gc> {
         iter.index = start;
         iter.index_back = end;
         iter
-    }
-
-    fn drain_without_drop(
-        &mut self,
-        start: usize,
-        end: usize,
-    ) -> ArrayStorageDrainIterator<'_, 'gc> {
-        //slice and clone
-        let iter = self.slice(start, end);
-
-        ArrayStorageDrainIterator {
-            iter,
-            start,
-            end,
-            has_to_drain: false,
-        }
     }
 
     pub fn splice<'a, R, I>(
@@ -816,14 +736,14 @@ impl<'gc> ArrayStorage<'gc> {
             std::ops::Bound::Included(&end) => end + 1,
             std::ops::Bound::Excluded(&end) => end,
             std::ops::Bound::Unbounded => match self {
-                ArrayStorage::Dense(storage, ..) => storage.len(),
-                ArrayStorage::Sparse(_storage, length) => *length,
+                ArrayStorage::Dense(storage, _) => storage.len(),
+                ArrayStorage::Sparse(_, length) => *length,
             },
         };
-        let drain = self.drain_without_drop(start, end);
+        let slice = self.slice(start, end);
         let replace_with = replace_with.into_iter().map(Some);
         ArrayStorageSpliceIterator {
-            drain,
+            slice,
             replace_with,
         }
     }
