@@ -198,7 +198,7 @@ impl VideoDecoder for Vp6Decoder {
         let v = &yuv[offsets.2..offsets.2 + chroma_width * chroma_height];
 
         // Cropping the encoded frame (containing whole macroblocks) to the
-        // size requested by the the bounds attribute.
+        // size requested by the bounds attribute.
 
         let &bounds = &self.bounds;
 
