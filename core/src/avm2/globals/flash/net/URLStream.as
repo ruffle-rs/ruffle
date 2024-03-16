@@ -5,10 +5,10 @@ package flash.net {
     import flash.utils.IDataInput;
     import flash.utils.ByteArray;
     import flash.events.Event;
+    import flash.events.HTTPStatusEvent;
     import flash.events.IOErrorEvent;
-    import flash.events.SecurityErrorEvent;
     import flash.events.ProgressEvent;
-    import flash.events;
+    import flash.events.SecurityErrorEvent;
     import __ruffle__.stub_constructor;
     import __ruffle__.stub_method;
     import __ruffle__.stub_getter;
@@ -49,7 +49,9 @@ package flash.net {
                 self._loader.data.endian = self._endian;
                 self.dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, e.bytesLoaded, e.bytesTotal));
             });
-
+            this._loader.addEventListener(HTTPStatusEvent.HTTP_STATUS, function(e:*):void {
+                self.dispatchEvent(new HTTPStatusEvent(HTTPStatusEvent.HTTP_STATUS, false, false, e.status, e.redirected));
+            });
         }
 
         public function get bytesAvailable():uint {
