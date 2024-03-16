@@ -6,6 +6,7 @@ use std::collections::BTreeMap;
 use std::ops::RangeBounds;
 
 const MIN_SPARSE_LENGTH: usize = 32;
+const MAX_DENSE_LENGTH: usize = 1 << 28;
 
 /// The array storage portion of an array object.
 ///
@@ -35,50 +36,30 @@ impl<'a, 'gc> Iterator for ArrayStorageIterator<'a, 'gc> {
     type Item = Option<Value<'gc>>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match &self.storage {
-            ArrayStorage::Dense(storage, _) => {
-                if self.index >= self.index_back {
-                    None
-                } else {
-                    let value = storage[self.index];
-                    self.index += 1;
-                    Some(value)
-                }
-            }
-            ArrayStorage::Sparse(storage, _) => {
-                if self.index >= self.index_back {
-                    None
-                } else {
-                    let value = storage.get(&self.index).copied();
-                    self.index += 1;
-                    Some(value)
-                }
-            }
+        if self.index >= self.index_back {
+            None
+        } else {
+            let value = match &self.storage {
+                ArrayStorage::Dense(storage, _) => storage[self.index],
+                ArrayStorage::Sparse(storage, _) => storage.get(&self.index).copied(),
+            };
+            self.index += 1;
+            Some(value)
         }
     }
 }
 
 impl<'a, 'gc> DoubleEndedIterator for ArrayStorageIterator<'a, 'gc> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        match &self.storage {
-            ArrayStorage::Dense(storage, _) => {
-                if self.index >= self.index_back || self.index_back == 0 {
-                    None
-                } else {
-                    self.index_back -= 1;
-                    let value = storage[self.index_back];
-                    Some(value)
-                }
-            }
-            ArrayStorage::Sparse(storage, _) => {
-                if self.index >= self.index_back || self.index_back == 0 {
-                    None
-                } else {
-                    self.index_back -= 1;
-                    let value = storage.get(&self.index_back).copied();
-                    Some(value)
-                }
-            }
+        if self.index >= self.index_back || self.index_back == 0 {
+            None
+        } else {
+            self.index_back -= 1;
+            let value = match &self.storage {
+                ArrayStorage::Dense(storage, _) => storage[self.index_back],
+                ArrayStorage::Sparse(storage, _) => storage.get(&self.index_back).copied(),
+            };
+            Some(value)
         }
     }
 }
@@ -93,50 +74,30 @@ impl<'a, 'gc> Iterator for ArrayStorageMutableIterator<'a, 'gc> {
     type Item = Option<Value<'gc>>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match &self.storage {
-            ArrayStorage::Dense(storage, _) => {
-                if self.index >= self.index_back {
-                    None
-                } else {
-                    let value = storage[self.index];
-                    self.index += 1;
-                    Some(value)
-                }
-            }
-            ArrayStorage::Sparse(storage, _) => {
-                if self.index >= self.index_back {
-                    None
-                } else {
-                    let value = storage.get(&self.index).copied();
-                    self.index += 1;
-                    Some(value)
-                }
-            }
+        if self.index >= self.index_back {
+            None
+        } else {
+            let value = match &self.storage {
+                ArrayStorage::Dense(storage, _) => storage[self.index],
+                ArrayStorage::Sparse(storage, _) => storage.get(&self.index).copied(),
+            };
+            self.index += 1;
+            Some(value)
         }
     }
 }
 
 impl<'a, 'gc> DoubleEndedIterator for ArrayStorageMutableIterator<'a, 'gc> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        match &self.storage {
-            ArrayStorage::Dense(storage, _) => {
-                if self.index >= self.index_back || self.index_back == 0 {
-                    None
-                } else {
-                    self.index_back -= 1;
-                    let value = storage[self.index_back];
-                    Some(value)
-                }
-            }
-            ArrayStorage::Sparse(storage, _) => {
-                if self.index >= self.index_back || self.index_back == 0 {
-                    None
-                } else {
-                    self.index_back -= 1;
-                    let value = storage.get(&self.index_back).copied();
-                    Some(value)
-                }
-            }
+        if self.index >= self.index_back || self.index_back == 0 {
+            None
+        } else {
+            self.index_back -= 1;
+            let value = match &self.storage {
+                ArrayStorage::Dense(storage, _) => storage[self.index_back],
+                ArrayStorage::Sparse(storage, _) => storage.get(&self.index_back).copied(),
+            };
+            Some(value)
         }
     }
 }
@@ -245,7 +206,7 @@ impl<'gc> ArrayStorage<'gc> {
     /// The length parameter indicates how big the array storage should start
     /// out as. All array storage consists of holes.
     pub fn new(length: usize) -> Self {
-        if length > (1 << 28) {
+        if length > MAX_DENSE_LENGTH {
             ArrayStorage::Sparse(BTreeMap::new(), 0)
         } else {
             ArrayStorage::Dense(Vec::with_capacity(length), 0)
@@ -341,8 +302,9 @@ impl<'gc> ArrayStorage<'gc> {
         match self {
             ArrayStorage::Dense(storage, dense_used) => {
                 if storage.len() < (item + 1) {
-                    //check if dense_used is less than quarter of item
-                    if *dense_used < (item / 4) && MIN_SPARSE_LENGTH < item {
+                    if *dense_used < (item / 4) && MIN_SPARSE_LENGTH < item
+                        || item >= MAX_DENSE_LENGTH
+                    {
                         self.convert_to_sparse();
                         if let ArrayStorage::Sparse(storage, length) = self {
                             *length = item + 1;
@@ -403,7 +365,7 @@ impl<'gc> ArrayStorage<'gc> {
     pub fn set_length(&mut self, size: usize) {
         match self {
             ArrayStorage::Dense(storage, dense_used) => {
-                if size < 1 << 28 {
+                if size < MAX_DENSE_LENGTH {
                     let num_of_new_holes = (size as i32 - storage.len() as i32).max(0) as usize;
                     if *dense_used + num_of_new_holes < (size / 4)
                         && num_of_new_holes > 0
@@ -428,8 +390,8 @@ impl<'gc> ArrayStorage<'gc> {
                     *length = size;
                 } else {
                     let mut to_remove = Vec::new();
-                    for i in size..*length {
-                        to_remove.push(i);
+                    for (i, _) in storage.range(size..) {
+                        to_remove.push(*i);
                     }
                     for i in to_remove {
                         storage.remove(&i);
@@ -474,11 +436,9 @@ impl<'gc> ArrayStorage<'gc> {
                     *length += other_storage.len();
                 }
                 ArrayStorage::Sparse(other_storage, other_length) => {
-                    for i in 0..*other_length {
-                        let value = other_storage.get(&i).copied();
-                        if let Some(value) = value {
-                            storage.insert(i + *length, value);
-                        }
+                    let storage_range = other_storage.range(..);
+                    for (i, v) in storage_range {
+                        storage.insert(i + *length, *v);
                     }
                     *length += *other_length;
                 }
@@ -505,7 +465,9 @@ impl<'gc> ArrayStorage<'gc> {
     fn maybe_convert_to_sparse(&mut self) {
         match self {
             ArrayStorage::Dense(storage, dense_used) => {
-                if *dense_used < (storage.len() / 4) && MIN_SPARSE_LENGTH < storage.len() {
+                if *dense_used < (storage.len() / 4) && MIN_SPARSE_LENGTH < storage.len()
+                    || storage.len() >= MAX_DENSE_LENGTH
+                {
                     self.convert_to_sparse();
                 }
             }
@@ -633,7 +595,6 @@ impl<'gc> ArrayStorage<'gc> {
         }
     }
 
-    /// Iterate over array values.
     pub fn iter_mut<'a>(&'a mut self) -> ArrayStorageMutableIterator<'a, 'gc> {
         let index_back = self.length();
         ArrayStorageMutableIterator {
@@ -643,6 +604,7 @@ impl<'gc> ArrayStorage<'gc> {
         }
     }
 
+    /// Iterate over array values.
     pub fn iter<'a>(
         &'a self,
     ) -> impl DoubleEndedIterator<Item = Option<Value<'gc>>>
