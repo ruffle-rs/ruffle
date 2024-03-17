@@ -150,14 +150,18 @@ where
                         }
                     }
                 }
-                let offset = self.slice.index as i32 - self.slice.index_back as i32
-                    + replace_with_length as i32;
+                let slice_size = self.slice.index_back - self.slice.index;
+                let is_replace_with_longer = replace_with_length > slice_size;
                 let storage_after_offset = storage_clone
                     .range(self.slice.index_back..)
                     .collect::<BTreeMap<_, _>>();
                 for (index, value) in storage_after_offset {
                     storage.remove(index);
-                    storage.insert((*index as i32 + offset) as usize, *value);
+                    if is_replace_with_longer {
+                        storage.insert(index + (replace_with_length - slice_size), *value);
+                    } else {
+                        storage.insert(index - (slice_size - replace_with_length), *value);
+                    }
                 }
 
                 length -= self.slice.index_back - self.slice.index;
@@ -313,8 +317,8 @@ impl<'gc> ArrayStorage<'gc> {
                     } else {
                         storage.resize(item + 1, None);
                         *storage.get_mut(item).unwrap() = Some(value);
-                        let new_holes = item as i32 - storage.len() as i32 + 1;
-                        *dense_used = (*dense_used + new_holes as usize) + 1;
+                        let new_holes = (item + 1) - storage.len();
+                        *dense_used = (*dense_used + new_holes) + 1;
                     }
                 } else {
                     if storage[item].is_none() {
@@ -366,7 +370,10 @@ impl<'gc> ArrayStorage<'gc> {
         match self {
             ArrayStorage::Dense(storage, dense_used) => {
                 if size < MAX_DENSE_LENGTH {
-                    let num_of_new_holes = (size as i32 - storage.len() as i32).max(0) as usize;
+                    let mut num_of_new_holes = 0;
+                    if size > storage.len() {
+                        num_of_new_holes = size - storage.len();
+                    }
                     if *dense_used + num_of_new_holes < (size / 4)
                         && num_of_new_holes > 0
                         && MIN_SPARSE_LENGTH < size
