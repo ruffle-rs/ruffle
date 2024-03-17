@@ -2330,7 +2330,7 @@ impl<'gc> MovieClip<'gc> {
 
     fn enabled(self, context: &mut UpdateContext<'_, 'gc>) -> bool {
         if !self.movie().is_action_script_3() {
-            self.get_avm1_boolean_property(context, "enabled", true)
+            self.get_avm1_boolean_property(context, "enabled", |_| true)
         } else {
             self.avm2_enabled()
         }
@@ -2346,7 +2346,7 @@ impl<'gc> MovieClip<'gc> {
 
     fn use_hand_cursor(self, context: &mut UpdateContext<'_, 'gc>) -> bool {
         if !self.movie().is_action_script_3() {
-            self.get_avm1_boolean_property(context, "useHandCursor", true)
+            self.get_avm1_boolean_property(context, "useHandCursor", |_| true)
         } else {
             self.avm2_use_hand_cursor()
         }
@@ -3014,7 +3014,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             if self.is_button_mode(context) {
                 true
             } else {
-                self.get_avm1_boolean_property(context, "focusEnabled", false)
+                self.get_avm1_boolean_property(context, "focusEnabled", |_| false)
             }
         } else {
             false
@@ -3035,7 +3035,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         // TODO The default value here is more complicated.
         //      It will be true when there's at least one movie clip handler defined.
         let default_value = false;
-        self.get_avm1_boolean_property(context, "tabEnabled", default_value)
+        self.get_avm1_boolean_property(context, "tabEnabled", |_| default_value)
     }
 
     fn tab_index(&self) -> Option<i64> {
@@ -3066,7 +3066,7 @@ impl<'gc> TDisplayObjectContainer<'gc> for MovieClip<'gc> {
     /// According to the AS2 documentation, it should affect only automatic tab ordering.
     /// However, that does not seem to be the case, as it also affects custom ordering.
     fn is_tab_children(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        self.get_avm1_boolean_property(context, "tabChildren", true)
+        self.get_avm1_boolean_property(context, "tabChildren", |_| true)
     }
 }
 
