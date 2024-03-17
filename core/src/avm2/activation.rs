@@ -213,7 +213,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Construct an activation for the execution of a particular script's
     /// initializer method.
     pub fn from_script(
-        context: UpdateContext<'a, 'gc>,
+        mut context: UpdateContext<'a, 'gc>,
         script: Script<'gc>,
     ) -> Result<Self, Error<'gc>> {
         let (method, global_object, domain) = script.init();
@@ -235,6 +235,29 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         *local_registers.get_unchecked_mut(0) = global_object.into();
 
+        let activation_class = if let Method::Bytecode(method) = method {
+            let body = method
+                .body()
+                .ok_or("Cannot execute non-native method (for script) without body")?;
+
+            BytecodeMethod::get_or_init_activation_class(method, context.gc_context, || {
+                let translation_unit = method.translation_unit();
+                let abc_method = method.method();
+                let mut dummy_activation = Activation::from_domain(context.reborrow(), domain);
+                dummy_activation.set_outer(ScopeChain::new(domain));
+                let activation_class = Class::for_activation(
+                    &mut dummy_activation,
+                    translation_unit,
+                    abc_method,
+                    body,
+                )?;
+
+                ClassObject::from_class(&mut dummy_activation, activation_class, None)
+            })?
+        } else {
+            None
+        };
+
         Ok(Self {
             ip: 0,
             actions_since_timeout_check: 0,
@@ -243,7 +266,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             caller_domain: Some(domain),
             caller_movie: script.translation_unit().map(|t| t.movie()),
             subclass_object: None,
-            activation_class: None,
+            activation_class,
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
             max_stack_size: max_stack as usize,
