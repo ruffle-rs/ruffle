@@ -57,19 +57,19 @@
         "message": "Проверка статуса Ruffle в текущей вкладке…"
     },
     "status_result_running": {
-        "message": "Ruffle запущен и готов к запуску Flash-контента в текущей вкладке."
+        "message": "Ruffle готов к запуску Flash-контента в текущей вкладке."
     },
     "status_result_running_protected": {
-        "message": "Ruffle проигрывает Flash-контент в текущей вкладке."
+        "message": "Ruffle готов к запуску вашего Flash-контента."
     },
     "status_result_optout": {
-        "message": "Ruffle отключён, так как текущая страница помечена владельцем как несовместимая."
+        "message": "Ruffle отключён, так как данный сайт пометил себя как несовместимый."
     },
     "status_result_disabled": {
-        "message": "Ruffle отключён пользователем."
+        "message": "Ruffle отключён."
     },
     "status_result_error": {
-        "message": "Произошла ошибка при запуске Ruffle в текущей вкладке."
+        "message": "Произошла ошибка при запросе экземпляра Ruffle текущей страницы."
     },
     "status_result_protected": {
         "message": "Ruffle не может запускаться на защищённых страницах браузера."

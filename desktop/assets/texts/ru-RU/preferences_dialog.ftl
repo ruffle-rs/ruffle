@@ -1,0 +1,13 @@
+preferences-dialog = Параметры Ruffle
+preference-locked-by-cli = Только чтение (установлено CLI)
+graphics-backend = Обработка графики
+graphics-backend-default = По умолчанию
+graphics-power = Предпочитаемая нагрузка
+graphics-power-low = Низкая (iGPU)
+graphics-power-high = Высокая (GPU)
+language = Язык
+audio-output-device = Устройство вывода звука
+audio-output-device-default = Как в системе
+log-filename-pattern = Имя файла журнала
+log-filename-pattern-single-file = Только имя (ruffle.log)
+log-filename-pattern-with-timestamp = С временной меткой
