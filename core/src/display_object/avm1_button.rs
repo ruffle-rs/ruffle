@@ -423,7 +423,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
     }
 
     fn is_tab_enabled(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        self.get_avm1_boolean_property(context, "tabEnabled", true)
+        self.get_avm1_boolean_property(context, "tabEnabled", |_| true)
     }
 
     fn tab_index(&self) -> Option<i64> {
