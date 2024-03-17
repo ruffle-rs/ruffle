@@ -3032,10 +3032,9 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn is_tab_enabled(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        // TODO The default value here is more complicated.
-        //      It will be true when there's at least one movie clip handler defined.
-        let default_value = false;
-        self.get_avm1_boolean_property(context, "tabEnabled", |_| default_value)
+        self.get_avm1_boolean_property(context, "tabEnabled", |context| {
+            self.tab_index().is_some() || self.is_button_mode(context)
+        })
     }
 
     fn tab_index(&self) -> Option<i64> {
