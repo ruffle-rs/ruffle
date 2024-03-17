@@ -1830,12 +1830,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_new_activation(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let instance = if let Some(activation_class) = self.activation_class {
-            activation_class.construct(self, &[])?
-        } else {
-            // TODO: we might want this to be a proper Object instance, just in case
-            ScriptObject::custom_object(self.context.gc_context, None, None)
-        };
+        let instance = self
+            .activation_class
+            .expect("Activation class should exist for bytecode")
+            .construct(self, &[])?;
 
         self.push_stack(instance);
 
