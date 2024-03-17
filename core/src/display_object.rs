@@ -2518,12 +2518,15 @@ pub trait TDisplayObject<'gc>:
     /// Retrieve a named property from the AVM1 object.
     ///
     /// This is required as some boolean properties in AVM1 can in fact hold any value.
-    fn get_avm1_boolean_property(
+    fn get_avm1_boolean_property<F>(
         self,
         context: &mut UpdateContext<'_, 'gc>,
         name: &'static str,
-        default: bool,
-    ) -> bool {
+        default: F,
+    ) -> bool
+    where
+        F: FnOnce(&mut UpdateContext<'_, 'gc>) -> bool,
+    {
         if let Avm1Value::Object(object) = self.object() {
             let mut activation = Activation::from_nothing(
                 context.reborrow(),
@@ -2532,11 +2535,11 @@ pub trait TDisplayObject<'gc>:
             );
             if let Ok(value) = object.get(name, &mut activation) {
                 match value {
-                    Avm1Value::Undefined => default,
+                    Avm1Value::Undefined => default(&mut activation.context),
                     _ => value.as_bool(activation.swf_version()),
                 }
             } else {
-                default
+                default(&mut activation.context)
             }
         } else {
             false
