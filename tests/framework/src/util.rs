@@ -1,4 +1,4 @@
-use image::{EncodableLayout, ImageBuffer, ImageOutputFormat, Pixel, PixelWithColorType};
+use image::{EncodableLayout, ImageBuffer, ImageFormat, Pixel, PixelWithColorType};
 use std::io::{Cursor, Read, Write};
 use std::ops::Deref;
 use vfs::{VfsError, VfsPath};
@@ -17,7 +17,7 @@ pub fn write_bytes(path: &VfsPath, data: &[u8]) -> Result<(), VfsError> {
 pub fn write_image<P, Container>(
     path: &VfsPath,
     image: &ImageBuffer<P, Container>,
-    format: ImageOutputFormat,
+    format: ImageFormat,
 ) -> anyhow::Result<()>
 where
     P: Pixel + PixelWithColorType,

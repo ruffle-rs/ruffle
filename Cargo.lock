@@ -1529,7 +1529,7 @@ checksum = "3f4a6962241a76da5be5e64e41b851ee1c95fda11f76635522a3c82b119b5475"
 dependencies = [
  "egui",
  "enum-map",
- "image",
+ "image 0.24.9",
  "log",
  "mime_guess2",
  "serde",
@@ -1795,7 +1795,7 @@ dependencies = [
  "anyhow",
  "clap",
  "futures",
- "image",
+ "image 0.25.0",
  "indicatif",
  "log",
  "rayon",
@@ -2621,6 +2621,17 @@ dependencies = [
  "bytemuck",
  "byteorder",
  "color_quant",
+ "num-traits",
+]
+
+[[package]]
+name = "image"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a9b4f005360d32e9325029b38ba47ebd7a56f3316df09249368939562d518645"
+dependencies = [
+ "bytemuck",
+ "byteorder",
  "num-traits",
  "png",
  "tiff",
@@ -4203,7 +4214,7 @@ dependencies = [
  "futures",
  "hashbrown 0.14.3",
  "id3",
- "image",
+ "image 0.25.0",
  "indexmap",
  "jpegxr",
  "linkme",
@@ -4263,7 +4274,7 @@ dependencies = [
  "futures",
  "futures-lite 2.3.0",
  "gilrs",
- "image",
+ "image 0.25.0",
  "isahc",
  "macro_rules_attribute",
  "os_info",
@@ -4387,7 +4398,7 @@ dependencies = [
  "enum-map",
  "fnv",
  "futures",
- "image",
+ "image 0.25.0",
  "indexmap",
  "lru",
  "naga",
@@ -4438,7 +4449,7 @@ dependencies = [
  "async-channel 2.2.0",
  "chrono",
  "futures",
- "image",
+ "image 0.25.0",
  "percent-encoding",
  "pretty_assertions",
  "regex",
@@ -5135,7 +5146,7 @@ dependencies = [
  "anyhow",
  "env_logger",
  "futures",
- "image",
+ "image 0.25.0",
  "libtest-mimic",
  "ruffle_core",
  "ruffle_render_wgpu",
