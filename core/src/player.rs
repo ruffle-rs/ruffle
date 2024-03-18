@@ -540,10 +540,9 @@ impl Player {
                 return vec![];
             }
 
-            // TODO: This should use a pointed display object with `.menu`
-            let root_dobj = context.stage.root_clip();
+            let display_obj = Player::get_context_menu_display_object(context);
 
-            let menu = if let Some(Value::Object(obj)) = root_dobj.map(|root| root.object()) {
+            let menu = if let Some(Value::Object(obj)) = display_obj.map(|obj| obj.object()) {
                 let mut activation = Activation::from_stub(
                     context.reborrow(),
                     ActivationIdentifier::root("[ContextMenu]"),
@@ -563,10 +562,10 @@ impl Player {
                 };
 
                 crate::avm1::make_context_menu_state(menu_object, &mut activation)
-            } else if let Some(Avm2Value::Object(hit_obj)) = root_dobj.map(|root| root.object2()) {
+            } else if let Some(Avm2Value::Object(hit_obj)) = display_obj.map(|obj| obj.object2()) {
                 let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
-                let menu_object = root_dobj
+                let menu_object = display_obj
                     .expect("Root is confirmed to exist here")
                     .as_interactive()
                     .map(|iobj| iobj.context_menu())
@@ -628,14 +627,13 @@ impl Player {
                     ContextMenuCallback::Back => Self::back_root_movie(context),
                     ContextMenuCallback::Rewind => Self::rewind_root_movie(context),
                     ContextMenuCallback::Avm2 { item } => {
-                        // TODO: This should use the pointed display object (see comment on line 614)
-                        let root_dobj = context.stage.root_clip();
+                        let menu_item = *item;
 
-                        if let Some(root_dobj) = root_dobj {
-                            let menu_item = *item;
+                        if let Some(display_obj) = Player::get_context_menu_display_object(context)
+                        {
                             let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
-                            let menu_obj = root_dobj
+                            let menu_obj = display_obj
                                 .as_interactive()
                                 .map(|iobj| iobj.context_menu())
                                 .and_then(|v| v.as_object());
@@ -652,8 +650,8 @@ impl Player {
                                             "menuItemSelect".into(),
                                             false.into(),
                                             false.into(),
-                                            root_dobj.object2(),
-                                            root_dobj.object2(),
+                                            display_obj.object2(),
+                                            display_obj.object2(),
                                         ],
                                     )
                                     .expect("Context menu event should be constructed!");
@@ -683,16 +681,14 @@ impl Player {
         callback: Object<'gc>,
         context: &mut UpdateContext<'_, 'gc>,
     ) {
-        if let Some(root_clip) = context.stage.root_clip() {
+        if let Some(display_obj) = Player::get_context_menu_display_object(context) {
             let mut activation = Activation::from_nothing(
                 context.reborrow(),
                 ActivationIdentifier::root("[Context Menu Callback]"),
-                root_clip,
+                display_obj,
             );
 
-            // TODO: Remember to also change the first arg
-            // when we support contextmenu on non-root-movie
-            let params = vec![root_clip.object(), Value::Object(item)];
+            let params = vec![display_obj.object(), Value::Object(item)];
 
             let _ = callback.call(
                 "[Context Menu Callback]".into(),
@@ -701,6 +697,29 @@ impl Player {
                 &params,
             );
         }
+    }
+
+    //Return root if item has no custom menu
+    ///Returns the display object that the mouse is hovering if it has a custom context menu, else returns the root. Also returns the root on a avm2 object.
+    fn get_context_menu_display_object<'gc>(
+        context: &mut UpdateContext<'_, 'gc>,
+    ) -> Option<DisplayObject<'gc>> {
+        if let Some(interactive_obj) = run_mouse_pick(context, false) {
+            let disp_object = interactive_obj.as_displayobject();
+
+            //TODO: add avm2 object logic
+            if let Some(Value::Object(obj)) = Some(disp_object).map(|obj| obj.object()) {
+                let mut activation = Activation::from_stub(
+                    context.reborrow(),
+                    ActivationIdentifier::root("[ContextMenu]"),
+                );
+
+                if let Ok(Value::Object(_)) = obj.get("menu", &mut activation) {
+                    return Some(disp_object);
+                }
+            }
+        }
+        context.stage.root_clip()
     }
 
     pub fn set_fullscreen(&mut self, is_fullscreen: bool) {
