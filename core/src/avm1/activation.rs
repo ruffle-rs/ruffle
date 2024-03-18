@@ -322,7 +322,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
     }
 
-    /// Construct an empty stack frame with no code running on the root move in
+    /// Construct an empty stack frame with no code running on the root movie in
     /// layer 0.
     pub fn from_stub(context: UpdateContext<'a, 'gc>, id: ActivationIdentifier<'a>) -> Self {
         // [NA]: we have 3 options here:
