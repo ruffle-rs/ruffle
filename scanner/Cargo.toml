@@ -11,7 +11,7 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-clap = { version = "4.5.2", features = ["derive"] }
+clap = { version = "4.5.3", features = ["derive"] }
 ruffle_core = { path = "../core", features = ["deterministic"] }
 log = "0.4"
 walkdir = "2.5.0"
