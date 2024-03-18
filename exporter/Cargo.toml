@@ -15,7 +15,7 @@ clap = { workspace = true }
 futures = "0.3"
 ruffle_core = { path = "../core", features = ["deterministic", "default_font"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
-image = { version = "0.24.9", default-features = false, features = ["png"] }
+image = { version = "0.25.0", default-features = false, features = ["png"] }
 log = "0.4"
 walkdir = "2.5.0"
 indicatif = "0.17"

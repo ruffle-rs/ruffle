@@ -4,7 +4,7 @@ use crate::image_trigger::ImageTrigger;
 use crate::util::write_image;
 use anyhow::{anyhow, Result};
 use approx::relative_eq;
-use image::ImageOutputFormat;
+use image::ImageFormat;
 use regex::Regex;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{PlayerBuilder, PlayerRuntime, ViewportDimensions};
@@ -246,7 +246,7 @@ impl ImageComparison {
                 write_image(
                     &test_path.join(format!("{name}.actual-{environment_name}.png"))?,
                     &actual_image,
-                    ImageOutputFormat::Png,
+                    ImageFormat::Png,
                 )
             } else {
                 Ok(())
@@ -324,7 +324,7 @@ impl ImageComparison {
                 write_image(
                     &test_path.join(format!("{name}.difference-color-{environment_name}.png"))?,
                     &difference_image,
-                    ImageOutputFormat::Png,
+                    ImageFormat::Png,
                 )?;
             }
 
@@ -348,7 +348,7 @@ impl ImageComparison {
                         &test_path
                             .join(format!("{name}.difference-alpha-{environment_name}.png"))?,
                         &difference_image,
-                        ImageOutputFormat::Png,
+                        ImageFormat::Png,
                     )?;
                 }
             }
