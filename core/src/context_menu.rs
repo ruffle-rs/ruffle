@@ -7,8 +7,8 @@
 use crate::avm1;
 use crate::avm2;
 use crate::context::UpdateContext;
+use crate::display_object::{DisplayObject, InteractiveObject, TDisplayObject};
 use crate::display_object::{EditText, Stage};
-use crate::display_object::{InteractiveObject, TDisplayObject};
 use crate::events::TextControlCode;
 use crate::i18n::core_text;
 use gc_arena::Collect;
@@ -20,6 +20,7 @@ pub struct ContextMenuState<'gc> {
     #[collect(require_static)]
     info: Vec<ContextMenuItem>,
     callbacks: Vec<ContextMenuCallback<'gc>>,
+    object: Option<DisplayObject<'gc>>,
 }
 
 impl<'gc> ContextMenuState<'gc> {
@@ -38,6 +39,14 @@ impl<'gc> ContextMenuState<'gc> {
 
     pub fn callback(&self, index: usize) -> &ContextMenuCallback<'gc> {
         &self.callbacks[index]
+    }
+
+    pub fn get_display_object(&self) -> Option<DisplayObject<'gc>> {
+        self.object
+    }
+
+    pub fn set_display_object(&mut self, object: Option<DisplayObject<'gc>>) {
+        self.object = object;
     }
 
     pub fn build_builtin_items(
