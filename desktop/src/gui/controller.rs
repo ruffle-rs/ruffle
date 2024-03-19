@@ -48,30 +48,7 @@ impl GuiController {
         initial_movie_url: Option<Url>,
         no_gui: bool,
     ) -> anyhow::Result<Self> {
-        let mut backend: wgpu::Backends = preferences.graphics_backends().into();
-        if wgpu::Backends::SECONDARY.contains(backend) {
-            tracing::warn!(
-                "{} graphics backend support may not be fully supported.",
-                format_list(&get_backend_names(backend), "and")
-            );
-        }
-        let mut instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-            backends: backend,
-            flags: wgpu::InstanceFlags::default().with_env(),
-            ..Default::default()
-        });
-        if instance.enumerate_adapters(backend).is_empty() && backend != wgpu::Backends::all() {
-            tracing::warn!(
-                "Graphics backend {} is not available; falling back to any available backend",
-                format_list(&get_backend_names(backend), "and")
-            );
-            backend = wgpu::Backends::all();
-            instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-                backends: backend,
-                flags: wgpu::InstanceFlags::default().with_env(),
-                ..Default::default()
-            });
-        }
+        let (instance, backend) = create_wgpu_instance(preferences.graphics_backends().into())?;
         let surface = unsafe {
             instance.create_surface_unsafe(wgpu::SurfaceTargetUnsafe::from_window(window.as_ref())?)
         }?;
@@ -358,6 +335,52 @@ impl GuiController {
 
     pub fn show_open_dialog(&mut self) {
         self.gui.open_file_advanced()
+    }
+}
+
+fn create_wgpu_instance(
+    preferred_backends: wgpu::Backends,
+) -> anyhow::Result<(wgpu::Instance, wgpu::Backends)> {
+    for backend in preferred_backends.iter() {
+        if let Some(instance) = try_wgpu_backend(backend) {
+            tracing::info!(
+                "Using preferred backend {}",
+                format_list(&get_backend_names(backend), "and")
+            );
+            return Ok((instance, backend));
+        }
+    }
+
+    tracing::warn!(
+        "Preferred backend(s) of {} not available; falling back to any",
+        format_list(&get_backend_names(preferred_backends), "or")
+    );
+
+    for backend in wgpu::Backends::all() - preferred_backends {
+        if let Some(instance) = try_wgpu_backend(backend) {
+            tracing::info!(
+                "Using fallback backend {}",
+                format_list(&get_backend_names(backend), "and")
+            );
+            return Ok((instance, backend));
+        }
+    }
+
+    Err(anyhow!(
+        "No compatible graphics backends of any kind were available"
+    ))
+}
+
+fn try_wgpu_backend(backend: wgpu::Backends) -> Option<wgpu::Instance> {
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        backends: backend,
+        flags: wgpu::InstanceFlags::default().with_env(),
+        ..Default::default()
+    });
+    if instance.enumerate_adapters(backend).is_empty() {
+        None
+    } else {
+        Some(instance)
     }
 }
 
