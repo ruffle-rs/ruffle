@@ -226,6 +226,14 @@ pub fn make_context_menu_state<'gc>(
                             continue;
                         }
 
+                        if result
+                            .info()
+                            .iter()
+                            .any(|menu_item| menu_item.caption == caption.to_string())
+                        {
+                            continue;
+                        }
+
                         result.push(
                             context_menu::ContextMenuItem {
                                 enabled,
