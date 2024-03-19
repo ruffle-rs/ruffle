@@ -112,7 +112,6 @@ impl GuiController {
             initial_movie_url.clone(),
             PlayerOptions::from(&preferences),
             preferences.clone(),
-            descriptors.clone(),
         );
         let system_fonts =
             load_system_fonts(font_database, preferences.language().to_owned()).unwrap_or_default();

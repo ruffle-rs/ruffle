@@ -22,10 +22,9 @@ use fluent_templates::{static_loader, Loader};
 use rfd::FileDialog;
 use ruffle_core::debug_ui::Message as DebugMessage;
 use ruffle_core::Player;
-use ruffle_render_wgpu::descriptors::Descriptors;
 use std::collections::HashMap;
 use std::fs;
-use std::sync::{Arc, MutexGuard};
+use std::sync::MutexGuard;
 use unic_langid::LanguageIdentifier;
 use winit::event_loop::EventLoopProxy;
 
@@ -92,7 +91,6 @@ pub struct RuffleGui {
     currently_opened: Option<(Url, PlayerOptions)>,
     was_suspended_before_debug: bool,
     preferences: GlobalPreferences,
-    descriptors: Arc<Descriptors>,
 }
 
 impl RuffleGui {
@@ -101,7 +99,6 @@ impl RuffleGui {
         default_path: Option<Url>,
         default_player_options: PlayerOptions,
         preferences: GlobalPreferences,
-        descriptors: Arc<Descriptors>,
     ) -> Self {
         Self {
             is_about_visible: false,
@@ -122,7 +119,6 @@ impl RuffleGui {
             default_player_options,
             currently_opened: None,
             preferences,
-            descriptors,
         }
     }
 
@@ -513,10 +509,7 @@ impl RuffleGui {
     }
 
     fn open_preferences(&mut self) {
-        self.preferences_dialog = Some(PreferencesDialog::new(
-            &self.descriptors,
-            self.preferences.clone(),
-        ));
+        self.preferences_dialog = Some(PreferencesDialog::new(self.preferences.clone()));
     }
 
     fn close_movie(&mut self, ui: &mut egui::Ui) {
