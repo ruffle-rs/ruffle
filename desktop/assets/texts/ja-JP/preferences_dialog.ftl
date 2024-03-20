@@ -8,3 +8,6 @@ graphics-power-high = 高(GPU等の場合)
 language = 言語
 audio-output-device = オーディオ出力デバイス
 audio-output-device-default = システムのデフォルト
+log-filename-pattern = ログファイル名
+log-filename-pattern-single-file = 単一ファイル（ruffle.log）
+log-filename-pattern-with-timestamp = タイムスタンプ付き
