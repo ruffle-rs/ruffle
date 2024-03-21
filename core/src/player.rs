@@ -156,6 +156,9 @@ struct GcRootData<'gc> {
 
     current_context_menu: Option<ContextMenuState<'gc>>,
 
+    //Stores for wich object the context menu shows.
+    clicked_object_context_menu: Option<DisplayObject<'gc>>,
+
     /// External interface for (for example) JavaScript <-> ActionScript interaction
     external_interface: ExternalInterface<'gc>,
 
@@ -541,6 +544,7 @@ impl Player {
             }
 
             let display_obj = Player::get_context_menu_display_object(context);
+            context.clicked_object_context_menu = display_obj;
 
             let menu = if let Some(Value::Object(obj)) = display_obj.map(|obj| obj.object()) {
                 let mut activation = Activation::from_stub(
@@ -628,9 +632,7 @@ impl Player {
                     ContextMenuCallback::Rewind => Self::rewind_root_movie(context),
                     ContextMenuCallback::Avm2 { item } => {
                         let menu_item = *item;
-
-                        if let Some(display_obj) = Player::get_context_menu_display_object(context)
-                        {
+                        if let Some(display_obj) = context.clicked_object_context_menu {
                             let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
                             let menu_obj = display_obj
@@ -681,7 +683,7 @@ impl Player {
         callback: Object<'gc>,
         context: &mut UpdateContext<'_, 'gc>,
     ) {
-        if let Some(display_obj) = Player::get_context_menu_display_object(context) {
+        if let Some(display_obj) = context.clicked_object_context_menu {
             let mut activation = Activation::from_nothing(
                 context.reborrow(),
                 ActivationIdentifier::root("[Context Menu Callback]"),
@@ -1858,6 +1860,7 @@ impl Player {
             let mut root_data = gc_root.data.write(gc_context);
             let mouse_hovered_object = root_data.mouse_hovered_object;
             let mouse_pressed_object = root_data.mouse_pressed_object;
+            let clicked_object_context_menu = root_data.clicked_object_context_menu;
             let focus_tracker = root_data.focus_tracker;
 
             #[allow(unused_variables)]
@@ -1916,6 +1919,7 @@ impl Player {
                 unbound_text_fields,
                 timers,
                 current_context_menu,
+                clicked_object_context_menu,
                 needs_render: &mut self.needs_render,
                 avm1,
                 avm2,
@@ -1961,8 +1965,10 @@ impl Player {
             // Hovered object may have been updated; copy it back to the GC root.
             let mouse_hovered_object = update_context.mouse_over_object;
             let mouse_pressed_object = update_context.mouse_down_object;
+            let clicked_menu_object = update_context.clicked_object_context_menu;
             root_data.mouse_hovered_object = mouse_hovered_object;
             root_data.mouse_pressed_object = mouse_pressed_object;
+            root_data.clicked_object_context_menu = clicked_menu_object;
 
             ret
         })
@@ -2455,6 +2461,7 @@ impl PlayerBuilder {
                     avm2: Avm2::new(&mut init, player_version, player_runtime),
                     interner,
                     current_context_menu: None,
+                    clicked_object_context_menu: None,
                     drag_object: None,
                     external_interface: ExternalInterface::new(
                         external_interface_providers,
