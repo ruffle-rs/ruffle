@@ -1,0 +1,30 @@
+num_ticks = 6
+
+[image_comparisons."output.01"]
+trigger = 1
+max_outliers = 4
+
+[image_comparisons."output.02"]
+trigger = 2
+max_outliers = 4
+
+[image_comparisons."output.03"]
+trigger = 3
+max_outliers = 4
+
+[image_comparisons."output.04"]
+trigger = 4
+max_outliers = 4
+
+[image_comparisons."output.05"]
+trigger = 5
+# Position of the cursor does not matter,
+# what matters is that there's no highlight.
+max_outliers = 100
+
+[image_comparisons."output.06"]
+trigger = 6
+max_outliers = 4
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }
