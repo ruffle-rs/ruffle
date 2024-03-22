@@ -497,7 +497,7 @@ dependencies = [
  "bitflags 2.4.2",
  "cexpr",
  "clang-sys",
- "itertools 0.12.1",
+ "itertools",
  "lazy_static",
  "lazycell",
  "log",
@@ -2413,7 +2413,7 @@ dependencies = [
 [[package]]
 name = "h263-rs"
 version = "0.1.0"
-source = "git+https://github.com/ruffle-rs/h263-rs?rev=16700664e2b3334f0a930f99af86011aebee14cc#16700664e2b3334f0a930f99af86011aebee14cc"
+source = "git+https://github.com/ruffle-rs/h263-rs?rev=5c8d9d7d86f62b70ca484df006a75a9c8ff1985c#5c8d9d7d86f62b70ca484df006a75a9c8ff1985c"
 dependencies = [
  "bitflags 2.4.2",
  "lazy_static",
@@ -2424,16 +2424,16 @@ dependencies = [
 [[package]]
 name = "h263-rs-deblock"
 version = "0.1.0"
-source = "git+https://github.com/ruffle-rs/h263-rs?rev=16700664e2b3334f0a930f99af86011aebee14cc#16700664e2b3334f0a930f99af86011aebee14cc"
+source = "git+https://github.com/ruffle-rs/h263-rs?rev=5c8d9d7d86f62b70ca484df006a75a9c8ff1985c#5c8d9d7d86f62b70ca484df006a75a9c8ff1985c"
 dependencies = [
- "itertools 0.11.0",
+ "itertools",
  "wide",
 ]
 
 [[package]]
 name = "h263-rs-yuv"
 version = "0.1.0"
-source = "git+https://github.com/ruffle-rs/h263-rs?rev=16700664e2b3334f0a930f99af86011aebee14cc#16700664e2b3334f0a930f99af86011aebee14cc"
+source = "git+https://github.com/ruffle-rs/h263-rs?rev=5c8d9d7d86f62b70ca484df006a75a9c8ff1985c#5c8d9d7d86f62b70ca484df006a75a9c8ff1985c"
 dependencies = [
  "bytemuck",
  "wide",
@@ -2758,15 +2758,6 @@ dependencies = [
  "tracing-futures",
  "url",
  "waker-fn",
-]
-
-[[package]]
-name = "itertools"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
-dependencies = [
- "either",
 ]
 
 [[package]]
