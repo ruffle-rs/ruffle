@@ -32,7 +32,7 @@ webbrowser = "0.8.13"
 url = "2.5.0"
 dirs = "5.0"
 isahc = { version = "1.7.2", features = ["cookies"] }
-rfd = "0.14.0"
+rfd = "0.14.1"
 anyhow = "1.0"
 bytemuck = "1.15.0"
 os_info = { version = "3", default-features = false }
@@ -46,7 +46,7 @@ futures-lite = "2.3.0"
 async-io = "2.3.2"
 async-net = "2.0.0"
 async-channel = "2.2.0"
-toml_edit = { version = "0.22.7", features = ["parse"] }
+toml_edit = { version = "0.22.9", features = ["parse"] }
 gilrs = "0.10"
 urlencoding = "2.1.3"
 
