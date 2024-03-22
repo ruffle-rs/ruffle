@@ -9,7 +9,7 @@ use std::cell::Cell;
 use std::cmp;
 use std::fmt::{self, Display, Formatter};
 use std::io::prelude::*;
-use std::io::{self, Read, SeekFrom};
+use std::io::{self, SeekFrom};
 
 #[derive(Clone, Collect, Debug, Copy, PartialEq, Eq)]
 #[collect(no_drop)]

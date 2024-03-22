@@ -9,9 +9,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{self, ArrayObject, Object, ScriptObject, TObject, Value};
 use crate::backend::navigator::NavigationMethod;
 use crate::context::{GcContext, UpdateContext};
-use crate::display_object::{
-    Bitmap, DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer,
-};
+use crate::display_object::{Bitmap, EditText, MovieClip};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
 use crate::string::AvmString;
@@ -20,7 +18,7 @@ use crate::{avm1_stub, avm_error, avm_warn};
 use ruffle_render::shape_utils::{DrawCommand, GradientType};
 use swf::{
     FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
-    LineCapStyle, LineJoinStyle, LineStyle, Rectangle, Twips,
+    LineCapStyle, LineJoinStyle, LineStyle,
 };
 
 macro_rules! mc_method {

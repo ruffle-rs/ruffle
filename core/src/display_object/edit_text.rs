@@ -17,7 +17,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
-use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
+use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
 use crate::drawing::Drawing;
 use crate::events::{ClipEvent, ClipEventResult, TextControlCode};
 use crate::font::{round_down_to_pixel, FontType, Glyph, TextRenderSettings};
@@ -39,7 +39,7 @@ use ruffle_wstr::WStrToUtf8;
 use std::cmp::Ordering;
 use std::collections::VecDeque;
 use std::{cell::Ref, cell::RefMut, sync::Arc};
-use swf::{Color, ColorTransform, Twips};
+use swf::ColorTransform;
 use unic_segment::WordBoundIndices;
 
 use super::interactive::Avm2MousePick;

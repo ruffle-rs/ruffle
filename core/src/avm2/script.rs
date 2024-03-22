@@ -19,7 +19,6 @@ use crate::tag_utils::SwfMovie;
 use crate::PlayerRuntime;
 use gc_arena::{Collect, Gc, GcCell, Mutation};
 use std::cell::Ref;
-use std::mem::drop;
 use std::rc::Rc;
 use std::sync::Arc;
 use swf::avm2::types::{

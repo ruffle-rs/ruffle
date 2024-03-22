@@ -9,8 +9,8 @@ use futures::{AsyncReadExt, AsyncWriteExt};
 use futures_lite::FutureExt;
 use isahc::http::{HeaderName, HeaderValue};
 use isahc::{
-    config::RedirectPolicy, prelude::*, AsyncBody, AsyncReadResponseExt, HttpClient,
-    Request as IsahcRequest, Response as IsahcResponse,
+    config::RedirectPolicy, prelude::*, AsyncBody, HttpClient, Request as IsahcRequest,
+    Response as IsahcResponse,
 };
 use rfd::{AsyncMessageDialog, MessageButtons, MessageDialog, MessageDialogResult, MessageLevel};
 use ruffle_core::backend::navigator::{

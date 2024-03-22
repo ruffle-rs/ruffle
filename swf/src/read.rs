@@ -2556,9 +2556,7 @@ pub fn read_compression_type<R: Read>(mut input: R) -> Result<Compression> {
 #[allow(clippy::unusual_byte_groupings)]
 pub mod tests {
     use super::*;
-    use crate::tag_code::TagCode;
     use crate::test_data;
-    use std::vec::Vec;
 
     fn reader(data: &[u8]) -> Reader<'_> {
         let default_version = 13;
