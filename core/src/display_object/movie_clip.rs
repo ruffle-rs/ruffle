@@ -3041,6 +3041,11 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn tab_index(&self) -> Option<i64> {
         self.0.read().tab_index.map(|i| i as i64)
     }
+
+    fn is_highlight_enabled(&self) -> bool {
+        // TODO focusrect support
+        true
+    }
 }
 
 impl<'gc> TDisplayObjectContainer<'gc> for MovieClip<'gc> {
