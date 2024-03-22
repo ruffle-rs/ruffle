@@ -25,8 +25,8 @@ ruffle_video = { path = "../video" }
 ruffle_macros = { path = "macros" }
 ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf" }
-bitflags = "2.4.2"
-smallvec = { version = "1.13.1", features = ["union"] }
+bitflags = "2.5.0"
+smallvec = { version = "1.13.2", features = ["union"] }
 num-traits = "0.2"
 num-derive = "0.4"
 quick-xml = "0.31.0"
