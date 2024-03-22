@@ -15,6 +15,7 @@ use crate::display_object::interactive::{
 };
 use crate::display_object::{render_base, DisplayObjectBase, DisplayObjectPtr};
 use crate::events::{ClipEvent, ClipEventResult};
+use crate::focus_tracker::FocusTracker;
 use crate::prelude::*;
 use crate::string::{FromWStr, WStr};
 use crate::tag_utils::SwfMovie;
@@ -147,6 +148,9 @@ pub struct StageData<'gc> {
     /// identity matrix unless explicitly set from ActionScript)
     #[collect(require_static)]
     viewport_matrix: Matrix,
+
+    /// A tracker for the current keyboard focused element
+    focus_tracker: FocusTracker<'gc>,
 }
 
 impl<'gc> Stage<'gc> {
@@ -184,6 +188,7 @@ impl<'gc> Stage<'gc> {
                 stage3ds: vec![],
                 movie,
                 viewport_matrix: Matrix::IDENTITY,
+                focus_tracker: FocusTracker::new(gc_context),
             },
         ));
         stage.set_is_root(gc_context, true);
@@ -731,6 +736,10 @@ impl<'gc> Stage<'gc> {
 
             Avm2::dispatch_event(context, full_screen_event, stage);
         }
+    }
+
+    pub fn focus_tracker(&self) -> FocusTracker<'gc> {
+        self.0.read().focus_tracker
     }
 }
 
