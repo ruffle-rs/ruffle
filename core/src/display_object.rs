@@ -1926,6 +1926,11 @@ pub trait TDisplayObject<'gc>:
         None
     }
 
+    /// Whether this object may be highlighted by tab ordering.
+    fn is_highlight_enabled(&self) -> bool {
+        false
+    }
+
     /// Whether this display object has been created by ActionScript 3.
     /// When this flag is set, changes from SWF `RemoveObject` tags are
     /// ignored.

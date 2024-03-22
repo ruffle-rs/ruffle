@@ -847,6 +847,8 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
 
         render_base((*self).into(), context);
 
+        self.focus_tracker().render_highlight(context);
+
         if self.should_letterbox() {
             self.draw_letterbox(context);
         }

@@ -1187,6 +1187,17 @@ impl Player {
                 tracker.cycle(context, reversed);
             });
         }
+
+        if matches!(
+            event,
+            PlayerEvent::MouseDown { .. }
+                | PlayerEvent::MouseUp { .. }
+                | PlayerEvent::MouseMove { .. }
+        ) {
+            self.mutate_with_update_context(|context| {
+                context.focus_tracker.reset_highlight();
+            });
+        }
     }
 
     /// Update dragged object, if any.
