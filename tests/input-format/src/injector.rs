@@ -96,6 +96,7 @@ impl InputInjector {
                     AutomatedEvent::Wait => break,
                     AutomatedEvent::MouseMove { .. }
                     | AutomatedEvent::KeyDown { .. }
+                    | AutomatedEvent::KeyUp { .. }
                     | AutomatedEvent::TextInput { .. }
                     | AutomatedEvent::TextControl { .. }
                     | AutomatedEvent::SetClipboardText { .. } => {}
