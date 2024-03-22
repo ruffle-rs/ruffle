@@ -1,0 +1,40 @@
+num_ticks = 9
+
+[image_comparisons."output.01_highlight_under"]
+tolerance = 0
+trigger = 1
+
+[image_comparisons."output.02_highlight_over"]
+tolerance = 0
+trigger = 2
+
+[image_comparisons."output.03_after_mouse_move"]
+tolerance = 0
+trigger = 3
+
+[image_comparisons."output.04_after_mouse_up"]
+tolerance = 0
+trigger = 4
+
+[image_comparisons."output.05_after_mouse_down"]
+tolerance = 0
+trigger = 5
+
+[image_comparisons."output.06_after_key_down"]
+tolerance = 0
+trigger = 6
+
+[image_comparisons."output.07_after_focus_change"]
+tolerance = 0
+trigger = 7
+
+[image_comparisons."output.08_after_focus_change_and_tab"]
+tolerance = 0
+trigger = 8
+
+[image_comparisons."output.09_after_focus_change_without_highlight"]
+tolerance = 0
+trigger = 9
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }
