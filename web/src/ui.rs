@@ -14,6 +14,7 @@ use web_sys::{HtmlCanvasElement, HtmlDocument, HtmlTextAreaElement};
 
 use chrono::{DateTime, Utc};
 
+#[allow(dead_code)]
 #[derive(Debug)]
 struct FullScreenError {
     jsval: String,

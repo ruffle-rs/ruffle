@@ -4,7 +4,7 @@ use crate::context::RenderContext;
 use crate::context::UpdateContext;
 use crate::display_object::InteractiveObject;
 use crate::display_object::TInteractiveObject;
-use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
+use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
 

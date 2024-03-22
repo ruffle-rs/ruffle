@@ -9,7 +9,6 @@ use crate::avm2::value::Value;
 use crate::avm2::StageObject;
 use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::avm2::{ClassObject, Error};
-use crate::display_object::{DisplayObject, HitTestOptions, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
 use crate::prelude::*;
 use crate::string::AvmString;
@@ -19,8 +18,6 @@ use crate::{avm2_stub_getter, avm2_stub_setter};
 use ruffle_render::blend::ExtendedBlendMode;
 use ruffle_render::filters::Filter;
 use std::str::FromStr;
-use swf::Rectangle;
-use swf::Twips;
 
 pub fn display_object_allocator<'gc>(
     class: ClassObject<'gc>,

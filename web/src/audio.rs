@@ -11,7 +11,7 @@ use std::time::Duration;
 use tracing_subscriber::layer::Layered;
 use tracing_subscriber::Registry;
 use tracing_wasm::WASMLayer;
-use wasm_bindgen::{closure::Closure, prelude::*, JsCast};
+use wasm_bindgen::prelude::*;
 use web_sys::AudioContext;
 
 #[allow(dead_code)]

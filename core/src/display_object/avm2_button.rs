@@ -10,7 +10,7 @@ use crate::display_object::container::{dispatch_added_event, dispatch_removed_ev
 use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
-use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, MovieClip, TDisplayObject};
+use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, MovieClip};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::prelude::*;

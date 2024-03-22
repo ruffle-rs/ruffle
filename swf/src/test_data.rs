@@ -11,7 +11,6 @@ use crate::types::*;
 use crate::write::write_swf;
 use std::borrow::Cow;
 use std::fs::File;
-use std::vec::Vec;
 
 #[allow(dead_code)]
 pub fn echo_swf(filename: &str) {

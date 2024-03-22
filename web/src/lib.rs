@@ -40,7 +40,7 @@ use tracing_subscriber::layer::{Layered, SubscriberExt};
 use tracing_subscriber::registry::Registry;
 use tracing_wasm::{WASMLayer, WASMLayerConfigBuilder};
 use url::Url;
-use wasm_bindgen::{prelude::*, JsCast, JsValue};
+use wasm_bindgen::prelude::*;
 use web_sys::{
     AddEventListenerOptions, ClipboardEvent, Element, Event, EventTarget, HtmlCanvasElement,
     HtmlElement, KeyboardEvent, PointerEvent, WheelEvent, Window,

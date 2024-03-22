@@ -54,7 +54,6 @@ impl<'a> PreferencesWriter<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::log::FilenamePattern;
     use crate::preferences::read::read_preferences;
     use fluent_templates::loader::langid;
 
