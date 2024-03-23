@@ -1,0 +1,6 @@
+button_2: _parent.val: 0
+button_1: _parent.val: 2
+button_1: _parent.button_2.val[_parent.val]: 2
+button_1: _parent.val: 1
+button_1: _parent.button_2.val[_parent.val]: 1
+button_2: _parent.val: 1

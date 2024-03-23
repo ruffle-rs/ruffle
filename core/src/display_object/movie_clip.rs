@@ -3124,12 +3124,13 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                             }
                         }
 
-                        context.action_queue.queue_action(
+                        context.action_queue.queue_front_or_back_action(
                             self.into(),
                             ActionType::Normal {
                                 bytecode: event_handler.action_data.clone(),
                             },
                             event == ClipEvent::Unload,
+                            event.propagates(),
                         );
                     }
                 }
@@ -3140,7 +3141,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                     if let Some(name) = event.method_name() {
                         // Keyboard events don't fire their methods unless the MovieClip has focus (#2120).
                         if !event.is_key_event() || read.has_focus {
-                            context.action_queue.queue_action(
+                            context.action_queue.queue_front_or_back_action(
                                 self.into(),
                                 ActionType::Method {
                                     object,
@@ -3148,6 +3149,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                                     args: vec![],
                                 },
                                 event == ClipEvent::Unload,
+                                event.propagates(),
                             );
                         }
                     }
