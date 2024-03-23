@@ -406,6 +406,11 @@ pub fn optimize<'gc>(
                 stack.pop();
                 stack.push_any();
             }
+            Op::NegateI => {
+                stack.pop();
+                stack.pop();
+                stack.push_any();
+            }
             Op::Add => {
                 let value2 = stack.pop_or_any();
                 let value1 = stack.pop_or_any();
@@ -497,6 +502,10 @@ pub fn optimize<'gc>(
             Op::NewClass { .. } => {
                 stack.push_class_object(types.class);
             }
+            Op::NewCatch { .. } => {
+                // Avoid handling for now
+                stack.push_any();
+            }
             Op::IsType { .. } => {
                 stack.pop();
                 stack.push_class_object(types.boolean);
@@ -505,6 +514,10 @@ pub fn optimize<'gc>(
                 stack.pop();
                 stack.pop();
                 stack.push_class_object(types.boolean);
+            }
+            Op::TypeOf => {
+                stack.pop();
+                stack.push_class_object(types.string);
             }
             Op::ApplyType { num_types } => {
                 stack.popn(*num_types);
@@ -580,15 +593,23 @@ pub fn optimize<'gc>(
             Op::PopScope => {
                 scope_stack.pop();
             }
+            Op::GetScopeObject { .. } => {
+                // Avoid handling for now
+                stack.push_any();
+            }
             Op::Pop => {
                 stack.pop();
             }
             Op::Dup => {
-                let stack_value = stack.pop();
-                if let Some(stack_value) = stack_value {
-                    stack.push(stack_value);
-                    stack.push(stack_value);
-                }
+                let stack_value = stack.pop_or_any();
+                stack.push(stack_value);
+                stack.push(stack_value);
+            }
+            Op::Swap => {
+                let first = stack.pop_or_any();
+                let second = stack.pop_or_any();
+                stack.push(first);
+                stack.push(second);
             }
             Op::Kill { index } => {
                 local_types.set_any(*index as usize);
@@ -615,6 +636,43 @@ pub fn optimize<'gc>(
 
                 // Avoid handling for now
                 stack.push_any();
+            }
+            Op::FindDef { .. } => {
+                // Avoid handling for now
+                stack.push_any();
+            }
+            Op::In => {
+                stack.pop();
+                stack.pop();
+                stack.push_class_object(types.boolean);
+            }
+            Op::NextName => {
+                stack.pop();
+                stack.pop();
+                stack.push_any();
+            }
+            Op::NextValue => {
+                stack.pop();
+                stack.pop();
+                stack.push_any();
+            }
+            Op::HasNext2 {
+                index_register,
+                object_register,
+            } => {
+                stack.push_class_object(types.boolean);
+                local_types.set_any(*index_register as usize);
+                local_types.set_any(*object_register as usize);
+            }
+            Op::GetSlot { .. } => {
+                stack.pop();
+
+                // Avoid handling type for now
+                stack.push_any();
+            }
+            Op::SetSlot { .. } => {
+                stack.pop();
+                stack.pop();
             }
             Op::GetProperty { multiname } => {
                 let mut stack_push_done = false;
@@ -667,12 +725,6 @@ pub fn optimize<'gc>(
                     stack.push_any();
                 }
             }
-            Op::GetSlot { .. } => {
-                stack.pop();
-
-                // Avoid handling type for now
-                stack.push_any();
-            }
             Op::InitProperty { multiname } => {
                 stack.pop();
                 stack.pop_for_multiname(*multiname);
@@ -709,6 +761,11 @@ pub fn optimize<'gc>(
                     }
                 }
                 // `stack_pop_multiname` handled lazy
+            }
+            Op::DeleteProperty { multiname } => {
+                stack.pop_for_multiname(*multiname);
+
+                stack.pop();
             }
             Op::Construct { num_args } => {
                 // Arguments
@@ -821,6 +878,12 @@ pub fn optimize<'gc>(
                 stack.pop();
             }
             Op::Li8 | Op::Li16 => {
+                stack.pop();
+                let mut value = OptValue::of_type(types.int);
+                value.contains_valid_integer = true;
+                stack.push(value);
+            }
+            Op::Sxi8 | Op::Sxi16 => {
                 stack.pop();
                 let mut value = OptValue::of_type(types.int);
                 value.contains_valid_integer = true;
