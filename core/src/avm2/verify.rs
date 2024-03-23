@@ -288,6 +288,16 @@ pub fn verify_method<'gc>(
                     }
                 }
 
+                AbcOp::GetOuterScope { index } => {
+                    if activation.outer().get(index as usize).is_none() {
+                        return Err(Error::AvmError(verify_error(
+                            activation,
+                            "Error #1019: Getscopeobject  is out of bounds.",
+                            1019,
+                        )?));
+                    }
+                }
+
                 AbcOp::AsType {
                     type_name: name_index,
                 }

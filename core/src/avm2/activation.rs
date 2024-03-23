@@ -592,6 +592,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         *self.local_registers.get_unchecked_mut(id) = value.into();
     }
 
+    /// Retrieve the outer scope of this activation
+    pub fn outer(&self) -> ScopeChain<'gc> {
+        self.outer
+    }
+
     /// Sets the outer scope of this activation
     pub fn set_outer(&mut self, new_outer: ScopeChain<'gc>) {
         self.outer = new_outer;
@@ -1621,13 +1626,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_get_outer_scope(&mut self, index: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let scope = self.outer.get(index as usize);
+        // Verifier ensures that this points to a valid outer scope
+        let scope = self.outer.get_unchecked(index as usize);
 
-        if let Some(scope) = scope {
-            self.push_stack(scope.values());
-        } else {
-            self.push_stack(Value::Undefined);
-        };
+        self.push_stack(scope.values());
 
         Ok(FrameControl::Continue)
     }
