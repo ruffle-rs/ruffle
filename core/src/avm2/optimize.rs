@@ -631,16 +631,16 @@ pub fn optimize<'gc>(
                 stack.push_any();
             }
             Op::FindPropStrict { multiname } => {
-                if !multiname.has_lazy_component() {
-                    stack.push_any();
-                } else {
-                    // Avoid handling lazy for now
-                    stack.clear();
-                }
-            }
-            Op::FindProperty { .. } => {
+                stack.pop_for_multiname(*multiname);
+
                 // Avoid handling for now
-                stack.clear();
+                stack.push_any();
+            }
+            Op::FindProperty { multiname } => {
+                stack.pop_for_multiname(*multiname);
+
+                // Avoid handling for now
+                stack.push_any();
             }
             Op::GetProperty { multiname } => {
                 let mut stack_push_done = false;
