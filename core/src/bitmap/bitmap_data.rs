@@ -40,8 +40,7 @@ impl LehmerRng {
 /// unmultiplied values. Make sure to convert the color to the correct form beforehand.
 // TODO: Maybe split the type into `PremultipliedColor(u32)` and
 //   `UnmultipliedColor(u32)`?
-#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Collect)]
-#[collect(no_drop)]
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Color(u32);
 
 #[derive(Debug, Clone)]
@@ -197,7 +196,9 @@ bitflags! {
 #[collect(no_drop)]
 pub struct BitmapData<'gc> {
     /// The pixels in the bitmap, stored as a array of pre-multiplied ARGB colour values
+    #[collect(require_static)]
     pixels: Vec<Color>,
+
     width: u32,
     height: u32,
     transparency: bool,
@@ -223,11 +224,11 @@ pub struct BitmapData<'gc> {
     /// A list of display objects that are backed by this BitmapData
     display_objects: Vec<DisplayObjectWeak<'gc>>,
 
+    #[collect(require_static)]
     dirty_state: DirtyState,
 }
 
-#[derive(Clone, Collect, Debug)]
-#[collect(require_static)]
+#[derive(Clone, Debug)]
 enum DirtyState {
     // Both the CPU and GPU pixels are up to date. We do not need to wait for any syncs to complete
     Clean,
