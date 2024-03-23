@@ -83,12 +83,8 @@ impl<'gc> Locals<'gc> {
         self.0[index] = value;
     }
 
-    fn at(&self, index: usize) -> Option<OptValue<'gc>> {
-        self.0.get(index).copied()
-    }
-
-    fn len(&self) -> usize {
-        self.0.len()
+    fn at(&self, index: usize) -> OptValue<'gc> {
+        self.0[index]
     }
 }
 
@@ -242,20 +238,14 @@ pub fn optimize<'gc>(
             | Op::IncLocalI { index }
             | Op::DecLocal { index }
             | Op::DecLocalI { index } => {
-                if (*index as usize) < initial_local_types.len() {
-                    initial_local_types.set_any(*index as usize);
-                }
+                initial_local_types.set_any(*index as usize);
             }
             Op::HasNext2 {
                 object_register,
                 index_register,
             } => {
-                if (*object_register as usize) < initial_local_types.len() {
-                    initial_local_types.set_any(*object_register as usize);
-                }
-                if (*index_register as usize) < initial_local_types.len() {
-                    initial_local_types.set_any(*index_register as usize);
-                }
+                initial_local_types.set_any(*object_register as usize);
+                initial_local_types.set_any(*index_register as usize);
             }
             _ => {}
         }
@@ -384,14 +374,10 @@ pub fn optimize<'gc>(
                 stack.push_any();
             }
             Op::DecLocalI { index } => {
-                if (*index as usize) < local_types.len() {
-                    local_types.set_any(*index as usize);
-                }
+                local_types.set_any(*index as usize);
             }
             Op::IncLocalI { index } => {
-                if (*index as usize) < local_types.len() {
-                    local_types.set_any(*index as usize);
-                }
+                local_types.set_any(*index as usize);
             }
             Op::Increment => {
                 stack.pop();
@@ -605,27 +591,15 @@ pub fn optimize<'gc>(
                 }
             }
             Op::Kill { index } => {
-                if (*index as usize) < local_types.len() {
-                    local_types.set_any(*index as usize);
-                }
+                local_types.set_any(*index as usize);
             }
             Op::SetLocal { index } => {
-                let stack_value = stack.pop();
-                if (*index as usize) < local_types.len() {
-                    if let Some(stack_value) = stack_value {
-                        local_types.set(*index as usize, stack_value);
-                    } else {
-                        local_types.set_any(*index as usize);
-                    }
-                }
+                let stack_value = stack.pop_or_any();
+                local_types.set(*index as usize, stack_value);
             }
             Op::GetLocal { index } => {
                 let local_type = local_types.at(*index as usize);
-                if let Some(local_type) = local_type {
-                    stack.push(local_type);
-                } else {
-                    stack.push_any();
-                }
+                stack.push(local_type);
             }
             Op::GetLex { .. } => {
                 stack.push_any();
