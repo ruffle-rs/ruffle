@@ -842,14 +842,18 @@ pub fn optimize<'gc>(
                 stack.pop();
                 stack.pop();
             }
-            Op::Si8 => {
+            Op::Si8 | Op::Si16 | Op::Si32 => {
                 stack.pop();
                 stack.pop();
             }
-            Op::Li8 => {
+            Op::Li8 | Op::Li16 => {
                 stack.pop();
                 let mut value = OptValue::of_type(types.int);
                 value.contains_valid_integer = true;
+                stack.push(value);
+            }
+            Op::Li32 => {
+                stack.pop();
                 stack.push_class_object(types.int);
             }
             Op::ReturnVoid
