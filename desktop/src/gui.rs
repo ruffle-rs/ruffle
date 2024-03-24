@@ -1,3 +1,4 @@
+mod bookmarks_dialog;
 mod context_menu;
 mod controller;
 mod movie;
@@ -7,9 +8,11 @@ mod preferences_dialog;
 pub use controller::GuiController;
 pub use movie::MovieView;
 use std::borrow::Cow;
+use std::str::FromStr;
 use url::Url;
 
 use crate::custom_event::RuffleEvent;
+use crate::gui::bookmarks_dialog::BookmarksDialog;
 use crate::gui::context_menu::ContextMenu;
 use crate::gui::open_dialog::OpenDialog;
 use crate::gui::preferences_dialog::PreferencesDialog;
@@ -87,6 +90,7 @@ pub struct RuffleGui {
     context_menu: Option<ContextMenu>,
     open_dialog: OpenDialog,
     preferences_dialog: Option<PreferencesDialog>,
+    bookmarks_dialog: Option<BookmarksDialog>,
     default_player_options: PlayerOptions,
     currently_opened: Option<(Url, PlayerOptions)>,
     was_suspended_before_debug: bool,
@@ -114,6 +118,7 @@ impl RuffleGui {
                 event_loop.clone(),
             ),
             preferences_dialog: None,
+            bookmarks_dialog: None,
 
             event_loop,
             default_player_options,
@@ -139,6 +144,7 @@ impl RuffleGui {
         self.about_window(&locale, egui_ctx);
         self.open_dialog(&locale, egui_ctx);
         self.preferences_dialog(&locale, egui_ctx);
+        self.bookmarks_dialog(&locale, egui_ctx);
 
         if let Some(player) = player {
             let was_suspended = player.debug_ui().should_suspend_player();
@@ -298,6 +304,48 @@ impl RuffleGui {
                     });
                     if Button::new(text(locale, "controls-menu-volume")).ui(ui).clicked() {
                         self.show_volume_screen(ui);
+                    }
+                });
+                menu::menu_button(ui, text(locale, "bookmarks-menu"), |ui| {
+                    ui.add_enabled_ui(player.is_some(), |ui| {
+                        if Button::new(text(locale, "bookmarks-menu-add")).ui(ui).clicked() {
+                            ui.close_menu();
+                            if let Some(player) = &player {
+                                if let Err(e) = self.preferences.write_bookmarks(|writer| {
+                                    // FIXME: if spoof url is used, the URL here is incorrect (fun fact, its also incorrect in the debug tools).
+                                    match Url::from_str(player.swf().url()) {
+                                        Ok(url) => writer.add(crate::preferences::Bookmark {
+                                            url,
+                                        }),
+                                        Err(e) => tracing::warn!("Failed to parse SWF url for bookmark: {e}"),
+                                    };
+                                }) {
+                                    tracing::warn!("Couldn't update bookmarks: {e}");
+                                }
+                            }
+                        }
+                    });
+
+                    let mut have_bookmarks = false;
+
+                    self.preferences.bookmarks(|bookmarks| {
+                        have_bookmarks = !bookmarks.is_empty();
+
+                        if have_bookmarks {
+                            ui.separator();
+                            for bookmark in bookmarks {
+                                if Button::new(crate::util::url_to_readable_name(&bookmark.url)).ui(ui).clicked() {
+                                    ui.close_menu();
+                                    let _ = self.event_loop.send_event(RuffleEvent::OpenURL(bookmark.url.clone(), Box::new(self.default_player_options.clone())));
+                                }
+                            }
+                            ui.separator();
+                        }
+                    });
+
+                    if have_bookmarks && Button::new(text(locale, "bookmarks-menu-manage")).ui(ui).clicked() {
+                        ui.close_menu();
+                        self.open_bookmarks();
                     }
                 });
                 menu::menu_button(ui, text(locale, "debug-menu"), |ui| {
@@ -512,6 +560,10 @@ impl RuffleGui {
         self.preferences_dialog = Some(PreferencesDialog::new(self.preferences.clone()));
     }
 
+    fn open_bookmarks(&mut self) {
+        self.bookmarks_dialog = Some(BookmarksDialog::new(self.preferences.clone()));
+    }
+
     fn close_movie(&mut self, ui: &mut egui::Ui) {
         let _ = self.event_loop.send_event(RuffleEvent::CloseFile);
         self.currently_opened = None;
@@ -543,6 +595,17 @@ impl RuffleGui {
         };
         if !keep_open {
             self.preferences_dialog = None;
+        }
+    }
+
+    fn bookmarks_dialog(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) {
+        let keep_open = if let Some(dialog) = &mut self.bookmarks_dialog {
+            dialog.show(locale, egui_ctx)
+        } else {
+            true
+        };
+        if !keep_open {
+            self.bookmarks_dialog = None;
         }
     }
 
