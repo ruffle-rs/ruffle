@@ -27,6 +27,10 @@ help-menu-sponsor-development = Sponsor Development...
 help-menu-translate-ruffle = Translate Ruffle...
 help-menu-about = About Ruffle
 
+bookmarks-menu = Bookmarks
+bookmarks-menu-add = Add
+bookmarks-menu-manage = Manage Bookmarks...
+
 debug-menu = Debug Tools
 debug-menu-open-stage = View Stage Info
 debug-menu-open-movie = View Movie
