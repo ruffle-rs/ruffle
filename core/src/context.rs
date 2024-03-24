@@ -153,9 +153,6 @@ pub struct UpdateContext<'a, 'gc> {
     /// If the mouse is down, the display object that the mouse is currently pressing.
     pub mouse_down_object: Option<InteractiveObject<'gc>>,
 
-    //Stores for wich object the context menu shows.
-    pub clicked_object_context_menu: Option<DisplayObject<'gc>>,
-
     /// The input manager, tracking keys state.
     pub input: &'a InputManager,
 
@@ -523,7 +520,6 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
             unbound_text_fields: self.unbound_text_fields,
             timers: self.timers,
             current_context_menu: self.current_context_menu,
-            clicked_object_context_menu: self.clicked_object_context_menu,
             avm1: self.avm1,
             avm2: self.avm2,
             external_interface: self.external_interface,

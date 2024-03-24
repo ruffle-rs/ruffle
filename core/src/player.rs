@@ -156,9 +156,6 @@ struct GcRootData<'gc> {
 
     current_context_menu: Option<ContextMenuState<'gc>>,
 
-    //Stores for wich object the context menu shows.
-    clicked_object_context_menu: Option<DisplayObject<'gc>>,
-
     /// External interface for (for example) JavaScript <-> ActionScript interaction
     external_interface: ExternalInterface<'gc>,
 
@@ -543,8 +540,7 @@ impl Player {
                 return vec![];
             }
 
-            let display_obj = Player::get_context_menu_display_object(context);
-            context.clicked_object_context_menu = display_obj;
+            let display_obj = Player::get_context_menu_display_object(None, context);
 
             let menu = if let Some(Value::Object(obj)) = display_obj.map(|obj| obj.object()) {
                 let mut activation = Activation::from_stub(
@@ -632,7 +628,9 @@ impl Player {
                     ContextMenuCallback::Rewind => Self::rewind_root_movie(context),
                     ContextMenuCallback::Avm2 { item } => {
                         let menu_item = *item;
-                        if let Some(display_obj) = context.clicked_object_context_menu {
+                        if let Some(display_obj) =
+                            Player::get_context_menu_display_object(None, context)
+                        {
                             let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
                             let menu_obj = display_obj
@@ -683,14 +681,16 @@ impl Player {
         callback: Object<'gc>,
         context: &mut UpdateContext<'_, 'gc>,
     ) {
-        if let Some(display_obj) = context.clicked_object_context_menu {
+        if let Some(root_clip) = context.stage.root_clip() {
             let mut activation = Activation::from_nothing(
                 context.reborrow(),
                 ActivationIdentifier::root("[Context Menu Callback]"),
-                display_obj,
+                root_clip,
             );
 
-            let params = vec![display_obj.object(), Value::Object(item)];
+            // TODO: Remember to also change the first arg
+            // when we support contextmenu on non-root-movie
+            let params = vec![root_clip.object(), Value::Object(item)];
 
             let _ = callback.call(
                 "[Context Menu Callback]".into(),
@@ -701,25 +701,46 @@ impl Player {
         }
     }
 
-    //Return root if item has no custom menu
-    ///Returns the display object that the mouse is hovering if it has a custom context menu, else returns the root. Also returns the root on a avm2 object.
+    ///Returns the display object that the mouse is hovering if it has a custom context menu will return the first parent that has a custom menu or else the root.
     fn get_context_menu_display_object<'gc>(
+        display_object: Option<DisplayObject<'gc>>,
         context: &mut UpdateContext<'_, 'gc>,
     ) -> Option<DisplayObject<'gc>> {
-        if let Some(interactive_obj) = run_mouse_pick(context, false) {
-            let disp_object = interactive_obj.as_displayobject();
-
+        let mut display_object = display_object;
+        if display_object.is_none() {
+            if let Some(interactive_obj) = run_mouse_pick(context, false) {
+                display_object = Some(interactive_obj.as_displayobject());
+            } else {
+                display_object = context.stage.root_clip()
+            }
+        }
+        if let Some(disp_obj) = display_object {
             //TODO: add avm2 object logic
-            if let Some(Value::Object(obj)) = Some(disp_object).map(|obj| obj.object()) {
+            if let Some(Value::Object(obj)) = Some(disp_obj).map(|obj| obj.object()) {
                 let mut activation = Activation::from_stub(
                     context.reborrow(),
                     ActivationIdentifier::root("[ContextMenu]"),
                 );
 
                 if let Ok(Value::Object(_)) = obj.get("menu", &mut activation) {
-                    return Some(disp_object);
+                    return Some(disp_obj);
                 }
             }
+
+            if let Some(parent) = disp_obj.parent() {
+                if parent.hit_test_shape(
+                    context,
+                    *context.mouse_position,
+                    HitTestOptions::MOUSE_PICK,
+                ) {
+                    if let Some(result) =
+                        Self::get_context_menu_display_object(Some(parent), context)
+                    {
+                        return Some(result);
+                    }
+                }
+            }
+            return None;
         }
         context.stage.root_clip()
     }
@@ -1860,7 +1881,6 @@ impl Player {
             let mut root_data = gc_root.data.write(gc_context);
             let mouse_hovered_object = root_data.mouse_hovered_object;
             let mouse_pressed_object = root_data.mouse_pressed_object;
-            let clicked_object_context_menu = root_data.clicked_object_context_menu;
             let focus_tracker = root_data.focus_tracker;
 
             #[allow(unused_variables)]
@@ -1919,7 +1939,6 @@ impl Player {
                 unbound_text_fields,
                 timers,
                 current_context_menu,
-                clicked_object_context_menu,
                 needs_render: &mut self.needs_render,
                 avm1,
                 avm2,
@@ -1965,10 +1984,8 @@ impl Player {
             // Hovered object may have been updated; copy it back to the GC root.
             let mouse_hovered_object = update_context.mouse_over_object;
             let mouse_pressed_object = update_context.mouse_down_object;
-            let clicked_menu_object = update_context.clicked_object_context_menu;
             root_data.mouse_hovered_object = mouse_hovered_object;
             root_data.mouse_pressed_object = mouse_pressed_object;
-            root_data.clicked_object_context_menu = clicked_menu_object;
 
             ret
         })
@@ -2461,7 +2478,6 @@ impl PlayerBuilder {
                     avm2: Avm2::new(&mut init, player_version, player_runtime),
                     interner,
                     current_context_menu: None,
-                    clicked_object_context_menu: None,
                     drag_object: None,
                     external_interface: ExternalInterface::new(
                         external_interface_providers,
