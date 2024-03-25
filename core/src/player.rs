@@ -540,7 +540,7 @@ impl Player {
                 return vec![];
             }
 
-            let display_obj = Player::get_context_menu_display_object(None, context);
+            let display_obj = Player::get_context_menu_display_object(context);
 
             let menu = if let Some(Value::Object(obj)) = display_obj.map(|obj| obj.object()) {
                 let mut activation = Activation::from_stub(
@@ -561,7 +561,7 @@ impl Player {
                     None
                 };
 
-                crate::avm1::make_context_menu_state(menu_object, &mut activation)
+                crate::avm1::make_context_menu_state(menu_object, display_obj, &mut activation)
             } else if let Some(Avm2Value::Object(hit_obj)) = display_obj.map(|obj| obj.object2()) {
                 let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
@@ -627,10 +627,8 @@ impl Player {
                     ContextMenuCallback::Back => Self::back_root_movie(context),
                     ContextMenuCallback::Rewind => Self::rewind_root_movie(context),
                     ContextMenuCallback::Avm2 { item } => {
-                        let menu_item = *item;
-                        if let Some(display_obj) =
-                            Player::get_context_menu_display_object(None, context)
-                        {
+                        if let Some(display_obj) = menu.get_display_object() {
+                            let menu_item = *item;
                             let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
                             let menu_obj = display_obj
@@ -681,68 +679,57 @@ impl Player {
         callback: Object<'gc>,
         context: &mut UpdateContext<'_, 'gc>,
     ) {
-        if let Some(root_clip) = context.stage.root_clip() {
-            let mut activation = Activation::from_nothing(
-                context.reborrow(),
-                ActivationIdentifier::root("[Context Menu Callback]"),
-                root_clip,
-            );
+        if let Some(menu_state) = context.current_context_menu {
+            if let Some(display_object) = menu_state.get_display_object() {
+                let mut activation = Activation::from_nothing(
+                    context.reborrow(),
+                    ActivationIdentifier::root("[Context Menu Callback]"),
+                    display_object,
+                );
 
-            // TODO: Remember to also change the first arg
-            // when we support contextmenu on non-root-movie
-            let params = vec![root_clip.object(), Value::Object(item)];
+                // TODO: Remember to also change the first arg
+                // when we support contextmenu on non-root-movie
+                let params = vec![display_object.object(), Value::Object(item)];
 
-            let _ = callback.call(
-                "[Context Menu Callback]".into(),
-                &mut activation,
-                Value::Undefined,
-                &params,
-            );
+                let _ = callback.call(
+                    "[Context Menu Callback]".into(),
+                    &mut activation,
+                    Value::Undefined,
+                    &params,
+                );
+            }
         }
     }
 
     ///Returns the display object that the mouse is hovering if it has a custom context menu will return the first parent that has a custom menu or else the root.
     fn get_context_menu_display_object<'gc>(
-        display_object: Option<DisplayObject<'gc>>,
         context: &mut UpdateContext<'_, 'gc>,
     ) -> Option<DisplayObject<'gc>> {
-        let mut display_object = display_object;
-        if display_object.is_none() {
-            if let Some(interactive_obj) = run_mouse_pick(context, false) {
-                display_object = Some(interactive_obj.as_displayobject());
-            } else {
-                display_object = context.stage.root_clip()
-            }
-        }
-        if let Some(disp_obj) = display_object {
-            //TODO: add avm2 object logic
-            if let Some(Value::Object(obj)) = Some(disp_obj).map(|obj| obj.object()) {
-                let mut activation = Activation::from_stub(
-                    context.reborrow(),
-                    ActivationIdentifier::root("[ContextMenu]"),
-                );
-
-                if let Ok(Value::Object(_)) = obj.get("menu", &mut activation) {
-                    return Some(disp_obj);
-                }
-            }
-
-            if let Some(parent) = disp_obj.parent() {
-                if parent.hit_test_shape(
+        let mut display_object = run_mouse_pick(context, false).map(|obj| obj.as_displayobject());
+        loop {
+            if let Some(disp_obj) = display_object {
+                if disp_obj.hit_test_shape(
                     context,
                     *context.mouse_position,
                     HitTestOptions::MOUSE_PICK,
                 ) {
-                    if let Some(result) =
-                        Self::get_context_menu_display_object(Some(parent), context)
-                    {
-                        return Some(result);
+                    if let Some(Value::Object(obj)) = Some(disp_obj).map(|obj| obj.object()) {
+                        let mut activation = Activation::from_stub(
+                            context.reborrow(),
+                            ActivationIdentifier::root("[ContextMenu]"),
+                        );
+
+                        if let Ok(Value::Object(_)) = obj.get("menu", &mut activation) {
+                            return Some(disp_obj);
+                        }
                     }
                 }
+
+                display_object = disp_obj.parent();
+            } else {
+                return context.stage.root_clip();
             }
-            return None;
         }
-        context.stage.root_clip()
     }
 
     pub fn set_fullscreen(&mut self, is_fullscreen: bool) {
