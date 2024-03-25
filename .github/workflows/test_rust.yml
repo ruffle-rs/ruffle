@@ -31,7 +31,7 @@ jobs:
 
   build:
     needs: changes
-    if: needs.changes.outputs.should_run== 'true'
+    if: needs.changes.outputs.should_run == 'true'
     name: Test Rust ${{ matrix.rust_version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     continue-on-error: ${{ matrix.rust_version == 'nightly' || matrix.rust_version == 'beta' }}
@@ -103,7 +103,7 @@ jobs:
 
   lints:
     needs: changes
-    if: needs.changes.outputs.should_run== 'true'
+    if: needs.changes.outputs.should_run == 'true'
     name: Lints with Rust ${{ matrix.rust_version }}
     runs-on: ubuntu-22.04
     continue-on-error: ${{ matrix.rust_version == 'nightly' || matrix.rust_version == 'beta' }}
@@ -133,14 +133,25 @@ jobs:
         # Don't fail the build for clippy on nightly, since we get a lot of false-positives
         run: cargo clippy --all --all-features --tests ${{ (matrix.rust_version != 'nightly' && '-- -D warnings') || '' }}
 
-      - name: Check licensing and duplicates in used crates
-        if: ${{ matrix.rust_version == 'stable' }}
-        uses: EmbarkStudios/cargo-deny-action@v1
-
       - name: Check documentation
         run: cargo doc --no-deps --all-features
         env:
           RUSTDOCFLAGS: -D warnings
+
+  dependencies:
+    needs: changes
+    if: needs.changes.outputs.should_run == 'true'
+    name: Check dependencies
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Check licenses, duplicates, and advisories
+        uses: EmbarkStudios/cargo-deny-action@v1
 
   check-required:
     needs: changes
