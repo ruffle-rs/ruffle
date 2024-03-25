@@ -19,7 +19,7 @@ image = { version = "0.25.0", default-features = false, features = ["png"] }
 log = "0.4"
 walkdir = "2.5.0"
 indicatif = "0.17"
-rayon = "1.9.0"
+rayon = "1.10.0"
 anyhow = { workspace = true }
 
 [features]
