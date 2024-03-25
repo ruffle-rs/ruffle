@@ -471,6 +471,7 @@ impl App {
                 }
 
                 winit::event::Event::UserEvent(RuffleEvent::CloseFile) => {
+                    self.window.set_title("Ruffle"); // Reset title since file has been closed.
                     self.player.destroy();
                 }
 
