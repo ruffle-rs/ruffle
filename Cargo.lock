@@ -612,13 +612,10 @@ name = "build_playerglobal"
 version = "0.1.0"
 dependencies = [
  "clap",
- "colored",
  "convert_case",
  "proc-macro2",
  "quote",
  "regex",
- "serde",
- "serde-xml-rs",
  "swf",
  "walkdir",
 ]
@@ -857,16 +854,6 @@ name = "colorchoice"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "acbf1af155f9b9ef647e42cdc158db4b64a1b61f743629225fde6f3e0be2a7c7"
-
-[[package]]
-name = "colored"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cbf2150cce219b664a8a70df7a1f933836724b503f8a413af9365b4dcc4d90b8"
-dependencies = [
- "lazy_static",
- "windows-sys 0.48.0",
-]
 
 [[package]]
 name = "com"
@@ -4330,7 +4317,6 @@ dependencies = [
  "h263-rs-yuv",
  "indexmap",
  "jpeg-decoder",
- "lru",
  "lyon",
  "lyon_geom",
  "num-derive",
@@ -4352,7 +4338,6 @@ name = "ruffle_render_canvas"
 version = "0.1.0"
 dependencies = [
  "downcast-rs",
- "fnv",
  "js-sys",
  "log",
  "ruffle_render",
@@ -4368,7 +4353,6 @@ version = "0.1.0"
 dependencies = [
  "bytemuck",
  "downcast-rs",
- "fnv",
  "js-sys",
  "log",
  "ruffle_render",
@@ -4704,18 +4688,6 @@ dependencies = [
  "js-sys",
  "serde",
  "wasm-bindgen",
-]
-
-[[package]]
-name = "serde-xml-rs"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb3aa78ecda1ebc9ec9847d5d3aba7d618823446a049ba2491940506da6e2782"
-dependencies = [
- "log",
- "serde",
- "thiserror",
- "xml-rs",
 ]
 
 [[package]]
