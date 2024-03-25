@@ -153,6 +153,11 @@ jobs:
       - name: Check licenses, duplicates, and advisories
         uses: EmbarkStudios/cargo-deny-action@v1
 
+      - name: Check unused dependencies
+        uses: bnjbvr/cargo-machete@main
+        # So the previous step failing doesn't prevent this one from running.
+        if: always()
+
   check-required:
     needs: changes
     if: needs.changes.outputs.should_run == 'false'
