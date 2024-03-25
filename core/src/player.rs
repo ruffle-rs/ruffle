@@ -592,7 +592,7 @@ impl Player {
                     Avm2::dispatch_event(&mut activation.context, menu_evt, menu_object);
                 }
 
-                crate::avm2::make_context_menu_state(menu_object, &mut activation)
+                crate::avm2::make_context_menu_state(menu_object, display_obj, &mut activation)
             } else {
                 // no AVM1 or AVM2 object - so just prepare the builtin items
                 let mut menu = ContextMenuState::new();
