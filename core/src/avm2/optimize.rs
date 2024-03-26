@@ -560,6 +560,8 @@ pub fn optimize<'gc>(
             }
             Op::Coerce { class } => {
                 let stack_value = stack.pop_or_any();
+                stack.push_class(*class);
+
                 if stack_value.guaranteed_null {
                     // Coercing null to a non-primitive or void is a noop.
                     if !GcCell::ptr_eq(*class, types.int.inner_class_definition())
