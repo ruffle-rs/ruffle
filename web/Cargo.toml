@@ -74,3 +74,9 @@ features = [
     "HtmlInputElement", "HtmlTextAreaElement", "KeyboardEvent", "Location", "PointerEvent",
     "Request", "RequestInit", "Response", "Storage", "WheelEvent", "Window", "ReadableStream", "RequestCredentials"
 ]
+
+[package.metadata.cargo-machete]
+ignored = [
+    # Not used directly, declared only to enable its `js` feature.
+    "getrandom"
+]
