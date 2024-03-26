@@ -141,31 +141,35 @@ impl GuiController {
         &self.descriptors
     }
 
+    pub fn resize(&mut self, size: PhysicalSize<u32>) {
+        if size.width > 0 && size.height > 0 {
+            self.surface.configure(
+                &self.descriptors.device,
+                &wgpu::SurfaceConfiguration {
+                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                    format: self.surface_format,
+                    width: size.width,
+                    height: size.height,
+                    present_mode: Default::default(),
+                    desired_maximum_frame_latency: 2,
+                    alpha_mode: Default::default(),
+                    view_formats: Default::default(),
+                },
+            );
+            self.movie_view_renderer.update_resolution(
+                &self.descriptors,
+                self.window.fullscreen().is_none() && !self.no_gui,
+                size.height,
+                self.window.scale_factor(),
+            );
+            self.size = size;
+        }
+    }
+
     #[must_use]
     pub fn handle_event(&mut self, event: &WindowEvent) -> bool {
         if let WindowEvent::Resized(size) = &event {
-            if size.width > 0 && size.height > 0 {
-                self.surface.configure(
-                    &self.descriptors.device,
-                    &wgpu::SurfaceConfiguration {
-                        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                        format: self.surface_format,
-                        width: size.width,
-                        height: size.height,
-                        present_mode: Default::default(),
-                        desired_maximum_frame_latency: 2,
-                        alpha_mode: Default::default(),
-                        view_formats: Default::default(),
-                    },
-                );
-                self.movie_view_renderer.update_resolution(
-                    &self.descriptors,
-                    self.window.fullscreen().is_none() && !self.no_gui,
-                    size.height,
-                    self.window.scale_factor(),
-                );
-                self.size = *size;
-            }
+            self.resize(*size);
         }
 
         if let WindowEvent::ThemeChanged(theme) = &event {
