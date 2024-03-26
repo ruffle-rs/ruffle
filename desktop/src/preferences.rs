@@ -130,12 +130,14 @@ impl GlobalPreferences {
     }
 
     pub fn save_storage_backend(&self) -> save::StorageBackend {
-        self.preferences
-            .lock()
-            .expect("Preferences is not reentrant")
-            .values
-            .save
-            .backend
+        self.cli.storage.unwrap_or_else(|| {
+            self.preferences
+                .lock()
+                .expect("Preferences is not reentrant")
+                .values
+                .save
+                .backend
+        })
     }
 
     pub fn write_preferences(&self, fun: impl FnOnce(&mut PreferencesWriter)) -> Result<(), Error> {

@@ -2,7 +2,7 @@ use crate::{backends::DiskStorageBackend, player::PlayerOptions};
 use ruffle_core::backend::storage::MemoryStorageBackend;
 use std::str::FromStr;
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Default)]
+#[derive(clap::ValueEnum, Copy, Clone, PartialEq, Eq, Debug, Default)]
 pub enum StorageBackend {
     #[default]
     Disk,

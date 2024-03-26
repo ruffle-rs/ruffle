@@ -30,6 +30,7 @@ pub struct PreferencesDialog {
     log_filename_pattern_changed: bool,
 
     save_storage_backend: StorageBackend,
+    save_storage_backend_readonly: bool,
     save_storage_backend_changed: bool,
 }
 
@@ -68,6 +69,7 @@ impl PreferencesDialog {
             log_filename_pattern_changed: false,
 
             save_storage_backend: preferences.save_storage_backend(),
+            save_storage_backend_readonly: preferences.cli.storage.is_some(),
             save_storage_backend_changed: false,
 
             preferences,
@@ -98,7 +100,7 @@ impl PreferencesDialog {
 
                             self.show_log_preferences(locale, ui);
 
-                            self.show_save_preferences(locale, ui);
+                            self.show_save_preferences(locale, &locked_text, ui);
                         });
 
                     if self.restart_required() {
@@ -274,28 +276,39 @@ impl PreferencesDialog {
         ui.end_row();
     }
 
-    fn show_save_preferences(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
+    fn show_save_preferences(
+        &mut self,
+        locale: &LanguageIdentifier,
+        locked_text: &str,
+        ui: &mut Ui,
+    ) {
         ui.label(text(locale, "save-storage-backend"));
 
-        let previous = self.save_storage_backend;
-        ComboBox::from_id_source("save-storage-backend")
-            .selected_text(storage_backend_name(locale, self.save_storage_backend))
-            .show_ui(ui, |ui| {
-                ui.selectable_value(
-                    &mut self.save_storage_backend,
-                    StorageBackend::Disk,
-                    storage_backend_name(locale, StorageBackend::Disk),
-                );
-                ui.selectable_value(
-                    &mut self.save_storage_backend,
-                    StorageBackend::Memory,
-                    storage_backend_name(locale, StorageBackend::Memory),
-                );
-            });
+        if self.save_storage_backend_readonly {
+            ui.label(storage_backend_name(locale, self.save_storage_backend))
+                .on_hover_text(locked_text);
+        } else {
+            let previous = self.save_storage_backend;
+            ComboBox::from_id_source("save-storage-backend")
+                .selected_text(storage_backend_name(locale, self.save_storage_backend))
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(
+                        &mut self.save_storage_backend,
+                        StorageBackend::Disk,
+                        storage_backend_name(locale, StorageBackend::Disk),
+                    );
+                    ui.selectable_value(
+                        &mut self.save_storage_backend,
+                        StorageBackend::Memory,
+                        storage_backend_name(locale, StorageBackend::Memory),
+                    );
+                });
 
-        if self.save_storage_backend != previous {
-            self.save_storage_backend_changed = true;
+            if self.save_storage_backend != previous {
+                self.save_storage_backend_changed = true;
+            }
         }
+
         ui.end_row();
     }
 
