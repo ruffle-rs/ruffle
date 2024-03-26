@@ -1186,8 +1186,9 @@ impl Player {
         } = event
         {
             self.mutate_with_update_context(|context| {
+                let reversed = context.input.is_key_down(KeyCode::Shift);
                 let tracker = context.focus_tracker;
-                tracker.cycle(context);
+                tracker.cycle(context, reversed);
             });
         }
     }
