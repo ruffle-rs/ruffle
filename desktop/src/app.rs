@@ -419,7 +419,15 @@ impl App {
                         self.window.scale_factor(),
                     );
 
-                    let _ = self.window.request_inner_size(window_size);
+                    let viewport_size = self.window.inner_size();
+
+                    if let Some(new_viewport_size) = self.window.request_inner_size(window_size) {
+                        if new_viewport_size != viewport_size {
+                            self.gui.borrow_mut().resize(new_viewport_size);
+                        } else {
+                            tracing::warn!("Unable to resize window");
+                        }
+                    }
                     self.window.set_fullscreen(if self.start_fullscreen {
                         Some(Fullscreen::Borderless(None))
                     } else {
