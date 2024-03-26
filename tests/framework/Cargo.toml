@@ -11,7 +11,6 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-futures = "0.3.30"
 ruffle_core = { path = "../../core", features = ["deterministic", "timeline_debug", "avm_debug", "audio", "mp3", "default_font"] }
 ruffle_render = { path = "../../render" }
 ruffle_input_format = { path = "../input-format" }
