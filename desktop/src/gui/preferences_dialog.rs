@@ -1,6 +1,6 @@
 use crate::gui::{available_languages, optional_text, text};
 use crate::log::FilenamePattern;
-use crate::preferences::GlobalPreferences;
+use crate::preferences::{storage::StorageBackend, GlobalPreferences};
 use cpal::traits::{DeviceTrait, HostTrait};
 use egui::{Align2, Button, ComboBox, Grid, Ui, Widget, Window};
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
@@ -28,6 +28,10 @@ pub struct PreferencesDialog {
 
     log_filename_pattern: FilenamePattern,
     log_filename_pattern_changed: bool,
+
+    storage_backend: StorageBackend,
+    storage_backend_readonly: bool,
+    storage_backend_changed: bool,
 }
 
 impl PreferencesDialog {
@@ -64,6 +68,10 @@ impl PreferencesDialog {
             log_filename_pattern: preferences.log_filename_pattern(),
             log_filename_pattern_changed: false,
 
+            storage_backend: preferences.storage_backend(),
+            storage_backend_readonly: preferences.cli.storage.is_some(),
+            storage_backend_changed: false,
+
             preferences,
         }
     }
@@ -91,6 +99,8 @@ impl PreferencesDialog {
                             self.show_audio_preferences(locale, ui);
 
                             self.show_log_preferences(locale, ui);
+
+                            self.show_storage_preferences(locale, &locked_text, ui);
                         });
 
                     if self.restart_required() {
@@ -119,6 +129,7 @@ impl PreferencesDialog {
             || self.power_preference != self.preferences.graphics_power_preference()
             || self.output_device != self.preferences.output_device_name()
             || self.log_filename_pattern != self.preferences.log_filename_pattern()
+            || self.storage_backend != self.preferences.storage_backend()
     }
 
     fn show_graphics_preferences(
@@ -266,6 +277,42 @@ impl PreferencesDialog {
         ui.end_row();
     }
 
+    fn show_storage_preferences(
+        &mut self,
+        locale: &LanguageIdentifier,
+        locked_text: &str,
+        ui: &mut Ui,
+    ) {
+        ui.label(text(locale, "storage-backend"));
+
+        if self.storage_backend_readonly {
+            ui.label(storage_backend_name(locale, self.storage_backend))
+                .on_hover_text(locked_text);
+        } else {
+            let previous = self.storage_backend;
+            ComboBox::from_id_source("storage-backend")
+                .selected_text(storage_backend_name(locale, self.storage_backend))
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(
+                        &mut self.storage_backend,
+                        StorageBackend::Disk,
+                        storage_backend_name(locale, StorageBackend::Disk),
+                    );
+                    ui.selectable_value(
+                        &mut self.storage_backend,
+                        StorageBackend::Memory,
+                        storage_backend_name(locale, StorageBackend::Memory),
+                    );
+                });
+
+            if self.storage_backend != previous {
+                self.storage_backend_changed = true;
+            }
+        }
+
+        ui.end_row();
+    }
+
     fn save(&mut self) {
         if let Err(e) = self.preferences.write_preferences(|preferences| {
             if self.graphics_backend_changed {
@@ -283,6 +330,9 @@ impl PreferencesDialog {
             }
             if self.log_filename_pattern_changed {
                 preferences.set_log_filename_pattern(self.log_filename_pattern);
+            }
+            if self.storage_backend_changed {
+                preferences.set_storage_backend(self.storage_backend);
             }
         }) {
             // [NA] TODO: Better error handling... everywhere in desktop, really
@@ -318,6 +368,13 @@ fn filename_pattern_name(locale: &LanguageIdentifier, pattern: FilenamePattern) 
     match pattern {
         FilenamePattern::SingleFile => text(locale, "log-filename-pattern-single-file"),
         FilenamePattern::WithTimestamp => text(locale, "log-filename-pattern-with-timestamp"),
+    }
+}
+
+fn storage_backend_name(locale: &LanguageIdentifier, backend: StorageBackend) -> Cow<str> {
+    match backend {
+        StorageBackend::Disk => text(locale, "storage-backend-disk"),
+        StorageBackend::Memory => text(locale, "storage-backend-memory"),
     }
 }
 

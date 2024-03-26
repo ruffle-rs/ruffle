@@ -1,6 +1,8 @@
 mod read;
 mod write;
 
+pub mod storage;
+
 use crate::cli::Opt;
 use crate::log::FilenamePattern;
 use crate::preferences::read::{read_bookmarks, read_preferences};
@@ -165,6 +167,17 @@ impl GlobalPreferences {
         !bookmarks.is_empty() && !bookmarks.iter().all(|x| x.is_invalid())
     }
 
+    pub fn storage_backend(&self) -> storage::StorageBackend {
+        self.cli.storage.unwrap_or_else(|| {
+            self.preferences
+                .lock()
+                .expect("Preferences is not reentrant")
+                .values
+                .storage
+                .backend
+        })
+    }
+
     pub fn write_preferences(&self, fun: impl FnOnce(&mut PreferencesWriter)) -> Result<(), Error> {
         let mut preferences = self
             .preferences
@@ -226,6 +239,7 @@ pub struct SavedGlobalPreferences {
     pub mute: bool,
     pub volume: f32,
     pub log: LogPreferences,
+    pub storage: StoragePreferences,
 }
 
 impl Default for SavedGlobalPreferences {
@@ -242,6 +256,7 @@ impl Default for SavedGlobalPreferences {
             mute: false,
             volume: 1.0,
             log: Default::default(),
+            storage: Default::default(),
         }
     }
 }
@@ -249,6 +264,11 @@ impl Default for SavedGlobalPreferences {
 #[derive(PartialEq, Debug, Default)]
 pub struct LogPreferences {
     pub filename_pattern: FilenamePattern,
+}
+
+#[derive(PartialEq, Debug, Default)]
+pub struct StoragePreferences {
+    pub backend: storage::StorageBackend,
 }
 
 pub static INVALID_URL: &str = "invalid:///";

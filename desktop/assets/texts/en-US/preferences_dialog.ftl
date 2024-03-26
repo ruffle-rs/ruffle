@@ -17,3 +17,7 @@ audio-output-device-default = System Default
 log-filename-pattern = Log Filename
 log-filename-pattern-single-file = Single File (ruffle.log)
 log-filename-pattern-with-timestamp = With Timestamp
+
+storage-backend = Save-File Location
+storage-backend-disk = Disk
+storage-backend-memory = Memory
