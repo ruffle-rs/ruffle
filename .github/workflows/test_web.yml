@@ -95,7 +95,7 @@ jobs:
         working-directory: web
         run: npm test
 
-  check-required:
+  dummy:
     needs: changes
     if: needs.changes.outputs.should_run == 'false'
     name: Dummy for Test Node.js

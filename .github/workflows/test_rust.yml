@@ -142,7 +142,7 @@ jobs:
         env:
           RUSTDOCFLAGS: -D warnings
 
-  check-required:
+  dummy:
     needs: changes
     if: needs.changes.outputs.should_run == 'false'
     name: Dummy for Test Rust
