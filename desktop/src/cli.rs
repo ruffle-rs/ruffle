@@ -1,3 +1,4 @@
+use crate::preferences::storage::StorageBackend;
 use crate::RUFFLE_VERSION;
 use anyhow::{anyhow, Error};
 use clap::{Parser, ValueEnum};
@@ -54,6 +55,12 @@ pub struct Opt {
     #[clap(long, short)]
     pub power: Option<PowerPreference>,
 
+    /// Type of storage backend to use. This determines where local storage data is saved (e.g. shared objects).
+    ///
+    /// This option temporarily overrides any stored preference.
+    #[clap(long)]
+    pub storage: Option<StorageBackend>,
+
     /// Width of window in pixels.
     #[clap(long, display_order = 1)]
     pub width: Option<f64>,
@@ -101,6 +108,8 @@ pub struct Opt {
     trace_path: Option<std::path::PathBuf>,
 
     /// Location to store save data for games.
+    ///
+    /// This option has no effect if `storage` is not `disk`.
     #[clap(long, default_value_os_t=get_default_save_directory())]
     pub save_directory: std::path::PathBuf,
 

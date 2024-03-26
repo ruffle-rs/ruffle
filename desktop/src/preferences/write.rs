@@ -1,4 +1,5 @@
 use crate::log::FilenamePattern;
+use crate::preferences::storage::StorageBackend;
 use crate::preferences::{Bookmark, BookmarksAndDocument, PreferencesAndDocument};
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use toml_edit::{array, value, ArrayOfTables, Table};
@@ -48,6 +49,11 @@ impl<'a> PreferencesWriter<'a> {
     pub fn set_log_filename_pattern(&mut self, pattern: FilenamePattern) {
         self.0.toml_document["log"]["filename_pattern"] = value(pattern.as_str());
         self.0.values.log.filename_pattern = pattern;
+    }
+
+    pub fn set_storage_backend(&mut self, backend: StorageBackend) {
+        self.0.toml_document["storage"]["backend"] = value(backend.as_str());
+        self.0.values.storage.backend = backend;
     }
 }
 
@@ -240,6 +246,25 @@ mod tests {
                 "[log]\nfilename_pattern = \"with_timestamp\"\n",
                 |writer| writer.set_log_filename_pattern(FilenamePattern::SingleFile),
                 "[log]\nfilename_pattern = \"single_file\"\n",
+            );
+        }
+
+        #[test]
+        fn set_storage_backend() {
+            test(
+                "",
+                |writer| writer.set_storage_backend(StorageBackend::Disk),
+                "storage = { backend = \"disk\" }\n",
+            );
+            test(
+                "storage = { backend = \"disk\" }\n",
+                |writer| writer.set_storage_backend(StorageBackend::Memory),
+                "storage = { backend = \"memory\" }\n",
+            );
+            test(
+                "[storage]\nbackend = \"disk\"\n",
+                |writer| writer.set_storage_backend(StorageBackend::Memory),
+                "[storage]\nbackend = \"memory\"\n",
             );
         }
     }

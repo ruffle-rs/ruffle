@@ -244,6 +244,12 @@ pub fn read_preferences(input: &str) -> (ParseResult<SavedGlobalPreferences>, Do
         };
     });
 
+    document.get_table_like(&mut cx, "storage", |cx, storage| {
+        if let Some(value) = storage.parse_from_str(cx, "backend") {
+            result.result.storage.backend = value;
+        }
+    });
+
     result.warnings = cx.warnings;
     (result, document)
 }
@@ -290,7 +296,7 @@ pub fn read_bookmarks(input: &str) -> (ParseResult<Vec<Bookmark>>, DocumentMut) 
 mod tests {
     use super::*;
     use crate::log::FilenamePattern;
-    use crate::preferences::LogPreferences;
+    use crate::preferences::{storage::StorageBackend, LogPreferences, StoragePreferences};
     use fluent_templates::loader::langid;
     use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
     use url::Url;
@@ -601,6 +607,63 @@ mod tests {
                 warnings: vec!["Invalid log: expected table but found string".to_string()]
             },
             read_preferences("log = \"yes\"").0
+        );
+    }
+
+    #[test]
+    fn storage_backend() {
+        assert_eq!(
+            ParseResult {
+                result: SavedGlobalPreferences {
+                    storage: StoragePreferences {
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                warnings: vec![
+                    "Invalid storage.backend: expected string but found integer".to_string()
+                ]
+            },
+            read_preferences("storage = {backend = 5}").0
+        );
+
+        assert_eq!(
+            ParseResult {
+                result: SavedGlobalPreferences {
+                    storage: StoragePreferences {
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                warnings: vec!["Invalid storage.backend: unsupported value \"???\"".to_string()]
+            },
+            read_preferences("storage = {backend = \"???\"}").0
+        );
+
+        assert_eq!(
+            ParseResult {
+                result: SavedGlobalPreferences {
+                    storage: StoragePreferences {
+                        backend: StorageBackend::Memory,
+                    },
+                    ..Default::default()
+                },
+                warnings: vec![]
+            },
+            read_preferences("storage = {backend = \"memory\"}").0
+        );
+    }
+
+    #[test]
+    fn storage() {
+        assert_eq!(
+            ParseResult {
+                result: SavedGlobalPreferences {
+                    ..Default::default()
+                },
+                warnings: vec!["Invalid storage: expected table but found string".to_string()]
+            },
+            read_preferences("storage = \"no\"").0
         );
     }
 

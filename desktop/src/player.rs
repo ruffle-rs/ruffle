@@ -1,6 +1,6 @@
 use crate::backends::{
     CpalAudioBackend, DesktopExternalInterfaceProvider, DesktopFSCommandProvider, DesktopUiBackend,
-    DiskStorageBackend, ExternalNavigatorBackend,
+    ExternalNavigatorBackend,
 };
 use crate::custom_event::RuffleEvent;
 use crate::executor::WinitAsyncExecutor;
@@ -159,7 +159,7 @@ impl ActivePlayer {
         builder = builder
             .with_navigator(navigator)
             .with_renderer(renderer)
-            .with_storage(DiskStorageBackend::new(opt.save_directory.clone()))
+            .with_storage(preferences.storage_backend().create_backend(opt))
             .with_fs_commands(Box::new(DesktopFSCommandProvider {
                 event_loop: event_loop.clone(),
                 window: window.clone(),

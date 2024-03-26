@@ -2268,8 +2268,8 @@ impl PlayerBuilder {
 
     /// Sets the storage backend of the player.
     #[inline]
-    pub fn with_storage(mut self, storage: impl 'static + StorageBackend) -> Self {
-        self.storage = Some(Box::new(storage));
+    pub fn with_storage(mut self, storage: Box<dyn StorageBackend>) -> Self {
+        self.storage = Some(storage);
         self
     }
 
