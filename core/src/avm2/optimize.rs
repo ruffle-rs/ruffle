@@ -7,7 +7,7 @@ use crate::avm2::op::Op;
 use crate::avm2::property::Property;
 
 use gc_arena::{Gc, GcCell};
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 #[derive(Clone, Copy, Debug)]
 struct OptValue<'gc> {
@@ -86,6 +86,10 @@ impl<'gc> Locals<'gc> {
     fn at(&self, index: usize) -> OptValue<'gc> {
         self.0[index]
     }
+
+    fn len(&self) -> usize {
+        self.0.len()
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -146,7 +150,7 @@ pub fn optimize<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: &BytecodeMethod<'gc>,
     code: &mut Vec<Op<'gc>>,
-    jump_targets: HashSet<i32>,
+    jump_targets: HashMap<i32, Vec<i32>>,
 ) {
     // These make the code less readable
     #![allow(clippy::manual_filter)]
@@ -251,15 +255,49 @@ pub fn optimize<'gc>(
         }
     }
 
+    // TODO: Fill out all ops, then add scope stack and stack merging, too
+    let mut state_map: HashMap<i32, Locals<'gc>> = HashMap::new();
+
     let mut stack = Stack::new();
     let mut scope_stack = Stack::new();
     let mut local_types = initial_local_types.clone();
 
     for (i, op) in code.iter_mut().enumerate() {
-        if jump_targets.contains(&(i as i32)) {
+        if let Some(sources) = jump_targets.get(&(i as i32)) {
+            // Avoid handling multiple sources for now
+            if sources.len() == 1 {
+                // We can merge the locals easily, now
+                let source_i = sources[0];
+                // Because of the linear optimizer logic, this guarantees that the jump source came before the target
+                if let Some(source_local_types) = state_map.get(&source_i) {
+                    let mut merged_types = initial_local_types.clone();
+                    assert_eq!(source_local_types.len(), local_types.len());
+
+                    for (i, target_local) in local_types.0.iter().enumerate() {
+                        let source_local = source_local_types.at(i);
+                        // TODO: Check superclasses, too
+                        if let (Some(source_local_class), Some(target_local_class)) =
+                            (source_local.class, target_local.class)
+                        {
+                            if GcCell::ptr_eq(
+                                source_local_class.inner_class_definition(),
+                                target_local_class.inner_class_definition(),
+                            ) {
+                                merged_types.set(i, OptValue::of_type(source_local_class));
+                            }
+                        }
+                    }
+
+                    local_types = merged_types;
+                } else {
+                    local_types = initial_local_types.clone();
+                }
+            } else {
+                local_types = initial_local_types.clone();
+            }
+
             stack.clear();
             scope_stack.clear();
-            local_types = initial_local_types.clone();
         }
 
         match op {
@@ -859,6 +897,7 @@ pub fn optimize<'gc>(
             Op::Debug { .. } => {}
             Op::IfTrue { .. } | Op::IfFalse { .. } => {
                 stack.pop();
+                state_map.insert(i as i32, local_types.clone());
             }
             Op::IfStrictEq { .. }
             | Op::IfStrictNe { .. }
@@ -874,6 +913,7 @@ pub fn optimize<'gc>(
             | Op::IfNlt { .. } => {
                 stack.pop();
                 stack.pop();
+                state_map.insert(i as i32, local_types.clone());
             }
             Op::Si8 | Op::Si16 | Op::Si32 => {
                 stack.pop();
@@ -895,11 +935,15 @@ pub fn optimize<'gc>(
                 stack.pop();
                 stack.push_class_object(types.int);
             }
-            Op::ReturnVoid
-            | Op::ReturnValue
-            | Op::Throw
-            | Op::Jump { .. }
-            | Op::LookupSwitch(_) => {
+            Op::ReturnVoid | Op::ReturnValue | Op::Throw | Op::LookupSwitch(_) => {
+                // End of block
+                stack.clear();
+                scope_stack.clear();
+                local_types = initial_local_types.clone();
+            }
+            Op::Jump { .. } => {
+                state_map.insert(i as i32, local_types.clone());
+
                 // End of block
                 stack.clear();
                 scope_stack.clear();
@@ -908,7 +952,6 @@ pub fn optimize<'gc>(
             _ => {
                 stack.clear();
                 scope_stack.clear();
-                local_types = initial_local_types.clone();
             }
         }
     }
