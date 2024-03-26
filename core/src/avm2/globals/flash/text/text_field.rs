@@ -1373,3 +1373,17 @@ pub fn set_restrict<'gc>(
     }
     Ok(Value::Undefined)
 }
+
+pub fn get_raw_text<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this
+        .as_display_object()
+        .and_then(|this| this.as_edit_text())
+    {
+        return Ok(AvmString::new(activation.context.gc_context, this.text()).into());
+    }
+    Ok("".into())
+}
