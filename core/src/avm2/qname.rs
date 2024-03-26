@@ -1,8 +1,8 @@
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Activation, Error, Namespace};
 use crate::context::UpdateContext;
-use crate::either::Either;
 use crate::string::{AvmString, WStr, WString};
+use either::Either;
 use gc_arena::{Collect, Mutation};
 use std::fmt::Debug;
 use swf::avm2::types::{Index, Multiname as AbcMultiname};

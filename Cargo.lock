@@ -4184,6 +4184,7 @@ dependencies = [
  "downcast-rs",
  "egui",
  "egui_extras",
+ "either",
  "encoding_rs",
  "enum-map",
  "enumset",
