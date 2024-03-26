@@ -105,10 +105,6 @@ body {
     text-shadow: 0 0 1px white;
 }
 
-#info-container span:first-child::after {
-    content: ":";
-}
-
 #info-container span:last-child {
     float: right;
 }

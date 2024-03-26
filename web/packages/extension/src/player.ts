@@ -92,7 +92,7 @@ function unload() {
     if (player) {
         player.remove();
         document.querySelectorAll("span.metadata").forEach((el) => {
-            el.textContent = "Loading";
+            el.textContent = utils.i18n.getMessage("player_loading");
         });
         document.getElementById("backgroundColor")!.style.backgroundColor =
             "white";
@@ -216,7 +216,9 @@ toggleInfo.addEventListener("click", () => {
 
 reloadSwf.addEventListener("click", () => {
     if (player) {
-        const confirmReload = confirm("Reload the current SWF?");
+        const confirmReload = confirm(
+            utils.i18n.getMessage("player_confirm_reload"),
+        );
         if (confirmReload) {
             player.reload();
         }
@@ -269,11 +271,11 @@ window.addEventListener("pageshow", loadSwfFromHash);
 window.addEventListener("hashchange", loadSwfFromHash);
 
 window.addEventListener("DOMContentLoaded", () => {
-    document
-        .getElementById("local-file-label")!
-        .addEventListener("click", () => {
-            document.getElementById("local-file")!.click();
-        });
+    const localFileLabel = document.getElementById("local-file-label")!;
+
+    localFileLabel.addEventListener("click", () => {
+        document.getElementById("local-file")!.click();
+    });
     webFormSubmit.addEventListener("click", () => {
         if (webURL.value !== "") {
             window.location.hash = webURL.value;
@@ -282,4 +284,20 @@ window.addEventListener("DOMContentLoaded", () => {
     webURL.addEventListener("keydown", (event) =>
         event.key === "Enter" ? webFormSubmit.click() : undefined,
     );
+
+    // Localize all strings.
+    document.title = utils.i18n.getMessage("player_title");
+    webURL.placeholder = utils.i18n.getMessage("player_swf_url");
+    webFormSubmit.textContent = utils.i18n.getMessage("player_load");
+    localFileLabel.textContent = utils.i18n.getMessage("player_select_file");
+    localFileName.textContent = utils.i18n.getMessage(
+        "player_no_file_selected",
+    );
+    playerContainer.ariaLabel = utils.i18n.getMessage("player_aria_label");
+    infoContainer.querySelectorAll("span").forEach((el) => {
+        const local = el.dataset["i18n"];
+        if (local) {
+            el.textContent = utils.i18n.getMessage(local);
+        }
+    });
 });
