@@ -15,7 +15,6 @@ wgpu = { workspace = true, features = ["naga-ir"] }
 tracing = { workspace = true }
 ruffle_render = { path = "..", features = ["tessellator", "wgpu"] }
 bytemuck = { version = "1.15.0", features = ["derive"] }
-raw-window-handle = "0.6.0"
 clap = { version = "4.5.4", features = ["derive"], optional = true }
 enum-map = "2.7.3"
 fnv = "1.0.7"
@@ -24,7 +23,6 @@ image = { version = "0.25.0", default-features = false }
 naga_oil = { workspace = true }
 naga-agal = { path = "../naga-agal" }
 naga-pixelbender = { path = "../naga-pixelbender" }
-downcast-rs = "1.2.0"
 profiling = { version = "1.0", default-features = false, optional = true }
 lru = "0.12.3"
 naga = { workspace = true }
@@ -44,3 +42,9 @@ render_debug_labels = []
 render_trace = ["wgpu/trace"]
 webgl = ["wgpu/webgl"]
 profile-with-tracy = ["profiling", "profiling/profile-with-tracy"]
+
+[package.metadata.cargo-machete]
+ignored = [
+    # Not used directly, declared only to enable its `profile-with-tracy` feature.
+    "profiling"
+]

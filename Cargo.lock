@@ -1787,7 +1787,6 @@ dependencies = [
  "futures",
  "image 0.25.0",
  "indicatif",
- "log",
  "rayon",
  "ruffle_core",
  "ruffle_render_wgpu",
@@ -3273,11 +3272,9 @@ name = "naga-pixelbender"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bitflags 2.5.0",
  "naga",
  "naga_oil",
  "ruffle_render",
- "tracing",
 ]
 
 [[package]]
@@ -4340,7 +4337,6 @@ dependencies = [
 name = "ruffle_render_canvas"
 version = "0.1.0"
 dependencies = [
- "downcast-rs",
  "js-sys",
  "log",
  "ruffle_render",
@@ -4355,7 +4351,6 @@ name = "ruffle_render_webgl"
 version = "0.1.0"
 dependencies = [
  "bytemuck",
- "downcast-rs",
  "js-sys",
  "log",
  "ruffle_render",
@@ -4372,7 +4367,6 @@ version = "0.1.0"
 dependencies = [
  "bytemuck",
  "clap",
- "downcast-rs",
  "enum-map",
  "fnv",
  "futures",
@@ -4384,7 +4378,6 @@ dependencies = [
  "naga-pixelbender",
  "naga_oil",
  "profiling",
- "raw-window-handle 0.6.0",
  "ruffle_render",
  "swf",
  "tracing",
@@ -4426,7 +4419,6 @@ dependencies = [
  "approx",
  "async-channel 2.2.0",
  "chrono",
- "futures",
  "image 0.25.0",
  "percent-encoding",
  "pretty_assertions",
