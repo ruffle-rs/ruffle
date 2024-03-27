@@ -23,6 +23,9 @@ impl Color {
     pub const RED: Self = Self::from_rgb(0xFF0000, 255);
     pub const GREEN: Self = Self::from_rgb(0x00FF00, 255);
     pub const BLUE: Self = Self::from_rgb(0x0000FF, 255);
+    pub const YELLOW: Self = Self::from_rgb(0xFFFF00, 255);
+    pub const CYAN: Self = Self::from_rgb(0x00FFFF, 255);
+    pub const MAGENTA: Self = Self::from_rgb(0xFF00FF, 255);
 
     /// Creates a `Color` from a 32-bit `rgb` value and an `alpha` value.
     ///

@@ -130,6 +130,17 @@ impl<T: Coordinate> Rectangle<T> {
             && self.y_min <= other.y_max
             && self.y_max >= other.y_min
     }
+
+    #[must_use]
+    pub fn grow(mut self, amount: T) -> Self {
+        if self.is_valid() {
+            self.x_min -= amount;
+            self.x_max += amount;
+            self.y_min -= amount;
+            self.y_max += amount;
+        }
+        self
+    }
 }
 
 impl<T: Coordinate> Default for Rectangle<T> {
