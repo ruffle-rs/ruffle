@@ -659,6 +659,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "514de17de45fdb8dc022b1a7975556c53c86f9f0aa5f534b98977b171857c2c9"
 
 [[package]]
+name = "bzip2-rs"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "beeb59e7e4c811ab37cc73680c798c7a5da77fc9989c62b09138e31ee740f735"
+dependencies = [
+ "crc32fast",
+ "tinyvec",
+]
+
+[[package]]
 name = "calloop"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3154,6 +3164,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "md-5"
+version = "0.10.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d89e7ee0cfbedfc4da3340218492196241d89eefb6dab27de5df917a6d2e78cf"
+dependencies = [
+ "cfg-if",
+ "digest",
+]
+
+[[package]]
 name = "memchr"
 version = "2.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4263,6 +4283,8 @@ dependencies = [
  "ruffle_core",
  "ruffle_render",
  "ruffle_render_wgpu",
+ "ruffle_video",
+ "ruffle_video_external",
  "ruffle_video_software",
  "slotmap",
  "sys-locale",
@@ -4435,6 +4457,8 @@ dependencies = [
  "ruffle_input_format",
  "ruffle_render",
  "ruffle_socket_format",
+ "ruffle_video",
+ "ruffle_video_external",
  "ruffle_video_software",
  "serde",
  "toml",
@@ -4450,6 +4474,24 @@ dependencies = [
  "slotmap",
  "swf",
  "thiserror",
+]
+
+[[package]]
+name = "ruffle_video_external"
+version = "0.1.0"
+dependencies = [
+ "bzip2-rs",
+ "hex",
+ "isahc",
+ "libloading 0.8.3",
+ "md-5",
+ "ruffle_render",
+ "ruffle_video",
+ "ruffle_video_software",
+ "slotmap",
+ "swf",
+ "thiserror",
+ "tracing",
 ]
 
 [[package]]

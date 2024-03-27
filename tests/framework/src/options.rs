@@ -174,10 +174,21 @@ impl PlayerOptions {
 
         player_builder = player_builder.with_player_runtime(self.runtime);
 
-        #[cfg(feature = "ruffle_video_software")]
         if self.with_video {
-            use ruffle_video_software::backend::SoftwareVideoBackend;
-            player_builder = player_builder.with_video(SoftwareVideoBackend::new())
+            #[cfg(feature = "ruffle_video_external")]
+            {
+                player_builder = player_builder
+                    .with_video(ruffle_video_external::backend::ExternalVideoBackend::new());
+            }
+
+            #[cfg(all(
+                not(feature = "ruffle_video_external"),
+                feature = "ruffle_video_software"
+            ))]
+            {
+                player_builder = player_builder
+                    .with_video(ruffle_video_software::backend::SoftwareVideoBackend::new());
+            }
         }
 
         Ok(player_builder)

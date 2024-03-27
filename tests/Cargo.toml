@@ -14,7 +14,11 @@ workspace = true
 # Enable running image comparison tests. This is off by default,
 # since the images we compare against are generated on CI, and may
 # not match your local machine's Vulkan version / image output.
-imgtests = ["ruffle_test_framework/ruffle_video_software", "ruffle_render_wgpu"]
+imgtests = [
+    "ruffle_render_wgpu",
+    "ruffle_test_framework/ruffle_video_software",
+    "ruffle_test_framework/ruffle_video_external",
+]
 jpegxr = ["ruffle_test_framework/jpegxr"]
 lzma = ["ruffle_test_framework/lzma"]
 
