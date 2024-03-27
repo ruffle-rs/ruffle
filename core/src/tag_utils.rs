@@ -151,8 +151,52 @@ impl SwfMovie {
         Self::from_data(&data, url.into(), loader_url)
     }
 
-    /// Construct a movie based on the contents of the SWF datastream.
+    /// Construct a movie based on the contents of a datastream.
     pub fn from_data(
+        swf_data: &[u8],
+        url: String,
+        loader_url: Option<String>,
+    ) -> Result<Self, Error> {
+        match Self::filter_from_projector_bundle(swf_data) {
+            Some(extracted_swf) => Self::from_swf_data(&extracted_swf, url, loader_url),
+            None => Self::from_swf_data(swf_data, url, loader_url),
+        }
+    }
+
+    /// Get an SWF from data if the data is a swf/projector bundle
+    fn filter_from_projector_bundle(data: &[u8]) -> Option<Vec<u8>> {
+        let len = data.len();
+        let signature = u32::from_le_bytes(
+            data[len - 8..len - 4]
+                .try_into()
+                .expect("4 bytes make a u32"),
+        );
+
+        if signature != 0xFA123456 {
+            return None;
+        }
+
+        let swf_size = usize::try_from(u32::from_le_bytes(
+            data[len - 4..len].try_into().expect("4 bytes make a u32"),
+        ))
+        .expect("size should be at least 32 bits");
+
+        if swf_size > len - 8 {
+            //catch possible overflow
+            return None;
+        }
+
+        let offset = len - swf_size - 8;
+        let mut swf_data = Vec::with_capacity(swf_size);
+        for i in 0..swf_size {
+            swf_data.push(data[i + offset]);
+        }
+
+        Some(swf_data)
+    }
+
+    /// Construct a movie based on the contents of the SWF datastream.
+    fn from_swf_data(
         swf_data: &[u8],
         url: String,
         loader_url: Option<String>,
