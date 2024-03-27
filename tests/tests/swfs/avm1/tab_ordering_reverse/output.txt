@@ -1,0 +1,51 @@
+Focus changed
+  old: null
+  new: _level0.text1
+Tab pressed
+Focus changed
+  old: _level0.text1
+  new: _level0.text2
+Tab pressed
+Focus changed
+  old: _level0.text2
+  new: _level0.text3
+Tab pressed
+Focus changed
+  old: _level0.text3
+  new: _level0.text2
+Tab pressed
+Focus changed
+  old: _level0.text2
+  new: _level0.text3
+Tab pressed
+Focus changed
+  old: _level0.text3
+  new: _level0.text2
+Tab pressed
+Focus changed
+  old: _level0.text2
+  new: _level0.text1
+Tab pressed
+Focus changed
+  old: _level0.text1
+  new: _level0.text4
+Tab pressed
+Focus changed
+  old: _level0.text4
+  new: _level0.text1
+Tab pressed
+Focus changed
+  old: _level0.text1
+  new: _level0.text2
+Tab pressed
+Focus changed
+  old: _level0.text2
+  new: _level0.text3
+Tab pressed
+Focus changed
+  old: _level0.text3
+  new: _level0.text2
+Tab pressed
+Focus changed
+  old: _level0.text2
+  new: _level0.text3
