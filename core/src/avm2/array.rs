@@ -169,7 +169,11 @@ where
                 for (index, value) in replace_with_tree {
                     storage.insert(self.slice.index + index, value);
                 }
-                *self.slice.storage = ArrayStorage::Sparse(storage.clone(), length);
+                if storage.is_empty() {
+                    *self.slice.storage = ArrayStorage::Dense(Vec::new(), 0);
+                } else {
+                    *self.slice.storage = ArrayStorage::Sparse(storage.clone(), length);
+                }
             }
         }
     }
@@ -283,21 +287,6 @@ impl<'gc> ArrayStorage<'gc> {
         }
     }
 
-    fn convert_to_dense(&mut self) {
-        match self {
-            ArrayStorage::Dense(..) => {}
-            ArrayStorage::Sparse(storage, length) => {
-                let mut new_storage = Vec::new();
-                for i in 0..*length {
-                    let value = storage.get(&i).copied();
-                    new_storage.push(value);
-                }
-                let dense_used = new_storage.iter().filter(|v| v.is_some()).count();
-                *self = ArrayStorage::Dense(new_storage, dense_used);
-            }
-        }
-    }
-
     /// Set an array storage slot to a particular value.
     ///
     /// If the item index extends beyond the length of the array, then the
@@ -344,15 +333,13 @@ impl<'gc> ArrayStorage<'gc> {
                     *i = None;
                     if *dense_used != 0 {
                         *dense_used -= 1;
-                        if *dense_used == 0 {
-                            self.convert_to_dense();
-                        }
                         self.maybe_convert_to_sparse();
                     }
                 }
             }
             ArrayStorage::Sparse(storage, _) => {
                 storage.remove(&item);
+                self.maybe_convert_to_dense();
             }
         }
     }
@@ -404,6 +391,7 @@ impl<'gc> ArrayStorage<'gc> {
                         storage.remove(&i);
                     }
                     *length = size;
+                    self.maybe_convert_to_dense();
                 }
             }
         }
@@ -482,6 +470,17 @@ impl<'gc> ArrayStorage<'gc> {
         }
     }
 
+    fn maybe_convert_to_dense(&mut self) {
+        match self {
+            ArrayStorage::Dense(..) => {}
+            ArrayStorage::Sparse(storage, _) => {
+                if storage.is_empty() {
+                    *self = ArrayStorage::Dense(Vec::new(), 0);
+                }
+            }
+        }
+    }
+
     /// Push an array hole onto the end of this array.
     pub fn push_hole(&mut self) {
         match self {
@@ -529,7 +528,9 @@ impl<'gc> ArrayStorage<'gc> {
                 }
                 if let Some(non_hole) = non_hole {
                     *length -= 1;
-                    storage.remove(non_hole).unwrap()
+                    let value = storage.remove(non_hole).unwrap();
+                    self.maybe_convert_to_dense();
+                    value
                 } else {
                     let value = storage
                         .get(&(*length - 1))
@@ -537,6 +538,7 @@ impl<'gc> ArrayStorage<'gc> {
                         .unwrap_or(Value::Undefined);
                     storage.remove(&(*length - 1));
                     *length -= 1;
+                    self.maybe_convert_to_dense();
                     value
                 }
             }
@@ -572,6 +574,8 @@ impl<'gc> ArrayStorage<'gc> {
 
                 if *length > 0 {
                     *length -= 1;
+                } else {
+                    self.maybe_convert_to_dense();
                 }
                 value
             }
@@ -670,6 +674,7 @@ impl<'gc> ArrayStorage<'gc> {
                         storage.insert(key - 1, value);
                         storage.remove(&key);
                     }
+                    self.maybe_convert_to_dense();
                     value
                 }
             }
