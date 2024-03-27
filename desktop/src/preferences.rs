@@ -3,8 +3,8 @@ mod write;
 
 use crate::cli::Opt;
 use crate::log::FilenamePattern;
-use crate::preferences::read::read_preferences;
-use crate::preferences::write::PreferencesWriter;
+use crate::preferences::read::{read_bookmarks, read_preferences};
+use crate::preferences::write::{BookmarksWriter, PreferencesWriter};
 use anyhow::{Context, Error};
 use ruffle_core::backend::ui::US_ENGLISH;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
@@ -12,6 +12,7 @@ use std::sync::{Arc, Mutex};
 use sys_locale::get_locale;
 use toml_edit::DocumentMut;
 use unic_langid::LanguageIdentifier;
+use url::Url;
 
 /// The preferences that relate to the application itself.
 ///
@@ -34,6 +35,8 @@ pub struct GlobalPreferences {
 
     /// The actual, mutable user preferences that are persisted to disk.
     preferences: Arc<Mutex<PreferencesAndDocument>>,
+
+    bookmarks: Arc<Mutex<BookmarksAndDocument>>,
 }
 
 impl GlobalPreferences {
@@ -56,9 +59,26 @@ impl GlobalPreferences {
             Default::default()
         };
 
+        let bookmarks_path = cli.config.join("bookmarks.toml");
+        let bookmarks = if bookmarks_path.exists() {
+            let contents = std::fs::read_to_string(&bookmarks_path)
+                .context("Failed to read saved bookmarks")?;
+            let (result, document) = read_bookmarks(&contents);
+            for warning in result.warnings {
+                tracing::warn!("{warning}");
+            }
+            BookmarksAndDocument {
+                toml_document: document,
+                values: result.result,
+            }
+        } else {
+            Default::default()
+        };
+
         Ok(Self {
             cli,
             preferences: Arc::new(Mutex::new(preferences)),
+            bookmarks: Arc::new(Mutex::new(bookmarks)),
         })
     }
 
@@ -127,6 +147,14 @@ impl GlobalPreferences {
             .filename_pattern
     }
 
+    pub fn bookmarks(&self, fun: impl FnOnce(&Vec<Bookmark>)) {
+        fun(&self
+            .bookmarks
+            .lock()
+            .expect("Bookmarks is no reentrant")
+            .values)
+    }
+
     pub fn write_preferences(&self, fun: impl FnOnce(&mut PreferencesWriter)) -> Result<(), Error> {
         let mut preferences = self
             .preferences
@@ -139,6 +167,17 @@ impl GlobalPreferences {
         let serialized = preferences.toml_document.to_string();
         std::fs::write(self.cli.config.join("preferences.toml"), serialized)
             .context("Could not write preferences to disk")
+    }
+
+    pub fn write_bookmarks(&self, fun: impl FnOnce(&mut BookmarksWriter)) -> Result<(), Error> {
+        let mut bookmarks = self.bookmarks.lock().expect("Bookmarks is not reentrant");
+
+        let mut writer = BookmarksWriter::new(&mut bookmarks);
+        fun(&mut writer);
+
+        let serialized = bookmarks.toml_document.to_string();
+        std::fs::write(self.cli.config.join("bookmarks.toml"), serialized)
+            .context("Could not write bookmarks to disk")
     }
 }
 
@@ -158,6 +197,14 @@ struct PreferencesAndDocument {
 
     /// The actual preferences stored within the toml document, as this version of Ruffle understands them.
     values: SavedGlobalPreferences,
+}
+
+#[derive(Default)]
+struct BookmarksAndDocument {
+    /// The original toml document
+    toml_document: DocumentMut,
+
+    values: Vec<Bookmark>,
 }
 
 #[derive(PartialEq, Debug)]
@@ -192,4 +239,9 @@ impl Default for SavedGlobalPreferences {
 #[derive(PartialEq, Debug, Default)]
 pub struct LogPreferences {
     pub filename_pattern: FilenamePattern,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Bookmark {
+    pub url: Url,
 }
