@@ -1373,3 +1373,32 @@ pub fn set_restrict<'gc>(
     }
     Ok(Value::Undefined)
 }
+
+pub fn get_selected_text<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(this) = this
+        .as_display_object()
+        .and_then(|this| this.as_edit_text())
+    {
+        let selection = this
+            .selection()
+            .unwrap_or_else(|| TextSelection::for_position(0));
+
+        let start_index = selection.start();
+        let end_index = selection.end();
+
+        return if this.text().len() > end_index {
+            Ok(AvmString::new(
+                activation.context.gc_context,
+                &this.text()[start_index..end_index],
+            )
+            .into())
+        } else {
+            Ok("".into())
+        };
+    }
+    Ok("".into())
+}
