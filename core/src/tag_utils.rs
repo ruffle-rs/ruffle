@@ -166,6 +166,10 @@ impl SwfMovie {
     /// Get an SWF from data if the data is a swf/projector bundle
     fn filter_from_projector_bundle(data: &[u8]) -> Option<Vec<u8>> {
         let len = data.len();
+        if len < 8 {
+            return None;
+        }
+
         let signature = u32::from_le_bytes(
             data[len - 8..len - 4]
                 .try_into()
