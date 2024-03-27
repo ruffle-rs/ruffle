@@ -1,14 +1,15 @@
 use crate::preferences::SavedGlobalPreferences;
+use std::fmt;
 use std::str::FromStr;
 use toml_edit::{DocumentMut, Item};
 
 #[derive(Debug, PartialEq)]
-pub struct ParseResult {
-    pub result: SavedGlobalPreferences,
+pub struct ParseResult<T: PartialEq + fmt::Debug> {
+    pub result: T,
     pub warnings: Vec<String>,
 }
 
-impl ParseResult {
+impl<T: fmt::Debug + PartialEq> ParseResult<T> {
     fn add_warning(&mut self, message: String) {
         self.warnings.push(message);
     }
@@ -23,7 +24,7 @@ impl ParseResult {
 /// Default values are used wherever an unknown or invalid value is found;
 /// this is to support the case of, for example, a later version having different supported
 /// backends than an older version.
-pub fn read_preferences(input: &str) -> (ParseResult, DocumentMut) {
+pub fn read_preferences(input: &str) -> (ParseResult<SavedGlobalPreferences>, DocumentMut) {
     let mut result = ParseResult {
         result: Default::default(),
         warnings: vec![],
@@ -90,7 +91,7 @@ pub fn read_preferences(input: &str) -> (ParseResult, DocumentMut) {
     (result, document)
 }
 
-fn parse_item_from_str<T: FromStr + Default>(item: Option<&Item>) -> Result<Option<T>, String> {
+fn parse_item_from_str<T: FromStr>(item: Option<&Item>) -> Result<Option<T>, String> {
     if let Some(item) = item {
         if let Some(str) = item.as_str() {
             if let Ok(value) = str.parse::<T>() {
