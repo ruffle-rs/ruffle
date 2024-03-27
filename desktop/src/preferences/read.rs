@@ -87,6 +87,21 @@ pub fn read_preferences(input: &str) -> (ParseResult, DocumentMut) {
         }
     }
 
+    if let Some(save_item) = document.get("save") {
+        if let Some(save) = save_item.as_table_like() {
+            match parse_item_from_str(save.get("backend")) {
+                Ok(Some(value)) => result.result.save.backend = value,
+                Ok(None) => {}
+                Err(e) => result.add_warning(format!("Invalid save.backend: {e}")),
+            }
+        } else {
+            result.add_warning(format!(
+                "Invalid save: expected table but found {}",
+                save_item.type_name()
+            ));
+        }
+    }
+
     (result, document)
 }
 
@@ -134,7 +149,7 @@ fn parse_item_from_bool(item: Option<&Item>) -> Result<Option<bool>, String> {
 mod tests {
     use super::*;
     use crate::log::FilenamePattern;
-    use crate::preferences::LogPreferences;
+    use crate::preferences::{save::StorageBackend, LogPreferences, SavePreferences};
     use fluent_templates::loader::langid;
     use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 
@@ -444,6 +459,63 @@ mod tests {
                 warnings: vec!["Invalid log: expected table but found string".to_string()]
             },
             read_preferences("log = \"yes\"").0
+        );
+    }
+
+    #[test]
+    fn save_backend() {
+        assert_eq!(
+            ParseResult {
+                result: SavedGlobalPreferences {
+                    save: SavePreferences {
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                warnings: vec![
+                    "Invalid save.backend: expected string but found integer".to_string()
+                ]
+            },
+            read_preferences("save = {backend = 5}").0
+        );
+
+        assert_eq!(
+            ParseResult {
+                result: SavedGlobalPreferences {
+                    save: SavePreferences {
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                warnings: vec!["Invalid save.backend: unsupported value \"???\"".to_string()]
+            },
+            read_preferences("save = {backend = \"???\"}").0
+        );
+
+        assert_eq!(
+            ParseResult {
+                result: SavedGlobalPreferences {
+                    save: SavePreferences {
+                        backend: StorageBackend::Memory,
+                    },
+                    ..Default::default()
+                },
+                warnings: vec![]
+            },
+            read_preferences("save = {backend = \"memory\"}").0
+        );
+    }
+
+    #[test]
+    fn save() {
+        assert_eq!(
+            ParseResult {
+                result: SavedGlobalPreferences {
+                    ..Default::default()
+                },
+                warnings: vec!["Invalid save: expected table but found string".to_string()]
+            },
+            read_preferences("save = \"no\"").0
         );
     }
 }

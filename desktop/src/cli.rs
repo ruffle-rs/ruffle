@@ -1,3 +1,4 @@
+use crate::preferences::save::StorageBackend;
 use crate::RUFFLE_VERSION;
 use anyhow::{anyhow, Error};
 use clap::{Parser, ValueEnum};
@@ -53,6 +54,12 @@ pub struct Opt {
     /// This option temporarily overrides any stored preference.
     #[clap(long, short)]
     pub power: Option<PowerPreference>,
+
+    /// Type of storage backend to use. This determines where local storage data is saved (e.g. shared objects).
+    ///
+    /// This option temporarily overrides any stored preference.
+    #[clap(long)]
+    pub storage: Option<StorageBackend>,
 
     /// Width of window in pixels.
     #[clap(long, display_order = 1)]

@@ -644,7 +644,7 @@ impl Ruffle {
 
         match window.local_storage() {
             Ok(Some(s)) => {
-                builder = builder.with_storage(storage::LocalStorageBackend::new(s));
+                builder = builder.with_storage(Box::new(storage::LocalStorageBackend::new(s)));
             }
             err => {
                 tracing::warn!("Unable to use localStorage: {:?}\nData will not save.", err);
