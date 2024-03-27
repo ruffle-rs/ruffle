@@ -3051,6 +3051,18 @@ impl<'gc> TDisplayObjectContainer<'gc> for MovieClip<'gc> {
     fn raw_container_mut(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, ChildContainer<'gc>> {
         RefMut::map(self.0.write(gc_context), |this| &mut this.container)
     }
+
+    /// The property `MovieClip.tabChildren` allows changing the behavior of
+    /// tab ordering hierarchically.
+    /// When set to `false`, it excludes the whole subtree represented by
+    /// the movie clip from tab ordering.
+    ///
+    /// _NOTE:_
+    /// According to the AS2 documentation, it should affect only automatic tab ordering.
+    /// However, that does not seem to be the case, as it also affects custom ordering.
+    fn is_tab_children(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        self.get_avm1_boolean_property(context, "tabChildren", true)
+    }
 }
 
 impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {

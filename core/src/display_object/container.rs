@@ -475,12 +475,19 @@ pub trait TDisplayObjectContainer<'gc>:
         RenderIter::from_container(self.into())
     }
 
+    fn is_tab_children(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+        true
+    }
+
     fn fill_tab_order(
         &self,
         tab_order: &mut Vec<DisplayObject<'gc>>,
         context: &mut UpdateContext<'_, 'gc>,
     ) {
-        // TODO Add support for `tabChildren`
+        if !self.is_tab_children(context) {
+            return;
+        }
+
         for child in self.iter_render_list() {
             if child.is_tab_enabled(context) {
                 tab_order.push(child);
