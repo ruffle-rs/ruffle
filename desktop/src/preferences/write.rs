@@ -54,124 +54,138 @@ impl<'a> PreferencesWriter<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::preferences::read::read_preferences;
     use fluent_templates::loader::langid;
 
-    fn parse(input: &str) -> PreferencesAndDocument {
-        let (result, document) = read_preferences(input);
-        PreferencesAndDocument {
-            toml_document: document,
-            values: result.result,
+    macro_rules! define_serialization_test_helpers {
+        ($read_method:ident, $doc_struct:ident, $writer:ident) => {
+            fn parse(input: &str) -> $doc_struct {
+                let (result, document) = $read_method(input);
+                $doc_struct {
+                    toml_document: document,
+                    values: result.result,
+                }
+            }
+
+            fn check_roundtrip(preferences: &mut $doc_struct) {
+                let read_result = $read_method(&preferences.toml_document.to_string());
+                assert_eq!(
+                    preferences.values, read_result.0.result,
+                    "roundtrip failed: expected != actual"
+                );
+            }
+
+            fn test(original: &str, fun: impl FnOnce(&mut $writer), expected: &str) {
+                let mut preferences = parse(original);
+                let mut writer = $writer::new(&mut preferences);
+                fun(&mut writer);
+                check_roundtrip(&mut preferences);
+                assert_eq!(expected, preferences.toml_document.to_string());
+            }
+        };
+    }
+
+    mod preferences {
+        use super::*;
+        use crate::preferences::read::read_preferences;
+
+        define_serialization_test_helpers!(
+            read_preferences,
+            PreferencesAndDocument,
+            PreferencesWriter
+        );
+
+        #[test]
+        fn set_graphics_backend() {
+            test(
+                "",
+                |writer| writer.set_graphics_backend(GraphicsBackend::Default),
+                "graphics_backend = \"default\"\n",
+            );
+
+            test(
+                "graphics_backend = \"fast\"",
+                |writer| writer.set_graphics_backend(GraphicsBackend::Vulkan),
+                "graphics_backend = \"vulkan\"\n",
+            );
         }
-    }
 
-    fn check_roundtrip(preferences: &mut PreferencesAndDocument) {
-        let read_result = read_preferences(&preferences.toml_document.to_string());
-        assert_eq!(
-            preferences.values, read_result.0.result,
-            "roundtrip failed: expected != actual"
-        );
-    }
+        #[test]
+        fn set_graphics_power_preference() {
+            test(
+                "",
+                |writer| writer.set_graphics_power_preference(PowerPreference::High),
+                "graphics_power_preference = \"high\"\n",
+            );
 
-    fn test(original: &str, fun: impl FnOnce(&mut PreferencesWriter), expected: &str) {
-        let mut preferences = parse(original);
-        let mut writer = PreferencesWriter::new(&mut preferences);
-        fun(&mut writer);
-        check_roundtrip(&mut preferences);
-        assert_eq!(expected, preferences.toml_document.to_string());
-    }
+            test(
+                "graphics_power_preference = \"fast\"",
+                |writer| writer.set_graphics_power_preference(PowerPreference::Low),
+                "graphics_power_preference = \"low\"\n",
+            );
+        }
 
-    #[test]
-    fn set_graphics_backend() {
-        test(
-            "",
-            |writer| writer.set_graphics_backend(GraphicsBackend::Default),
-            "graphics_backend = \"default\"\n",
-        );
+        #[test]
+        fn set_language() {
+            test(
+                "",
+                |writer| writer.set_language(langid!("en-US")),
+                "language = \"en-US\"\n",
+            );
 
-        test(
-            "graphics_backend = \"fast\"",
-            |writer| writer.set_graphics_backend(GraphicsBackend::Vulkan),
-            "graphics_backend = \"vulkan\"\n",
-        );
-    }
+            test(
+                "language = \"???\"",
+                |writer| writer.set_language(langid!("en-Latn-US-valencia")),
+                "language = \"en-Latn-US-valencia\"\n",
+            );
+        }
 
-    #[test]
-    fn set_graphics_power_preference() {
-        test(
-            "",
-            |writer| writer.set_graphics_power_preference(PowerPreference::High),
-            "graphics_power_preference = \"high\"\n",
-        );
+        #[test]
+        fn set_output_device() {
+            test(
+                "",
+                |writer| writer.set_output_device(Some("Speakers".to_string())),
+                "output_device = \"Speakers\"\n",
+            );
 
-        test(
-            "graphics_power_preference = \"fast\"",
-            |writer| writer.set_graphics_power_preference(PowerPreference::Low),
-            "graphics_power_preference = \"low\"\n",
-        );
-    }
+            test(
+                "output_device = \"Speakers\"",
+                |writer| writer.set_output_device(None),
+                "",
+            );
+        }
 
-    #[test]
-    fn set_language() {
-        test(
-            "",
-            |writer| writer.set_language(langid!("en-US")),
-            "language = \"en-US\"\n",
-        );
+        #[test]
+        fn set_volume() {
+            test("", |writer| writer.set_volume(0.5), "volume = 0.5\n");
+        }
 
-        test(
-            "language = \"???\"",
-            |writer| writer.set_language(langid!("en-Latn-US-valencia")),
-            "language = \"en-Latn-US-valencia\"\n",
-        );
-    }
+        #[test]
+        fn set_mute() {
+            test("", |writer| writer.set_mute(true), "mute = true\n");
+            test(
+                "mute = true",
+                |writer| writer.set_mute(false),
+                "mute = false\n",
+            );
+        }
 
-    #[test]
-    fn set_output_device() {
-        test(
-            "",
-            |writer| writer.set_output_device(Some("Speakers".to_string())),
-            "output_device = \"Speakers\"\n",
-        );
-
-        test(
-            "output_device = \"Speakers\"",
-            |writer| writer.set_output_device(None),
-            "",
-        );
-    }
-
-    #[test]
-    fn set_volume() {
-        test("", |writer| writer.set_volume(0.5), "volume = 0.5\n");
-    }
-
-    #[test]
-    fn set_mute() {
-        test("", |writer| writer.set_mute(true), "mute = true\n");
-        test(
-            "mute = true",
-            |writer| writer.set_mute(false),
-            "mute = false\n",
-        );
-    }
-
-    #[test]
-    fn set_log_filename_pattern() {
-        test(
-            "",
-            |writer| writer.set_log_filename_pattern(FilenamePattern::WithTimestamp),
-            "log = { filename_pattern = \"with_timestamp\" }\n",
-        );
-        test(
-            "log = { filename_pattern = \"with_timestamp\" }\n",
-            |writer| writer.set_log_filename_pattern(FilenamePattern::SingleFile),
-            "log = { filename_pattern = \"single_file\" }\n",
-        );
-        test(
-            "[log]\nfilename_pattern = \"with_timestamp\"\n",
-            |writer| writer.set_log_filename_pattern(FilenamePattern::SingleFile),
-            "[log]\nfilename_pattern = \"single_file\"\n",
-        );
+        #[test]
+        fn set_log_filename_pattern() {
+            test(
+                "",
+                |writer| writer.set_log_filename_pattern(FilenamePattern::WithTimestamp),
+                "log = { filename_pattern = \"with_timestamp\" }\n",
+            );
+            test(
+                "log = { filename_pattern = \"with_timestamp\" }\n",
+                |writer| writer.set_log_filename_pattern(FilenamePattern::SingleFile),
+                "log = { filename_pattern = \"single_file\" }\n",
+            );
+            test(
+                "[log]\nfilename_pattern = \"with_timestamp\"\n",
+                |writer| writer.set_log_filename_pattern(FilenamePattern::SingleFile),
+                "[log]\nfilename_pattern = \"single_file\"\n",
+            );
+        }
     }
 }
