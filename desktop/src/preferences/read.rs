@@ -1,6 +1,6 @@
 use crate::preferences::SavedGlobalPreferences;
 use std::str::FromStr;
-use toml_edit::{DocumentMut, Item};
+use toml_edit::{DocumentMut, Item, TableLike};
 
 #[derive(Debug, PartialEq)]
 pub struct ParseResult {
@@ -11,6 +11,142 @@ pub struct ParseResult {
 impl ParseResult {
     fn add_warning(&mut self, message: String) {
         self.warnings.push(message);
+    }
+}
+
+#[derive(Default)]
+pub struct ParseContext {
+    warnings: Vec<String>,
+    /// Path of the current item being parsed
+    path: Vec<&'static str>,
+}
+
+impl ParseContext {
+    pub fn push_key(&mut self, key: &'static str) {
+        self.path.push(key);
+    }
+
+    pub fn pop_key(&mut self) {
+        let _ = self.path.pop();
+    }
+
+    pub fn path(&self) -> String {
+        self.path.join(".")
+    }
+
+    pub fn add_warning(&mut self, warning: String) {
+        self.warnings.push(warning);
+    }
+}
+
+pub trait ReadExt<'a> {
+    fn get_impl(&'a self, key: &str) -> Option<&'a Item>;
+
+    fn get_table_like(
+        &'a self,
+        cx: &mut ParseContext,
+        key: &'static str,
+        fun: impl FnOnce(&mut ParseContext, &dyn TableLike),
+    ) {
+        if let Some(item) = self.get_impl(key) {
+            cx.push_key(key);
+
+            if let Some(table) = item.as_table_like() {
+                fun(cx, table);
+            } else {
+                cx.add_warning(format!(
+                    "Invalid {}: expected table but found {}",
+                    cx.path(),
+                    item.type_name()
+                ));
+            }
+
+            cx.pop_key();
+        }
+    }
+
+    fn parse_from_str<T: FromStr>(&'a self, cx: &mut ParseContext, key: &'static str) -> Option<T> {
+        if let Some(item) = self.get_impl(key) {
+            cx.push_key(key);
+
+            if let Some(str) = item.as_str() {
+                if let Ok(value) = str.parse::<T>() {
+                    return Some(value);
+                } else {
+                    cx.add_warning(format!("Invalid {}: unsupported value {str:?}", cx.path()));
+                }
+            } else {
+                cx.add_warning(format!(
+                    "Invalid {}: expected string but found {}",
+                    cx.path(),
+                    item.type_name()
+                ));
+            }
+
+            cx.pop_key();
+        }
+
+        None
+    }
+
+    fn get_bool(&'a self, cx: &mut ParseContext, key: &'static str) -> Option<bool> {
+        if let Some(item) = self.get_impl(key) {
+            cx.push_key(key);
+
+            if let Some(value) = item.as_bool() {
+                return Some(value);
+            } else {
+                cx.add_warning(format!(
+                    "Invalid {}: expected boolean but found {}",
+                    cx.path(),
+                    item.type_name()
+                ));
+            }
+
+            cx.pop_key();
+        }
+
+        None
+    }
+
+    fn get_float(&'a self, cx: &mut ParseContext, key: &'static str) -> Option<f64> {
+        if let Some(item) = self.get_impl(key) {
+            cx.push_key(key);
+
+            if let Some(value) = item.as_float() {
+                return Some(value);
+            } else {
+                cx.add_warning(format!(
+                    "Invalid {}: expected float but found {}",
+                    cx.path(),
+                    item.type_name()
+                ));
+            }
+
+            cx.pop_key();
+        }
+
+        None
+    }
+}
+
+// Implementations for toml_edit types.
+
+impl<'a> ReadExt<'a> for DocumentMut {
+    fn get_impl(&'a self, key: &str) -> Option<&'a Item> {
+        self.get(key)
+    }
+}
+
+impl<'a> ReadExt<'a> for Item {
+    fn get_impl(&'a self, key: &str) -> Option<&'a Item> {
+        self.get(key)
+    }
+}
+
+impl<'a> ReadExt<'a> for dyn TableLike + 'a {
+    fn get_impl(&'a self, key: &str) -> Option<&'a Item> {
+        self.get(key)
     }
 }
 
@@ -36,98 +172,40 @@ pub fn read_preferences(input: &str) -> (ParseResult, DocumentMut) {
         }
     };
 
-    match parse_item_from_str(document.get("graphics_backend")) {
-        Ok(Some(value)) => result.result.graphics_backend = value,
-        Ok(None) => {}
-        Err(e) => result.add_warning(format!("Invalid graphics_backend: {e}")),
+    let mut cx = ParseContext::default();
+
+    if let Some(value) = document.parse_from_str(&mut cx, "graphics_backend") {
+        result.result.graphics_backend = value;
     };
 
-    match parse_item_from_str(document.get("graphics_power_preference")) {
-        Ok(Some(value)) => result.result.graphics_power_preference = value,
-        Ok(None) => {}
-        Err(e) => result.add_warning(format!("Invalid graphics_power_preference: {e}")),
+    if let Some(value) = document.parse_from_str(&mut cx, "graphics_power_preference") {
+        result.result.graphics_power_preference = value;
     };
 
-    match parse_item_from_str(document.get("language")) {
-        Ok(Some(value)) => result.result.language = value,
-        Ok(None) => {}
-        Err(e) => result.add_warning(format!("Invalid language: {e}")),
+    if let Some(value) = document.parse_from_str(&mut cx, "language") {
+        result.result.language = value;
     };
 
-    match parse_item_from_str(document.get("output_device")) {
-        Ok(Some(value)) => result.result.output_device = Some(value),
-        Ok(None) => {}
-        Err(e) => result.add_warning(format!("Invalid output_device: {e}")),
+    if let Some(value) = document.parse_from_str(&mut cx, "output_device") {
+        result.result.output_device = Some(value);
     };
 
-    match parse_item_from_float(document.get("volume")) {
-        Ok(Some(value)) => result.result.volume = value.clamp(0.0, 1.0) as f32,
-        Ok(None) => {}
-        Err(e) => result.add_warning(format!("Invalid volume: {e}")),
+    if let Some(value) = document.get_float(&mut cx, "volume") {
+        result.result.volume = value.clamp(0.0, 1.0) as f32;
     };
 
-    match parse_item_from_bool(document.get("mute")) {
-        Ok(Some(value)) => result.result.mute = value,
-        Ok(None) => {}
-        Err(e) => result.add_warning(format!("Invalid mute: {e}")),
+    if let Some(value) = document.get_bool(&mut cx, "mute") {
+        result.result.mute = value;
     };
 
-    if let Some(log_item) = document.get("log") {
-        if let Some(log) = log_item.as_table_like() {
-            match parse_item_from_str(log.get("filename_pattern")) {
-                Ok(Some(value)) => result.result.log.filename_pattern = value,
-                Ok(None) => {}
-                Err(e) => result.add_warning(format!("Invalid log.filename_pattern: {e}")),
-            };
-        } else {
-            result.add_warning(format!(
-                "Invalid log: expected table but found {}",
-                log_item.type_name()
-            ));
-        }
-    }
+    document.get_table_like(&mut cx, "log", |cx, log| {
+        if let Some(value) = log.parse_from_str(cx, "filename_pattern") {
+            result.result.log.filename_pattern = value;
+        };
+    });
 
+    result.warnings = cx.warnings;
     (result, document)
-}
-
-fn parse_item_from_str<T: FromStr + Default>(item: Option<&Item>) -> Result<Option<T>, String> {
-    if let Some(item) = item {
-        if let Some(str) = item.as_str() {
-            if let Ok(value) = str.parse::<T>() {
-                Ok(Some(value))
-            } else {
-                Err(format!("unsupported value {str:?}"))
-            }
-        } else {
-            Err(format!("expected string but found {}", item.type_name()))
-        }
-    } else {
-        Ok(None)
-    }
-}
-
-fn parse_item_from_float(item: Option<&Item>) -> Result<Option<f64>, String> {
-    if let Some(item) = item {
-        if let Some(value) = item.as_float() {
-            Ok(Some(value))
-        } else {
-            Err(format!("expected float but found {}", item.type_name()))
-        }
-    } else {
-        Ok(None)
-    }
-}
-
-fn parse_item_from_bool(item: Option<&Item>) -> Result<Option<bool>, String> {
-    if let Some(item) = item {
-        if let Some(value) = item.as_bool() {
-            Ok(Some(value))
-        } else {
-            Err(format!("expected boolean but found {}", item.type_name()))
-        }
-    } else {
-        Ok(None)
-    }
 }
 
 #[cfg(test)]
