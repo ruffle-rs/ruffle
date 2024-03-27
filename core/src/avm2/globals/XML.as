@@ -58,14 +58,14 @@ package {
         AS3 native function name():Object;
         AS3 native function setName(name:*):void;
         private native function namespace_internal_impl(hasPrefix:Boolean, prefix:String = null):*;
-        AS3 function namespace(prefix:String = null):* {
+        AS3 function namespace(prefix:* = null):* {
             return namespace_internal_impl(arguments.length > 0, prefix);
         }
         AS3 native function inScopeNamespaces():Array;
         AS3 native function namespaceDeclarations():Array;
         AS3 native function localName():Object;
         AS3 native function toXMLString():String;
-        AS3 native function child(name:Object):XMLList;
+        AS3 native function child(name:*):XMLList;
         AS3 native function childIndex():int;
         AS3 native function children():XMLList;
         AS3 native function copy():XML;
@@ -74,19 +74,19 @@ package {
         AS3 native function attributes():XMLList;
         AS3 native function attribute(name:*):XMLList;
         AS3 native function nodeKind():String;
-        AS3 native function appendChild(child:Object):XML;
-        AS3 native function prependChild(child:Object):XML;
+        AS3 native function appendChild(child:*):XML;
+        AS3 native function prependChild(child:*):XML;
         AS3 native function descendants(name:Object = "*"):XMLList;
         AS3 native function text():XMLList;
         AS3 native function toString():String;
         AS3 native function length():int;
         AS3 native function comments():XMLList;
-        AS3 native function processingInstructions(name:String = "*"):XMLList;
-        AS3 native function insertChildAfter(child1:Object, child2:Object):*;
-        AS3 native function insertChildBefore(child1:Object, child2:Object):*;
+        AS3 native function processingInstructions(name:* = "*"):XMLList;
+        AS3 native function insertChildAfter(child1:*, child2:*):*;
+        AS3 native function insertChildBefore(child1:*, child2:*):*;
         // NOTE: Docs lie, value can be anything not just XML.
-        AS3 native function replace(propertyName:Object, value:*):XML;
-        AS3 native function setChildren(value:Object):XML;
+        AS3 native function replace(propertyName:*, value:*):XML;
+        AS3 native function setChildren(value:*):XML;
         AS3 native function setLocalName(name:*):void;
 
         AS3 function valueOf():XML {
@@ -156,7 +156,7 @@ package {
             return self.AS3::toXMLString();
         };
 
-        prototype.child = function(name:Object):XMLList {
+        prototype.child = function(name:*):XMLList {
             var self:XML = this;
             return self.AS3::child(name);
         };
@@ -181,7 +181,7 @@ package {
             return self.AS3::parent();
         };
 
-        prototype.elements = function(name:*):XMLList {
+        prototype.elements = function(name:* = "*"):XMLList {
             var self:XML = this;
             return self.AS3::elements(name);
         }
@@ -209,17 +209,17 @@ package {
             return self.AS3::nodeKind();
         };
 
-        prototype.appendChild = function(child:Object):XML {
+        prototype.appendChild = function(child:*):XML {
             var self:XML = this;
             return self.AS3::appendChild(child);
         };
 
-        prototype.prependChild = function(child:Object):XML {
+        prototype.prependChild = function(child:*):XML {
             var self:XML = this;
             return self.AS3::prependChild(child);
         };
 
-        prototype.descendants = function(name:Object):XMLList {
+        prototype.descendants = function(name:* = "*"):XMLList {
             var self:XML = this;
             return self.AS3::descendants(name);
         };

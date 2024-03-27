@@ -6,7 +6,7 @@ use crate::options::{ImageComparison, TestOptions};
 use crate::test::Test;
 use crate::util::{read_bytes, write_image};
 use anyhow::{anyhow, Result};
-use image::ImageOutputFormat;
+use image::ImageFormat;
 use pretty_assertions::Comparison;
 use ruffle_core::backend::navigator::NullExecutor;
 use ruffle_core::events::MouseButton as RuffleMouseButton;
@@ -169,7 +169,7 @@ impl TestRunner {
         self.executor.run();
     }
 
-    /// After a tick, run any custom fdcommands that were queued up and perform any scheduled tests.  
+    /// After a tick, run any custom fdcommands that were queued up and perform any scheduled tests.
     pub fn test(&mut self) -> Result<TestStatus> {
         for command in self.fs_commands.try_iter() {
             match command {
@@ -455,7 +455,7 @@ fn capture_and_compare_image(
             ));
         } else {
             // If we're expecting this to be wrong, don't save a likely wrong image
-            write_image(&expected_image_path, &actual_image, ImageOutputFormat::Png)?;
+            write_image(&expected_image_path, &actual_image, ImageFormat::Png)?;
         }
     } else if known_failure {
         // It's possible that the trace output matched but the image might not.

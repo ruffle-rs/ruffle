@@ -49,7 +49,7 @@ naga = { version = "0.19.2", features = ["wgsl-out"] }
 naga_oil = "0.13.0"
 wgpu = "0.19.3"
 egui = "0.26.2"
-clap = { version = "4.5.2", features = ["derive"] }
+clap = { version = "4.5.4", features = ["derive"] }
 anyhow = "1.0"
 slotmap = "1.0.7"
 
@@ -63,6 +63,9 @@ unknown_lints = "allow"
 # LONG-TERM: These lints are unhelpful.
 manual_map = "allow"             # Less readable: Suggests `opt.map(..)` instsead of `if let Some(opt) { .. }`
 manual_range_contains = "allow"  # Less readable: Suggests `(a..b).contains(n)` instead of `n >= a && n < b`
+assigning_clones = "allow"       # Sometimes useful, but more often than not it doesn't do anything as
+                                 # we overwrite an empty item. And sometimes it can even be a footgun
+                                 # by keeping big allocations alive.
 
 # Don't optimize build scripts and macros.
 [profile.release.build-override]

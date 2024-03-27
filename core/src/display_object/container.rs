@@ -475,6 +475,22 @@ pub trait TDisplayObjectContainer<'gc>:
         RenderIter::from_container(self.into())
     }
 
+    fn fill_tab_order(
+        &self,
+        tab_order: &mut Vec<DisplayObject<'gc>>,
+        context: &mut UpdateContext<'_, 'gc>,
+    ) {
+        // TODO Add support for `tabChildren`
+        for child in self.iter_render_list() {
+            if child.is_tab_enabled(context) {
+                tab_order.push(child);
+            }
+            if let Some(container) = child.as_container() {
+                container.fill_tab_order(tab_order, context);
+            }
+        }
+    }
+
     /// Renders the children of this container in render list order.
     fn render_children(self, context: &mut RenderContext<'_, 'gc>) {
         let mut clip_depth = 0;

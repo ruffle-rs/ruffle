@@ -1890,9 +1890,21 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
-    /// Whether or not this clip may be focusable for keyboard input.
+    /// Whether this clip may be focusable for keyboard input.
     fn is_focusable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
         false
+    }
+
+    /// Whether this object is included in tab ordering.
+    fn is_tab_enabled(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+        false
+    }
+
+    /// Used to customize tab ordering.
+    /// When not `None`, a custom ordering is used, and
+    /// objects are ordered according to this value.
+    fn tab_index(&self) -> Option<i64> {
+        None
     }
 
     /// Whether this display object has been created by ActionScript 3.
@@ -2476,6 +2488,34 @@ pub trait TDisplayObject<'gc>:
             if let Some(parent) = self.parent() {
                 parent.invalidate_cached_bitmap(mc);
             }
+        }
+    }
+
+    /// Retrieve a named property from the AVM1 object.
+    ///
+    /// This is required as some boolean properties in AVM1 can in fact hold any value.
+    fn get_avm1_boolean_property(
+        self,
+        context: &mut UpdateContext<'_, 'gc>,
+        name: &'static str,
+        default: bool,
+    ) -> bool {
+        if let Avm1Value::Object(object) = self.object() {
+            let mut activation = Activation::from_nothing(
+                context.reborrow(),
+                Avm1ActivationIdentifier::root("[AVM1 Boolean Property]"),
+                self.avm1_root(),
+            );
+            if let Ok(value) = object.get(name, &mut activation) {
+                match value {
+                    Avm1Value::Undefined => default,
+                    _ => value.as_bool(activation.swf_version()),
+                }
+            } else {
+                default
+            }
+        } else {
+            false
         }
     }
 }

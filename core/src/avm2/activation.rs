@@ -213,7 +213,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Construct an activation for the execution of a particular script's
     /// initializer method.
     pub fn from_script(
-        context: UpdateContext<'a, 'gc>,
+        mut context: UpdateContext<'a, 'gc>,
         script: Script<'gc>,
     ) -> Result<Self, Error<'gc>> {
         let (method, global_object, domain) = script.init();
@@ -235,6 +235,29 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         *local_registers.get_unchecked_mut(0) = global_object.into();
 
+        let activation_class = if let Method::Bytecode(method) = method {
+            let body = method
+                .body()
+                .ok_or("Cannot execute non-native method (for script) without body")?;
+
+            BytecodeMethod::get_or_init_activation_class(method, context.gc_context, || {
+                let translation_unit = method.translation_unit();
+                let abc_method = method.method();
+                let mut dummy_activation = Activation::from_domain(context.reborrow(), domain);
+                dummy_activation.set_outer(ScopeChain::new(domain));
+                let activation_class = Class::for_activation(
+                    &mut dummy_activation,
+                    translation_unit,
+                    abc_method,
+                    body,
+                )?;
+
+                ClassObject::from_class(&mut dummy_activation, activation_class, None)
+            })?
+        } else {
+            None
+        };
+
         Ok(Self {
             ip: 0,
             actions_since_timeout_check: 0,
@@ -243,7 +266,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             caller_domain: Some(domain),
             caller_movie: script.translation_unit().map(|t| t.movie()),
             subclass_object: None,
-            activation_class: None,
+            activation_class,
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
             max_stack_size: max_stack as usize,
@@ -569,6 +592,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         *self.local_registers.get_unchecked_mut(id) = value.into();
     }
 
+    /// Retrieve the outer scope of this activation
+    pub fn outer(&self) -> ScopeChain<'gc> {
+        self.outer
+    }
+
     /// Sets the outer scope of this activation
     pub fn set_outer(&mut self, new_outer: ScopeChain<'gc>) {
         self.outer = new_outer;
@@ -849,7 +877,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         opcodes: &[Op<'gc>],
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         self.actions_since_timeout_check += 1;
-        if self.actions_since_timeout_check >= 2000 {
+        if self.actions_since_timeout_check >= 64000 {
             self.actions_since_timeout_check = 0;
             if self.context.update_start.elapsed() >= self.context.max_execution_duration {
                 return Err(
@@ -1598,13 +1626,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_get_outer_scope(&mut self, index: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let scope = self.outer.get(index as usize);
+        // Verifier ensures that this points to a valid outer scope
+        let scope = self.outer.get_unchecked(index as usize);
 
-        if let Some(scope) = scope {
-            self.push_stack(scope.values());
-        } else {
-            self.push_stack(Value::Undefined);
-        };
+        self.push_stack(scope.values());
 
         Ok(FrameControl::Continue)
     }
@@ -1807,12 +1832,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_new_activation(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let instance = if let Some(activation_class) = self.activation_class {
-            activation_class.construct(self, &[])?
-        } else {
-            // TODO: we might want this to be a proper Object instance, just in case
-            ScriptObject::custom_object(self.context.gc_context, None, None)
-        };
+        let instance = self
+            .activation_class
+            .expect("Activation class should exist for bytecode")
+            .construct(self, &[])?;
 
         self.push_stack(instance);
 

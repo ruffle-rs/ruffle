@@ -8,3 +8,6 @@ graphics-power-high = Magas (pl. dedikált GPU)
 language = Nyelv
 audio-output-device = Hangkimeneti eszköz
 audio-output-device-default = Rendszer alapértelmezett
+log-filename-pattern = Naplófájl neve
+log-filename-pattern-single-file = Egyetlen fájl (ruffle.log)
+log-filename-pattern-with-timestamp = Időbélyeggel

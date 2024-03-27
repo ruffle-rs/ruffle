@@ -17,7 +17,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
-use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
+use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
 use crate::drawing::Drawing;
 use crate::events::{ClipEvent, ClipEventResult, TextControlCode};
 use crate::font::{round_down_to_pixel, FontType, Glyph, TextRenderSettings};
@@ -39,7 +39,7 @@ use ruffle_wstr::WStrToUtf8;
 use std::cmp::Ordering;
 use std::collections::VecDeque;
 use std::{cell::Ref, cell::RefMut, sync::Arc};
-use swf::{Color, ColorTransform, Twips};
+use swf::ColorTransform;
 use unic_segment::WordBoundIndices;
 
 use super::interactive::Avm2MousePick;
@@ -167,6 +167,9 @@ pub struct EditTextData<'gc> {
     /// Doesn't affect script-triggered modifications.
     max_chars: i32,
 
+    /// Indicates if the text is scrollable using the mouse wheel.
+    mouse_wheel_enabled: bool,
+
     /// Flags indicating the text field's settings.
     #[collect(require_static)]
     flags: EditTextFlag,
@@ -177,6 +180,11 @@ pub struct EditTextData<'gc> {
     /// Restrict what characters the user may input.
     #[collect(require_static)]
     restrict: EditTextRestrict,
+
+    // TODO Consider moving this to InteractiveObject along with
+    //      MovieClip's and Button's tab indices after AVM2 analysis
+    // NOTE: `tabIndex` is u32 in TextField, compared to i32 in Button and MovieClip
+    tab_index: Option<u32>,
 }
 
 impl<'gc> EditTextData<'gc> {
@@ -356,8 +364,10 @@ impl<'gc> EditText<'gc> {
                 line_data,
                 scroll: 1,
                 max_chars: swf_tag.max_length().unwrap_or_default() as i32,
+                mouse_wheel_enabled: true,
                 is_tlf: false,
                 restrict: EditTextRestrict::allow_all(),
+                tab_index: None,
             },
         ));
 
@@ -508,6 +518,14 @@ impl<'gc> EditText<'gc> {
             .write(context.gc_context)
             .flags
             .set(EditTextFlag::READ_ONLY, !is_editable);
+    }
+
+    pub fn is_mouse_wheel_enabled(self) -> bool {
+        self.0.read().mouse_wheel_enabled
+    }
+
+    pub fn set_mouse_wheel_enabled(self, is_enabled: bool, context: &mut UpdateContext<'_, 'gc>) {
+        self.0.write(context.gc_context).mouse_wheel_enabled = is_enabled;
     }
 
     pub fn is_multiline(self) -> bool {
@@ -953,12 +971,27 @@ impl<'gc> EditText<'gc> {
     /// Render a layout box, plus its children.
     fn render_layout_box(self, context: &mut RenderContext<'_, 'gc>, lbox: &LayoutBox<'gc>) {
         let origin = lbox.bounds().origin();
+
+        let edit_text = self.0.read();
+
+        // If text's top is under the textbox's bottom, skip drawing.
+        // TODO: FP actually skips drawing a line as soon as its bottom is under the textbox;
+        //   Current logic is conservative for safety (and even of this I'm not 100% sure).
+        // TODO: we should also cull text that's above the textbox
+        //   (instead of culling, this can be implemented as having the loop start from `scrollY`th line)
+        //   (maybe we could cull-before-render all glyphs, thus removing the need for masking?)
+        // TODO: also cull text that's simply out of screen, just like we cull whole DOs in render_self().
+        if origin.y() + Twips::from_pixels(Self::INTERNAL_PADDING)
+            - edit_text.vertical_scroll_offset()
+            > edit_text.bounds.y_max
+        {
+            return;
+        }
+
         context.transform_stack.push(&Transform {
             matrix: Matrix::translate(origin.x(), origin.y()),
             ..Default::default()
         });
-
-        let edit_text = self.0.read();
 
         let visible_selection = if edit_text.flags.contains(EditTextFlag::HAS_FOCUS) {
             edit_text.selection
@@ -1773,6 +1806,18 @@ impl<'gc> EditText<'gc> {
         }
     }
 
+    fn on_scroller(&self, activation: &mut Avm1Activation<'_, 'gc>) {
+        if let Avm1Value::Object(object) = self.object() {
+            let _ = object.call_method(
+                "broadcastMessage".into(),
+                &["onScroller".into(), object.into()],
+                activation,
+                ExecutionReason::Special,
+            );
+        }
+        //TODO: Implement this for Avm2
+    }
+
     /// Construct the text field's AVM1 representation.
     fn construct_as_avm1_object(&self, context: &mut UpdateContext<'_, 'gc>, run_frame: bool) {
         let mut text = self.0.write(context.gc_context);
@@ -1989,6 +2034,18 @@ impl<'gc> EditText<'gc> {
                     .contains(Position::from((position.x, position.y)))
         })
     }
+
+    /// Get the value of `tabIndex` used in AS.
+    ///
+    /// Do not confuse it with `tab_index`, which returns the value used for ordering.
+    pub fn tab_index_value(&self) -> Option<u32> {
+        self.0.read().tab_index
+    }
+
+    /// Set the value of `tabIndex` used in AS.
+    pub fn set_tab_index_value(&self, context: &mut UpdateContext<'_, 'gc>, value: Option<u32>) {
+        self.0.write(context.gc()).tab_index = value;
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
@@ -2049,9 +2106,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             context
                 .avm1
                 .add_to_exec_list(context.gc_context, (*self).into());
-        }
-
-        if !self.movie().is_action_script_3() {
             self.construct_as_avm1_object(context, run_frame);
         }
     }
@@ -2292,6 +2346,14 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         // Even if this isn't selectable or editable, a script can focus on it manually.
         true
     }
+
+    fn is_tab_enabled(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        self.get_avm1_boolean_property(context, "tabEnabled", true)
+    }
+
+    fn tab_index(&self) -> Option<i64> {
+        self.0.read().tab_index.map(|i| i as i64)
+    }
 }
 
 impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
@@ -2312,18 +2374,32 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         _context: &mut UpdateContext<'_, 'gc>,
         event: ClipEvent,
     ) -> ClipEventResult {
-        if event != ClipEvent::Press {
-            return ClipEventResult::NotHandled;
+        match event {
+            ClipEvent::Press | ClipEvent::MouseWheel { .. } => ClipEventResult::Handled,
+            _ => ClipEventResult::NotHandled,
         }
-
-        ClipEventResult::Handled
     }
 
     fn event_dispatch(
         self,
         context: &mut UpdateContext<'_, 'gc>,
-        _event: ClipEvent<'gc>,
+        event: ClipEvent<'gc>,
     ) -> ClipEventResult {
+        if let ClipEvent::MouseWheel { delta } = event {
+            if self.is_mouse_wheel_enabled() {
+                let new_scroll = self.scroll() as f64 - delta.lines();
+                self.set_scroll(new_scroll, context);
+
+                let mut activation = Avm1Activation::from_nothing(
+                    context.reborrow(),
+                    ActivationIdentifier::root("[On Scroller]"),
+                    self.into(),
+                );
+                self.on_scroller(&mut activation);
+            }
+            return ClipEventResult::Handled;
+        }
+
         if self.is_editable() || self.is_selectable() {
             let tracker = context.focus_tracker;
             tracker.set(Some(self.into()), context);

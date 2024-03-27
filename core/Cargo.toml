@@ -18,15 +18,15 @@ flate2 = "1.0.28"
 fnv = "1.0.7"
 gc-arena = { package = "ruffle_gc_arena", path = "../ruffle_gc_arena" }
 slotmap = { workspace = true }
-indexmap = "2.2.5"
+indexmap = "2.2.6"
 tracing = { workspace = true }
 ruffle_render = { path = "../render", features = ["tessellator"] }
 ruffle_video = { path = "../video" }
 ruffle_macros = { path = "macros" }
 ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf" }
-bitflags = "2.4.2"
-smallvec = { version = "1.13.1", features = ["union"] }
+bitflags = "2.5.0"
+smallvec = { version = "1.13.2", features = ["union"] }
 num-traits = "0.2"
 num-derive = "0.4"
 quick-xml = "0.31.0"
@@ -49,7 +49,7 @@ dasp = { version = "0.11.0", features = ["interpolate", "interpolate-linear", "s
 symphonia = { version = "0.5.4", default-features = false, features = ["mp3"], optional = true }
 enumset = "1.1.3"
 bytemuck = "1.15.0"
-clap = { version = "4.5.2", features = ["derive"], optional=true }
+clap = { version = "4.5.4", features = ["derive"], optional=true }
 realfft = "3.3.0"
 hashbrown = { version = "0.14.3", features = ["raw"] }
 scopeguard = "1.2.0"
@@ -60,7 +60,7 @@ png = { version = "0.17.13", optional = true }
 flv-rs = { path = "../flv" }
 async-channel = "2.2.0"
 jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", branch = "ruffle", optional = true }
-image = { version = "0.24.9", default-features = false, features = ["tiff", "dxt"] }
+image = { version = "0.25.0", default-features = false, features = ["tiff"] }
 enum-map = "2.7.3"
 ttf-parser = "0.20"
 num-bigint = "0.4"

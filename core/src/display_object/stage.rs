@@ -9,15 +9,11 @@ use crate::avm2::{
 use crate::backend::ui::MouseCursor;
 use crate::config::Letterbox;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::container::{
-    ChildContainer, DisplayObjectContainer, TDisplayObjectContainer,
-};
+use crate::display_object::container::ChildContainer;
 use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
-use crate::display_object::{
-    render_base, DisplayObject, DisplayObjectBase, DisplayObjectPtr, TDisplayObject,
-};
+use crate::display_object::{render_base, DisplayObjectBase, DisplayObjectPtr};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::string::{FromWStr, WStr};

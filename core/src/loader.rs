@@ -2445,7 +2445,7 @@ impl<'gc> Loader<'gc> {
                 if url.scheme() == "file" {
                     Loader::load_error_swf(mc, uc, url.to_string());
                 } else {
-                    // Replacing the movie sets total_frames and and frames_loaded correctly.
+                    // Replacing the movie sets total_frames and frames_loaded correctly.
                     // The movie just needs to be the default empty movie with the correct URL.
                     // In this loading state, the URL is the URL of the parent movie / doesn't change.
 

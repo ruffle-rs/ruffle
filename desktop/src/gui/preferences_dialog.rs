@@ -4,7 +4,6 @@ use crate::preferences::GlobalPreferences;
 use cpal::traits::{DeviceTrait, HostTrait};
 use egui::{Align2, Button, ComboBox, Grid, Ui, Widget, Window};
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
-use ruffle_render_wgpu::descriptors::Descriptors;
 use std::borrow::Cow;
 use unic_langid::LanguageIdentifier;
 
@@ -32,13 +31,8 @@ pub struct PreferencesDialog {
 }
 
 impl PreferencesDialog {
-    pub fn new(descriptors: &Descriptors, preferences: GlobalPreferences) -> Self {
-        let mut available_backends = wgpu::Backends::empty();
-
-        available_backends |= backend_availability(descriptors, wgpu::Backends::VULKAN);
-        available_backends |= backend_availability(descriptors, wgpu::Backends::GL);
-        available_backends |= backend_availability(descriptors, wgpu::Backends::METAL);
-        available_backends |= backend_availability(descriptors, wgpu::Backends::DX12);
+    pub fn new(preferences: GlobalPreferences) -> Self {
+        let available_backends = find_available_graphics_backends();
 
         let audio_host = cpal::default_host();
         let mut available_output_devices = Vec::new();
@@ -320,14 +314,29 @@ fn filename_pattern_name(locale: &LanguageIdentifier, pattern: FilenamePattern) 
     }
 }
 
-fn backend_availability(descriptors: &Descriptors, backend: wgpu::Backends) -> wgpu::Backends {
-    if descriptors
-        .wgpu_instance
-        .enumerate_adapters(backend)
-        .is_empty()
-    {
+fn backend_availability(instance: &wgpu::Instance, backend: wgpu::Backends) -> wgpu::Backends {
+    if instance.enumerate_adapters(backend).is_empty() {
         wgpu::Backends::empty()
     } else {
         backend
     }
+}
+
+fn find_available_graphics_backends() -> wgpu::Backends {
+    let mut available_backends = wgpu::Backends::empty();
+
+    // We have to make a new instance here, as the one created for the entire application may not have
+    // all backends enabled
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        backends: wgpu::Backends::all(),
+        flags: wgpu::InstanceFlags::default().with_env(),
+        ..Default::default()
+    });
+
+    available_backends |= backend_availability(&instance, wgpu::Backends::VULKAN);
+    available_backends |= backend_availability(&instance, wgpu::Backends::GL);
+    available_backends |= backend_availability(&instance, wgpu::Backends::METAL);
+    available_backends |= backend_availability(&instance, wgpu::Backends::DX12);
+
+    available_backends
 }

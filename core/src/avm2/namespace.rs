@@ -185,7 +185,7 @@ impl<'gc> Namespace<'gc> {
                 {
                     api_version = ApiVersion::VM_INTERNAL;
                 }
-                // In avmplus, this conversion is done later in in 'getValidApiVersion'
+                // In avmplus, this conversion is done later in 'getValidApiVersion'
                 // However, there's no reason to hold on to invalid API versions for the
                 // current active series (player runtime), so let's just do the conversion immediately.
                 api_version =

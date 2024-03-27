@@ -17,7 +17,6 @@ ruffle_web_common = { path = "../../web/common" }
 ruffle_render = { path = "..", features = ["tessellator", "web"] }
 wasm-bindgen = "=0.2.92"
 bytemuck = { version = "1.15.0", features = ["derive"] }
-fnv = "1.0.7"
 swf = { path = "../../swf" }
 thiserror = "1.0"
 downcast-rs = "1.2.0"

@@ -288,6 +288,16 @@ pub fn verify_method<'gc>(
                     }
                 }
 
+                AbcOp::GetOuterScope { index } => {
+                    if activation.outer().get(index as usize).is_none() {
+                        return Err(Error::AvmError(verify_error(
+                            activation,
+                            "Error #1019: Getscopeobject  is out of bounds.",
+                            1019,
+                        )?));
+                    }
+                }
+
                 AbcOp::AsType {
                     type_name: name_index,
                 }
@@ -532,12 +542,14 @@ pub fn verify_method<'gc>(
         verified_code.push(resolved_op);
     }
 
-    crate::avm2::optimize::optimize(
-        activation,
-        method,
-        &mut verified_code,
-        potential_jump_targets,
-    );
+    if activation.avm2().optimizer_enabled() {
+        crate::avm2::optimize::optimize(
+            activation,
+            method,
+            &mut verified_code,
+            potential_jump_targets,
+        );
+    }
 
     Ok(VerifiedMethodInfo {
         parsed_code: verified_code,

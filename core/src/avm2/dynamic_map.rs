@@ -1,6 +1,6 @@
 use fnv::FnvBuildHasher;
 use gc_arena::Collect;
-use hashbrown::{self, raw::RawTable};
+use hashbrown::raw::RawTable;
 use std::{cell::Cell, hash::Hash};
 
 use super::{string::AvmString, Object};

@@ -66,4 +66,40 @@ impl<'gc> FocusTracker<'gc> {
             }
         }
     }
+
+    pub fn cycle(&self, context: &mut UpdateContext<'_, 'gc>) {
+        let stage = context.stage;
+        let mut tab_order = vec![];
+        stage.fill_tab_order(&mut tab_order, context);
+
+        let custom_ordering = tab_order.iter().any(|o| o.tab_index().is_some());
+        if custom_ordering {
+            // Custom ordering disables automatic ordering and
+            // ignores all objects without tabIndex.
+            tab_order = tab_order
+                .iter()
+                .filter(|o| o.tab_index().is_some())
+                .copied()
+                .collect::<Vec<DisplayObject>>();
+
+            // Then, items are sorted according to their tab indices.
+            // TODO When two objects have the same index, the behavior is undefined.
+            //      We should analyze and match FP's behavior here if possible.
+            tab_order.sort_by_key(|o| o.tab_index());
+        }
+
+        let next = if let Some(current_focus) = self.0.get() {
+            // Find the next object which should take the focus.
+            tab_order
+                .iter()
+                .skip_while(|o| o.as_ptr() != current_focus.as_ptr())
+                .nth(1)
+                .or(tab_order.first())
+        } else {
+            // If no focus is present, we start from the beginning.
+            tab_order.first()
+        };
+
+        self.set(next.copied(), context);
+    }
 }

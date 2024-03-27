@@ -1,7 +1,7 @@
-context-menu-play = Играть
-context-menu-rewind = Перемотка назад
-context-menu-forward = Перемотка вперёд
-context-menu-back = Вернуться
-context-menu-quality-low = Качество: слабое
-context-menu-quality-medium = Качество: нейтральное
-context-menu-quality-high = Качество: хорошие
+context-menu-play = Воспроизведение
+context-menu-rewind = Перемотать назад
+context-menu-forward = Вперёд
+context-menu-back = Назад
+context-menu-quality-low = Качество: низкое
+context-menu-quality-medium = Качество: среднее
+context-menu-quality-high = Качество: высокое

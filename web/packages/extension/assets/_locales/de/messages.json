@@ -77,6 +77,9 @@
     "action_reload": {
         "message": "Laden Sie den Tab neu um die Änderungen zu übernehmen."
     },
+    "open_player_page": {
+        "message": "SWF-Player öffnen"
+    },
     "open_settings_page": {
         "message": "Einstellungsseite öffnen"
     },

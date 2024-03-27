@@ -17,7 +17,7 @@ tracing = { workspace = true }
 gif = "0.13.1"
 png = "0.17.13"
 flate2 = "1.0.28"
-smallvec = { version = "1.13.1", features = ["union"] }
+smallvec = { version = "1.13.2", features = ["union"] }
 downcast-rs = "1.2.0"
 lyon = { version = "1.0.1", optional = true }
 lyon_geom = "1.0.5"
@@ -25,14 +25,13 @@ thiserror = "1.0"
 wasm-bindgen = { version = "=0.2.92", optional = true }
 enum-map = "2.7.3"
 serde = { version = "1.0.197", features = ["derive"] }
-clap = { version = "4.5.2", features = ["derive"], optional = true }
-h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "16700664e2b3334f0a930f99af86011aebee14cc"}
-lru = "0.12.3"
+clap = { version = "4.5.4", features = ["derive"], optional = true }
+h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "5c8d9d7d86f62b70ca484df006a75a9c8ff1985c"}
 num-traits = "0.2"
 num-derive = "0.4"
 byteorder = "1.5"
 wgpu = { workspace = true, optional = true }
-indexmap = "2.2.5"
+indexmap = "2.2.6"
 
 # This crate has a `compile_error!` on apple platforms
 [target.'cfg(not(target_vendor = "apple"))'.dependencies.renderdoc]

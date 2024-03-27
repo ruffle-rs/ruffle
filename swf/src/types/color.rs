@@ -29,7 +29,7 @@ impl Color {
     /// The byte-ordering of the 32-bit `rgb` value is XXRRGGBB.
     /// The most significant byte, represented by XX, is ignored;
     /// the `alpha` value is provided separately.
-    /// This is followed by the the red (RR), green (GG), and blue (BB) components values,
+    /// This is followed by the red (RR), green (GG), and blue (BB) components values,
     /// respectively.
     ///
     /// # Examples

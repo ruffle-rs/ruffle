@@ -8,3 +8,6 @@ graphics-power-high = Alto (para gráficos dedicados)
 language = Idioma
 audio-output-device = Dispositivo de reproducción de audio
 audio-output-device-default = Predeterminado del sistema
+log-filename-pattern = Nombre del archivo de registro
+log-filename-pattern-single-file = Archivo soltero (ruffle.log)
+log-filename-pattern-with-timestamp = Con marca de la fecha y la hora (UTC)

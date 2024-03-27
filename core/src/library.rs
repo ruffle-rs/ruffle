@@ -4,7 +4,7 @@ use crate::backend::audio::SoundHandle;
 use crate::character::Character;
 use std::borrow::Cow;
 
-use crate::display_object::{Bitmap, Graphic, MorphShape, TDisplayObject, Text};
+use crate::display_object::{Bitmap, Graphic, MorphShape, Text};
 use crate::font::{Font, FontDescriptor, FontType};
 use crate::prelude::*;
 use crate::string::AvmString;
@@ -19,7 +19,6 @@ use crate::DefaultFont;
 use fnv::{FnvHashMap, FnvHashSet};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
-use swf::CharacterId;
 use weak_table::{traits::WeakElement, PtrWeakKeyHashMap, WeakValueHashMap};
 
 #[derive(Clone)]

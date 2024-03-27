@@ -992,21 +992,11 @@ impl Player {
                 _ => None,
             };
 
-            let mut key_press_handled = false;
-            if let Some(button_event) = button_event {
-                for level in context.stage.iter_render_list() {
-                    let state = if let Some(interactive) = level.as_interactive() {
-                        interactive.handle_clip_event(context, button_event)
-                    } else {
-                        ClipEventResult::NotHandled
-                    };
-
-                    if state == ClipEventResult::Handled {
-                        key_press_handled = true;
-                        break;
-                    }
-                }
-            }
+            let key_press_handled = if let Some(button_event) = button_event {
+                context.stage.handle_clip_event(context, button_event) == ClipEventResult::Handled
+            } else {
+                false
+            };
 
             if let PlayerEvent::KeyDown { key_code, key_char }
             | PlayerEvent::KeyUp { key_code, key_char } = event
@@ -1188,6 +1178,17 @@ impl Player {
             if self.update_mouse_state(is_mouse_button_changed, true) {
                 self.needs_render = true;
             }
+        }
+
+        if let PlayerEvent::KeyDown {
+            key_code: KeyCode::Tab,
+            ..
+        } = event
+        {
+            self.mutate_with_update_context(|context| {
+                let tracker = context.focus_tracker;
+                tracker.cycle(context);
+            });
         }
     }
 
@@ -2156,6 +2157,7 @@ pub struct PlayerBuilder {
     fs_command_provider: Box<dyn FsCommandProvider>,
     #[cfg(feature = "known_stubs")]
     stub_report_output: Option<std::path::PathBuf>,
+    avm2_optimizer_enabled: bool,
 }
 
 impl PlayerBuilder {
@@ -2207,6 +2209,7 @@ impl PlayerBuilder {
             fs_command_provider: Box::new(NullFsCommandProvider),
             #[cfg(feature = "known_stubs")]
             stub_report_output: None,
+            avm2_optimizer_enabled: true,
         }
     }
 
@@ -2409,6 +2412,11 @@ impl PlayerBuilder {
         self
     }
 
+    pub fn with_avm2_optimizer_enabled(mut self, value: bool) -> Self {
+        self.avm2_optimizer_enabled = value;
+        self
+    }
+
     fn create_gc_root<'gc>(
         gc_context: &'gc gc_arena::Mutation<'gc>,
         player_version: u8,
@@ -2591,7 +2599,11 @@ impl PlayerBuilder {
         }
 
         player_lock.mutate_with_update_context(|context| {
+            context
+                .avm2
+                .set_optimizer_enabled(self.avm2_optimizer_enabled);
             Avm2::load_player_globals(context).expect("Unable to load AVM2 globals");
+
             let stage = context.stage;
             stage.set_align(context, self.align);
             stage.set_forced_align(context, self.forced_align);

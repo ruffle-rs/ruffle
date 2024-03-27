@@ -547,7 +547,6 @@ mod tests {
 
     use crate::avm1::function::Executable;
     use crate::avm1::function::FunctionObject;
-    use crate::avm1::property::Attribute;
 
     fn with_object<F>(swf_version: u8, test: F)
     where

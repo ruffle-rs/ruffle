@@ -76,6 +76,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "maxhscroll" => property(tf_getter!(maxhscroll));
     "maxscroll" => property(tf_getter!(maxscroll));
     "maxChars" => property(tf_getter!(max_chars), tf_setter!(set_max_chars));
+    "mouseWheelEnabled" => property(tf_getter!(mouse_wheel_enabled), tf_setter!(set_mouse_wheel_enabled));
     "multiline" => property(tf_getter!(multiline), tf_setter!(set_multiline));
     "password" => property(tf_getter!(password), tf_setter!(set_password));
     "restrict" => property(tf_getter!(restrict), tf_setter!(set_restrict));
@@ -92,6 +93,8 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "gridFitType" => property(tf_getter!(grid_fit_type), tf_setter!(set_grid_fit_type));
     "sharpness" => property(tf_getter!(sharpness), tf_setter!(set_sharpness));
     "thickness" => property(tf_getter!(thickness), tf_setter!(set_thickness));
+    // NOTE: `tabEnabled` is not a built-in property of TextField.
+    "tabIndex" => property(tf_getter!(tab_index), tf_setter!(set_tab_index); VERSION_6);
 };
 
 /// Implements `TextField`
@@ -112,6 +115,7 @@ pub fn create_proto<'gc>(
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
     object.into()
 }
+
 pub fn password<'gc>(
     this: EditText<'gc>,
     _activation: &mut Activation<'_, 'gc>,
@@ -493,6 +497,23 @@ pub fn text_height<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let metrics = this.measure_text(&mut activation.context);
     Ok(round_down_to_pixel(metrics.1).to_pixels().into())
+}
+
+pub fn mouse_wheel_enabled<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.is_mouse_wheel_enabled().into())
+}
+
+pub fn set_mouse_wheel_enabled<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let is_enabled = value.as_bool(activation.swf_version());
+    this.set_mouse_wheel_enabled(is_enabled, &mut activation.context);
+    Ok(())
 }
 
 pub fn multiline<'gc>(
@@ -889,6 +910,34 @@ fn set_restrict<'gc>(
             } else {
                 this.set_restrict(Some(&text), &mut activation.context);
             }
+        }
+    };
+    Ok(())
+}
+
+pub fn tab_index<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(index) = this.tab_index_value() {
+        Ok(index.into())
+    } else {
+        Ok(Value::Undefined)
+    }
+}
+
+pub fn set_tab_index<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    match value {
+        Value::Undefined | Value::Null => {
+            this.set_tab_index_value(&mut activation.context, None);
+        }
+        _ => {
+            let u32_value = value.coerce_to_u32(activation)?;
+            this.set_tab_index_value(&mut activation.context, Some(u32_value));
         }
     };
     Ok(())

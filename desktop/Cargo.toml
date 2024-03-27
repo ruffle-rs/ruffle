@@ -11,12 +11,12 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-clap = { version = "4.5.2", features = ["derive"] }
+clap = { version = "4.5.4", features = ["derive"] }
 cpal = "0.15.3"
 egui = { workspace = true }
 egui_extras = { version = "0.26.2", features = ["image"] }
 egui-wgpu = { version = "0.26.2", features = ["winit"] }
-image = { version = "0.24", default-features = false, features = ["png"] }
+image = { version = "0.25.0", default-features = false, features = ["png"] }
 egui-winit = "0.26.2"
 fontdb = "0.16"
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymoser", "default_compatibility_rules", "egui"] }
@@ -32,7 +32,7 @@ webbrowser = "0.8.13"
 url = "2.5.0"
 dirs = "5.0"
 isahc = { version = "1.7.2", features = ["cookies"] }
-rfd = "0.14.0"
+rfd = "0.14.1"
 anyhow = "1.0"
 bytemuck = "1.15.0"
 os_info = { version = "3", default-features = false }
@@ -42,11 +42,11 @@ wgpu = { workspace = true }
 futures = "0.3.30"
 chrono = { version = "0.4", default-features = false, features = [] }
 fluent-templates = "0.9.1"
-futures-lite = "2.2.0"
+futures-lite = "2.3.0"
 async-io = "2.3.2"
 async-net = "2.0.0"
 async-channel = "2.2.0"
-toml_edit = { version = "0.22.7", features = ["parse"] }
+toml_edit = { version = "0.22.9", features = ["parse"] }
 gilrs = "0.10"
 urlencoding = "2.1.3"
 

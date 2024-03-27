@@ -2434,7 +2434,6 @@ fn count_fbits(n: Fixed16) -> u32 {
 #[cfg(test)]
 #[allow(clippy::unusual_byte_groupings)]
 mod tests {
-    use super::Writer;
     use super::*;
     use crate::test_data;
 

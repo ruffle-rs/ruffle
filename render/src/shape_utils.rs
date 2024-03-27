@@ -1436,8 +1436,6 @@ mod tests {
         assert_eq!(commands, expected);
     }
 
-    use swf::Twips;
-
     #[test]
     fn test_winding_number_line() {
         fn test(

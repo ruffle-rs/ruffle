@@ -72,6 +72,11 @@ impl<'gc> ScopeContainer<'gc> {
         self.scopes.get(index).cloned()
     }
 
+    /// Like `get`, but panics if the scope index is out of bounds.
+    pub fn get_unchecked(&self, index: usize) -> Scope<'gc> {
+        self.scopes[index]
+    }
+
     fn is_empty(&self) -> bool {
         self.scopes.is_empty()
     }
@@ -145,6 +150,12 @@ impl<'gc> ScopeChain<'gc> {
 
     pub fn get(&self, index: usize) -> Option<Scope<'gc>> {
         self.container.and_then(|container| container.get(index))
+    }
+
+    /// Like `get`, but panics if the container doesn't exist or
+    /// the scope index is out of bounds.
+    pub fn get_unchecked(&self, index: usize) -> Scope<'gc> {
+        self.container.unwrap().get_unchecked(index)
     }
 
     pub fn is_empty(&self) -> bool {

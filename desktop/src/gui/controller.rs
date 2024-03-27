@@ -17,7 +17,9 @@ use std::time::{Duration, Instant};
 use unic_langid::LanguageIdentifier;
 use url::Url;
 use winit::dpi::PhysicalSize;
+use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
+use winit::keyboard::{Key, NamedKey};
 use winit::window::{Theme, Window};
 
 /// Integration layer connecting wgpu+winit to egui.
@@ -48,30 +50,7 @@ impl GuiController {
         initial_movie_url: Option<Url>,
         no_gui: bool,
     ) -> anyhow::Result<Self> {
-        let mut backend: wgpu::Backends = preferences.graphics_backends().into();
-        if wgpu::Backends::SECONDARY.contains(backend) {
-            tracing::warn!(
-                "{} graphics backend support may not be fully supported.",
-                format_list(&get_backend_names(backend), "and")
-            );
-        }
-        let mut instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-            backends: backend,
-            flags: wgpu::InstanceFlags::default().with_env(),
-            ..Default::default()
-        });
-        if instance.enumerate_adapters(backend).is_empty() && backend != wgpu::Backends::all() {
-            tracing::warn!(
-                "Graphics backend {} is not available; falling back to any available backend",
-                format_list(&get_backend_names(backend), "and")
-            );
-            backend = wgpu::Backends::all();
-            instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-                backends: backend,
-                flags: wgpu::InstanceFlags::default().with_env(),
-                ..Default::default()
-            });
-        }
+        let (instance, backend) = create_wgpu_instance(preferences.graphics_backends().into())?;
         let surface = unsafe {
             instance.create_surface_unsafe(wgpu::SurfaceTargetUnsafe::from_window(window.as_ref())?)
         }?;
@@ -135,7 +114,6 @@ impl GuiController {
             initial_movie_url.clone(),
             PlayerOptions::from(&preferences),
             preferences.clone(),
-            descriptors.clone(),
         );
         let system_fonts =
             load_system_fonts(font_database, preferences.language().to_owned()).unwrap_or_default();
@@ -164,8 +142,8 @@ impl GuiController {
     }
 
     #[must_use]
-    pub fn handle_event(&mut self, event: &winit::event::WindowEvent) -> bool {
-        if let winit::event::WindowEvent::Resized(size) = &event {
+    pub fn handle_event(&mut self, event: &WindowEvent) -> bool {
+        if let WindowEvent::Resized(size) = &event {
             if size.width > 0 && size.height > 0 {
                 self.surface.configure(
                     &self.descriptors.device,
@@ -190,12 +168,26 @@ impl GuiController {
             }
         }
 
-        if let winit::event::WindowEvent::ThemeChanged(theme) = &event {
+        if let WindowEvent::ThemeChanged(theme) = &event {
             let visuals = match theme {
                 Theme::Dark => egui::Visuals::dark(),
                 Theme::Light => egui::Visuals::light(),
             };
             self.egui_winit.egui_ctx().set_visuals(visuals);
+        }
+
+        if matches!(
+            &event,
+            WindowEvent::KeyboardInput {
+                event: winit::event::KeyEvent {
+                    logical_key: Key::Named(NamedKey::Tab),
+                    ..
+                },
+                ..
+            }
+        ) {
+            // Prevent egui from consuming the Tab key.
+            return false;
         }
 
         let response = self.egui_winit.on_window_event(&self.window, event);
@@ -358,6 +350,52 @@ impl GuiController {
 
     pub fn show_open_dialog(&mut self) {
         self.gui.open_file_advanced()
+    }
+}
+
+fn create_wgpu_instance(
+    preferred_backends: wgpu::Backends,
+) -> anyhow::Result<(wgpu::Instance, wgpu::Backends)> {
+    for backend in preferred_backends.iter() {
+        if let Some(instance) = try_wgpu_backend(backend) {
+            tracing::info!(
+                "Using preferred backend {}",
+                format_list(&get_backend_names(backend), "and")
+            );
+            return Ok((instance, backend));
+        }
+    }
+
+    tracing::warn!(
+        "Preferred backend(s) of {} not available; falling back to any",
+        format_list(&get_backend_names(preferred_backends), "or")
+    );
+
+    for backend in wgpu::Backends::all() - preferred_backends {
+        if let Some(instance) = try_wgpu_backend(backend) {
+            tracing::info!(
+                "Using fallback backend {}",
+                format_list(&get_backend_names(backend), "and")
+            );
+            return Ok((instance, backend));
+        }
+    }
+
+    Err(anyhow!(
+        "No compatible graphics backends of any kind were available"
+    ))
+}
+
+fn try_wgpu_backend(backend: wgpu::Backends) -> Option<wgpu::Instance> {
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        backends: backend,
+        flags: wgpu::InstanceFlags::default().with_env(),
+        ..Default::default()
+    });
+    if instance.enumerate_adapters(backend).is_empty() {
+        None
+    } else {
+        Some(instance)
     }
 }
 

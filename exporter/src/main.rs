@@ -244,10 +244,7 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
         if opt.output_path == Some(PathBuf::from("-")) {
             let mut bytes: Vec<u8> = Vec::new();
             image
-                .write_to(
-                    &mut io::Cursor::new(&mut bytes),
-                    image::ImageOutputFormat::Png,
-                )
+                .write_to(&mut io::Cursor::new(&mut bytes), image::ImageFormat::Png)
                 .expect("Encoding failed");
             io::stdout()
                 .write_all(bytes.as_slice())

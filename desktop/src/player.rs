@@ -57,6 +57,7 @@ pub struct PlayerOptions {
     pub open_url_mode: OpenURLMode,
     pub dummy_external_interface: bool,
     pub gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
+    pub avm2_optimizer_enabled: bool,
 }
 
 impl From<&GlobalPreferences> for PlayerOptions {
@@ -85,6 +86,7 @@ impl From<&GlobalPreferences> for PlayerOptions {
             socket_allowed: HashSet::from_iter(value.cli.socket_allow.iter().cloned()),
             tcp_connections: value.cli.tcp_connections,
             gamepad_button_mapping: HashMap::from_iter(value.cli.gamepad_button.iter().cloned()),
+            avm2_optimizer_enabled: !value.cli.no_avm2_optimizer,
         }
     }
 }
@@ -185,7 +187,8 @@ impl ActivePlayer {
             .with_page_url(opt.spoof_url.clone().map(|url| url.to_string()))
             .with_player_version(Some(opt.player_version))
             .with_player_runtime(opt.player_runtime)
-            .with_frame_rate(opt.frame_rate);
+            .with_frame_rate(opt.frame_rate)
+            .with_avm2_optimizer_enabled(opt.avm2_optimizer_enabled);
         let player = builder.build();
 
         let name = movie_url

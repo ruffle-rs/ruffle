@@ -11,11 +11,11 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-bitflags = "2.4.2"
+bitflags = "2.5.0"
 naga = { workspace = true }
 num-derive = "0.4.2"
 num-traits = "0.2.18"
 
 [dev-dependencies]
-insta = "1.36.1"
+insta = "1.37.0"
 naga = { workspace = true, features = ["wgsl-out"] }

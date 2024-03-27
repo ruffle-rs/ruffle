@@ -16,5 +16,5 @@ naga = { workspace = true }
 naga_oil = { workspace = true }
 tracing = { workspace = true }
 anyhow = "1.0.81"
-bitflags = "2.4.2"
+bitflags = "2.5.0"
 

@@ -195,6 +195,12 @@ pub struct Opt {
         value_name = "GAMEPAD BUTTON>=<KEY NAME"
     )]
     pub gamepad_button: Vec<(GamepadButton, KeyCode)>,
+
+    /// Disable AVM2 optimizer.
+    /// Note that some early opcode conversions
+    /// (like inlining constant pool entries) can't be disabled.
+    #[clap(long)]
+    pub no_avm2_optimizer: bool,
 }
 
 fn parse_movie_file_or_url(path: &str) -> Result<Url, Error> {

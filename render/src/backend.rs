@@ -15,7 +15,7 @@ use std::cell::RefCell;
 use std::fmt::Debug;
 use std::rc::Rc;
 use std::sync::Arc;
-use swf::{self, Color, Rectangle, Twips};
+use swf::{Color, Rectangle, Twips};
 
 pub struct BitmapCacheEntry {
     pub handle: BitmapHandle,
