@@ -1,14 +1,15 @@
-use crate::preferences::SavedGlobalPreferences;
+use crate::preferences::{Bookmark, SavedGlobalPreferences};
+use std::fmt;
 use std::str::FromStr;
 use toml_edit::{DocumentMut, Item};
 
 #[derive(Debug, PartialEq)]
-pub struct ParseResult {
-    pub result: SavedGlobalPreferences,
+pub struct ParseResult<T: PartialEq + fmt::Debug> {
+    pub result: T,
     pub warnings: Vec<String>,
 }
 
-impl ParseResult {
+impl<T: fmt::Debug + PartialEq> ParseResult<T> {
     fn add_warning(&mut self, message: String) {
         self.warnings.push(message);
     }
@@ -23,7 +24,7 @@ impl ParseResult {
 /// Default values are used wherever an unknown or invalid value is found;
 /// this is to support the case of, for example, a later version having different supported
 /// backends than an older version.
-pub fn read_preferences(input: &str) -> (ParseResult, DocumentMut) {
+pub fn read_preferences(input: &str) -> (ParseResult<SavedGlobalPreferences>, DocumentMut) {
     let mut result = ParseResult {
         result: Default::default(),
         warnings: vec![],
@@ -90,7 +91,48 @@ pub fn read_preferences(input: &str) -> (ParseResult, DocumentMut) {
     (result, document)
 }
 
-fn parse_item_from_str<T: FromStr + Default>(item: Option<&Item>) -> Result<Option<T>, String> {
+pub fn read_bookmarks(input: &str) -> (ParseResult<Vec<Bookmark>>, DocumentMut) {
+    let mut result = ParseResult {
+        result: Default::default(),
+        warnings: vec![],
+    };
+    let document = match input.parse::<DocumentMut>() {
+        Ok(document) => document,
+        Err(e) => {
+            result.add_warning(format!("Invalid TOML: {e}"));
+            return (result, DocumentMut::default());
+        }
+    };
+
+    if let Some(bookmark_item) = document.get("bookmark") {
+        if let Some(bookmarks) = bookmark_item.as_array_of_tables() {
+            for bookmark in bookmarks.iter() {
+                let url = match parse_item_from_str(bookmark.get("url")) {
+                    Ok(Some(value)) => value,
+                    Ok(None) => {
+                        result.add_warning("Missing bookmark.url".to_string());
+                        continue;
+                    }
+                    Err(e) => {
+                        result.add_warning(format!("Invalid bookmark.url: {e}"));
+                        continue;
+                    }
+                };
+
+                result.result.push(Bookmark { url });
+            }
+        } else {
+            result.add_warning(format!(
+                "Invalid bookmark: expected array of tables but found {}",
+                bookmark_item.type_name()
+            ));
+        }
+    }
+
+    (result, document)
+}
+
+fn parse_item_from_str<T: FromStr>(item: Option<&Item>) -> Result<Option<T>, String> {
     if let Some(item) = item {
         if let Some(str) = item.as_str() {
             if let Ok(value) = str.parse::<T>() {
@@ -130,6 +172,7 @@ fn parse_item_from_bool(item: Option<&Item>) -> Result<Option<bool>, String> {
     }
 }
 
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -137,6 +180,7 @@ mod tests {
     use crate::preferences::LogPreferences;
     use fluent_templates::loader::langid;
     use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
+    use url::Url;
 
     #[test]
     fn invalid_toml() {
@@ -444,6 +488,95 @@ mod tests {
                 warnings: vec!["Invalid log: expected table but found string".to_string()]
             },
             read_preferences("log = \"yes\"").0
+        );
+    }
+
+    #[test]
+    fn bookmark() {
+        assert_eq!(
+            ParseResult {
+                result: vec![],
+                warnings: vec![
+                    "Invalid bookmark: expected array of tables but found table".to_string()
+                ]
+            },
+            read_bookmarks("[bookmark]").0
+        );
+
+        assert_eq!(
+            ParseResult {
+                result: vec![],
+                warnings: vec!["Missing bookmark.url".to_string()],
+            },
+            read_bookmarks("[[bookmark]]").0
+        );
+
+        assert_eq!(
+            ParseResult {
+                result: vec![],
+                warnings: vec!["Invalid bookmark.url: unsupported value \"invalid\"".to_string()],
+            },
+            read_bookmarks("[[bookmark]]\nurl = \"invalid\"").0,
+        );
+    }
+
+    #[test]
+    fn multiple_bookmarks() {
+        assert_eq!(
+            ParseResult {
+                result: vec![
+                    Bookmark {
+                        url: Url::from_str("file:///home/user/example.swf").unwrap(),
+                    },
+                    Bookmark {
+                        url: Url::from_str("https://ruffle.rs/logo-anim.swf").unwrap(),
+                    }
+                ],
+                warnings: vec![],
+            },
+            read_bookmarks(
+                r#"
+            [[bookmark]]
+            url = "file:///home/user/example.swf"
+
+            [[bookmark]]
+            url = "https://ruffle.rs/logo-anim.swf"
+            "#
+            )
+            .0
+        );
+
+        assert_eq!(
+            ParseResult {
+                result: vec![
+                    Bookmark {
+                        url: Url::from_str("file:///home/user/example.swf").unwrap(),
+                    },
+                    Bookmark {
+                        url: Url::from_str("https://ruffle.rs/logo-anim.swf").unwrap(),
+                    }
+                ],
+
+                warnings: vec![
+                    "Invalid bookmark.url: unsupported value \"invalid\"".to_string(),
+                    "Missing bookmark.url".to_string()
+                ],
+            },
+            read_bookmarks(
+                r#"
+            [[bookmark]]
+            url = "file:///home/user/example.swf"
+
+            [[bookmark]]
+            url = "invalid"
+
+            [[bookmark]]
+
+            [[bookmark]]
+            url = "https://ruffle.rs/logo-anim.swf"
+            "#
+            )
+            .0
         );
     }
 }

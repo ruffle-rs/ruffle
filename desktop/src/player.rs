@@ -19,14 +19,12 @@ use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::descriptors::Descriptors;
-use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
 use url::Url;
-use urlencoding::decode;
 use winit::event_loop::EventLoopProxy;
 use winit::window::Window;
 
@@ -191,17 +189,11 @@ impl ActivePlayer {
             .with_avm2_optimizer_enabled(opt.avm2_optimizer_enabled);
         let player = builder.build();
 
-        let name = movie_url
-            .path_segments()
-            .and_then(|segments| segments.last())
-            .unwrap_or_else(|| movie_url.as_str())
-            .to_string();
-
-        let readable_name = decode(&name).unwrap_or(Cow::Borrowed(&name));
+        let readable_name = crate::util::url_to_readable_name(movie_url);
 
         window.set_title(&format!("Ruffle - {readable_name}"));
 
-        SWF_INFO.with(|i| *i.borrow_mut() = Some(name.clone()));
+        SWF_INFO.with(|i| *i.borrow_mut() = Some(readable_name.into_owned()));
 
         let on_metadata = move |swf_header: &ruffle_core::swf::HeaderExt| {
             let _ = event_loop.send_event(RuffleEvent::OnMetadata(swf_header.clone()));
