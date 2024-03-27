@@ -1,7 +1,7 @@
-use crate::preferences::SavedGlobalPreferences;
+use crate::preferences::{Bookmark, SavedGlobalPreferences};
 use std::fmt;
 use std::str::FromStr;
-use toml_edit::{DocumentMut, Item, TableLike};
+use toml_edit::{ArrayOfTables, DocumentMut, Item, Table, TableLike};
 
 #[derive(Debug, PartialEq)]
 pub struct ParseResult<T: PartialEq + fmt::Debug> {
@@ -57,6 +57,29 @@ pub trait ReadExt<'a> {
             } else {
                 cx.add_warning(format!(
                     "Invalid {}: expected table but found {}",
+                    cx.path(),
+                    item.type_name()
+                ));
+            }
+
+            cx.pop_key();
+        }
+    }
+
+    fn get_array_of_tables(
+        &'a self,
+        cx: &mut ParseContext,
+        key: &'static str,
+        fun: impl FnOnce(&mut ParseContext, &ArrayOfTables),
+    ) {
+        if let Some(item) = self.get_impl(key) {
+            cx.push_key(key);
+
+            if let Some(array) = item.as_array_of_tables() {
+                fun(cx, array);
+            } else {
+                cx.add_warning(format!(
+                    "Invalid {}: expected array of tables but found {}",
                     cx.path(),
                     item.type_name()
                 ));
@@ -155,6 +178,12 @@ impl<'a> ReadExt<'a> for Item {
     }
 }
 
+impl<'a> ReadExt<'a> for Table {
+    fn get_impl(&'a self, key: &str) -> Option<&'a Item> {
+        self.get(key)
+    }
+}
+
 impl<'a> ReadExt<'a> for dyn TableLike + 'a {
     fn get_impl(&'a self, key: &str) -> Option<&'a Item> {
         self.get(key)
@@ -219,6 +248,40 @@ pub fn read_preferences(input: &str) -> (ParseResult<SavedGlobalPreferences>, Do
     (result, document)
 }
 
+pub fn read_bookmarks(input: &str) -> (ParseResult<Vec<Bookmark>>, DocumentMut) {
+    let mut result = ParseResult {
+        result: Default::default(),
+        warnings: vec![],
+    };
+    let document = match input.parse::<DocumentMut>() {
+        Ok(document) => document,
+        Err(e) => {
+            result.add_warning(format!("Invalid TOML: {e}"));
+            return (result, DocumentMut::default());
+        }
+    };
+
+    let mut cx = ParseContext::default();
+
+    document.get_array_of_tables(&mut cx, "bookmark", |cx, bookmarks| {
+        for bookmark in bookmarks.iter() {
+            let url = match bookmark.parse_from_str(cx, "url") {
+                Some(value) => value,
+                None => {
+                    cx.add_warning("Missing bookmark.url".to_string());
+                    continue;
+                }
+            };
+
+            result.result.push(Bookmark { url });
+        }
+    });
+
+    result.warnings = cx.warnings;
+    (result, document)
+}
+
+#[allow(clippy::unwrap_used)]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -226,6 +289,7 @@ mod tests {
     use crate::preferences::LogPreferences;
     use fluent_templates::loader::langid;
     use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
+    use url::Url;
 
     #[test]
     fn invalid_toml() {
@@ -533,6 +597,95 @@ mod tests {
                 warnings: vec!["Invalid log: expected table but found string".to_string()]
             },
             read_preferences("log = \"yes\"").0
+        );
+    }
+
+    #[test]
+    fn bookmark() {
+        assert_eq!(
+            ParseResult {
+                result: vec![],
+                warnings: vec![
+                    "Invalid bookmark: expected array of tables but found table".to_string()
+                ]
+            },
+            read_bookmarks("[bookmark]").0
+        );
+
+        assert_eq!(
+            ParseResult {
+                result: vec![],
+                warnings: vec!["Missing bookmark.url".to_string()],
+            },
+            read_bookmarks("[[bookmark]]").0
+        );
+
+        assert_eq!(
+            ParseResult {
+                result: vec![],
+                warnings: vec!["Invalid bookmark.url: unsupported value \"invalid\"".to_string()],
+            },
+            read_bookmarks("[[bookmark]]\nurl = \"invalid\"").0,
+        );
+    }
+
+    #[test]
+    fn multiple_bookmarks() {
+        assert_eq!(
+            ParseResult {
+                result: vec![
+                    Bookmark {
+                        url: Url::from_str("file:///home/user/example.swf").unwrap(),
+                    },
+                    Bookmark {
+                        url: Url::from_str("https://ruffle.rs/logo-anim.swf").unwrap(),
+                    }
+                ],
+                warnings: vec![],
+            },
+            read_bookmarks(
+                r#"
+            [[bookmark]]
+            url = "file:///home/user/example.swf"
+
+            [[bookmark]]
+            url = "https://ruffle.rs/logo-anim.swf"
+            "#
+            )
+            .0
+        );
+
+        assert_eq!(
+            ParseResult {
+                result: vec![
+                    Bookmark {
+                        url: Url::from_str("file:///home/user/example.swf").unwrap(),
+                    },
+                    Bookmark {
+                        url: Url::from_str("https://ruffle.rs/logo-anim.swf").unwrap(),
+                    }
+                ],
+
+                warnings: vec![
+                    "Invalid bookmark.url: unsupported value \"invalid\"".to_string(),
+                    "Missing bookmark.url".to_string()
+                ],
+            },
+            read_bookmarks(
+                r#"
+            [[bookmark]]
+            url = "file:///home/user/example.swf"
+
+            [[bookmark]]
+            url = "invalid"
+
+            [[bookmark]]
+
+            [[bookmark]]
+            url = "https://ruffle.rs/logo-anim.swf"
+            "#
+            )
+            .0
         );
     }
 }
