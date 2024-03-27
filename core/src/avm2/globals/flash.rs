@@ -6,6 +6,7 @@ pub mod display;
 pub mod display3D;
 pub mod events;
 pub mod external;
+pub mod filesystem;
 pub mod geom;
 pub mod media;
 pub mod net;
