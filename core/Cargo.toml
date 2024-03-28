@@ -66,6 +66,7 @@ ttf-parser = "0.20"
 num-bigint = "0.4"
 unic-segment = "0.9.0"
 id3 = "1.13.1"
+web-sys = { version="0.3.69", features=[ "console" ] }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 version = "0.3.30"

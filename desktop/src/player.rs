@@ -58,6 +58,7 @@ pub struct PlayerOptions {
     pub dummy_external_interface: bool,
     pub gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
     pub avm2_optimizer_enabled: bool,
+    pub avm_output_json: bool,
 }
 
 impl From<&GlobalPreferences> for PlayerOptions {
@@ -87,6 +88,7 @@ impl From<&GlobalPreferences> for PlayerOptions {
             tcp_connections: value.cli.tcp_connections,
             gamepad_button_mapping: HashMap::from_iter(value.cli.gamepad_button.iter().cloned()),
             avm2_optimizer_enabled: !value.cli.no_avm2_optimizer,
+            avm_output_json: value.cli.avm_output_json,
         }
     }
 }
@@ -272,6 +274,13 @@ impl ActivePlayer {
                     "Arial Unicode MS".into(),    // Mac fallback
                 ],
             );
+
+            player_lock.mutate_with_update_context(|context| {
+                if opt.avm_output_json {
+                    context.avm1.output_json = 1;
+                    context.avm1.output_json_stdin = true;
+                }
+            });
         }
 
         Self { player, executor }

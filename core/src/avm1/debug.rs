@@ -1,7 +1,32 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::{Object, ObjectPtr, TObject, Value};
+use crate::display_object::{TDisplayObject, TDisplayObjectContainer};
 use crate::string::AvmString;
 use std::fmt::Write;
+
+macro_rules! print_string {
+    ($self:expr,$string:expr) => {
+        $self.output.push('\"');
+        for c in $string.chars() {
+            let c = c.unwrap_or(char::REPLACEMENT_CHARACTER);
+            let escape = match u8::try_from(c as u32) {
+                Ok(b'"') => "\\\"",
+                Ok(b'\\') => "\\\\",
+                Ok(b'\n') => "\\n",
+                Ok(b'\r') => "\\r",
+                Ok(b'\t') => "\\t",
+                Ok(0x08) => "\\b",
+                Ok(0x0C) => "\\f",
+                _ => {
+                    $self.output.push(c);
+                    continue;
+                }
+            };
+            $self.output.push_str(escape);
+        }
+        $self.output.push('\"');
+    };
+}
 
 #[allow(dead_code)]
 pub struct VariableDumper<'a> {
@@ -57,28 +82,7 @@ impl<'a> VariableDumper<'a> {
     }
 
     pub fn print_string(&mut self, string: AvmString<'_>) {
-        self.output.push('\"');
-
-        for c in string.chars() {
-            let c = c.unwrap_or(char::REPLACEMENT_CHARACTER);
-            let escape = match u8::try_from(c as u32) {
-                Ok(b'"') => "\\\"",
-                Ok(b'\\') => "\\\\",
-                Ok(b'\n') => "\\n",
-                Ok(b'\r') => "\\r",
-                Ok(b'\t') => "\\t",
-                Ok(0x08) => "\\b",
-                Ok(0x0C) => "\\f",
-                _ => {
-                    self.output.push(c);
-                    continue;
-                }
-            };
-
-            self.output.push_str(escape);
-        }
-
-        self.output.push('\"');
+        print_string!(self, string);
     }
 
     pub fn print_object<'gc>(
@@ -186,6 +190,136 @@ impl<'a> VariableDumper<'a> {
 
         self.depth -= 1;
         self.output.push('\n');
+    }
+}
+
+pub struct VariableDumperJson {
+    output: String,
+}
+
+impl VariableDumperJson {
+    pub fn new() -> Self {
+        Self {
+            output: String::new(),
+        }
+    }
+
+    pub fn output(&mut self) -> &str {
+        self.output.push('}');
+        &self.output
+    }
+
+    fn print_property<'gc>(
+        &mut self,
+        object: &Object<'gc>,
+        key: AvmString<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) {
+        match object.get(key, activation) {
+            Ok(value) => {
+                self.print_value(&value, activation);
+            }
+            Err(e) => {
+                self.output.push_str("\"Error\": \"");
+                self.output.push_str(&e.to_string());
+                self.output.push('\"');
+            }
+        }
+    }
+
+    fn print_properties<'gc>(
+        &mut self,
+        object: &Object<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) {
+        let keys = object.get_keys(activation, false);
+        if keys.is_empty() {
+            self.output.push_str("{}");
+        } else {
+            self.output.push('{');
+
+            let mut b = false;
+            for key in keys.into_iter() {
+                if b {
+                    self.output.push(',');
+                } else {
+                    b = true;
+                }
+                self.output.push('\"');
+                self.output.push_str(&key.to_utf8_lossy());
+                self.output.push_str("\":");
+                self.print_property(object, key, activation);
+            }
+
+            self.output.push('}');
+        }
+    }
+
+    fn print_value<'gc>(&mut self, value: &Value<'gc>, activation: &mut Activation<'_, 'gc>) {
+        match value {
+            Value::Undefined => self.output.push_str("[]"), // "undefined" is not valid json, {} is for empty objects, [] ? (is not conflicting with "NewObject" for "Array")
+            Value::Null => self.output.push_str("null"),
+            Value::Bool(value) => self.output.push_str(&value.to_string()),
+            Value::Number(value) => self.output.push_str(&value.to_string()),
+            Value::String(value) => {
+                print_string!(self, *value);
+            }
+            Value::Object(object) => {
+                self.print_properties(object, activation);
+            }
+            Value::MovieClip(_) => {
+                let obj = value.coerce_to_object(activation);
+                self.print_properties(&obj, activation); //object's properties
+            }
+        }
+    }
+
+    fn print_variables<'gc>(
+        &mut self,
+        name: &str,
+        object: &Object<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) {
+        let keys = object.get_keys(activation, false);
+        if keys.is_empty() {
+            return;
+        }
+
+        if !self.output.is_empty() {
+            self.output.push(',');
+        } else {
+            self.output.push('{');
+        }
+        self.output.push('\"');
+        self.output.push_str(name);
+        self.output.push_str("\":{");
+
+        let mut b = false;
+        for key in keys.into_iter() {
+            if b {
+                self.output.push(',');
+            } else {
+                b = true;
+            }
+
+            let _ = write!(self.output, "\"{key}\":");
+            self.print_property(object, key, activation);
+        }
+
+        self.output.push('}');
+    }
+
+    pub fn print_activation(&mut self, activation: &mut Activation<'_, '_>) {
+        self.print_variables(
+            "_global",
+            &activation.context.avm1.global_object(),
+            activation,
+        );
+        for display_object in activation.context.stage.iter_render_list() {
+            let level = display_object.depth();
+            let object = display_object.object().coerce_to_object(activation);
+            self.print_variables(&format!("_level{level}"), &object, activation);
+        }
     }
 }
 
