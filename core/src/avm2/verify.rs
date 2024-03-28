@@ -341,8 +341,8 @@ pub fn verify_method<'gc>(
     }
 
     // Record a list of possible places the code could
-    // jump to- this will be used for optimization.
-    let mut potential_jump_targets = HashSet::new();
+    // jump to- this will be used in the optimizer.
+    let mut potential_jump_targets: HashMap<i32, Vec<i32>> = HashMap::new();
 
     // Handle exceptions
     let mut new_exceptions = Vec::new();
@@ -518,17 +518,23 @@ pub fn verify_method<'gc>(
             | AbcOp::Jump { offset } => {
                 let adjusted_result = adjust_jump_to_idx(i, *offset, true)?;
                 *offset = adjusted_result.1;
-                potential_jump_targets.insert(adjusted_result.0);
+                if let Some(sources) = potential_jump_targets.get_mut(&adjusted_result.0) {
+                    sources.push(i);
+                } else {
+                    potential_jump_targets.insert(adjusted_result.0, vec![i]);
+                }
             }
             AbcOp::LookupSwitch(ref mut lookup_switch) => {
+                // TODO: Add i to possible sources, like in the branch ops
+
                 let adjusted_default = adjust_jump_to_idx(i, lookup_switch.default_offset, false)?;
                 lookup_switch.default_offset = adjusted_default.1;
-                potential_jump_targets.insert(adjusted_default.0);
+                potential_jump_targets.insert(adjusted_default.0, Vec::new());
 
                 for case in lookup_switch.case_offsets.iter_mut() {
                     let adjusted_case = adjust_jump_to_idx(i, *case, false)?;
                     *case = adjusted_case.1;
-                    potential_jump_targets.insert(adjusted_case.0);
+                    potential_jump_targets.insert(adjusted_case.0, Vec::new());
                 }
             }
             _ => {}
