@@ -261,6 +261,7 @@ pub fn optimize<'gc>(
     let mut stack = Stack::new();
     let mut scope_stack = Stack::new();
     let mut local_types = initial_local_types.clone();
+    let mut last_op_was_block_terminating = false;
 
     for (i, op) in code.iter_mut().enumerate() {
         if let Some(sources) = jump_targets.get(&(i as i32)) {
@@ -273,17 +274,25 @@ pub fn optimize<'gc>(
                     let mut merged_types = initial_local_types.clone();
                     assert_eq!(source_local_types.len(), local_types.len());
 
-                    for (i, target_local) in local_types.0.iter().enumerate() {
-                        let source_local = source_local_types.at(i);
-                        // TODO: Check superclasses, too
-                        if let (Some(source_local_class), Some(target_local_class)) =
-                            (source_local.class, target_local.class)
-                        {
-                            if GcCell::ptr_eq(
-                                source_local_class.inner_class_definition(),
-                                target_local_class.inner_class_definition(),
-                            ) {
-                                merged_types.set(i, OptValue::of_type(source_local_class));
+                    if last_op_was_block_terminating {
+                        // If the last op was a block-terminating op, the
+                        // only possible way this is reachable is from
+                        // the jump. Just set the types to the types
+                        // at the jump.
+                        merged_types = source_local_types.clone();
+                    } else {
+                        for (i, target_local) in local_types.0.iter().enumerate() {
+                            let source_local = source_local_types.at(i);
+                            // TODO: Check superclasses, too
+                            if let (Some(source_local_class), Some(target_local_class)) =
+                                (source_local.class, target_local.class)
+                            {
+                                if GcCell::ptr_eq(
+                                    source_local_class.inner_class_definition(),
+                                    target_local_class.inner_class_definition(),
+                                ) {
+                                    merged_types.set(i, OptValue::of_type(source_local_class));
+                                }
                             }
                         }
                     }
@@ -299,6 +308,8 @@ pub fn optimize<'gc>(
             stack.clear();
             scope_stack.clear();
         }
+
+        last_op_was_block_terminating = false;
 
         match op {
             Op::CoerceB => {
@@ -940,6 +951,7 @@ pub fn optimize<'gc>(
                 stack.clear();
                 scope_stack.clear();
                 local_types = initial_local_types.clone();
+                last_op_was_block_terminating = true;
             }
             Op::Jump { .. } => {
                 state_map.insert(i as i32, local_types.clone());
@@ -948,6 +960,7 @@ pub fn optimize<'gc>(
                 stack.clear();
                 scope_stack.clear();
                 local_types = initial_local_types.clone();
+                last_op_was_block_terminating = true;
             }
             _ => {
                 stack.clear();
