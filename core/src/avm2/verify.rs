@@ -340,8 +340,8 @@ pub fn verify_method<'gc>(
         }
     }
 
-    // Record a list of possible places the code could
-    // jump to- this will be used in the optimizer.
+    // Record a target->sources mapping of all jump
+    // targets- this will be used in the optimizer.
     let mut potential_jump_targets: HashMap<i32, Vec<i32>> = HashMap::new();
 
     // Handle exceptions
@@ -389,10 +389,19 @@ pub fn verify_method<'gc>(
             return Err(make_error_1054(activation));
         }
 
-        let new_target_offset = byte_offset_to_idx
+        let maybe_new_target_offset = byte_offset_to_idx
             .get(&(exception.target_offset as usize))
-            .copied()
-            .unwrap_or(0);
+            .copied();
+
+        // The large "NOTE" comment below is also relevant here
+        if let Some(new_target_offset) = maybe_new_target_offset {
+            // If this is a reachable target offset, insert it into the list
+            // of potential jump targets. TODO: Add sources, better handle
+            // the scope stack and stack being cleared after jumps
+            potential_jump_targets.insert(new_target_offset, Vec::new());
+        }
+
+        let new_target_offset = maybe_new_target_offset.unwrap_or(0);
 
         // NOTE: That `unwrap_or` is definitely reachable, e.g. in a case where
         // the target offset is unreachable (see the test "verification"), but it
