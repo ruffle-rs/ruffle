@@ -7,6 +7,7 @@ pub use crate::display_object::{
 use either::Either;
 use gc_arena::lock::GcLock;
 use gc_arena::{Collect, Mutation};
+use swf::Twips;
 
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
@@ -75,19 +76,10 @@ impl<'gc> FocusTracker<'gc> {
 
         let custom_ordering = tab_order.iter().any(|o| o.tab_index().is_some());
         if custom_ordering {
-            // Custom ordering disables automatic ordering and
-            // ignores all objects without tabIndex.
-            tab_order = tab_order
-                .iter()
-                .filter(|o| o.tab_index().is_some())
-                .copied()
-                .collect::<Vec<DisplayObject>>();
-
-            // Then, items are sorted according to their tab indices.
-            // TODO When two objects have the same index, the behavior is undefined.
-            //      We should analyze and match FP's behavior here if possible.
-            tab_order.sort_by_key(|o| o.tab_index());
-        }
+            Self::order_custom(&mut tab_order);
+        } else {
+            Self::order_automatic(&mut tab_order);
+        };
 
         let mut tab_order = if reverse {
             Either::Left(tab_order.iter().rev())
@@ -111,5 +103,34 @@ impl<'gc> FocusTracker<'gc> {
         if next.is_some() {
             self.set(next.copied(), context);
         }
+    }
+
+    fn order_custom(tab_order: &mut Vec<DisplayObject>) {
+        // Custom ordering disables automatic ordering and
+        // ignores all objects without tabIndex.
+        tab_order.retain(|o| o.tab_index().is_some());
+
+        // Then, items are sorted according to their tab indices.
+        // TODO When two objects have the same index, the behavior is undefined.
+        //      We should analyze and match FP's behavior here if possible.
+        tab_order.sort_by_key(|o| o.tab_index());
+    }
+
+    // TODO This ordering is yet far from being perfect.
+    //      FP actually has some weird ordering logic, which
+    //      sometimes jumps up, sometimes even ignores some objects.
+    fn order_automatic(tab_order: &mut Vec<DisplayObject>) {
+        fn key_extractor(o: &DisplayObject) -> (Twips, Twips) {
+            let bounds = o.world_bounds();
+            (bounds.y_min, bounds.x_min)
+        }
+
+        // The automatic order is mainly dependent on
+        // the position of the top-left bound corner.
+        tab_order.sort_by_cached_key(key_extractor);
+
+        // Duplicated positions are removed,
+        // only the first element is retained.
+        tab_order.dedup_by_key(|o| key_extractor(o));
     }
 }
