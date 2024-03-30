@@ -5,6 +5,7 @@ use crate::avm2::multiname::Multiname;
 use crate::avm2::object::ClassObject;
 use crate::avm2::op::Op;
 use crate::avm2::property::Property;
+use crate::avm2::verify::JumpSources;
 
 use gc_arena::{Gc, GcCell};
 use std::collections::HashMap;
@@ -150,7 +151,7 @@ pub fn optimize<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: &BytecodeMethod<'gc>,
     code: &mut Vec<Op<'gc>>,
-    jump_targets: HashMap<i32, Vec<i32>>,
+    jump_targets: HashMap<i32, JumpSources>,
 ) {
     // These make the code less readable
     #![allow(clippy::manual_filter)]
@@ -264,40 +265,44 @@ pub fn optimize<'gc>(
     let mut last_op_was_block_terminating = false;
 
     for (i, op) in code.iter_mut().enumerate() {
-        if let Some(sources) = jump_targets.get(&(i as i32)) {
-            // Avoid handling multiple sources for now
-            if sources.len() == 1 {
-                // We can merge the locals easily, now
-                let source_i = sources[0];
-                // Because of the linear optimizer logic, this guarantees that the jump source came before the target
-                if let Some(source_local_types) = state_map.get(&source_i) {
-                    let mut merged_types = initial_local_types.clone();
-                    assert_eq!(source_local_types.len(), local_types.len());
+        if let Some(jump_sources) = jump_targets.get(&(i as i32)) {
+            if let JumpSources::Known(sources) = jump_sources {
+                // Avoid handling multiple sources for now
+                if sources.len() == 1 {
+                    // We can merge the locals easily, now
+                    let source_i = sources[0];
 
-                    if last_op_was_block_terminating {
-                        // If the last op was a block-terminating op, the
-                        // only possible way this is reachable is from
-                        // the jump. Just set the types to the types
-                        // at the jump.
-                        merged_types = source_local_types.clone();
-                    } else {
-                        for (i, target_local) in local_types.0.iter().enumerate() {
-                            let source_local = source_local_types.at(i);
-                            // TODO: Check superclasses, too
-                            if let (Some(source_local_class), Some(target_local_class)) =
-                                (source_local.class, target_local.class)
-                            {
-                                if GcCell::ptr_eq(
-                                    source_local_class.inner_class_definition(),
-                                    target_local_class.inner_class_definition(),
-                                ) {
-                                    merged_types.set(i, OptValue::of_type(source_local_class));
+                    if let Some(source_local_types) = state_map.get(&source_i) {
+                        let mut merged_types = initial_local_types.clone();
+                        assert_eq!(source_local_types.len(), local_types.len());
+
+                        if last_op_was_block_terminating {
+                            // If the last op was a block-terminating op, the
+                            // only possible way this is reachable is from
+                            // the jump. Just set the types to the types
+                            // at the jump.
+                            merged_types = source_local_types.clone();
+                        } else {
+                            for (i, target_local) in local_types.0.iter().enumerate() {
+                                let source_local = source_local_types.at(i);
+                                // TODO: Check superclasses, too
+                                if let (Some(source_local_class), Some(target_local_class)) =
+                                    (source_local.class, target_local.class)
+                                {
+                                    if GcCell::ptr_eq(
+                                        source_local_class.inner_class_definition(),
+                                        target_local_class.inner_class_definition(),
+                                    ) {
+                                        merged_types.set(i, OptValue::of_type(source_local_class));
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    local_types = merged_types;
+                        local_types = merged_types;
+                    } else {
+                        local_types = initial_local_types.clone();
+                    }
                 } else {
                     local_types = initial_local_types.clone();
                 }
