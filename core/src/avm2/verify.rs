@@ -45,6 +45,11 @@ enum ByteInfo {
     NotYetReached,
 }
 
+pub enum JumpSources {
+    Known(Vec<i32>),
+    Unknown,
+}
+
 pub fn verify_method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: &BytecodeMethod<'gc>,
@@ -342,7 +347,7 @@ pub fn verify_method<'gc>(
 
     // Record a target->sources mapping of all jump
     // targets- this will be used in the optimizer.
-    let mut potential_jump_targets: HashMap<i32, Vec<i32>> = HashMap::new();
+    let mut potential_jump_targets: HashMap<i32, JumpSources> = HashMap::new();
 
     // Handle exceptions
     let mut new_exceptions = Vec::new();
@@ -398,7 +403,7 @@ pub fn verify_method<'gc>(
             // If this is a reachable target offset, insert it into the list
             // of potential jump targets. TODO: Add sources, better handle
             // the scope stack and stack being cleared after jumps
-            potential_jump_targets.insert(new_target_offset, Vec::new());
+            potential_jump_targets.insert(new_target_offset, JumpSources::Unknown);
         }
 
         let new_target_offset = maybe_new_target_offset.unwrap_or(0);
@@ -527,10 +532,12 @@ pub fn verify_method<'gc>(
             | AbcOp::Jump { offset } => {
                 let adjusted_result = adjust_jump_to_idx(i, *offset, true)?;
                 *offset = adjusted_result.1;
-                if let Some(sources) = potential_jump_targets.get_mut(&adjusted_result.0) {
-                    sources.push(i);
+                if let Some(jump_sources) = potential_jump_targets.get_mut(&adjusted_result.0) {
+                    if let JumpSources::Known(sources) = jump_sources {
+                        sources.push(i);
+                    }
                 } else {
-                    potential_jump_targets.insert(adjusted_result.0, vec![i]);
+                    potential_jump_targets.insert(adjusted_result.0, JumpSources::Known(vec![i]));
                 }
             }
             AbcOp::LookupSwitch(ref mut lookup_switch) => {
@@ -538,12 +545,12 @@ pub fn verify_method<'gc>(
 
                 let adjusted_default = adjust_jump_to_idx(i, lookup_switch.default_offset, false)?;
                 lookup_switch.default_offset = adjusted_default.1;
-                potential_jump_targets.insert(adjusted_default.0, Vec::new());
+                potential_jump_targets.insert(adjusted_default.0, JumpSources::Unknown);
 
                 for case in lookup_switch.case_offsets.iter_mut() {
                     let adjusted_case = adjust_jump_to_idx(i, *case, false)?;
                     *case = adjusted_case.1;
-                    potential_jump_targets.insert(adjusted_case.0, Vec::new());
+                    potential_jump_targets.insert(adjusted_case.0, JumpSources::Unknown);
                 }
             }
             _ => {}
