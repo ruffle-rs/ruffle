@@ -267,10 +267,8 @@ pub fn read_bookmarks(input: &str) -> (ParseResult<Vec<Bookmark>>, DocumentMut) 
         for bookmark in bookmarks.iter() {
             let url = match bookmark.parse_from_str(cx, "url") {
                 Some(value) => value,
-                None => {
-                    cx.add_warning("Missing bookmark.url".to_string());
-                    continue;
-                }
+                None => url::Url::parse(crate::preferences::INVALID_URL)
+                    .expect("Url is constant and valid"),
             };
 
             result.result.push(Bookmark { url });
@@ -614,15 +612,19 @@ mod tests {
 
         assert_eq!(
             ParseResult {
-                result: vec![],
-                warnings: vec!["Missing bookmark.url".to_string()],
+                result: vec![Bookmark {
+                    url: Url::parse(crate::preferences::INVALID_URL).unwrap(),
+                }],
+                warnings: vec![],
             },
             read_bookmarks("[[bookmark]]").0
         );
 
         assert_eq!(
             ParseResult {
-                result: vec![],
+                result: vec![Bookmark {
+                    url: Url::parse(crate::preferences::INVALID_URL).unwrap(),
+                }],
                 warnings: vec!["Invalid bookmark.url: unsupported value \"invalid\"".to_string()],
             },
             read_bookmarks("[[bookmark]]\nurl = \"invalid\"").0,
@@ -662,14 +664,17 @@ mod tests {
                         url: Url::from_str("file:///home/user/example.swf").unwrap(),
                     },
                     Bookmark {
+                        url: Url::parse(crate::preferences::INVALID_URL).unwrap(),
+                    },
+                    Bookmark {
+                        url: Url::parse(crate::preferences::INVALID_URL).unwrap(),
+                    },
+                    Bookmark {
                         url: Url::from_str("https://ruffle.rs/logo-anim.swf").unwrap(),
                     }
                 ],
 
-                warnings: vec![
-                    "Invalid bookmark.url: unsupported value \"invalid\"".to_string(),
-                    "Missing bookmark.url".to_string()
-                ],
+                warnings: vec!["Invalid bookmark.url: unsupported value \"invalid\"".to_string(),],
             },
             read_bookmarks(
                 r#"

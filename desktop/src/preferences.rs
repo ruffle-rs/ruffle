@@ -241,7 +241,15 @@ pub struct LogPreferences {
     pub filename_pattern: FilenamePattern,
 }
 
+pub static INVALID_URL: &str = "invalid:///";
+
 #[derive(Debug, PartialEq)]
 pub struct Bookmark {
     pub url: Url,
+}
+
+impl Bookmark {
+    pub fn is_invalid(&self) -> bool {
+        self.url.as_str() == INVALID_URL
+    }
 }

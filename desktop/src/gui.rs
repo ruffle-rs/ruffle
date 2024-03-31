@@ -333,7 +333,7 @@ impl RuffleGui {
 
                         if have_bookmarks {
                             ui.separator();
-                            for bookmark in bookmarks {
+                            for bookmark in bookmarks.iter().filter(|x| !x.is_invalid()) {
                                 if Button::new(crate::util::url_to_readable_name(&bookmark.url)).ui(ui).clicked() {
                                     ui.close_menu();
                                     let _ = self.event_loop.send_event(RuffleEvent::OpenURL(bookmark.url.clone(), Box::new(self.default_player_options.clone())));

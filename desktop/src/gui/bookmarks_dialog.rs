@@ -36,7 +36,9 @@ impl BookmarksDialog {
                             // Close the dialog if we have no bookmarks to show.
                             should_close = bookmarks.is_empty();
 
-                            for (index, bookmark) in bookmarks.iter().enumerate() {
+                            for (index, bookmark) in
+                                bookmarks.iter().filter(|x| !x.is_invalid()).enumerate()
+                            {
                                 ui.label(bookmark.url.as_str());
 
                                 if Button::new(text(locale, "remove")).ui(ui).clicked() {
