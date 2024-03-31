@@ -768,6 +768,7 @@ pub fn optimize<'gc>(
                                     *op = Op::CallMethod {
                                         num_args: 0,
                                         index: disp_id,
+                                        push_return_value: true,
                                     };
                                 }
                                 _ => {}
@@ -793,6 +794,15 @@ pub fn optimize<'gc>(
                                 | Some(Property::ConstSlot { slot_id }) => {
                                     *op = Op::SetSlot { index: slot_id };
                                 }
+                                Some(Property::Virtual {
+                                    set: Some(disp_id), ..
+                                }) => {
+                                    *op = Op::CallMethod {
+                                        num_args: 1,
+                                        index: disp_id,
+                                        push_return_value: false,
+                                    };
+                                }
                                 _ => {}
                             }
                         }
@@ -810,6 +820,15 @@ pub fn optimize<'gc>(
                             match class.instance_vtable().get_trait(multiname) {
                                 Some(Property::Slot { slot_id }) => {
                                     *op = Op::SetSlot { index: slot_id };
+                                }
+                                Some(Property::Virtual {
+                                    set: Some(disp_id), ..
+                                }) => {
+                                    *op = Op::CallMethod {
+                                        num_args: 1,
+                                        index: disp_id,
+                                        push_return_value: false,
+                                    };
                                 }
                                 _ => {}
                             }
@@ -874,6 +893,7 @@ pub fn optimize<'gc>(
                                     *op = Op::CallMethod {
                                         num_args: *num_args,
                                         index: disp_id,
+                                        push_return_value: true,
                                     };
                                 }
                                 _ => {}
@@ -886,9 +906,35 @@ pub fn optimize<'gc>(
                 // Avoid checking return value for now
                 stack.push_any();
             }
-            Op::CallPropVoid { .. } => {
-                // Avoid handling for now
-                stack.clear();
+            Op::CallPropVoid {
+                multiname,
+                num_args,
+            } => {
+                // Arguments
+                stack.popn(*num_args);
+
+                stack.pop_for_multiname(*multiname);
+
+                // Then receiver.
+                let stack_value = stack.pop_or_any();
+
+                if !multiname.has_lazy_component() {
+                    if let Some(class) = stack_value.class {
+                        if !class.inner_class_definition().read().is_interface() {
+                            match class.instance_vtable().get_trait(multiname) {
+                                Some(Property::Method { disp_id }) => {
+                                    *op = Op::CallMethod {
+                                        num_args: *num_args,
+                                        index: disp_id,
+                                        push_return_value: false,
+                                    };
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+                // `stack_pop_multiname` handled lazy
             }
             Op::Call { num_args } => {
                 // Arguments
