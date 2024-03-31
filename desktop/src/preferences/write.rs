@@ -1,7 +1,7 @@
 use crate::log::FilenamePattern;
 use crate::preferences::{Bookmark, BookmarksAndDocument, PreferencesAndDocument};
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
-use toml_edit::{array, value, Table};
+use toml_edit::{array, value, ArrayOfTables, Table};
 use unic_langid::LanguageIdentifier;
 
 pub struct PreferencesWriter<'a>(&'a mut PreferencesAndDocument);
@@ -58,34 +58,32 @@ impl<'a> BookmarksWriter<'a> {
         Self(bookmarks)
     }
 
-    pub fn add(&mut self, bookmark: Bookmark) {
-        if let Some(array) = self.0.toml_document["bookmark"]
-            .or_insert(array())
-            .as_array_of_tables_mut()
-        {
-            // TODO: If we add a BookmarkWriter use this here instead rather than duplicating the table write code.
-            let mut table = Table::new();
-            table["url"] = value(bookmark.url.to_string());
-            array.push(table);
-            self.0.values.push(bookmark);
-        } else {
-            // TODO: There is definitely a better way to handle this, then just logging a warning.
-            tracing::warn!("bookmark is not an array of tables, bookmarks will NOT be saved.");
+    fn get_underlying_table(&mut self) -> &mut ArrayOfTables {
+        if self.0.toml_document.contains_array_of_tables("bookmark") {
+            return self.0.toml_document["bookmark"]
+                .as_array_of_tables_mut()
+                .expect("type was just verified");
         }
+
+        tracing::warn!("missing or invalid bookmark array, recreating..");
+        self.0.toml_document.insert("bookmark", array());
+        self.0.toml_document["bookmark"]
+            .as_array_of_tables_mut()
+            .expect("type was just created")
+    }
+
+    pub fn add(&mut self, bookmark: Bookmark) {
+        let table = self.get_underlying_table();
+        let mut bookmark_table = Table::new();
+        bookmark_table["url"] = value(bookmark.url.to_string());
+        table.push(bookmark_table);
+        self.0.values.push(bookmark);
     }
 
     pub fn remove(&mut self, index: usize) {
+        let table = self.get_underlying_table();
+        table.remove(index);
         self.0.values.remove(index);
-
-        if let Some(array) = self.0.toml_document["bookmark"]
-            .or_insert(array())
-            .as_array_of_tables_mut()
-        {
-            array.remove(index);
-        } else {
-            // TODO: We should add a way to return an error from write methods.
-            tracing::warn!("bookmark is not an array of tables, bookmarks will NOT be saved.");
-        }
     }
 }
 
@@ -266,6 +264,29 @@ mod tests {
 
             // check if we can remove invalid entries.
             test("[[bookmark]]", |writer| writer.remove(0), "");
+        }
+
+        #[test]
+        fn overwrite_invalid_bookmark_type() {
+            test(
+                "[bookmark]",
+                |writer| {
+                    writer.add(Bookmark {
+                        url: url::Url::from_str("file:///test.swf").unwrap(),
+                    })
+                },
+                "[[bookmark]]\nurl = \"file:///test.swf\"\n",
+            );
+
+            test(
+                "bookmark = 1010",
+                |writer| {
+                    writer.add(Bookmark {
+                        url: url::Url::from_str("file:///test.swf").unwrap(),
+                    })
+                },
+                "[[bookmark]]\nurl = \"file:///test.swf\"\n",
+            );
         }
     }
 }
