@@ -66,14 +66,15 @@ pub trait ReadExt<'a> {
     }
 
     fn parse_from_str<T: FromStr>(&'a self, cx: &mut ParseContext, key: &'static str) -> Option<T> {
-        if let Some(item) = self.get_impl(key) {
-            cx.push_key(key);
+        cx.push_key(key);
 
+        let res = if let Some(item) = self.get_impl(key) {
             if let Some(str) = item.as_str() {
                 if let Ok(value) = str.parse::<T>() {
-                    return Some(value);
+                    Some(value)
                 } else {
                     cx.add_warning(format!("Invalid {}: unsupported value {str:?}", cx.path()));
+                    None
                 }
             } else {
                 cx.add_warning(format!(
@@ -81,52 +82,61 @@ pub trait ReadExt<'a> {
                     cx.path(),
                     item.type_name()
                 ));
+                None
             }
+        } else {
+            None
+        };
 
-            cx.pop_key();
-        }
+        cx.pop_key();
 
-        None
+        res
     }
 
     fn get_bool(&'a self, cx: &mut ParseContext, key: &'static str) -> Option<bool> {
-        if let Some(item) = self.get_impl(key) {
-            cx.push_key(key);
+        cx.push_key(key);
 
+        let res = if let Some(item) = self.get_impl(key) {
             if let Some(value) = item.as_bool() {
-                return Some(value);
+                Some(value)
             } else {
                 cx.add_warning(format!(
                     "Invalid {}: expected boolean but found {}",
                     cx.path(),
                     item.type_name()
                 ));
+                None
             }
+        } else {
+            None
+        };
 
-            cx.pop_key();
-        }
+        cx.pop_key();
 
-        None
+        res
     }
 
     fn get_float(&'a self, cx: &mut ParseContext, key: &'static str) -> Option<f64> {
-        if let Some(item) = self.get_impl(key) {
-            cx.push_key(key);
+        cx.push_key(key);
 
+        let res = if let Some(item) = self.get_impl(key) {
             if let Some(value) = item.as_float() {
-                return Some(value);
+                Some(value)
             } else {
                 cx.add_warning(format!(
                     "Invalid {}: expected float but found {}",
                     cx.path(),
                     item.type_name()
                 ));
+                None
             }
+        } else {
+            None
+        };
 
-            cx.pop_key();
-        }
+        cx.pop_key();
 
-        None
+        res
     }
 }
 
