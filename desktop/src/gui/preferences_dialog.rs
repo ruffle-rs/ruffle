@@ -207,13 +207,14 @@ impl PreferencesDialog {
         ui.label(text(locale, "language"));
         let previous = self.language.clone();
         ComboBox::from_id_source("language")
-            .selected_text(self.language.to_string())
+            .selected_text(language_name(&self.language))
             .show_ui(ui, |ui| {
                 for language in available_languages() {
-                    let name = optional_text(language, "language-name")
-                        .map(|s| s.to_string())
-                        .unwrap_or_else(|| language.to_string());
-                    ui.selectable_value(&mut self.language, language.clone(), name);
+                    ui.selectable_value(
+                        &mut self.language,
+                        language.clone(),
+                        language_name(language),
+                    );
                 }
             });
         if self.language != previous {
@@ -305,6 +306,12 @@ fn graphics_power_name(locale: &LanguageIdentifier, power_preference: PowerPrefe
         PowerPreference::Low => text(locale, "graphics-power-low"),
         PowerPreference::High => text(locale, "graphics-power-high"),
     }
+}
+
+fn language_name(language: &LanguageIdentifier) -> String {
+    optional_text(language, "language-name")
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| language.to_string())
 }
 
 fn filename_pattern_name(locale: &LanguageIdentifier, pattern: FilenamePattern) -> Cow<str> {
