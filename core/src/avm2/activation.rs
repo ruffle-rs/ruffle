@@ -911,7 +911,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::SetLocal { index } => self.op_set_local(*index),
                 Op::Kill { index } => self.op_kill(*index),
                 Op::Call { num_args } => self.op_call(*num_args),
-                Op::CallMethod { index, num_args } => self.op_call_method(*index, *num_args),
+                Op::CallMethod {
+                    index,
+                    num_args,
+                    push_return_value,
+                } => self.op_call_method(*index, *num_args, *push_return_value),
                 Op::CallProperty {
                     multiname,
                     num_args,
@@ -1205,6 +1209,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self,
         index: u32,
         arg_count: u32,
+        push_return_value: bool,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         // The entire implementation of VTable assumes that
         // call_method is never encountered in user code. (see the long comment there)
@@ -1218,7 +1223,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let value = receiver.call_method(index, &args, self)?;
 
-        self.push_stack(value);
+        if push_return_value {
+            self.push_stack(value);
+        }
 
         Ok(FrameControl::Continue)
     }

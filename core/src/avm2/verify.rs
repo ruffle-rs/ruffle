@@ -741,7 +741,11 @@ fn resolve_op<'gc>(
         AbcOp::SetLocal { index } => Op::SetLocal { index },
         AbcOp::Kill { index } => Op::Kill { index },
         AbcOp::Call { num_args } => Op::Call { num_args },
-        AbcOp::CallMethod { index, num_args } => Op::CallMethod { index, num_args },
+        AbcOp::CallMethod { index, num_args } => Op::CallMethod {
+            index,
+            num_args,
+            push_return_value: true,
+        },
         AbcOp::CallProperty { index, num_args } => {
             let multiname = pool_multiname(activation, translation_unit, index)?;
 

@@ -32,8 +32,8 @@ pub enum Op<'gc> {
     },
     CallMethod {
         index: u32,
-
         num_args: u32,
+        push_return_value: bool,
     },
     CallProperty {
         multiname: Gc<'gc, Multiname<'gc>>,
