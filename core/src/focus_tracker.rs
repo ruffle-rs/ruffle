@@ -4,6 +4,7 @@ use crate::context::UpdateContext;
 pub use crate::display_object::{
     DisplayObject, TDisplayObject, TDisplayObjectContainer, TextSelection,
 };
+use either::Either;
 use gc_arena::lock::GcLock;
 use gc_arena::{Collect, Mutation};
 
@@ -67,7 +68,7 @@ impl<'gc> FocusTracker<'gc> {
         }
     }
 
-    pub fn cycle(&self, context: &mut UpdateContext<'_, 'gc>) {
+    pub fn cycle(&self, context: &mut UpdateContext<'_, 'gc>, reverse: bool) {
         let stage = context.stage;
         let mut tab_order = vec![];
         stage.fill_tab_order(&mut tab_order, context);
@@ -88,18 +89,27 @@ impl<'gc> FocusTracker<'gc> {
             tab_order.sort_by_key(|o| o.tab_index());
         }
 
+        let mut tab_order = if reverse {
+            Either::Left(tab_order.iter().rev())
+        } else {
+            Either::Right(tab_order.iter())
+        }
+        .peekable();
+        let first = tab_order.peek().copied();
+
         let next = if let Some(current_focus) = self.0.get() {
             // Find the next object which should take the focus.
             tab_order
-                .iter()
                 .skip_while(|o| o.as_ptr() != current_focus.as_ptr())
                 .nth(1)
-                .or(tab_order.first())
+                .or(first)
         } else {
             // If no focus is present, we start from the beginning.
-            tab_order.first()
+            first
         };
 
-        self.set(next.copied(), context);
+        if next.is_some() {
+            self.set(next.copied(), context);
+        }
     }
 }
