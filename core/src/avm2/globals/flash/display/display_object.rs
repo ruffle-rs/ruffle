@@ -621,6 +621,34 @@ pub fn set_visible<'gc>(
     Ok(Value::Undefined)
 }
 
+/// Implements `metaData`'s getter.
+pub fn get_meta_data<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.display.DisplayObject", "metaData");
+    if let Some(dobj) = this.as_display_object() {
+        return Ok(dobj.meta_data().map_or(Value::Null, Value::Object));
+    }
+
+    Ok(Value::Undefined)
+}
+
+/// Implements `metaData`'s setter.
+pub fn set_meta_data<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(dobj) = this.as_display_object() {
+        let obj = args.get_object(activation, 0, "metaData")?;
+        dobj.set_meta_data(activation.gc(), obj);
+    }
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `mouseX`.
 pub fn get_mouse_x<'gc>(
     activation: &mut Activation<'_, 'gc>,
