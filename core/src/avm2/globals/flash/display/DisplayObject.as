@@ -88,6 +88,9 @@ package flash.display {
         public native function get visible():Boolean;
         public native function set visible(value:Boolean):void;
 
+        public native function get metaData():Object;
+        public native function set metaData(value:Object):void;
+
         public native function get mouseX():Number;
 
         public native function get mouseY():Number;

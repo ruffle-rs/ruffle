@@ -225,6 +225,8 @@ pub struct DisplayObjectBase<'gc> {
     /// The display object we are currently masking.
     maskee: Option<DisplayObject<'gc>>,
 
+    meta_data: Option<Avm2Object<'gc>>,
+
     /// The blend mode used when rendering this display object.
     /// Values other than the default `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
     #[collect(require_static)]
@@ -282,6 +284,7 @@ impl<'gc> Default for DisplayObjectBase<'gc> {
             next_avm1_clip: None,
             masker: None,
             maskee: None,
+            meta_data: None,
             sound_transform: Default::default(),
             blend_mode: Default::default(),
             blend_shader: None,
@@ -768,6 +771,14 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     fn set_maskee(&mut self, node: Option<DisplayObject<'gc>>) {
         self.maskee = node;
+    }
+
+    fn meta_data(&self) -> Option<Avm2Object<'gc>> {
+        self.meta_data
+    }
+
+    fn set_meta_data(&mut self, value: Avm2Object<'gc>) {
+        self.meta_data = Some(value);
     }
 }
 
@@ -1705,6 +1716,14 @@ pub trait TDisplayObject<'gc>:
                 parent.invalidate_cached_bitmap(gc_context);
             }
         }
+    }
+
+    fn meta_data(&self) -> Option<Avm2Object<'gc>> {
+        self.base().meta_data()
+    }
+
+    fn set_meta_data(&self, gc_context: &Mutation<'gc>, value: Avm2Object<'gc>) {
+        self.base_mut(gc_context).set_meta_data(value);
     }
 
     /// The blend mode used when rendering this display object.
