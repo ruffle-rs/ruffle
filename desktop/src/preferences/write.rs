@@ -59,42 +59,29 @@ impl<'a> BookmarksWriter<'a> {
     }
 
     pub fn add(&mut self, bookmark: Bookmark) {
-        // TODO: if more fields are added, this should use URL matching (e.g. other properties are ignored)
-        if !self.0.values.contains(&bookmark) {
-            if let Some(array) = self.0.toml_document["bookmark"]
-                .or_insert(array())
-                .as_array_of_tables_mut()
-            {
-                // TODO: If we add a BookmarkWriter use this here instead rather than duplicating the table write code.
-                let mut table = Table::new();
-                table["url"] = value(bookmark.url.to_string());
-                array.push(table);
-                self.0.values.push(bookmark);
-            } else {
-                // TODO: There is definitely a better way to handle this, then just logging a warning.
-                tracing::warn!("bookmark is not an array of tables, bookmarks will NOT be saved.");
-            }
-        }
-    }
-
-    pub fn remove(&mut self, index: usize) {
-        // We need to get the URL to find the bookmark in the TOML file, since index may not correspond to
-        // the same table entry (i.e. invalid tables and such that we want to keep intact for compatibility purposes)
-        let bookmark = self.0.values.remove(index);
-
-        // Remove the bookmark from the TOML file.
         if let Some(array) = self.0.toml_document["bookmark"]
             .or_insert(array())
             .as_array_of_tables_mut()
         {
-            let bookmark_url = bookmark.url.to_string();
-            array.retain(|x| {
-                if let Some(url) = x.get("url").and_then(|x| x.as_str()) {
-                    return url != bookmark_url;
-                }
+            // TODO: If we add a BookmarkWriter use this here instead rather than duplicating the table write code.
+            let mut table = Table::new();
+            table["url"] = value(bookmark.url.to_string());
+            array.push(table);
+            self.0.values.push(bookmark);
+        } else {
+            // TODO: There is definitely a better way to handle this, then just logging a warning.
+            tracing::warn!("bookmark is not an array of tables, bookmarks will NOT be saved.");
+        }
+    }
 
-                true
-            });
+    pub fn remove(&mut self, index: usize) {
+        self.0.values.remove(index);
+
+        if let Some(array) = self.0.toml_document["bookmark"]
+            .or_insert(array())
+            .as_array_of_tables_mut()
+        {
+            array.remove(index);
         } else {
             // TODO: We should add a way to return an error from write methods.
             tracing::warn!("bookmark is not an array of tables, bookmarks will NOT be saved.");
@@ -273,11 +260,12 @@ mod tests {
             },
             "[[bookmark]]\nurl = \"file://home/user/example.swf\"\n\n[[bookmark]]\nurl = \"file:///another_file.swf\"\n",
         );
-
-            // Test that we leave invalid bookmark tables intact when removing a bookmark.
             test("[[bookmark]]\nurl = \"file://home/user/example.swf\"\n\n[[bookmark]]\n\n[[bookmark]]\nurl = \"https://ruffle.rs/logo-anim.swf\"\n\n[[bookmark]]\nurl = \"invalid\"\n", |writer| {
-            writer.remove(1);
-        }, "[[bookmark]]\nurl = \"file://home/user/example.swf\"\n\n[[bookmark]]\n\n[[bookmark]]\nurl = \"invalid\"\n")
+            writer.remove(2);
+        }, "[[bookmark]]\nurl = \"file://home/user/example.swf\"\n\n[[bookmark]]\n\n[[bookmark]]\nurl = \"invalid\"\n");
+
+            // check if we can remove invalid entries.
+            test("[[bookmark]]", |writer| writer.remove(0), "");
         }
     }
 }
