@@ -4,6 +4,7 @@ mod controller;
 mod movie;
 mod open_dialog;
 mod preferences_dialog;
+mod widgets;
 
 pub use controller::GuiController;
 pub use movie::MovieView;
