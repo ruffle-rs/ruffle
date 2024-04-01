@@ -151,8 +151,18 @@ impl GlobalPreferences {
         fun(&self
             .bookmarks
             .lock()
-            .expect("Bookmarks is no reentrant")
+            .expect("Bookmarks is not reentrant")
             .values)
+    }
+
+    pub fn have_bookmarks(&self) -> bool {
+        let bookmarks = &self
+            .bookmarks
+            .lock()
+            .expect("Bookmarks is not reentrant")
+            .values;
+
+        !bookmarks.is_empty() && !bookmarks.iter().all(|x| x.is_invalid())
     }
 
     pub fn write_preferences(&self, fun: impl FnOnce(&mut PreferencesWriter)) -> Result<(), Error> {

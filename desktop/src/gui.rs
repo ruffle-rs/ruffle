@@ -327,26 +327,21 @@ impl RuffleGui {
                         }
                     });
 
-                    let mut have_bookmarks = false;
+                    if Button::new(text(locale, "bookmarks-menu-manage")).ui(ui).clicked() {
+                        ui.close_menu();
+                        self.open_bookmarks();
+                    }
 
-                    self.preferences.bookmarks(|bookmarks| {
-                        have_bookmarks = !bookmarks.is_empty();
-
-                        if have_bookmarks {
-                            ui.separator();
+                    if self.preferences.have_bookmarks() {
+                        ui.separator();
+                        self.preferences.bookmarks(|bookmarks| {
                             for bookmark in bookmarks.iter().filter(|x| !x.is_invalid()) {
                                 if Button::new(crate::util::url_to_readable_name(&bookmark.url)).ui(ui).clicked() {
                                     ui.close_menu();
                                     let _ = self.event_loop.send_event(RuffleEvent::OpenURL(bookmark.url.clone(), Box::new(self.default_player_options.clone())));
                                 }
                             }
-                            ui.separator();
-                        }
-                    });
-
-                    if have_bookmarks && Button::new(text(locale, "bookmarks-menu-manage")).ui(ui).clicked() {
-                        ui.close_menu();
-                        self.open_bookmarks();
+                        });
                     }
                 });
                 menu::menu_button(ui, text(locale, "debug-menu"), |ui| {

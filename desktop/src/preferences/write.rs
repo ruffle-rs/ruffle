@@ -58,6 +58,12 @@ impl<'a> BookmarksWriter<'a> {
         Self(bookmarks)
     }
 
+    fn bookmark_table(&mut self, index: usize) -> &mut Table {
+        self.get_underlying_table()
+            .get_mut(index)
+            .expect("invalid bookmark index")
+    }
+
     fn get_underlying_table(&mut self) -> &mut ArrayOfTables {
         if self.0.toml_document.contains_array_of_tables("bookmark") {
             return self.0.toml_document["bookmark"]
@@ -78,6 +84,12 @@ impl<'a> BookmarksWriter<'a> {
         bookmark_table["url"] = value(bookmark.url.to_string());
         table.push(bookmark_table);
         self.0.values.push(bookmark);
+    }
+
+    pub fn set_url(&mut self, index: usize, url: url::Url) {
+        let table = self.bookmark_table(index);
+        table["url"] = value(url.as_str());
+        self.0.values[index].url = url;
     }
 
     pub fn remove(&mut self, index: usize) {
