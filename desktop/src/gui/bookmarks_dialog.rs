@@ -46,7 +46,7 @@ impl BookmarkAddDialog {
                         ui.text_edit_singleline(&mut self.name);
                         ui.end_row();
 
-                        ui.label(text(locale, "bookmarks-dialog-url"));
+                        ui.label(text(locale, "bookmarks-dialog-location"));
                         self.url.ui(locale, ui);
                         ui.end_row();
                     });
@@ -234,7 +234,7 @@ impl BookmarksDialog {
 
                     let previous_url = bookmark.url.value().cloned();
 
-                    ui.label(text(locale, "bookmarks-dialog-url"));
+                    ui.label(text(locale, "bookmarks-dialog-location"));
                     let current_url = bookmark.url.ui(locale, ui).value();
 
                     // TOOD: Change the UrlOrPathField widget to return a response instead, so we can update when we lose the focus, removes the need to clone every redraw.
