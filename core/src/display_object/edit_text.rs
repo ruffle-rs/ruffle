@@ -2347,7 +2347,12 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         true
     }
 
-    fn is_tab_enabled(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+    fn is_tabbable(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        if !self.is_editable() {
+            // Non-editable text fields are never tabbable.
+            return false;
+        }
+
         self.get_avm1_boolean_property(context, "tabEnabled", |_| true)
     }
 

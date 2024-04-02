@@ -1915,7 +1915,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Whether this object is included in tab ordering.
-    fn is_tab_enabled(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+    fn is_tabbable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
         false
     }
 

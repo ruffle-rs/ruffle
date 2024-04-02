@@ -422,7 +422,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         self.call_focus_handler(context, focused, other);
     }
 
-    fn is_tab_enabled(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+    fn is_tabbable(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
         self.get_avm1_boolean_property(context, "tabEnabled", |_| true)
     }
 
