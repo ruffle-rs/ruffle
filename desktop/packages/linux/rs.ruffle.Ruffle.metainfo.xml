@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Copyright 2023 Doomsdayrs -->
-<component type="desktop">
+<component type="desktop-application">
   <id>rs.ruffle.Ruffle</id>
   <metadata_license>CC0-1.0</metadata_license>
   <name>Ruffle</name>
