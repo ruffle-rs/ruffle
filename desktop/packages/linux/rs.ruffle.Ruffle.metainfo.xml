@@ -4,7 +4,7 @@
   <id>rs.ruffle.Ruffle</id>
   <metadata_license>CC0-1.0</metadata_license>
   <name>Ruffle</name>
-  <summary>A Flash Player emulator</summary>
+  <summary>Flash Player emulator</summary>
   <launchable type="desktop-id">rs.ruffle.Ruffle.desktop</launchable>
   <screenshots>
     <screenshot type="default">
