@@ -123,7 +123,7 @@ pub struct StageData<'gc> {
     #[collect(require_static)]
     window_mode: WindowMode,
 
-    /// Whether or not objects display a glowing border when they have focus.
+    /// Whether objects display a glowing border when they have focus.
     stage_focus_rect: bool,
 
     /// Whether to show default context menu items
@@ -287,21 +287,16 @@ impl<'gc> Stage<'gc> {
         Ref::map(self.0.read(), |this| &this.stage3ds)
     }
 
-    /// Get the boolean flag which determines whether or not objects display a glowing border
+    /// Get the boolean flag which determines whether objects display a glowing border
     /// when they have focus.
-    ///
-    /// This setting is currently ignored in Ruffle.
     pub fn stage_focus_rect(self) -> bool {
         self.0.read().stage_focus_rect
     }
 
-    /// Set the boolean flag which determines whether or not objects display a glowing border
+    /// Set the boolean flag which determines whether objects display a glowing border
     /// when they have focus.
-    ///
-    /// This setting is currently ignored in Ruffle.
-    pub fn set_stage_focus_rect(self, gc_context: &Mutation<'gc>, fr: bool) {
-        let mut this = self.0.write(gc_context);
-        this.stage_focus_rect = fr
+    pub fn set_stage_focus_rect(self, gc_context: &Mutation<'gc>, value: bool) {
+        self.0.write(gc_context).stage_focus_rect = value
     }
 
     /// Get the size of the stage.
