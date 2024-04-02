@@ -1,0 +1,42 @@
+Setting test stage to 1
+Focus changed
+  old: null
+  new: _level0.clip1
+Focus changed
+  old: _level0.clip1
+  new: _level0.clip2
+Setting test stage to 2
+Focus changed
+  old: _level0.clip2
+  new: _level0.clip1
+Focus changed
+  old: _level0.clip1
+  new: _level0.clip2
+Setting test stage to 3
+Focus changed
+  old: _level0.clip2
+  new: _level0.clip1
+Focus changed
+  old: _level0.clip1
+  new: _level0.clip2
+Setting test stage to 4
+Focus changed
+  old: _level0.clip2
+  new: _level0.clip1
+Focus changed
+  old: _level0.clip1
+  new: _level0.clip2
+Setting test stage to 5
+Focus changed
+  old: _level0.clip2
+  new: _level0.clip1
+Focus changed
+  old: _level0.clip1
+  new: _level0.clip2
+Setting test stage to 6
+Focus changed
+  old: _level0.clip2
+  new: _level0.clip1
+Focus changed
+  old: _level0.clip1
+  new: _level0.clip2
