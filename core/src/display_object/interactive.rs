@@ -89,6 +89,9 @@ pub struct InteractiveObjectBase<'gc> {
     /// display object.
     #[collect(require_static)]
     last_click: Option<Instant>,
+
+    /// Specifies whether this object displays a yellow rectangle when focused.
+    focus_rect: Option<bool>,
 }
 
 impl<'gc> Default for InteractiveObjectBase<'gc> {
@@ -98,6 +101,7 @@ impl<'gc> Default for InteractiveObjectBase<'gc> {
             flags: InteractiveObjectFlags::MOUSE_ENABLED,
             context_menu: Avm2Value::Null,
             last_click: None,
+            focus_rect: None,
         }
     }
 }
@@ -157,6 +161,18 @@ pub trait TInteractiveObject<'gc>:
 
     fn set_context_menu(self, mc: &Mutation<'gc>, value: Avm2Value<'gc>) {
         self.raw_interactive_mut(mc).context_menu = value;
+    }
+
+    /// Get the boolean flag which determines whether objects display a glowing border
+    /// when they have focus.
+    fn focus_rect(self) -> Option<bool> {
+        self.raw_interactive().focus_rect
+    }
+
+    /// Set the boolean flag which determines whether objects display a glowing border
+    /// when they have focus.
+    fn set_focus_rect(self, mc: &Mutation<'gc>, value: Option<bool>) {
+        self.raw_interactive_mut(mc).focus_rect = value;
     }
 
     /// Filter the incoming clip event.
