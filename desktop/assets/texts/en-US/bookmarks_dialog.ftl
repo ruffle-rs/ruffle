@@ -1,4 +1,5 @@
 bookmarks-dialog = Manage Bookmarks
+bookmark-dialog-add = Add Bookmark
 
 bookmarks-dialog-name = Name
 bookmarks-dialog-location = Location

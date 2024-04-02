@@ -9,11 +9,10 @@ mod widgets;
 pub use controller::GuiController;
 pub use movie::MovieView;
 use std::borrow::Cow;
-use std::str::FromStr;
 use url::Url;
 
 use crate::custom_event::RuffleEvent;
-use crate::gui::bookmarks_dialog::BookmarksDialog;
+use crate::gui::bookmarks_dialog::{BookmarkAddDialog, BookmarksDialog};
 use crate::gui::context_menu::ContextMenu;
 use crate::gui::open_dialog::OpenDialog;
 use crate::gui::preferences_dialog::PreferencesDialog;
@@ -92,6 +91,7 @@ pub struct RuffleGui {
     open_dialog: OpenDialog,
     preferences_dialog: Option<PreferencesDialog>,
     bookmarks_dialog: Option<BookmarksDialog>,
+    bookmark_add_dialog: Option<BookmarkAddDialog>,
     default_player_options: PlayerOptions,
     currently_opened: Option<(Url, PlayerOptions)>,
     was_suspended_before_debug: bool,
@@ -120,6 +120,7 @@ impl RuffleGui {
             ),
             preferences_dialog: None,
             bookmarks_dialog: None,
+            bookmark_add_dialog: None,
 
             event_loop,
             default_player_options,
@@ -146,6 +147,7 @@ impl RuffleGui {
         self.open_dialog(&locale, egui_ctx);
         self.preferences_dialog(&locale, egui_ctx);
         self.bookmarks_dialog(&locale, egui_ctx);
+        self.bookmark_add_dialog(&locale, egui_ctx);
 
         if let Some(player) = player {
             let was_suspended = player.debug_ui().should_suspend_player();
@@ -308,25 +310,23 @@ impl RuffleGui {
                     }
                 });
                 menu::menu_button(ui, text(locale, "bookmarks-menu"), |ui| {
-                    ui.add_enabled_ui(player.is_some(), |ui| {
-                        if Button::new(text(locale, "bookmarks-menu-add")).ui(ui).clicked() {
-                            ui.close_menu();
-                            if let Some(player) = &player {
-                                if let Err(e) = self.preferences.write_bookmarks(|writer| {
-                                    // FIXME: if spoof url is used, the URL here is incorrect (fun fact, its also incorrect in the debug tools).
-                                    match Url::from_str(player.swf().url()) {
-                                        Ok(url) => writer.add(crate::preferences::Bookmark {
-                                            name: crate::util::url_to_readable_name(&url).into_owned(),
-                                            url,
-                                        }),
-                                        Err(e) => tracing::warn!("Failed to parse SWF url for bookmark: {e}"),
-                                    };
-                                }) {
-                                    tracing::warn!("Couldn't update bookmarks: {e}");
+                    if Button::new(text(locale, "bookmarks-menu-add")).ui(ui).clicked() {
+                        ui.close_menu();
+
+                        let initial_url = if let Some(player) = &player {
+                            match Url::parse(player.swf().url()) {
+                                Ok(url) => Some(url),
+                                Err(e) => {
+                                    tracing::warn!("Failed to parse SWF url for bookmark: {e}");
+                                    None
                                 }
                             }
-                        }
-                    });
+                        } else {
+                            None
+                        };
+
+                        self.open_add_bookmark(initial_url);
+                    }
 
                     if Button::new(text(locale, "bookmarks-menu-manage")).ui(ui).clicked() {
                         ui.close_menu();
@@ -561,6 +561,13 @@ impl RuffleGui {
         self.bookmarks_dialog = Some(BookmarksDialog::new(self.preferences.clone()));
     }
 
+    fn open_add_bookmark(&mut self, initial_url: Option<url::Url>) {
+        self.bookmark_add_dialog = Some(BookmarkAddDialog::new(
+            self.preferences.clone(),
+            initial_url,
+        ))
+    }
+
     fn close_movie(&mut self, ui: &mut egui::Ui) {
         let _ = self.event_loop.send_event(RuffleEvent::CloseFile);
         self.currently_opened = None;
@@ -603,6 +610,17 @@ impl RuffleGui {
         };
         if !keep_open {
             self.bookmarks_dialog = None;
+        }
+    }
+
+    fn bookmark_add_dialog(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) {
+        let keep_open = if let Some(dialog) = &mut self.bookmark_add_dialog {
+            dialog.show(locale, egui_ctx)
+        } else {
+            true
+        };
+        if !keep_open {
+            self.bookmark_add_dialog = None;
         }
     }
 

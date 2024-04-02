@@ -1,9 +1,89 @@
 use crate::gui::text;
 use crate::gui::widgets::PathOrUrlField;
-use crate::preferences::GlobalPreferences;
-use egui::{Align2, Grid, Label, Sense, Ui, Window};
+use crate::preferences::{Bookmark, GlobalPreferences};
+use egui::{Align2, Button, Grid, Label, Layout, Sense, Ui, Widget, Window};
 use egui_extras::{Column, TableBuilder};
 use unic_langid::LanguageIdentifier;
+use url::Url;
+
+pub struct BookmarkAddDialog {
+    preferences: GlobalPreferences,
+    name: String,
+    url: PathOrUrlField,
+}
+
+impl BookmarkAddDialog {
+    pub fn new(preferences: GlobalPreferences, initial_url: Option<Url>) -> Self {
+        Self {
+            preferences,
+            name: initial_url
+                .as_ref()
+                .map(|x| crate::util::url_to_readable_name(x).into_owned())
+                .unwrap_or_default(),
+            // TODO: hint.
+            url: PathOrUrlField::new(initial_url, ""),
+        }
+    }
+
+    fn is_valid(&self) -> bool {
+        self.url.value().is_some() && !self.name.is_empty()
+    }
+
+    pub fn show(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) -> bool {
+        let mut keep_open = true;
+        let mut should_close = false;
+
+        Window::new(text(locale, "bookmark-dialog-add"))
+            .open(&mut keep_open)
+            .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
+            .collapsible(false)
+            .resizable(false)
+            .show(egui_ctx, |ui| {
+                Grid::new("bookmarks-dialog-add-grid")
+                    .num_columns(2)
+                    .show(ui, |ui| {
+                        ui.label(text(locale, "bookmarks-dialog-name"));
+                        ui.text_edit_singleline(&mut self.name);
+                        ui.end_row();
+
+                        ui.label(text(locale, "bookmarks-dialog-url"));
+                        self.url.ui(locale, ui);
+                        ui.end_row();
+                    });
+
+                ui.separator();
+                ui.horizontal(|ui| {
+                    ui.with_layout(Layout::right_to_left(egui::Align::Center), |ui| {
+                        if ui
+                            .add_enabled(self.is_valid(), Button::new(text(locale, "save")))
+                            .clicked()
+                        {
+                            should_close = true;
+
+                            if let Err(e) = self.preferences.write_bookmarks(|writer| {
+                                writer.add(Bookmark {
+                                    name: self.name.clone(),
+                                    url: self
+                                        .url
+                                        .value()
+                                        .cloned()
+                                        .expect("is_valid() ensured value exists"),
+                                })
+                            }) {
+                                tracing::warn!("Couldn't update bookmarks: {e}");
+                            }
+                        }
+
+                        if Button::new(text(locale, "cancel")).ui(ui).clicked() {
+                            should_close = true;
+                        }
+                    });
+                });
+            });
+
+        keep_open && !should_close
+    }
+}
 
 struct SelectedBookmark {
     index: usize,
