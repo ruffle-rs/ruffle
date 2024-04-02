@@ -1055,14 +1055,18 @@ impl<'gc> E4XNode<'gc> {
             return false;
         }
 
+        // The Multiname is not a QName, so an any name matches everything.
+        // See https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/Multiname.cpp#L59
+        if name.is_any_name() && !name.is_qname() {
+            return true;
+        }
+
         if !name.is_any_name() && self.local_name() != name.local_name() {
             return false;
         }
 
-        // The Multiname is not a QName, so an any name matches everything.
-        // See https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/Multiname.cpp#L59
-        if name.is_any_name() && name.namespace_set().len() > 1 {
-            return true;
+        if self.local_name().is_none() {
+            return false;
         }
 
         if name.is_any_namespace() {
