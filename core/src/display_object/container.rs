@@ -489,7 +489,11 @@ pub trait TDisplayObjectContainer<'gc>:
         }
 
         for child in self.iter_render_list() {
-            if child.is_tab_enabled(context) {
+            if !child.visible() {
+                // Non-visible objects and their children are excluded from tab ordering.
+                continue;
+            }
+            if child.is_tabbable(context) {
                 tab_order.push(child);
             }
             if let Some(container) = child.as_container() {
