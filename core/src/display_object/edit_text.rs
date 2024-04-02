@@ -302,7 +302,7 @@ impl<'gc> EditText<'gc> {
         );
         let line_data = get_line_data(&layout);
 
-        let mut base = InteractiveObjectBase::default();
+        let mut base = InteractiveObjectBase::new(false);
 
         base.base.matrix_mut().tx = swf_tag.bounds().x_min;
         base.base.matrix_mut().ty = swf_tag.bounds().y_min;
