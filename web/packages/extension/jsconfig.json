@@ -7,10 +7,6 @@
         "target": "es2017",
         "resolveJsonModule": true,
         "maxNodeModuleJsDepth": 0,
-
-        // Disable some checks for `sign-addon`.
-        "noUnusedLocals": false,
-        "noUncheckedIndexedAccess": false,
     },
-    "include": ["webpack.config.js", "tools/**/*", "../../node_modules/sign-addon/**/*"],
+    "include": ["webpack.config.js", "tools/**/*"],
 }
