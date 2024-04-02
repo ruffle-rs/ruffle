@@ -82,6 +82,7 @@ impl<'a> BookmarksWriter<'a> {
         let table = self.get_underlying_table();
         let mut bookmark_table = Table::new();
         bookmark_table["url"] = value(bookmark.url.to_string());
+        bookmark_table["name"] = value(&bookmark.name);
         table.push(bookmark_table);
         self.0.values.push(bookmark);
     }
@@ -90,6 +91,12 @@ impl<'a> BookmarksWriter<'a> {
         let table = self.bookmark_table(index);
         table["url"] = value(url.as_str());
         self.0.values[index].url = url;
+    }
+
+    pub fn set_name(&mut self, index: usize, name: String) {
+        let table = self.bookmark_table(index);
+        table["name"] = value(&name);
+        self.0.values[index].name = name;
     }
 
     pub fn remove(&mut self, index: usize) {
@@ -242,6 +249,7 @@ mod tests {
         use super::*;
         use crate::preferences::read::read_bookmarks;
         use std::str::FromStr;
+        use url::Url;
 
         define_serialization_test_helpers!(read_bookmarks, BookmarksAndDocument, BookmarksWriter);
 
@@ -251,14 +259,30 @@ mod tests {
                 "",
                 |writer| {
                     writer.add(Bookmark {
-                        url: url::Url::from_str("file:///home/user/example.swf").unwrap(),
+                        url: Url::from_str("file:///home/user/example.swf").unwrap(),
+                        name: "example.swf".to_string(),
                     })
                 },
-                "[[bookmark]]\nurl = \"file:///home/user/example.swf\"\n",
+                "[[bookmark]]\nurl = \"file:///home/user/example.swf\"\nname = \"example.swf\"\n",
             );
             test("[[bookmark]]\nurl = \"file:///home/user/example.swf\"\n", |writer| writer.add(Bookmark {
-            url: url::Url::from_str("file:///home/user/another_file.swf").unwrap()
-        }), "[[bookmark]]\nurl = \"file:///home/user/example.swf\"\n\n[[bookmark]]\nurl = \"file:///home/user/another_file.swf\"\n");
+            url: Url::from_str("file:///home/user/another_file.swf").unwrap(),
+            name: "another_file.swf".to_string(),
+        }), "[[bookmark]]\nurl = \"file:///home/user/example.swf\"\n\n[[bookmark]]\nurl = \"file:///home/user/another_file.swf\"\nname = \"another_file.swf\"\n");
+        }
+
+        #[test]
+        fn modify_bookmark() {
+            test(
+                "[[bookmark]]\nurl = \"file:///example.swf\"\n",
+                |writer| writer.set_name(0, "Custom Name".to_string()),
+                "[[bookmark]]\nurl = \"file:///example.swf\"\nname = \"Custom Name\"\n",
+            );
+            test(
+                "[[bookmark]]\nurl = \"file:///example.swf\"\nname = \"example.swf\"",
+                |writer| writer.set_url(0, Url::parse("https://ruffle.rs/logo-anim.swf").unwrap()),
+                "[[bookmark]]\nurl = \"https://ruffle.rs/logo-anim.swf\"\nname = \"example.swf\"\n",
+            );
         }
 
         #[test]
@@ -284,20 +308,22 @@ mod tests {
                 "[bookmark]",
                 |writer| {
                     writer.add(Bookmark {
-                        url: url::Url::from_str("file:///test.swf").unwrap(),
+                        url: Url::from_str("file:///test.swf").unwrap(),
+                        name: "test.swf".to_string(),
                     })
                 },
-                "[[bookmark]]\nurl = \"file:///test.swf\"\n",
+                "[[bookmark]]\nurl = \"file:///test.swf\"\nname = \"test.swf\"\n",
             );
 
             test(
                 "bookmark = 1010",
                 |writer| {
                     writer.add(Bookmark {
-                        url: url::Url::from_str("file:///test.swf").unwrap(),
+                        url: Url::from_str("file:///test.swf").unwrap(),
+                        name: "test.swf".to_string(),
                     })
                 },
-                "[[bookmark]]\nurl = \"file:///test.swf\"\n",
+                "[[bookmark]]\nurl = \"file:///test.swf\"\nname = \"test.swf\"\n",
             );
         }
     }

@@ -271,7 +271,13 @@ pub fn read_bookmarks(input: &str) -> (ParseResult<Vec<Bookmark>>, DocumentMut) 
                     .expect("Url is constant and valid"),
             };
 
-            result.result.push(Bookmark { url });
+            let name = match bookmark.parse_from_str(cx, "name") {
+                Some(value) => value,
+                // Fallback to using the URL as the name.
+                None => crate::util::url_to_readable_name(&url).into_owned(),
+            };
+
+            result.result.push(Bookmark { url, name });
         }
     });
 
@@ -603,6 +609,7 @@ mod tests {
         assert_eq!(
             ParseResult {
                 result: vec![],
+
                 warnings: vec![
                     "Invalid bookmark: expected array of tables but found table".to_string()
                 ]
@@ -614,6 +621,7 @@ mod tests {
             ParseResult {
                 result: vec![Bookmark {
                     url: Url::parse(crate::preferences::INVALID_URL).unwrap(),
+                    name: "".to_string(),
                 }],
                 warnings: vec![],
             },
@@ -624,10 +632,25 @@ mod tests {
             ParseResult {
                 result: vec![Bookmark {
                     url: Url::parse(crate::preferences::INVALID_URL).unwrap(),
+                    name: "".to_string(),
                 }],
                 warnings: vec!["Invalid bookmark.url: unsupported value \"invalid\"".to_string()],
             },
             read_bookmarks("[[bookmark]]\nurl = \"invalid\"").0,
+        );
+
+        assert_eq!(
+            ParseResult {
+                result: vec![Bookmark {
+                    url: Url::parse("https://ruffle.rs/logo-anim.swf").unwrap(),
+                    name: "Logo SWF".to_string(),
+                }],
+                warnings: vec![],
+            },
+            read_bookmarks(
+                "[[bookmark]]\nurl = \"https://ruffle.rs/logo-anim.swf\"\nname = \"Logo SWF\""
+            )
+            .0
         );
     }
 
@@ -638,9 +661,11 @@ mod tests {
                 result: vec![
                     Bookmark {
                         url: Url::from_str("file:///home/user/example.swf").unwrap(),
+                        name: "example.swf".to_string(),
                     },
                     Bookmark {
                         url: Url::from_str("https://ruffle.rs/logo-anim.swf").unwrap(),
+                        name: "logo-anim.swf".to_string(),
                     }
                 ],
                 warnings: vec![],
@@ -662,15 +687,19 @@ mod tests {
                 result: vec![
                     Bookmark {
                         url: Url::from_str("file:///home/user/example.swf").unwrap(),
+                        name: "example.swf".to_string(),
                     },
                     Bookmark {
                         url: Url::parse(crate::preferences::INVALID_URL).unwrap(),
+                        name: "".to_string(),
                     },
                     Bookmark {
                         url: Url::parse(crate::preferences::INVALID_URL).unwrap(),
+                        name: "".to_string(),
                     },
                     Bookmark {
                         url: Url::from_str("https://ruffle.rs/logo-anim.swf").unwrap(),
+                        name: "logo-anim.swf".to_string(),
                     }
                 ],
 

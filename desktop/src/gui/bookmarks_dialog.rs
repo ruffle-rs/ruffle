@@ -1,13 +1,13 @@
 use crate::gui::text;
 use crate::gui::widgets::PathOrUrlField;
 use crate::preferences::GlobalPreferences;
-use crate::util::url_to_readable_name;
 use egui::{Align2, Grid, Label, Sense, Ui, Window};
 use egui_extras::{Column, TableBuilder};
 use unic_langid::LanguageIdentifier;
 
 struct SelectedBookmark {
     index: usize,
+    name: String,
     url: PathOrUrlField,
 }
 
@@ -94,11 +94,7 @@ impl BookmarksDialog {
                             }
 
                             row.col(|ui| {
-                                ui.add(
-                                    Label::new(url_to_readable_name(&bookmark.url))
-                                        .selectable(false)
-                                        .wrap(false),
-                                );
+                                ui.add(Label::new(&bookmark.name).selectable(false).wrap(false));
                             });
                             row.col(|ui| {
                                 ui.add(
@@ -119,6 +115,7 @@ impl BookmarksDialog {
                                 self.selected_bookmark = Some(SelectedBookmark {
                                     index,
                                     // TODO: set hint
+                                    name: bookmark.name.clone(),
                                     url: PathOrUrlField::new(Some(bookmark.url.clone()), ""),
                                 });
                             }
@@ -145,11 +142,22 @@ impl BookmarksDialog {
             Grid::new("bookmarks-dialog-panel-grid")
                 .num_columns(2)
                 .show(ui, |ui| {
+                    ui.label(text(locale, "bookmarks-dialog-name"));
+                    if ui.text_edit_singleline(&mut bookmark.name).lost_focus() {
+                        if let Err(e) = self.preferences.write_bookmarks(|writer| {
+                            writer.set_name(bookmark.index, bookmark.name.clone());
+                        }) {
+                            tracing::warn!("Couldn't update bookmarks: {e}");
+                        }
+                    }
+                    ui.end_row();
+
                     let previous_url = bookmark.url.value().cloned();
 
                     ui.label(text(locale, "bookmarks-dialog-url"));
                     let current_url = bookmark.url.ui(locale, ui).value();
 
+                    // TOOD: Change the UrlOrPathField widget to return a response instead, so we can update when we lose the focus, removes the need to clone every redraw.
                     if previous_url.as_ref() != current_url {
                         if let Some(url) = current_url {
                             if let Err(e) = self.preferences.write_bookmarks(|writer| {
@@ -159,7 +167,6 @@ impl BookmarksDialog {
                             }
                         }
                     }
-
                     ui.end_row();
                 });
         } else {
