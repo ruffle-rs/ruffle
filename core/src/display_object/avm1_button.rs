@@ -430,11 +430,6 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         self.0.tab_index.get().map(|i| i as i64)
     }
 
-    fn is_highlight_enabled(&self) -> bool {
-        // TODO focusrect support
-        true
-    }
-
     fn avm1_unload(&self, context: &mut UpdateContext<'_, 'gc>) {
         let had_focus = self.0.has_focus.get();
         if had_focus {

@@ -1,6 +1,7 @@
 use crate::avm1::Avm1;
 use crate::avm1::Value;
 use crate::context::{RenderContext, UpdateContext};
+use crate::display_object::TInteractiveObject;
 pub use crate::display_object::{
     DisplayObject, TDisplayObject, TDisplayObjectContainer, TextSelection,
 };
@@ -68,7 +69,7 @@ impl<'gc> FocusTracker<'gc> {
             focus.set(focused_element);
 
             // The highlight always follows the focus.
-            self.update_highlight();
+            self.update_highlight(context);
 
             if let Some(old) = old {
                 old.on_focus_changed(context, false, focused_element);
@@ -139,20 +140,23 @@ impl<'gc> FocusTracker<'gc> {
 
         if next.is_some() {
             self.set(next.copied(), context);
-            self.update_highlight();
+            self.update_highlight(context);
         }
     }
 
-    fn update_highlight(&self) {
-        self.0.highlight.replace(self.redraw_highlight());
+    fn update_highlight(&self, context: &mut UpdateContext<'_, 'gc>) {
+        self.0.highlight.replace(self.redraw_highlight(context));
     }
 
-    fn redraw_highlight(&self) -> Highlight {
+    fn redraw_highlight(&self, context: &mut UpdateContext<'_, 'gc>) -> Highlight {
         let Some(focus) = self.get() else {
             return Highlight::Inactive;
         };
 
-        if !focus.is_highlight_enabled() {
+        if !focus
+            .as_interactive()
+            .is_some_and(|o| o.is_highlight_enabled(context))
+        {
             return Highlight::Inactive;
         }
 
