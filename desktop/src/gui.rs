@@ -316,6 +316,7 @@ impl RuffleGui {
                                     // FIXME: if spoof url is used, the URL here is incorrect (fun fact, its also incorrect in the debug tools).
                                     match Url::from_str(player.swf().url()) {
                                         Ok(url) => writer.add(crate::preferences::Bookmark {
+                                            name: crate::util::url_to_readable_name(&url).into_owned(),
                                             url,
                                         }),
                                         Err(e) => tracing::warn!("Failed to parse SWF url for bookmark: {e}"),
@@ -336,7 +337,7 @@ impl RuffleGui {
                         ui.separator();
                         self.preferences.bookmarks(|bookmarks| {
                             for bookmark in bookmarks.iter().filter(|x| !x.is_invalid()) {
-                                if Button::new(crate::util::url_to_readable_name(&bookmark.url)).ui(ui).clicked() {
+                                if Button::new(&bookmark.name).ui(ui).clicked() {
                                     ui.close_menu();
                                     let _ = self.event_loop.send_event(RuffleEvent::OpenURL(bookmark.url.clone(), Box::new(self.default_player_options.clone())));
                                 }

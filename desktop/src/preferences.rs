@@ -256,6 +256,7 @@ pub static INVALID_URL: &str = "invalid:///";
 #[derive(Debug, PartialEq)]
 pub struct Bookmark {
     pub url: Url,
+    pub name: String,
 }
 
 impl Bookmark {
