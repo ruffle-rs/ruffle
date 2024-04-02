@@ -68,6 +68,12 @@ bitflags! {
         const HAS_LAZY_NAME = 1 << 1;
         /// Whether this was a 'MultinameA' - used for XML attribute lookups
         const ATTRIBUTE = 1 << 2;
+
+        /// Represents the XML concept of "qualified name".
+        /// This also distinguishes a QName(x, y) from Multiname(x, [y])
+        /// Basically, marks multinames that come from multinames of kind `(RT)QName(L)(A)`
+        ///   (and dynamically-generated multinames that are supposed to be equivalent to one).
+        const IS_QNAME = 1 << 3;
     }
 }
 
@@ -119,6 +125,15 @@ impl<'gc> Multiname<'gc> {
 
     pub fn set_is_attribute(&mut self, is_attribute: bool) {
         self.flags.set(MultinameFlags::ATTRIBUTE, is_attribute);
+    }
+
+    #[inline(always)]
+    pub fn is_qname(&self) -> bool {
+        self.flags.contains(MultinameFlags::IS_QNAME)
+    }
+
+    pub fn set_is_qname(&mut self, is_qname: bool) {
+        self.flags.set(MultinameFlags::IS_QNAME, is_qname);
     }
 
     /// Read a namespace set from the ABC constant pool, and return a list of
@@ -175,7 +190,7 @@ impl<'gc> Multiname<'gc> {
                         .pool_string_option(name.0, &mut context.borrow_gc())?
                         .map(|v| v.into()),
                     param: None,
-                    flags: Default::default(),
+                    flags: MultinameFlags::IS_QNAME,
                 }
             }
             AbcMultiname::RTQName { name } | AbcMultiname::RTQNameA { name } => Self {
@@ -184,13 +199,15 @@ impl<'gc> Multiname<'gc> {
                     .pool_string_option(name.0, &mut context.borrow_gc())?
                     .map(|v| v.into()),
                 param: None,
-                flags: MultinameFlags::HAS_LAZY_NS,
+                flags: MultinameFlags::HAS_LAZY_NS | MultinameFlags::IS_QNAME,
             },
             AbcMultiname::RTQNameL | AbcMultiname::RTQNameLA => Self {
                 ns: NamespaceSet::multiple(vec![], mc),
                 name: None,
                 param: None,
-                flags: MultinameFlags::HAS_LAZY_NS | MultinameFlags::HAS_LAZY_NAME,
+                flags: MultinameFlags::HAS_LAZY_NS
+                    | MultinameFlags::HAS_LAZY_NAME
+                    | MultinameFlags::IS_QNAME,
             },
             AbcMultiname::Multiname {
                 namespace_set,
@@ -287,7 +304,7 @@ impl<'gc> Multiname<'gc> {
             ns,
             name,
             param: self.param,
-            flags: self.flags & MultinameFlags::ATTRIBUTE,
+            flags: self.flags & (MultinameFlags::ATTRIBUTE | MultinameFlags::IS_QNAME),
         })
     }
 
