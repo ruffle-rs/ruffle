@@ -8,7 +8,7 @@ use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::avm_warn;
 use crate::context::UpdateContext;
 use crate::display_object::{
-    DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer,
+    DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
 };
 use crate::string::{AvmString, WStr};
 use crate::types::Percent;
@@ -738,17 +738,56 @@ fn set_high_quality<'gc>(
     Ok(())
 }
 
-fn focus_rect<'gc>(activation: &mut Activation<'_, 'gc>, _this: DisplayObject<'gc>) -> Value<'gc> {
-    avm_warn!(activation, "Unimplemented property _focusrect");
-    Value::Null
+fn refers_to_stage_focus_rect<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: DisplayObject<'gc>,
+) -> bool {
+    activation.swf_version() <= 5 || this.parent().is_some_and(|p| p.as_stage().is_some())
+}
+
+fn focus_rect<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
+    if refers_to_stage_focus_rect(activation, this) {
+        let val = activation.context.stage.stage_focus_rect();
+        if activation.swf_version() <= 5 {
+            Value::Number(if val { 1.0 } else { 0.0 })
+        } else {
+            Value::Bool(val)
+        }
+    } else if let Some(obj) = this.as_interactive() {
+        match obj.focus_rect() {
+            Some(val) => Value::Bool(val),
+            None => Value::Null,
+        }
+    } else {
+        Value::Undefined
+    }
 }
 
 fn set_focus_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: DisplayObject<'gc>,
-    _val: Value<'gc>,
+    this: DisplayObject<'gc>,
+    val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    avm_warn!(activation, "Unimplemented property _focusrect");
+    if refers_to_stage_focus_rect(activation, this) {
+        let val = match val {
+            Value::Undefined | Value::Null => {
+                // undefined & null are ignored
+                return Ok(());
+            }
+            Value::Object(_) => false,
+            _ => val.coerce_to_f64(activation)? != 0.0,
+        };
+        activation
+            .context
+            .stage
+            .set_stage_focus_rect(activation.context.gc(), val);
+    } else if let Some(obj) = this.as_interactive() {
+        let val = match val {
+            Value::Undefined | Value::Null => None,
+            _ => Some(val.as_bool(activation.swf_version())),
+        };
+        obj.set_focus_rect(activation.context.gc(), val);
+    }
     Ok(())
 }
 
