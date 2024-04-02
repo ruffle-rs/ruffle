@@ -284,8 +284,6 @@ pub fn set_scale_mode<'gc>(
 }
 
 /// Implement `stageFocusRect`'s getter
-///
-/// This setting is currently ignored in Ruffle.
 pub fn get_stage_focus_rect<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -299,8 +297,6 @@ pub fn get_stage_focus_rect<'gc>(
 }
 
 /// Implement `stageFocusRect`'s setter
-///
-/// This setting is currently ignored in Ruffle.
 pub fn set_stage_focus_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
