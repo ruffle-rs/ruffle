@@ -20,10 +20,13 @@ Ruffle is an Adobe Flash Player emulator written in the Rust programming languag
 * [Project status](#project-status)
 * [Using Ruffle](#using-ruffle)
 * [Building from source](#building-from-source)
+  * [Prerequisites](#prerequisites)
+  * [Linux prerequisites](#linux-prerequisites)
   * [Desktop](#desktop)
-  * [Ubuntu](#ubuntu)
-* [Homebrew](#homebrew)
+    * [Build](#build)
+    * [macOS](#macos)
   * [Web or Extension](#web-or-extension)
+  * [Android](#android)
   * [Scanner](#scanner)
   * [Exporter](#exporter)
 * [Structure](#structure)
@@ -38,22 +41,22 @@ Ruffle supports ActionScript 1, 2 and 3 pretty well, but it's still not finished
 
 ## Using Ruffle
 
-The easiest way to try out Ruffle is to visit the [web demo page](https://ruffle.rs/demo/), then click the "Browse..." button to load an SWF file of your choice.
+The easiest way to try out Ruffle is to visit the [web demo page](https://ruffle.rs/demo/), then click the "Select File" button to load a SWF file of your choice.
 
-[Nightly builds](https://ruffle.rs/#releases) of Ruffle are available for desktop and web platforms including the browser extension.
+[Nightly builds](https://ruffle.rs/downloads#nightly-releases) of Ruffle are available for desktop and web platforms.
 
 For more detailed instructions, see our [wiki page](https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle).
 
 ## Building from source
 
-[Follow the official guide](https://www.rust-lang.org/tools/install) to install Rust for your platform.
+### Prerequisites
 
-You must also have Java installed, and available on your PATH as `java`.
+* Latest stable channel of [Rust](https://www.rust-lang.org/tools/install)
+* Java, available on your PATH as `java` (required for building the library containing the builtin Flash classes for ActionScript 3)
 
-### Desktop
+### Linux prerequisites
 
-If you are building for a Linux platform, the following are typical dependencies:
-#### Ubuntu
+The following are typical dependencies for Linux:
 
 * libasound2-dev
 * libxcb-shape0-dev
@@ -68,6 +71,9 @@ If you are building for a Linux platform, the following are typical dependencies
 * cmake
 * g++
 
+### Desktop
+
+#### Build
 
 Use the following command to build and run the desktop app:
 
@@ -79,9 +85,9 @@ To run a specific SWF file, pass the SWF path as an argument:
 
 To build in debug mode, simply omit `--release` from the command.
 
-## Homebrew
+#### macOS
 
-Ruffle Desktop can be built from our [Homebrew Tap](https://github.com/ruffle-rs/homebrew-ruffle/):
+Ruffle desktop can be built from our [Homebrew Tap](https://github.com/ruffle-rs/homebrew-ruffle/):
 
 `brew install --HEAD ruffle-rs/ruffle/ruffle`
 
@@ -94,17 +100,21 @@ either the web or browser extension version of Ruffle.
 
 This project is tested with BrowserStack.
 
+### Android
+
+Follow the [instructions](https://github.com/ruffle-rs/ruffle-android/blob/main/CONTRIBUTING.md#building-from-source) in the `ruffle-android` project for building the Android application of Ruffle.
+
 ### Scanner
 
 If you have a collection of "real world" SWFs to test against, the scanner may be used to benchmark
 ruffle's parsing capabilities. Provided with a folder and an output filename, it will attempt to read
-all of the flash files and report on the success of such a task.
+all of the Flash files and report on the success of such a task.
 
 `cargo run --release --package=ruffle_scanner -- folder/with/swfs/ results.csv`
 
 ### Exporter
 
-If you have a swf and would like to capture an image of it, you may use the exporter tool.
+If you have a SWF file and would like to capture an image of it, you may use the exporter tool.
 This currently requires hardware acceleration, but can be run headless (with no window).
 
 - `cargo run --release --package=exporter -- path/to/file.swf`
@@ -112,11 +122,16 @@ This currently requires hardware acceleration, but can be run headless (with no 
 
 ## Structure
 
-- `core` contains the core emulator and common code
-- `desktop` contains the desktop client (uses `wgpu-rs`)
-- [`web`](web) contains the web client and browser extension (uses `wasm-bindgen`)
-- `scanner` contains a utility to bulk parse swf files
-- `exporter` contains a utility to generate PNG screenshots of a swf file
+- `core` - core emulator and common code
+- `swf` - SWF and ActionScript parser
+- `desktop` - desktop client (uses `wgpu-rs`)
+- `web` - web client and browser extension (uses `wasm-bindgen`)
+- `render` - various rendering backends for both desktop and web
+- `video` - video decoding backends
+- `flv` - Flash Video decoder
+- `wstr` - a Flash-compatible implementation of strings
+- `scanner` - a utility to bulk parse SWF files
+- `exporter` - a utility to generate PNG screenshots of a SWF file
 
 ## Sponsors
 
