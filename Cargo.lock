@@ -4259,6 +4259,7 @@ dependencies = [
  "os_info",
  "rfd",
  "ruffle_core",
+ "ruffle_frontend_utils",
  "ruffle_render",
  "ruffle_render_wgpu",
  "ruffle_video_software",
@@ -4278,6 +4279,13 @@ dependencies = [
  "wgpu",
  "winapi",
  "winit",
+]
+
+[[package]]
+name = "ruffle_frontend_utils"
+version = "0.1.0"
+dependencies = [
+ "toml_edit 0.22.9",
 ]
 
 [[package]]

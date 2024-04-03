@@ -1,0 +1,14 @@
+[package]
+name = "ruffle_frontend_utils"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+toml_edit = { version = "0.22.9", features = ["parse"] }
