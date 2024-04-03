@@ -1,114 +1,149 @@
 use crate::log::FilenamePattern;
 use crate::preferences::storage::StorageBackend;
-use crate::preferences::{Bookmark, BookmarksAndDocument, PreferencesAndDocument};
+use crate::preferences::{Bookmark, SavedGlobalPreferences};
+use ruffle_frontend_utils::parse::DocumentHolder;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
-use toml_edit::{array, value, ArrayOfTables, Table};
+use toml_edit::{array, value, ArrayOfTables, DocumentMut, Table};
 use unic_langid::LanguageIdentifier;
 
-pub struct PreferencesWriter<'a>(&'a mut PreferencesAndDocument);
+pub struct PreferencesWriter<'a>(&'a mut DocumentHolder<SavedGlobalPreferences>);
 
 impl<'a> PreferencesWriter<'a> {
-    pub(super) fn new(preferences: &'a mut PreferencesAndDocument) -> Self {
+    pub(super) fn new(preferences: &'a mut DocumentHolder<SavedGlobalPreferences>) -> Self {
         Self(preferences)
     }
 
     pub fn set_graphics_backend(&mut self, backend: GraphicsBackend) {
-        self.0.toml_document["graphics_backend"] = value(backend.as_str());
-        self.0.values.graphics_backend = backend;
+        self.0.edit(|values, toml_document| {
+            toml_document["graphics_backend"] = value(backend.as_str());
+            values.graphics_backend = backend;
+        })
     }
 
     pub fn set_graphics_power_preference(&mut self, preference: PowerPreference) {
-        self.0.toml_document["graphics_power_preference"] = value(preference.as_str());
-        self.0.values.graphics_power_preference = preference;
+        self.0.edit(|values, toml_document| {
+            toml_document["graphics_power_preference"] = value(preference.as_str());
+            values.graphics_power_preference = preference;
+        })
     }
 
     pub fn set_language(&mut self, language: LanguageIdentifier) {
-        self.0.toml_document["language"] = value(language.to_string());
-        self.0.values.language = language;
+        self.0.edit(|values, toml_document| {
+            toml_document["language"] = value(language.to_string());
+            values.language = language;
+        })
     }
 
     pub fn set_output_device(&mut self, name: Option<String>) {
-        if let Some(name) = &name {
-            self.0.toml_document["output_device"] = value(name);
-        } else {
-            self.0.toml_document.remove("output_device");
-        }
-        self.0.values.output_device = name;
+        self.0.edit(|values, toml_document| {
+            if let Some(name) = &name {
+                toml_document["output_device"] = value(name);
+            } else {
+                toml_document.remove("output_device");
+            }
+            values.output_device = name;
+        })
     }
 
     pub fn set_mute(&mut self, mute: bool) {
-        self.0.toml_document["mute"] = value(mute);
-        self.0.values.mute = mute;
+        self.0.edit(|values, toml_document| {
+            toml_document["mute"] = value(mute);
+            values.mute = mute;
+        })
     }
 
     pub fn set_volume(&mut self, volume: f32) {
-        self.0.toml_document["volume"] = value(volume as f64);
-        self.0.values.volume = volume;
+        self.0.edit(|values, toml_document| {
+            toml_document["volume"] = value(volume as f64);
+            values.volume = volume;
+        })
     }
 
     pub fn set_log_filename_pattern(&mut self, pattern: FilenamePattern) {
-        self.0.toml_document["log"]["filename_pattern"] = value(pattern.as_str());
-        self.0.values.log.filename_pattern = pattern;
+        self.0.edit(|values, toml_document| {
+            toml_document["log"]["filename_pattern"] = value(pattern.as_str());
+            values.log.filename_pattern = pattern;
+        })
     }
 
     pub fn set_storage_backend(&mut self, backend: StorageBackend) {
-        self.0.toml_document["storage"]["backend"] = value(backend.as_str());
-        self.0.values.storage.backend = backend;
+        self.0.edit(|values, toml_document| {
+            toml_document["storage"]["backend"] = value(backend.as_str());
+            values.storage.backend = backend;
+        })
     }
 }
 
-pub struct BookmarksWriter<'a>(&'a mut BookmarksAndDocument);
+pub struct BookmarksWriter<'a>(&'a mut DocumentHolder<Vec<Bookmark>>);
 
 impl<'a> BookmarksWriter<'a> {
-    pub(super) fn new(bookmarks: &'a mut BookmarksAndDocument) -> Self {
+    pub(super) fn new(bookmarks: &'a mut DocumentHolder<Vec<Bookmark>>) -> Self {
         Self(bookmarks)
     }
 
-    fn bookmark_table(&mut self, index: usize) -> &mut Table {
-        self.get_underlying_table()
-            .get_mut(index)
-            .expect("invalid bookmark index")
-    }
+    fn with_underlying_table(&mut self, fun: impl FnOnce(&mut Vec<Bookmark>, &mut ArrayOfTables)) {
+        fn find_table(toml_document: &mut DocumentMut) -> &mut ArrayOfTables {
+            if toml_document.contains_array_of_tables("bookmark") {
+                return toml_document["bookmark"]
+                    .as_array_of_tables_mut()
+                    .expect("type was just verified");
+            }
 
-    fn get_underlying_table(&mut self) -> &mut ArrayOfTables {
-        if self.0.toml_document.contains_array_of_tables("bookmark") {
-            return self.0.toml_document["bookmark"]
+            tracing::warn!("missing or invalid bookmark array, recreating..");
+            toml_document.insert("bookmark", array());
+            toml_document["bookmark"]
                 .as_array_of_tables_mut()
-                .expect("type was just verified");
+                .expect("type was just created")
         }
 
-        tracing::warn!("missing or invalid bookmark array, recreating..");
-        self.0.toml_document.insert("bookmark", array());
-        self.0.toml_document["bookmark"]
-            .as_array_of_tables_mut()
-            .expect("type was just created")
+        self.0.edit(|values, toml_document| {
+            let table = find_table(toml_document);
+            fun(values, table)
+        })
+    }
+
+    fn with_bookmark_table(
+        &mut self,
+        index: usize,
+        fun: impl FnOnce(&mut Vec<Bookmark>, &mut Table),
+    ) {
+        self.with_underlying_table(|values, array_of_tables| {
+            let table = array_of_tables
+                .get_mut(index)
+                .expect("invalid bookmark index");
+            fun(values, table)
+        })
     }
 
     pub fn add(&mut self, bookmark: Bookmark) {
-        let table = self.get_underlying_table();
-        let mut bookmark_table = Table::new();
-        bookmark_table["url"] = value(bookmark.url.to_string());
-        bookmark_table["name"] = value(&bookmark.name);
-        table.push(bookmark_table);
-        self.0.values.push(bookmark);
+        self.with_underlying_table(|values, table| {
+            let mut bookmark_table = Table::new();
+            bookmark_table["url"] = value(bookmark.url.to_string());
+            bookmark_table["name"] = value(&bookmark.name);
+            table.push(bookmark_table);
+            values.push(bookmark);
+        })
     }
 
     pub fn set_url(&mut self, index: usize, url: url::Url) {
-        let table = self.bookmark_table(index);
-        table["url"] = value(url.as_str());
-        self.0.values[index].url = url;
+        self.with_bookmark_table(index, |values, table| {
+            table["url"] = value(url.as_str());
+            values[index].url = url;
+        })
     }
 
     pub fn set_name(&mut self, index: usize, name: String) {
-        let table = self.bookmark_table(index);
-        table["name"] = value(&name);
-        self.0.values[index].name = name;
+        self.with_bookmark_table(index, |values, table| {
+            table["name"] = value(&name);
+            values[index].name = name;
+        })
     }
 
     pub fn remove(&mut self, index: usize) {
-        let table = self.get_underlying_table();
-        table.remove(index);
-        self.0.values.remove(index);
+        self.with_underlying_table(|values, table| {
+            table.remove(index);
+            values.remove(index);
+        })
     }
 }
 
@@ -116,21 +151,20 @@ impl<'a> BookmarksWriter<'a> {
 mod tests {
     use super::*;
     use fluent_templates::loader::langid;
+    use std::ops::Deref;
 
     macro_rules! define_serialization_test_helpers {
-        ($read_method:ident, $doc_struct:ident, $writer:ident) => {
-            fn parse(input: &str) -> $doc_struct {
+        ($read_method:ident, $doc_struct:ty, $writer:ident) => {
+            fn parse(input: &str) -> DocumentHolder<$doc_struct> {
                 let (result, document) = $read_method(input);
-                $doc_struct {
-                    toml_document: document,
-                    values: result.result,
-                }
+                DocumentHolder::new(result.result, document)
             }
 
-            fn check_roundtrip(preferences: &mut $doc_struct) {
-                let read_result = $read_method(&preferences.toml_document.to_string());
+            fn check_roundtrip(preferences: &DocumentHolder<$doc_struct>) {
+                let read_result = $read_method(&preferences.serialize());
                 assert_eq!(
-                    preferences.values, read_result.0.result,
+                    *preferences.deref(),
+                    read_result.0.result,
                     "roundtrip failed: expected != actual"
                 );
             }
@@ -139,8 +173,8 @@ mod tests {
                 let mut preferences = parse(original);
                 let mut writer = $writer::new(&mut preferences);
                 fun(&mut writer);
-                check_roundtrip(&mut preferences);
-                assert_eq!(expected, preferences.toml_document.to_string());
+                check_roundtrip(&preferences);
+                assert_eq!(expected, preferences.serialize());
             }
         };
     }
@@ -151,7 +185,7 @@ mod tests {
 
         define_serialization_test_helpers!(
             read_preferences,
-            PreferencesAndDocument,
+            SavedGlobalPreferences,
             PreferencesWriter
         );
 
@@ -276,7 +310,7 @@ mod tests {
         use std::str::FromStr;
         use url::Url;
 
-        define_serialization_test_helpers!(read_bookmarks, BookmarksAndDocument, BookmarksWriter);
+        define_serialization_test_helpers!(read_bookmarks, Vec<Bookmark>, BookmarksWriter);
 
         #[test]
         fn add_bookmark() {
