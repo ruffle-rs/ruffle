@@ -73,6 +73,8 @@ bitflags! {
         /// This also distinguishes a QName(x, y) from Multiname(x, [y])
         /// Basically, marks multinames that come from multinames of kind `(RT)QName(L)(A)`
         ///   (and dynamically-generated multinames that are supposed to be equivalent to one).
+        /// TODO: There are places (getQName()) where FP sets this where we don't have a direct equivalent,
+        /// these should probably be audited eventually
         const IS_QNAME = 1 << 3;
     }
 }
