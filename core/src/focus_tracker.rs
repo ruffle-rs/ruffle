@@ -47,6 +47,10 @@ impl<'gc> FocusTracker<'gc> {
         ))
     }
 
+    pub fn is_highlight_active(&self) -> bool {
+        matches!(*self.0.highlight.borrow(), Highlight::Active(_))
+    }
+
     pub fn reset_highlight(&self) {
         self.0.highlight.replace(Highlight::Inactive);
     }
@@ -143,7 +147,7 @@ impl<'gc> FocusTracker<'gc> {
         }
     }
 
-    fn update_highlight(&self, context: &mut UpdateContext<'_, 'gc>) {
+    pub fn update_highlight(&self, context: &mut UpdateContext<'_, 'gc>) {
         self.0.highlight.replace(self.redraw_highlight(context));
     }
 
