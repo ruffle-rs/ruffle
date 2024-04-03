@@ -10,15 +10,10 @@ use swf::avm2::types::{Index, Multiname as AbcMultiname};
 use super::api_version::ApiVersion;
 use super::Multiname;
 
-/// A `QName`, likely "qualified name", consists of a namespace and name string.
-///
-/// This is technically interchangeable with `xml::XMLName`, as they both
-/// implement `QName`; however, AVM2 and XML have separate representations.
-///
-/// A property cannot be retrieved or set without first being resolved into a
-/// `QName`. All other forms of names and multinames are either versions of
-/// `QName` with unspecified parameters, or multiple names to be checked in
-/// order.
+/// Qualified name.
+/// NOTE: this struct doesn't actually directly correspond to an AVM2 QName concept.
+/// Currently, we mostly use this struct simply to wrap a name+namespace pair,
+/// and try to reduce its future use if possible.
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
 pub struct QName<'gc> {
