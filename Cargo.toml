@@ -12,6 +12,8 @@ members = [
     "scanner",
     "exporter",
 
+    "frontend-utils",
+
     "render",
     "render/canvas",
     "render/naga-agal",
