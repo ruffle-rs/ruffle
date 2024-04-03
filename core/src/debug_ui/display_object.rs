@@ -10,7 +10,7 @@ use crate::debug_ui::handle::{AVM1ObjectHandle, AVM2ObjectHandle, DisplayObjectH
 use crate::debug_ui::movie::open_movie_button;
 use crate::debug_ui::Message;
 use crate::display_object::{
-    DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer,
+    DisplayObject, EditText, MovieClip, Stage, TDisplayObject, TDisplayObjectContainer,
 };
 use egui::collapsing_header::CollapsingState;
 use egui::{Button, Checkbox, CollapsingHeader, ComboBox, Grid, Id, TextEdit, Ui, Widget, Window};
@@ -148,6 +148,8 @@ impl DisplayObjectWindow {
                             self.show_movieclip(ui, context, object)
                         } else if let DisplayObject::EditText(object) = object {
                             self.show_edit_text(ui, object)
+                        } else if let DisplayObject::Stage(object) = object {
+                            self.show_stage(ui, context, object, messages)
                         }
                     }
                 }
@@ -323,6 +325,47 @@ impl DisplayObjectWindow {
                             ui.end_row();
                         }
                     });
+            });
+    }
+
+    pub fn show_stage<'gc>(
+        &mut self,
+        ui: &mut Ui,
+        context: &mut UpdateContext<'_, 'gc>,
+        object: Stage<'gc>,
+        messages: &mut Vec<Message>,
+    ) {
+        Grid::new(ui.id().with("stage"))
+            .num_columns(2)
+            .show(ui, |ui| {
+                let focus = object.focus_tracker().get();
+                ui.label("Current Focus");
+                if let Some(focus) = focus {
+                    if ui.button(summary_name(focus)).clicked() {
+                        messages.push(Message::TrackDisplayObject(DisplayObjectHandle::new(
+                            context, focus,
+                        )));
+                    }
+                } else {
+                    ui.label("None");
+                }
+                ui.end_row();
+
+                let highlight = object.focus_tracker().is_highlight_active();
+                let highlight_enabled = focus.is_some_and(|o| o.is_highlightable(context));
+                ui.label("Focus Highlight");
+                ui.add_enabled_ui(highlight_enabled, |ui| {
+                    let mut enabled = highlight;
+                    Checkbox::new(&mut enabled, "Enabled").ui(ui);
+                    if enabled != highlight {
+                        if enabled {
+                            object.focus_tracker().update_highlight(context);
+                        } else {
+                            object.focus_tracker().reset_highlight();
+                        }
+                    }
+                });
+                ui.end_row();
             });
     }
 
@@ -727,7 +770,7 @@ fn summary_color_transform_entry(name: &str, mult: Fixed8, add: i16) -> Option<S
 fn has_type_specific_tab(object: DisplayObject) -> bool {
     matches!(
         object,
-        DisplayObject::MovieClip(_) | DisplayObject::EditText(_)
+        DisplayObject::MovieClip(_) | DisplayObject::EditText(_) | DisplayObject::Stage(_)
     )
 }
 
