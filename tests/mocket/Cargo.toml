@@ -11,7 +11,7 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-anyhow = "1.0.81"
+anyhow = { workspace = true }
 clap = { version = "4.5.4", features = ["derive"] }
 tracing = { workspace = true}
 tracing-subscriber = { workspace = true }
