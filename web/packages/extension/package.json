@@ -15,7 +15,7 @@
         "ruffle-core": "^0.1.0"
     },
     "devDependencies": {
-        "@tsconfig/strictest": "^2.0.3",
+        "@tsconfig/strictest": "^2.0.5",
         "@types/archiver": "^6.0.2",
         "@types/chrome": "^0.0.263",
         "@types/common-tags": "^1.8.4",
@@ -24,7 +24,7 @@
         "archiver": "^7.0.1",
         "json5": "^2.2.3",
         "ts-loader": "^9.5.1",
-        "typescript": "^5.4.2",
+        "typescript": "^5.4.4",
         "webpack-cli": "^5.1.4",
         "axios": "^1.6.8",
         "form-data": "^4.0.0",
