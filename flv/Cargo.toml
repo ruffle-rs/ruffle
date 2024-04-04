@@ -7,4 +7,4 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 bitflags = { workspace = true }
-thiserror = "1.0"
+thiserror = { workspace = true }

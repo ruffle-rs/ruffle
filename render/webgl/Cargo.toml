@@ -18,7 +18,7 @@ ruffle_render = { path = "..", features = ["tessellator", "web"] }
 wasm-bindgen = "=0.2.92"
 bytemuck = { workspace = true, features = ["derive"] }
 swf = { path = "../../swf" }
-thiserror = "1.0"
+thiserror = { workspace = true }
 
 [dependencies.web-sys]
 version = "0.3.69"
