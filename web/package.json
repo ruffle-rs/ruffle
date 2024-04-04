@@ -15,7 +15,7 @@
         "@wdio/mocha-framework": "^8.35.0",
         "@wdio/spec-reporter": "^8.32.4",
         "@wdio/static-server-service": "^8.32.4",
-        "chai": "^4.4.1",
+        "chai": "^5.1.0",
         "chai-html": "^2.1.0",
         "copy-webpack-plugin": "^12.0.2",
         "cross-env": "^7.0.3",
