@@ -1,5 +1,5 @@
-const path = require("path");
-const { expect } = require("chai");
+import path from "path";
+import { expect } from "chai";
 
 async function isRuffleLoaded(browser) {
     return await browser.execute(
@@ -151,7 +151,7 @@ function jsApiBefore(swf) {
     });
 }
 
-module.exports = {
+export {
     isRuffleLoaded,
     waitForRuffle,
     playAndMonitor,

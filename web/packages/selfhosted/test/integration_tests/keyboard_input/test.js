@@ -1,7 +1,7 @@
-const { jsApiBefore, getTraceOutput } = require("../../utils");
-const { use, expect } = require("chai");
-const chaiHtml = require("chai-html");
-const { Key } = require("webdriverio");
+import { jsApiBefore, getTraceOutput } from "../../utils.js";
+import { use, expect } from "chai";
+import chaiHtml from "chai-html";
+import { Key } from "webdriverio";
 
 use(chaiHtml);
 
