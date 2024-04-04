@@ -8,7 +8,7 @@ use crate::avm2::error::{
     make_error_1127, make_error_1506, make_null_or_undefined_error, make_reference_error,
     type_error, ReferenceErrorCode,
 };
-use crate::avm2::method::{BytecodeMethod, Method, ParamConfig};
+use crate::avm2::method::{BytecodeMethod, Method, ResolvedParamConfig};
 use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
     XmlListObject,
@@ -26,7 +26,6 @@ use crate::string::{AvmAtom, AvmString};
 use crate::tag_utils::SwfMovie;
 use gc_arena::{Gc, GcCell};
 use smallvec::SmallVec;
-use std::borrow::Cow;
 use std::cmp::{min, Ordering};
 use std::sync::Arc;
 use swf::avm2::types::{
@@ -258,7 +257,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             None
         };
 
-        Ok(Self {
+        let mut created_activation = Self {
             ip: 0,
             actions_since_timeout_check: 0,
             local_registers,
@@ -272,7 +271,16 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             max_stack_size: max_stack as usize,
             max_scope_size: max_scope as usize,
             context,
-        })
+        };
+
+        // Run verifier for bytecode methods
+        if let Method::Bytecode(method) = method {
+            if method.verified_info.read().is_none() {
+                method.verify(&mut created_activation)?;
+            }
+        }
+
+        Ok(created_activation)
     }
 
     /// Finds an object on either the current or outer scope of this activation by definition.
@@ -337,15 +345,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self,
         method: Method<'gc>,
         value: Option<&Value<'gc>>,
-        param_config: &ParamConfig<'gc>,
+        param_config: &ResolvedParamConfig<'gc>,
         user_arguments: &[Value<'gc>],
         callee: Option<Object<'gc>>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let arg = if let Some(value) = value {
-            Cow::Borrowed(value)
-        } else if let Some(default) = &param_config.default_value {
-            Cow::Borrowed(default)
-        } else if param_config.param_type_name.is_any_name() {
+            value
+        } else if let Some(default_value) = &param_config.default_value {
+            default_value
+        } else if param_config.param_type.is_none() {
+            // TODO: FP's system of allowing missing arguments
+            // is a more complicated than this.
             return Ok(Value::Undefined);
         } else {
             return Err(Error::AvmError(make_mismatch_error(
@@ -356,7 +366,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             )?));
         };
 
-        arg.coerce_to_type_name(self, &param_config.param_type_name)
+        if let Some(param_class) = param_config.param_type {
+            arg.coerce_to_type(self, param_class)
+        } else {
+            Ok(*arg)
+        }
     }
 
     /// Statically resolve all of the parameters for a given method.
@@ -370,7 +384,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self,
         method: Method<'gc>,
         user_arguments: &[Value<'gc>],
-        signature: &[ParamConfig<'gc>],
+        signature: &[ResolvedParamConfig<'gc>],
         callee: Option<Object<'gc>>,
     ) -> Result<Vec<Value<'gc>>, Error<'gc>> {
         let mut arguments_list = Vec::new();
@@ -426,13 +440,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let body = body?;
         let num_locals = body.num_locals;
         let has_rest_or_args = method.is_variadic();
-        let arg_register = if has_rest_or_args { 1 } else { 0 };
-        let signature: &[ParamConfig<'_>] = method.signature();
 
-        let num_declared_arguments = signature.len() as u32;
-
-        let mut local_registers =
-            RegisterSet::new(num_locals + num_declared_arguments + arg_register + 1);
+        let mut local_registers = RegisterSet::new(num_locals + 1);
         *local_registers.get_unchecked_mut(0) = this.into();
 
         let activation_class =
@@ -463,6 +472,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.scope_depth = self.context.avm2.scope_stack.len();
         self.max_stack_size = body.max_stack as usize;
         self.max_scope_size = (body.max_scope_depth - body.init_scope_depth) as usize;
+
+        // Everything is now setup for the verifier to run
+        if method.verified_info.read().is_none() {
+            method.verify(self)?;
+        }
+
+        let verified_info = method.verified_info.read();
+        let signature = &verified_info.as_ref().unwrap().param_config;
 
         if user_arguments.len() > signature.len() && !has_rest_or_args {
             return Err(Error::AvmError(make_mismatch_error(
@@ -525,7 +542,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
             *self
                 .local_registers
-                .get_unchecked_mut(1 + num_declared_arguments) = args_object.into();
+                .get_unchecked_mut(1 + signature.len() as u32) = args_object.into();
         }
 
         Ok(())
@@ -797,9 +814,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if method.verified_info.read().is_none() {
-            method.verify(self)?;
-        }
+        // The method must be verified at this point
 
         let verified_info = method.verified_info.read();
         let verified_code = verified_info.as_ref().unwrap().parsed_code.as_slice();
@@ -1352,7 +1367,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let return_value = self.pop_stack();
-        let coerced = return_value.coerce_to_type_name(self, &method.return_type)?;
+        let return_type = method.resolved_return_type();
+
+        let coerced = if let Some(return_type) = return_type {
+            return_value.coerce_to_type(self, return_type)?
+        } else {
+            return_value
+        };
+
         Ok(FrameControl::Return(coerced))
     }
 

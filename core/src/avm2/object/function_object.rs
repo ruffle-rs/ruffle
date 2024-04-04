@@ -31,6 +31,7 @@ pub fn function_allocator<'gc>(
             method: |_, _, _| Ok(Value::Undefined),
             name: "<Empty Function>",
             signature: vec![],
+            resolved_signature: GcCell::new(activation.context.gc_context, None),
             return_type: Multiname::any(activation.context.gc_context),
             is_variadic: true,
         },

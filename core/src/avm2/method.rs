@@ -1,10 +1,11 @@
 //! AVM2 methods
 
 use crate::avm2::activation::Activation;
+use crate::avm2::class::Class;
 use crate::avm2::object::{ClassObject, Object};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{abc_default_value, Value};
-use crate::avm2::verify::VerifiedMethodInfo;
+use crate::avm2::verify::{resolve_param_config, VerifiedMethodInfo};
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::string::AvmString;
@@ -36,6 +37,21 @@ pub type NativeMethodImpl = for<'gc> fn(
     Object<'gc>,
     &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>>;
+
+/// Configuration of a single parameter of a method,
+/// with the parameter's type resolved.
+#[derive(Clone, Collect, Debug)]
+#[collect(no_drop)]
+pub struct ResolvedParamConfig<'gc> {
+    /// The name of the parameter.
+    pub param_name: AvmString<'gc>,
+
+    /// The type of the parameter.
+    pub param_type: Option<GcCell<'gc, Class<'gc>>>,
+
+    /// The default value for this parameter.
+    pub default_value: Option<Value<'gc>>,
+}
 
 /// Configuration of a single parameter of a method.
 #[derive(Clone, Collect, Debug)]
@@ -238,6 +254,12 @@ impl<'gc> BytecodeMethod<'gc> {
         &self.signature
     }
 
+    pub fn resolved_return_type(&self) -> Option<GcCell<'gc, Class<'gc>>> {
+        let verified_info = self.verified_info.read();
+
+        verified_info.as_ref().unwrap().return_type
+    }
+
     /// Get the name of this method.
     pub fn method_name(&self) -> Cow<'_, str> {
         let name_index = self.method().name.0 as usize;
@@ -319,12 +341,27 @@ pub struct NativeMethod<'gc> {
     /// The parameter signature of the method.
     pub signature: Vec<ParamConfig<'gc>>,
 
+    /// The resolved parameter signature of the method.
+    pub resolved_signature: GcCell<'gc, Option<Vec<ResolvedParamConfig<'gc>>>>,
+
     /// The return type of this method.
     pub return_type: Multiname<'gc>,
 
     /// Whether or not this method accepts parameters beyond those
     /// mentioned in the parameter list.
     pub is_variadic: bool,
+}
+
+impl<'gc> NativeMethod<'gc> {
+    pub fn resolve_signature(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<(), Error<'gc>> {
+        *self.resolved_signature.write(activation.context.gc_context) =
+            Some(resolve_param_config(activation, &self.signature)?);
+
+        Ok(())
+    }
 }
 
 impl<'gc> fmt::Debug for NativeMethod<'gc> {
@@ -372,6 +409,7 @@ impl<'gc> Method<'gc> {
                 method,
                 name,
                 signature,
+                resolved_signature: GcCell::new(mc, None),
                 return_type,
                 is_variadic,
             },
@@ -386,6 +424,7 @@ impl<'gc> Method<'gc> {
                 method,
                 name,
                 signature: Vec::new(),
+                resolved_signature: GcCell::new(mc, None),
                 // FIXME - take in the real return type. This is needed for 'describeType'
                 return_type: Multiname::any(mc),
                 is_variadic: true,

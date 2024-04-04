@@ -3,7 +3,7 @@ use crate::avm2::error::{
     make_error_1014, make_error_1021, make_error_1025, make_error_1032, make_error_1054,
     make_error_1107, verify_error,
 };
-use crate::avm2::method::BytecodeMethod;
+use crate::avm2::method::{BytecodeMethod, ParamConfig, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
 use crate::avm2::op::Op;
 use crate::avm2::script::TranslationUnit;
@@ -24,6 +24,9 @@ pub struct VerifiedMethodInfo<'gc> {
     pub parsed_code: Vec<Op<'gc>>,
 
     pub exceptions: Vec<Exception<'gc>>,
+
+    pub param_config: Vec<ResolvedParamConfig<'gc>>,
+    pub return_type: Option<GcCell<'gc, Class<'gc>>>,
 }
 
 #[derive(Collect)]
@@ -64,8 +67,13 @@ pub fn verify_method<'gc>(
 
     // Ensure there are enough local variables
     // to fit the parameters in.
-    if (max_locals as usize) < param_count + 1 {
+    if (max_locals as usize) < 1 + param_count {
         return Err(make_error_1107(activation));
+    }
+
+    if (max_locals as usize) < 1 + param_count + if method.is_variadic() { 1 } else { 0 } {
+        // This matches FP's error message
+        return Err(make_error_1025(activation, 1 + param_count as u32));
     }
 
     use swf::extensions::ReadSwfExt;
@@ -77,6 +85,9 @@ pub fn verify_method<'gc>(
             1043,
         )?));
     }
+
+    let resolved_param_config = resolve_param_config(activation, method.signature())?;
+    let resolved_return_type = resolve_return_type(activation, &method.return_type)?;
 
     let mut worklist = vec![0];
 
@@ -576,7 +587,73 @@ pub fn verify_method<'gc>(
     Ok(VerifiedMethodInfo {
         parsed_code: verified_code,
         exceptions: new_exceptions,
+        param_config: resolved_param_config,
+        return_type: resolved_return_type,
     })
+}
+
+pub fn resolve_param_config<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    param_config: &[ParamConfig<'gc>],
+) -> Result<Vec<ResolvedParamConfig<'gc>>, Error<'gc>> {
+    let mut resolved_param_config = Vec::new();
+
+    for param in param_config {
+        if param.param_type_name.has_lazy_component() {
+            return Err(make_error_1014(activation, "[]".into()));
+        }
+
+        let resolved_class = if param.param_type_name.is_any_name() {
+            None
+        } else {
+            let lookedup_class = activation
+                .domain()
+                .get_class(&param.param_type_name, activation.context.gc_context)
+                .ok_or_else(|| {
+                    make_error_1014(
+                        activation,
+                        param
+                            .param_type_name
+                            .to_qualified_name(activation.context.gc_context),
+                    )
+                })?;
+
+            Some(lookedup_class)
+        };
+
+        resolved_param_config.push(ResolvedParamConfig {
+            param_name: param.param_name,
+            param_type: resolved_class,
+            default_value: param.default_value,
+        });
+    }
+
+    Ok(resolved_param_config)
+}
+
+fn resolve_return_type<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    return_type: &Multiname<'gc>,
+) -> Result<Option<GcCell<'gc, Class<'gc>>>, Error<'gc>> {
+    if return_type.has_lazy_component() {
+        return Err(make_error_1014(activation, "[]".into()));
+    }
+
+    if return_type.is_any_name() {
+        return Ok(None);
+    }
+
+    Ok(Some(
+        activation
+            .domain()
+            .get_class(return_type, activation.context.gc_context)
+            .ok_or_else(|| {
+                make_error_1014(
+                    activation,
+                    return_type.to_qualified_name(activation.context.gc_context),
+                )
+            })?,
+    ))
 }
 
 // Taken from avmplus's opcodes.tbl
