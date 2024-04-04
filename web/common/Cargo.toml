@@ -11,7 +11,7 @@ workspace = true
 [dependencies]
 js-sys = { workspace = true }
 tracing = { workspace = true }
-wasm-bindgen = "=0.2.92"
+wasm-bindgen = { workspace = true }
 
 [dependencies.web-sys]
 version = "0.3.69"
