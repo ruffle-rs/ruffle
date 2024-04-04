@@ -9,12 +9,12 @@ use crate::preferences::read::{read_bookmarks, read_preferences};
 use crate::preferences::write::{BookmarksWriter, PreferencesWriter};
 use anyhow::{Context, Error};
 use ruffle_core::backend::ui::US_ENGLISH;
+use ruffle_frontend_utils::bookmarks::Bookmarks;
 use ruffle_frontend_utils::parse::DocumentHolder;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::sync::{Arc, Mutex};
 use sys_locale::get_locale;
 use unic_langid::LanguageIdentifier;
-use url::Url;
 
 /// The preferences that relate to the application itself.
 ///
@@ -38,7 +38,7 @@ pub struct GlobalPreferences {
     /// The actual, mutable user preferences that are persisted to disk.
     preferences: Arc<Mutex<DocumentHolder<SavedGlobalPreferences>>>,
 
-    bookmarks: Arc<Mutex<DocumentHolder<Vec<Bookmark>>>>,
+    bookmarks: Arc<Mutex<DocumentHolder<Bookmarks>>>,
 }
 
 impl GlobalPreferences {
@@ -136,7 +136,7 @@ impl GlobalPreferences {
             .filename_pattern
     }
 
-    pub fn bookmarks(&self, fun: impl FnOnce(&Vec<Bookmark>)) {
+    pub fn bookmarks(&self, fun: impl FnOnce(&Bookmarks)) {
         fun(&self.bookmarks.lock().expect("Bookmarks is not reentrant"))
     }
 
@@ -221,18 +221,4 @@ pub struct LogPreferences {
 #[derive(PartialEq, Debug, Default)]
 pub struct StoragePreferences {
     pub backend: storage::StorageBackend,
-}
-
-pub static INVALID_URL: &str = "invalid:///";
-
-#[derive(Debug, PartialEq)]
-pub struct Bookmark {
-    pub url: Url,
-    pub name: String,
-}
-
-impl Bookmark {
-    pub fn is_invalid(&self) -> bool {
-        self.url.as_str() == INVALID_URL
-    }
 }

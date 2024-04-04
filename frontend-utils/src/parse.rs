@@ -101,7 +101,7 @@ impl<T> ParseResult<T> {
 pub struct ParseContext {
     pub warnings: Vec<String>,
     /// Path of the current item being parsed
-    pub path: Vec<&'static str>,
+    path: Vec<&'static str>,
 }
 
 impl ParseContext {

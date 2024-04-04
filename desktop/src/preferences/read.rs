@@ -1,4 +1,5 @@
-use crate::preferences::{Bookmark, SavedGlobalPreferences};
+use crate::preferences::SavedGlobalPreferences;
+use ruffle_frontend_utils::bookmarks::{Bookmark, Bookmarks};
 use ruffle_frontend_utils::parse::{DocumentHolder, ParseContext, ParseResult, ReadExt};
 use std::str::FromStr;
 use toml_edit::DocumentMut;
@@ -68,7 +69,7 @@ pub fn read_preferences(input: &str) -> ParseResult<SavedGlobalPreferences> {
     }
 }
 
-pub fn read_bookmarks(input: &str) -> ParseResult<Vec<Bookmark>> {
+pub fn read_bookmarks(input: &str) -> ParseResult<Bookmarks> {
     let document = match input.parse::<DocumentMut>() {
         Ok(document) => document,
         Err(e) => {
@@ -86,7 +87,7 @@ pub fn read_bookmarks(input: &str) -> ParseResult<Vec<Bookmark>> {
         for bookmark in bookmarks.iter() {
             let url = match bookmark.parse_from_str(cx, "url") {
                 Some(value) => value,
-                None => url::Url::parse(crate::preferences::INVALID_URL)
+                None => url::Url::parse(ruffle_frontend_utils::bookmarks::INVALID_URL)
                     .expect("Url is constant and valid"),
             };
 
@@ -432,7 +433,7 @@ mod tests {
         let result = read_bookmarks("[[bookmark]]");
         assert_eq!(
             &vec![Bookmark {
-                url: Url::parse(crate::preferences::INVALID_URL).unwrap(),
+                url: Url::parse(ruffle_frontend_utils::bookmarks::INVALID_URL).unwrap(),
                 name: "".to_string(),
             }],
             result.values()
@@ -442,7 +443,7 @@ mod tests {
         let result = read_bookmarks("[[bookmark]]\nurl = \"invalid\"");
         assert_eq!(
             &vec![Bookmark {
-                url: Url::parse(crate::preferences::INVALID_URL).unwrap(),
+                url: Url::parse(ruffle_frontend_utils::bookmarks::INVALID_URL).unwrap(),
                 name: "".to_string(),
             }],
             result.values()
@@ -512,11 +513,11 @@ mod tests {
                     name: "example.swf".to_string(),
                 },
                 Bookmark {
-                    url: Url::parse(crate::preferences::INVALID_URL).unwrap(),
+                    url: Url::parse(ruffle_frontend_utils::bookmarks::INVALID_URL).unwrap(),
                     name: "".to_string(),
                 },
                 Bookmark {
-                    url: Url::parse(crate::preferences::INVALID_URL).unwrap(),
+                    url: Url::parse(ruffle_frontend_utils::bookmarks::INVALID_URL).unwrap(),
                     name: "".to_string(),
                 },
                 Bookmark {

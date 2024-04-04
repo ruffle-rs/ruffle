@@ -1,6 +1,7 @@
 use crate::log::FilenamePattern;
 use crate::preferences::storage::StorageBackend;
-use crate::preferences::{Bookmark, SavedGlobalPreferences};
+use crate::preferences::SavedGlobalPreferences;
+use ruffle_frontend_utils::bookmarks::{Bookmark, Bookmarks};
 use ruffle_frontend_utils::parse::DocumentHolder;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use toml_edit::{array, value, ArrayOfTables, DocumentMut, Table};
@@ -74,14 +75,14 @@ impl<'a> PreferencesWriter<'a> {
     }
 }
 
-pub struct BookmarksWriter<'a>(&'a mut DocumentHolder<Vec<Bookmark>>);
+pub struct BookmarksWriter<'a>(&'a mut DocumentHolder<Bookmarks>);
 
 impl<'a> BookmarksWriter<'a> {
-    pub(super) fn new(bookmarks: &'a mut DocumentHolder<Vec<Bookmark>>) -> Self {
+    pub(super) fn new(bookmarks: &'a mut DocumentHolder<Bookmarks>) -> Self {
         Self(bookmarks)
     }
 
-    fn with_underlying_table(&mut self, fun: impl FnOnce(&mut Vec<Bookmark>, &mut ArrayOfTables)) {
+    fn with_underlying_table(&mut self, fun: impl FnOnce(&mut Bookmarks, &mut ArrayOfTables)) {
         fn find_table(toml_document: &mut DocumentMut) -> &mut ArrayOfTables {
             if toml_document.contains_array_of_tables("bookmark") {
                 return toml_document["bookmark"]
@@ -102,11 +103,7 @@ impl<'a> BookmarksWriter<'a> {
         })
     }
 
-    fn with_bookmark_table(
-        &mut self,
-        index: usize,
-        fun: impl FnOnce(&mut Vec<Bookmark>, &mut Table),
-    ) {
+    fn with_bookmark_table(&mut self, index: usize, fun: impl FnOnce(&mut Bookmarks, &mut Table)) {
         self.with_underlying_table(|values, array_of_tables| {
             let table = array_of_tables
                 .get_mut(index)
@@ -305,7 +302,7 @@ mod tests {
         use std::str::FromStr;
         use url::Url;
 
-        define_serialization_test_helpers!(read_bookmarks, Vec<Bookmark>, BookmarksWriter);
+        define_serialization_test_helpers!(read_bookmarks, Bookmarks, BookmarksWriter);
 
         #[test]
         fn add_bookmark() {
