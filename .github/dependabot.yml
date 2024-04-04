@@ -3,7 +3,7 @@ updates:
   - package-ecosystem: "npm"
     allow:
       - dependency-type: "all"
-    directory: "/"
+    directory: "/web/"
     schedule:
       interval: "weekly"
     groups:
