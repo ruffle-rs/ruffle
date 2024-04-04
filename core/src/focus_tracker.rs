@@ -1,7 +1,6 @@
 use crate::avm1::Avm1;
 use crate::avm1::Value;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::TInteractiveObject;
 pub use crate::display_object::{
     DisplayObject, TDisplayObject, TDisplayObjectContainer, TextSelection,
 };
@@ -153,10 +152,7 @@ impl<'gc> FocusTracker<'gc> {
             return Highlight::Inactive;
         };
 
-        if !focus
-            .as_interactive()
-            .is_some_and(|o| o.is_highlight_enabled(context))
-        {
+        if !focus.is_highlightable(context) {
             return Highlight::Inactive;
         }
 
