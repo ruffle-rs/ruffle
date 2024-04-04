@@ -1,8 +1,6 @@
 version: 2
 updates:
   - package-ecosystem: "npm"
-    allow:
-      - dependency-type: "all"
     directory: "/web/"
     schedule:
       interval: "weekly"
@@ -20,8 +18,6 @@ updates:
       interval: "weekly"
 
   - package-ecosystem: "cargo"
-    allow:
-      - dependency-type: "all"
     directory: "/"
     schedule:
       interval: "weekly"
