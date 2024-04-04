@@ -13,7 +13,7 @@ workspace = true
 [dependencies]
 bitflags = { workspace = true }
 naga = { workspace = true }
-num-derive = "0.4.2"
+num-derive = { workspace = true }
 num-traits = "0.2.18"
 
 [dev-dependencies]
