@@ -11,7 +11,7 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-js-sys = "0.3.69"
+js-sys = { workspace = true }
 log = "0.4"
 ruffle_web_common = { path = "../../web/common" }
 wasm-bindgen = "=0.2.92"
