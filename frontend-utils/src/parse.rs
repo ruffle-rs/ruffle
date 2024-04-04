@@ -73,12 +73,12 @@ impl<T> DocumentHolder<T> {
     }
 }
 
-pub struct ParseResult<T> {
+pub struct ParseDetails<T> {
     pub result: DocumentHolder<T>,
     pub warnings: Vec<String>,
 }
 
-impl<T: fmt::Debug> fmt::Debug for ParseResult<T> {
+impl<T: fmt::Debug> fmt::Debug for ParseDetails<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.debug_struct("ParseResult")
             .field("result", &self.result)
@@ -87,7 +87,7 @@ impl<T: fmt::Debug> fmt::Debug for ParseResult<T> {
     }
 }
 
-impl<T> ParseResult<T> {
+impl<T> ParseDetails<T> {
     pub fn add_warning(&mut self, message: String) {
         self.warnings.push(message);
     }

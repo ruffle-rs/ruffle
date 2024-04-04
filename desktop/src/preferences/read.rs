@@ -1,6 +1,6 @@
 use crate::preferences::SavedGlobalPreferences;
 use ruffle_frontend_utils::bookmarks::{Bookmark, Bookmarks};
-use ruffle_frontend_utils::parse::{DocumentHolder, ParseContext, ParseResult, ReadExt};
+use ruffle_frontend_utils::parse::{DocumentHolder, ParseContext, ParseDetails, ReadExt};
 use toml_edit::DocumentMut;
 
 /// Read the given preferences into a **guaranteed valid** `SavedGlobalPreferences`,
@@ -12,11 +12,11 @@ use toml_edit::DocumentMut;
 /// Default values are used wherever an unknown or invalid value is found;
 /// this is to support the case of, for example, a later version having different supported
 /// backends than an older version.
-pub fn read_preferences(input: &str) -> ParseResult<SavedGlobalPreferences> {
+pub fn read_preferences(input: &str) -> ParseDetails<SavedGlobalPreferences> {
     let document = match input.parse::<DocumentMut>() {
         Ok(document) => document,
         Err(e) => {
-            return ParseResult {
+            return ParseDetails {
                 result: Default::default(),
                 warnings: vec![format!("Invalid TOML: {e}")],
             }
@@ -62,17 +62,17 @@ pub fn read_preferences(input: &str) -> ParseResult<SavedGlobalPreferences> {
         }
     });
 
-    ParseResult {
+    ParseDetails {
         result: DocumentHolder::new(result, document),
         warnings: cx.warnings,
     }
 }
 
-pub fn read_bookmarks(input: &str) -> ParseResult<Bookmarks> {
+pub fn read_bookmarks(input: &str) -> ParseDetails<Bookmarks> {
     let document = match input.parse::<DocumentMut>() {
         Ok(document) => document,
         Err(e) => {
-            return ParseResult {
+            return ParseDetails {
                 result: Default::default(),
                 warnings: vec![format!("Invalid TOML: {e}")],
             }
@@ -100,7 +100,7 @@ pub fn read_bookmarks(input: &str) -> ParseResult<Bookmarks> {
         }
     });
 
-    ParseResult {
+    ParseDetails {
         result: DocumentHolder::new(result, document),
         warnings: cx.warnings,
     }
