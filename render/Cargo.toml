@@ -21,7 +21,7 @@ smallvec = { version = "1.13.2", features = ["union"] }
 downcast-rs = "1.2.0"
 lyon = { version = "1.0.1", optional = true }
 lyon_geom = "1.0.5"
-thiserror = "1.0"
+thiserror = { workspace = true }
 wasm-bindgen = { version = "=0.2.92", optional = true }
 enum-map = { workspace = true }
 serde = { workspace = true, features = ["derive"] }

@@ -14,7 +14,7 @@ workspace = true
 swf = { path = "../swf" }
 ruffle_render = { path = "../render" }
 slotmap = { workspace = true }
-thiserror = "1.0"
+thiserror = { workspace = true }
 
 [features]
 default = []
