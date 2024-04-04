@@ -3,8 +3,9 @@ use crate::preferences::storage::StorageBackend;
 use crate::preferences::SavedGlobalPreferences;
 use ruffle_frontend_utils::bookmarks::{Bookmark, Bookmarks};
 use ruffle_frontend_utils::parse::DocumentHolder;
+use ruffle_frontend_utils::write::TableExt;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
-use toml_edit::{array, value, ArrayOfTables, DocumentMut, Table};
+use toml_edit::{value, ArrayOfTables, Table};
 use unic_langid::LanguageIdentifier;
 
 pub struct PreferencesWriter<'a>(&'a mut DocumentHolder<SavedGlobalPreferences>);
@@ -83,22 +84,8 @@ impl<'a> BookmarksWriter<'a> {
     }
 
     fn with_underlying_table(&mut self, fun: impl FnOnce(&mut Bookmarks, &mut ArrayOfTables)) {
-        fn find_table(toml_document: &mut DocumentMut) -> &mut ArrayOfTables {
-            if toml_document.contains_array_of_tables("bookmark") {
-                return toml_document["bookmark"]
-                    .as_array_of_tables_mut()
-                    .expect("type was just verified");
-            }
-
-            tracing::warn!("missing or invalid bookmark array, recreating..");
-            toml_document.insert("bookmark", array());
-            toml_document["bookmark"]
-                .as_array_of_tables_mut()
-                .expect("type was just created")
-        }
-
         self.0.edit(|values, toml_document| {
-            let table = find_table(toml_document);
+            let table = toml_document.get_or_create_array_of_tables("bookmark");
             fun(values, table)
         })
     }

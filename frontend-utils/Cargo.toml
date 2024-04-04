@@ -13,3 +13,4 @@ workspace = true
 [dependencies]
 toml_edit = { version = "0.22.9", features = ["parse"] }
 url = { workspace = true }
+tracing = { workspace = true }
