@@ -69,7 +69,7 @@ id3 = "1.13.1"
 either = "1.10.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
-version = "0.3.30"
+workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies.wasm-bindgen-futures]
 version = "0.4.42"

@@ -30,7 +30,7 @@ indexmap = "2.2.6"
 
 # desktop
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
-version = "0.3.30"
+workspace = true
 
 # wasm
 [target.'cfg(target_family = "wasm")'.dependencies.web-sys]
