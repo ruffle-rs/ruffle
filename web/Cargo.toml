@@ -48,7 +48,7 @@ url = "2.5.0"
 wasm-bindgen = "=0.2.92"
 wasm-bindgen-futures = "0.4.42"
 serde-wasm-bindgen = "0.6.5"
-chrono = { version = "0.4", default-features = false, features = ["wasmbind", "clock"] }
+chrono = { workspace = true, features = ["wasmbind", "clock"] }
 getrandom = { version = "0.2", features = ["js"] }
 serde = { version = "1.0.197", features = ["derive"] }
 thiserror = "1.0"

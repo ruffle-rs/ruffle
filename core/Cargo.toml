@@ -35,7 +35,7 @@ url = "2.5.0"
 weak-table = "0.3.2"
 percent-encoding = "2.3.1"
 thiserror = "1.0"
-chrono = { version = "0.4", default-features = false, features = ["clock"] }
+chrono = { workspace = true, features = ["clock"] }
 web-time = "0.2.4"
 encoding_rs = "0.8.33"
 rand = { version = "0.8.5", features = ["std", "small_rng"], default-features = false }
