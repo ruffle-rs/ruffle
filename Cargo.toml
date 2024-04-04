@@ -54,6 +54,7 @@ egui = "0.27.2"
 clap = { version = "4.5.4", features = ["derive"] }
 anyhow = "1.0"
 slotmap = "1.0.7"
+async-channel = "2.2.0"
 
 [workspace.lints.rust]
 # Clippy nightly often adds new/buggy lints that we want to ignore.

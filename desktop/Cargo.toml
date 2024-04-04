@@ -46,7 +46,7 @@ fluent-templates = "0.9.1"
 futures-lite = "2.3.0"
 async-io = "2.3.2"
 async-net = "2.0.0"
-async-channel = "2.2.0"
+async-channel = { workspace = true }
 toml_edit = { version = "0.22.9", features = ["parse"] }
 gilrs = "0.10"
 urlencoding = "2.1.3"
