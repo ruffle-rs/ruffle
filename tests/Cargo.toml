@@ -27,7 +27,7 @@ ruffle_test_framework = { path = "framework" }
 libtest-mimic = "0.7.0"
 walkdir = "2.5.0"
 anyhow = { workspace = true }
-image = { version = "0.25.0", default-features = false, features  = ["png"] }
+image = { workspace = true, features  = ["png"] }
 futures = { workspace = true }
 env_logger = "0.11.3"
 tracing = { workspace = true }

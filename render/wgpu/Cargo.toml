@@ -19,7 +19,7 @@ clap = { workspace = true, optional = true }
 enum-map = { workspace = true }
 fnv = "1.0.7"
 swf = { path = "../../swf" }
-image = { version = "0.25.0", default-features = false }
+image = { workspace = true }
 naga_oil = { workspace = true }
 naga-agal = { path = "../naga-agal" }
 naga-pixelbender = { path = "../naga-pixelbender" }
