@@ -16,7 +16,7 @@ futures = { workspace = true }
 ruffle_core = { path = "../core", features = ["deterministic", "default_font"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
 image = { workspace = true, features = ["png"] }
-walkdir = "2.5.0"
+walkdir = { workspace = true }
 indicatif = "0.17"
 rayon = "1.10.0"
 anyhow = { workspace = true }

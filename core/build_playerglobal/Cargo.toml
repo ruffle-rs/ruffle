@@ -17,4 +17,4 @@ quote = "1.0.35"
 swf = { path = "../../swf" }
 clap = { workspace = true }
 regex = "1.10.4"
-walkdir = "2.5.0"
+walkdir = { workspace = true }
