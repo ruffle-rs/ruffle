@@ -1,13 +1,13 @@
-const { openTest, injectRuffleAndWait } = require("../../utils");
-const { expect, use } = require("chai");
-const chaiHtml = require("chai-html");
-const fs = require("fs");
+import { openTest, injectRuffleAndWait } from "../../utils.js";
+import { expect, use } from "chai";
+import chaiHtml from "chai-html";
+import fs from "fs";
 
 use(chaiHtml);
 
 describe("Flash inside frame with injected ruffle", () => {
     it("loads the test", async () => {
-        await openTest(browser, __dirname);
+        await openTest(browser, import.meta.dirname);
     });
 
     it("polyfills inside a frame", async () => {
@@ -16,7 +16,10 @@ describe("Flash inside frame with injected ruffle", () => {
         await browser.$("<ruffle-object />").waitForExist();
 
         const actual = await browser.$("#test-container").getHTML(false);
-        const expected = fs.readFileSync(`${__dirname}/expected.html`, "utf8");
+        const expected = fs.readFileSync(
+            `${import.meta.dirname}/expected.html`,
+            "utf8",
+        );
         expect(actual).html.to.equal(expected);
     });
 
@@ -37,7 +40,10 @@ describe("Flash inside frame with injected ruffle", () => {
         await browser.$("<ruffle-object />").waitForExist();
 
         const actual = await browser.$("#test-container").getHTML(false);
-        const expected = fs.readFileSync(`${__dirname}/expected.html`, "utf8");
+        const expected = fs.readFileSync(
+            `${import.meta.dirname}/expected.html`,
+            "utf8",
+        );
         expect(actual).html.to.equal(expected);
     });
 });

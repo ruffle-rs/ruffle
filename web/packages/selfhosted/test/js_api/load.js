@@ -1,6 +1,6 @@
-const { jsApiBefore, playAndMonitor } = require("../utils");
-const { use } = require("chai");
-const chaiHtml = require("chai-html");
+import { jsApiBefore, playAndMonitor } from "../utils.js";
+import { use } from "chai";
+import chaiHtml from "chai-html";
 
 use(chaiHtml);
 

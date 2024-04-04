@@ -1,6 +1,6 @@
-const { jsApiBefore } = require("../utils");
-const { expect, use } = require("chai");
-const chaiHtml = require("chai-html");
+import { jsApiBefore } from "../utils.js";
+import { expect, use } from "chai";
+import chaiHtml from "chai-html";
 
 use(chaiHtml);
 

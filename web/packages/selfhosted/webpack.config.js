@@ -1,12 +1,12 @@
 /* eslint-env node */
 
-const path = require("path");
-const json5 = require("json5");
-const CopyPlugin = require("copy-webpack-plugin");
-const TerserPlugin = require("terser-webpack-plugin");
+import url from "url";
+import json5 from "json5";
+import CopyPlugin from "copy-webpack-plugin";
+import TerserPlugin from "terser-webpack-plugin";
 
 function transformPackage(content) {
-    const package = json5.parse(content);
+    const pkg = json5.parse(content);
 
     const packageVersion = process.env.npm_package_version;
 
@@ -19,15 +19,15 @@ function transformPackage(content) {
 
     // The npm registry requires the version to monotonically increase,
     // so append the build date onto the end of the package version.
-    package.version =
+    pkg.version =
         versionChannel !== "stable"
             ? `${packageVersion}-${versionChannel}.${buildDate}`
             : packageVersion;
 
-    return JSON.stringify(package);
+    return JSON.stringify(pkg);
 }
 
-module.exports = (_env, _argv) => {
+export default function (_env, _argv) {
     const mode = process.env.NODE_ENV || "production";
     console.log(`Building ${mode}...`);
 
@@ -35,7 +35,7 @@ module.exports = (_env, _argv) => {
         mode,
         entry: "./js/ruffle.js",
         output: {
-            path: path.resolve(__dirname, "dist"),
+            path: url.fileURLToPath(new URL("dist", import.meta.url)),
             filename: "ruffle.js",
             publicPath: "",
             chunkFilename: "core.ruffle.[contenthash].js",
@@ -71,4 +71,4 @@ module.exports = (_env, _argv) => {
             }),
         ],
     };
-};
+}

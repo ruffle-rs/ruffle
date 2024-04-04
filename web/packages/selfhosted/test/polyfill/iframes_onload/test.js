@@ -1,13 +1,13 @@
-const { openTest, injectRuffleAndWait } = require("../../utils");
-const { expect, use } = require("chai");
-const chaiHtml = require("chai-html");
-const fs = require("fs");
+import { openTest, injectRuffleAndWait } from "../../utils.js";
+import { expect, use } from "chai";
+import chaiHtml from "chai-html";
+import fs from "fs";
 
 use(chaiHtml);
 
 describe("iframe onload", () => {
     it("loads the test", async () => {
-        await openTest(browser, __dirname);
+        await openTest(browser, import.meta.dirname);
     });
 
     it("runs the iframe onload event", async () => {
@@ -15,7 +15,10 @@ describe("iframe onload", () => {
         await browser.$("<div />").waitForExist();
 
         const actual = await browser.$("#container").getHTML(false);
-        const expected = fs.readFileSync(`${__dirname}/expected.html`, "utf8");
+        const expected = fs.readFileSync(
+            `${import.meta.dirname}/expected.html`,
+            "utf8",
+        );
         expect(actual).html.to.equal(expected);
     });
 });
