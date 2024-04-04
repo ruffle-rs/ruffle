@@ -35,7 +35,7 @@ dirs = "5.0"
 isahc = { version = "1.7.2", features = ["cookies"] }
 rfd = "0.14.1"
 anyhow = { workspace = true }
-bytemuck = "1.15.0"
+bytemuck = { workspace = true }
 os_info = { version = "3", default-features = false }
 unic-langid = "0.9.4"
 sys-locale = "0.3.1"
