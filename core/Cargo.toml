@@ -31,7 +31,7 @@ num-traits = { workspace = true }
 num-derive = { workspace = true }
 quick-xml = "0.31.0"
 downcast-rs = "1.2.0"
-url = "2.5.0"
+url = { workspace = true }
 weak-table = "0.3.2"
 percent-encoding = "2.3.1"
 thiserror = { workspace = true }
