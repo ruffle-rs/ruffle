@@ -1,7 +1,6 @@
 use crate::preferences::SavedGlobalPreferences;
 use ruffle_frontend_utils::bookmarks::{Bookmark, Bookmarks};
 use ruffle_frontend_utils::parse::{DocumentHolder, ParseContext, ParseResult, ReadExt};
-use std::str::FromStr;
 use toml_edit::DocumentMut;
 
 /// Read the given preferences into a **guaranteed valid** `SavedGlobalPreferences`,
@@ -115,6 +114,7 @@ mod tests {
     use crate::preferences::{storage::StorageBackend, LogPreferences, StoragePreferences};
     use fluent_templates::loader::langid;
     use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
+    use std::str::FromStr;
     use url::Url;
 
     #[test]
