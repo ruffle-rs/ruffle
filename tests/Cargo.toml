@@ -26,7 +26,7 @@ ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug",
 ruffle_test_framework = { path = "framework" }
 libtest-mimic = "0.7.0"
 walkdir = "2.5.0"
-anyhow = "1.0.81"
+anyhow = { workspace = true }
 image = { version = "0.25.0", default-features = false, features  = ["png"] }
 futures = "0.3.30"
 env_logger = "0.11.3"

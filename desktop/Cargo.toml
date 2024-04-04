@@ -34,7 +34,7 @@ url = "2.5.0"
 dirs = "5.0"
 isahc = { version = "1.7.2", features = ["cookies"] }
 rfd = "0.14.1"
-anyhow = "1.0"
+anyhow = { workspace = true }
 bytemuck = "1.15.0"
 os_info = { version = "3", default-features = false }
 unic-langid = "0.9.4"
