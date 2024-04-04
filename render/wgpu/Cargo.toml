@@ -15,7 +15,7 @@ wgpu = { workspace = true, features = ["naga-ir"] }
 tracing = { workspace = true }
 ruffle_render = { path = "..", features = ["tessellator", "wgpu"] }
 bytemuck = { workspace = true, features = ["derive"] }
-clap = { version = "4.5.4", features = ["derive"], optional = true }
+clap = { workspace = true, optional = true }
 enum-map = "2.7.3"
 fnv = "1.0.7"
 swf = { path = "../../swf" }
