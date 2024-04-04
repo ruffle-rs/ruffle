@@ -145,10 +145,17 @@ impl<'gc> Executable<'gc> {
                     .into());
                 }
 
+                if bm.method.resolved_signature.read().is_none() {
+                    bm.method.resolve_signature(&mut activation)?;
+                }
+
+                let resolved_signature = bm.method.resolved_signature.read();
+                let resolved_signature = resolved_signature.as_ref().unwrap();
+
                 let arguments = activation.resolve_parameters(
                     Method::Native(bm.method),
                     arguments,
-                    &bm.method.signature,
+                    resolved_signature,
                     Some(callee),
                 )?;
                 activation

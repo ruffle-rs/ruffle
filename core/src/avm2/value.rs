@@ -989,30 +989,6 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    /// Like `coerce_to_type`, but also performs resolution of the type name.
-    /// This is used to allow coercing to a class while the ClassObject is still
-    /// being initialized. We should eventually be able to remove this, once
-    /// our Class/ClassObject representation is refactored.
-    pub fn coerce_to_type_name(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        type_name: &Multiname<'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        if type_name.is_any_name() {
-            return Ok(*self);
-        }
-        let param_type = activation
-            .domain()
-            .get_class(type_name, activation.context.gc_context)
-            .ok_or_else(|| {
-                Error::RustError(
-                    format!("Failed to lookup class {:?} during coercion", type_name).into(),
-                )
-            })?;
-
-        self.coerce_to_type(activation, param_type)
-    }
-
     /// Coerce the value to another value by type name.
     ///
     /// This function implements a handful of coercion rules that appear to be

@@ -295,12 +295,19 @@ impl<'gc> Avm2<'gc> {
         let (method, scope, _domain) = script.init();
         match method {
             Method::Native(method) => {
-                //This exists purely to check if the builtin is OK with being called with
-                //no parameters.
+                if method.resolved_signature.read().is_none() {
+                    method.resolve_signature(&mut init_activation)?;
+                }
+
+                let resolved_signature = method.resolved_signature.read();
+                let resolved_signature = resolved_signature.as_ref().unwrap();
+
+                // This exists purely to check if the builtin is OK with being called with
+                // no parameters.
                 init_activation.resolve_parameters(
                     Method::Native(method),
                     &[],
-                    &method.signature,
+                    resolved_signature,
                     None,
                 )?;
                 init_activation
