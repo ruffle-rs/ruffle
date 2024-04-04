@@ -12,3 +12,4 @@ workspace = true
 
 [dependencies]
 toml_edit = { version = "0.22.9", features = ["parse"] }
+url = "2.5.0"

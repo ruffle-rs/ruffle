@@ -1,8 +1,9 @@
 use crate::gui::text;
 use crate::gui::widgets::PathOrUrlField;
-use crate::preferences::{Bookmark, GlobalPreferences};
+use crate::preferences::GlobalPreferences;
 use egui::{Align2, Button, Grid, Label, Layout, Sense, Ui, Widget, Window};
 use egui_extras::{Column, TableBuilder};
+use ruffle_frontend_utils::bookmarks::Bookmark;
 use unic_langid::LanguageIdentifier;
 use url::Url;
 
