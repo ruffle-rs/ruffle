@@ -1,32 +1,38 @@
 version: 2
 updates:
   - package-ecosystem: "npm"
+    allow:
+      - dependency-type: "all"
     directory: "/"
     schedule:
       interval: "weekly"
     groups:
-      nodejs-dependencies:
+      npm-minor:
         patterns:
-        - "*"
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
 
-  - package-ecosystem: "rust"
+  - package-ecosystem: "cargo"
+    allow:
+      - dependency-type: "all"
     directory: "/"
     schedule:
       interval: "weekly"
     groups:
-      winit-wgpu-dependencies:
+      winit-wgpu-egui:
         patterns:
         - "winit"
         - "wgpu"
         - "naga"
         - "naga_oil"
-        - "egui-winit"
-        - "egui-wgpu"
+        - "egui*"
         - "raw-window-handle"
       wasm-bindgen-dependencies:
         patterns:
@@ -34,5 +40,12 @@ updates:
         - "js-sys"
         - "web-sys"
         - "wasm-bindgen-futures"
+      gradle-minor:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
       - dependency-name: "tracing-tracy"
+      - dependency-name: "tracy-client"
