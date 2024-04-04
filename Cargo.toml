@@ -66,6 +66,7 @@ js-sys = "0.3.69"
 log = "0.4"
 num-derive = "0.4.2"
 num-traits = "0.2.18"
+serde = "1.0.197"
 
 [workspace.lints.rust]
 # Clippy nightly often adds new/buggy lints that we want to ignore.

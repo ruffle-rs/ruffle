@@ -22,7 +22,7 @@ url = "2.5.0"
 chrono = { workspace = true }
 approx = "0.5.1"
 pretty_assertions = "1.4.0"
-serde = "1.0.197"
+serde = { workspace = true }
 toml = "0.8.12"
 anyhow = { workspace = true }
 async-channel = { workspace = true }
