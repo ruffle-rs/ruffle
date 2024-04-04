@@ -25,7 +25,7 @@ pretty_assertions = "1.4.0"
 serde = "1.0.197"
 toml = "0.8.12"
 anyhow = { workspace = true }
-async-channel = "2.2.0"
+async-channel = { workspace = true }
 vfs = "0.12.0"
 percent-encoding = "2.3.1"
 
