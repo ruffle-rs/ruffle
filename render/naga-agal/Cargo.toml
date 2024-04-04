@@ -14,7 +14,7 @@ workspace = true
 bitflags = { workspace = true }
 naga = { workspace = true }
 num-derive = { workspace = true }
-num-traits = "0.2.18"
+num-traits = { workspace = true }
 
 [dev-dependencies]
 insta = "1.38.0"

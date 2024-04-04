@@ -27,7 +27,7 @@ ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf" }
 bitflags = { workspace = true }
 smallvec = { version = "1.13.2", features = ["union"] }
-num-traits = "0.2"
+num-traits = { workspace = true }
 num-derive = { workspace = true }
 quick-xml = "0.31.0"
 downcast-rs = "1.2.0"
