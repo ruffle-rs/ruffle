@@ -16,7 +16,7 @@ tracing = { workspace = true }
 ruffle_render = { path = "..", features = ["tessellator", "wgpu"] }
 bytemuck = { workspace = true, features = ["derive"] }
 clap = { workspace = true, optional = true }
-enum-map = "2.7.3"
+enum-map = { workspace = true }
 fnv = "1.0.7"
 swf = { path = "../../swf" }
 image = { version = "0.25.0", default-features = false }
