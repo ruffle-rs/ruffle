@@ -30,7 +30,7 @@ tracing-appender = "0.2.3"
 slotmap = { workspace = true }
 winit = "0.29.15"
 webbrowser = "0.8.13"
-url = "2.5.0"
+url = { workspace = true }
 dirs = "5.0"
 isahc = { version = "1.7.2", features = ["cookies"] }
 rfd = "0.14.1"

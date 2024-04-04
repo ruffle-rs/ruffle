@@ -44,7 +44,7 @@ ruffle_render = { path = "../render" }
 ruffle_render_webgl = { path = "../render/webgl", optional = true }
 ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 ruffle_video_software = { path = "../video/software" }
-url = "2.5.0"
+url = { workspace = true }
 wasm-bindgen = "=0.2.92"
 wasm-bindgen-futures = "0.4.42"
 serde-wasm-bindgen = "0.6.5"
