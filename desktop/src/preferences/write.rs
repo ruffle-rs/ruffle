@@ -155,22 +155,17 @@ mod tests {
 
     macro_rules! define_serialization_test_helpers {
         ($read_method:ident, $doc_struct:ty, $writer:ident) => {
-            fn parse(input: &str) -> DocumentHolder<$doc_struct> {
-                let (result, document) = $read_method(input);
-                DocumentHolder::new(result.result, document)
-            }
-
             fn check_roundtrip(preferences: &DocumentHolder<$doc_struct>) {
                 let read_result = $read_method(&preferences.serialize());
                 assert_eq!(
-                    *preferences.deref(),
-                    read_result.0.result,
+                    preferences.deref(),
+                    read_result.values(),
                     "roundtrip failed: expected != actual"
                 );
             }
 
             fn test(original: &str, fun: impl FnOnce(&mut $writer), expected: &str) {
-                let mut preferences = parse(original);
+                let mut preferences = $read_method(original).result;
                 let mut writer = $writer::new(&mut preferences);
                 fun(&mut writer);
                 check_roundtrip(&preferences);
