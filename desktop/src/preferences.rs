@@ -48,12 +48,12 @@ impl GlobalPreferences {
         let preferences = if preferences_path.exists() {
             let contents = std::fs::read_to_string(&preferences_path)
                 .context("Failed to read saved preferences")?;
-            let (result, document) = read_preferences(&contents);
+            let result = read_preferences(&contents);
             for warning in result.warnings {
                 // TODO: A way to display warnings to users, generally
                 tracing::warn!("{warning}");
             }
-            DocumentHolder::new(result.result, document)
+            result.result
         } else {
             Default::default()
         };
@@ -62,11 +62,11 @@ impl GlobalPreferences {
         let bookmarks = if bookmarks_path.exists() {
             let contents = std::fs::read_to_string(&bookmarks_path)
                 .context("Failed to read saved bookmarks")?;
-            let (result, document) = read_bookmarks(&contents);
+            let result = read_bookmarks(&contents);
             for warning in result.warnings {
                 tracing::warn!("{warning}");
             }
-            DocumentHolder::new(result.result, document)
+            result.result
         } else {
             Default::default()
         };

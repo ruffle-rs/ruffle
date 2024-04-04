@@ -1,4 +1,5 @@
 use std::fmt;
+use std::fmt::Formatter;
 use std::ops::Deref;
 use std::str::FromStr;
 use toml_edit::{ArrayOfTables, DocumentMut, Item, Table, TableLike};
@@ -36,6 +37,14 @@ impl<T: Default> Default for DocumentHolder<T> {
     }
 }
 
+impl<T: fmt::Debug> fmt::Debug for DocumentHolder<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("DocumentHolder")
+            .field("inner", &self.inner)
+            .finish()
+    }
+}
+
 impl<T> DocumentHolder<T> {
     pub fn new(values: T, document: DocumentMut) -> Self {
         Self {
@@ -64,15 +73,27 @@ impl<T> DocumentHolder<T> {
     }
 }
 
-#[derive(Debug, PartialEq)]
-pub struct ParseResult<T: PartialEq + fmt::Debug> {
-    pub result: T,
+pub struct ParseResult<T> {
+    pub result: DocumentHolder<T>,
     pub warnings: Vec<String>,
 }
 
-impl<T: fmt::Debug + PartialEq> ParseResult<T> {
+impl<T: fmt::Debug> fmt::Debug for ParseResult<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ParseResult")
+            .field("result", &self.result)
+            .field("warnings", &self.warnings)
+            .finish()
+    }
+}
+
+impl<T> ParseResult<T> {
     pub fn add_warning(&mut self, message: String) {
         self.warnings.push(message);
+    }
+
+    pub fn values(&self) -> &T {
+        &self.result
     }
 }
 
