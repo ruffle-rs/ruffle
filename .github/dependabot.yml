@@ -34,7 +34,7 @@ updates:
         - "naga_oil"
         - "egui*"
         - "raw-window-handle"
-      wasm-bindgen-dependencies:
+      wasm-bindgen:
         patterns:
         - "wasm-bindgen"
         - "js-sys"
