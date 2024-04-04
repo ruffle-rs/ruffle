@@ -62,6 +62,7 @@ enum-map = "2.7.3"
 flate2 = "1.0.28"
 futures = "0.3.30"
 image = { version = "0.25.0", default-features = false }
+js-sys = "0.3.69"
 
 [workspace.lints.rust]
 # Clippy nightly often adds new/buggy lints that we want to ignore.
