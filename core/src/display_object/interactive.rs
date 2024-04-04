@@ -92,28 +92,17 @@ pub struct InteractiveObjectBase<'gc> {
 
     /// Specifies whether this object displays a yellow rectangle when focused.
     focus_rect: Option<bool>,
-
-    /// Specifies whether focus_rect should be considered.
-    /// When set to `false`, no highlight is rendered ever.
-    focus_rect_supported: bool,
 }
 
-impl<'gc> InteractiveObjectBase<'gc> {
-    pub fn new(focus_rect_supported: bool) -> Self {
+impl<'gc> Default for InteractiveObjectBase<'gc> {
+    fn default() -> Self {
         Self {
             base: Default::default(),
             flags: InteractiveObjectFlags::MOUSE_ENABLED,
             context_menu: Avm2Value::Null,
             last_click: None,
             focus_rect: None,
-            focus_rect_supported,
         }
-    }
-}
-
-impl<'gc> Default for InteractiveObjectBase<'gc> {
-    fn default() -> Self {
-        InteractiveObjectBase::new(true)
     }
 }
 
@@ -518,11 +507,12 @@ pub trait TInteractiveObject<'gc>:
         MouseCursor::Hand
     }
 
-    /// Whether this object may be highlighted when focused.
+    /// Whether highlight is enabled for this object.
+    ///
+    /// Note: This value does not mean that a highlight should actually be rendered,
+    /// for that see [`TDisplayObject::is_highlightable()`].
     fn is_highlight_enabled(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        if !self.raw_interactive().focus_rect_supported {
-            false
-        } else if context.swf.version() >= 6 {
+        if context.swf.version() >= 6 {
             self.focus_rect()
                 .unwrap_or_else(|| context.stage.stage_focus_rect())
         } else {

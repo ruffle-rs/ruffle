@@ -1914,6 +1914,12 @@ pub trait TDisplayObject<'gc>:
         false
     }
 
+    /// Whether this object may be highlighted when focused.
+    fn is_highlightable(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        self.as_interactive()
+            .is_some_and(|o| o.is_highlight_enabled(context))
+    }
+
     /// Whether this object is included in tab ordering.
     fn is_tabbable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
         false
