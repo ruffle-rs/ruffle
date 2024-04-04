@@ -14,7 +14,7 @@ workspace = true
 wgpu = { workspace = true, features = ["naga-ir"] }
 tracing = { workspace = true }
 ruffle_render = { path = "..", features = ["tessellator", "wgpu"] }
-bytemuck = { version = "1.15.0", features = ["derive"] }
+bytemuck = { workspace = true, features = ["derive"] }
 clap = { version = "4.5.4", features = ["derive"], optional = true }
 enum-map = "2.7.3"
 fnv = "1.0.7"

@@ -56,6 +56,7 @@ anyhow = "1.0"
 slotmap = "1.0.7"
 async-channel = "2.2.0"
 bitflags = "2.5.0"
+bytemuck = "1.15.0"
 
 [workspace.lints.rust]
 # Clippy nightly often adds new/buggy lints that we want to ignore.
