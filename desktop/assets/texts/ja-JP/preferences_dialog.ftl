@@ -11,3 +11,6 @@ audio-output-device-default = システムのデフォルト
 log-filename-pattern = ログファイル名
 log-filename-pattern-single-file = 単一ファイル（ruffle.log）
 log-filename-pattern-with-timestamp = タイムスタンプ付き
+storage-backend = セーブファイルの場所
+storage-backend-disk = ディスク
+storage-backend-memory = メモリ

@@ -11,3 +11,6 @@ audio-output-device-default = Predeterminado del sistema
 log-filename-pattern = Nombre del archivo de registro
 log-filename-pattern-single-file = Archivo soltero (ruffle.log)
 log-filename-pattern-with-timestamp = Con marca de la fecha y la hora (UTC)
+storage-backend = Destino del archivo guardado
+storage-backend-disk = Disco
+storage-backend-memory = Memoria

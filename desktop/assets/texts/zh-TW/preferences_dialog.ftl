@@ -11,3 +11,6 @@ audio-output-device-default = 系統預設
 log-filename-pattern = 記錄檔名
 log-filename-pattern-single-file = 統一檔案 (ruffle.log)
 log-filename-pattern-with-timestamp = 包含時間點
+storage-backend = 存檔地點
+storage-backend-disk = 硬碟
+storage-backend-memory = 記憶體
