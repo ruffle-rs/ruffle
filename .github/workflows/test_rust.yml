@@ -129,9 +129,13 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-      - name: Check clippy
+      - name: Check clippy (with tests)
         # Don't fail the build for clippy on nightly, since we get a lot of false-positives
         run: cargo clippy --all --all-features --tests ${{ (matrix.rust_version != 'nightly' && '-- -D warnings') || '' }}
+
+      - name: Check clippy (without tests)
+        # Don't fail the build for clippy on nightly, since we get a lot of false-positives
+        run: cargo clippy --all --all-features ${{ (matrix.rust_version != 'nightly' && '-- -D warnings') || '' }}
 
       - name: Check documentation
         run: cargo doc --no-deps --all-features
