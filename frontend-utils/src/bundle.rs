@@ -67,6 +67,7 @@ mod tests {
     use crate::bundle::info::{
         BundleInformation, BundleInformationParseError, BUNDLE_INFORMATION_FILENAME,
     };
+    use crate::bundle::source::BundleSourceError;
     use crate::bundle::{Bundle, BundleError};
     use tempfile::tempdir;
     use url::Url;
@@ -84,7 +85,10 @@ mod tests {
         let tmp_dir = tempdir().unwrap();
         let result = Bundle::from_path(tmp_dir.path());
         drop(tmp_dir);
-        assert!(matches!(result, Err(BundleError::MissingBundleInformation)))
+        assert!(matches!(
+            result,
+            Err(BundleError::InvalidSource(BundleSourceError::UnknownSource))
+        ))
     }
 
     #[test]
@@ -93,7 +97,10 @@ mod tests {
         let _ = std::fs::create_dir(tmp_dir.path().join(BUNDLE_INFORMATION_FILENAME));
         let result = Bundle::from_path(tmp_dir.path());
         drop(tmp_dir);
-        assert!(matches!(result, Err(BundleError::MissingBundleInformation)))
+        assert!(matches!(
+            result,
+            Err(BundleError::InvalidSource(BundleSourceError::UnknownSource))
+        ))
     }
 
     #[test]

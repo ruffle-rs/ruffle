@@ -7,16 +7,20 @@ impl BundleSourceImpl for Path {
     type Read = File;
 
     fn read_file(&self, path: &str) -> Result<Self::Read, Error> {
-        let potential_path = self.join(path.strip_prefix('/').unwrap_or(path));
-        if !potential_path.starts_with(self) {
+        let potential_path = self
+            .join(path.strip_prefix('/').unwrap_or(path))
+            .canonicalize()?;
+        if !potential_path.starts_with(self.canonicalize()?) {
             return Err(Error::from(ErrorKind::NotFound));
         }
         File::open(potential_path)
     }
 
     fn read_content(&self, path: &str) -> Result<Self::Read, Error> {
-        let root = self.join("content");
-        let potential_path = root.join(path.strip_prefix('/').unwrap_or(path));
+        let root = self.join("content").canonicalize()?;
+        let potential_path = root
+            .join(path.strip_prefix('/').unwrap_or(path))
+            .canonicalize()?;
         if !potential_path.starts_with(root) {
             return Err(Error::from(ErrorKind::NotFound));
         }
@@ -52,10 +56,8 @@ mod tests {
     #[test]
     fn read_file_invalid() {
         let tmp_dir = tempdir().unwrap();
-        let success = matches!(
-            tmp_dir.path().read_file("!?\\//"),
-            Err(e) if e.kind() == ErrorKind::NotFound
-        );
+        // [NA] Exact error depends on OS... just check it's an error, period.
+        let success = tmp_dir.path().read_file("!?\\//").is_err();
         drop(tmp_dir);
         assert!(success)
     }
@@ -109,10 +111,9 @@ mod tests {
     #[test]
     fn read_content_invalid() {
         let tmp_dir = tempdir().unwrap();
-        let success = matches!(
-            tmp_dir.path().read_content("!?\\//"),
-            Err(e) if e.kind() == ErrorKind::NotFound
-        );
+
+        // [NA] Exact error depends on OS... just check it's an error, period.
+        let success = tmp_dir.path().read_content("!?\\//").is_err();
         drop(tmp_dir);
         assert!(success)
     }
