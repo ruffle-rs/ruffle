@@ -597,6 +597,17 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         base.set_slot(id, value, activation.gc())
     }
 
+    fn set_slot_no_coerce(
+        self,
+        id: u32,
+        value: Value<'gc>,
+        mc: &Mutation<'gc>,
+    ) -> Result<(), Error<'gc>> {
+        let mut base = self.base_mut(mc);
+
+        base.set_slot(id, value, mc)
+    }
+
     /// Call a method by its index.
     ///
     /// This directly corresponds with the AVM2 operation `callmethod`.

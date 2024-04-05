@@ -581,6 +581,7 @@ pub fn verify_method<'gc>(
             method,
             &mut verified_code,
             &resolved_param_config,
+            resolved_return_type,
             potential_jump_targets,
         );
     }

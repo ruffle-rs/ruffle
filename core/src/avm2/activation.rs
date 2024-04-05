@@ -933,6 +933,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     num_args,
                 } => self.op_call_super_void(*multiname, *num_args),
                 Op::ReturnValue => self.op_return_value(method),
+                Op::ReturnValueNoCoerce => self.op_return_value_no_coerce(),
                 Op::ReturnVoid => self.op_return_void(),
                 Op::GetProperty { multiname } => self.op_get_property(*multiname),
                 Op::SetProperty { multiname } => self.op_set_property(*multiname),
@@ -955,6 +956,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::GetDescendants { multiname } => self.op_get_descendants(*multiname),
                 Op::GetSlot { index } => self.op_get_slot(*index),
                 Op::SetSlot { index } => self.op_set_slot(*index),
+                Op::SetSlotNoCoerce { index } => self.op_set_slot_no_coerce(*index),
                 Op::GetGlobalSlot { index } => self.op_get_global_slot(*index),
                 Op::SetGlobalSlot { index } => self.op_set_global_slot(*index),
                 Op::Construct { num_args } => self.op_construct(*num_args),
@@ -1356,6 +1358,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         };
 
         Ok(FrameControl::Return(coerced))
+    }
+
+    fn op_return_value_no_coerce(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let return_value = self.pop_stack();
+
+        Ok(FrameControl::Return(return_value))
     }
 
     fn op_return_void(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
@@ -1773,6 +1781,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
 
         object.set_slot(index, value, self)?;
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_set_slot_no_coerce(&mut self, index: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let value = self.pop_stack();
+        let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
+
+        object.set_slot_no_coerce(index, value, self.context.gc_context)?;
 
         Ok(FrameControl::Continue)
     }

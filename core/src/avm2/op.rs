@@ -296,6 +296,7 @@ pub enum Op<'gc> {
     PushUndefined,
     PushWith,
     ReturnValue,
+    ReturnValueNoCoerce,
     ReturnVoid,
     RShift,
     SetGlobalSlot {
@@ -308,6 +309,9 @@ pub enum Op<'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
     },
     SetSlot {
+        index: u32,
+    },
+    SetSlotNoCoerce {
         index: u32,
     },
     SetSuper {
