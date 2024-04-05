@@ -125,17 +125,18 @@ impl ParseContext {
 pub trait ReadExt<'a> {
     fn get_impl(&'a self, key: &str) -> Option<&'a Item>;
 
-    fn get_table_like(
+    fn get_table_like<R>(
         &'a self,
         cx: &mut ParseContext,
         key: &'static str,
-        fun: impl FnOnce(&mut ParseContext, &dyn TableLike),
-    ) {
+        fun: impl FnOnce(&mut ParseContext, &dyn TableLike) -> R,
+    ) -> Option<R> {
+        let mut result = None;
         if let Some(item) = self.get_impl(key) {
             cx.push_key(key);
 
             if let Some(table) = item.as_table_like() {
-                fun(cx, table);
+                result = Some(fun(cx, table));
             } else {
                 cx.add_warning(format!(
                     "Invalid {}: expected table but found {}",
@@ -146,19 +147,21 @@ pub trait ReadExt<'a> {
 
             cx.pop_key();
         }
+        result
     }
 
-    fn get_array_of_tables(
+    fn get_array_of_tables<R>(
         &'a self,
         cx: &mut ParseContext,
         key: &'static str,
-        fun: impl FnOnce(&mut ParseContext, &ArrayOfTables),
-    ) {
+        fun: impl FnOnce(&mut ParseContext, &ArrayOfTables) -> R,
+    ) -> Option<R> {
+        let mut result = None;
         if let Some(item) = self.get_impl(key) {
             cx.push_key(key);
 
             if let Some(array) = item.as_array_of_tables() {
-                fun(cx, array);
+                result = Some(fun(cx, array));
             } else {
                 cx.add_warning(format!(
                     "Invalid {}: expected array of tables but found {}",
@@ -169,6 +172,7 @@ pub trait ReadExt<'a> {
 
             cx.pop_key();
         }
+        result
     }
 
     fn parse_from_str<T: FromStr>(&'a self, cx: &mut ParseContext, key: &'static str) -> Option<T> {
