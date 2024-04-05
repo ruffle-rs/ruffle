@@ -92,7 +92,8 @@ pub fn init<'gc>(
     };
 
     if let Some(namespace) = namespace {
-        this.set_namespace(activation.context.gc_context, namespace)
+        this.set_namespace(activation.context.gc_context, namespace);
+        this.set_is_qname(activation.context.gc_context, true);
     }
 
     Ok(Value::Undefined)
