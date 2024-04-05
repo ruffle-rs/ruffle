@@ -1,5 +1,7 @@
 mod read;
+mod write;
 pub use read::read_bookmarks;
+pub use write::BookmarksWriter;
 
 use url::Url;
 
