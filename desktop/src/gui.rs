@@ -313,17 +313,7 @@ impl RuffleGui {
                     if Button::new(text(locale, "bookmarks-menu-add")).ui(ui).clicked() {
                         ui.close_menu();
 
-                        let initial_url = if let Some(player) = &player {
-                            match Url::parse(player.swf().url()) {
-                                Ok(url) => Some(url),
-                                Err(e) => {
-                                    tracing::warn!("Failed to parse SWF url for bookmark: {e}");
-                                    None
-                                }
-                            }
-                        } else {
-                            None
-                        };
+                        let initial_url = self.currently_opened.as_ref().map(|(url, _)| url.clone());
 
                         self.open_add_bookmark(initial_url);
                     }
