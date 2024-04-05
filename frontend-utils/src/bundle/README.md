@@ -1,7 +1,7 @@
 # Ruffle Bundle (.ruf) format specification
 A Ruffle Bundle is an easy way to package and share Flash games and any assets that are required to make the game work.
 
-A bundle can be a directory or a renamed zip file, and must contain at minimum a `bundle.toml` file.
+A bundle can be a directory or a renamed zip file, and must contain at minimum a `ruffle-bundle.toml` file.
 
 <!-- TOC -->
 * [Ruffle Bundle (.ruf) format specification](#ruffle-bundle-ruf-format-specification)

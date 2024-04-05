@@ -7,7 +7,7 @@ impl BundleSourceImpl for Path {
     type Read = File;
 
     fn read_file(&self, path: &str) -> Result<Self::Read, Error> {
-        let potential_path = self.join(path);
+        let potential_path = self.join(path.strip_prefix('/').unwrap_or(path));
         if !potential_path.starts_with(self) {
             return Err(Error::from(ErrorKind::NotFound));
         }
@@ -16,7 +16,7 @@ impl BundleSourceImpl for Path {
 
     fn read_content(&self, path: &str) -> Result<Self::Read, Error> {
         let root = self.join("content");
-        let potential_path = root.join(path);
+        let potential_path = root.join(path.strip_prefix('/').unwrap_or(path));
         if !potential_path.starts_with(root) {
             return Err(Error::from(ErrorKind::NotFound));
         }
@@ -125,6 +125,25 @@ mod tests {
         let result = tmp_dir
             .path()
             .read_content("some_file.txt")
+            .map_err(|e| e.to_string())
+            .map(|mut f| {
+                let mut result = String::new();
+                let _ = f.read_to_string(&mut result);
+                result
+            });
+        drop(tmp_dir);
+
+        assert_eq!(result.as_deref(), Ok("Fancy!"))
+    }
+
+    #[test]
+    fn read_content_works_with_absolute_path() {
+        let tmp_dir = tempdir().unwrap();
+        let _ = std::fs::create_dir(tmp_dir.path().join("content"));
+        let _ = std::fs::write(tmp_dir.path().join("content/some_file.txt"), "Fancy!");
+        let result = tmp_dir
+            .path()
+            .read_content("/some_file.txt")
             .map_err(|e| e.to_string())
             .map(|mut f| {
                 let mut result = String::new();
