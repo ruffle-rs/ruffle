@@ -15,6 +15,7 @@ toml_edit = { version = "0.22.9", features = ["parse"] }
 url = { workspace = true }
 tracing = { workspace = true }
 thiserror = { workspace = true }
+zip = "0.6.6"
 
 [dev-dependencies]
 tempfile = "3"

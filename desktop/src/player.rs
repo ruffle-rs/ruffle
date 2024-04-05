@@ -15,14 +15,13 @@ use ruffle_core::{
     DefaultFont, LoadBehavior, Player, PlayerBuilder, PlayerEvent, PlayerRuntime, StageAlign,
     StageScaleMode,
 };
-use ruffle_frontend_utils::bundle::info::BUNDLE_INFORMATION_FILENAME;
-use ruffle_frontend_utils::bundle::Bundle;
+use ruffle_frontend_utils::bundle::source::BundleSourceError;
+use ruffle_frontend_utils::bundle::{Bundle, BundleError};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::descriptors::Descriptors;
 use std::collections::{HashMap, HashSet};
-use std::ffi::OsStr;
 use std::fmt::{Debug, Formatter};
 use std::io::Read;
 use std::path::PathBuf;
@@ -175,30 +174,26 @@ impl ActivePlayer {
         let mut content = PlayingContent::DirectFile(movie_url.clone());
         if movie_url.scheme() == "file" {
             if let Ok(path) = movie_url.to_file_path() {
-                if path.is_file()
-                    && path.file_name() == Some(OsStr::new(BUNDLE_INFORMATION_FILENAME))
-                {
-                    if let Some(bundle_dir) = path.parent() {
-                        match Bundle::from_path(bundle_dir) {
-                            Ok(bundle) => {
-                                if bundle.warnings().is_empty() {
-                                    tracing::info!("Opening bundle at {bundle_dir:?}");
-                                } else {
-                                    // TODO: Show warnings to user (toast?)
-                                    tracing::warn!(
-                                        "Opening bundle at {bundle_dir:?} with warnings"
-                                    );
-                                    for warning in bundle.warnings() {
-                                        tracing::warn!("{warning}");
-                                    }
-                                }
-                                content = PlayingContent::Bundle(movie_url.clone(), bundle);
-                            }
-                            Err(e) => {
-                                // TODO: Visible popup when a bundle (or regular file) fails to open
-                                tracing::error!("Couldn't open bundle at {bundle_dir:?}: {e}");
+                match Bundle::from_path(&path) {
+                    Ok(bundle) => {
+                        if bundle.warnings().is_empty() {
+                            tracing::info!("Opening bundle at {path:?}");
+                        } else {
+                            // TODO: Show warnings to user (toast?)
+                            tracing::warn!("Opening bundle at {path:?} with warnings");
+                            for warning in bundle.warnings() {
+                                tracing::warn!("{warning}");
                             }
                         }
+                        content = PlayingContent::Bundle(movie_url.clone(), bundle);
+                    }
+                    Err(BundleError::BundleDoesntExist)
+                    | Err(BundleError::InvalidSource(BundleSourceError::UnknownSource)) => {
+                        // Do nothing and carry on opening it as a swf - this likely isn't a bundle at all
+                    }
+                    Err(e) => {
+                        // TODO: Visible popup when a bundle (or regular file) fails to open
+                        tracing::error!("Couldn't open bundle at {path:?}: {e}");
                     }
                 }
             }
@@ -215,7 +210,7 @@ impl ActivePlayer {
             opt.open_url_mode,
             opt.socket_allowed.clone(),
             opt.tcp_connections,
-            Arc::new(content),
+            Rc::new(content),
         );
 
         if cfg!(feature = "software_video") {
