@@ -93,7 +93,7 @@ pub fn read_bookmarks(input: &str) -> ParseDetails<Bookmarks> {
             let name = match bookmark.parse_from_str(cx, "name") {
                 Some(value) => value,
                 // Fallback to using the URL as the name.
-                None => crate::util::url_to_readable_name(&url).into_owned(),
+                None => ruffle_frontend_utils::url_to_readable_name(&url).into_owned(),
             };
 
             result.push(Bookmark { url, name });

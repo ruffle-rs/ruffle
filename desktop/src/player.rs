@@ -125,7 +125,9 @@ impl PlayingContent {
 
     pub fn name(&self) -> String {
         match self {
-            PlayingContent::DirectFile(url) => crate::util::url_to_readable_name(url).to_string(),
+            PlayingContent::DirectFile(url) => {
+                ruffle_frontend_utils::url_to_readable_name(url).to_string()
+            }
             PlayingContent::Bundle(_, bundle) => bundle.information().name.to_string(),
         }
     }

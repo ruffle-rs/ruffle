@@ -3,7 +3,6 @@ use anyhow::{anyhow, Error};
 use gilrs::Button;
 use rfd::FileDialog;
 use ruffle_core::events::{GamepadButton, KeyCode, TextControlCode};
-use std::borrow::Cow;
 use std::path::{Path, PathBuf};
 use url::Url;
 use winit::dpi::PhysicalSize;
@@ -232,15 +231,6 @@ pub fn parse_url(path: &Path) -> Result<Url, Error> {
             .filter(|url| url.host().is_some() || url.scheme() == "file")
             .ok_or_else(|| anyhow!("Input path is not a file and could not be parsed as a URL."))
     }
-}
-
-pub fn url_to_readable_name(url: &Url) -> Cow<'_, str> {
-    let name = url
-        .path_segments()
-        .and_then(|segments| segments.last())
-        .unwrap_or_else(|| url.as_str());
-
-    urlencoding::decode(name).unwrap_or(Cow::Borrowed(name))
 }
 
 fn actually_pick_file(dir: Option<PathBuf>) -> Option<PathBuf> {
