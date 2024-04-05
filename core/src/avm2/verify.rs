@@ -832,7 +832,14 @@ fn resolve_op<'gc>(
                 num_args,
             }
         }
-        AbcOp::CallPropLex { index, num_args } => Op::CallPropLex { index, num_args },
+        AbcOp::CallPropLex { index, num_args } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::CallPropLex {
+                multiname,
+                num_args,
+            }
+        }
         AbcOp::CallPropVoid { index, num_args } => {
             let multiname = pool_multiname(activation, translation_unit, index)?;
 
@@ -842,8 +849,22 @@ fn resolve_op<'gc>(
             }
         }
         AbcOp::CallStatic { index, num_args } => Op::CallStatic { index, num_args },
-        AbcOp::CallSuper { index, num_args } => Op::CallSuper { index, num_args },
-        AbcOp::CallSuperVoid { index, num_args } => Op::CallSuperVoid { index, num_args },
+        AbcOp::CallSuper { index, num_args } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::CallSuper {
+                multiname,
+                num_args,
+            }
+        }
+        AbcOp::CallSuperVoid { index, num_args } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::CallSuperVoid {
+                multiname,
+                num_args,
+            }
+        }
         AbcOp::ReturnValue => Op::ReturnValue,
         AbcOp::ReturnVoid => Op::ReturnVoid,
         AbcOp::GetProperty { index } => {
@@ -866,8 +887,16 @@ fn resolve_op<'gc>(
 
             Op::DeleteProperty { multiname }
         }
-        AbcOp::GetSuper { index } => Op::GetSuper { index },
-        AbcOp::SetSuper { index } => Op::SetSuper { index },
+        AbcOp::GetSuper { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::GetSuper { multiname }
+        }
+        AbcOp::SetSuper { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::SetSuper { multiname }
+        }
         AbcOp::In => Op::In,
         AbcOp::PushScope => Op::PushScope,
         AbcOp::NewCatch { index } => Op::NewCatch { index },
@@ -898,7 +927,11 @@ fn resolve_op<'gc>(
 
             Op::GetLex { multiname }
         }
-        AbcOp::GetDescendants { index } => Op::GetDescendants { index },
+        AbcOp::GetDescendants { index } => {
+            let multiname = pool_multiname(activation, translation_unit, index)?;
+
+            Op::GetDescendants { multiname }
+        }
         AbcOp::GetSlot { index } => Op::GetSlot { index },
         AbcOp::SetSlot { index } => Op::SetSlot { index },
         AbcOp::GetGlobalSlot { index } => Op::GetGlobalSlot { index },
