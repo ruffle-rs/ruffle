@@ -3,9 +3,7 @@ use crate::avm2::multiname::Multiname;
 use crate::string::AvmAtom;
 
 use gc_arena::{Collect, Gc, GcCell};
-use swf::avm2::types::{
-    Class as AbcClass, Exception, Index, LookupSwitch, Method, Multiname as AbcMultiname, Namespace,
-};
+use swf::avm2::types::{Class as AbcClass, Exception, Index, LookupSwitch, Method, Namespace};
 
 #[derive(Clone, Collect, Debug)]
 #[collect(no_drop)]
@@ -41,8 +39,7 @@ pub enum Op<'gc> {
         num_args: u32,
     },
     CallPropLex {
-        #[collect(require_static)]
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
 
         num_args: u32,
     },
@@ -58,14 +55,12 @@ pub enum Op<'gc> {
         num_args: u32,
     },
     CallSuper {
-        #[collect(require_static)]
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
 
         num_args: u32,
     },
     CallSuperVoid {
-        #[collect(require_static)]
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
 
         num_args: u32,
     },
@@ -133,8 +128,7 @@ pub enum Op<'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
     },
     GetDescendants {
-        #[collect(require_static)]
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     },
     GetGlobalScope,
     GetGlobalSlot {
@@ -159,8 +153,7 @@ pub enum Op<'gc> {
         index: u32,
     },
     GetSuper {
-        #[collect(require_static)]
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     },
     GreaterEquals,
     GreaterThan,
@@ -318,8 +311,7 @@ pub enum Op<'gc> {
         index: u32,
     },
     SetSuper {
-        #[collect(require_static)]
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     },
     Sf32,
     Sf64,

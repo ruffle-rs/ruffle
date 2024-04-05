@@ -30,7 +30,7 @@ use std::cmp::{min, Ordering};
 use std::sync::Arc;
 use swf::avm2::types::{
     Class as AbcClass, Exception, Index, Method as AbcMethod, MethodFlags as AbcMethodFlags,
-    Multiname as AbcMultiname, Namespace as AbcNamespace,
+    Namespace as AbcNamespace,
 };
 
 use super::error::make_mismatch_error;
@@ -771,24 +771,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .pool_namespace(index, &mut self.context)
     }
 
-    /// Retrieve a multiname from the current constant pool.
-    /// The name is guaranteed to be fully initialized.
-    fn pool_multiname_and_initialize(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
-    ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
-        let name = method
-            .translation_unit()
-            .pool_maybe_uninitialized_multiname(index, &mut self.context)?;
-        if name.has_lazy_component() {
-            let name = name.fill_with_runtime_params(self)?;
-            Ok(Gc::new(self.context.gc_context, name))
-        } else {
-            Ok(name)
-        }
-    }
-
     /// Retrieve a method entry from the current ABC file's method table.
     fn table_method(
         &mut self,
@@ -931,9 +913,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     multiname,
                     num_args,
                 } => self.op_call_property(*multiname, *num_args),
-                Op::CallPropLex { index, num_args } => {
-                    self.op_call_prop_lex(method, *index, *num_args)
-                }
+                Op::CallPropLex {
+                    multiname,
+                    num_args,
+                } => self.op_call_prop_lex(*multiname, *num_args),
                 Op::CallPropVoid {
                     multiname,
                     num_args,
@@ -941,18 +924,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::CallStatic { index, num_args } => {
                     self.op_call_static(method, *index, *num_args)
                 }
-                Op::CallSuper { index, num_args } => self.op_call_super(method, *index, *num_args),
-                Op::CallSuperVoid { index, num_args } => {
-                    self.op_call_super_void(method, *index, *num_args)
-                }
+                Op::CallSuper {
+                    multiname,
+                    num_args,
+                } => self.op_call_super(*multiname, *num_args),
+                Op::CallSuperVoid {
+                    multiname,
+                    num_args,
+                } => self.op_call_super_void(*multiname, *num_args),
                 Op::ReturnValue => self.op_return_value(method),
                 Op::ReturnVoid => self.op_return_void(),
                 Op::GetProperty { multiname } => self.op_get_property(*multiname),
                 Op::SetProperty { multiname } => self.op_set_property(*multiname),
                 Op::InitProperty { multiname } => self.op_init_property(*multiname),
                 Op::DeleteProperty { multiname } => self.op_delete_property(*multiname),
-                Op::GetSuper { index } => self.op_get_super(method, *index),
-                Op::SetSuper { index } => self.op_set_super(method, *index),
+                Op::GetSuper { multiname } => self.op_get_super(*multiname),
+                Op::SetSuper { multiname } => self.op_set_super(*multiname),
                 Op::In => self.op_in(),
                 Op::PushScope => self.op_push_scope(),
                 Op::NewCatch { index } => self.op_newcatch(method, *index),
@@ -965,7 +952,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::FindProperty { multiname } => self.op_find_property(*multiname),
                 Op::FindPropStrict { multiname } => self.op_find_prop_strict(*multiname),
                 Op::GetLex { multiname } => self.op_get_lex(*multiname),
-                Op::GetDescendants { index } => self.op_get_descendants(method, *index),
+                Op::GetDescendants { multiname } => self.op_get_descendants(*multiname),
                 Op::GetSlot { index } => self.op_get_slot(*index),
                 Op::SetSlot { index } => self.op_set_slot(*index),
                 Op::GetGlobalSlot { index } => self.op_get_global_slot(*index),
@@ -1261,12 +1248,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_call_prop_lex(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
-        let multiname = self.pool_multiname_and_initialize(method, index)?;
+        let multiname = multiname.fill_with_runtime_params(self)?;
         let receiver = self
             .pop_stack()
             .coerce_to_object_or_typeerror(self, Some(&multiname))?;
@@ -1320,12 +1306,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_call_super(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
-        let multiname = self.pool_multiname_and_initialize(method, index)?;
+        let multiname = multiname.fill_with_runtime_params(self)?;
         let receiver = self
             .pop_stack()
             .coerce_to_object_or_typeerror(self, Some(&multiname))?;
@@ -1341,12 +1326,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_call_super_void(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
-        let multiname = self.pool_multiname_and_initialize(method, index)?;
+        let multiname = multiname.fill_with_runtime_params(self)?;
         let receiver = self
             .pop_stack()
             .coerce_to_object_or_typeerror(self, Some(&multiname))?;
@@ -1550,10 +1534,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_get_super(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let multiname = self.pool_multiname_and_initialize(method, index)?;
+        let multiname = multiname.fill_with_runtime_params(self)?;
         let object = self
             .pop_stack()
             .coerce_to_object_or_typeerror(self, Some(&multiname))?;
@@ -1569,11 +1552,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_set_super(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack();
-        let multiname = self.pool_multiname_and_initialize(method, index)?;
+        let multiname = multiname.fill_with_runtime_params(self)?;
         let object = self
             .pop_stack()
             .coerce_to_object_or_typeerror(self, Some(&multiname))?;
@@ -1730,10 +1712,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_get_descendants(
         &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcMultiname>,
+        multiname: Gc<'gc, Multiname<'gc>>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let multiname = self.pool_multiname_and_initialize(method, index)?;
+        let multiname = multiname.fill_with_runtime_params(self)?;
         let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
         if let Some(descendants) = object.xml_descendants(self, &multiname) {
             self.push_stack(descendants);
