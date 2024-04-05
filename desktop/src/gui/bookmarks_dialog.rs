@@ -19,7 +19,7 @@ impl BookmarkAddDialog {
             preferences,
             name: initial_url
                 .as_ref()
-                .map(|x| crate::util::url_to_readable_name(x).into_owned())
+                .map(|x| ruffle_frontend_utils::url_to_readable_name(x).into_owned())
                 .unwrap_or_default(),
             // TODO: hint.
             url: PathOrUrlField::new(initial_url, ""),

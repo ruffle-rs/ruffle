@@ -4386,6 +4386,7 @@ dependencies = [
  "toml_edit 0.22.9",
  "tracing",
  "url",
+ "urlencoding",
  "zip",
 ]
 
