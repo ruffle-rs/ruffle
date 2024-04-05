@@ -170,6 +170,7 @@ pub fn optimize<'gc>(
         pub array: ClassObject<'gc>,
         pub function: ClassObject<'gc>,
         pub void: ClassObject<'gc>,
+        pub namespace: ClassObject<'gc>,
     }
     let types = Types {
         object: activation.avm2().classes().object,
@@ -182,6 +183,7 @@ pub fn optimize<'gc>(
         array: activation.avm2().classes().array,
         function: activation.avm2().classes().function,
         void: activation.avm2().classes().void,
+        namespace: activation.avm2().classes().namespace,
     };
 
     let method_body = method
@@ -306,6 +308,11 @@ pub fn optimize<'gc>(
         last_op_was_block_terminating = false;
 
         match op {
+            Op::CoerceA => {
+                // This does actually inhibit optimizations in FP
+                stack.pop();
+                stack.push_any();
+            }
             Op::CoerceB => {
                 let stack_value = stack.pop_or_any();
                 if stack_value.class == Some(types.boolean) {
@@ -331,18 +338,16 @@ pub fn optimize<'gc>(
                 }
                 stack.push_class_object(types.int);
             }
-            Op::CoerceU => {
-                let stack_value = stack.pop_or_any();
-                // TODO: maybe the type check is safe here...?
-                if stack_value.contains_valid_unsigned {
-                    *op = Op::Nop;
-                }
-                stack.push_class_object(types.uint);
-            }
-            Op::CoerceA => {
-                // This does actually inhibit optimizations in FP
+            Op::CoerceO => {
                 stack.pop();
-                stack.push_any();
+
+                stack.push_class_object(types.object);
+            }
+            Op::ConvertO => {
+                // This has no stack effect that code can notice:
+                // either it will push the value back on the stack
+                // (no difference) or it will throw an error (which
+                // will clear the stack).
             }
             Op::CoerceS => {
                 let stack_value = stack.pop_or_any();
@@ -350,6 +355,18 @@ pub fn optimize<'gc>(
                     *op = Op::Nop;
                 }
                 stack.push_class_object(types.string);
+            }
+            Op::ConvertS => {
+                stack.pop();
+                stack.push_class_object(types.string);
+            }
+            Op::CoerceU => {
+                let stack_value = stack.pop_or_any();
+                // TODO: maybe the type check is safe here...?
+                if stack_value.contains_valid_unsigned {
+                    *op = Op::Nop;
+                }
+                stack.push_class_object(types.uint);
             }
             Op::Equals
             | Op::StrictEquals
@@ -406,6 +423,13 @@ pub fn optimize<'gc>(
                 }
                 stack.push(new_value);
             }
+            Op::PushUint { value } => {
+                let mut new_value = OptValue::of_type(types.uint);
+                if *value < (1 << 28) {
+                    new_value.contains_valid_unsigned = true;
+                }
+                stack.push(new_value);
+            }
             Op::DecrementI => {
                 // TODO (same for other I ops): analyze what _exactly_ the type int implies
                 // and whether we can use Number or (u)int here
@@ -419,8 +443,14 @@ pub fn optimize<'gc>(
             Op::DecLocalI { index } => {
                 local_types.set_any(*index as usize);
             }
+            Op::DecLocal { index } => {
+                local_types.set(*index as usize, OptValue::of_type(types.number));
+            }
             Op::IncLocalI { index } => {
                 local_types.set_any(*index as usize);
+            }
+            Op::IncLocal { index } => {
+                local_types.set(*index as usize, OptValue::of_type(types.number));
             }
             Op::Increment => {
                 stack.pop();
@@ -450,7 +480,6 @@ pub fn optimize<'gc>(
                 stack.push_any();
             }
             Op::NegateI => {
-                stack.pop();
                 stack.pop();
                 stack.push_any();
             }
@@ -526,6 +555,9 @@ pub fn optimize<'gc>(
             Op::PushDouble { .. } => {
                 stack.push_class_object(types.number);
             }
+            Op::PushNamespace { .. } => {
+                stack.push_class_object(types.namespace);
+            }
             Op::PushString { .. } => {
                 stack.push_class_object(types.string);
             }
@@ -558,12 +590,38 @@ pub fn optimize<'gc>(
                 stack.pop();
                 stack.push_class_object(types.boolean);
             }
+            Op::InstanceOf => {
+                stack.pop();
+                stack.pop();
+                stack.push_class_object(types.boolean);
+            }
             Op::TypeOf => {
                 stack.pop();
                 stack.push_class_object(types.string);
             }
             Op::ApplyType { num_types } => {
                 stack.popn(*num_types);
+
+                stack.pop();
+
+                stack.push_any();
+            }
+            Op::CheckFilter => {
+                stack.pop();
+                stack.push_any();
+            }
+            Op::Dxns { .. } => {
+                // Dxns doesn't change stack or locals
+            }
+            Op::DxnsLate => {
+                stack.pop();
+            }
+            Op::EscXAttr | Op::EscXElem => {
+                stack.pop();
+                stack.push_class_object(types.string);
+            }
+            Op::GetDescendants { multiname } => {
+                stack.pop_for_multiname(*multiname);
 
                 stack.pop();
 
@@ -642,6 +700,10 @@ pub fn optimize<'gc>(
                 // Avoid handling for now
                 stack.push_any();
             }
+            Op::GetOuterScope { .. } => {
+                // Avoid handling for now
+                stack.push_any();
+            }
             Op::Pop => {
                 stack.pop();
             }
@@ -697,6 +759,11 @@ pub fn optimize<'gc>(
                 stack.push_any();
             }
             Op::NextValue => {
+                stack.pop();
+                stack.pop();
+                stack.push_any();
+            }
+            Op::HasNext => {
                 stack.pop();
                 stack.pop();
                 stack.push_any();
@@ -862,6 +929,43 @@ pub fn optimize<'gc>(
                 // Avoid checking return value for now
                 stack.push_any();
             }
+            Op::Call { num_args } => {
+                // Arguments
+                stack.popn(*num_args);
+
+                stack.pop();
+
+                stack.pop();
+
+                // Avoid checking return value for now
+                stack.push_any();
+            }
+            Op::CallMethod { .. } => unreachable!("CallMethod cannot be emitted by verifier"),
+            Op::CallPropLex {
+                multiname,
+                num_args,
+            } => {
+                // Arguments
+                stack.popn(*num_args);
+
+                stack.pop_for_multiname(*multiname);
+
+                // Then receiver.
+                stack.pop();
+
+                // Avoid checking return value for now
+                stack.push_any();
+            }
+            Op::CallStatic { num_args, .. } => {
+                // Arguments
+                stack.popn(*num_args);
+
+                // Then receiver.
+                stack.pop();
+
+                // Avoid checking return value for now
+                stack.push_any();
+            }
             Op::CallProperty {
                 multiname,
                 num_args,
@@ -925,27 +1029,70 @@ pub fn optimize<'gc>(
                 }
                 // `stack_pop_multiname` handled lazy
             }
-            Op::Call { num_args } => {
+            Op::GetSuper { multiname } => {
+                stack.pop_for_multiname(*multiname);
+
+                // Receiver
+                stack.pop();
+            }
+            Op::SetSuper { multiname } => {
+                stack.pop();
+
+                stack.pop_for_multiname(*multiname);
+
+                // Receiver
+                stack.pop();
+            }
+            Op::CallSuper {
+                multiname,
+                num_args,
+            } => {
                 // Arguments
                 stack.popn(*num_args);
 
+                stack.pop_for_multiname(*multiname);
+
+                // Then receiver.
                 stack.pop();
 
                 // Avoid checking return value for now
                 stack.push_any();
             }
+            Op::CallSuperVoid {
+                multiname,
+                num_args,
+            } => {
+                // Arguments
+                stack.popn(*num_args);
+
+                stack.pop_for_multiname(*multiname);
+
+                // Then receiver.
+                stack.pop();
+            }
             Op::GetGlobalScope => {
                 // Avoid handling for now
                 stack.push_any();
+            }
+            Op::GetGlobalSlot { .. } => {
+                // Avoid handling for now
+                stack.push_any();
+            }
+            Op::SetGlobalSlot { .. } => {
+                // Avoid handling for now
+                stack.pop();
             }
             Op::NewActivation => {
                 // Avoid handling for now
                 stack.push_any();
             }
             Op::Nop => {}
-            Op::DebugFile { .. } => {}
-            Op::DebugLine { .. } => {}
-            Op::Debug { .. } => {}
+            Op::DebugFile { .. }
+            | Op::DebugLine { .. }
+            | Op::Debug { .. }
+            | Op::Bkpt
+            | Op::BkptLine { .. }
+            | Op::Timestamp => {}
             Op::IfTrue { .. } | Op::IfFalse { .. } => {
                 stack.pop();
                 state_map.insert(i as i32, local_types.clone());
@@ -976,15 +1123,23 @@ pub fn optimize<'gc>(
                 value.contains_valid_integer = true;
                 stack.push(value);
             }
-            Op::Sxi8 | Op::Sxi16 => {
+            Op::Li32 => {
+                stack.pop();
+                stack.push_class_object(types.int);
+            }
+            Op::Sxi1 | Op::Sxi8 | Op::Sxi16 => {
                 stack.pop();
                 let mut value = OptValue::of_type(types.int);
                 value.contains_valid_integer = true;
                 stack.push(value);
             }
-            Op::Li32 => {
+            Op::Sf32 | Op::Sf64 => {
                 stack.pop();
-                stack.push_class_object(types.int);
+                stack.pop();
+            }
+            Op::Lf32 | Op::Lf64 => {
+                stack.pop();
+                stack.push_class_object(types.number);
             }
             Op::ReturnVoid | Op::ReturnValue | Op::Throw | Op::LookupSwitch(_) => {
                 // End of block
@@ -1001,10 +1156,6 @@ pub fn optimize<'gc>(
                 scope_stack.clear();
                 local_types = initial_local_types.clone();
                 last_op_was_block_terminating = true;
-            }
-            _ => {
-                stack.clear();
-                scope_stack.clear();
             }
         }
     }
