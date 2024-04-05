@@ -1,6 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::method::BytecodeMethod;
+use crate::avm2::method::{BytecodeMethod, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
 use crate::avm2::object::ClassObject;
 use crate::avm2::op::Op;
@@ -151,6 +151,7 @@ pub fn optimize<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: &BytecodeMethod<'gc>,
     code: &mut Vec<Op<'gc>>,
+    resolved_parameters: &[ResolvedParamConfig<'gc>],
     jump_targets: HashMap<i32, JumpSources>,
 ) {
     // These make the code less readable
@@ -201,22 +202,10 @@ pub fn optimize<'gc>(
         None
     };
 
-    // TODO: Store these argument types somewhere on the function so they don't
-    // have to be re-resolved every function call
-    let mut argument_types = Vec::new();
-    for argument in &method.signature {
-        let type_name = &argument.param_type_name;
-
-        let argument_type = if !type_name.has_lazy_component() {
-            activation
-                .domain()
-                .get_class(type_name, activation.context.gc_context)
-        } else {
-            None
-        };
-
-        argument_types.push(argument_type);
-    }
+    let argument_types = resolved_parameters
+        .iter()
+        .map(|arg| arg.param_type)
+        .collect::<Vec<_>>();
 
     // Initial set of local types
     let mut initial_local_types = Locals::new(method_body.num_locals as usize);
