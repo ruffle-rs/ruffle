@@ -819,10 +819,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let verified_info = method.verified_info.read();
         let verified_code = verified_info.as_ref().unwrap().parsed_code.as_slice();
 
-        if verified_code.is_empty() {
-            return Ok(Value::Undefined);
-        }
-
         self.ip = 0;
 
         let val = loop {
