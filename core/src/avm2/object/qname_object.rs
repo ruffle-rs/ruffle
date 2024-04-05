@@ -99,6 +99,12 @@ impl<'gc> QNameObject<'gc> {
         name.local_name().unwrap_or("*".into())
     }
 
+    pub fn set_is_qname(&self, mc: &Mutation<'gc>, is_qname: bool) {
+        let mut write = self.0.write(mc);
+
+        write.name.set_is_qname(is_qname);
+    }
+
     pub fn uri(&self) -> Option<AvmString<'gc>> {
         let read = self.0.read();
 
