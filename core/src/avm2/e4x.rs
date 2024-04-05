@@ -262,6 +262,7 @@ impl<'gc> E4XNode<'gc> {
     pub fn deep_copy(&self, mc: &Mutation<'gc>) -> Self {
         let this = self.0.read();
 
+        // TODO: FP actually respects ignoreComments and ignoreProcessingInstructions here.
         let kind = match &this.kind {
             E4XNodeKind::Text(string) => E4XNodeKind::Text(*string),
             E4XNodeKind::CData(string) => E4XNodeKind::CData(*string),
@@ -1384,6 +1385,12 @@ pub fn string_to_multiname<'gc>(
 }
 
 // 10.6 ToXMLName
+// note: the coercion rules in FP are slightly more complex.
+// in FP there are 2 layers:
+// - ToXMLName()
+// - CoerceE4XMultiname()
+// for example, the first layer doesn't propagate IS_QNAME on QNames, but latter does
+// TODO: figure out if this matters for us, maybe there are some edge cases
 pub fn name_to_multiname<'gc>(
     activation: &mut Activation<'_, 'gc>,
     name: &Value<'gc>,
