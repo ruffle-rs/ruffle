@@ -20,3 +20,26 @@ impl TableExt for Table {
             .expect("type was just created")
     }
 }
+
+#[macro_export]
+macro_rules! define_serialization_test_helpers {
+    ($read_method:ident, $doc_struct:ty, $writer:ident) => {
+        fn check_roundtrip(preferences: &DocumentHolder<$doc_struct>) {
+            use std::ops::Deref;
+            let read_result = $read_method(&preferences.serialize());
+            assert_eq!(
+                preferences.deref(),
+                read_result.values(),
+                "roundtrip failed: expected != actual"
+            );
+        }
+
+        fn test(original: &str, fun: impl FnOnce(&mut $writer), expected: &str) {
+            let mut preferences = $read_method(original).result;
+            let mut writer = $writer::new(&mut preferences);
+            fun(&mut writer);
+            check_roundtrip(&preferences);
+            assert_eq!(expected, preferences.serialize());
+        }
+    };
+}
