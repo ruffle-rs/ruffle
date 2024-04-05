@@ -285,7 +285,7 @@ mod tests {
     #[allow(clippy::unwrap_used)]
     mod bookmarks {
         use super::*;
-        use crate::preferences::read::read_bookmarks;
+        use ruffle_frontend_utils::bookmarks::read_bookmarks;
         use std::str::FromStr;
         use url::Url;
 
