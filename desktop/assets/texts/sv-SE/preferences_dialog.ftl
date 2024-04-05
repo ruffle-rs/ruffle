@@ -11,3 +11,6 @@ audio-output-device-default = Systemstandard
 log-filename-pattern = Loggfilnamn
 log-filename-pattern-single-file = Enskild Fil (ruffle.log)
 log-filename-pattern-with-timestamp = Med Tidsstämpel
+storage-backend = Sparfilplats
+storage-backend-disk = Disk
+storage-backend-memory = Minne
