@@ -6,6 +6,8 @@ pub use crate::display_object::{
 };
 use crate::display_object::{EditText, InteractiveObject, TInteractiveObject};
 use crate::drawing::Drawing;
+use crate::events::ClipEvent;
+use crate::Player;
 use either::Either;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
@@ -67,6 +69,24 @@ impl<'gc> FocusTracker<'gc> {
     }
 
     pub fn set(&self, new: Option<InteractiveObject<'gc>>, context: &mut UpdateContext<'_, 'gc>) {
+        self.set_internal(new, context, false);
+    }
+
+    fn set_internal(
+        &self,
+        new: Option<InteractiveObject<'gc>>,
+        context: &mut UpdateContext<'_, 'gc>,
+        run_actions: bool,
+    ) {
+        Self::roll_over(context, new);
+
+        if run_actions {
+            // The order of events in avm1/tab_ordering_events suggests that
+            // FP executes rollOut/rollOver events synchronously when tabbing,
+            // but asynchronously when setting focus programmatically.
+            Player::run_actions(context);
+        }
+
         let old = self.0.focus.get();
 
         // Check if the focused element changed.
@@ -117,6 +137,17 @@ impl<'gc> FocusTracker<'gc> {
         }
     }
 
+    fn roll_over(context: &mut UpdateContext<'_, 'gc>, new: Option<InteractiveObject<'gc>>) {
+        let old = context.mouse_data.hovered;
+        context.mouse_data.hovered = new;
+        if let Some(old) = old {
+            old.handle_clip_event(context, ClipEvent::RollOut { to: new });
+        }
+        if let Some(new) = new {
+            new.handle_clip_event(context, ClipEvent::RollOver { from: old });
+        }
+    }
+
     pub fn cycle(&self, context: &mut UpdateContext<'_, 'gc>, reverse: bool) {
         let stage = context.stage;
         let mut tab_order = vec![];
@@ -149,7 +180,7 @@ impl<'gc> FocusTracker<'gc> {
         };
 
         if next.is_some() {
-            self.set(next.copied(), context);
+            self.set_internal(next.copied(), context, true);
             self.update_highlight(context);
         }
     }
