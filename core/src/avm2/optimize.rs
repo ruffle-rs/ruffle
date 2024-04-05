@@ -152,6 +152,7 @@ pub fn optimize<'gc>(
     method: &BytecodeMethod<'gc>,
     code: &mut Vec<Op<'gc>>,
     resolved_parameters: &[ResolvedParamConfig<'gc>],
+    return_type: Option<GcCell<'gc, Class<'gc>>>,
     jump_targets: HashMap<i32, JumpSources>,
 ) {
     // These make the code less readable
@@ -839,7 +840,8 @@ pub fn optimize<'gc>(
                 }
             }
             Op::InitProperty { multiname } => {
-                stack.pop();
+                let set_value = stack.pop_or_any();
+
                 stack.pop_for_multiname(*multiname);
                 let stack_value = stack.pop_or_any();
                 if !multiname.has_lazy_component() {
@@ -849,6 +851,28 @@ pub fn optimize<'gc>(
                                 Some(Property::Slot { slot_id })
                                 | Some(Property::ConstSlot { slot_id }) => {
                                     *op = Op::SetSlot { index: slot_id };
+
+                                    // If the set value's type is the same as the type of the slot,
+                                    // a SetSlotNoCoerce can be emitted.
+                                    let mut value_class =
+                                        class.instance_vtable().slot_classes()[slot_id as usize];
+                                    let resolved_value_class = value_class.get_class(activation);
+
+                                    if let Ok(slot_class) = resolved_value_class {
+                                        if let Some(slot_class) = slot_class {
+                                            if let Some(set_value_class) = set_value.class {
+                                                if GcCell::ptr_eq(
+                                                    set_value_class.inner_class_definition(),
+                                                    slot_class,
+                                                ) {
+                                                    *op = Op::SetSlotNoCoerce { index: slot_id };
+                                                }
+                                            }
+                                        } else {
+                                            // Slot type was Any, no coercion will be done anyways
+                                            *op = Op::SetSlotNoCoerce { index: slot_id };
+                                        }
+                                    }
                                 }
                                 Some(Property::Virtual {
                                     set: Some(disp_id), ..
@@ -867,7 +891,8 @@ pub fn optimize<'gc>(
                 // `stack_pop_multiname` handled lazy
             }
             Op::SetProperty { multiname } => {
-                stack.pop();
+                let set_value = stack.pop_or_any();
+
                 stack.pop_for_multiname(*multiname);
                 let stack_value = stack.pop_or_any();
                 if !multiname.has_lazy_component() {
@@ -876,6 +901,28 @@ pub fn optimize<'gc>(
                             match class.instance_vtable().get_trait(multiname) {
                                 Some(Property::Slot { slot_id }) => {
                                     *op = Op::SetSlot { index: slot_id };
+
+                                    // If the set value's type is the same as the type of the slot,
+                                    // a SetSlotNoCoerce can be emitted.
+                                    let mut value_class =
+                                        class.instance_vtable().slot_classes()[slot_id as usize];
+                                    let resolved_value_class = value_class.get_class(activation);
+
+                                    if let Ok(slot_class) = resolved_value_class {
+                                        if let Some(slot_class) = slot_class {
+                                            if let Some(set_value_class) = set_value.class {
+                                                if GcCell::ptr_eq(
+                                                    set_value_class.inner_class_definition(),
+                                                    slot_class,
+                                                ) {
+                                                    *op = Op::SetSlotNoCoerce { index: slot_id };
+                                                }
+                                            }
+                                        } else {
+                                            // Slot type was Any, no coercion will be done anyways
+                                            *op = Op::SetSlotNoCoerce { index: slot_id };
+                                        }
+                                    }
                                 }
                                 Some(Property::Virtual {
                                     set: Some(disp_id), ..
@@ -940,7 +987,6 @@ pub fn optimize<'gc>(
                 // Avoid checking return value for now
                 stack.push_any();
             }
-            Op::CallMethod { .. } => unreachable!("CallMethod cannot be emitted by verifier"),
             Op::CallPropLex {
                 multiname,
                 num_args,
@@ -1141,7 +1187,27 @@ pub fn optimize<'gc>(
                 stack.pop();
                 stack.push_class_object(types.number);
             }
-            Op::ReturnVoid | Op::ReturnValue | Op::Throw | Op::LookupSwitch(_) => {
+            Op::ReturnVoid | Op::Throw | Op::LookupSwitch(_) => {
+                // End of block
+                stack.clear();
+                scope_stack.clear();
+                local_types = initial_local_types.clone();
+                last_op_was_block_terminating = true;
+            }
+            Op::ReturnValue => {
+                let stack_value = stack.pop_or_any();
+
+                if let Some(return_type) = return_type {
+                    if let Some(stack_value_class) = stack_value.class {
+                        if GcCell::ptr_eq(stack_value_class.inner_class_definition(), return_type) {
+                            *op = Op::ReturnValueNoCoerce;
+                        }
+                    }
+                } else {
+                    // Return type was Any, no coercion will be done anyways
+                    *op = Op::ReturnValueNoCoerce;
+                }
+
                 // End of block
                 stack.clear();
                 scope_stack.clear();
@@ -1157,6 +1223,10 @@ pub fn optimize<'gc>(
                 local_types = initial_local_types.clone();
                 last_op_was_block_terminating = true;
             }
+            other => unreachable!(
+                "Optimizer hit op {:?}, which cannot appear after the verifier step",
+                other
+            ),
         }
     }
 }
