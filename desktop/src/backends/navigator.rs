@@ -1,6 +1,7 @@
 //! Navigator backend for web
 
 use crate::executor::FutureSpawner;
+use crate::player::PlayingContent;
 use async_channel::{Receiver, Sender, TryRecvError};
 use async_io::Timer;
 use async_net::TcpStream;
@@ -21,9 +22,9 @@ use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
 use std::collections::HashSet;
-use std::fs::File;
+use std::io;
 use std::io::ErrorKind;
-use std::io::{self, Read};
+use std::path::Path;
 use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
@@ -50,6 +51,8 @@ pub struct ExternalNavigatorBackend<F: FutureSpawner> {
     upgrade_to_https: bool,
 
     open_url_mode: OpenURLMode,
+
+    content: Arc<PlayingContent>,
 }
 
 impl<F: FutureSpawner> ExternalNavigatorBackend<F> {
@@ -63,6 +66,7 @@ impl<F: FutureSpawner> ExternalNavigatorBackend<F> {
         open_url_mode: OpenURLMode,
         socket_allowed: HashSet<String>,
         socket_mode: SocketMode,
+        content: Arc<PlayingContent>,
     ) -> Self {
         let proxy = proxy.and_then(|url| url.as_str().parse().ok());
         let builder = HttpClient::builder()
@@ -86,6 +90,7 @@ impl<F: FutureSpawner> ExternalNavigatorBackend<F> {
             open_url_mode,
             socket_allowed,
             socket_mode,
+            content,
         }
     }
 }
@@ -170,7 +175,7 @@ impl<F: FutureSpawner> NavigatorBackend for ExternalNavigatorBackend<F> {
     fn fetch(&self, request: Request) -> OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse> {
         enum DesktopResponseBody {
             /// The response's body comes from a file.
-            File(File),
+            File(Result<Vec<u8>, std::io::Error>),
 
             /// The response's body comes from the network.
             ///
@@ -195,13 +200,9 @@ impl<F: FutureSpawner> NavigatorBackend for ExternalNavigatorBackend<F> {
             #[allow(clippy::await_holding_lock)]
             fn body(self: Box<Self>) -> OwnedFuture<Vec<u8>, Error> {
                 match self.response_body {
-                    DesktopResponseBody::File(mut file) => Box::pin(async move {
-                        let mut body = vec![];
-                        file.read_to_end(&mut body)
-                            .map_err(|e| Error::FetchError(e.to_string()))?;
-
-                        Ok(body)
-                    }),
+                    DesktopResponseBody::File(file) => {
+                        Box::pin(async move { file.map_err(|e| Error::FetchError(e.to_string())) })
+                    }
                     DesktopResponseBody::Network(response) => Box::pin(async move {
                         let mut body = vec![];
                         response
@@ -228,17 +229,16 @@ impl<F: FutureSpawner> NavigatorBackend for ExternalNavigatorBackend<F> {
             fn next_chunk(&mut self) -> OwnedFuture<Option<Vec<u8>>, Error> {
                 match &mut self.response_body {
                     DesktopResponseBody::File(file) => {
-                        let mut buf = vec![0; 4096];
-                        let res = file.read(&mut buf);
+                        let res = file
+                            .as_mut()
+                            .map(std::mem::take)
+                            .map_err(|e| Error::FetchError(e.to_string()));
 
                         Box::pin(async move {
                             match res {
-                                Ok(count) if count > 0 => {
-                                    buf.resize(count, 0);
-                                    Ok(Some(buf))
-                                }
+                                Ok(bytes) if !bytes.is_empty() => Ok(Some(bytes)),
                                 Ok(_) => Ok(None),
-                                Err(e) => Err(Error::FetchError(e.to_string())),
+                                Err(e) => Err(e),
                             }
                         })
                     }
@@ -276,7 +276,9 @@ impl<F: FutureSpawner> NavigatorBackend for ExternalNavigatorBackend<F> {
 
             fn expected_length(&self) -> Result<Option<u64>, Error> {
                 match &self.response_body {
-                    DesktopResponseBody::File(file) => Ok(Some(file.metadata()?.len())),
+                    DesktopResponseBody::File(file) => {
+                        Ok(file.as_ref().map(|file| file.len() as u64).ok())
+                    }
                     DesktopResponseBody::Network(response) => {
                         let response = response.lock().expect("no recursive locks");
                         let content_length = response.headers().get("Content-Length");
@@ -306,41 +308,46 @@ impl<F: FutureSpawner> NavigatorBackend for ExternalNavigatorBackend<F> {
         let client = self.client.clone();
 
         match processed_url.scheme() {
-            "file" => Box::pin(async move {
-                // We send the original url (including query parameters)
-                // back to ruffle_core in the `Response`
-                let response_url = processed_url.clone();
-                // Flash supports query parameters with local urls.
-                // SwfMovie takes care of exposing those to ActionScript -
-                // when we actually load a filesystem url, strip them out.
-                processed_url.set_query(None);
+            "file" => {
+                let content = self.content.clone();
+                Box::pin(async move {
+                    // We send the original url (including query parameters)
+                    // back to ruffle_core in the `Response`
+                    let response_url = processed_url.clone();
+                    // Flash supports query parameters with local urls.
+                    // SwfMovie takes care of exposing those to ActionScript -
+                    // when we actually load a filesystem url, strip them out.
+                    processed_url.set_query(None);
 
-                let path = match processed_url.to_file_path() {
-                    Ok(path) => path,
-                    Err(_) => {
-                        return create_specific_fetch_error(
-                            "Unable to create path out of URL",
-                            response_url.as_str(),
-                            "",
-                        );
+                    let path = match processed_url.to_file_path() {
+                        Ok(path) => path,
+                        Err(_) => {
+                            return create_specific_fetch_error(
+                                "Unable to create path out of URL",
+                                response_url.as_str(),
+                                "",
+                            );
+                        }
                     }
-                };
+                    .to_string_lossy()
+                    .to_string();
 
-                let contents = std::fs::File::open(&path).or_else(|e| {
+                    let contents = content.get_local_file(&path).or_else(|e| {
                     if cfg!(feature = "sandbox") {
                         use rfd::FileDialog;
+                        let parent_path = Path::new(&path).parent().unwrap_or_else(|| Path::new(&path));
 
                         if e.kind() == ErrorKind::PermissionDenied {
                             let attempt_sandbox_open = MessageDialog::new()
                                 .set_level(MessageLevel::Warning)
-                                .set_description(format!("The current movie is attempting to read files stored in {}.\n\nTo allow it to do so, click Yes, and then Open to grant read access to that directory.\n\nOtherwise, click No to deny access.", path.parent().unwrap_or(&path).to_string_lossy()))
+                                .set_description(format!("The current movie is attempting to read files stored in {}.\n\nTo allow it to do so, click Yes, and then Open to grant read access to that directory.\n\nOtherwise, click No to deny access.", parent_path.to_string_lossy()))
                                 .set_buttons(MessageButtons::YesNo)
                                 .show() == MessageDialogResult::Yes;
 
                             if attempt_sandbox_open {
-                                FileDialog::new().set_directory(&path).pick_folder();
+                                FileDialog::new().set_directory(parent_path).pick_folder();
 
-                                return std::fs::File::open(&path);
+                                return content.get_local_file(&path);
                             }
                         }
                     }
@@ -348,26 +355,16 @@ impl<F: FutureSpawner> NavigatorBackend for ExternalNavigatorBackend<F> {
                     Err(e)
                 });
 
-                let file = match contents {
-                    Ok(file) => file,
-                    Err(e) => {
-                        return create_specific_fetch_error(
-                            "Can't open file",
-                            response_url.as_str(),
-                            e,
-                        );
-                    }
-                };
+                    let response: Box<dyn SuccessResponse> = Box::new(DesktopResponse {
+                        url: response_url.to_string(),
+                        response_body: DesktopResponseBody::File(contents),
+                        status: 0,
+                        redirected: false,
+                    });
 
-                let response: Box<dyn SuccessResponse> = Box::new(DesktopResponse {
-                    url: response_url.to_string(),
-                    response_body: DesktopResponseBody::File(file),
-                    status: 0,
-                    redirected: false,
-                });
-
-                Ok(response)
-            }),
+                    Ok(response)
+                })
+            }
             _ => Box::pin(async move {
                 let client = client.ok_or_else(|| ErrorResponse {
                     url: processed_url.to_string(),
@@ -692,8 +689,9 @@ mod tests {
     }
 
     fn new_test_backend(socket_allow: bool) -> ExternalNavigatorBackend<TestFutureSpawner> {
+        let url = Url::parse("https://example.com/path/").unwrap();
         ExternalNavigatorBackend::new(
-            Url::parse("https://example.com/path/").unwrap(),
+            url.clone(),
             TestFutureSpawner,
             None,
             false,
@@ -704,6 +702,7 @@ mod tests {
             } else {
                 SocketMode::Deny
             },
+            Arc::new(PlayingContent::DirectFile(url)),
         )
     }
 

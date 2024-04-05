@@ -15,11 +15,16 @@ use ruffle_core::{
     DefaultFont, LoadBehavior, Player, PlayerBuilder, PlayerEvent, PlayerRuntime, StageAlign,
     StageScaleMode,
 };
+use ruffle_frontend_utils::bundle::info::BUNDLE_INFORMATION_FILENAME;
+use ruffle_frontend_utils::bundle::Bundle;
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::descriptors::Descriptors;
 use std::collections::{HashMap, HashSet};
+use std::ffi::OsStr;
+use std::fmt::{Debug, Formatter};
+use std::io::Read;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -89,6 +94,54 @@ impl From<&GlobalPreferences> for PlayerOptions {
     }
 }
 
+pub enum PlayingContent {
+    DirectFile(Url),
+    Bundle(Url, Bundle),
+}
+
+impl Debug for PlayingContent {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PlayingContent::DirectFile(url) => f
+                .debug_tuple("PlayingContent::DirectFile")
+                .field(url)
+                .finish(),
+            PlayingContent::Bundle(url, _) => f
+                .debug_tuple("PlayingContent::Bundle")
+                .field(url)
+                .field(&"_")
+                .finish(),
+        }
+    }
+}
+
+impl PlayingContent {
+    pub fn initial_swf_url(&self) -> &Url {
+        match self {
+            PlayingContent::DirectFile(url) => url,
+            PlayingContent::Bundle(_, bundle) => &bundle.information().url,
+        }
+    }
+
+    pub fn name(&self) -> String {
+        match self {
+            PlayingContent::DirectFile(url) => crate::util::url_to_readable_name(url).to_string(),
+            PlayingContent::Bundle(_, bundle) => bundle.information().name.to_string(),
+        }
+    }
+
+    pub fn get_local_file(&self, path: &str) -> Result<Vec<u8>, std::io::Error> {
+        match self {
+            PlayingContent::DirectFile(_) => {
+                let mut result = vec![];
+                std::fs::File::open(path)?.read_to_end(&mut result)?;
+                Ok(result)
+            }
+            PlayingContent::Bundle(_, bundle) => bundle.source().read_content(path),
+        }
+    }
+}
+
 /// Represents a current Player and any associated state with that player,
 /// which may be lost when this Player is closed (dropped)
 struct ActivePlayer {
@@ -119,7 +172,41 @@ impl ActivePlayer {
             }
         };
 
+        let mut content = PlayingContent::DirectFile(movie_url.clone());
+        if movie_url.scheme() == "file" {
+            if let Ok(path) = movie_url.to_file_path() {
+                if path.is_file()
+                    && path.file_name() == Some(OsStr::new(BUNDLE_INFORMATION_FILENAME))
+                {
+                    if let Some(bundle_dir) = path.parent() {
+                        match Bundle::from_path(bundle_dir) {
+                            Ok(bundle) => {
+                                if bundle.warnings().is_empty() {
+                                    tracing::info!("Opening bundle at {bundle_dir:?}");
+                                } else {
+                                    // TODO: Show warnings to user (toast?)
+                                    tracing::warn!(
+                                        "Opening bundle at {bundle_dir:?} with warnings"
+                                    );
+                                    for warning in bundle.warnings() {
+                                        tracing::warn!("{warning}");
+                                    }
+                                }
+                                content = PlayingContent::Bundle(movie_url.clone(), bundle);
+                            }
+                            Err(e) => {
+                                // TODO: Visible popup when a bundle (or regular file) fails to open
+                                tracing::error!("Couldn't open bundle at {bundle_dir:?}: {e}");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         let (executor, future_spawner) = WinitAsyncExecutor::new(event_loop.clone());
+        let movie_url = content.initial_swf_url().clone();
+        let readable_name = content.name();
         let navigator = ExternalNavigatorBackend::new(
             opt.base.to_owned().unwrap_or_else(|| movie_url.clone()),
             future_spawner,
@@ -128,6 +215,7 @@ impl ActivePlayer {
             opt.open_url_mode,
             opt.socket_allowed.clone(),
             opt.tcp_connections,
+            Arc::new(content),
         );
 
         if cfg!(feature = "software_video") {
@@ -189,11 +277,9 @@ impl ActivePlayer {
             .with_avm2_optimizer_enabled(opt.avm2_optimizer_enabled);
         let player = builder.build();
 
-        let readable_name = crate::util::url_to_readable_name(movie_url);
-
         window.set_title(&format!("Ruffle - {readable_name}"));
 
-        SWF_INFO.with(|i| *i.borrow_mut() = Some(readable_name.into_owned()));
+        SWF_INFO.with(|i| *i.borrow_mut() = Some(readable_name));
 
         let on_metadata = move |swf_header: &ruffle_core::swf::HeaderExt| {
             let _ = event_loop.send_event(RuffleEvent::OnMetadata(swf_header.clone()));
