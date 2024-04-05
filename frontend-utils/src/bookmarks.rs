@@ -1,3 +1,6 @@
+mod read;
+pub use read::read_bookmarks;
+
 use url::Url;
 
 pub static INVALID_URL: &str = "invalid:///";

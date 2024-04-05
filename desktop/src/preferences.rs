@@ -5,11 +5,11 @@ pub mod storage;
 
 use crate::cli::Opt;
 use crate::log::FilenamePattern;
-use crate::preferences::read::{read_bookmarks, read_preferences};
+use crate::preferences::read::read_preferences;
 use crate::preferences::write::{BookmarksWriter, PreferencesWriter};
 use anyhow::{Context, Error};
 use ruffle_core::backend::ui::US_ENGLISH;
-use ruffle_frontend_utils::bookmarks::Bookmarks;
+use ruffle_frontend_utils::bookmarks::{read_bookmarks, Bookmarks};
 use ruffle_frontend_utils::parse::DocumentHolder;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::sync::{Arc, Mutex};
