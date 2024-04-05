@@ -52,7 +52,7 @@ pub struct ExternalNavigatorBackend<F: FutureSpawner> {
 
     open_url_mode: OpenURLMode,
 
-    content: Arc<PlayingContent>,
+    content: Rc<PlayingContent>,
 }
 
 impl<F: FutureSpawner> ExternalNavigatorBackend<F> {
@@ -66,7 +66,7 @@ impl<F: FutureSpawner> ExternalNavigatorBackend<F> {
         open_url_mode: OpenURLMode,
         socket_allowed: HashSet<String>,
         socket_mode: SocketMode,
-        content: Arc<PlayingContent>,
+        content: Rc<PlayingContent>,
     ) -> Self {
         let proxy = proxy.and_then(|url| url.as_str().parse().ok());
         let builder = HttpClient::builder()
@@ -702,7 +702,7 @@ mod tests {
             } else {
                 SocketMode::Deny
             },
-            Arc::new(PlayingContent::DirectFile(url)),
+            Rc::new(PlayingContent::DirectFile(url)),
         )
     }
 

@@ -245,7 +245,7 @@ pub fn url_to_readable_name(url: &Url) -> Cow<'_, str> {
 
 fn actually_pick_file(dir: Option<PathBuf>) -> Option<PathBuf> {
     let mut dialog = FileDialog::new()
-        .add_filter("Flash Files", &["swf", "spl"])
+        .add_filter("Flash Files", &["swf", "spl", "ruf"])
         .add_filter("All Files", &["*"])
         .set_title("Load a Flash File");
 
