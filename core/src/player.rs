@@ -530,10 +530,6 @@ impl Player {
         self.audio.set_volume(volume)
     }
 
-    pub fn swf(&self) -> Arc<SwfMovie> {
-        self.swf.clone()
-    }
-
     pub fn prepare_context_menu(&mut self) -> Vec<ContextMenuItem> {
         self.mutate_with_update_context(|context| {
             if !context.stage.show_menu() {
