@@ -235,9 +235,10 @@ pub fn hit_test<'gc>(
             .map(|v| v.as_bool(activation.swf_version()))
             .unwrap_or(false);
         if x.is_finite() && y.is_finite() {
-            // Stage can be moved via _x etc., so we actually have to transform from stage to world space.
+            // The docs say the point is in "Stage coordinates", but actually they are in root coordinates.
+            // root can be moved via _root._x etc., so we actually have to transform from root to world space.
             let local = Point::from_pixels(x, y);
-            let point = movie_clip.avm1_stage().local_to_global(local);
+            let point = movie_clip.avm1_root_no_lock().local_to_global(local);
             let ret = if shape {
                 movie_clip.hit_test_shape(
                     &mut activation.context,
