@@ -2393,15 +2393,11 @@ pub trait TDisplayObject<'gc>:
     /// `avm1_root`, but disregards _lockroot
     fn avm1_root_no_lock(&self) -> DisplayObject<'gc> {
         let mut root = (*self).into();
-        loop {
-            if let Some(parent) = root.avm1_parent() {
-                if !parent.movie().is_action_script_3() {
-                    root = parent;
-                } else {
-                    // We've traversed upwards into a loader AVM2 movie, so break.
-                    break;
-                }
+        while let Some(parent) = root.avm1_parent() {
+            if !parent.movie().is_action_script_3() {
+                root = parent;
             } else {
+                // We've traversed upwards into a loader AVM2 movie, so break.
                 break;
             }
         }
