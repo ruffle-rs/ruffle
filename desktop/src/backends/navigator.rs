@@ -333,27 +333,27 @@ impl<F: FutureSpawner> NavigatorBackend for ExternalNavigatorBackend<F> {
                     .to_string();
 
                     let contents = content.get_local_file(&path).or_else(|e| {
-                    if cfg!(feature = "sandbox") {
-                        use rfd::FileDialog;
-                        let parent_path = Path::new(&path).parent().unwrap_or_else(|| Path::new(&path));
+                        if cfg!(feature = "sandbox") {
+                            use rfd::FileDialog;
+                            let parent_path = Path::new(&path).parent().unwrap_or_else(|| Path::new(&path));
 
-                        if e.kind() == ErrorKind::PermissionDenied {
-                            let attempt_sandbox_open = MessageDialog::new()
-                                .set_level(MessageLevel::Warning)
-                                .set_description(format!("The current movie is attempting to read files stored in {}.\n\nTo allow it to do so, click Yes, and then Open to grant read access to that directory.\n\nOtherwise, click No to deny access.", parent_path.to_string_lossy()))
-                                .set_buttons(MessageButtons::YesNo)
-                                .show() == MessageDialogResult::Yes;
+                            if e.kind() == ErrorKind::PermissionDenied {
+                                let attempt_sandbox_open = MessageDialog::new()
+                                    .set_level(MessageLevel::Warning)
+                                    .set_description(format!("The current movie is attempting to read files stored in {}.\n\nTo allow it to do so, click Yes, and then Open to grant read access to that directory.\n\nOtherwise, click No to deny access.", parent_path.to_string_lossy()))
+                                    .set_buttons(MessageButtons::YesNo)
+                                    .show() == MessageDialogResult::Yes;
 
-                            if attempt_sandbox_open {
-                                FileDialog::new().set_directory(parent_path).pick_folder();
+                                if attempt_sandbox_open {
+                                    FileDialog::new().set_directory(parent_path).pick_folder();
 
-                                return content.get_local_file(&path);
+                                    return content.get_local_file(&path);
+                                }
                             }
                         }
-                    }
 
-                    Err(e)
-                });
+                        Err(e)
+                    });
 
                     let response: Box<dyn SuccessResponse> = Box::new(DesktopResponse {
                         url: response_url.to_string(),
