@@ -1,10 +1,8 @@
+use crate::bundle::source::BundleSourceImpl;
 use std::cell::RefCell;
 use std::io::{Cursor, Error, ErrorKind, Read, Seek};
 use zip::result::ZipError;
-
 use zip::ZipArchive;
-
-use crate::bundle::source::BundleSourceImpl;
 
 pub struct ZipSource<R: Read + Seek>(RefCell<ZipArchive<R>>);
 
@@ -40,12 +38,10 @@ impl<R: Read + Seek> BundleSourceImpl for ZipSource<R> {
 
 #[cfg(test)]
 mod tests {
-    use std::io::{Cursor, ErrorKind, Read};
-
-    use zip::result::ZipError;
-
     use crate::bundle::source::zip::ZipSource;
     use crate::bundle::source::BundleSourceImpl;
+    use std::io::{Cursor, ErrorKind, Read};
+    use zip::result::ZipError;
 
     #[test]
     fn open_not_a_zip() {
