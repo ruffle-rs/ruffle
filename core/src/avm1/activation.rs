@@ -777,12 +777,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let num_args = num_args.min(self.context.avm1.stack_len());
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
-            let arg = self.context.avm1.pop();
-            if let Value::MovieClip(_) = arg {
-                args.push(Value::Object(arg.coerce_to_object(self)));
-            } else {
-                args.push(arg);
-            }
+            args.push(self.context.avm1.pop());
         }
 
         let variable = self.get_variable(fn_name)?;
@@ -807,12 +802,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let num_args = num_args.min(self.context.avm1.stack_len());
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
-            let arg = self.context.avm1.pop();
-            if let Value::MovieClip(_) = arg {
-                args.push(Value::Object(arg.coerce_to_object(self)));
-            } else {
-                args.push(arg);
-            }
+            args.push(self.context.avm1.pop());
         }
 
         // Can not call method on undefined/null.
@@ -1707,12 +1697,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let num_args = num_args.min(self.context.avm1.stack_len());
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
-            let arg = self.context.avm1.pop();
-            if let Value::MovieClip(_) = arg {
-                args.push(Value::Object(arg.coerce_to_object(self)));
-            } else {
-                args.push(arg);
-            }
+            args.push(self.context.avm1.pop());
         }
 
         // Can not call method on undefined/null.
@@ -1759,12 +1744,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let num_args = num_args.min(self.context.avm1.stack_len());
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
-            let arg = self.context.avm1.pop();
-            if let Value::MovieClip(_) = arg {
-                args.push(Value::Object(arg.coerce_to_object(self)));
-            } else {
-                args.push(arg);
-            }
+            args.push(self.context.avm1.pop());
         }
 
         let name_value: Value<'gc> = self.resolve(fn_name)?.into();
