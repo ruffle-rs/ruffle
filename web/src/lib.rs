@@ -1881,6 +1881,7 @@ fn web_to_ruffle_key_code(key_code: &str) -> KeyCode {
         "Insert" => KeyCode::Insert,
         "Delete" => KeyCode::Delete,
         "Pause" => KeyCode::Pause,
+        "NumLock" => KeyCode::NumLock,
         "ScrollLock" => KeyCode::ScrollLock,
         "F1" => KeyCode::F1,
         "F2" => KeyCode::F2,
