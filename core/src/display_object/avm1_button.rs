@@ -511,65 +511,74 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         let (new_state, condition, sound) = match event {
             ClipEvent::DragOut { .. } => (
                 ButtonState::Over,
-                ButtonActionCondition::OVER_DOWN_TO_OUT_DOWN,
+                Some(ButtonActionCondition::OVER_DOWN_TO_OUT_DOWN),
                 None,
             ),
             ClipEvent::DragOver { .. } => (
                 ButtonState::Down,
-                ButtonActionCondition::OUT_DOWN_TO_OVER_DOWN,
+                Some(ButtonActionCondition::OUT_DOWN_TO_OVER_DOWN),
                 None,
             ),
             ClipEvent::Press => (
                 ButtonState::Down,
-                ButtonActionCondition::OVER_UP_TO_OVER_DOWN,
+                Some(ButtonActionCondition::OVER_UP_TO_OVER_DOWN),
                 static_data.over_to_down_sound.as_ref(),
             ),
             ClipEvent::Release => (
                 ButtonState::Over,
-                ButtonActionCondition::OVER_DOWN_TO_OVER_UP,
+                Some(ButtonActionCondition::OVER_DOWN_TO_OVER_UP),
                 static_data.down_to_over_sound.as_ref(),
             ),
             ClipEvent::ReleaseOutside => (
                 ButtonState::Up,
-                ButtonActionCondition::OUT_DOWN_TO_IDLE,
+                Some(ButtonActionCondition::OUT_DOWN_TO_IDLE),
                 static_data.over_to_up_sound.as_ref(),
             ),
             ClipEvent::RollOut { .. } => (
                 ButtonState::Up,
-                ButtonActionCondition::OVER_UP_TO_IDLE,
+                Some(ButtonActionCondition::OVER_UP_TO_IDLE),
                 static_data.over_to_up_sound.as_ref(),
             ),
             ClipEvent::RollOver { .. } => (
                 ButtonState::Over,
-                ButtonActionCondition::IDLE_TO_OVER_UP,
+                Some(ButtonActionCondition::IDLE_TO_OVER_UP),
                 static_data.up_to_over_sound.as_ref(),
             ),
             ClipEvent::KeyPress { key_code } => {
                 return self.0.run_actions(
                     context,
-                    swf::ButtonActionCondition::from_key_code(key_code.to_u8()),
+                    ButtonActionCondition::from_key_code(key_code.to_u8()),
                 );
             }
+            // KeyUp and KeyDown might fire some event handlers
+            ClipEvent::KeyUp => (self.0.state.get(), None, None),
+            ClipEvent::KeyDown => (self.0.state.get(), None, None),
             _ => return ClipEventResult::NotHandled,
         };
 
         let (update_state, new_state) = if is_enabled {
-            self.0.run_actions(context, condition);
+            if let Some(condition) = condition {
+                self.0.run_actions(context, condition);
+            }
             self.0.play_sound(context, sound);
 
             // Queue ActionScript-defined event handlers after the SWF defined ones.
             // (e.g., clip.onRelease = foo).
             if movie_version >= 6 {
                 if let Some(name) = event.method_name() {
-                    context.action_queue.queue_action(
-                        self_display_object,
-                        ActionType::Method {
-                            object: self.0.object.get().unwrap(),
-                            name,
-                            args: vec![],
-                        },
-                        false,
-                    );
+                    // Keyboard events don't fire their methods
+                    // unless the Button has focus (like for MovieClips).
+                    if !event.is_key_event() || self.0.has_focus.get() {
+                        context.action_queue.queue_action(
+                            self_display_object,
+                            ActionType::Method {
+                                object: self.0.object.get().unwrap(),
+                                name,
+                                args: vec![],
+                            },
+                            false,
+                        );
+                    }
                 }
             }
 
@@ -654,7 +663,7 @@ impl<'gc> Avm1ButtonData<'gc> {
     fn run_actions(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
-        condition: swf::ButtonActionCondition,
+        condition: ButtonActionCondition,
     ) -> ClipEventResult {
         let mut handled = ClipEventResult::NotHandled;
         if let Some(parent) = self.cell.borrow().base.base.parent {
@@ -702,7 +711,7 @@ impl From<ButtonState> for swf::ButtonState {
 #[derive(Clone, Debug)]
 struct ButtonAction {
     action_data: SwfSlice,
-    conditions: swf::ButtonActionCondition,
+    conditions: ButtonActionCondition,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
