@@ -330,7 +330,7 @@ pub fn verify_method<'gc>(
 
                     activation
                         .domain()
-                        .get_class(&multiname, activation.context.gc_context)
+                        .get_class(&mut activation.context, &multiname)
                         .ok_or_else(|| {
                             make_error_1014(
                                 activation,
@@ -448,7 +448,7 @@ pub fn verify_method<'gc>(
 
             let resolved_type = activation
                 .domain()
-                .get_class(&pooled_type_name, activation.context.gc_context)
+                .get_class(&mut activation.context, &pooled_type_name)
                 .ok_or_else(|| {
                     make_error_1014(
                         activation,
@@ -610,7 +610,7 @@ pub fn resolve_param_config<'gc>(
         } else {
             let lookedup_class = activation
                 .domain()
-                .get_class(&param.param_type_name, activation.context.gc_context)
+                .get_class(&mut activation.context, &param.param_type_name)
                 .ok_or_else(|| {
                     make_error_1014(
                         activation,
@@ -648,7 +648,7 @@ fn resolve_return_type<'gc>(
     Ok(Some(
         activation
             .domain()
-            .get_class(return_type, activation.context.gc_context)
+            .get_class(&mut activation.context, return_type)
             .ok_or_else(|| {
                 make_error_1014(
                     activation,
@@ -1028,7 +1028,7 @@ fn resolve_op<'gc>(
 
             let class = activation
                 .domain()
-                .get_class(&multiname, activation.context.gc_context)
+                .get_class(&mut activation.context, &multiname)
                 .unwrap();
             // Verifier guarantees that class exists
 
@@ -1041,7 +1041,7 @@ fn resolve_op<'gc>(
 
             let class = activation
                 .domain()
-                .get_class(&multiname, activation.context.gc_context)
+                .get_class(&mut activation.context, &multiname)
                 .unwrap();
             // Verifier guarantees that class exists
 
@@ -1088,7 +1088,7 @@ fn resolve_op<'gc>(
 
             let class = activation
                 .domain()
-                .get_class(&multiname, activation.context.gc_context)
+                .get_class(&mut activation.context, &multiname)
                 .unwrap();
             // Verifier guarantees that class exists
 

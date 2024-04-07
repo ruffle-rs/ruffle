@@ -10,6 +10,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::QName;
+use crate::context::UpdateContext;
 use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use ruffle_wstr::WStr;
 
@@ -213,20 +214,20 @@ impl<'gc> Domain<'gc> {
 
     pub fn get_class(
         self,
+        context: &mut UpdateContext<'_, 'gc>,
         multiname: &Multiname<'gc>,
-        mc: &Mutation<'gc>,
     ) -> Option<GcCell<'gc, Class<'gc>>> {
         let class = self.get_class_inner(multiname);
 
         if let Some(class) = class {
             if let Some(param) = multiname.param() {
                 if !param.is_any_name() {
-                    if let Some(resolved_param) = self.get_class(&param, mc) {
-                        return Some(Class::with_type_param(class, Some(resolved_param), mc));
+                    if let Some(resolved_param) = self.get_class(context, &param) {
+                        return Some(Class::with_type_param(context, class, Some(resolved_param)));
                     }
                     return None;
                 } else {
-                    return Some(Class::with_type_param(class, None, mc));
+                    return Some(Class::with_type_param(context, class, None));
                 }
             }
         }
