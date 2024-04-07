@@ -492,6 +492,7 @@ pub enum KeyCode {
     F22 = 133, // undocumented
     F23 = 134, // undocumented
     F24 = 135, // undocumented
+    NumLock = 144,
     ScrollLock = 145,
     Semicolon = 186,
     Equals = 187,
