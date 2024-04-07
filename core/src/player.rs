@@ -1102,11 +1102,7 @@ impl Player {
 
             // Fire clip event on all clips.
             if let Some(clip_event) = clip_event {
-                for level in context.stage.iter_render_list() {
-                    if let Some(interactive) = level.as_interactive() {
-                        interactive.handle_clip_event(context, clip_event);
-                    }
-                }
+                context.stage.handle_clip_event(context, clip_event);
             }
 
             // Fire event listener on appropriate object
