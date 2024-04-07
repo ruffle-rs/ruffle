@@ -1,0 +1,14 @@
+button.onKeyDown
+keyPress a
+button.onKeyUp
+button.onKeyDown
+keyPress b
+button.onKeyDown
+keyPress a
+button.onKeyUp
+button.onKeyUp
+button.onKeyDown
+button2.onKeyUp
+button2.onKeyDown
+keyPress a
+button2.onKeyUp
