@@ -12,10 +12,10 @@ use crate::avm2::property::Property;
 use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::value::Value;
 use crate::avm2::vtable::{ClassBoundMethod, VTable};
+use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::QName;
 use crate::avm2::TranslationUnit;
-use crate::avm2::{Domain, Error};
 use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
@@ -339,11 +339,12 @@ impl<'gc> ClassObject<'gc> {
         let mut queue = vec![class];
         while let Some(cls) = queue.pop() {
             for interface_name in cls.read().direct_interfaces() {
-                let interface = self.early_resolve_class(
-                    scope.domain(),
-                    interface_name,
-                    activation.context.gc_context,
-                )?;
+                let interface = scope
+                    .domain()
+                    .get_class(&mut activation.context, interface_name)
+                    .ok_or_else(|| {
+                        Error::from(format!("Could not resolve interface {interface_name:?}"))
+                    })?;
 
                 if !interface.read().is_interface() {
                     return Err(format!(
@@ -359,12 +360,8 @@ impl<'gc> ClassObject<'gc> {
                 }
             }
 
-            if let Some(superclass_name) = cls.read().super_class_name() {
-                queue.push(self.early_resolve_class(
-                    scope.domain(),
-                    superclass_name,
-                    activation.context.gc_context,
-                )?);
+            if let Some(super_class) = cls.read().super_class() {
+                queue.push(super_class);
             }
         }
         write.interfaces = interfaces;
@@ -394,20 +391,6 @@ impl<'gc> ClassObject<'gc> {
         }
 
         Ok(())
-    }
-
-    // Looks up a class by name, without using `ScopeChain.resolve`
-    // This lets us look up an class before its `ClassObject` has been constructed,
-    // which is needed to resolve classes when constructing a (different) `ClassObject`.
-    fn early_resolve_class(
-        &self,
-        domain: Domain<'gc>,
-        class_name: &Multiname<'gc>,
-        mc: &Mutation<'gc>,
-    ) -> Result<GcCell<'gc, Class<'gc>>, Error<'gc>> {
-        domain
-            .get_class(class_name, mc)
-            .ok_or_else(|| format!("Could not resolve class {class_name:?}").into())
     }
 
     /// Manually set the type of this `Class`.
@@ -983,7 +966,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         let class_param = object_param.map(|c| c.inner_class_definition());
 
         let parameterized_class: GcCell<'_, Class<'_>> =
-            Class::with_type_param(self_class, class_param, activation.context.gc_context);
+            Class::with_type_param(&mut activation.context, self_class, class_param);
 
         // NOTE: this isn't fully accurate, but much simpler.
         // FP's Vector is more of special case that literally copies some parent class's properties

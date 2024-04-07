@@ -232,6 +232,10 @@ impl<'gc> TranslationUnit<'gc> {
         drop(read);
 
         let mut activation = Activation::from_domain(uc.reborrow(), domain);
+        // Make sure we have the correct domain for code that tries to access it
+        // using `activation.domain()`
+        activation.set_outer(ScopeChain::new(domain));
+
         let global_class = activation.avm2().classes().global;
         let global_obj = global_class.construct(&mut activation, &[])?;
         global_obj.fork_vtable(activation.context.gc_context);
