@@ -144,6 +144,7 @@ pub fn winit_to_ruffle_key_code(event: &KeyEvent) -> KeyCode {
         Key::Named(NamedKey::Insert) => KeyCode::Insert,
         Key::Named(NamedKey::Delete) => KeyCode::Delete,
         Key::Named(NamedKey::Pause) => KeyCode::Pause,
+        Key::Named(NamedKey::NumLock) => KeyCode::NumLock,
         Key::Named(NamedKey::ScrollLock) => KeyCode::ScrollLock,
         Key::Named(NamedKey::F1) => KeyCode::F1,
         Key::Named(NamedKey::F2) => KeyCode::F2,
