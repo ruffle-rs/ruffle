@@ -21,3 +21,5 @@ log-filename-pattern-with-timestamp = With Timestamp
 storage-backend = Save-File Location
 storage-backend-disk = Disk
 storage-backend-memory = Memory
+
+recent-limit = Recent Limit

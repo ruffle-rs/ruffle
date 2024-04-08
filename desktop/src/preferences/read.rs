@@ -51,6 +51,10 @@ pub fn read_preferences(input: &str) -> ParseDetails<SavedGlobalPreferences> {
         result.mute = value;
     };
 
+    if let Some(value) = document.get_integer(&mut cx, "recent_limit") {
+        result.recent_limit = value as usize;
+    }
+
     document.get_table_like(&mut cx, "log", |cx, log| {
         if let Some(value) = log.parse_from_str(cx, "filename_pattern") {
             result.log.filename_pattern = value;
@@ -429,5 +433,52 @@ mod tests {
             }],
             result.warnings
         );
+    }
+
+    #[test]
+    fn recent_limit() {
+        let result = read_preferences("recent_limit = \"1\"");
+        assert_eq!(
+            &SavedGlobalPreferences {
+                recent_limit: 10,
+                ..Default::default()
+            },
+            result.values()
+        );
+        assert_eq!(
+            vec![ParseWarning::UnexpectedType {
+                expected: "integer",
+                actual: "string",
+                path: "recent_limit".to_string(),
+            }],
+            result.warnings
+        );
+
+        let result = read_preferences("recent_limit = 0.5");
+        assert_eq!(
+            &SavedGlobalPreferences {
+                recent_limit: 10,
+                ..Default::default()
+            },
+            result.values()
+        );
+        assert_eq!(
+            vec![ParseWarning::UnexpectedType {
+                expected: "integer",
+                actual: "float",
+                path: "recent_limit".to_string(),
+            }],
+            result.warnings
+        );
+
+        let result = read_preferences("recent_limit = 5");
+        assert_eq!(
+            &SavedGlobalPreferences {
+                recent_limit: 5,
+                ..Default::default()
+            },
+            result.values()
+        );
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
     }
 }
