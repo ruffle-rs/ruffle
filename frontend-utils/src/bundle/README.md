@@ -24,7 +24,7 @@ More files and folders may be added in the future, as this format is expanded up
 ### `ruffle-bundle.toml` (Bundle information)
 This [toml](https://toml.io/) file is required and contains information that Ruffle needs to run this bundle.
 
-See [the ruffle-bundle.toml file specification](#bundletoml-file-specification) for more details.
+See [the ruffle-bundle.toml file specification](#ruffle-bundletoml-file-specification) for more details.
 
 ### `content/` (Flash content)
 Every file (and subdirectory) within this directory will be accessible to the Flash content, exposed as a **virtual filesystem**.
