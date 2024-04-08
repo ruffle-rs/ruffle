@@ -29,7 +29,7 @@ tracing-subscriber = { workspace = true }
 tracing-appender = "0.2.3"
 slotmap = { workspace = true }
 winit = "0.29.15"
-webbrowser = "0.8.13"
+webbrowser = "0.8.14"
 url = { workspace = true }
 dirs = "5.0"
 isahc = { version = "1.7.2", features = ["cookies"] }
