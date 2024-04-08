@@ -8,6 +8,7 @@ mod widgets;
 
 pub use controller::GuiController;
 pub use movie::MovieView;
+use ruffle_frontend_utils::recents::Recent;
 use std::borrow::Cow;
 use url::Url;
 
@@ -206,6 +207,17 @@ impl RuffleGui {
         mut player: MutexGuard<Player>,
     ) {
         self.currently_opened = Some((movie_url.clone(), opt.clone()));
+        if let Err(e) = self.preferences.write_recents(|writer| {
+            writer.push(
+                Recent {
+                    url: movie_url.clone(),
+                },
+                // TODO: Add user configurable recent limit.
+                10,
+            )
+        }) {
+            tracing::warn!("Couldn't update recents: {e}");
+        }
 
         // Update dialog state to reflect the newly-opened movie's options.
         self.is_open_dialog_visible = false;
@@ -274,6 +286,19 @@ impl RuffleGui {
                     if ui.add_enabled(player.is_some(), Button::new(text(locale, "file-menu-close"))).clicked() {
                         self.close_movie(ui);
                     }
+                    ui.separator();
+
+                    ui.menu_button("Recents", |ui| {
+                        // Since we store recents from oldest to newest iterate backwards.
+                        self.preferences.recents(|recents| {
+                            for recent in recents.iter().rev() {
+                                if ui.button(recent.url.as_str()).clicked() {
+                                    ui.close_menu();
+                                    let _ = self.event_loop.send_event(RuffleEvent::OpenURL(recent.url.clone(), Box::new(self.default_player_options.clone())));
+                                }
+                            }
+                        });
+                    });
 
                     ui.separator();
                     if Button::new(text(locale, "file-menu-preferences"))
