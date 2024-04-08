@@ -1,4 +1,4 @@
-use crate::bookmarks::{Bookmark, Bookmarks, INVALID_URL};
+use crate::bookmarks::{Bookmark, Bookmarks};
 use crate::parse::{DocumentHolder, ParseContext, ParseDetails, ParseWarning, ReadExt};
 use toml_edit::DocumentMut;
 use url::Url;
@@ -21,7 +21,7 @@ pub fn read_bookmarks(input: &str) -> ParseDetails<Bookmarks> {
         for bookmark in bookmarks.iter() {
             let url = match bookmark.parse_from_str(cx, "url") {
                 Some(value) => value,
-                None => Url::parse(INVALID_URL).expect("Url is constant and valid"),
+                None => Url::parse(crate::INVALID_URL).expect("Url is constant and valid"),
             };
 
             let name = match bookmark.parse_from_str(cx, "name") {
@@ -61,7 +61,7 @@ mod tests {
         let result = read_bookmarks("[[bookmark]]");
         assert_eq!(
             &vec![Bookmark {
-                url: Url::parse(INVALID_URL).unwrap(),
+                url: Url::parse(crate::INVALID_URL).unwrap(),
                 name: "".to_string(),
             }],
             result.values()
@@ -71,7 +71,7 @@ mod tests {
         let result = read_bookmarks("[[bookmark]]\nurl = \"invalid\"");
         assert_eq!(
             &vec![Bookmark {
-                url: Url::parse(INVALID_URL).unwrap(),
+                url: Url::parse(crate::INVALID_URL).unwrap(),
                 name: "".to_string(),
             }],
             result.values()
@@ -144,11 +144,11 @@ mod tests {
                     name: "example.swf".to_string(),
                 },
                 Bookmark {
-                    url: Url::parse(INVALID_URL).unwrap(),
+                    url: Url::parse(crate::INVALID_URL).unwrap(),
                     name: "".to_string(),
                 },
                 Bookmark {
-                    url: Url::parse(INVALID_URL).unwrap(),
+                    url: Url::parse(crate::INVALID_URL).unwrap(),
                     name: "".to_string(),
                 },
                 Bookmark {
