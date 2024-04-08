@@ -8,6 +8,7 @@ use crate::gui::MovieView;
 use crate::preferences::GlobalPreferences;
 use crate::{CALLSTACK, RENDER_INFO, SWF_INFO};
 use anyhow::anyhow;
+use rfd::{MessageButtons, MessageDialog, MessageDialogResult, MessageLevel};
 use ruffle_core::backend::navigator::{OpenURLMode, SocketMode};
 use ruffle_core::config::Letterbox;
 use ruffle_core::events::{GamepadButton, KeyCode};
@@ -23,7 +24,7 @@ use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::descriptors::Descriptors;
 use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Formatter};
-use std::io::Read;
+use std::io::{ErrorKind, Read};
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -129,14 +130,56 @@ impl PlayingContent {
         }
     }
 
-    pub fn get_local_file(&self, path: &str) -> Result<Vec<u8>, std::io::Error> {
+    pub fn get_local_file(&self, url: &Url) -> Result<Vec<u8>, std::io::Error> {
         match self {
             PlayingContent::DirectFile(_) => {
+                let path = url
+                    .to_file_path()
+                    .map_err(|_| std::io::Error::other("Could not turn url into file path"))?;
                 let mut result = vec![];
-                std::fs::File::open(path)?.read_to_end(&mut result)?;
+                let mut file = std::fs::File::open(&path).or_else(|e| {
+                    if cfg!(feature = "sandbox") {
+                        use rfd::FileDialog;
+                        let parent_path = path.parent().unwrap_or(&path);
+
+                        if e.kind() == ErrorKind::PermissionDenied {
+                            let attempt_sandbox_open = MessageDialog::new()
+                                .set_level(MessageLevel::Warning)
+                                .set_description(format!("The current movie is attempting to read files stored in {parent_path:?}.\n\nTo allow it to do so, click Yes, and then Open to grant read access to that directory.\n\nOtherwise, click No to deny access."))
+                                .set_buttons(MessageButtons::YesNo)
+                                .show() == MessageDialogResult::Yes;
+
+                            if attempt_sandbox_open {
+                                FileDialog::new().set_directory(parent_path).pick_folder();
+
+                                return std::fs::File::open(path);
+                            }
+                        }
+                    }
+
+                    Err(e)
+                })?;
+                file.read_to_end(&mut result)?;
                 Ok(result)
             }
-            PlayingContent::Bundle(_, bundle) => bundle.source().read_content(path),
+            PlayingContent::Bundle(_, bundle) => {
+                if url.scheme() != "file" {
+                    return Err(ErrorKind::NotFound.into());
+                }
+                let mut path = String::new();
+                if let Some(segments) = url.path_segments() {
+                    for segment in segments {
+                        path.push('/');
+                        path.push_str(
+                            urlencoding::decode(segment)
+                                .map_err(std::io::Error::other)?
+                                .as_ref(),
+                        );
+                    }
+                }
+                // No sandbox check here - Ruffle already had to have read from the bundle, so we have access
+                bundle.source().read_content(&path)
+            }
         }
     }
 }

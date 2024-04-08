@@ -15,8 +15,8 @@ use isahc::{
 };
 use rfd::{AsyncMessageDialog, MessageButtons, MessageDialog, MessageDialogResult, MessageLevel};
 use ruffle_core::backend::navigator::{
-    async_return, create_fetch_error, create_specific_fetch_error, ErrorResponse, NavigationMethod,
-    NavigatorBackend, OpenURLMode, OwnedFuture, Request, SocketMode, SuccessResponse,
+    async_return, create_fetch_error, ErrorResponse, NavigationMethod, NavigatorBackend,
+    OpenURLMode, OwnedFuture, Request, SocketMode, SuccessResponse,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
@@ -24,7 +24,6 @@ use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
 use std::collections::HashSet;
 use std::io;
 use std::io::ErrorKind;
-use std::path::Path;
 use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
@@ -319,41 +318,7 @@ impl<F: FutureSpawner> NavigatorBackend for ExternalNavigatorBackend<F> {
                     // when we actually load a filesystem url, strip them out.
                     processed_url.set_query(None);
 
-                    let path = match processed_url.to_file_path() {
-                        Ok(path) => path,
-                        Err(_) => {
-                            return create_specific_fetch_error(
-                                "Unable to create path out of URL",
-                                response_url.as_str(),
-                                "",
-                            );
-                        }
-                    }
-                    .to_string_lossy()
-                    .to_string();
-
-                    let contents = content.get_local_file(&path).or_else(|e| {
-                        if cfg!(feature = "sandbox") {
-                            use rfd::FileDialog;
-                            let parent_path = Path::new(&path).parent().unwrap_or_else(|| Path::new(&path));
-
-                            if e.kind() == ErrorKind::PermissionDenied {
-                                let attempt_sandbox_open = MessageDialog::new()
-                                    .set_level(MessageLevel::Warning)
-                                    .set_description(format!("The current movie is attempting to read files stored in {}.\n\nTo allow it to do so, click Yes, and then Open to grant read access to that directory.\n\nOtherwise, click No to deny access.", parent_path.to_string_lossy()))
-                                    .set_buttons(MessageButtons::YesNo)
-                                    .show() == MessageDialogResult::Yes;
-
-                                if attempt_sandbox_open {
-                                    FileDialog::new().set_directory(parent_path).pick_folder();
-
-                                    return content.get_local_file(&path);
-                                }
-                            }
-                        }
-
-                        Err(e)
-                    });
+                    let contents = content.get_local_file(&processed_url);
 
                     let response: Box<dyn SuccessResponse> = Box::new(DesktopResponse {
                         url: response_url.to_string(),
