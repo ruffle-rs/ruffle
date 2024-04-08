@@ -173,6 +173,13 @@ impl GlobalPreferences {
         })
     }
 
+    pub fn recent_limit(&self) -> usize {
+        self.preferences
+            .lock()
+            .expect("Preferences is not reentrant")
+            .recent_limit
+    }
+
     pub fn recents(&self, fun: impl FnOnce(&Recents)) {
         fun(&self.recents.lock().expect("Recents is not reentrant"))
     }
@@ -222,6 +229,7 @@ pub struct SavedGlobalPreferences {
     pub output_device: Option<String>,
     pub mute: bool,
     pub volume: f32,
+    pub recent_limit: usize,
     pub log: LogPreferences,
     pub storage: StoragePreferences,
 }
@@ -239,6 +247,7 @@ impl Default for SavedGlobalPreferences {
             output_device: None,
             mute: false,
             volume: 1.0,
+            recent_limit: 10,
             log: Default::default(),
             storage: Default::default(),
         }

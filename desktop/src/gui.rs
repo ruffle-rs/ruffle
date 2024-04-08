@@ -207,13 +207,13 @@ impl RuffleGui {
         mut player: MutexGuard<Player>,
     ) {
         self.currently_opened = Some((movie_url.clone(), opt.clone()));
+        let recent_limit = self.preferences.recent_limit();
         if let Err(e) = self.preferences.write_recents(|writer| {
             writer.push(
                 Recent {
                     url: movie_url.clone(),
                 },
-                // TODO: Add user configurable recent limit.
-                10,
+                recent_limit,
             )
         }) {
             tracing::warn!("Couldn't update recents: {e}");

@@ -2,7 +2,7 @@ use crate::gui::{available_languages, optional_text, text};
 use crate::log::FilenamePattern;
 use crate::preferences::{storage::StorageBackend, GlobalPreferences};
 use cpal::traits::{DeviceTrait, HostTrait};
-use egui::{Align2, Button, ComboBox, Grid, Ui, Widget, Window};
+use egui::{Align2, Button, ComboBox, DragValue, Grid, Ui, Widget, Window};
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::borrow::Cow;
 use unic_langid::LanguageIdentifier;
@@ -25,6 +25,9 @@ pub struct PreferencesDialog {
     output_device: Option<String>,
     available_output_devices: Vec<String>,
     output_device_changed: bool,
+
+    recent_limit: usize,
+    recent_limit_changed: bool,
 
     log_filename_pattern: FilenamePattern,
     log_filename_pattern_changed: bool,
@@ -65,6 +68,9 @@ impl PreferencesDialog {
             available_output_devices,
             output_device_changed: false,
 
+            recent_limit: preferences.recent_limit(),
+            recent_limit_changed: false,
+
             log_filename_pattern: preferences.log_filename_pattern(),
             log_filename_pattern_changed: false,
 
@@ -101,6 +107,8 @@ impl PreferencesDialog {
                             self.show_log_preferences(locale, ui);
 
                             self.show_storage_preferences(locale, &locked_text, ui);
+
+                            self.show_misc_preferences(locale, ui);
                         });
 
                     if self.restart_required() {
@@ -313,6 +321,19 @@ impl PreferencesDialog {
         ui.end_row();
     }
 
+    fn show_misc_preferences(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
+        ui.label(text(locale, "recent-limit"));
+
+        let previous = self.recent_limit;
+        DragValue::new(&mut self.recent_limit).ui(ui);
+
+        if self.recent_limit != previous {
+            self.recent_limit_changed = true;
+        }
+
+        ui.end_row()
+    }
+
     fn save(&mut self) {
         if let Err(e) = self.preferences.write_preferences(|preferences| {
             if self.graphics_backend_changed {
@@ -333,6 +354,9 @@ impl PreferencesDialog {
             }
             if self.storage_backend_changed {
                 preferences.set_storage_backend(self.storage_backend);
+            }
+            if self.recent_limit_changed {
+                preferences.set_recent_limit(self.recent_limit);
             }
         }) {
             // [NA] TODO: Better error handling... everywhere in desktop, really

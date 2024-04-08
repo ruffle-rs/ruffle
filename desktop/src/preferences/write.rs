@@ -72,6 +72,13 @@ impl<'a> PreferencesWriter<'a> {
             values.storage.backend = backend;
         })
     }
+
+    pub fn set_recent_limit(&mut self, limit: usize) {
+        self.0.edit(|values, toml_document| {
+            toml_document["recent_limit"] = value(limit as i64);
+            values.recent_limit = limit;
+        })
+    }
 }
 
 #[cfg(test)]
@@ -196,6 +203,20 @@ mod tests {
             "[storage]\nbackend = \"disk\"\n",
             |writer| writer.set_storage_backend(StorageBackend::Memory),
             "[storage]\nbackend = \"memory\"\n",
+        );
+    }
+
+    #[test]
+    fn set_recent_limit() {
+        test(
+            "",
+            |writer| writer.set_recent_limit(40),
+            "recent_limit = 40\n",
+        );
+        test(
+            "recent_limit = 5",
+            |writer| writer.set_recent_limit(15),
+            "recent_limit = 15\n",
         );
     }
 }
