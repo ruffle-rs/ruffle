@@ -29,7 +29,7 @@ See [the ruffle-bundle.toml file specification](#ruffle-bundletoml-file-specific
 ### `content/` (Flash content)
 Every file (and subdirectory) within this directory will be accessible to the Flash content, exposed as a **virtual filesystem**.
 
-To Flash content, this is accessible through `file:///` - for example, the file `/content/game.swf` is `file:///content.swf`.
+To Flash content, this is accessible through `file:///` - for example, the file `/content/game.swf` is `file:///game.swf`.
 The file `/content/locale/en.xml` is `file:///locale/en.xml`.
 
 You'll want to put the `.swf` file in here, along with any extra files it may need. Files outside this directory are **not** accessible to the content.
