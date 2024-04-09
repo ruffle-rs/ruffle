@@ -23,8 +23,7 @@ pub fn get_begin_index<'gc>(
     if let Some(selection) = activation
         .context
         .focus_tracker
-        .get()
-        .and_then(|o| o.as_edit_text())
+        .get_as_edit_text()
         .and_then(EditText::selection)
     {
         Ok(selection.start().into())
@@ -41,8 +40,7 @@ pub fn get_end_index<'gc>(
     if let Some(selection) = activation
         .context
         .focus_tracker
-        .get()
-        .and_then(|o| o.as_edit_text())
+        .get_as_edit_text()
         .and_then(EditText::selection)
     {
         Ok(selection.end().into())
@@ -59,8 +57,7 @@ pub fn get_caret_index<'gc>(
     if let Some(selection) = activation
         .context
         .focus_tracker
-        .get()
-        .and_then(|o| o.as_edit_text())
+        .get_as_edit_text()
         .and_then(EditText::selection)
     {
         Ok(selection.to().into())
@@ -78,12 +75,7 @@ pub fn set_selection<'gc>(
         return Ok(Value::Undefined);
     }
 
-    if let Some(edit_box) = activation
-        .context
-        .focus_tracker
-        .get()
-        .and_then(|o| o.as_edit_text())
-    {
+    if let Some(edit_box) = activation.context.focus_tracker.get_as_edit_text() {
         let start = args
             .get(0)
             .map(|v| v.coerce_to_i32(activation))

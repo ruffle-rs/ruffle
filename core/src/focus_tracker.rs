@@ -1,10 +1,10 @@
 use crate::avm1::Avm1;
 use crate::avm1::Value;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::TInteractiveObject;
 pub use crate::display_object::{
     DisplayObject, TDisplayObject, TDisplayObjectContainer, TextSelection,
 };
+use crate::display_object::{EditText, TInteractiveObject};
 use crate::drawing::Drawing;
 use either::Either;
 use gc_arena::barrier::unlock;
@@ -60,6 +60,10 @@ impl<'gc> FocusTracker<'gc> {
         self.0.focus.get()
     }
 
+    pub fn get_as_edit_text(&self) -> Option<EditText<'gc>> {
+        self.get().and_then(|o| o.as_edit_text())
+    }
+
     pub fn set(
         &self,
         focused_element: Option<DisplayObject<'gc>>,
@@ -99,7 +103,7 @@ impl<'gc> FocusTracker<'gc> {
         }
 
         // This applies even if the focused element hasn't changed.
-        if let Some(text_field) = focused_element.and_then(|e| e.as_edit_text()) {
+        if let Some(text_field) = self.get_as_edit_text() {
             if text_field.is_editable() {
                 if !text_field.movie().is_action_script_3() {
                     let length = text_field.text_length();

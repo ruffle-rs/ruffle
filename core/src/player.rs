@@ -1060,12 +1060,12 @@ impl Player {
             // keyPress events take precedence over text input.
             if !key_press_handled {
                 if let PlayerEvent::TextInput { codepoint } = event {
-                    if let Some(text) = context.focus_tracker.get().and_then(|o| o.as_edit_text()) {
+                    if let Some(text) = context.focus_tracker.get_as_edit_text() {
                         text.text_input(codepoint, context);
                     }
                 }
                 if let PlayerEvent::TextControl { code } = event {
-                    if let Some(text) = context.focus_tracker.get().and_then(|o| o.as_edit_text()) {
+                    if let Some(text) = context.focus_tracker.get_as_edit_text() {
                         text.text_control_input(code, context);
                     }
                 }
