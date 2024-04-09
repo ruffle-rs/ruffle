@@ -1,3 +1,4 @@
+mod about_dialog;
 mod bookmarks_dialog;
 mod open_dialog;
 mod preferences_dialog;
@@ -26,6 +27,8 @@ pub struct Dialogs {
     pub volume_controls: VolumeControls,
     is_volume_visible: bool,
 
+    is_about_visible: bool,
+
     preferences: GlobalPreferences,
 }
 
@@ -46,6 +49,8 @@ impl Dialogs {
 
             volume_controls: VolumeControls::new(&preferences),
             is_volume_visible: false,
+
+            is_about_visible: false,
 
             preferences,
         }
@@ -84,6 +89,10 @@ impl Dialogs {
         self.is_volume_visible = true;
     }
 
+    pub fn open_about_screen(&mut self) {
+        self.is_about_visible = true;
+    }
+
     pub fn show(
         &mut self,
         locale: &LanguageIdentifier,
@@ -94,7 +103,8 @@ impl Dialogs {
         self.preferences_dialog(locale, egui_ctx);
         self.bookmarks_dialog(locale, egui_ctx);
         self.bookmark_add_dialog(locale, egui_ctx);
-        self.volume_controls(locale, egui_ctx, player)
+        self.volume_controls(locale, egui_ctx, player);
+        self.about_dialog(locale, egui_ctx);
     }
 
     fn open_dialog(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) {
@@ -148,6 +158,13 @@ impl Dialogs {
                 .volume_controls
                 .show(locale, egui_ctx, player, &self.preferences);
             self.is_volume_visible = keep_open;
+        }
+    }
+
+    fn about_dialog(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) {
+        if self.is_about_visible {
+            let keep_open = about_dialog::show_about_dialog(locale, egui_ctx);
+            self.is_about_visible = keep_open;
         }
     }
 }
