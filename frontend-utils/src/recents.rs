@@ -6,7 +6,7 @@ pub use write::RecentsWriter;
 
 use url::Url;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Recent {
     pub url: Url,
 }

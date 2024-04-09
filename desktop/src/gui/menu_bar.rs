@@ -5,6 +5,7 @@ use crate::player::PlayerOptions;
 use crate::preferences::GlobalPreferences;
 use egui::{menu, Button, Key, KeyboardShortcut, Modifiers, Widget};
 use ruffle_core::Player;
+use ruffle_frontend_utils::recents::Recent;
 use unic_langid::LanguageIdentifier;
 use url::Url;
 use winit::event_loop::EventLoopProxy;
@@ -14,6 +15,7 @@ pub struct MenuBar {
     default_player_options: PlayerOptions,
     preferences: GlobalPreferences,
 
+    cached_recents: Option<Vec<Recent>>,
     pub currently_opened: Option<(Url, PlayerOptions)>,
 }
 
@@ -26,6 +28,7 @@ impl MenuBar {
         Self {
             event_loop,
             default_player_options,
+            cached_recents: None,
             currently_opened: None,
             preferences,
         }
@@ -65,6 +68,7 @@ impl MenuBar {
 
             menu::bar(ui, |ui| {
                 self.file_menu(locale, ui, dialogs, player.is_some());
+
                 menu::menu_button(ui, text(locale, "controls-menu"), |ui| {
                     ui.add_enabled_ui(player.is_some(), |ui| {
                         let playing = player.as_ref().map(|p| p.is_playing()).unwrap_or_default();
@@ -208,20 +212,47 @@ impl MenuBar {
             }
             ui.separator();
 
-            ui.menu_button("Recents", |ui| {
-                // Since we store recents from oldest to newest iterate backwards.
-                self.preferences.recents(|recents| {
-                    for recent in recents.iter().rev() {
-                        if ui.button(recent.url.as_str()).clicked() {
-                            ui.close_menu();
-                            let _ = self.event_loop.send_event(RuffleEvent::OpenURL(
-                                recent.url.clone(),
-                                Box::new(self.default_player_options.clone()),
-                            ));
-                        }
+            let recent_menu_response = ui
+                .menu_button("Recents", |ui| {
+                    if self
+                        .cached_recents
+                        .as_ref()
+                        .map(|x| x.is_empty())
+                        .unwrap_or(true)
+                    {
+                        ui.label("No recent entries");
                     }
-                });
-            });
+
+                    if let Some(recents) = &self.cached_recents {
+                        for recent in recents {
+                            if ui.button(recent.url.as_str()).clicked() {
+                                ui.close_menu();
+                                let _ = self.event_loop.send_event(RuffleEvent::OpenURL(
+                                    recent.url.clone(),
+                                    Box::new(self.default_player_options.clone()),
+                                ));
+                            }
+                        }
+                    };
+                })
+                .inner;
+
+            match recent_menu_response {
+                // recreate the cache on the first draw.
+                Some(_) if self.cached_recents.is_none() => {
+                    self.cached_recents = Some(self.preferences.recents(|recents| {
+                        recents
+                            .iter()
+                            .rev()
+                            .filter(|x| !x.is_invalid() && x.is_available())
+                            .cloned()
+                            .collect::<Vec<_>>()
+                    }))
+                }
+                // clear cache, since menu was closed.
+                None if self.cached_recents.is_some() => self.cached_recents = None,
+                _ => {}
+            }
 
             ui.separator();
             if Button::new(text(locale, "file-menu-preferences"))

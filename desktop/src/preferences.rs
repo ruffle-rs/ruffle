@@ -180,7 +180,7 @@ impl GlobalPreferences {
             .recent_limit
     }
 
-    pub fn recents(&self, fun: impl FnOnce(&Recents)) {
+    pub fn recents<R>(&self, fun: impl FnOnce(&Recents) -> R) -> R {
         fun(&self.recents.lock().expect("Recents is not reentrant"))
     }
 
