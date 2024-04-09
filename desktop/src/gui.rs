@@ -1,6 +1,7 @@
 mod context_menu;
 mod controller;
 mod dialogs;
+mod menu_bar;
 mod movie;
 mod widgets;
 
@@ -18,6 +19,7 @@ use dialogs::Dialogs;
 use egui::*;
 use fluent_templates::fluent_bundle::FluentValue;
 use fluent_templates::{static_loader, Loader};
+use menu_bar::MenuBar;
 use rfd::FileDialog;
 use ruffle_core::debug_ui::Message as DebugMessage;
 use ruffle_core::Player;
@@ -79,8 +81,8 @@ pub struct RuffleGui {
     event_loop: EventLoopProxy<RuffleEvent>,
     context_menu: Option<ContextMenu>,
     dialogs: Dialogs,
-    default_player_options: PlayerOptions,
-    currently_opened: Option<(Url, PlayerOptions)>,
+    menu_bar: MenuBar,
+
     was_suspended_before_debug: bool,
     preferences: GlobalPreferences,
 }
@@ -102,10 +104,13 @@ impl RuffleGui {
                 default_path,
                 event_loop.clone(),
             ),
+            menu_bar: MenuBar::new(
+                event_loop.clone(),
+                default_player_options,
+                preferences.clone(),
+            ),
 
             event_loop,
-            default_player_options,
-            currently_opened: None,
             preferences,
         }
     }
@@ -121,7 +126,8 @@ impl RuffleGui {
         let locale = self.preferences.language();
 
         if show_menu {
-            self.main_menu_bar(&locale, egui_ctx, player.as_deref_mut());
+            self.menu_bar
+                .show(&locale, egui_ctx, &mut self.dialogs, player.as_deref_mut());
         }
 
         self.dialogs.show(&locale, egui_ctx, player.as_deref_mut());
@@ -178,7 +184,7 @@ impl RuffleGui {
         movie_url: Url,
         mut player: MutexGuard<Player>,
     ) {
-        self.currently_opened = Some((movie_url.clone(), opt.clone()));
+        self.menu_bar.currently_opened = Some((movie_url.clone(), opt.clone()));
         let recent_limit = self.preferences.recent_limit();
         if let Err(e) = self.preferences.write_recents(|writer| {
             writer.push(
@@ -196,241 +202,5 @@ impl RuffleGui {
             .recreate_open_dialog(opt, Some(movie_url), self.event_loop.clone());
 
         player.set_volume(self.dialogs.volume_controls.get_volume());
-    }
-
-    /// Renders the main menu bar at the top of the window.
-    fn main_menu_bar(
-        &mut self,
-        locale: &LanguageIdentifier,
-        egui_ctx: &egui::Context,
-        mut player: Option<&mut Player>,
-    ) {
-        egui::TopBottomPanel::top("menu_bar").show(egui_ctx, |ui| {
-            // TODO(mike): Make some MenuItem struct with shortcut info to handle this more cleanly.
-            if ui.ctx().input_mut(|input| {
-                input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND, Key::O))
-            }) {
-                self.open_file(ui);
-            }
-            if ui.ctx().input_mut(|input| {
-                input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND | Modifiers::SHIFT, Key::O))
-            }) {
-                self.dialogs.open_file_advanced();
-            }
-            if ui.ctx().input_mut(|input| {
-                input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND, Key::Q))
-            }) {
-                self.request_exit(ui);
-            }
-            if ui.ctx().input_mut(|input| {
-                input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND, Key::P))
-            }) {
-                if let Some(player) = &mut player {
-                    player.set_is_playing(!player.is_playing());
-                }
-            }
-
-            menu::bar(ui, |ui| {
-                menu::menu_button(ui, text(locale, "file-menu"), |ui| {
-                    let mut shortcut;
-
-                    shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::O);
-                    if Button::new(text(locale, "file-menu-open-quick"))
-                        .shortcut_text(ui.ctx().format_shortcut(&shortcut))
-                        .ui(ui)
-                        .clicked()
-                    {
-                        self.open_file(ui);
-                    }
-
-                    shortcut = KeyboardShortcut::new(Modifiers::COMMAND | Modifiers::SHIFT, Key::O);
-                    if Button::new(text(locale, "file-menu-open-advanced"))
-                        .shortcut_text(ui.ctx().format_shortcut(&shortcut))
-                        .ui(ui).clicked() {
-                        ui.close_menu();
-                        self.dialogs.open_file_advanced();
-                    }
-
-                    if ui.add_enabled(player.is_some(), Button::new(text(locale, "file-menu-reload"))).clicked() {
-                        self.reload_movie(ui);
-                    }
-
-                    if ui.add_enabled(player.is_some(), Button::new(text(locale, "file-menu-close"))).clicked() {
-                        self.close_movie(ui);
-                    }
-                    ui.separator();
-
-                    ui.menu_button("Recents", |ui| {
-                        // Since we store recents from oldest to newest iterate backwards.
-                        self.preferences.recents(|recents| {
-                            for recent in recents.iter().rev() {
-                                if ui.button(recent.url.as_str()).clicked() {
-                                    ui.close_menu();
-                                    let _ = self.event_loop.send_event(RuffleEvent::OpenURL(recent.url.clone(), Box::new(self.default_player_options.clone())));
-                                }
-                            }
-                        });
-                    });
-
-                    ui.separator();
-                    if Button::new(text(locale, "file-menu-preferences"))
-                        .ui(ui)
-                        .clicked()
-                    {
-                        ui.close_menu();
-                        self.dialogs.open_preferences();
-                    }
-                    ui.separator();
-
-                    shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::Q);
-                    if Button::new(text(locale, "file-menu-exit"))
-                        .shortcut_text(ui.ctx().format_shortcut(&shortcut))
-                        .ui(ui)
-                        .clicked()
-                    {
-                        self.request_exit(ui);
-                    }
-                });
-                menu::menu_button(ui, text(locale, "controls-menu"), |ui| {
-                    ui.add_enabled_ui(player.is_some(), |ui| {
-                        let playing = player.as_ref().map(|p| p.is_playing()).unwrap_or_default();
-                        let pause_shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::P);
-                        if Button::new(text(locale, if playing { "controls-menu-suspend" } else { "controls-menu-resume" })).shortcut_text(ui.ctx().format_shortcut(&pause_shortcut)).ui(ui).clicked() {
-                            ui.close_menu();
-                            if let Some(player) = &mut player {
-                                player.set_is_playing(!player.is_playing());
-                            }
-                        }
-                    });
-                    if Button::new(text(locale, "controls-menu-volume")).ui(ui).clicked() {
-                        self.show_volume_screen(ui);
-                    }
-                });
-                menu::menu_button(ui, text(locale, "bookmarks-menu"), |ui| {
-                    if Button::new(text(locale, "bookmarks-menu-add")).ui(ui).clicked() {
-                        ui.close_menu();
-
-                        let initial_url = self.currently_opened.as_ref().map(|(url, _)| url.clone());
-
-                        self.dialogs.open_add_bookmark(initial_url);
-                    }
-
-                    if Button::new(text(locale, "bookmarks-menu-manage")).ui(ui).clicked() {
-                        ui.close_menu();
-                        self.dialogs.open_bookmarks();
-                    }
-
-                    if self.preferences.have_bookmarks() {
-                        ui.separator();
-                        self.preferences.bookmarks(|bookmarks| {
-                            for bookmark in bookmarks.iter().filter(|x| !x.is_invalid()) {
-                                if Button::new(&bookmark.name).ui(ui).clicked() {
-                                    ui.close_menu();
-                                    let _ = self.event_loop.send_event(RuffleEvent::OpenURL(bookmark.url.clone(), Box::new(self.default_player_options.clone())));
-                                }
-                            }
-                        });
-                    }
-                });
-                menu::menu_button(ui, text(locale, "debug-menu"), |ui| {
-                    ui.add_enabled_ui(player.is_some(), |ui| {
-                        if Button::new(text(locale, "debug-menu-open-stage")).ui(ui).clicked() {
-                            ui.close_menu();
-                            if let Some(player) = &mut player {
-                                player.debug_ui().queue_message(DebugMessage::TrackStage);
-                            }
-                        }
-                        if Button::new(text(locale, "debug-menu-open-movie")).ui(ui).clicked() {
-                            ui.close_menu();
-                            if let Some(player) = &mut player {
-                                player.debug_ui().queue_message(DebugMessage::TrackTopLevelMovie);
-                            }
-                        }
-                        if Button::new(text(locale, "debug-menu-open-movie-list")).ui(ui).clicked() {
-                            ui.close_menu();
-                            if let Some(player) = &mut player {
-                                player.debug_ui().queue_message(DebugMessage::ShowKnownMovies);
-                            }
-                        }
-                        if Button::new(text(locale, "debug-menu-open-domain-list")).ui(ui).clicked() {
-                            ui.close_menu();
-                            if let Some(player) = &mut player {
-                                player.debug_ui().queue_message(DebugMessage::ShowDomains);
-                            }
-                        }
-                        if Button::new(text(locale, "debug-menu-search-display-objects")).ui(ui).clicked() {
-                            ui.close_menu();
-                            if let Some(player) = &mut player {
-                                player.debug_ui().queue_message(DebugMessage::SearchForDisplayObject);
-                            }
-                        }
-                    });
-                });
-                menu::menu_button(ui, text(locale, "help-menu"), |ui| {
-                    if ui.button(text(locale, "help-menu-join-discord")).clicked() {
-                        self.launch_website(ui, "https://discord.gg/ruffle");
-                    }
-                    if ui.button(text(locale, "help-menu-report-a-bug")).clicked() {
-                        self.launch_website(ui, "https://github.com/ruffle-rs/ruffle/issues/new?assignees=&labels=bug&projects=&template=bug_report.yml");
-                    }
-                    if ui.button(text(locale, "help-menu-sponsor-development")).clicked() {
-                        self.launch_website(ui, "https://opencollective.com/ruffle/");
-                    }
-                    if ui.button(text(locale, "help-menu-translate-ruffle")).clicked() {
-                        self.launch_website(ui, "https://crowdin.com/project/ruffle");
-                    }
-                    ui.separator();
-                    if ui.button(text(locale, "help-menu-about")).clicked() {
-                        self.show_about_screen(ui);
-                    }
-                });
-            });
-        });
-    }
-
-    fn open_file(&mut self, ui: &mut egui::Ui) {
-        ui.close_menu();
-
-        let _ = self
-            .event_loop
-            .send_event(RuffleEvent::BrowseAndOpen(Box::new(
-                self.default_player_options.clone(),
-            )));
-    }
-
-    fn close_movie(&mut self, ui: &mut egui::Ui) {
-        let _ = self.event_loop.send_event(RuffleEvent::CloseFile);
-        self.currently_opened = None;
-        ui.close_menu();
-    }
-
-    fn reload_movie(&mut self, ui: &mut egui::Ui) {
-        let _ = self.event_loop.send_event(RuffleEvent::CloseFile);
-        if let Some((movie_url, opts)) = self.currently_opened.take() {
-            let _ = self
-                .event_loop
-                .send_event(RuffleEvent::OpenURL(movie_url, opts.into()));
-        }
-        ui.close_menu();
-    }
-
-    fn request_exit(&mut self, ui: &mut egui::Ui) {
-        let _ = self.event_loop.send_event(RuffleEvent::ExitRequested);
-        ui.close_menu();
-    }
-
-    fn launch_website(&mut self, ui: &mut egui::Ui, url: &str) {
-        let _ = webbrowser::open(url);
-        ui.close_menu();
-    }
-
-    fn show_about_screen(&mut self, ui: &mut egui::Ui) {
-        self.dialogs.open_about_screen();
-        ui.close_menu();
-    }
-
-    fn show_volume_screen(&mut self, ui: &mut egui::Ui) {
-        self.dialogs.open_volume_controls();
-        ui.close_menu();
     }
 }
