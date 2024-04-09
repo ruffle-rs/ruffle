@@ -4,7 +4,7 @@ use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, Value};
 use crate::context::GcContext;
-use crate::display_object::{EditText, TDisplayObject, TextSelection};
+use crate::display_object::{EditText, TDisplayObject, TInteractiveObject, TextSelection};
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "getBeginIndex" => method(get_begin_index; DONT_ENUM | DONT_DELETE | READ_ONLY);
@@ -134,7 +134,10 @@ pub fn set_focus<'gc>(
             let start_clip = activation.target_clip_or_root();
             let object = activation.resolve_target_display_object(start_clip, *focus, false)?;
             if let Some(display_object) = object {
-                if display_object.is_focusable(&mut activation.context) {
+                if display_object
+                    .as_interactive()
+                    .is_some_and(|o| o.is_focusable(&mut activation.context))
+                {
                     tracker.set(object, &mut activation.context);
                     return Ok(true.into());
                 }

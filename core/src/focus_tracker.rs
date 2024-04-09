@@ -1,6 +1,7 @@
 use crate::avm1::Avm1;
 use crate::avm1::Value;
 use crate::context::{RenderContext, UpdateContext};
+use crate::display_object::TInteractiveObject;
 pub use crate::display_object::{
     DisplayObject, TDisplayObject, TDisplayObjectContainer, TextSelection,
 };
@@ -74,10 +75,10 @@ impl<'gc> FocusTracker<'gc> {
             // The highlight always follows the focus.
             self.update_highlight(context);
 
-            if let Some(old) = old {
+            if let Some(old) = old.and_then(|o| o.as_interactive()) {
                 old.on_focus_changed(context, false, focused_element);
             }
-            if let Some(new) = focused_element {
+            if let Some(new) = focused_element.and_then(|o| o.as_interactive()) {
                 new.on_focus_changed(context, true, old);
             }
 
@@ -115,7 +116,9 @@ impl<'gc> FocusTracker<'gc> {
         let mut tab_order = vec![];
         stage.fill_tab_order(&mut tab_order, context);
 
-        let custom_ordering = tab_order.iter().any(|o| o.tab_index().is_some());
+        let custom_ordering = tab_order
+            .iter()
+            .any(|o| o.as_interactive().is_some_and(|o| o.tab_index().is_some()));
         if custom_ordering {
             Self::order_custom(&mut tab_order);
         } else {
@@ -156,7 +159,10 @@ impl<'gc> FocusTracker<'gc> {
             return Highlight::Inactive;
         };
 
-        if !focus.is_highlightable(context) {
+        if !focus
+            .as_interactive()
+            .is_some_and(|o| o.is_highlightable(context))
+        {
             return Highlight::Inactive;
         }
 
@@ -186,12 +192,12 @@ impl<'gc> FocusTracker<'gc> {
     fn order_custom(tab_order: &mut Vec<DisplayObject>) {
         // Custom ordering disables automatic ordering and
         // ignores all objects without tabIndex.
-        tab_order.retain(|o| o.tab_index().is_some());
+        tab_order.retain(|o| o.as_interactive().and_then(|o| o.tab_index()).is_some());
 
         // Then, items are sorted according to their tab indices.
         // TODO When two objects have the same index, the behavior is undefined.
         //      We should analyze and match FP's behavior here if possible.
-        tab_order.sort_by_key(|o| o.tab_index());
+        tab_order.sort_by_key(|o| o.as_interactive().unwrap().tab_index());
     }
 
     // TODO This ordering is yet far from being perfect.
