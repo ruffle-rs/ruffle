@@ -1,6 +1,6 @@
 use crate::avm1::{
-    ActivationIdentifier as Avm1ActivationIdentifier, ExecutionReason as Avm1ExecutionReason,
-    Object as Avm1Object, TObject as Avm1TObject, Value as Avm1Value,
+    ActivationIdentifier as Avm1ActivationIdentifier, Object as Avm1Object, TObject as Avm1TObject,
+    Value as Avm1Value,
 };
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, Error as Avm2Error, EventObject as Avm2EventObject,
@@ -1842,94 +1842,6 @@ pub trait TDisplayObject<'gc>:
     /// Sets whether this display object has a scroll rectangle applied.
     fn set_has_scroll_rect(&self, gc_context: &Mutation<'gc>, value: bool) {
         self.base_mut(gc_context).set_has_scroll_rect(value)
-    }
-
-    /// Called whenever the focus tracker has deemed this display object worthy, or no longer worthy,
-    /// of being the currently focused object.
-    /// This should only be called by the focus manager. To change a focus, go through that.
-    fn on_focus_changed(
-        &self,
-        _context: &mut UpdateContext<'_, 'gc>,
-        _focused: bool,
-        _other: Option<DisplayObject<'gc>>,
-    ) {
-    }
-
-    fn call_focus_handler(
-        &self,
-        context: &mut UpdateContext<'_, 'gc>,
-        focused: bool,
-        other: Option<DisplayObject<'gc>>,
-    ) {
-        if let Avm1Value::Object(object) = self.object() {
-            let other = other.map(|d| d.object()).unwrap_or(Avm1Value::Null);
-            let mut activation = Activation::from_nothing(
-                context.reborrow(),
-                Avm1ActivationIdentifier::root("[Handle Changed Focus]"),
-                (*self).into(),
-            );
-            let method_name = if focused {
-                "onSetFocus".into()
-            } else {
-                "onKillFocus".into()
-            };
-            let _ = object.call_method(
-                method_name,
-                &[other],
-                &mut activation,
-                Avm1ExecutionReason::Special,
-            );
-        } else if let Avm2Value::Object(object) = self.object2() {
-            let mut activation = Avm2Activation::from_nothing(context.reborrow());
-            let event_name = if focused {
-                "focusIn".into()
-            } else {
-                // `focusOut` is not this simple in FP,
-                // firing it might break SWFs that rely
-                // on the specific behavior
-                return;
-            };
-            let event = activation
-                .avm2()
-                .classes()
-                .focusevent
-                .construct(
-                    &mut activation,
-                    &[
-                        event_name,
-                        true.into(),
-                        false.into(),
-                        other.map(|o| o.object2()).unwrap_or(Avm2Value::Null),
-                        // Rest of the properties are not yet implemented
-                    ],
-                )
-                .expect("Event should construct!");
-
-            Avm2::dispatch_event(&mut activation.context, event, object);
-        }
-    }
-
-    /// Whether this clip may be focusable for keyboard input.
-    fn is_focusable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
-        false
-    }
-
-    /// Whether this object may be highlighted when focused.
-    fn is_highlightable(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        self.as_interactive()
-            .is_some_and(|o| o.is_highlight_enabled(context))
-    }
-
-    /// Whether this object is included in tab ordering.
-    fn is_tabbable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
-        false
-    }
-
-    /// Used to customize tab ordering.
-    /// When not `None`, a custom ordering is used, and
-    /// objects are ordered according to this value.
-    fn tab_index(&self) -> Option<i64> {
-        None
     }
 
     /// Whether this display object has been created by ActionScript 3.

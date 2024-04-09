@@ -696,19 +696,6 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             false
         }
     }
-
-    fn is_focusable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
-        true
-    }
-
-    fn on_focus_changed(
-        &self,
-        _context: &mut UpdateContext<'_, 'gc>,
-        focused: bool,
-        _other: Option<DisplayObject<'gc>>,
-    ) {
-        self.0.has_focus.set(focused);
-    }
 }
 
 impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
@@ -835,6 +822,19 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
         } else {
             MouseCursor::Arrow
         }
+    }
+
+    fn is_focusable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+        true
+    }
+
+    fn on_focus_changed(
+        &self,
+        _context: &mut UpdateContext<'_, 'gc>,
+        focused: bool,
+        _other: Option<DisplayObject<'gc>>,
+    ) {
+        self.0.has_focus.set(focused);
     }
 }
 

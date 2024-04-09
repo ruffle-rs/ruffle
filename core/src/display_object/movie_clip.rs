@@ -3008,38 +3008,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     fn allow_as_mask(&self) -> bool {
         !self.is_empty()
     }
-
-    fn is_focusable(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        if !self.movie().is_action_script_3() {
-            if self.is_button_mode(context) {
-                true
-            } else {
-                self.get_avm1_boolean_property(context, "focusEnabled", |_| false)
-            }
-        } else {
-            false
-        }
-    }
-
-    fn on_focus_changed(
-        &self,
-        context: &mut UpdateContext<'_, 'gc>,
-        focused: bool,
-        other: Option<DisplayObject<'gc>>,
-    ) {
-        self.0.write(context.gc_context).has_focus = focused;
-        self.call_focus_handler(context, focused, other);
-    }
-
-    fn is_tabbable(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        self.get_avm1_boolean_property(context, "tabEnabled", |context| {
-            self.tab_index().is_some() || self.is_button_mode(context)
-        })
-    }
-
-    fn tab_index(&self) -> Option<i64> {
-        self.0.read().tab_index.map(|i| i as i64)
-    }
 }
 
 impl<'gc> TDisplayObjectContainer<'gc> for MovieClip<'gc> {
@@ -3424,6 +3392,38 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         } else {
             MouseCursor::Arrow
         }
+    }
+
+    fn is_focusable(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        if !self.movie().is_action_script_3() {
+            if self.is_button_mode(context) {
+                true
+            } else {
+                self.get_avm1_boolean_property(context, "focusEnabled", |_| false)
+            }
+        } else {
+            false
+        }
+    }
+
+    fn on_focus_changed(
+        &self,
+        context: &mut UpdateContext<'_, 'gc>,
+        focused: bool,
+        other: Option<DisplayObject<'gc>>,
+    ) {
+        self.0.write(context.gc_context).has_focus = focused;
+        self.call_focus_handler(context, focused, other);
+    }
+
+    fn is_tabbable(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        self.get_avm1_boolean_property(context, "tabEnabled", |context| {
+            self.tab_index().is_some() || self.is_button_mode(context)
+        })
+    }
+
+    fn tab_index(&self) -> Option<i64> {
+        self.0.read().tab_index.map(|i| i as i64)
     }
 }
 

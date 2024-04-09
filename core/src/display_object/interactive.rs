@@ -1,7 +1,11 @@
 //! Interactive object enumtrait
 
+use crate::avm1::Activation as Avm1Activation;
+use crate::avm1::ActivationIdentifier as Avm1ActivationIdentifier;
+use crate::avm1::ExecutionReason as Avm1ExecutionReason;
+use crate::avm1::{TObject as Avm1TObject, Value as Avm1Value};
 use crate::avm2::activation::Activation as Avm2Activation;
-use crate::avm2::{Avm2, EventObject as Avm2EventObject, Value as Avm2Value};
+use crate::avm2::{Avm2, EventObject as Avm2EventObject, TObject, Value as Avm2Value};
 use crate::backend::ui::MouseCursor;
 use crate::context::UpdateContext;
 use crate::display_object::avm1_button::Avm1Button;
@@ -507,10 +511,85 @@ pub trait TInteractiveObject<'gc>:
         MouseCursor::Hand
     }
 
+    /// Whether this clip may be focusable for keyboard input.
+    fn is_focusable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+        false
+    }
+
+    /// Called whenever the focus tracker has deemed this display object worthy, or no longer worthy,
+    /// of being the currently focused object.
+    /// This should only be called by the focus manager. To change a focus, go through that.
+    fn on_focus_changed(
+        &self,
+        _context: &mut UpdateContext<'_, 'gc>,
+        _focused: bool,
+        _other: Option<DisplayObject<'gc>>,
+    ) {
+    }
+
+    fn call_focus_handler(
+        &self,
+        context: &mut UpdateContext<'_, 'gc>,
+        focused: bool,
+        other: Option<DisplayObject<'gc>>,
+    ) {
+        if let Avm1Value::Object(object) = self.as_displayobject().object() {
+            let other = other.map(|d| d.object()).unwrap_or(Avm1Value::Null);
+            let mut activation = Avm1Activation::from_nothing(
+                context.reborrow(),
+                Avm1ActivationIdentifier::root("[Handle Changed Focus]"),
+                self.as_displayobject(),
+            );
+            let method_name = if focused {
+                "onSetFocus".into()
+            } else {
+                "onKillFocus".into()
+            };
+            let _ = object.call_method(
+                method_name,
+                &[other],
+                &mut activation,
+                Avm1ExecutionReason::Special,
+            );
+        } else if let Avm2Value::Object(object) = self.as_displayobject().object2() {
+            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let event_name = if focused {
+                "focusIn".into()
+            } else {
+                // `focusOut` is not this simple in FP,
+                // firing it might break SWFs that rely
+                // on the specific behavior
+                return;
+            };
+            let event = activation
+                .avm2()
+                .classes()
+                .focusevent
+                .construct(
+                    &mut activation,
+                    &[
+                        event_name,
+                        true.into(),
+                        false.into(),
+                        other.map(|o| o.object2()).unwrap_or(Avm2Value::Null),
+                        // Rest of the properties are not yet implemented
+                    ],
+                )
+                .expect("Event should construct!");
+
+            Avm2::dispatch_event(&mut activation.context, event, object);
+        }
+    }
+
+    /// Whether this object may be highlighted when focused.
+    fn is_highlightable(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        self.is_highlight_enabled(context)
+    }
+
     /// Whether highlight is enabled for this object.
     ///
     /// Note: This value does not mean that a highlight should actually be rendered,
-    /// for that see [`TDisplayObject::is_highlightable()`].
+    /// for that see [`Self::is_highlightable()`].
     fn is_highlight_enabled(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
         if context.swf.version() >= 6 {
             self.focus_rect()
@@ -518,6 +597,18 @@ pub trait TInteractiveObject<'gc>:
         } else {
             context.stage.stage_focus_rect()
         }
+    }
+
+    /// Whether this object is included in tab ordering.
+    fn is_tabbable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+        false
+    }
+
+    /// Used to customize tab ordering.
+    /// When not `None`, a custom ordering is used, and
+    /// objects are ordered according to this value.
+    fn tab_index(&self) -> Option<i64> {
+        None
     }
 }
 

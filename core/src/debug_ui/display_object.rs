@@ -353,7 +353,9 @@ impl DisplayObjectWindow {
                 ui.end_row();
 
                 let highlight = object.focus_tracker().is_highlight_active();
-                let highlight_enabled = focus.is_some_and(|o| o.is_highlightable(context));
+                let highlight_enabled = focus
+                    .and_then(|o| o.as_interactive())
+                    .is_some_and(|o| o.is_highlightable(context));
                 ui.label("Focus Highlight");
                 ui.add_enabled_ui(highlight_enabled, |ui| {
                     let mut enabled = highlight;

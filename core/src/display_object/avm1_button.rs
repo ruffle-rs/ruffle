@@ -408,28 +408,6 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         !self.is_empty()
     }
 
-    fn is_focusable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
-        true
-    }
-
-    fn on_focus_changed(
-        &self,
-        context: &mut UpdateContext<'_, 'gc>,
-        focused: bool,
-        other: Option<DisplayObject<'gc>>,
-    ) {
-        self.0.has_focus.set(focused);
-        self.call_focus_handler(context, focused, other);
-    }
-
-    fn is_tabbable(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        self.get_avm1_boolean_property(context, "tabEnabled", |_| true)
-    }
-
-    fn tab_index(&self) -> Option<i64> {
-        self.0.tab_index.get().map(|i| i as i64)
-    }
-
     fn avm1_unload(&self, context: &mut UpdateContext<'_, 'gc>) {
         let had_focus = self.0.has_focus.get();
         if had_focus {
@@ -644,6 +622,28 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         } else {
             MouseCursor::Arrow
         }
+    }
+
+    fn is_focusable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+        true
+    }
+
+    fn on_focus_changed(
+        &self,
+        context: &mut UpdateContext<'_, 'gc>,
+        focused: bool,
+        other: Option<DisplayObject<'gc>>,
+    ) {
+        self.0.has_focus.set(focused);
+        self.call_focus_handler(context, focused, other);
+    }
+
+    fn is_tabbable(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        self.get_avm1_boolean_property(context, "tabEnabled", |_| true)
+    }
+
+    fn tab_index(&self) -> Option<i64> {
+        self.0.tab_index.get().map(|i| i as i64)
     }
 }
 

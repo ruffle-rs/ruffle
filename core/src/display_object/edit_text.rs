@@ -2324,45 +2324,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
         self.set_avm1_removed(context.gc_context, true);
     }
-
-    fn on_focus_changed(
-        &self,
-        context: &mut UpdateContext<'_, 'gc>,
-        focused: bool,
-        other: Option<DisplayObject<'gc>>,
-    ) {
-        let is_action_script_3 = self.movie().is_action_script_3();
-        let mut text = self.0.write(context.gc_context);
-        text.flags.set(EditTextFlag::HAS_FOCUS, focused);
-        if !focused && !is_action_script_3 {
-            text.selection = None;
-        }
-        drop(text);
-
-        self.call_focus_handler(context, focused, other);
-    }
-
-    fn is_focusable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
-        // Even if this isn't selectable or editable, a script can focus on it manually.
-        true
-    }
-
-    fn is_highlightable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
-        // TextField is incapable of rendering a highlight.
-        false
-    }
-
-    fn is_tabbable(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        if !self.is_editable() {
-            // Non-editable text fields are never tabbable.
-            return false;
-        }
-        self.get_avm1_boolean_property(context, "tabEnabled", |_| true)
-    }
-
-    fn tab_index(&self) -> Option<i64> {
-        self.0.read().tab_index.map(|i| i as i64)
-    }
 }
 
 impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
@@ -2508,6 +2469,45 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         } else {
             MouseCursor::Arrow
         }
+    }
+
+    fn is_focusable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+        // Even if this isn't selectable or editable, a script can focus on it manually.
+        true
+    }
+
+    fn on_focus_changed(
+        &self,
+        context: &mut UpdateContext<'_, 'gc>,
+        focused: bool,
+        other: Option<DisplayObject<'gc>>,
+    ) {
+        let is_action_script_3 = self.movie().is_action_script_3();
+        let mut text = self.0.write(context.gc_context);
+        text.flags.set(EditTextFlag::HAS_FOCUS, focused);
+        if !focused && !is_action_script_3 {
+            text.selection = None;
+        }
+        drop(text);
+
+        self.call_focus_handler(context, focused, other);
+    }
+
+    fn is_highlightable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+        // TextField is incapable of rendering a highlight.
+        false
+    }
+
+    fn is_tabbable(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        if !self.is_editable() {
+            // Non-editable text fields are never tabbable.
+            return false;
+        }
+        self.get_avm1_boolean_property(context, "tabEnabled", |_| true)
+    }
+
+    fn tab_index(&self) -> Option<i64> {
+        self.0.read().tab_index.map(|i| i as i64)
     }
 }
 
