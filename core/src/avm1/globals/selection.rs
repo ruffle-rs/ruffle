@@ -102,6 +102,7 @@ pub fn get_focus<'gc>(
     let focus = activation.context.focus_tracker.get();
     Ok(match focus {
         Some(focus) => focus
+            .as_displayobject()
             .object()
             .coerce_to_string(activation)
             .unwrap_or_default()
@@ -125,12 +126,9 @@ pub fn set_focus<'gc>(
         Some(focus) => {
             let start_clip = activation.target_clip_or_root();
             let object = activation.resolve_target_display_object(start_clip, *focus, false)?;
-            if let Some(display_object) = object {
-                if display_object
-                    .as_interactive()
-                    .is_some_and(|o| o.is_focusable(&mut activation.context))
-                {
-                    tracker.set(object, &mut activation.context);
+            if let Some(object) = object.and_then(|o| o.as_interactive()) {
+                if object.is_focusable(&mut activation.context) {
+                    tracker.set(Some(object), &mut activation.context);
                     return Ok(true.into());
                 }
             }

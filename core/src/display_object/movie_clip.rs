@@ -3410,7 +3410,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         &self,
         context: &mut UpdateContext<'_, 'gc>,
         focused: bool,
-        other: Option<DisplayObject<'gc>>,
+        other: Option<InteractiveObject<'gc>>,
     ) {
         self.0.write(context.gc_context).has_focus = focused;
         self.call_focus_handler(context, focused, other);

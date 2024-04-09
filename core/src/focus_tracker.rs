@@ -4,7 +4,7 @@ use crate::context::{RenderContext, UpdateContext};
 pub use crate::display_object::{
     DisplayObject, TDisplayObject, TDisplayObjectContainer, TextSelection,
 };
-use crate::display_object::{EditText, TInteractiveObject};
+use crate::display_object::{EditText, InteractiveObject, TInteractiveObject};
 use crate::drawing::Drawing;
 use either::Either;
 use gc_arena::barrier::unlock;
@@ -17,7 +17,7 @@ use swf::{Color, LineJoinStyle, Point, Twips};
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct FocusTrackerData<'gc> {
-    focus: Lock<Option<DisplayObject<'gc>>>,
+    focus: Lock<Option<InteractiveObject<'gc>>>,
     highlight: RefCell<Highlight>,
 }
 
@@ -56,37 +56,35 @@ impl<'gc> FocusTracker<'gc> {
         self.0.highlight.replace(Highlight::Inactive);
     }
 
-    pub fn get(&self) -> Option<DisplayObject<'gc>> {
+    pub fn get(&self) -> Option<InteractiveObject<'gc>> {
         self.0.focus.get()
     }
 
     pub fn get_as_edit_text(&self) -> Option<EditText<'gc>> {
-        self.get().and_then(|o| o.as_edit_text())
+        self.get()
+            .map(|o| o.as_displayobject())
+            .and_then(|o| o.as_edit_text())
     }
 
-    pub fn set(
-        &self,
-        focused_element: Option<DisplayObject<'gc>>,
-        context: &mut UpdateContext<'_, 'gc>,
-    ) {
+    pub fn set(&self, new: Option<InteractiveObject<'gc>>, context: &mut UpdateContext<'_, 'gc>) {
         let old = self.0.focus.get();
 
         // Check if the focused element changed.
-        if old.map(|o| o.as_ptr()) != focused_element.map(|o| o.as_ptr()) {
+        if !InteractiveObject::option_ptr_eq(old, new) {
             let focus = unlock!(Gc::write(context.gc(), self.0), FocusTrackerData, focus);
-            focus.set(focused_element);
+            focus.set(new);
 
             // The highlight always follows the focus.
             self.update_highlight(context);
 
-            if let Some(old) = old.and_then(|o| o.as_interactive()) {
-                old.on_focus_changed(context, false, focused_element);
+            if let Some(old) = old {
+                old.on_focus_changed(context, false, new);
             }
-            if let Some(new) = focused_element.and_then(|o| o.as_interactive()) {
+            if let Some(new) = new {
                 new.on_focus_changed(context, true, old);
             }
 
-            tracing::info!("Focus is now on {:?}", focused_element);
+            tracing::info!("Focus is now on {:?}", new);
 
             if let Some(level0) = context.stage.root_clip() {
                 Avm1::notify_system_listeners(
@@ -95,8 +93,12 @@ impl<'gc> FocusTracker<'gc> {
                     "Selection".into(),
                     "onSetFocus".into(),
                     &[
-                        old.map(|v| v.object()).unwrap_or(Value::Null),
-                        focused_element.map(|v| v.object()).unwrap_or(Value::Null),
+                        old.map(|o| o.as_displayobject())
+                            .map(|v| v.object())
+                            .unwrap_or(Value::Null),
+                        new.map(|o| o.as_displayobject())
+                            .map(|v| v.object())
+                            .unwrap_or(Value::Null),
                     ],
                 );
             }
@@ -120,9 +122,7 @@ impl<'gc> FocusTracker<'gc> {
         let mut tab_order = vec![];
         stage.fill_tab_order(&mut tab_order, context);
 
-        let custom_ordering = tab_order
-            .iter()
-            .any(|o| o.as_interactive().is_some_and(|o| o.tab_index().is_some()));
+        let custom_ordering = tab_order.iter().any(|o| o.tab_index().is_some());
         if custom_ordering {
             Self::order_custom(&mut tab_order);
         } else {
@@ -140,7 +140,7 @@ impl<'gc> FocusTracker<'gc> {
         let next = if let Some(current_focus) = self.get() {
             // Find the next object which should take the focus.
             tab_order
-                .skip_while(|o| o.as_ptr() != current_focus.as_ptr())
+                .skip_while(|o| !InteractiveObject::ptr_eq(**o, current_focus))
                 .nth(1)
                 .or(first)
         } else {
@@ -163,14 +163,14 @@ impl<'gc> FocusTracker<'gc> {
             return Highlight::Inactive;
         };
 
-        if !focus
-            .as_interactive()
-            .is_some_and(|o| o.is_highlightable(context))
-        {
+        if !focus.is_highlightable(context) {
             return Highlight::Inactive;
         }
 
-        let bounds = focus.world_bounds().grow(-Self::HIGHLIGHT_WIDTH / 2);
+        let bounds = focus
+            .as_displayobject()
+            .world_bounds()
+            .grow(-Self::HIGHLIGHT_WIDTH / 2);
         let mut drawing = Drawing::new();
         drawing.set_line_style(Some(
             swf::LineStyle::new()
@@ -193,23 +193,23 @@ impl<'gc> FocusTracker<'gc> {
         };
     }
 
-    fn order_custom(tab_order: &mut Vec<DisplayObject>) {
+    fn order_custom(tab_order: &mut Vec<InteractiveObject>) {
         // Custom ordering disables automatic ordering and
         // ignores all objects without tabIndex.
-        tab_order.retain(|o| o.as_interactive().and_then(|o| o.tab_index()).is_some());
+        tab_order.retain(|o| o.tab_index().is_some());
 
         // Then, items are sorted according to their tab indices.
         // TODO When two objects have the same index, the behavior is undefined.
         //      We should analyze and match FP's behavior here if possible.
-        tab_order.sort_by_key(|o| o.as_interactive().unwrap().tab_index());
+        tab_order.sort_by_key(|o| o.tab_index());
     }
 
     // TODO This ordering is yet far from being perfect.
     //      FP actually has some weird ordering logic, which
     //      sometimes jumps up, sometimes even ignores some objects.
-    fn order_automatic(tab_order: &mut Vec<DisplayObject>) {
-        fn key_extractor(o: &DisplayObject) -> (Twips, Twips) {
-            let bounds = o.world_bounds();
+    fn order_automatic(tab_order: &mut Vec<InteractiveObject>) {
+        fn key_extractor(o: &InteractiveObject) -> (Twips, Twips) {
+            let bounds = o.as_displayobject().world_bounds();
             (bounds.y_min, bounds.x_min)
         }
 
