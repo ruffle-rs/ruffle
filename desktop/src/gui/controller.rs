@@ -353,7 +353,7 @@ impl GuiController {
     }
 
     pub fn show_open_dialog(&mut self) {
-        self.gui.open_file_advanced()
+        self.gui.dialogs.open_file_advanced()
     }
 }
 

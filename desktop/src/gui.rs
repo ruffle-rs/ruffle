@@ -1,9 +1,7 @@
-mod bookmarks_dialog;
 mod context_menu;
 mod controller;
+mod dialogs;
 mod movie;
-mod open_dialog;
-mod preferences_dialog;
 mod widgets;
 
 pub use controller::GuiController;
@@ -13,13 +11,11 @@ use std::borrow::Cow;
 use url::Url;
 
 use crate::custom_event::RuffleEvent;
-use crate::gui::bookmarks_dialog::{BookmarkAddDialog, BookmarksDialog};
 use crate::gui::context_menu::ContextMenu;
-use crate::gui::open_dialog::OpenDialog;
-use crate::gui::preferences_dialog::PreferencesDialog;
 use crate::player::PlayerOptions;
 use crate::preferences::GlobalPreferences;
 use chrono::DateTime;
+use dialogs::Dialogs;
 use egui::*;
 use fluent_templates::fluent_bundle::FluentValue;
 use fluent_templates::{static_loader, Loader};
@@ -87,12 +83,8 @@ pub struct RuffleGui {
     is_about_visible: bool,
     is_volume_visible: bool,
     volume_controls: VolumeControls,
-    is_open_dialog_visible: bool,
     context_menu: Option<ContextMenu>,
-    open_dialog: OpenDialog,
-    preferences_dialog: Option<PreferencesDialog>,
-    bookmarks_dialog: Option<BookmarksDialog>,
-    bookmark_add_dialog: Option<BookmarkAddDialog>,
+    dialogs: Dialogs,
     default_player_options: PlayerOptions,
     currently_opened: Option<(Url, PlayerOptions)>,
     was_suspended_before_debug: bool,
@@ -110,18 +102,16 @@ impl RuffleGui {
             is_about_visible: false,
             is_volume_visible: false,
             volume_controls: VolumeControls::new(&preferences),
-            is_open_dialog_visible: false,
+
             was_suspended_before_debug: false,
 
             context_menu: None,
-            open_dialog: OpenDialog::new(
+            dialogs: Dialogs::new(
+                preferences.clone(),
                 default_player_options.clone(),
                 default_path,
                 event_loop.clone(),
             ),
-            preferences_dialog: None,
-            bookmarks_dialog: None,
-            bookmark_add_dialog: None,
 
             event_loop,
             default_player_options,
@@ -145,10 +135,7 @@ impl RuffleGui {
         }
 
         self.about_window(&locale, egui_ctx);
-        self.open_dialog(&locale, egui_ctx);
-        self.preferences_dialog(&locale, egui_ctx);
-        self.bookmarks_dialog(&locale, egui_ctx);
-        self.bookmark_add_dialog(&locale, egui_ctx);
+        self.dialogs.show(&locale, egui_ctx);
 
         if let Some(player) = player {
             let was_suspended = player.debug_ui().should_suspend_player();
@@ -220,8 +207,8 @@ impl RuffleGui {
         }
 
         // Update dialog state to reflect the newly-opened movie's options.
-        self.is_open_dialog_visible = false;
-        self.open_dialog = OpenDialog::new(opt, Some(movie_url), self.event_loop.clone());
+        self.dialogs
+            .recreate_open_dialog(opt, Some(movie_url), self.event_loop.clone());
 
         player.set_volume(self.volume_controls.get_volume());
     }
@@ -243,7 +230,7 @@ impl RuffleGui {
             if ui.ctx().input_mut(|input| {
                 input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND | Modifiers::SHIFT, Key::O))
             }) {
-                self.open_file_advanced();
+                self.dialogs.open_file_advanced();
             }
             if ui.ctx().input_mut(|input| {
                 input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND, Key::Q))
@@ -276,7 +263,7 @@ impl RuffleGui {
                         .shortcut_text(ui.ctx().format_shortcut(&shortcut))
                         .ui(ui).clicked() {
                         ui.close_menu();
-                        self.open_file_advanced();
+                        self.dialogs.open_file_advanced();
                     }
 
                     if ui.add_enabled(player.is_some(), Button::new(text(locale, "file-menu-reload"))).clicked() {
@@ -306,7 +293,7 @@ impl RuffleGui {
                         .clicked()
                     {
                         ui.close_menu();
-                        self.open_preferences();
+                        self.dialogs.open_preferences();
                     }
                     ui.separator();
 
@@ -340,12 +327,12 @@ impl RuffleGui {
 
                         let initial_url = self.currently_opened.as_ref().map(|(url, _)| url.clone());
 
-                        self.open_add_bookmark(initial_url);
+                        self.dialogs.open_add_bookmark(initial_url);
                     }
 
                     if Button::new(text(locale, "bookmarks-menu-manage")).ui(ui).clicked() {
                         ui.close_menu();
-                        self.open_bookmarks();
+                        self.dialogs.open_bookmarks();
                     }
 
                     if self.preferences.have_bookmarks() {
@@ -564,25 +551,6 @@ impl RuffleGui {
             )));
     }
 
-    fn open_file_advanced(&mut self) {
-        self.is_open_dialog_visible = true;
-    }
-
-    fn open_preferences(&mut self) {
-        self.preferences_dialog = Some(PreferencesDialog::new(self.preferences.clone()));
-    }
-
-    fn open_bookmarks(&mut self) {
-        self.bookmarks_dialog = Some(BookmarksDialog::new(self.preferences.clone()));
-    }
-
-    fn open_add_bookmark(&mut self, initial_url: Option<url::Url>) {
-        self.bookmark_add_dialog = Some(BookmarkAddDialog::new(
-            self.preferences.clone(),
-            initial_url,
-        ))
-    }
-
     fn close_movie(&mut self, ui: &mut egui::Ui) {
         let _ = self.event_loop.send_event(RuffleEvent::CloseFile);
         self.currently_opened = None;
@@ -597,46 +565,6 @@ impl RuffleGui {
                 .send_event(RuffleEvent::OpenURL(movie_url, opts.into()));
         }
         ui.close_menu();
-    }
-
-    fn open_dialog(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) {
-        if self.is_open_dialog_visible {
-            let keep_open = self.open_dialog.show(locale, egui_ctx);
-            self.is_open_dialog_visible = keep_open;
-        }
-    }
-
-    fn preferences_dialog(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) {
-        let keep_open = if let Some(dialog) = &mut self.preferences_dialog {
-            dialog.show(locale, egui_ctx)
-        } else {
-            true
-        };
-        if !keep_open {
-            self.preferences_dialog = None;
-        }
-    }
-
-    fn bookmarks_dialog(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) {
-        let keep_open = if let Some(dialog) = &mut self.bookmarks_dialog {
-            dialog.show(locale, egui_ctx)
-        } else {
-            true
-        };
-        if !keep_open {
-            self.bookmarks_dialog = None;
-        }
-    }
-
-    fn bookmark_add_dialog(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) {
-        let keep_open = if let Some(dialog) = &mut self.bookmark_add_dialog {
-            dialog.show(locale, egui_ctx)
-        } else {
-            true
-        };
-        if !keep_open {
-            self.bookmark_add_dialog = None;
-        }
     }
 
     fn request_exit(&mut self, ui: &mut egui::Ui) {
