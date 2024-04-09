@@ -112,6 +112,16 @@ impl StaticCallstack {
 
 #[derive(Collect)]
 #[collect(no_drop)]
+pub struct MouseData<'gc> {
+    /// The object that the mouse is currently hovering over.
+    pub hovered: Option<InteractiveObject<'gc>>,
+
+    /// If the mouse is down, the object that the mouse is currently pressing.
+    pub pressed: Option<InteractiveObject<'gc>>,
+}
+
+#[derive(Collect)]
+#[collect(no_drop)]
 struct GcRootData<'gc> {
     library: Library<'gc>,
 
@@ -121,11 +131,7 @@ struct GcRootData<'gc> {
     /// accessed in AVM2.
     stage: Stage<'gc>,
 
-    /// The display object that the mouse is currently hovering over.
-    mouse_hovered_object: Option<InteractiveObject<'gc>>,
-
-    /// If the mouse is down, the display object that the mouse is currently pressing.
-    mouse_pressed_object: Option<InteractiveObject<'gc>>,
+    mouse_data: MouseData<'gc>,
 
     /// The object being dragged via a `startDrag` action.
     drag_object: Option<DragObject<'gc>>,
@@ -213,6 +219,7 @@ impl<'gc> GcRootData<'gc> {
         &mut NetConnections<'gc>,
         &mut LocalConnections<'gc>,
         &mut Vec<PostFrameCallback<'gc>>,
+        &mut MouseData<'gc>,
         DynamicRootSet<'gc>,
     ) {
         (
@@ -236,6 +243,7 @@ impl<'gc> GcRootData<'gc> {
             &mut self.net_connections,
             &mut self.local_connections,
             &mut self.post_frame_callbacks,
+            &mut self.mouse_data,
             self.dynamic_root,
         )
     }
@@ -1152,7 +1160,7 @@ impl Player {
 
         if let PlayerEvent::MouseWheel { delta } = event {
             self.mutate_with_update_context(|context| {
-                if let Some(over_object) = context.mouse_over_object {
+                if let Some(over_object) = context.mouse_data.hovered {
                     if over_object.as_displayobject().movie().is_action_script_3()
                         || !over_object.as_displayobject().avm1_removed()
                     {
@@ -1276,11 +1284,11 @@ impl Player {
 
             let mut new_over_object_updated = false;
             // Cancel hover if an object is removed from the stage.
-            if let Some(hovered) = context.mouse_over_object {
+            if let Some(hovered) = context.mouse_data.hovered {
                 if !hovered.as_displayobject().movie().is_action_script_3()
                     && hovered.as_displayobject().avm1_removed()
                 {
-                    context.mouse_over_object = None;
+                    context.mouse_data.hovered = None;
                     if let Some(new_object) = new_over_object {
                         if Self::check_display_object_equality(
                             new_object.as_displayobject(),
@@ -1289,18 +1297,18 @@ impl Player {
                             if let Some(state) = hovered.as_displayobject().state() {
                                 new_object.as_displayobject().set_state(context, state);
                             }
-                            context.mouse_over_object = Some(new_object);
+                            context.mouse_data.hovered = Some(new_object);
                             new_over_object_updated = true;
                         }
                     }
                 }
             }
 
-            if let Some(pressed) = context.mouse_down_object {
+            if let Some(pressed) = context.mouse_data.pressed {
                 if !pressed.as_displayobject().movie().is_action_script_3()
                     && pressed.as_displayobject().avm1_removed()
                 {
-                    context.mouse_down_object = None;
+                    context.mouse_data.pressed = None;
                     let mut display_object = None;
                     if let Some(root_clip) = context.stage.root_clip() {
                         display_object = Self::find_first_character_instance(
@@ -1314,7 +1322,7 @@ impl Player {
                             new_down_object.set_state(context, state);
                         }
 
-                        context.mouse_down_object = new_down_object.as_interactive();
+                        context.mouse_data.pressed = new_down_object.as_interactive();
                     }
                 }
             }
@@ -1322,7 +1330,7 @@ impl Player {
             // Update the cursor if the object was removed from the stage.
             if new_cursor != MouseCursor::Arrow {
                 let object_removed =
-                    context.mouse_over_object.is_none() && context.mouse_down_object.is_none();
+                    context.mouse_data.hovered.is_none() && context.mouse_data.pressed.is_none();
                 if !object_removed {
                     mouse_cursor_needs_check = false;
                     if is_mouse_button_changed {
@@ -1343,16 +1351,16 @@ impl Player {
                 mouse_cursor_needs_check = false;
             }
 
-            let cur_over_object = context.mouse_over_object;
+            let cur_over_object = context.mouse_data.hovered;
             // Check if a new object has been hovered over.
             if !InteractiveObject::option_ptr_eq(cur_over_object, new_over_object) {
                 // If the mouse button is down, the object the user clicked on grabs the focus
                 // and fires "drag" events. Other objects are ignored.
                 if context.input.is_mouse_down() {
-                    context.mouse_over_object = new_over_object;
-                    if let Some(down_object) = context.mouse_down_object {
+                    context.mouse_data.hovered = new_over_object;
+                    if let Some(down_object) = context.mouse_data.pressed {
                         if InteractiveObject::option_ptr_eq(
-                            context.mouse_down_object,
+                            context.mouse_data.pressed,
                             cur_over_object,
                         ) {
                             // Dragged from outside the clicked object to the inside.
@@ -1363,7 +1371,7 @@ impl Player {
                                 },
                             ));
                         } else if InteractiveObject::option_ptr_eq(
-                            context.mouse_down_object,
+                            context.mouse_data.pressed,
                             new_over_object,
                         ) {
                             // Dragged from inside the clicked object to the outside.
@@ -1401,31 +1409,31 @@ impl Player {
                 }
             }
             if !new_over_object_updated {
-                context.mouse_over_object = new_over_object;
+                context.mouse_data.hovered = new_over_object;
             }
             // Handle presses and releases.
             if is_mouse_button_changed {
                 if context.input.is_mouse_down() {
                     // Pressed on a hovered object.
-                    if let Some(over_object) = context.mouse_over_object {
+                    if let Some(over_object) = context.mouse_data.hovered {
                         events.push((over_object, ClipEvent::Press));
-                        context.mouse_down_object = context.mouse_over_object;
+                        context.mouse_data.pressed = context.mouse_data.hovered;
                     } else {
                         events.push((context.stage.into(), ClipEvent::Press));
                     }
                 } else {
-                    if let Some(over_object) = context.mouse_over_object {
+                    if let Some(over_object) = context.mouse_data.hovered {
                         events.push((over_object, ClipEvent::MouseUpInside));
                     } else {
                         events.push((context.stage.into(), ClipEvent::MouseUpInside));
                     }
 
                     let mut released_inside = InteractiveObject::option_ptr_eq(
-                        context.mouse_down_object,
-                        context.mouse_over_object,
+                        context.mouse_data.pressed,
+                        context.mouse_data.hovered,
                     );
-                    if let Some(down) = context.mouse_down_object {
-                        if let Some(over) = context.mouse_over_object {
+                    if let Some(down) = context.mouse_data.pressed {
+                        if let Some(over) = context.mouse_data.hovered {
                             if !released_inside {
                                 released_inside = Self::check_display_object_equality(
                                     down.as_displayobject(),
@@ -1436,7 +1444,7 @@ impl Player {
                     }
                     if released_inside {
                         // Released inside the clicked object.
-                        if let Some(down_object) = context.mouse_down_object {
+                        if let Some(down_object) = context.mouse_data.pressed {
                             new_cursor = down_object.mouse_cursor(context);
                             events.push((down_object, ClipEvent::Release));
                         } else {
@@ -1444,13 +1452,13 @@ impl Player {
                         }
                     } else {
                         // Released outside the clicked object.
-                        if let Some(down_object) = context.mouse_down_object {
+                        if let Some(down_object) = context.mouse_data.pressed {
                             events.push((down_object, ClipEvent::ReleaseOutside));
                         } else {
                             events.push((context.stage.into(), ClipEvent::ReleaseOutside));
                         }
                         // The new object is rolled over immediately.
-                        if let Some(over_object) = context.mouse_over_object {
+                        if let Some(over_object) = context.mouse_data.hovered {
                             new_cursor = over_object.mouse_cursor(context);
                             events.push((
                                 over_object,
@@ -1462,7 +1470,7 @@ impl Player {
                             new_cursor = MouseCursor::Arrow;
                         }
                     }
-                    context.mouse_down_object = None;
+                    context.mouse_data.pressed = None;
                 }
             }
 
@@ -1842,8 +1850,6 @@ impl Player {
     {
         self.gc_arena.borrow().mutate(|gc_context, gc_root| {
             let mut root_data = gc_root.data.write(gc_context);
-            let mouse_hovered_object = root_data.mouse_hovered_object;
-            let mouse_pressed_object = root_data.mouse_pressed_object;
 
             #[allow(unused_variables)]
             let (
@@ -1867,6 +1873,7 @@ impl Player {
                 net_connections,
                 local_connections,
                 post_frame_callbacks,
+                mouse_data,
                 dynamic_root,
             ) = root_data.update_context_params();
 
@@ -1883,8 +1890,7 @@ impl Player {
                 gc_context,
                 interner,
                 stage,
-                mouse_over_object: mouse_hovered_object,
-                mouse_down_object: mouse_pressed_object,
+                mouse_data,
                 input: &self.input,
                 mouse_position: &self.mouse_position,
                 drag_object,
@@ -1942,12 +1948,6 @@ impl Player {
                 .root_clip()
                 .and_then(|root| root.as_movie_clip())
                 .map(|clip| clip.current_frame());
-
-            // Hovered object may have been updated; copy it back to the GC root.
-            let mouse_hovered_object = update_context.mouse_over_object;
-            let mouse_pressed_object = update_context.mouse_down_object;
-            root_data.mouse_hovered_object = mouse_hovered_object;
-            root_data.mouse_pressed_object = mouse_pressed_object;
 
             ret
         })
@@ -2454,8 +2454,10 @@ impl PlayerBuilder {
                     ),
                     library: Library::empty(),
                     load_manager: LoadManager::new(),
-                    mouse_hovered_object: None,
-                    mouse_pressed_object: None,
+                    mouse_data: MouseData {
+                        hovered: None,
+                        pressed: None,
+                    },
                     avm1_shared_objects: HashMap::new(),
                     avm2_shared_objects: HashMap::new(),
                     stage: Stage::empty(gc_context, fullscreen, fake_movie),

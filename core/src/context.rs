@@ -21,7 +21,7 @@ use crate::backend::{
     ui::{InputManager, UiBackend},
 };
 use crate::context_menu::ContextMenuState;
-use crate::display_object::{EditText, InteractiveObject, MovieClip, SoundTransform, Stage};
+use crate::display_object::{EditText, MovieClip, SoundTransform, Stage};
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
 use crate::frame_lifecycle::FramePhase;
@@ -29,8 +29,8 @@ use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::local_connection::LocalConnections;
 use crate::net_connection::NetConnections;
-use crate::player::Player;
 use crate::player::PostFrameCallback;
+use crate::player::{MouseData, Player};
 use crate::prelude::*;
 use crate::socket::Sockets;
 use crate::streams::StreamManager;
@@ -147,11 +147,7 @@ pub struct UpdateContext<'a, 'gc> {
     /// The current player's stage (including all loaded levels)
     pub stage: Stage<'gc>,
 
-    /// The display object that the mouse is currently hovering over.
-    pub mouse_over_object: Option<InteractiveObject<'gc>>,
-
-    /// If the mouse is down, the display object that the mouse is currently pressing.
-    pub mouse_down_object: Option<InteractiveObject<'gc>>,
+    pub mouse_data: &'a mut MouseData<'gc>,
 
     /// The input manager, tracking keys state.
     pub input: &'a InputManager,
@@ -333,7 +329,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
         &mut self,
         movie_clip: MovieClip<'gc>,
         frame: u16,
-        data: crate::tag_utils::SwfSlice,
+        data: SwfSlice,
         stream_info: &swf::SoundStreamHead,
     ) -> Option<SoundInstanceHandle> {
         self.audio_manager
@@ -505,8 +501,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
             storage: self.storage,
             rng: self.rng,
             stage: self.stage,
-            mouse_over_object: self.mouse_over_object,
-            mouse_down_object: self.mouse_down_object,
+            mouse_data: self.mouse_data,
             input: self.input,
             mouse_position: self.mouse_position,
             drag_object: self.drag_object,

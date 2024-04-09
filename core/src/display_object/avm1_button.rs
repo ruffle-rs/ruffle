@@ -564,11 +564,11 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         } else {
             // Remove the current mouse hovered and mouse down objects.
             // This is required to make sure the button will fire its events if it gets enabled.
-            if InteractiveObject::option_ptr_eq(self.as_interactive(), context.mouse_over_object) {
-                context.mouse_over_object = None;
+            if InteractiveObject::option_ptr_eq(self.as_interactive(), context.mouse_data.hovered) {
+                context.mouse_data.hovered = None;
             }
-            if InteractiveObject::option_ptr_eq(self.as_interactive(), context.mouse_down_object) {
-                context.mouse_down_object = None;
+            if InteractiveObject::option_ptr_eq(self.as_interactive(), context.mouse_data.pressed) {
+                context.mouse_data.pressed = None;
             }
 
             (new_state != ButtonState::Over, ButtonState::Up)
