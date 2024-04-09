@@ -81,8 +81,6 @@ pub const MENU_HEIGHT: u32 = 24;
 pub struct RuffleGui {
     event_loop: EventLoopProxy<RuffleEvent>,
     is_about_visible: bool,
-    is_volume_visible: bool,
-    volume_controls: VolumeControls,
     context_menu: Option<ContextMenu>,
     dialogs: Dialogs,
     default_player_options: PlayerOptions,
@@ -100,8 +98,6 @@ impl RuffleGui {
     ) -> Self {
         Self {
             is_about_visible: false,
-            is_volume_visible: false,
-            volume_controls: VolumeControls::new(&preferences),
 
             was_suspended_before_debug: false,
 
@@ -135,7 +131,7 @@ impl RuffleGui {
         }
 
         self.about_window(&locale, egui_ctx);
-        self.dialogs.show(&locale, egui_ctx);
+        self.dialogs.show(&locale, egui_ctx, player.as_deref_mut());
 
         if let Some(player) = player {
             let was_suspended = player.debug_ui().should_suspend_player();
@@ -163,11 +159,7 @@ impl RuffleGui {
                     }
                 });
             }
-
-            self.volume_window(&locale, egui_ctx, Some(player));
-        } else {
-            self.volume_window(&locale, egui_ctx, None);
-        }
+        };
 
         if let Some(context_menu) = &mut self.context_menu {
             if !context_menu.show(egui_ctx, &self.event_loop) {
@@ -210,7 +202,7 @@ impl RuffleGui {
         self.dialogs
             .recreate_open_dialog(opt, Some(movie_url), self.event_loop.clone());
 
-        player.set_volume(self.volume_controls.get_volume());
+        player.set_volume(self.dialogs.volume_controls.get_volume());
     }
 
     /// Renders the main menu bar at the top of the window.
@@ -489,58 +481,6 @@ impl RuffleGui {
             });
     }
 
-    /// Renders the volume controls window.
-    fn volume_window(
-        &mut self,
-        locale: &LanguageIdentifier,
-        egui_ctx: &egui::Context,
-        player: Option<&mut Player>,
-    ) {
-        egui::Window::new(text(locale, "volume-controls"))
-            .collapsible(false)
-            .resizable(false)
-            .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
-            .open(&mut self.is_volume_visible)
-            .show(egui_ctx, |ui| {
-                let mut changed_slider = false;
-
-                let changed_checkbox = ui
-                    .checkbox(
-                        &mut self.volume_controls.is_muted,
-                        text(locale, "volume-controls-mute"),
-                    )
-                    .changed();
-
-                ui.add_enabled_ui(!self.volume_controls.is_muted, |ui| {
-                    ui.horizontal(|ui| {
-                        ui.label(text(locale, "volume-controls-volume"));
-                        changed_slider = ui
-                            .add(Slider::new(&mut self.volume_controls.volume, 0.0..=100.0))
-                            .changed();
-                    });
-                });
-
-                if changed_checkbox || changed_slider {
-                    if let Some(player) = player {
-                        player.set_volume(self.volume_controls.get_volume());
-                    }
-                    // Don't update persisted volume if the CLI set it
-                    if self.preferences.cli.volume.is_none() {
-                        if let Err(e) = self.preferences.write_preferences(|writer| {
-                            if changed_checkbox {
-                                writer.set_mute(self.volume_controls.is_muted);
-                            }
-                            if changed_slider {
-                                writer.set_volume(self.volume_controls.volume / 100.0);
-                            }
-                        }) {
-                            tracing::warn!("Couldn't update volume preferences: {e}");
-                        }
-                    }
-                }
-            });
-    }
-
     fn open_file(&mut self, ui: &mut egui::Ui) {
         ui.close_menu();
 
@@ -583,32 +523,7 @@ impl RuffleGui {
     }
 
     fn show_volume_screen(&mut self, ui: &mut egui::Ui) {
-        self.is_volume_visible = true;
+        self.dialogs.open_volume_controls();
         ui.close_menu();
-    }
-}
-
-/// The volume controls of the Ruffle GUI.
-pub struct VolumeControls {
-    is_muted: bool,
-    volume: f32,
-}
-
-impl VolumeControls {
-    fn new(preferences: &GlobalPreferences) -> Self {
-        Self {
-            is_muted: preferences.mute(),
-            volume: preferences.preferred_volume() * 100.0,
-        }
-    }
-
-    /// Returns the volume between 0 and 1 (calculated out of the
-    /// checkbox and the slider).
-    fn get_volume(&self) -> f32 {
-        if !self.is_muted {
-            self.volume / 100.0
-        } else {
-            0.0
-        }
     }
 }
