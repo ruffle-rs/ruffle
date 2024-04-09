@@ -511,9 +511,10 @@ pub trait TInteractiveObject<'gc>:
         MouseCursor::Hand
     }
 
-    /// Whether this clip may be focusable for keyboard input.
+    /// Whether this object is focusable for keyboard input.
     fn is_focusable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
-        false
+        // By default, all interactive objects are focusable.
+        true
     }
 
     /// Called whenever the focus tracker has deemed this display object worthy, or no longer worthy,

@@ -624,10 +624,6 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         }
     }
 
-    fn is_focusable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
-        true
-    }
-
     fn on_focus_changed(
         &self,
         context: &mut UpdateContext<'_, 'gc>,

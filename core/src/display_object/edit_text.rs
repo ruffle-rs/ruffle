@@ -2471,11 +2471,6 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         }
     }
 
-    fn is_focusable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
-        // Even if this isn't selectable or editable, a script can focus on it manually.
-        true
-    }
-
     fn on_focus_changed(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
