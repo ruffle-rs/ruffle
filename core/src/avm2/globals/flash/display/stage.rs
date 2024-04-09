@@ -7,7 +7,7 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
-use crate::display_object::{StageDisplayState, TDisplayObject};
+use crate::display_object::{StageDisplayState, TDisplayObject, TInteractiveObject};
 use crate::string::{AvmString, WString};
 use crate::{avm2_stub_getter, avm2_stub_setter};
 use swf::Color;
@@ -183,6 +183,7 @@ pub fn get_focus<'gc>(
         .context
         .focus_tracker
         .get()
+        .map(|o| o.as_displayobject())
         .and_then(|focus_dobj| focus_dobj.object2().as_object())
         .map(|o| o.into())
         .unwrap_or(Value::Null))
@@ -198,7 +199,7 @@ pub fn set_focus<'gc>(
     match args.try_get_object(activation, 0) {
         None => focus.set(None, &mut activation.context),
         Some(obj) => {
-            if let Some(dobj) = obj.as_display_object() {
+            if let Some(dobj) = obj.as_display_object().and_then(|o| o.as_interactive()) {
                 focus.set(Some(dobj), &mut activation.context);
             } else {
                 return Err("Cannot set focus to non-DisplayObject".into());

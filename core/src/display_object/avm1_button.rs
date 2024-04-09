@@ -628,7 +628,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         &self,
         context: &mut UpdateContext<'_, 'gc>,
         focused: bool,
-        other: Option<DisplayObject<'gc>>,
+        other: Option<InteractiveObject<'gc>>,
     ) {
         self.0.has_focus.set(focused);
         self.call_focus_handler(context, focused, other);

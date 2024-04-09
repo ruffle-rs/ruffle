@@ -1045,6 +1045,7 @@ impl Player {
                     .context
                     .focus_tracker
                     .get()
+                    .map(|o| o.as_displayobject())
                     .unwrap_or_else(|| activation.context.stage.into());
 
                 if target_object.movie().is_action_script_3() {

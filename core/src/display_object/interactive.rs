@@ -3,7 +3,9 @@
 use crate::avm1::Avm1;
 use crate::avm1::Value as Avm1Value;
 use crate::avm2::activation::Activation as Avm2Activation;
-use crate::avm2::{Avm2, EventObject as Avm2EventObject, TObject, Value as Avm2Value};
+use crate::avm2::{
+    Avm2, EventObject as Avm2EventObject, TObject as Avm2TObject, Value as Avm2Value,
+};
 use crate::backend::ui::MouseCursor;
 use crate::context::UpdateContext;
 use crate::display_object::avm1_button::Avm1Button;
@@ -522,7 +524,7 @@ pub trait TInteractiveObject<'gc>:
         &self,
         _context: &mut UpdateContext<'_, 'gc>,
         _focused: bool,
-        _other: Option<DisplayObject<'gc>>,
+        _other: Option<InteractiveObject<'gc>>,
     ) {
     }
 
@@ -530,9 +532,10 @@ pub trait TInteractiveObject<'gc>:
         &self,
         context: &mut UpdateContext<'_, 'gc>,
         focused: bool,
-        other: Option<DisplayObject<'gc>>,
+        other: Option<InteractiveObject<'gc>>,
     ) {
         let self_do = self.as_displayobject();
+        let other = other.map(|d| d.as_displayobject());
         if let Avm1Value::Object(object) = self_do.object() {
             let other = other.map(|d| d.object()).unwrap_or(Avm1Value::Null);
             let method_name = if focused {

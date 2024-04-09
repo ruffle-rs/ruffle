@@ -10,7 +10,9 @@ use crate::display_object::avm1_button::Avm1Button;
 use crate::display_object::loader_display::LoaderDisplay;
 use crate::display_object::movie_clip::MovieClip;
 use crate::display_object::stage::Stage;
-use crate::display_object::{Depth, DisplayObject, TDisplayObject, TInteractiveObject};
+use crate::display_object::{
+    Depth, DisplayObject, InteractiveObject, TDisplayObject, TInteractiveObject,
+};
 use crate::string::WStr;
 use crate::tag_utils::SwfMovie;
 use gc_arena::{Collect, Mutation};
@@ -481,7 +483,7 @@ pub trait TDisplayObjectContainer<'gc>:
 
     fn fill_tab_order(
         &self,
-        tab_order: &mut Vec<DisplayObject<'gc>>,
+        tab_order: &mut Vec<InteractiveObject<'gc>>,
         context: &mut UpdateContext<'_, 'gc>,
     ) {
         if !self.is_tab_children(context) {
@@ -493,11 +495,10 @@ pub trait TDisplayObjectContainer<'gc>:
                 // Non-visible objects and their children are excluded from tab ordering.
                 continue;
             }
-            if child
-                .as_interactive()
-                .is_some_and(|o| o.is_tabbable(context))
-            {
-                tab_order.push(child);
+            if let Some(child) = child.as_interactive() {
+                if child.is_tabbable(context) {
+                    tab_order.push(child);
+                }
             }
             if let Some(container) = child.as_container() {
                 container.fill_tab_order(tab_order, context);
