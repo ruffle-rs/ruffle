@@ -1,6 +1,7 @@
 mod bookmarks_dialog;
 mod open_dialog;
 mod preferences_dialog;
+mod volume_controls;
 
 use crate::custom_event::RuffleEvent;
 use crate::player::PlayerOptions;
@@ -8,8 +9,10 @@ use crate::preferences::GlobalPreferences;
 use bookmarks_dialog::{BookmarkAddDialog, BookmarksDialog};
 use open_dialog::OpenDialog;
 use preferences_dialog::PreferencesDialog;
+use ruffle_core::Player;
 use unic_langid::LanguageIdentifier;
 use url::Url;
+use volume_controls::VolumeControls;
 use winit::event_loop::EventLoopProxy;
 
 pub struct Dialogs {
@@ -19,6 +22,10 @@ pub struct Dialogs {
 
     open_dialog: OpenDialog,
     is_open_dialog_visible: bool,
+
+    pub volume_controls: VolumeControls,
+    is_volume_visible: bool,
+
     preferences: GlobalPreferences,
 }
 
@@ -36,6 +43,9 @@ impl Dialogs {
 
             open_dialog: OpenDialog::new(player_options, default_path, event_loop),
             is_open_dialog_visible: false,
+
+            volume_controls: VolumeControls::new(&preferences),
+            is_volume_visible: false,
 
             preferences,
         }
@@ -70,11 +80,21 @@ impl Dialogs {
         ))
     }
 
-    pub fn show(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) {
+    pub fn open_volume_controls(&mut self) {
+        self.is_volume_visible = true;
+    }
+
+    pub fn show(
+        &mut self,
+        locale: &LanguageIdentifier,
+        egui_ctx: &egui::Context,
+        player: Option<&mut Player>,
+    ) {
         self.open_dialog(locale, egui_ctx);
         self.preferences_dialog(locale, egui_ctx);
         self.bookmarks_dialog(locale, egui_ctx);
         self.bookmark_add_dialog(locale, egui_ctx);
+        self.volume_controls(locale, egui_ctx, player)
     }
 
     fn open_dialog(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) {
@@ -114,6 +134,20 @@ impl Dialogs {
         };
         if !keep_open {
             self.bookmark_add_dialog = None;
+        }
+    }
+
+    fn volume_controls(
+        &mut self,
+        locale: &LanguageIdentifier,
+        egui_ctx: &egui::Context,
+        player: Option<&mut Player>,
+    ) {
+        if self.is_volume_visible {
+            let keep_open = self
+                .volume_controls
+                .show(locale, egui_ctx, player, &self.preferences);
+            self.is_volume_visible = keep_open;
         }
     }
 }
