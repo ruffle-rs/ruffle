@@ -1,9 +1,7 @@
 //! Interactive object enumtrait
 
-use crate::avm1::Activation as Avm1Activation;
-use crate::avm1::ActivationIdentifier as Avm1ActivationIdentifier;
-use crate::avm1::ExecutionReason as Avm1ExecutionReason;
-use crate::avm1::{TObject as Avm1TObject, Value as Avm1Value};
+use crate::avm1::Avm1;
+use crate::avm1::Value as Avm1Value;
 use crate::avm2::activation::Activation as Avm2Activation;
 use crate::avm2::{Avm2, EventObject as Avm2EventObject, TObject, Value as Avm2Value};
 use crate::backend::ui::MouseCursor;
@@ -534,25 +532,16 @@ pub trait TInteractiveObject<'gc>:
         focused: bool,
         other: Option<DisplayObject<'gc>>,
     ) {
-        if let Avm1Value::Object(object) = self.as_displayobject().object() {
+        let self_do = self.as_displayobject();
+        if let Avm1Value::Object(object) = self_do.object() {
             let other = other.map(|d| d.object()).unwrap_or(Avm1Value::Null);
-            let mut activation = Avm1Activation::from_nothing(
-                context.reborrow(),
-                Avm1ActivationIdentifier::root("[Handle Changed Focus]"),
-                self.as_displayobject(),
-            );
             let method_name = if focused {
                 "onSetFocus".into()
             } else {
                 "onKillFocus".into()
             };
-            let _ = object.call_method(
-                method_name,
-                &[other],
-                &mut activation,
-                Avm1ExecutionReason::Special,
-            );
-        } else if let Avm2Value::Object(object) = self.as_displayobject().object2() {
+            Avm1::run_stack_frame_for_method(self_do, object, context, method_name, &[other]);
+        } else if let Avm2Value::Object(object) = self_do.object2() {
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
             let event_name = if focused {
                 "focusIn".into()
