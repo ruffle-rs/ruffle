@@ -14,7 +14,6 @@ use crate::custom_event::RuffleEvent;
 use crate::gui::context_menu::ContextMenu;
 use crate::player::PlayerOptions;
 use crate::preferences::GlobalPreferences;
-use chrono::DateTime;
 use dialogs::Dialogs;
 use egui::*;
 use fluent_templates::fluent_bundle::FluentValue;
@@ -27,8 +26,6 @@ use std::fs;
 use std::sync::MutexGuard;
 use unic_langid::LanguageIdentifier;
 use winit::event_loop::EventLoopProxy;
-
-const VERGEN_UNKNOWN: &str = "VERGEN_IDEMPOTENT_OUTPUT";
 
 static_loader! {
     static TEXTS = {
@@ -80,7 +77,6 @@ pub const MENU_HEIGHT: u32 = 24;
 /// The main controller for the Ruffle GUI.
 pub struct RuffleGui {
     event_loop: EventLoopProxy<RuffleEvent>,
-    is_about_visible: bool,
     context_menu: Option<ContextMenu>,
     dialogs: Dialogs,
     default_player_options: PlayerOptions,
@@ -97,8 +93,6 @@ impl RuffleGui {
         preferences: GlobalPreferences,
     ) -> Self {
         Self {
-            is_about_visible: false,
-
             was_suspended_before_debug: false,
 
             context_menu: None,
@@ -130,7 +124,6 @@ impl RuffleGui {
             self.main_menu_bar(&locale, egui_ctx, player.as_deref_mut());
         }
 
-        self.about_window(&locale, egui_ctx);
         self.dialogs.show(&locale, egui_ctx, player.as_deref_mut());
 
         if let Some(player) = player {
@@ -395,92 +388,6 @@ impl RuffleGui {
         });
     }
 
-    /// Renders the About Ruffle window.
-    fn about_window(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) {
-        egui::Window::new(text(locale, "about-ruffle"))
-            .collapsible(false)
-            .resizable(false)
-            .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
-            .open(&mut self.is_about_visible)
-            .show(egui_ctx, |ui| {
-                ui.vertical_centered(|ui| {
-                    ui.add(
-                        Image::new(egui::include_image!("../assets/about_logo.png"))
-                            .max_width(350.0),
-                    );
-                    Grid::new("about_ruffle_version_info")
-                        .striped(true)
-                        .show(ui, |ui| {
-                            ui.label(text(locale, "about-ruffle-version"));
-                            ui.label(env!("CARGO_PKG_VERSION"));
-                            ui.end_row();
-
-                            ui.label(text(locale, "about-ruffle-channel"));
-                            ui.label(env!("CFG_RELEASE_CHANNEL"));
-                            ui.end_row();
-
-                            let build_time = env!("VERGEN_BUILD_TIMESTAMP");
-                            if build_time != VERGEN_UNKNOWN {
-                                ui.label(text(locale, "about-ruffle-build-time"));
-                                ui.label(
-                                    DateTime::parse_from_rfc3339(build_time)
-                                        .map(|t| t.format("%c").to_string())
-                                        .unwrap_or_else(|_| build_time.to_string()),
-                                );
-                                ui.end_row();
-                            }
-
-                            let sha = env!("VERGEN_GIT_SHA");
-                            if sha != VERGEN_UNKNOWN {
-                                ui.label(text(locale, "about-ruffle-commit-ref"));
-                                ui.hyperlink_to(
-                                    sha,
-                                    format!("https://github.com/ruffle-rs/ruffle/commit/{}", sha),
-                                );
-                                ui.end_row();
-                            }
-
-                            let commit_time = env!("VERGEN_GIT_COMMIT_TIMESTAMP");
-                            if sha != VERGEN_UNKNOWN {
-                                ui.label(text(locale, "about-ruffle-commit-time"));
-                                ui.label(
-                                    DateTime::parse_from_rfc3339(commit_time)
-                                        .map(|t| t.format("%c").to_string())
-                                        .unwrap_or_else(|_| commit_time.to_string()),
-                                );
-                                ui.end_row();
-                            }
-
-                            ui.label(text(locale, "about-ruffle-build-features"));
-                            ui.horizontal_wrapped(|ui| {
-                                ui.label(env!("VERGEN_CARGO_FEATURES").replace(',', ", "));
-                            });
-                            ui.end_row();
-                        });
-
-                    ui.horizontal(|ui| {
-                        ui.hyperlink_to(
-                            text(locale, "about-ruffle-visit-website"),
-                            "https://ruffle.rs",
-                        );
-                        ui.hyperlink_to(
-                            text(locale, "about-ruffle-visit-github"),
-                            "https://github.com/ruffle-rs/ruffle/",
-                        );
-                        ui.hyperlink_to(
-                            text(locale, "about-ruffle-visit-discord"),
-                            "https://discord.gg/ruffle",
-                        );
-                        ui.hyperlink_to(
-                            text(locale, "about-ruffle-visit-sponsor"),
-                            "https://opencollective.com/ruffle/",
-                        );
-                        ui.shrink_width_to_current();
-                    });
-                })
-            });
-    }
-
     fn open_file(&mut self, ui: &mut egui::Ui) {
         ui.close_menu();
 
@@ -518,7 +425,7 @@ impl RuffleGui {
     }
 
     fn show_about_screen(&mut self, ui: &mut egui::Ui) {
-        self.is_about_visible = true;
+        self.dialogs.open_about_screen();
         ui.close_menu();
     }
 
