@@ -213,14 +213,14 @@ impl MenuBar {
             ui.separator();
 
             let recent_menu_response = ui
-                .menu_button("Recents", |ui| {
+                .menu_button(text(locale, "file-menu-recents"), |ui| {
                     if self
                         .cached_recents
                         .as_ref()
                         .map(|x| x.is_empty())
                         .unwrap_or(true)
                     {
-                        ui.label("No recent entries");
+                        ui.label(text(locale, "file-menu-recents-empty"));
                     }
 
                     if let Some(recents) = &self.cached_recents {
