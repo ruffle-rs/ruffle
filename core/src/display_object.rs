@@ -2390,6 +2390,20 @@ pub trait TDisplayObject<'gc>:
         root
     }
 
+    /// `avm1_root`, but disregards _lockroot
+    fn avm1_root_no_lock(&self) -> DisplayObject<'gc> {
+        let mut root = (*self).into();
+        while let Some(parent) = root.avm1_parent() {
+            if !parent.movie().is_action_script_3() {
+                root = parent;
+            } else {
+                // We've traversed upwards into a loader AVM2 movie, so break.
+                break;
+            }
+        }
+        root
+    }
+
     /// Obtain the top-most Stage or LoaderDisplay object of the display tree hierarchy, for use in mixed AVM.
     fn avm1_stage(&self) -> DisplayObject<'gc> {
         let mut root = (*self).into();
