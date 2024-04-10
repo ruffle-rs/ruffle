@@ -31,6 +31,7 @@ pub struct TestOptions {
     pub log_fetch: bool,
     pub required_features: RequiredFeatures,
     pub fonts: HashMap<String, FontOptions>,
+    pub is_slow: bool,
 }
 
 impl Default for TestOptions {
@@ -49,6 +50,7 @@ impl Default for TestOptions {
             log_fetch: false,
             required_features: RequiredFeatures::default(),
             fonts: Default::default(),
+            is_slow: false,
         }
     }
 }
