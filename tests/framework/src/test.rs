@@ -30,6 +30,21 @@ impl TestKind {
             TestKind::Render => "render",
         }
     }
+
+    pub fn priority(kind: &str) -> isize {
+        // NOTE: Make sure to synchronize this with the nextest config
+        match kind {
+            "realtime" => 3,
+            "large" => 2,
+            // Render tests are slower on Windows and sometimes on nextest
+            "render" => 1,
+            _ => 0,
+        }
+    }
+
+    pub fn ord(kind: &str) -> impl Ord {
+        -Self::priority(kind)
+    }
 }
 
 pub struct Test {

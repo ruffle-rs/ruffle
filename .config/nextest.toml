@@ -7,3 +7,17 @@ test(avm2/graphics_round_rects) or \
 test(avm1/netstream_play_flv) or \
 test(avm1/netstream_play_flv_screen)"""
 retries = 4
+
+# Run tests that take more time first
+# NOTE: Make sure to synchronize this with TestKind::priority
+[[profile.default.overrides]]
+filter = "test([realtime] )"
+priority = 3
+
+[[profile.default.overrides]]
+filter = "test([large] )"
+priority = 2
+
+[[profile.default.overrides]]
+filter = "test([render] )"
+priority = 1

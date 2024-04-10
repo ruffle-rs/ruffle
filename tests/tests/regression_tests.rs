@@ -11,7 +11,7 @@ use libtest_mimic::Trial;
 use ruffle_fs_tests_runner::{FsTestsRunner, TestLoaderParams};
 use ruffle_test_framework::options::TestOptions;
 use ruffle_test_framework::runner::TestStatus;
-use ruffle_test_framework::test::Test;
+use ruffle_test_framework::test::{Test, TestKind};
 use std::borrow::Cow;
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::path::PathBuf;
@@ -60,6 +60,8 @@ fn main() {
     runner.with_additional_test(Trial::test("external_interface_avm2", || {
         external_interface_avm2(&NativeEnvironment)
     }));
+
+    runner.with_test_ordering_by_key(|t| (TestKind::ord(t.kind()), t.name().to_owned()));
 
     runner.run()
 }
