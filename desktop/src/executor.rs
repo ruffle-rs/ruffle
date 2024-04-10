@@ -1,6 +1,5 @@
 //! Async executor
 
-use crate::custom_event::RuffleEvent;
 use crate::task::Task;
 use async_channel::{unbounded, Receiver, Sender};
 use ruffle_core::backend::navigator::OwnedFuture;
@@ -9,7 +8,10 @@ use slotmap::{new_key_type, SlotMap};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard, Weak};
 use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
-use winit::event_loop::EventLoopProxy;
+
+pub trait PollRequester: Clone {
+    fn request_poll(&self);
+}
 
 new_key_type! {
     // This is what we would call `TaskHandle` everywhere else, but that name is already taken.
@@ -21,7 +23,7 @@ new_key_type! {
 /// All task handles are identical and interchangeable. Cloning a `TaskHandle`
 /// does not clone the underlying task.
 #[derive(Clone)]
-struct TaskHandle {
+struct TaskHandle<R: PollRequester> {
     /// The arena handle for a given task.
     handle: TaskKey,
 
@@ -29,12 +31,12 @@ struct TaskHandle {
     ///
     /// Weak reference ensures that the executor along
     /// with its tasks is dropped properly.
-    executor: Weak<WinitAsyncExecutor>,
+    executor: Weak<WinitAsyncExecutor<R>>,
 }
 
-impl TaskHandle {
+impl<R: PollRequester> TaskHandle<R> {
     /// Construct a handle to a given task.
-    fn for_task(task: TaskKey, executor: Weak<WinitAsyncExecutor>) -> Self {
+    fn for_task(task: TaskKey, executor: Weak<WinitAsyncExecutor<R>>) -> Self {
         Self {
             handle: task,
             executor,
@@ -97,28 +99,29 @@ impl TaskHandle {
     ///
     /// This is part of the vtable methods of our `RawWaker` impl.
     unsafe fn clone_as_ptr(almost_self: *const ()) -> RawWaker {
-        let selfish = TaskHandle::from_const_ptr(almost_self).expect("non-null context ptr");
+        let selfish = TaskHandle::<R>::from_const_ptr(almost_self).expect("non-null context ptr");
 
         selfish.raw_waker()
     }
 
     /// Wake the given task, then drop it.
     unsafe fn wake_as_ptr(almost_self: *const ()) {
-        let selfish = TaskHandle::box_from_const_ptr(almost_self).expect("non-null context ptr");
+        let selfish =
+            TaskHandle::<R>::box_from_const_ptr(almost_self).expect("non-null context ptr");
 
         selfish.wake();
     }
 
     /// Wake the given task.
     unsafe fn wake_by_ref_as_ptr(almost_self: *const ()) {
-        let selfish = TaskHandle::from_const_ptr(almost_self).expect("non-null context ptr");
+        let selfish = TaskHandle::<R>::from_const_ptr(almost_self).expect("non-null context ptr");
 
         selfish.wake();
     }
 
     /// Drop the async executor.
     unsafe fn drop_as_ptr(almost_self: *const ()) {
-        let _ = TaskHandle::box_from_const_ptr(almost_self).expect("non-null context ptr");
+        let _ = TaskHandle::<R>::box_from_const_ptr(almost_self).expect("non-null context ptr");
     }
 
     const VTABLE: RawWakerVTable = RawWakerVTable::new(
@@ -129,7 +132,7 @@ impl TaskHandle {
     );
 }
 
-pub struct WinitAsyncExecutor {
+pub struct WinitAsyncExecutor<R: PollRequester> {
     /// List of all spawned tasks.
     task_queue: RwLock<SlotMap<TaskKey, Mutex<Task>>>,
 
@@ -140,29 +143,29 @@ pub struct WinitAsyncExecutor {
     self_ref: Weak<Self>,
 
     /// Event injector for the main thread event loop.
-    event_loop: EventLoopProxy<RuffleEvent>,
+    poll_requester: R,
 
     /// Whether we have already queued a `TaskPoll` event.
     waiting_for_poll: AtomicBool,
 }
 
-impl WinitAsyncExecutor {
+impl<R: PollRequester> WinitAsyncExecutor<R> {
     /// Construct a new executor for the winit event loop.
     ///
     /// This function returns the executor itself, plus the `Sender` necessary
     /// to spawn new tasks.
-    pub fn new(event_loop: EventLoopProxy<RuffleEvent>) -> (Arc<Self>, WinitFutureSpawner) {
+    pub fn new(poll_requester: R) -> (Arc<Self>, WinitFutureSpawner<R>) {
         let (send, recv) = unbounded();
         let new_self = Arc::new_cyclic(|self_ref| Self {
             task_queue: RwLock::new(SlotMap::with_key()),
             channel: recv,
             self_ref: self_ref.clone(),
-            event_loop: event_loop.clone(),
+            poll_requester: poll_requester.clone(),
             waiting_for_poll: AtomicBool::new(false),
         });
         (
             new_self,
-            WinitFutureSpawner::send_and_poll(send, event_loop),
+            WinitFutureSpawner::send_and_poll(send, poll_requester),
         )
     }
 
@@ -204,9 +207,7 @@ impl WinitAsyncExecutor {
             if !task.is_completed() {
                 task.set_ready();
                 if !self.waiting_for_poll.swap(true, Ordering::SeqCst) {
-                    if self.event_loop.send_event(RuffleEvent::TaskPoll).is_err() {
-                        tracing::warn!("A task was queued on an event loop that has already ended. It will not be polled.");
-                    }
+                    self.poll_requester.request_poll();
                 } else {
                     tracing::info!("Double polling");
                 }
@@ -247,32 +248,28 @@ pub trait FutureSpawner {
     fn spawn(&self, future: OwnedFuture<(), Error>);
 }
 
-pub struct WinitFutureSpawner {
+pub struct WinitFutureSpawner<R: PollRequester> {
     channel: Sender<OwnedFuture<(), Error>>,
-    event_loop: EventLoopProxy<RuffleEvent>,
+    poll_requester: R,
 }
 
-impl WinitFutureSpawner {
+impl<R: PollRequester> WinitFutureSpawner<R> {
     pub fn send_and_poll(
         channel: Sender<OwnedFuture<(), Error>>,
-        event_loop: EventLoopProxy<RuffleEvent>,
-    ) -> WinitFutureSpawner {
+        request_poll: R,
+    ) -> WinitFutureSpawner<R> {
         WinitFutureSpawner {
             channel,
-            event_loop,
+            poll_requester: request_poll,
         }
     }
 }
 
-impl FutureSpawner for WinitFutureSpawner {
+impl<R: PollRequester> FutureSpawner for WinitFutureSpawner<R> {
     fn spawn(&self, future: OwnedFuture<(), Error>) {
         self.channel
             .send_blocking(future)
             .expect("working channel send");
-        if self.event_loop.send_event(RuffleEvent::TaskPoll).is_err() {
-            tracing::warn!(
-                "A task was queued on an event loop that has already ended. It will not be polled."
-            );
-        }
+        self.poll_requester.request_poll()
     }
 }
