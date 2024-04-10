@@ -64,7 +64,7 @@ impl Test {
     }
 
     pub fn kind(&self) -> Option<TestKind> {
-        let is_slow = self.options.is_slow;
+        let is_slow = self.options.is_slow || self.options.sleep_to_meet_frame_rate;
         if is_slow {
             Some(TestKind::Slow)
         } else {
