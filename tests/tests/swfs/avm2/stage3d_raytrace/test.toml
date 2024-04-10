@@ -3,6 +3,7 @@
 # All of the necessary files were copied into this directory.
 
 num_frames = 80
+size = "large"
 
 [image_comparisons.output]
 tolerance = 8
