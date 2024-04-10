@@ -318,7 +318,30 @@ impl<F: FutureSpawner> NavigatorBackend for ExternalNavigatorBackend<F> {
                     // when we actually load a filesystem url, strip them out.
                     processed_url.set_query(None);
 
-                    let contents = content.get_local_file(&processed_url);
+                    let contents = content.get_local_file(&processed_url, |path| {
+                        std::fs::File::open(path).or_else(|e| {
+                            if cfg!(feature = "sandbox") {
+                                use rfd::FileDialog;
+                                let parent_path = path.parent().unwrap_or(path);
+
+                                if e.kind() == ErrorKind::PermissionDenied {
+                                    let attempt_sandbox_open = MessageDialog::new()
+                                        .set_level(MessageLevel::Warning)
+                                        .set_description(format!("The current movie is attempting to read files stored in {parent_path:?}.\n\nTo allow it to do so, click Yes, and then Open to grant read access to that directory.\n\nOtherwise, click No to deny access."))
+                                        .set_buttons(MessageButtons::YesNo)
+                                        .show() == MessageDialogResult::Yes;
+
+                                    if attempt_sandbox_open {
+                                        FileDialog::new().set_directory(parent_path).pick_folder();
+
+                                        return std::fs::File::open(path);
+                                    }
+                                }
+                            }
+
+                            Err(e)
+                        })
+                    });
 
                     let response: Box<dyn SuccessResponse> = Box::new(DesktopResponse {
                         url: response_url.to_string(),
