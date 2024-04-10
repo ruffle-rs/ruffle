@@ -22,8 +22,10 @@ use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
 use ruffle_frontend_utils::backends::executor::FutureSpawner;
 use ruffle_frontend_utils::content::PlayingContent;
 use std::collections::HashSet;
+use std::fs::File;
 use std::io;
 use std::io::ErrorKind;
+use std::path::Path;
 use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
@@ -31,9 +33,65 @@ use std::time::Duration;
 use tracing::warn;
 use url::{ParseError, Url};
 
+pub trait NavigatorInterface: Clone + 'static {
+    fn confirm_website_navigation(&self, url: &Url) -> bool;
+
+    fn open_file(&self, path: &Path) -> io::Result<File>;
+
+    async fn confirm_socket(&self, host: &str, port: u16) -> bool;
+}
+
+#[derive(Clone)]
+pub struct RfdNavigatorInterface;
+
+impl NavigatorInterface for RfdNavigatorInterface {
+    fn confirm_website_navigation(&self, url: &Url) -> bool {
+        let message = format!("The SWF file wants to open the website {}", url);
+        // TODO: Add a checkbox with a GUI toolkit
+        MessageDialog::new()
+            .set_title("Open website?")
+            .set_level(MessageLevel::Info)
+            .set_description(message)
+            .set_buttons(MessageButtons::OkCancel)
+            .show()
+            == MessageDialogResult::Ok
+    }
+
+    fn open_file(&self, path: &Path) -> io::Result<File> {
+        File::open(path).or_else(|e| {
+            if cfg!(feature = "sandbox") {
+                use rfd::FileDialog;
+                let parent_path = path.parent().unwrap_or(path);
+
+                if e.kind() == ErrorKind::PermissionDenied {
+                    let attempt_sandbox_open = MessageDialog::new()
+                        .set_level(MessageLevel::Warning)
+                        .set_description(format!("The current movie is attempting to read files stored in {parent_path:?}.\n\nTo allow it to do so, click Yes, and then Open to grant read access to that directory.\n\nOtherwise, click No to deny access."))
+                        .set_buttons(MessageButtons::YesNo)
+                        .show() == MessageDialogResult::Yes;
+
+                    if attempt_sandbox_open {
+                        FileDialog::new().set_directory(parent_path).pick_folder();
+
+                        return File::open(path);
+                    }
+                }
+            }
+
+            Err(e)
+        })
+    }
+
+    async fn confirm_socket(&self, host: &str, port: u16) -> bool {
+        AsyncMessageDialog::new().set_level(MessageLevel::Warning).set_description(format!("The current movie is attempting to connect to {:?} (port {}).\n\nTo allow it to do so, click Yes to grant network access to that host.\n\nOtherwise, click No to deny access.", host, port)).set_buttons(MessageButtons::YesNo)
+            .show()
+            .await == MessageDialogResult::Yes
+    }
+}
+
 /// Implementation of `NavigatorBackend` for non-web environments that can call
 /// out to a web browser.
-pub struct ExternalNavigatorBackend<F: FutureSpawner> {
+pub struct ExternalNavigatorBackend<F: FutureSpawner, I: NavigatorInterface> {
     /// Sink for tasks sent to us through `spawn_future`.
     future_spawner: F,
 
@@ -52,9 +110,11 @@ pub struct ExternalNavigatorBackend<F: FutureSpawner> {
     open_url_mode: OpenURLMode,
 
     content: Rc<PlayingContent>,
+
+    interface: I,
 }
 
-impl<F: FutureSpawner> ExternalNavigatorBackend<F> {
+impl<F: FutureSpawner, I: NavigatorInterface> ExternalNavigatorBackend<F, I> {
     /// Construct a navigator backend with fetch and async capability.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
@@ -66,6 +126,7 @@ impl<F: FutureSpawner> ExternalNavigatorBackend<F> {
         socket_allowed: HashSet<String>,
         socket_mode: SocketMode,
         content: Rc<PlayingContent>,
+        interface: I,
     ) -> Self {
         let proxy = proxy.and_then(|url| url.as_str().parse().ok());
         let builder = HttpClient::builder()
@@ -90,11 +151,12 @@ impl<F: FutureSpawner> ExternalNavigatorBackend<F> {
             socket_allowed,
             socket_mode,
             content,
+            interface,
         }
     }
 }
 
-impl<F: FutureSpawner> NavigatorBackend for ExternalNavigatorBackend<F> {
+impl<F: FutureSpawner, I: NavigatorInterface> NavigatorBackend for ExternalNavigatorBackend<F, I> {
     fn navigate_to_url(
         &self,
         url: &str,
@@ -141,16 +203,7 @@ impl<F: FutureSpawner> NavigatorBackend for ExternalNavigatorBackend<F> {
         }
 
         if self.open_url_mode == OpenURLMode::Confirm {
-            let message = format!("The SWF file wants to open the website {}", modified_url);
-            // TODO: Add a checkbox with a GUI toolkit
-            let confirm = MessageDialog::new()
-                .set_title("Open website?")
-                .set_level(MessageLevel::Info)
-                .set_description(message)
-                .set_buttons(MessageButtons::OkCancel)
-                .show()
-                == MessageDialogResult::Ok;
-            if !confirm {
+            if !self.interface.confirm_website_navigation(&modified_url) {
                 tracing::info!("SWF tried to open a website, but the user declined the request");
                 return;
             }
@@ -309,6 +362,7 @@ impl<F: FutureSpawner> NavigatorBackend for ExternalNavigatorBackend<F> {
         match processed_url.scheme() {
             "file" => {
                 let content = self.content.clone();
+                let interface = self.interface.clone();
                 Box::pin(async move {
                     // We send the original url (including query parameters)
                     // back to ruffle_core in the `Response`
@@ -318,30 +372,8 @@ impl<F: FutureSpawner> NavigatorBackend for ExternalNavigatorBackend<F> {
                     // when we actually load a filesystem url, strip them out.
                     processed_url.set_query(None);
 
-                    let contents = content.get_local_file(&processed_url, |path| {
-                        std::fs::File::open(path).or_else(|e| {
-                            if cfg!(feature = "sandbox") {
-                                use rfd::FileDialog;
-                                let parent_path = path.parent().unwrap_or(path);
-
-                                if e.kind() == ErrorKind::PermissionDenied {
-                                    let attempt_sandbox_open = MessageDialog::new()
-                                        .set_level(MessageLevel::Warning)
-                                        .set_description(format!("The current movie is attempting to read files stored in {parent_path:?}.\n\nTo allow it to do so, click Yes, and then Open to grant read access to that directory.\n\nOtherwise, click No to deny access."))
-                                        .set_buttons(MessageButtons::YesNo)
-                                        .show() == MessageDialogResult::Yes;
-
-                                    if attempt_sandbox_open {
-                                        FileDialog::new().set_directory(parent_path).pick_folder();
-
-                                        return std::fs::File::open(path);
-                                    }
-                                }
-                            }
-
-                            Err(e)
-                        })
-                    });
+                    let contents =
+                        content.get_local_file(&processed_url, |path| interface.open_file(path));
 
                     let response: Box<dyn SuccessResponse> = Box::new(DesktopResponse {
                         url: response_url.to_string(),
@@ -463,6 +495,7 @@ impl<F: FutureSpawner> NavigatorBackend for ExternalNavigatorBackend<F> {
         let addr = format!("{}:{}", host, port);
         let is_allowed = self.socket_allowed.contains(&addr);
         let socket_mode = self.socket_mode;
+        let interface = self.interface.clone();
 
         let future = Box::pin(async move {
             match (is_allowed, socket_mode) {
@@ -480,9 +513,7 @@ impl<F: FutureSpawner> NavigatorBackend for ExternalNavigatorBackend<F> {
                     return Ok(());
                 }
                 (false, SocketMode::Ask) => {
-                    let attempt_sandbox_connect = AsyncMessageDialog::new().set_level(MessageLevel::Warning).set_description(format!("The current movie is attempting to connect to {:?} (port {}).\n\nTo allow it to do so, click Yes to grant network access to that host.\n\nOtherwise, click No to deny access.", host, port)).set_buttons(MessageButtons::YesNo)
-                        .show()
-                        .await == MessageDialogResult::Yes;
+                    let attempt_sandbox_connect = interface.confirm_socket(&host, port).await;
 
                     if !attempt_sandbox_connect {
                         // fail the connection.
@@ -676,7 +707,9 @@ mod tests {
         };
     }
 
-    fn new_test_backend(socket_allow: bool) -> ExternalNavigatorBackend<TestFutureSpawner> {
+    fn new_test_backend(
+        socket_allow: bool,
+    ) -> ExternalNavigatorBackend<TestFutureSpawner, RfdNavigatorInterface> {
         let url = Url::parse("https://example.com/path/").unwrap();
         ExternalNavigatorBackend::new(
             url.clone(),
@@ -691,6 +724,7 @@ mod tests {
                 SocketMode::Deny
             },
             Rc::new(PlayingContent::DirectFile(url)),
+            RfdNavigatorInterface,
         )
     }
 
