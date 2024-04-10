@@ -4,6 +4,7 @@ pub mod parse;
 pub mod write;
 
 pub mod backends;
+pub mod content;
 
 use std::borrow::Cow;
 use url::Url;

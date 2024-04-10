@@ -17,15 +17,14 @@ use ruffle_core::{
 use ruffle_frontend_utils::backends::executor::{AsyncExecutor, PollRequester};
 use ruffle_frontend_utils::bundle::source::BundleSourceError;
 use ruffle_frontend_utils::bundle::{Bundle, BundleError};
+use ruffle_frontend_utils::content::PlayingContent;
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::descriptors::Descriptors;
 use std::collections::{HashMap, HashSet};
-use std::fmt::{Debug, Formatter};
-use std::fs::File;
-use std::io::{ErrorKind, Read};
-use std::path::{Path, PathBuf};
+use std::fmt::Debug;
+use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
@@ -90,81 +89,6 @@ impl From<&GlobalPreferences> for PlayerOptions {
             tcp_connections: value.cli.tcp_connections,
             gamepad_button_mapping: HashMap::from_iter(value.cli.gamepad_button.iter().cloned()),
             avm2_optimizer_enabled: !value.cli.no_avm2_optimizer,
-        }
-    }
-}
-
-pub enum PlayingContent {
-    DirectFile(Url),
-    Bundle(Url, Bundle),
-}
-
-impl Debug for PlayingContent {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            PlayingContent::DirectFile(url) => f
-                .debug_tuple("PlayingContent::DirectFile")
-                .field(url)
-                .finish(),
-            PlayingContent::Bundle(url, _) => f
-                .debug_tuple("PlayingContent::Bundle")
-                .field(url)
-                .field(&"_")
-                .finish(),
-        }
-    }
-}
-
-impl PlayingContent {
-    pub fn initial_swf_url(&self) -> &Url {
-        match self {
-            PlayingContent::DirectFile(url) => url,
-            PlayingContent::Bundle(_, bundle) => &bundle.information().url,
-        }
-    }
-
-    pub fn name(&self) -> String {
-        match self {
-            PlayingContent::DirectFile(url) => {
-                ruffle_frontend_utils::url_to_readable_name(url).to_string()
-            }
-            PlayingContent::Bundle(_, bundle) => bundle.information().name.to_string(),
-        }
-    }
-
-    pub fn get_local_file(
-        &self,
-        url: &Url,
-        open_file: impl FnOnce(&Path) -> std::io::Result<File>,
-    ) -> Result<Vec<u8>, std::io::Error> {
-        match self {
-            PlayingContent::DirectFile(_) => {
-                let path = url
-                    .to_file_path()
-                    .map_err(|_| std::io::Error::other("Could not turn url into file path"))?;
-                let mut result = vec![];
-                let mut file = open_file(&path)?;
-                file.read_to_end(&mut result)?;
-                Ok(result)
-            }
-            PlayingContent::Bundle(_, bundle) => {
-                if url.scheme() != "file" {
-                    return Err(ErrorKind::NotFound.into());
-                }
-                let mut path = String::new();
-                if let Some(segments) = url.path_segments() {
-                    for segment in segments {
-                        path.push('/');
-                        path.push_str(
-                            urlencoding::decode(segment)
-                                .map_err(std::io::Error::other)?
-                                .as_ref(),
-                        );
-                    }
-                }
-                // No sandbox check here - Ruffle already had to have read from the bundle, so we have access
-                bundle.source().read_content(&path)
-            }
         }
     }
 }
