@@ -7,5 +7,5 @@ mod ui;
 pub use audio::CpalAudioBackend;
 pub use external_interface::DesktopExternalInterfaceProvider;
 pub use fscommand::DesktopFSCommandProvider;
-pub use navigator::{ExternalNavigatorBackend, RfdNavigatorInterface};
+pub use navigator::RfdNavigatorInterface;
 pub use ui::DesktopUiBackend;
