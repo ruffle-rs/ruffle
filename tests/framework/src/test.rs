@@ -15,6 +15,26 @@ pub struct Font {
     pub italic: bool,
 }
 
+#[derive(Clone, Copy)]
+pub enum TestKind {
+    Slow,
+}
+
+impl TestKind {
+    pub fn name(self) -> &'static str {
+        match self {
+            TestKind::Slow => "slow",
+        }
+    }
+
+    pub fn ord(kind: &str) -> impl Ord {
+        match kind {
+            "slow" => 0,
+            _ => 1,
+        }
+    }
+}
+
 pub struct Test {
     pub options: TestOptions,
     pub swf_path: VfsPath,
@@ -41,6 +61,15 @@ impl Test {
             root_path: test_dir,
             name,
         })
+    }
+
+    pub fn kind(&self) -> Option<TestKind> {
+        let is_slow = self.options.is_slow;
+        if is_slow {
+            Some(TestKind::Slow)
+        } else {
+            None
+        }
     }
 
     pub fn create_test_runner(&self, environment: &impl Environment) -> Result<TestRunner> {

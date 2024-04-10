@@ -166,6 +166,7 @@ fn run_test(args: &Arguments, file: &Path, name: &str) -> Trial {
     .unwrap();
 
     let ignore = !test.should_run(!args.list, &NativeEnvironment);
+    let kind = test.kind();
 
     let mut trial = Trial::test(test.name.to_string(), move || {
         let test = AssertUnwindSafe(test);
@@ -197,6 +198,9 @@ fn run_test(args: &Arguments, file: &Path, name: &str) -> Trial {
             }
         }
     });
+    if let Some(kind) = kind {
+        trial = trial.with_kind(kind.name());
+    }
     if ignore {
         trial = trial.with_ignored_flag(true);
     }
