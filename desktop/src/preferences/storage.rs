@@ -1,5 +1,6 @@
-use crate::{backends::DiskStorageBackend, player::PlayerOptions};
+use crate::player::PlayerOptions;
 use ruffle_core::backend::storage::MemoryStorageBackend;
+use ruffle_frontend_utils::backends::storage::DiskStorageBackend;
 use std::str::FromStr;
 
 #[derive(clap::ValueEnum, Copy, Clone, PartialEq, Eq, Debug, Default)]
