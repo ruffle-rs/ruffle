@@ -1,6 +1,6 @@
 use crate::backends::{
     CpalAudioBackend, DesktopExternalInterfaceProvider, DesktopFSCommandProvider, DesktopUiBackend,
-    ExternalNavigatorBackend,
+    ExternalNavigatorBackend, RfdNavigatorInterface,
 };
 use crate::custom_event::RuffleEvent;
 use crate::gui::MovieView;
@@ -174,6 +174,7 @@ impl ActivePlayer {
             opt.socket_allowed.clone(),
             opt.tcp_connections,
             Rc::new(content),
+            RfdNavigatorInterface,
         );
 
         if cfg!(feature = "software_video") {
