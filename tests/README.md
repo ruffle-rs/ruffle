@@ -25,6 +25,10 @@ known_failure = false # If true, this test is known to fail and the result will 
 output_path = "output.txt" # Path (relative to the directory containing test.toml) to the expected output
 log_fetch = false # If true, all network requests will be included in the output.
 
+# Used to mark larger tests as `size = "large"`. Larger tests will be executed
+# at the beginning to improve test execution time.
+size = "regular"
+
 # Sometimes floating point math doesn't exactly 100% match between flash and rust.
 # If you encounter this in a test, the following section will change the output testing from "exact" to "approximate"
 # (when it comes to floating point numbers, at least.)
