@@ -1,6 +1,6 @@
-//! Async executor
+mod task;
 
-use crate::task::Task;
+pub use crate::backends::executor::task::Task;
 use async_channel::{unbounded, Receiver, Sender};
 use ruffle_core::backend::navigator::OwnedFuture;
 use ruffle_core::loader::Error;

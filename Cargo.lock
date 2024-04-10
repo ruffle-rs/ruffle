@@ -4359,7 +4359,6 @@ dependencies = [
  "ruffle_render",
  "ruffle_render_wgpu",
  "ruffle_video_software",
- "slotmap",
  "sys-locale",
  "tokio",
  "toml_edit 0.22.9",
@@ -4381,7 +4380,9 @@ dependencies = [
 name = "ruffle_frontend_utils"
 version = "0.1.0"
 dependencies = [
+ "async-channel 2.2.0",
  "ruffle_core",
+ "slotmap",
  "tempfile",
  "thiserror",
  "toml_edit 0.22.9",
