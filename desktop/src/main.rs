@@ -10,12 +10,10 @@ mod app;
 mod backends;
 mod cli;
 mod custom_event;
-mod executor;
 mod gui;
 mod log;
 mod player;
 mod preferences;
-mod task;
 mod time_demo;
 mod util;
 

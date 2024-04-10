@@ -3,7 +3,6 @@ use crate::backends::{
     ExternalNavigatorBackend,
 };
 use crate::custom_event::RuffleEvent;
-use crate::executor::{PollRequester, WinitAsyncExecutor};
 use crate::gui::MovieView;
 use crate::preferences::GlobalPreferences;
 use crate::{CALLSTACK, RENDER_INFO, SWF_INFO};
@@ -16,6 +15,7 @@ use ruffle_core::{
     DefaultFont, LoadBehavior, Player, PlayerBuilder, PlayerEvent, PlayerRuntime, StageAlign,
     StageScaleMode,
 };
+use ruffle_frontend_utils::backends::executor::{PollRequester, WinitAsyncExecutor};
 use ruffle_frontend_utils::bundle::source::BundleSourceError;
 use ruffle_frontend_utils::bundle::{Bundle, BundleError};
 use ruffle_render::backend::RenderBackend;

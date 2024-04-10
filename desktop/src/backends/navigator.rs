@@ -1,6 +1,5 @@
 //! Navigator backend for web
 
-use crate::executor::FutureSpawner;
 use crate::player::PlayingContent;
 use async_channel::{Receiver, Sender, TryRecvError};
 use async_io::Timer;
@@ -21,6 +20,7 @@ use ruffle_core::backend::navigator::{
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
+use ruffle_frontend_utils::backends::executor::FutureSpawner;
 use std::collections::HashSet;
 use std::io;
 use std::io::ErrorKind;
