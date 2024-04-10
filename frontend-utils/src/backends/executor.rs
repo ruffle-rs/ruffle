@@ -31,12 +31,12 @@ struct TaskHandle<R: PollRequester> {
     ///
     /// Weak reference ensures that the executor along
     /// with its tasks is dropped properly.
-    executor: Weak<WinitAsyncExecutor<R>>,
+    executor: Weak<AsyncExecutor<R>>,
 }
 
 impl<R: PollRequester> TaskHandle<R> {
     /// Construct a handle to a given task.
-    fn for_task(task: TaskKey, executor: Weak<WinitAsyncExecutor<R>>) -> Self {
+    fn for_task(task: TaskKey, executor: Weak<AsyncExecutor<R>>) -> Self {
         Self {
             handle: task,
             executor,
@@ -132,7 +132,7 @@ impl<R: PollRequester> TaskHandle<R> {
     );
 }
 
-pub struct WinitAsyncExecutor<R: PollRequester> {
+pub struct AsyncExecutor<R: PollRequester> {
     /// List of all spawned tasks.
     task_queue: RwLock<SlotMap<TaskKey, Mutex<Task>>>,
 
@@ -149,12 +149,12 @@ pub struct WinitAsyncExecutor<R: PollRequester> {
     waiting_for_poll: AtomicBool,
 }
 
-impl<R: PollRequester> WinitAsyncExecutor<R> {
-    /// Construct a new executor for the winit event loop.
+impl<R: PollRequester> AsyncExecutor<R> {
+    /// Construct a new executor for the given poll requester.
     ///
     /// This function returns the executor itself, plus the `Sender` necessary
     /// to spawn new tasks.
-    pub fn new(poll_requester: R) -> (Arc<Self>, WinitFutureSpawner<R>) {
+    pub fn new(poll_requester: R) -> (Arc<Self>, AsyncFutureSpawner<R>) {
         let (send, recv) = unbounded();
         let new_self = Arc::new_cyclic(|self_ref| Self {
             task_queue: RwLock::new(SlotMap::with_key()),
@@ -165,7 +165,7 @@ impl<R: PollRequester> WinitAsyncExecutor<R> {
         });
         (
             new_self,
-            WinitFutureSpawner::send_and_poll(send, poll_requester),
+            AsyncFutureSpawner::send_and_poll(send, poll_requester),
         )
     }
 
@@ -248,24 +248,24 @@ pub trait FutureSpawner {
     fn spawn(&self, future: OwnedFuture<(), Error>);
 }
 
-pub struct WinitFutureSpawner<R: PollRequester> {
+pub struct AsyncFutureSpawner<R: PollRequester> {
     channel: Sender<OwnedFuture<(), Error>>,
     poll_requester: R,
 }
 
-impl<R: PollRequester> WinitFutureSpawner<R> {
+impl<R: PollRequester> AsyncFutureSpawner<R> {
     pub fn send_and_poll(
         channel: Sender<OwnedFuture<(), Error>>,
         request_poll: R,
-    ) -> WinitFutureSpawner<R> {
-        WinitFutureSpawner {
+    ) -> AsyncFutureSpawner<R> {
+        AsyncFutureSpawner {
             channel,
             poll_requester: request_poll,
         }
     }
 }
 
-impl<R: PollRequester> FutureSpawner for WinitFutureSpawner<R> {
+impl<R: PollRequester> FutureSpawner for AsyncFutureSpawner<R> {
     fn spawn(&self, future: OwnedFuture<(), Error>) {
         self.channel
             .send_blocking(future)

@@ -15,7 +15,7 @@ use ruffle_core::{
     DefaultFont, LoadBehavior, Player, PlayerBuilder, PlayerEvent, PlayerRuntime, StageAlign,
     StageScaleMode,
 };
-use ruffle_frontend_utils::backends::executor::{PollRequester, WinitAsyncExecutor};
+use ruffle_frontend_utils::backends::executor::{AsyncExecutor, PollRequester};
 use ruffle_frontend_utils::bundle::source::BundleSourceError;
 use ruffle_frontend_utils::bundle::{Bundle, BundleError};
 use ruffle_render::backend::RenderBackend;
@@ -201,7 +201,7 @@ impl PollRequester for WinitWaker {
 /// which may be lost when this Player is closed (dropped)
 struct ActivePlayer {
     player: Arc<Mutex<Player>>,
-    executor: Arc<WinitAsyncExecutor<WinitWaker>>,
+    executor: Arc<AsyncExecutor<WinitWaker>>,
 }
 
 impl ActivePlayer {
@@ -255,7 +255,7 @@ impl ActivePlayer {
             }
         }
 
-        let (executor, future_spawner) = WinitAsyncExecutor::new(WinitWaker(event_loop.clone()));
+        let (executor, future_spawner) = AsyncExecutor::new(WinitWaker(event_loop.clone()));
         let movie_url = content.initial_swf_url().clone();
         let readable_name = content.name();
         let navigator = ExternalNavigatorBackend::new(
