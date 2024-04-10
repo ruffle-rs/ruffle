@@ -1,4 +1,5 @@
 num_ticks = 20
+is_slow = true
 
 [image_comparisons.output]
 tolerance = 5
