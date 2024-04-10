@@ -1,6 +1,6 @@
 use crate::backends::{
     CpalAudioBackend, DesktopExternalInterfaceProvider, DesktopFSCommandProvider, DesktopUiBackend,
-    ExternalNavigatorBackend, RfdNavigatorInterface,
+    RfdNavigatorInterface,
 };
 use crate::custom_event::RuffleEvent;
 use crate::gui::MovieView;
@@ -15,6 +15,7 @@ use ruffle_core::{
     StageScaleMode,
 };
 use ruffle_frontend_utils::backends::executor::{AsyncExecutor, PollRequester};
+use ruffle_frontend_utils::backends::navigator::ExternalNavigatorBackend;
 use ruffle_frontend_utils::bundle::source::BundleSourceError;
 use ruffle_frontend_utils::bundle::{Bundle, BundleError};
 use ruffle_frontend_utils::content::PlayingContent;

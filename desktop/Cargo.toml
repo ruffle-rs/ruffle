@@ -42,9 +42,6 @@ wgpu = { workspace = true }
 futures = { workspace = true }
 chrono = { workspace = true }
 fluent-templates = "0.9.1"
-futures-lite = "2.3.0"
-async-io = "2.3.2"
-async-net = "2.0.0"
 async-channel = { workspace = true }
 toml_edit = { version = "0.22.9", features = ["parse"] }
 gilrs = "0.10"
@@ -77,6 +74,3 @@ render_trace = ["ruffle_render_wgpu/render_trace"]
 # sandboxing
 sandbox = []
 
-[dev-dependencies]
-macro_rules_attribute = "0.2.0"
-tokio = { version = "1.36.0", features = ["macros", "rt"] }
