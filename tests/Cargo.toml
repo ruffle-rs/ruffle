@@ -17,6 +17,8 @@ workspace = true
 imgtests = ["ruffle_test_framework/ruffle_video_software", "ruffle_render_wgpu"]
 jpegxr = ["ruffle_test_framework/jpegxr"]
 lzma = ["ruffle_test_framework/lzma"]
+# Execute fast tests only, slow tests are ignored.
+fast = ["ruffle_test_framework/fast"]
 
 [dependencies]
 ruffle_render_wgpu = { path = "../render/wgpu", optional = true }

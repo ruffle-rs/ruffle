@@ -131,6 +131,9 @@ impl Test {
         if self.options.ignore {
             return false;
         }
+        if cfg!(feature = "fast") && matches!(self.kind, Some(TestKind::Slow)) {
+            return false;
+        }
         self.options.required_features.can_run()
             && self
                 .options
