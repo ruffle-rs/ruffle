@@ -4381,6 +4381,7 @@ dependencies = [
 name = "ruffle_frontend_utils"
 version = "0.1.0"
 dependencies = [
+ "ruffle_core",
  "tempfile",
  "thiserror",
  "toml_edit 0.22.9",

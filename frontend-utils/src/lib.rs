@@ -3,6 +3,8 @@ pub mod bundle;
 pub mod parse;
 pub mod write;
 
+pub mod backends;
+
 use std::borrow::Cow;
 use url::Url;
 
