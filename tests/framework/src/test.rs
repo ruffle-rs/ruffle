@@ -52,7 +52,7 @@ impl Test {
         let input_path = test_dir.join("input.json")?;
         let socket_path = test_dir.join("socket.json")?;
         let output_path = options.output_path(&test_dir)?;
-        let is_slow = options.is_slow;
+        let is_slow = options.is_slow || options.sleep_to_meet_frame_rate;
 
         Ok(Self {
             options,
