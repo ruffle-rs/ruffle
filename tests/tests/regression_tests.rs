@@ -11,7 +11,7 @@ use libtest_mimic::{Arguments, Trial};
 use regex::Regex;
 use ruffle_test_framework::options::TestOptions;
 use ruffle_test_framework::runner::TestStatus;
-use ruffle_test_framework::test::Test;
+use ruffle_test_framework::test::{Test, TestKind};
 use ruffle_test_framework::vfs::{PhysicalFS, VfsPath};
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::path::Path;
@@ -126,7 +126,7 @@ fn main() {
         external_interface_avm2(&NativeEnvironment)
     }));
 
-    tests.sort_unstable_by(|a, b| a.name().cmp(b.name()));
+    tests.sort_unstable_by_key(|t| (TestKind::ord(t.kind()), t.name().to_owned()));
 
     libtest_mimic::run(&args, tests).exit()
 }
