@@ -3,7 +3,7 @@ use crate::backends::{
     ExternalNavigatorBackend,
 };
 use crate::custom_event::RuffleEvent;
-use crate::executor::WinitAsyncExecutor;
+use crate::executor::{PollRequester, WinitAsyncExecutor};
 use crate::gui::MovieView;
 use crate::preferences::GlobalPreferences;
 use crate::{CALLSTACK, RENDER_INFO, SWF_INFO};
@@ -186,11 +186,22 @@ impl PlayingContent {
     }
 }
 
+#[derive(Clone)]
+struct WinitWaker(EventLoopProxy<RuffleEvent>);
+
+impl PollRequester for WinitWaker {
+    fn request_poll(&self) {
+        if self.0.send_event(RuffleEvent::TaskPoll).is_err() {
+            tracing::error!("Couldn't request poll - event loop is closed");
+        }
+    }
+}
+
 /// Represents a current Player and any associated state with that player,
 /// which may be lost when this Player is closed (dropped)
 struct ActivePlayer {
     player: Arc<Mutex<Player>>,
-    executor: Arc<WinitAsyncExecutor>,
+    executor: Arc<WinitAsyncExecutor<WinitWaker>>,
 }
 
 impl ActivePlayer {
@@ -244,7 +255,7 @@ impl ActivePlayer {
             }
         }
 
-        let (executor, future_spawner) = WinitAsyncExecutor::new(event_loop.clone());
+        let (executor, future_spawner) = WinitAsyncExecutor::new(WinitWaker(event_loop.clone()));
         let movie_url = content.initial_swf_url().clone();
         let readable_name = content.name();
         let navigator = ExternalNavigatorBackend::new(
