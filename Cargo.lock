@@ -4331,7 +4331,6 @@ name = "ruffle_desktop"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-channel 2.2.0",
  "bytemuck",
  "chrono",
  "clap",
@@ -4363,7 +4362,6 @@ dependencies = [
  "tracing-tracy",
  "unic-langid",
  "url",
- "urlencoding",
  "vergen",
  "webbrowser",
  "wgpu",

@@ -42,10 +42,8 @@ wgpu = { workspace = true }
 futures = { workspace = true }
 chrono = { workspace = true }
 fluent-templates = "0.9.1"
-async-channel = { workspace = true }
 toml_edit = { version = "0.22.9", features = ["parse"] }
 gilrs = "0.10"
-urlencoding = "2.1.3"
 
 # Deliberately held back to match tracy client used by profiling crate
 tracing-tracy = { version = "=0.10.4", optional = true }
