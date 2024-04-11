@@ -610,6 +610,42 @@ impl<'gc> ActionQueue<'gc> {
         }
     }
 
+    /// Queues an action to run for the given movie clip to the front.
+    /// The action will be skipped if the clip is removed before the action runs.
+    pub fn queue_front_action(
+        &mut self,
+        clip: DisplayObject<'gc>,
+        action_type: ActionType<'gc>,
+        is_unload: bool,
+    ) {
+        let priority = action_type.priority();
+        let action = QueuedAction {
+            clip,
+            action_type,
+            is_unload,
+        };
+        debug_assert!(priority < Self::NUM_PRIORITIES);
+        if let Some(queue) = self.action_queue.get_mut(priority) {
+            queue.push_front(action)
+        }
+    }
+
+    /// Conditionally queues an action to run for the given movie clip to either the front (true), or the back (false).
+    /// The action will be skipped if the clip is removed before the action runs.
+    pub fn queue_front_or_back_action(
+        &mut self,
+        clip: DisplayObject<'gc>,
+        action_type: ActionType<'gc>,
+        is_unload: bool,
+        is_front: bool,
+    ) {
+        if is_front {
+            self.queue_front_action(clip, action_type, is_unload);
+        } else {
+            self.queue_action(clip, action_type, is_unload);
+        }
+    }
+
     /// Sorts and drains the actions from the queue.
     pub fn pop_action(&mut self) -> Option<QueuedAction<'gc>> {
         self.action_queue

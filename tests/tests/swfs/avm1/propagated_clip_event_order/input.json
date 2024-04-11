@@ -1,0 +1,59 @@
+[
+    {
+        "type": "MouseMove",
+        "pos": [295.0, 180.0]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [295.0, 180.0],
+        "btn": "Left"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [295.0, 180.0],
+        "btn": "Left"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [340.0, 180.0]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [340.0, 180.0],
+        "btn": "Left"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [340.0, 180.0],
+        "btn": "Left"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "MouseMove",
+        "pos": [320.0, 180.0]
+    },
+    {
+        "type": "MouseDown",
+        "pos": [320.0, 180.0],
+        "btn": "Left"
+    },
+    {
+        "type": "Wait"
+    },
+    {
+        "type": "MouseUp",
+        "pos": [320.0, 180.0],
+        "btn": "Left"
+    }
+]
