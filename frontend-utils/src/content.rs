@@ -71,7 +71,6 @@ impl PlayingContent {
                         );
                     }
                 }
-                // No sandbox check here - Ruffle already had to have read from the bundle, so we have access
                 bundle.source().read_content(&path)
             }
         }

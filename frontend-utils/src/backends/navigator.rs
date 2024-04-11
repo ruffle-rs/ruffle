@@ -1,5 +1,3 @@
-//! Navigator backend for web
-
 use crate::backends::executor::FutureSpawner;
 use crate::content::PlayingContent;
 use async_channel::{Receiver, Sender, TryRecvError};

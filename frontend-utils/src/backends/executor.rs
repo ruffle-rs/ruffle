@@ -142,7 +142,7 @@ pub struct AsyncExecutor<R: PollRequester> {
     /// Weak reference to ourselves.
     self_ref: Weak<Self>,
 
-    /// Event injector for the main thread event loop.
+    /// Callback to inform main thread that this executor is ready for polling
     poll_requester: R,
 
     /// Whether we have already queued a `TaskPoll` event.
