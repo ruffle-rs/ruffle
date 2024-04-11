@@ -1268,6 +1268,11 @@ impl Player {
         // Determine the display object the mouse is hovering over.
         // Search through levels from top-to-bottom, returning the first display object that is under the mouse.
         let needs_render = self.mutate_with_update_context(|context| {
+            // Objects may be hovered using Tab,
+            // skip mouse hover when it's not necessary.
+            let mut skip_mouse_hover =
+                !is_mouse_moved && !is_mouse_button_changed && context.mouse_data.hovered.is_some();
+
             let new_over_object = if mouse_in_stage {
                 run_mouse_pick(context, true)
             } else {
@@ -1284,8 +1289,8 @@ impl Player {
             }
 
             let mut new_over_object_updated = false;
-            // Cancel hover if an object is removed from the stage.
             if let Some(hovered) = context.mouse_data.hovered {
+                // Cancel hover if an object is removed from the stage.
                 if !hovered.as_displayobject().movie().is_action_script_3()
                     && hovered.as_displayobject().avm1_removed()
                 {
@@ -1302,6 +1307,12 @@ impl Player {
                             new_over_object_updated = true;
                         }
                     }
+                }
+
+                // Ensure that hover is canceled when an object disappears,
+                // even if the mouse was idle.
+                if !hovered.as_displayobject().visible() {
+                    skip_mouse_hover = false;
                 }
             }
 
@@ -1354,7 +1365,9 @@ impl Player {
 
             let cur_over_object = context.mouse_data.hovered;
             // Check if a new object has been hovered over.
-            if !InteractiveObject::option_ptr_eq(cur_over_object, new_over_object) {
+            if !skip_mouse_hover
+                && !InteractiveObject::option_ptr_eq(cur_over_object, new_over_object)
+            {
                 // If the mouse button is down, the object the user clicked on grabs the focus
                 // and fires "drag" events. Other objects are ignored.
                 if context.input.is_mouse_down() {
@@ -1409,7 +1422,7 @@ impl Player {
                     }
                 }
             }
-            if !new_over_object_updated {
+            if !skip_mouse_hover && !new_over_object_updated {
                 context.mouse_data.hovered = new_over_object;
             }
             // Handle presses and releases.
