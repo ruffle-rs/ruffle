@@ -53,6 +53,7 @@ function injectScriptRaw(src: string) {
     const script = document.createElement("script");
     script.textContent = src;
     (document.head || document.documentElement).append(script);
+    script.remove();
 }
 
 /**
