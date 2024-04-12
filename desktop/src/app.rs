@@ -408,78 +408,92 @@ impl App {
                 }
                 winit::event::Event::UserEvent(RuffleEvent::TaskPoll) => self.player.poll(),
                 winit::event::Event::UserEvent(RuffleEvent::OnMetadata(swf_header)) => {
-                    let movie_width = swf_header.stage_size().width().to_pixels();
-                    let movie_height = swf_header.stage_size().height().to_pixels();
                     let height_offset = if self.window.fullscreen().is_some() || self.no_gui {
                         0.0
                     } else {
                         MENU_HEIGHT as f64
                     };
 
-                    let window_size: Size = match (self.preferred_width, self.preferred_height) {
-                        (None, None) => {
-                            LogicalSize::new(movie_width, movie_height + height_offset).into()
-                        }
-                        (Some(width), None) => {
-                            let scale = width / movie_width;
-                            let height = movie_height * scale;
-                            PhysicalSize::new(
+                    // To prevent issues like waiting on resize indefinitely (#11364) or desyncing the window state on Windows,
+                    // do not resize while window is maximized.
+                    let should_resize = !self.window.is_maximized();
+
+                    let viewport_size = if should_resize {
+                        let movie_width = swf_header.stage_size().width().to_pixels();
+                        let movie_height = swf_header.stage_size().height().to_pixels();
+
+                        let window_size: Size = match (self.preferred_width, self.preferred_height)
+                        {
+                            (None, None) => {
+                                LogicalSize::new(movie_width, movie_height + height_offset).into()
+                            }
+                            (Some(width), None) => {
+                                let scale = width / movie_width;
+                                let height = movie_height * scale;
+                                PhysicalSize::new(
+                                    width.max(1.0),
+                                    height.max(1.0) + height_offset * self.window.scale_factor(),
+                                )
+                                .into()
+                            }
+                            (None, Some(height)) => {
+                                let scale = height / movie_height;
+                                let width = movie_width * scale;
+                                PhysicalSize::new(
+                                    width.max(1.0),
+                                    height.max(1.0) + height_offset * self.window.scale_factor(),
+                                )
+                                .into()
+                            }
+                            (Some(width), Some(height)) => PhysicalSize::new(
                                 width.max(1.0),
                                 height.max(1.0) + height_offset * self.window.scale_factor(),
                             )
-                            .into()
+                            .into(),
+                        };
+
+                        let window_size = Size::clamp(
+                            window_size,
+                            self.min_window_size.into(),
+                            self.max_window_size.into(),
+                            self.window.scale_factor(),
+                        );
+
+                        let viewport_size = self.window.inner_size();
+                        let mut window_resize_denied = false;
+
+                        if let Some(new_viewport_size) = self.window.request_inner_size(window_size)
+                        {
+                            if new_viewport_size != viewport_size {
+                                self.gui.borrow_mut().resize(new_viewport_size);
+                            } else {
+                                tracing::warn!("Unable to resize window");
+                                window_resize_denied = true;
+                            }
                         }
-                        (None, Some(height)) => {
-                            let scale = height / movie_height;
-                            let width = movie_width * scale;
-                            PhysicalSize::new(
-                                width.max(1.0),
-                                height.max(1.0) + height_offset * self.window.scale_factor(),
-                            )
-                            .into()
+
+                        let viewport_size = self.window.inner_size();
+
+                        // On X11 (and possibly other platforms), the window size is not updated immediately.
+                        // On a successful resize request, wait for the window to be resized to the requested size
+                        // before we start running the SWF (which can observe the viewport size in "noScale" mode)
+                        if !window_resize_denied && window_size != viewport_size.into() {
+                            loaded = LoadingState::WaitingForResize;
+                        } else {
+                            loaded = LoadingState::Loaded;
                         }
-                        (Some(width), Some(height)) => PhysicalSize::new(
-                            width.max(1.0),
-                            height.max(1.0) + height_offset * self.window.scale_factor(),
-                        )
-                        .into(),
+
+                        viewport_size
+                    } else {
+                        self.window.inner_size()
                     };
 
-                    let window_size = Size::clamp(
-                        window_size,
-                        self.min_window_size.into(),
-                        self.max_window_size.into(),
-                        self.window.scale_factor(),
-                    );
-
-                    let viewport_size = self.window.inner_size();
-                    let mut window_resize_denied = false;
-
-                    if let Some(new_viewport_size) = self.window.request_inner_size(window_size) {
-                        if new_viewport_size != viewport_size {
-                            self.gui.borrow_mut().resize(new_viewport_size);
-                        } else {
-                            tracing::warn!("Unable to resize window");
-                            window_resize_denied = true;
-                        }
-                    }
                     self.window.set_fullscreen(if self.start_fullscreen {
                         Some(Fullscreen::Borderless(None))
                     } else {
                         None
                     });
                     self.window.set_visible(true);
-
-                    let viewport_size = self.window.inner_size();
-
-                    // On X11 (and possibly other platforms), the window size is not updated immediately.
-                    // On a successful resize request, wait for the window to be resized to the requested size
-                    // before we start running the SWF (which can observe the viewport size in "noScale" mode)
-                    if !window_resize_denied && window_size != viewport_size.into() {
-                        loaded = LoadingState::WaitingForResize;
-                    } else {
-                        loaded = LoadingState::Loaded;
-                    }
 
                     let viewport_scale_factor = self.window.scale_factor();
                     if let Some(mut player) = self.player.get() {
