@@ -11,3 +11,6 @@ audio-output-device-default = Výchozí systému
 log-filename-pattern = Název souboru logu
 log-filename-pattern-single-file = Jeden soubor (ruffle.log)
 log-filename-pattern-with-timestamp = S časovým razítkem
+storage-backend = Umístění souboru s uloženými pozicemi
+storage-backend-disk = Disk
+storage-backend-memory = Paměť
