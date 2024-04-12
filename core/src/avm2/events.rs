@@ -1,7 +1,7 @@
 //! Core event structure
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::type_error;
+use crate::avm2::error::make_error_2007;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -469,18 +469,7 @@ pub fn dispatch_event<'gc>(
         event
             .call_public_property("clone", &[], activation)?
             .as_object()
-            .ok_or_else(|| {
-                let error = type_error(
-                    activation,
-                    "Error #2007: Parameter event must be non-null.",
-                    2007,
-                );
-
-                match error {
-                    Err(e) => e,
-                    Ok(e) => Error::AvmError(e),
-                }
-            })?
+            .ok_or_else(|| make_error_2007(activation, "event"))?
     } else {
         event
     };
