@@ -1,4 +1,4 @@
-use crate::avm2::error::{argument_error, type_error};
+use crate::avm2::error::{argument_error, make_error_2007};
 use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Avm2, Error, Object, Value};
@@ -81,11 +81,7 @@ pub fn connect<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let connection_name = args.get_value(0);
     if matches!(connection_name, Value::Null) {
-        return Err(Error::AvmError(type_error(
-            activation,
-            "Error #2007: Parameter connectionName must be non-null.",
-            2007,
-        )?));
+        return Err(make_error_2007(activation, "connectionName"));
     };
 
     if let Some(local_connection) = this.as_local_connection_object() {
