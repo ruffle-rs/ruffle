@@ -43,6 +43,7 @@ chrono = { workspace = true }
 fluent-templates = "0.9.1"
 toml_edit = { version = "0.22.9", features = ["parse"] }
 gilrs = "0.10"
+tokio = { workspace = true, features = ["rt-multi-thread", "macros"]}
 
 # Deliberately held back to match tracy client used by profiling crate
 tracing-tracy = { version = "=0.10.4", optional = true }

@@ -20,12 +20,12 @@ urlencoding = "2.1.3"
 ruffle_core = { path = "../core", default-features = false }
 async-channel = { workspace = true }
 slotmap = { workspace = true }
-isahc = { version = "1.7.2", features = ["cookies"] }
 futures = { workspace = true }
 async-io = "2.3.2"
 async-net = "2.0.0"
 futures-lite = "2.3.0"
 webbrowser = "0.8.14"
+reqwest = { version = "0.12.3", features = ["cookies"] }
 
 [dev-dependencies]
 tempfile = "3"

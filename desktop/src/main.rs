@@ -146,7 +146,8 @@ fn shutdown() {
     }
 }
 
-fn main() -> Result<(), Error> {
+#[tokio::main]
+async fn main() -> Result<(), Error> {
     init();
 
     let opt = Opt::parse();
