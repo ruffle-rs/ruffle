@@ -3,6 +3,7 @@
 use indexmap::IndexMap;
 
 use crate::avm2::activation::Activation;
+use crate::avm2::error::make_error_2007;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;
@@ -121,10 +122,10 @@ pub fn request_from_url_request<'gc>(
     // FIXME: set `followRedirects`  and `userAgent`
     // from the `URLRequest`
 
-    let mut url = url_request
-        .get_public_property("url", activation)?
-        .coerce_to_string(activation)?
-        .to_string();
+    let mut url = match url_request.get_public_property("url", activation)? {
+        Value::Null => return Err(make_error_2007(activation, "url")),
+        url => url.coerce_to_string(activation)?.to_string(),
+    };
 
     let method = url_request
         .get_public_property("method", activation)?
