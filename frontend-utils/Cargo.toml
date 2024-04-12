@@ -29,5 +29,5 @@ reqwest = { version = "0.12.3", default-features = false, features = ["rustls-tl
 
 [dev-dependencies]
 tempfile = "3"
-tokio = { version = "1.36.0", features = ["macros", "rt"] }
+tokio = { workspace = true, features = ["macros", "rt"] }
 macro_rules_attribute = "0.2.0"
