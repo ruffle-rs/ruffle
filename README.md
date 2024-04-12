@@ -62,7 +62,6 @@ The following are typical dependencies for Linux:
 * libxcb-shape0-dev
 * libxcb-xfixes0-dev
 * libgtk-3-dev
-* libssl-dev
 * libudev-dev
 * libxcb-xinput-dev
 * libxcb-xkb-dev
