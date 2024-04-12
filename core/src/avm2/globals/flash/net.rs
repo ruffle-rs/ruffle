@@ -1,6 +1,6 @@
 //! `flash.net` namespace
 
-use crate::avm2::error::type_error;
+use crate::avm2::error::make_error_2007;
 use crate::avm2::object::TObject;
 use crate::avm2::{Activation, Error, Object, Value};
 use crate::backend::navigator::NavigationMethod;
@@ -82,11 +82,7 @@ pub fn navigate_to_url<'gc>(
         .coerce_to_string(activation)?;
 
     match request.get_public_property("url", activation)? {
-        Value::Null => Err(Error::AvmError(type_error(
-            activation,
-            "Error #2007: Parameter url must be non-null.",
-            2007,
-        )?)),
+        Value::Null => Err(make_error_2007(activation, "url")),
         url => {
             let url = url.coerce_to_string(activation)?.to_string();
             let method = request

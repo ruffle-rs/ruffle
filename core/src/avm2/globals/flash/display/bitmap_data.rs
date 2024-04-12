@@ -2,11 +2,11 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
-use crate::avm2::error::{argument_error, make_error_2008, range_error};
+use crate::avm2::error::{argument_error, make_error_2007, make_error_2008, range_error};
 use crate::avm2::filters::FilterAvm2Ext;
 pub use crate::avm2::object::bitmap_data_allocator;
 use crate::avm2::object::{BitmapDataObject, ByteArrayObject, Object, TObject, VectorObject};
-use crate::avm2::parameters::{null_parameter_error, ParametersExt};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
@@ -1391,7 +1391,7 @@ pub fn threshold<'gc>(
                     )?));
                 }
             } else {
-                return Err(null_parameter_error(activation, "operation"));
+                return Err(make_error_2007(activation, "operation"));
             };
 
             let (src_min_x, src_min_y, src_width, src_height) =
