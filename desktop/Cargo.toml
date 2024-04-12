@@ -31,7 +31,6 @@ winit = "0.29.15"
 webbrowser = "0.8.14"
 url = { workspace = true }
 dirs = "5.0"
-isahc = { version = "1.7.2", features = ["cookies"] }
 rfd = "0.14.1"
 anyhow = { workspace = true }
 bytemuck = { workspace = true }

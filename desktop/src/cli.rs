@@ -137,9 +137,6 @@ pub struct Opt {
     #[clap(long, action)]
     pub fullscreen: bool,
 
-    #[clap(long, action)]
-    pub timedemo: bool,
-
     #[clap(long, default_value = "streaming")]
     pub load_behavior: LoadBehavior,
 

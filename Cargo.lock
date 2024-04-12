@@ -4346,7 +4346,6 @@ dependencies = [
  "futures",
  "gilrs",
  "image 0.25.1",
- "isahc",
  "os_info",
  "rfd",
  "ruffle_core",
