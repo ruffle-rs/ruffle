@@ -21,6 +21,7 @@ allow = [
     "CC0-1.0",
     "OFL-1.1",
     "LicenseRef-UFL-1.0",
+    "OpenSSL"
 ]
 
 # Some crates don't have (easily) machine readable licensing information,
@@ -43,6 +44,13 @@ license-files = []
 name = "nihav_codec_support"
 expression = "MIT"
 license-files = []
+
+[[licenses.clarify]]
+name = "ring"
+expression = "MIT AND ISC AND OpenSSL"
+license-files = [
+    { path = "LICENSE", hash = 0xbd0eed23 }
+]
 
 [bans]
 # Lint level for when multiple versions of the same crate are detected
