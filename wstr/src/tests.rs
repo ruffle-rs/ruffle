@@ -5,7 +5,7 @@ use alloc::vec::Vec;
 use core::fmt::Debug;
 
 macro_rules! bstr {
-    ($str:literal) => {
+    ($str:expr) => {
         WStr::from_units($str)
     };
 }
@@ -350,4 +350,63 @@ fn utf8_index_mapping_empty() {
 
     assert_eq!(to_utf8.utf16_index(0), Some(0));
     assert_eq!(to_utf8.utf16_index(1), None);
+}
+
+#[test]
+fn parse() {
+    fn test_u32(string: &[u8]) {
+        let actual = bstr!(string).parse::<u32>();
+        if let Ok(expected) = core::str::from_utf8(string).unwrap().parse::<u32>() {
+            assert!(actual.is_ok());
+            assert_eq!(actual.unwrap(), expected);
+        } else {
+            assert!(actual.is_err());
+        }
+    }
+
+    fn test_i32(string: &[u8]) {
+        let actual = bstr!(string).parse::<i32>();
+        if let Ok(expected) = core::str::from_utf8(string).unwrap().parse::<i32>() {
+            assert!(actual.is_ok());
+            assert_eq!(actual.unwrap(), expected);
+        } else {
+            assert!(actual.is_err());
+        }
+    }
+
+    test_u32(b"0");
+    test_u32(b"123");
+    test_u32(b"001");
+    test_u32(b"123asd");
+    test_u32(b"asdf");
+    test_u32(b"");
+    test_u32(b"   ");
+    test_u32(b"123");
+    test_u32(b"4294967295");
+    test_u32(b"4294967296");
+    test_u32(b"4294967297");
+    test_u32(b"+0");
+    test_u32(b"+1");
+    test_u32(b"-1");
+    test_u32(b"-0");
+    test_u32(b"-");
+    test_u32(b"+");
+
+    test_i32(b"0");
+    test_i32(b"123");
+    test_i32(b"001");
+    test_i32(b"123asd");
+    test_i32(b"asdf");
+    test_i32(b"");
+    test_i32(b"   ");
+    test_i32(b"123");
+    test_i32(b"4294967295");
+    test_i32(b"4294967296");
+    test_i32(b"4294967297");
+    test_i32(b"+0");
+    test_i32(b"+1");
+    test_i32(b"-1");
+    test_i32(b"-0");
+    test_i32(b"-");
+    test_i32(b"+");
 }
