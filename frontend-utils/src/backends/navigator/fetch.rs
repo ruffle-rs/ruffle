@@ -1,5 +1,4 @@
-use futures::AsyncReadExt;
-use isahc::{prelude::*, AsyncBody, Response as IsahcResponse};
+use reqwest::Response as ReqwestResponse;
 use ruffle_core::backend::navigator::{OwnedFuture, SuccessResponse};
 use ruffle_core::loader::Error;
 use std::sync::{Arc, Mutex};
@@ -13,7 +12,7 @@ pub enum ResponseBody {
     /// This has to be stored in shared ownership so that we can return
     /// owned futures. A synchronous lock is used here as we do not
     /// expect contention on this lock.
-    Network(Arc<Mutex<IsahcResponse<AsyncBody>>>),
+    Network(Arc<Mutex<Option<ReqwestResponse>>>),
 }
 
 pub struct Response {
@@ -35,15 +34,15 @@ impl SuccessResponse for Response {
                 Box::pin(async move { file.map_err(|e| Error::FetchError(e.to_string())) })
             }
             ResponseBody::Network(response) => Box::pin(async move {
-                let mut body = vec![];
-                response
+                Ok(response
                     .lock()
                     .expect("working lock during fetch body read")
-                    .copy_to(&mut body)
+                    .take()
+                    .expect("Body cannot already be consumed")
+                    .bytes()
                     .await
-                    .map_err(|e| Error::FetchError(e.to_string()))?;
-
-                Ok(body)
+                    .map_err(|e| Error::FetchError(e.to_string()))?
+                    .to_vec())
             }),
         }
     }
@@ -75,9 +74,7 @@ impl SuccessResponse for Response {
             }
             ResponseBody::Network(response) => {
                 let response = response.clone();
-
                 Box::pin(async move {
-                    let mut buf = vec![0; 4096];
                     let lock = response.try_lock();
                     if matches!(lock, Err(std::sync::TryLockError::WouldBlock)) {
                         return Err(Error::FetchError(
@@ -88,16 +85,14 @@ impl SuccessResponse for Response {
 
                     let result = lock
                         .expect("desktop network lock")
-                        .body_mut()
-                        .read(&mut buf)
+                        .as_mut()
+                        .expect("Body cannot already be consumed")
+                        .chunk()
                         .await;
 
                     match result {
-                        Ok(count) if count > 0 => {
-                            buf.resize(count, 0);
-                            Ok(Some(buf))
-                        }
-                        Ok(_) => Ok(None),
+                        Ok(Some(bytes)) => Ok(Some(bytes.to_vec())),
+                        Ok(None) => Ok(None),
                         Err(e) => Err(Error::FetchError(e.to_string())),
                     }
                 })
@@ -109,18 +104,9 @@ impl SuccessResponse for Response {
         match &self.response_body {
             ResponseBody::File(file) => Ok(file.as_ref().map(|file| file.len() as u64).ok()),
             ResponseBody::Network(response) => {
-                let response = response.lock().expect("no recursive locks");
-                let content_length = response.headers().get("Content-Length");
-
-                if let Some(len) = content_length {
-                    Ok(Some(
-                        len.to_str()
-                            .map_err(|_| Error::InvalidHeaderValue)?
-                            .parse::<u64>()?,
-                    ))
-                } else {
-                    Ok(None)
-                }
+                let lock = response.lock().expect("no recursive locks");
+                let response = lock.as_ref().expect("Body cannot already be consumed");
+                Ok(response.content_length())
             }
         }
     }

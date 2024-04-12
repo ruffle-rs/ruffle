@@ -9,9 +9,7 @@ use async_net::TcpStream;
 use futures::future::select;
 use futures::{AsyncReadExt, AsyncWriteExt};
 use futures_lite::FutureExt;
-use isahc::config::{Configurable, RedirectPolicy};
-use isahc::http::{HeaderName, HeaderValue};
-use isahc::{HttpClient, Request as IsahcRequest, ResponseExt};
+use reqwest::Proxy;
 use ruffle_core::backend::navigator::{
     async_return, create_fetch_error, ErrorResponse, NavigationMethod, NavigatorBackend,
     OpenURLMode, OwnedFuture, Request, SocketMode, SuccessResponse,
@@ -25,7 +23,6 @@ use std::io;
 use std::io::ErrorKind;
 use std::path::Path;
 use std::rc::Rc;
-use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tracing::warn;
@@ -53,7 +50,7 @@ pub struct ExternalNavigatorBackend<F: FutureSpawner, I: NavigatorInterface> {
     base_url: Url,
 
     // Client to use for network requests
-    client: Option<Rc<HttpClient>>,
+    client: Option<Rc<reqwest::Client>>,
 
     socket_allowed: HashSet<String>,
 
@@ -82,11 +79,18 @@ impl<F: FutureSpawner, I: NavigatorInterface> ExternalNavigatorBackend<F, I> {
         content: Rc<PlayingContent>,
         interface: I,
     ) -> Self {
-        let proxy = proxy.and_then(|url| url.as_str().parse().ok());
-        let builder = HttpClient::builder()
-            .proxy(proxy)
-            .cookies()
-            .redirect_policy(RedirectPolicy::Follow);
+        let mut builder = reqwest::ClientBuilder::new().cookie_store(true);
+
+        if let Some(proxy) = proxy {
+            match Proxy::all(proxy.clone()) {
+                Ok(proxy) => {
+                    builder = builder.proxy(proxy);
+                }
+                Err(e) => {
+                    tracing::error!("Couldn't configure proxy {proxy}: {e}")
+                }
+            }
+        }
 
         let client = builder.build().ok().map(Rc::new);
 
@@ -221,44 +225,23 @@ impl<F: FutureSpawner, I: NavigatorInterface> NavigatorBackend for ExternalNavig
                     error: Error::FetchError("Network unavailable".to_string()),
                 })?;
 
-                let mut isahc_request = match request.method() {
-                    NavigationMethod::Get => IsahcRequest::get(processed_url.to_string()),
-                    NavigationMethod::Post => IsahcRequest::post(processed_url.to_string()),
+                let mut request_builder = match request.method() {
+                    NavigationMethod::Get => client.get(processed_url.clone()),
+                    NavigationMethod::Post => client.post(processed_url.clone()),
                 };
                 let (body_data, mime) = request.body().clone().unwrap_or_default();
-                if let Some(headers) = isahc_request.headers_mut() {
-                    for (name, val) in request.headers().iter() {
-                        headers.insert(
-                            HeaderName::from_str(name).map_err(|e| ErrorResponse {
-                                url: processed_url.to_string(),
-                                error: Error::FetchError(e.to_string()),
-                            })?,
-                            HeaderValue::from_str(val).map_err(|e| ErrorResponse {
-                                url: processed_url.to_string(),
-                                error: Error::FetchError(e.to_string()),
-                            })?,
-                        );
-                    }
-                    headers.insert(
-                        "Content-Type",
-                        HeaderValue::from_str(&mime).map_err(|e| ErrorResponse {
-                            url: processed_url.to_string(),
-                            error: Error::FetchError(e.to_string()),
-                        })?,
-                    );
+                for (name, val) in request.headers().iter() {
+                    request_builder = request_builder.header(name, val);
                 }
+                request_builder = request_builder.header("Content-Type", &mime);
 
-                let body = isahc_request.body(body_data).map_err(|e| ErrorResponse {
-                    url: processed_url.to_string(),
-                    error: Error::FetchError(e.to_string()),
-                })?;
+                request_builder = request_builder.body(body_data);
 
-                let response = client.send_async(body).await.map_err(|e| {
-                    let inner = match e.kind() {
-                        isahc::error::ErrorKind::NameResolution => {
-                            Error::InvalidDomain(processed_url.to_string())
-                        }
-                        _ => Error::FetchError(e.to_string()),
+                let response = request_builder.send().await.map_err(|e| {
+                    let inner = if e.is_connect() {
+                        Error::InvalidDomain(processed_url.to_string())
+                    } else {
+                        Error::FetchError(e.to_string())
                     };
                     ErrorResponse {
                         url: processed_url.to_string(),
@@ -266,27 +249,23 @@ impl<F: FutureSpawner, I: NavigatorInterface> NavigatorBackend for ExternalNavig
                     }
                 })?;
 
-                let url = if let Some(uri) = response.effective_uri() {
-                    uri.to_string()
-                } else {
-                    processed_url.into()
-                };
+                let url = response.url().to_string();
 
                 let status = response.status().as_u16();
-                let redirected = response.effective_uri().is_some();
+                let redirected = *response.url() != processed_url;
                 if !response.status().is_success() {
                     let error = Error::HttpNotOk(
                         format!("HTTP status is not ok, got {}", response.status()),
                         status,
                         redirected,
-                        response.body().len().unwrap_or(0),
+                        response.content_length().unwrap_or_default(),
                     );
                     return Err(ErrorResponse { url, error });
                 }
 
                 let response: Box<dyn SuccessResponse> = Box::new(Response {
                     url,
-                    response_body: ResponseBody::Network(Arc::new(Mutex::new(response))),
+                    response_body: ResponseBody::Network(Arc::new(Mutex::new(Some(response)))),
                     status,
                     redirected,
                 });
@@ -484,6 +463,7 @@ mod tests {
     use async_net::TcpListener;
     use ruffle_core::socket::SocketAction::{Close, Connect, Data};
     use std::net::SocketAddr;
+    use std::str::FromStr;
     use tokio::task;
 
     use super::*;
