@@ -1,7 +1,7 @@
 mod fetch;
 
 use crate::backends::executor::FutureSpawner;
-use crate::backends::navigator::fetch::{DesktopResponse, DesktopResponseBody};
+use crate::backends::navigator::fetch::{Response, ResponseBody};
 use crate::content::PlayingContent;
 use async_channel::{Receiver, Sender, TryRecvError};
 use async_io::Timer;
@@ -205,9 +205,9 @@ impl<F: FutureSpawner, I: NavigatorInterface> NavigatorBackend for ExternalNavig
                     let contents =
                         content.get_local_file(&processed_url, |path| interface.open_file(path));
 
-                    let response: Box<dyn SuccessResponse> = Box::new(DesktopResponse {
+                    let response: Box<dyn SuccessResponse> = Box::new(Response {
                         url: response_url.to_string(),
-                        response_body: DesktopResponseBody::File(contents),
+                        response_body: ResponseBody::File(contents),
                         status: 0,
                         redirected: false,
                     });
@@ -284,9 +284,9 @@ impl<F: FutureSpawner, I: NavigatorInterface> NavigatorBackend for ExternalNavig
                     return Err(ErrorResponse { url, error });
                 }
 
-                let response: Box<dyn SuccessResponse> = Box::new(DesktopResponse {
+                let response: Box<dyn SuccessResponse> = Box::new(Response {
                     url,
-                    response_body: DesktopResponseBody::Network(Arc::new(Mutex::new(response))),
+                    response_body: ResponseBody::Network(Arc::new(Mutex::new(response))),
                     status,
                     redirected,
                 });
