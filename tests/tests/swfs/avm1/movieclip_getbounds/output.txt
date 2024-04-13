@@ -1,80 +1,80 @@
 // clip.clip.getBounds()
--50
+50
 -112
 154.95
-50
+-50
 
 // clip.clip.getBounds(clip.clip)
--50
+50
 -112
 154.95
-50
+-50
 
 // clip.clip.getBounds(clip.clip)
--50
+50
 -112
 154.95
-50
+-50
 
 // clip.clip.getBounds(clip.clip.clip)
--154.95
+471.9
 -100
 50
-471.9
+-154.95
 
 // clip.clip.getBounds(clip)
--35.35
+72.5
 -57.25
 94.4
-72.5
+-35.35
 
 // clip.clip.getBounds(_root)
-99.95
+304.95
 100
 261.95
-304.95
+99.95
 
 // clip.clip.getBounds(clip2)
--124.65
+469.5
 210.05
 145.75
-469.5
+-124.65
 
 // clip4.getBounds(_root)
-236.2
+380.2
 330.2
 286.2
-380.2
+236.2
 
 // clip.getBounds('/')
-3.5
+354.9
 50
 308.4
-354.9
+3.5
 
 // clip.getBounds('/clip')
--35.35
+68.2
 -35.35
 76.7
-68.2
+-35.35
 
 // clip.getBounds('clip:clip')
--204.95
+521.9
 -99.9
 99.95
-521.9
+-204.95
 
 // clip3.getBounds(undefined)
--119.3
+68
 -89.3
 50
-68
+-119.3
 
 // clip3.getBounds(o)
--5.3
+50
 -107.3
 164
-50
+-5.3
 
 // clip.clip.getBounds(undefined)
 undefined
@@ -95,82 +95,82 @@ undefined
 6710886.35
 
 // clip.clip.getRect()
--50
+50
 -112
 154.95
-50
+-50
 
 // clip.clip.getRect(clip.clip)
--50
+50
 -112
 154.95
-50
+-50
 
 // clip.clip.getRect(clip.clip)
--50
+50
 -112
 154.95
-50
+-50
 
 // clip.clip.getRect(clip.clip.clip)
--154.95
+471.9
 -100
 50
-471.9
+-154.95
 
 // clip.clip.getRect(clip)
--35.35
+72.5
 -57.25
 94.4
-72.5
+-35.35
 
 // clip.clip.getRect(_root)
-99.95
+304.95
 100
 261.95
-304.95
+99.95
 
 // clip.clip.getRect(clip2)
--124.65
+469.5
 210.05
 145.75
-469.5
+-124.65
 
 // clip4.getRect(_root)
-236.2
+380.2
 330.2
 286.2
-380.2
+236.2
 
 // clip.getRect('/')
-3.5
+354.9
 50
 308.4
-354.9
+3.5
 
 // clip.getRect('/clip')
--35.35
+68.2
 -35.35
 76.7
-68.2
+-35.35
 
 // clip.getRect('clip:clip')
--204.95
+521.9
 -99.9
 99.95
-521.9
+-204.95
 
 // clip3.getRect(undefined)
--119.3
+68
 -89.3
 50
-68
+-119.3
 
 // clip3.getRect(o)
--5.3
+50
 -107.3
 164
-50
+-5.3
 
 // clip.clip.getRect(undefined)
 undefined
