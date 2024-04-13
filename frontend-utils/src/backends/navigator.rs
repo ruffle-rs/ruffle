@@ -702,16 +702,14 @@ mod tests {
             Connect(dummy_handle!(), ConnectionState::Connected),
         );
 
-        write_server(&mut server_socket, "Hello ").await;
-        write_server(&mut server_socket, "World!").await;
+        write_server(&mut server_socket, "Hello World!").await;
 
         assert_next_socket_actions!(
             client_read;
             Data(dummy_handle!(), "Hello World!".as_bytes().to_vec()),
         );
 
-        write_client(&client_write, "Hello from").await;
-        write_client(&client_write, " client").await;
+        write_client(&client_write, "Hello from client").await;
 
         assert_eq!(read_server(&mut server_socket).await, "Hello from client");
 
@@ -736,8 +734,7 @@ mod tests {
             Connect(dummy_handle!(), ConnectionState::Connected),
         );
 
-        write_client(&client_write, "Sending some").await;
-        write_client(&client_write, " data").await;
+        write_client(&client_write, "Sending some data").await;
         client_write.close();
 
         assert_eq!(read_server(&mut server_socket).await, "Sending some data");
