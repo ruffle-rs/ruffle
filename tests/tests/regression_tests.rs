@@ -8,6 +8,7 @@ use crate::shared_object::{shared_object_avm1, shared_object_avm2, shared_object
 use anyhow::Context;
 use anyhow::Result;
 use libtest_mimic::{Arguments, Trial};
+use regex::Regex;
 use ruffle_test_framework::options::TestOptions;
 use ruffle_test_framework::runner::TestStatus;
 use ruffle_test_framework::test::Test;
@@ -22,19 +23,38 @@ mod shared_object;
 
 const TEST_TOML_NAME: &str = "test.toml";
 
+/// Convert the filter (e.g. from the CLI) to a test name.
+///
+/// These two values may differ due to how
+/// libtest_mimic handles test kind annotations:
+/// a test may be named `test` or `[kind] test` when a kind is present.
+/// This function removes the "kind" prefix from
+/// the name to match tests similarly to libtest_mimic.
+///
+/// See [`Arguments::is_filtered_out()`].
+/// See [`libtest_mimic::TestInfo::test_name_with_kind()`].
+fn filter_to_test_name(filter: &str) -> String {
+    Regex::new("^\\[[^]]+] ")
+        .unwrap()
+        .replace(filter, "")
+        .to_string()
+}
+
 fn is_candidate(args: &Arguments, test_name: &str) -> bool {
     if let Some(filter) = &args.filter {
+        let expected_test_name = filter_to_test_name(filter);
         match args.exact {
-            true if test_name != filter => return false,
-            false if !test_name.contains(filter) => return false,
+            true if test_name != expected_test_name => return false,
+            false if !test_name.contains(&expected_test_name) => return false,
             _ => {}
         };
     }
 
     for skip_filter in &args.skip {
+        let skipped_test_name = filter_to_test_name(skip_filter);
         match args.exact {
-            true if test_name == skip_filter => return false,
-            false if test_name.contains(skip_filter) => return false,
+            true if test_name == skipped_test_name => return false,
+            false if test_name.contains(&skipped_test_name) => return false,
             _ => {}
         }
     }
@@ -65,19 +85,7 @@ fn main() {
 
     let root = Path::new("tests/swfs");
     let mut tests: Vec<Trial> = if filter_exact {
-        let name = args.filter.as_ref().unwrap();
-        let absolute_root = std::fs::canonicalize(root).unwrap();
-        let path = absolute_root
-            .join(name)
-            .join(TEST_TOML_NAME)
-            .canonicalize()
-            .expect("test should exist");
-        path.strip_prefix(absolute_root).expect("path traversal");
-        if path.is_file() {
-            vec![run_test(&args, &path, name)]
-        } else {
-            vec![]
-        }
+        look_up_test(root, &args).map_or_else(Vec::new, |trial| vec![trial])
     } else {
         walkdir::WalkDir::new(root)
             .into_iter()
@@ -121,6 +129,28 @@ fn main() {
     tests.sort_unstable_by(|a, b| a.name().cmp(b.name()));
 
     libtest_mimic::run(&args, tests).exit()
+}
+
+fn look_up_test(root: &Path, args: &Arguments) -> Option<Trial> {
+    let name = filter_to_test_name(args.filter.as_ref().unwrap());
+    let absolute_root = std::fs::canonicalize(root).unwrap();
+    let path = absolute_root
+        .join(&name)
+        .join(TEST_TOML_NAME)
+        .canonicalize()
+        .ok()?;
+
+    // Make sure that:
+    //   1. There's no path traversal (e.g. `cargo test ../../test`)
+    //   2. The path is still exact (e.g. `cargo test avm1/../avm1/test`)
+    if path.strip_prefix(absolute_root).ok()? != Path::new(&name).join(TEST_TOML_NAME) {
+        return None;
+    }
+    if path.is_file() {
+        Some(run_test(args, &path, &name))
+    } else {
+        None
+    }
 }
 
 fn run_test(args: &Arguments, file: &Path, name: &str) -> Trial {
