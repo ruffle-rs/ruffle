@@ -11,3 +11,6 @@ audio-output-device-default = Rendszer alapértelmezett
 log-filename-pattern = Naplófájl neve
 log-filename-pattern-single-file = Egyetlen fájl (ruffle.log)
 log-filename-pattern-with-timestamp = Időbélyeggel
+storage-backend = Mentésfájlok helye
+storage-backend-disk = Lemez
+storage-backend-memory = Memória
