@@ -1506,8 +1506,8 @@ fn get_bounds<'gc>(
             Some(activation.context.avm1.prototypes().object),
         );
         out.set("xMin", out_bounds.x_min.to_pixels().into(), activation)?;
-        out.set("yMin", out_bounds.y_min.to_pixels().into(), activation)?;
         out.set("xMax", out_bounds.x_max.to_pixels().into(), activation)?;
+        out.set("yMin", out_bounds.y_min.to_pixels().into(), activation)?;
         out.set("yMax", out_bounds.y_max.to_pixels().into(), activation)?;
         Ok(out.into())
     } else {
