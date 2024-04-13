@@ -5248,6 +5248,7 @@ dependencies = [
  "futures",
  "image 0.25.1",
  "libtest-mimic",
+ "regex",
  "ruffle_core",
  "ruffle_render_wgpu",
  "ruffle_test_framework",
