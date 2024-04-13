@@ -15,11 +15,12 @@ use ruffle_test_framework::vfs::{PhysicalFS, VfsPath};
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::path::Path;
 use std::thread::sleep;
-use walkdir::DirEntry;
 
 mod environment;
 mod external_interface;
 mod shared_object;
+
+const TEST_TOML_NAME: &str = "test.toml";
 
 fn is_candidate(args: &Arguments, test_name: &str) -> bool {
     if let Some(filter) = &args.filter {
@@ -57,27 +58,48 @@ fn main() {
     // Ignore error if it's already been set
     let _ = tracing::subscriber::set_global_default(subscriber);
 
+    // When this is true, we are looking for one specific test.
+    // This is an important optimization for nextest,
+    // as it executes tests one by one.
+    let filter_exact = args.exact && args.filter.is_some();
+
     let root = Path::new("tests/swfs");
-    let mut tests: Vec<Trial> = walkdir::WalkDir::new(root)
-        .into_iter()
-        .map(Result::unwrap)
-        .filter(|entry| entry.file_type().is_file() && entry.file_name() == "test.toml")
-        .filter_map(|file| {
-            let name = file
-                .path()
-                .parent()?
-                .strip_prefix(root)
-                .context("Couldn't strip root prefix from test dir")
-                .unwrap()
-                .to_string_lossy()
-                .replace('\\', "/");
-            if is_candidate(&args, &name) {
-                Some(run_test(&args, file, name))
-            } else {
-                None
-            }
-        })
-        .collect();
+    let mut tests: Vec<Trial> = if filter_exact {
+        let name = args.filter.as_ref().unwrap();
+        let absolute_root = std::fs::canonicalize(root).unwrap();
+        let path = absolute_root
+            .join(name)
+            .join(TEST_TOML_NAME)
+            .canonicalize()
+            .expect("test should exist");
+        path.strip_prefix(absolute_root).expect("path traversal");
+        if path.is_file() {
+            vec![run_test(&args, &path, name)]
+        } else {
+            vec![]
+        }
+    } else {
+        walkdir::WalkDir::new(root)
+            .into_iter()
+            .map(Result::unwrap)
+            .filter(|entry| entry.file_type().is_file() && entry.file_name() == TEST_TOML_NAME)
+            .filter_map(|file| {
+                let name = file
+                    .path()
+                    .parent()?
+                    .strip_prefix(root)
+                    .context("Couldn't strip root prefix from test dir")
+                    .unwrap()
+                    .to_string_lossy()
+                    .replace('\\', "/");
+                if is_candidate(&args, &name) {
+                    Some(run_test(&args, file.path(), &name))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    };
 
     // Manual tests here, since #[test] doesn't work once we use our own test harness
     tests.push(Trial::test("shared_object_avm1", || {
@@ -101,14 +123,14 @@ fn main() {
     libtest_mimic::run(&args, tests).exit()
 }
 
-fn run_test(args: &Arguments, file: DirEntry, name: String) -> Trial {
-    let root = VfsPath::new(PhysicalFS::new(file.path().parent().unwrap()));
+fn run_test(args: &Arguments, file: &Path, name: &str) -> Trial {
+    let root = VfsPath::new(PhysicalFS::new(file.parent().unwrap()));
     let test = Test::from_options(
         TestOptions::read(&root.join("test.toml").unwrap())
             .context("Couldn't load test options")
             .unwrap(),
         root,
-        name.clone(),
+        name.to_string(),
     )
     .with_context(|| format!("Couldn't create test {name}"))
     .unwrap();
