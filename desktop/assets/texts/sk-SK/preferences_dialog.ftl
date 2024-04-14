@@ -1,0 +1,16 @@
+preferences-dialog = Nastavenia Ruffle
+preference-locked-by-cli = Len na čítanie (nastavené CLI)
+graphics-backend = Grafický backend
+graphics-backend-default = Predvolené
+graphics-power = Nastavenie výkonu
+graphics-power-low = Nízky (napr. iGPU)
+graphics-power-high = Vysoký (napr. GPU)
+language = Jazyk
+audio-output-device = Zariadenie pre výstup zvuku
+audio-output-device-default = Predvolené systémom
+log-filename-pattern = Názov súboru logu
+log-filename-pattern-single-file = Jeden súbor (ruffle.log)
+log-filename-pattern-with-timestamp = S časovou pečiatkou
+storage-backend = Umiestnenie súboru s uloženými pozíciami
+storage-backend-disk = Disk
+storage-backend-memory = Pamäť
