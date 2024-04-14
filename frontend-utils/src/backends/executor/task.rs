@@ -7,11 +7,8 @@ use std::task::{Context, Poll};
 /// Indicates the state of a given task.
 #[derive(Eq, PartialEq)]
 enum TaskState {
-    /// Indicates that a task is ready to be polled to make progress.
-    Ready,
-
-    /// Indicates that a task is blocked on another event source.
-    Blocked,
+    /// Indicates that a task is being executed and is waiting to be awoken.
+    InProgress,
 
     /// Indicates that a task is complete and should not be awoken again.
     Completed,
@@ -30,25 +27,9 @@ impl Task {
     /// Box an owned future into a task structure.
     pub fn from_future(future: OwnedFuture<(), Error>) -> Self {
         Self {
-            state: TaskState::Ready,
+            state: TaskState::InProgress,
             future,
         }
-    }
-
-    /// Returns `true` if the task is ready to be polled.
-    pub fn is_ready(&self) -> bool {
-        self.state == TaskState::Ready
-    }
-
-    /// Marks this task to as ready to make progress.
-    pub fn set_ready(&mut self) {
-        self.state = TaskState::Ready
-    }
-
-    /// Returns `true` if the task is awaiting further progress.
-    #[allow(dead_code)]
-    pub fn is_blocked(&self) -> bool {
-        self.state == TaskState::Blocked
     }
 
     /// Returns `true` if the task has completed and should not be polled again.
@@ -68,7 +49,7 @@ impl Task {
         let poll = self.future.as_mut().poll(context);
 
         self.state = match poll {
-            Poll::Pending => TaskState::Blocked,
+            Poll::Pending => TaskState::InProgress,
             Poll::Ready(_) => TaskState::Completed,
         };
 
