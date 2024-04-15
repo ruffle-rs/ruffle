@@ -24,7 +24,7 @@ ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 [dev-dependencies]
 ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug", "avm_debug", "audio", "mp3", "default_font"] }
 ruffle_test_framework = { path = "framework" }
-libtest-mimic = "0.7.0"
+libtest-mimic = "0.7.2"
 walkdir = { workspace = true }
 anyhow = { workspace = true }
 image = { workspace = true, features  = ["png"] }

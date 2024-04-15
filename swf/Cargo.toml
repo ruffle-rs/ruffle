@@ -15,7 +15,7 @@ workspace = true
 bitflags = { workspace = true }
 bitstream-io = "2.2.0"
 byteorder = "1.5"
-encoding_rs = "0.8.33"
+encoding_rs = "0.8.34"
 num-derive = { workspace = true }
 num-traits = { workspace = true }
 libflate = {version = "2.0", optional = true}
