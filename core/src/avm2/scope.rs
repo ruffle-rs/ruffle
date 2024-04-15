@@ -89,7 +89,7 @@ impl<'gc> ScopeContainer<'gc> {
 /// initial creation.
 ///
 /// A ScopeChain is either created by chaining new scopes on top of an already existing
-/// ScopeChain, or if we havn't created one yet (like during script initialization), you can
+/// ScopeChain, or if we haven't created one yet (like during script initialization), you can
 /// create an empty ScopeChain with only a Domain. A ScopeChain should **always** have a Domain.
 ///
 /// ScopeChain's are copy-on-write, meaning when we chain new scopes on top of a ScopeChain, we
