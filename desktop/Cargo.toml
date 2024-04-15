@@ -28,7 +28,7 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing-appender = "0.2.3"
 winit = "0.29.15"
-webbrowser = "0.8.14"
+webbrowser = "0.8.15"
 url = { workspace = true }
 dirs = "5.0"
 rfd = "0.14.1"
@@ -40,7 +40,7 @@ sys-locale = "0.3.1"
 wgpu = { workspace = true }
 futures = { workspace = true }
 chrono = { workspace = true }
-fluent-templates = "0.9.1"
+fluent-templates = "0.9.2"
 toml_edit = { version = "0.22.9", features = ["parse"] }
 gilrs = "0.10"
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"]}

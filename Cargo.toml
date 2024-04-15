@@ -54,10 +54,10 @@ egui = "0.27.2"
 clap = { version = "4.5.4", features = ["derive"] }
 anyhow = "1.0"
 slotmap = "1.0.7"
-async-channel = "2.2.0"
+async-channel = "2.2.1"
 bitflags = "2.5.0"
 bytemuck = "1.15.0"
-chrono = { version = "0.4.35", default-features = false }
+chrono = { version = "0.4.38", default-features = false }
 enum-map = "2.7.3"
 flate2 = "1.0.28"
 futures = "0.3.30"
