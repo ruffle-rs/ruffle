@@ -1343,7 +1343,7 @@ pub fn to_xml_string<'gc>(
             .get_public_property("prettyIndent", activation)
             .expect("prettyIndent should be set")
             .coerce_to_i32(activation)
-            .expect("shouldnt error");
+            .expect("shouldn't error");
 
         // NOTE: Negative values are invalid and are ignored.
         if pretty_indent < 0 {
