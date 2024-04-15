@@ -11,6 +11,7 @@ use crate::debug_ui::movie::open_movie_button;
 use crate::debug_ui::Message;
 use crate::display_object::{
     DisplayObject, EditText, MovieClip, Stage, TDisplayObject, TDisplayObjectContainer,
+    TInteractiveObject,
 };
 use egui::collapsing_header::CollapsingState;
 use egui::{Button, Checkbox, CollapsingHeader, ComboBox, Grid, Id, TextEdit, Ui, Widget, Window};
@@ -501,6 +502,41 @@ impl DisplayObjectWindow {
                 ui.label("Color Transform");
                 ui.label(summary_color_transform(color_transform));
                 ui.end_row();
+
+                if let Some(obj) = object.as_interactive() {
+                    ui.label("Mouse enabled");
+                    ui.horizontal(|ui| {
+                        let mut enabled = obj.mouse_enabled();
+                        Checkbox::new(&mut enabled, "Enabled").ui(ui);
+                        if enabled != obj.mouse_enabled() {
+                            obj.set_mouse_enabled(context.gc_context, enabled);
+                        }
+                    });
+                    ui.end_row();
+
+                    ui.label("Double-click enabled");
+                    ui.horizontal(|ui| {
+                        let mut enabled = obj.double_click_enabled();
+                        Checkbox::new(&mut enabled, "Enabled").ui(ui);
+                        if enabled != obj.double_click_enabled() {
+                            obj.set_double_click_enabled(context.gc_context, enabled);
+                        }
+                    });
+                    ui.end_row();
+                }
+
+                if let Some(obj) = object.as_container() {
+                    ui.label("Mouse children enabled");
+                    ui.horizontal(|ui| {
+                        let mut enabled = obj.raw_container().mouse_children();
+                        Checkbox::new(&mut enabled, "Enabled").ui(ui);
+                        if enabled != obj.raw_container().mouse_children() {
+                            obj.raw_container_mut(context.gc_context)
+                                .set_mouse_children(enabled);
+                        }
+                    });
+                    ui.end_row();
+                }
             });
 
         let filters = object.filters();
