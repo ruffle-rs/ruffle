@@ -7,7 +7,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::Collect;
 use std::cmp::{max, min};
-use std::ops::{Index, RangeBounds};
+use std::ops::RangeBounds;
 use std::slice::SliceIndex;
 
 /// The vector storage portion of a vector object.
@@ -401,10 +401,7 @@ impl<'gc> VectorStorage<'gc> {
     where
         R: Clone + SliceIndex<[Value<'gc>], Output = [Value<'gc>]> + RangeBounds<usize>,
     {
-        if self.is_fixed && self.storage.index(range.clone()).len() != replace_with.len() {
-            return Err("RangeError: Vector is fixed".into());
-        }
-
+        // NOTE: no fixed check here for bug compatibility
         Ok(self.storage.splice(range, replace_with).collect())
     }
 }
