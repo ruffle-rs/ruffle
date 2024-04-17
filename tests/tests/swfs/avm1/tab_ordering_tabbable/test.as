@@ -51,7 +51,7 @@ listener.onKeyDown = function() {
         if (testStage == 1) {
             trace("Enabling tab");
             for (var i in objects) {
-                objects[i].tabEnable = true;
+                objects[i].tabEnabled = true;
             }
         } else if (testStage == 2) {
             trace("Setting custom order");

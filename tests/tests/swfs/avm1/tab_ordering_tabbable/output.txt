@@ -19,7 +19,7 @@ Tabbable elements:
   _level0.clip9.text: false
   _level0.clip9: false
   _level0.clip8.text: true
-  _level0.clip8: false
+  _level0.clip8: true
   _level0.text7: true
   _level0.text6: true
   _level0.text5: false
