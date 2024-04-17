@@ -1,6 +1,6 @@
 mod fetch;
 
-use crate::backends::executor::FutureSpawner;
+use crate::backends::executor::{spawn_tokio, FutureSpawner};
 use crate::backends::navigator::fetch::{Response, ResponseBody};
 use crate::content::PlayingContent;
 use async_channel::{Receiver, Sender, TryRecvError};
@@ -25,7 +25,6 @@ use std::path::Path;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use tokio::task;
 use tracing::warn;
 use url::{ParseError, Url};
 
@@ -238,19 +237,17 @@ impl<F: FutureSpawner, I: NavigatorInterface> NavigatorBackend for ExternalNavig
 
                 request_builder = request_builder.body(body_data);
 
-                let response = task::unconstrained(request_builder.send())
-                    .await
-                    .map_err(|e| {
-                        let inner = if e.is_connect() {
-                            Error::InvalidDomain(processed_url.to_string())
-                        } else {
-                            Error::FetchError(e.to_string())
-                        };
-                        ErrorResponse {
-                            url: processed_url.to_string(),
-                            error: inner,
-                        }
-                    })?;
+                let response = spawn_tokio(request_builder.send()).await.map_err(|e| {
+                    let inner = if e.is_connect() {
+                        Error::InvalidDomain(processed_url.to_string())
+                    } else {
+                        Error::FetchError(e.to_string())
+                    };
+                    ErrorResponse {
+                        url: processed_url.to_string(),
+                        error: inner,
+                    }
+                })?;
 
                 let url = response.url().to_string();
 
@@ -467,6 +464,7 @@ mod tests {
     use ruffle_core::socket::SocketAction::{Close, Connect, Data};
     use std::net::SocketAddr;
     use std::str::FromStr;
+    use tokio::task;
 
     use super::*;
 
