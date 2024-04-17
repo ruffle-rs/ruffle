@@ -5,6 +5,7 @@ use async_channel::{unbounded, Receiver, Sender};
 use ruffle_core::backend::navigator::OwnedFuture;
 use ruffle_core::loader::Error;
 use slotmap::{new_key_type, SlotMap};
+use std::future::Future;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard, Weak};
 use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
@@ -272,4 +273,17 @@ impl<R: PollRequester> FutureSpawner for AsyncFutureSpawner<R> {
             .expect("working channel send");
         self.poll_requester.request_poll()
     }
+}
+
+/// Spawns a new asynchronous task in a tokio runtime, without the current executor needing to belong to tokio
+pub async fn spawn_tokio<F>(future: F) -> F::Output
+where
+    F: Future + Send + 'static,
+    F::Output: Send + 'static,
+{
+    let (sender, receiver) = tokio::sync::oneshot::channel();
+    tokio::spawn(async move { sender.send(future.await) });
+    tokio::task::unconstrained(receiver)
+        .await
+        .expect("Oneshot should succeed")
 }
