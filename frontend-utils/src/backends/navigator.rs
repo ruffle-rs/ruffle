@@ -252,8 +252,14 @@ impl<F: FutureSpawner, I: NavigatorInterface> NavigatorBackend for ExternalNavig
                 };
                 let (body_data, mime) = request.body().clone().unwrap_or_default();
                 for (name, val) in request.headers().iter() {
+                    warn!("SETTING header: {}={}", name, val);
                     request_builder = request_builder.header(name, val);
                 }
+
+                request_builder =
+                    request_builder.header("Referer", "https://www.4399.com/flash/130396.htm");
+                //request_builder = request_builder.header("Cookie", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
+
                 request_builder = request_builder.header("Content-Type", &mime);
 
                 request_builder = request_builder.body(body_data);

@@ -27,7 +27,7 @@ use crate::limits::ExecutionLimit;
 use crate::player::{Player, PostFrameCallback};
 use crate::streams::NetStream;
 use crate::string::AvmString;
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::{self, ControlFlow, SwfMovie, SwfSlice, SwfStream};
 use crate::vminterface::Instantiator;
 use crate::{avm2_stub_method, avm2_stub_method_context};
 use chardetng::EncodingDetector;
@@ -42,6 +42,7 @@ use std::str::FromStr;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 use swf::read::{extract_swz, read_compression_type};
+use swf::TagCode;
 use thiserror::Error;
 use url::{form_urlencoded, ParseError, Url};
 
@@ -341,6 +342,106 @@ impl<'gc> LoadManager<'gc> {
         let handle = self.add_loader(loader);
         let loader = self.get_loader_mut(handle).unwrap();
         loader.movie_loader(player, request, loader_url)
+    }
+
+    async fn wait_for_full_response(
+        response: OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse>,
+    ) -> Result<(Vec<u8>, String, u16, bool), ErrorResponse> {
+        let response = response.await?;
+        let url = response.url().to_string();
+        let status = response.status();
+        let redirected = response.redirected();
+        let body = response.body().await;
+
+        match body {
+            Ok(body) => Ok((body, url, status, redirected)),
+            Err(error) => Err(ErrorResponse { url, error }),
+        }
+    }
+
+    pub fn load_asset_movie(
+        player: Weak<Mutex<Player>>,
+        target_clip: DisplayObject<'gc>,
+        request: Request,
+        loader_url: Option<String>,
+        uc: &mut UpdateContext<'_, 'gc>,
+        chunk_limit: &mut ExecutionLimit,
+    ) -> OwnedFuture<(), Error> {
+        let player = player
+            .upgrade()
+            .expect("Could not upgrade weak reference to player");
+
+        Box::pin(async move {
+            let request_url = request.url().to_string();
+            let resolved_url = player.lock().unwrap().navigator().resolve_url(&request_url);
+
+            let fetch = player.lock().unwrap().navigator().fetch(request);
+
+            match Self::wait_for_full_response(fetch).await {
+                Ok((body, url, status, redirected)) => {
+                    let content_type = ContentType::sniff(&body);
+                    tracing::warn!("url: {:?}", url);
+                    tracing::warn!("Content type: {:?}", content_type);
+                    match content_type {
+                        ContentType::Swf => {
+                            //let movie = SwfMovie::from_data(&body, url.clone(), Some(url.clone()));
+                            //let movie = movie.unwrap();
+
+                            if !url.contains("/Tank.swf") {
+                                tracing::warn!("Skipping non Tank.swf");
+                                return Ok(());
+                            }
+
+                            let movie = SwfMovie::from_data(&body, url.clone(), Some(url.clone()))
+                                .expect("Could not load movie");
+
+                            let is_movie_as3 = movie.is_action_script_3();
+
+                            let movie = Arc::new(movie);
+
+                            player.lock().unwrap().mutate_with_update_context(|uc| {
+                                let clip = MovieClip::new(movie, uc.gc_context);
+                                let mut execution_limit = ExecutionLimit::none();
+
+                                let loader_is_avm2 = true;
+                                if loader_is_avm2 && !is_movie_as3 {
+                                    // When an AVM2 movie loads an AVM1 movie, we need to call `post_instantiation` here.
+                                    clip.post_instantiation(uc, None, Instantiator::Movie, false);
+
+                                    clip.set_depth(uc.gc_context, LOADER_INSERTED_AVM1_DEPTH);
+                                }
+
+                                clip.preload(uc, &mut execution_limit);
+                            });
+
+                            /*let slice = SwfSlice::from(movie.clone());
+
+                            let mut reader = slice.read_from(0);
+
+                            let tag_callback = |reader: &mut SwfStream<'_>, tag_code, _tag_len| {
+                                if tag_code == TagCode::ExportAssets {
+                                    let export_assets = reader
+                                        .read_export_assets();
+
+                                    for assets in export_assets {
+                                        for asset in assets {
+                                            tracing::warn!("Asset: {:?}", asset);
+                                        }
+                                    }
+                                }
+                                Ok(ControlFlow::Continue)
+                            };
+
+                            let _ = tag_utils::decode_tags(&mut reader, tag_callback);*/
+
+                            Ok(())
+                        }
+                        _ => Ok(()),
+                    }
+                }
+                Err(e) => Err(Error::FetchError("e.to_string()".to_string())),
+            }
+        })
     }
 
     /// Kick off a movie clip load.

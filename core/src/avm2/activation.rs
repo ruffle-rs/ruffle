@@ -843,6 +843,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if self.actions_since_timeout_check >= 64000 {
             self.actions_since_timeout_check = 0;
             if self.context.update_start.elapsed() >= self.context.max_execution_duration {
+                tracing::error!("STACK TRACE\n{}", self.avm2().call_stack().read());
                 return Err(
                     "A script in this movie has taken too long to execute and has been terminated."
                         .into(),

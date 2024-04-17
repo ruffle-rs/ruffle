@@ -9,6 +9,7 @@ use crate::avm2::{
     QName as Avm2QName, StageObject as Avm2StageObject, TObject as Avm2TObject, Value as Avm2Value,
 };
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
+use crate::backend::navigator::Request;
 use crate::backend::ui::MouseCursor;
 use crate::frame_lifecycle::run_inner_goto_frame;
 use bitflags::bitflags;
@@ -31,8 +32,8 @@ use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::font::{Font, FontType};
 use crate::limits::ExecutionLimit;
-use crate::loader::Loader;
 use crate::loader::{self, ContentType};
+use crate::loader::{LoadManager, Loader, MovieLoaderVMData};
 use crate::prelude::*;
 use crate::streams::NetStream;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
@@ -47,7 +48,7 @@ use std::cmp::max;
 use std::collections::HashMap;
 use std::sync::Arc;
 use swf::extensions::ReadSwfExt;
-use swf::{ClipEventFlag, DefineBitsLossless, FrameLabelData, TagCode};
+use swf::{ClipEventFlag, DefineBitsLossless, FrameLabelData, TagCode, UTF_8};
 
 use super::interactive::Avm2MousePick;
 use super::BitmapClass;
@@ -700,10 +701,11 @@ impl<'gc> MovieClip<'gc> {
                     .0
                     .write(context.gc_context)
                     .import_assets(context, reader),
-                TagCode::ImportAssets2 => self
-                    .0
-                    .write(context.gc_context)
-                    .import_assets_2(context, reader),
+                TagCode::ImportAssets2 => {
+                    self.0
+                        .write(context.gc_context)
+                        .import_assets_2(context, reader, chunk_limit)
+                }
                 TagCode::DoAbc | TagCode::DoAbc2 => self.preload_bytecode_tag(
                     tag_code,
                     reader,
@@ -4042,9 +4044,44 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn import_assets_2(
         &mut self,
         context: &mut UpdateContext<'_, 'gc>,
-        _reader: &mut SwfStream<'a>,
+        reader: &mut SwfStream<'a>,
+        chunk_limit: &mut ExecutionLimit,
     ) -> Result<(), Error> {
-        context_stub!(context, "ImportAssets2 tag");
+        tracing::warn!("ImportAssets2!!!!!");
+        let mut activation = Avm2Activation::from_nothing(context.reborrow());
+
+        let import_assets = reader.read_import_assets_2()?;
+
+        let asset_url = import_assets.0.to_string_lossy(UTF_8);
+
+        let request = Request::get(asset_url);
+
+        let url = request.url().to_string();
+
+        let target_clip = MovieClip::new(
+            Arc::new(SwfMovie::empty(context.swf.version())),
+            context.gc_context,
+        );
+
+        let player = context.player.clone();
+        let fut = LoadManager::load_asset_movie(
+            player,
+            target_clip.into(),
+            request,
+            Some(url),
+            context,
+            chunk_limit,
+        );
+
+        context.navigator.spawn_future(fut);
+
+        for asset in import_assets.1 {
+            let name = asset.name.decode(reader.encoding());
+            let name = AvmString::new(context.gc_context, name);
+            let library = context.library.library_for_movie_mut(self.movie());
+        }
+
+        //context_stub!(context, "ImportAssets2 tag");
 
         Ok(())
     }
@@ -4069,12 +4106,23 @@ impl<'gc, 'a> MovieClipData<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
-        let exports = reader.read_export_assets()?;
+        let exports = reader.read_export_assets();
+
+        let exports = match exports {
+            Ok(exports) => exports,
+            Err(e) => {
+                tracing::warn!("Error reading ExportAssets tag: {:?}", e);
+                return Err(tag_utils::Error::InvalidSwf(e));
+            }
+        };
+
         for export in exports {
             let name = export.name.decode(reader.encoding());
             let name = AvmString::new(context.gc_context, name);
             let library = context.library.library_for_movie_mut(self.movie());
             library.register_export(export.id, name);
+
+            tracing::warn!("Exporting asset: {} (ID: {})", name, export.id);
 
             // TODO: do other types of Character need to know their exported name?
             if let Some(character) = library.character_by_id(export.id) {
