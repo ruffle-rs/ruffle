@@ -4220,6 +4220,35 @@ impl<'gc, 'a> MovieClipData<'gc> {
         return Err(Error::InvalidSwf(swf::error::Error::invalid_data("message")));
     }
 
+    fn register_export(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc>,
+        id: CharacterId,
+        name: &AvmString<'gc>,
+        movie: Arc<SwfMovie>,
+    ) {
+        let library = context.library.library_for_movie_mut(movie);
+        library.register_export(id, name.clone());
+
+        // TODO: do other types of Character need to know their exported name?
+        if let Some(character) = library.character_by_id(id) {
+            if let Character::MovieClip(movie_clip) = character {
+                *movie_clip
+                    .0
+                    .read()
+                    .static_data
+                    .exported_name
+                    .write(context.gc_context) = Some(name.clone());
+            }
+        } else {
+            tracing::warn!(
+                "Can't register export {}: Character ID {} doesn't exist",
+                name,
+                id,
+            );
+        }
+    }
+
     #[inline]
     fn export_assets(
         &mut self,
@@ -4234,77 +4263,23 @@ impl<'gc, 'a> MovieClipData<'gc> {
 
             let character = self.get_registered_character_by_id(context, export.id)?;
 
+            self.register_export(context, export.id, &name, self.movie());
+
             if self.importer_movie.is_some() {                    
                 let parent = self.importer_movie.as_ref().unwrap().clone();
-                let parent_library = context.library.library_for_movie_mut(parent);
+                let parent_library = context.library.library_for_movie_mut(parent.clone());
 
                 if let Some(id) = parent_library.character_id_by_import_name(name) {
                     parent_library.register_character(id, character);
-                    parent_library.register_export(id, name);
+
+                    self.register_export(context, id, &name, parent);
                     tracing::warn!("Registering parent asset: {} (Parent ID: {})(ID: {})", name, id, export.id);
 
 
-                    if let Some(character) = parent_library.character_by_id(id) {
-                        if let Character::MovieClip(movie_clip) = character {
-                            *movie_clip
-                                .0
-                                .read()
-                                .static_data
-                                .exported_name
-                                .write(context.gc_context) = Some(name);
-                        }
-                    } else {
-                        tracing::warn!(
-                            "Can't register export {}: Character ID {} doesn't exist",
-                            name,
-                            export.id,
-                        );
-                    }
-                }
-            } else {
-                let library = context.library.library_for_movie_mut(self.movie());
-                library.register_export(export.id, name);
-
-                // TODO: do other types of Character need to know their exported name?
-                if let Some(character) = library.character_by_id(export.id) {
-                    if let Character::MovieClip(movie_clip) = character {
-                        *movie_clip
-                            .0
-                            .read()
-                            .static_data
-                            .exported_name
-                            .write(context.gc_context) = Some(name);
-                    }
-                } else {
-                    tracing::warn!(
-                        "Can't register export {}: Character ID {} doesn't exist",
-                        name,
-                        export.id,
-                    );
                 }
             }
-            
 
             tracing::warn!("Exporting asset: {} (ID: {})", name, export.id);
-            /*
-            // TODO: do other types of Character need to know their exported name?
-            if let Some(character) = library.character_by_id(export.id) {
-                if let Character::MovieClip(movie_clip) = character {
-                    *movie_clip
-                        .0
-                        .read()
-                        .static_data
-                        .exported_name
-                        .write(context.gc_context) = Some(name);
-                }
-            } else {
-                tracing::warn!(
-                    "Can't register export {}: Character ID {} doesn't exist",
-                    name,
-                    export.id,
-                );
-            }
-            */
         }
         Ok(())
     }
