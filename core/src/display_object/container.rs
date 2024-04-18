@@ -136,7 +136,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// Get mutable access to the raw container.
     fn raw_container_mut(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, ChildContainer<'gc>>;
 
-    /// Get a child display object by it's position in the render list.
+    /// Get a child display object by its position in the render list.
     ///
     /// The `index` provided here should not be confused with the `Depth`s used
     /// to index the depth list.
@@ -144,7 +144,7 @@ pub trait TDisplayObjectContainer<'gc>:
         self.raw_container().get_id(index)
     }
 
-    /// Get a child display object by it's position in the depth list.
+    /// Get a child display object by its position in the depth list.
     ///
     /// The `Depth` provided here should not be confused with the `index`s used
     /// to index the render list.
@@ -152,7 +152,7 @@ pub trait TDisplayObjectContainer<'gc>:
         self.raw_container().get_depth(depth)
     }
 
-    /// Get a child display object by it's instance/timeline name.
+    /// Get a child display object by its instance/timeline name.
     ///
     /// The `case_sensitive` parameter determines if we should consider
     /// children with different capitalizations as being distinct names.
@@ -477,8 +477,24 @@ pub trait TDisplayObjectContainer<'gc>:
         RenderIter::from_container(self.into())
     }
 
-    fn is_tab_children(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+    fn is_tab_children_avm1(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
         true
+    }
+
+    fn is_tab_children(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        if context.swf.is_action_script_3() {
+            self.raw_container().tab_children
+        } else {
+            self.is_tab_children_avm1(context)
+        }
+    }
+
+    fn set_tab_children(&self, context: &mut UpdateContext<'_, 'gc>, value: bool) {
+        if context.swf.is_action_script_3() {
+            self.raw_container_mut(context.gc()).tab_children = value;
+        } else {
+            tracing::warn!("Trying to set tab_children on an AVM1 object, this has no effect")
+        }
     }
 
     fn fill_tab_order(
@@ -630,6 +646,9 @@ pub struct ChildContainer<'gc> {
 
     /// The movie this ChildContainer belongs to.
     movie: Arc<SwfMovie>,
+
+    /// Specifies whether children are present in the tab ordering.
+    tab_children: bool,
 }
 
 impl<'gc> ChildContainer<'gc> {
@@ -640,6 +659,7 @@ impl<'gc> ChildContainer<'gc> {
             has_pending_removals: false,
             mouse_children: true,
             movie,
+            tab_children: true,
         }
     }
 
