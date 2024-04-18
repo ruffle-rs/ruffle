@@ -1,4 +1,18 @@
 // Method: POST
+// Data: null
+Navigator::navigate_to_url:
+  URL: https://example.com/purchase/
+  Target: _blank
+  Method: POST
+
+// Method: GET
+// Data: null
+Navigator::navigate_to_url:
+  URL: https://example.com/purchase/
+  Target: _blank
+  Method: GET
+
+// Method: POST
 // Data: 
 Navigator::navigate_to_url:
   URL: https://example.com/purchase/
