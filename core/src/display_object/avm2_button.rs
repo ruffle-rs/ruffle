@@ -833,6 +833,10 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
         self.0.has_focus.set(focused);
         self.call_focus_handler(context, focused, other);
     }
+
+    fn tab_enabled_avm2_default(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+        true
+    }
 }
 
 impl<'gc> Avm2ButtonData<'gc> {
