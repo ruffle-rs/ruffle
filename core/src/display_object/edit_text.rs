@@ -12,6 +12,7 @@ use crate::avm2::{
     Activation as Avm2Activation, EventObject as Avm2EventObject, Object as Avm2Object,
     StageObject as Avm2StageObject, TObject as _,
 };
+use crate::backend::navigator::Request;
 use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::interactive::{
@@ -2013,9 +2014,10 @@ impl<'gc> EditText<'gc> {
                 Avm2::dispatch_event(&mut activation.context, event, object);
             }
         } else {
-            context
-                .navigator
-                .navigate_to_url(&url.to_utf8_lossy(), &target.to_utf8_lossy(), None);
+            context.navigator.navigate_to_url(
+                Request::get(url.to_utf8_lossy().to_string()),
+                &target.to_utf8_lossy(),
+            );
         }
     }
 

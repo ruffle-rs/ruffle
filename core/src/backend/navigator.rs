@@ -282,25 +282,10 @@ pub trait NavigatorBackend {
     /// The `target` parameter, should be treated identically to the `target`
     /// parameter on an HTML `<a>nchor` tag.
     ///
-    /// This function may be used to send variables to an eligible target. If
-    /// desired, the `vars_method` will be specified with a suitable
-    /// `NavigationMethod` and a key-value representation of the variables to
-    /// be sent. What the backend needs to do depends on the `NavigationMethod`:
-    ///
-    /// * `GET` - Variables are appended onto the query parameters of the given
-    ///   URL.
-    /// * `POST` - Variables are sent as form data in a POST request, as if the
-    ///   user had filled out and submitted an HTML form.
-    ///
     /// Flash Player implemented sandboxing to prevent certain kinds of XSS
     /// attacks. The `NavigatorBackend` is not responsible for enforcing this
     /// sandbox.
-    fn navigate_to_url(
-        &self,
-        url: &str,
-        target: &str,
-        vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
-    );
+    fn navigate_to_url(&self, request: Request, target: &str);
 
     /// Fetch data and return it some time in the future.
     fn fetch(&self, request: Request) -> OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse>;
@@ -452,13 +437,7 @@ impl Default for NullNavigatorBackend {
 }
 
 impl NavigatorBackend for NullNavigatorBackend {
-    fn navigate_to_url(
-        &self,
-        _url: &str,
-        _target: &str,
-        _vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
-    ) {
-    }
+    fn navigate_to_url(&self, _request: Request, _target: &str) {}
 
     fn fetch(&self, request: Request) -> OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse> {
         fetch_path(self, "NullNavigatorBackend", request.url(), None)

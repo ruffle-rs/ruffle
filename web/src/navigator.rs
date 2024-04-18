@@ -6,7 +6,7 @@ use futures_util::{future, SinkExt, StreamExt};
 use gloo_net::websocket::{futures::WebSocket, Message};
 use js_sys::{Array, Uint8Array};
 use ruffle_core::backend::navigator::{
-    async_return, create_fetch_error, create_specific_fetch_error, ErrorResponse, NavigationMethod,
+    async_return, create_fetch_error, create_specific_fetch_error, Body, ErrorResponse,
     NavigatorBackend, OpenURLMode, OwnedFuture, Request, SuccessResponse,
 };
 use ruffle_core::config::NetworkingAccessMode;
@@ -100,18 +100,13 @@ impl WebNavigatorBackend {
 }
 
 impl NavigatorBackend for WebNavigatorBackend {
-    fn navigate_to_url(
-        &self,
-        url: &str,
-        target: &str,
-        vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
-    ) {
+    fn navigate_to_url(&self, request: Request, target: &str) {
         // If the URL is empty, ignore the request.
-        if url.is_empty() {
+        if request.url().is_empty() {
             return;
         }
 
-        let url = match self.resolve_url(url) {
+        let url = match self.resolve_url(request.url()) {
             Ok(url) => {
                 if url.scheme() == "file" {
                     tracing::error!(
@@ -127,7 +122,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                 tracing::error!(
                     "Could not parse URL because of {}, the corrupt URL was: {}",
                     e,
-                    url
+                    request.url()
                 );
                 return;
             }
@@ -179,52 +174,57 @@ impl NavigatorBackend for WebNavigatorBackend {
         }
 
         // TODO: Should we return a result for failed opens? Does Flash care?
-        match vars_method {
-            Some((navmethod, formvars)) => {
-                let document = window.document().expect("document()");
-                let body = match document.body() {
-                    Some(body) => body,
-                    None => return,
-                };
+        if let Body::FormData { vars, .. } = request.body() {
+            let document = window.document().expect("document()");
+            let body = match document.body() {
+                Some(body) => body,
+                None => return,
+            };
 
-                let form: HtmlFormElement = document
-                    .create_element("form")
+            let form: HtmlFormElement = document
+                .create_element("form")
+                .expect("create_element() must succeed")
+                .dyn_into()
+                .expect("create_element(\"form\") didn't give us a form");
+
+            form.set_method(&request.method().to_string());
+            form.set_action(url.as_str());
+
+            if !target.is_empty() {
+                form.set_target(target);
+            }
+
+            for (key, value) in vars.iter() {
+                let hidden: HtmlInputElement = document
+                    .create_element("input")
                     .expect("create_element() must succeed")
                     .dyn_into()
-                    .expect("create_element(\"form\") didn't give us a form");
+                    .expect("create_element(\"input\") didn't give us an input");
 
-                form.set_method(&navmethod.to_string());
-                form.set_action(url.as_str());
+                hidden.set_type("hidden");
+                hidden.set_name(&key);
+                hidden.set_value(&value);
 
-                if !target.is_empty() {
-                    form.set_target(target);
-                }
-
-                for (key, value) in formvars {
-                    let hidden: HtmlInputElement = document
-                        .create_element("input")
-                        .expect("create_element() must succeed")
-                        .dyn_into()
-                        .expect("create_element(\"input\") didn't give us an input");
-
-                    hidden.set_type("hidden");
-                    hidden.set_name(&key);
-                    hidden.set_value(&value);
-
-                    let _ = form.append_child(&hidden);
-                }
-
-                let _ = body.append_child(&form);
-                let _ = form.submit();
+                let _ = form.append_child(&hidden);
             }
-            None => {
-                if target.is_empty() {
-                    let _ = window.location().assign(url.as_str());
-                } else {
-                    let _ = window.open_with_url_and_target(url.as_str(), target);
+
+            let _ = body.append_child(&form);
+            let _ = form.submit();
+        } else {
+            let mut url = url.as_str().to_owned();
+            if let Body::Bytes { data, .. } = request.body() {
+                if !url.contains('?') {
+                    url.push('?');
                 }
+                url.push_str(&String::from_utf8_lossy(data));
             }
-        };
+
+            if target.is_empty() {
+                let _ = window.location().assign(&url);
+            } else {
+                let _ = window.open_with_url_and_target(&url, target);
+            }
+        }
     }
 
     fn fetch(&self, request: Request) -> OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse> {

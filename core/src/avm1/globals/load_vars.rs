@@ -8,7 +8,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::avm1_stub;
-use crate::backend::navigator::{NavigationMethod, Request};
+use crate::backend::navigator::{Body, NavigationMethod, Request};
 use crate::context::GcContext;
 use crate::string::AvmString;
 
@@ -186,11 +186,19 @@ fn send<'gc>(
         );
     }
 
-    activation.context.navigator.navigate_to_url(
-        &url.to_utf8_lossy(),
-        &window.to_utf8_lossy(),
-        Some((method, form_values)),
+    let request = Request::request(
+        method,
+        url.to_string(),
+        Body::FormData {
+            vars: form_values,
+            content_type: "application/x-www-form-urlencoded".into(),
+        },
     );
+
+    activation
+        .context
+        .navigator
+        .navigate_to_url(request, &window.to_utf8_lossy());
 
     Ok(true.into())
 }

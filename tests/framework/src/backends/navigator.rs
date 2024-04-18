@@ -91,21 +91,22 @@ impl TestNavigatorBackend {
 }
 
 impl NavigatorBackend for TestNavigatorBackend {
-    fn navigate_to_url(
-        &self,
-        url: &str,
-        target: &str,
-        vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
-    ) {
+    fn navigate_to_url(&self, request: Request, target: &str) {
         // Log request.
         if let Some(log) = &self.log {
             log.avm_trace("Navigator::navigate_to_url:");
-            log.avm_trace(&format!("  URL: {}", url));
+            log.avm_trace(&format!("  URL: {}", request.url()));
             log.avm_trace(&format!("  Target: {}", target));
-            if let Some((method, vars)) = vars_method {
-                log.avm_trace(&format!("  Method: {}", method));
-                for (key, value) in vars {
-                    log.avm_trace(&format!("  Param: {}={}", key, value));
+            log.avm_trace(&format!("  Method: {}", request.method()));
+            match request.body() {
+                Body::None => {}
+                Body::FormData { vars, .. } => {
+                    for (key, value) in vars {
+                        log.avm_trace(&format!("  Param: {}={}", key, value));
+                    }
+                }
+                Body::Bytes { data, .. } => {
+                    log.avm_trace(&format!("  Data: {}", String::from_utf8_lossy(data)));
                 }
             }
         }

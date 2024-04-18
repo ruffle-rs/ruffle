@@ -1,4 +1,18 @@
 // Method: POST
+// Data: null
+Navigator::navigate_to_url:
+  URL: https://example.com/purchase/
+  Target: _blank
+  Method: POST
+
+// Method: GET
+// Data: null
+Navigator::navigate_to_url:
+  URL: https://example.com/purchase/
+  Target: _blank
+  Method: GET
+
+// Method: POST
 // Data: 
 Navigator::navigate_to_url:
   URL: https://example.com/purchase/
@@ -23,22 +37,22 @@ Navigator::navigate_to_url:
 // Method: GET
 // Data: sku=Test
 Navigator::navigate_to_url:
-  URL: https://example.com/purchase/
+  URL: https://example.com/purchase/?sku=Test
   Target: _blank
   Method: GET
-  Param: sku=Test
 
 // Method: POST
-// Data: sku=Test
+// Data: testing
 Navigator::navigate_to_url:
-  URL: https://example.com/purchase/?sku=Test
+  URL: https://example.com/purchase/
   Target: _blank
   Method: POST
+  Data: testing
 
 // Method: GET
-// Data: sku=Test
+// Data: testing
 Navigator::navigate_to_url:
-  URL: https://example.com/purchase/?sku=Test
+  URL: https://example.com/purchase/?testing
   Target: _blank
   Method: GET
 

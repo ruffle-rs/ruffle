@@ -14,7 +14,6 @@ use ruffle_core::backend::navigator::{
     async_return, create_fetch_error, ErrorResponse, NavigationMethod, NavigatorBackend,
     OpenURLMode, OwnedFuture, Request, SocketMode, SuccessResponse,
 };
-use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
 use std::collections::HashSet;
@@ -115,45 +114,36 @@ impl<F: FutureSpawner, I: NavigatorInterface> ExternalNavigatorBackend<F, I> {
 }
 
 impl<F: FutureSpawner, I: NavigatorInterface> NavigatorBackend for ExternalNavigatorBackend<F, I> {
-    fn navigate_to_url(
-        &self,
-        url: &str,
-        _target: &str,
-        vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
-    ) {
+    fn navigate_to_url(&self, request: Request, _target: &str) {
         //TODO: Should we return a result for failed opens? Does Flash care?
+
+        // Note: On desktop the Flash Player appends the POST body as a search
+        // parameter to the URL. (In a sense it treats "POST" like "GET")
+        let mut full_url = request.url().to_owned();
+        if let Some((bytes, _)) = request.body().to_bytes_and_mime() {
+            if !bytes.is_empty() {
+                if !full_url.contains('?') {
+                    full_url.push('?');
+                }
+                full_url.push_str(&String::from_utf8_lossy(&bytes));
+            }
+        }
 
         //NOTE: Flash desktop players / projectors ignore the window parameter,
         //      unless it's a `_layer`, and we shouldn't handle that anyway.
-        let mut parsed_url = match self.resolve_url(url) {
+        let url = match self.resolve_url(&full_url) {
             Ok(parsed_url) => parsed_url,
             Err(e) => {
                 tracing::error!(
                     "Could not parse URL because of {}, the corrupt URL was: {}",
                     e,
-                    url
+                    request.url()
                 );
                 return;
             }
         };
 
-        let modified_url = match vars_method {
-            Some((_, query_pairs)) => {
-                {
-                    //lifetime limiter because we don't have NLL yet
-                    let mut modifier = parsed_url.query_pairs_mut();
-
-                    for (k, v) in query_pairs.iter() {
-                        modifier.append_pair(k, v);
-                    }
-                }
-
-                parsed_url
-            }
-            None => parsed_url,
-        };
-
-        if modified_url.scheme() == "javascript" {
+        if url.scheme() == "javascript" {
             tracing::warn!(
                 "SWF tried to run a script on desktop, but javascript calls are not allowed"
             );
@@ -161,7 +151,7 @@ impl<F: FutureSpawner, I: NavigatorInterface> NavigatorBackend for ExternalNavig
         }
 
         if self.open_url_mode == OpenURLMode::Confirm {
-            if !self.interface.confirm_website_navigation(&modified_url) {
+            if !self.interface.confirm_website_navigation(&url) {
                 tracing::info!("SWF tried to open a website, but the user declined the request");
                 return;
             }
@@ -176,9 +166,9 @@ impl<F: FutureSpawner, I: NavigatorInterface> NavigatorBackend for ExternalNavig
         // in the default program for the respective filetype.
         // This especially includes mailto links. Ruffle opens the browser which opens
         // the preferred program while flash opens the preferred program directly.
-        match webbrowser::open(modified_url.as_ref()) {
+        match webbrowser::open(url.as_ref()) {
             Ok(_output) => {}
-            Err(e) => tracing::error!("Could not open URL {}: {}", modified_url.as_str(), e),
+            Err(e) => tracing::error!("Could not open URL {}: {}", url.as_str(), e),
         };
     }
 

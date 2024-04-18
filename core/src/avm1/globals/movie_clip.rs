@@ -7,7 +7,7 @@ use crate::avm1::globals::{self, bitmap_filter, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{self, ArrayObject, Object, ScriptObject, TObject, Value};
-use crate::backend::navigator::NavigationMethod;
+use crate::backend::navigator::{Body, NavigationMethod, Request};
 use crate::context::{GcContext, UpdateContext};
 use crate::display_object::{Bitmap, EditText, MovieClip};
 use crate::ecma_conversions::f64_to_wrapping_i32;
@@ -1564,13 +1564,23 @@ pub fn get_url<'gc>(
             Some(Value::String(s)) => NavigationMethod::from_method_str(s),
             _ => None,
         };
-        let vars_method = method.map(|m| (m, activation.locals_into_form_values()));
 
-        activation.context.navigator.navigate_to_url(
-            &url.to_utf8_lossy(),
-            &window.to_utf8_lossy(),
-            vars_method,
-        );
+        let request = match method {
+            Some(method) => Request::request(
+                method,
+                url.to_string(),
+                Body::FormData {
+                    vars: activation.locals_into_form_values(),
+                    content_type: "application/x-www-form-urlencoded".into(),
+                },
+            ),
+            None => Request::get(url.to_string()),
+        };
+
+        activation
+            .context
+            .navigator
+            .navigate_to_url(request, &window.to_utf8_lossy());
     }
 
     Ok(Value::Undefined)

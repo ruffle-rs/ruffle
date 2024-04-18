@@ -1235,11 +1235,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if let Some(fscommand) = fscommand::parse(&url) {
             fscommand::handle(fscommand, &target, self)?;
         } else {
-            self.context.navigator.navigate_to_url(
-                &url.to_utf8_lossy(),
-                &target.to_utf8_lossy(),
-                None,
-            );
+            self.context
+                .navigator
+                .navigate_to_url(Request::get(url.to_string()), &target.to_utf8_lossy());
         }
 
         Ok(FrameControl::Continue)
@@ -1385,14 +1383,21 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         // `getURL` call.
-        let vars = match NavigationMethod::from_send_vars_method(action.send_vars_method()) {
-            Some(method) => Some((method, self.locals_into_form_values())),
-            None => None,
+        let request = match NavigationMethod::from_send_vars_method(action.send_vars_method()) {
+            Some(method) => Request::request(
+                method,
+                url.to_string(),
+                Body::FormData {
+                    vars: self.locals_into_form_values(),
+                    content_type: "application/x-www-form-urlencoded".into(),
+                },
+            ),
+            None => Request::get(url.to_string()),
         };
 
         self.context
             .navigator
-            .navigate_to_url(&url.to_utf8_lossy(), &target.to_utf8_lossy(), vars);
+            .navigate_to_url(request, &target.to_utf8_lossy());
 
         Ok(FrameControl::Continue)
     }

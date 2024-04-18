@@ -11,12 +11,14 @@ package {
             variables.sku = "Test";
             var empty_variables:URLVariables = new URLVariables();
             var cases:Array = [
+                ["POST", null],
+                ["GET", null],
                 ["POST", empty_variables],
                 ["GET", empty_variables],
                 ["POST", variables],
                 ["GET", variables],
-                ["POST", "sku=Test"],
-                ["GET", "sku=Test"]
+                ["POST", "testing"],
+                ["GET", "testing"]
             ];
             for each (var case_tuple:Array in cases) {
                 var method:String = case_tuple[0];
