@@ -12,6 +12,8 @@ text3._visible = false;
 text6.selectable = false;
 clip9._visible = false;
 button11._visible = false;
+text12.type = "dynamic";
+text12.tabEnabled = true;
 
 var objects = [
     text1,
@@ -26,7 +28,8 @@ var objects = [
     clip9,
     clip9.text,
     button10,
-    button11
+    button11,
+    text12
 ];
 
 var tabbedObjects = [];
