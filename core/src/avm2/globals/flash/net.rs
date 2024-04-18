@@ -55,7 +55,7 @@ fn parse_data<'gc>(
     if data.is_of_type(activation, urlvariables) {
         let obj = data.coerce_to_object(activation)?;
         vars = object_to_index_map(activation, &obj).unwrap_or_default();
-    } else {
+    } else if *data != Value::Null {
         let str_data = data.coerce_to_string(activation)?.to_string();
         if !url.contains('?') {
             url.push('?');

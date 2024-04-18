@@ -138,7 +138,7 @@ impl<F: FutureSpawner, I: NavigatorInterface> NavigatorBackend for ExternalNavig
         };
 
         let modified_url = match vars_method {
-            Some((_, query_pairs)) => {
+            Some((_, query_pairs)) if !query_pairs.is_empty() => {
                 {
                     //lifetime limiter because we don't have NLL yet
                     let mut modifier = parsed_url.query_pairs_mut();
@@ -150,7 +150,7 @@ impl<F: FutureSpawner, I: NavigatorInterface> NavigatorBackend for ExternalNavig
 
                 parsed_url
             }
-            None => parsed_url,
+            _ => parsed_url,
         };
 
         if modified_url.scheme() == "javascript" {
