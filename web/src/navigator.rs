@@ -265,10 +265,10 @@ impl NavigatorBackend for WebNavigatorBackend {
             init.method(&request.method().to_string());
             init.credentials(credentials);
 
-            if let Some((data, mime)) = request.body() {
+            if let Some((data, mime)) = request.body().to_bytes_and_mime() {
                 let blob = Blob::new_with_buffer_source_sequence_and_options(
                     &Array::from_iter([Uint8Array::from(data.as_slice()).buffer()]),
-                    BlobPropertyBag::new().type_(mime),
+                    BlobPropertyBag::new().type_(&mime),
                 )
                 .map_err(|_| ErrorResponse {
                     url: url.to_string(),

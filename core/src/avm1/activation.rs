@@ -6,7 +6,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::runtime::skip_actions;
 use crate::avm1::scope::{Scope, ScopeClass};
 use crate::avm1::{fscommand, globals, scope, ArrayObject, ScriptObject, Value};
-use crate::backend::navigator::{NavigationMethod, Request};
+use crate::backend::navigator::{Body, NavigationMethod, Request};
 use crate::context::UpdateContext;
 use crate::display_object::{
     DisplayObject, DisplayObjectContainer, MovieClip, TDisplayObject, TDisplayObjectContainer,
@@ -2501,10 +2501,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     NavigationMethod::Get => Request::get(format!("{url}&{qstring}")),
                     NavigationMethod::Post => Request::post(
                         url.to_utf8_lossy().into_owned(),
-                        Some((
-                            qstring.as_bytes().to_owned(),
-                            "application/x-www-form-urlencoded".to_string(),
-                        )),
+                        Body::Bytes {
+                            data: qstring.as_bytes().to_owned(),
+                            content_type: "application/x-www-form-urlencoded".to_string(),
+                        },
                     ),
                 }
             }

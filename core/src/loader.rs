@@ -13,7 +13,7 @@ use crate::avm2::{
     Activation as Avm2Activation, Avm2, BitmapDataObject, Domain as Avm2Domain,
     Object as Avm2Object, Value as Avm2Value,
 };
-use crate::backend::navigator::{ErrorResponse, OwnedFuture, Request, SuccessResponse};
+use crate::backend::navigator::{Body, ErrorResponse, OwnedFuture, Request, SuccessResponse};
 use crate::backend::ui::DialogResultFuture;
 use crate::bitmap::bitmap_data::Color;
 use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
@@ -3020,10 +3020,10 @@ impl<'gc> Loader<'gc> {
             // Upload the data
             let req = Request::post(
                 url,
-                Some((
-                    out_data,
-                    "multipart/form-data; boundary=------------BOUNDARY".to_string(),
-                )),
+                Body::Bytes {
+                    data: out_data,
+                    content_type: "multipart/form-data; boundary=------------BOUNDARY".into(),
+                },
             );
             // Doing this in two steps to prevent holding the player lock during fetch
             let future = player.lock().unwrap().navigator().fetch(req);

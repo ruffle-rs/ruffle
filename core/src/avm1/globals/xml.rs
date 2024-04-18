@@ -6,7 +6,7 @@ use crate::avm1::{
     Activation, Attribute, Error, NativeObject, Object, ScriptObject, TObject, Value,
 };
 use crate::avm_warn;
-use crate::backend::navigator::Request;
+use crate::backend::navigator::{Body, Request};
 use crate::context::GcContext;
 use crate::string::{AvmString, WStr, WString};
 use crate::xml::{custom_unescape, XmlNode, ELEMENT_NODE, TEXT_NODE};
@@ -505,10 +505,10 @@ fn spawn_xml_fetch<'gc>(
         let string = node.into_string(activation)?;
         Request::post(
             url,
-            Some((
-                string.to_utf8_lossy().into_owned().into_bytes(),
-                "application/x-www-form-urlencoded".to_string(),
-            )),
+            Body::Bytes {
+                data: string.to_utf8_lossy().into_owned().into_bytes(),
+                content_type: "application/x-www-form-urlencoded".into(),
+            },
         )
     } else {
         // Not sending any parameters.

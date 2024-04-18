@@ -2,7 +2,7 @@ use crate::avm2::object::{
     NetConnectionObject as Avm2NetConnectionObject, ResponderObject as Avm2ResponderObject,
 };
 use crate::avm2::{Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject};
-use crate::backend::navigator::{ErrorResponse, NavigatorBackend, OwnedFuture, Request};
+use crate::backend::navigator::{Body, ErrorResponse, NavigatorBackend, OwnedFuture, Request};
 use crate::context::UpdateContext;
 use crate::loader::Error;
 use crate::string::AvmString;
@@ -455,7 +455,13 @@ impl FlashRemoting {
                 .expect("Could not upgrade weak reference to player");
             let bytes = flash_lso::packet::write::write_to_bytes(&packet, true)
                 .expect("Must be able to serialize a packet");
-            let request = Request::post(url, Some((bytes, "application/x-amf".to_string())));
+            let request = Request::post(
+                url,
+                Body::Bytes {
+                    data: bytes,
+                    content_type: "application/x-amf".into(),
+                },
+            );
             let fetch = player.lock().unwrap().navigator().fetch(request);
             let response: Result<_, ErrorResponse> = async {
                 let response = fetch.await?;

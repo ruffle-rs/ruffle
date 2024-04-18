@@ -14,7 +14,7 @@ use crate::avm2::ClassObject;
 use crate::avm2::Multiname;
 use crate::avm2::{Error, Object};
 use crate::avm2_stub_method;
-use crate::backend::navigator::{NavigationMethod, Request};
+use crate::backend::navigator::{Body, NavigationMethod, Request};
 use crate::display_object::LoaderDisplay;
 use crate::display_object::MovieClip;
 use crate::loader::LoadManager;
@@ -115,6 +115,32 @@ pub fn load<'gc>(
     Ok(Value::Undefined)
 }
 
+fn body_from_urlvariables<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    obj: Object<'gc>,
+    content_type: String,
+) -> Result<Body, Error<'gc>> {
+    let mut vars = IndexMap::new();
+
+    let mut last_index = obj.get_next_enumerant(0, activation)?;
+    while let Some(index) = last_index {
+        let name = obj
+            .get_enumerant_name(index, activation)?
+            .coerce_to_string(activation)?;
+        let value = obj
+            .get_public_property(name, activation)?
+            .coerce_to_string(activation)?
+            .to_utf8_lossy()
+            .to_string();
+
+        let name = name.to_utf8_lossy().to_string();
+        vars.insert(name, value);
+        last_index = obj.get_next_enumerant(index, activation)?;
+    }
+
+    Ok(Body::FormData { vars, content_type })
+}
+
 pub fn request_from_url_request<'gc>(
     activation: &mut Activation<'_, 'gc>,
     url_request: Object<'gc>,
@@ -163,7 +189,7 @@ pub fn request_from_url_request<'gc>(
         NavigationMethod::from_method_str(&method).expect("URLRequest should have a valid method");
     let data = url_request.get_public_property("data", activation)?;
     let body = match (method, data) {
-        (_, Value::Null | Value::Undefined) => None,
+        (_, Value::Null | Value::Undefined) => Body::None,
         (NavigationMethod::Get, data) => {
             // This looks "wrong" but it's Flash-correct.
             // It simply appends the data to the URL if there's already a query,
@@ -174,24 +200,39 @@ pub fn request_from_url_request<'gc>(
                 url.push('?');
             }
             url.push_str(&data.coerce_to_string(activation)?.to_string());
-            None
+            Body::None
         }
         (NavigationMethod::Post, data) => {
             let content_type = url_request
                 .get_public_property("contentType", activation)?
                 .coerce_to_string(activation)?
                 .to_string();
-            if let Some(ba) = data.as_object().and_then(|o| o.as_bytearray_object()) {
+            if let Some(vars) = data.as_object().filter(|obj| {
+                obj.is_of_type(
+                    activation
+                        .avm2()
+                        .classes()
+                        .urlvariables
+                        .inner_class_definition(),
+                    &mut activation.context,
+                )
+            }) {
+                body_from_urlvariables(activation, vars, content_type)?
+            } else if let Some(ba) = data.as_object().and_then(|o| o.as_bytearray_object()) {
                 // Note that this does *not* respect or modify the position.
-                Some((ba.storage().bytes().to_vec(), content_type))
+                Body::Bytes {
+                    data: ba.storage().bytes().to_vec(),
+                    content_type,
+                }
             } else {
-                Some((
-                    data.coerce_to_string(activation)?
+                Body::Bytes {
+                    data: data
+                        .coerce_to_string(activation)?
                         .to_utf8_lossy()
                         .as_bytes()
                         .to_vec(),
                     content_type,
-                ))
+                }
             }
         }
     };

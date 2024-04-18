@@ -4,7 +4,7 @@ use async_channel::{Receiver, Sender};
 use percent_encoding::percent_decode_str;
 use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::{
-    async_return, create_fetch_error, ErrorResponse, NavigationMethod, NavigatorBackend,
+    async_return, create_fetch_error, Body, ErrorResponse, NavigationMethod, NavigatorBackend,
     NullExecutor, NullSpawner, OwnedFuture, Request, SuccessResponse,
 };
 use ruffle_core::indexmap::IndexMap;
@@ -160,12 +160,12 @@ impl NavigatorBackend for TestNavigatorBackend {
                         .join("\n")
                 ))
             }
-            if let Some((body, mime_type)) = request.body() {
-                log.avm_trace(&format!("  Mime-Type: {}", mime_type));
-                if mime_type == "application/x-www-form-urlencoded" {
-                    log.avm_trace(&format!("  Body: {}", String::from_utf8_lossy(body)));
+            if let Body::Bytes { data, content_type } = request.body() {
+                log.avm_trace(&format!("  Mime-Type: {}", content_type));
+                if content_type == "application/x-www-form-urlencoded" {
+                    log.avm_trace(&format!("  Body: {}", String::from_utf8_lossy(data)));
                 } else {
-                    log.avm_trace(&format!("  Body: {:02X?}", body));
+                    log.avm_trace(&format!("  Body: {:02X?}", data));
                 }
             }
         }

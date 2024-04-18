@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 use std::pin::Pin;
 use std::time::Duration;
 use swf::avm1::types::SendVarsMethod;
-use url::{ParseError, Url};
+use url::{form_urlencoded, ParseError, Url};
 
 /// Attempt to convert a relative URL into an absolute URL, using the base URL
 /// if necessary.
@@ -105,6 +105,38 @@ impl fmt::Display for NavigationMethod {
     }
 }
 
+/// The (optional) body of a request, usually for POST.
+pub enum Body {
+    /// Don't send any body.
+    None,
+
+    /// Form data variables
+    FormData {
+        vars: IndexMap<String, String>,
+        content_type: String,
+    },
+
+    /// Raw data bytes
+    Bytes { data: Vec<u8>, content_type: String },
+}
+
+impl Body {
+    pub fn to_bytes_and_mime(&self) -> Option<(Vec<u8>, &str)> {
+        match self {
+            Self::None => None,
+            Self::FormData { vars, content_type } => {
+                let bytes = form_urlencoded::Serializer::new(String::new())
+                    .extend_pairs(vars.iter())
+                    .finish()
+                    .as_bytes()
+                    .to_owned();
+                Some((bytes, &content_type))
+            }
+            Self::Bytes { data, content_type } => Some((data.clone(), &content_type)),
+        }
+    }
+}
+
 /// A fetch request.
 pub struct Request {
     /// The URL of the request.
@@ -117,7 +149,7 @@ pub struct Request {
     /// having a body.
     ///
     /// The body consists of data and a mime type.
-    body: Option<(Vec<u8>, String)>,
+    body: Body,
 
     /// The headers for the request, as (header_name, header_value) pairs.
     /// Flash appears to iterate over an internal hash table to determine
@@ -133,13 +165,13 @@ impl Request {
         Self {
             url,
             method: NavigationMethod::Get,
-            body: None,
+            body: Body::None,
             headers: Default::default(),
         }
     }
 
     /// Construct a POST request.
-    pub fn post(url: String, body: Option<(Vec<u8>, String)>) -> Self {
+    pub fn post(url: String, body: Body) -> Self {
         Self {
             url,
             method: NavigationMethod::Post,
@@ -150,7 +182,7 @@ impl Request {
 
     /// Construct a request with the given method and data
     #[allow(clippy::self_named_constructors)]
-    pub fn request(method: NavigationMethod, url: String, body: Option<(Vec<u8>, String)>) -> Self {
+    pub fn request(method: NavigationMethod, url: String, body: Body) -> Self {
         Self {
             url,
             method,
@@ -170,12 +202,12 @@ impl Request {
     }
 
     /// Retrieve the body of this request, if it exists.
-    pub fn body(&self) -> &Option<(Vec<u8>, String)> {
+    pub fn body(&self) -> &Body {
         &self.body
     }
 
-    pub fn set_body(&mut self, body: (Vec<u8>, String)) {
-        self.body = Some(body);
+    pub fn set_body(&mut self, body: Body) {
+        self.body = body;
     }
 
     pub fn headers(&self) -> &IndexMap<String, String> {

@@ -229,13 +229,15 @@ impl<F: FutureSpawner, I: NavigatorInterface> NavigatorBackend for ExternalNavig
                     NavigationMethod::Get => client.get(processed_url.clone()),
                     NavigationMethod::Post => client.post(processed_url.clone()),
                 };
-                let (body_data, mime) = request.body().clone().unwrap_or_default();
+
                 for (name, val) in request.headers().iter() {
                     request_builder = request_builder.header(name, val);
                 }
-                request_builder = request_builder.header("Content-Type", &mime);
 
-                request_builder = request_builder.body(body_data);
+                if let Some((bytes, mime)) = request.body().to_bytes_and_mime() {
+                    request_builder = request_builder.header("Content-Type", mime);
+                    request_builder = request_builder.body(bytes);
+                }
 
                 let response = spawn_tokio(request_builder.send()).await.map_err(|e| {
                     let inner = if e.is_connect() {
