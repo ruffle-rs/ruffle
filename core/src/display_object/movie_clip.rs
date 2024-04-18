@@ -19,7 +19,7 @@ use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::binary_data::BinaryData;
 use crate::character::{Character, CompressedBitmap};
 use crate::context::{ActionType, RenderContext, UpdateContext};
-use crate::context_stub;
+use crate::{context_stub, library};
 use crate::display_object::container::{dispatch_removed_event, ChildContainer};
 use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
@@ -189,6 +189,12 @@ pub struct MovieClipData<'gc> {
 
     /// Attached audio (AVM1)
     attached_audio: Option<NetStream<'gc>>,
+
+    // TODO Consider moving this to InteractiveObject along with
+    //      TextField's and Button's tab indices after AVM2 analysis
+    tab_index: Option<i32>,
+
+    importer_movie: Option<Arc<SwfMovie>>,
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -224,6 +230,8 @@ impl<'gc> MovieClip<'gc> {
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
                 attached_audio: None,
+                tab_index: None,
+                importer_movie: None,
             },
         ))
     }
@@ -265,6 +273,8 @@ impl<'gc> MovieClip<'gc> {
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
                 attached_audio: None,
+                tab_index: None,
+                importer_movie: None,
             },
         ));
         clip.set_avm2_class(gc_context, Some(class));
@@ -309,12 +319,83 @@ impl<'gc> MovieClip<'gc> {
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
                 attached_audio: None,
+                tab_index: None,
+                importer_movie: None,
             },
         ))
     }
 
     pub fn downgrade(self) -> MovieClipWeak<'gc> {
         MovieClipWeak(GcCell::downgrade(self.0))
+    }
+
+    pub fn new_import_assets(
+        activation: &mut Avm2Activation<'_, 'gc>,
+        movie: Arc<SwfMovie>,
+        parent: Arc<SwfMovie>
+    ) -> Self {
+        let num_frames = movie.num_frames();
+
+        let loader_info = if movie.is_action_script_3() {
+            // The root movie doesn't have a `Loader`
+            // We will replace this with a `LoaderStream::Swf` later in this function
+            let loader_info =
+                LoaderInfoObject::not_yet_loaded(activation, movie.clone(), None, None, false)
+                    .expect("Failed to construct LoaderInfoObject");
+            let loader_info_obj = loader_info.as_loader_info_object().unwrap();
+            loader_info_obj.set_expose_content(activation.context.gc_context);
+            loader_info_obj.set_content_type(ContentType::Swf, activation.context.gc_context);
+            Some(loader_info)
+        } else {
+            None
+        };
+
+        let mc = MovieClip(GcCell::new(
+            activation.context.gc_context,
+            MovieClipData {
+                base: Default::default(),
+                static_data: Gc::new(
+                    activation.context.gc_context,
+                    MovieClipStatic::with_data(
+                        0,
+                        movie.clone().into(),
+                        num_frames,
+                        loader_info,
+                        activation.context.gc_context,
+                    ),
+                ),
+                tag_stream_pos: 0,
+                current_frame: 0,
+                audio_stream: None,
+                container: ChildContainer::new(movie.clone()),
+                object: None,
+                clip_event_handlers: Vec::new(),
+                clip_event_flags: ClipEventFlag::empty(),
+                frame_scripts: Vec::new(),
+                flags: MovieClipFlags::PLAYING,
+                avm2_class: None,
+                drawing: Drawing::new(),
+                has_focus: false,
+                avm2_enabled: true,
+                avm2_use_hand_cursor: true,
+                button_mode: false,
+                last_queued_script_frame: None,
+                queued_script_frame: None,
+                queued_goto_frame: None,
+                drop_target: None,
+                hit_area: None,
+
+                #[cfg(feature = "timeline_debug")]
+                tag_frame_boundaries: Default::default(),
+                queued_tags: HashMap::new(),
+                attached_audio: None,
+                tab_index: None,
+                //importer_movie: None,
+                importer_movie: Some(parent.clone()),
+            },
+        ));
+
+        mc
     }
 
     /// Construct a movie clip that represents the root movie
@@ -376,6 +457,8 @@ impl<'gc> MovieClip<'gc> {
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
                 attached_audio: None,
+                tab_index: None,
+                importer_movie: None,
             },
         ));
 
@@ -4063,6 +4146,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         chunk_limit: &mut ExecutionLimit,
     ) -> Result<(), Error> {
         let mut activation = Avm2Activation::from_nothing(context.reborrow());
+        let library = context.library.library_for_movie_mut(self.movie());
 
         let asset_url = url.to_string_lossy(UTF_8);
 
@@ -4083,6 +4167,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             Some(url),
             context,
             chunk_limit,
+            self.movie()
         );
 
         context.navigator.spawn_future(fut);
@@ -4090,7 +4175,8 @@ impl<'gc, 'a> MovieClipData<'gc> {
         for asset in exported_assets {
             let name = asset.name.decode(reader.encoding());
             let name = AvmString::new(context.gc_context, name);
-            let library = context.library.library_for_movie_mut(self.movie());
+            let id = asset.id;
+            tracing::warn!("Importing asset: {} (ID: {})", name, id);
         }
 
         //context_stub!(context, "ImportAssets2 tag");
@@ -4113,29 +4199,47 @@ impl<'gc, 'a> MovieClipData<'gc> {
     }
 
     #[inline]
+    fn get_registered_character_by_id(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc>,
+        id: CharacterId,
+    ) -> Result<Character<'gc>, Error> {
+        let library_for_movie = context.library.library_for_movie(self.movie());
+            
+        if let Some(library) = library_for_movie {
+            if let Some(character) = library.character_by_id(id) {
+                return Ok(character.clone());
+            }
+        }
+        return Err(Error::InvalidSwf(swf::error::Error::invalid_data("message")));
+    }
+
+    #[inline]
     fn export_assets(
         &mut self,
         context: &mut UpdateContext<'_, 'gc>,
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
-        let exports = reader.read_export_assets();
-
-        let exports = match exports {
-            Ok(exports) => exports,
-            Err(e) => {
-                tracing::warn!("Error reading ExportAssets tag: {:?}", e);
-                return Err(tag_utils::Error::InvalidSwf(e));
-            }
-        };
-
+        let exports = reader.read_export_assets()?;
+        //return Ok(());
         for export in exports {
             let name = export.name.decode(reader.encoding());
             let name = AvmString::new(context.gc_context, name);
-            let library = context.library.library_for_movie_mut(self.movie());
-            library.register_export(export.id, name);
+
+            let character = self.get_registered_character_by_id(context, export.id)?;
+
+            if self.importer_movie.is_some() {                    
+                let parent = self.importer_movie.as_ref().unwrap().clone();
+                let parent_library = context.library.library_for_movie_mut(parent);
+
+                parent_library.register_character(export.id, character);
+                parent_library.register_export(export.id, name);
+                tracing::warn!("Registering parent asset: {} (ID: {})", name, export.id);
+            }
+            
 
             tracing::warn!("Exporting asset: {} (ID: {})", name, export.id);
-
+            /*
             // TODO: do other types of Character need to know their exported name?
             if let Some(character) = library.character_by_id(export.id) {
                 if let Character::MovieClip(movie_clip) = character {
@@ -4153,6 +4257,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
                     export.id,
                 );
             }
+            */
         }
         Ok(())
     }

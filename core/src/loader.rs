@@ -366,6 +366,7 @@ impl<'gc> LoadManager<'gc> {
         loader_url: Option<String>,
         uc: &mut UpdateContext<'_, 'gc>,
         chunk_limit: &mut ExecutionLimit,
+        importer_movie: Arc<SwfMovie>
     ) -> OwnedFuture<(), Error> {
         let player = player
             .upgrade()
@@ -400,18 +401,29 @@ impl<'gc> LoadManager<'gc> {
                             let movie = Arc::new(movie);
 
                             player.lock().unwrap().mutate_with_update_context(|uc| {
-                                let clip = MovieClip::new(movie, uc.gc_context);
+                                //let clip = MovieClip::new(movie, uc.gc_context);
+
+                                let stage_domain = uc.avm2.stage_domain();
+                                let mut activation = Avm2Activation::from_domain(uc.reborrow(), stage_domain);
+
+                                let clip = MovieClip::new_import_assets(&mut activation, movie, importer_movie);
+
+                                clip.set_cur_preload_frame(uc.gc_context, 0);
                                 let mut execution_limit = ExecutionLimit::none();
 
                                 let loader_is_avm2 = true;
                                 if loader_is_avm2 && !is_movie_as3 {
                                     // When an AVM2 movie loads an AVM1 movie, we need to call `post_instantiation` here.
-                                    clip.post_instantiation(uc, None, Instantiator::Movie, false);
+                                    //clip.post_instantiation(uc, None, Instantiator::Movie, false);
 
-                                    clip.set_depth(uc.gc_context, LOADER_INSERTED_AVM1_DEPTH);
+                                    //clip.set_depth(uc.gc_context, LOADER_INSERTED_AVM1_DEPTH);
                                 }
+                                tracing::warn!("Preloading swf to run exports {:?}", url);
 
-                                clip.preload(uc, &mut execution_limit);
+                                // Create library for exports before preloading
+                                uc.library.library_for_movie_mut(clip.movie());
+                                let res = clip.preload(uc, &mut execution_limit);
+                                tracing::warn!("Preloaded swf to run exports result {:?} {}", url, res);
                             });
 
                             /*let slice = SwfSlice::from(movie.clone());
