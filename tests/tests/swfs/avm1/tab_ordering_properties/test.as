@@ -96,6 +96,9 @@ function testProperties(obj) {
 
 trace('===== text =====');
 testProperties(text);
+trace('===== non-editable text =====');
+text2.type = "dynamic";
+testProperties(text2);
 trace('===== button =====');
 testProperties(button);
 trace('===== movie clip =====');
