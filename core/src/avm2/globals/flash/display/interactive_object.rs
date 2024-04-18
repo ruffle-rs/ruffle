@@ -121,20 +121,28 @@ pub fn set_context_menu<'gc>(
 
 pub fn get_tab_enabled<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.InteractiveObject", "tabEnabled");
-
-    Ok(false.into())
+    if let Some(obj) = this.as_display_object().and_then(|o| o.as_interactive()) {
+        Ok(Value::Bool(obj.tab_enabled(&mut activation.context)))
+    } else {
+        Ok(Value::Undefined)
+    }
 }
 
 pub fn set_tab_enabled<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.display.InteractiveObject", "tabIndex");
+    if let Some(obj) = this
+        .as_display_object()
+        .and_then(|this| this.as_interactive())
+    {
+        let value = args.get_bool(0);
+        obj.set_tab_enabled(&mut activation.context, value);
+    }
 
     Ok(Value::Undefined)
 }
