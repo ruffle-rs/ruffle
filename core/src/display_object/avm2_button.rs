@@ -826,11 +826,12 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
 
     fn on_focus_changed(
         &self,
-        _context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'_, 'gc>,
         focused: bool,
-        _other: Option<InteractiveObject<'gc>>,
+        other: Option<InteractiveObject<'gc>>,
     ) {
         self.0.has_focus.set(focused);
+        self.call_focus_handler(context, focused, other);
     }
 }
 
