@@ -4159,6 +4159,15 @@ impl<'gc, 'a> MovieClipData<'gc> {
             context.gc_context,
         );
 
+        for asset in exported_assets {
+            let name = asset.name.decode(reader.encoding());
+            let name = AvmString::new(context.gc_context, name);
+            let id = asset.id;
+            tracing::warn!("Importing asset: {} (ID: {})", name, id);
+
+            library.register_import(name, id);
+        }
+
         let player = context.player.clone();
         let fut = LoadManager::load_asset_movie(
             player,
@@ -4170,14 +4179,11 @@ impl<'gc, 'a> MovieClipData<'gc> {
             self.movie()
         );
 
+
+
         context.navigator.spawn_future(fut);
 
-        for asset in exported_assets {
-            let name = asset.name.decode(reader.encoding());
-            let name = AvmString::new(context.gc_context, name);
-            let id = asset.id;
-            tracing::warn!("Importing asset: {} (ID: {})", name, id);
-        }
+
 
         //context_stub!(context, "ImportAssets2 tag");
 
@@ -4232,9 +4238,13 @@ impl<'gc, 'a> MovieClipData<'gc> {
                 let parent = self.importer_movie.as_ref().unwrap().clone();
                 let parent_library = context.library.library_for_movie_mut(parent);
 
-                parent_library.register_character(export.id, character);
-                parent_library.register_export(export.id, name);
-                tracing::warn!("Registering parent asset: {} (ID: {})", name, export.id);
+                if let Some(id) = parent_library.character_id_by_import_name(name) {
+                    parent_library.register_character(id, character);
+                    parent_library.register_export(id, name);
+                    tracing::warn!("Registering parent asset: {} (ID: {})", name, export.id);
+                }
+
+                
             }
             
 
