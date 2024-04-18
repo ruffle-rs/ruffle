@@ -387,10 +387,10 @@ impl<'gc> LoadManager<'gc> {
                             //let movie = SwfMovie::from_data(&body, url.clone(), Some(url.clone()));
                             //let movie = movie.unwrap();
 
-                            if !url.contains("/Tank.swf") {
+                            /*if !url.contains("/Tank.swf") {
                                 tracing::warn!("Skipping non Tank.swf");
                                 return Ok(());
-                            }
+                            }*/
 
                             let movie = SwfMovie::from_data(&body, url.clone(), Some(url.clone()))
                                 .expect("Could not load movie");
@@ -439,7 +439,9 @@ impl<'gc> LoadManager<'gc> {
                         _ => Ok(()),
                     }
                 }
-                Err(e) => Err(Error::FetchError("e.to_string()".to_string())),
+                Err(e) => {
+                    Err(Error::FetchError(format!("Could not fetch: {:?} because {:?}", e.url, e.error)))
+                },
             }
         })
     }

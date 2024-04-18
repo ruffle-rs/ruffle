@@ -700,7 +700,7 @@ impl<'gc> MovieClip<'gc> {
                 TagCode::ImportAssets => self
                     .0
                     .write(context.gc_context)
-                    .import_assets(context, reader),
+                    .import_assets(context, reader, chunk_limit),
                 TagCode::ImportAssets2 => {
                     self.0
                         .write(context.gc_context)
@@ -4033,11 +4033,12 @@ impl<'gc, 'a> MovieClipData<'gc> {
     fn import_assets(
         &mut self,
         context: &mut UpdateContext<'_, 'gc>,
-        _reader: &mut SwfStream<'a>,
+        reader: &mut SwfStream<'a>,
+        chunk_limit: &mut ExecutionLimit,
     ) -> Result<(), Error> {
-        context_stub!(context, "ImportAssets tag");
-
-        Ok(())
+        tracing::warn!("ImportAssets!!!!!");
+        let import_assets = reader.read_import_assets()?;
+        self.import_assets_load(context, reader, import_assets.0, import_assets.1, chunk_limit)
     }
 
     #[inline]
@@ -4048,11 +4049,22 @@ impl<'gc, 'a> MovieClipData<'gc> {
         chunk_limit: &mut ExecutionLimit,
     ) -> Result<(), Error> {
         tracing::warn!("ImportAssets2!!!!!");
+        let import_assets = reader.read_import_assets_2()?;
+        self.import_assets_load(context, reader, import_assets.0, import_assets.1, chunk_limit)
+    }
+
+    #[inline]
+    fn import_assets_load(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc>,
+        reader: &mut SwfStream<'a>,
+        url: &swf::SwfStr,
+        exported_assets: Vec<swf::ExportedAsset>,
+        chunk_limit: &mut ExecutionLimit,
+    ) -> Result<(), Error> {
         let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
-        let import_assets = reader.read_import_assets_2()?;
-
-        let asset_url = import_assets.0.to_string_lossy(UTF_8);
+        let asset_url = url.to_string_lossy(UTF_8);
 
         let request = Request::get(asset_url);
 
@@ -4075,7 +4087,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
 
         context.navigator.spawn_future(fut);
 
-        for asset in import_assets.1 {
+        for asset in exported_assets {
             let name = asset.name.decode(reader.encoding());
             let name = AvmString::new(context.gc_context, name);
             let library = context.library.library_for_movie_mut(self.movie());
