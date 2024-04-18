@@ -503,6 +503,9 @@ pub trait TDisplayObjectContainer<'gc>:
         context: &mut UpdateContext<'_, 'gc>,
     ) {
         if !self.is_tab_children(context) {
+            // AS3 docs say that objects with custom ordering (tabIndex set)
+            // are included even when tabChildren is false.
+            // Do not be fooled for that is untrue!
             return;
         }
 
