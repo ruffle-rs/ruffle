@@ -191,15 +191,18 @@ pub fn request_from_url_request<'gc>(
     let body = match (method, data) {
         (_, Value::Null | Value::Undefined) => Body::None,
         (NavigationMethod::Get, data) => {
+            let data = data.coerce_to_string(activation)?.to_string();
             // This looks "wrong" but it's Flash-correct.
             // It simply appends the data to the URL if there's already a query,
             // otherwise it adds ?data.
             // This does mean that if there's a #fragment in the URL after the query,
             // the new data gets appended to *that* - which is totally wrong but whatcha gonna do?
-            if !url.contains('?') {
-                url.push('?');
+            if !data.is_empty() {
+                if !url.contains('?') {
+                    url.push('?');
+                }
+                url.push_str(&data);
             }
-            url.push_str(&data.coerce_to_string(activation)?.to_string());
             Body::None
         }
         (NavigationMethod::Post, data) => {
