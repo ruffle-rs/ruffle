@@ -7,10 +7,12 @@ package {
         public function Test()
         {
             var request:URLRequest = new URLRequest("https://example.com/purchase/");
-			var variables:URLVariables = new URLVariables();
+            var variables:URLVariables = new URLVariables();
             variables.sku = "Test";
             var empty_variables:URLVariables = new URLVariables();
             var cases:Array = [
+                ["POST", null],
+                ["GET", null],
                 ["POST", empty_variables],
                 ["GET", empty_variables],
                 ["POST", variables],
