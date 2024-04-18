@@ -94,6 +94,9 @@ pub struct InteractiveObjectBase<'gc> {
     #[collect(require_static)]
     last_click: Option<Instant>,
 
+    #[collect(require_static)]
+    tab_index: Option<i32>,
+
     /// Specifies whether this object displays a yellow rectangle when focused.
     focus_rect: Option<bool>,
 }
@@ -105,6 +108,7 @@ impl<'gc> Default for InteractiveObjectBase<'gc> {
             flags: InteractiveObjectFlags::MOUSE_ENABLED,
             context_menu: Avm2Value::Null,
             last_click: None,
+            tab_index: None,
             focus_rect: None,
         }
     }
@@ -600,8 +604,12 @@ pub trait TInteractiveObject<'gc>:
     /// Used to customize tab ordering.
     /// When not `None`, a custom ordering is used, and
     /// objects are ordered according to this value.
-    fn tab_index(&self) -> Option<i64> {
-        None
+    fn tab_index(&self) -> Option<i32> {
+        self.raw_interactive().tab_index
+    }
+
+    fn set_tab_index(&self, context: &mut UpdateContext<'_, 'gc>, value: Option<i32>) {
+        self.raw_interactive_mut(context.gc()).tab_index = value
     }
 }
 

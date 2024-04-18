@@ -9,7 +9,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{self, ArrayObject, Object, ScriptObject, TObject, Value};
 use crate::backend::navigator::NavigationMethod;
 use crate::context::{GcContext, UpdateContext};
-use crate::display_object::{Bitmap, EditText, MovieClip};
+use crate::display_object::{Bitmap, EditText, MovieClip, TInteractiveObject};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
 use crate::string::AvmString;
@@ -1828,8 +1828,8 @@ fn tab_index<'gc>(
     this: MovieClip<'gc>,
     _activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(index) = this.tab_index_value() {
-        Ok(index.into())
+    if let Some(index) = this.as_interactive().and_then(|this| this.tab_index()) {
+        Ok(Value::Number(index as f64))
     } else {
         Ok(Value::Undefined)
     }
@@ -1840,19 +1840,18 @@ fn set_tab_index<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    match value {
-        Value::Undefined | Value::Null => {
-            this.set_tab_index_value(&mut activation.context, None);
-        }
-        Value::Bool(_) | Value::Number(_) => {
-            // FIXME This coercion is not perfect, as it wraps
-            //       instead of falling back to MIN, as FP does
-            let i32_value = value.coerce_to_i32(activation)?;
-            this.set_tab_index_value(&mut activation.context, Some(i32_value));
-        }
-        _ => {
-            this.set_tab_index_value(&mut activation.context, Some(i32::MIN));
-        }
-    };
+    if let Some(this) = this.as_interactive() {
+        let value = match value {
+            Value::Undefined | Value::Null => None,
+            Value::Bool(_) | Value::Number(_) => {
+                // FIXME This coercion is not perfect, as it wraps
+                //       instead of falling back to MIN, as FP does
+                let i32_value = value.coerce_to_i32(activation)?;
+                Some(i32_value)
+            }
+            _ => Some(i32::MIN),
+        };
+        this.set_tab_index(&mut activation.context, value);
+    }
     Ok(())
 }
