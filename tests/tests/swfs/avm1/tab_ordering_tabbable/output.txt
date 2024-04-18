@@ -1,4 +1,5 @@
 Tabbable elements:
+  _level0.text12: false
   _level0.button11: false
   _level0.button10: true
   _level0.clip9.text: false
@@ -14,6 +15,7 @@ Tabbable elements:
   _level0.text1: false
 Enabling tab
 Tabbable elements:
+  _level0.text12: false
   _level0.button11: false
   _level0.button10: true
   _level0.clip9.text: false
@@ -29,6 +31,7 @@ Tabbable elements:
   _level0.text1: false
 Setting custom order
 Tabbable elements:
+  _level0.text12: false
   _level0.button11: false
   _level0.button10: true
   _level0.clip9.text: false
