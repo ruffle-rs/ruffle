@@ -3007,7 +3007,7 @@ impl<'gc> TDisplayObjectContainer<'gc> for MovieClip<'gc> {
     /// _NOTE:_
     /// According to the AS2 documentation, it should affect only automatic tab ordering.
     /// However, that does not seem to be the case, as it also affects custom ordering.
-    fn is_tab_children(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+    fn is_tab_children_avm1(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
         self.get_avm1_boolean_property(context, "tabChildren", |_| true)
     }
 }
