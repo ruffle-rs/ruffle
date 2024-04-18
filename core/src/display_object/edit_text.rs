@@ -2480,7 +2480,15 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
             // Non-editable text fields are never tabbable.
             return false;
         }
+        self.tab_enabled(context)
+    }
+
+    fn tab_enabled_avm1(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
         self.get_avm1_boolean_property(context, "tabEnabled", |_| true)
+    }
+
+    fn tab_enabled_avm2_default(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+        self.is_editable()
     }
 }
 

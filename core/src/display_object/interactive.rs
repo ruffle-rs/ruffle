@@ -95,6 +95,9 @@ pub struct InteractiveObjectBase<'gc> {
     last_click: Option<Instant>,
 
     #[collect(require_static)]
+    tab_enabled: Option<bool>,
+
+    #[collect(require_static)]
     tab_index: Option<i32>,
 
     /// Specifies whether this object displays a yellow rectangle when focused.
@@ -108,6 +111,7 @@ impl<'gc> Default for InteractiveObjectBase<'gc> {
             flags: InteractiveObjectFlags::MOUSE_ENABLED,
             context_menu: Avm2Value::Null,
             last_click: None,
+            tab_enabled: None,
             tab_index: None,
             focus_rect: None,
         }
@@ -597,8 +601,41 @@ pub trait TInteractiveObject<'gc>:
     }
 
     /// Whether this object is included in tab ordering.
-    fn is_tabbable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+    fn is_tabbable(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        self.tab_enabled(context)
+    }
+
+    /// Sets whether tab ordering is enabled for this object.
+    ///
+    /// Some objects may be excluded from tab ordering
+    /// even if it's enabled, see [`Self::is_tabbable()`].
+    fn tab_enabled(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        if context.swf.is_action_script_3() {
+            self.raw_interactive()
+                .tab_enabled
+                .unwrap_or_else(|| self.tab_enabled_avm2_default(context))
+        } else {
+            self.tab_enabled_avm1(context)
+        }
+    }
+
+    /// Look up the `tabEnabled` property from AVM1.
+    ///
+    /// Do not use this directly, use [`Self::is_tabbable()`] or [`Self::tab_enabled()`].
+    fn tab_enabled_avm1(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
         false
+    }
+
+    fn tab_enabled_avm2_default(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+        false
+    }
+
+    fn set_tab_enabled(&self, context: &mut UpdateContext<'_, 'gc>, value: bool) {
+        if context.swf.is_action_script_3() {
+            self.raw_interactive_mut(context.gc()).tab_enabled = Some(value)
+        } else {
+            tracing::warn!("Trying to set tab_enabled on an AVM1 object, this has no effect")
+        }
     }
 
     /// Used to customize tab ordering.
