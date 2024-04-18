@@ -4241,10 +4241,47 @@ impl<'gc, 'a> MovieClipData<'gc> {
                 if let Some(id) = parent_library.character_id_by_import_name(name) {
                     parent_library.register_character(id, character);
                     parent_library.register_export(id, name);
-                    tracing::warn!("Registering parent asset: {} (ID: {})", name, export.id);
-                }
+                    tracing::warn!("Registering parent asset: {} (Parent ID: {})(ID: {})", name, id, export.id);
 
-                
+
+                    if let Some(character) = parent_library.character_by_id(id) {
+                        if let Character::MovieClip(movie_clip) = character {
+                            *movie_clip
+                                .0
+                                .read()
+                                .static_data
+                                .exported_name
+                                .write(context.gc_context) = Some(name);
+                        }
+                    } else {
+                        tracing::warn!(
+                            "Can't register export {}: Character ID {} doesn't exist",
+                            name,
+                            export.id,
+                        );
+                    }
+                }
+            } else {
+                let library = context.library.library_for_movie_mut(self.movie());
+                library.register_export(export.id, name);
+
+                // TODO: do other types of Character need to know their exported name?
+                if let Some(character) = library.character_by_id(export.id) {
+                    if let Character::MovieClip(movie_clip) = character {
+                        *movie_clip
+                            .0
+                            .read()
+                            .static_data
+                            .exported_name
+                            .write(context.gc_context) = Some(name);
+                    }
+                } else {
+                    tracing::warn!(
+                        "Can't register export {}: Character ID {} doesn't exist",
+                        name,
+                        export.id,
+                    );
+                }
             }
             
 
