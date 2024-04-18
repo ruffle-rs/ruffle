@@ -429,6 +429,23 @@ pub fn make_error_2008<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &s
 
 #[inline(never)]
 #[cold]
+pub fn make_error_2027<'gc>(activation: &mut Activation<'_, 'gc>, value: i32) -> Error<'gc> {
+    let err = range_error(
+        activation,
+        &format!(
+            "Error #2027: Parameter tabIndex must be a non-negative number; got {}.",
+            value
+        ),
+        2027,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_2037<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = error(
         activation,

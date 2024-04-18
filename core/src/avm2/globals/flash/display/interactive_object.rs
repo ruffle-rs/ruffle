@@ -1,6 +1,7 @@
 //! `flash.display.InteractiveObject` builtin/prototype
 
 use crate::avm2::activation::Activation;
+use crate::avm2::error::make_error_2027;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -139,21 +140,32 @@ pub fn set_tab_enabled<'gc>(
 }
 
 pub fn get_tab_index<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.InteractiveObject", "tabIndex");
-
-    Ok((-1).into())
+    if let Some(obj) = this
+        .as_display_object()
+        .and_then(|this| this.as_interactive())
+    {
+        Ok(Value::Number(obj.tab_index().unwrap_or(-1) as f64))
+    } else {
+        Ok(Value::Undefined)
+    }
 }
 
 pub fn set_tab_index<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.display.InteractiveObject", "tabIndex");
+    if let Some(obj) = this.as_display_object().and_then(|o| o.as_interactive()) {
+        let value = args.get_i32(activation, 0)?;
+        if value < 0 {
+            return Err(make_error_2027(activation, value));
+        }
+        obj.set_tab_index(&mut activation.context, Some(value));
+    }
 
     Ok(Value::Undefined)
 }
