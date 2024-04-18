@@ -149,7 +149,8 @@ package flash.display {
         }
 
         override public function set tabChildren(value:Boolean):void {
-            super.tabChildren = value;
+            // Docs say that this operation throws IllegalOperationError,
+            // but in reality this call is just ignored.
         }
 
         override public function set tabEnabled(value:Boolean):void {
