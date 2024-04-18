@@ -5,7 +5,9 @@ use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{globals, ArrayObject, Object, ScriptObject, TObject, Value};
 use crate::context::GcContext;
-use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
+use crate::display_object::{
+    AutoSizeMode, EditText, TDisplayObject, TInteractiveObject, TextSelection,
+};
 use crate::font::round_down_to_pixel;
 use crate::html::TextFormat;
 use crate::string::{AvmString, WStr};
@@ -919,8 +921,8 @@ pub fn tab_index<'gc>(
     this: EditText<'gc>,
     _activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(index) = this.tab_index_value() {
-        Ok(index.into())
+    if let Some(index) = this.as_interactive().and_then(|this| this.tab_index()) {
+        Ok(Value::Number(index as u32 as f64))
     } else {
         Ok(Value::Undefined)
     }
@@ -931,14 +933,18 @@ pub fn set_tab_index<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    match value {
-        Value::Undefined | Value::Null => {
-            this.set_tab_index_value(&mut activation.context, None);
-        }
-        _ => {
-            let u32_value = value.coerce_to_u32(activation)?;
-            this.set_tab_index_value(&mut activation.context, Some(u32_value));
-        }
-    };
+    if let Some(this) = this.as_interactive() {
+        let value = match value {
+            Value::Undefined | Value::Null => None,
+            _ => {
+                // `tabIndex` is u32 in TextField, compared to i32 in Button and MovieClip,
+                // but that is only a data representation difference,
+                // as both are interpreted as i32.
+                let u32_value = value.coerce_to_u32(activation)?;
+                Some(u32_value as i32)
+            }
+        };
+        this.set_tab_index(&mut activation.context, value);
+    }
     Ok(())
 }

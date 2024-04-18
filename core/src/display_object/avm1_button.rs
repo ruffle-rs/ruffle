@@ -46,9 +46,6 @@ pub struct Avm1ButtonData<'gc> {
     object: Lock<Option<Object<'gc>>>,
     initialized: Cell<bool>,
     has_focus: Cell<bool>,
-    // TODO Consider moving this to InteractiveObject along with
-    //      TextField's and MovieClip's tab indices after AVM2 analysis
-    tab_index: Cell<Option<i32>>,
 }
 
 #[derive(Clone, Collect)]
@@ -102,7 +99,6 @@ impl<'gc> Avm1Button<'gc> {
                     ButtonTracking::Push
                 }),
                 has_focus: Cell::new(false),
-                tab_index: Cell::new(None),
             },
         ))
     }
@@ -244,18 +240,6 @@ impl<'gc> Avm1Button<'gc> {
 
     fn use_hand_cursor(self, context: &mut UpdateContext<'_, 'gc>) -> bool {
         self.get_boolean_property(context, "useHandCursor", true)
-    }
-
-    /// Get the value of `tabIndex` used in AS.
-    ///
-    /// Do not confuse it with `tab_index`, which returns the value used for ordering.
-    pub fn tab_index_value(&self) -> Option<i32> {
-        self.0.tab_index.get()
-    }
-
-    /// Set the value of `tabIndex` used in AS.
-    pub fn set_tab_index_value(&self, _context: &mut UpdateContext<'_, 'gc>, value: Option<i32>) {
-        self.0.tab_index.set(value)
     }
 }
 
@@ -636,10 +620,6 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
 
     fn is_tabbable(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
         self.get_avm1_boolean_property(context, "tabEnabled", |_| true)
-    }
-
-    fn tab_index(&self) -> Option<i64> {
-        self.0.tab_index.get().map(|i| i as i64)
     }
 }
 

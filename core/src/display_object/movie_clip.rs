@@ -189,10 +189,6 @@ pub struct MovieClipData<'gc> {
 
     /// Attached audio (AVM1)
     attached_audio: Option<NetStream<'gc>>,
-
-    // TODO Consider moving this to InteractiveObject along with
-    //      TextField's and Button's tab indices after AVM2 analysis
-    tab_index: Option<i32>,
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -230,7 +226,6 @@ impl<'gc> MovieClip<'gc> {
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
                 attached_audio: None,
-                tab_index: None,
             },
         ))
     }
@@ -274,7 +269,6 @@ impl<'gc> MovieClip<'gc> {
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
                 attached_audio: None,
-                tab_index: None,
             },
         ))
     }
@@ -319,7 +313,6 @@ impl<'gc> MovieClip<'gc> {
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
                 attached_audio: None,
-                tab_index: None,
             },
         ))
     }
@@ -389,7 +382,6 @@ impl<'gc> MovieClip<'gc> {
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
                 attached_audio: None,
-                tab_index: None,
             },
         ));
 
@@ -2562,18 +2554,6 @@ impl<'gc> MovieClip<'gc> {
             }
         }
     }
-
-    /// Get the value of `tabIndex` used in AS.
-    ///
-    /// Do not confuse it with `tab_index`, which returns the value used for ordering.
-    pub fn tab_index_value(&self) -> Option<i32> {
-        self.0.read().tab_index
-    }
-
-    /// Set the value of `tabIndex` used in AS.
-    pub fn set_tab_index_value(&self, context: &mut UpdateContext<'_, 'gc>, value: Option<i32>) {
-        self.0.write(context.gc()).tab_index = value;
-    }
 }
 
 impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
@@ -3420,10 +3400,6 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         self.get_avm1_boolean_property(context, "tabEnabled", |context| {
             self.tab_index().is_some() || self.is_button_mode(context)
         })
-    }
-
-    fn tab_index(&self) -> Option<i64> {
-        self.0.read().tab_index.map(|i| i as i64)
     }
 }
 
