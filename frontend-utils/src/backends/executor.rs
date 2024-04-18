@@ -209,8 +209,6 @@ impl<R: PollRequester> AsyncExecutor<R> {
                 task.set_ready();
                 if !self.waiting_for_poll.swap(true, Ordering::SeqCst) {
                     self.poll_requester.request_poll();
-                } else {
-                    tracing::info!("Double polling");
                 }
             } else {
                 tracing::warn!(
