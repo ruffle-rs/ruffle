@@ -1,54 +1,48 @@
 name: Release to addons.mozilla.org
 
 on:
-  #Run weekly every Friday
+  # Run weekly every Friday
   schedule:
    - cron: "0 2 * * 6"
-  
-  #Allow for manual releases if needed
+
+  # Allow for manual releases if needed
   workflow_dispatch:
 
 jobs:
   submit-amo:
     name: Submit to addons.mozilla.org
     runs-on: ubuntu-22.04
-  
+
     if: github.repository == 'ruffle-rs/ruffle'
 
     steps:
-      - name: Get latest release name
-        uses: mathiasvr/command-output@v2.0.0
-        id: release_tag
-        with:
-          run: GH_TOKEN=${{ secrets.GITHUB_TOKEN }} GH_REPO=${{github.repository}} gh release list -L1 | awk '{print $4}'
-      
+      - name: Get latest release tag and date
+        id: release_info
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        # NOTE: The following line relies on the output of the `gh` command (when piped) looking like this:
+        # "Nightly 2024-04-20      Pre-release     nightly-2024-04-20      2024-04-20T00:03:23Z"
+        # And sets the following outputs: tag = "nightly-2024-04-20", date = "2024_04_20"
+        # NOTE: The hyphens in the date are replaced with underscores.
+        run: gh release list -L1 | awk '{ print "tag="$4; gsub(/-/, "_"); print "date="$2; }' >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v4
         with:
-          ref: ${{steps.release_tag.outputs.stdout}}
+          ref: ${{ steps.release_info.outputs.tag }}
 
       - name: Install node packages
         working-directory: web
         shell: bash -l {0}
-        run: |
-          npm ci
+        run: npm ci
 
-      - name: Compute release date
-        uses: mathiasvr/command-output@v2.0.0
-        id: release_date
-        with:
-          run: GH_TOKEN=${{ secrets.GITHUB_TOKEN }} GH_REPO=${{github.repository}} gh release list -L1 | awk '{print $2}' | sed 's/-/_/g'
-      
       - name: Download latest release assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ steps.release_info.outputs.tag }}
+          RELEASE_DATE: ${{ steps.release_info.outputs.date }}
         run: |
-          export RELEASE_TAG="${{steps.release_tag.outputs.stdout}}"
-          export RELEASE_DATE="${{steps.release_date.outputs.stdout}}"
-
-          export RELEASE_TAG=${RELEASE_TAG//$'\n'/}
-          export RELEASE_DATE=${RELEASE_DATE//$'\n'/}
-
           mkdir release_assets
           gh release download --pattern "*.xpi" --pattern "*.zip" --dir release_assets $RELEASE_TAG
 
@@ -61,7 +55,7 @@ jobs:
 
           mkdir web/packages/extension/dist
           mv release_assets/ruffle-nightly-$RELEASE_DATE-web-extension-firefox-unsigned.xpi web/packages/extension/dist/firefox_unsigned.xpi
-      
+
       - name: Publish Firefox extension
         id: sign-firefox
         continue-on-error: true
@@ -69,10 +63,7 @@ jobs:
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
           MOZILLA_API_KEY: ${{ secrets.MOZILLA_API_KEY }}
           MOZILLA_API_SECRET: ${{ secrets.MOZILLA_API_SECRET }}
+          SOURCE_TAG: ${{ steps.release_info.outputs.tag }}
         working-directory: web/packages/extension
         shell: bash -l {0}
-        run: |
-          export SOURCE_TAG="${{steps.release_tag.outputs.stdout}}"
-          export SOURCE_TAG=${SOURCE_TAG//$'\n'/}
-
-          npm run sign-firefox
+        run: npm run sign-firefox
