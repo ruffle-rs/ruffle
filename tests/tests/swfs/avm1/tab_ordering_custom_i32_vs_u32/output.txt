@@ -1,0 +1,12 @@
+Focus changed
+  old: null
+  new: _level0.text
+Focus changed
+  old: _level0.text
+  new: _level0.text2
+Focus changed
+  old: _level0.text2
+  new: _level0.button
+Focus changed
+  old: _level0.button
+  new: _level0.text
