@@ -398,6 +398,10 @@ impl<'gc> MovieClip<'gc> {
         mc
     }
 
+    pub fn get_importer_movie(&self) -> Option<Arc<SwfMovie>> {
+        self.0.read().importer_movie.clone()
+    }
+
     /// Construct a movie clip that represents the root movie
     /// for the entire `Player`.
     pub fn player_root_movie(
@@ -821,6 +825,10 @@ impl<'gc> MovieClip<'gc> {
             Ok(true)
         };
         let is_finished = end_tag_found || result.is_err() || !result.unwrap_or_default();
+
+        self.0
+            .write(context.gc_context)
+            .import_exports_of_importer(context);
 
         // These variables will be persisted to be picked back up in the next
         // chunk.
@@ -4114,6 +4122,44 @@ impl<'gc, 'a> MovieClipData<'gc> {
     }
 
     #[inline]
+    fn get_exported_from_importer(
+        &self,
+        context: &mut UpdateContext<'_, 'gc>,
+        importer_movie: Arc<SwfMovie>,
+    ) -> HashMap<AvmString<'gc>, (CharacterId, Character<'gc>)> {
+        let mut map: HashMap<AvmString<'gc>, (CharacterId, Character<'gc>)> = HashMap::new();
+        let library = context.library.library_for_movie_mut(importer_movie);
+
+        library.export_characters().iter().for_each(|(name, id)| {
+            let character = library.character_by_id(*id).unwrap();
+            map.insert(name.clone(), (*id, character.clone()));
+        });
+        map
+    }
+
+    #[inline]
+    fn import_exports_of_importer(&mut self, context: &mut UpdateContext<'_, 'gc>) {
+        tracing::warn!("import_exports_of_importer!!!!!");
+
+        if let Some(importer_movie) = self.importer_movie.as_ref() {
+            let exported_from_importer =
+                { self.get_exported_from_importer(context, importer_movie.clone()) };
+
+            let self_library = context.library.library_for_movie_mut(self.movie().clone());
+
+            exported_from_importer
+                .iter()
+                .for_each(|(name, (id, character))| {
+                    let id = *id;
+                    if self_library.character_by_id(id).is_none() {
+                        self_library.register_character(id, character.clone());
+                        self_library.register_export(id, name.clone());
+                    }
+                });
+        }
+    }
+
+    #[inline]
     fn import_assets(
         &mut self,
         context: &mut UpdateContext<'_, 'gc>,
@@ -4250,6 +4296,12 @@ impl<'gc, 'a> MovieClipData<'gc> {
                     .static_data
                     .exported_name
                     .write(context.gc_context) = Some(name.clone());
+            } else {
+                tracing::warn!(
+                    "Registering export for non-movie clip: {} (ID: {})",
+                    name,
+                    id
+                );
             }
         } else {
             tracing::warn!(
@@ -4275,6 +4327,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             let character = self.get_registered_character_by_id(context, export.id)?;
 
             self.register_export(context, export.id, &name, self.movie());
+            tracing::warn!("register_export asset: {} (ID: {})", name, export.id);
 
             if self.importer_movie.is_some() {
                 let parent = self.importer_movie.as_ref().unwrap().clone();

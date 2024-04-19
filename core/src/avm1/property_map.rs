@@ -106,6 +106,10 @@ impl<'gc, V> PropertyMap<'gc, V> {
             self.0.shift_remove(&CaseInsensitive(key.as_ref()))
         }
     }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
 }
 
 unsafe impl<'gc, V: Collect> Collect for PropertyMap<'gc, V> {

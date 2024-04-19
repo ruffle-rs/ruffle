@@ -225,6 +225,12 @@ impl<'gc> MovieLibrary<'gc> {
         if let Some((id, character)) = self.character_by_export_name(export_name) {
             self.instantiate_display_object(id, character, mc)
         } else {
+            self.export_characters.iter().for_each(|((name, id))| {
+                tracing::error!("Exported character: {} -> {}", name, id);
+            });
+
+            tracing::error!("registerd exports {}", self.export_characters.len());
+
             tracing::error!(
                 "Tried to instantiate non-registered character {}",
                 export_name
