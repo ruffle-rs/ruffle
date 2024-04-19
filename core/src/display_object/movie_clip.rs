@@ -19,7 +19,6 @@ use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::binary_data::BinaryData;
 use crate::character::{Character, CompressedBitmap};
 use crate::context::{ActionType, RenderContext, UpdateContext};
-use crate::{context_stub, library};
 use crate::display_object::container::{dispatch_removed_event, ChildContainer};
 use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
@@ -39,6 +38,7 @@ use crate::streams::NetStream;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::{self, ControlFlow, DecodeResult, Error, SwfMovie, SwfSlice, SwfStream};
 use crate::vminterface::{AvmObject, Instantiator};
+use crate::{context_stub, library};
 use core::fmt;
 use gc_arena::{Collect, Gc, GcCell, GcWeakCell, Mutation};
 use smallvec::SmallVec;
@@ -332,7 +332,7 @@ impl<'gc> MovieClip<'gc> {
     pub fn new_import_assets(
         activation: &mut Avm2Activation<'_, 'gc>,
         movie: Arc<SwfMovie>,
-        parent: Arc<SwfMovie>
+        parent: Arc<SwfMovie>,
     ) -> Self {
         let num_frames = movie.num_frames();
 
@@ -780,10 +780,11 @@ impl<'gc> MovieClip<'gc> {
                     .0
                     .write(context.gc_context)
                     .define_binary_data(context, reader),
-                TagCode::ImportAssets => self
-                    .0
-                    .write(context.gc_context)
-                    .import_assets(context, reader, chunk_limit),
+                TagCode::ImportAssets => {
+                    self.0
+                        .write(context.gc_context)
+                        .import_assets(context, reader, chunk_limit)
+                }
                 TagCode::ImportAssets2 => {
                     self.0
                         .write(context.gc_context)
@@ -4121,7 +4122,13 @@ impl<'gc, 'a> MovieClipData<'gc> {
     ) -> Result<(), Error> {
         tracing::warn!("ImportAssets!!!!!");
         let import_assets = reader.read_import_assets()?;
-        self.import_assets_load(context, reader, import_assets.0, import_assets.1, chunk_limit)
+        self.import_assets_load(
+            context,
+            reader,
+            import_assets.0,
+            import_assets.1,
+            chunk_limit,
+        )
     }
 
     #[inline]
@@ -4133,7 +4140,13 @@ impl<'gc, 'a> MovieClipData<'gc> {
     ) -> Result<(), Error> {
         tracing::warn!("ImportAssets2!!!!!");
         let import_assets = reader.read_import_assets_2()?;
-        self.import_assets_load(context, reader, import_assets.0, import_assets.1, chunk_limit)
+        self.import_assets_load(
+            context,
+            reader,
+            import_assets.0,
+            import_assets.1,
+            chunk_limit,
+        )
     }
 
     #[inline]
@@ -4176,14 +4189,10 @@ impl<'gc, 'a> MovieClipData<'gc> {
             Some(url),
             context,
             chunk_limit,
-            self.movie()
+            self.movie(),
         );
 
-
-
         context.navigator.spawn_future(fut);
-
-
 
         //context_stub!(context, "ImportAssets2 tag");
 
@@ -4211,13 +4220,15 @@ impl<'gc, 'a> MovieClipData<'gc> {
         id: CharacterId,
     ) -> Result<Character<'gc>, Error> {
         let library_for_movie = context.library.library_for_movie(self.movie());
-            
+
         if let Some(library) = library_for_movie {
             if let Some(character) = library.character_by_id(id) {
                 return Ok(character.clone());
             }
         }
-        return Err(Error::InvalidSwf(swf::error::Error::invalid_data("message")));
+        return Err(Error::InvalidSwf(swf::error::Error::invalid_data(
+            "message",
+        )));
     }
 
     fn register_export(
@@ -4265,7 +4276,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
 
             self.register_export(context, export.id, &name, self.movie());
 
-            if self.importer_movie.is_some() {                    
+            if self.importer_movie.is_some() {
                 let parent = self.importer_movie.as_ref().unwrap().clone();
                 let parent_library = context.library.library_for_movie_mut(parent.clone());
 
@@ -4273,9 +4284,12 @@ impl<'gc, 'a> MovieClipData<'gc> {
                     parent_library.register_character(id, character);
 
                     self.register_export(context, id, &name, parent);
-                    tracing::warn!("Registering parent asset: {} (Parent ID: {})(ID: {})", name, id, export.id);
-
-
+                    tracing::warn!(
+                        "Registering parent asset: {} (Parent ID: {})(ID: {})",
+                        name,
+                        id,
+                        export.id
+                    );
                 }
             }
 

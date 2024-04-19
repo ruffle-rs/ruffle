@@ -366,7 +366,7 @@ impl<'gc> LoadManager<'gc> {
         loader_url: Option<String>,
         uc: &mut UpdateContext<'_, 'gc>,
         chunk_limit: &mut ExecutionLimit,
-        importer_movie: Arc<SwfMovie>
+        importer_movie: Arc<SwfMovie>,
     ) -> OwnedFuture<(), Error> {
         let player = player
             .upgrade()
@@ -404,9 +404,14 @@ impl<'gc> LoadManager<'gc> {
                                 //let clip = MovieClip::new(movie, uc.gc_context);
 
                                 let stage_domain = uc.avm2.stage_domain();
-                                let mut activation = Avm2Activation::from_domain(uc.reborrow(), stage_domain);
+                                let mut activation =
+                                    Avm2Activation::from_domain(uc.reborrow(), stage_domain);
 
-                                let clip = MovieClip::new_import_assets(&mut activation, movie, importer_movie);
+                                let clip = MovieClip::new_import_assets(
+                                    &mut activation,
+                                    movie,
+                                    importer_movie,
+                                );
 
                                 clip.set_cur_preload_frame(uc.gc_context, 0);
                                 let mut execution_limit = ExecutionLimit::none();
@@ -423,7 +428,11 @@ impl<'gc> LoadManager<'gc> {
                                 // Create library for exports before preloading
                                 uc.library.library_for_movie_mut(clip.movie());
                                 let res = clip.preload(uc, &mut execution_limit);
-                                tracing::warn!("Preloaded swf to run exports result {:?} {}", url, res);
+                                tracing::warn!(
+                                    "Preloaded swf to run exports result {:?} {}",
+                                    url,
+                                    res
+                                );
                             });
 
                             /*let slice = SwfSlice::from(movie.clone());
@@ -451,9 +460,10 @@ impl<'gc> LoadManager<'gc> {
                         _ => Ok(()),
                     }
                 }
-                Err(e) => {
-                    Err(Error::FetchError(format!("Could not fetch: {:?} because {:?}", e.url, e.error)))
-                },
+                Err(e) => Err(Error::FetchError(format!(
+                    "Could not fetch: {:?} because {:?}",
+                    e.url, e.error
+                ))),
             }
         })
     }
