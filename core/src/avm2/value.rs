@@ -34,8 +34,6 @@ pub enum Hint {
 }
 
 /// An AVM2 value.
-///
-/// TODO: AVM2 also needs Scope, Namespace, and XML values.
 #[derive(Clone, Copy, Collect, Debug)]
 #[collect(no_drop)]
 pub enum Value<'gc> {
@@ -885,12 +883,8 @@ impl<'gc> Value<'gc> {
 
     /// Coerce the value to an Object.
     ///
-    /// TODO: In ECMA-262 3rd Edition, this would also box primitive values
-    /// into objects. Supposedly, ES4 removes primitive values entirely, and
-    /// the AVM2 Overview also implies that all this does is throw an error if
-    /// `undefined` or `null` are present. For the time being, this is what
-    /// that does. If we implement primitive boxing, then we should also box
-    /// them here, and this should change type to return `Object<'gc>`.
+    /// TODO: Once `PrimitiveObject` is removed, this method will be able
+    /// to be removed too, since all that this will do then is a null/undefined check.
     pub fn coerce_to_object(
         &self,
         activation: &mut Activation<'_, 'gc>,
@@ -1188,7 +1182,7 @@ impl<'gc> Value<'gc> {
         // for XML and XMLList types. Because they are objects in Ruffle we
         // have to be a bit more complicated and factor out the code into
         // a separate method.
-        // TODO: QName and Namespace handling
+        // TODO: QName handling
         if let Value::Object(obj) = self {
             if let Some(xml_list_obj) = obj.as_xml_list_object() {
                 return xml_list_obj.equals(other, activation);
