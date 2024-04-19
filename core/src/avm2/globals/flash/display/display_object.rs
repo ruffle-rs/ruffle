@@ -903,9 +903,6 @@ pub fn set_scroll_rect<'gc>(
                 object_to_rectangle(activation, rectangle)?,
             );
 
-            // TODO: Technically we should accept only `flash.geom.Rectangle` objects, in which case
-            // `object_to_rectangle` will be infallible. Once this happens, the following line can
-            // be moved above the `set_next_scroll_rect` call.
             dobj.set_has_scroll_rect(activation.context.gc_context, true);
         } else {
             dobj.set_has_scroll_rect(activation.context.gc_context, false);
