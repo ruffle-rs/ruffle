@@ -238,13 +238,9 @@ impl MorphShapeStatic {
             handle
         } else {
             let library = library.library_for_movie(self.movie.clone()).unwrap();
-            let handle = context.renderer.register_shape(
-                (&frame.shape).into(),
-                &MovieLibrarySource {
-                    library,
-                    gc_context: context.gc_context,
-                },
-            );
+            let handle = context
+                .renderer
+                .register_shape((&frame.shape).into(), &MovieLibrarySource { library });
             frame.shape_handle = Some(handle.clone());
             handle
         }

@@ -164,6 +164,7 @@ impl<'gc> Eq for NetStream<'gc> {}
 pub enum NetStreamType {
     /// The stream is an FLV.
     Flv {
+        #[allow(dead_code)] // set but never read
         header: FlvHeader,
 
         /// The currently playing video track's stream instance.
