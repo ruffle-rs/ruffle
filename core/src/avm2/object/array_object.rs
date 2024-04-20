@@ -133,11 +133,6 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
-                    // [NA] temporarily limit this. It may not be correct but it's better than 100GB arrays.
-                    // TODO: sparse array support
-                    if index > 1 << 28 {
-                        return Err("Ruffle does not support sparse arrays yet.".into());
-                    }
                     write.array.set(index, value);
                     return Ok(());
                 }
@@ -158,11 +153,6 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
-                    // [NA] temporarily limit this. It may not be correct but it's better than 100GB arrays.
-                    // TODO: sparse array support
-                    if index > 1 << 28 {
-                        return Err("Ruffle does not support sparse arrays yet.".into());
-                    }
                     write.array.set(index, value);
                     return Ok(());
                 }
@@ -217,12 +207,11 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         let array_length = read.array.length() as u32;
 
         // Array enumeration skips over holes.
-        while last_index < array_length {
-            if read.array.get(last_index as usize).is_some() {
-                return Ok(Some(last_index + 1));
-            }
-            last_index += 1;
+        if let Some(index) = read.array.get_next_enumerant(last_index as usize) {
+            return Ok(Some(index as u32));
         }
+
+        last_index = std::cmp::max(last_index, array_length);
 
         drop(read);
 
