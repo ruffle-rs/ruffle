@@ -1,0 +1,41 @@
+1
+6
+10
+11
+undefined
+501
+// delete
+undefined
+10
+// push
+502
+12
+12
+501
+11
+// for
+0
+1
+100
+500
+// for each
+1
+2
+10
+11
+// shift
+1
+500
+2
+10
+11
+// shift
+501
+1
+10
+11
+// removeAt
+undefined
+500
+11
+undefined
