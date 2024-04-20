@@ -346,7 +346,6 @@ impl<'gc> MovieLibrary<'gc> {
 
 pub struct MovieLibrarySource<'a, 'gc> {
     pub library: &'a MovieLibrary<'gc>,
-    pub gc_context: &'a Mutation<'gc>,
 }
 
 impl<'a, 'gc> ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'a, 'gc> {

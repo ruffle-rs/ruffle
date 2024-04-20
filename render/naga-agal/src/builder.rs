@@ -247,6 +247,7 @@ impl VertexAttributeFormat {
 pub struct ShaderConfig<'a> {
     pub shader_type: ShaderType,
     pub vertex_attributes: &'a [Option<VertexAttributeFormat>; 8],
+    #[allow(dead_code)] // set but never read
     pub sampler_configs: &'a [SamplerConfig; 8],
     pub version: AgalVersion,
 }
