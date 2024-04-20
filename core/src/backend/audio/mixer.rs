@@ -207,7 +207,7 @@ impl SoundInstance {
             left_transform: [1.0, 0.0],
             right_transform: [0.0, 1.0],
             peak: [0.0, 0.0],
-            range: ([std::f32::INFINITY; 2], [std::f32::NEG_INFINITY; 2]),
+            range: ([f32::INFINITY; 2], [f32::NEG_INFINITY; 2]),
         }
     }
 
@@ -222,7 +222,7 @@ impl SoundInstance {
             left_transform: [1.0, 0.0],
             right_transform: [0.0, 1.0],
             peak: [0.0, 0.0],
-            range: ([std::f32::INFINITY; 2], [std::f32::NEG_INFINITY; 2]),
+            range: ([f32::INFINITY; 2], [f32::NEG_INFINITY; 2]),
         }
     }
 
@@ -231,7 +231,7 @@ impl SoundInstance {
         self.peak[0] = (self.range.1[0] - self.range.0[0]) / 2.0;
         self.peak[1] = (self.range.1[1] - self.range.0[1]) / 2.0;
 
-        self.range = ([std::f32::INFINITY; 2], [std::f32::NEG_INFINITY; 2]);
+        self.range = ([f32::INFINITY; 2], [f32::NEG_INFINITY; 2]);
     }
 }
 
