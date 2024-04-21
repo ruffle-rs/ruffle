@@ -1,14 +1,13 @@
 //! Whole script representation
 
 use super::api_version::ApiVersion;
-use super::traits::TraitKind;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::method::{BytecodeMethod, Method};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::scope::ScopeChain;
-use crate::avm2::traits::Trait;
+use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
@@ -112,6 +111,24 @@ impl<'gc> TranslationUnit<'gc> {
                 movie,
             },
         ))
+    }
+
+    pub fn load_classes(self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
+        // Classes must be loaded in the order they appear in the constant pool,
+        // to ensure that superclasses are loaded before subclasses
+
+        let num_classes = self.0.read().classes.len();
+        for i in 0..num_classes {
+            let class = self.load_class(i as u32, activation)?;
+
+            // NOTE: There are subtle differences between how a class is initially exported (here),
+            // and how it's exported again when it is encountered in a trait (see `Script::load_traits`).
+            // We currently don't handle them and just export it in the domain in both cases.
+            self.domain()
+                .export_class(class.read().name(), class, activation.context.gc_context);
+        }
+
+        Ok(())
     }
 
     pub fn domain(self) -> Domain<'gc> {
@@ -220,7 +237,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn load_script(
         self,
         script_index: u32,
-        uc: &mut UpdateContext<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Script<'gc>, Error<'gc>> {
         let read = self.0.read();
         if let Some(Some(scripts)) = read.scripts.get(script_index as usize) {
@@ -231,20 +248,15 @@ impl<'gc> TranslationUnit<'gc> {
 
         drop(read);
 
-        let mut activation = Activation::from_domain(uc.reborrow(), domain);
-        // Make sure we have the correct domain for code that tries to access it
-        // using `activation.domain()`
-        activation.set_outer(ScopeChain::new(domain));
-
         let global_class = activation.avm2().classes().global;
-        let global_obj = global_class.construct(&mut activation, &[])?;
+        let global_obj = global_class.construct(activation, &[])?;
         global_obj.fork_vtable(activation.context.gc_context);
 
         let mut script =
-            Script::from_abc_index(self, script_index, global_obj, domain, &mut activation)?;
+            Script::from_abc_index(self, script_index, global_obj, domain, activation)?;
         self.0.write(activation.context.gc_context).scripts[script_index as usize] = Some(script);
 
-        script.load_traits(self, script_index, &mut activation)?;
+        script.load_traits(self, script_index, activation)?;
 
         Ok(script)
     }
