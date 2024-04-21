@@ -319,13 +319,7 @@ impl<'gc> Namespace<'gc> {
             ) => {
                 let name_matches = name1 == name2;
                 let version_matches = version1 <= version2;
-                if name_matches && !version_matches {
-                    tracing::info!(
-                        "Rejecting namespace match due to versions: {:?} {:?}",
-                        self.0,
-                        other.0
-                    );
-                }
+
                 name_matches && version_matches
             }
             _ => false,
