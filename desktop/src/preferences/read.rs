@@ -1,5 +1,7 @@
 use crate::preferences::SavedGlobalPreferences;
-use ruffle_frontend_utils::parse::{DocumentHolder, ParseContext, ParseDetails, ReadExt};
+use ruffle_frontend_utils::parse::{
+    DocumentHolder, ParseContext, ParseDetails, ParseWarning, ReadExt,
+};
 use toml_edit::DocumentMut;
 
 /// Read the given preferences into a **guaranteed valid** `SavedGlobalPreferences`,
@@ -17,7 +19,7 @@ pub fn read_preferences(input: &str) -> ParseDetails<SavedGlobalPreferences> {
         Err(e) => {
             return ParseDetails {
                 result: Default::default(),
-                warnings: vec![format!("Invalid TOML: {e}")],
+                warnings: vec![ParseWarning::InvalidToml(e)],
             }
         }
     };
@@ -80,7 +82,8 @@ mod tests {
         let result = read_preferences("~~INVALID~~");
 
         assert_eq!(&SavedGlobalPreferences::default(), result.values());
-        assert_eq!(vec!["Invalid TOML: TOML parse error at line 1, column 1\n  |\n1 | ~~INVALID~~\n  | ^\ninvalid key\n".to_string()], result.warnings);
+        assert_eq!(result.warnings.len(), 1);
+        assert_eq!("Invalid TOML: TOML parse error at line 1, column 1\n  |\n1 | ~~INVALID~~\n  | ^\ninvalid key\n", result.warnings[0].to_string());
     }
 
     #[test]
@@ -88,7 +91,7 @@ mod tests {
         let result = read_preferences("");
 
         assert_eq!(&SavedGlobalPreferences::default(), result.values());
-        assert_eq!(Vec::<String>::new(), result.warnings);
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
     }
 
     #[test]
@@ -97,7 +100,11 @@ mod tests {
 
         assert_eq!(&SavedGlobalPreferences::default(), result.values());
         assert_eq!(
-            vec!["Invalid graphics_backend: expected string but found integer".to_string()],
+            vec![ParseWarning::UnexpectedType {
+                expected: "string",
+                actual: "integer",
+                path: "graphics_backend".to_string()
+            }],
             result.warnings
         );
     }
@@ -108,7 +115,10 @@ mod tests {
 
         assert_eq!(&SavedGlobalPreferences::default(), result.values());
         assert_eq!(
-            vec!["Invalid graphics_backend: unsupported value \"fast\"".to_string()],
+            vec![ParseWarning::UnsupportedValue {
+                value: "fast".to_string(),
+                path: "graphics_backend".to_string()
+            }],
             result.warnings
         );
     }
@@ -124,7 +134,7 @@ mod tests {
             },
             result.values()
         );
-        assert_eq!(Vec::<String>::new(), result.warnings);
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
     }
 
     #[test]
@@ -133,9 +143,11 @@ mod tests {
 
         assert_eq!(&SavedGlobalPreferences::default(), result.values());
         assert_eq!(
-            vec![
-                "Invalid graphics_power_preference: expected string but found integer".to_string()
-            ],
+            vec![ParseWarning::UnexpectedType {
+                expected: "string",
+                actual: "integer",
+                path: "graphics_power_preference".to_string()
+            }],
             result.warnings
         );
     }
@@ -146,7 +158,10 @@ mod tests {
 
         assert_eq!(&SavedGlobalPreferences::default(), result.values());
         assert_eq!(
-            vec!["Invalid graphics_power_preference: unsupported value \"fast\"".to_string()],
+            vec![ParseWarning::UnsupportedValue {
+                value: "fast".to_string(),
+                path: "graphics_power_preference".to_string()
+            }],
             result.warnings
         );
     }
@@ -162,7 +177,7 @@ mod tests {
             },
             result.values()
         );
-        assert_eq!(Vec::<String>::new(), result.warnings);
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
     }
 
     #[test]
@@ -171,7 +186,10 @@ mod tests {
 
         assert_eq!(&SavedGlobalPreferences::default(), result.values());
         assert_eq!(
-            vec!["Invalid language: unsupported value \"???\"".to_string()],
+            vec![ParseWarning::UnsupportedValue {
+                value: "???".to_string(),
+                path: "language".to_string()
+            }],
             result.warnings
         );
     }
@@ -187,7 +205,7 @@ mod tests {
             },
             result.values()
         );
-        assert_eq!(Vec::<String>::new(), result.warnings);
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
     }
 
     #[test]
@@ -201,7 +219,7 @@ mod tests {
             },
             result.values()
         );
-        assert_eq!(Vec::<String>::new(), result.warnings);
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
     }
 
     #[test]
@@ -216,7 +234,11 @@ mod tests {
             result.values()
         );
         assert_eq!(
-            vec!["Invalid output_device: expected string but found integer".to_string()],
+            vec![ParseWarning::UnexpectedType {
+                expected: "string",
+                actual: "integer",
+                path: "output_device".to_string()
+            }],
             result.warnings
         );
     }
@@ -232,7 +254,11 @@ mod tests {
             result.values()
         );
         assert_eq!(
-            vec!["Invalid mute: expected boolean but found string".to_string()],
+            vec![ParseWarning::UnexpectedType {
+                expected: "boolean",
+                actual: "string",
+                path: "mute".to_string()
+            }],
             result.warnings
         );
 
@@ -244,7 +270,7 @@ mod tests {
             },
             result.values()
         );
-        assert_eq!(Vec::<String>::new(), result.warnings);
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
 
         let result = read_preferences("");
         assert_eq!(
@@ -254,7 +280,7 @@ mod tests {
             },
             result.values()
         );
-        assert_eq!(Vec::<String>::new(), result.warnings);
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
     }
 
     #[test]
@@ -268,7 +294,11 @@ mod tests {
             result.values()
         );
         assert_eq!(
-            vec!["Invalid volume: expected float but found string".to_string()],
+            vec![ParseWarning::UnexpectedType {
+                expected: "float",
+                actual: "string",
+                path: "volume".to_string()
+            }],
             result.warnings
         );
 
@@ -280,7 +310,7 @@ mod tests {
             },
             result.values()
         );
-        assert_eq!(Vec::<String>::new(), result.warnings);
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
 
         let result = read_preferences("volume = -1.0");
         assert_eq!(
@@ -290,7 +320,7 @@ mod tests {
             },
             result.values()
         );
-        assert_eq!(Vec::<String>::new(), result.warnings);
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
     }
 
     #[test]
@@ -306,14 +336,21 @@ mod tests {
             result.values()
         );
         assert_eq!(
-            vec!["Invalid log.filename_pattern: expected string but found integer".to_string()],
+            vec![ParseWarning::UnexpectedType {
+                expected: "string",
+                actual: "integer",
+                path: "log.filename_pattern".to_string()
+            }],
             result.warnings
         );
 
         let result = read_preferences("log = {filename_pattern = \"???\"}");
         assert_eq!(&SavedGlobalPreferences::default(), result.values());
         assert_eq!(
-            vec!["Invalid log.filename_pattern: unsupported value \"???\"".to_string()],
+            vec![ParseWarning::UnsupportedValue {
+                value: "???".to_string(),
+                path: "log.filename_pattern".to_string()
+            }],
             result.warnings
         );
 
@@ -327,7 +364,7 @@ mod tests {
             },
             result.values()
         );
-        assert_eq!(Vec::<String>::new(), result.warnings);
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
     }
 
     #[test]
@@ -335,7 +372,11 @@ mod tests {
         let result = read_preferences("log = \"yes\"");
         assert_eq!(&SavedGlobalPreferences::default(), result.values());
         assert_eq!(
-            vec!["Invalid log: expected table but found string".to_string()],
+            vec![ParseWarning::UnexpectedType {
+                expected: "table",
+                actual: "string",
+                path: "log".to_string()
+            }],
             result.warnings
         );
     }
@@ -345,14 +386,21 @@ mod tests {
         let result = read_preferences("storage = {backend = 5}");
         assert_eq!(&SavedGlobalPreferences::default(), result.values());
         assert_eq!(
-            vec!["Invalid storage.backend: expected string but found integer".to_string()],
+            vec![ParseWarning::UnexpectedType {
+                expected: "string",
+                actual: "integer",
+                path: "storage.backend".to_string()
+            }],
             result.warnings
         );
 
         let result = read_preferences("storage = {backend = \"???\"}");
         assert_eq!(&SavedGlobalPreferences::default(), result.values());
         assert_eq!(
-            vec!["Invalid storage.backend: unsupported value \"???\"".to_string()],
+            vec![ParseWarning::UnsupportedValue {
+                value: "???".to_string(),
+                path: "storage.backend".to_string()
+            }],
             result.warnings
         );
 
@@ -366,7 +414,7 @@ mod tests {
             },
             result.values()
         );
-        assert_eq!(Vec::<String>::new(), result.warnings);
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
     }
 
     #[test]
@@ -374,7 +422,11 @@ mod tests {
         let result = read_preferences("storage = \"no\"");
         assert_eq!(&SavedGlobalPreferences::default(), result.values());
         assert_eq!(
-            vec!["Invalid storage: expected table but found string".to_string()],
+            vec![ParseWarning::UnexpectedType {
+                expected: "table",
+                actual: "string",
+                path: "storage".to_string()
+            }],
             result.warnings
         );
     }

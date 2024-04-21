@@ -2,7 +2,7 @@ use std::fmt;
 use std::fmt::Formatter;
 use std::ops::Deref;
 use std::str::FromStr;
-use toml_edit::{ArrayOfTables, DocumentMut, Item, Table, TableLike};
+use toml_edit::{ArrayOfTables, DocumentMut, Item, Table, TableLike, TomlError};
 
 /// A holder over values that may be read and potentially written back to disk.
 ///
@@ -75,7 +75,7 @@ impl<T> DocumentHolder<T> {
 
 pub struct ParseDetails<T> {
     pub result: DocumentHolder<T>,
-    pub warnings: Vec<String>,
+    pub warnings: Vec<ParseWarning>,
 }
 
 impl<T: fmt::Debug> fmt::Debug for ParseDetails<T> {
@@ -88,18 +88,44 @@ impl<T: fmt::Debug> fmt::Debug for ParseDetails<T> {
 }
 
 impl<T> ParseDetails<T> {
-    pub fn add_warning(&mut self, message: String) {
-        self.warnings.push(message);
-    }
-
     pub fn values(&self) -> &T {
         &self.result
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub enum ParseWarning {
+    InvalidToml(TomlError),
+    UnexpectedType {
+        expected: &'static str,
+        actual: &'static str,
+        path: String,
+    },
+    UnsupportedValue {
+        value: String,
+        path: String,
+    },
+}
+
+impl fmt::Display for ParseWarning {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            ParseWarning::InvalidToml(e) => write!(f, "Invalid TOML: {e}"),
+            ParseWarning::UnexpectedType {
+                expected,
+                actual,
+                path,
+            } => write!(f, "Invalid {path}: expected {expected} but found {actual}"),
+            ParseWarning::UnsupportedValue { value, path } => {
+                write!(f, "Invalid {path}: unsupported value {value:?}")
+            }
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct ParseContext {
-    pub warnings: Vec<String>,
+    pub warnings: Vec<ParseWarning>,
     /// Path of the current item being parsed
     path: Vec<&'static str>,
 }
@@ -117,8 +143,21 @@ impl ParseContext {
         self.path.join(".")
     }
 
-    pub fn add_warning(&mut self, warning: String) {
-        self.warnings.push(warning);
+    /// Emits an unexpected type warning.
+    pub fn unexpected_type(&mut self, expected: &'static str, actual: &'static str) {
+        self.warnings.push(ParseWarning::UnexpectedType {
+            expected,
+            actual,
+            path: self.path(),
+        })
+    }
+
+    /// Emits an unsupported value warning.
+    pub fn unsupported_value(&mut self, value: String) {
+        self.warnings.push(ParseWarning::UnsupportedValue {
+            value,
+            path: self.path(),
+        })
     }
 }
 
@@ -138,11 +177,7 @@ pub trait ReadExt<'a> {
             if let Some(table) = item.as_table_like() {
                 result = Some(fun(cx, table));
             } else {
-                cx.add_warning(format!(
-                    "Invalid {}: expected table but found {}",
-                    cx.path(),
-                    item.type_name()
-                ));
+                cx.unexpected_type("table", item.type_name());
             }
 
             cx.pop_key();
@@ -163,11 +198,7 @@ pub trait ReadExt<'a> {
             if let Some(array) = item.as_array_of_tables() {
                 result = Some(fun(cx, array));
             } else {
-                cx.add_warning(format!(
-                    "Invalid {}: expected array of tables but found {}",
-                    cx.path(),
-                    item.type_name()
-                ));
+                cx.unexpected_type("array of tables", item.type_name());
             }
 
             cx.pop_key();
@@ -183,15 +214,11 @@ pub trait ReadExt<'a> {
                 if let Ok(value) = str.parse::<T>() {
                     Some(value)
                 } else {
-                    cx.add_warning(format!("Invalid {}: unsupported value {str:?}", cx.path()));
+                    cx.unsupported_value(str.to_owned());
                     None
                 }
             } else {
-                cx.add_warning(format!(
-                    "Invalid {}: expected string but found {}",
-                    cx.path(),
-                    item.type_name()
-                ));
+                cx.unexpected_type("string", item.type_name());
                 None
             }
         } else {
@@ -210,11 +237,7 @@ pub trait ReadExt<'a> {
             if let Some(value) = item.as_bool() {
                 Some(value)
             } else {
-                cx.add_warning(format!(
-                    "Invalid {}: expected boolean but found {}",
-                    cx.path(),
-                    item.type_name()
-                ));
+                cx.unexpected_type("boolean", item.type_name());
                 None
             }
         } else {
@@ -233,11 +256,7 @@ pub trait ReadExt<'a> {
             if let Some(value) = item.as_float() {
                 Some(value)
             } else {
-                cx.add_warning(format!(
-                    "Invalid {}: expected float but found {}",
-                    cx.path(),
-                    item.type_name()
-                ));
+                cx.unexpected_type("float", item.type_name());
                 None
             }
         } else {

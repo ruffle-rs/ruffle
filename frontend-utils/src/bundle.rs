@@ -2,6 +2,7 @@ use crate::bundle::info::{
     BundleInformation, BundleInformationParseError, BUNDLE_INFORMATION_FILENAME,
 };
 use crate::bundle::source::BundleSource;
+use crate::parse::ParseWarning;
 use std::path::Path;
 
 pub mod info;
@@ -25,7 +26,7 @@ pub enum BundleError {
 pub struct Bundle {
     source: BundleSource,
     information: BundleInformation,
-    warnings: Vec<String>,
+    warnings: Vec<ParseWarning>,
 }
 
 impl Bundle {
@@ -53,7 +54,7 @@ impl Bundle {
         &self.source
     }
 
-    pub fn warnings(&self) -> &[String] {
+    pub fn warnings(&self) -> &[ParseWarning] {
         &self.warnings
     }
 
@@ -69,6 +70,7 @@ mod tests {
     };
     use crate::bundle::source::BundleSourceError;
     use crate::bundle::{Bundle, BundleError};
+    use crate::parse::ParseWarning;
     use tempfile::tempdir;
     use url::Url;
 
@@ -150,6 +152,6 @@ mod tests {
             },
             result.information
         );
-        assert_eq!(Vec::<String>::new(), result.warnings);
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
     }
 }
