@@ -7,6 +7,7 @@ use crate::avm2::error::make_error_1107;
 use crate::avm2::function::Executable;
 use crate::avm2::globals::SystemClasses;
 use crate::avm2::method::{Method, NativeMethodImpl};
+use crate::avm2::scope::ScopeChain;
 use crate::avm2::script::{Script, TranslationUnit};
 use crate::context::{GcContext, UpdateContext};
 use crate::display_object::{DisplayObject, DisplayObjectWeak, TDisplayObject};
@@ -569,16 +570,23 @@ impl<'gc> Avm2<'gc> {
             }
         };
 
+        let mut activation = Activation::from_domain(context.reborrow(), domain);
+        // Make sure we have the correct domain for code that tries to access it
+        // using `activation.domain()`
+        activation.set_outer(ScopeChain::new(domain));
+
         let num_scripts = abc.scripts.len();
-        let tunit = TranslationUnit::from_abc(abc, domain, name, movie, context.gc_context);
+        let tunit =
+            TranslationUnit::from_abc(abc, domain, name, movie, activation.context.gc_context);
+        tunit.load_classes(&mut activation)?;
         for i in 0..num_scripts {
-            tunit.load_script(i as u32, context)?;
+            tunit.load_script(i as u32, &mut activation)?;
         }
 
         if !flags.contains(DoAbc2Flag::LAZY_INITIALIZE) {
             for i in 0..num_scripts {
                 if let Some(mut script) = tunit.get_script(i) {
-                    script.globals(context)?;
+                    script.globals(&mut activation.context)?;
                 }
             }
         }
