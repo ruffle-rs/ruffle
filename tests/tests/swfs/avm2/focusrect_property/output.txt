@@ -1,0 +1,110 @@
+===== stage =====
+  default value: null
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+  after set to true: null
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+  after set to false: null
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+  after set to null: null
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+  after set to undefined: null
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+  after set to 0: null
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+  after set to 1: null
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+  after set to -1: null
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+  after set to 0.2: null
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+  after set to test: null
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+  after set to Infinity: null
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+  after set to NaN: null
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+  after set to [object Object]: null
+===== text1 =====
+  default value: null
+  after set to true: true
+  after set to false: false
+  after set to null: null
+  after set to undefined: null
+  after set to 0: false
+  after set to 1: false
+  after set to -1: false
+  after set to 0.2: false
+  after set to test: false
+  after set to Infinity: false
+  after set to NaN: false
+  after set to [object Object]: false
+===== text2 =====
+  default value: null
+  after set to true: true
+  after set to false: false
+  after set to null: null
+  after set to undefined: null
+  after set to 0: false
+  after set to 1: false
+  after set to -1: false
+  after set to 0.2: false
+  after set to test: false
+  after set to Infinity: false
+  after set to NaN: false
+  after set to [object Object]: false
+===== button =====
+  default value: null
+  after set to true: true
+  after set to false: false
+  after set to null: null
+  after set to undefined: null
+  after set to 0: false
+  after set to 1: false
+  after set to -1: false
+  after set to 0.2: false
+  after set to test: false
+  after set to Infinity: false
+  after set to NaN: false
+  after set to [object Object]: false
+===== mc1 =====
+  default value: null
+  after set to true: true
+  after set to false: false
+  after set to null: null
+  after set to undefined: null
+  after set to 0: false
+  after set to 1: false
+  after set to -1: false
+  after set to 0.2: false
+  after set to test: false
+  after set to Infinity: false
+  after set to NaN: false
+  after set to [object Object]: false
+===== mc2 =====
+  default value: null
+  after set to true: true
+  after set to false: false
+  after set to null: null
+  after set to undefined: null
+  after set to 0: false
+  after set to 1: false
+  after set to -1: false
+  after set to 0.2: false
+  after set to test: false
+  after set to Infinity: false
+  after set to NaN: false
+  after set to [object Object]: false
+===== sprite =====
+  default value: null
+  after set to true: true
+  after set to false: false
+  after set to null: null
+  after set to undefined: null
+  after set to 0: false
+  after set to 1: false
+  after set to -1: false
+  after set to 0.2: false
+  after set to test: false
+  after set to Infinity: false
+  after set to NaN: false
+  after set to [object Object]: false
