@@ -7,7 +7,6 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{TDisplayObject, TInteractiveObject};
-use crate::{avm2_stub_getter, avm2_stub_setter};
 
 /// Implements `flash.display.InteractiveObject`'s native instance constructor.
 pub fn native_instance_init<'gc>(
@@ -179,24 +178,33 @@ pub fn set_tab_index<'gc>(
 }
 
 pub fn get_focus_rect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.InteractiveObject", "focusRect");
-    Ok(Value::Null)
+    if let Some(obj) = this.as_display_object().and_then(|o| o.as_interactive()) {
+        Ok(obj.focus_rect().map(Value::Bool).unwrap_or(Value::Null))
+    } else {
+        Ok(Value::Null)
+    }
 }
 
 pub fn set_focus_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // NOTE: all values other than true or null are converted to false. (false/null do differ)
-
-    // let's only warn on true, as games sometimes just set focusRect to false for some reason.
-    if matches!(args.get(0), Some(Value::Bool(true))) {
-        avm2_stub_setter!(activation, "flash.display.InteractiveObject", "focusRect");
+    if let Some(obj) = this
+        .as_display_object()
+        .and_then(|this| this.as_interactive())
+    {
+        let value = match args.get(0) {
+            Some(Value::Bool(true)) => Some(true),
+            Some(Value::Null) => None,
+            // everything else sets focusRect to false
+            _ => Some(false),
+        };
+        obj.set_focus_rect(activation.context.gc(), value);
     }
 
     Ok(Value::Null)
