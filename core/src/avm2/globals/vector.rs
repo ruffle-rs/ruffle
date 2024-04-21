@@ -14,6 +14,7 @@ use crate::avm2::object::{
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::QName;
 use crate::string::AvmString;
 use gc_arena::GcCell;
@@ -916,7 +917,10 @@ pub fn create_generic_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell
     let mc = activation.context.gc_context;
     let class = Class::new(
         QName::new(activation.avm2().vector_public_namespace, "Vector"),
-        Some(activation.avm2().classes().object.inner_class_definition()),
+        Some(Multiname::new(
+            activation.avm2().public_namespace_base_version,
+            "Object",
+        )),
         Method::from_builtin(generic_init, "<Vector instance initializer>", mc),
         Method::from_builtin(generic_init, "<Vector class initializer>", mc),
         mc,
@@ -949,7 +953,10 @@ pub fn create_builtin_class<'gc>(
 
     let class = Class::new(
         name,
-        Some(activation.avm2().classes().object.inner_class_definition()),
+        Some(Multiname::new(
+            activation.avm2().public_namespace_base_version,
+            "Object",
+        )),
         Method::from_builtin(instance_init, "<Vector.<T> instance initializer>", mc),
         Method::from_builtin(class_init, "<Vector.<T> class initializer>", mc),
         mc,

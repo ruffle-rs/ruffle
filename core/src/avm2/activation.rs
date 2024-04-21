@@ -326,6 +326,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
     }
 
+    pub fn lookup_class_in_domain(
+        &mut self,
+        name: &Multiname<'gc>,
+    ) -> Result<GcCell<'gc, Class<'gc>>, Error<'gc>> {
+        self.domain()
+            .get_class(name, self.context.gc_context)
+            .ok_or_else(|| format!("Attempted to resolve nonexistent type {name:?}").into())
+    }
+
     /// Resolve a single parameter value.
     ///
     /// Given an individual parameter value and the associated parameter's

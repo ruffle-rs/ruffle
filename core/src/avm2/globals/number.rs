@@ -6,6 +6,7 @@ use crate::avm2::error::{make_error_1002, make_error_1003, make_error_1004};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
+use crate::avm2::Multiname;
 use crate::avm2::QName;
 use crate::avm2::{AvmString, Error};
 use gc_arena::GcCell;
@@ -371,7 +372,10 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
     let mc = activation.context.gc_context;
     let class = Class::new(
         QName::new(activation.avm2().public_namespace_base_version, "Number"),
-        Some(activation.avm2().classes().object.inner_class_definition()),
+        Some(Multiname::new(
+            activation.avm2().public_namespace_base_version,
+            "Object",
+        )),
         Method::from_builtin(instance_init, "<Number instance initializer>", mc),
         Method::from_builtin(class_init, "<Number class initializer>", mc),
         mc,

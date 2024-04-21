@@ -1,7 +1,6 @@
 //! AVM2 classes
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::make_error_1014;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{ClassObject, Object};
 use crate::avm2::script::TranslationUnit;
@@ -11,7 +10,6 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
-use crate::context::UpdateContext;
 use bitflags::bitflags;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, Mutation};
@@ -82,8 +80,8 @@ pub struct Class<'gc> {
     /// The type parameter for this class (only supported for Vector)
     param: Option<Option<GcCell<'gc, Class<'gc>>>>,
 
-    /// This class's superclass, or None if it has no superclass
-    super_class: Option<GcCell<'gc, Class<'gc>>>,
+    /// The name of this class's superclass.
+    super_class: Option<Multiname<'gc>>,
 
     /// Attributes of the given class.
     #[collect(require_static)]
@@ -205,7 +203,7 @@ impl<'gc> Class<'gc> {
     /// using `load_traits`.
     pub fn new(
         name: QName<'gc>,
-        super_class: Option<GcCell<'gc, Class<'gc>>>,
+        super_class: Option<Multiname<'gc>>,
         instance_init: Method<'gc>,
         class_init: Method<'gc>,
         mc: &Mutation<'gc>,
@@ -251,12 +249,10 @@ impl<'gc> Class<'gc> {
     /// This is used to parameterize a generic type. The returned class will no
     /// longer be generic.
     pub fn with_type_param(
-        context: &mut UpdateContext<'_, 'gc>,
         this: GcCell<'gc, Class<'gc>>,
         param: Option<GcCell<'gc, Class<'gc>>>,
+        mc: &Mutation<'gc>,
     ) -> GcCell<'gc, Class<'gc>> {
-        let mc = context.gc_context;
-
         let read = this.read();
         let key = param.map(ClassKey);
 
@@ -279,13 +275,7 @@ impl<'gc> Class<'gc> {
             // FIXME - we should store a `Multiname` instead of a `QName`, and use the
             // `params` field. For now, this is good enough to get tests passing
             QName::new(read.name.namespace(), AvmString::new_utf8(mc, name)),
-            Some(
-                context
-                    .avm2
-                    .classes()
-                    .object_vector
-                    .inner_class_definition(),
-            ),
+            Some(Multiname::new(read.name.namespace(), "Vector.<*>")),
             object_vector_cls.read().instance_init(),
             object_vector_cls.read().class_init(),
             mc,
@@ -346,19 +336,10 @@ impl<'gc> Class<'gc> {
         let super_class = if abc_instance.super_name.0 == 0 {
             None
         } else {
-            let multiname =
-                unit.pool_multiname_static(abc_instance.super_name, &mut activation.context)?;
-
             Some(
-                activation
-                    .domain()
-                    .get_class(&mut activation.context, &multiname)
-                    .ok_or_else(|| {
-                        make_error_1014(
-                            activation,
-                            multiname.to_qualified_name(activation.context.gc_context),
-                        )
-                    })?,
+                unit.pool_multiname_static(abc_instance.super_name, &mut activation.context)?
+                    .deref()
+                    .clone(),
             )
         };
 
@@ -635,12 +616,8 @@ impl<'gc> Class<'gc> {
         self.param = param;
     }
 
-    pub fn super_class(&self) -> Option<GcCell<'gc, Class<'gc>>> {
-        self.super_class
-    }
-
-    pub fn super_class_name(&self) -> Option<Multiname<'gc>> {
-        self.super_class.map(|c| c.read().name().into())
+    pub fn super_class_name(&self) -> &Option<Multiname<'gc>> {
+        &self.super_class
     }
 
     pub fn protected_namespace(&self) -> Option<Namespace<'gc>> {

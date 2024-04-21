@@ -8,6 +8,7 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{function_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::QName;
 use gc_arena::GcCell;
 
@@ -221,14 +222,14 @@ fn set_prototype<'gc>(
 }
 
 /// Construct `Function`'s class.
-pub fn create_class<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    object_classdef: GcCell<'gc, Class<'gc>>,
-) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
     let gc_context = activation.context.gc_context;
     let function_class = Class::new(
         QName::new(activation.avm2().public_namespace_base_version, "Function"),
-        Some(object_classdef),
+        Some(Multiname::new(
+            activation.avm2().public_namespace_base_version,
+            "Object",
+        )),
         Method::from_builtin(instance_init, "<Function instance initializer>", gc_context),
         Method::from_builtin(class_init, "<Function class initializer>", gc_context),
         gc_context,
