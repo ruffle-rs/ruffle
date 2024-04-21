@@ -1,5 +1,5 @@
 use crate::bookmarks::{Bookmark, Bookmarks, INVALID_URL};
-use crate::parse::{DocumentHolder, ParseContext, ParseDetails, ReadExt};
+use crate::parse::{DocumentHolder, ParseContext, ParseDetails, ParseWarning, ReadExt};
 use toml_edit::DocumentMut;
 use url::Url;
 
@@ -9,7 +9,7 @@ pub fn read_bookmarks(input: &str) -> ParseDetails<Bookmarks> {
         Err(e) => {
             return ParseDetails {
                 result: Default::default(),
-                warnings: vec![format!("Invalid TOML: {e}")],
+                warnings: vec![ParseWarning::InvalidToml(e)],
             }
         }
     };
@@ -50,7 +50,11 @@ mod tests {
         let result = read_bookmarks("[bookmark]");
         assert_eq!(&Vec::<Bookmark>::new(), result.values());
         assert_eq!(
-            vec!["Invalid bookmark: expected array of tables but found table".to_string()],
+            vec![ParseWarning::UnexpectedType {
+                expected: "array of tables",
+                actual: "table",
+                path: "bookmark".to_string()
+            }],
             result.warnings
         );
 
@@ -62,7 +66,7 @@ mod tests {
             }],
             result.values()
         );
-        assert_eq!(Vec::<String>::new(), result.warnings);
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
 
         let result = read_bookmarks("[[bookmark]]\nurl = \"invalid\"");
         assert_eq!(
@@ -73,7 +77,10 @@ mod tests {
             result.values()
         );
         assert_eq!(
-            vec!["Invalid bookmark.url: unsupported value \"invalid\"".to_string()],
+            vec![ParseWarning::UnsupportedValue {
+                value: "invalid".to_string(),
+                path: "bookmark.url".to_string()
+            }],
             result.warnings
         );
 
@@ -87,7 +94,7 @@ mod tests {
             }],
             result.values()
         );
-        assert_eq!(Vec::<String>::new(), result.warnings);
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
     }
 
     #[test]
@@ -114,7 +121,7 @@ mod tests {
             ],
             result.values()
         );
-        assert_eq!(Vec::<String>::new(), result.warnings);
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
 
         let result = read_bookmarks(
             r#"
@@ -152,7 +159,10 @@ mod tests {
             result.values()
         );
         assert_eq!(
-            vec!["Invalid bookmark.url: unsupported value \"invalid\"".to_string()],
+            vec![ParseWarning::UnsupportedValue {
+                value: "invalid".to_string(),
+                path: "bookmark.url".to_string()
+            }],
             result.warnings
         );
     }
