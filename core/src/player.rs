@@ -1193,16 +1193,42 @@ impl Player {
             });
         }
 
-        if matches!(
-            event,
-            PlayerEvent::MouseDown { .. }
-                | PlayerEvent::MouseUp { .. }
-                | PlayerEvent::MouseMove { .. }
-        ) {
+        if self.should_reset_highlight(event) {
             self.mutate_with_update_context(|context| {
                 context.focus_tracker.reset_highlight();
             });
         }
+    }
+
+    fn should_reset_highlight(&self, event: PlayerEvent) -> bool {
+        if matches!(
+            event,
+            PlayerEvent::MouseDown {
+                button: MouseButton::Left,
+                ..
+            }
+        ) {
+            // Left mouse button down always resets the highlight.
+            return true;
+        }
+
+        if self.swf.version() < 9
+            && matches!(
+                event,
+                PlayerEvent::MouseDown {
+                    button: MouseButton::Left | MouseButton::Right,
+                    ..
+                } | PlayerEvent::MouseUp {
+                    button: MouseButton::Left | MouseButton::Right,
+                    ..
+                } | PlayerEvent::MouseMove { .. }
+            )
+        {
+            // For SWF8 and older, other mouse events also reset the highlight.
+            return true;
+        }
+
+        false
     }
 
     /// Update dragged object, if any.
