@@ -24,6 +24,8 @@ impl<R: Read + Seek> BundleSourceImpl for ZipSource<R> {
                 ZipError::InvalidArchive(_) => e.into(),
                 ZipError::UnsupportedArchive(_) => e.into(),
                 ZipError::FileNotFound => Error::from(ErrorKind::NotFound),
+                ZipError::InvalidPassword => Error::from(ErrorKind::PermissionDenied),
+                _ => Error::from(ErrorKind::Other),
             })?;
         let mut buf = vec![];
         result.read_to_end(&mut buf)?;
