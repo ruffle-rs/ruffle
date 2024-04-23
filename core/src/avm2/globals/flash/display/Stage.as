@@ -5,9 +5,11 @@ package flash.display {
     import flash.display.ColorCorrection;
     import flash.display.ColorCorrectionSupport;
     import flash.errors.IllegalOperationError;
+    import flash.events.Event;
     import flash.filters.BitmapFilter;
     import flash.geom.Rectangle;
     import flash.geom.Transform;
+    import flash.text.TextSnapshot;
     import flash.ui.ContextMenu;
 
     [Ruffle(NativeInstanceInit)]
@@ -20,6 +22,18 @@ package flash.display {
 
         override public function set accessibilityProperties(value:AccessibilityProperties):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
+        }
+
+        override public function addChild(child:DisplayObject):DisplayObject {
+            return super.addChild(child);
+        }
+
+        override public function addChildAt(child:DisplayObject, index:int):DisplayObject {
+            return super.addChildAt(child, index);
+        }
+
+        override public function addEventListener(type:String, listener:Function, useCapture:Boolean = false, priority:int = 0, useWeakReference:Boolean = false):void {
+            super.addEventListener(type, listener, useCapture, priority, useWeakReference);
         }
 
         override public function set alpha(value:Number):void {
@@ -38,11 +52,27 @@ package flash.display {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
+        override public function dispatchEvent(event:Event):Boolean {
+            return super.dispatchEvent(event);
+        }
+
         override public function set filters(value:Array):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
         override public function set focusRect(value:Object):void {
+            throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
+        }
+
+        override public function hasEventListener(type:String):Boolean {
+            return super.hasEventListener(type);
+        }
+
+        override public function get height():Number {
+            return super.height;
+        }
+
+        override public function set height(value:Number):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
@@ -54,6 +84,14 @@ package flash.display {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
+        override public function get mouseChildren():Boolean {
+            return super.mouseChildren;
+        }
+
+        override public function set mouseChildren(value:Boolean):void {
+            super.mouseChildren = value;
+        }
+
         override public function set mouseEnabled(value:Boolean):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
@@ -61,13 +99,21 @@ package flash.display {
         override public function get name():String {
             return null;
         }
-        
+
         override public function set name(value:String):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
+        override public function get numChildren():int {
+            return super.numChildren;
+        }
+
         override public function set opaqueBackground(value:Object):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
+        }
+
+        override public function removeChildAt(index:int):DisplayObject {
+            return super.removeChildAt(index);
         }
 
         override public function set rotation(value:Number):void {
@@ -90,11 +136,31 @@ package flash.display {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
+        override public function setChildIndex(child:DisplayObject, index:int):void {
+            super.setChildIndex(child, index);
+        }
+
+        override public function swapChildrenAt(index1:int, index2:int):void {
+            super.swapChildrenAt(index1, index2);
+        }
+
+        override public function get tabChildren():Boolean {
+            return super.tabChildren;
+        }
+
+        override public function set tabChildren(value:Boolean):void {
+            super.tabChildren = value;
+        }
+
         override public function set tabEnabled(value:Boolean):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
         override public function set tabIndex(value:int):void {
+            throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
+        }
+
+        override public function get textSnapshot():TextSnapshot {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
@@ -104,6 +170,18 @@ package flash.display {
 
         override public function set visible(value:Boolean):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
+        }
+
+        override public function get width():Number {
+            return super.width;
+        }
+
+        override public function set width(value:Number):void {
+            throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
+        }
+
+        override public function willTrigger(type:String):Boolean {
+            return super.willTrigger(type);
         }
 
         override public function set x(value:Number):void {
