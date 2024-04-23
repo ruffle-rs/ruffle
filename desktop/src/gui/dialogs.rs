@@ -5,7 +5,7 @@ mod preferences_dialog;
 mod volume_controls;
 
 use crate::custom_event::RuffleEvent;
-use crate::player::PlayerOptions;
+use crate::player::LaunchOptions;
 use crate::preferences::GlobalPreferences;
 use bookmarks_dialog::{BookmarkAddDialog, BookmarksDialog};
 use open_dialog::OpenDialog;
@@ -35,7 +35,7 @@ pub struct Dialogs {
 impl Dialogs {
     pub fn new(
         preferences: GlobalPreferences,
-        player_options: PlayerOptions,
+        player_options: LaunchOptions,
         default_path: Option<Url>,
         event_loop: EventLoopProxy<RuffleEvent>,
     ) -> Self {
@@ -58,7 +58,7 @@ impl Dialogs {
 
     pub fn recreate_open_dialog(
         &mut self,
-        opt: PlayerOptions,
+        opt: LaunchOptions,
         url: Option<Url>,
         event_loop: EventLoopProxy<RuffleEvent>,
     ) {

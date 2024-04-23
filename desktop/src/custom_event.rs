@@ -1,6 +1,6 @@
 //! Custom event type for desktop ruffle
 
-use crate::player::PlayerOptions;
+use crate::player::LaunchOptions;
 
 /// User-defined events.
 pub enum RuffleEvent {
@@ -11,10 +11,10 @@ pub enum RuffleEvent {
     OnMetadata(ruffle_core::swf::HeaderExt),
 
     /// The user requested to pick and then open a file.
-    BrowseAndOpen(Box<PlayerOptions>),
+    BrowseAndOpen(Box<LaunchOptions>),
 
     /// The user requested to open a URL.
-    OpenURL(url::Url, Box<PlayerOptions>),
+    OpenURL(url::Url, Box<LaunchOptions>),
 
     /// The user requested to close the current SWF.
     CloseFile,

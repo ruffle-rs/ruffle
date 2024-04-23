@@ -1,7 +1,7 @@
 use crate::custom_event::RuffleEvent;
 use crate::gui::text;
 use crate::gui::widgets::PathOrUrlField;
-use crate::player::PlayerOptions;
+use crate::player::LaunchOptions;
 use egui::{
     Align2, Button, Checkbox, ComboBox, DragValue, Grid, Slider, TextEdit, Ui, Widget, Window,
 };
@@ -14,7 +14,7 @@ use url::Url;
 use winit::event_loop::EventLoopProxy;
 
 pub struct OpenDialog {
-    options: PlayerOptions,
+    options: LaunchOptions,
     event_loop: EventLoopProxy<RuffleEvent>,
 
     // These are outside of PlayerOptions as it can be an invalid value (ie URL) during typing,
@@ -30,7 +30,7 @@ pub struct OpenDialog {
 
 impl OpenDialog {
     pub fn new(
-        defaults: PlayerOptions,
+        defaults: LaunchOptions,
         default_url: Option<Url>,
         event_loop: EventLoopProxy<RuffleEvent>,
     ) -> Self {

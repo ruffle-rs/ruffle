@@ -36,7 +36,7 @@ use winit::window::Window;
 /// Options used when creating a Player (& passed through to a PlayerBuilder).
 /// These may be primed by command line arguments.
 #[derive(Debug, Clone)]
-pub struct PlayerOptions {
+pub struct LaunchOptions {
     pub parameters: Vec<(String, String)>,
     pub max_execution_duration: f64,
     pub base: Option<Url>,
@@ -63,7 +63,7 @@ pub struct PlayerOptions {
     pub avm2_optimizer_enabled: bool,
 }
 
-impl From<&GlobalPreferences> for PlayerOptions {
+impl From<&GlobalPreferences> for LaunchOptions {
     fn from(value: &GlobalPreferences) -> Self {
         Self {
             parameters: value.cli.parameters().collect(),
@@ -115,7 +115,7 @@ struct ActivePlayer {
 impl ActivePlayer {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        opt: &PlayerOptions,
+        opt: &LaunchOptions,
         event_loop: EventLoopProxy<RuffleEvent>,
         movie_url: &Url,
         window: Rc<Window>,
@@ -345,7 +345,7 @@ impl PlayerController {
         }
     }
 
-    pub fn create(&mut self, opt: &PlayerOptions, movie_url: &Url, movie_view: MovieView) {
+    pub fn create(&mut self, opt: &LaunchOptions, movie_url: &Url, movie_view: MovieView) {
         self.player = Some(ActivePlayer::new(
             opt,
             self.event_loop.clone(),
