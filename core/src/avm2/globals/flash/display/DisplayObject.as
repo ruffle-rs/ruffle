@@ -9,9 +9,6 @@ package flash.display {
     import flash.display.Stage;
     import flash.geom.Point;
     import flash.events.EventDispatcher;
-    
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_setter;
 
     [Ruffle(InstanceAllocator)]
     [Ruffle(NativeInstanceInit)]
