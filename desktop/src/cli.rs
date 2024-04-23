@@ -9,6 +9,7 @@ use ruffle_core::{LoadBehavior, PlayerRuntime, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::path::Path;
+use std::time::Duration;
 use url::Url;
 
 fn get_default_save_directory() -> std::path::PathBuf {
@@ -70,8 +71,8 @@ pub struct Opt {
     pub height: Option<f64>,
 
     /// Maximum number of seconds a script can run before scripting is disabled.
-    #[clap(long, short, default_value = "Infinity")]
-    pub max_execution_duration: f64,
+    #[clap(long, short, value_parser(parse_duration_seconds))]
+    pub max_execution_duration: Option<Duration>,
 
     /// Base directory or URL used to resolve all relative path statements in the SWF file.
     /// The default is the current directory.
@@ -211,6 +212,10 @@ pub struct Opt {
 
 fn parse_movie_file_or_url(path: &str) -> Result<Url, Error> {
     crate::util::parse_url(Path::new(path))
+}
+
+fn parse_duration_seconds(value: &str) -> Result<Duration, Error> {
+    Ok(Duration::from_secs_f64(value.parse()?))
 }
 
 fn parse_gamepad_button(mapping: &str) -> Result<(GamepadButton, KeyCode), Error> {
