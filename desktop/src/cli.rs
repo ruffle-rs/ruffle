@@ -127,8 +127,8 @@ pub struct Opt {
     pub socket_allow: Vec<String>,
 
     /// Define how to deal with TCP Socket connections.
-    #[clap(long = "tcp-connections", default_value = "ask")]
-    pub tcp_connections: SocketMode,
+    #[clap(long = "tcp-connections")]
+    pub tcp_connections: Option<SocketMode>,
 
     /// Replace all embedded HTTP URLs with HTTPS.
     #[clap(long, action)]

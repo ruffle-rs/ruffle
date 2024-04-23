@@ -47,7 +47,7 @@ pub struct LaunchOptions {
     pub force_scale: bool,
     pub proxy: Option<Url>,
     pub socket_allowed: HashSet<String>,
-    pub tcp_connections: SocketMode,
+    pub tcp_connections: Option<SocketMode>,
     pub upgrade_to_https: bool,
     pub fullscreen: bool,
     pub load_behavior: LoadBehavior,
@@ -173,7 +173,7 @@ impl ActivePlayer {
             opt.upgrade_to_https,
             opt.open_url_mode,
             opt.socket_allowed.clone(),
-            opt.tcp_connections,
+            opt.tcp_connections.unwrap_or(SocketMode::Ask),
             Rc::new(content),
             RfdNavigatorInterface,
         );

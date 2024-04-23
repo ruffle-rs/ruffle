@@ -3,12 +3,14 @@ use crate::gui::text;
 use crate::gui::widgets::PathOrUrlField;
 use crate::player::LaunchOptions;
 use egui::{
-    Align2, Button, Checkbox, ComboBox, DragValue, Grid, Slider, TextEdit, Ui, Widget, Window,
+    Align2, Button, Checkbox, ComboBox, DragValue, Grid, Layout, Slider, TextEdit, Ui, Widget,
+    Window,
 };
 use ruffle_core::backend::navigator::{OpenURLMode, SocketMode};
 use ruffle_core::config::Letterbox;
 use ruffle_core::{LoadBehavior, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
+use std::borrow::Cow;
 use std::ops::RangeInclusive;
 use std::time::Duration;
 use unic_langid::LanguageIdentifier;
@@ -30,6 +32,7 @@ pub struct OpenDialog {
     framerate_enabled: bool,
 
     script_timeout: OptionalField<DurationField>,
+    tcp_connections: OptionalField<EnumDropdownField<SocketMode>>,
 }
 
 impl OpenDialog {
@@ -58,6 +61,18 @@ impl OpenDialog {
                 .map(Duration::as_secs_f64),
             DurationField::new(1.0..=600.0, 30.0),
         );
+        let tcp_connections = OptionalField::new(
+            defaults.tcp_connections,
+            EnumDropdownField::new(
+                SocketMode::Ask,
+                vec![SocketMode::Allow, SocketMode::Ask, SocketMode::Deny],
+                Box::new(|value, locale| match value {
+                    SocketMode::Allow => text(locale, "tcp-connections-allow"),
+                    SocketMode::Ask => text(locale, "tcp-connections-ask"),
+                    SocketMode::Deny => text(locale, "tcp-connections-deny"),
+                }),
+            ),
+        );
 
         Self {
             options: defaults,
@@ -69,6 +84,7 @@ impl OpenDialog {
             framerate: 30.0,
             framerate_enabled: false,
             script_timeout,
+            tcp_connections,
         }
     }
 
@@ -180,29 +196,8 @@ impl OpenDialog {
                 ui.end_row();
 
                 ui.label(text(locale, "tcp-connections"));
-                ComboBox::from_id_source("open-file-advanced-options-tcp-connections")
-                    .selected_text(match self.options.tcp_connections {
-                        SocketMode::Allow => text(locale, "tcp-connections-allow"),
-                        SocketMode::Ask => text(locale, "tcp-connections-ask"),
-                        SocketMode::Deny => text(locale, "tcp-connections-deny"),
-                    })
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(
-                            &mut self.options.tcp_connections,
-                            SocketMode::Allow,
-                            text(locale, "tcp-connections-allow"),
-                        );
-                        ui.selectable_value(
-                            &mut self.options.tcp_connections,
-                            SocketMode::Ask,
-                            text(locale, "tcp-connections-ask"),
-                        );
-                        ui.selectable_value(
-                            &mut self.options.tcp_connections,
-                            SocketMode::Deny,
-                            text(locale, "tcp-connections-deny"),
-                        );
-                    });
+                self.tcp_connections
+                    .ui(ui, &mut self.options.tcp_connections, locale);
                 ui.end_row();
 
                 // TODO: This should probably be a global setting somewhere, not per load
@@ -550,13 +545,7 @@ trait InnerField {
 
     fn value_if_missing(&self) -> Self::Value;
 
-    fn widget<'a>(
-        &self,
-        ui: &Ui,
-        value: &'a mut Self::Value,
-        error: bool,
-        locale: &LanguageIdentifier,
-    ) -> impl Widget + 'a;
+    fn ui(&self, ui: &mut Ui, value: &mut Self::Value, error: bool, locale: &LanguageIdentifier);
 
     fn value_to_result(&self, value: &Self::Value) -> Result<Self::Result, ()>;
 }
@@ -579,13 +568,7 @@ impl InnerField for UrlField {
         String::new()
     }
 
-    fn widget<'a>(
-        &self,
-        ui: &Ui,
-        value: &'a mut Self::Value,
-        error: bool,
-        _locale: &LanguageIdentifier,
-    ) -> impl Widget + 'a {
+    fn ui(&self, ui: &mut Ui, value: &mut Self::Value, error: bool, _locale: &LanguageIdentifier) {
         TextEdit::singleline(value)
             .hint_text(self.hint)
             .text_color_opt(if error {
@@ -593,6 +576,7 @@ impl InnerField for UrlField {
             } else {
                 None
             })
+            .ui(ui);
     }
 
     fn value_to_result(&self, value: &Self::Value) -> Result<Self::Result, ()> {
@@ -622,14 +606,10 @@ impl InnerField for DurationField {
         self.default_seconds
     }
 
-    fn widget<'a>(
-        &self,
-        _ui: &Ui,
-        value: &'a mut Self::Value,
-        _error: bool,
-        locale: &LanguageIdentifier,
-    ) -> impl Widget + 'a {
-        Slider::new(value, self.range.clone()).suffix(text(locale, "max-execution-duration-suffix"))
+    fn ui(&self, ui: &mut Ui, value: &mut Self::Value, _error: bool, locale: &LanguageIdentifier) {
+        Slider::new(value, self.range.clone())
+            .suffix(text(locale, "max-execution-duration-suffix"))
+            .ui(ui);
     }
 
     fn value_to_result(&self, value: &Self::Value) -> Result<Self::Result, ()> {
@@ -638,6 +618,53 @@ impl InnerField for DurationField {
         } else {
             Duration::MAX
         })
+    }
+}
+
+type ValueToTextFn<T> = dyn Fn(T, &LanguageIdentifier) -> Cow<'static, str>;
+
+struct EnumDropdownField<T: Copy> {
+    id: egui::Id,
+    default: T,
+    value_to_name: Box<ValueToTextFn<T>>,
+    possible_values: Vec<T>,
+}
+
+impl<T: Copy> EnumDropdownField<T> {
+    pub fn new(default: T, possible_values: Vec<T>, value_to_name: Box<ValueToTextFn<T>>) -> Self {
+        Self {
+            id: egui::Id::new(rand::random::<u64>()),
+            default,
+            value_to_name,
+            possible_values,
+        }
+    }
+}
+
+impl<T: Copy + PartialEq> InnerField for EnumDropdownField<T> {
+    type Value = T;
+    type Result = T;
+
+    fn value_if_missing(&self) -> Self::Value {
+        self.default
+    }
+
+    fn ui(&self, ui: &mut Ui, value: &mut Self::Value, _error: bool, locale: &LanguageIdentifier) {
+        ComboBox::from_id_source(self.id)
+            .selected_text((self.value_to_name)(*value, locale))
+            .show_ui(ui, |ui| {
+                for possible_value in &self.possible_values {
+                    ui.selectable_value(
+                        value,
+                        *possible_value,
+                        (self.value_to_name)(*possible_value, locale),
+                    );
+                }
+            });
+    }
+
+    fn value_to_result(&self, value: &Self::Value) -> Result<Self::Result, ()> {
+        Ok(*value)
     }
 }
 
@@ -676,8 +703,10 @@ impl<Inner: InnerField> OptionalField<Inner> {
         ui.horizontal(|ui| {
             Checkbox::without_text(&mut self.enabled).ui(ui);
             ui.add_enabled_ui(self.enabled, |ui| {
-                let widget = self.inner.widget(ui, &mut self.value, self.error, locale);
-                ui.add_sized(ui.available_size(), widget);
+                let layout = Layout::centered_and_justified(ui.layout().main_dir());
+                ui.allocate_ui_with_layout(ui.available_size(), layout, |ui| {
+                    self.inner.ui(ui, &mut self.value, self.error, locale);
+                });
             });
         });
 
