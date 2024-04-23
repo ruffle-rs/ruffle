@@ -4351,6 +4351,7 @@ dependencies = [
  "gilrs",
  "image 0.25.1",
  "os_info",
+ "rand",
  "rfd",
  "ruffle_core",
  "ruffle_frontend_utils",
