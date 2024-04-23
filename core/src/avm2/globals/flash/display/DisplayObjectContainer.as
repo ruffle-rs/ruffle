@@ -7,6 +7,7 @@ package flash.display {
     import flash.media.SoundTransform;
     import flash.display.DisplayObject;
     import flash.display.InteractiveObject;
+    import flash.text.TextSnapshot;
 
     [Ruffle(NativeInstanceInit)]
     public class DisplayObjectContainer extends InteractiveObject {
@@ -42,5 +43,10 @@ package flash.display {
 
         public native function getObjectsUnderPoint(point:Point):Array;
         public native function areInaccessibleObjectsUnderPoint(point:Point):Boolean;
+
+        public function get textSnapshot():TextSnapshot {
+            stub_getter("flash.display.DisplayObjectContainer", "textSnapshot")
+            return new TextSnapshot();
+        }
     }
 }
