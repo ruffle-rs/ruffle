@@ -9,6 +9,8 @@ use ruffle_core::backend::navigator::{OpenURLMode, SocketMode};
 use ruffle_core::config::Letterbox;
 use ruffle_core::{LoadBehavior, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
+use std::ops::RangeInclusive;
+use std::time::Duration;
 use unic_langid::LanguageIdentifier;
 use url::Url;
 use winit::event_loop::EventLoopProxy;
@@ -26,6 +28,8 @@ pub struct OpenDialog {
 
     framerate: f64,
     framerate_enabled: bool,
+
+    script_timeout: OptionalField<DurationField>,
 }
 
 impl OpenDialog {
@@ -47,6 +51,14 @@ impl OpenDialog {
             UrlField::new("socks5://localhost:8080"),
         );
         let path = PathOrUrlField::new(default_url, "path/to/movie.swf");
+        let script_timeout = OptionalField::new(
+            defaults
+                .max_execution_duration
+                .as_ref()
+                .map(Duration::as_secs_f64),
+            DurationField::new(1.0..=600.0, 30.0),
+        );
+
         Self {
             options: defaults,
             event_loop,
@@ -56,6 +68,7 @@ impl OpenDialog {
             path,
             framerate: 30.0,
             framerate_enabled: false,
+            script_timeout,
         }
     }
 
@@ -139,18 +152,24 @@ impl OpenDialog {
             .spacing([40.0, 4.0])
             .show(ui, |ui| {
                 ui.label(text(locale, "custom-base-url"));
-                is_valid &= self.base_url.ui(ui, &mut self.options.base).is_valid();
+                is_valid &= self
+                    .base_url
+                    .ui(ui, &mut self.options.base, locale)
+                    .is_valid();
                 ui.end_row();
 
                 ui.label(text(locale, "spoof-swf-url"));
                 is_valid &= self
                     .spoof_url
-                    .ui(ui, &mut self.options.spoof_url)
+                    .ui(ui, &mut self.options.spoof_url, locale)
                     .is_valid();
                 ui.end_row();
 
                 ui.label(text(locale, "proxy"));
-                is_valid &= self.proxy_url.ui(ui, &mut self.options.proxy).is_valid();
+                is_valid &= self
+                    .proxy_url
+                    .ui(ui, &mut self.options.proxy, locale)
+                    .is_valid();
                 ui.end_row();
 
                 ui.label(text(locale, "upgrade-http"));
@@ -250,9 +269,8 @@ impl OpenDialog {
             .spacing([40.0, 4.0])
             .show(ui, |ui| {
                 ui.label(text(locale, "max-execution-duration"));
-                Slider::new(&mut self.options.max_execution_duration, 1.0..=600.0)
-                    .suffix(text(locale, "max-execution-duration-suffix"))
-                    .ui(ui);
+                self.script_timeout
+                    .ui(ui, &mut self.options.max_execution_duration, locale);
                 ui.end_row();
 
                 ui.label(text(locale, "quality"));
@@ -532,7 +550,13 @@ trait InnerField {
 
     fn value_if_missing(&self) -> Self::Value;
 
-    fn widget<'a>(&self, ui: &Ui, value: &'a mut Self::Value, error: bool) -> impl Widget + 'a;
+    fn widget<'a>(
+        &self,
+        ui: &Ui,
+        value: &'a mut Self::Value,
+        error: bool,
+        locale: &LanguageIdentifier,
+    ) -> impl Widget + 'a;
 
     fn value_to_result(&self, value: &Self::Value) -> Result<Self::Result, ()>;
 }
@@ -555,7 +579,13 @@ impl InnerField for UrlField {
         String::new()
     }
 
-    fn widget<'a>(&self, ui: &Ui, value: &'a mut Self::Value, error: bool) -> impl Widget + 'a {
+    fn widget<'a>(
+        &self,
+        ui: &Ui,
+        value: &'a mut Self::Value,
+        error: bool,
+        _locale: &LanguageIdentifier,
+    ) -> impl Widget + 'a {
         TextEdit::singleline(value)
             .hint_text(self.hint)
             .text_color_opt(if error {
@@ -567,6 +597,47 @@ impl InnerField for UrlField {
 
     fn value_to_result(&self, value: &Self::Value) -> Result<Self::Result, ()> {
         Url::parse(value).map_err(|_| ())
+    }
+}
+
+struct DurationField {
+    range: RangeInclusive<f64>,
+    default_seconds: f64,
+}
+
+impl DurationField {
+    pub fn new(range: RangeInclusive<f64>, default_seconds: f64) -> Self {
+        Self {
+            range,
+            default_seconds,
+        }
+    }
+}
+
+impl InnerField for DurationField {
+    type Value = f64;
+    type Result = Duration;
+
+    fn value_if_missing(&self) -> Self::Value {
+        self.default_seconds
+    }
+
+    fn widget<'a>(
+        &self,
+        _ui: &Ui,
+        value: &'a mut Self::Value,
+        _error: bool,
+        locale: &LanguageIdentifier,
+    ) -> impl Widget + 'a {
+        Slider::new(value, self.range.clone()).suffix(text(locale, "max-execution-duration-suffix"))
+    }
+
+    fn value_to_result(&self, value: &Self::Value) -> Result<Self::Result, ()> {
+        Ok(if value.is_finite() {
+            Duration::from_secs_f64(*value)
+        } else {
+            Duration::MAX
+        })
     }
 }
 
@@ -596,11 +667,16 @@ impl<Inner: InnerField> OptionalField<Inner> {
         }
     }
 
-    pub fn ui(&mut self, ui: &mut Ui, result: &mut Option<Inner::Result>) -> &mut Self {
+    pub fn ui(
+        &mut self,
+        ui: &mut Ui,
+        result: &mut Option<Inner::Result>,
+        locale: &LanguageIdentifier,
+    ) -> &mut Self {
         ui.horizontal(|ui| {
             Checkbox::without_text(&mut self.enabled).ui(ui);
             ui.add_enabled_ui(self.enabled, |ui| {
-                let widget = self.inner.widget(ui, &mut self.value, self.error);
+                let widget = self.inner.widget(ui, &mut self.value, self.error, locale);
                 ui.add_sized(ui.available_size(), widget);
             });
         });

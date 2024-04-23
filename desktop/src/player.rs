@@ -38,7 +38,7 @@ use winit::window::Window;
 #[derive(Debug, Clone)]
 pub struct LaunchOptions {
     pub parameters: Vec<(String, String)>,
-    pub max_execution_duration: f64,
+    pub max_execution_duration: Option<Duration>,
     pub base: Option<Url>,
     pub quality: StageQuality,
     pub align: StageAlign,
@@ -194,12 +194,6 @@ impl ActivePlayer {
             }));
         }
 
-        let max_execution_duration = if opt.max_execution_duration == f64::INFINITY {
-            Duration::MAX
-        } else {
-            Duration::from_secs_f64(opt.max_execution_duration)
-        };
-
         if !opt.gamepad_button_mapping.is_empty() {
             builder = builder.with_gamepad_button_mapping(opt.gamepad_button_mapping.clone());
         }
@@ -223,7 +217,7 @@ impl ActivePlayer {
             )
             .with_autoplay(true)
             .with_letterbox(opt.letterbox)
-            .with_max_execution_duration(max_execution_duration)
+            .with_max_execution_duration(opt.max_execution_duration.unwrap_or(Duration::MAX))
             .with_quality(opt.quality)
             .with_align(opt.align, opt.force_align)
             .with_scale_mode(opt.scale, opt.force_scale)
