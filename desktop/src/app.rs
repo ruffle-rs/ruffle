@@ -1,6 +1,6 @@
 use crate::custom_event::RuffleEvent;
 use crate::gui::{GuiController, MENU_HEIGHT};
-use crate::player::{PlayerController, PlayerOptions};
+use crate::player::{LaunchOptions, PlayerController};
 use crate::preferences::GlobalPreferences;
 use crate::util::{
     get_screen_size, gilrs_button_to_gamepad_button, parse_url, pick_file, plot_stats_in_tracy,
@@ -83,7 +83,7 @@ impl App {
         if let Some(movie_url) = &movie_url {
             gui.create_movie(
                 &mut player,
-                PlayerOptions::from(&preferences),
+                LaunchOptions::from(&preferences),
                 movie_url.clone(),
             );
         } else {
@@ -230,7 +230,7 @@ impl App {
                             if let Ok(url) = parse_url(&file) {
                                 self.gui.borrow_mut().create_movie(
                                     &mut self.player,
-                                    PlayerOptions::from(&self.preferences),
+                                    LaunchOptions::from(&self.preferences),
                                     url,
                                 );
                             }

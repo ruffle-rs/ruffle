@@ -1,7 +1,7 @@
 use crate::custom_event::RuffleEvent;
 use crate::gui::dialogs::Dialogs;
 use crate::gui::{text, DebugMessage};
-use crate::player::PlayerOptions;
+use crate::player::LaunchOptions;
 use crate::preferences::GlobalPreferences;
 use egui::{menu, Button, Key, KeyboardShortcut, Modifiers, Widget};
 use ruffle_core::Player;
@@ -12,17 +12,17 @@ use winit::event_loop::EventLoopProxy;
 
 pub struct MenuBar {
     event_loop: EventLoopProxy<RuffleEvent>,
-    default_player_options: PlayerOptions,
+    default_player_options: LaunchOptions,
     preferences: GlobalPreferences,
 
     cached_recents: Option<Vec<Recent>>,
-    pub currently_opened: Option<(Url, PlayerOptions)>,
+    pub currently_opened: Option<(Url, LaunchOptions)>,
 }
 
 impl MenuBar {
     pub fn new(
         event_loop: EventLoopProxy<RuffleEvent>,
-        default_player_options: PlayerOptions,
+        default_player_options: LaunchOptions,
         preferences: GlobalPreferences,
     ) -> Self {
         Self {
