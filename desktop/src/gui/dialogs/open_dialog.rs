@@ -19,9 +19,9 @@ pub struct OpenDialog {
 
     // These are outside of PlayerOptions as it can be an invalid value (ie URL) during typing,
     // and we don't want to clear the value if the user, ie, toggles the checkbox.
-    spoof_url: OptionalUrlField,
-    base_url: OptionalUrlField,
-    proxy_url: OptionalUrlField,
+    spoof_url: OptionalField<UrlField>,
+    base_url: OptionalField<UrlField>,
+    proxy_url: OptionalField<UrlField>,
     path: PathOrUrlField,
 
     framerate: f64,
@@ -34,9 +34,18 @@ impl OpenDialog {
         default_url: Option<Url>,
         event_loop: EventLoopProxy<RuffleEvent>,
     ) -> Self {
-        let spoof_url = OptionalUrlField::new(&defaults.spoof_url, "https://example.org/game.swf");
-        let base_url = OptionalUrlField::new(&defaults.base, "https://example.org");
-        let proxy_url = OptionalUrlField::new(&defaults.proxy, "socks5://localhost:8080");
+        let spoof_url = OptionalField::new(
+            defaults.spoof_url.as_ref().map(Url::to_string),
+            UrlField::new("https://example.org/game.swf"),
+        );
+        let base_url = OptionalField::new(
+            defaults.base.as_ref().map(Url::to_string),
+            UrlField::new("https://example.org"),
+        );
+        let proxy_url = OptionalField::new(
+            defaults.proxy.as_ref().map(Url::to_string),
+            UrlField::new("socks5://localhost:8080"),
+        );
         let path = PathOrUrlField::new(default_url, "path/to/movie.swf");
         Self {
             options: defaults,
@@ -517,56 +526,92 @@ impl OpenDialog {
     }
 }
 
-struct OptionalUrlField {
-    value: String,
-    error: bool,
-    enabled: bool,
+trait InnerField {
+    type Value;
+    type Result;
+
+    fn value_if_missing(&self) -> Self::Value;
+
+    fn widget<'a>(&self, ui: &Ui, value: &'a mut Self::Value, error: bool) -> impl Widget + 'a;
+
+    fn value_to_result(&self, value: &Self::Value) -> Result<Self::Result, ()>;
+}
+
+struct UrlField {
     hint: &'static str,
 }
 
-impl OptionalUrlField {
-    pub fn new(default: &Option<Url>, hint: &'static str) -> Self {
+impl UrlField {
+    pub fn new(hint: &'static str) -> Self {
+        Self { hint }
+    }
+}
+
+impl InnerField for UrlField {
+    type Value = String;
+    type Result = Url;
+
+    fn value_if_missing(&self) -> Self::Value {
+        String::new()
+    }
+
+    fn widget<'a>(&self, ui: &Ui, value: &'a mut Self::Value, error: bool) -> impl Widget + 'a {
+        TextEdit::singleline(value)
+            .hint_text(self.hint)
+            .text_color_opt(if error {
+                Some(ui.style().visuals.error_fg_color)
+            } else {
+                None
+            })
+    }
+
+    fn value_to_result(&self, value: &Self::Value) -> Result<Self::Result, ()> {
+        Url::parse(value).map_err(|_| ())
+    }
+}
+
+struct OptionalField<Inner: InnerField> {
+    value: Inner::Value,
+    error: bool,
+    enabled: bool,
+    inner: Inner,
+}
+
+impl<Inner: InnerField> OptionalField<Inner> {
+    pub fn new(default: Option<Inner::Value>, inner: Inner) -> Self {
         if let Some(default) = default {
             Self {
-                value: default.to_string(),
+                value: default,
                 error: false,
                 enabled: true,
-                hint,
+                inner,
             }
         } else {
             Self {
-                value: "".to_string(),
+                value: inner.value_if_missing(),
                 error: false,
                 enabled: false,
-                hint,
+                inner,
             }
         }
     }
 
-    pub fn ui(&mut self, ui: &mut Ui, result: &mut Option<Url>) -> &mut Self {
+    pub fn ui(&mut self, ui: &mut Ui, result: &mut Option<Inner::Result>) -> &mut Self {
         ui.horizontal(|ui| {
             Checkbox::without_text(&mut self.enabled).ui(ui);
             ui.add_enabled_ui(self.enabled, |ui| {
-                ui.add_sized(
-                    ui.available_size(),
-                    TextEdit::singleline(&mut self.value)
-                        .hint_text(self.hint)
-                        .text_color_opt(if self.error {
-                            Some(ui.style().visuals.error_fg_color)
-                        } else {
-                            None
-                        }),
-                );
+                let widget = self.inner.widget(ui, &mut self.value, self.error);
+                ui.add_sized(ui.available_size(), widget);
             });
         });
 
         if self.enabled {
-            match Url::parse(&self.value) {
-                Ok(url) => {
-                    *result = Some(url);
+            match self.inner.value_to_result(&self.value) {
+                Ok(value) => {
+                    *result = Some(value);
                     self.error = false;
                 }
-                Err(_) => {
+                Err(()) => {
                     self.error = true;
                 }
             }
