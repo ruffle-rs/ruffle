@@ -39,6 +39,7 @@ pub struct OpenDialog {
     letterbox: OptionalField<EnumDropdownField<Letterbox>>,
     player_version: OptionalField<NumberField<u8>>,
     player_runtime: OptionalField<EnumDropdownField<PlayerRuntime>>,
+    dummy_external_interface: OptionalField<BooleanDropdownField>,
 }
 
 impl OpenDialog {
@@ -212,6 +213,16 @@ impl OpenDialog {
                 }),
             ),
         );
+        let dummy_external_interface = OptionalField::new(
+            defaults.dummy_external_interface,
+            BooleanDropdownField::new(
+                false,
+                Box::new(|value, locale| match value {
+                    true => text(locale, "enable"),
+                    false => text(locale, "disable"),
+                }),
+            ),
+        );
 
         Self {
             options: defaults,
@@ -231,6 +242,7 @@ impl OpenDialog {
             letterbox,
             player_version,
             player_runtime,
+            dummy_external_interface,
         }
     }
 
@@ -438,9 +450,10 @@ impl OpenDialog {
                 ui.end_row();
 
                 ui.label(text(locale, "dummy-external-interface"));
-                ui.checkbox(
+                self.dummy_external_interface.ui(
+                    ui,
                     &mut self.options.dummy_external_interface,
-                    text(locale, "dummy-external-interface-check"),
+                    locale,
                 );
                 ui.end_row();
 
@@ -668,6 +681,44 @@ impl<T: Copy + PartialEq> InnerField for EnumDropdownField<T> {
                         (self.value_to_name)(*possible_value, locale),
                     );
                 }
+            });
+    }
+
+    fn value_to_result(&self, value: &Self::Value) -> Result<Self::Result, ()> {
+        Ok(*value)
+    }
+}
+
+struct BooleanDropdownField {
+    id: egui::Id,
+    default: bool,
+    value_to_name: Box<ValueToTextFn<bool>>,
+}
+
+impl BooleanDropdownField {
+    pub fn new(default: bool, value_to_name: Box<ValueToTextFn<bool>>) -> Self {
+        Self {
+            id: egui::Id::new(rand::random::<u64>()),
+            default,
+            value_to_name,
+        }
+    }
+}
+
+impl InnerField for BooleanDropdownField {
+    type Value = bool;
+    type Result = bool;
+
+    fn value_if_missing(&self) -> Self::Value {
+        self.default
+    }
+
+    fn ui(&self, ui: &mut Ui, value: &mut Self::Value, _error: bool, locale: &LanguageIdentifier) {
+        ComboBox::from_id_source(self.id)
+            .selected_text((self.value_to_name)(*value, locale))
+            .show_ui(ui, |ui| {
+                ui.selectable_value(value, false, (self.value_to_name)(false, locale));
+                ui.selectable_value(value, true, (self.value_to_name)(true, locale));
             });
     }
 
