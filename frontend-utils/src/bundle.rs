@@ -6,6 +6,7 @@ use crate::parse::ParseWarning;
 use std::path::Path;
 
 pub mod info;
+pub mod player_options;
 pub mod source;
 
 #[derive(Debug, thiserror::Error)]

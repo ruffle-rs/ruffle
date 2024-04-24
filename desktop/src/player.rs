@@ -10,12 +10,10 @@ use anyhow::anyhow;
 use ruffle_core::backend::navigator::{OpenURLMode, SocketMode};
 use ruffle_core::config::Letterbox;
 use ruffle_core::events::{GamepadButton, KeyCode};
-use ruffle_core::{
-    DefaultFont, LoadBehavior, Player, PlayerBuilder, PlayerEvent, PlayerRuntime, StageAlign,
-    StageScaleMode,
-};
+use ruffle_core::{DefaultFont, LoadBehavior, Player, PlayerBuilder, PlayerEvent};
 use ruffle_frontend_utils::backends::executor::{AsyncExecutor, PollRequester};
 use ruffle_frontend_utils::backends::navigator::ExternalNavigatorBackend;
+use ruffle_frontend_utils::bundle::player_options::PlayerOptions;
 use ruffle_frontend_utils::bundle::source::BundleSourceError;
 use ruffle_frontend_utils::bundle::{Bundle, BundleError};
 use ruffle_frontend_utils::content::PlayingContent;
@@ -37,28 +35,13 @@ use winit::window::Window;
 /// These may be primed by command line arguments.
 #[derive(Debug, Clone)]
 pub struct LaunchOptions {
-    pub parameters: Vec<(String, String)>,
-    pub max_execution_duration: Option<Duration>,
-    pub base: Option<Url>,
-    pub quality: Option<StageQuality>,
-    pub align: Option<StageAlign>,
-    pub force_align: Option<bool>,
-    pub scale: Option<StageScaleMode>,
-    pub force_scale: Option<bool>,
+    pub player: PlayerOptions,
     pub proxy: Option<Url>,
     pub socket_allowed: HashSet<String>,
     pub tcp_connections: Option<SocketMode>,
-    pub upgrade_to_https: Option<bool>,
     pub fullscreen: bool,
-    pub load_behavior: Option<LoadBehavior>,
     pub save_directory: PathBuf,
-    pub letterbox: Option<Letterbox>,
-    pub spoof_url: Option<Url>,
-    pub player_version: Option<u8>,
-    pub player_runtime: Option<PlayerRuntime>,
-    pub frame_rate: Option<f64>,
     pub open_url_mode: OpenURLMode,
-    pub dummy_external_interface: Option<bool>,
     pub gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
     pub avm2_optimizer_enabled: bool,
 }
@@ -66,42 +49,44 @@ pub struct LaunchOptions {
 impl From<&GlobalPreferences> for LaunchOptions {
     fn from(value: &GlobalPreferences) -> Self {
         Self {
-            parameters: value.cli.parameters().collect(),
-            max_execution_duration: value.cli.max_execution_duration,
-            base: value.cli.base.clone(),
-            quality: value.cli.quality,
-            align: value.cli.align,
-            force_align: if value.cli.force_align {
-                Some(true)
-            } else {
-                None
-            },
-            scale: value.cli.scale,
-            force_scale: if value.cli.force_scale {
-                Some(true)
-            } else {
-                None
+            player: PlayerOptions {
+                parameters: value.cli.parameters().collect(),
+                max_execution_duration: value.cli.max_execution_duration,
+                base: value.cli.base.clone(),
+                quality: value.cli.quality,
+                align: value.cli.align,
+                force_align: if value.cli.force_align {
+                    Some(true)
+                } else {
+                    None
+                },
+                scale: value.cli.scale,
+                force_scale: if value.cli.force_scale {
+                    Some(true)
+                } else {
+                    None
+                },
+                upgrade_to_https: if value.cli.upgrade_to_https {
+                    Some(true)
+                } else {
+                    None
+                },
+                load_behavior: value.cli.load_behavior,
+                letterbox: value.cli.letterbox,
+                spoof_url: value.cli.spoof_url.clone(),
+                player_version: value.cli.player_version,
+                player_runtime: value.cli.player_runtime,
+                frame_rate: value.cli.frame_rate,
+                dummy_external_interface: if value.cli.dummy_external_interface {
+                    Some(true)
+                } else {
+                    None
+                },
             },
             proxy: value.cli.proxy.clone(),
-            upgrade_to_https: if value.cli.upgrade_to_https {
-                Some(true)
-            } else {
-                None
-            },
             fullscreen: value.cli.fullscreen,
-            load_behavior: value.cli.load_behavior,
             save_directory: value.cli.save_directory.clone(),
-            letterbox: value.cli.letterbox,
-            spoof_url: value.cli.spoof_url.clone(),
-            player_version: value.cli.player_version,
-            player_runtime: value.cli.player_runtime,
-            frame_rate: value.cli.frame_rate,
             open_url_mode: value.cli.open_url_mode,
-            dummy_external_interface: if value.cli.dummy_external_interface {
-                Some(true)
-            } else {
-                None
-            },
             socket_allowed: HashSet::from_iter(value.cli.socket_allow.iter().cloned()),
             tcp_connections: value.cli.tcp_connections,
             gamepad_button_mapping: HashMap::from_iter(value.cli.gamepad_button.iter().cloned()),
@@ -183,10 +168,13 @@ impl ActivePlayer {
         let movie_url = content.initial_swf_url().clone();
         let readable_name = content.name();
         let navigator = ExternalNavigatorBackend::new(
-            opt.base.to_owned().unwrap_or_else(|| movie_url.clone()),
+            opt.player
+                .base
+                .to_owned()
+                .unwrap_or_else(|| movie_url.clone()),
             future_spawner,
             opt.proxy.clone(),
-            opt.upgrade_to_https.unwrap_or_default(),
+            opt.player.upgrade_to_https.unwrap_or_default(),
             opt.open_url_mode,
             opt.socket_allowed.clone(),
             opt.tcp_connections.unwrap_or(SocketMode::Ask),
@@ -204,9 +192,9 @@ impl ActivePlayer {
             .expect("Couldn't create wgpu rendering backend");
         RENDER_INFO.with(|i| *i.borrow_mut() = Some(renderer.debug_info().to_string()));
 
-        if opt.dummy_external_interface.unwrap_or_default() {
+        if opt.player.dummy_external_interface.unwrap_or_default() {
             builder = builder.with_external_interface(Box::new(DesktopExternalInterfaceProvider {
-                spoof_url: opt.spoof_url.clone(),
+                spoof_url: opt.player.spoof_url.clone(),
             }));
         }
 
@@ -232,24 +220,24 @@ impl ActivePlayer {
                 .expect("Couldn't create ui backend"),
             )
             .with_autoplay(true)
-            .with_letterbox(opt.letterbox.unwrap_or(Letterbox::On))
-            .with_max_execution_duration(opt.max_execution_duration.unwrap_or(Duration::MAX))
-            .with_quality(opt.quality.unwrap_or(StageQuality::High))
+            .with_letterbox(opt.player.letterbox.unwrap_or(Letterbox::On))
+            .with_max_execution_duration(opt.player.max_execution_duration.unwrap_or(Duration::MAX))
+            .with_quality(opt.player.quality.unwrap_or(StageQuality::High))
             .with_align(
-                opt.align.unwrap_or_default(),
-                opt.force_align.unwrap_or_default(),
+                opt.player.align.unwrap_or_default(),
+                opt.player.force_align.unwrap_or_default(),
             )
             .with_scale_mode(
-                opt.scale.unwrap_or_default(),
-                opt.force_scale.unwrap_or_default(),
+                opt.player.scale.unwrap_or_default(),
+                opt.player.force_scale.unwrap_or_default(),
             )
             .with_fullscreen(opt.fullscreen)
-            .with_load_behavior(opt.load_behavior.unwrap_or(LoadBehavior::Streaming))
-            .with_spoofed_url(opt.spoof_url.clone().map(|url| url.to_string()))
-            .with_page_url(opt.spoof_url.clone().map(|url| url.to_string()))
-            .with_player_version(opt.player_version)
-            .with_player_runtime(opt.player_runtime.unwrap_or_default())
-            .with_frame_rate(opt.frame_rate)
+            .with_load_behavior(opt.player.load_behavior.unwrap_or(LoadBehavior::Streaming))
+            .with_spoofed_url(opt.player.spoof_url.clone().map(|url| url.to_string()))
+            .with_page_url(opt.player.spoof_url.clone().map(|url| url.to_string()))
+            .with_player_version(opt.player.player_version)
+            .with_player_runtime(opt.player.player_runtime.unwrap_or_default())
+            .with_frame_rate(opt.player.frame_rate)
             .with_avm2_optimizer_enabled(opt.avm2_optimizer_enabled);
         let player = builder.build();
 
@@ -268,7 +256,7 @@ impl ActivePlayer {
             });
             player_lock.fetch_root_movie(
                 movie_url.to_string(),
-                opt.parameters.to_owned(),
+                opt.player.parameters.to_owned(),
                 Box::new(on_metadata),
             );
 

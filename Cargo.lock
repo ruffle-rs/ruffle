@@ -4386,6 +4386,7 @@ dependencies = [
  "macro_rules_attribute",
  "reqwest",
  "ruffle_core",
+ "ruffle_render",
  "slotmap",
  "tempfile",
  "thiserror",
