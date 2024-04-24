@@ -41,8 +41,8 @@ pub struct LaunchOptions {
     pub max_execution_duration: Option<Duration>,
     pub base: Option<Url>,
     pub quality: Option<StageQuality>,
-    pub align: StageAlign,
-    pub force_align: bool,
+    pub align: Option<StageAlign>,
+    pub force_align: Option<bool>,
     pub scale: StageScaleMode,
     pub force_scale: bool,
     pub proxy: Option<Url>,
@@ -70,8 +70,12 @@ impl From<&GlobalPreferences> for LaunchOptions {
             max_execution_duration: value.cli.max_execution_duration,
             base: value.cli.base.clone(),
             quality: value.cli.quality,
-            align: value.cli.align.unwrap_or_default(),
-            force_align: value.cli.force_align,
+            align: value.cli.align,
+            force_align: if value.cli.force_align {
+                Some(true)
+            } else {
+                None
+            },
             scale: value.cli.scale,
             force_scale: value.cli.force_scale,
             proxy: value.cli.proxy.clone(),
@@ -219,7 +223,10 @@ impl ActivePlayer {
             .with_letterbox(opt.letterbox)
             .with_max_execution_duration(opt.max_execution_duration.unwrap_or(Duration::MAX))
             .with_quality(opt.quality.unwrap_or(StageQuality::High))
-            .with_align(opt.align, opt.force_align)
+            .with_align(
+                opt.align.unwrap_or_default(),
+                opt.force_align.unwrap_or_default(),
+            )
             .with_scale_mode(opt.scale, opt.force_scale)
             .with_fullscreen(opt.fullscreen)
             .with_load_behavior(opt.load_behavior)

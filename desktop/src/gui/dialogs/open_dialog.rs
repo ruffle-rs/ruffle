@@ -34,6 +34,7 @@ pub struct OpenDialog {
     script_timeout: OptionalField<DurationField>,
     tcp_connections: OptionalField<EnumDropdownField<SocketMode>>,
     quality: OptionalField<EnumDropdownField<StageQuality>>,
+    align: OptionalField<FieldWithCheckbox<EnumDropdownField<StageAlign>>>,
 }
 
 impl OpenDialog {
@@ -100,6 +101,48 @@ impl OpenDialog {
                 }),
             ),
         );
+        let align = OptionalField::new(
+            defaults
+                .align
+                .map(|a| (a, defaults.force_align.unwrap_or_default())),
+            FieldWithCheckbox::new(
+                EnumDropdownField::new(
+                    StageAlign::default(),
+                    vec![
+                        StageAlign::default(),
+                        StageAlign::TOP,
+                        StageAlign::BOTTOM,
+                        StageAlign::LEFT,
+                        StageAlign::RIGHT,
+                        StageAlign::TOP | StageAlign::LEFT,
+                        StageAlign::TOP | StageAlign::RIGHT,
+                        StageAlign::BOTTOM | StageAlign::LEFT,
+                        StageAlign::BOTTOM | StageAlign::RIGHT,
+                    ],
+                    Box::new(|value, locale| match value {
+                        StageAlign::TOP => text(locale, "align-top"),
+                        StageAlign::BOTTOM => text(locale, "align-bottom"),
+                        StageAlign::LEFT => text(locale, "align-left"),
+                        StageAlign::RIGHT => text(locale, "align-right"),
+                        _ => {
+                            if value == StageAlign::TOP | StageAlign::LEFT {
+                                text(locale, "align-top-left")
+                            } else if value == StageAlign::TOP | StageAlign::RIGHT {
+                                text(locale, "align-top-right")
+                            } else if value == StageAlign::BOTTOM | StageAlign::LEFT {
+                                text(locale, "align-bottom-left")
+                            } else if value == StageAlign::BOTTOM | StageAlign::RIGHT {
+                                text(locale, "align-bottom-right")
+                            } else {
+                                text(locale, "align-center")
+                            }
+                        }
+                    }),
+                ),
+                Box::new(|locale| text(locale, "align-force")),
+                false,
+            ),
+        );
 
         Self {
             options: defaults,
@@ -113,6 +156,7 @@ impl OpenDialog {
             script_timeout,
             tcp_connections,
             quality,
+            align,
         }
     }
 
@@ -327,77 +371,21 @@ impl OpenDialog {
                 ui.end_row();
 
                 ui.label(text(locale, "align"));
-                ui.horizontal(|ui| {
-                    ComboBox::from_id_source("open-file-advanced-options-align")
-                        .selected_text(match self.options.align {
-                            StageAlign::TOP => text(locale, "align-top"),
-                            StageAlign::BOTTOM => text(locale, "align-bottom"),
-                            StageAlign::LEFT => text(locale, "align-left"),
-                            StageAlign::RIGHT => text(locale, "align-right"),
-                            _ => {
-                                let align = self.options.align;
-                                if align == StageAlign::TOP | StageAlign::LEFT {
-                                    text(locale, "align-top-left")
-                                } else if align == StageAlign::TOP | StageAlign::RIGHT {
-                                    text(locale, "align-top-right")
-                                } else if align == StageAlign::BOTTOM | StageAlign::LEFT {
-                                    text(locale, "align-bottom-left")
-                                } else if align == StageAlign::BOTTOM | StageAlign::RIGHT {
-                                    text(locale, "align-bottom-right")
-                                } else {
-                                    text(locale, "align-center")
-                                }
-                            }
-                        })
-                        .show_ui(ui, |ui| {
-                            ui.selectable_value(
-                                &mut self.options.align,
-                                StageAlign::default(),
-                                text(locale, "align-center"),
-                            );
-                            ui.selectable_value(
-                                &mut self.options.align,
-                                StageAlign::TOP,
-                                text(locale, "align-top"),
-                            );
-                            ui.selectable_value(
-                                &mut self.options.align,
-                                StageAlign::BOTTOM,
-                                text(locale, "align-bottom"),
-                            );
-                            ui.selectable_value(
-                                &mut self.options.align,
-                                StageAlign::LEFT,
-                                text(locale, "align-left"),
-                            );
-                            ui.selectable_value(
-                                &mut self.options.align,
-                                StageAlign::RIGHT,
-                                text(locale, "align-right"),
-                            );
-                            ui.selectable_value(
-                                &mut self.options.align,
-                                StageAlign::TOP | StageAlign::LEFT,
-                                text(locale, "align-top-left"),
-                            );
-                            ui.selectable_value(
-                                &mut self.options.align,
-                                StageAlign::TOP | StageAlign::RIGHT,
-                                text(locale, "align-top-right"),
-                            );
-                            ui.selectable_value(
-                                &mut self.options.align,
-                                StageAlign::BOTTOM | StageAlign::LEFT,
-                                text(locale, "align-bottom-left"),
-                            );
-                            ui.selectable_value(
-                                &mut self.options.align,
-                                StageAlign::BOTTOM | StageAlign::RIGHT,
-                                text(locale, "align-bottom-right"),
-                            );
-                        });
-                    ui.checkbox(&mut self.options.force_align, text(locale, "align-force"));
-                });
+                let mut align = self
+                    .options
+                    .align
+                    .map(|a| (a, self.options.force_align.unwrap_or_default()));
+                self.align.ui(ui, &mut align, locale);
+                match align {
+                    Some((align, force)) => {
+                        self.options.align = Some(align);
+                        self.options.force_align = Some(force);
+                    }
+                    None => {
+                        self.options.align = None;
+                        self.options.force_align = None;
+                    }
+                }
                 ui.end_row();
 
                 ui.label(text(locale, "scale-mode"));
@@ -641,6 +629,44 @@ impl<T: Copy + PartialEq> InnerField for EnumDropdownField<T> {
 
     fn value_to_result(&self, value: &Self::Value) -> Result<Self::Result, ()> {
         Ok(*value)
+    }
+}
+
+struct FieldWithCheckbox<T: InnerField> {
+    field: T,
+    checkbox_label: Box<dyn Fn(&LanguageIdentifier) -> Cow<'static, str>>,
+    checkbox_default: bool,
+}
+
+impl<T: InnerField> FieldWithCheckbox<T> {
+    pub fn new(
+        field: T,
+        checkbox_label: Box<dyn Fn(&LanguageIdentifier) -> Cow<'static, str>>,
+        checkbox_default: bool,
+    ) -> Self {
+        Self {
+            field,
+            checkbox_label,
+            checkbox_default,
+        }
+    }
+}
+
+impl<T: InnerField> InnerField for FieldWithCheckbox<T> {
+    type Value = (T::Value, bool);
+    type Result = (T::Result, bool);
+
+    fn value_if_missing(&self) -> Self::Value {
+        (self.field.value_if_missing(), self.checkbox_default)
+    }
+
+    fn ui(&self, ui: &mut Ui, value: &mut Self::Value, error: bool, locale: &LanguageIdentifier) {
+        self.field.ui(ui, &mut value.0, error, locale);
+        ui.checkbox(&mut value.1, (self.checkbox_label)(locale));
+    }
+
+    fn value_to_result(&self, value: &Self::Value) -> Result<Self::Result, ()> {
+        Ok((self.field.value_to_result(&value.0)?, value.1))
     }
 }
 
