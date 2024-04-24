@@ -80,8 +80,8 @@ pub struct Opt {
     pub base: Option<Url>,
 
     /// Default quality of the movie.
-    #[clap(long, short, default_value = "high")]
-    pub quality: StageQuality,
+    #[clap(long, short)]
+    pub quality: Option<StageQuality>,
 
     /// The alignment of the stage.
     #[clap(long, short)]
