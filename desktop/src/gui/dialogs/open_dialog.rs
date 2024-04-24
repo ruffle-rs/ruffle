@@ -3,8 +3,7 @@ use crate::gui::text;
 use crate::gui::widgets::PathOrUrlField;
 use crate::player::LaunchOptions;
 use egui::{
-    Align2, Button, Checkbox, ComboBox, DragValue, Grid, Layout, Slider, TextEdit, Ui, Widget,
-    Window,
+    emath, Align2, Button, Checkbox, ComboBox, Grid, Layout, Slider, TextEdit, Ui, Widget, Window,
 };
 use ruffle_core::backend::navigator::{OpenURLMode, SocketMode};
 use ruffle_core::config::Letterbox;
@@ -38,6 +37,7 @@ pub struct OpenDialog {
     scale_mode: OptionalField<FieldWithCheckbox<EnumDropdownField<StageScaleMode>>>,
     load_behavior: OptionalField<EnumDropdownField<LoadBehavior>>,
     letterbox: OptionalField<EnumDropdownField<Letterbox>>,
+    player_version: OptionalField<NumberField<u8>>,
 }
 
 impl OpenDialog {
@@ -198,6 +198,8 @@ impl OpenDialog {
                 }),
             ),
         );
+        let player_version =
+            OptionalField::new(defaults.player_version, NumberField::new(1..=32, 32));
 
         Self {
             options: defaults,
@@ -215,6 +217,7 @@ impl OpenDialog {
             scale_mode,
             load_behavior,
             letterbox,
+            player_version,
         }
     }
 
@@ -429,9 +432,8 @@ impl OpenDialog {
                 ui.end_row();
 
                 ui.label(text(locale, "player-version"));
-                DragValue::new(&mut self.options.player_version)
-                    .clamp_range(1..=32)
-                    .ui(ui);
+                self.player_version
+                    .ui(ui, &mut self.options.player_version, locale);
                 ui.end_row();
 
                 ui.label(text(locale, "custom-framerate"));
@@ -577,6 +579,34 @@ impl InnerField for DurationField {
         } else {
             Duration::MAX
         })
+    }
+}
+
+struct NumberField<T: emath::Numeric> {
+    range: RangeInclusive<T>,
+    default: T,
+}
+
+impl<T: emath::Numeric> NumberField<T> {
+    pub fn new(range: RangeInclusive<T>, default: T) -> Self {
+        Self { range, default }
+    }
+}
+
+impl<T: emath::Numeric> InnerField for NumberField<T> {
+    type Value = T;
+    type Result = T;
+
+    fn value_if_missing(&self) -> Self::Value {
+        self.default
+    }
+
+    fn ui(&self, ui: &mut Ui, value: &mut Self::Value, _error: bool, _locale: &LanguageIdentifier) {
+        Slider::new(value, self.range.clone()).ui(ui);
+    }
+
+    fn value_to_result(&self, value: &Self::Value) -> Result<Self::Result, ()> {
+        Ok(*value)
     }
 }
 
