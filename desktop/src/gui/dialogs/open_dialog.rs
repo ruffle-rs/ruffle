@@ -50,11 +50,11 @@ impl OpenDialog {
         event_loop: EventLoopProxy<RuffleEvent>,
     ) -> Self {
         let spoof_url = OptionalField::new(
-            defaults.spoof_url.as_ref().map(Url::to_string),
+            defaults.player.spoof_url.as_ref().map(Url::to_string),
             UrlField::new("https://example.org/game.swf"),
         );
         let base_url = OptionalField::new(
-            defaults.base.as_ref().map(Url::to_string),
+            defaults.player.base.as_ref().map(Url::to_string),
             UrlField::new("https://example.org"),
         );
         let proxy_url = OptionalField::new(
@@ -64,6 +64,7 @@ impl OpenDialog {
         let path = PathOrUrlField::new(default_url, "path/to/movie.swf");
         let script_timeout = OptionalField::new(
             defaults
+                .player
                 .max_execution_duration
                 .as_ref()
                 .map(Duration::as_secs_f64),
@@ -82,7 +83,7 @@ impl OpenDialog {
             ),
         );
         let quality = OptionalField::new(
-            defaults.quality,
+            defaults.player.quality,
             EnumDropdownField::new(
                 StageQuality::High,
                 vec![
@@ -109,8 +110,9 @@ impl OpenDialog {
         );
         let align = OptionalField::new(
             defaults
+                .player
                 .align
-                .map(|a| (a, defaults.force_align.unwrap_or_default())),
+                .map(|a| (a, defaults.player.force_align.unwrap_or_default())),
             FieldWithCheckbox::new(
                 EnumDropdownField::new(
                     StageAlign::default(),
@@ -151,8 +153,9 @@ impl OpenDialog {
         );
         let scale_mode = OptionalField::new(
             defaults
+                .player
                 .scale
-                .map(|a| (a, defaults.force_scale.unwrap_or_default())),
+                .map(|a| (a, defaults.player.force_scale.unwrap_or_default())),
             FieldWithCheckbox::new(
                 EnumDropdownField::new(
                     StageScaleMode::default(),
@@ -174,7 +177,7 @@ impl OpenDialog {
             ),
         );
         let load_behavior = OptionalField::new(
-            defaults.load_behavior,
+            defaults.player.load_behavior,
             EnumDropdownField::new(
                 LoadBehavior::Streaming,
                 vec![
@@ -190,7 +193,7 @@ impl OpenDialog {
             ),
         );
         let letterbox = OptionalField::new(
-            defaults.letterbox,
+            defaults.player.letterbox,
             EnumDropdownField::new(
                 Letterbox::On,
                 vec![Letterbox::On, Letterbox::Fullscreen, Letterbox::Off],
@@ -202,9 +205,9 @@ impl OpenDialog {
             ),
         );
         let player_version =
-            OptionalField::new(defaults.player_version, NumberField::new(1..=32, 32));
+            OptionalField::new(defaults.player.player_version, NumberField::new(1..=32, 32));
         let player_runtime = OptionalField::new(
-            defaults.player_runtime,
+            defaults.player.player_runtime,
             EnumDropdownField::new(
                 PlayerRuntime::default(),
                 vec![PlayerRuntime::FlashPlayer, PlayerRuntime::AIR],
@@ -215,7 +218,7 @@ impl OpenDialog {
             ),
         );
         let dummy_external_interface = OptionalField::new(
-            defaults.dummy_external_interface,
+            defaults.player.dummy_external_interface,
             BooleanDropdownField::new(
                 false,
                 Box::new(|value, locale| match value {
@@ -225,7 +228,7 @@ impl OpenDialog {
             ),
         );
         let upgrade_to_https = OptionalField::new(
-            defaults.upgrade_to_https,
+            defaults.player.upgrade_to_https,
             BooleanDropdownField::new(
                 false,
                 Box::new(|value, locale| match value {
@@ -260,9 +263,9 @@ impl OpenDialog {
 
     fn start(&mut self) -> bool {
         if self.framerate_enabled {
-            self.options.frame_rate = Some(self.framerate);
+            self.options.player.frame_rate = Some(self.framerate);
         } else {
-            self.options.frame_rate = None;
+            self.options.player.frame_rate = None;
         }
         if let Some(url) = self.path.value() {
             if self
@@ -340,14 +343,14 @@ impl OpenDialog {
                 ui.label(text(locale, "custom-base-url"));
                 is_valid &= self
                     .base_url
-                    .ui(ui, &mut self.options.base, locale)
+                    .ui(ui, &mut self.options.player.base, locale)
                     .is_valid();
                 ui.end_row();
 
                 ui.label(text(locale, "spoof-swf-url"));
                 is_valid &= self
                     .spoof_url
-                    .ui(ui, &mut self.options.spoof_url, locale)
+                    .ui(ui, &mut self.options.player.spoof_url, locale)
                     .is_valid();
                 ui.end_row();
 
@@ -360,7 +363,7 @@ impl OpenDialog {
 
                 ui.label(text(locale, "upgrade-http"));
                 self.upgrade_to_https
-                    .ui(ui, &mut self.options.upgrade_to_https, locale);
+                    .ui(ui, &mut self.options.player.upgrade_to_https, locale);
                 ui.end_row();
 
                 ui.label(text(locale, "tcp-connections"));
@@ -397,7 +400,7 @@ impl OpenDialog {
 
                 ui.label(text(locale, "load-behavior"));
                 self.load_behavior
-                    .ui(ui, &mut self.options.load_behavior, locale);
+                    .ui(ui, &mut self.options.player.load_behavior, locale);
                 ui.end_row();
             });
 
@@ -412,31 +415,34 @@ impl OpenDialog {
             .show(ui, |ui| {
                 ui.label(text(locale, "max-execution-duration"));
                 self.script_timeout
-                    .ui(ui, &mut self.options.max_execution_duration, locale);
+                    .ui(ui, &mut self.options.player.max_execution_duration, locale);
                 ui.end_row();
 
                 ui.label(text(locale, "quality"));
-                self.quality.ui(ui, &mut self.options.quality, locale);
+                self.quality
+                    .ui(ui, &mut self.options.player.quality, locale);
                 ui.end_row();
 
                 ui.label(text(locale, "letterbox"));
-                self.letterbox.ui(ui, &mut self.options.letterbox, locale);
+                self.letterbox
+                    .ui(ui, &mut self.options.player.letterbox, locale);
                 ui.end_row();
 
                 ui.label(text(locale, "align"));
                 let mut align = self
                     .options
+                    .player
                     .align
-                    .map(|a| (a, self.options.force_align.unwrap_or_default()));
+                    .map(|a| (a, self.options.player.force_align.unwrap_or_default()));
                 self.align.ui(ui, &mut align, locale);
                 match align {
                     Some((align, force)) => {
-                        self.options.align = Some(align);
-                        self.options.force_align = Some(force);
+                        self.options.player.align = Some(align);
+                        self.options.player.force_align = Some(force);
                     }
                     None => {
-                        self.options.align = None;
-                        self.options.force_align = None;
+                        self.options.player.align = None;
+                        self.options.player.force_align = None;
                     }
                 }
                 ui.end_row();
@@ -444,17 +450,18 @@ impl OpenDialog {
                 ui.label(text(locale, "scale-mode"));
                 let mut scale_mode = self
                     .options
+                    .player
                     .scale
-                    .map(|a| (a, self.options.force_scale.unwrap_or_default()));
+                    .map(|a| (a, self.options.player.force_scale.unwrap_or_default()));
                 self.scale_mode.ui(ui, &mut scale_mode, locale);
                 match scale_mode {
                     Some((scale, force)) => {
-                        self.options.scale = Some(scale);
-                        self.options.force_scale = Some(force);
+                        self.options.player.scale = Some(scale);
+                        self.options.player.force_scale = Some(force);
                     }
                     None => {
-                        self.options.scale = None;
-                        self.options.force_scale = None;
+                        self.options.player.scale = None;
+                        self.options.player.force_scale = None;
                     }
                 }
                 ui.end_row();
@@ -462,19 +469,19 @@ impl OpenDialog {
                 ui.label(text(locale, "dummy-external-interface"));
                 self.dummy_external_interface.ui(
                     ui,
-                    &mut self.options.dummy_external_interface,
+                    &mut self.options.player.dummy_external_interface,
                     locale,
                 );
                 ui.end_row();
 
                 ui.label(text(locale, "player-version"));
                 self.player_version
-                    .ui(ui, &mut self.options.player_version, locale);
+                    .ui(ui, &mut self.options.player.player_version, locale);
                 ui.end_row();
 
                 ui.label(text(locale, "player-runtime"));
                 self.player_runtime
-                    .ui(ui, &mut self.options.player_runtime, locale);
+                    .ui(ui, &mut self.options.player.player_runtime, locale);
                 ui.end_row();
 
                 ui.label(text(locale, "custom-framerate"));
@@ -500,18 +507,19 @@ impl OpenDialog {
                 .clicked()
             {
                 self.options
+                    .player
                     .parameters
                     .push((Default::default(), Default::default()));
             }
 
             if ui
                 .add_enabled(
-                    !self.options.parameters.is_empty(),
+                    !self.options.player.parameters.is_empty(),
                     Button::new(text(locale, "open-dialog-remove-parameters")),
                 )
                 .clicked()
             {
-                self.options.parameters.clear();
+                self.options.player.parameters.clear();
             }
         });
 
@@ -521,7 +529,7 @@ impl OpenDialog {
             .min_col_width(100.0)
             .striped(true)
             .show(ui, |ui| {
-                self.options.parameters.retain_mut(|(key, value)| {
+                self.options.player.parameters.retain_mut(|(key, value)| {
                     let mut keep = true;
                     ui.text_edit_singleline(key);
                     ui.horizontal(|ui| {
