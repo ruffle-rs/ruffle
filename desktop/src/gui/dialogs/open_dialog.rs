@@ -35,6 +35,7 @@ pub struct OpenDialog {
     tcp_connections: OptionalField<EnumDropdownField<SocketMode>>,
     quality: OptionalField<EnumDropdownField<StageQuality>>,
     align: OptionalField<FieldWithCheckbox<EnumDropdownField<StageAlign>>>,
+    scale_mode: OptionalField<FieldWithCheckbox<EnumDropdownField<StageScaleMode>>>,
 }
 
 impl OpenDialog {
@@ -143,6 +144,30 @@ impl OpenDialog {
                 false,
             ),
         );
+        let scale_mode = OptionalField::new(
+            defaults
+                .scale
+                .map(|a| (a, defaults.force_scale.unwrap_or_default())),
+            FieldWithCheckbox::new(
+                EnumDropdownField::new(
+                    StageScaleMode::default(),
+                    vec![
+                        StageScaleMode::ExactFit,
+                        StageScaleMode::NoBorder,
+                        StageScaleMode::NoScale,
+                        StageScaleMode::ShowAll,
+                    ],
+                    Box::new(|value, locale| match value {
+                        StageScaleMode::ExactFit => text(locale, "scale-mode-exactfit"),
+                        StageScaleMode::NoBorder => text(locale, "scale-mode-noborder"),
+                        StageScaleMode::NoScale => text(locale, "scale-mode-noscale"),
+                        StageScaleMode::ShowAll => text(locale, "scale-mode-showall"),
+                    }),
+                ),
+                Box::new(|locale| text(locale, "scale-mode-force")),
+                false,
+            ),
+        );
 
         Self {
             options: defaults,
@@ -157,6 +182,7 @@ impl OpenDialog {
             tcp_connections,
             quality,
             align,
+            scale_mode,
         }
     }
 
@@ -389,41 +415,21 @@ impl OpenDialog {
                 ui.end_row();
 
                 ui.label(text(locale, "scale-mode"));
-                ui.horizontal(|ui| {
-                    ComboBox::from_id_source("open-file-advanced-options-scale")
-                        .selected_text(match self.options.scale {
-                            StageScaleMode::ExactFit => text(locale, "scale-mode-exactfit"),
-                            StageScaleMode::NoBorder => text(locale, "scale-mode-noborder"),
-                            StageScaleMode::NoScale => text(locale, "scale-mode-noscale"),
-                            StageScaleMode::ShowAll => text(locale, "scale-mode-showall"),
-                        })
-                        .show_ui(ui, |ui| {
-                            ui.selectable_value(
-                                &mut self.options.scale,
-                                StageScaleMode::ExactFit,
-                                text(locale, "scale-mode-exactfit"),
-                            );
-                            ui.selectable_value(
-                                &mut self.options.scale,
-                                StageScaleMode::NoBorder,
-                                text(locale, "scale-mode-noborder"),
-                            );
-                            ui.selectable_value(
-                                &mut self.options.scale,
-                                StageScaleMode::NoScale,
-                                text(locale, "scale-mode-noscale"),
-                            );
-                            ui.selectable_value(
-                                &mut self.options.scale,
-                                StageScaleMode::ShowAll,
-                                text(locale, "scale-mode-showall"),
-                            );
-                        });
-                    ui.checkbox(
-                        &mut self.options.force_scale,
-                        text(locale, "scale-mode-force"),
-                    );
-                });
+                let mut scale_mode = self
+                    .options
+                    .scale
+                    .map(|a| (a, self.options.force_scale.unwrap_or_default()));
+                self.scale_mode.ui(ui, &mut scale_mode, locale);
+                match scale_mode {
+                    Some((scale, force)) => {
+                        self.options.scale = Some(scale);
+                        self.options.force_scale = Some(force);
+                    }
+                    None => {
+                        self.options.scale = None;
+                        self.options.force_scale = None;
+                    }
+                }
                 ui.end_row();
 
                 ui.label(text(locale, "dummy-external-interface"));
@@ -586,6 +592,7 @@ impl InnerField for DurationField {
 }
 
 type ValueToTextFn<T> = dyn Fn(T, &LanguageIdentifier) -> Cow<'static, str>;
+type CheckboxLabelFn = dyn Fn(&LanguageIdentifier) -> Cow<'static, str>;
 
 struct EnumDropdownField<T: Copy> {
     id: egui::Id,
@@ -634,16 +641,12 @@ impl<T: Copy + PartialEq> InnerField for EnumDropdownField<T> {
 
 struct FieldWithCheckbox<T: InnerField> {
     field: T,
-    checkbox_label: Box<dyn Fn(&LanguageIdentifier) -> Cow<'static, str>>,
+    checkbox_label: Box<CheckboxLabelFn>,
     checkbox_default: bool,
 }
 
 impl<T: InnerField> FieldWithCheckbox<T> {
-    pub fn new(
-        field: T,
-        checkbox_label: Box<dyn Fn(&LanguageIdentifier) -> Cow<'static, str>>,
-        checkbox_default: bool,
-    ) -> Self {
+    pub fn new(field: T, checkbox_label: Box<CheckboxLabelFn>, checkbox_default: bool) -> Self {
         Self {
             field,
             checkbox_label,

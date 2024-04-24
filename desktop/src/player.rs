@@ -43,8 +43,8 @@ pub struct LaunchOptions {
     pub quality: Option<StageQuality>,
     pub align: Option<StageAlign>,
     pub force_align: Option<bool>,
-    pub scale: StageScaleMode,
-    pub force_scale: bool,
+    pub scale: Option<StageScaleMode>,
+    pub force_scale: Option<bool>,
     pub proxy: Option<Url>,
     pub socket_allowed: HashSet<String>,
     pub tcp_connections: Option<SocketMode>,
@@ -77,7 +77,11 @@ impl From<&GlobalPreferences> for LaunchOptions {
                 None
             },
             scale: value.cli.scale,
-            force_scale: value.cli.force_scale,
+            force_scale: if value.cli.force_scale {
+                Some(true)
+            } else {
+                None
+            },
             proxy: value.cli.proxy.clone(),
             upgrade_to_https: value.cli.upgrade_to_https,
             fullscreen: value.cli.fullscreen,
@@ -227,7 +231,10 @@ impl ActivePlayer {
                 opt.align.unwrap_or_default(),
                 opt.force_align.unwrap_or_default(),
             )
-            .with_scale_mode(opt.scale, opt.force_scale)
+            .with_scale_mode(
+                opt.scale.unwrap_or_default(),
+                opt.force_scale.unwrap_or_default(),
+            )
             .with_fullscreen(opt.fullscreen)
             .with_load_behavior(opt.load_behavior)
             .with_spoofed_url(opt.spoof_url.clone().map(|url| url.to_string()))
