@@ -52,7 +52,7 @@ pub struct LaunchOptions {
     pub fullscreen: bool,
     pub load_behavior: Option<LoadBehavior>,
     pub save_directory: PathBuf,
-    pub letterbox: Letterbox,
+    pub letterbox: Option<Letterbox>,
     pub spoof_url: Option<Url>,
     pub player_version: u8,
     pub player_runtime: PlayerRuntime,
@@ -224,7 +224,7 @@ impl ActivePlayer {
                 .expect("Couldn't create ui backend"),
             )
             .with_autoplay(true)
-            .with_letterbox(opt.letterbox)
+            .with_letterbox(opt.letterbox.unwrap_or(Letterbox::On))
             .with_max_execution_duration(opt.max_execution_duration.unwrap_or(Duration::MAX))
             .with_quality(opt.quality.unwrap_or(StageQuality::High))
             .with_align(
