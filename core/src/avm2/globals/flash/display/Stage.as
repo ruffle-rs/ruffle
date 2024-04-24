@@ -235,6 +235,14 @@ package flash.display {
         public native function get stageFocusRect():Boolean;
         public native function set stageFocusRect(value:Boolean):void;
 
+        [API("670")]
+        public function get softKeyboardRect() : Rectangle {
+            stub_getter("flash.display.Stage", "softKeyboardRect");
+            // This is technically a valid implementation most of the time,
+            // as 0x0 Rect is the expected value with no soft keyboard.
+            return new Rectangle(0, 0, 0, 0);
+        }
+
         public native function get allowsFullScreen():Boolean;
 
         public native function get allowsFullScreenInteractive():Boolean;
