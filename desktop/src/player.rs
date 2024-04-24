@@ -55,7 +55,7 @@ pub struct LaunchOptions {
     pub letterbox: Option<Letterbox>,
     pub spoof_url: Option<Url>,
     pub player_version: Option<u8>,
-    pub player_runtime: PlayerRuntime,
+    pub player_runtime: Option<PlayerRuntime>,
     pub frame_rate: Option<f64>,
     pub open_url_mode: OpenURLMode,
     pub dummy_external_interface: bool,
@@ -240,7 +240,7 @@ impl ActivePlayer {
             .with_spoofed_url(opt.spoof_url.clone().map(|url| url.to_string()))
             .with_page_url(opt.spoof_url.clone().map(|url| url.to_string()))
             .with_player_version(opt.player_version)
-            .with_player_runtime(opt.player_runtime)
+            .with_player_runtime(opt.player_runtime.unwrap_or_default())
             .with_frame_rate(opt.frame_rate)
             .with_avm2_optimizer_enabled(opt.avm2_optimizer_enabled);
         let player = builder.build();
