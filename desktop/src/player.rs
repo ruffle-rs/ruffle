@@ -40,7 +40,7 @@ pub struct LaunchOptions {
     pub parameters: Vec<(String, String)>,
     pub max_execution_duration: Option<Duration>,
     pub base: Option<Url>,
-    pub quality: StageQuality,
+    pub quality: Option<StageQuality>,
     pub align: StageAlign,
     pub force_align: bool,
     pub scale: StageScaleMode,
@@ -218,7 +218,7 @@ impl ActivePlayer {
             .with_autoplay(true)
             .with_letterbox(opt.letterbox)
             .with_max_execution_duration(opt.max_execution_duration.unwrap_or(Duration::MAX))
-            .with_quality(opt.quality)
+            .with_quality(opt.quality.unwrap_or(StageQuality::High))
             .with_align(opt.align, opt.force_align)
             .with_scale_mode(opt.scale, opt.force_scale)
             .with_fullscreen(opt.fullscreen)

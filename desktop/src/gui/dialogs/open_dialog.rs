@@ -33,6 +33,7 @@ pub struct OpenDialog {
 
     script_timeout: OptionalField<DurationField>,
     tcp_connections: OptionalField<EnumDropdownField<SocketMode>>,
+    quality: OptionalField<EnumDropdownField<StageQuality>>,
 }
 
 impl OpenDialog {
@@ -73,6 +74,32 @@ impl OpenDialog {
                 }),
             ),
         );
+        let quality = OptionalField::new(
+            defaults.quality,
+            EnumDropdownField::new(
+                StageQuality::High,
+                vec![
+                    StageQuality::Low,
+                    StageQuality::Medium,
+                    StageQuality::High,
+                    StageQuality::Best,
+                    StageQuality::High8x8,
+                    StageQuality::High8x8Linear,
+                    StageQuality::High16x16,
+                    StageQuality::High16x16Linear,
+                ],
+                Box::new(|value, locale| match value {
+                    StageQuality::Low => text(locale, "quality-low"),
+                    StageQuality::Medium => text(locale, "quality-medium"),
+                    StageQuality::High => text(locale, "quality-high"),
+                    StageQuality::Best => text(locale, "quality-best"),
+                    StageQuality::High8x8 => text(locale, "quality-high8x8"),
+                    StageQuality::High8x8Linear => text(locale, "quality-high8x8linear"),
+                    StageQuality::High16x16 => text(locale, "quality-high16x16"),
+                    StageQuality::High16x16Linear => text(locale, "quality-high16x16linear"),
+                }),
+            ),
+        );
 
         Self {
             options: defaults,
@@ -85,6 +112,7 @@ impl OpenDialog {
             framerate_enabled: false,
             script_timeout,
             tcp_connections,
+            quality,
         }
     }
 
@@ -269,59 +297,7 @@ impl OpenDialog {
                 ui.end_row();
 
                 ui.label(text(locale, "quality"));
-                ComboBox::from_id_source("open-file-advanced-options-quality")
-                    .selected_text(match self.options.quality {
-                        StageQuality::Low => text(locale, "quality-low"),
-                        StageQuality::Medium => text(locale, "quality-medium"),
-                        StageQuality::High => text(locale, "quality-high"),
-                        StageQuality::Best => text(locale, "quality-best"),
-                        StageQuality::High8x8 => text(locale, "quality-high8x8"),
-                        StageQuality::High8x8Linear => text(locale, "quality-high8x8linear"),
-                        StageQuality::High16x16 => text(locale, "quality-high16x16"),
-                        StageQuality::High16x16Linear => text(locale, "quality-high16x16linear"),
-                    })
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(
-                            &mut self.options.quality,
-                            StageQuality::Low,
-                            text(locale, "quality-low"),
-                        );
-                        ui.selectable_value(
-                            &mut self.options.quality,
-                            StageQuality::Medium,
-                            text(locale, "quality-medium"),
-                        );
-                        ui.selectable_value(
-                            &mut self.options.quality,
-                            StageQuality::High,
-                            text(locale, "quality-high"),
-                        );
-                        ui.selectable_value(
-                            &mut self.options.quality,
-                            StageQuality::Best,
-                            text(locale, "quality-best"),
-                        );
-                        ui.selectable_value(
-                            &mut self.options.quality,
-                            StageQuality::High8x8,
-                            text(locale, "quality-high8x8"),
-                        );
-                        ui.selectable_value(
-                            &mut self.options.quality,
-                            StageQuality::High8x8Linear,
-                            text(locale, "quality-high8x8linear"),
-                        );
-                        ui.selectable_value(
-                            &mut self.options.quality,
-                            StageQuality::High16x16,
-                            text(locale, "quality-high16x16"),
-                        );
-                        ui.selectable_value(
-                            &mut self.options.quality,
-                            StageQuality::High16x16Linear,
-                            text(locale, "quality-high16x16linear"),
-                        );
-                    });
+                self.quality.ui(ui, &mut self.options.quality, locale);
                 ui.end_row();
 
                 ui.label(text(locale, "letterbox"));
