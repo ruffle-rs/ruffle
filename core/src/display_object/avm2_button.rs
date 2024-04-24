@@ -531,12 +531,11 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             // The `added` event for the state itself, as well as the `addedToStage` events, all see
             // the actual parent
             dispatch_added_event((*self).into(), up_state, true, context);
-            if let Some(container) = up_state.as_container() {
-                if up_should_fire {
-                    for child in container.iter_render_list() {
-                        dispatch_added_to_stage_event(child, context);
-                    }
-                }
+            if self.avm2_stage(context).is_some() {
+                // note: AFAIK we can only get here if we were created by timeline,
+                // which means that `self` can't have listeners set yet,
+                // but up_state can.
+                dispatch_added_to_stage_event((*self).into(), context);
             }
 
             if needs_avm2_construction {

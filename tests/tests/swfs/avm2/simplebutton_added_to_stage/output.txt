@@ -1,0 +1,45 @@
+MySprite constructor
+MySprite ADDED
+null
+MyButton constructor
+MyButton ADDED
+null
+MyButtonContainer constructor
+---- addChild
+MyButtonContainer: ADDED_TO_STAGE
+[object Stage]
+MyButton ADDED_TO_STAGE
+[object Stage]
+MySprite ADDED_TO_STAGE
+[object Stage]
+-------------------------------------------------
+MySprite constructor
+MySprite constructor
+MySprite ADDED
+null
+MySprite ADDED
+null
+MyButton2 constructor
+MyButton2 ADDED
+null
+MyButtonContainer2 constructor
+---- addChild
+MyButtonContainer2: ADDED_TO_STAGE
+[object Stage]
+MyButton2 ADDED_TO_STAGE
+[object Stage]
+MySprite ADDED_TO_STAGE
+[object Stage]
+MySprite ADDED_TO_STAGE
+[object Stage]
+-------------------------------------------------
+MySprite constructor
+MySprite ADDED
+[object Stage]
+MySprite ADDED_TO_STAGE
+[object Stage]
+MyButton constructor
+MyButton ADDED
+[object Stage]
+MyButton ADDED_TO_STAGE
+[object Stage]

@@ -1,0 +1,4 @@
+# note: normally we'd use the EventWatcher infrastructure,
+# but here it also highlights more preexisting bugs we didn't
+# want to cover in this test.
+num_frames = 1
