@@ -92,8 +92,8 @@ pub struct Opt {
     pub force_align: bool,
 
     /// The scale mode of the stage.
-    #[clap(long, short, default_value = "show-all")]
-    pub scale: StageScaleMode,
+    #[clap(long, short)]
+    pub scale: Option<StageScaleMode>,
 
     /// Audio volume as a number between 0 (muted) and 1 (full volume). Default is 1.
     #[clap(long, short)]
