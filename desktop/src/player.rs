@@ -50,7 +50,7 @@ pub struct LaunchOptions {
     pub tcp_connections: Option<SocketMode>,
     pub upgrade_to_https: bool,
     pub fullscreen: bool,
-    pub load_behavior: LoadBehavior,
+    pub load_behavior: Option<LoadBehavior>,
     pub save_directory: PathBuf,
     pub letterbox: Letterbox,
     pub spoof_url: Option<Url>,
@@ -236,7 +236,7 @@ impl ActivePlayer {
                 opt.force_scale.unwrap_or_default(),
             )
             .with_fullscreen(opt.fullscreen)
-            .with_load_behavior(opt.load_behavior)
+            .with_load_behavior(opt.load_behavior.unwrap_or(LoadBehavior::Streaming))
             .with_spoofed_url(opt.spoof_url.clone().map(|url| url.to_string()))
             .with_page_url(opt.spoof_url.clone().map(|url| url.to_string()))
             .with_player_version(Some(opt.player_version))
