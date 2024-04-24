@@ -58,7 +58,7 @@ pub struct LaunchOptions {
     pub player_runtime: Option<PlayerRuntime>,
     pub frame_rate: Option<f64>,
     pub open_url_mode: OpenURLMode,
-    pub dummy_external_interface: bool,
+    pub dummy_external_interface: Option<bool>,
     pub gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
     pub avm2_optimizer_enabled: bool,
 }
@@ -93,7 +93,11 @@ impl From<&GlobalPreferences> for LaunchOptions {
             player_runtime: value.cli.player_runtime,
             frame_rate: value.cli.frame_rate,
             open_url_mode: value.cli.open_url_mode,
-            dummy_external_interface: value.cli.dummy_external_interface,
+            dummy_external_interface: if value.cli.dummy_external_interface {
+                Some(true)
+            } else {
+                None
+            },
             socket_allowed: HashSet::from_iter(value.cli.socket_allow.iter().cloned()),
             tcp_connections: value.cli.tcp_connections,
             gamepad_button_mapping: HashMap::from_iter(value.cli.gamepad_button.iter().cloned()),
@@ -196,7 +200,7 @@ impl ActivePlayer {
             .expect("Couldn't create wgpu rendering backend");
         RENDER_INFO.with(|i| *i.borrow_mut() = Some(renderer.debug_info().to_string()));
 
-        if opt.dummy_external_interface {
+        if opt.dummy_external_interface.unwrap_or_default() {
             builder = builder.with_external_interface(Box::new(DesktopExternalInterfaceProvider {
                 spoof_url: opt.spoof_url.clone(),
             }));

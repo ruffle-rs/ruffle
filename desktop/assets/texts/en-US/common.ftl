@@ -5,3 +5,6 @@ browse = Browse
 save = Save
 cancel = Cancel
 remove = Remove
+
+enable = Enable
+disable = Disable
