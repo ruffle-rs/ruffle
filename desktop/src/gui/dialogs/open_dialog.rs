@@ -36,6 +36,7 @@ pub struct OpenDialog {
     quality: OptionalField<EnumDropdownField<StageQuality>>,
     align: OptionalField<FieldWithCheckbox<EnumDropdownField<StageAlign>>>,
     scale_mode: OptionalField<FieldWithCheckbox<EnumDropdownField<StageScaleMode>>>,
+    load_behavior: OptionalField<EnumDropdownField<LoadBehavior>>,
 }
 
 impl OpenDialog {
@@ -168,6 +169,22 @@ impl OpenDialog {
                 false,
             ),
         );
+        let load_behavior = OptionalField::new(
+            defaults.load_behavior,
+            EnumDropdownField::new(
+                LoadBehavior::Streaming,
+                vec![
+                    LoadBehavior::Streaming,
+                    LoadBehavior::Delayed,
+                    LoadBehavior::Blocking,
+                ],
+                Box::new(|value, locale| match value {
+                    LoadBehavior::Streaming => text(locale, "load-behavior-streaming"),
+                    LoadBehavior::Delayed => text(locale, "load-behavior-delayed"),
+                    LoadBehavior::Blocking => text(locale, "load-behavior-blocking"),
+                }),
+            ),
+        );
 
         Self {
             options: defaults,
@@ -183,6 +200,7 @@ impl OpenDialog {
             quality,
             align,
             scale_mode,
+            load_behavior,
         }
     }
 
@@ -326,29 +344,8 @@ impl OpenDialog {
                 ui.end_row();
 
                 ui.label(text(locale, "load-behavior"));
-                ComboBox::from_id_source("open-file-advanced-options-load-behaviour")
-                    .selected_text(match self.options.load_behavior {
-                        LoadBehavior::Streaming => text(locale, "load-behavior-streaming"),
-                        LoadBehavior::Delayed => text(locale, "load-behavior-delayed"),
-                        LoadBehavior::Blocking => text(locale, "load-behavior-blocking"),
-                    })
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(
-                            &mut self.options.load_behavior,
-                            LoadBehavior::Streaming,
-                            text(locale, "load-behavior-streaming"),
-                        );
-                        ui.selectable_value(
-                            &mut self.options.load_behavior,
-                            LoadBehavior::Delayed,
-                            text(locale, "load-behavior-delayed"),
-                        );
-                        ui.selectable_value(
-                            &mut self.options.load_behavior,
-                            LoadBehavior::Blocking,
-                            text(locale, "load-behavior-blocking"),
-                        );
-                    });
+                self.load_behavior
+                    .ui(ui, &mut self.options.load_behavior, locale);
                 ui.end_row();
             });
 

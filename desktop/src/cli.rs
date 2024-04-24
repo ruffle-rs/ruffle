@@ -138,8 +138,8 @@ pub struct Opt {
     #[clap(long, action)]
     pub fullscreen: bool,
 
-    #[clap(long, default_value = "streaming")]
-    pub load_behavior: LoadBehavior,
+    #[clap(long)]
+    pub load_behavior: Option<LoadBehavior>,
 
     /// Specify how Ruffle should handle areas outside the movie stage.
     #[clap(long, default_value = "on")]
