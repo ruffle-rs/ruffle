@@ -154,8 +154,8 @@ pub struct Opt {
     pub player_version: Option<u8>,
 
     /// The runtime to emulate (Flash Player or Adobe AIR)
-    #[clap(long, default_value = "flash-player")]
-    pub player_runtime: PlayerRuntime,
+    #[clap(long)]
+    pub player_runtime: Option<PlayerRuntime>,
 
     /// Set and lock the player's frame rate, overriding the movie's frame rate.
     #[clap(long)]

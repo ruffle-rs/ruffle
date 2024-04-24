@@ -7,7 +7,7 @@ use egui::{
 };
 use ruffle_core::backend::navigator::{OpenURLMode, SocketMode};
 use ruffle_core::config::Letterbox;
-use ruffle_core::{LoadBehavior, StageAlign, StageScaleMode};
+use ruffle_core::{LoadBehavior, PlayerRuntime, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
 use std::borrow::Cow;
 use std::ops::RangeInclusive;
@@ -38,6 +38,7 @@ pub struct OpenDialog {
     load_behavior: OptionalField<EnumDropdownField<LoadBehavior>>,
     letterbox: OptionalField<EnumDropdownField<Letterbox>>,
     player_version: OptionalField<NumberField<u8>>,
+    player_runtime: OptionalField<EnumDropdownField<PlayerRuntime>>,
 }
 
 impl OpenDialog {
@@ -200,6 +201,17 @@ impl OpenDialog {
         );
         let player_version =
             OptionalField::new(defaults.player_version, NumberField::new(1..=32, 32));
+        let player_runtime = OptionalField::new(
+            defaults.player_runtime,
+            EnumDropdownField::new(
+                PlayerRuntime::default(),
+                vec![PlayerRuntime::FlashPlayer, PlayerRuntime::AIR],
+                Box::new(|value, locale| match value {
+                    PlayerRuntime::FlashPlayer => text(locale, "player-runtime-flash"),
+                    PlayerRuntime::AIR => text(locale, "player-runtime-air"),
+                }),
+            ),
+        );
 
         Self {
             options: defaults,
@@ -218,6 +230,7 @@ impl OpenDialog {
             load_behavior,
             letterbox,
             player_version,
+            player_runtime,
         }
     }
 
@@ -434,6 +447,11 @@ impl OpenDialog {
                 ui.label(text(locale, "player-version"));
                 self.player_version
                     .ui(ui, &mut self.options.player_version, locale);
+                ui.end_row();
+
+                ui.label(text(locale, "player-runtime"));
+                self.player_runtime
+                    .ui(ui, &mut self.options.player_runtime, locale);
                 ui.end_row();
 
                 ui.label(text(locale, "custom-framerate"));

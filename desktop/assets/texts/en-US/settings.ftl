@@ -65,6 +65,10 @@ scale-mode-force = Force
 
 player-version = Player Version
 
+player-runtime = Player Runtime
+player-runtime-flash = Flash Player
+player-runtime-air = Adobe AIR
+
 custom-framerate = Custom Framerate
 custom-framerate-suffix = {" "} fps
 
