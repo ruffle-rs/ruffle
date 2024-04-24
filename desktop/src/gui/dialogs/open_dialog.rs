@@ -37,6 +37,7 @@ pub struct OpenDialog {
     align: OptionalField<FieldWithCheckbox<EnumDropdownField<StageAlign>>>,
     scale_mode: OptionalField<FieldWithCheckbox<EnumDropdownField<StageScaleMode>>>,
     load_behavior: OptionalField<EnumDropdownField<LoadBehavior>>,
+    letterbox: OptionalField<EnumDropdownField<Letterbox>>,
 }
 
 impl OpenDialog {
@@ -185,6 +186,18 @@ impl OpenDialog {
                 }),
             ),
         );
+        let letterbox = OptionalField::new(
+            defaults.letterbox,
+            EnumDropdownField::new(
+                Letterbox::On,
+                vec![Letterbox::On, Letterbox::Fullscreen, Letterbox::Off],
+                Box::new(|value, locale| match value {
+                    Letterbox::On => text(locale, "letterbox-on"),
+                    Letterbox::Fullscreen => text(locale, "letterbox-fullscreen"),
+                    Letterbox::Off => text(locale, "letterbox-off"),
+                }),
+            ),
+        );
 
         Self {
             options: defaults,
@@ -201,6 +214,7 @@ impl OpenDialog {
             align,
             scale_mode,
             load_behavior,
+            letterbox,
         }
     }
 
@@ -368,29 +382,7 @@ impl OpenDialog {
                 ui.end_row();
 
                 ui.label(text(locale, "letterbox"));
-                ComboBox::from_id_source("open-file-advanced-options-letterbox")
-                    .selected_text(match self.options.letterbox {
-                        Letterbox::On => text(locale, "letterbox-on"),
-                        Letterbox::Fullscreen => text(locale, "letterbox-fullscreen"),
-                        Letterbox::Off => text(locale, "letterbox-off"),
-                    })
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(
-                            &mut self.options.letterbox,
-                            Letterbox::On,
-                            text(locale, "letterbox-on"),
-                        );
-                        ui.selectable_value(
-                            &mut self.options.letterbox,
-                            Letterbox::Fullscreen,
-                            text(locale, "letterbox-fullscreen"),
-                        );
-                        ui.selectable_value(
-                            &mut self.options.letterbox,
-                            Letterbox::Off,
-                            text(locale, "letterbox-off"),
-                        );
-                    });
+                self.letterbox.ui(ui, &mut self.options.letterbox, locale);
                 ui.end_row();
 
                 ui.label(text(locale, "align"));

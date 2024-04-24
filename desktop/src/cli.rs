@@ -142,8 +142,8 @@ pub struct Opt {
     pub load_behavior: Option<LoadBehavior>,
 
     /// Specify how Ruffle should handle areas outside the movie stage.
-    #[clap(long, default_value = "on")]
-    pub letterbox: Letterbox,
+    #[clap(long)]
+    pub letterbox: Option<Letterbox>,
 
     /// Spoofs the root SWF URL provided to ActionScript.
     #[clap(long, value_parser)]
