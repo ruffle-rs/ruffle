@@ -54,7 +54,7 @@ pub struct LaunchOptions {
     pub save_directory: PathBuf,
     pub letterbox: Option<Letterbox>,
     pub spoof_url: Option<Url>,
-    pub player_version: u8,
+    pub player_version: Option<u8>,
     pub player_runtime: PlayerRuntime,
     pub frame_rate: Option<f64>,
     pub open_url_mode: OpenURLMode,
@@ -89,7 +89,7 @@ impl From<&GlobalPreferences> for LaunchOptions {
             save_directory: value.cli.save_directory.clone(),
             letterbox: value.cli.letterbox,
             spoof_url: value.cli.spoof_url.clone(),
-            player_version: value.cli.player_version.unwrap_or(32),
+            player_version: value.cli.player_version,
             player_runtime: value.cli.player_runtime,
             frame_rate: value.cli.frame_rate,
             open_url_mode: value.cli.open_url_mode,
@@ -239,7 +239,7 @@ impl ActivePlayer {
             .with_load_behavior(opt.load_behavior.unwrap_or(LoadBehavior::Streaming))
             .with_spoofed_url(opt.spoof_url.clone().map(|url| url.to_string()))
             .with_page_url(opt.spoof_url.clone().map(|url| url.to_string()))
-            .with_player_version(Some(opt.player_version))
+            .with_player_version(opt.player_version)
             .with_player_runtime(opt.player_runtime)
             .with_frame_rate(opt.frame_rate)
             .with_avm2_optimizer_enabled(opt.avm2_optimizer_enabled);
