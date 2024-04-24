@@ -48,7 +48,7 @@ pub struct LaunchOptions {
     pub proxy: Option<Url>,
     pub socket_allowed: HashSet<String>,
     pub tcp_connections: Option<SocketMode>,
-    pub upgrade_to_https: bool,
+    pub upgrade_to_https: Option<bool>,
     pub fullscreen: bool,
     pub load_behavior: Option<LoadBehavior>,
     pub save_directory: PathBuf,
@@ -83,7 +83,11 @@ impl From<&GlobalPreferences> for LaunchOptions {
                 None
             },
             proxy: value.cli.proxy.clone(),
-            upgrade_to_https: value.cli.upgrade_to_https,
+            upgrade_to_https: if value.cli.upgrade_to_https {
+                Some(true)
+            } else {
+                None
+            },
             fullscreen: value.cli.fullscreen,
             load_behavior: value.cli.load_behavior,
             save_directory: value.cli.save_directory.clone(),
@@ -182,7 +186,7 @@ impl ActivePlayer {
             opt.base.to_owned().unwrap_or_else(|| movie_url.clone()),
             future_spawner,
             opt.proxy.clone(),
-            opt.upgrade_to_https,
+            opt.upgrade_to_https.unwrap_or_default(),
             opt.open_url_mode,
             opt.socket_allowed.clone(),
             opt.tcp_connections.unwrap_or(SocketMode::Ask),

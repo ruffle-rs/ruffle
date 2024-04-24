@@ -40,6 +40,7 @@ pub struct OpenDialog {
     player_version: OptionalField<NumberField<u8>>,
     player_runtime: OptionalField<EnumDropdownField<PlayerRuntime>>,
     dummy_external_interface: OptionalField<BooleanDropdownField>,
+    upgrade_to_https: OptionalField<BooleanDropdownField>,
 }
 
 impl OpenDialog {
@@ -223,6 +224,16 @@ impl OpenDialog {
                 }),
             ),
         );
+        let upgrade_to_https = OptionalField::new(
+            defaults.upgrade_to_https,
+            BooleanDropdownField::new(
+                false,
+                Box::new(|value, locale| match value {
+                    true => text(locale, "enable"),
+                    false => text(locale, "disable"),
+                }),
+            ),
+        );
 
         Self {
             options: defaults,
@@ -243,6 +254,7 @@ impl OpenDialog {
             player_version,
             player_runtime,
             dummy_external_interface,
+            upgrade_to_https,
         }
     }
 
@@ -347,10 +359,8 @@ impl OpenDialog {
                 ui.end_row();
 
                 ui.label(text(locale, "upgrade-http"));
-                ui.checkbox(
-                    &mut self.options.upgrade_to_https,
-                    text(locale, "upgrade-http-check"),
-                );
+                self.upgrade_to_https
+                    .ui(ui, &mut self.options.upgrade_to_https, locale);
                 ui.end_row();
 
                 ui.label(text(locale, "tcp-connections"));
