@@ -35,8 +35,8 @@ pub fn read_bookmarks(input: &str) -> ParseDetails<Bookmarks> {
     });
 
     ParseDetails {
-        result: DocumentHolder::new(result, document),
         warnings: cx.warnings,
+        result: DocumentHolder::new(result, document),
     }
 }
 

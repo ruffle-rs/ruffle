@@ -64,8 +64,8 @@ pub fn read_preferences(input: &str) -> ParseDetails<SavedGlobalPreferences> {
     });
 
     ParseDetails {
-        result: DocumentHolder::new(result, document),
         warnings: cx.warnings,
+        result: DocumentHolder::new(result, document),
     }
 }
 
