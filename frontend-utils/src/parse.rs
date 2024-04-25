@@ -124,14 +124,14 @@ impl fmt::Display for ParseWarning {
 }
 
 #[derive(Default)]
-pub struct ParseContext {
+pub struct ParseContext<'a> {
     pub warnings: Vec<ParseWarning>,
     /// Path of the current item being parsed
-    path: Vec<&'static str>,
+    path: Vec<&'a str>,
 }
 
-impl ParseContext {
-    pub fn push_key(&mut self, key: &'static str) {
+impl<'a> ParseContext<'a> {
+    pub fn push_key(&mut self, key: &'a str) {
         self.path.push(key);
     }
 
@@ -166,9 +166,9 @@ pub trait ReadExt<'a> {
 
     fn get_table_like<R>(
         &'a self,
-        cx: &mut ParseContext,
+        cx: &mut ParseContext<'a>,
         key: &'static str,
-        fun: impl FnOnce(&mut ParseContext, &dyn TableLike) -> R,
+        fun: impl FnOnce(&mut ParseContext<'a>, &'a dyn TableLike) -> R,
     ) -> Option<R> {
         let mut result = None;
         if let Some(item) = self.get_impl(key) {
@@ -187,9 +187,9 @@ pub trait ReadExt<'a> {
 
     fn get_array_of_tables<R>(
         &'a self,
-        cx: &mut ParseContext,
+        cx: &mut ParseContext<'a>,
         key: &'static str,
-        fun: impl FnOnce(&mut ParseContext, &ArrayOfTables) -> R,
+        fun: impl FnOnce(&mut ParseContext<'a>, &'a ArrayOfTables) -> R,
     ) -> Option<R> {
         let mut result = None;
         if let Some(item) = self.get_impl(key) {

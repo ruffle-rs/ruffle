@@ -46,8 +46,8 @@ impl BundleInformation {
             .unwrap_or(Err(BundleInformationParseError::InvalidBundleSection))?;
 
         Ok(ParseDetails {
-            result: DocumentHolder::new(result, document),
             warnings: cx.warnings,
+            result: DocumentHolder::new(result, document),
         })
     }
 }
