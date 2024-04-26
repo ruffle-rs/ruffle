@@ -1,0 +1,4 @@
+# It appears that when there are multiple children for the state,
+# a full frame is run several times.
+num_frames = 1
+known_failure = true
