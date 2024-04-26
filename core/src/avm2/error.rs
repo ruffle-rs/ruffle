@@ -100,7 +100,6 @@ pub fn make_reference_error<'gc>(
     let class_name = object_class
         .map(|cls| {
             cls.inner_class_definition()
-                .read()
                 .name()
                 .to_qualified_name_err_message(activation.context.gc_context)
         })

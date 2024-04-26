@@ -47,7 +47,7 @@ pub struct ResolvedParamConfig<'gc> {
     pub param_name: AvmString<'gc>,
 
     /// The type of the parameter.
-    pub param_type: Option<GcCell<'gc, Class<'gc>>>,
+    pub param_type: Option<Class<'gc>>,
 
     /// The default value for this parameter.
     pub default_value: Option<Value<'gc>>,
@@ -254,7 +254,7 @@ impl<'gc> BytecodeMethod<'gc> {
         &self.signature
     }
 
-    pub fn resolved_return_type(&self) -> Option<GcCell<'gc, Class<'gc>>> {
+    pub fn resolved_return_type(&self) -> Option<Class<'gc>> {
         let verified_info = self.verified_info.read();
 
         verified_info.as_ref().unwrap().return_type

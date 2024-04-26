@@ -55,7 +55,7 @@ struct TranslationUnitData<'gc> {
     abc: Rc<AbcFile>,
 
     /// All classes loaded from the ABC's class list.
-    classes: Vec<Option<GcCell<'gc, Class<'gc>>>>,
+    classes: Vec<Option<Class<'gc>>>,
 
     /// All methods loaded from the ABC's method list.
     methods: Vec<Option<Method<'gc>>>,
@@ -125,7 +125,7 @@ impl<'gc> TranslationUnit<'gc> {
             // and how it's exported again when it is encountered in a trait (see `Script::load_traits`).
             // We currently don't handle them and just export it in the domain in both cases.
             self.domain()
-                .export_class(class.read().name(), class, activation.context.gc_context);
+                .export_class(class.name(), class, activation.context.gc_context);
         }
 
         Ok(())
@@ -215,7 +215,7 @@ impl<'gc> TranslationUnit<'gc> {
         self,
         class_index: u32,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Result<GcCell<'gc, Class<'gc>>, Error<'gc>> {
+    ) -> Result<Class<'gc>, Error<'gc>> {
         let read = self.0.read();
         if let Some(Some(class)) = read.classes.get(class_index as usize) {
             return Ok(*class);
@@ -226,9 +226,7 @@ impl<'gc> TranslationUnit<'gc> {
         let class = Class::from_abc_index(self, class_index, activation)?;
         self.0.write(activation.context.gc_context).classes[class_index as usize] = Some(class);
 
-        class
-            .write(activation.context.gc_context)
-            .load_traits(self, class_index, activation)?;
+        class.load_traits(activation, self, class_index)?;
 
         Ok(class)
     }

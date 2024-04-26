@@ -11,7 +11,6 @@ use crate::avm2::Error;
 use crate::avm2::QName;
 use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::string::{AvmString, WString};
-use gc_arena::GcCell;
 
 // All of these methods will be defined as both
 // AS3 instance methods and methods on the `String` class prototype.
@@ -667,7 +666,7 @@ fn to_upper_case<'gc>(
 }
 
 /// Construct `String`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     let mc = activation.context.gc_context;
     let class = Class::new(
         QName::new(activation.avm2().public_namespace_base_version, "String"),
@@ -677,33 +676,31 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         mc,
     );
 
-    let mut write = class.write(mc);
-    write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
-    write.set_instance_allocator(primitive_allocator);
-    write.set_call_handler(Method::from_builtin(
-        call_handler,
-        "<String call handler>",
+    class.set_attributes(mc, ClassAttributes::FINAL | ClassAttributes::SEALED);
+    class.set_instance_allocator(mc, primitive_allocator);
+    class.set_call_handler(
         mc,
-    ));
+        Method::from_builtin(call_handler, "<String call handler>", mc),
+    );
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,
         Option<NativeMethodImpl>,
         Option<NativeMethodImpl>,
     )] = &[("length", Some(length), None)];
-    write.define_builtin_instance_properties(
+    class.define_builtin_instance_properties(
         mc,
         activation.avm2().public_namespace_base_version,
         PUBLIC_INSTANCE_PROPERTIES,
     );
-    write.define_builtin_instance_methods(
+    class.define_builtin_instance_methods(
         mc,
         activation.avm2().as3_namespace,
         PUBLIC_INSTANCE_AND_PROTO_METHODS,
     );
 
     const CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
-    write.define_constant_int_class_traits(
+    class.define_constant_int_class_traits(
         activation.avm2().public_namespace_base_version,
         CONSTANTS_INT,
         activation,
@@ -711,8 +708,8 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
 
     const AS3_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("fromCharCode", from_char_code)];
     const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("fromCharCode", from_char_code)];
-    write.define_builtin_class_methods(mc, activation.avm2().as3_namespace, AS3_CLASS_METHODS);
-    write.define_builtin_class_methods(
+    class.define_builtin_class_methods(mc, activation.avm2().as3_namespace, AS3_CLASS_METHODS);
+    class.define_builtin_class_methods(
         mc,
         activation.avm2().public_namespace_base_version,
         PUBLIC_CLASS_METHODS,

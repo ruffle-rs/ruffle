@@ -24,7 +24,7 @@ use crate::avm2::{Avm2, Error};
 use crate::context::{GcContext, UpdateContext};
 use crate::string::{AvmAtom, AvmString};
 use crate::tag_utils::SwfMovie;
-use gc_arena::{Gc, GcCell};
+use gc_arena::Gc;
 use smallvec::SmallVec;
 use std::cmp::{min, Ordering};
 use std::sync::Arc;
@@ -779,7 +779,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcClass>,
-    ) -> Result<GcCell<'gc, Class<'gc>>, Error<'gc>> {
+    ) -> Result<Class<'gc>, Error<'gc>> {
         method.translation_unit().load_class(index.0, self)
     }
 
@@ -1723,7 +1723,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 .instance_of()
                 .map(|cls| {
                     cls.inner_class_definition()
-                        .read()
                         .name()
                         .to_qualified_name_err_message(self.context.gc_context)
                 })
@@ -2620,10 +2619,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_is_type(
-        &mut self,
-        class: GcCell<'gc, Class<'gc>>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn op_is_type(&mut self, class: Class<'gc>) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack();
 
         let is_instance_of = value.is_of_type(self, class);
@@ -2652,10 +2648,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_as_type(
-        &mut self,
-        class: GcCell<'gc, Class<'gc>>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn op_as_type(&mut self, class: Class<'gc>) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack();
 
         if value.is_of_type(self, class) {
@@ -2821,10 +2814,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     /// Implements `Op::Coerce`
-    fn op_coerce(
-        &mut self,
-        class: GcCell<'gc, Class<'gc>>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn op_coerce(&mut self, class: Class<'gc>) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.pop_stack();
         let x = val.coerce_to_type(self, class)?;
 

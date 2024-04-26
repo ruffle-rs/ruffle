@@ -2,7 +2,7 @@ use crate::avm2::class::Class;
 use crate::avm2::multiname::Multiname;
 use crate::string::AvmAtom;
 
-use gc_arena::{Collect, Gc, GcCell};
+use gc_arena::{Collect, Gc};
 use swf::avm2::types::{Class as AbcClass, Exception, Index, LookupSwitch, Method, Namespace};
 
 #[derive(Clone, Collect, Debug)]
@@ -14,7 +14,7 @@ pub enum Op<'gc> {
         num_types: u32,
     },
     AsType {
-        class: GcCell<'gc, Class<'gc>>,
+        class: Class<'gc>,
     },
     AsTypeLate,
     BitAnd,
@@ -66,7 +66,7 @@ pub enum Op<'gc> {
     },
     CheckFilter,
     Coerce {
-        class: GcCell<'gc, Class<'gc>>,
+        class: Class<'gc>,
     },
     CoerceA,
     CoerceB,
@@ -218,7 +218,7 @@ pub enum Op<'gc> {
     },
     InstanceOf,
     IsType {
-        class: GcCell<'gc, Class<'gc>>,
+        class: Class<'gc>,
     },
     IsTypeLate,
     Jump {

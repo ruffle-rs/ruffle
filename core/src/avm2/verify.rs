@@ -10,7 +10,7 @@ use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Activation, Error, QName};
 use crate::string::AvmAtom;
 
-use gc_arena::{Collect, Gc, GcCell};
+use gc_arena::{Collect, Gc};
 use std::collections::{HashMap, HashSet};
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
@@ -26,7 +26,7 @@ pub struct VerifiedMethodInfo<'gc> {
     pub exceptions: Vec<Exception<'gc>>,
 
     pub param_config: Vec<ResolvedParamConfig<'gc>>,
-    pub return_type: Option<GcCell<'gc, Class<'gc>>>,
+    pub return_type: Option<Class<'gc>>,
 }
 
 #[derive(Collect)]
@@ -37,7 +37,7 @@ pub struct Exception<'gc> {
     pub target_offset: u32,
 
     pub variable_name: Option<QName<'gc>>,
-    pub target_class: Option<GcCell<'gc, Class<'gc>>>,
+    pub target_class: Option<Class<'gc>>,
 }
 
 #[derive(Clone, Debug)]
@@ -636,7 +636,7 @@ pub fn resolve_param_config<'gc>(
 fn resolve_return_type<'gc>(
     activation: &mut Activation<'_, 'gc>,
     return_type: &Multiname<'gc>,
-) -> Result<Option<GcCell<'gc, Class<'gc>>>, Error<'gc>> {
+) -> Result<Option<Class<'gc>>, Error<'gc>> {
     if return_type.has_lazy_component() {
         return Err(make_error_1014(activation, "[]".into()));
     }

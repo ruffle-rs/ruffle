@@ -92,7 +92,7 @@ pub fn init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     // We set the underlying BitmapData instance - we start out with a dummy BitmapDataWrapper,
     // which makes custom classes see a disposed BitmapData before they call super()
-    let name = this.instance_of_class_definition().map(|c| c.read().name());
+    let name = this.instance_of_class_definition().map(|c| c.name());
     let character = this
         .instance_of()
         .and_then(|t| {

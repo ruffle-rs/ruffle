@@ -57,15 +57,15 @@ impl DomainListWindow {
                 classes.sort_by_key(|(name, _, _)| *name);
 
                 for (_, _, class) in classes {
-                    let class_name = class.read().name().to_qualified_name(context.gc_context);
+                    let class_name = class.name().to_qualified_name(context.gc_context);
                     if !class_name.to_string().to_ascii_lowercase().contains(search) {
                         continue;
                     }
 
                     CollapsingHeader::new(format!("Class {class_name}"))
-                        .id_source(ui.id().with(class.as_ptr()))
+                        .id_source(ui.id().with(class.0.as_ptr()))
                         .show(ui, |ui| {
-                            for class_obj in class.read().class_objects() {
+                            for class_obj in &*class.class_objects() {
                                 let button = ui.button(format!("{class_obj:?}"));
                                 if button.clicked() {
                                     messages.push(Message::TrackAVM2Object(AVM2ObjectHandle::new(

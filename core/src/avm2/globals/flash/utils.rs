@@ -208,7 +208,6 @@ pub fn get_qualified_class_name<'gc>(
 
     Ok(class
         .inner_class_definition()
-        .read()
         .name()
         .to_qualified_name(activation.context.gc_context)
         .into())
@@ -236,7 +235,6 @@ pub fn get_qualified_superclass_name<'gc>(
     if let Some(super_class) = class.superclass_object() {
         Ok(super_class
             .inner_class_definition()
-            .read()
             .name()
             .to_qualified_name(activation.context.gc_context)
             .into())

@@ -729,7 +729,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             None => {
                 if self
                     .instance_of_class_definition()
-                    .map(|c| c.read().is_sealed())
+                    .map(|c| c.is_sealed())
                     .unwrap_or(false)
                 {
                     Ok(false)
@@ -985,7 +985,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn to_string(&self, activation: &mut Activation<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>> {
         let class_name = self
             .instance_of_class_definition()
-            .map(|c| c.read().name().local_name())
+            .map(|c| c.name().local_name())
             .unwrap_or_else(|| "Object".into());
 
         Ok(AvmString::new_utf8(activation.gc(), format!("[object {class_name}]")).into())
@@ -1005,7 +1005,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<Value<'gc>, Error<'gc>> {
         let class_name = self
             .instance_of_class_definition()
-            .map(|c| c.read().name().local_name())
+            .map(|c| c.name().local_name())
             .unwrap_or_else(|| "Object".into());
 
         Ok(AvmString::new_utf8(
@@ -1101,20 +1101,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ///
     /// The given object should be the class object for the given type we are
     /// checking against this object.
-    fn is_of_type(
-        &self,
-        test_class: GcCell<'gc, Class<'gc>>,
-        context: &mut UpdateContext<'_, 'gc>,
-    ) -> bool {
+    fn is_of_type(&self, test_class: Class<'gc>, context: &mut UpdateContext<'_, 'gc>) -> bool {
         let my_class = self.instance_of();
 
         // ES3 objects are not class instances but are still treated as
         // instances of Object, which is an ES4 class.
         if my_class.is_none()
-            && GcCell::ptr_eq(
-                test_class,
-                context.avm2.classes().object.inner_class_definition(),
-            )
+            && test_class == context.avm2.classes().object.inner_class_definition()
         {
             true
         } else if let Some(my_class) = my_class {
@@ -1146,14 +1139,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Get this object's class's `Class`, if it has one.
-    fn instance_of_class_definition(&self) -> Option<GcCell<'gc, Class<'gc>>> {
+    fn instance_of_class_definition(&self) -> Option<Class<'gc>> {
         self.instance_of().map(|cls| cls.inner_class_definition())
     }
 
     /// Get this object's class's name, formatted for debug output.
     fn instance_of_class_name(&self, mc: &Mutation<'gc>) -> AvmString<'gc> {
         self.instance_of_class_definition()
-            .map(|r| r.read().name().to_qualified_name(mc))
+            .map(|r| r.name().to_qualified_name(mc))
             .unwrap_or_else(|| "<Unknown type>".into())
     }
 

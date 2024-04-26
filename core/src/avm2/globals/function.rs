@@ -9,7 +9,6 @@ use crate::avm2::object::{function_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::QName;
-use gc_arena::GcCell;
 
 /// Implements `Function`'s instance initializer.
 pub fn instance_init<'gc>(
@@ -223,8 +222,8 @@ fn set_prototype<'gc>(
 /// Construct `Function`'s class.
 pub fn create_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    object_classdef: GcCell<'gc, Class<'gc>>,
-) -> GcCell<'gc, Class<'gc>> {
+    object_classdef: Class<'gc>,
+) -> Class<'gc> {
     let gc_context = activation.context.gc_context;
     let function_class = Class::new(
         QName::new(activation.avm2().public_namespace_base_version, "Function"),
@@ -234,11 +233,9 @@ pub fn create_class<'gc>(
         gc_context,
     );
 
-    let mut write = function_class.write(gc_context);
-
     // Fixed traits (in AS3 namespace)
     const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("call", call), ("apply", apply)];
-    write.define_builtin_instance_methods(
+    function_class.define_builtin_instance_methods(
         gc_context,
         activation.avm2().as3_namespace,
         AS3_INSTANCE_METHODS,
@@ -252,25 +249,24 @@ pub fn create_class<'gc>(
         ("prototype", Some(prototype), Some(set_prototype)),
         ("length", Some(length), None),
     ];
-    write.define_builtin_instance_properties(
+    function_class.define_builtin_instance_properties(
         gc_context,
         activation.avm2().public_namespace_base_version,
         PUBLIC_INSTANCE_PROPERTIES,
     );
 
     const CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
-    write.define_constant_int_class_traits(
+    function_class.define_constant_int_class_traits(
         activation.avm2().public_namespace_base_version,
         CONSTANTS_INT,
         activation,
     );
 
-    write.set_instance_allocator(function_allocator);
-    write.set_call_handler(Method::from_builtin(
-        class_call,
-        "<Function call handler>",
+    function_class.set_instance_allocator(gc_context, function_allocator);
+    function_class.set_call_handler(
         gc_context,
-    ));
+        Method::from_builtin(class_call, "<Function call handler>", gc_context),
+    );
 
     function_class
 }

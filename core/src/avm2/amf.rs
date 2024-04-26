@@ -130,7 +130,7 @@ pub fn serialize_value<'gc>(
                 let name = class_to_alias(activation, class);
 
                 let mut attributes = EnumSet::empty();
-                if !class.inner_class_definition().read().is_sealed() {
+                if !class.inner_class_definition().is_sealed() {
                     attributes.insert(Attribute::Dynamic);
                 }
 

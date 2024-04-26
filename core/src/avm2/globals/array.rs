@@ -11,7 +11,6 @@ use crate::avm2::Error;
 use crate::avm2::QName;
 use crate::string::AvmString;
 use bitflags::bitflags;
-use gc_arena::GcCell;
 use std::cmp::{min, Ordering};
 use std::mem::swap;
 
@@ -1242,7 +1241,7 @@ pub fn remove_at<'gc>(
 }
 
 /// Construct `Array`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     let mc = activation.context.gc_context;
     let class = Class::new(
         QName::new(activation.avm2().public_namespace_base_version, "Array"),
@@ -1252,23 +1251,24 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         mc,
     );
 
-    let mut write = class.write(mc);
-
-    write.set_instance_allocator(array_allocator);
-    write.set_call_handler(Method::from_builtin(class_call, "<Array call handler>", mc));
+    class.set_instance_allocator(mc, array_allocator);
+    class.set_call_handler(
+        mc,
+        Method::from_builtin(class_call, "<Array call handler>", mc),
+    );
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,
         Option<NativeMethodImpl>,
         Option<NativeMethodImpl>,
     )] = &[("length", Some(length), Some(set_length))];
-    write.define_builtin_instance_properties(
+    class.define_builtin_instance_properties(
         mc,
         activation.avm2().public_namespace_base_version,
         PUBLIC_INSTANCE_PROPERTIES,
     );
 
-    write.define_builtin_instance_methods(
+    class.define_builtin_instance_methods(
         mc,
         activation.avm2().as3_namespace,
         PUBLIC_AS3_INSTANCE_METHODS,
@@ -1287,14 +1287,14 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         ),
         ("UNIQUESORT", SortOptions::UNIQUE_SORT.bits() as u32),
     ];
-    write.define_constant_uint_class_traits(
+    class.define_constant_uint_class_traits(
         activation.avm2().public_namespace_base_version,
         CONSTANTS_UINT,
         activation,
     );
 
     const CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
-    write.define_constant_int_class_traits(
+    class.define_constant_int_class_traits(
         activation.avm2().public_namespace_base_version,
         CONSTANTS_INT,
         activation,

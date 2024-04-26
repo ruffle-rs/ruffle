@@ -8,7 +8,6 @@ use crate::avm2::method::{Method, NativeMethodImpl, ParamConfig};
 use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{AvmString, Error, Multiname, QName};
-use gc_arena::GcCell;
 
 /// Implements `uint`'s instance initializer.
 fn instance_init<'gc>(
@@ -213,7 +212,7 @@ fn value_of<'gc>(
 }
 
 /// Construct `uint`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     let mc = activation.context.gc_context;
     let class = Class::new(
         QName::new(activation.avm2().public_namespace_base_version, "uint"),
@@ -234,30 +233,31 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         mc,
     );
 
-    let mut write = class.write(mc);
-    write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
-    write.set_instance_allocator(primitive_allocator);
-    write.set_native_instance_init(Method::from_builtin(
-        native_instance_init,
-        "<uint native instance initializer>",
+    class.set_attributes(mc, ClassAttributes::FINAL | ClassAttributes::SEALED);
+    class.set_instance_allocator(mc, primitive_allocator);
+    class.set_native_instance_init(
         mc,
-    ));
-    write.set_call_handler(Method::from_builtin(
-        call_handler,
-        "<uint call handler>",
+        Method::from_builtin(
+            native_instance_init,
+            "<uint native instance initializer>",
+            mc,
+        ),
+    );
+    class.set_call_handler(
         mc,
-    ));
+        Method::from_builtin(call_handler, "<uint call handler>", mc),
+    );
 
     const CLASS_CONSTANTS_UINT: &[(&str, u32)] =
         &[("MAX_VALUE", u32::MAX), ("MIN_VALUE", u32::MIN)];
-    write.define_constant_uint_class_traits(
+    class.define_constant_uint_class_traits(
         activation.avm2().public_namespace_base_version,
         CLASS_CONSTANTS_UINT,
         activation,
     );
 
     const CLASS_CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
-    write.define_constant_int_class_traits(
+    class.define_constant_int_class_traits(
         activation.avm2().public_namespace_base_version,
         CLASS_CONSTANTS_INT,
         activation,
@@ -270,7 +270,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         ("toString", to_string),
         ("valueOf", value_of),
     ];
-    write.define_builtin_instance_methods(
+    class.define_builtin_instance_methods(
         mc,
         activation.avm2().as3_namespace,
         AS3_INSTANCE_METHODS,

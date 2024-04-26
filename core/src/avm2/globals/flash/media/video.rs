@@ -69,7 +69,7 @@ pub fn attach_net_stream<'gc>(
                 "Cannot use value of type {:?} as video source",
                 source
                     .and_then(|o| o.instance_of_class_definition())
-                    .map(|c| c.read().name().local_name())
+                    .map(|c| c.name().local_name())
                     .unwrap_or_else(|| "Object".into())
             )
             .into());

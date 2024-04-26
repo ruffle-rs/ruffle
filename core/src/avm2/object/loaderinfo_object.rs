@@ -22,7 +22,7 @@ pub fn loader_info_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let class_name = class.inner_class_definition().read().name().local_name();
+    let class_name = class.inner_class_definition().name().local_name();
 
     Err(Error::AvmError(argument_error(
         activation,
