@@ -37,7 +37,7 @@ struct DomainData<'gc> {
 
     /// A map of all Clasess defined in this domain. Used by ClassObject
     /// to perform early interface resolution.
-    classes: PropertyMap<'gc, GcCell<'gc, Class<'gc>>>,
+    classes: PropertyMap<'gc, Class<'gc>>,
 
     /// The parent domain.
     parent: Option<Domain<'gc>>,
@@ -90,7 +90,7 @@ impl<'gc> Domain<'gc> {
         domain
     }
 
-    pub fn classes(&self) -> Ref<'_, PropertyMap<'gc, GcCell<'gc, Class<'gc>>>> {
+    pub fn classes(&self) -> Ref<'_, PropertyMap<'gc, Class<'gc>>> {
         Ref::map(self.0.read(), |r| &r.classes)
     }
 
@@ -199,7 +199,7 @@ impl<'gc> Domain<'gc> {
         Ok(None)
     }
 
-    fn get_class_inner(self, multiname: &Multiname<'gc>) -> Option<GcCell<'gc, Class<'gc>>> {
+    fn get_class_inner(self, multiname: &Multiname<'gc>) -> Option<Class<'gc>> {
         let read = self.0.read();
         if let Some(class) = read.classes.get_for_multiname(multiname).copied() {
             return Some(class);
@@ -216,7 +216,7 @@ impl<'gc> Domain<'gc> {
         self,
         context: &mut UpdateContext<'_, 'gc>,
         multiname: &Multiname<'gc>,
-    ) -> Option<GcCell<'gc, Class<'gc>>> {
+    ) -> Option<Class<'gc>> {
         let class = self.get_class_inner(multiname);
 
         if let Some(class) = class {
@@ -333,12 +333,7 @@ impl<'gc> Domain<'gc> {
     /// Export a class into the current application domain.
     ///
     /// This does nothing if the definition already exists in this domain or a parent.
-    pub fn export_class(
-        &self,
-        export_name: QName<'gc>,
-        class: GcCell<'gc, Class<'gc>>,
-        mc: &Mutation<'gc>,
-    ) {
+    pub fn export_class(&self, export_name: QName<'gc>, class: Class<'gc>, mc: &Mutation<'gc>) {
         if self.has_class(export_name) {
             return;
         }

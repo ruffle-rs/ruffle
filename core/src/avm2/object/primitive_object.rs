@@ -124,7 +124,7 @@ impl<'gc> TObject<'gc> for PrimitiveObject<'gc> {
             _ => {
                 let class_name = self
                     .instance_of_class_definition()
-                    .map(|c| c.read().name().local_name())
+                    .map(|c| c.name().local_name())
                     .unwrap_or_else(|| "Object".into());
 
                 Ok(AvmString::new_utf8(

@@ -285,7 +285,6 @@ impl<'gc> VTable<'gc> {
 
         write.protected_namespace = defining_class
             .inner_class_definition()
-            .read()
             .protected_namespace();
 
         if let Some(superclass_vtable) = superclass_vtable {

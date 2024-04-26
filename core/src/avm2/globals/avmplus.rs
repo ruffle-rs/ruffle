@@ -34,7 +34,6 @@ pub fn describe_type_json<'gc>(
     }
 
     let class = class_obj.inner_class_definition();
-    let class = class.read();
 
     let qualified_name = class
         .name()
@@ -160,7 +159,6 @@ fn describe_internal_body<'gc>(
         while let Some(super_obj) = current_super_obj {
             let super_name = super_obj
                 .inner_class_definition()
-                .read()
                 .name()
                 .to_qualified_name(activation.context.gc_context);
             bases_array.push(super_name.into());
@@ -184,7 +182,6 @@ fn describe_internal_body<'gc>(
     if flags.contains(DescribeTypeFlags::INCLUDE_INTERFACES) && use_instance_traits {
         for interface in class_obj.interfaces() {
             let interface_name = interface
-                .read()
                 .name()
                 .to_qualified_name(activation.context.gc_context);
             interfaces_array.push(interface_name.into());
@@ -294,7 +291,6 @@ fn describe_internal_body<'gc>(
 
                 let declared_by_name = declared_by
                     .inner_class_definition()
-                    .read()
                     .name()
                     .to_qualified_name(activation.context.gc_context);
 
@@ -382,7 +378,6 @@ fn describe_internal_body<'gc>(
                     method_type.to_qualified_name_or_star(activation.context.gc_context);
                 let declared_by = defining_class
                     .inner_class_definition()
-                    .read()
                     .name()
                     .to_qualified_name(activation.context.gc_context);
 

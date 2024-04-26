@@ -10,7 +10,6 @@ use crate::avm2::QName;
 use crate::locale::{get_current_date_time, get_timezone};
 use crate::string::{utils as string_utils, AvmString, WStr};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, LocalResult, TimeZone, Timelike, Utc};
-use gc_arena::GcCell;
 use num_traits::ToPrimitive;
 
 // All of these methods will be defined as both
@@ -1322,7 +1321,7 @@ pub fn parse<'gc>(
 }
 
 /// Construct `Date`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     let mc = activation.context.gc_context;
     let class = Class::new(
         QName::new(activation.avm2().public_namespace_base_version, "Date"),
@@ -1332,13 +1331,11 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         mc,
     );
 
-    let mut write = class.write(mc);
-    write.set_instance_allocator(date_allocator);
-    write.set_call_handler(Method::from_builtin(
-        call_handler,
-        "<Date call handler>",
+    class.set_instance_allocator(mc, date_allocator);
+    class.set_call_handler(
         mc,
-    ));
+        Method::from_builtin(call_handler, "<Date call handler>", mc),
+    );
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,
@@ -1368,12 +1365,12 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         ("dayUTC", Some(day_utc), None),
         ("timezoneOffset", Some(timezone_offset), None),
     ];
-    write.define_builtin_instance_properties(
+    class.define_builtin_instance_properties(
         mc,
         activation.avm2().public_namespace_base_version,
         PUBLIC_INSTANCE_PROPERTIES,
     );
-    write.define_builtin_instance_methods(
+    class.define_builtin_instance_methods(
         mc,
         activation.avm2().as3_namespace,
         PUBLIC_INSTANCE_AND_PROTO_METHODS,
@@ -1381,7 +1378,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
 
     const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("UTC", utc), ("parse", parse)];
 
-    write.define_builtin_class_methods(
+    class.define_builtin_class_methods(
         mc,
         activation.avm2().public_namespace_base_version,
         PUBLIC_CLASS_METHODS,
@@ -1389,7 +1386,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
 
     const CLASS_CONSTANTS_INT: &[(&str, i32)] = &[("length", 7)];
 
-    write.define_constant_int_class_traits(
+    class.define_constant_int_class_traits(
         activation.avm2().public_namespace_base_version,
         CLASS_CONSTANTS_INT,
         activation,

@@ -401,7 +401,7 @@ impl<'gc> ScriptObjectData<'gc> {
 
     pub fn is_sealed(&self) -> bool {
         self.instance_of()
-            .map(|cls| cls.inner_class_definition().read().is_sealed())
+            .map(|cls| cls.inner_class_definition().is_sealed())
             .unwrap_or(false)
     }
 

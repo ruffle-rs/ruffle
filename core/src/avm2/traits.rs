@@ -10,7 +10,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::QName;
 use bitflags::bitflags;
-use gc_arena::{Collect, GcCell};
+use gc_arena::Collect;
 use std::ops::Deref;
 use swf::avm2::types::{
     DefaultValue as AbcDefaultValue, Trait as AbcTrait, TraitKind as AbcTraitKind,
@@ -91,10 +91,7 @@ pub enum TraitKind<'gc> {
 
     /// A class property on an object that can be used to construct more
     /// objects.
-    Class {
-        slot_id: u32,
-        class: GcCell<'gc, Class<'gc>>,
-    },
+    Class { slot_id: u32, class: Class<'gc> },
 
     /// A free function (not an instance method) that can be called.
     Function { slot_id: u32, function: Method<'gc> },
@@ -110,8 +107,8 @@ pub enum TraitKind<'gc> {
 }
 
 impl<'gc> Trait<'gc> {
-    pub fn from_class(class: GcCell<'gc, Class<'gc>>) -> Self {
-        let name = class.read().name();
+    pub fn from_class(class: Class<'gc>) -> Self {
+        let name = class.name();
 
         Trait {
             name,

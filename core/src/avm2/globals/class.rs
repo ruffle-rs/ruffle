@@ -7,7 +7,6 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::QName;
-use gc_arena::GcCell;
 
 /// Implements `Class`'s instance initializer.
 ///
@@ -45,8 +44,8 @@ fn prototype<'gc>(
 /// Construct `Class`'s class.
 pub fn create_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    object_class: GcCell<'gc, Class<'gc>>,
-) -> GcCell<'gc, Class<'gc>> {
+    object_class: Class<'gc>,
+) -> Class<'gc> {
     let gc_context = activation.context.gc_context;
     let class_class = Class::new(
         QName::new(activation.avm2().public_namespace_base_version, "Class"),
@@ -56,12 +55,10 @@ pub fn create_class<'gc>(
         gc_context,
     );
 
-    let mut write = class_class.write(gc_context);
-
     // 'length' is a weird undocumented constant in Class.
     // We need to define it, since it shows up in 'describeType'
     const CLASS_CONSTANTS: &[(&str, i32)] = &[("length", 1)];
-    write.define_constant_int_class_traits(
+    class_class.define_constant_int_class_traits(
         activation.avm2().public_namespace_base_version,
         CLASS_CONSTANTS,
         activation,
@@ -72,7 +69,7 @@ pub fn create_class<'gc>(
         Option<NativeMethodImpl>,
         Option<NativeMethodImpl>,
     )] = &[("prototype", Some(prototype), None)];
-    write.define_builtin_instance_properties(
+    class_class.define_builtin_instance_properties(
         gc_context,
         activation.avm2().public_namespace_base_version,
         PUBLIC_INSTANCE_PROPERTIES,

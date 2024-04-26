@@ -5,9 +5,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::TranslationUnit;
 use crate::avm2::Value;
-use gc_arena::GcCell;
-use gc_arena::Mutation;
-use gc_arena::{Collect, Gc};
+use gc_arena::{Collect, Gc, Mutation};
 
 use super::class::Class;
 
@@ -40,7 +38,7 @@ pub enum PropertyClass<'gc> {
     /// `Value::Undefined`, so it needs to be distinguished
     /// from the `Object` class
     Any,
-    Class(GcCell<'gc, Class<'gc>>),
+    Class(Class<'gc>),
     Name(Gc<'gc, (Multiname<'gc>, Option<TranslationUnit<'gc>>)>),
 }
 
@@ -103,7 +101,7 @@ impl<'gc> PropertyClass<'gc> {
     pub fn get_class(
         &mut self,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Option<GcCell<'gc, Class<'gc>>>, Error<'gc>> {
+    ) -> Result<Option<Class<'gc>>, Error<'gc>> {
         match self {
             PropertyClass::Class(class) => Ok(Some(*class)),
             PropertyClass::Name(gc) => {
@@ -131,7 +129,7 @@ impl<'gc> PropertyClass<'gc> {
 
     pub fn get_name(&self, mc: &Mutation<'gc>) -> Multiname<'gc> {
         match self {
-            PropertyClass::Class(class) => class.read().name().into(),
+            PropertyClass::Class(class) => class.name().into(),
             PropertyClass::Name(gc) => gc.0.clone(),
             PropertyClass::Any => Multiname::any(mc),
         }

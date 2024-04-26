@@ -964,7 +964,7 @@ impl<'gc> MovieClip<'gc> {
                                     *avm2_bitmapdata_class.write(activation.context.gc_context) =
                                         bitmap_class;
                                 } else {
-                                    tracing::error!("Associated class {:?} for symbol {} must extend flash.display.Bitmap or BitmapData, does neither", class_object.inner_class_definition().read().name(), self.id());
+                                    tracing::error!("Associated class {:?} for symbol {} must extend flash.display.Bitmap or BitmapData, does neither", class_object.inner_class_definition().name(), self.id());
                                 }
                             }
                             _ => {
@@ -2253,7 +2253,7 @@ impl<'gc> MovieClip<'gc> {
                     e,
                     class_object
                         .try_inner_class_definition()
-                        .map(|c| c.read().name().to_qualified_name(context.gc_context))
+                        .map(|c| c.name().to_qualified_name(context.gc_context))
                         .unwrap_or_else(|_| "[BorrowError!]".into())
                 );
             }

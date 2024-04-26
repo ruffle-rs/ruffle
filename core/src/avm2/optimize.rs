@@ -7,7 +7,7 @@ use crate::avm2::op::Op;
 use crate::avm2::property::Property;
 use crate::avm2::verify::JumpSources;
 
-use gc_arena::{Gc, GcCell};
+use gc_arena::Gc;
 use std::collections::HashMap;
 
 #[derive(Clone, Copy, Debug)]
@@ -57,10 +57,10 @@ impl<'gc> OptValue<'gc> {
             ..Self::any()
         }
     }
-    pub fn of_type_from_class(class: GcCell<'gc, Class<'gc>>) -> Self {
+    pub fn of_type_from_class(class: Class<'gc>) -> Self {
         // FIXME: Getting the ClassObject this way should be unnecessary
         // after the ClassObject refactor
-        if let Some(cls) = class.read().class_object() {
+        if let Some(cls) = class.class_object() {
             Self::of_type(cls)
         } else {
             Self::any()
@@ -105,7 +105,7 @@ impl<'gc> Stack<'gc> {
         self.0.push(OptValue::of_type(class));
     }
 
-    fn push_class(&mut self, class: GcCell<'gc, Class<'gc>>) {
+    fn push_class(&mut self, class: Class<'gc>) {
         self.0.push(OptValue::of_type_from_class(class));
     }
 
@@ -152,7 +152,7 @@ pub fn optimize<'gc>(
     method: &BytecodeMethod<'gc>,
     code: &mut Vec<Op<'gc>>,
     resolved_parameters: &[ResolvedParamConfig<'gc>],
-    return_type: Option<GcCell<'gc, Class<'gc>>>,
+    return_type: Option<Class<'gc>>,
     jump_targets: HashMap<i32, JumpSources>,
 ) {
     // These make the code less readable
@@ -281,10 +281,9 @@ pub fn optimize<'gc>(
                                 if let (Some(source_local_class), Some(target_local_class)) =
                                     (source_local.class, target_local.class)
                                 {
-                                    if GcCell::ptr_eq(
-                                        source_local_class.inner_class_definition(),
-                                        target_local_class.inner_class_definition(),
-                                    ) {
+                                    if source_local_class.inner_class_definition()
+                                        == target_local_class.inner_class_definition()
+                                    {
                                         merged_types.set(i, OptValue::of_type(source_local_class));
                                     }
                                 }
@@ -636,10 +635,11 @@ pub fn optimize<'gc>(
             Op::AsType { class } => {
                 let stack_value = stack.pop_or_any();
 
-                let class_is_primitive = GcCell::ptr_eq(*class, types.int.inner_class_definition())
-                    || GcCell::ptr_eq(*class, types.uint.inner_class_definition())
-                    || GcCell::ptr_eq(*class, types.number.inner_class_definition())
-                    || GcCell::ptr_eq(*class, types.boolean.inner_class_definition());
+                let class_is_primitive = *class == types.int.inner_class_definition()
+                    || *class == types.uint.inner_class_definition()
+                    || *class == types.number.inner_class_definition()
+                    || *class == types.boolean.inner_class_definition()
+                    || *class == types.void.inner_class_definition();
 
                 let mut new_value = OptValue::any();
                 if !class_is_primitive {
@@ -647,7 +647,7 @@ pub fn optimize<'gc>(
                     new_value = OptValue::of_type_from_class(*class);
                 }
                 if let Some(class_object) = stack_value.class {
-                    if GcCell::ptr_eq(*class, class_object.inner_class_definition()) {
+                    if *class == class_object.inner_class_definition() {
                         // If type check is guaranteed, preserve original type
                         // TODO: there are more cases when this can succeed,
                         // like inheritance and numbers (`x: Number = 1; x as int;`)
@@ -666,17 +666,17 @@ pub fn optimize<'gc>(
 
                 if stack_value.guaranteed_null {
                     // Coercing null to a non-primitive or void is a noop.
-                    if !GcCell::ptr_eq(*class, types.int.inner_class_definition())
-                        && !GcCell::ptr_eq(*class, types.uint.inner_class_definition())
-                        && !GcCell::ptr_eq(*class, types.number.inner_class_definition())
-                        && !GcCell::ptr_eq(*class, types.boolean.inner_class_definition())
-                        && !GcCell::ptr_eq(*class, types.void.inner_class_definition())
+                    if *class != types.int.inner_class_definition()
+                        && *class != types.uint.inner_class_definition()
+                        && *class != types.number.inner_class_definition()
+                        && *class != types.boolean.inner_class_definition()
+                        && *class != types.void.inner_class_definition()
                     {
                         *op = Op::Nop;
                     }
                 } else if let Some(class_object) = stack_value.class {
                     // TODO: this could check for inheritance
-                    if GcCell::ptr_eq(*class, class_object.inner_class_definition()) {
+                    if *class == class_object.inner_class_definition() {
                         *op = Op::Nop;
                     }
                 }
@@ -794,7 +794,7 @@ pub fn optimize<'gc>(
 
                 if !multiname.has_lazy_component() {
                     if let Some(class) = stack_value.class {
-                        if !class.inner_class_definition().read().is_interface() {
+                        if !class.inner_class_definition().is_interface() {
                             match class.instance_vtable().get_trait(multiname) {
                                 Some(Property::Slot { slot_id })
                                 | Some(Property::ConstSlot { slot_id }) => {
@@ -846,7 +846,7 @@ pub fn optimize<'gc>(
                 let stack_value = stack.pop_or_any();
                 if !multiname.has_lazy_component() {
                     if let Some(class) = stack_value.class {
-                        if !class.inner_class_definition().read().is_interface() {
+                        if !class.inner_class_definition().is_interface() {
                             match class.instance_vtable().get_trait(multiname) {
                                 Some(Property::Slot { slot_id })
                                 | Some(Property::ConstSlot { slot_id }) => {
@@ -861,10 +861,9 @@ pub fn optimize<'gc>(
                                     if let Ok(slot_class) = resolved_value_class {
                                         if let Some(slot_class) = slot_class {
                                             if let Some(set_value_class) = set_value.class {
-                                                if GcCell::ptr_eq(
-                                                    set_value_class.inner_class_definition(),
-                                                    slot_class,
-                                                ) {
+                                                if set_value_class.inner_class_definition()
+                                                    == slot_class
+                                                {
                                                     *op = Op::SetSlotNoCoerce { index: slot_id };
                                                 }
                                             }
@@ -897,7 +896,7 @@ pub fn optimize<'gc>(
                 let stack_value = stack.pop_or_any();
                 if !multiname.has_lazy_component() {
                     if let Some(class) = stack_value.class {
-                        if !class.inner_class_definition().read().is_interface() {
+                        if !class.inner_class_definition().is_interface() {
                             match class.instance_vtable().get_trait(multiname) {
                                 Some(Property::Slot { slot_id }) => {
                                     *op = Op::SetSlot { index: slot_id };
@@ -911,10 +910,9 @@ pub fn optimize<'gc>(
                                     if let Ok(slot_class) = resolved_value_class {
                                         if let Some(slot_class) = slot_class {
                                             if let Some(set_value_class) = set_value.class {
-                                                if GcCell::ptr_eq(
-                                                    set_value_class.inner_class_definition(),
-                                                    slot_class,
-                                                ) {
+                                                if set_value_class.inner_class_definition()
+                                                    == slot_class
+                                                {
                                                     *op = Op::SetSlotNoCoerce { index: slot_id };
                                                 }
                                             }
@@ -1026,7 +1024,7 @@ pub fn optimize<'gc>(
 
                 if !multiname.has_lazy_component() {
                     if let Some(class) = stack_value.class {
-                        if !class.inner_class_definition().read().is_interface() {
+                        if !class.inner_class_definition().is_interface() {
                             match class.instance_vtable().get_trait(multiname) {
                                 Some(Property::Method { disp_id }) => {
                                     *op = Op::CallMethod {
@@ -1059,7 +1057,7 @@ pub fn optimize<'gc>(
 
                 if !multiname.has_lazy_component() {
                     if let Some(class) = stack_value.class {
-                        if !class.inner_class_definition().read().is_interface() {
+                        if !class.inner_class_definition().is_interface() {
                             match class.instance_vtable().get_trait(multiname) {
                                 Some(Property::Method { disp_id }) => {
                                     *op = Op::CallMethod {
@@ -1199,7 +1197,7 @@ pub fn optimize<'gc>(
 
                 if let Some(return_type) = return_type {
                     if let Some(stack_value_class) = stack_value.class {
-                        if GcCell::ptr_eq(stack_value_class.inner_class_definition(), return_type) {
+                        if stack_value_class.inner_class_definition() == return_type {
                             *op = Op::ReturnValueNoCoerce;
                         }
                     }

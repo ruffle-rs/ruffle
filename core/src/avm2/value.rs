@@ -10,7 +10,7 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use crate::string::{AvmAtom, AvmString, WStr};
-use gc_arena::{Collect, GcCell, Mutation};
+use gc_arena::{Collect, Mutation};
 use num_bigint::BigInt;
 use num_traits::{ToPrimitive, Zero};
 use std::cell::Ref;
@@ -994,50 +994,32 @@ impl<'gc> Value<'gc> {
     pub fn coerce_to_type(
         &self,
         activation: &mut Activation<'_, 'gc>,
-        class: GcCell<'gc, Class<'gc>>,
+        class: Class<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if GcCell::ptr_eq(
-            class,
-            activation.avm2().classes().int.inner_class_definition(),
-        ) {
+        if class == activation.avm2().classes().int.inner_class_definition() {
             return Ok(self.coerce_to_i32(activation)?.into());
         }
 
-        if GcCell::ptr_eq(
-            class,
-            activation.avm2().classes().uint.inner_class_definition(),
-        ) {
+        if class == activation.avm2().classes().uint.inner_class_definition() {
             return Ok(self.coerce_to_u32(activation)?.into());
         }
 
-        if GcCell::ptr_eq(
-            class,
-            activation.avm2().classes().number.inner_class_definition(),
-        ) {
+        if class == activation.avm2().classes().number.inner_class_definition() {
             return Ok(self.coerce_to_number(activation)?.into());
         }
 
-        if GcCell::ptr_eq(
-            class,
-            activation.avm2().classes().boolean.inner_class_definition(),
-        ) {
+        if class == activation.avm2().classes().boolean.inner_class_definition() {
             return Ok(self.coerce_to_boolean().into());
         }
 
         if matches!(self, Value::Undefined) || matches!(self, Value::Null) {
-            if GcCell::ptr_eq(
-                class,
-                activation.avm2().classes().void.inner_class_definition(),
-            ) {
+            if class == activation.avm2().classes().void.inner_class_definition() {
                 return Ok(Value::Undefined);
             }
             return Ok(Value::Null);
         }
 
-        if GcCell::ptr_eq(
-            class,
-            activation.avm2().classes().string.inner_class_definition(),
-        ) {
+        if class == activation.avm2().classes().string.inner_class_definition() {
             return Ok(self.coerce_to_string(activation)?.into());
         }
 
@@ -1048,7 +1030,6 @@ impl<'gc> Value<'gc> {
         }
 
         let name = class
-            .read()
             .name()
             .to_qualified_name_err_message(activation.context.gc_context);
 
@@ -1116,32 +1097,20 @@ impl<'gc> Value<'gc> {
     pub fn is_of_type(
         &self,
         activation: &mut Activation<'_, 'gc>,
-        type_object: GcCell<'gc, Class<'gc>>,
+        type_object: Class<'gc>,
     ) -> bool {
-        if GcCell::ptr_eq(
-            type_object,
-            activation.avm2().classes().number.inner_class_definition(),
-        ) {
+        if type_object == activation.avm2().classes().number.inner_class_definition() {
             return self.is_number();
         }
-        if GcCell::ptr_eq(
-            type_object,
-            activation.avm2().classes().uint.inner_class_definition(),
-        ) {
+        if type_object == activation.avm2().classes().uint.inner_class_definition() {
             return self.is_u32();
         }
-        if GcCell::ptr_eq(
-            type_object,
-            activation.avm2().classes().int.inner_class_definition(),
-        ) {
+        if type_object == activation.avm2().classes().int.inner_class_definition() {
             return self.is_i32();
         }
 
         if let Value::Undefined = self {
-            if GcCell::ptr_eq(
-                type_object,
-                activation.avm2().classes().void.inner_class_definition(),
-            ) {
+            if type_object == activation.avm2().classes().void.inner_class_definition() {
                 return true;
             }
         }

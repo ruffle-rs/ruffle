@@ -9,7 +9,6 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::QName;
-use gc_arena::GcCell;
 
 /// Implements `Object`'s instance initializer.
 pub fn instance_init<'gc>(
@@ -251,7 +250,7 @@ pub fn init<'gc>(
 }
 
 /// Construct `Object`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     let gc_context = activation.context.gc_context;
     let object_class = Class::new(
         QName::new(activation.avm2().public_namespace_base_version, "Object"),
@@ -260,18 +259,20 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         Method::from_builtin(class_init, "<Object class initializer>", gc_context),
         gc_context,
     );
-    let mut write = object_class.write(gc_context);
-    write.set_call_handler(Method::from_builtin(
-        class_call,
-        "<Object call handler>",
-        gc_context,
-    ));
 
-    write.define_class_trait(Trait::from_const(
-        QName::new(activation.avm2().public_namespace_base_version, "length"),
-        Multiname::new(activation.avm2().public_namespace_base_version, "int"),
-        Some(1.into()),
-    ));
+    object_class.set_call_handler(
+        gc_context,
+        Method::from_builtin(class_call, "<Object call handler>", gc_context),
+    );
+
+    object_class.define_class_trait(
+        gc_context,
+        Trait::from_const(
+            QName::new(activation.avm2().public_namespace_base_version, "length"),
+            Multiname::new(activation.avm2().public_namespace_base_version, "int"),
+            Some(1.into()),
+        ),
+    );
 
     // Fixed traits (in AS3 namespace)
     let as3_instance_methods: Vec<(&str, NativeMethodImpl, _, _)> = vec![
@@ -307,14 +308,14 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
             Multiname::new(activation.avm2().public_namespace_base_version, "Boolean"),
         ),
     ];
-    write.define_builtin_instance_methods_with_sig(
+    object_class.define_builtin_instance_methods_with_sig(
         gc_context,
         activation.avm2().as3_namespace,
         as3_instance_methods,
     );
 
     const INTERNAL_INIT_METHOD: &[(&str, NativeMethodImpl)] = &[("init", init)];
-    write.define_builtin_class_methods(
+    object_class.define_builtin_class_methods(
         gc_context,
         activation.avm2().internal_namespace,
         INTERNAL_INIT_METHOD,

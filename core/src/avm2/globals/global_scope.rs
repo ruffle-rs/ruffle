@@ -11,7 +11,6 @@ use crate::avm2::object::Object;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::QName;
-use gc_arena::GcCell;
 
 /// Implements `global`'s instance constructor.
 pub fn instance_init<'gc>(
@@ -34,8 +33,8 @@ pub fn class_init<'gc>(
 /// Construct `global`'s class.
 pub fn create_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    object_class: GcCell<'gc, Class<'gc>>,
-) -> GcCell<'gc, Class<'gc>> {
+    object_class: Class<'gc>,
+) -> Class<'gc> {
     let mc = activation.context.gc_context;
     Class::new(
         QName::new(activation.avm2().public_namespace_base_version, "global"),

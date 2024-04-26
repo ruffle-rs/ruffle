@@ -271,20 +271,19 @@ impl Definition {
         let mut definition = Self::default();
         let class = class_object.inner_class_definition();
 
-        if class.read().is_final() {
+        if class.is_final() {
             definition
                 .classinfo
                 .get_or_insert_with(Default::default)
                 .is_final = true;
         }
-        if !class.read().is_sealed() {
+        if !class.is_sealed() {
             definition
                 .classinfo
                 .get_or_insert_with(Default::default)
                 .dynamic = true;
         }
         if let Some(super_name) = class
-            .read()
             .super_class_name()
             .as_ref()
             .and_then(|n| n.local_name())
@@ -322,13 +321,13 @@ impl Definition {
 
         Self::fill_traits(
             activation.avm2(),
-            class.read().class_traits(),
+            &class.class_traits(),
             &mut definition.static_traits,
             stubs,
         );
         Self::fill_traits(
             activation.avm2(),
-            class.read().instance_traits(),
+            &class.instance_traits(),
             &mut definition.instance_traits,
             stubs,
         );
@@ -476,7 +475,6 @@ pub fn capture_specification(context: &mut UpdateContext, output: &Path) {
             if let Some(class) = object.as_class_object() {
                 let class_name = class
                     .inner_class_definition()
-                    .read()
                     .name()
                     .to_qualified_name_err_message(activation.context.gc_context)
                     .to_string();
