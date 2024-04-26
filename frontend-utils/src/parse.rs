@@ -207,66 +207,43 @@ pub trait ReadExt<'a> {
     }
 
     fn parse_from_str<T: FromStr>(&'a self, cx: &mut ParseContext, key: &'static str) -> Option<T> {
+        let mut result = None;
+
         cx.push_key(key);
-
-        let res = if let Some(item) = self.get_impl(key) {
-            if let Some(str) = item.as_str() {
-                if let Ok(value) = str.parse::<T>() {
-                    Some(value)
-                } else {
-                    cx.unsupported_value(str.to_owned());
-                    None
-                }
+        if let Some(str) = self.get_impl(key).and_then(|item| item.as_str_or_warn(cx)) {
+            if let Ok(value) = str.parse::<T>() {
+                result = Some(value)
             } else {
-                cx.unexpected_type("string", item.type_name());
-                None
+                cx.unsupported_value(str.to_owned());
             }
-        } else {
-            None
-        };
-
+        }
         cx.pop_key();
 
-        res
+        result
     }
 
     fn get_bool(&'a self, cx: &mut ParseContext, key: &'static str) -> Option<bool> {
         cx.push_key(key);
-
-        let res = if let Some(item) = self.get_impl(key) {
-            if let Some(value) = item.as_bool() {
-                Some(value)
-            } else {
-                cx.unexpected_type("boolean", item.type_name());
-                None
-            }
-        } else {
-            None
-        };
-
+        let result = self.get_impl(key).and_then(|x| x.as_bool_or_warn(cx));
         cx.pop_key();
 
-        res
+        result
     }
 
     fn get_float(&'a self, cx: &mut ParseContext, key: &'static str) -> Option<f64> {
         cx.push_key(key);
-
-        let res = if let Some(item) = self.get_impl(key) {
-            if let Some(value) = item.as_float() {
-                Some(value)
-            } else {
-                cx.unexpected_type("float", item.type_name());
-                None
-            }
-        } else {
-            None
-        };
-
+        let result = self.get_impl(key).and_then(|x| x.as_float_or_warn(cx));
         cx.pop_key();
 
-        res
+        result
     }
+}
+
+/// Extension trait to provide casting methods with warning capabilities.
+pub trait ItemExt<'a> {
+    fn as_str_or_warn(&'a self, cx: &mut ParseContext) -> Option<&'a str>;
+    fn as_bool_or_warn(&self, cx: &mut ParseContext) -> Option<bool>;
+    fn as_float_or_warn(&self, cx: &mut ParseContext) -> Option<f64>;
 }
 
 // Implementations for toml_edit types.
@@ -292,5 +269,37 @@ impl<'a> ReadExt<'a> for Table {
 impl<'a> ReadExt<'a> for dyn TableLike + 'a {
     fn get_impl(&'a self, key: &str) -> Option<&'a Item> {
         self.get(key)
+    }
+}
+
+impl<'a> ItemExt<'a> for Item {
+    fn as_bool_or_warn(&self, cx: &mut ParseContext) -> Option<bool> {
+        if let Some(value) = self.as_bool() {
+            return Some(value);
+        } else {
+            cx.unexpected_type("boolean", self.type_name());
+        }
+
+        None
+    }
+
+    fn as_float_or_warn(&self, cx: &mut ParseContext) -> Option<f64> {
+        if let Some(value) = self.as_float() {
+            return Some(value);
+        } else {
+            cx.unexpected_type("float", self.type_name());
+        }
+
+        None
+    }
+
+    fn as_str_or_warn(&'a self, cx: &mut ParseContext) -> Option<&'a str> {
+        if let Some(value) = self.as_str() {
+            return Some(value);
+        } else {
+            cx.unexpected_type("string", self.type_name());
+        }
+
+        None
     }
 }
