@@ -237,6 +237,14 @@ pub trait ReadExt<'a> {
 
         result
     }
+
+    fn get_integer(&'a self, cx: &mut ParseContext, key: &'static str) -> Option<i64> {
+        cx.push_key(key);
+        let result = self.get_impl(key).and_then(|x| x.as_integer_or_warn(cx));
+        cx.pop_key();
+
+        result
+    }
 }
 
 /// Extension trait to provide casting methods with warning capabilities.
@@ -244,6 +252,7 @@ pub trait ItemExt<'a> {
     fn as_str_or_warn(&'a self, cx: &mut ParseContext) -> Option<&'a str>;
     fn as_bool_or_warn(&self, cx: &mut ParseContext) -> Option<bool>;
     fn as_float_or_warn(&self, cx: &mut ParseContext) -> Option<f64>;
+    fn as_integer_or_warn(&self, cx: &mut ParseContext) -> Option<i64>;
 }
 
 // Implementations for toml_edit types.
@@ -298,6 +307,16 @@ impl<'a> ItemExt<'a> for Item {
             return Some(value);
         } else {
             cx.unexpected_type("string", self.type_name());
+        }
+
+        None
+    }
+
+    fn as_integer_or_warn(&self, cx: &mut ParseContext) -> Option<i64> {
+        if let Some(value) = self.as_integer() {
+            return Some(value);
+        } else {
+            cx.unexpected_type("integer", self.type_name());
         }
 
         None
