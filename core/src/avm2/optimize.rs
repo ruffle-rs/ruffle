@@ -730,9 +730,6 @@ pub fn optimize<'gc>(
                 let local_type = local_types.at(*index as usize);
                 stack.push(local_type);
             }
-            Op::GetLex { .. } => {
-                stack.push_any();
-            }
             Op::FindPropStrict { multiname } => {
                 stack.pop_for_multiname(*multiname);
 

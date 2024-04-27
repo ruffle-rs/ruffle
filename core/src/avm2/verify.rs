@@ -45,7 +45,18 @@ enum ByteInfo {
     OpStart(AbcOp),
     OpContinue,
 
+    OpStartNonJumpable(AbcOp),
+
     NotYetReached,
+}
+
+impl ByteInfo {
+    fn get_op(&self) -> Option<&AbcOp> {
+        match self {
+            ByteInfo::OpStart(op) | ByteInfo::OpStartNonJumpable(op) => Some(op),
+            _ => None,
+        }
+    }
 }
 
 pub enum JumpSources {
@@ -152,7 +163,10 @@ pub fn verify_method<'gc>(
 
                 let lookedup_target_info = byte_info.get(target_position as usize);
 
-                if matches!(lookedup_target_info, Some(ByteInfo::OpContinue)) {
+                if matches!(
+                    lookedup_target_info,
+                    Some(ByteInfo::OpContinue | ByteInfo::OpStartNonJumpable(_))
+                ) {
                     return Err(make_error_1021(activation));
                 }
 
@@ -290,7 +304,7 @@ pub fn verify_method<'gc>(
                     }
                 }
 
-                AbcOp::GetLex { index } | AbcOp::FindDef { index } => {
+                AbcOp::FindDef { index } => {
                     let multiname = method
                         .translation_unit()
                         .pool_maybe_uninitialized_multiname(index, &mut activation.context)?;
@@ -302,6 +316,26 @@ pub fn verify_method<'gc>(
                             1078,
                         )?));
                     }
+                }
+
+                AbcOp::GetLex { index } => {
+                    let multiname = method
+                        .translation_unit()
+                        .pool_maybe_uninitialized_multiname(index, &mut activation.context)?;
+
+                    if multiname.has_lazy_component() {
+                        return Err(Error::AvmError(verify_error(
+                            activation,
+                            "Error #1078: Illegal opcode/multiname combination.",
+                            1078,
+                        )?));
+                    }
+
+                    assert!(bytes_read > 1);
+                    byte_info[previous_position as usize] =
+                        ByteInfo::OpStart(AbcOp::FindPropStrict { index });
+                    byte_info[(previous_position + 1) as usize] =
+                        ByteInfo::OpStartNonJumpable(AbcOp::GetProperty { index });
                 }
 
                 AbcOp::GetOuterScope { index } => {
@@ -349,9 +383,9 @@ pub fn verify_method<'gc>(
 
     let mut new_code = Vec::new();
     for (i, info) in byte_info.iter().enumerate() {
-        if let ByteInfo::OpStart(c) = info {
+        if let Some(op) = info.get_op() {
             byte_offset_to_idx.insert(i, new_code.len() as i32);
-            new_code.push(c.clone());
+            new_code.push(op.clone());
             idx_to_byte_offset.push(i);
         }
     }
@@ -922,11 +956,8 @@ fn resolve_op<'gc>(
 
             Op::FindPropStrict { multiname }
         }
-        AbcOp::GetLex { index } => {
-            let multiname = pool_multiname(activation, translation_unit, index)?;
-            // Verifier guarantees that multiname was non-lazy
-
-            Op::GetLex { multiname }
+        AbcOp::GetLex { .. } => {
+            unreachable!("Verifier emits FindPropStrict and GetProperty instead of GetLex")
         }
         AbcOp::GetDescendants { index } => {
             let multiname = pool_multiname(activation, translation_unit, index)?;
