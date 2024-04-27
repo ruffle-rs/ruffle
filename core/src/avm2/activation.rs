@@ -305,27 +305,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
     }
 
-    /// Resolves a definition using either the current or outer scope of this activation.
-    pub fn resolve_definition(
-        &mut self,
-        name: &Multiname<'gc>,
-    ) -> Result<Option<Value<'gc>>, Error<'gc>> {
-        let outer_scope = self.outer;
-
-        if let Some(obj) = search_scope_stack(self.scope_frame(), name, outer_scope.is_empty())? {
-            Ok(Some(obj.get_property(name, self)?))
-        } else if let Some(result) = outer_scope.resolve(name, self)? {
-            Ok(Some(result))
-        } else if let Some(global) = self.global_scope() {
-            if !global.base().has_own_property(name) {
-                return Ok(None);
-            }
-            return Ok(Some(global.base().get_property_local(name, self)?));
-        } else {
-            Ok(None)
-        }
-    }
-
     /// Resolve a single parameter value.
     ///
     /// Given an individual parameter value and the associated parameter's
@@ -943,7 +922,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::FindDef { multiname } => self.op_find_def(*multiname),
                 Op::FindProperty { multiname } => self.op_find_property(*multiname),
                 Op::FindPropStrict { multiname } => self.op_find_prop_strict(*multiname),
-                Op::GetLex { multiname } => self.op_get_lex(*multiname),
                 Op::GetDescendants { multiname } => self.op_get_descendants(*multiname),
                 Op::GetSlot { index } => self.op_get_slot(*index),
                 Op::SetSlot { index } => self.op_set_slot(*index),
@@ -1756,23 +1734,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 1016,
             )?));
         }
-
-        Ok(FrameControl::Continue)
-    }
-
-    fn op_get_lex(
-        &mut self,
-        multiname: Gc<'gc, Multiname<'gc>>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        // Verifier ensures that multiname is non-lazy
-
-        avm_debug!(self.avm2(), "Resolving {:?}", *multiname);
-        let found: Result<Value<'gc>, Error<'gc>> =
-            self.resolve_definition(&multiname)?.ok_or_else(|| {
-                make_reference_error(self, ReferenceErrorCode::InvalidLookup, &multiname, None)
-            });
-
-        self.push_stack(found?);
 
         Ok(FrameControl::Continue)
     }

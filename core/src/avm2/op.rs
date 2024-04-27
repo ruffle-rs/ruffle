@@ -134,9 +134,6 @@ pub enum Op<'gc> {
     GetGlobalSlot {
         index: u32,
     },
-    GetLex {
-        multiname: Gc<'gc, Multiname<'gc>>,
-    },
     GetLocal {
         index: u32,
     },
