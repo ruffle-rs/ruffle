@@ -248,6 +248,23 @@ pub fn optimize<'gc>(
         }
     }
 
+    let mut has_simple_scoping = false;
+    if !jump_targets.contains_key(&0) || !jump_targets.contains_key(&1) {
+        if matches!(code.get(0), Some(Op::GetLocal { index: 0 }))
+            && matches!(code.get(1), Some(Op::PushScope))
+        {
+            has_simple_scoping = true;
+            for op in code.iter().skip(2) {
+                match op {
+                    Op::PushScope | Op::PushWith | Op::PopScope => {
+                        has_simple_scoping = false;
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
     // TODO: Fill out all ops, then add scope stack and stack merging, too
     let mut state_map: HashMap<i32, Locals<'gc>> = HashMap::new();
 
@@ -730,17 +747,62 @@ pub fn optimize<'gc>(
                 let local_type = local_types.at(*index as usize);
                 stack.push(local_type);
             }
-            Op::FindPropStrict { multiname } => {
-                stack.pop_for_multiname(*multiname);
+            Op::FindPropStrict { multiname } | Op::FindProperty { multiname } => {
+                let multiname = multiname.clone();
+                let mut stack_push_done = false;
+                stack.pop_for_multiname(multiname);
 
-                // Avoid handling for now
-                stack.push_any();
-            }
-            Op::FindProperty { multiname } => {
-                stack.pop_for_multiname(*multiname);
+                if has_simple_scoping {
+                    let outer_scope = activation.outer();
+                    if !outer_scope.is_empty() {
+                        if let Some(this_class) = this_class {
+                            if this_class.instance_vtable().has_trait(&multiname) {
+                                *op = Op::GetScopeObject { index: 0 };
 
-                // Avoid handling for now
-                stack.push_any();
+                                stack_push_done = true;
+                                stack.push_class_object(this_class);
+                            }
+                        } else {
+                            stack_push_done = true;
+                            stack.push_any();
+                        }
+                    }
+
+                    if !stack_push_done {
+                        if let Some((class, index)) =
+                            outer_scope.get_entry_for_multiname(&multiname)
+                        {
+                            *op = Op::GetOuterScope {
+                                index: index as u32,
+                            };
+
+                            stack_push_done = true;
+                            if let Some(class) = class {
+                                stack.push_class_object(class);
+                            } else {
+                                stack.push_any();
+                            }
+                        }
+                    }
+
+                    if !stack_push_done {
+                        if let Ok(Some((_, script))) =
+                            outer_scope.domain().get_defining_script(&multiname)
+                        {
+                            *op = Op::GetScriptGlobals { script };
+
+                            stack_push_done = true;
+                            // Pushing the `global` class doesn't work because of the `fork_vtable` hack
+                            stack.push_any();
+                        }
+                    }
+
+                    // Ignore global scope for now
+                }
+
+                if !stack_push_done {
+                    stack.push_any();
+                }
             }
             Op::FindDef { .. } => {
                 // Avoid handling for now

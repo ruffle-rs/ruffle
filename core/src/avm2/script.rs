@@ -18,6 +18,7 @@ use crate::tag_utils::SwfMovie;
 use crate::PlayerRuntime;
 use gc_arena::{Collect, Gc, GcCell, Mutation};
 use std::cell::Ref;
+use std::fmt::Debug;
 use std::rc::Rc;
 use std::sync::Arc;
 use swf::avm2::types::{
@@ -558,10 +559,7 @@ impl<'gc> Script<'gc> {
     ///
     /// If the script has not yet been initialized, this will initialize it on
     /// the same stack.
-    pub fn globals(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    pub fn globals(&self, context: &mut UpdateContext<'_, 'gc>) -> Result<Object<'gc>, Error<'gc>> {
         let mut write = self.0.write(context.gc_context);
 
         if !write.initialized {
@@ -604,5 +602,13 @@ impl<'gc> Script<'gc> {
         }
 
         Ok(Ref::map(read, |read| &read.traits[..]))
+    }
+}
+
+impl<'gc> Debug for Script<'gc> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        f.debug_struct("Script")
+            .field("ptr", &self.0.as_ptr())
+            .finish()
     }
 }

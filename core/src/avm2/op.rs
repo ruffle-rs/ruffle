@@ -1,5 +1,6 @@
 use crate::avm2::class::Class;
 use crate::avm2::multiname::Multiname;
+use crate::avm2::script::Script;
 use crate::string::AvmAtom;
 
 use gc_arena::{Collect, Gc};
@@ -145,6 +146,9 @@ pub enum Op<'gc> {
     },
     GetScopeObject {
         index: u8,
+    },
+    GetScriptGlobals {
+        script: Script<'gc>,
     },
     GetSlot {
         index: u32,

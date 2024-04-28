@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::domain::Domain;
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::{Multiname, Namespace};
@@ -195,7 +195,7 @@ impl<'gc> ScopeChain<'gc> {
             }
         }
         // That didn't work... let's try searching the domain now.
-        if let Some((qname, mut script)) = self.domain.get_defining_script(multiname)? {
+        if let Some((qname, script)) = self.domain.get_defining_script(multiname)? {
             return Ok(Some((
                 Some(qname.namespace()),
                 script.globals(&mut activation.context)?,
@@ -232,6 +232,28 @@ impl<'gc> ScopeChain<'gc> {
             }
         }
         Ok(found.map(|o| o.1))
+    }
+
+    pub fn get_entry_for_multiname(
+        &self,
+        multiname: &Multiname<'gc>,
+    ) -> Option<(Option<ClassObject<'gc>>, u32)> {
+        if let Some(container) = self.container {
+            for (index, scope) in container.scopes.iter().enumerate().skip(1).rev() {
+                if scope.with() {
+                    // If this is a `with` scope, stop here because
+                    // dynamic properties could be added at any time
+                    return None;
+                }
+
+                let values = scope.values();
+                if values.has_trait(&multiname) {
+                    return Some((values.instance_of(), index as u32));
+                }
+            }
+        }
+
+        None
     }
 
     pub fn resolve(

@@ -922,6 +922,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::FindDef { multiname } => self.op_find_def(*multiname),
                 Op::FindProperty { multiname } => self.op_find_property(*multiname),
                 Op::FindPropStrict { multiname } => self.op_find_prop_strict(*multiname),
+                Op::GetScriptGlobals { script } => self.op_get_script_globals(*script),
                 Op::GetDescendants { multiname } => self.op_get_descendants(*multiname),
                 Op::GetSlot { index } => self.op_get_slot(*index),
                 Op::SetSlot { index } => self.op_set_slot(*index),
@@ -1667,7 +1668,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // Verifier ensures that multiname is non-lazy
 
         avm_debug!(self.avm2(), "Resolving {:?}", *multiname);
-        let (_, mut script) = self.domain().find_defining_script(self, &multiname)?;
+        let (_, script) = self.domain().find_defining_script(self, &multiname)?;
         let obj = script.globals(&mut self.context)?;
         self.push_stack(obj);
         Ok(FrameControl::Continue)
@@ -1703,6 +1704,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let result: Value<'gc> = found?.into();
 
         self.push_stack(result);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_get_script_globals(
+        &mut self,
+        script: Script<'gc>,
+    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let globals = script.globals(&mut self.context)?;
+
+        self.push_stack(globals);
 
         Ok(FrameControl::Continue)
     }
