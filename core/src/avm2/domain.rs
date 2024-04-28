@@ -263,7 +263,7 @@ impl<'gc> Domain<'gc> {
         activation: &mut Activation<'_, 'gc>,
         name: QName<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let (name, mut script) = self.find_defining_script(activation, &name.into())?;
+        let (name, script) = self.find_defining_script(activation, &name.into())?;
         let globals = script.globals(&mut activation.context)?;
 
         globals.get_property(&name.into(), activation)

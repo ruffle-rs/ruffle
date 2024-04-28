@@ -585,7 +585,7 @@ impl<'gc> Avm2<'gc> {
 
         if !flags.contains(DoAbc2Flag::LAZY_INITIALIZE) {
             for i in 0..num_scripts {
-                if let Some(mut script) = tunit.get_script(i) {
+                if let Some(script) = tunit.get_script(i) {
                     script.globals(&mut activation.context)?;
                 }
             }
