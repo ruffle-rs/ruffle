@@ -1,5 +1,5 @@
 network-settings = إعدادات الشبكة
-player-settings = إعدادات اللاعب
+player-settings = إعدادات المشغل
 movie-parameters = معامل الفيلم
 custom-base-url = رابط الموقع الأساسي
 spoof-swf-url = محاكاة رابط SWF
@@ -16,7 +16,7 @@ open-url-mode-confirm = اسأل
 open-url-mode-deny = رفض
 load-behavior = تحميل السلوك
 load-behavior-streaming = البث
-load-behavior-delayed = تأخير
+load-behavior-delayed = مؤجل
 load-behavior-blocking = حجب
 max-execution-duration = مدة التنفيذ القصوى
 max-execution-duration-suffix = { " " } ثانية

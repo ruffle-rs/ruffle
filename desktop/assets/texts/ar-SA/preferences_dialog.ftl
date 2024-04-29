@@ -1,0 +1,16 @@
+preferences-dialog = إعدادات Ruffle
+preference-locked-by-cli = للقراءة فقط (تم تعيينه بواسطة مدخل سطر الأوامر)
+graphics-backend = محرك الرسومات
+graphics-backend-default = إفتراضي
+graphics-power = إعدادات الطاقة
+graphics-power-low = منخفض (iGPU مثلاً)
+graphics-power-high = مرتفع (GPU مثلاً)
+language = اللغة
+audio-output-device = جهاز إخراج الصوت
+audio-output-device-default = الإعداد الإفتراضي للنظام
+log-filename-pattern = اسم ملف السجل
+log-filename-pattern-single-file = ملف فردي (ruffle.log)
+log-filename-pattern-with-timestamp = مع طابع زمني
+storage-backend = موقع ملف الحفظ
+storage-backend-disk = القرص
+storage-backend-memory = الذاكرة
