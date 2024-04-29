@@ -3,8 +3,8 @@ context-menu-copy-debug-info = نسخ معلومات التصحيح
 context-menu-open-save-manager = فتح مدير الحفظ
 context-menu-about-ruffle =
     { $flavor ->
-        [extension] حول ملحق رفل ({ $version })
-       *[other] حول رفل ({ $version })
+        [extension] حول ملحق Ruffle ({ $version })
+       *[other] حول Ruffle ({ $version })
     }
 context-menu-hide = إخفاء هذه القائمة
 context-menu-exit-fullscreen = الخروج من وضعية الشاشة الكاملة
