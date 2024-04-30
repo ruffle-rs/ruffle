@@ -84,21 +84,17 @@ impl FileDialogResult for DesktopFileDialogResult {
         }
     }
 
-    fn creator(&self) -> Option<String> {
-        None
-    }
-
     fn contents(&self) -> &[u8] {
         &self.contents
     }
 
-    fn write(&self, data: &[u8]) {
+    fn write_and_refresh(&mut self, data: &[u8]) {
+        // write
         if let Some(handle) = &self.handle {
             let _ = std::fs::write(handle.path(), data);
         }
-    }
 
-    fn refresh(&mut self) {
+        // refresh
         let md = self
             .handle
             .as_ref()
