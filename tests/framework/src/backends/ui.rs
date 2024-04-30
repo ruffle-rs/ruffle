@@ -1,6 +1,5 @@
 use crate::test::Font;
 use chrono::{DateTime, Utc};
-use image::EncodableLayout;
 use ruffle_core::backend::ui::{
     DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter, FontDefinition,
     FullscreenError, LanguageIdentifier, MouseCursor, UiBackend, US_ENGLISH,
@@ -14,6 +13,7 @@ use url::Url;
 pub struct TestFileDialogResult {
     canceled: bool,
     file_name: Option<String>,
+    contents: Vec<u8>,
 }
 
 impl TestFileDialogResult {
@@ -21,6 +21,7 @@ impl TestFileDialogResult {
         Self {
             canceled: true,
             file_name: None,
+            contents: Vec::new(),
         }
     }
 
@@ -28,11 +29,10 @@ impl TestFileDialogResult {
         Self {
             canceled: false,
             file_name: Some(file_name),
+            contents: b"Hello, World!".to_vec(),
         }
     }
 }
-
-const FILE_CONTENTS: &[u8; 13] = b"Hello, World!";
 
 impl FileDialogResult for TestFileDialogResult {
     fn is_cancelled(&self) -> bool {
@@ -48,28 +48,24 @@ impl FileDialogResult for TestFileDialogResult {
     }
 
     fn file_name(&self) -> Option<String> {
-        (!self.is_cancelled()).then(|| self.file_name.clone().unwrap())
+        self.file_name.clone()
     }
 
     fn size(&self) -> Option<u64> {
-        Some(FILE_CONTENTS.len() as u64)
+        Some(self.contents.len() as u64)
     }
 
     fn file_type(&self) -> Option<String> {
         (!self.is_cancelled()).then(|| ".txt".to_string())
     }
 
-    fn creator(&self) -> Option<String> {
-        None
-    }
-
     fn contents(&self) -> &[u8] {
-        FILE_CONTENTS.as_bytes()
+        &self.contents
     }
 
-    fn write(&self, _data: &[u8]) {}
-
-    fn refresh(&mut self) {}
+    fn write_and_refresh(&mut self, data: &[u8]) {
+        self.contents = data.to_vec();
+    }
 }
 
 /// This is an implementation of [`UiBackend`], designed for use in tests

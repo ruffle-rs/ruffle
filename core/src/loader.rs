@@ -2686,8 +2686,7 @@ impl<'gc> Loader<'gc> {
                 match dialog_result {
                     Ok(mut dialog_result) => {
                         if !dialog_result.is_cancelled() {
-                            dialog_result.write(&data);
-                            dialog_result.refresh();
+                            dialog_result.write_and_refresh(&data);
                             target_object.init_from_dialog_result(dialog_result);
 
                             let mut activation = Avm2Activation::from_nothing(uc.reborrow());
@@ -2840,8 +2839,7 @@ impl<'gc> Loader<'gc> {
                                     // perspective of AS, we want to refresh the file_ref internal data
                                     // before invoking the callbacks
 
-                                    dialog_result.write(&body);
-                                    dialog_result.refresh();
+                                    dialog_result.write_and_refresh(&body);
                                     file_ref.init_from_dialog_result(
                                         &mut activation,
                                         dialog_result.borrow(),
