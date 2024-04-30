@@ -646,6 +646,12 @@ pub trait TInteractiveObject<'gc>:
     }
 
     fn set_tab_index(&self, context: &mut UpdateContext<'_, 'gc>, value: Option<i32>) {
+        // tabIndex = -1 is always equivalent to unset tabIndex
+        let value = if matches!(value, Some(-1)) {
+            None
+        } else {
+            value
+        };
         self.raw_interactive_mut(context.gc()).tab_index = value
     }
 }
