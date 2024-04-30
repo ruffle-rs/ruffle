@@ -1,0 +1,29 @@
+Tab pressed
+Focus changed
+  old: null
+  new: _level0.text6
+Tab pressed
+Focus changed
+  old: _level0.text6
+  new: _level0.text5
+Tab pressed
+Focus changed
+  old: _level0.text5
+  new: _level0.text2
+Tab pressed
+Focus changed
+  old: _level0.text2
+  new: _level0.text1
+Tab pressed
+Focus changed
+  old: _level0.text1
+  new: _level0.text4
+Tab pressed
+Focus changed
+  old: _level0.text4
+  new: _level0.text6
+Tab pressed
+Focus changed
+  old: _level0.text6
+  new: _level0.text5
+Tab pressed
