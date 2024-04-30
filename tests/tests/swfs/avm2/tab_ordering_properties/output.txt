@@ -93,6 +93,15 @@
     tabEnabled = false
     tabIndex = -1
     tabChildren = true
+    set tabEnabled
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+    set tabIndex
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+    set tabChildren
+  after set 11
+    tabEnabled = false
+    tabIndex = -1
+    tabChildren = true
 ===== text =====
   default
     tabEnabled = false
@@ -180,6 +189,14 @@
   after set 10
     tabEnabled = true
     tabIndex = 1
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.text.TextField.
+  after set 11
+    tabEnabled = true
+    tabIndex = -1
     Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
 ===== text type input =====
   default
@@ -269,6 +286,14 @@
     tabEnabled = true
     tabIndex = 1
     Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.text.TextField.
+  after set 11
+    tabEnabled = true
+    tabIndex = -1
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
 ===== button =====
   default
     tabEnabled = true
@@ -357,6 +382,14 @@
     tabEnabled = true
     tabIndex = 1
     Error: ReferenceError: Error #1069: Property tabChildren not found on flash.display.SimpleButton and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.display.SimpleButton.
+  after set 11
+    tabEnabled = true
+    tabIndex = -1
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.display.SimpleButton and there is no default value.
 ===== movie clip =====
   default
     tabEnabled = false
@@ -434,6 +467,13 @@
   after set 10
     tabEnabled = true
     tabIndex = 1
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 11
+    tabEnabled = true
+    tabIndex = -1
     tabChildren = true
 ===== movie clip button mode true =====
   default
@@ -513,6 +553,13 @@
     tabEnabled = true
     tabIndex = 1
     tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 11
+    tabEnabled = true
+    tabIndex = -1
+    tabChildren = true
 ===== movie clip with index =====
   default
     tabEnabled = false
@@ -591,6 +638,13 @@
     tabEnabled = true
     tabIndex = 1
     tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 11
+    tabEnabled = true
+    tabIndex = -1
+    tabChildren = true
 ===== sprite =====
   default
     tabEnabled = false
@@ -668,4 +722,11 @@
   after set 10
     tabEnabled = true
     tabIndex = 1
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 11
+    tabEnabled = true
+    tabIndex = -1
     tabChildren = true
