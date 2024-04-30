@@ -32,7 +32,7 @@ impl Avm1ObjectWindow {
         Window::new(object_name(object))
             .id(Id::new(object.as_ptr()))
             .open(&mut keep_open)
-            .scroll2([true, true])
+            .scroll([true, true])
             .show(egui_ctx, |ui| {
                 Grid::new(ui.id().with("properties"))
                     .num_columns(2)

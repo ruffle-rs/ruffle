@@ -28,7 +28,7 @@ impl MovieListWindow {
 
         Window::new("Known Movie List")
             .open(&mut keep_open)
-            .scroll2([true, true])
+            .scroll([true, true])
             .show(egui_ctx, |ui| {
                 let movies = context.library.known_movies();
 
@@ -81,7 +81,7 @@ impl MovieWindow {
         Window::new(movie_name(&movie))
             .id(Id::new(Arc::as_ptr(&movie)))
             .open(&mut keep_open)
-            .scroll2([true, true])
+            .scroll([true, true])
             .show(egui_ctx, |ui| {
                 ui.horizontal(|ui| {
                     ui.selectable_value(&mut self.open_panel, Panel::Information, "Information");

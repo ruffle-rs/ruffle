@@ -48,7 +48,7 @@ impl Avm2ObjectWindow {
         Window::new(object_name(activation.context.gc_context, object))
             .id(Id::new(object.as_ptr()))
             .open(&mut keep_open)
-            .scroll2([true, true])
+            .scroll([true, true])
             .show(egui_ctx, |ui| {
                 ui.horizontal(|ui| {
                     ui.selectable_value(&mut self.open_panel, Panel::Information, "Information");

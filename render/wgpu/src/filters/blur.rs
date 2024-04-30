@@ -117,6 +117,7 @@ impl BlurFilter {
                         module: &descriptors.shaders.blur_filter,
                         entry_point: "main_vertex",
                         buffers: &VERTEX_BUFFERS_DESCRIPTION_FILTERS,
+                        compilation_options: Default::default(),
                     },
                     primitive: wgpu::PrimitiveState {
                         topology: wgpu::PrimitiveTopology::TriangleList,
@@ -137,6 +138,7 @@ impl BlurFilter {
                         module: &descriptors.shaders.blur_filter,
                         entry_point: "main_fragment",
                         targets: &[Some(wgpu::TextureFormat::Rgba8Unorm.into())],
+                        compilation_options: Default::default(),
                     }),
                     multiview: None,
                 })
