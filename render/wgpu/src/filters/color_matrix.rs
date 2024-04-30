@@ -98,6 +98,7 @@ impl ColorMatrixFilter {
                         module: &descriptors.shaders.color_matrix_filter,
                         entry_point: "main_vertex",
                         buffers: &VERTEX_BUFFERS_DESCRIPTION_FILTERS,
+                        compilation_options: Default::default(),
                     },
                     primitive: wgpu::PrimitiveState {
                         topology: wgpu::PrimitiveTopology::TriangleList,
@@ -118,6 +119,7 @@ impl ColorMatrixFilter {
                         module: &descriptors.shaders.color_matrix_filter,
                         entry_point: "main_fragment",
                         targets: &[Some(wgpu::TextureFormat::Rgba8Unorm.into())],
+                        compilation_options: Default::default(),
                     }),
                     multiview: None,
                 })

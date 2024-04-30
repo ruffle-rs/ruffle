@@ -243,11 +243,13 @@ fn create_pipeline_descriptor<'a>(
             module: vertex_shader,
             entry_point: "main_vertex",
             buffers: vertex_buffer_layout,
+            compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: fragment_shader,
             entry_point: "main_fragment",
             targets: color_target_state,
+            compilation_options: Default::default(),
         }),
         primitive: wgpu::PrimitiveState {
             topology: wgpu::PrimitiveTopology::TriangleList,

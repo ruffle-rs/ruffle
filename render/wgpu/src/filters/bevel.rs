@@ -122,6 +122,7 @@ impl BevelFilter {
                         module: &descriptors.shaders.bevel_filter,
                         entry_point: "main_vertex",
                         buffers: &VERTEX_BUFFERS_DESCRIPTION_FILTERS_WITH_DOUBLE_BLUR,
+                        compilation_options: Default::default(),
                     },
                     primitive: wgpu::PrimitiveState {
                         topology: wgpu::PrimitiveTopology::TriangleList,
@@ -142,6 +143,7 @@ impl BevelFilter {
                         module: &descriptors.shaders.bevel_filter,
                         entry_point: "main_fragment",
                         targets: &[Some(wgpu::TextureFormat::Rgba8Unorm.into())],
+                        compilation_options: Default::default(),
                     }),
                     multiview: None,
                 })

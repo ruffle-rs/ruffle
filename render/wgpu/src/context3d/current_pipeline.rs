@@ -508,6 +508,7 @@ impl CurrentPipeline {
                     module: &compiled_shaders.vertex_module,
                     entry_point: naga_agal::SHADER_ENTRY_POINT,
                     buffers: &wgpu_vertex_buffers,
+                    compilation_options: Default::default(),
                 },
                 fragment: Some(wgpu::FragmentState {
                     module: &compiled_shaders.fragment_module,
@@ -520,6 +521,7 @@ impl CurrentPipeline {
                         }),
                         write_mask: self.color_mask,
                     })],
+                    compilation_options: Default::default(),
                 }),
                 primitive: wgpu::PrimitiveState {
                     // Stage3d appears to use clockwise winding:

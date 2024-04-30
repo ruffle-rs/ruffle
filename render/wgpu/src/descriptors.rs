@@ -96,6 +96,7 @@ impl Descriptors {
                                 module: &self.shaders.copy_srgb_shader,
                                 entry_point: "main_vertex",
                                 buffers: &VERTEX_BUFFERS_DESCRIPTION_POS,
+                                compilation_options: Default::default(),
                             },
                             fragment: Some(wgpu::FragmentState {
                                 module: &self.shaders.copy_srgb_shader,
@@ -107,6 +108,7 @@ impl Descriptors {
                                     blend: Some(wgpu::BlendState::REPLACE),
                                     write_mask: Default::default(),
                                 })],
+                                compilation_options: Default::default(),
                             }),
                             primitive: wgpu::PrimitiveState {
                                 topology: wgpu::PrimitiveTopology::TriangleList,
@@ -163,6 +165,7 @@ impl Descriptors {
                                 module: &self.shaders.copy_shader,
                                 entry_point: "main_vertex",
                                 buffers: &VERTEX_BUFFERS_DESCRIPTION_POS,
+                                compilation_options: Default::default(),
                             },
                             fragment: Some(wgpu::FragmentState {
                                 module: &self.shaders.copy_shader,
@@ -174,6 +177,7 @@ impl Descriptors {
                                     blend: Some(wgpu::BlendState::REPLACE),
                                     write_mask: Default::default(),
                                 })],
+                                compilation_options: Default::default(),
                             }),
                             primitive: wgpu::PrimitiveState {
                                 topology: wgpu::PrimitiveTopology::TriangleList,

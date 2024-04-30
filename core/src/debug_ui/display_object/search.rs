@@ -56,7 +56,7 @@ impl DisplayObjectSearchWindow {
 
         Window::new("Display Object Picker")
             .open(&mut keep_open)
-            .scroll2([true, true])
+            .scroll([true, true])
             .show(egui_ctx, |ui| {
                 ui.horizontal(|ui| {
                     ui.checkbox(&mut self.include_hidden, "Include Hidden");

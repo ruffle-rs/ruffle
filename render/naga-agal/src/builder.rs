@@ -4,7 +4,7 @@ use std::num::NonZeroU32;
 use naga::{
     AddressSpace, ArraySize, Block, BuiltIn, Constant, DerivativeControl, EntryPoint,
     FunctionArgument, FunctionResult, GlobalVariable, ImageClass, ImageDimension, Literal,
-    Override, ResourceBinding, Scalar, ShaderStage, StructMember, SwizzleComponent, UnaryOperator,
+    ResourceBinding, Scalar, ShaderStage, StructMember, SwizzleComponent, UnaryOperator,
 };
 use naga::{BinaryOperator, MathFunction};
 use naga::{
@@ -185,13 +185,12 @@ impl VertexAttributeFormat {
 
                 let const_expr_f32_zero = builder
                     .module
-                    .const_expressions
+                    .global_expressions
                     .append(Expression::Literal(Literal::F32(0.0)), Span::UNDEFINED);
 
                 let constant_zero = builder.module.constants.append(
                     Constant {
                         name: None,
-                        r#override: Override::None,
                         ty: builder.f32_type,
                         init: const_expr_f32_zero,
                     },
@@ -209,13 +208,12 @@ impl VertexAttributeFormat {
 
                 let const_expr_f32_1 = builder
                     .module
-                    .const_expressions
+                    .global_expressions
                     .append(Expression::Literal(Literal::F32(1.0)), Span::UNDEFINED);
 
                 let constant_one = builder.module.constants.append(
                     Constant {
                         name: None,
-                        r#override: Override::None,
                         ty: builder.f32_type,
                         init: const_expr_f32_1,
                     },
@@ -683,14 +681,13 @@ impl<'a> NagaBuilder<'a> {
     }
 
     fn emit_const_register_load(&mut self, index: usize) -> Result<Handle<Expression>> {
-        let const_value_expr = self.module.const_expressions.append(
+        let const_value_expr = self.module.global_expressions.append(
             Expression::Literal(Literal::U32(index as u32)),
             Span::UNDEFINED,
         );
         let index_const = self.module.constants.append(
             Constant {
                 name: None,
-                r#override: Override::None,
                 ty: self.u32_type,
                 init: const_value_expr,
             },
@@ -859,7 +856,7 @@ impl<'a> NagaBuilder<'a> {
                             convert: Some(4),
                         });
 
-                        let const_indirect_offset = self.module.const_expressions.append(
+                        let const_indirect_offset = self.module.global_expressions.append(
                             Expression::Literal(Literal::U32(source.indirect_offset as u32)),
                             Span::UNDEFINED,
                         );
@@ -867,7 +864,6 @@ impl<'a> NagaBuilder<'a> {
                         let offset_constant = self.module.constants.append(
                             Constant {
                                 name: None,
-                                r#override: Override::None,
                                 ty: self.u32_type,
                                 init: const_indirect_offset,
                             },
@@ -1602,14 +1598,13 @@ impl<'a> NagaBuilder<'a> {
 
                 let constant_f32_zero = self
                     .module
-                    .const_expressions
+                    .global_expressions
                     .append(Expression::Literal(Literal::F32(0.0)), Span::UNDEFINED);
 
                 // Check `source < 0.0`.
                 let constant_zero = self.module.constants.append(
                     Constant {
                         name: None,
-                        r#override: Override::None,
                         ty: self.f32_type,
                         init: constant_f32_zero,
                     },
