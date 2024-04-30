@@ -14,3 +14,4 @@ log-filename-pattern-with-timestamp = כולל חותמת זמן
 storage-backend = שמור מיקום קובץ
 storage-backend-disk = דיסק
 storage-backend-memory = זיכרון
+recent-limit = מגבלה אחרונה
