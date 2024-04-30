@@ -235,6 +235,22 @@ public class Test extends MovieClip {
 
         trace('  after set 10');
         this.printProperties(obj);
+
+        this.logError(function():void {
+            trace('    set tabEnabled');
+            obj.tabEnabled = -1;
+        });
+        this.logError(function():void {
+            trace('    set tabIndex');
+            obj.tabIndex = -1;
+        });
+        this.logError(function():void {
+            trace('    set tabChildren');
+            obj.tabChildren = -1;
+        });
+
+        trace('  after set 11');
+        this.printProperties(obj);
     }
 }
 }
