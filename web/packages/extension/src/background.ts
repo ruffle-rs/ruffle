@@ -22,6 +22,8 @@ async function enable() {
                     "https://*.twitch.tv/*",
                     "https://www.tuxedocomputers.com/*",
                     "https://*.taobao.com/*",
+                    "https://*.time4learning.com/*",
+                    "https://*.edgenuity.com/*",
                 ],
                 runAt: "document_start",
                 world: "MAIN",
