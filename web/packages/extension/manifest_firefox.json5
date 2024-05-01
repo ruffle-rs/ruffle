@@ -24,6 +24,8 @@
                 "https://*.twitch.tv/*",
                 "https://www.tuxedocomputers.com/*",
                 "https://*.taobao.com/*",
+                "https://*.time4learning.com/*",
+                "https://*.edgenuity.com/*",
             ],
             "js": ["dist/content.js"],
             "all_frames": true,
