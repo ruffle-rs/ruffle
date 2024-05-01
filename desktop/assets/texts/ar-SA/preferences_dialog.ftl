@@ -14,3 +14,4 @@ log-filename-pattern-with-timestamp = مع طابع زمني
 storage-backend = موقع ملف الحفظ
 storage-backend-disk = القرص
 storage-backend-memory = الذاكرة
+recent-limit = حد الملفات الحديثة
