@@ -1152,11 +1152,8 @@ export class RufflePlayer extends HTMLElement {
         const blobURL = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = blobURL;
-        link.style.display = "none";
         link.download = name;
-        document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
         URL.revokeObjectURL(blobURL);
     }
 
