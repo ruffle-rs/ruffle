@@ -249,15 +249,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 if let Some(bound_method) = self.get_bound_method(disp_id) {
                     return Ok(bound_method.into());
                 }
-                let vtable = self.vtable().unwrap();
-                if let Some(bound_method) =
-                    vtable.make_bound_method(activation, self.into(), disp_id)
-                {
-                    self.install_bound_method(activation.context.gc_context, disp_id, bound_method);
-                    Ok(bound_method.into())
-                } else {
-                    Err("Method not found".into())
-                }
+
+                let bound_method = self
+                    .vtable()
+                    .expect("object to have a vtable")
+                    .make_bound_method(activation, self.into(), disp_id)
+                    .ok_or_else(|| format!("Method not found with id {disp_id}"))?;
+
+                self.install_bound_method(activation.context.gc_context, disp_id, bound_method);
+
+                Ok(bound_method.into())
             }
             Some(Property::Virtual { get: Some(get), .. }) => {
                 self.call_method(get, &[], activation)
@@ -501,43 +502,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
                 obj.call(Value::from(self.into()), arguments, activation)
             }
-            Some(Property::Method { disp_id }) => {
-                let vtable = self.vtable().unwrap();
-                if let Some(ClassBoundMethod {
-                    class,
-                    scope,
-                    method,
-                }) = vtable.get_full_method(disp_id)
-                {
-                    if !method.needs_arguments_object() {
-                        Executable::from_method(method, scope, None, Some(class)).exec(
-                            Value::from(self.into()),
-                            arguments,
-                            activation,
-                            class.into(), //Deliberately invalid.
-                        )
-                    } else {
-                        if let Some(bound_method) = self.get_bound_method(disp_id) {
-                            return bound_method.call(
-                                Value::from(self.into()),
-                                arguments,
-                                activation,
-                            );
-                        }
-                        let bound_method = vtable
-                            .make_bound_method(activation, self.into(), disp_id)
-                            .unwrap();
-                        self.install_bound_method(
-                            activation.context.gc_context,
-                            disp_id,
-                            bound_method,
-                        );
-                        bound_method.call(Value::from(self.into()), arguments, activation)
-                    }
-                } else {
-                    Err("Method not found".into())
-                }
-            }
+            Some(Property::Method { disp_id }) => self.call_method(disp_id, arguments, activation),
             Some(Property::Virtual { get: Some(get), .. }) => {
                 let obj = self.call_method(get, &[], activation)?.as_callable(
                     activation,
@@ -611,27 +576,43 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Call a method by its index.
     ///
     /// This directly corresponds with the AVM2 operation `callmethod`.
-    #[allow(unused_mut)] //Not unused.
     fn call_method(
-        mut self,
+        self,
         id: u32,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if self.get_bound_method(id).is_none() {
-            if let Some(vtable) = self.vtable() {
-                if let Some(bound_method) = vtable.make_bound_method(activation, self.into(), id) {
-                    self.install_bound_method(activation.context.gc_context, id, bound_method);
-                }
-            }
+        if let Some(bound_method) = self.get_bound_method(id) {
+            return bound_method.call(Value::from(self.into()), arguments, activation);
         }
 
-        let bound_method = self.get_bound_method(id);
-        if let Some(method_object) = bound_method {
-            return method_object.call(Value::from(self.into()), arguments, activation);
+        let full_method = self
+            .vtable()
+            .expect("method to have a vtable")
+            .get_full_method(id)
+            .ok_or_else(|| format!("Cannot call unknown method id {id}"))?;
+
+        // Execute immediately if this method doesn't require binding
+        if !full_method.method.needs_arguments_object() {
+            let ClassBoundMethod {
+                method,
+                scope,
+                class,
+            } = full_method;
+
+            return Executable::from_method(method, scope, None, Some(class)).exec(
+                Value::from(self.into()),
+                arguments,
+                activation,
+                class.into(), //Deliberately invalid.
+            );
         }
 
-        Err(format!("Cannot call unknown method id {id}").into())
+        let bound_method = VTable::bind_method(activation, self.into(), full_method);
+
+        self.install_bound_method(activation.context.gc_context, id, bound_method);
+
+        bound_method.call(Value::from(self.into()), arguments, activation)
     }
 
     /// Implements the `in` opcode and AS3 operator.
