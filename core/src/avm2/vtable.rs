@@ -532,22 +532,23 @@ impl<'gc> VTable<'gc> {
         receiver: Object<'gc>,
         disp_id: u32,
     ) -> Option<FunctionObject<'gc>> {
-        if let Some(ClassBoundMethod {
+        self.get_full_method(disp_id)
+            .map(|method| Self::bind_method(activation, receiver, method))
+    }
+
+    /// Bind an instance method to a receiver, allowing it to be used as a value. See `VTable::make_bound_method`
+    pub fn bind_method(
+        activation: &mut Activation<'_, 'gc>,
+        receiver: Object<'gc>,
+        method: ClassBoundMethod<'gc>,
+    ) -> FunctionObject<'gc> {
+        let ClassBoundMethod {
             class,
             scope,
             method,
-        }) = self.get_full_method(disp_id)
-        {
-            Some(FunctionObject::from_method(
-                activation,
-                method,
-                scope,
-                Some(receiver),
-                Some(class),
-            ))
-        } else {
-            None
-        }
+        } = method;
+
+        FunctionObject::from_method(activation, method, scope, Some(receiver), Some(class))
     }
 
     /// Install a const trait on the global object.
