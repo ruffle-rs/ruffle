@@ -14,3 +14,4 @@ log-filename-pattern-with-timestamp = S časovou pečiatkou
 storage-backend = Umiestnenie súboru s uloženými pozíciami
 storage-backend-disk = Disk
 storage-backend-memory = Pamäť
+recent-limit = Limit pre nedávne položky
