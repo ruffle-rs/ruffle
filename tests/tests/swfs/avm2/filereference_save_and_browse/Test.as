@@ -7,6 +7,7 @@ import flash.net.FileReference;
 import flash.net.FileFilter;
 import flash.events.Event;
 import flash.events.ProgressEvent;
+import flash.utils.setTimeout;
 
 var file = new FileReference();
 
@@ -41,11 +42,29 @@ function onprogress(e) {
 function oncomplete(e) {
     trace("complete event");
     dump(e.target);
+
+    file.removeEventListener(Event.SELECT, onselect);
+    file.removeEventListener(Event.COMPLETE, oncomplete);
+    file.addEventListener(Event.SELECT, onselect2);
+    file.addEventListener(Event.COMPLETE, oncomplete2);
+    file.browse([new FileFilter("debug-select-success", "*.txt")]);
+}
+
+function oncomplete2(e) {
+    trace("complete event");
+    dump(e.target);
 }
 
 function onselect(e) {
     trace("select event");
     dump(e.target);
+}
+
+function onselect2(e) {
+    trace("select event 2");
+    dump(e.target);
+
+    file.load();
 }
 
 function oncancel(e) {
