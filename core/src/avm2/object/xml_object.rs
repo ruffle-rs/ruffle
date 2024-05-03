@@ -177,6 +177,46 @@ impl<'gc> XmlObject<'gc> {
         Ref::map(self.0.read(), |data| &data.node)
     }
 
+    pub fn contains(&self, value: &Value<'gc>, activation: &mut Activation<'_, 'gc>) -> bool {
+        let node = self.node();
+
+        if let Some(xml) = value.as_object().and_then(|obj| obj.as_xml_object()) {
+            let other = xml.node();
+
+            if node.is_text() || node.is_attribute() {
+                return node.xml_to_string(activation) == other.xml_to_string(activation);
+            }
+
+            if other.is_text() || other.is_attribute() {
+                return false;
+            }
+
+            return node.equals(&other);
+        }
+
+        if let Some(list) = value.as_object().and_then(|obj| obj.as_xml_list_object()) {
+            if list.length() == 1 {
+                let xml = list
+                    .xml_object_child(0, activation)
+                    .expect("List length was just verified");
+
+                if node.is_text() || node.is_attribute() {
+                    return node.xml_to_string(activation) == xml.node().xml_to_string(activation);
+                }
+
+                if xml.node().is_text() || xml.node().is_attribute() {
+                    return false;
+                }
+
+                return node.equals(&xml.node());
+            }
+
+            return false;
+        }
+
+        false
+    }
+
     pub fn deep_copy(&self, activation: &mut Activation<'_, 'gc>) -> XmlObject<'gc> {
         let node = self.node();
         XmlObject::new(node.deep_copy(activation.gc()), activation)
