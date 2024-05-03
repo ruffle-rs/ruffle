@@ -32,6 +32,7 @@ use crate::vminterface::Instantiator;
 use crate::{avm2_stub_method, avm2_stub_method_context};
 use encoding_rs::UTF_8;
 use gc_arena::{Collect, GcCell};
+use indexmap::IndexMap;
 use ruffle_render::utils::{determine_jpeg_tag_format, JpegTagFormat};
 use slotmap::{new_key_type, SlotMap};
 use std::borrow::Borrow;
@@ -1050,6 +1051,21 @@ impl<'gc> Loader<'gc> {
                 if let Some(mut mc) = clip.as_movie_clip() {
                     if !mc.movie().is_action_script_3() {
                         mc.avm1_unload(uc);
+
+                        // Clear deletable properties on the target before loading
+                        // Properties written during the subsequent onLoad events will persist
+                        let clip_value = mc.object();
+                        if let Value::Object(clip_object) = clip_value {
+                            let mut activation = Activation::from_nothing(
+                                uc.reborrow(),
+                                ActivationIdentifier::root("unknown"),
+                                clip,
+                            );
+
+                            for key in clip_object.get_keys(&mut activation, true) {
+                                clip_object.delete(&mut activation, key);
+                            }
+                        }
                     }
 
                     // Before the actual SWF is loaded, an initial loading state is entered.
@@ -1065,7 +1081,43 @@ impl<'gc> Loader<'gc> {
 
                     let movie = SwfMovie::from_data(&body, url.to_string(), loader_url)?;
                     player.lock().unwrap().mutate_with_update_context(|uc| {
+                        // Make a copy of the properties on the root, so we can put them back after replacing it
+                        let mut root_properties: IndexMap<AvmString, Value> = IndexMap::new();
+                        if let Some(root) = uc.stage.root_clip() {
+                            let root_val = root.object();
+                            if let Value::Object(root_object) = root_val {
+                                let mut activation = Activation::from_nothing(
+                                    uc.reborrow(),
+                                    ActivationIdentifier::root("unknown"),
+                                    root,
+                                );
+                                for key in root_object.get_keys(&mut activation, true) {
+                                    let val = root_object
+                                        .get_stored(key, &mut activation)
+                                        .unwrap_or(Value::Undefined);
+                                    root_properties.insert(key, val);
+                                }
+                            }
+                        }
+
                         uc.replace_root_movie(movie);
+
+                        // Add the copied properties back onto the new root
+                        if !root_properties.is_empty() {
+                            if let Some(root) = uc.stage.root_clip() {
+                                let val = root.object();
+                                if let Value::Object(clip_object) = val {
+                                    let mut activation = Activation::from_nothing(
+                                        uc.reborrow(),
+                                        ActivationIdentifier::root("unknown"),
+                                        root,
+                                    );
+                                    for (key, val) in root_properties {
+                                        let _ = clip_object.set(key, val, &mut activation);
+                                    }
+                                }
+                            }
+                        }
                     });
                     return Ok(());
                 }
