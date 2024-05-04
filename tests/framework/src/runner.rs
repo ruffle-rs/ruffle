@@ -239,8 +239,8 @@ impl TestRunner {
                 },
                 AutomatedEvent::TextControl { code } => PlayerEvent::TextControl {
                     code: match code {
-                        InputTextControlCode::MoveLeft => RuffleTextControlCode::Backspace,
-                        InputTextControlCode::MoveRight => RuffleTextControlCode::Delete,
+                        InputTextControlCode::MoveLeft => RuffleTextControlCode::MoveLeft,
+                        InputTextControlCode::MoveRight => RuffleTextControlCode::MoveRight,
                         InputTextControlCode::SelectLeft => RuffleTextControlCode::SelectLeft,
                         InputTextControlCode::SelectRight => RuffleTextControlCode::SelectRight,
                         InputTextControlCode::SelectAll => RuffleTextControlCode::SelectAll,
