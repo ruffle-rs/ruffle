@@ -1383,22 +1383,16 @@ pub fn get_selected_text<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let selection = this
+        let text = this.text();
+        let mut selection = this
             .selection()
             .unwrap_or_else(|| TextSelection::for_position(0));
+        selection.clamp(text.len());
 
         let start_index = selection.start();
         let end_index = selection.end();
 
-        return if this.text().len() > end_index {
-            Ok(AvmString::new(
-                activation.context.gc_context,
-                &this.text()[start_index..end_index],
-            )
-            .into())
-        } else {
-            Ok("".into())
-        };
+        return Ok(AvmString::new(activation.context.gc(), &text[start_index..end_index]).into());
     }
     Ok("".into())
 }
