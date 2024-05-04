@@ -3390,10 +3390,9 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         &self,
         context: &mut UpdateContext<'_, 'gc>,
         focused: bool,
-        other: Option<InteractiveObject<'gc>>,
+        _other: Option<InteractiveObject<'gc>>,
     ) {
         self.0.write(context.gc_context).has_focus = focused;
-        self.call_focus_handler(context, focused, other);
     }
 
     fn tab_enabled_avm1(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {

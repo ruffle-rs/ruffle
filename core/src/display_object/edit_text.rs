@@ -2457,7 +2457,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         &self,
         context: &mut UpdateContext<'_, 'gc>,
         focused: bool,
-        other: Option<InteractiveObject<'gc>>,
+        _other: Option<InteractiveObject<'gc>>,
     ) {
         let is_action_script_3 = self.movie().is_action_script_3();
         let mut text = self.0.write(context.gc_context);
@@ -2465,9 +2465,6 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         if !focused && !is_action_script_3 {
             text.selection = None;
         }
-        drop(text);
-
-        self.call_focus_handler(context, focused, other);
     }
 
     fn is_highlightable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {

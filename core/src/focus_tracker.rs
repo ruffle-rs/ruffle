@@ -99,9 +99,11 @@ impl<'gc> FocusTracker<'gc> {
 
             if let Some(old) = old {
                 old.on_focus_changed(context, false, new);
+                old.call_focus_handler(context, false, new);
             }
             if let Some(new) = new {
                 new.on_focus_changed(context, true, old);
+                new.call_focus_handler(context, true, old);
             }
 
             tracing::info!("Focus is now on {:?}", new);
