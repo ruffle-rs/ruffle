@@ -348,7 +348,6 @@ pub fn contains<'gc>(
         let result = xml.node().equals(&other.node());
         return Ok(result.into());
     }
-    
     Ok(false.into())
 }
 
