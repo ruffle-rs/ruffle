@@ -1375,6 +1375,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         // (fast) side path for dictionary/array-likes
+        // NOTE: FP behaves differently here when the public namespace isn't
+        // included in the multiname's namespace set
         if multiname.has_lazy_name() && !multiname.has_lazy_ns() {
             // `MultinameL` is the only form of multiname that allows fast-path
             // or alternate-path lookups based on the local name *value*,
@@ -1434,25 +1436,43 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         // side path for dictionary/arrays (TODO)
+        // NOTE: FP behaves differently here when the public namespace isn't
+        // included in the multiname's namespace set
         if multiname.has_lazy_name() && !multiname.has_lazy_ns() {
             // `MultinameL` is the only form of multiname that allows fast-path
             // or alternate-path lookups based on the local name *value*,
             // rather than it's string representation.
 
             let name_value = self.context.avm2.peek(0);
-            let object = self.context.avm2.peek(1);
-            if !name_value.is_primitive() {
-                let object = object.coerce_to_object_or_typeerror(self, None)?;
-                if let Some(dictionary) = object.as_dictionary_object() {
-                    let _ = self.pop_stack();
-                    let _ = self.pop_stack();
-                    dictionary.set_property_by_object(
-                        name_value.as_object().unwrap(),
-                        value,
-                        self.context.gc_context,
-                    );
+            let object_value = self.context.avm2.peek(1);
 
-                    return Ok(FrameControl::Continue);
+            if let Value::Object(object) = object_value {
+                match name_value {
+                    Value::Integer(name_int) if name_int >= 0 => {
+                        if let Some(mut array) =
+                            object.as_array_storage_mut(self.context.gc_context)
+                        {
+                            let _ = self.pop_stack();
+                            let _ = self.pop_stack();
+                            array.set(name_int as usize, value);
+
+                            return Ok(FrameControl::Continue);
+                        }
+                    }
+                    Value::Object(name_object) => {
+                        if let Some(dictionary) = object.as_dictionary_object() {
+                            let _ = self.pop_stack();
+                            let _ = self.pop_stack();
+                            dictionary.set_property_by_object(
+                                name_object,
+                                value,
+                                self.context.gc_context,
+                            );
+
+                            return Ok(FrameControl::Continue);
+                        }
+                    }
+                    _ => {}
                 }
             }
         }
