@@ -22,11 +22,22 @@ pub enum MouseButton {
 /// Control inputs to a text field
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TextControlCode {
-    // TODO: Add control codes for Ctrl+Arrows and Home/End keys
     MoveLeft,
+    MoveLeftWord,
+    MoveLeftLine,
+    MoveLeftDocument,
     MoveRight,
+    MoveRightWord,
+    MoveRightLine,
+    MoveRightDocument,
     SelectLeft,
+    SelectLeftWord,
+    SelectLeftLine,
+    SelectLeftDocument,
     SelectRight,
+    SelectRightWord,
+    SelectRightLine,
+    SelectRightDocument,
     SelectAll,
     Copy,
     Paste,
