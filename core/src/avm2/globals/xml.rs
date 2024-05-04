@@ -337,14 +337,14 @@ pub fn children<'gc>(
 }
 
 pub fn contains<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let xml = this.as_xml_object().unwrap();
     let value = args.get_value(0);
 
-    let contains = xml.contains(&value, activation);
+    let contains = xml.contains(&value);
     Ok(contains.into())
 }
 

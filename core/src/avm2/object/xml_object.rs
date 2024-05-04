@@ -177,33 +177,13 @@ impl<'gc> XmlObject<'gc> {
         Ref::map(self.0.read(), |data| &data.node)
     }
 
-    pub fn contains(&self, value: &Value<'gc>, activation: &mut Activation<'_, 'gc>) -> bool {
+    pub fn contains(&self, value: &Value<'gc>) -> bool {
         let node = self.node();
 
         if let Some(xml) = value.as_object().and_then(|obj| obj.as_xml_object()) {
             let other = xml.node();
 
             return node.equals(&other);
-        }
-
-        if let Some(list) = value.as_object().and_then(|obj| obj.as_xml_list_object()) {
-            if list.length() == 1 {
-                let xml = list
-                    .xml_object_child(0, activation)
-                    .expect("List length was just verified");
-
-                if node.is_text() || node.is_attribute() {
-                    return node.xml_to_string(activation) == xml.node().xml_to_string(activation);
-                }
-
-                if xml.node().is_text() || xml.node().is_attribute() {
-                    return false;
-                }
-
-                return node.equals(&xml.node());
-            }
-
-            return false;
         }
 
         false
