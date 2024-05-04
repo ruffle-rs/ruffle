@@ -922,6 +922,11 @@ impl<'gc> TInteractiveObject<'gc> for Stage<'gc> {
     fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {
         MouseCursor::Arrow
     }
+
+    fn is_highlight_enabled(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+        // Highlight is always disabled for stage.
+        false
+    }
 }
 
 pub struct ParseEnumError;
