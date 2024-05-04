@@ -183,14 +183,6 @@ impl<'gc> XmlObject<'gc> {
         if let Some(xml) = value.as_object().and_then(|obj| obj.as_xml_object()) {
             let other = xml.node();
 
-            if node.is_text() || node.is_attribute() {
-                return node.xml_to_string(activation) == other.xml_to_string(activation);
-            }
-
-            if other.is_text() || other.is_attribute() {
-                return false;
-            }
-
             return node.equals(&other);
         }
 
