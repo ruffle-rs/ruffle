@@ -506,7 +506,7 @@ pub fn verify_method<'gc>(
         let mut byte_offset = idx_to_byte_offset
             .get(i as usize)
             .copied()
-            .ok_or(make_error_1021(activation))?; // This is still reachable with some weird bytecode, see the `verify_jump_to_middle_of_op` test
+            .ok_or_else(|| make_error_1021(activation))?; // This is still reachable with some weird bytecode, see the `verify_jump_to_middle_of_op` test
 
         if is_jump {
             byte_offset += JUMP_INSTRUCTION_LENGTH;
@@ -516,7 +516,7 @@ pub fn verify_method<'gc>(
         let new_idx = byte_offset_to_idx
             .get(&(new_byte_offset as usize))
             .copied()
-            .ok_or(make_error_1021(activation))?; // See above comment
+            .ok_or_else(|| make_error_1021(activation))?; // See above comment
 
         Ok((new_idx, new_idx - i - 1))
     };
