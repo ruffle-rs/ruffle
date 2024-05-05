@@ -68,7 +68,7 @@ package {
         AS3 native function child(name:*):XMLList;
         AS3 native function childIndex():int;
         AS3 native function children():XMLList;
-        AS3 native function contains(name:*):Boolean;
+        AS3 native function contains(value:*):Boolean;
         AS3 native function copy():XML;
         AS3 native function parent():*;
         AS3 native function elements(name:* = "*"):XMLList;
@@ -172,9 +172,9 @@ package {
             return self.AS3::children();
         };
 
-        prototype.contains = function(name:*):Boolean {
+        prototype.contains = function(value:*):Boolean {
             var self:XML = this;
-            return self.AS3::contains(name);
+            return self.AS3::contains(value);
         };
 
         prototype.copy = function():XML {
