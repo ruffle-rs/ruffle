@@ -14,4 +14,4 @@ log-filename-pattern-with-timestamp = タイムスタンプ付き
 storage-backend = セーブファイルの場所
 storage-backend-disk = ディスク
 storage-backend-memory = メモリ
-recent-limit = 最近の最大再生数
+recent-limit = 履歴の保存上限
