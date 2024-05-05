@@ -332,6 +332,11 @@ impl ByteArrayStorage {
         *self.bytes.get_mut(item).unwrap() = value;
     }
 
+    /// Write a single byte at any offset in the bytearray, panicking if out of bounds.
+    pub fn set_nongrowing(&mut self, item: usize, value: u8) {
+        self.bytes[item] = value;
+    }
+
     pub fn delete(&mut self, item: usize) {
         if let Some(i) = self.bytes.get_mut(item) {
             *i = 0;

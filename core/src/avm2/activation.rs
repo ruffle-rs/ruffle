@@ -2858,7 +2858,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let dm = self.domain_memory();
         let mut dm = dm
             .as_bytearray_mut(self.context.gc_context)
-            .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
+            .expect("Bytearray storage should exist");
 
         let Ok(address) = usize::try_from(address) else {
             return Err(make_error_1506(self));
@@ -2868,8 +2868,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
 
-        dm.write_at_nongrowing(&val.to_le_bytes(), address)
-            .map_err(|e| e.to_avm(self))?;
+        dm.set_nongrowing(address, val as u8);
 
         Ok(FrameControl::Continue)
     }
@@ -2882,7 +2881,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let dm = self.domain_memory();
         let mut dm = dm
             .as_bytearray_mut(self.context.gc_context)
-            .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
+            .expect("Bytearray storage should exist");
 
         let Ok(address) = usize::try_from(address) else {
             return Err(make_error_1506(self));
@@ -2904,7 +2903,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let dm = self.domain_memory();
         let mut dm = dm
             .as_bytearray_mut(self.context.gc_context)
-            .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
+            .expect("Bytearray storage should exist");
 
         let Ok(address) = usize::try_from(address) else {
             return Err(make_error_1506(self));
@@ -2926,7 +2925,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let dm = self.domain_memory();
         let mut dm = dm
             .as_bytearray_mut(self.context.gc_context)
-            .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
+            .expect("Bytearray storage should exist");
 
         let Ok(address) = usize::try_from(address) else {
             return Err(make_error_1506(self));
@@ -2948,7 +2947,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let dm = self.domain_memory();
         let mut dm = dm
             .as_bytearray_mut(self.context.gc_context)
-            .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
+            .expect("Bytearray storage should exist");
 
         let Ok(address) = usize::try_from(address) else {
             return Err(make_error_1506(self));
@@ -2967,9 +2966,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let address = self.pop_stack().coerce_to_u32(self)? as usize;
 
         let dm = self.domain_memory();
-        let dm = dm
-            .as_bytearray()
-            .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
+        let dm = dm.as_bytearray().expect("Bytearray storage should exist");
+
         let val = dm.get(address);
 
         if let Some(val) = val {
@@ -2986,9 +2984,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let address = self.pop_stack().coerce_to_u32(self)? as usize;
 
         let dm = self.domain_memory();
-        let dm = dm
-            .as_bytearray()
-            .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
+        let dm = dm.as_bytearray().expect("Bytearray storage should exist");
 
         if address > dm.len() - 2 {
             return Err(make_error_1506(self));
@@ -3005,9 +3001,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let address = self.pop_stack().coerce_to_u32(self)? as usize;
 
         let dm = self.domain_memory();
-        let dm = dm
-            .as_bytearray()
-            .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
+        let dm = dm.as_bytearray().expect("Bytearray storage should exist");
 
         if address > dm.len() - 4 {
             return Err(make_error_1506(self));
@@ -3023,9 +3017,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let address = self.pop_stack().coerce_to_u32(self)? as usize;
 
         let dm = self.domain_memory();
-        let dm = dm
-            .as_bytearray()
-            .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
+        let dm = dm.as_bytearray().expect("Bytearray storage should exist");
 
         if address > dm.len() - 4 {
             return Err(make_error_1506(self));
@@ -3042,9 +3034,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let address = self.pop_stack().coerce_to_u32(self)? as usize;
 
         let dm = self.domain_memory();
-        let dm = dm
-            .as_bytearray()
-            .ok_or_else(|| "Unable to get bytearray storage".to_string())?;
+        let dm = dm.as_bytearray().expect("Bytearray storage should exist");
 
         if address > dm.len() - 8 {
             return Err(make_error_1506(self));
