@@ -440,8 +440,8 @@ impl App {
                     let viewport_size = self.window.inner_size();
 
                     // On X11 (and possibly other platforms), the window size is not updated immediately.
-                    // Wait for the window to be resized to the requested size before we start running
-                    // the SWF (which can observe the viewport size in "noScale" mode)
+                    // On a successful resize request, wait for the window to be resized to the requested size
+                    // before we start running the SWF (which can observe the viewport size in "noScale" mode)
                     if !window_resize_denied && window_size != viewport_size.into() {
                         loaded = LoadingState::WaitingForResize;
                     } else {
