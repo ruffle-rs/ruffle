@@ -65,7 +65,7 @@ image = { version = "0.25.1", default-features = false }
 js-sys = "0.3.69"
 log = "0.4"
 num-derive = "0.4.2"
-num-traits = "0.2.18"
+num-traits = "0.2.19"
 serde = "1.0.199"
 thiserror = "1.0"
 url = "2.5.0"
