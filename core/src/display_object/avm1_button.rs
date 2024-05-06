@@ -459,7 +459,6 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
     ) -> ClipEventResult {
         let self_display_object = self.into();
         let is_enabled = self.enabled(context);
-        let movie_version = self.movie().version();
 
         // Translate the clip event to a button event, based on how the button state changes.
         let static_data = self.0.static_data;
@@ -520,21 +519,17 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
 
             // Queue ActionScript-defined event handlers after the SWF defined ones.
             // (e.g., clip.onRelease = foo).
-            if movie_version >= 6 {
+            if self.should_fire_event_handlers(context, event) {
                 if let Some(name) = event.method_name() {
-                    // Keyboard events don't fire their methods
-                    // unless the Button has focus (like for MovieClips).
-                    if !event.is_key_event() || self.has_focus() {
-                        context.action_queue.queue_action(
-                            self_display_object,
-                            ActionType::Method {
-                                object: self.0.object.get().unwrap(),
-                                name,
-                                args: vec![],
-                            },
-                            false,
-                        );
-                    }
+                    context.action_queue.queue_action(
+                        self_display_object,
+                        ActionType::Method {
+                            object: self.0.object.get().unwrap(),
+                            name,
+                            args: vec![],
+                        },
+                        false,
+                    );
                 }
             }
 
