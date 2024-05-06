@@ -336,6 +336,21 @@ pub fn children<'gc>(
     .into())
 }
 
+pub fn contains<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let xml = this.as_xml_object().unwrap();
+    let value = args.get_value(0);
+
+    if let Some(other) = value.as_object().and_then(|obj| obj.as_xml_object()) {
+        let result = xml.node().equals(&other.node());
+        return Ok(result.into());
+    }
+    Ok(false.into())
+}
+
 pub fn copy<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
