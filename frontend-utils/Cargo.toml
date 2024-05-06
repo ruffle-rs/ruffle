@@ -24,7 +24,7 @@ futures = { workspace = true }
 async-io = "2.3.2"
 async-net = "2.0.0"
 futures-lite = "2.3.0"
-webbrowser = "0.8.15"
+webbrowser = "1.0.1"
 reqwest = { version = "0.12.4", default-features = false, features = ["rustls-tls", "cookies", "charset", "http2", "macos-system-configuration"] }
 tokio = { workspace = true }
 
