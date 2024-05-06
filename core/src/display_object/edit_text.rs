@@ -2114,16 +2114,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.0.write(context.gc_context).object = Some(to.into());
     }
 
-    fn on_parent_removed(&self, context: &mut UpdateContext<'_, 'gc>) {
-        if self.movie().is_action_script_3() {
-            let had_focus = self.has_focus();
-            if had_focus {
-                let tracker = context.focus_tracker;
-                tracker.set(None, context);
-            }
-        }
-    }
-
     fn self_bounds(&self) -> Rectangle<Twips> {
         self.0.read().bounds.clone()
     }
