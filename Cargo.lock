@@ -1482,7 +1482,7 @@ dependencies = [
  "raw-window-handle 0.6.1",
  "smithay-clipboard",
  "web-time 0.2.4",
- "webbrowser",
+ "webbrowser 0.8.15",
  "winit",
 ]
 
@@ -4332,7 +4332,7 @@ dependencies = [
  "unic-langid",
  "url",
  "vergen",
- "webbrowser",
+ "webbrowser 1.0.0",
  "wgpu",
  "winapi",
  "winit",
@@ -4358,7 +4358,7 @@ dependencies = [
  "tracing",
  "url",
  "urlencoding",
- "webbrowser",
+ "webbrowser 1.0.0",
  "zip",
 ]
 
@@ -6156,6 +6156,23 @@ name = "webbrowser"
 version = "0.8.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "db67ae75a9405634f5882791678772c94ff5f16a66535aae186e26aa0841fc8b"
+dependencies = [
+ "core-foundation",
+ "home",
+ "jni",
+ "log",
+ "ndk-context",
+ "objc",
+ "raw-window-handle 0.5.2",
+ "url",
+ "web-sys",
+]
+
+[[package]]
+name = "webbrowser"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "60b6f804e41d0852e16d2eaee61c7e4f7d3e8ffdb7b8ed85886aeb0791fe9fcd"
 dependencies = [
  "core-foundation",
  "home",
