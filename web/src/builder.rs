@@ -17,7 +17,7 @@ use ruffle_core::{
 };
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
-use ruffle_video_software::backend::SoftwareVideoBackend;
+use ruffle_video_external::backend::ExternalVideoBackend;
 use ruffle_web_common::JsResult;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -665,7 +665,10 @@ impl RuffleInstanceBuilder {
         let core = builder
             .with_log(log_adapter::WebLogBackend::new(trace_observer.clone()))
             .with_ui(ui::WebUiBackend::new(js_player.clone(), &canvas))
-            .with_video(SoftwareVideoBackend::new())
+            // `ExternalVideoBackend` has an internal `SoftwareVideoBackend` that it uses for any non-H.264 video.
+            .with_video(ExternalVideoBackend::new_with_webcodecs(
+                log_subscriber.clone(),
+            ))
             .with_letterbox(self.letterbox)
             .with_max_execution_duration(self.max_execution_duration)
             .with_player_version(self.player_version)
