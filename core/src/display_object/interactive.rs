@@ -76,6 +76,9 @@ bitflags! {
 
         /// Whether this `InteractiveObject` accepts double-clicks.
         const DOUBLE_CLICK_ENABLED = 1 << 1;
+
+        /// Whether this `InteractiveObject` is currently focused.
+        const HAS_FOCUS = 1 << 2;
     }
 }
 
@@ -165,6 +168,18 @@ pub trait TInteractiveObject<'gc>:
         self.raw_interactive_mut(mc)
             .flags
             .set(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED, value)
+    }
+
+    fn has_focus(self) -> bool {
+        self.raw_interactive()
+            .flags
+            .contains(InteractiveObjectFlags::HAS_FOCUS)
+    }
+
+    fn set_has_focus(self, mc: &Mutation<'gc>, value: bool) {
+        self.raw_interactive_mut(mc)
+            .flags
+            .set(InteractiveObjectFlags::HAS_FOCUS, value)
     }
 
     fn context_menu(self) -> Avm2Value<'gc> {
@@ -534,6 +549,14 @@ pub trait TInteractiveObject<'gc>:
         _focused: bool,
         _other: Option<InteractiveObject<'gc>>,
     ) {
+    }
+
+    /// If this object has focus, this method drops it.
+    fn drop_focus(&self, context: &mut UpdateContext<'_, 'gc>) {
+        if self.has_focus() {
+            let tracker = context.focus_tracker;
+            tracker.set(None, context);
+        }
     }
 
     fn call_focus_handler(
