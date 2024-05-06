@@ -689,8 +689,14 @@ pub trait TInteractiveObject<'gc>:
             return false;
         }
 
+        // Non-keyboard events are always handled.
+        if !event.is_key_event() {
+            return true;
+        }
+
         // Keyboard events don't fire their methods unless the object has focus (#2120).
-        !event.is_key_event() || self.has_focus()
+        // The focus highlight also has to be active (see test focus_keyboard_press).
+        self.has_focus() && context.focus_tracker.highlight().is_active()
     }
 }
 
