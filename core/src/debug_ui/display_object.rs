@@ -13,6 +13,7 @@ use crate::display_object::{
     DisplayObject, EditText, MovieClip, Stage, TDisplayObject, TDisplayObjectContainer,
     TInteractiveObject,
 };
+use crate::focus_tracker::Highlight;
 use egui::collapsing_header::CollapsingState;
 use egui::{Button, Checkbox, CollapsingHeader, ComboBox, Grid, Id, TextEdit, Ui, Widget, Window};
 use ruffle_wstr::{WStr, WString};
@@ -353,25 +354,23 @@ impl DisplayObjectWindow {
                     if ui.button("Clear").clicked() {
                         focus_tracker.set(None, context);
                     }
+                    if ui.button("Re-focus").clicked() {
+                        focus_tracker.set(None, context);
+                        focus_tracker.set(focus.as_interactive(), context);
+                    }
                 } else {
                     ui.label("None");
                 }
                 ui.end_row();
 
-                let highlight = focus_tracker.highlight().is_active();
-                let highlight_enabled = focus.is_some_and(|o| o.is_highlightable(context));
+                let highlight = focus_tracker.highlight();
                 ui.label("Focus Highlight");
-                ui.add_enabled_ui(highlight_enabled, |ui| {
-                    let mut enabled = highlight;
-                    Checkbox::new(&mut enabled, "Enabled").ui(ui);
-                    if enabled != highlight {
-                        if enabled {
-                            focus_tracker.update_highlight(context);
-                        } else {
-                            focus_tracker.reset_highlight();
-                        }
-                    }
-                });
+                let highlight_text = match highlight {
+                    Highlight::Inactive => "inactive",
+                    Highlight::ActiveHidden => "active, hidden",
+                    Highlight::ActiveVisible => "active, visible",
+                };
+                ui.label(highlight_text);
                 ui.end_row();
             });
 
