@@ -21,9 +21,30 @@ pub struct FocusTrackerData<'gc> {
     highlight: RefCell<Highlight>,
 }
 
-enum Highlight {
+#[derive(Copy, Clone)]
+pub enum Highlight {
+    /// The focus is highlighted and the highlight is visible on the screen.
+    ///
+    /// This is the required state for keyboard navigation to work.
+    ActiveVisible,
+
+    /// The focus is highlighted, but the highlight is not visible on the screen.
+    ///
+    /// Some keyboard events (KeyUp, KeyDown) require this logic.
+    ActiveHidden,
+
+    /// The focus is not highlighted.
     Inactive,
-    Active,
+}
+
+impl Highlight {
+    pub fn is_active(self) -> bool {
+        matches!(self, Highlight::ActiveVisible | Highlight::ActiveHidden)
+    }
+
+    pub fn is_visible(self) -> bool {
+        matches!(self, Highlight::ActiveVisible)
+    }
 }
 
 #[derive(Clone, Copy, Collect)]
@@ -44,8 +65,8 @@ impl<'gc> FocusTracker<'gc> {
         ))
     }
 
-    pub fn is_highlight_active(&self) -> bool {
-        matches!(*self.0.highlight.borrow(), Highlight::Active)
+    pub fn highlight(&self) -> Highlight {
+        *self.0.highlight.borrow()
     }
 
     pub fn reset_highlight(&self) {
@@ -197,14 +218,14 @@ impl<'gc> FocusTracker<'gc> {
         };
 
         if !focus.is_highlightable(context) {
-            return Highlight::Inactive;
+            return Highlight::ActiveHidden;
         }
 
-        Highlight::Active
+        Highlight::ActiveVisible
     }
 
     pub fn render_highlight(&self, context: &mut RenderContext<'_, 'gc>) {
-        if !self.is_highlight_active() {
+        if !self.highlight().is_visible() {
             return;
         };
 
