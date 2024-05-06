@@ -677,6 +677,21 @@ pub trait TInteractiveObject<'gc>:
         };
         self.raw_interactive_mut(context.gc()).tab_index = value
     }
+
+    /// Whether event handlers (e.g. onKeyUp, onPress) should be fired for the given event.
+    fn should_fire_event_handlers(
+        &self,
+        context: &mut UpdateContext<'_, 'gc>,
+        event: ClipEvent,
+    ) -> bool {
+        // Event handlers are supported only by SWF6+.
+        if context.swf.version() < 6 {
+            return false;
+        }
+
+        // Keyboard events don't fire their methods unless the object has focus (#2120).
+        !event.is_key_event() || self.has_focus()
+    }
 }
 
 #[derive(Copy, Clone, Collect)]

@@ -3084,20 +3084,17 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
 
                 // Queue ActionScript-defined event handlers after the SWF defined ones.
                 // (e.g., clip.onEnterFrame = foo).
-                if swf_version >= 6 {
+                if self.should_fire_event_handlers(context, event) {
                     if let Some(name) = event.method_name() {
-                        // Keyboard events don't fire their methods unless the MovieClip has focus (#2120).
-                        if !event.is_key_event() || self.has_focus() {
-                            context.action_queue.queue_action(
-                                self.into(),
-                                ActionType::Method {
-                                    object,
-                                    name,
-                                    args: vec![],
-                                },
-                                event == ClipEvent::Unload,
-                            );
-                        }
+                        context.action_queue.queue_action(
+                            self.into(),
+                            ActionType::Method {
+                                object,
+                                name,
+                                args: vec![],
+                            },
+                            event == ClipEvent::Unload,
+                        );
                     }
                 }
             }
