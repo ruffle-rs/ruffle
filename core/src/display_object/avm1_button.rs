@@ -45,7 +45,6 @@ pub struct Avm1ButtonData<'gc> {
     tracking: Cell<ButtonTracking>,
     object: Lock<Option<Object<'gc>>>,
     initialized: Cell<bool>,
-    has_focus: Cell<bool>,
 }
 
 #[derive(Clone, Collect)]
@@ -98,7 +97,6 @@ impl<'gc> Avm1Button<'gc> {
                 } else {
                     ButtonTracking::Push
                 }),
-                has_focus: Cell::new(false),
             },
         ))
     }
@@ -393,11 +391,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
     }
 
     fn avm1_unload(&self, context: &mut UpdateContext<'_, 'gc>) {
-        let had_focus = self.0.has_focus.get();
-        if had_focus {
-            let tracker = context.focus_tracker;
-            tracker.set(None, context);
-        }
+        self.drop_focus(context);
         if let Some(node) = self.maskee() {
             node.set_masker(context.gc(), None, true);
         } else if let Some(node) = self.masker() {
@@ -530,7 +524,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
                 if let Some(name) = event.method_name() {
                     // Keyboard events don't fire their methods
                     // unless the Button has focus (like for MovieClips).
-                    if !event.is_key_event() || self.0.has_focus.get() {
+                    if !event.is_key_event() || self.has_focus() {
                         context.action_queue.queue_action(
                             self_display_object,
                             ActionType::Method {
@@ -606,15 +600,6 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         } else {
             MouseCursor::Arrow
         }
-    }
-
-    fn on_focus_changed(
-        &self,
-        _context: &mut UpdateContext<'_, 'gc>,
-        focused: bool,
-        _other: Option<InteractiveObject<'gc>>,
-    ) {
-        self.0.has_focus.set(focused);
     }
 
     fn tab_enabled_avm1(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {

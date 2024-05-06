@@ -74,7 +74,6 @@ pub struct Avm2ButtonData<'gc> {
     /// The AVM2 representation of this button.
     object: Lock<Option<Avm2Object<'gc>>>,
 
-    has_focus: Cell<bool>,
     enabled: Cell<bool>,
     use_hand_cursor: Cell<bool>,
 
@@ -135,7 +134,6 @@ impl<'gc> Avm2Button<'gc> {
                 } else {
                     ButtonTracking::Push
                 }),
-                has_focus: Cell::new(false),
                 enabled: Cell::new(true),
                 use_hand_cursor: Cell::new(true),
                 skip_current_frame: Cell::new(false),
@@ -821,15 +819,6 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
         } else {
             MouseCursor::Arrow
         }
-    }
-
-    fn on_focus_changed(
-        &self,
-        _context: &mut UpdateContext<'_, 'gc>,
-        focused: bool,
-        _other: Option<InteractiveObject<'gc>>,
-    ) {
-        self.0.has_focus.set(focused);
     }
 
     fn tab_enabled_avm2_default(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {

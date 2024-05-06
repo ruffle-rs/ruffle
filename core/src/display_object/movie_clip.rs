@@ -162,7 +162,6 @@ pub struct MovieClipData<'gc> {
     avm2_class: Option<Avm2ClassObject<'gc>>,
     #[collect(require_static)]
     drawing: Drawing,
-    has_focus: bool,
     avm2_enabled: bool,
 
     /// Show a hand cursor when the clip is in button mode.
@@ -212,7 +211,6 @@ impl<'gc> MovieClip<'gc> {
                 flags: MovieClipFlags::empty(),
                 avm2_class: None,
                 drawing: Drawing::new(),
-                has_focus: false,
                 avm2_enabled: true,
                 avm2_use_hand_cursor: true,
                 button_mode: false,
@@ -255,7 +253,6 @@ impl<'gc> MovieClip<'gc> {
                 flags: MovieClipFlags::empty(),
                 avm2_class: Some(class),
                 drawing: Drawing::new(),
-                has_focus: false,
                 avm2_enabled: true,
                 avm2_use_hand_cursor: true,
                 button_mode: false,
@@ -299,7 +296,6 @@ impl<'gc> MovieClip<'gc> {
                 flags: MovieClipFlags::PLAYING,
                 avm2_class: None,
                 drawing: Drawing::new(),
-                has_focus: false,
                 avm2_enabled: true,
                 avm2_use_hand_cursor: true,
                 button_mode: false,
@@ -368,7 +364,6 @@ impl<'gc> MovieClip<'gc> {
                 flags: MovieClipFlags::PLAYING,
                 avm2_class: None,
                 drawing: Drawing::new(),
-                has_focus: false,
                 avm2_enabled: true,
                 avm2_use_hand_cursor: true,
                 button_mode: false,
@@ -2962,11 +2957,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             }
         }
 
-        let had_focus = self.0.read().has_focus;
-        if had_focus {
-            let tracker = context.focus_tracker;
-            tracker.set(None, context);
-        }
+        self.drop_focus(context);
 
         {
             let mut mc = self.0.write(context.gc_context);
@@ -3101,7 +3092,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                 if swf_version >= 6 {
                     if let Some(name) = event.method_name() {
                         // Keyboard events don't fire their methods unless the MovieClip has focus (#2120).
-                        if !event.is_key_event() || read.has_focus {
+                        if !event.is_key_event() || self.has_focus() {
                             context.action_queue.queue_action(
                                 self.into(),
                                 ActionType::Method {
@@ -3384,15 +3375,6 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         } else {
             false
         }
-    }
-
-    fn on_focus_changed(
-        &self,
-        context: &mut UpdateContext<'_, 'gc>,
-        focused: bool,
-        _other: Option<InteractiveObject<'gc>>,
-    ) {
-        self.0.write(context.gc_context).has_focus = focused;
     }
 
     fn tab_enabled_avm1(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
