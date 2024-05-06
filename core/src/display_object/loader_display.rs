@@ -136,13 +136,8 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         self.0.read().movie.clone()
     }
 
-    fn set_parent(&self, context: &mut UpdateContext<'_, 'gc>, parent: Option<DisplayObject<'gc>>) {
-        let had_parent = self.parent().is_some();
-        self.base_mut(context.gc_context)
-            .set_parent_ignoring_orphan_list(parent);
-        let has_parent = self.parent().is_some();
-
-        if self.movie().is_action_script_3() && had_parent && !has_parent {
+    fn on_parent_removed(&self, context: &mut UpdateContext<'_, 'gc>) {
+        if self.movie().is_action_script_3() {
             context.avm2.add_orphan_obj((*self).into())
         }
     }
