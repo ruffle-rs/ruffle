@@ -87,12 +87,7 @@ fn describe_type_json_null<'gc>(
     activation: &mut Activation<'_, 'gc>,
     flags: DescribeTypeFlags,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // These checks will effectively cause `describeType` to faithfully mirror FP's
-    // implementation. That is to say, it will cause it to throw an "Error #1009: Cannot access
-    // a property or method of a null object reference."
-    if flags.contains(DescribeTypeFlags::USE_ITRAITS)
-        || !flags.contains(DescribeTypeFlags::INCLUDE_BASES | DescribeTypeFlags::INCLUDE_TRAITS)
-    {
+    if flags.contains(DescribeTypeFlags::USE_ITRAITS) {
         return Ok(Value::Null);
     }
     let object = activation
@@ -112,15 +107,74 @@ fn describe_type_json_null<'gc>(
         .object
         .construct(activation, &[])?;
 
-    traits.set_public_property("bases", ArrayObject::empty(activation)?.into(), activation)?;
-    traits.set_public_property("interfaces", Value::Null, activation)?;
-    traits.set_public_property("variables", Value::Null, activation)?;
-    traits.set_public_property("accessors", Value::Null, activation)?;
-    traits.set_public_property("methods", Value::Null, activation)?;
-    traits.set_public_property("metadata", Value::Null, activation)?;
-    traits.set_public_property("constructor", Value::Null, activation)?;
-
-    object.set_public_property("traits", traits.into(), activation)?;
+    if flags.contains(DescribeTypeFlags::INCLUDE_TRAITS) {
+        traits.set_public_property(
+            "bases",
+            if flags.contains(DescribeTypeFlags::INCLUDE_BASES) {
+                ArrayObject::empty(activation)?.into()
+            } else {
+                Value::Null
+            },
+            activation,
+        )?;
+        traits.set_public_property(
+            "interfaces",
+            if flags.contains(DescribeTypeFlags::INCLUDE_INTERFACES) {
+                ArrayObject::empty(activation)?.into()
+            } else {
+                Value::Null
+            },
+            activation,
+        )?;
+        traits.set_public_property(
+            "variables",
+            if flags.contains(DescribeTypeFlags::INCLUDE_VARIABLES) {
+                ArrayObject::empty(activation)?.into()
+            } else {
+                Value::Null
+            },
+            activation,
+        )?;
+        traits.set_public_property(
+            "accessors",
+            if flags.contains(DescribeTypeFlags::INCLUDE_ACCESSORS) {
+                ArrayObject::empty(activation)?.into()
+            } else {
+                Value::Null
+            },
+            activation,
+        )?;
+        traits.set_public_property(
+            "methods",
+            if flags.contains(DescribeTypeFlags::INCLUDE_METHODS) {
+                ArrayObject::empty(activation)?.into()
+            } else {
+                Value::Null
+            },
+            activation,
+        )?;
+        traits.set_public_property(
+            "metadata",
+            if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
+                ArrayObject::empty(activation)?.into()
+            } else {
+                Value::Null
+            },
+            activation,
+        )?;
+        traits.set_public_property(
+            "constructor",
+            if flags.contains(DescribeTypeFlags::INCLUDE_CONSTRUCTOR) {
+                ArrayObject::empty(activation)?.into()
+            } else {
+                Value::Null
+            },
+            activation,
+        )?;
+        object.set_public_property("traits", traits.into(), activation)?;
+    } else {
+        object.set_public_property("traits", Value::Null, activation)?;
+    }
 
     Ok(object.into())
 }
