@@ -16,7 +16,7 @@ use crate::backend::audio::{
 use crate::backend::navigator::Request;
 use crate::buffer::{Buffer, Slice, Substream, SubstreamError};
 use crate::context::UpdateContext;
-use crate::display_object::MovieClip;
+use crate::display_object::{MovieClip, TDisplayObject};
 use crate::loader::Error;
 use crate::string::AvmString;
 use crate::vminterface::AvmObject;
@@ -960,6 +960,10 @@ impl<'gc> NetStream<'gc> {
                 ) {
                     Ok(bitmap_info) => {
                         write.last_decoded_bitmap = Some(bitmap_info);
+                        if let Some(mc) = write.attached_to {
+                            mc.invalidate_cached_bitmap(context.gc_context);
+                            *context.needs_render = true;
+                        }
                     }
                     Err(e) => {
                         tracing::error!("Decoding video frame {} failed: {}", frame_id, e);
