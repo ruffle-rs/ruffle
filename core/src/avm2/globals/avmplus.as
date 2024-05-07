@@ -109,6 +109,9 @@ package avmplus {
     }
 
     public function describeType(value: *, flags: uint):XML {
+        if (value == null) {
+            return <type name="null" isDynamic="false" isFinal="true" isStatic="false"/>;
+        }
         var json = describeTypeJSON(value, flags);
         var xml = <type />;
         xml.@name = json.name;
