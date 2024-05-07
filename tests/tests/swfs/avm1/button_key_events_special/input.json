@@ -1,0 +1,56 @@
+[
+  { "type": "KeyDown", "key_code": 37 },
+  { "type": "TextControl", "code": "MoveLeft" },
+  { "type": "KeyUp", "key_code": 37 },
+
+  { "type": "KeyDown", "key_code": 39 },
+  { "type": "TextControl", "code": "MoveRight" },
+  { "type": "KeyUp", "key_code": 39 },
+
+  { "type": "KeyDown", "key_code": 36 },
+  { "type": "TextControl", "code": "MoveLeftLine" },
+  { "type": "KeyUp", "key_code": 36 },
+
+  { "type": "KeyDown", "key_code": 35 },
+  { "type": "TextControl", "code": "MoveRightLine" },
+  { "type": "KeyUp", "key_code": 35 },
+
+  { "type": "KeyDown", "key_code": 45 },
+  { "type": "KeyUp", "key_code": 45 },
+
+  { "type": "KeyDown", "key_code": 46 },
+  { "type": "TextControl", "code": "Delete" },
+  { "type": "KeyUp", "key_code": 46 },
+
+  { "type": "KeyDown", "key_code": 8 },
+  { "type": "TextControl", "code": "Backspace" },
+  { "type": "KeyUp", "key_code": 8 },
+
+  { "type": "KeyDown", "key_code": 9 },
+  { "type": "TextInput", "codepoint": "\t" },
+  { "type": "KeyUp", "key_code": 9 },
+
+  { "type": "KeyDown", "key_code": 13 },
+  { "type": "TextControl", "code": "Enter" },
+  { "type": "KeyUp", "key_code": 13 },
+
+  { "type": "KeyDown", "key_code": 38 },
+  { "type": "KeyUp", "key_code": 38 },
+
+  { "type": "KeyDown", "key_code": 40 },
+  { "type": "KeyUp", "key_code": 40 },
+
+  { "type": "KeyDown", "key_code": 33 },
+  { "type": "KeyUp", "key_code": 33 },
+
+  { "type": "KeyDown", "key_code": 34 },
+  { "type": "KeyUp", "key_code": 34 },
+
+  { "type": "KeyDown", "key_code": 27 },
+  { "type": "TextInput", "codepoint": "\u001b" },
+  { "type": "KeyUp", "key_code": 27 },
+
+  { "type": "KeyDown", "key_code": 32 },
+  { "type": "TextInput", "codepoint": " " },
+  { "type": "KeyUp", "key_code": 32 }
+]
