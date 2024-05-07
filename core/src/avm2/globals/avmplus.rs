@@ -15,9 +15,12 @@ pub fn describe_type_json<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let value = args[0].coerce_to_object(activation)?;
     let flags = DescribeTypeFlags::from_bits(args.get_u32(activation, 1)?).expect("Invalid flags!");
+    if args[0] == Value::Null {
+        return describe_type_json_null(activation, flags);
+    }
 
+    let value = args[0].coerce_to_object(activation)?;
     let class_obj = value.as_class_object().or_else(|| value.instance_of());
     let object = activation
         .avm2()
@@ -78,6 +81,48 @@ bitflags::bitflags! {
         const USE_ITRAITS             = 1 << 9;
         const HIDE_OBJECT             = 1 << 10;
     }
+}
+
+fn describe_type_json_null<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    flags: DescribeTypeFlags,
+) -> Result<Value<'gc>, Error<'gc>> {
+    // These checks will effectively cause `describeType` to faithfully mirror FP's
+    // implementation. That is to say, it will cause it to throw an "Error #1009: Cannot access
+    // a property or method of a null object reference."
+    if flags.contains(DescribeTypeFlags::USE_ITRAITS)
+        || !flags.contains(DescribeTypeFlags::INCLUDE_BASES | DescribeTypeFlags::INCLUDE_TRAITS)
+    {
+        return Ok(Value::Null);
+    }
+    let object = activation
+        .avm2()
+        .classes()
+        .object
+        .construct(activation, &[])?;
+
+    object.set_public_property("name", "null".into(), activation)?;
+    object.set_public_property("isDynamic", false.into(), activation)?;
+    object.set_public_property("isFinal", true.into(), activation)?;
+    object.set_public_property("isStatic", false.into(), activation)?;
+
+    let traits = activation
+        .avm2()
+        .classes()
+        .object
+        .construct(activation, &[])?;
+
+    traits.set_public_property("bases", ArrayObject::empty(activation)?.into(), activation)?;
+    traits.set_public_property("interfaces", Value::Null, activation)?;
+    traits.set_public_property("variables", Value::Null, activation)?;
+    traits.set_public_property("accessors", Value::Null, activation)?;
+    traits.set_public_property("methods", Value::Null, activation)?;
+    traits.set_public_property("metadata", Value::Null, activation)?;
+    traits.set_public_property("constructor", Value::Null, activation)?;
+
+    object.set_public_property("traits", traits.into(), activation)?;
+
+    Ok(object.into())
 }
 
 fn describe_internal_body<'gc>(
