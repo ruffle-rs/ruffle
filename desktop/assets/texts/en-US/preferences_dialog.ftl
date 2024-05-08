@@ -23,3 +23,4 @@ storage-backend-disk = Disk
 storage-backend-memory = Memory
 
 recent-limit = Recent Limit
+recent-clear = Clear
