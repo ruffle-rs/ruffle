@@ -957,4 +957,36 @@ mod tests {
             PointDelta::new(Twips::new(141), Twips::new(-7)),
         ),
     );
+
+    #[test]
+    fn test_round_to_i32() {
+        assert_eq!(round_to_i32(0.0), 0);
+        assert_eq!(round_to_i32(2.0), 2);
+        assert_eq!(round_to_i32(2.1), 2);
+        assert_eq!(round_to_i32(2.5), 2);
+        assert_eq!(round_to_i32(2.9), 3);
+        assert_eq!(round_to_i32(3.0), 3);
+        assert_eq!(round_to_i32(3.1), 3);
+        assert_eq!(round_to_i32(3.5), 4);
+        assert_eq!(round_to_i32(3.9), 4);
+        assert_eq!(round_to_i32(4.0), 4);
+        assert_eq!(round_to_i32(-2.0), -2);
+        assert_eq!(round_to_i32(-2.1), -2);
+        assert_eq!(round_to_i32(-2.5), -2);
+        assert_eq!(round_to_i32(-2.9), -3);
+        assert_eq!(round_to_i32(-3.0), -3);
+        assert_eq!(round_to_i32(-3.1), -3);
+        assert_eq!(round_to_i32(-3.5), -4);
+        assert_eq!(round_to_i32(-3.9), -4);
+        assert_eq!(round_to_i32(-4.0), -4);
+        assert_eq!(round_to_i32(f32::NAN), 0);
+        assert_eq!(round_to_i32(f32::INFINITY), 0);
+        assert_eq!(round_to_i32(f32::NEG_INFINITY), 0);
+        assert_eq!(round_to_i32(-2147483520f32), -2147483520);
+        assert_eq!(round_to_i32(-2147483648f32), i32::MIN);
+        assert_eq!(round_to_i32(-2147483904f32), i32::MIN);
+        assert_eq!(round_to_i32(2147483520f32), 2147483520);
+        assert_eq!(round_to_i32(2147483648f32), i32::MIN);
+        assert_eq!(round_to_i32(2147483904f32), i32::MIN);
+    }
 }
