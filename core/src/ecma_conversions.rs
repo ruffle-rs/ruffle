@@ -45,17 +45,11 @@ pub fn f64_to_wrapping_i32(n: f64) -> i32 {
 
 /// Implements the IEEE-754 "Round to nearest, ties to even" rounding rule.
 /// (e.g., both 1.5 and 2.5 will round to 2).
-/// Although this is easy to do on most architectures, Rust provides no standard
-/// way to round in this manner (`f64::round` always rounds away from zero).
-/// For more info and the below code snippet, see: https://github.com/rust-lang/rust/issues/55107
 /// This also clamps out-of-range values and NaN to `i32::MIN`.
-/// TODO: Investigate using SSE/wasm intrinsics for this.
 pub fn round_to_even(n: f64) -> i32 {
-    let k = 1.0 / f64::EPSILON;
-    let a = n.abs();
-    let out = if a < k { ((a + k) - k).copysign(n) } else { n };
+    let out = n.round_ties_even();
     // Clamp out-of-range values to `i32::MIN`.
-    if out.is_finite() && out >= i32::MIN.into() && out <= i32::MAX.into() {
+    if out.is_finite() && out <= i32::MAX.into() {
         out as i32
     } else {
         i32::MIN
