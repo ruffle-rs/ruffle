@@ -5,16 +5,14 @@ pub use crate::display_object::{
     DisplayObject, TDisplayObject, TDisplayObjectContainer, TextSelection,
 };
 use crate::display_object::{EditText, InteractiveObject, TInteractiveObject};
-use crate::drawing::Drawing;
 use crate::events::ClipEvent;
 use crate::Player;
 use either::Either;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
-use ruffle_render::shape_utils::DrawCommand;
 use std::cell::RefCell;
-use swf::{Color, LineJoinStyle, Point, Twips};
+use swf::{Color, Twips};
 
 #[derive(Collect)]
 #[collect(no_drop)]
@@ -25,7 +23,7 @@ pub struct FocusTrackerData<'gc> {
 
 enum Highlight {
     Inactive,
-    Active(Drawing),
+    Active,
 }
 
 #[derive(Clone, Copy, Collect)]
@@ -33,12 +31,8 @@ enum Highlight {
 pub struct FocusTracker<'gc>(Gc<'gc, FocusTrackerData<'gc>>);
 
 impl<'gc> FocusTracker<'gc> {
-    const HIGHLIGHT_WIDTH: Twips = Twips::from_pixels_i32(3);
+    const HIGHLIGHT_THICKNESS: Twips = Twips::from_pixels_i32(3);
     const HIGHLIGHT_COLOR: Color = Color::YELLOW;
-
-    // Although at 3px width Round and Miter are similar
-    // to each other, it seems that FP uses Round.
-    const HIGHLIGHT_LINE_JOIN_STYLE: LineJoinStyle = LineJoinStyle::Round;
 
     pub fn new(mc: &Mutation<'gc>) -> Self {
         Self(Gc::new(
@@ -51,7 +45,7 @@ impl<'gc> FocusTracker<'gc> {
     }
 
     pub fn is_highlight_active(&self) -> bool {
-        matches!(*self.0.highlight.borrow(), Highlight::Active(_))
+        matches!(*self.0.highlight.borrow(), Highlight::Active)
     }
 
     pub fn reset_highlight(&self) {
@@ -190,10 +184,10 @@ impl<'gc> FocusTracker<'gc> {
     }
 
     pub fn update_highlight(&self, context: &mut UpdateContext<'_, 'gc>) {
-        self.0.highlight.replace(self.redraw_highlight(context));
+        self.0.highlight.replace(self.calculate_highlight(context));
     }
 
-    fn redraw_highlight(&self, context: &mut UpdateContext<'_, 'gc>) -> Highlight {
+    fn calculate_highlight(&self, context: &mut UpdateContext<'_, 'gc>) -> Highlight {
         let Some(focus) = self.get() else {
             return Highlight::Inactive;
         };
@@ -202,30 +196,20 @@ impl<'gc> FocusTracker<'gc> {
             return Highlight::Inactive;
         }
 
-        let bounds = focus
-            .as_displayobject()
-            .world_bounds()
-            .grow(-Self::HIGHLIGHT_WIDTH / 2);
-        let mut drawing = Drawing::new();
-        drawing.set_line_style(Some(
-            swf::LineStyle::new()
-                .with_width(Self::HIGHLIGHT_WIDTH)
-                .with_color(Self::HIGHLIGHT_COLOR)
-                .with_join_style(Self::HIGHLIGHT_LINE_JOIN_STYLE),
-        ));
-        drawing.draw_command(DrawCommand::MoveTo(Point::new(bounds.x_min, bounds.y_min)));
-        drawing.draw_command(DrawCommand::LineTo(Point::new(bounds.x_min, bounds.y_max)));
-        drawing.draw_command(DrawCommand::LineTo(Point::new(bounds.x_max, bounds.y_max)));
-        drawing.draw_command(DrawCommand::LineTo(Point::new(bounds.x_max, bounds.y_min)));
-        drawing.draw_command(DrawCommand::LineTo(Point::new(bounds.x_min, bounds.y_min)));
-
-        Highlight::Active(drawing)
+        Highlight::Active
     }
 
     pub fn render_highlight(&self, context: &mut RenderContext<'_, 'gc>) {
-        if let Highlight::Active(ref highlight) = *self.0.highlight.borrow() {
-            highlight.render(context);
+        if !self.is_highlight_active() {
+            return;
         };
+
+        let Some(focus) = self.get() else {
+            return;
+        };
+
+        let bounds = focus.as_displayobject().world_bounds();
+        context.draw_rect_outline(Self::HIGHLIGHT_COLOR, bounds, Self::HIGHLIGHT_THICKNESS);
     }
 
     fn order_custom(tab_order: &mut Vec<InteractiveObject>) {
