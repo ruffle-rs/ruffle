@@ -18,8 +18,6 @@ use crate::display_object::TDisplayObject;
 use crate::tag_utils::SwfMovie;
 use gc_arena::DynamicRootSet;
 use hashbrown::HashMap;
-use ruffle_render::commands::CommandHandler;
-use ruffle_render::matrix::Matrix;
 use std::fmt::{Debug, Formatter};
 use std::sync::{Arc, Weak};
 use swf::{Color, Rectangle, Twips};
@@ -226,40 +224,7 @@ fn draw_debug_rect(
     bounds: Rectangle<Twips>,
     thickness: f32,
 ) {
-    let width = bounds.width().to_pixels() as f32;
-    let height = bounds.height().to_pixels() as f32;
-    let thickness_twips = Twips::from_pixels(thickness as f64);
-
-    // Top
-    context.commands.draw_rect(
-        color,
-        Matrix::create_box(
-            width,
-            thickness,
-            0.0,
-            bounds.x_min,
-            bounds.y_min - thickness_twips,
-        ),
-    );
-    // Bottom
-    context.commands.draw_rect(
-        color,
-        Matrix::create_box(width, thickness, 0.0, bounds.x_min, bounds.y_max),
-    );
-    // Left
-    context.commands.draw_rect(
-        color,
-        Matrix::create_box(
-            thickness,
-            height,
-            0.0,
-            bounds.x_min - thickness_twips,
-            bounds.y_min,
-        ),
-    );
-    // Right
-    context.commands.draw_rect(
-        color,
-        Matrix::create_box(thickness, height, 0.0, bounds.x_max, bounds.y_min),
-    );
+    let thickness = Twips::from_pixels(thickness as f64);
+    let bounds = bounds.grow(thickness);
+    context.draw_rect_outline(color, bounds, thickness);
 }
