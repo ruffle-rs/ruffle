@@ -61,3 +61,38 @@ pub fn round_to_even(n: f64) -> i32 {
         i32::MIN
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::round_to_even;
+
+    #[test]
+    fn test_round_to_even() {
+        assert_eq!(round_to_even(0.0), 0);
+        assert_eq!(round_to_even(2.0), 2);
+        assert_eq!(round_to_even(2.1), 2);
+        assert_eq!(round_to_even(2.5), 2);
+        assert_eq!(round_to_even(2.9), 3);
+        assert_eq!(round_to_even(3.0), 3);
+        assert_eq!(round_to_even(3.1), 3);
+        assert_eq!(round_to_even(3.5), 4);
+        assert_eq!(round_to_even(3.9), 4);
+        assert_eq!(round_to_even(4.0), 4);
+        assert_eq!(round_to_even(-2.0), -2);
+        assert_eq!(round_to_even(-2.1), -2);
+        assert_eq!(round_to_even(-2.5), -2);
+        assert_eq!(round_to_even(-2.9), -3);
+        assert_eq!(round_to_even(-3.0), -3);
+        assert_eq!(round_to_even(-3.1), -3);
+        assert_eq!(round_to_even(-3.5), -4);
+        assert_eq!(round_to_even(-3.9), -4);
+        assert_eq!(round_to_even(-4.0), -4);
+        assert_eq!(round_to_even(f64::NAN), i32::MIN);
+        assert_eq!(round_to_even(f64::INFINITY), i32::MIN);
+        assert_eq!(round_to_even(f64::NEG_INFINITY), i32::MIN);
+        assert_eq!(round_to_even(-2147483648f64), i32::MIN);
+        assert_eq!(round_to_even(-2247483648f64), i32::MIN);
+        assert_eq!(round_to_even(2147483647f64), i32::MAX);
+        assert_eq!(round_to_even(2247483647f64), i32::MIN);
+    }
+}
