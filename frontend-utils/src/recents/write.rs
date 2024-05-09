@@ -26,6 +26,11 @@ impl<'a> RecentsWriter<'a> {
 
     /// Pushes a new recent entry on the entry stack, if same entry already exists, it will get moved to the top.
     pub fn push(&mut self, recent: Recent, limit: usize) {
+        if limit == 0 {
+            // Do not even bother.
+            return;
+        }
+
         self.with_underlying_table(|values, array| {
             // First, lets check if we already have existing entry with the same URL and move it to the top.
             let existing = values.iter().position(|x| x.url == recent.url);
@@ -108,5 +113,21 @@ mod tests {
     #[test]
     fn clear() {
         test("[[recent]]\nurl = \"file:///file_one.swf\"\n[[recent]]\nurl = \"file:///file_two.swf\"\n[[recent]]\nurl = \"file:///3.swf\"\n", |writer| writer.clear(), "");
+    }
+
+    #[test]
+    fn zero_limit() {
+        test(
+            "",
+            |writer| {
+                writer.push(
+                    Recent {
+                        url: Url::parse("file:///no_crash.swf").unwrap(),
+                    },
+                    0,
+                )
+            },
+            "",
+        );
     }
 }
