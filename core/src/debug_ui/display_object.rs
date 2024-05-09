@@ -342,11 +342,13 @@ impl DisplayObjectWindow {
                 let focus = object.focus_tracker().get();
                 ui.label("Current Focus");
                 if let Some(focus) = focus.map(|o| o.as_displayobject()) {
-                    if ui.button(summary_name(focus)).clicked() {
-                        messages.push(Message::TrackDisplayObject(DisplayObjectHandle::new(
-                            context, focus,
-                        )));
-                    }
+                    open_display_object_button(
+                        ui,
+                        context,
+                        messages,
+                        focus,
+                        &mut self.hovered_debug_rect,
+                    );
                 } else {
                     ui.label("None");
                 }
