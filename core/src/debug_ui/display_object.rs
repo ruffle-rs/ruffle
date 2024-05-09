@@ -349,6 +349,9 @@ impl DisplayObjectWindow {
                         focus,
                         &mut self.hovered_debug_rect,
                     );
+                    if ui.button("Clear").clicked() {
+                        focus_tracker.set(None, context);
+                    }
                 } else {
                     ui.label("None");
                 }
