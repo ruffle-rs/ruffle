@@ -15,3 +15,4 @@ storage-backend = 存档文件位置
 storage-backend-disk = 磁盘
 storage-backend-memory = 内存
 recent-limit = 最近播放数量上限
+recent-clear = 清空
