@@ -146,7 +146,7 @@ impl<'gc> FocusTracker<'gc> {
         }
     }
 
-    pub fn cycle(&self, context: &mut UpdateContext<'_, 'gc>, reverse: bool) {
+    pub fn tab_order(&self, context: &mut UpdateContext<'_, 'gc>) -> Vec<InteractiveObject<'gc>> {
         let stage = context.stage;
         let mut tab_order = vec![];
         stage.fill_tab_order(&mut tab_order, context);
@@ -157,7 +157,11 @@ impl<'gc> FocusTracker<'gc> {
         } else {
             Self::order_automatic(&mut tab_order);
         };
+        tab_order
+    }
 
+    pub fn cycle(&self, context: &mut UpdateContext<'_, 'gc>, reverse: bool) {
+        let tab_order = self.tab_order(context);
         let mut tab_order = if reverse {
             Either::Left(tab_order.iter().rev())
         } else {
