@@ -336,10 +336,11 @@ impl DisplayObjectWindow {
         object: Stage<'gc>,
         messages: &mut Vec<Message>,
     ) {
+        let focus_tracker = object.focus_tracker();
+        let focus = focus_tracker.get();
         Grid::new(ui.id().with("stage"))
             .num_columns(2)
             .show(ui, |ui| {
-                let focus = object.focus_tracker().get();
                 ui.label("Current Focus");
                 if let Some(focus) = focus.map(|o| o.as_displayobject()) {
                     open_display_object_button(
@@ -357,7 +358,7 @@ impl DisplayObjectWindow {
                 }
                 ui.end_row();
 
-                let highlight = object.focus_tracker().is_highlight_active();
+                let highlight = focus_tracker.is_highlight_active();
                 let highlight_enabled = focus.is_some_and(|o| o.is_highlightable(context));
                 ui.label("Focus Highlight");
                 ui.add_enabled_ui(highlight_enabled, |ui| {
@@ -365,13 +366,62 @@ impl DisplayObjectWindow {
                     Checkbox::new(&mut enabled, "Enabled").ui(ui);
                     if enabled != highlight {
                         if enabled {
-                            object.focus_tracker().update_highlight(context);
+                            focus_tracker.update_highlight(context);
                         } else {
-                            object.focus_tracker().reset_highlight();
+                            focus_tracker.reset_highlight();
                         }
                     }
                 });
                 ui.end_row();
+            });
+
+        let tab_order = focus_tracker.tab_order(context);
+        let tab_order_suffix = tab_order
+            .first()
+            .map(|o| {
+                if o.tab_index().is_some() {
+                    "custom"
+                } else {
+                    "automatic"
+                }
+            })
+            .unwrap_or("empty");
+        CollapsingHeader::new(format!("Tab Order ({})", tab_order_suffix))
+            .id_source(ui.id().with("tab_order"))
+            .show(ui, |ui| {
+                Grid::new(ui.id().with("tab_order_grid"))
+                    .num_columns(3)
+                    .show(ui, |ui| {
+                        ui.label("#");
+                        ui.label("Object");
+                        ui.label("Actions");
+                        ui.label("Tab Index");
+                        ui.end_row();
+
+                        for (i, object) in tab_order.iter().enumerate() {
+                            if Some(*object) == focus {
+                                ui.label(format!("{}.*", i + 1));
+                            } else {
+                                ui.label(format!("{}.", i + 1));
+                            }
+                            open_display_object_button(
+                                ui,
+                                context,
+                                messages,
+                                object.as_displayobject(),
+                                &mut self.hovered_debug_rect,
+                            );
+                            if ui.button("Focus").clicked() {
+                                focus_tracker.set(Some(*object), context);
+                            }
+                            if let Some(tab_index) = object.tab_index() {
+                                ui.label(tab_index.to_string());
+                            } else {
+                                ui.label("(none)");
+                            }
+                            ui.end_row();
+                        }
+                    });
             });
     }
 
