@@ -237,18 +237,18 @@ impl<'gc> ScopeChain<'gc> {
     pub fn get_entry_for_multiname(
         &self,
         multiname: &Multiname<'gc>,
-    ) -> Option<(Option<ClassObject<'gc>>, u32)> {
+    ) -> Option<Option<(Option<ClassObject<'gc>>, u32)>> {
         if let Some(container) = self.container {
             for (index, scope) in container.scopes.iter().enumerate().skip(1).rev() {
                 if scope.with() {
                     // If this is a `with` scope, stop here because
                     // dynamic properties could be added at any time
-                    return None;
+                    return Some(None);
                 }
 
                 let values = scope.values();
                 if values.has_trait(&multiname) {
-                    return Some((values.instance_of(), index as u32));
+                    return Some(Some((values.instance_of(), index as u32)));
                 }
             }
         }

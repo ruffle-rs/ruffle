@@ -265,6 +265,10 @@ pub fn optimize<'gc>(
         }
     }
 
+    if !method_body.exceptions.is_empty() {
+        has_simple_scoping = false;
+    }
+
     // TODO: Fill out all ops, then add scope stack and stack merging, too
     let mut state_map: HashMap<i32, Locals<'gc>> = HashMap::new();
 
@@ -769,17 +773,20 @@ pub fn optimize<'gc>(
                     }
 
                     if !stack_push_done {
-                        if let Some((class, index)) =
-                            outer_scope.get_entry_for_multiname(&multiname)
-                        {
-                            *op = Op::GetOuterScope {
-                                index: index as u32,
-                            };
+                        if let Some(info) = outer_scope.get_entry_for_multiname(&multiname) {
+                            if let Some((class, index)) = info {
+                                *op = Op::GetOuterScope {
+                                    index: index as u32,
+                                };
 
-                            stack_push_done = true;
-                            if let Some(class) = class {
-                                stack.push_class_object(class);
+                                stack_push_done = true;
+                                if let Some(class) = class {
+                                    stack.push_class_object(class);
+                                } else {
+                                    stack.push_any();
+                                }
                             } else {
+                                stack_push_done = true;
                                 stack.push_any();
                             }
                         }
@@ -790,7 +797,6 @@ pub fn optimize<'gc>(
                             outer_scope.domain().get_defining_script(&multiname)
                         {
                             *op = Op::GetScriptGlobals { script };
-
 
                             let script_globals = script
                                 .globals(&mut activation.context)
