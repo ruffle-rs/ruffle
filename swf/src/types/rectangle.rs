@@ -58,7 +58,7 @@ impl<T: PointCoordinate + Ord> Rectangle<T> {
 }
 
 impl<T: Coordinate> Rectangle<T> {
-    const INVALID: Self = Self {
+    pub const INVALID: Self = Self {
         x_min: T::INVALID,
         x_max: T::INVALID,
         y_min: T::INVALID,
