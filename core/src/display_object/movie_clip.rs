@@ -3358,16 +3358,12 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
     }
 
     fn is_focusable(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        if !self.movie().is_action_script_3() {
-            if self.is_root() {
-                false
-            } else if self.is_button_mode(context) {
-                true
-            } else {
-                self.get_avm1_boolean_property(context, "focusEnabled", |_| false)
-            }
-        } else {
+        if self.is_root() {
             false
+        } else if self.is_button_mode(context) {
+            true
+        } else {
+            self.get_avm1_boolean_property(context, "focusEnabled", |_| false)
         }
     }
 
