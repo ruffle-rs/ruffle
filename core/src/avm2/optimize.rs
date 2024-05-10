@@ -2,7 +2,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::{BytecodeMethod, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
-use crate::avm2::object::ClassObject;
+use crate::avm2::object::{ClassObject, TObject};
 use crate::avm2::op::Op;
 use crate::avm2::property::Property;
 use crate::avm2::verify::JumpSources;
@@ -791,9 +791,17 @@ pub fn optimize<'gc>(
                         {
                             *op = Op::GetScriptGlobals { script };
 
+
+                            let script_globals = script
+                                .globals(&mut activation.context)
+                                .expect("Script should be resolved if traits exist");
+
                             stack_push_done = true;
-                            // Pushing the `global` class doesn't work because of the `fork_vtable` hack
-                            stack.push_any();
+                            if let Some(global_class) = script_globals.instance_of() {
+                                stack.push_class_object(global_class);
+                            } else {
+                                stack.push_any();
+                            }
                         }
                     }
 

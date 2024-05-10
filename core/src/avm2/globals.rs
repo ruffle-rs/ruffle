@@ -24,7 +24,7 @@ mod date;
 mod error;
 pub mod flash;
 mod function;
-mod global_scope;
+pub mod global_scope;
 mod int;
 mod json;
 mod math;
@@ -61,7 +61,6 @@ pub struct SystemClasses<'gc> {
     pub object: ClassObject<'gc>,
     pub function: ClassObject<'gc>,
     pub class: ClassObject<'gc>,
-    pub global: ClassObject<'gc>,
     pub string: ClassObject<'gc>,
     pub boolean: ClassObject<'gc>,
     pub number: ClassObject<'gc>,
@@ -186,17 +185,11 @@ impl<'gc> SystemClasses<'gc> {
     /// the empty object also handed to this function. It is the caller's
     /// responsibility to instantiate each class and replace the empty object
     /// with that.
-    fn new(
-        object: ClassObject<'gc>,
-        function: ClassObject<'gc>,
-        class: ClassObject<'gc>,
-        global: ClassObject<'gc>,
-    ) -> Self {
+    fn new(object: ClassObject<'gc>, function: ClassObject<'gc>, class: ClassObject<'gc>) -> Self {
         SystemClasses {
             object,
             function,
             class,
-            global,
             // temporary initialization
             string: object,
             boolean: object,
@@ -515,12 +508,8 @@ pub fn load_player_globals<'gc>(
     // order to continue initializing the player. The rest of the classes
     // are set to a temporary class until we have a chance to initialize them.
 
-    activation.context.avm2.system_classes = Some(SystemClasses::new(
-        object_class,
-        fn_class,
-        class_class,
-        global_class,
-    ));
+    activation.context.avm2.system_classes =
+        Some(SystemClasses::new(object_class, fn_class, class_class));
 
     // Our activation environment is now functional enough to finish
     // initializing the core class weave. We need to initialize superclasses
@@ -546,7 +535,6 @@ pub fn load_player_globals<'gc>(
 
     globals.set_proto(mc, global_proto);
     globals.set_instance_of(mc, global_class);
-    globals.fork_vtable(mc);
 
     activation.context.avm2.toplevel_global_object = Some(globals);
 

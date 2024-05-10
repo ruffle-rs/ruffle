@@ -1144,14 +1144,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         base.set_vtable(vtable);
     }
 
-    // Duplicates the vtable for modification without subclassing
-    // Note: this detaches the vtable from the original class.
-    fn fork_vtable(&self, mc: &Mutation<'gc>) {
-        let mut base = self.base_mut(mc);
-        let vtable = base.vtable().unwrap().duplicate(mc);
-        base.set_vtable(vtable);
-    }
-
     /// Try to corece this object into a `ClassObject`.
     fn as_class_object(&self) -> Option<ClassObject<'gc>> {
         None

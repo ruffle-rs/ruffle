@@ -4,8 +4,9 @@ use super::api_version::ApiVersion;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
+use crate::avm2::globals::global_scope;
 use crate::avm2::method::{BytecodeMethod, Method};
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::Value;
@@ -247,9 +248,15 @@ impl<'gc> TranslationUnit<'gc> {
 
         drop(read);
 
-        let global_class = activation.avm2().classes().global;
+        let object_class = activation.avm2().classes().object;
+
+        let global_classdef =
+            global_scope::create_class(activation, object_class.inner_class_definition());
+
+        let global_class =
+            ClassObject::from_class(activation, global_classdef, Some(object_class))?;
+
         let global_obj = global_class.construct(activation, &[])?;
-        global_obj.fork_vtable(activation.context.gc_context);
 
         let mut script =
             Script::from_abc_index(self, script_index, global_obj, domain, activation)?;
