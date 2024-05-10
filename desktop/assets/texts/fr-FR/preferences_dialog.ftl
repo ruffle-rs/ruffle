@@ -15,3 +15,4 @@ storage-backend = Emplacement des fichiers de sauvegarde
 storage-backend-disk = Disque
 storage-backend-memory = Mémoire
 recent-limit = Limite de fichiers récents
+recent-clear = Effacer
