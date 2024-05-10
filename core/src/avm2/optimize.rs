@@ -798,15 +798,15 @@ pub fn optimize<'gc>(
                         {
                             *op = Op::GetScriptGlobals { script };
 
-                            let script_globals = script
-                                .globals(&mut activation.context)
-                                .expect("Script should be resolved if traits exist");
+                            let script_globals = script.globals_if_init();
 
-                            stack_push_done = true;
-                            if let Some(global_class) = script_globals.instance_of() {
-                                stack.push_class_object(global_class);
-                            } else {
-                                stack.push_any();
+                            if let Some(script_globals) = script_globals {
+                                stack_push_done = true;
+                                if let Some(global_class) = script_globals.instance_of() {
+                                    stack.push_class_object(global_class);
+                                } else {
+                                    stack.push_any();
+                                }
                             }
                         }
                     }
