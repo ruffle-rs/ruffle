@@ -25,7 +25,7 @@ use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use std::time::Duration;
-use swf::{Point, Twips};
+use swf::{Point, Rectangle, Twips};
 use web_time::Instant;
 
 /// Find the lowest common ancestor between the display objects in `from` and
@@ -621,6 +621,11 @@ pub trait TInteractiveObject<'gc>:
         } else {
             context.stage.stage_focus_rect()
         }
+    }
+
+    /// Get the bounds of the focus highlight.
+    fn highlight_bounds(self) -> Rectangle<Twips> {
+        self.as_displayobject().world_bounds()
     }
 
     /// Whether this object is included in tab ordering.
