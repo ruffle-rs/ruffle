@@ -597,6 +597,19 @@ impl<'gc> Script<'gc> {
         }
     }
 
+    /// Return the global scope for the script.
+    ///
+    /// If the script has not yet been initialized, this will return None.
+    pub fn globals_if_init(&self) -> Option<Object<'gc>> {
+        let read = self.0.read();
+
+        if !read.initialized {
+            None
+        } else {
+            Some(read.globals)
+        }
+    }
+
     /// Return traits for this script.
     ///
     /// This function will return an error if it is incorrectly called before
