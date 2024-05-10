@@ -233,7 +233,7 @@ impl<'gc> FocusTracker<'gc> {
             return;
         };
 
-        let bounds = focus.as_displayobject().world_bounds();
+        let bounds = focus.highlight_bounds();
         context.draw_rect_outline(Self::HIGHLIGHT_COLOR, bounds, Self::HIGHLIGHT_THICKNESS);
     }
 
@@ -253,7 +253,7 @@ impl<'gc> FocusTracker<'gc> {
     //      sometimes jumps up, sometimes even ignores some objects.
     fn order_automatic(tab_order: &mut Vec<InteractiveObject>) {
         fn key_extractor(o: &InteractiveObject) -> (Twips, Twips) {
-            let bounds = o.as_displayobject().world_bounds();
+            let bounds = o.highlight_bounds();
             (bounds.y_min, bounds.x_min)
         }
 
