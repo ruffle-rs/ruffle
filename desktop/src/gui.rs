@@ -91,7 +91,7 @@ impl RuffleGui {
     fn new(
         event_loop: EventLoopProxy<RuffleEvent>,
         default_path: Option<Url>,
-        default_player_options: LaunchOptions,
+        default_launch_options: LaunchOptions,
         preferences: GlobalPreferences,
     ) -> Self {
         Self {
@@ -100,13 +100,13 @@ impl RuffleGui {
             context_menu: None,
             dialogs: Dialogs::new(
                 preferences.clone(),
-                default_player_options.clone(),
+                default_launch_options.clone(),
                 default_path,
                 event_loop.clone(),
             ),
             menu_bar: MenuBar::new(
                 event_loop.clone(),
-                default_player_options,
+                default_launch_options,
                 preferences.clone(),
             ),
 
