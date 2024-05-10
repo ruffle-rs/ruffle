@@ -850,11 +850,36 @@ pub fn optimize<'gc>(
                 local_types.set_any(*index_register as usize);
                 local_types.set_any(*object_register as usize);
             }
-            Op::GetSlot { .. } => {
-                stack.pop();
+            Op::GetSlot { index: slot_id } => {
+                let mut stack_push_done = false;
+                let stack_value = stack.pop_or_any();
 
-                // Avoid handling type for now
-                stack.push_any();
+                if let Some(class) = stack_value.class {
+                    if !class.inner_class_definition().is_interface() {
+                        let mut value_class =
+                            class.instance_vtable().slot_classes()[*slot_id as usize];
+                        let resolved_value_class = value_class.get_class(activation);
+                        if let Ok(class) = resolved_value_class {
+                            stack_push_done = true;
+
+                            if let Some(class) = class {
+                                stack.push_class(class);
+                            } else {
+                                stack.push_any();
+                            }
+                        }
+
+                        class.instance_vtable().set_slot_class(
+                            activation.context.gc_context,
+                            *slot_id as usize,
+                            value_class,
+                        );
+                    }
+                }
+
+                if !stack_push_done {
+                    stack.push_any();
+                }
             }
             Op::SetSlot { .. } => {
                 stack.pop();
@@ -1015,6 +1040,8 @@ pub fn optimize<'gc>(
                 stack.pop_for_multiname(*multiname);
 
                 stack.pop();
+
+                stack.push_class_object(types.boolean);
             }
             Op::Construct { num_args } => {
                 // Arguments
@@ -1188,12 +1215,62 @@ pub fn optimize<'gc>(
                 stack.pop();
             }
             Op::GetGlobalScope => {
-                // Avoid handling for now
-                stack.push_any();
+                let mut stack_push_done = false;
+
+                if has_simple_scoping {
+                    let outer_scope = activation.outer();
+                    if !outer_scope.is_empty() {
+                        let global_scope = outer_scope.get_unchecked(0);
+
+                        stack_push_done = true;
+                        if let Some(class) = global_scope.values().instance_of() {
+                            stack.push_class_object(class);
+                        } else {
+                            stack.push_any();
+                        }
+                    }
+                }
+
+                if !stack_push_done {
+                    stack.push_any();
+                }
             }
-            Op::GetGlobalSlot { .. } => {
-                // Avoid handling for now
-                stack.push_any();
+            Op::GetGlobalSlot { index: slot_id } => {
+                let mut stack_push_done = false;
+
+                if has_simple_scoping {
+                    let outer_scope = activation.outer();
+                    if !outer_scope.is_empty() {
+                        let global_scope = outer_scope.get_unchecked(0);
+
+                        if let Some(class) = global_scope.values().instance_of() {
+                            if !class.inner_class_definition().is_interface() {
+                                let mut value_class =
+                                    class.instance_vtable().slot_classes()[*slot_id as usize];
+                                let resolved_value_class = value_class.get_class(activation);
+                                if let Ok(class) = resolved_value_class {
+                                    stack_push_done = true;
+
+                                    if let Some(class) = class {
+                                        stack.push_class(class);
+                                    } else {
+                                        stack.push_any();
+                                    }
+                                }
+
+                                class.instance_vtable().set_slot_class(
+                                    activation.context.gc_context,
+                                    *slot_id as usize,
+                                    value_class,
+                                );
+                            }
+                        }
+                    }
+                }
+
+                if !stack_push_done {
+                    stack.push_any();
+                }
             }
             Op::SetGlobalSlot { .. } => {
                 // Avoid handling for now
