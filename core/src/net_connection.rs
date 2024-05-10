@@ -1,3 +1,5 @@
+use crate::avm1::globals::netconnection::NetConnection as Avm1NetConnectionObject;
+use crate::avm1::Object as Avm1Object;
 use crate::avm2::object::{
     NetConnectionObject as Avm2NetConnectionObject, ResponderObject as Avm2ResponderObject,
 };
@@ -28,12 +30,14 @@ pub enum ResponderCallback {
 #[derive(Clone)]
 pub enum ResponderHandle {
     Avm2(DynamicRoot<Rootable![Avm2ResponderObject<'_>]>),
+    Avm1(DynamicRoot<Rootable![Avm1Object<'_>]>),
 }
 
 impl Debug for ResponderHandle {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             ResponderHandle::Avm2(_) => write!(f, "ResponderHandle::Avm2"),
+            ResponderHandle::Avm1(_) => write!(f, "ResponderHandle::Avm1"),
         }
     }
 }
@@ -52,6 +56,14 @@ impl ResponderHandle {
                     tracing::error!("Unhandled error sending {callback:?} callback: {e}");
                 }
             }
+            ResponderHandle::Avm1(handle) => {
+                let object = context.dynamic_root.fetch(handle);
+                if let Err(e) =
+                    Avm1NetConnectionObject::send_callback(context, *object, callback, &message)
+                {
+                    tracing::error!("Unhandled error sending {callback:?} callback: {e}");
+                }
+            }
         }
     }
 }
@@ -60,12 +72,20 @@ impl ResponderHandle {
 #[collect(no_drop)]
 pub enum NetConnectionObject<'gc> {
     Avm2(Avm2NetConnectionObject<'gc>),
+    Avm1(Avm1Object<'gc>),
 }
 
 impl<'gc> NetConnectionObject<'gc> {
     pub fn set_handle(&self, handle: Option<NetConnectionHandle>) -> Option<NetConnectionHandle> {
         match self {
             NetConnectionObject::Avm2(object) => object.set_handle(handle),
+            NetConnectionObject::Avm1(object) => {
+                if let Some(net_connection) = Avm1NetConnectionObject::cast((*object).into()) {
+                    net_connection.set_handle(handle)
+                } else {
+                    None
+                }
+            }
         }
     }
 }
@@ -73,6 +93,12 @@ impl<'gc> NetConnectionObject<'gc> {
 impl<'gc> From<Avm2NetConnectionObject<'gc>> for NetConnectionObject<'gc> {
     fn from(value: Avm2NetConnectionObject<'gc>) -> Self {
         NetConnectionObject::Avm2(value)
+    }
+}
+
+impl<'gc> From<Avm1Object<'gc>> for NetConnectionObject<'gc> {
+    fn from(value: Avm1Object<'gc>) -> Self {
+        NetConnectionObject::Avm1(value)
     }
 }
 
@@ -125,6 +151,15 @@ impl<'gc> NetConnections<'gc> {
                     ],
                 );
                 Avm2::dispatch_event(&mut activation.context, event, object.into());
+            }
+            NetConnectionObject::Avm1(object) => {
+                if let Err(e) = Avm1NetConnectionObject::on_status_event(
+                    context,
+                    object,
+                    "NetConnection.Connect.Success",
+                ) {
+                    tracing::error!("Unhandled error sending connection callback: {e}");
+                }
             }
         }
     }
@@ -191,6 +226,23 @@ impl<'gc> NetConnections<'gc> {
                     Avm2::dispatch_event(&mut activation.context, event, object.into());
                 }
             }
+            NetConnectionObject::Avm1(object) => {
+                if let Err(e) = Avm1NetConnectionObject::on_status_event(
+                    context,
+                    object,
+                    "NetConnection.Connect.Closed",
+                ) {
+                    tracing::error!("Unhandled error sending connection callback: {e}");
+                }
+                if is_explicit
+                    && matches!(connection.protocol, NetConnectionProtocol::FlashRemoting(_))
+                {
+                    if let Err(e) = Avm1NetConnectionObject::on_empty_status_event(context, object)
+                    {
+                        tracing::error!("Unhandled error sending connection callback: {e}");
+                    }
+                }
+            }
         }
     }
 
@@ -221,6 +273,20 @@ impl<'gc> NetConnections<'gc> {
         if let Some(connection) = context.net_connections.connections.get_mut(handle) {
             let responder_handle =
                 ResponderHandle::Avm2(context.dynamic_root.stash(context.gc_context, responder));
+            connection.send(command, Some(responder_handle), message);
+        }
+    }
+
+    pub fn send_avm1(
+        context: &mut UpdateContext<'_, 'gc>,
+        handle: NetConnectionHandle,
+        command: String,
+        message: AmfValue,
+        responder: Avm1Object<'gc>,
+    ) {
+        if let Some(connection) = context.net_connections.connections.get_mut(handle) {
+            let responder_handle =
+                ResponderHandle::Avm1(context.dynamic_root.stash(context.gc_context, responder));
             connection.send(command, Some(responder_handle), message);
         }
     }
@@ -501,6 +567,15 @@ impl FlashRemoting {
                                         event,
                                         object.into(),
                                     );
+                                }
+                                NetConnectionObject::Avm1(object) => {
+                                    if let Err(e) =
+                                        Avm1NetConnectionObject::on_empty_status_event(uc, object)
+                                    {
+                                        tracing::error!(
+                                            "Unhandled error sending connection callback: {e}"
+                                        );
+                                    }
                                 }
                             }
                         }
