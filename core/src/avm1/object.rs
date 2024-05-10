@@ -698,6 +698,7 @@ pub fn search_prototype<'gc>(
     is_slash_path: bool,
 ) -> Result<Option<(Value<'gc>, u8)>, Error<'gc>> {
     let mut depth = 0;
+    let orig_proto = proto;
 
     while let Value::Object(p) = proto {
         if depth == 255 {
@@ -726,6 +727,34 @@ pub fn search_prototype<'gc>(
 
         if let Some(value) = p.get_local_stored(name, activation, is_slash_path) {
             return Ok(Some((value, depth)));
+        }
+
+        proto = p.proto(activation);
+        depth += 1;
+    }
+
+    if let Some(resolve) = find_resolve_method(orig_proto, activation)? {
+        let result = resolve.call("__resolve".into(), activation, this.into(), &[name.into()])?;
+        return Ok(Some((result, 0)));
+    }
+
+    Ok(None)
+}
+
+/// Finds the appropriate `__resolve` method for an object, searching its hierarchy too.
+pub fn find_resolve_method<'gc>(
+    mut proto: Value<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<Option<Object<'gc>>, Error<'gc>> {
+    let mut depth = 0;
+
+    while let Value::Object(p) = proto {
+        if depth == 255 {
+            return Err(Error::PrototypeRecursionLimit);
+        }
+
+        if let Some(value) = p.get_local_stored("__resolve", activation, false) {
+            return Ok(Some(value.coerce_to_object(activation)));
         }
 
         proto = p.proto(activation);

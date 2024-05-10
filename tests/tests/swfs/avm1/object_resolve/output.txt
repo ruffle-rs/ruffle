@@ -1,0 +1,29 @@
+// __resolve(string) called!
+object.string: A String!
+// __resolve(undefined) called!
+object.undefined: undefined
+// __resolve(object) called!
+object.object: [object Object]
+// __resolve(function) called!
+object.function: [type Function]
+// __resolve(function) called!
+// function called!
+// this == object
+object.function(): undefined
+object.hasOwnProperty("function"): false
+
+object.string: An overriden string!
+object.onThePrototype: This was on the prototype!
+// Proto.prototype.__resolve function called!
+object.undefined: undefined
+// Proto.prototype.__resolve function called!
+object.object: [object Object]
+// Proto.prototype.__resolve function called!
+object.function: [type Function]
+// Proto.prototype.__resolve function called!
+// function called!
+// this == object
+object.function(): undefined
+object.hasOwnProperty("function"): false
+
+object.foo with an addProperty __resolve: undefined
