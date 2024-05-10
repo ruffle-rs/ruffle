@@ -69,6 +69,21 @@ fn get_disk_usage<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -> AmfValue {
+    match value {
+        Value::Undefined => AmfValue::Undefined,
+        Value::Null => AmfValue::Null,
+        Value::Bool(bool) => AmfValue::Bool(bool),
+        Value::Number(number) => AmfValue::Number(number),
+        Value::String(string) => AmfValue::String(string.to_string()),
+        Value::Object(object) => {
+            let lso = new_lso(activation, "root", object);
+            AmfValue::Object(lso.into_iter().collect(), None)
+        }
+        Value::MovieClip(_) => AmfValue::Undefined,
+    }
+}
+
 /// Serialize an Object and any children to a JSON object
 fn recursive_serialize<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -130,7 +145,7 @@ fn recursive_serialize<'gc>(
 }
 
 /// Deserialize a AmfValue to a Value
-fn deserialize_value<'gc>(
+pub fn deserialize_value<'gc>(
     activation: &mut Activation<'_, 'gc>,
     val: &AmfValue,
     lso: &AMF0Decoder,

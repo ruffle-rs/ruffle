@@ -12,6 +12,7 @@ use crate::avm1::globals::drop_shadow_filter::DropShadowFilter;
 use crate::avm1::globals::file_reference::FileReferenceObject;
 use crate::avm1::globals::glow_filter::GlowFilter;
 use crate::avm1::globals::gradient_filter::GradientFilter;
+use crate::avm1::globals::netconnection::NetConnection;
 use crate::avm1::globals::shared_object::SharedObject;
 use crate::avm1::globals::transform::TransformObject;
 use crate::avm1::globals::xml::Xml;
@@ -64,6 +65,7 @@ pub enum NativeObject<'gc> {
     SharedObject(GcCell<'gc, SharedObject>),
     XmlSocket(XmlSocket<'gc>),
     FileReference(FileReferenceObject<'gc>),
+    NetConnection(NetConnection<'gc>),
 }
 
 /// Represents an object that can be directly interacted with by the AVM
