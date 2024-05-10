@@ -6,6 +6,7 @@ pub mod write;
 
 pub mod backends;
 pub mod content;
+pub mod player_options;
 
 use std::borrow::Cow;
 use url::Url;
