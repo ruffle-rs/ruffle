@@ -3359,7 +3359,9 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
 
     fn is_focusable(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
         if !self.movie().is_action_script_3() {
-            if self.is_button_mode(context) {
+            if self.is_root() {
+                false
+            } else if self.is_button_mode(context) {
                 true
             } else {
                 self.get_avm1_boolean_property(context, "focusEnabled", |_| false)
@@ -3367,6 +3369,14 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         } else {
             false
         }
+    }
+
+    fn is_tabbable(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        if self.is_root() {
+            // Root movie clips are never tabbable.
+            return false;
+        }
+        self.tab_enabled(context)
     }
 
     fn tab_enabled_default(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {

@@ -923,8 +923,8 @@ impl<'gc> TInteractiveObject<'gc> for Stage<'gc> {
         MouseCursor::Arrow
     }
 
-    fn is_highlight_enabled(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
-        // Highlight is always disabled for stage.
+    fn is_highlightable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+        // Stage cannot be highlighted.
         false
     }
 }
