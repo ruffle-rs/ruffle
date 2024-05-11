@@ -156,6 +156,7 @@ pub fn optimize<'gc>(
     jump_targets: HashMap<i32, JumpSources>,
 ) {
     // These make the code less readable
+    #![allow(clippy::collapsible_if)]
     #![allow(clippy::manual_filter)]
     #![allow(clippy::single_match)]
 
@@ -752,11 +753,11 @@ pub fn optimize<'gc>(
                 stack.push(local_type);
             }
             Op::FindPropStrict { multiname } | Op::FindProperty { multiname } => {
-                let multiname = multiname.clone();
+                let multiname = *multiname;
                 let mut stack_push_done = false;
                 stack.pop_for_multiname(multiname);
 
-                if has_simple_scoping {
+                if !multiname.has_lazy_component() && has_simple_scoping {
                     let outer_scope = activation.outer();
                     if !outer_scope.is_empty() {
                         if let Some(this_class) = this_class {
@@ -775,9 +776,7 @@ pub fn optimize<'gc>(
                     if !stack_push_done {
                         if let Some(info) = outer_scope.get_entry_for_multiname(&multiname) {
                             if let Some((class, index)) = info {
-                                *op = Op::GetOuterScope {
-                                    index: index as u32,
-                                };
+                                *op = Op::GetOuterScope { index };
 
                                 stack_push_done = true;
                                 if let Some(class) = class {
