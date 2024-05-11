@@ -247,7 +247,7 @@ impl<'gc> ScopeChain<'gc> {
                 }
 
                 let values = scope.values();
-                if values.has_trait(&multiname) {
+                if values.has_trait(multiname) {
                     return Some(Some((values.instance_of(), index as u32)));
                 }
             }
