@@ -2487,6 +2487,22 @@ pub trait TDisplayObject<'gc>:
             false
         }
     }
+
+    fn set_avm1_property(
+        self,
+        context: &mut UpdateContext<'_, 'gc>,
+        name: &'static str,
+        value: Avm1Value<'gc>,
+    ) {
+        if let Avm1Value::Object(object) = self.object() {
+            let mut activation = Activation::from_nothing(
+                context.reborrow(),
+                Avm1ActivationIdentifier::root("[AVM1 Property Set]"),
+                self.avm1_root(),
+            );
+            let _ = object.set(name, value, &mut activation);
+        }
+    }
 }
 
 pub enum DisplayObjectPtr {}
