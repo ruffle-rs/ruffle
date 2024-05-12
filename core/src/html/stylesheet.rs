@@ -1,5 +1,6 @@
 use fnv::FnvHashMap;
-use ruffle_wstr::WStr;
+use ruffle_wstr::{WStr, WString};
+use std::borrow::Cow;
 
 pub type CssProperties<'a> = FnvHashMap<&'a WStr, &'a WStr>;
 
@@ -207,6 +208,29 @@ impl<'a> CssStream<'a> {
             }
         }
     }
+}
+
+pub fn transform_dashes_to_camel_case(input: &WStr) -> Cow<WStr> {
+    if !input.contains(b'-') {
+        return Cow::Borrowed(input);
+    }
+    let mut result = WString::with_capacity(input.len(), input.is_wide());
+
+    let mut make_upper = false;
+    let mut pos = 0;
+    while let Some(char) = input.get(pos) {
+        match char {
+            0x002D if !make_upper => make_upper = true, // - as u16, can't use `as` in arm
+            _ if make_upper => {
+                make_upper = false;
+                result.push_str(&input[pos..=pos].to_ascii_uppercase())
+            }
+            _ => result.push(char),
+        }
+        pos += 1;
+    }
+
+    Cow::Owned(result)
 }
 
 // More exhaustive tests live inside avm2 stylesheet swf test

@@ -189,6 +189,14 @@ styleSheet.getStyle("key") = {
 }
 styleSheet.getStyle("nonexistant") = {}
 
+/// parseCSS: name transformation
+styleSheet.getStyle("key") = {
+    "UPPERDASHES" = string "value"
+    "nameWithDashes" = string "value  name-with-dashes-and-spaces  : value"
+    "this-one-has-two-dashes" = string "value"
+}
+styleSheet.getStyle("nonexistant") = {}
+
 /// transform
 styleSheet.getStyle("anything") = {}
 styleSheet.getStyle("nonexistant") = {}
