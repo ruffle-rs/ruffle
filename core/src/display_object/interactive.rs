@@ -658,7 +658,8 @@ pub trait TInteractiveObject<'gc>:
         if context.swf.is_action_script_3() {
             self.raw_interactive_mut(context.gc()).tab_enabled = Some(value)
         } else {
-            tracing::warn!("Trying to set tab_enabled on an AVM1 object, this has no effect")
+            self.as_displayobject()
+                .set_avm1_property(context, "tabEnabled", value.into());
         }
     }
 
