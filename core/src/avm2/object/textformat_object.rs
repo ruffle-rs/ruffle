@@ -5,7 +5,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::html::TextFormat;
+use crate::html::{TextDisplay, TextFormat};
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::RefLock;
@@ -21,7 +21,10 @@ pub fn textformat_allocator<'gc>(
         activation.gc(),
         TextFormatObjectData {
             base: RefLock::new(ScriptObjectData::new(class)),
-            text_format: Default::default(),
+            text_format: RefCell::new(TextFormat {
+                display: Some(TextDisplay::Block),
+                ..Default::default()
+            }),
         },
     ))
     .into())
