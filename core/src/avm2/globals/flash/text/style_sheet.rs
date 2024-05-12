@@ -1,6 +1,6 @@
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, TObject, Value};
-use crate::html::CssStream;
+use crate::html::{transform_dashes_to_camel_case, CssStream};
 use crate::string::AvmString;
 use ruffle_wstr::{WStr, WString};
 
@@ -25,7 +25,7 @@ pub fn inner_parse_css<'gc>(
                 .construct(activation, &[])?;
             for (key, value) in properties.into_iter() {
                 object.set_public_property(
-                    AvmString::new(activation.gc(), key),
+                    AvmString::new(activation.gc(), transform_dashes_to_camel_case(key)),
                     Value::String(AvmString::new(activation.gc(), value)),
                     activation,
                 )?;

@@ -186,6 +186,16 @@
 					"}");
 			});
 
+			test("parseCSS: name transformation", styleSheet, function() {
+				styleSheet.clear();
+				styleSheet.parseCSS("key {" +
+					"name-with-dashes: value" +
+					"  name-with-dashes-and-spaces  : value;" +
+					"this--one--has--two--dashes: value;" +
+					"UPPER-DASHES: value;" +
+					"}");
+			});
+
 			styleSheet = new AlwaysRedStyleSheet();
 			test("transform", styleSheet, function() {
 				styleSheet.setStyle("anything", "blue");
