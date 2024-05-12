@@ -821,7 +821,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
         }
     }
 
-    fn tab_enabled_avm2_default(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+    fn tab_enabled_default(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
         true
     }
 }

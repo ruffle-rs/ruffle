@@ -641,20 +641,16 @@ pub trait TInteractiveObject<'gc>:
         if context.swf.is_action_script_3() {
             self.raw_interactive()
                 .tab_enabled
-                .unwrap_or_else(|| self.tab_enabled_avm2_default(context))
+                .unwrap_or_else(|| self.tab_enabled_default(context))
         } else {
-            self.tab_enabled_avm1(context)
+            self.as_displayobject()
+                .get_avm1_boolean_property(context, "tabEnabled", |context| {
+                    self.tab_enabled_default(context)
+                })
         }
     }
 
-    /// Look up the `tabEnabled` property from AVM1.
-    ///
-    /// Do not use this directly, use [`Self::is_tabbable()`] or [`Self::tab_enabled()`].
-    fn tab_enabled_avm1(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
-        false
-    }
-
-    fn tab_enabled_avm2_default(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+    fn tab_enabled_default(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
         false
     }
 

@@ -3369,14 +3369,17 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         }
     }
 
-    fn tab_enabled_avm1(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        self.get_avm1_boolean_property(context, "tabEnabled", |context| {
-            self.tab_index().is_some() || self.is_button_mode(context)
-        })
-    }
+    fn tab_enabled_default(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        if self.is_button_mode(context) {
+            return true;
+        }
 
-    fn tab_enabled_avm2_default(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        self.is_button_mode(context)
+        let is_avm1 = !context.swf.is_action_script_3();
+        if is_avm1 && self.tab_index().is_some() {
+            return true;
+        }
+
+        false
     }
 }
 
