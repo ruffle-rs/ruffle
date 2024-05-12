@@ -1216,17 +1216,15 @@ pub fn optimize<'gc>(
             Op::GetGlobalScope => {
                 let mut stack_push_done = false;
 
-                if has_simple_scoping {
-                    let outer_scope = activation.outer();
-                    if !outer_scope.is_empty() {
-                        let global_scope = outer_scope.get_unchecked(0);
+                let outer_scope = activation.outer();
+                if !outer_scope.is_empty() {
+                    let global_scope = outer_scope.get_unchecked(0);
 
-                        stack_push_done = true;
-                        if let Some(class) = global_scope.values().instance_of() {
-                            stack.push_class_object(class);
-                        } else {
-                            stack.push_any();
-                        }
+                    stack_push_done = true;
+                    if let Some(class) = global_scope.values().instance_of() {
+                        stack.push_class_object(class);
+                    } else {
+                        stack.push_any();
                     }
                 }
 
@@ -1237,32 +1235,30 @@ pub fn optimize<'gc>(
             Op::GetGlobalSlot { index: slot_id } => {
                 let mut stack_push_done = false;
 
-                if has_simple_scoping {
-                    let outer_scope = activation.outer();
-                    if !outer_scope.is_empty() {
-                        let global_scope = outer_scope.get_unchecked(0);
+                let outer_scope = activation.outer();
+                if !outer_scope.is_empty() {
+                    let global_scope = outer_scope.get_unchecked(0);
 
-                        if let Some(class) = global_scope.values().instance_of() {
-                            if !class.inner_class_definition().is_interface() {
-                                let mut value_class =
-                                    class.instance_vtable().slot_classes()[*slot_id as usize];
-                                let resolved_value_class = value_class.get_class(activation);
-                                if let Ok(class) = resolved_value_class {
-                                    stack_push_done = true;
+                    if let Some(class) = global_scope.values().instance_of() {
+                        if !class.inner_class_definition().is_interface() {
+                            let mut value_class =
+                                class.instance_vtable().slot_classes()[*slot_id as usize];
+                            let resolved_value_class = value_class.get_class(activation);
+                            if let Ok(class) = resolved_value_class {
+                                stack_push_done = true;
 
-                                    if let Some(class) = class {
-                                        stack.push_class(class);
-                                    } else {
-                                        stack.push_any();
-                                    }
+                                if let Some(class) = class {
+                                    stack.push_class(class);
+                                } else {
+                                    stack.push_any();
                                 }
-
-                                class.instance_vtable().set_slot_class(
-                                    activation.context.gc_context,
-                                    *slot_id as usize,
-                                    value_class,
-                                );
                             }
+
+                            class.instance_vtable().set_slot_class(
+                                activation.context.gc_context,
+                                *slot_id as usize,
+                                value_class,
+                            );
                         }
                     }
                 }
