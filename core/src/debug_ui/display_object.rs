@@ -472,32 +472,36 @@ impl DisplayObjectWindow {
             .num_columns(2)
             .show(ui, |ui| {
                 ui.label("Current Focus");
-                if let Some(focus) = focus.map(|o| o.as_displayobject()) {
-                    open_display_object_button(
-                        ui,
-                        context,
-                        messages,
-                        focus,
-                        &mut self.hovered_debug_rect,
-                    );
-                    if ui.button("Clear").clicked() {
-                        focus_tracker.set(None, context);
+                ui.vertical(|ui| {
+                    if let Some(focus) = focus.map(|o| o.as_displayobject()) {
+                        open_display_object_button(
+                            ui,
+                            context,
+                            messages,
+                            focus,
+                            &mut self.hovered_debug_rect,
+                        );
+                        ui.horizontal(|ui| {
+                            if ui.button("Clear").clicked() {
+                                focus_tracker.set(None, context);
+                            }
+                            if ui.button("Re-focus").clicked() {
+                                focus_tracker.set(None, context);
+                                focus_tracker.set(focus.as_interactive(), context);
+                            }
+                        });
+                    } else {
+                        ui.label("None");
                     }
-                    if ui.button("Re-focus").clicked() {
-                        focus_tracker.set(None, context);
-                        focus_tracker.set(focus.as_interactive(), context);
-                    }
-                } else {
-                    ui.label("None");
-                }
+                });
                 ui.end_row();
 
                 let highlight = focus_tracker.highlight();
                 ui.label("Focus Highlight");
                 let highlight_text = match highlight {
-                    Highlight::Inactive => "inactive",
-                    Highlight::ActiveHidden => "active, hidden",
-                    Highlight::ActiveVisible => "active, visible",
+                    Highlight::Inactive => "Inactive",
+                    Highlight::ActiveHidden => "Active, Hidden",
+                    Highlight::ActiveVisible => "Active, Visible",
                 };
                 ui.label(highlight_text);
                 ui.end_row();
