@@ -471,6 +471,14 @@ impl DisplayObjectWindow {
         Grid::new(ui.id().with("stage"))
             .num_columns(2)
             .show(ui, |ui| {
+                ui.label("Stage Focus Rect");
+                let mut new_stage_focus_rect = object.stage_focus_rect();
+                ui.checkbox(&mut new_stage_focus_rect, "Enabled");
+                if new_stage_focus_rect != object.stage_focus_rect() {
+                    object.set_stage_focus_rect(context.gc(), new_stage_focus_rect);
+                }
+                ui.end_row();
+
                 ui.label("Current Focus");
                 ui.vertical(|ui| {
                     if let Some(focus) = focus.map(|o| o.as_displayobject()) {
