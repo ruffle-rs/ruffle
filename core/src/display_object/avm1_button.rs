@@ -599,8 +599,8 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         }
     }
 
-    fn tab_enabled_avm1(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        self.get_avm1_boolean_property(context, "tabEnabled", |_| true)
+    fn tab_enabled_default(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+        true
     }
 
     fn highlight_bounds(self) -> Rectangle<Twips> {
