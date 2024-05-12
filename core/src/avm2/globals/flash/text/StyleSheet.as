@@ -1,6 +1,4 @@
 package flash.text {
-    import __ruffle__.stub_method;
-    
     public dynamic class StyleSheet {
         // Shallow copies of the original style objects. Not used by Ruffle itself, just for getStyle()
         private var _styles: Object = {};
@@ -40,8 +38,82 @@ package flash.text {
         }
         
         public function transform(formatObject:Object):TextFormat {
-            stub_method("flash.text.StyleSheet", "transform");
-            return null;
+            if (!formatObject) {
+                return null;
+            }
+            var result = new TextFormat();
+
+            if (formatObject.color) {
+                result.color = innerParseColor(formatObject.color);
+            }
+
+            if (formatObject.display) {
+                result.display = formatObject.display;
+            }
+
+            if (formatObject.fontFamily) {
+                result.font = innerParseFontFamily(formatObject.fontFamily);
+            }
+
+            if (formatObject.fontSize) {
+                var size = parseInt(formatObject.fontSize);
+                if (size > 0) {
+                    result.size = size;
+                }
+            }
+
+            if (formatObject.fontStyle == "italic") {
+                result.italic = true;
+            } else if (formatObject.fontStyle == "normal") {
+                result.italic = false;
+            }
+
+            if (formatObject.fontWeight == "bold") {
+                result.bold = true;
+            } else if (formatObject.fontWeight == "normal") {
+                result.bold = false;
+            }
+
+            if (formatObject.kerning == "true") {
+                result.kerning = true;
+            } else if (formatObject.kerning == "false") {
+                result.kerning = false;
+            } else {
+                // Seems to always set, not just if defined
+                result.kerning = parseInt(formatObject.kerning);
+            }
+
+            if (formatObject.leading) {
+                result.leading = parseInt(formatObject.leading);
+            }
+
+            if (formatObject.letterSpacing) {
+                result.letterSpacing = parseFloat(formatObject.letterSpacing);
+            }
+
+            if (formatObject.marginLeft) {
+                result.leftMargin = parseFloat(formatObject.marginLeft);
+            }
+
+            if (formatObject.marginRight) {
+                result.rightMargin = parseFloat(formatObject.marginRight);
+            }
+
+            if (formatObject.textAlign) {
+                result.align = formatObject.textAlign;
+            }
+
+            if (formatObject.textDecoration == "underline") {
+                result.underline = true;
+            } else if (formatObject.textDecoration == "none") {
+                result.underline = false;
+            }
+
+            if (formatObject.textIndent) {
+                result.indent = parseInt(formatObject.textIndent);
+            }
+
+            return result;
         }
 
         private function _createShallowCopy(original: *): Object {
@@ -54,5 +126,7 @@ package flash.text {
 
         // Avoid doing potentially expensive string parsing in AS :D
         private native function innerParseCss(css: String): Object;
+        private native function innerParseColor(color: String): Number;
+        private native function innerParseFontFamily(fontFamily: String): String;
     }
 }
