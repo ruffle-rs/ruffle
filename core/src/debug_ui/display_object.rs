@@ -10,12 +10,14 @@ use crate::debug_ui::handle::{AVM1ObjectHandle, AVM2ObjectHandle, DisplayObjectH
 use crate::debug_ui::movie::open_movie_button;
 use crate::debug_ui::Message;
 use crate::display_object::{
-    DisplayObject, EditText, MovieClip, Stage, TDisplayObject, TDisplayObjectContainer,
-    TInteractiveObject,
+    DisplayObject, EditText, InteractiveObject, MovieClip, Stage, TDisplayObject,
+    TDisplayObjectContainer, TInteractiveObject,
 };
 use crate::focus_tracker::Highlight;
 use egui::collapsing_header::CollapsingState;
-use egui::{Button, Checkbox, CollapsingHeader, ComboBox, Grid, Id, TextEdit, Ui, Widget, Window};
+use egui::{
+    Button, Checkbox, CollapsingHeader, ComboBox, DragValue, Grid, Id, TextEdit, Ui, Widget, Window,
+};
 use ruffle_wstr::{WStr, WString};
 use std::borrow::Cow;
 use swf::{ColorTransform, Fixed8};
@@ -57,6 +59,7 @@ enum Panel {
     Position,
     Display,
     Children,
+    Interactive,
     TypeSpecific,
 }
 
@@ -122,6 +125,13 @@ impl DisplayObjectWindow {
                 ui.horizontal(|ui| {
                     ui.selectable_value(&mut self.open_panel, Panel::Position, "Position");
                     ui.selectable_value(&mut self.open_panel, Panel::Display, "Display");
+                    if object.as_interactive().is_some() {
+                        ui.selectable_value(
+                            &mut self.open_panel,
+                            Panel::Interactive,
+                            "Interactive",
+                        );
+                    }
                     if has_type_specific_tab(object) {
                         ui.selectable_value(
                             &mut self.open_panel,
@@ -154,9 +164,128 @@ impl DisplayObjectWindow {
                             self.show_stage(ui, context, object, messages)
                         }
                     }
+                    Panel::Interactive => {
+                        if let Some(int) = object.as_interactive() {
+                            self.show_interactive(ui, context, int)
+                        }
+                    }
                 }
             });
         keep_open
+    }
+
+    pub fn show_interactive<'gc>(
+        &mut self,
+        ui: &mut Ui,
+        context: &mut UpdateContext<'_, 'gc>,
+        object: InteractiveObject<'gc>,
+    ) {
+        Grid::new(ui.id().with("interactive"))
+            .num_columns(2)
+            .show(ui, |ui| {
+                ui.label("Mouse Enabled");
+                ui.horizontal(|ui| {
+                    let mut enabled = object.mouse_enabled();
+                    Checkbox::new(&mut enabled, "Enabled").ui(ui);
+                    if enabled != object.mouse_enabled() {
+                        object.set_mouse_enabled(context.gc_context, enabled);
+                    }
+                });
+                ui.end_row();
+
+                ui.label("Double-click Enabled");
+                ui.horizontal(|ui| {
+                    let mut enabled = object.double_click_enabled();
+                    Checkbox::new(&mut enabled, "Enabled").ui(ui);
+                    if enabled != object.double_click_enabled() {
+                        object.set_double_click_enabled(context.gc_context, enabled);
+                    }
+                });
+                ui.end_row();
+
+                ui.label("Tab Enabled");
+                {
+                    let mut enabled = object.tab_enabled(context);
+                    Checkbox::new(&mut enabled, "Enabled").ui(ui);
+                    if enabled != object.tab_enabled(context) {
+                        object.set_tab_enabled(context, enabled);
+                    }
+                }
+                ui.end_row();
+
+                ui.label("Tab Index");
+                ui.horizontal(|ui| {
+                    let tab_index = object.tab_index();
+                    let mut enabled = tab_index.is_some();
+                    ui.checkbox(&mut enabled, "");
+                    if enabled != tab_index.is_some() {
+                        if enabled {
+                            object.set_tab_index(context, Some(0));
+                        } else {
+                            object.set_tab_index(context, None);
+                        }
+                    }
+
+                    if let Some(tab_index) = tab_index.map(|i| i as usize) {
+                        let mut new_tab_index: usize = tab_index;
+                        DragValue::new(&mut new_tab_index).ui(ui);
+                        if new_tab_index != tab_index {
+                            object.set_tab_index(context, Some(new_tab_index as i32));
+                        }
+                    } else {
+                        ui.label("None");
+                    }
+                });
+                ui.end_row();
+
+                ui.label("Focus Rect");
+                let focus_rect = object.focus_rect();
+                let mut new_focus_rect = focus_rect;
+                ComboBox::from_id_source(ui.id().with("focus_rect"))
+                    .selected_text(optional_boolean_switch_value(focus_rect))
+                    .show_ui(ui, |ui| {
+                        for value in [None, Some(true), Some(false)] {
+                            ui.selectable_value(
+                                &mut new_focus_rect,
+                                value,
+                                optional_boolean_switch_value(value),
+                            );
+                        }
+                    });
+                if new_focus_rect != focus_rect {
+                    object.set_focus_rect(context.gc(), new_focus_rect);
+                }
+                ui.end_row();
+
+                ui.label("Highlight Bounds");
+                if object.highlight_bounds().is_valid() {
+                    ui.label(object.highlight_bounds().to_string());
+                } else {
+                    ui.weak("Invalid");
+                }
+                ui.end_row();
+
+                ui.label("Derived Properties");
+                ui.add_enabled_ui(false, |ui| {
+                    ui.vertical(|ui| {
+                        ui.checkbox(&mut object.has_focus(), "Has Focus");
+                        ui.checkbox(&mut object.is_focusable(context), "Focusable");
+                        ui.checkbox(&mut object.is_tabbable(context), "Tabbable");
+                        ui.checkbox(&mut object.is_highlightable(context), "Highlightable");
+                    });
+                });
+                ui.end_row();
+
+                ui.label("Actions");
+                ui.horizontal(|ui| {
+                    if ui.button("Focus").clicked() {
+                        let focus_tracker = context.focus_tracker;
+                        focus_tracker.set(None, context);
+                        focus_tracker.set(Some(object), context);
+                    }
+                });
+                ui.end_row();
+            });
     }
 
     pub fn show_edit_text(&mut self, ui: &mut Ui, object: EditText) {
@@ -557,28 +686,6 @@ impl DisplayObjectWindow {
                 ui.label(summary_color_transform(color_transform));
                 ui.end_row();
 
-                if let Some(obj) = object.as_interactive() {
-                    ui.label("Mouse enabled");
-                    ui.horizontal(|ui| {
-                        let mut enabled = obj.mouse_enabled();
-                        Checkbox::new(&mut enabled, "Enabled").ui(ui);
-                        if enabled != obj.mouse_enabled() {
-                            obj.set_mouse_enabled(context.gc_context, enabled);
-                        }
-                    });
-                    ui.end_row();
-
-                    ui.label("Double-click enabled");
-                    ui.horizontal(|ui| {
-                        let mut enabled = obj.double_click_enabled();
-                        Checkbox::new(&mut enabled, "Enabled").ui(ui);
-                        if enabled != obj.double_click_enabled() {
-                            obj.set_double_click_enabled(context.gc_context, enabled);
-                        }
-                    });
-                    ui.end_row();
-                }
-
                 if let Some(obj) = object.as_container() {
                     ui.label("Mouse children enabled");
                     ui.horizontal(|ui| {
@@ -908,6 +1015,14 @@ fn blend_mode_name(mode: ExtendedBlendMode) -> &'static str {
         ExtendedBlendMode::Overlay => "Overlay",
         ExtendedBlendMode::HardLight => "HardLight",
         ExtendedBlendMode::Shader => "Shader",
+    }
+}
+
+fn optional_boolean_switch_value(value: Option<bool>) -> &'static str {
+    match value {
+        Some(true) => "Enabled",
+        Some(false) => "Disabled",
+        None => "Default",
     }
 }
 
