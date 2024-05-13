@@ -709,16 +709,11 @@ impl DisplayObjectWindow {
             });
 
         let tab_order = focus_tracker.tab_order(context);
-        let tab_order_suffix = tab_order
-            .first()
-            .map(|o| {
-                if o.tab_index().is_some() {
-                    "custom"
-                } else {
-                    "automatic"
-                }
-            })
-            .unwrap_or("empty");
+        let tab_order_suffix = if tab_order.is_custom() {
+            "custom"
+        } else {
+            "automatic"
+        };
         CollapsingHeader::new(format!("Tab Order ({})", tab_order_suffix))
             .id_source(ui.id().with("tab_order"))
             .show(ui, |ui| {

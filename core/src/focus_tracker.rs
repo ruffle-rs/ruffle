@@ -5,14 +5,15 @@ pub use crate::display_object::{
     DisplayObject, TDisplayObject, TDisplayObjectContainer, TextSelection,
 };
 use crate::display_object::{EditText, InteractiveObject, TInteractiveObject};
-use crate::events::ClipEvent;
+use crate::events::{ClipEvent, KeyCode};
 use crate::Player;
 use either::Either;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use std::cell::RefCell;
-use swf::{Color, Twips};
+use std::slice::Iter;
+use swf::{Color, Rectangle, Twips};
 
 #[derive(Collect)]
 #[collect(no_drop)]
@@ -183,17 +184,9 @@ impl<'gc> FocusTracker<'gc> {
         }
     }
 
-    pub fn tab_order(&self, context: &mut UpdateContext<'_, 'gc>) -> Vec<InteractiveObject<'gc>> {
-        let stage = context.stage;
-        let mut tab_order = vec![];
-        stage.fill_tab_order(&mut tab_order, context);
-
-        let custom_ordering = tab_order.iter().any(|o| o.tab_index().is_some());
-        if custom_ordering {
-            Self::order_custom(&mut tab_order);
-        } else {
-            Self::order_automatic(&mut tab_order);
-        };
+    pub fn tab_order(&self, context: &mut UpdateContext<'_, 'gc>) -> TabOrder<'gc> {
+        let mut tab_order = TabOrder::fill(context);
+        tab_order.sort();
         tab_order
     }
 
@@ -278,61 +271,152 @@ impl<'gc> FocusTracker<'gc> {
         let bounds = focus.highlight_bounds();
         context.draw_rect_outline(Self::HIGHLIGHT_COLOR, bounds, Self::HIGHLIGHT_THICKNESS);
     }
+}
 
-    fn order_custom(tab_order: &mut Vec<InteractiveObject>) {
-        // Custom ordering disables automatic ordering and
-        // ignores all objects without tabIndex.
-        tab_order.retain(|o| o.tab_index().is_some());
+/// A list of interactive objects ordered
+/// according to a specific tab order.
+pub struct TabOrder<'gc> {
+    objects: Vec<InteractiveObject<'gc>>,
 
-        // Then, items are sorted according to their tab indices.
-        // When two objects have the same index, they are ordered by
-        // their respective positions in hierarchy as returned by fill_tab_order().
-        tab_order.sort_by_key(|o| o.tab_index());
+    /// When any object has tab index set, objects without
+    /// tab indices are filtered out and this value is `true`.
+    is_custom: bool,
+}
+
+impl<'gc> TabOrder<'gc> {
+    fn empty() -> Self {
+        Self {
+            objects: Vec::new(),
+            is_custom: false,
+        }
     }
 
-    /// The automatic ordering depends only on the position of
-    /// the top-left highlight bound corner, referred to as `(x,y)`.
-    /// It does not depend on object's size or other corners.
-    ///
-    /// The value of `6y+x` is used to order objects by it.
-    /// This means that the next object to be tabbed is the next one
-    /// that touches the line `y=-(x-p)/6` (with the smallest `p`).
-    ///
-    /// When two objects have the same value of `6y+x`
-    /// (i.e. when the line touches two objects at the same time),
-    /// only one of them is included.
-    ///
-    /// This behavior is similar to the naive approach of
-    /// "left-to-right, top-to-bottom", but (besides being sometimes
-    /// seen as random jumps) takes into account the fact that
-    /// the next object to the right may be positioned slightly higher.
-    /// This is especially true for objects placed by hand or objects with
-    /// different heights (as FP uses the top left corner instead of the center).
-    ///
-    /// This behavior has been discovered experimentally by placing
-    /// tabbable objects randomly and bisecting one of their
-    /// coordinates to find a difference in behavior.
-    ///
-    /// See the test `avm2/tab_ordering_automatic_advanced`.
-    ///
-    /// *WARNING:* Be careful when testing automatic order in FP,
-    /// as its behavior is slightly different with a zoom other than 100%.
-    fn order_automatic(tab_order: &mut Vec<InteractiveObject>) {
-        fn key_extractor(o: &InteractiveObject) -> i64 {
-            let bounds = o.highlight_bounds();
+    fn fill(context: &mut UpdateContext<'_, 'gc>) -> Self {
+        let stage = context.stage;
+        let mut tab_order = Self::empty();
+        stage.fill_tab_order(&mut tab_order, context);
+        tab_order
+    }
 
-            let x = bounds.x_min.get() as i64;
-            let y = bounds.y_min.get() as i64;
+    pub fn is_custom(&self) -> bool {
+        self.is_custom
+    }
 
-            y * 6 + x
+    pub fn iter(&self) -> Iter<'_, InteractiveObject<'gc>> {
+        self.objects.iter()
+    }
+
+    pub fn add_object(&mut self, object: InteractiveObject<'gc>) {
+        let has_tab_index = object.tab_index().is_some();
+        if has_tab_index && !self.is_custom {
+            // If an object has tab index, we have to switch to a custom order,
+            // and retain only objects with tab index, even for keyboard navigation.
+            self.is_custom = true;
+            self.objects.retain(|&o| o.tab_index().is_some());
         }
 
-        tab_order.sort_by_cached_key(key_extractor);
+        if has_tab_index || !self.is_custom {
+            self.objects.push(object);
+        }
+    }
 
+    fn sort(&mut self) {
+        if self.is_custom() {
+            self.sort_with(CustomTabOrdering);
+        } else {
+            self.sort_with(AutomaticTabOrdering);
+        }
+    }
+
+    fn sort_with(&mut self, ordering: impl TabOrdering) {
+        self.objects.sort_by_cached_key(|&o| ordering.key(o));
+
+        let to_skip = self
+            .objects
+            .iter()
+            .take_while(|&&o| ordering.key(o).is_none())
+            .count();
+        self.objects.drain(..to_skip);
+
+        if ordering.ignore_duplicates() {
+            self.objects.dedup_by_key(|&mut o| ordering.key(o));
+        }
+    }
+
+    fn first(&self, ordering: impl TabOrdering) -> Option<InteractiveObject<'gc>> {
+        self.objects
+            .iter()
+            .filter(|&&object| ordering.key(object).is_some())
+            .min_by_key(|&&object| ordering.key(object))
+            .cloned()
+    }
+}
+
+trait TabOrdering {
+    fn key(&self, object: InteractiveObject) -> Option<impl Ord + Copy>;
+
+    fn ignore_duplicates(&self) -> bool;
+}
+
+/// In custom ordering, items are sorted according to their tab indices.
+/// When two objects have the same index, they are ordered by
+/// their respective positions in hierarchy
+struct CustomTabOrdering;
+
+impl TabOrdering for CustomTabOrdering {
+    fn key(&self, object: InteractiveObject) -> Option<impl Ord + Copy> {
+        object.tab_index()
+    }
+
+    fn ignore_duplicates(&self) -> bool {
+        false
+    }
+}
+
+/// The automatic ordering depends only on the position of
+/// the top-left highlight bound corner, referred to as `(x,y)`.
+/// It does not depend on object's size or other corners.
+///
+/// The value of `6y+x` is used to order objects by it.
+/// This means that the next object to be tabbed is the next one
+/// that touches the line `y=-(x-p)/6` (with the smallest `p`).
+///
+/// When two objects have the same value of `6y+x`
+/// (i.e. when the line touches two objects at the same time),
+/// only one of them is included.
+///
+/// This behavior is similar to the naive approach of
+/// "left-to-right, top-to-bottom", but (besides being sometimes
+/// seen as random jumps) takes into account the fact that
+/// the next object to the right may be positioned slightly higher.
+/// This is especially true for objects placed by hand or objects with
+/// different heights (as FP uses the top left corner instead of the center).
+///
+/// This behavior has been discovered experimentally by placing
+/// tabbable objects randomly and bisecting one of their
+/// coordinates to find a difference in behavior.
+///
+/// See the test `avm2/tab_ordering_automatic_advanced`.
+///
+/// *WARNING:* Be careful when testing automatic order in FP,
+/// as its behavior is slightly different with a zoom other than 100%.
+struct AutomaticTabOrdering;
+
+impl TabOrdering for AutomaticTabOrdering {
+    fn key(&self, object: InteractiveObject) -> Option<impl Ord + Copy> {
+        let bounds = object.highlight_bounds();
+
+        let x = bounds.x_min.get() as i64;
+        let y = bounds.y_min.get() as i64;
+
+        Some(y * 6 + x)
+    }
+
+    fn ignore_duplicates(&self) -> bool {
         // Objects with duplicate keys are removed, retaining only
         // the first instance with respect to the order of fill_tab_order().
         // This of course causes some objects to be skipped, even if far from one another,
         // but that's unfortunately how FP behaves.
-        tab_order.dedup_by_key(|o| key_extractor(o));
+        true
     }
 }
