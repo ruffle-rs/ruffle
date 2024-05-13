@@ -10,9 +10,8 @@ use crate::display_object::avm1_button::Avm1Button;
 use crate::display_object::loader_display::LoaderDisplay;
 use crate::display_object::movie_clip::MovieClip;
 use crate::display_object::stage::Stage;
-use crate::display_object::{
-    Depth, DisplayObject, InteractiveObject, TDisplayObject, TInteractiveObject,
-};
+use crate::display_object::{Depth, DisplayObject, TDisplayObject, TInteractiveObject};
+use crate::focus_tracker::TabOrder;
 use crate::string::WStr;
 use crate::tag_utils::SwfMovie;
 use gc_arena::{Collect, Mutation};
@@ -512,11 +511,7 @@ pub trait TDisplayObjectContainer<'gc>:
         }
     }
 
-    fn fill_tab_order(
-        &self,
-        tab_order: &mut Vec<InteractiveObject<'gc>>,
-        context: &mut UpdateContext<'_, 'gc>,
-    ) {
+    fn fill_tab_order(&self, tab_order: &mut TabOrder<'gc>, context: &mut UpdateContext<'_, 'gc>) {
         if !self.is_tab_children(context) {
             // AS3 docs say that objects with custom ordering (tabIndex set)
             // are included even when tabChildren is false.
@@ -531,7 +526,7 @@ pub trait TDisplayObjectContainer<'gc>:
             }
             if let Some(child) = child.as_interactive() {
                 if child.is_tabbable(context) {
-                    tab_order.push(child);
+                    tab_order.add_object(child);
                 }
             }
             if let Some(container) = child.as_container() {
