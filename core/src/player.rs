@@ -2772,7 +2772,7 @@ impl FromStr for PlayerRuntime {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let player_runtime = match s {
             "air" => PlayerRuntime::AIR,
-            "flashPlayer" => PlayerRuntime::FlashPlayer,
+            "flash_player" => PlayerRuntime::FlashPlayer,
             _ => return Err(ParseEnumError),
         };
         Ok(player_runtime)

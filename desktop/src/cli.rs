@@ -84,7 +84,7 @@ pub struct Opt {
     pub quality: Option<StageQuality>,
 
     /// The alignment of the stage.
-    #[clap(long, short)]
+    #[clap(long, short, value_parser(parse_align))]
     pub align: Option<StageAlign>,
 
     /// Prevent movies from changing the stage alignment.
@@ -216,6 +216,12 @@ fn parse_movie_file_or_url(path: &str) -> Result<Url, Error> {
 
 fn parse_duration_seconds(value: &str) -> Result<Duration, Error> {
     Ok(Duration::from_secs_f64(value.parse()?))
+}
+
+fn parse_align(value: &str) -> Result<StageAlign, Error> {
+    value
+        .parse()
+        .map_err(|_| anyhow::anyhow!("Invalid stage alignment"))
 }
 
 fn parse_gamepad_button(mapping: &str) -> Result<(GamepadButton, KeyCode), Error> {

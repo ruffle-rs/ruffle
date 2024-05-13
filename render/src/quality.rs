@@ -99,15 +99,10 @@ impl FromStr for StageQuality {
     type Err = StageQualityError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let quality = match s.to_ascii_lowercase().as_str() {
+        let quality = match s {
             "low" => StageQuality::Low,
             "medium" => StageQuality::Medium,
             "high" => StageQuality::High,
-            "best" => StageQuality::Best,
-            "8x8" => StageQuality::High8x8,
-            "8x8linear" => StageQuality::High8x8Linear,
-            "16x16" => StageQuality::High16x16,
-            "16x16linear" => StageQuality::High16x16Linear,
             _ => return Err(StageQualityError),
         };
         Ok(quality)

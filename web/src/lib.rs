@@ -177,7 +177,11 @@ where
     D: serde::Deserializer<'de>,
 {
     let value: String = serde::Deserialize::deserialize(deserializer)?;
-    Ok(PlayerRuntime::from_str(&value).unwrap_or_default())
+    Ok(match value.as_str() {
+        "air" => PlayerRuntime::AIR,
+        "flashPlayer" => PlayerRuntime::FlashPlayer,
+        _ => Default::default(),
+    })
 }
 
 fn deserialize_duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
@@ -683,20 +687,57 @@ impl Ruffle {
             .with_quality(
                 config
                     .quality
-                    .and_then(|q| StageQuality::from_str(&q).ok())
+                    .and_then(|q| {
+                        let quality = match q.to_ascii_lowercase().as_str() {
+                            "low" => StageQuality::Low,
+                            "medium" => StageQuality::Medium,
+                            "high" => StageQuality::High,
+                            "best" => StageQuality::Best,
+                            "8x8" => StageQuality::High8x8,
+                            "8x8linear" => StageQuality::High8x8Linear,
+                            "16x16" => StageQuality::High16x16,
+                            "16x16linear" => StageQuality::High16x16Linear,
+                            _ => return None,
+                        };
+
+                        Some(quality)
+                    })
                     .unwrap_or(default_quality),
             )
             .with_align(
                 config
                     .salign
-                    .and_then(|s| StageAlign::from_str(&s).ok())
+                    .map(|s| {
+                        // Chars get converted into flags.
+                        // This means "tbbtlbltblbrllrbltlrtbl" is valid, resulting in "TBLR".
+                        let mut align = StageAlign::default();
+                        for c in s.bytes().map(|c| c.to_ascii_uppercase()) {
+                            match c {
+                                b'T' => align.insert(StageAlign::TOP),
+                                b'B' => align.insert(StageAlign::BOTTOM),
+                                b'L' => align.insert(StageAlign::LEFT),
+                                b'R' => align.insert(StageAlign::RIGHT),
+                                _ => (),
+                            }
+                        }
+                        align
+                    })
                     .unwrap_or_default(),
                 config.force_align,
             )
             .with_scale_mode(
                 config
                     .scale
-                    .and_then(|s| StageScaleMode::from_str(&s).ok())
+                    .and_then(|s| {
+                        let scale_mode = match s.to_ascii_lowercase().as_str() {
+                            "exactfit" => StageScaleMode::ExactFit,
+                            "noborder" => StageScaleMode::NoBorder,
+                            "noscale" => StageScaleMode::NoScale,
+                            "showall" => StageScaleMode::ShowAll,
+                            _ => return None,
+                        };
+                        Some(scale_mode)
+                    })
                     .unwrap_or_default(),
                 config.force_scale,
             )

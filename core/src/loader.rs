@@ -36,6 +36,7 @@ use ruffle_render::utils::{determine_jpeg_tag_format, JpegTagFormat};
 use slotmap::{new_key_type, SlotMap};
 use std::borrow::Borrow;
 use std::fmt;
+use std::str::FromStr;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 use swf::read::{extract_swz, read_compression_type};
@@ -72,6 +73,22 @@ pub enum LoadBehavior {
     /// done synchronously. Complex movies will visibly block the player from
     /// accepting user input and the application will appear to freeze.
     Blocking,
+}
+
+pub struct ParseEnumError;
+
+impl FromStr for LoadBehavior {
+    type Err = ParseEnumError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let behavior = match s {
+            "streaming" => LoadBehavior::Streaming,
+            "delayed" => LoadBehavior::Delayed,
+            "blocking" => LoadBehavior::Blocking,
+            _ => return Err(ParseEnumError),
+        };
+        Ok(behavior)
+    }
 }
 
 /// Enumeration of all content types that `Loader` can handle.
