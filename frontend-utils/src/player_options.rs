@@ -1,3 +1,6 @@
+mod read;
+pub use read::read_player_options;
+
 use ruffle_core::config::Letterbox;
 use ruffle_core::{LoadBehavior, PlayerRuntime, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
