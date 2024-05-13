@@ -21,6 +21,7 @@ use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
 use ruffle_render_wgpu::descriptors::Descriptors;
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::path::PathBuf;
@@ -164,6 +165,25 @@ impl ActivePlayer {
             }
         }
 
+        let opt = match &content {
+            PlayingContent::DirectFile(_) => Cow::Borrowed(opt),
+            PlayingContent::Bundle(_, bundle) => {
+                let player = opt.player.or(&bundle.information().player);
+
+                Cow::Owned(LaunchOptions {
+                    player,
+                    proxy: opt.proxy.clone(),
+                    socket_allowed: opt.socket_allowed.clone(),
+                    tcp_connections: opt.tcp_connections,
+                    fullscreen: opt.fullscreen,
+                    save_directory: opt.save_directory.clone(),
+                    open_url_mode: opt.open_url_mode,
+                    gamepad_button_mapping: opt.gamepad_button_mapping.clone(),
+                    avm2_optimizer_enabled: opt.avm2_optimizer_enabled,
+                })
+            }
+        };
+
         let (executor, future_spawner) = AsyncExecutor::new(WinitWaker(event_loop.clone()));
         let movie_url = content.initial_swf_url().clone();
         let readable_name = content.name();
@@ -205,7 +225,7 @@ impl ActivePlayer {
         builder = builder
             .with_navigator(navigator)
             .with_renderer(renderer)
-            .with_storage(preferences.storage_backend().create_backend(opt))
+            .with_storage(preferences.storage_backend().create_backend(&opt))
             .with_fs_commands(Box::new(DesktopFSCommandProvider {
                 event_loop: event_loop.clone(),
                 window: window.clone(),
