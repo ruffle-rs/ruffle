@@ -15,7 +15,7 @@
         "@wdio/mocha-framework": "^8.36.1",
         "@wdio/spec-reporter": "^8.36.1",
         "@wdio/static-server-service": "^8.36.1",
-        "chai": "^5.1.0",
+        "chai": "^5.1.1",
         "chai-html": "^3.0.0",
         "copy-webpack-plugin": "^12.0.2",
         "cross-env": "^7.0.3",
@@ -34,7 +34,7 @@
         "webpack-cli": "^5.1.4"
     },
     "optionalDependencies": {
-        "chromedriver": "^124.0.1"
+        "chromedriver": "^124.0.3"
     },
     "scripts": {
         "build": "npm run build --workspace=ruffle-core && npm run build --workspace=ruffle-demo --workspace=ruffle-extension --workspace=ruffle-selfhosted",
