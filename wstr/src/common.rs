@@ -11,7 +11,7 @@ pub struct WStr {
 }
 
 #[cold]
-pub(super) fn panic_on_invalid_length(len: usize) -> ! {
+pub fn panic_on_invalid_length(len: usize) -> ! {
     panic!("Too many code units in Ruffle string (len = {})", len)
 }
 

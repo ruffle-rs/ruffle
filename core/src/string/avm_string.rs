@@ -9,6 +9,8 @@ use crate::string::{AvmAtom, AvmStringRepr};
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
 enum Source<'gc> {
+    // TODO: Rename this to `Managed`, to avoid
+    // ambiguity with dependent/owned/owner terms.
     Owned(Gc<'gc, AvmStringRepr<'gc>>),
     Static(&'static WStr),
 }
@@ -35,6 +37,13 @@ impl<'gc> AvmString<'gc> {
                 let repr = AvmStringRepr::from_raw(s.into(), false);
                 Gc::new(gc_context, repr)
             }
+        }
+    }
+
+    pub fn as_managed(self) -> Option<Gc<'gc, AvmStringRepr<'gc>>> {
+        match self.source {
+            Source::Owned(s) => Some(s),
+            Source::Static(_) => None,
         }
     }
 
@@ -105,7 +114,28 @@ impl<'gc> AvmString<'gc> {
         } else if right.is_empty() {
             left
         } else {
-            let mut out = WString::from(left.as_wstr());
+            if let Some(repr) = AvmStringRepr::try_append_inline(left, &right) {
+                return Self {
+                    source: Source::Owned(Gc::new(gc_context, repr)),
+                };
+            }
+
+            // When doing a non-in-place append,
+            // Overallocate a bit so that further appends can be in-place.
+            // (Note that this means that all first-time appends will happen here and
+            // overallocate, even if done only once)
+            // This growth logic should be equivalent to AVM's, except I capped the growth at 1MB instead of 4MB.
+            let new_size = left.len() + right.len();
+            let new_capacity = if new_size < 32 {
+                32
+            } else if new_size > 1024 * 1024 {
+                new_size + 1024 * 1024
+            } else {
+                new_size * 2
+            };
+
+            let mut out = WString::with_capacity(new_capacity, left.is_wide() || right.is_wide());
+            out.push_str(&left);
             out.push_str(&right);
             Self::new(gc_context, out)
         }
