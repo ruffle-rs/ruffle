@@ -18,7 +18,7 @@ egui_extras = { version = "0.27.2", features = ["image"] }
 egui-wgpu = { version = "0.27.2", features = ["winit"] }
 image = { workspace = true, features = ["png"] }
 egui-winit = "0.27.2"
-fontdb = "0.16"
+fontdb = "0.17"
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymoser", "default_compatibility_rules", "egui"] }
 ruffle_render = { path = "../render", features = ["clap"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
@@ -35,7 +35,7 @@ rfd = "0.14.1"
 anyhow = { workspace = true }
 bytemuck = { workspace = true }
 os_info = { version = "3", default-features = false }
-unic-langid = "0.9.4"
+unic-langid = "0.9.5"
 sys-locale = "0.3.1"
 wgpu = { workspace = true }
 futures = { workspace = true }
