@@ -172,13 +172,15 @@ fn concat<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mut ret = WString::from(Value::from(this).coerce_to_string(activation)?.as_wstr());
+    let lhs = Value::from(this).coerce_to_string(activation)?;
+
+    let mut ret = lhs;
     for arg in args {
         let s = arg.coerce_to_string(activation)?;
-        ret.push_str(&s);
+        ret = AvmString::concat(activation.context.gc_context, ret, s);
     }
 
-    Ok(AvmString::new(activation.context.gc_context, ret).into())
+    Ok(ret.into())
 }
 
 /// Implements `String.fromCharCode`

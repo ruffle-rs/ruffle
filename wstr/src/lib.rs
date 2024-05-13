@@ -35,7 +35,7 @@ pub use ptr::WStrMetadata;
 use alloc::borrow::Cow;
 use core::borrow::Borrow;
 
-use common::panic_on_invalid_length;
+pub use common::panic_on_invalid_length;
 
 /// Flattens a slice of strings, placing `sep` as a separator between each.
 #[inline]
