@@ -1,4 +1,5 @@
 use crate::parse::{DocumentHolder, ParseContext, ParseDetails, ReadExt};
+use crate::player_options::{read_player_options, PlayerOptions};
 use toml_edit::DocumentMut;
 use url::Url;
 
@@ -23,6 +24,8 @@ pub enum BundleInformationParseError {
 pub struct BundleInformation {
     pub name: String,
     pub url: Url,
+
+    pub player: PlayerOptions,
 }
 
 impl BundleInformation {
@@ -33,7 +36,7 @@ impl BundleInformation {
 
         let mut cx = ParseContext::default();
 
-        let result = document
+        let (name, url) = document
             .get_table_like(&mut cx, "bundle", |cx, bundle| {
                 let Some(name) = bundle.parse_from_str(cx, "name") else {
                     return Err(BundleInformationParseError::InvalidName);
@@ -41,13 +44,25 @@ impl BundleInformation {
                 let Some(url) = bundle.parse_from_str(cx, "url") else {
                     return Err(BundleInformationParseError::InvalidUrl);
                 };
-                Ok(BundleInformation { name, url })
+
+                Ok((name, url))
             })
             .unwrap_or(Err(BundleInformationParseError::InvalidBundleSection))?;
 
+        let player_options = document.get_table_like(&mut cx, "player", |cx, table| {
+            read_player_options(cx, table)
+        });
+
         Ok(ParseDetails {
             warnings: cx.warnings,
-            result: DocumentHolder::new(result, document),
+            result: DocumentHolder::new(
+                BundleInformation {
+                    name,
+                    url,
+                    player: player_options.unwrap_or_default(),
+                },
+                document,
+            ),
         })
     }
 }
@@ -56,6 +71,8 @@ impl BundleInformation {
 mod test {
     use crate::bundle::info::{BundleInformation, BundleInformationParseError};
     use crate::parse::ParseWarning;
+    use crate::player_options::PlayerOptions;
+    use ruffle_core::PlayerRuntime;
     use url::Url;
 
     fn read(
@@ -157,6 +174,46 @@ mod test {
                 BundleInformation {
                     name: "Cool Game!".to_string(),
                     url: Url::parse("file:///game.swf").unwrap(),
+                    player: Default::default(),
+                },
+                vec![]
+            ))
+        )
+    }
+
+    #[test]
+    fn valid_with_player_options() {
+        assert_eq!(
+            read(
+                r#"
+            [bundle]
+            name = "Player Options Example"
+            url = "file:///example.swf"
+
+            [player]
+            frame_rate = 15.0
+            upgrade_http_to_https = true
+            runtime = "air"
+
+            [player.parameters]
+            value1 = "Hello"
+            value2 = "World!"
+            "#
+            ),
+            Ok((
+                BundleInformation {
+                    name: "Player Options Example".to_string(),
+                    url: Url::parse("file:///example.swf").unwrap(),
+                    player: PlayerOptions {
+                        parameters: vec![
+                            ("value1".to_string(), "Hello".to_string()),
+                            ("value2".to_string(), "World!".to_string())
+                        ],
+                        upgrade_to_https: Some(true),
+                        player_runtime: Some(PlayerRuntime::AIR),
+                        frame_rate: Some(15.0),
+                        ..Default::default()
+                    }
                 },
                 vec![]
             ))
