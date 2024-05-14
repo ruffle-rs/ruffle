@@ -218,11 +218,11 @@ pub fn set_display<'gc>(
             value => value.coerce_to_string(activation)?,
         };
 
-        text_format.display = if value == WStr::from_units(b"block") {
+        text_format.display = if &value == b"block" {
             Some(TextDisplay::Block)
-        } else if value == WStr::from_units(b"inline") {
+        } else if &value == b"inline" {
             Some(TextDisplay::Inline)
-        } else if value == WStr::from_units(b"none") {
+        } else if &value == b"none" {
             Some(TextDisplay::None)
         } else {
             // No error message for this, silently set it to None/null

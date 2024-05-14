@@ -87,11 +87,11 @@ pub fn inner_parse_font_family<'gc>(
         }
 
         // Transform some names
-        if value == WStr::from_units(b"mono") {
+        if value == b"mono" {
             value = WStr::from_units(b"_typewriter");
-        } else if value == WStr::from_units(b"sans-serif") {
+        } else if value == b"sans-serif" {
             value = WStr::from_units(b"_sans");
-        } else if value == WStr::from_units(b"serif") {
+        } else if value == b"serif" {
             value = WStr::from_units(b"_serif");
         }
 
