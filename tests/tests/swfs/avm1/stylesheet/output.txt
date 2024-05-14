@@ -1,0 +1,284 @@
+/// Enumeration
+
+/// Known Properties
+transform: DONT_ENUM | DONT_DELETE | READ_ONLY
+setStyle: DONT_ENUM | DONT_DELETE | READ_ONLY
+parseCSS: DONT_ENUM | DONT_DELETE | READ_ONLY
+load: DONT_ENUM | DONT_DELETE | READ_ONLY
+getStyleNames: DONT_ENUM | DONT_DELETE | READ_ONLY
+getStyle: DONT_ENUM | DONT_DELETE | READ_ONLY
+clear: DONT_ENUM | DONT_DELETE | READ_ONLY
+_css: NOT FOUND
+_styles: NOT FOUND
+After setStyle:
+_css: found
+_styles: found
+After clear:
+_css: found/different
+_styles: found/different
+
+/// New stylesheet
+styleSheet.getStyle("nonexistant") = null
+
+/// setStyle
+transform called with [object Object]
+transform called with null
+transform called with null
+transform called with null
+transform called with [object Object]
+transform called with [object Object]
+styleSheet.getStyle("OBJect") = null
+styleSheet.getStyle("OBJECT") = {
+    "color" = string "blue"
+}
+styleSheet.getStyle("Object") = {
+    "color" = string "red"
+    "invalid" = number 32
+    "kerning" = string "blue"
+    "nested" = object [object Object]
+}
+styleSheet.getStyle("blank") = {}
+styleSheet.getStyle("null") = null
+styleSheet.getStyle("string") = null
+styleSheet.getStyle("undefined") = null
+styleSheet.getStyle("nonexistant") = null
+
+/// setStyle again
+transform called with [object Object]
+styleSheet.getStyle("OBJECT") = {
+    "color" = string "blue"
+}
+styleSheet.getStyle("Object") = {
+    "color" = string "red"
+    "invalid" = number 32
+    "kerning" = string "blue"
+    "nested" = object [object Object]
+}
+styleSheet.getStyle("blank") = {}
+styleSheet.getStyle("null") = null
+styleSheet.getStyle("object") = {
+    "kerning" = number 5
+}
+styleSheet.getStyle("string") = null
+styleSheet.getStyle("undefined") = null
+styleSheet.getStyle("nonexistant") = null
+
+/// clear
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS
+transform called with [object Object]
+true
+styleSheet.getStyle("one") = {
+    "color" = string "red"
+}
+styleSheet.getStyle("nonexistant") = null
+
+/// parse
+transform called with [object Object]
+true
+styleSheet.getStyle("one") = {
+    "color" = string "red"
+}
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: malformed
+false
+styleSheet.getStyle("one") = {
+    "color" = string "red"
+}
+styleSheet.getStyle("nonexistant") = null
+
+/// parse: malformed
+false
+styleSheet.getStyle("one") = {
+    "color" = string "red"
+}
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: replacing vs merging
+transform called with [object Object]
+transform called with [object Object]
+styleSheet.getStyle("one") = {
+    "kerning" = string "5 "
+}
+styleSheet.getStyle("two") = {
+    "color" = string "red"
+}
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: two selectors, one definition
+transform called with [object Object]
+transform called with [object Object]
+styleSheet.getStyle("a") = {
+    "kerning" = string "5 "
+}
+styleSheet.getStyle("b") = {
+    "kerning" = string "5 "
+}
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: selector with spaces
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: selector with special characters
+transform called with [object Object]
+styleSheet.getStyle("a.b.c-d!#@$😜") = {
+    "worked" = string "honestly, I'm surprised too! "
+}
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: case sensitivity in selector
+transform called with [object Object]
+transform called with [object Object]
+transform called with [object Object]
+styleSheet.getStyle("KEY") = {
+    "color" = string "blue"
+}
+styleSheet.getStyle("KeY") = {
+    "color" = string "pink"
+}
+styleSheet.getStyle("key") = {
+    "color" = string "red"
+}
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: no selector
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: escapes?
+transform called with [object Object]
+styleSheet.getStyle("test\\") = {
+    "color" = string "\\"
+}
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: strings?
+transform called with [object Object]
+styleSheet.getStyle("\"test\"") = {
+    "color" = string "\"red\""
+}
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: selector names contains }
+transform called with [object Object]
+styleSheet.getStyle("a}") = {}
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: unclosed block
+transform called with [object Object]
+styleSheet.getStyle("a") = {}
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: only selector
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: empty property name
+transform called with [object Object]
+styleSheet.getStyle("a") = {}
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: no colon and unclosed
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: no colon
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: many semicolons
+transform called with [object Object]
+transform called with [object Object]
+transform called with [object Object]
+transform called with [object Object]
+transform called with [object Object]
+styleSheet.getStyle("b") = {
+    ";;key" = string "value"
+    ";other" = string "value"
+}
+styleSheet.getStyle("c") = {
+    ";;key" = string "value"
+    "other" = string "value"
+}
+styleSheet.getStyle("e") = {
+    "key;other" = string "value"
+}
+styleSheet.getStyle("f") = {
+    ";" = string "value"
+}
+styleSheet.getStyle("g") = {
+    "key" = string "value"
+}
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: property name is actually a whole other block
+transform called with [object Object]
+styleSheet.getStyle("a") = {
+    "name}b{" = string "value"
+}
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: empty property name and unclosed
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: unclosed block after name given
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: closed block after name given
+transform called with [object Object]
+styleSheet.getStyle("a") = {
+    "key" = string ""
+}
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: unclosed block after value given
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: unclosed block after semicolon
+transform called with [object Object]
+styleSheet.getStyle("a") = {
+    "key" = string ""
+}
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: unclosed empty name and value
+transform called with [object Object]
+styleSheet.getStyle("a") = {}
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: case sensitivity in properties
+transform called with [object Object]
+styleSheet.getStyle("key") = {
+    "PROPERTY" = string "VALUE"
+    "Property" = string "Value"
+    "property" = string "value"
+}
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: whitespace in property name
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: whitespace in property value
+transform called with [object Object]
+styleSheet.getStyle("key") = {
+    "property  " = string "test    value    "
+}
+styleSheet.getStyle("nonexistant") = null
+
+/// parseCSS: name transformation
+transform called with [object Object]
+styleSheet.getStyle("key") = {
+    "UPPERDASHES" = string "value"
+    "nameWithDashes" = string "value  name-with-dashes-and-spaces  : value"
+    "this-one-has-two-dashes" = string "value"
+}
+styleSheet.getStyle("nonexistant") = null
+
+/// transform
+// transform([object Object])
+styleSheet._styles.anything: [object Object] (textformat!)
+styleSheet._styles.anything.color: 16711680
+styleSheet._styles.nonexistant: undefined
+styleSheet.getStyle("anything") = {
+    "color" = string "blue"
+}
+styleSheet.getStyle("nonexistant") = null
+
