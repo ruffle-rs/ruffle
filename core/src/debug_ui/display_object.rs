@@ -934,8 +934,10 @@ fn summary_color_transform(ct: ColorTransform) -> Cow<'static, str> {
 
     if ct.r_multiply == ct.g_multiply
         && ct.g_multiply == ct.b_multiply
+        && ct.b_multiply == ct.a_multiply
         && ct.r_add == ct.g_add
         && ct.g_add == ct.b_add
+        && ct.b_add == ct.a_add
     {
         // All color values are the same, no need to list them 3 times
         if let Some(entry) = summary_color_transform_entry("C", ct.r_multiply, ct.r_add) {
