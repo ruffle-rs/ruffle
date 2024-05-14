@@ -35,6 +35,7 @@ package flash.text {
         
         public function setStyle(styleName:String, styleObject:Object):void {
             _styles[styleName.toLowerCase()] = _createShallowCopy(styleObject);
+            transform(_createShallowCopy(styleObject)); // TODO: Store this in a way that Rust can access it, when we implement `TextField.stylesheet`
         }
         
         public function transform(formatObject:Object):TextFormat {
