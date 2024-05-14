@@ -226,6 +226,12 @@ pub struct BitmapData<'gc> {
 
     #[collect(require_static)]
     dirty_state: DirtyState,
+
+    /// Holds an egui texture handle, used for rendering this Bitmap in the debug ui.
+    /// This is automatically set to `None` when the texture is updated (either from
+    /// marking the CPU side dirty, or from performing a GPU -> CPU sync).
+    #[cfg(feature = "egui")]
+    pub egui_texture: std::cell::RefCell<Option<egui::TextureHandle>>,
 }
 
 #[derive(Clone, Debug)]
@@ -306,6 +312,8 @@ mod wrapper {
                     avm2_object: None,
                     display_objects: vec![],
                     dirty_state: DirtyState::Clean,
+                    #[cfg(feature = "egui")]
+                    egui_texture: Default::default(),
                 },
             ))
         }
@@ -328,6 +336,8 @@ mod wrapper {
                 display_objects: vec![],
                 // We have no GPU texture, so there's no need to mark as dirty
                 dirty_state: DirtyState::Clean,
+                #[cfg(feature = "egui")]
+                egui_texture: Default::default(),
             }
         }
 
@@ -349,7 +359,9 @@ mod wrapper {
                             }),
                         )
                         .expect("Failed to sync BitmapData");
-                    write.dirty_state = DirtyState::Clean
+                    write.dirty_state = DirtyState::Clean;
+                    #[cfg(feature = "egui")]
+                    write.egui_texture.borrow_mut().take();
                 }
                 old_state => write.dirty_state = old_state,
             }
@@ -389,6 +401,8 @@ mod wrapper {
                 }
                 DirtyState::CpuModified(_) | DirtyState::Clean => None,
             };
+            #[cfg(feature = "egui")]
+            write.egui_texture.borrow_mut().take();
             (self.0, dirty_rect)
         }
 
@@ -561,6 +575,8 @@ impl<'gc> BitmapData<'gc> {
             avm2_object: None,
             display_objects: vec![],
             dirty_state: DirtyState::Clean,
+            #[cfg(feature = "egui")]
+            egui_texture: Default::default(),
         }
     }
 
@@ -580,6 +596,8 @@ impl<'gc> BitmapData<'gc> {
             disposed: false,
             dirty_state: DirtyState::Clean,
             display_objects: vec![],
+            #[cfg(feature = "egui")]
+            egui_texture: Default::default(),
         }
     }
 
@@ -632,6 +650,10 @@ impl<'gc> BitmapData<'gc> {
     pub fn set_cpu_dirty(&mut self, gc_context: &Mutation<'gc>, region: PixelRegion) {
         debug_assert!(region.x_max <= self.width);
         debug_assert!(region.y_max <= self.height);
+
+        #[cfg(feature = "egui")]
+        self.egui_texture.borrow_mut().take();
+
         let inform_changes = match &mut self.dirty_state {
             DirtyState::CpuModified(old_region) => {
                 old_region.union(region);
