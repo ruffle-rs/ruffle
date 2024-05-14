@@ -182,6 +182,10 @@ impl<'gc> FocusTracker<'gc> {
     }
 
     pub fn cycle(&self, context: &mut UpdateContext<'_, 'gc>, reverse: bool) {
+        // Ordering the whole array and finding the next object in it
+        // is suboptimal, but it's a simple and infrequently performed operation.
+        // Additionally, we want to display the whole list in the debug UI anyway,
+        // so we do not want to complicate/duplicate logic here if it's unnecessary.
         let tab_order = self.tab_order(context);
         let mut tab_order = if reverse {
             Either::Left(tab_order.iter().rev())
@@ -248,21 +252,49 @@ impl<'gc> FocusTracker<'gc> {
         tab_order.sort_by_key(|o| o.tab_index());
     }
 
-    // TODO This ordering is yet far from being perfect.
-    //      FP actually has some weird ordering logic, which
-    //      sometimes jumps up, sometimes even ignores some objects.
+    /// The automatic ordering depends only on the position of
+    /// the top-left highlight bound corner, referred to as `(x,y)`.
+    /// It does not depend on object's size or other corners.
+    ///
+    /// The value of `6y+x` is used to order objects by it.
+    /// This means that the next object to be tabbed is the next one
+    /// that touches the line `y=-(x-p)/6` (with the smallest `p`).
+    ///
+    /// When two objects have the same value of `6y+x`
+    /// (i.e. when the line touches two objects at the same time),
+    /// only one of them is included.
+    ///
+    /// This behavior is similar to the naive approach of
+    /// "left-to-right, top-to-bottom", but (besides being sometimes
+    /// seen as random jumps) takes into account the fact that
+    /// the next object to the right may be positioned slightly higher.
+    /// This is especially true for objects placed by hand or objects with
+    /// different heights (as FP uses the top left corner instead of the center).
+    ///
+    /// This behavior has been discovered experimentally by placing
+    /// tabbable objects randomly and bisecting one of their
+    /// coordinates to find a difference in behavior.
+    ///
+    /// See the test `avm2/tab_ordering_automatic_advanced`.
+    ///
+    /// *WARNING:* Be careful when testing automatic order in FP,
+    /// as its behavior is slightly different with a zoom other than 100%.
     fn order_automatic(tab_order: &mut Vec<InteractiveObject>) {
-        fn key_extractor(o: &InteractiveObject) -> (Twips, Twips) {
+        fn key_extractor(o: &InteractiveObject) -> i64 {
             let bounds = o.highlight_bounds();
-            (bounds.y_min, bounds.x_min)
+
+            let x = bounds.x_min.get() as i64;
+            let y = bounds.y_min.get() as i64;
+
+            y * 6 + x
         }
 
-        // The automatic order is mainly dependent on
-        // the position of the top-left bound corner.
         tab_order.sort_by_cached_key(key_extractor);
 
-        // Duplicated positions are removed,
-        // only the first element is retained.
+        // Objects with duplicate keys are removed, retaining only
+        // the first instance with respect to the order of fill_tab_order().
+        // This of course causes some objects to be skipped, even if far from one another,
+        // but that's unfortunately how FP behaves.
         tab_order.dedup_by_key(|o| key_extractor(o));
     }
 }
