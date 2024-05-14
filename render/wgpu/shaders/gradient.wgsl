@@ -1,13 +1,12 @@
-#define_import_path gradient
-#import common
+// NOTE: The `common.wgsl` source is prepended to this before compilation.
 
 struct VertexOutput {
     @builtin(position) position: vec4<f32>,
     @location(0) uv: vec2<f32>,
 };
 
-@group(1) @binding(0) var<uniform> transforms: common::Transforms;
-@group(2) @binding(0) var<uniform> textureTransforms: common::TextureTransforms;
+@group(1) @binding(0) var<uniform> transforms: common__Transforms;
+@group(2) @binding(0) var<uniform> textureTransforms: common__TextureTransforms;
 
 struct Gradient {
     focal_point: f32,
@@ -29,7 +28,7 @@ struct GradientVertexInput {
 fn main_vertex(in: GradientVertexInput) -> VertexOutput {
     let matrix_ = textureTransforms.texture_matrix;
     let uv = (mat3x3<f32>(matrix_[0].xyz, matrix_[1].xyz, matrix_[2].xyz) * vec3<f32>(in.position, 1.0)).xy;
-    let pos = common::globals.view_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
+    let pos = common__globals.view_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
     return VertexOutput(pos, uv);
 }
 
@@ -76,7 +75,7 @@ fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
 
     var color = textureSample(texture, texture_sampler, vec2<f32>(t, 0.0));
     if( gradient.interpolation != 0 ) {
-        color = common::linear_to_srgb(color);
+        color = common__linear_to_srgb(color);
     }
     let out = saturate(color * transforms.mult_color + transforms.add_color);
     let alpha = saturate(out.a);
