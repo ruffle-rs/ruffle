@@ -13,6 +13,5 @@ workspace = true
 [dependencies]
 ruffle_render = { path = "../" }
 naga = { workspace = true }
-naga_oil = { workspace = true }
 anyhow = { workspace = true }
 

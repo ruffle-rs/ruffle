@@ -20,7 +20,6 @@ enum-map = { workspace = true }
 fnv = "1.0.7"
 swf = { path = "../../swf" }
 image = { workspace = true }
-naga_oil = { workspace = true }
 naga-agal = { path = "../naga-agal" }
 naga-pixelbender = { path = "../naga-pixelbender" }
 profiling = { version = "1.0", default-features = false, optional = true }

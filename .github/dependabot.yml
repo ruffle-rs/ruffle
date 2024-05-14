@@ -27,7 +27,6 @@ updates:
         - "winit"
         - "wgpu"
         - "naga"
-        - "naga_oil"
         - "egui*"
         - "raw-window-handle"
       wasm-bindgen:
