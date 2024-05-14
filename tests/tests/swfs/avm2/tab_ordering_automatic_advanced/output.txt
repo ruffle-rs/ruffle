@@ -1,0 +1,184 @@
+===== Stage 0 (IV quadrant preference over y = -(x - p) / 6)
+Focused other0 at dx=10, dy=0
+Focused other1 at dx=0, dy=10
+Collected the tab at 100000, 0
+===== Stage 1
+Focused other0 at dx=59, dy=0
+Focused other1 at dx=0, dy=10
+Collected the tab at 100000, 0
+===== Stage 2
+Focused other0 at dx=60, dy=0
+Collected the tab at 100000, 0
+===== Stage 3
+Focused other1 at dx=0, dy=10
+Focused other0 at dx=61, dy=0
+Collected the tab at 100000, 0
+===== Stage 4
+Focused other0 at dx=119, dy=0
+Focused other1 at dx=0, dy=20
+Collected the tab at 100000, 0
+===== Stage 5
+Focused other0 at dx=120, dy=0
+Collected the tab at 100000, 0
+===== Stage 6
+Focused other1 at dx=0, dy=20
+Focused other0 at dx=121, dy=0
+Collected the tab at 100000, 0
+===== Stage 7
+Focused other0 at dx=219, dy=100
+Focused other1 at dx=100, dy=120
+Collected the tab at 100000, 0
+===== Stage 8
+Focused other0 at dx=220, dy=100
+Collected the tab at 100000, 0
+===== Stage 9
+Focused other1 at dx=100, dy=120
+Focused other0 at dx=221, dy=100
+Collected the tab at 100000, 0
+===== Stage 10 (III/IV quadrant preference over y = -(x - p) / 6)
+Focused other0 at dx=59, dy=0
+Focused other1 at dx=-60, dy=20
+Collected the tab at 100000, 0
+===== Stage 11
+Focused other0 at dx=60, dy=0
+Collected the tab at 100000, 0
+===== Stage 12
+Focused other1 at dx=-60, dy=20
+Focused other0 at dx=61, dy=0
+Collected the tab at 100000, 0
+===== Stage 13 (III quadrant preference over y = -(x - p) / 6)
+Focused other0 at dx=-61, dy=100
+Focused other1 at dx=-120, dy=110
+Collected the tab at 100000, 0
+===== Stage 14
+Focused other0 at dx=-60, dy=100
+Collected the tab at 100000, 0
+===== Stage 15
+Focused other1 at dx=-120, dy=110
+Focused other0 at dx=-59, dy=100
+Collected the tab at 100000, 0
+===== Stage 16 (I/IV quadrant preference over y = -(x - p) / 6)
+Focused other0 at dx=259, dy=-5
+Focused other1 at dx=200, dy=5
+Collected the tab at 100000, 0
+===== Stage 17
+Focused other0 at dx=260, dy=-5
+Collected the tab at 100000, 0
+===== Stage 18
+Focused other1 at dx=200, dy=5
+Focused other0 at dx=261, dy=-5
+Collected the tab at 100000, 0
+===== Stage 19 (I quadrant preference over y = -(x - p) / 6)
+Focused other0 at dx=259, dy=-15
+Focused other1 at dx=200, dy=-5
+Collected the tab at 100000, 0
+===== Stage 20
+Focused other0 at dx=260, dy=-15
+Collected the tab at 100000, 0
+===== Stage 21
+Focused other1 at dx=200, dy=-5
+Focused other0 at dx=261, dy=-15
+Collected the tab at 100000, 0
+===== Stage 22 (I/III quadrant preference over y = -(x - p) / 6)
+Focused other0 at dx=119, dy=-10
+Focused other1 at dx=-120, dy=30
+Collected the tab at 100000, 0
+===== Stage 23
+Focused other0 at dx=120, dy=-10
+Collected the tab at 100000, 0
+===== Stage 24
+Focused other1 at dx=-120, dy=30
+Focused other0 at dx=121, dy=-10
+Collected the tab at 100000, 0
+===== Stage 25 (Cutoff over y < x / 6 around 60,-10)
+Collected the tab at 100000, 0
+===== Stage 26
+Collected the tab at 100000, 0
+===== Stage 27
+Focused other0 at dx=61, dy=-10
+Collected the tab at 100000, 0
+===== Stage 28
+Focused other0 at dx=60, dy=-9
+Collected the tab at 100000, 0
+===== Stage 29
+Collected the tab at 100000, 0
+===== Stage 30 (Cutoff over y < x / 6 around 0,0)
+Collected the tab at 100000, 0
+===== Stage 31
+Collected the tab at 100000, 0
+===== Stage 32
+Focused other0 at dx=1, dy=0
+Collected the tab at 100000, 0
+===== Stage 33
+Focused other0 at dx=0, dy=1
+Collected the tab at 100000, 0
+===== Stage 34
+Collected the tab at 100000, 0
+===== Stage 35 (Cutoff over y < x / 6 around -120,20)
+Collected the tab at 100000, 0
+===== Stage 36
+Collected the tab at 100000, 0
+===== Stage 37
+Focused other0 at dx=-119, dy=20
+Collected the tab at 100000, 0
+===== Stage 38
+Focused other0 at dx=-120, dy=21
+Collected the tab at 100000, 0
+===== Stage 39
+Collected the tab at 100000, 0
+===== Stage 40 (Scale should not influence the preference)
+Focused other0 at dx=59, dy=0
+Focused other1 at dx=0, dy=10
+Collected the tab at 100000, 0
+===== Stage 41
+Focused other0 at dx=60, dy=0
+Collected the tab at 100000, 0
+===== Stage 42
+Focused other1 at dx=0, dy=10
+Focused other0 at dx=61, dy=0
+Collected the tab at 100000, 0
+===== Stage 43
+Focused other0 at dx=59, dy=0
+Focused other1 at dx=0, dy=10
+Collected the tab at 100000, 0
+===== Stage 44
+Focused other0 at dx=60, dy=0
+Collected the tab at 100000, 0
+===== Stage 45
+Focused other1 at dx=0, dy=10
+Focused other0 at dx=61, dy=0
+Collected the tab at 100000, 0
+===== Stage 46 (Scale should not influence the cutoff line)
+Collected the tab at 100000, 0
+===== Stage 47
+Collected the tab at 100000, 0
+===== Stage 48
+Focused other0 at dx=-119, dy=20
+Collected the tab at 100000, 0
+===== Stage 49
+Focused other0 at dx=-120, dy=21
+Collected the tab at 100000, 0
+===== Stage 50
+Collected the tab at 100000, 0
+===== Stage 51
+Collected the tab at 100000, 0
+===== Stage 52
+Collected the tab at 100000, 0
+===== Stage 53
+Focused other0 at dx=-119, dy=20
+Collected the tab at 100000, 0
+===== Stage 54
+Focused other0 at dx=-120, dy=21
+Collected the tab at 100000, 0
+===== Stage 55
+Collected the tab at 100000, 0
+===== Stage 56 (Same preference vs order)
+Focused other0 at dx=60, dy=0
+Collected the tab at 100000, 0
+===== Stage 57
+Focused other0 at dx=0, dy=10
+Collected the tab at 100000, 0
+===== Stage 58 (Same position vs order)
+Focused other0 at dx=60, dy=10
+Collected the tab at 100000, 0
+===== Finished
