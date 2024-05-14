@@ -243,8 +243,8 @@ impl<'gc> FocusTracker<'gc> {
         tab_order.retain(|o| o.tab_index().is_some());
 
         // Then, items are sorted according to their tab indices.
-        // TODO When two objects have the same index, the behavior is undefined.
-        //      We should analyze and match FP's behavior here if possible.
+        // When two objects have the same index, they are ordered by
+        // their respective positions in hierarchy as returned by fill_tab_order().
         tab_order.sort_by_key(|o| o.tab_index());
     }
 
