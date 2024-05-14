@@ -10,7 +10,7 @@ use crate::debug_ui::handle::{AVM1ObjectHandle, AVM2ObjectHandle, DisplayObjectH
 use crate::debug_ui::movie::open_movie_button;
 use crate::debug_ui::Message;
 use crate::display_object::{
-    DisplayObject, EditText, InteractiveObject, MovieClip, Stage, TDisplayObject,
+    Bitmap, DisplayObject, EditText, InteractiveObject, MovieClip, Stage, TDisplayObject,
     TDisplayObjectContainer, TInteractiveObject,
 };
 use crate::focus_tracker::Highlight;
@@ -160,6 +160,8 @@ impl DisplayObjectWindow {
                             self.show_movieclip(ui, context, object)
                         } else if let DisplayObject::EditText(object) = object {
                             self.show_edit_text(ui, object)
+                        } else if let DisplayObject::Bitmap(object) = object {
+                            self.show_bitmap(ui, context, object)
                         } else if let DisplayObject::Stage(object) = object {
                             self.show_stage(ui, context, object, messages)
                         }
@@ -344,6 +346,29 @@ impl DisplayObjectWindow {
                         }
                     });
             });
+    }
+
+    pub fn show_bitmap<'gc>(
+        &mut self,
+        ui: &mut Ui,
+        context: &mut UpdateContext<'_, 'gc>,
+        object: Bitmap<'gc>,
+    ) {
+        let bitmap_data = object.bitmap_data(context.renderer);
+        let bitmap_data = bitmap_data.read();
+        let mut egui_texture = bitmap_data.egui_texture.borrow_mut();
+        let texture = egui_texture.get_or_insert_with(|| {
+            let image = egui::ColorImage::from_rgba_premultiplied(
+                [bitmap_data.width() as usize, bitmap_data.height() as usize],
+                &bitmap_data.pixels_rgba(),
+            );
+            ui.ctx().load_texture(
+                format!("bitmap-{:?}", object.as_ptr()),
+                image,
+                Default::default(),
+            )
+        });
+        ui.image((texture.id(), texture.size_vec2()));
     }
 
     pub fn show_movieclip<'gc>(
@@ -979,7 +1004,10 @@ fn summary_color_transform_entry(name: &str, mult: Fixed8, add: i16) -> Option<S
 fn has_type_specific_tab(object: DisplayObject) -> bool {
     matches!(
         object,
-        DisplayObject::MovieClip(_) | DisplayObject::EditText(_) | DisplayObject::Stage(_)
+        DisplayObject::MovieClip(_)
+            | DisplayObject::EditText(_)
+            | DisplayObject::Bitmap(_)
+            | DisplayObject::Stage(_)
     )
 }
 
