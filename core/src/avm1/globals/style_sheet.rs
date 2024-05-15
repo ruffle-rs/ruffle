@@ -5,6 +5,7 @@ use crate::avm1::{
 };
 use crate::avm1::{Activation, Error, Value};
 use crate::avm1_stub;
+use crate::backend::navigator::Request;
 use crate::context::GcContext;
 use crate::html::{transform_dashes_to_camel_case, CssStream, TextFormat};
 use crate::string::AvmString;
@@ -113,11 +114,24 @@ fn get_style_names<'gc>(
 
 fn load<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "TextField.StyleSheet", "load");
-    Ok(Value::Undefined)
+    let url = match args.get(0) {
+        Some(val) => val.coerce_to_string(activation)?,
+        None => return Ok(false.into()),
+    };
+
+    let request = Request::get(url.to_utf8_lossy().into_owned());
+
+    let future = activation.context.load_manager.load_stylesheet(
+        activation.context.player.clone(),
+        this,
+        request,
+    );
+    activation.context.navigator.spawn_future(future);
+
+    Ok(true.into())
 }
 
 fn transform<'gc>(
