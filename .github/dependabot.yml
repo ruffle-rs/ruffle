@@ -45,3 +45,4 @@ updates:
     ignore:
       - dependency-name: "tracing-tracy"
       - dependency-name: "tracy-client"
+      - dependency-name: "profiling"
