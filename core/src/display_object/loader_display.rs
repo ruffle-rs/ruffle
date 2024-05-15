@@ -219,9 +219,19 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
         if let Some(child) = self.iter_render_list().next() {
             if let Some(int) = child.as_interactive() {
                 if int.as_displayobject().movie().is_action_script_3() {
-                    return int
+                    let res = int
                         .mouse_pick_avm2(context, point, require_button_mode)
                         .combine_with_parent((*self).into());
+                    if let Avm2MousePick::Hit(target) = res {
+                        if target.as_displayobject().as_ptr() == child.as_ptr() {
+                            if self.mouse_enabled() {
+                                return Avm2MousePick::Hit((*self).into());
+                            } else {
+                                return Avm2MousePick::PropagateToParent;
+                            }
+                        }
+                    }
+                    return res;
                 } else {
                     let avm1_result = int.mouse_pick_avm1(context, point, require_button_mode);
                     if let Some(result) = avm1_result {
