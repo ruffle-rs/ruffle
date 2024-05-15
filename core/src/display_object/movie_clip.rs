@@ -3268,7 +3268,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
 
             for child in interactive.into_iter().chain(non_interactive) {
                 // Mask children are not clickable
-                if child.clip_depth() > 0 {
+                if child.clip_depth() > 0 || child.maskee().is_some() {
                     continue;
                 }
 
