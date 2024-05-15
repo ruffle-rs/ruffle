@@ -1,0 +1,184 @@
+[
+  {
+    "type": "MouseMove",
+    "pos": [45, 47]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [45, 47],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [45, 47],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [140, 218]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [140, 218],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [140, 218],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [248.25, 217.25]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [248.25, 217.25],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [248.25, 217.25],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [358, 217]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [358, 217],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [358, 217],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [131, 370]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [131, 370],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [131, 370],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [255.25, 367.25]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [255.25, 367.25],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [255.25, 367.25],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [361, 370]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [361, 370],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [361, 370],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [148, 516]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [148, 516],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [148, 516],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [246, 516]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [246, 516],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [246, 516],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [351, 518]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [351, 518],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [351, 518],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [136, 660]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [136, 660],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [136, 660],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [267, 663]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [267, 663],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [267, 663],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [352, 673]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [352, 673],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [352, 673],
+    "btn": "Left"
+  }
+]
