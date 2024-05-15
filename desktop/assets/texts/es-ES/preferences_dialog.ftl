@@ -14,3 +14,5 @@ log-filename-pattern-with-timestamp = Con marca de la fecha y la hora (UTC)
 storage-backend = Destino del archivo guardado
 storage-backend-disk = Disco
 storage-backend-memory = Memoria
+recent-limit = Límite de recientes
+recent-clear = Borrar
