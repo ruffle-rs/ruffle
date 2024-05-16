@@ -26,7 +26,7 @@
         "@tsconfig/strictest": "^2.0.5",
         "@types/mocha": "^10.0.6",
         "eslint": "^8.57.0",
-        "eslint-plugin-jsdoc": "^48.2.4",
+        "eslint-plugin-jsdoc": "^48.2.5",
         "mocha": "^10.4.0",
         "replace-in-file": "^7.1.0",
         "ts-node": "^10.9.2",
