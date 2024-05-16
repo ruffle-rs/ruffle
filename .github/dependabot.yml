@@ -41,12 +41,6 @@ updates:
         update-types:
           - "minor"
           - "patch"
-      cargo-lock:
-        patterns:
-          - "*"
-        update-types:
-          - "all"
-        dependency-type: "indirect"
     ignore:
       - dependency-name: "tracing-tracy"
       - dependency-name: "tracy-client"
