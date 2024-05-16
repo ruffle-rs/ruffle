@@ -1657,6 +1657,8 @@ impl Player {
                 did_finish = LoadManager::preload_tick(context, limit);
             }
 
+            Self::run_actions(context);
+
             did_finish
         })
     }
