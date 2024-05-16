@@ -66,7 +66,7 @@ ttf-parser = "0.21"
 num-bigint = "0.4"
 unic-segment = "0.9.0"
 id3 = "1.13.1"
-either = "1.11.0"
+either = "1.12.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 workspace = true
