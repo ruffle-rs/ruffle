@@ -922,6 +922,11 @@ impl<'gc> TInteractiveObject<'gc> for Stage<'gc> {
     fn mouse_cursor(self, _context: &mut UpdateContext<'_, 'gc>) -> MouseCursor {
         MouseCursor::Arrow
     }
+
+    fn is_highlight_enabled(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+        // Highlight is always disabled for stage.
+        false
+    }
 }
 
 pub struct ParseEnumError;
@@ -965,11 +970,11 @@ impl FromStr for StageScaleMode {
     type Err = ParseEnumError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let scale_mode = match s.to_ascii_lowercase().as_str() {
-            "exactfit" => StageScaleMode::ExactFit,
-            "noborder" => StageScaleMode::NoBorder,
-            "noscale" => StageScaleMode::NoScale,
-            "showall" => StageScaleMode::ShowAll,
+        let scale_mode = match s {
+            "exact_fit" => StageScaleMode::ExactFit,
+            "no_border" => StageScaleMode::NoBorder,
+            "no_scale" => StageScaleMode::NoScale,
+            "show_all" => StageScaleMode::ShowAll,
             _ => return Err(ParseEnumError),
         };
         Ok(scale_mode)
@@ -1077,21 +1082,21 @@ bitflags! {
 }
 
 impl FromStr for StageAlign {
-    type Err = std::convert::Infallible;
+    type Err = ParseEnumError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // Chars get converted into flags.
-        // This means "tbbtlbltblbrllrbltlrtbl" is valid, resulting in "TBLR".
-        let mut align = StageAlign::default();
-        for c in s.bytes().map(|c| c.to_ascii_uppercase()) {
-            match c {
-                b'T' => align.insert(StageAlign::TOP),
-                b'B' => align.insert(StageAlign::BOTTOM),
-                b'L' => align.insert(StageAlign::LEFT),
-                b'R' => align.insert(StageAlign::RIGHT),
-                _ => (),
-            }
-        }
+        let align = match s {
+            "bottom" => StageAlign::BOTTOM,
+            "bottom_left" => StageAlign::BOTTOM | StageAlign::LEFT,
+            "bottom_right" => StageAlign::BOTTOM | StageAlign::RIGHT,
+            "left" => StageAlign::LEFT,
+            "right" => StageAlign::RIGHT,
+            "top" => StageAlign::TOP,
+            "top_left" => StageAlign::TOP | StageAlign::LEFT,
+            "top_right" => StageAlign::TOP | StageAlign::RIGHT,
+            "center" => StageAlign::empty(),
+            _ => return Err(ParseEnumError),
+        };
         Ok(align)
     }
 }

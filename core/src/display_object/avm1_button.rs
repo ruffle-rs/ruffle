@@ -45,7 +45,6 @@ pub struct Avm1ButtonData<'gc> {
     tracking: Cell<ButtonTracking>,
     object: Lock<Option<Object<'gc>>>,
     initialized: Cell<bool>,
-    has_focus: Cell<bool>,
 }
 
 #[derive(Clone, Collect)]
@@ -53,6 +52,8 @@ pub struct Avm1ButtonData<'gc> {
 struct Avm1ButtonDataMut<'gc> {
     base: InteractiveObjectBase<'gc>,
     hit_area: BTreeMap<Depth, DisplayObject<'gc>>,
+    #[collect(require_static)]
+    hit_bounds: Rectangle<Twips>,
     container: ChildContainer<'gc>,
 }
 
@@ -74,6 +75,7 @@ impl<'gc> Avm1Button<'gc> {
                     base: Default::default(),
                     container: ChildContainer::new(source_movie.movie.clone()),
                     hit_area: BTreeMap::new(),
+                    hit_bounds: Default::default(),
                 }),
                 static_data: Gc::new(
                     mc,
@@ -98,7 +100,6 @@ impl<'gc> Avm1Button<'gc> {
                 } else {
                     ButtonTracking::Push
                 }),
-                has_focus: Cell::new(false),
             },
         ))
     }
@@ -128,11 +129,7 @@ impl<'gc> Avm1Button<'gc> {
     ///
     /// This function instantiates children and thus must not be called whilst
     /// the caller is holding a write lock on the button data.
-    pub fn set_state(
-        mut self,
-        context: &mut crate::context::UpdateContext<'_, 'gc>,
-        state: ButtonState,
-    ) {
+    pub fn set_state(mut self, context: &mut UpdateContext<'_, 'gc>, state: ButtonState) {
         let mut removed_depths: fnv::FnvHashSet<_> =
             self.iter_render_list().map(|o| o.depth()).collect();
 
@@ -337,10 +334,13 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
             }
 
             let write = unlock!(Gc::write(context.gc(), self.0), Avm1ButtonData, cell);
+            let mut hit_bounds = Rectangle::INVALID;
             for (child, depth) in new_children {
                 child.post_instantiation(context, None, Instantiator::Movie, false);
                 write.borrow_mut().hit_area.insert(depth, child);
+                hit_bounds = hit_bounds.union(&child.local_bounds());
             }
+            write.borrow_mut().hit_bounds = hit_bounds;
         }
     }
 
@@ -393,11 +393,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
     }
 
     fn avm1_unload(&self, context: &mut UpdateContext<'_, 'gc>) {
-        let had_focus = self.0.has_focus.get();
-        if had_focus {
-            let tracker = context.focus_tracker;
-            tracker.set(None, context);
-        }
+        self.drop_focus(context);
         if let Some(node) = self.maskee() {
             node.set_masker(context.gc(), None, true);
         } else if let Some(node) = self.masker() {
@@ -465,7 +461,6 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
     ) -> ClipEventResult {
         let self_display_object = self.into();
         let is_enabled = self.enabled(context);
-        let movie_version = self.movie().version();
 
         // Translate the clip event to a button event, based on how the button state changes.
         let static_data = self.0.static_data;
@@ -526,21 +521,17 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
 
             // Queue ActionScript-defined event handlers after the SWF defined ones.
             // (e.g., clip.onRelease = foo).
-            if movie_version >= 6 {
+            if self.should_fire_event_handlers(context, event) {
                 if let Some(name) = event.method_name() {
-                    // Keyboard events don't fire their methods
-                    // unless the Button has focus (like for MovieClips).
-                    if !event.is_key_event() || self.0.has_focus.get() {
-                        context.action_queue.queue_action(
-                            self_display_object,
-                            ActionType::Method {
-                                object: self.0.object.get().unwrap(),
-                                name,
-                                args: vec![],
-                            },
-                            false,
-                        );
-                    }
+                    context.action_queue.queue_action(
+                        self_display_object,
+                        ActionType::Method {
+                            object: self.0.object.get().unwrap(),
+                            name,
+                            args: vec![],
+                        },
+                        false,
+                    );
                 }
             }
 
@@ -608,18 +599,17 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
         }
     }
 
-    fn on_focus_changed(
-        &self,
-        context: &mut UpdateContext<'_, 'gc>,
-        focused: bool,
-        other: Option<InteractiveObject<'gc>>,
-    ) {
-        self.0.has_focus.set(focused);
-        self.call_focus_handler(context, focused, other);
+    fn tab_enabled_default(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+        true
     }
 
-    fn tab_enabled_avm1(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        self.get_avm1_boolean_property(context, "tabEnabled", |_| true)
+    fn highlight_bounds(self) -> Rectangle<Twips> {
+        // Buttons are always highlighted using their hit bounds.
+        // I guess it does have some sense to it, because their bounds
+        // usually change on hover (children are swapped out),
+        // which would cause the automatic tab order to change during tabbing.
+        // That could potentially create a loop in the tab ordering (soft locking the tab).
+        self.local_to_global_matrix() * self.0.cell.borrow().hit_bounds.clone()
     }
 }
 

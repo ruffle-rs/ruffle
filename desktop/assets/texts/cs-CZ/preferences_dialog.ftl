@@ -15,3 +15,4 @@ storage-backend = Umístění souboru s uloženými pozicemi
 storage-backend-disk = Disk
 storage-backend-memory = Paměť
 recent-limit = Limit pro nedávné položky
+recent-clear = Vymazat

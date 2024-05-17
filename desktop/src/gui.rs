@@ -13,7 +13,7 @@ use url::Url;
 
 use crate::custom_event::RuffleEvent;
 use crate::gui::context_menu::ContextMenu;
-use crate::player::PlayerOptions;
+use crate::player::LaunchOptions;
 use crate::preferences::GlobalPreferences;
 use dialogs::Dialogs;
 use egui::*;
@@ -91,7 +91,7 @@ impl RuffleGui {
     fn new(
         event_loop: EventLoopProxy<RuffleEvent>,
         default_path: Option<Url>,
-        default_player_options: PlayerOptions,
+        default_launch_options: LaunchOptions,
         preferences: GlobalPreferences,
     ) -> Self {
         Self {
@@ -100,13 +100,13 @@ impl RuffleGui {
             context_menu: None,
             dialogs: Dialogs::new(
                 preferences.clone(),
-                default_player_options.clone(),
+                default_launch_options.clone(),
                 default_path,
                 event_loop.clone(),
             ),
             menu_bar: MenuBar::new(
                 event_loop.clone(),
-                default_player_options,
+                default_launch_options,
                 preferences.clone(),
             ),
 
@@ -180,7 +180,7 @@ impl RuffleGui {
     /// Notifies the GUI that a new player was created.
     fn on_player_created(
         &mut self,
-        opt: PlayerOptions,
+        opt: LaunchOptions,
         movie_url: Url,
         mut player: MutexGuard<Player>,
     ) {

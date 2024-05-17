@@ -231,10 +231,6 @@ impl<'gc> Video<'gc> {
     /// `seek` is only called when processing `PlaceObject` tags involving this
     /// Video. It is a no-op for Videos that are connected to a `NetStream`.
     pub fn seek(self, context: &mut UpdateContext<'_, 'gc>, mut frame_id: u32) {
-        // Technically we might not need to invalidate...
-        // but if you're caching a video, this is the least of the efficiency concerns
-        self.invalidate_cached_bitmap(context.gc_context);
-
         let read = self.0.read();
         if let VideoStream::Uninstantiated(_) = &read.stream {
             drop(read);
@@ -342,7 +338,11 @@ impl<'gc> Video<'gc> {
         drop(read);
 
         match res {
-            Ok(bitmap) => self.0.write(context.gc_context).decoded_frame = Some((frame_id, bitmap)),
+            Ok(bitmap) => {
+                self.0.write(context.gc_context).decoded_frame = Some((frame_id, bitmap));
+                self.invalidate_cached_bitmap(context.gc_context);
+                *context.needs_render = true;
+            }
             Err(e) => tracing::error!("Got error when seeking to video frame {}: {}", frame_id, e),
         }
     }

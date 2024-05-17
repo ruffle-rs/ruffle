@@ -11,3 +11,7 @@ audio-output-device-default = Как в системе
 log-filename-pattern = Имя файла журнала
 log-filename-pattern-single-file = Только имя (ruffle.log)
 log-filename-pattern-with-timestamp = С временной меткой
+storage-backend = Место сохранения файла
+storage-backend-disk = Диск
+storage-backend-memory = Память
+recent-limit = Недавний лимит

@@ -162,7 +162,6 @@ pub struct MovieClipData<'gc> {
     avm2_class: Option<Avm2ClassObject<'gc>>,
     #[collect(require_static)]
     drawing: Drawing,
-    has_focus: bool,
     avm2_enabled: bool,
 
     /// Show a hand cursor when the clip is in button mode.
@@ -212,7 +211,6 @@ impl<'gc> MovieClip<'gc> {
                 flags: MovieClipFlags::empty(),
                 avm2_class: None,
                 drawing: Drawing::new(),
-                has_focus: false,
                 avm2_enabled: true,
                 avm2_use_hand_cursor: true,
                 button_mode: false,
@@ -255,7 +253,6 @@ impl<'gc> MovieClip<'gc> {
                 flags: MovieClipFlags::empty(),
                 avm2_class: Some(class),
                 drawing: Drawing::new(),
-                has_focus: false,
                 avm2_enabled: true,
                 avm2_use_hand_cursor: true,
                 button_mode: false,
@@ -299,7 +296,6 @@ impl<'gc> MovieClip<'gc> {
                 flags: MovieClipFlags::PLAYING,
                 avm2_class: None,
                 drawing: Drawing::new(),
-                has_focus: false,
                 avm2_enabled: true,
                 avm2_use_hand_cursor: true,
                 button_mode: false,
@@ -368,7 +364,6 @@ impl<'gc> MovieClip<'gc> {
                 flags: MovieClipFlags::PLAYING,
                 avm2_class: None,
                 drawing: Drawing::new(),
-                has_focus: false,
                 avm2_enabled: true,
                 avm2_use_hand_cursor: true,
                 button_mode: false,
@@ -2933,13 +2928,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
     }
 
-    fn set_parent(&self, context: &mut UpdateContext<'_, 'gc>, parent: Option<DisplayObject<'gc>>) {
-        let had_parent = self.parent().is_some();
-        self.base_mut(context.gc_context)
-            .set_parent_ignoring_orphan_list(parent);
-        let has_parent = self.parent().is_some();
-
-        if self.movie().is_action_script_3() && had_parent && !has_parent {
+    fn on_parent_removed(&self, context: &mut UpdateContext<'_, 'gc>) {
+        if self.movie().is_action_script_3() {
             context.avm2.add_orphan_obj((*self).into())
         }
     }
@@ -2962,11 +2952,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             }
         }
 
-        let had_focus = self.0.read().has_focus;
-        if had_focus {
-            let tracker = context.focus_tracker;
-            tracker.set(None, context);
-        }
+        self.drop_focus(context);
 
         {
             let mut mc = self.0.write(context.gc_context);
@@ -3098,20 +3084,17 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
 
                 // Queue ActionScript-defined event handlers after the SWF defined ones.
                 // (e.g., clip.onEnterFrame = foo).
-                if swf_version >= 6 {
+                if self.should_fire_event_handlers(context, event) {
                     if let Some(name) = event.method_name() {
-                        // Keyboard events don't fire their methods unless the MovieClip has focus (#2120).
-                        if !event.is_key_event() || read.has_focus {
-                            context.action_queue.queue_action(
-                                self.into(),
-                                ActionType::Method {
-                                    object,
-                                    name,
-                                    args: vec![],
-                                },
-                                event == ClipEvent::Unload,
-                            );
-                        }
+                        context.action_queue.queue_action(
+                            self.into(),
+                            ActionType::Method {
+                                object,
+                                name,
+                                args: vec![],
+                            },
+                            event == ClipEvent::Unload,
+                        );
                     }
                 }
             }
@@ -3285,7 +3268,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
 
             for child in interactive.into_iter().chain(non_interactive) {
                 // Mask children are not clickable
-                if child.clip_depth() > 0 {
+                if child.clip_depth() > 0 || child.maskee().is_some() {
                     continue;
                 }
 
@@ -3386,24 +3369,17 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         }
     }
 
-    fn on_focus_changed(
-        &self,
-        context: &mut UpdateContext<'_, 'gc>,
-        focused: bool,
-        other: Option<InteractiveObject<'gc>>,
-    ) {
-        self.0.write(context.gc_context).has_focus = focused;
-        self.call_focus_handler(context, focused, other);
-    }
+    fn tab_enabled_default(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        if self.is_button_mode(context) {
+            return true;
+        }
 
-    fn tab_enabled_avm1(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        self.get_avm1_boolean_property(context, "tabEnabled", |context| {
-            self.tab_index().is_some() || self.is_button_mode(context)
-        })
-    }
+        let is_avm1 = !context.swf.is_action_script_3();
+        if is_avm1 && self.tab_index().is_some() {
+            return true;
+        }
 
-    fn tab_enabled_avm2_default(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        self.is_button_mode(context)
+        false
     }
 }
 

@@ -15,3 +15,4 @@ storage-backend = موقع ملف الحفظ
 storage-backend-disk = القرص
 storage-backend-memory = الذاكرة
 recent-limit = حد الملفات الحديثة
+recent-clear = مسح

@@ -1,7 +1,7 @@
 use crate::custom_event::RuffleEvent;
 use crate::gui::dialogs::Dialogs;
 use crate::gui::{text, DebugMessage};
-use crate::player::PlayerOptions;
+use crate::player::LaunchOptions;
 use crate::preferences::GlobalPreferences;
 use egui::{menu, Button, Key, KeyboardShortcut, Modifiers, Widget};
 use ruffle_core::Player;
@@ -12,22 +12,22 @@ use winit::event_loop::EventLoopProxy;
 
 pub struct MenuBar {
     event_loop: EventLoopProxy<RuffleEvent>,
-    default_player_options: PlayerOptions,
+    default_launch_options: LaunchOptions,
     preferences: GlobalPreferences,
 
     cached_recents: Option<Vec<Recent>>,
-    pub currently_opened: Option<(Url, PlayerOptions)>,
+    pub currently_opened: Option<(Url, LaunchOptions)>,
 }
 
 impl MenuBar {
     pub fn new(
         event_loop: EventLoopProxy<RuffleEvent>,
-        default_player_options: PlayerOptions,
+        default_launch_options: LaunchOptions,
         preferences: GlobalPreferences,
     ) -> Self {
         Self {
             event_loop,
-            default_player_options,
+            default_launch_options,
             cached_recents: None,
             currently_opened: None,
             preferences,
@@ -105,7 +105,7 @@ impl MenuBar {
                             for bookmark in bookmarks.iter().filter(|x| !x.is_invalid()) {
                                 if Button::new(&bookmark.name).ui(ui).clicked() {
                                     ui.close_menu();
-                                    let _ = self.event_loop.send_event(RuffleEvent::OpenURL(bookmark.url.clone(), Box::new(self.default_player_options.clone())));
+                                    let _ = self.event_loop.send_event(RuffleEvent::OpenURL(bookmark.url.clone(), Box::new(self.default_launch_options.clone())));
                                 }
                             }
                         });
@@ -229,7 +229,7 @@ impl MenuBar {
                                 ui.close_menu();
                                 let _ = self.event_loop.send_event(RuffleEvent::OpenURL(
                                     recent.url.clone(),
-                                    Box::new(self.default_player_options.clone()),
+                                    Box::new(self.default_launch_options.clone()),
                                 ));
                             }
                         }
@@ -281,7 +281,7 @@ impl MenuBar {
         let _ = self
             .event_loop
             .send_event(RuffleEvent::BrowseAndOpen(Box::new(
-                self.default_player_options.clone(),
+                self.default_launch_options.clone(),
             )));
     }
 

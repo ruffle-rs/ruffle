@@ -191,7 +191,9 @@ Adobe Flash Professional CS6 is the most recent version to support both ActionSc
 
 ### Motion-Twin ActionScript 2 Compiler
 
-This is a free and open source command-line ActionScript 2 compiler. It can be downloaded from [here](http://tech.motion-twin.com/mtasc.html#download).
+This is a free and open source command-line ActionScript 2 compiler. It can be downloaded from [here](https://web.archive.org/web/20230315095249/http://tech.motion-twin.com/mtasc.html#download).
+
+Linux requires the `gcc-multilib` package.
 
 Create a `test.as` file in a text editor, per the following template:
 

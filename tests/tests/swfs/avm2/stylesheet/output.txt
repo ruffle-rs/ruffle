@@ -1,0 +1,203 @@
+/// New stylesheet
+styleSheet.getStyle("nonexistant") = {}
+
+/// setStyle
+styleSheet.getStyle("OBJect") = {
+    "color" = string "red"
+    "invalid" = number 32
+    "kerning" = string "blue"
+    "nested" = object [object Object]
+}
+styleSheet.getStyle("blank") = {}
+styleSheet.getStyle("null") = {}
+styleSheet.getStyle("object") = {
+    "color" = string "red"
+    "invalid" = number 32
+    "kerning" = string "blue"
+    "nested" = object [object Object]
+}
+styleSheet.getStyle("string") = {}
+styleSheet.getStyle("undefined") = {}
+styleSheet.getStyle("nonexistant") = {}
+
+/// setStyle again
+styleSheet.getStyle("blank") = {}
+styleSheet.getStyle("null") = {}
+styleSheet.getStyle("object") = {
+    "kerning" = number 5
+}
+styleSheet.getStyle("string") = {}
+styleSheet.getStyle("undefined") = {}
+styleSheet.getStyle("nonexistant") = {}
+
+/// clear
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS
+styleSheet.getStyle("one") = {
+    "color" = string "red"
+}
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: malformed
+styleSheet.getStyle("one") = {
+    "color" = string "red"
+}
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: replacing vs merging
+styleSheet.getStyle("one") = {
+    "kerning" = string "5 "
+}
+styleSheet.getStyle("two") = {
+    "color" = string "red"
+}
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: two selectors, one definition
+styleSheet.getStyle("a") = {
+    "kerning" = string "5 "
+}
+styleSheet.getStyle("b") = {
+    "kerning" = string "5 "
+}
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: selector with spaces
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: selector with special characters
+styleSheet.getStyle("a.b.c-d!#@$😜") = {
+    "worked" = string "honestly, I'm surprised too! "
+}
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: case sensitivity in selector
+styleSheet.getStyle("key") = {
+    "color" = string "pink"
+}
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: no selector
+styleSheet.getStyle("") = {
+    "color" = string ""
+}
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: escapes?
+styleSheet.getStyle("test\\") = {
+    "color" = string "\\"
+}
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: strings?
+styleSheet.getStyle("\"test\"") = {
+    "color" = string "\"red\""
+}
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: selector names contains }
+styleSheet.getStyle("a}") = {}
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: unclosed block
+styleSheet.getStyle("a") = {}
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: only selector
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: empty property name
+styleSheet.getStyle("a") = {
+    "" = string ""
+}
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: no colon and unclosed
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: no colon
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: many semicolons
+styleSheet.getStyle("b") = {
+    ";;key" = string "value"
+    ";other" = string "value"
+}
+styleSheet.getStyle("c") = {
+    ";;key" = string "value"
+    "other" = string "value"
+}
+styleSheet.getStyle("e") = {
+    "key;other" = string "value"
+}
+styleSheet.getStyle("f") = {
+    ";" = string "value"
+}
+styleSheet.getStyle("g") = {
+    "key" = string "value"
+}
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: property name is actually a whole other block
+styleSheet.getStyle("a") = {
+    "name}b{" = string "value"
+}
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: empty property name and unclosed
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: unclosed block after name given
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: closed block after name given
+styleSheet.getStyle("a") = {
+    "key" = string ""
+}
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: unclosed block after value given
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: unclosed block after semicolon
+styleSheet.getStyle("a") = {
+    "key" = string ""
+}
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: unclosed empty name and value
+styleSheet.getStyle("a") = {
+    "" = string ""
+}
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: case sensitivity in properties
+styleSheet.getStyle("key") = {
+    "PROPERTY" = string "VALUE"
+    "Property" = string "Value"
+    "property" = string "value"
+}
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: whitespace in property name
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: whitespace in property value
+styleSheet.getStyle("key") = {
+    "property  " = string "test    value    "
+}
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: name transformation
+styleSheet.getStyle("key") = {
+    "UPPERDASHES" = string "value"
+    "nameWithDashes" = string "value  name-with-dashes-and-spaces  : value"
+    "this-one-has-two-dashes" = string "value"
+}
+styleSheet.getStyle("nonexistant") = {}
+
+/// transform
+styleSheet.getStyle("anything") = {}
+styleSheet.getStyle("nonexistant") = {}
+

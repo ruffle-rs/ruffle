@@ -239,10 +239,38 @@ impl TestRunner {
                 },
                 AutomatedEvent::TextControl { code } => PlayerEvent::TextControl {
                     code: match code {
-                        InputTextControlCode::MoveLeft => RuffleTextControlCode::Backspace,
-                        InputTextControlCode::MoveRight => RuffleTextControlCode::Delete,
+                        InputTextControlCode::MoveLeft => RuffleTextControlCode::MoveLeft,
+                        InputTextControlCode::MoveLeftWord => RuffleTextControlCode::MoveLeftWord,
+                        InputTextControlCode::MoveLeftLine => RuffleTextControlCode::MoveLeftLine,
+                        InputTextControlCode::MoveLeftDocument => {
+                            RuffleTextControlCode::MoveLeftDocument
+                        }
+                        InputTextControlCode::MoveRight => RuffleTextControlCode::MoveRight,
+                        InputTextControlCode::MoveRightWord => RuffleTextControlCode::MoveRightWord,
+                        InputTextControlCode::MoveRightLine => RuffleTextControlCode::MoveRightLine,
+                        InputTextControlCode::MoveRightDocument => {
+                            RuffleTextControlCode::MoveRightDocument
+                        }
                         InputTextControlCode::SelectLeft => RuffleTextControlCode::SelectLeft,
+                        InputTextControlCode::SelectLeftWord => {
+                            RuffleTextControlCode::SelectLeftWord
+                        }
+                        InputTextControlCode::SelectLeftLine => {
+                            RuffleTextControlCode::SelectLeftLine
+                        }
+                        InputTextControlCode::SelectLeftDocument => {
+                            RuffleTextControlCode::SelectLeftDocument
+                        }
                         InputTextControlCode::SelectRight => RuffleTextControlCode::SelectRight,
+                        InputTextControlCode::SelectRightWord => {
+                            RuffleTextControlCode::SelectRightWord
+                        }
+                        InputTextControlCode::SelectRightLine => {
+                            RuffleTextControlCode::SelectRightLine
+                        }
+                        InputTextControlCode::SelectRightDocument => {
+                            RuffleTextControlCode::SelectRightDocument
+                        }
                         InputTextControlCode::SelectAll => RuffleTextControlCode::SelectAll,
                         InputTextControlCode::Copy => RuffleTextControlCode::Copy,
                         InputTextControlCode::Paste => RuffleTextControlCode::Paste,

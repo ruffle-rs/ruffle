@@ -65,6 +65,7 @@ impl PixelBenderWgpuShader {
                                 module: &self.vertex_shader,
                                 entry_point: naga_pixelbender::VERTEX_SHADER_ENTRYPOINT,
                                 buffers: &VERTEX_BUFFERS_DESCRIPTION_FILTERS,
+                                compilation_options: Default::default(),
                             },
                             fragment: Some(wgpu::FragmentState {
                                 module: &self.fragment_shader,
@@ -78,6 +79,7 @@ impl PixelBenderWgpuShader {
                                     }),
                                     write_mask: ColorWrites::all(),
                                 })],
+                                compilation_options: Default::default(),
                             }),
                             primitive: Default::default(),
                             depth_stencil: None,

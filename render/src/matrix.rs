@@ -1,5 +1,7 @@
 use swf::{Fixed16, Point, PointDelta, Rectangle, Twips};
 
+/// TODO: Consider using portable SIMD when it's stable (https://doc.rust-lang.org/std/simd/index.html).
+
 /// The transformation matrix used by Flash display objects.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Matrix {
@@ -286,18 +288,11 @@ impl From<Matrix> for swf::Matrix {
 /// Implements the IEEE-754 "Round to nearest, ties to even" rounding rule.
 /// (e.g., both 1.5 and 2.5 will round to 2).
 /// This is the rounding method used by Flash for the above transforms.
-/// Although this is easy to do on most architectures, Rust provides no standard
-/// way to round in this manner (`f32::round` always rounds away from zero).
-/// For more info and the below code snippet, see: https://github.com/rust-lang/rust/issues/55107
 /// This also clamps out-of-range values and NaN to `i32::MIN`.
-/// TODO: Investigate using SSE/wasm intrinsics for this.
 fn round_to_i32(f: f32) -> i32 {
     if f.is_finite() {
-        let a = f.abs();
         if f < 2_147_483_648.0_f32 {
-            let k = 1.0 / f32::EPSILON;
-            let out = if a < k { ((a + k) - k).copysign(f) } else { f };
-            out as i32
+            f.round_ties_even() as i32
         } else {
             // Out-of-range clamps to MIN.
             i32::MIN
@@ -957,4 +952,36 @@ mod tests {
             PointDelta::new(Twips::new(141), Twips::new(-7)),
         ),
     );
+
+    #[test]
+    fn test_round_to_i32() {
+        assert_eq!(round_to_i32(0.0), 0);
+        assert_eq!(round_to_i32(2.0), 2);
+        assert_eq!(round_to_i32(2.1), 2);
+        assert_eq!(round_to_i32(2.5), 2);
+        assert_eq!(round_to_i32(2.9), 3);
+        assert_eq!(round_to_i32(3.0), 3);
+        assert_eq!(round_to_i32(3.1), 3);
+        assert_eq!(round_to_i32(3.5), 4);
+        assert_eq!(round_to_i32(3.9), 4);
+        assert_eq!(round_to_i32(4.0), 4);
+        assert_eq!(round_to_i32(-2.0), -2);
+        assert_eq!(round_to_i32(-2.1), -2);
+        assert_eq!(round_to_i32(-2.5), -2);
+        assert_eq!(round_to_i32(-2.9), -3);
+        assert_eq!(round_to_i32(-3.0), -3);
+        assert_eq!(round_to_i32(-3.1), -3);
+        assert_eq!(round_to_i32(-3.5), -4);
+        assert_eq!(round_to_i32(-3.9), -4);
+        assert_eq!(round_to_i32(-4.0), -4);
+        assert_eq!(round_to_i32(f32::NAN), 0);
+        assert_eq!(round_to_i32(f32::INFINITY), 0);
+        assert_eq!(round_to_i32(f32::NEG_INFINITY), 0);
+        assert_eq!(round_to_i32(-2147483520f32), -2147483520);
+        assert_eq!(round_to_i32(-2147483648f32), i32::MIN);
+        assert_eq!(round_to_i32(-2147483904f32), i32::MIN);
+        assert_eq!(round_to_i32(2147483520f32), 2147483520);
+        assert_eq!(round_to_i32(2147483648f32), i32::MIN);
+        assert_eq!(round_to_i32(2147483904f32), i32::MIN);
+    }
 }

@@ -8,14 +8,13 @@ use naga::{
     ImageQuery, Literal, LocalVariable, MathFunction, Module, RelationalFunction, ResourceBinding,
     ScalarKind, ShaderStage, Span, Statement, SwizzleComponent, Type, TypeInner, VectorSize,
 };
-use naga_oil::compose::{Composer, NagaModuleDescriptor};
 use ruffle_render::pixel_bender::{
     Opcode, Operation, PixelBenderParam, PixelBenderParamQualifier, PixelBenderReg,
     PixelBenderRegChannel, PixelBenderRegKind, PixelBenderShader, PixelBenderTypeOpcode,
     OUT_COORD_NAME,
 };
 
-pub const VERTEX_SHADER_ENTRYPOINT: &str = "main_vertex";
+pub const VERTEX_SHADER_ENTRYPOINT: &str = "filter__vertex_entry_point";
 pub const FRAGMENT_SHADER_ENTRYPOINT: &str = "main";
 
 pub struct NagaModules {
@@ -127,25 +126,8 @@ impl<'a> ShaderBuilder<'a> {
         static VERTEX_SHADER: OnceLock<Module> = OnceLock::new();
         let vertex_shader = VERTEX_SHADER
             .get_or_init(|| {
-                let mut composer = Composer::default();
-                // [NA] Hack to get all capabilities since nobody exposes this type easily
-                let capabilities = composer.capabilities;
-                composer = composer.with_capabilities(!capabilities);
-
-                composer
-                    .make_naga_module(NagaModuleDescriptor {
-                        source: ruffle_render::shader_source::SHADER_FILTER_COMMON,
-                        file_path: "shaders/filter/common.wgsl",
-                        shader_defs: Default::default(),
-                        ..Default::default()
-                    })
-                    .unwrap_or_else(|e| {
-                        panic!(
-                            "shader_filter_common.wgsl failed to compile:\n{}\n{:#?}",
-                            e.emit_to_string(&composer),
-                            e
-                        )
-                    })
+                naga::front::wgsl::parse_str(ruffle_render::shader_source::SHADER_FILTER_COMMON)
+                    .expect("Failed to parse vertex shader")
             })
             .clone();
 

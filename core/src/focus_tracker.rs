@@ -5,16 +5,14 @@ pub use crate::display_object::{
     DisplayObject, TDisplayObject, TDisplayObjectContainer, TextSelection,
 };
 use crate::display_object::{EditText, InteractiveObject, TInteractiveObject};
-use crate::drawing::Drawing;
 use crate::events::ClipEvent;
 use crate::Player;
 use either::Either;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
-use ruffle_render::shape_utils::DrawCommand;
 use std::cell::RefCell;
-use swf::{Color, LineJoinStyle, Point, Twips};
+use swf::{Color, Twips};
 
 #[derive(Collect)]
 #[collect(no_drop)]
@@ -23,9 +21,30 @@ pub struct FocusTrackerData<'gc> {
     highlight: RefCell<Highlight>,
 }
 
-enum Highlight {
+#[derive(Copy, Clone)]
+pub enum Highlight {
+    /// The focus is highlighted and the highlight is visible on the screen.
+    ///
+    /// This is the required state for keyboard navigation to work.
+    ActiveVisible,
+
+    /// The focus is highlighted, but the highlight is not visible on the screen.
+    ///
+    /// Some keyboard events (KeyUp, KeyDown) require this logic.
+    ActiveHidden,
+
+    /// The focus is not highlighted.
     Inactive,
-    Active(Drawing),
+}
+
+impl Highlight {
+    pub fn is_active(self) -> bool {
+        matches!(self, Highlight::ActiveVisible | Highlight::ActiveHidden)
+    }
+
+    pub fn is_visible(self) -> bool {
+        matches!(self, Highlight::ActiveVisible)
+    }
 }
 
 #[derive(Clone, Copy, Collect)]
@@ -33,12 +52,8 @@ enum Highlight {
 pub struct FocusTracker<'gc>(Gc<'gc, FocusTrackerData<'gc>>);
 
 impl<'gc> FocusTracker<'gc> {
-    const HIGHLIGHT_WIDTH: Twips = Twips::from_pixels_i32(3);
+    const HIGHLIGHT_THICKNESS: Twips = Twips::from_pixels_i32(3);
     const HIGHLIGHT_COLOR: Color = Color::YELLOW;
-
-    // Although at 3px width Round and Miter are similar
-    // to each other, it seems that FP uses Round.
-    const HIGHLIGHT_LINE_JOIN_STYLE: LineJoinStyle = LineJoinStyle::Round;
 
     pub fn new(mc: &Mutation<'gc>) -> Self {
         Self(Gc::new(
@@ -50,8 +65,8 @@ impl<'gc> FocusTracker<'gc> {
         ))
     }
 
-    pub fn is_highlight_active(&self) -> bool {
-        matches!(*self.0.highlight.borrow(), Highlight::Active(_))
+    pub fn highlight(&self) -> Highlight {
+        *self.0.highlight.borrow()
     }
 
     pub fn reset_highlight(&self) {
@@ -98,10 +113,14 @@ impl<'gc> FocusTracker<'gc> {
             self.update_highlight(context);
 
             if let Some(old) = old {
+                old.set_has_focus(context.gc(), false);
                 old.on_focus_changed(context, false, new);
+                old.call_focus_handler(context, false, new);
             }
             if let Some(new) = new {
+                new.set_has_focus(context.gc(), true);
                 new.on_focus_changed(context, true, old);
+                new.call_focus_handler(context, true, old);
             }
 
             tracing::info!("Focus is now on {:?}", new);
@@ -148,7 +167,7 @@ impl<'gc> FocusTracker<'gc> {
         }
     }
 
-    pub fn cycle(&self, context: &mut UpdateContext<'_, 'gc>, reverse: bool) {
+    pub fn tab_order(&self, context: &mut UpdateContext<'_, 'gc>) -> Vec<InteractiveObject<'gc>> {
         let stage = context.stage;
         let mut tab_order = vec![];
         stage.fill_tab_order(&mut tab_order, context);
@@ -159,7 +178,15 @@ impl<'gc> FocusTracker<'gc> {
         } else {
             Self::order_automatic(&mut tab_order);
         };
+        tab_order
+    }
 
+    pub fn cycle(&self, context: &mut UpdateContext<'_, 'gc>, reverse: bool) {
+        // Ordering the whole array and finding the next object in it
+        // is suboptimal, but it's a simple and infrequently performed operation.
+        // Additionally, we want to display the whole list in the debug UI anyway,
+        // so we do not want to complicate/duplicate logic here if it's unnecessary.
+        let tab_order = self.tab_order(context);
         let mut tab_order = if reverse {
             Either::Left(tab_order.iter().rev())
         } else {
@@ -186,42 +213,32 @@ impl<'gc> FocusTracker<'gc> {
     }
 
     pub fn update_highlight(&self, context: &mut UpdateContext<'_, 'gc>) {
-        self.0.highlight.replace(self.redraw_highlight(context));
+        self.0.highlight.replace(self.calculate_highlight(context));
     }
 
-    fn redraw_highlight(&self, context: &mut UpdateContext<'_, 'gc>) -> Highlight {
+    fn calculate_highlight(&self, context: &mut UpdateContext<'_, 'gc>) -> Highlight {
         let Some(focus) = self.get() else {
             return Highlight::Inactive;
         };
 
         if !focus.is_highlightable(context) {
-            return Highlight::Inactive;
+            return Highlight::ActiveHidden;
         }
 
-        let bounds = focus
-            .as_displayobject()
-            .world_bounds()
-            .grow(-Self::HIGHLIGHT_WIDTH / 2);
-        let mut drawing = Drawing::new();
-        drawing.set_line_style(Some(
-            swf::LineStyle::new()
-                .with_width(Self::HIGHLIGHT_WIDTH)
-                .with_color(Self::HIGHLIGHT_COLOR)
-                .with_join_style(Self::HIGHLIGHT_LINE_JOIN_STYLE),
-        ));
-        drawing.draw_command(DrawCommand::MoveTo(Point::new(bounds.x_min, bounds.y_min)));
-        drawing.draw_command(DrawCommand::LineTo(Point::new(bounds.x_min, bounds.y_max)));
-        drawing.draw_command(DrawCommand::LineTo(Point::new(bounds.x_max, bounds.y_max)));
-        drawing.draw_command(DrawCommand::LineTo(Point::new(bounds.x_max, bounds.y_min)));
-        drawing.draw_command(DrawCommand::LineTo(Point::new(bounds.x_min, bounds.y_min)));
-
-        Highlight::Active(drawing)
+        Highlight::ActiveVisible
     }
 
     pub fn render_highlight(&self, context: &mut RenderContext<'_, 'gc>) {
-        if let Highlight::Active(ref highlight) = *self.0.highlight.borrow() {
-            highlight.render(context);
+        if !self.highlight().is_visible() {
+            return;
         };
+
+        let Some(focus) = self.get() else {
+            return;
+        };
+
+        let bounds = focus.highlight_bounds();
+        context.draw_rect_outline(Self::HIGHLIGHT_COLOR, bounds, Self::HIGHLIGHT_THICKNESS);
     }
 
     fn order_custom(tab_order: &mut Vec<InteractiveObject>) {
@@ -230,26 +247,54 @@ impl<'gc> FocusTracker<'gc> {
         tab_order.retain(|o| o.tab_index().is_some());
 
         // Then, items are sorted according to their tab indices.
-        // TODO When two objects have the same index, the behavior is undefined.
-        //      We should analyze and match FP's behavior here if possible.
+        // When two objects have the same index, they are ordered by
+        // their respective positions in hierarchy as returned by fill_tab_order().
         tab_order.sort_by_key(|o| o.tab_index());
     }
 
-    // TODO This ordering is yet far from being perfect.
-    //      FP actually has some weird ordering logic, which
-    //      sometimes jumps up, sometimes even ignores some objects.
+    /// The automatic ordering depends only on the position of
+    /// the top-left highlight bound corner, referred to as `(x,y)`.
+    /// It does not depend on object's size or other corners.
+    ///
+    /// The value of `6y+x` is used to order objects by it.
+    /// This means that the next object to be tabbed is the next one
+    /// that touches the line `y=-(x-p)/6` (with the smallest `p`).
+    ///
+    /// When two objects have the same value of `6y+x`
+    /// (i.e. when the line touches two objects at the same time),
+    /// only one of them is included.
+    ///
+    /// This behavior is similar to the naive approach of
+    /// "left-to-right, top-to-bottom", but (besides being sometimes
+    /// seen as random jumps) takes into account the fact that
+    /// the next object to the right may be positioned slightly higher.
+    /// This is especially true for objects placed by hand or objects with
+    /// different heights (as FP uses the top left corner instead of the center).
+    ///
+    /// This behavior has been discovered experimentally by placing
+    /// tabbable objects randomly and bisecting one of their
+    /// coordinates to find a difference in behavior.
+    ///
+    /// See the test `avm2/tab_ordering_automatic_advanced`.
+    ///
+    /// *WARNING:* Be careful when testing automatic order in FP,
+    /// as its behavior is slightly different with a zoom other than 100%.
     fn order_automatic(tab_order: &mut Vec<InteractiveObject>) {
-        fn key_extractor(o: &InteractiveObject) -> (Twips, Twips) {
-            let bounds = o.as_displayobject().world_bounds();
-            (bounds.y_min, bounds.x_min)
+        fn key_extractor(o: &InteractiveObject) -> i64 {
+            let bounds = o.highlight_bounds();
+
+            let x = bounds.x_min.get() as i64;
+            let y = bounds.y_min.get() as i64;
+
+            y * 6 + x
         }
 
-        // The automatic order is mainly dependent on
-        // the position of the top-left bound corner.
         tab_order.sort_by_cached_key(key_extractor);
 
-        // Duplicated positions are removed,
-        // only the first element is retained.
+        // Objects with duplicate keys are removed, retaining only
+        // the first instance with respect to the order of fill_tab_order().
+        // This of course causes some objects to be skipped, even if far from one another,
+        // but that's unfortunately how FP behaves.
         tab_order.dedup_by_key(|o| key_extractor(o));
     }
 }

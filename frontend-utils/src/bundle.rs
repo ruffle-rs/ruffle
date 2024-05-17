@@ -148,7 +148,8 @@ mod tests {
         assert_eq!(
             BundleInformation {
                 name: "Cool Game!".to_string(),
-                url: Url::parse("file:///game.swf").unwrap()
+                url: Url::parse("file:///game.swf").unwrap(),
+                player: Default::default(),
             },
             result.information
         );

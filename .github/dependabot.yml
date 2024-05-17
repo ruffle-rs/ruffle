@@ -27,7 +27,6 @@ updates:
         - "winit"
         - "wgpu"
         - "naga"
-        - "naga_oil"
         - "egui*"
         - "raw-window-handle"
       wasm-bindgen:
@@ -45,3 +44,4 @@ updates:
     ignore:
       - dependency-name: "tracing-tracy"
       - dependency-name: "tracy-client"
+      - dependency-name: "profiling"

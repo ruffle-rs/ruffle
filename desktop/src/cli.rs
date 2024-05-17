@@ -9,6 +9,7 @@ use ruffle_core::{LoadBehavior, PlayerRuntime, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::path::Path;
+use std::time::Duration;
 use url::Url;
 
 fn get_default_save_directory() -> std::path::PathBuf {
@@ -70,8 +71,8 @@ pub struct Opt {
     pub height: Option<f64>,
 
     /// Maximum number of seconds a script can run before scripting is disabled.
-    #[clap(long, short, default_value = "Infinity")]
-    pub max_execution_duration: f64,
+    #[clap(long, short, value_parser(parse_duration_seconds))]
+    pub max_execution_duration: Option<Duration>,
 
     /// Base directory or URL used to resolve all relative path statements in the SWF file.
     /// The default is the current directory.
@@ -79,11 +80,11 @@ pub struct Opt {
     pub base: Option<Url>,
 
     /// Default quality of the movie.
-    #[clap(long, short, default_value = "high")]
-    pub quality: StageQuality,
+    #[clap(long, short)]
+    pub quality: Option<StageQuality>,
 
     /// The alignment of the stage.
-    #[clap(long, short)]
+    #[clap(long, short, value_parser(parse_align))]
     pub align: Option<StageAlign>,
 
     /// Prevent movies from changing the stage alignment.
@@ -91,8 +92,8 @@ pub struct Opt {
     pub force_align: bool,
 
     /// The scale mode of the stage.
-    #[clap(long, short, default_value = "show-all")]
-    pub scale: StageScaleMode,
+    #[clap(long, short)]
+    pub scale: Option<StageScaleMode>,
 
     /// Audio volume as a number between 0 (muted) and 1 (full volume). Default is 1.
     #[clap(long, short)]
@@ -126,8 +127,8 @@ pub struct Opt {
     pub socket_allow: Vec<String>,
 
     /// Define how to deal with TCP Socket connections.
-    #[clap(long = "tcp-connections", default_value = "ask")]
-    pub tcp_connections: SocketMode,
+    #[clap(long = "tcp-connections")]
+    pub tcp_connections: Option<SocketMode>,
 
     /// Replace all embedded HTTP URLs with HTTPS.
     #[clap(long, action)]
@@ -137,12 +138,12 @@ pub struct Opt {
     #[clap(long, action)]
     pub fullscreen: bool,
 
-    #[clap(long, default_value = "streaming")]
-    pub load_behavior: LoadBehavior,
+    #[clap(long)]
+    pub load_behavior: Option<LoadBehavior>,
 
     /// Specify how Ruffle should handle areas outside the movie stage.
-    #[clap(long, default_value = "on")]
-    pub letterbox: Letterbox,
+    #[clap(long)]
+    pub letterbox: Option<Letterbox>,
 
     /// Spoofs the root SWF URL provided to ActionScript.
     #[clap(long, value_parser)]
@@ -153,8 +154,8 @@ pub struct Opt {
     pub player_version: Option<u8>,
 
     /// The runtime to emulate (Flash Player or Adobe AIR)
-    #[clap(long, default_value = "flash-player")]
-    pub player_runtime: PlayerRuntime,
+    #[clap(long)]
+    pub player_runtime: Option<PlayerRuntime>,
 
     /// Set and lock the player's frame rate, overriding the movie's frame rate.
     #[clap(long)]
@@ -211,6 +212,16 @@ pub struct Opt {
 
 fn parse_movie_file_or_url(path: &str) -> Result<Url, Error> {
     crate::util::parse_url(Path::new(path))
+}
+
+fn parse_duration_seconds(value: &str) -> Result<Duration, Error> {
+    Ok(Duration::from_secs_f64(value.parse()?))
+}
+
+fn parse_align(value: &str) -> Result<StageAlign, Error> {
+    value
+        .parse()
+        .map_err(|_| anyhow::anyhow!("Invalid stage alignment"))
 }
 
 fn parse_gamepad_button(mapping: &str) -> Result<(GamepadButton, KeyCode), Error> {

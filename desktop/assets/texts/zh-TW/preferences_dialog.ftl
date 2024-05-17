@@ -14,3 +14,5 @@ log-filename-pattern-with-timestamp = 包含時間點
 storage-backend = 存檔地點
 storage-backend-disk = 硬碟
 storage-backend-memory = 記憶體
+recent-limit = 最近上限
+recent-clear = 清除

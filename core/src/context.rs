@@ -44,7 +44,7 @@ use core::fmt;
 use gc_arena::{Collect, Mutation};
 use rand::rngs::SmallRng;
 use ruffle_render::backend::{BitmapCacheEntry, RenderBackend};
-use ruffle_render::commands::CommandList;
+use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::transform::TransformStack;
 use ruffle_video::backend::VideoBackend;
 use std::collections::{HashMap, VecDeque};
@@ -647,7 +647,7 @@ pub struct RenderContext<'a, 'gc> {
     /// Whether we're rendering offscreen. This can disable some logic like Ruffle-side render culling
     pub is_offscreen: bool,
 
-    /// Whether or not to use cacheAsBitmap, vs drawing everything explicitly
+    /// Whether to use cacheAsBitmap, vs drawing everything explicitly
     pub use_bitmap_cache: bool,
 
     /// The current player's stage (including all loaded levels)
@@ -660,6 +660,48 @@ impl<'a, 'gc> RenderContext<'a, 'gc> {
     #[inline(always)]
     pub fn gc(&self) -> &'gc Mutation<'gc> {
         self.gc_context
+    }
+
+    /// Draw a rectangle outline.
+    ///
+    /// The outline is contained within the given bounds.
+    pub fn draw_rect_outline(&mut self, color: Color, bounds: Rectangle<Twips>, thickness: Twips) {
+        let bounds = self.transform_stack.transform().matrix * bounds;
+        let width = bounds.width().to_pixels() as f32;
+        let height = bounds.height().to_pixels() as f32;
+        let thickness_pixels = thickness.to_pixels() as f32;
+        // Top
+        self.commands.draw_rect(
+            color,
+            Matrix::create_box(width, thickness_pixels, 0.0, bounds.x_min, bounds.y_min),
+        );
+        // Bottom
+        self.commands.draw_rect(
+            color,
+            Matrix::create_box(
+                width,
+                thickness_pixels,
+                0.0,
+                bounds.x_min,
+                bounds.y_max - thickness,
+            ),
+        );
+        // Left
+        self.commands.draw_rect(
+            color,
+            Matrix::create_box(thickness_pixels, height, 0.0, bounds.x_min, bounds.y_min),
+        );
+        // Right
+        self.commands.draw_rect(
+            color,
+            Matrix::create_box(
+                thickness_pixels,
+                height,
+                0.0,
+                bounds.x_max - thickness,
+                bounds.y_min,
+            ),
+        );
     }
 }
 

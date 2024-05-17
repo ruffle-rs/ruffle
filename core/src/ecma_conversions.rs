@@ -45,19 +45,48 @@ pub fn f64_to_wrapping_i32(n: f64) -> i32 {
 
 /// Implements the IEEE-754 "Round to nearest, ties to even" rounding rule.
 /// (e.g., both 1.5 and 2.5 will round to 2).
-/// Although this is easy to do on most architectures, Rust provides no standard
-/// way to round in this manner (`f64::round` always rounds away from zero).
-/// For more info and the below code snippet, see: https://github.com/rust-lang/rust/issues/55107
 /// This also clamps out-of-range values and NaN to `i32::MIN`.
-/// TODO: Investigate using SSE/wasm intrinsics for this.
 pub fn round_to_even(n: f64) -> i32 {
-    let k = 1.0 / f64::EPSILON;
-    let a = n.abs();
-    let out = if a < k { ((a + k) - k).copysign(n) } else { n };
+    let out = n.round_ties_even();
     // Clamp out-of-range values to `i32::MIN`.
-    if out.is_finite() && out >= i32::MIN.into() && out <= i32::MAX.into() {
+    if out.is_finite() && out <= i32::MAX.into() {
         out as i32
     } else {
         i32::MIN
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::round_to_even;
+
+    #[test]
+    fn test_round_to_even() {
+        assert_eq!(round_to_even(0.0), 0);
+        assert_eq!(round_to_even(2.0), 2);
+        assert_eq!(round_to_even(2.1), 2);
+        assert_eq!(round_to_even(2.5), 2);
+        assert_eq!(round_to_even(2.9), 3);
+        assert_eq!(round_to_even(3.0), 3);
+        assert_eq!(round_to_even(3.1), 3);
+        assert_eq!(round_to_even(3.5), 4);
+        assert_eq!(round_to_even(3.9), 4);
+        assert_eq!(round_to_even(4.0), 4);
+        assert_eq!(round_to_even(-2.0), -2);
+        assert_eq!(round_to_even(-2.1), -2);
+        assert_eq!(round_to_even(-2.5), -2);
+        assert_eq!(round_to_even(-2.9), -3);
+        assert_eq!(round_to_even(-3.0), -3);
+        assert_eq!(round_to_even(-3.1), -3);
+        assert_eq!(round_to_even(-3.5), -4);
+        assert_eq!(round_to_even(-3.9), -4);
+        assert_eq!(round_to_even(-4.0), -4);
+        assert_eq!(round_to_even(f64::NAN), i32::MIN);
+        assert_eq!(round_to_even(f64::INFINITY), i32::MIN);
+        assert_eq!(round_to_even(f64::NEG_INFINITY), i32::MIN);
+        assert_eq!(round_to_even(-2147483648f64), i32::MIN);
+        assert_eq!(round_to_even(-2247483648f64), i32::MIN);
+        assert_eq!(round_to_even(2147483647f64), i32::MAX);
+        assert_eq!(round_to_even(2247483647f64), i32::MIN);
     }
 }

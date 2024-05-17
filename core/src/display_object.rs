@@ -1587,9 +1587,24 @@ pub trait TDisplayObject<'gc>:
 
     /// Set the parent of this display object.
     fn set_parent(&self, context: &mut UpdateContext<'_, 'gc>, parent: Option<DisplayObject<'gc>>) {
+        let had_parent = self.parent().is_some();
         self.base_mut(context.gc_context)
             .set_parent_ignoring_orphan_list(parent);
+        let has_parent = self.parent().is_some();
+        let parent_removed = had_parent && !has_parent;
+
+        if parent_removed {
+            if let Some(int) = self.as_interactive() {
+                int.drop_focus(context);
+            }
+
+            self.on_parent_removed(context);
+        }
     }
+
+    /// This method is called when the parent is removed.
+    /// It may be overwritten to inject some implementation-specific behavior.
+    fn on_parent_removed(&self, _context: &mut UpdateContext<'_, 'gc>) {}
 
     /// Retrieve the parent of this display object.
     ///
@@ -2470,6 +2485,22 @@ pub trait TDisplayObject<'gc>:
             }
         } else {
             false
+        }
+    }
+
+    fn set_avm1_property(
+        self,
+        context: &mut UpdateContext<'_, 'gc>,
+        name: &'static str,
+        value: Avm1Value<'gc>,
+    ) {
+        if let Avm1Value::Object(object) = self.object() {
+            let mut activation = Activation::from_nothing(
+                context.reborrow(),
+                Avm1ActivationIdentifier::root("[AVM1 Property Set]"),
+                self.avm1_root(),
+            );
+            let _ = object.set(name, value, &mut activation);
         }
     }
 }

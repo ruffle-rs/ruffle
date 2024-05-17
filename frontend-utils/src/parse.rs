@@ -245,6 +245,25 @@ pub trait ReadExt<'a> {
 
         result
     }
+
+    /// Similar to [`ReadExt::get_float`], but also returns integers as floats.
+    fn get_float_like(&'a self, cx: &mut ParseContext, key: &'static str) -> Option<f64> {
+        let mut result = None;
+        cx.push_key(key);
+
+        if let Some(item) = self.get_impl(key) {
+            if let Some(float) = item.as_float() {
+                result = Some(float);
+            } else if let Some(integer) = item.as_integer() {
+                result = Some(integer as f64)
+            } else {
+                cx.unexpected_type("float or integer", item.type_name());
+            }
+        }
+
+        cx.pop_key();
+        result
+    }
 }
 
 /// Extension trait to provide casting methods with warning capabilities.

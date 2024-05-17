@@ -56,9 +56,14 @@ license-files = [
 # Lint level for when multiple versions of the same crate are detected
 multiple-versions = "warn"
 
-# We are manually pinning `tracing-tracy` to match the version used by
-# `profiling`, but this can get stale easily.
-deny = [{ name = "tracy-client", deny-multiple-versions = true }]
+deny = [
+    # We are manually pinning `tracing-tracy` to match the version used by
+    # `profiling`, but this can get stale easily.
+    { name = "tracy-client", deny-multiple-versions = true },
+    # Having multiple versions of this can silently cause images (such as
+    # the logo in the about dialog) in egui to not appear.
+    { name = "image", deny-multiple-versions = true },
+]
 
 [sources]
 # Lint level for what to happen when a crate from a crate registry that is not
@@ -72,6 +77,9 @@ unknown-git = "deny"
 #  github.com organizations to allow git sources for
 github = [
     "ruffle-rs",
+    # TODO: Remove once egui is updated to the first release
+    # with https://github.com/emilk/egui/pull/4160 in it.
+    "emilk",
 ]
 
 [advisories]

@@ -1,0 +1,308 @@
+/// Empty
+style = {}
+
+format = {
+   "align" = null
+   "bold" = null
+   "color" = null
+   "font" = null
+   "indent" = null
+   "italic" = null
+   "kerning" = boolean false
+   "leading" = null
+   "leftMargin" = null
+   "letterSpacing" = null
+   "rightMargin" = null
+   "size" = null
+   "underline" = null
+   "display" = string "block"
+}
+
+/// Null
+style = null
+
+format = null
+
+/// Undefined
+style = undefined
+
+format = null
+
+/// Number
+style = {}
+
+! 1069
+
+/// Color
+// styleSheet.transform({"color": "red"})
+color = number 0
+// styleSheet.transform({"color": ""})
+color = null
+// styleSheet.transform({"color": "123"})
+color = number 0
+// styleSheet.transform({"color": "#"})
+color = number 0
+// styleSheet.transform({"color": "#1"})
+color = number 1
+// styleSheet.transform({"color": "#12"})
+color = number 18
+// styleSheet.transform({"color": "#123"})
+color = number 291
+// styleSheet.transform({"color": "#1234"})
+color = number 4660
+// styleSheet.transform({"color": "#12345"})
+color = number 74565
+// styleSheet.transform({"color": "#123456"})
+color = number 1193046
+// styleSheet.transform({"color": "#1234567"})
+color = number 0
+// styleSheet.transform({"color": "#red"})
+color = number 0
+
+/// Display
+// styleSheet.transform({"display": "inline"})
+display = string "inline"
+// styleSheet.transform({"display": "block"})
+display = string "block"
+// styleSheet.transform({"display": "none"})
+display = string "none"
+// styleSheet.transform({"display": "invalid"})
+display = null
+// styleSheet.transform({"display": ""})
+display = string "block"
+
+/// Font Family
+// styleSheet.transform({"fontFamily": ""})
+font = null
+// styleSheet.transform({"fontFamily": "mono, sans-serif, serif"})
+font = string "_typewriter,_sans,_serif"
+// styleSheet.transform({"fontFamily": "a b c, d e   f  ,  ,  g h"})
+font = string "a b c,d e   f  ,g h"
+// styleSheet.transform({"fontFamily": "Times New Roman"})
+font = string "Times New Roman"
+
+/// Font Size
+// styleSheet.transform({"fontSize": ""})
+size = null
+// styleSheet.transform({"fontSize": "50"})
+size = number 50
+// styleSheet.transform({"fontSize": "50.5 px"})
+size = number 50
+// styleSheet.transform({"fontSize": "50 pt"})
+size = number 50
+// styleSheet.transform({"fontSize": "50xx"})
+size = number 50
+// styleSheet.transform({"fontSize": " 50"})
+size = number 50
+// styleSheet.transform({"fontSize": "x50"})
+size = null
+// styleSheet.transform({"fontSize": "0"})
+size = null
+// styleSheet.transform({"fontSize": "-50"})
+size = null
+// styleSheet.transform({"fontSize": "09"})
+size = number 9
+
+/// Font Style
+// styleSheet.transform({"fontStyle": ""})
+italic = null
+// styleSheet.transform({"fontStyle": "bold"})
+italic = null
+// styleSheet.transform({"fontStyle": "italic"})
+italic = boolean true
+// styleSheet.transform({"fontStyle": "normal"})
+italic = boolean false
+
+/// Font Weight
+// styleSheet.transform({"fontWeight": ""})
+bold = null
+// styleSheet.transform({"fontWeight": "bold"})
+bold = boolean true
+// styleSheet.transform({"fontWeight": "italic"})
+bold = null
+// styleSheet.transform({"fontWeight": "normal"})
+bold = boolean false
+
+/// Kerning
+// styleSheet.transform({"kerning": ""})
+kerning = boolean false
+// styleSheet.transform({"kerning": "true"})
+kerning = boolean true
+// styleSheet.transform({"kerning": "false"})
+kerning = boolean false
+// styleSheet.transform({"kerning": "lots"})
+kerning = boolean false
+// styleSheet.transform({"kerning": "50"})
+kerning = boolean true
+// styleSheet.transform({"kerning": "0"})
+kerning = boolean false
+
+/// Leading
+// styleSheet.transform({"leading": ""})
+leading = null
+// styleSheet.transform({"leading": "50"})
+leading = number 50
+// styleSheet.transform({"leading": "50.5 px"})
+leading = number 50
+// styleSheet.transform({"leading": "50 pt"})
+leading = number 50
+// styleSheet.transform({"leading": "50xx"})
+leading = number 50
+// styleSheet.transform({"leading": " 50"})
+leading = number 50
+// styleSheet.transform({"leading": "x50"})
+leading = number -2147483648
+// styleSheet.transform({"leading": "0"})
+leading = number 0
+// styleSheet.transform({"leading": "-50"})
+leading = number -50
+// styleSheet.transform({"leading": "09"})
+leading = number 9
+
+/// Letter Spacing
+// styleSheet.transform({"letterSpacing": ""})
+letterSpacing = null
+// styleSheet.transform({"letterSpacing": "50"})
+letterSpacing = number 50
+// styleSheet.transform({"letterSpacing": "50.5 px"})
+letterSpacing = number 50.5
+// styleSheet.transform({"letterSpacing": "50 pt"})
+letterSpacing = number 50
+// styleSheet.transform({"letterSpacing": "50xx"})
+letterSpacing = number 50
+// styleSheet.transform({"letterSpacing": " 50"})
+letterSpacing = number 50
+// styleSheet.transform({"letterSpacing": "x50"})
+letterSpacing = number NaN
+// styleSheet.transform({"letterSpacing": "0"})
+letterSpacing = number 0
+// styleSheet.transform({"letterSpacing": "-50"})
+letterSpacing = number -50
+// styleSheet.transform({"letterSpacing": "09"})
+letterSpacing = number 9
+
+/// Margin Left
+// styleSheet.transform({"marginLeft": ""})
+leftMargin = null
+// styleSheet.transform({"marginLeft": "50"})
+leftMargin = number 50
+// styleSheet.transform({"marginLeft": "50.5 px"})
+leftMargin = number 50
+// styleSheet.transform({"marginLeft": "50 pt"})
+leftMargin = number 50
+// styleSheet.transform({"marginLeft": "50xx"})
+leftMargin = number 50
+// styleSheet.transform({"marginLeft": " 50"})
+leftMargin = number 50
+// styleSheet.transform({"marginLeft": "x50"})
+leftMargin = number -2147483648
+// styleSheet.transform({"marginLeft": "0"})
+leftMargin = number 0
+// styleSheet.transform({"marginLeft": "-50"})
+leftMargin = number -50
+// styleSheet.transform({"marginLeft": "09"})
+leftMargin = number 9
+
+/// Margin Right
+// styleSheet.transform({"marginRight": ""})
+rightMargin = null
+// styleSheet.transform({"marginRight": "50"})
+rightMargin = number 50
+// styleSheet.transform({"marginRight": "50.5 px"})
+rightMargin = number 50
+// styleSheet.transform({"marginRight": "50 pt"})
+rightMargin = number 50
+// styleSheet.transform({"marginRight": "50xx"})
+rightMargin = number 50
+// styleSheet.transform({"marginRight": " 50"})
+rightMargin = number 50
+// styleSheet.transform({"marginRight": "x50"})
+rightMargin = number -2147483648
+// styleSheet.transform({"marginRight": "0"})
+rightMargin = number 0
+// styleSheet.transform({"marginRight": "-50"})
+rightMargin = number -50
+// styleSheet.transform({"marginRight": "09"})
+rightMargin = number 9
+
+/// Text Align
+// styleSheet.transform({"textAlign": ""})
+align = null
+// styleSheet.transform({"textAlign": "invalid"})
+! ArgumentError: Error #2008: Parameter align must be one of the accepted values.
+// styleSheet.transform({"textAlign": "left"})
+align = string "left"
+// styleSheet.transform({"textAlign": "right"})
+align = string "right"
+// styleSheet.transform({"textAlign": "justify"})
+align = string "justify"
+// styleSheet.transform({"textAlign": "center"})
+align = string "center"
+
+/// Text Decoration
+// styleSheet.transform({"textDecoration": ""})
+underline = null
+// styleSheet.transform({"textDecoration": "bold"})
+underline = null
+// styleSheet.transform({"textDecoration": "none"})
+underline = boolean false
+// styleSheet.transform({"textDecoration": "underline"})
+underline = boolean true
+
+/// Text Indent
+// styleSheet.transform({"textIndent": ""})
+indent = null
+// styleSheet.transform({"textIndent": "50"})
+indent = number 50
+// styleSheet.transform({"textIndent": "50.5 px"})
+indent = number 50
+// styleSheet.transform({"textIndent": "50 pt"})
+indent = number 50
+// styleSheet.transform({"textIndent": "50xx"})
+indent = number 50
+// styleSheet.transform({"textIndent": " 50"})
+indent = number 50
+// styleSheet.transform({"textIndent": "x50"})
+indent = number -2147483648
+// styleSheet.transform({"textIndent": "0"})
+indent = number 0
+// styleSheet.transform({"textIndent": "-50"})
+indent = number -50
+// styleSheet.transform({"textIndent": "09"})
+indent = number 9
+
+/// Every property is valid
+style = {
+   "color" = string "#FF0000"
+   "display" = string "block"
+   "fontFamily" = string "sans-serif"
+   "fontSize" = string "75px"
+   "fontStyle" = string "italic"
+   "fontWeight" = string "bold"
+   "kerning" = string "true"
+   "leading" = string "5"
+   "letterSpacing" = string "0"
+   "marginLeft" = string "0"
+   "marginRight" = string "0"
+   "textAlign" = string "justify"
+   "textDecoration" = string "underline"
+   "textIndent" = string "0"
+}
+
+format = {
+   "align" = string "justify"
+   "bold" = boolean true
+   "color" = number 16711680
+   "font" = string "_sans"
+   "indent" = number 0
+   "italic" = boolean true
+   "kerning" = boolean true
+   "leading" = number 5
+   "leftMargin" = number 0
+   "letterSpacing" = number 0
+   "rightMargin" = number 0
+   "size" = number 75
+   "underline" = boolean true
+   "display" = string "block"
+}
+

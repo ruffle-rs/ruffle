@@ -1,6 +1,6 @@
 use crate::custom_event::RuffleEvent;
 use crate::gui::{GuiController, MENU_HEIGHT};
-use crate::player::{PlayerController, PlayerOptions};
+use crate::player::{LaunchOptions, PlayerController};
 use crate::preferences::GlobalPreferences;
 use crate::util::{
     get_screen_size, gilrs_button_to_gamepad_button, parse_url, pick_file, plot_stats_in_tracy,
@@ -83,7 +83,7 @@ impl App {
         if let Some(movie_url) = &movie_url {
             gui.create_movie(
                 &mut player,
-                PlayerOptions::from(&preferences),
+                LaunchOptions::from(&preferences),
                 movie_url.clone(),
             );
         } else {
@@ -230,7 +230,7 @@ impl App {
                             if let Ok(url) = parse_url(&file) {
                                 self.gui.borrow_mut().create_movie(
                                     &mut self.player,
-                                    PlayerOptions::from(&self.preferences),
+                                    LaunchOptions::from(&self.preferences),
                                     url,
                                 );
                             }
@@ -420,12 +420,14 @@ impl App {
                     );
 
                     let viewport_size = self.window.inner_size();
+                    let mut window_resize_denied = false;
 
                     if let Some(new_viewport_size) = self.window.request_inner_size(window_size) {
                         if new_viewport_size != viewport_size {
                             self.gui.borrow_mut().resize(new_viewport_size);
                         } else {
                             tracing::warn!("Unable to resize window");
+                            window_resize_denied = true;
                         }
                     }
                     self.window.set_fullscreen(if self.start_fullscreen {
@@ -438,9 +440,9 @@ impl App {
                     let viewport_size = self.window.inner_size();
 
                     // On X11 (and possibly other platforms), the window size is not updated immediately.
-                    // Wait for the window to be resized to the requested size before we start running
-                    // the SWF (which can observe the viewport size in "noScale" mode)
-                    if window_size != viewport_size.into() {
+                    // On a successful resize request, wait for the window to be resized to the requested size
+                    // before we start running the SWF (which can observe the viewport size in "noScale" mode)
+                    if !window_resize_denied && window_size != viewport_size.into() {
                         loaded = LoadingState::WaitingForResize;
                     } else {
                         loaded = LoadingState::Loaded;

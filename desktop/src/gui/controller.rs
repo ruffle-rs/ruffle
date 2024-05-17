@@ -2,7 +2,7 @@ use crate::backends::DesktopUiBackend;
 use crate::custom_event::RuffleEvent;
 use crate::gui::movie::{MovieView, MovieViewRenderer};
 use crate::gui::{RuffleGui, MENU_HEIGHT};
-use crate::player::{PlayerController, PlayerOptions};
+use crate::player::{LaunchOptions, PlayerController};
 use crate::preferences::GlobalPreferences;
 use anyhow::anyhow;
 use egui::{Context, ViewportId};
@@ -112,7 +112,7 @@ impl GuiController {
         let gui = RuffleGui::new(
             event_loop,
             initial_movie_url.clone(),
-            PlayerOptions::from(&preferences),
+            LaunchOptions::from(&preferences),
             preferences.clone(),
         );
         let system_fonts =
@@ -204,7 +204,7 @@ impl GuiController {
     pub fn create_movie(
         &mut self,
         player: &mut PlayerController,
-        opt: PlayerOptions,
+        opt: LaunchOptions,
         movie_url: Url,
     ) {
         let movie_view = MovieView::new(

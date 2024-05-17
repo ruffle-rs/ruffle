@@ -16,7 +16,7 @@ function dump(file) {
     } catch (e) {
         trace("file.name threw: " + e);
     }
-/*
+/* FIXME
     try {
         trace("file.size: " + file.size);
     } catch (e) {

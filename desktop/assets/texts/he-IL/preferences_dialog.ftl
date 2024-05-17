@@ -15,3 +15,4 @@ storage-backend = שמור מיקום קובץ
 storage-backend-disk = דיסק
 storage-backend-memory = זיכרון
 recent-limit = מגבלה אחרונה
+recent-clear = מחיקה

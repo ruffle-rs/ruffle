@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 /// Controls whether the content is letterboxed or pillarboxed when the
 /// player's aspect ratio does not match the movie's aspect ratio.
@@ -20,6 +21,22 @@ pub enum Letterbox {
     /// The content will always be letterboxed.
     #[serde(rename = "on")]
     On,
+}
+
+pub struct ParseEnumError;
+
+impl FromStr for Letterbox {
+    type Err = ParseEnumError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let letterbox = match s {
+            "off" => Letterbox::Off,
+            "fullscreen" => Letterbox::Fullscreen,
+            "on" => Letterbox::On,
+            _ => return Err(ParseEnumError),
+        };
+        Ok(letterbox)
+    }
 }
 
 /// The networking API access mode of the Ruffle player.

@@ -974,7 +974,6 @@ impl Player {
         }
 
         self.mutate_with_update_context(|context| {
-            // Propagate button events.
             let button_event = match event {
                 // ASCII characters convert directly to keyPress button events.
                 PlayerEvent::TextInput { codepoint }
@@ -994,12 +993,6 @@ impl Player {
                     }
                 }
                 _ => None,
-            };
-
-            let key_press_handled = if let Some(button_event) = button_event {
-                context.stage.handle_clip_event(context, button_event) == ClipEventResult::Handled
-            } else {
-                false
             };
 
             if let PlayerEvent::KeyDown { key_code, key_char }
@@ -1058,20 +1051,6 @@ impl Player {
                 }
             }
 
-            // keyPress events take precedence over text input.
-            if !key_press_handled {
-                if let PlayerEvent::TextInput { codepoint } = event {
-                    if let Some(text) = context.focus_tracker.get_as_edit_text() {
-                        text.text_input(codepoint, context);
-                    }
-                }
-                if let PlayerEvent::TextControl { code } = event {
-                    if let Some(text) = context.focus_tracker.get_as_edit_text() {
-                        text.text_control_input(code, context);
-                    }
-                }
-            }
-
             // Propagate clip events.
             let (clip_event, listener) = match event {
                 PlayerEvent::KeyDown { .. } => {
@@ -1122,6 +1101,46 @@ impl Player {
                         },
                         false,
                     );
+                }
+            }
+
+            // Propagate button events.
+            // It has to be done after propagating the clip event,
+            // so that KeyPress is always fired after KeyDown.
+            let key_press_handled = if let Some(button_event) = button_event {
+                context.stage.handle_clip_event(context, button_event) == ClipEventResult::Handled
+            } else {
+                false
+            };
+
+            // KeyPress events take precedence over text input.
+            if !key_press_handled {
+                if let Some(text) = context.focus_tracker.get_as_edit_text() {
+                    if let PlayerEvent::TextInput { codepoint } = event {
+                        text.text_input(codepoint, context);
+                    }
+                    if let PlayerEvent::TextControl { code } = event {
+                        text.text_control_input(code, context);
+                    }
+                }
+            }
+
+            // KeyPress events also take precedence over keyboard navigation.
+            // Note that keyboard navigation works only when the highlight is visible.
+            if !key_press_handled && context.focus_tracker.highlight().is_visible() {
+                if let Some(focus) = context.focus_tracker.get() {
+                    if matches!(
+                        event,
+                        PlayerEvent::KeyDown {
+                            key_code: KeyCode::Return,
+                            ..
+                        } | PlayerEvent::TextInput { codepoint: ' ' }
+                    ) {
+                        // The button/clip is pressed and then immediately released.
+                        // We do not have to wait for KeyUp.
+                        focus.handle_clip_event(context, ClipEvent::Press);
+                        focus.handle_clip_event(context, ClipEvent::Release);
+                    }
                 }
             }
 
@@ -2753,7 +2772,7 @@ impl FromStr for PlayerRuntime {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let player_runtime = match s {
             "air" => PlayerRuntime::AIR,
-            "flashPlayer" => PlayerRuntime::FlashPlayer,
+            "flash_player" => PlayerRuntime::FlashPlayer,
             _ => return Err(ParseEnumError),
         };
         Ok(player_runtime)

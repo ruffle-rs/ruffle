@@ -14,11 +14,11 @@ workspace = true
 clap = { workspace = true }
 cpal = "0.15.3"
 egui = { workspace = true }
-egui_extras = { version = "0.27.2", features = ["image"] }
-egui-wgpu = { version = "0.27.2", features = ["winit"] }
+egui_extras = { git = "https://github.com/emilk/egui.git", rev = "738ea75453567c5f17a543e68aec8c48097cae7b", features = ["image"] }
+egui-wgpu = { git = "https://github.com/emilk/egui.git", rev = "738ea75453567c5f17a543e68aec8c48097cae7b", features = ["winit"] }
 image = { workspace = true, features = ["png"] }
-egui-winit = "0.27.2"
-fontdb = "0.16"
+egui-winit = { git = "https://github.com/emilk/egui.git", rev = "738ea75453567c5f17a543e68aec8c48097cae7b" }
+fontdb = "0.17"
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymoser", "default_compatibility_rules", "egui"] }
 ruffle_render = { path = "../render", features = ["clap"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
@@ -28,25 +28,26 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing-appender = "0.2.3"
 winit = "0.29.15"
-webbrowser = "0.8.15"
+webbrowser = "1.0.1"
 url = { workspace = true }
 dirs = "5.0"
 rfd = "0.14.1"
 anyhow = { workspace = true }
 bytemuck = { workspace = true }
 os_info = { version = "3", default-features = false }
-unic-langid = "0.9.4"
+unic-langid = "0.9.5"
 sys-locale = "0.3.1"
 wgpu = { workspace = true }
 futures = { workspace = true }
 chrono = { workspace = true }
 fluent-templates = "0.9.4"
-toml_edit = { version = "0.22.12", features = ["parse"] }
+toml_edit = { version = "0.22.13", features = ["parse"] }
 gilrs = "0.10"
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"]}
 
 # Deliberately held back to match tracy client used by profiling crate
 tracing-tracy = { version = "=0.10.4", optional = true }
+rand = "0.8.5"
 
 [target.'cfg(windows)'.dependencies]
 winapi = "0.3.9"

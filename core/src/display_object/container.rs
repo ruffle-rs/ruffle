@@ -84,6 +84,11 @@ pub fn dispatch_added_to_stage_event<'gc>(
             dispatch_added_to_stage_event(grandchild, context)
         }
     }
+    if let Some(button) = child.as_avm2_button() {
+        if let Some(child) = button.get_state_child(button.state().into()) {
+            dispatch_added_to_stage_event(child, context);
+        }
+    }
 }
 
 /// Dispatch an `added` event to one object, and log any errors encountered

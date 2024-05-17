@@ -101,6 +101,14 @@ fn process_html_entity(src: &WStr) -> Option<WString> {
     Some(result_str)
 }
 
+#[derive(Default, Clone, Debug, Eq, PartialEq)]
+pub enum TextDisplay {
+    #[default]
+    Block,
+    Inline,
+    None,
+}
+
 /// A set of text formatting options to be applied to some part, or the whole
 /// of, a given text field.
 ///
@@ -131,6 +139,7 @@ pub struct TextFormat {
     pub bullet: Option<bool>,
     pub url: Option<WString>,
     pub target: Option<WString>,
+    pub display: Option<TextDisplay>,
 }
 
 impl TextFormat {
@@ -191,6 +200,7 @@ impl TextFormat {
             // TODO: These are probably empty strings by default
             url: Some(WString::new()),
             target: Some(WString::new()),
+            display: None,
         }
     }
 
@@ -284,6 +294,11 @@ impl TextFormat {
             } else {
                 None
             },
+            display: if self.display == rhs.display {
+                self.display
+            } else {
+                None
+            },
         }
     }
 
@@ -311,6 +326,7 @@ impl TextFormat {
             bullet: self.bullet.or(rhs.bullet),
             url: self.url.or(rhs.url),
             target: self.target.or(rhs.target),
+            display: self.display.or(rhs.display),
         }
     }
 }
@@ -542,6 +558,7 @@ impl TextSpan {
             bullet: Some(self.bullet),
             url: Some(self.url.clone()),
             target: Some(self.target.clone()),
+            display: None, // TODO
         }
     }
 }

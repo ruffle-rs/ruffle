@@ -9,7 +9,6 @@ spoof-swf-url = Spoof SWF URL
 proxy = Proxy
 
 upgrade-http = Upgrade HTTP to HTTPS
-upgrade-http-check = Upgrade
 
 tcp-connections = TCP Connections
 tcp-connections-allow = Allow
@@ -65,8 +64,11 @@ scale-mode-force = Force
 
 player-version = Player Version
 
+player-runtime = Player Runtime
+player-runtime-flash = Flash Player
+player-runtime-air = Adobe AIR
+
 custom-framerate = Custom Framerate
 custom-framerate-suffix = {" "} fps
 
 dummy-external-interface = Dummy External Interface
-dummy-external-interface-check = Enable

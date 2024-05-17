@@ -3,6 +3,7 @@ use crate::layouts::BindLayouts;
 use crate::shaders::Shaders;
 use crate::{MaskState, PosColorVertex, PosVertex};
 use enum_map::{enum_map, Enum, EnumMap};
+use std::collections::HashMap;
 use wgpu::{vertex_attr_array, BlendState};
 
 pub const VERTEX_BUFFERS_DESCRIPTION_POS: [wgpu::VertexBufferLayout; 1] =
@@ -175,8 +176,8 @@ impl Pipelines {
 
         let bitmap_opaque = device.create_render_pipeline(&create_pipeline_descriptor(
             create_debug_label!("Bitmap opaque copy").as_deref(),
-            &shaders.bitmap_late_saturate_shader,
-            &shaders.bitmap_late_saturate_shader,
+            &shaders.bitmap_shader,
+            &shaders.bitmap_shader,
             &bitmap_opaque_pipeline_layout,
             None,
             &[Some(wgpu::ColorTargetState {
@@ -186,6 +187,7 @@ impl Pipelines {
             })],
             &VERTEX_BUFFERS_DESCRIPTION_POS,
             msaa_sample_count,
+            &[("late_saturate".to_owned(), 1.0)].into(),
         ));
 
         let bitmap_opaque_dummy_depth = device.create_render_pipeline(&create_pipeline_descriptor(
@@ -212,6 +214,7 @@ impl Pipelines {
             })],
             &VERTEX_BUFFERS_DESCRIPTION_POS,
             msaa_sample_count,
+            &Default::default(),
         ));
 
         Self {
@@ -235,6 +238,7 @@ fn create_pipeline_descriptor<'a>(
     color_target_state: &'a [Option<wgpu::ColorTargetState>],
     vertex_buffer_layout: &'a [wgpu::VertexBufferLayout<'a>],
     msaa_sample_count: u32,
+    fragment_constants: &'a HashMap<String, f64>,
 ) -> wgpu::RenderPipelineDescriptor<'a> {
     wgpu::RenderPipelineDescriptor {
         label,
@@ -243,11 +247,16 @@ fn create_pipeline_descriptor<'a>(
             module: vertex_shader,
             entry_point: "main_vertex",
             buffers: vertex_buffer_layout,
+            compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: fragment_shader,
             entry_point: "main_fragment",
             targets: color_target_state,
+            compilation_options: wgpu::PipelineCompilationOptions {
+                constants: fragment_constants,
+                ..Default::default()
+            },
         }),
         primitive: wgpu::PrimitiveState {
             topology: wgpu::PrimitiveTopology::TriangleList,
@@ -312,6 +321,7 @@ fn create_shape_pipeline(
             })],
             vertex_buffers_layout,
             msaa_sample_count,
+            &Default::default(),
         ))
     };
 
@@ -329,6 +339,7 @@ fn create_shape_pipeline(
             })],
             vertex_buffers_layout,
             msaa_sample_count,
+            &Default::default(),
         )),
         |mask_state| match mask_state {
             MaskState::NoMask => mask_render_state(

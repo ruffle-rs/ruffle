@@ -1,0 +1,50 @@
+# Start of Test 1
+[onResult works] started
+Navigator::fetch:
+  URL: http://localhost:8000/test1
+  Method: POST
+  Mime-Type: application/x-amf
+  Body: [00, 00, 00, 00, 00, 01, 00, 0B, 74, 65, 73, 74, 2E, 6D, 65, 74, 68, 6F, 64, 00, 02, 2F, 31, 00, 00, 00, 35, 0A, 00, 00, 00, 04, 02, 00, 0A, 41, 72, 67, 75, 6D, 65, 6E, 74, 20, 31, 01, 01, 00, 40, 5E, C0, 00, 00, 00, 00, 00, 03, 00, 03, 6B, 65, 79, 02, 00, 0C, 48, 65, 6C, 6C, 6F, 20, 57, 6F, 72, 6C, 64, 21, 00, 00, 09]
+[onResult works] passed!
+# End of Test 1
+
+# Start of Test 2
+// connection.onStatus(object)
+[onStatus] event.level = status
+[onStatus] event.code = NetConnection.Connect.Closed
+[onStatus works] started
+Navigator::fetch:
+  URL: http://localhost:8000/test2
+  Method: POST
+  Mime-Type: application/x-amf
+  Body: [00, 00, 00, 00, 00, 01, 00, 0B, 74, 65, 73, 74, 2E, 6D, 65, 74, 68, 6F, 64, 00, 02, 2F, 31, 00, 00, 00, 05, 0A, 00, 00, 00, 00]
+[onStatus works] passed!
+# End of Test 2
+
+# Start of Test 3
+// connection.onStatus(object)
+[onStatus] event.level = status
+[onStatus] event.code = NetConnection.Connect.Closed
+[Call 1 with headers] started
+[Call 2 with headers] started
+Navigator::fetch:
+  URL: http://localhost:8000/test3
+  Method: POST
+  Mime-Type: application/x-amf
+  Body: [00, 00, 00, 02, 00, 08, 52, 65, 71, 75, 69, 72, 65, 64, 01, 00, 00, 00, 08, 02, 00, 05, 76, 61, 6C, 75, 65, 00, 09, 44, 75, 70, 6C, 69, 63, 61, 74, 65, 01, 00, 00, 00, 01, 05, 00, 02, 00, 0B, 74, 65, 73, 74, 2E, 6D, 65, 74, 68, 6F, 64, 00, 02, 2F, 31, 00, 00, 00, 05, 0A, 00, 00, 00, 00, 00, 0B, 74, 65, 73, 74, 2E, 6D, 65, 74, 68, 6F, 64, 00, 02, 2F, 32, 00, 00, 00, 05, 0A, 00, 00, 00, 00]
+[Call 1 with headers] passed!
+[Call 2 with headers] passed!
+# End of Test 3
+
+# Start of Test 4
+// connection.onStatus(object)
+[onStatus] event.level = status
+[onStatus] event.code = NetConnection.Connect.Closed
+[Expected failure] started
+Navigator::fetch:
+  URL: http://localhost:8000/test4
+  Method: POST
+  Mime-Type: application/x-amf
+  Body: [00, 00, 00, 00, 00, 01, 00, 07, 66, 61, 69, 6C, 75, 72, 65, 00, 02, 2F, 31, 00, 00, 00, 05, 0A, 00, 00, 00, 00]
+// connection.onStatus(undefined)
+# End of Test 4

@@ -136,13 +136,8 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         self.0.read().movie.clone()
     }
 
-    fn set_parent(&self, context: &mut UpdateContext<'_, 'gc>, parent: Option<DisplayObject<'gc>>) {
-        let had_parent = self.parent().is_some();
-        self.base_mut(context.gc_context)
-            .set_parent_ignoring_orphan_list(parent);
-        let has_parent = self.parent().is_some();
-
-        if self.movie().is_action_script_3() && had_parent && !has_parent {
+    fn on_parent_removed(&self, context: &mut UpdateContext<'_, 'gc>) {
+        if self.movie().is_action_script_3() {
             context.avm2.add_orphan_obj((*self).into())
         }
     }
@@ -224,9 +219,19 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
         if let Some(child) = self.iter_render_list().next() {
             if let Some(int) = child.as_interactive() {
                 if int.as_displayobject().movie().is_action_script_3() {
-                    return int
+                    let res = int
                         .mouse_pick_avm2(context, point, require_button_mode)
                         .combine_with_parent((*self).into());
+                    if let Avm2MousePick::Hit(target) = res {
+                        if target.as_displayobject().as_ptr() == child.as_ptr() {
+                            if self.mouse_enabled() {
+                                return Avm2MousePick::Hit((*self).into());
+                            } else {
+                                return Avm2MousePick::PropagateToParent;
+                            }
+                        }
+                    }
+                    return res;
                 } else {
                     let avm1_result = int.mouse_pick_avm1(context, point, require_button_mode);
                     if let Some(result) = avm1_result {

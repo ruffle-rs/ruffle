@@ -324,12 +324,22 @@ impl PreferencesDialog {
     fn show_misc_preferences(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
         ui.label(text(locale, "recent-limit"));
 
-        let previous = self.recent_limit;
-        DragValue::new(&mut self.recent_limit).ui(ui);
+        ui.horizontal(|ui| {
+            let previous = self.recent_limit;
+            DragValue::new(&mut self.recent_limit).ui(ui);
 
-        if self.recent_limit != previous {
-            self.recent_limit_changed = true;
-        }
+            if self.recent_limit != previous {
+                self.recent_limit_changed = true;
+            }
+
+            if ui.button(text(locale, "recent-clear")).clicked() {
+                if let Err(e) = self.preferences.write_recents(|writer| {
+                    writer.clear();
+                }) {
+                    tracing::warn!("Couldn't update recents: {e}");
+                }
+            }
+        });
 
         ui.end_row()
     }

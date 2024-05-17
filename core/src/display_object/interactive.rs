@@ -25,7 +25,7 @@ use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use std::time::Duration;
-use swf::{Point, Twips};
+use swf::{Point, Rectangle, Twips};
 use web_time::Instant;
 
 /// Find the lowest common ancestor between the display objects in `from` and
@@ -76,6 +76,9 @@ bitflags! {
 
         /// Whether this `InteractiveObject` accepts double-clicks.
         const DOUBLE_CLICK_ENABLED = 1 << 1;
+
+        /// Whether this `InteractiveObject` is currently focused.
+        const HAS_FOCUS = 1 << 2;
     }
 }
 
@@ -165,6 +168,18 @@ pub trait TInteractiveObject<'gc>:
         self.raw_interactive_mut(mc)
             .flags
             .set(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED, value)
+    }
+
+    fn has_focus(self) -> bool {
+        self.raw_interactive()
+            .flags
+            .contains(InteractiveObjectFlags::HAS_FOCUS)
+    }
+
+    fn set_has_focus(self, mc: &Mutation<'gc>, value: bool) {
+        self.raw_interactive_mut(mc)
+            .flags
+            .set(InteractiveObjectFlags::HAS_FOCUS, value)
     }
 
     fn context_menu(self) -> Avm2Value<'gc> {
@@ -536,6 +551,14 @@ pub trait TInteractiveObject<'gc>:
     ) {
     }
 
+    /// If this object has focus, this method drops it.
+    fn drop_focus(&self, context: &mut UpdateContext<'_, 'gc>) {
+        if self.has_focus() {
+            let tracker = context.focus_tracker;
+            tracker.set(None, context);
+        }
+    }
+
     fn call_focus_handler(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
@@ -600,6 +623,11 @@ pub trait TInteractiveObject<'gc>:
         }
     }
 
+    /// Get the bounds of the focus highlight.
+    fn highlight_bounds(self) -> Rectangle<Twips> {
+        self.as_displayobject().world_bounds()
+    }
+
     /// Whether this object is included in tab ordering.
     fn is_tabbable(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
         self.tab_enabled(context)
@@ -613,20 +641,16 @@ pub trait TInteractiveObject<'gc>:
         if context.swf.is_action_script_3() {
             self.raw_interactive()
                 .tab_enabled
-                .unwrap_or_else(|| self.tab_enabled_avm2_default(context))
+                .unwrap_or_else(|| self.tab_enabled_default(context))
         } else {
-            self.tab_enabled_avm1(context)
+            self.as_displayobject()
+                .get_avm1_boolean_property(context, "tabEnabled", |context| {
+                    self.tab_enabled_default(context)
+                })
         }
     }
 
-    /// Look up the `tabEnabled` property from AVM1.
-    ///
-    /// Do not use this directly, use [`Self::is_tabbable()`] or [`Self::tab_enabled()`].
-    fn tab_enabled_avm1(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
-        false
-    }
-
-    fn tab_enabled_avm2_default(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+    fn tab_enabled_default(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
         false
     }
 
@@ -634,7 +658,8 @@ pub trait TInteractiveObject<'gc>:
         if context.swf.is_action_script_3() {
             self.raw_interactive_mut(context.gc()).tab_enabled = Some(value)
         } else {
-            tracing::warn!("Trying to set tab_enabled on an AVM1 object, this has no effect")
+            self.as_displayobject()
+                .set_avm1_property(context, "tabEnabled", value.into());
         }
     }
 
@@ -653,6 +678,27 @@ pub trait TInteractiveObject<'gc>:
             value
         };
         self.raw_interactive_mut(context.gc()).tab_index = value
+    }
+
+    /// Whether event handlers (e.g. onKeyUp, onPress) should be fired for the given event.
+    fn should_fire_event_handlers(
+        &self,
+        context: &mut UpdateContext<'_, 'gc>,
+        event: ClipEvent,
+    ) -> bool {
+        // Event handlers are supported only by SWF6+.
+        if context.swf.version() < 6 {
+            return false;
+        }
+
+        // Non-keyboard events are always handled.
+        if !event.is_key_event() {
+            return true;
+        }
+
+        // Keyboard events don't fire their methods unless the object has focus (#2120).
+        // The focus highlight also has to be active (see test focus_keyboard_press).
+        self.has_focus() && context.focus_tracker.highlight().is_active()
     }
 }
 

@@ -56,7 +56,7 @@ impl DisplayObjectSearchWindow {
 
         Window::new("Display Object Picker")
             .open(&mut keep_open)
-            .scroll2([true, true])
+            .scroll([true, true])
             .show(egui_ctx, |ui| {
                 ui.horizontal(|ui| {
                     ui.checkbox(&mut self.include_hidden, "Include Hidden");
@@ -110,9 +110,6 @@ impl DisplayObjectSearchWindow {
     }
 
     fn object_matches(&self, object: DisplayObject, cursor: Point<Twips>) -> bool {
-        if !self.include_hidden && !object.visible() {
-            return false;
-        }
         if self.only_mouse_enabled
             && !object
                 .as_interactive()
@@ -131,6 +128,10 @@ impl DisplayObjectSearchWindow {
         object: DisplayObject<'gc>,
         add_to: &mut Vec<DisplayObjectTree>,
     ) {
+        if !self.include_hidden && !object.visible() {
+            return;
+        }
+
         if self.object_matches(object, cursor) {
             let handle = DisplayObjectHandle::new(context, object);
             let color =

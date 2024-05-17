@@ -987,7 +987,7 @@ impl<'gc> EditText<'gc> {
             ..Default::default()
         });
 
-        let visible_selection = if edit_text.flags.contains(EditTextFlag::HAS_FOCUS) {
+        let visible_selection = if self.has_focus() {
             edit_text.selection
         } else {
             None
@@ -2114,21 +2114,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.0.write(context.gc_context).object = Some(to.into());
     }
 
-    fn set_parent(&self, context: &mut UpdateContext<'_, 'gc>, parent: Option<DisplayObject<'gc>>) {
-        let had_parent = self.parent().is_some();
-        self.base_mut(context.gc_context)
-            .set_parent_ignoring_orphan_list(parent);
-        let has_parent = self.parent().is_some();
-
-        if self.movie().is_action_script_3() && had_parent && !has_parent {
-            let had_focus = self.0.read().flags.contains(EditTextFlag::HAS_FOCUS);
-            if had_focus {
-                let tracker = context.focus_tracker;
-                tracker.set(None, context);
-            }
-        }
-    }
-
     fn self_bounds(&self) -> Rectangle<Twips> {
         self.0.read().bounds.clone()
     }
@@ -2237,7 +2222,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         });
 
         if edit_text.layout.is_empty() && !edit_text.flags.contains(EditTextFlag::READ_ONLY) {
-            let visible_selection = if edit_text.flags.contains(EditTextFlag::HAS_FOCUS) {
+            let visible_selection = if self.has_focus() {
                 edit_text.selection
             } else {
                 None
@@ -2275,11 +2260,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn avm1_unload(&self, context: &mut UpdateContext<'_, 'gc>) {
-        let had_focus = self.0.read().flags.contains(EditTextFlag::HAS_FOCUS);
-        if had_focus {
-            let tracker = context.focus_tracker;
-            tracker.set(None, context);
-        }
+        self.drop_focus(context);
 
         if let Some(node) = self.maskee() {
             node.set_masker(context.gc_context, None, true);
@@ -2457,17 +2438,12 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         &self,
         context: &mut UpdateContext<'_, 'gc>,
         focused: bool,
-        other: Option<InteractiveObject<'gc>>,
+        _other: Option<InteractiveObject<'gc>>,
     ) {
-        let is_action_script_3 = self.movie().is_action_script_3();
-        let mut text = self.0.write(context.gc_context);
-        text.flags.set(EditTextFlag::HAS_FOCUS, focused);
-        if !focused && !is_action_script_3 {
-            text.selection = None;
+        let is_avm1 = !self.movie().is_action_script_3();
+        if !focused && is_avm1 {
+            self.0.write(context.gc_context).selection = None;
         }
-        drop(text);
-
-        self.call_focus_handler(context, focused, other);
     }
 
     fn is_highlightable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
@@ -2483,11 +2459,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         self.tab_enabled(context)
     }
 
-    fn tab_enabled_avm1(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        self.get_avm1_boolean_property(context, "tabEnabled", |_| true)
-    }
-
-    fn tab_enabled_avm2_default(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+    fn tab_enabled_default(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
         self.is_editable()
     }
 }
@@ -2497,7 +2469,6 @@ bitflags::bitflags! {
     struct EditTextFlag: u16 {
         const FIRING_VARIABLE_BINDING = 1 << 0;
         const HAS_BACKGROUND = 1 << 1;
-        const HAS_FOCUS = 1 << 2;
 
         // The following bits need to match `swf::EditTextFlag`.
         const READ_ONLY = 1 << 3;

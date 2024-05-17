@@ -74,7 +74,6 @@ pub struct Avm2ButtonData<'gc> {
     /// The AVM2 representation of this button.
     object: Lock<Option<Avm2Object<'gc>>>,
 
-    has_focus: Cell<bool>,
     enabled: Cell<bool>,
     use_hand_cursor: Cell<bool>,
 
@@ -135,7 +134,6 @@ impl<'gc> Avm2Button<'gc> {
                 } else {
                     ButtonTracking::Push
                 }),
-                has_focus: Cell::new(false),
                 enabled: Cell::new(true),
                 use_hand_cursor: Cell::new(true),
                 skip_current_frame: Cell::new(false),
@@ -531,12 +529,11 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
             // The `added` event for the state itself, as well as the `addedToStage` events, all see
             // the actual parent
             dispatch_added_event((*self).into(), up_state, true, context);
-            if let Some(container) = up_state.as_container() {
-                if up_should_fire {
-                    for child in container.iter_render_list() {
-                        dispatch_added_to_stage_event(child, context);
-                    }
-                }
+            if self.avm2_stage(context).is_some() {
+                // note: AFAIK we can only get here if we were created by timeline,
+                // which means that `self` can't have listeners set yet,
+                // but up_state can.
+                dispatch_added_to_stage_event((*self).into(), context);
             }
 
             if needs_avm2_construction {
@@ -824,17 +821,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
         }
     }
 
-    fn on_focus_changed(
-        &self,
-        context: &mut UpdateContext<'_, 'gc>,
-        focused: bool,
-        other: Option<InteractiveObject<'gc>>,
-    ) {
-        self.0.has_focus.set(focused);
-        self.call_focus_handler(context, focused, other);
-    }
-
-    fn tab_enabled_avm2_default(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+    fn tab_enabled_default(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
         true
     }
 }
