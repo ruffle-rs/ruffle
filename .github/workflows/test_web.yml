@@ -34,7 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node_version: ["20", "21"]
+        node_version: ["20", "22"]
         os: [ubuntu-22.04, windows-latest]
 
     steps:
@@ -102,7 +102,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        node_version: ["20", "21"]
+        node_version: ["20", "22"]
         os: [ubuntu-22.04, windows-latest]
 
     steps:
