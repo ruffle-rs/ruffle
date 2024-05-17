@@ -5,14 +5,13 @@ use ruffle_render::shader_source::SHADER_FILTER_COMMON;
 #[derive(Debug)]
 pub struct Shaders {
     pub color_shader: wgpu::ShaderModule,
+    /// This has a pipeline-overridable `bool` constant, `late_saturate`,
+    /// with a default of `false`. It switches to performing saturation
+    /// after re-multiplying the alpha, rather than before. This is used
+    /// for the Stage3D `bitmap_opaque` pipeline, which needs to be able to
+    /// avoid changing initially-in-range rgb values (regadless of whether
+    /// dividing by the alpha value would produce an out-of-range value).
     pub bitmap_shader: wgpu::ShaderModule,
-    /// Like `bitmap_shader` but performs saturation after we've
-    /// re-multiplied the alpha. This is used for the Stage3D
-    /// `bitmap_opaque` pipeline, which needs to able to
-    /// avoid changing initially-in-range rgb values (regadless
-    /// of whether dividing by the alpha value would produce
-    /// an out-of-range value).
-    pub bitmap_late_saturate_shader: wgpu::ShaderModule,
     pub gradient_shader: wgpu::ShaderModule,
     pub copy_srgb_shader: wgpu::ShaderModule,
     pub copy_shader: wgpu::ShaderModule,
@@ -27,16 +26,10 @@ pub struct Shaders {
 impl Shaders {
     pub fn new(device: &wgpu::Device) -> Self {
         let color_shader = make_shader(device, "color.wgsl", include_str!("../shaders/color.wgsl"));
-        let bitmap = include_str!("../shaders/bitmap.wgsl");
         let bitmap_shader = make_shader(
             device,
             "bitmap.wgsl",
-            &bitmap.replace("#EARLY_SATURATE#", "true"),
-        );
-        let bitmap_late_saturate_shader = make_shader(
-            device,
-            "bitmap.wgsl",
-            &bitmap.replace("#EARLY_SATURATE#", "false"),
+            include_str!("../shaders/bitmap.wgsl"),
         );
         let copy_srgb_shader = make_shader(
             device,
@@ -90,7 +83,6 @@ impl Shaders {
         Self {
             color_shader,
             bitmap_shader,
-            bitmap_late_saturate_shader,
             gradient_shader,
             copy_srgb_shader,
             copy_shader,
