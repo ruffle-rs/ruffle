@@ -57,7 +57,6 @@ jobs:
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
-          sudo add-apt-repository ppa:kisak/kisak-mesa -y
           sudo apt-get update
           sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev libgtk-3-dev mesa-vulkan-drivers libpango1.0-dev libudev-dev
 
@@ -82,9 +81,7 @@ jobs:
 
       - name: Run tests with image tests
         if: runner.os != 'macOS'
-        # TODO: Disallow retries in general once we can allow only after SIGABRT.
-        # See: https://github.com/nextest-rs/nextest/issues/1172
-        run: cargo nextest run --cargo-profile ci --workspace --locked --no-fail-fast --retries 2 -j 4 --features imgtests,lzma,jpegxr
+        run: cargo nextest run --cargo-profile ci --workspace --locked --no-fail-fast -j 4 --features imgtests,lzma,jpegxr
         env:
           # This is to counteract the disabling by rust-cache.
           # See: https://github.com/Swatinem/rust-cache/issues/43
