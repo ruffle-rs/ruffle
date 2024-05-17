@@ -795,6 +795,10 @@ pub fn optimize<'gc>(
                         if let Ok(Some((_, script))) =
                             outer_scope.domain().get_defining_script(&multiname)
                         {
+                            // NOTE: avmplus rewrites this into a FindDef, and it caches
+                            // the results of that FindDef at runtime, rather than caching
+                            // the lookup here, in the verifier. However, this discrepancy
+                            // is unlikely to cause any real problems with SWFs.
                             *op = Op::GetScriptGlobals { script };
 
                             let script_globals = script.globals_if_init();
