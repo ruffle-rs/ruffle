@@ -13,7 +13,7 @@ concurrency:
 jobs:
   changes:
     name: Paths filter
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       should_run: ${{ steps.filter.outputs.src }}
     steps:
@@ -39,12 +39,12 @@ jobs:
       fail-fast: false
       matrix:
         rust_version: [stable]
-        os: [ubuntu-22.04, windows-latest, macos-14]
+        os: [ubuntu-24.04, windows-latest, macos-14]
         include:
           - rust_version: nightly
-            os: ubuntu-22.04
+            os: ubuntu-24.04
           - rust_version: beta
-            os: ubuntu-22.04
+            os: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v4
@@ -116,7 +116,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.should_run == 'true'
     name: Lints with Rust ${{ matrix.rust_version }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     continue-on-error: ${{ matrix.rust_version == 'nightly' || matrix.rust_version == 'beta' }}
     strategy:
       fail-fast: false
@@ -157,7 +157,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.should_run == 'true'
     name: Check dependencies
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v4
@@ -181,12 +181,12 @@ jobs:
     strategy:
       matrix:
         rust_version: [stable]
-        os: [ubuntu-22.04, windows-latest, macos-14]
+        os: [ubuntu-24.04, windows-latest, macos-14]
         include:
           - rust_version: nightly
-            os: ubuntu-22.04
+            os: ubuntu-24.04
           - rust_version: beta
-            os: ubuntu-22.04
+            os: ubuntu-24.04
 
     steps:
       - name: No-op
