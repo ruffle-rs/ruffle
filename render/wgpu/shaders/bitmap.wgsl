@@ -10,6 +10,7 @@ struct VertexOutput {
 @group(2) @binding(0) var<uniform> textureTransforms: common__TextureTransforms;
 @group(2) @binding(1) var texture: texture_2d<f32>;
 @group(2) @binding(2) var texture_sampler: sampler;
+override late_saturate: bool = false;
 
 @vertex
 fn main_vertex(in: common__VertexInput) -> VertexOutput {
@@ -27,13 +28,11 @@ fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     if( color.a > 0.0 ) {
         color = vec4<f32>(color.rgb / color.a, color.a);
         color = color * transforms.mult_color + transforms.add_color;
-        // NOTE: `#EARLY_SATURATE#` is replaced with a boolean value at compile time.
-        // TODO: Switch to pipeline constants once `wgpu` is updated to `0.20`.
-        if (#EARLY_SATURATE# == true) {
+        if (!late_saturate) {
             color = saturate(color);
         }
         color = vec4<f32>(color.rgb * color.a, color.a);
-        if (#EARLY_SATURATE# == false) {
+        if (late_saturate) {
             color = saturate(color);
         }
     }
