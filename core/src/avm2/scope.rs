@@ -253,6 +253,8 @@ impl<'gc> ScopeChain<'gc> {
             }
         }
 
+        // Nothing was found, and we can be sure that nothing will be
+        // found here at all (there were no `with` scopes).
         None
     }
 
