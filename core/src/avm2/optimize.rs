@@ -785,6 +785,8 @@ pub fn optimize<'gc>(
                                     stack.push_any();
                                 }
                             } else {
+                                // If `get_entry_for_multiname` returned `Some(None)`, there was
+                                // a `with` scope in the outer ScopeChain- abort optimization.
                                 stack_push_done = true;
                                 stack.push_any();
                             }

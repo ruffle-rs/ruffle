@@ -331,6 +331,14 @@ pub fn verify_method<'gc>(
                         )?));
                     }
 
+                    // Split this `GetLex` into a `FindPropStrict` and a `GetProperty`.
+                    // A `GetLex` is guaranteed to take up at least 2 bytes. We need
+                    // one byte for the opcode and at least one byte for the multiname
+                    // index. Overwrite the op registered at the opcode byte with a
+                    // `FindPropStrict` op, and register a non-jumpable `GetProperty`
+                    // op at the next byte. This isn't the best way to do it, but it's
+                    // simpler than actually emitting ops and rewriting the jump offsets
+                    // to match.
                     assert!(bytes_read > 1);
                     byte_info[previous_position as usize] =
                         ByteInfo::OpStart(AbcOp::FindPropStrict { index });
