@@ -23,7 +23,7 @@ ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 regex = "1.10.4"
 
 [dev-dependencies]
-ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug", "avm_debug", "audio", "mp3", "default_font"] }
+ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug", "avm_debug", "audio", "mp3", "default_font", "test_only_as3"] }
 ruffle_test_framework = { path = "framework" }
 libtest-mimic = "0.7.3"
 walkdir = { workspace = true }

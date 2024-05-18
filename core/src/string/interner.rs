@@ -144,6 +144,8 @@ impl<'gc> AvmStringInterner<'gc> {
         start_index: usize,
         end_index: usize,
     ) -> AvmString<'gc> {
+        // TODO: return original string if full range
+
         // It's assumed that start<=end. This is tested later via a range check.
         if start_index == end_index {
             return self.empty.into();

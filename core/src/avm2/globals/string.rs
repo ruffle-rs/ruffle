@@ -667,6 +667,20 @@ fn to_upper_case<'gc>(
     .into())
 }
 
+#[cfg(feature = "test_only_as3")]
+fn is_dependent<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(prim) = this.as_primitive() {
+        if let Value::String(s) = *prim {
+            return Ok(s.owner().is_some().into());
+        }
+    }
+    panic!();
+}
+
 /// Construct `String`'s class.
 pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     let mc = activation.context.gc_context;
@@ -700,6 +714,23 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
         activation.avm2().as3_namespace,
         PUBLIC_INSTANCE_AND_PROTO_METHODS,
     );
+
+    #[cfg(feature = "test_only_as3")]
+    {
+        use crate::avm2::api_version::ApiVersion;
+        use crate::avm2::namespace::Namespace;
+
+        const TEST_METHODS: &[(&str, NativeMethodImpl)] = &[("isDependent", is_dependent)];
+        class.define_builtin_instance_methods(
+            mc,
+            Namespace::package(
+                "__ruffle__",
+                ApiVersion::AllVersions,
+                &mut activation.borrow_gc(),
+            ),
+            TEST_METHODS,
+        );
+    }
 
     const CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
     class.define_constant_int_class_traits(
