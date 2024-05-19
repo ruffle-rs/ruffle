@@ -1,5 +1,5 @@
 use crate::avm2::dynamic_map::DynamicKey;
-use crate::avm2::function::Executable;
+use crate::avm2::function::BoundMethod;
 use crate::avm2::method::{Method, ParamConfig};
 use crate::avm2::object::TObject;
 use crate::avm2::traits::{Trait, TraitKind};
@@ -166,7 +166,7 @@ impl FunctionInfo {
         }
     }
 
-    pub fn from_executable(executable: &Executable, stubbed: bool) -> Self {
+    pub fn from_bound_method(executable: &BoundMethod, stubbed: bool) -> Self {
         Self {
             returns: executable
                 .return_type()
@@ -345,7 +345,7 @@ impl Definition {
             if let Some(executable) = object.as_executable() {
                 output.get_or_insert_with(Default::default).function.insert(
                     name.to_string(),
-                    FunctionInfo::from_executable(&executable, false),
+                    FunctionInfo::from_bound_method(&executable, false),
                 );
             }
         } else {
@@ -494,7 +494,7 @@ pub fn capture_specification(context: &mut UpdateContext, output: &Path) {
                     .get_or_insert_with(Default::default);
                 instance_traits.function.insert(
                     name.to_string(),
-                    FunctionInfo::from_executable(
+                    FunctionInfo::from_bound_method(
                         &executable,
                         namespace_stubs.has_method(&name.to_string()),
                     ),

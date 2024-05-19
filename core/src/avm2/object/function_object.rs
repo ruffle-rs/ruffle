@@ -1,7 +1,7 @@
 //! Function object impl
 
 use crate::avm2::activation::Activation;
-use crate::avm2::function::Executable;
+use crate::avm2::function::BoundMethod;
 use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
@@ -41,7 +41,7 @@ pub fn function_allocator<'gc>(
         activation.context.gc_context,
         FunctionObjectData {
             base,
-            exec: Executable::from_method(
+            exec: BoundMethod::from_method(
                 Method::Native(dummy),
                 activation.create_scopechain(),
                 None,
@@ -78,7 +78,7 @@ pub struct FunctionObjectData<'gc> {
     base: ScriptObjectData<'gc>,
 
     /// Executable code
-    exec: Executable<'gc>,
+    exec: BoundMethod<'gc>,
 
     /// Attached prototype (note: not the same thing as base object's proto)
     prototype: Option<Object<'gc>>,
@@ -120,7 +120,7 @@ impl<'gc> FunctionObject<'gc> {
         subclass_object: Option<ClassObject<'gc>>,
     ) -> FunctionObject<'gc> {
         let fn_class = activation.avm2().classes().function;
-        let exec = Executable::from_method(method, scope, receiver, subclass_object);
+        let exec = BoundMethod::from_method(method, scope, receiver, subclass_object);
 
         FunctionObject(GcCell::new(
             activation.context.gc_context,
@@ -169,7 +169,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         Ok(Value::Object(Object::from(*self)))
     }
 
-    fn as_executable(&self) -> Option<Ref<Executable<'gc>>> {
+    fn as_executable(&self) -> Option<Ref<BoundMethod<'gc>>> {
         Some(Ref::map(self.0.read(), |r| &r.exec))
     }
 

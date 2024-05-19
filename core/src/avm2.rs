@@ -4,7 +4,6 @@ use std::rc::Rc;
 
 use crate::avm2::class::AllocatorFn;
 use crate::avm2::error::make_error_1107;
-use crate::avm2::function::Executable;
 use crate::avm2::globals::SystemClasses;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::scope::ScopeChain;
@@ -598,8 +597,13 @@ impl<'gc> Avm2<'gc> {
     }
 
     /// Pushes an executable on the call stack
-    pub fn push_call(&self, mc: &Mutation<'gc>, calling: &Executable<'gc>) {
-        self.call_stack.write(mc).push(calling)
+    pub fn push_call(
+        &self,
+        mc: &Mutation<'gc>,
+        method: Method<'gc>,
+        superclass: Option<ClassObject<'gc>>,
+    ) {
+        self.call_stack.write(mc).push(method, superclass)
     }
 
     /// Pushes script initializer (global init) on the call stack

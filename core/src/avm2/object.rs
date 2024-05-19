@@ -7,7 +7,7 @@ use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::error;
 use crate::avm2::events::{DispatchList, Event};
-use crate::avm2::function::Executable;
+use crate::avm2::function::{exec, BoundMethod};
 use crate::avm2::property::Property;
 use crate::avm2::regexp::RegExp;
 use crate::avm2::value::{Hint, Value};
@@ -600,11 +600,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 class,
             } = full_method;
 
-            return Executable::from_method(method, scope, None, Some(class)).exec(
-                Value::from(self.into()),
+            return exec(
+                method,
+                scope,
+                self.into(),
+                Some(class),
                 arguments,
                 activation,
-                class.into(), //Deliberately invalid.
+                class.into(), //Callee deliberately invalid.
             );
         }
 
@@ -1153,8 +1156,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
-    /// Get this object's `Executable`, if it has one.
-    fn as_executable(&self) -> Option<Ref<Executable<'gc>>> {
+    /// Get this object's `BoundMethod`, if it has one.
+    fn as_executable(&self) -> Option<Ref<BoundMethod<'gc>>> {
         None
     }
 

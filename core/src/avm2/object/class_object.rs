@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Allocator, AllocatorFn, Class, ClassHashWrapper};
 use crate::avm2::error::{argument_error, make_error_1127, reference_error, type_error};
-use crate::avm2::function::Executable;
+use crate::avm2::function::exec;
 use crate::avm2::method::Method;
 use crate::avm2::object::function_object::FunctionObject;
 use crate::avm2::object::script_object::{scriptobject_allocator, ScriptObjectData};
@@ -477,10 +477,16 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let scope = self.0.read().instance_scope;
-        let constructor =
-            Executable::from_method(self.0.read().constructor, scope, None, Some(self));
-
-        constructor.exec(receiver, arguments, activation, self.into())
+        let method = self.0.read().constructor;
+        exec(
+            method,
+            scope,
+            receiver.coerce_to_object(activation)?,
+            Some(self),
+            arguments,
+            activation,
+            self.into(),
+        )
     }
 
     /// Call the instance's native initializer.
@@ -495,10 +501,16 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let scope = self.0.read().instance_scope;
-        let constructor =
-            Executable::from_method(self.0.read().native_constructor, scope, None, Some(self));
-
-        constructor.exec(receiver, arguments, activation, self.into())
+        let method = self.0.read().native_constructor;
+        exec(
+            method,
+            scope,
+            receiver.coerce_to_object(activation)?,
+            Some(self),
+            arguments,
+            activation,
+            self.into(),
+        )
     }
 
     /// Supercall a method defined in this class.
@@ -842,9 +854,15 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(call_handler) = self.0.read().call_handler {
             let scope = self.0.read().class_scope;
-            let func = Executable::from_method(call_handler, scope, None, Some(self));
-
-            func.exec(receiver, arguments, activation, self.into())
+            exec(
+                call_handler,
+                scope,
+                receiver.coerce_to_object(activation)?,
+                Some(self),
+                arguments,
+                activation,
+                self.into(),
+            )
         } else if arguments.len() == 1 {
             arguments[0].coerce_to_type(activation, self.inner_class_definition())
         } else {
