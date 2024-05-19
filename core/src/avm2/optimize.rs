@@ -58,16 +58,7 @@ impl<'gc> OptValue<'gc> {
         }
     }
 
-    pub fn of_type(class: ClassObject<'gc>) -> Self {
-        let class = class.inner_class_definition();
-        Self {
-            class: Some(class),
-            vtable: Some(class.instance_vtable()),
-            ..Self::any()
-        }
-    }
-
-    pub fn of_type_from_class(class: Class<'gc>) -> Self {
+    pub fn of_type(class: Class<'gc>) -> Self {
         Self {
             class: Some(class),
             vtable: Some(class.instance_vtable()),
@@ -131,11 +122,12 @@ impl<'gc> Stack<'gc> {
     }
 
     fn push_class_object(&mut self, class: ClassObject<'gc>) {
-        self.0.push(OptValue::of_type(class));
+        self.0
+            .push(OptValue::of_type(class.inner_class_definition()));
     }
 
     fn push_class(&mut self, class: Class<'gc>) {
-        self.0.push(OptValue::of_type_from_class(class));
+        self.0.push(OptValue::of_type(class));
     }
 
     fn push_any(&mut self) {
@@ -191,30 +183,38 @@ pub fn optimize<'gc>(
 
     // this is unfortunate, but way more convenient than grabbing types from Activation
     struct Types<'gc> {
-        pub object: ClassObject<'gc>,
-        pub int: ClassObject<'gc>,
-        pub uint: ClassObject<'gc>,
-        pub number: ClassObject<'gc>,
-        pub boolean: ClassObject<'gc>,
-        pub class: ClassObject<'gc>,
-        pub string: ClassObject<'gc>,
-        pub array: ClassObject<'gc>,
-        pub function: ClassObject<'gc>,
-        pub void: ClassObject<'gc>,
-        pub namespace: ClassObject<'gc>,
+        pub object: Class<'gc>,
+        pub int: Class<'gc>,
+        pub uint: Class<'gc>,
+        pub number: Class<'gc>,
+        pub boolean: Class<'gc>,
+        pub class: Class<'gc>,
+        pub string: Class<'gc>,
+        pub array: Class<'gc>,
+        pub function: Class<'gc>,
+        pub void: Class<'gc>,
+        pub namespace: Class<'gc>,
     }
     let types = Types {
-        object: activation.avm2().classes().object,
-        int: activation.avm2().classes().int,
-        uint: activation.avm2().classes().uint,
-        number: activation.avm2().classes().number,
-        boolean: activation.avm2().classes().boolean,
-        class: activation.avm2().classes().class,
-        string: activation.avm2().classes().string,
-        array: activation.avm2().classes().array,
-        function: activation.avm2().classes().function,
-        void: activation.avm2().classes().void,
-        namespace: activation.avm2().classes().namespace,
+        object: activation.avm2().classes().object.inner_class_definition(),
+        int: activation.avm2().classes().int.inner_class_definition(),
+        uint: activation.avm2().classes().uint.inner_class_definition(),
+        number: activation.avm2().classes().number.inner_class_definition(),
+        boolean: activation.avm2().classes().boolean.inner_class_definition(),
+        class: activation.avm2().classes().class.inner_class_definition(),
+        string: activation.avm2().classes().string.inner_class_definition(),
+        array: activation.avm2().classes().array.inner_class_definition(),
+        function: activation
+            .avm2()
+            .classes()
+            .function
+            .inner_class_definition(),
+        void: activation.avm2().classes().void.inner_class_definition(),
+        namespace: activation
+            .avm2()
+            .classes()
+            .namespace
+            .inner_class_definition(),
     };
 
     let method_body = method
@@ -227,12 +227,16 @@ pub fn optimize<'gc>(
 
     let (this_class, this_vtable) = if let Some(this_class) = activation.subclass_object() {
         if this_value.is_of_type(activation, this_class.inner_class_definition()) {
-            (Some(this_class), Some(this_class.inner_class_definition().instance_vtable()))
+            (
+                Some(this_class),
+                Some(this_class.inner_class_definition().instance_vtable()),
+            )
         } else if this_value
             .as_object()
             .and_then(|o| o.as_class_object())
             .map(|c| c.inner_class_definition() == this_class.inner_class_definition())
-            .unwrap_or(false) {
+            .unwrap_or(false)
+        {
             // Static method
             (
                 Some(activation.avm2().classes().class),
@@ -264,7 +268,7 @@ pub fn optimize<'gc>(
 
     for (i, argument_type) in argument_types.iter().enumerate() {
         if let Some(argument_type) = argument_type {
-            initial_local_types.set(i + 1, OptValue::of_type_from_class(*argument_type));
+            initial_local_types.set(i + 1, OptValue::of_type(*argument_type));
             // `i + 1` because the receiver takes up local #0
         }
     }
@@ -349,10 +353,7 @@ pub fn optimize<'gc>(
                                     (source_local.class, target_local.class)
                                 {
                                     if source_local_class == target_local_class {
-                                        merged_types.set(
-                                            i,
-                                            OptValue::of_type_from_class(source_local_class),
-                                        );
+                                        merged_types.set(i, OptValue::of_type(source_local_class));
                                     }
                                 }
                             }
@@ -383,20 +384,20 @@ pub fn optimize<'gc>(
             }
             Op::CoerceB => {
                 let stack_value = stack.pop_or_any();
-                if stack_value.class == Some(types.boolean.inner_class_definition()) {
+                if stack_value.class == Some(types.boolean) {
                     *op = Op::Nop;
                 }
-                stack.push_class_object(types.boolean);
+                stack.push_class(types.boolean);
             }
             Op::CoerceD => {
                 let stack_value = stack.pop_or_any();
-                if stack_value.class == Some(types.number.inner_class_definition())
-                    || stack_value.class == Some(types.int.inner_class_definition())
-                    || stack_value.class == Some(types.uint.inner_class_definition())
+                if stack_value.class == Some(types.number)
+                    || stack_value.class == Some(types.int)
+                    || stack_value.class == Some(types.uint)
                 {
                     *op = Op::Nop;
                 }
-                stack.push_class_object(types.number);
+                stack.push_class(types.number);
             }
             Op::CoerceI => {
                 let stack_value = stack.pop_or_any();
@@ -404,12 +405,12 @@ pub fn optimize<'gc>(
                 if stack_value.contains_valid_integer {
                     *op = Op::Nop;
                 }
-                stack.push_class_object(types.int);
+                stack.push_class(types.int);
             }
             Op::CoerceO => {
                 stack.pop();
 
-                stack.push_class_object(types.object);
+                stack.push_class(types.object);
             }
             Op::ConvertO => {
                 // This has no stack effect that code can notice:
@@ -422,11 +423,11 @@ pub fn optimize<'gc>(
                 if stack_value.guaranteed_null {
                     *op = Op::Nop;
                 }
-                stack.push_class_object(types.string);
+                stack.push_class(types.string);
             }
             Op::ConvertS => {
                 stack.pop();
-                stack.push_class_object(types.string);
+                stack.push_class(types.string);
             }
             Op::CoerceU => {
                 let stack_value = stack.pop_or_any();
@@ -434,7 +435,7 @@ pub fn optimize<'gc>(
                 if stack_value.contains_valid_unsigned {
                     *op = Op::Nop;
                 }
-                stack.push_class_object(types.uint);
+                stack.push_class(types.uint);
             }
             Op::Equals
             | Op::StrictEquals
@@ -444,24 +445,24 @@ pub fn optimize<'gc>(
             | Op::GreaterEquals => {
                 stack.pop();
                 stack.pop();
-                stack.push_class_object(types.boolean);
+                stack.push_class(types.boolean);
             }
             Op::Not => {
                 stack.pop();
-                stack.push_class_object(types.boolean);
+                stack.push_class(types.boolean);
             }
             Op::PushTrue | Op::PushFalse => {
-                stack.push_class_object(types.boolean);
+                stack.push_class(types.boolean);
             }
             Op::PushNull => {
                 // TODO: we should push null type here
                 stack.push(OptValue::null());
             }
             Op::PushUndefined => {
-                stack.push_class_object(types.void);
+                stack.push_class(types.void);
             }
             Op::PushNaN => {
-                stack.push_class_object(types.number);
+                stack.push_class(types.number);
             }
             Op::PushByte { value } => {
                 let mut new_value = OptValue::of_type(types.int);
@@ -522,15 +523,15 @@ pub fn optimize<'gc>(
             }
             Op::Increment => {
                 stack.pop();
-                stack.push_class_object(types.number);
+                stack.push_class(types.number);
             }
             Op::Decrement => {
                 stack.pop();
-                stack.push_class_object(types.number);
+                stack.push_class(types.number);
             }
             Op::Negate => {
                 stack.pop();
-                stack.push_class_object(types.number);
+                stack.push_class(types.number);
             }
             Op::AddI => {
                 stack.pop();
@@ -554,14 +555,14 @@ pub fn optimize<'gc>(
             Op::Add => {
                 let value2 = stack.pop_or_any();
                 let value1 = stack.pop_or_any();
-                if (value1.class == Some(types.int.inner_class_definition())
-                    || value1.class == Some(types.uint.inner_class_definition())
-                    || value1.class == Some(types.number.inner_class_definition()))
-                    && (value2.class == Some(types.int.inner_class_definition())
-                        || value2.class == Some(types.uint.inner_class_definition())
-                        || value2.class == Some(types.number.inner_class_definition()))
+                if (value1.class == Some(types.int)
+                    || value1.class == Some(types.uint)
+                    || value1.class == Some(types.number))
+                    && (value2.class == Some(types.int)
+                        || value2.class == Some(types.uint)
+                        || value2.class == Some(types.number))
                 {
-                    stack.push_class_object(types.number);
+                    stack.push_class(types.number);
                 } else {
                     stack.push_any();
                 }
@@ -569,22 +570,22 @@ pub fn optimize<'gc>(
             Op::Subtract => {
                 stack.pop();
                 stack.pop();
-                stack.push_class_object(types.number);
+                stack.push_class(types.number);
             }
             Op::Multiply => {
                 stack.pop();
                 stack.pop();
-                stack.push_class_object(types.number);
+                stack.push_class(types.number);
             }
             Op::Divide => {
                 stack.pop();
                 stack.pop();
-                stack.push_class_object(types.number);
+                stack.push_class(types.number);
             }
             Op::Modulo => {
                 stack.pop();
                 stack.pop();
-                stack.push_class_object(types.number);
+                stack.push_class(types.number);
             }
             Op::BitNot => {
                 stack.pop();
@@ -621,29 +622,29 @@ pub fn optimize<'gc>(
                 stack.push_any();
             }
             Op::PushDouble { .. } => {
-                stack.push_class_object(types.number);
+                stack.push_class(types.number);
             }
             Op::PushNamespace { .. } => {
-                stack.push_class_object(types.namespace);
+                stack.push_class(types.namespace);
             }
             Op::PushString { .. } => {
-                stack.push_class_object(types.string);
+                stack.push_class(types.string);
             }
             Op::NewArray { num_args } => {
                 stack.popn(*num_args);
 
-                stack.push_class_object(types.array);
+                stack.push_class(types.array);
             }
             Op::NewObject { num_args } => {
                 stack.popn(*num_args * 2);
 
-                stack.push_class_object(types.object);
+                stack.push_class(types.object);
             }
             Op::NewFunction { .. } => {
-                stack.push_class_object(types.function);
+                stack.push_class(types.function);
             }
             Op::NewClass { .. } => {
-                stack.push_class_object(types.class);
+                stack.push_class(types.class);
             }
             Op::NewCatch { .. } => {
                 // Avoid handling for now
@@ -651,21 +652,21 @@ pub fn optimize<'gc>(
             }
             Op::IsType { .. } => {
                 stack.pop();
-                stack.push_class_object(types.boolean);
+                stack.push_class(types.boolean);
             }
             Op::IsTypeLate => {
                 stack.pop();
                 stack.pop();
-                stack.push_class_object(types.boolean);
+                stack.push_class(types.boolean);
             }
             Op::InstanceOf => {
                 stack.pop();
                 stack.pop();
-                stack.push_class_object(types.boolean);
+                stack.push_class(types.boolean);
             }
             Op::TypeOf => {
                 stack.pop();
-                stack.push_class_object(types.string);
+                stack.push_class(types.string);
             }
             Op::ApplyType { num_types } => {
                 stack.popn(*num_types);
@@ -686,7 +687,7 @@ pub fn optimize<'gc>(
             }
             Op::EscXAttr | Op::EscXElem => {
                 stack.pop();
-                stack.push_class_object(types.string);
+                stack.push_class(types.string);
             }
             Op::GetDescendants { multiname } => {
                 stack.pop_for_multiname(*multiname);
@@ -703,16 +704,16 @@ pub fn optimize<'gc>(
             Op::AsType { class } => {
                 let stack_value = stack.pop_or_any();
 
-                let class_is_primitive = *class == types.int.inner_class_definition()
-                    || *class == types.uint.inner_class_definition()
-                    || *class == types.number.inner_class_definition()
-                    || *class == types.boolean.inner_class_definition()
-                    || *class == types.void.inner_class_definition();
+                let class_is_primitive = *class == types.int
+                    || *class == types.uint
+                    || *class == types.number
+                    || *class == types.boolean
+                    || *class == types.void;
 
                 let mut new_value = OptValue::any();
                 if !class_is_primitive {
                     // if T is non-nullable, we can assume the result is typed T
-                    new_value = OptValue::of_type_from_class(*class);
+                    new_value = OptValue::of_type(*class);
                 }
                 if let Some(stack_class) = stack_value.class {
                     if *class == stack_class {
@@ -734,11 +735,11 @@ pub fn optimize<'gc>(
 
                 if stack_value.guaranteed_null {
                     // Coercing null to a non-primitive or void is a noop.
-                    if *class != types.int.inner_class_definition()
-                        && *class != types.uint.inner_class_definition()
-                        && *class != types.number.inner_class_definition()
-                        && *class != types.boolean.inner_class_definition()
-                        && *class != types.void.inner_class_definition()
+                    if *class != types.int
+                        && *class != types.uint
+                        && *class != types.number
+                        && *class != types.boolean
+                        && *class != types.void
                     {
                         *op = Op::Nop;
                     }
@@ -876,7 +877,7 @@ pub fn optimize<'gc>(
             Op::In => {
                 stack.pop();
                 stack.pop();
-                stack.push_class_object(types.boolean);
+                stack.push_class(types.boolean);
             }
             Op::NextName => {
                 stack.pop();
@@ -897,7 +898,7 @@ pub fn optimize<'gc>(
                 index_register,
                 object_register,
             } => {
-                stack.push_class_object(types.boolean);
+                stack.push_class(types.boolean);
                 local_types.set_any(*index_register as usize);
                 local_types.set_any(*object_register as usize);
             }
@@ -1080,7 +1081,7 @@ pub fn optimize<'gc>(
 
                 stack.pop();
 
-                stack.push_class_object(types.boolean);
+                stack.push_class(types.boolean);
             }
             Op::Construct { num_args } => {
                 // Arguments
@@ -1348,7 +1349,7 @@ pub fn optimize<'gc>(
             }
             Op::Li32 => {
                 stack.pop();
-                stack.push_class_object(types.int);
+                stack.push_class(types.int);
             }
             Op::Sxi1 | Op::Sxi8 | Op::Sxi16 => {
                 stack.pop();
@@ -1362,7 +1363,7 @@ pub fn optimize<'gc>(
             }
             Op::Lf32 | Op::Lf64 => {
                 stack.pop();
-                stack.push_class_object(types.number);
+                stack.push_class(types.number);
             }
             Op::ReturnVoid | Op::Throw | Op::LookupSwitch(_) => {
                 // End of block
