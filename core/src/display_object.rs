@@ -463,8 +463,15 @@ impl<'gc> DisplayObjectBase<'gc> {
             value = 0.0.into();
         }
 
-        let cos = f64::cos(self.rotation.into_radians());
-        let sin = f64::sin(self.rotation.into_radians());
+        // Similarly, a rotation of `NaN` can be reported to ActionScript, but we
+        // treat it as 0.0 when calculating the matrix
+        let mut rot = self.rotation.into_radians();
+        if rot.is_nan() {
+            rot = 0.0;
+        }
+
+        let cos = f64::cos(rot);
+        let sin = f64::sin(rot);
         let matrix = &mut self.transform.matrix;
         matrix.a = (cos * value.unit()) as f32;
         matrix.b = (sin * value.unit()) as f32;
@@ -490,8 +497,15 @@ impl<'gc> DisplayObjectBase<'gc> {
             value = 0.0.into();
         }
 
-        let cos = f64::cos(self.rotation.into_radians() + self.skew);
-        let sin = f64::sin(self.rotation.into_radians() + self.skew);
+        // Similarly, a rotation of `NaN` can be reported to ActionScript, but we
+        // treat it as 0.0 when calculating the matrix
+        let mut rot = self.rotation.into_radians();
+        if rot.is_nan() {
+            rot = 0.0;
+        }
+
+        let cos = f64::cos(rot + self.skew);
+        let sin = f64::sin(rot + self.skew);
         let matrix = &mut self.transform.matrix;
         matrix.c = (-sin * value.unit()) as f32;
         matrix.d = (cos * value.unit()) as f32;
