@@ -268,5 +268,10 @@ pub fn create_class<'gc>(
         Method::from_builtin(class_call, "<Function call handler>", gc_context),
     );
 
+    function_class.mark_traits_loaded(activation.context.gc_context);
+    function_class
+        .init_vtable(&mut activation.context)
+        .expect("Native class's vtable should initialize");
+
     function_class
 }

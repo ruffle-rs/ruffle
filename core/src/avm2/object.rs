@@ -602,12 +602,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
             return exec(
                 method,
-                scope,
+                scope.expect("Scope should exist here"),
                 self.into(),
-                Some(class),
+                class,
                 arguments,
                 activation,
-                class.into(), //Callee deliberately invalid.
+                ScriptObject::custom_object(activation.context.gc_context, None, None), // Callee deliberately invalid.
             );
         }
 

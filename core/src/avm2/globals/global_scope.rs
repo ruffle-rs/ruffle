@@ -36,11 +36,18 @@ pub fn create_class<'gc>(
     object_class: Class<'gc>,
 ) -> Class<'gc> {
     let mc = activation.context.gc_context;
-    Class::new(
+    let class = Class::new(
         QName::new(activation.avm2().public_namespace_base_version, "global"),
         Some(object_class),
         Method::from_builtin(instance_init, "<global instance initializer>", mc),
         Method::from_builtin(class_init, "<global class initializer>", mc),
         mc,
-    )
+    );
+
+    class.mark_traits_loaded(activation.context.gc_context);
+    class
+        .init_vtable(&mut activation.context)
+        .expect("Native class's vtable should initialize");
+
+    class
 }

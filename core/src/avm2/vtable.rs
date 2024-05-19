@@ -11,6 +11,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
+use crate::context::UpdateContext;
 use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, Mutation};
 use std::cell::Ref;
@@ -24,10 +25,6 @@ pub struct VTable<'gc>(GcCell<'gc, VTableData<'gc>>);
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct VTableData<'gc> {
-    /// should always be Some post-initialization
-    defining_class: Option<ClassObject<'gc>>,
-
-    /// should always be Some post-initialization
     scope: Option<ScopeChain<'gc>>,
 
     protected_namespace: Option<Namespace<'gc>>,
@@ -55,8 +52,8 @@ pub struct VTableData<'gc> {
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct ClassBoundMethod<'gc> {
-    pub class: ClassObject<'gc>,
-    pub scope: ScopeChain<'gc>,
+    pub class: Option<ClassObject<'gc>>,
+    pub scope: Option<ScopeChain<'gc>>,
     pub method: Method<'gc>,
 }
 
@@ -65,7 +62,6 @@ impl<'gc> VTable<'gc> {
         VTable(GcCell::new(
             mc,
             VTableData {
-                defining_class: None,
                 scope: None,
                 protected_namespace: None,
                 resolved_traits: PropertyMap::new(),
@@ -87,7 +83,6 @@ impl<'gc> VTable<'gc> {
         let vt = VTable(GcCell::new(
             mc,
             VTableData {
-                defining_class: None,
                 scope: None,
                 protected_namespace: None,
                 resolved_traits: rt,
@@ -104,10 +99,6 @@ impl<'gc> VTable<'gc> {
         ));
 
         vt
-    }
-
-    pub fn duplicate(self, mc: &Mutation<'gc>) -> Self {
-        VTable(GcCell::new(mc, self.0.read().clone()))
     }
 
     pub fn resolved_traits(&self) -> Ref<'_, PropertyMap<'gc, Property>> {
@@ -220,12 +211,13 @@ impl<'gc> VTable<'gc> {
     #[allow(clippy::if_same_then_else)]
     pub fn init_vtable(
         self,
-        defining_class: ClassObject<'gc>,
+        defining_class: Option<ClassObject<'gc>>,
+        protected_namespace: Option<Namespace<'gc>>,
         traits: &[Trait<'gc>],
-        scope: ScopeChain<'gc>,
+        scope: Option<ScopeChain<'gc>>,
         superclass_vtable: Option<Self>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
+        context: &mut UpdateContext<'_, 'gc>,
+    ) {
         // Let's talk about slot_ids and disp_ids.
         // Specification is one thing, but reality is another.
 
@@ -277,15 +269,12 @@ impl<'gc> VTable<'gc> {
         // so long-term it's still something we should verify.
         // (and it's far from the only verification check we lack anyway)
 
-        let mut write = self.0.write(activation.context.gc_context);
+        let mut write = self.0.write(context.gc_context);
         let write = write.deref_mut();
 
-        write.defining_class = Some(defining_class);
-        write.scope = Some(scope);
+        write.scope = scope;
 
-        write.protected_namespace = defining_class
-            .inner_class_definition()
-            .protected_namespace();
+        write.protected_namespace = protected_namespace;
 
         if let Some(superclass_vtable) = superclass_vtable {
             write.resolved_traits = superclass_vtable.0.read().resolved_traits.clone();
@@ -434,11 +423,10 @@ impl<'gc> VTable<'gc> {
                 }
                 TraitKind::Slot { slot_id, .. }
                 | TraitKind::Const { slot_id, .. }
-                | TraitKind::Function { slot_id, .. }
                 | TraitKind::Class { slot_id, .. } => {
                     let slot_id = *slot_id;
 
-                    let value = trait_to_default_value(scope, trait_data, activation);
+                    let value = trait_to_default_value(trait_data);
                     let value = Some(value);
 
                     let new_slot_id = if slot_id == 0 {
@@ -467,36 +455,18 @@ impl<'gc> VTable<'gc> {
                             type_name, unit, ..
                         } => (
                             Property::new_slot(new_slot_id),
-                            PropertyClass::name(
-                                activation.context.gc_context,
-                                type_name.clone(),
-                                *unit,
-                            ),
-                        ),
-                        TraitKind::Function { .. } => (
-                            Property::new_slot(new_slot_id),
-                            PropertyClass::Class(
-                                activation
-                                    .avm2()
-                                    .classes()
-                                    .function
-                                    .inner_class_definition(),
-                            ),
+                            PropertyClass::name(context.gc_context, type_name.clone(), *unit),
                         ),
                         TraitKind::Const {
                             type_name, unit, ..
                         } => (
                             Property::new_const_slot(new_slot_id),
-                            PropertyClass::name(
-                                activation.context.gc_context,
-                                type_name.clone(),
-                                *unit,
-                            ),
+                            PropertyClass::name(context.gc_context, type_name.clone(), *unit),
                         ),
                         TraitKind::Class { .. } => (
                             Property::new_const_slot(new_slot_id),
                             PropertyClass::Class(
-                                activation.avm2().classes().class.inner_class_definition(),
+                                context.avm2.classes().class.inner_class_definition(),
                             ),
                         ),
                         _ => unreachable!(),
@@ -510,10 +480,9 @@ impl<'gc> VTable<'gc> {
 
                     slot_classes[new_slot_id as usize] = new_class;
                 }
+                TraitKind::Function { .. } => panic!("TraitKind::Function shouldn't appear"),
             }
         }
-
-        Ok(())
     }
 
     /// Retrieve a bound instance method suitable for use as a value.
@@ -548,7 +517,13 @@ impl<'gc> VTable<'gc> {
             method,
         } = method;
 
-        FunctionObject::from_method(activation, method, scope, Some(receiver), Some(class))
+        FunctionObject::from_method(
+            activation,
+            method,
+            scope.expect("Scope should exist here"),
+            Some(receiver),
+            class,
+        )
     }
 
     /// Install a const trait on the global object.
@@ -606,20 +581,11 @@ impl<'gc> VTable<'gc> {
     }
 }
 
-fn trait_to_default_value<'gc>(
-    scope: ScopeChain<'gc>,
-    trait_data: &Trait<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-) -> Value<'gc> {
+fn trait_to_default_value<'gc>(trait_data: &Trait<'gc>) -> Value<'gc> {
     match trait_data.kind() {
         TraitKind::Slot { default_value, .. } => *default_value,
         TraitKind::Const { default_value, .. } => *default_value,
-        TraitKind::Function { function, .. } => {
-            FunctionObject::from_function(activation, *function, scope)
-                .unwrap()
-                .into()
-        }
-        TraitKind::Class { .. } => Value::Undefined,
+        TraitKind::Class { .. } => Value::Null,
         _ => unreachable!(),
     }
 }

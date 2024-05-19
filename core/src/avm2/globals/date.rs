@@ -1392,5 +1392,10 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
         activation,
     );
 
+    class.mark_traits_loaded(activation.context.gc_context);
+    class
+        .init_vtable(&mut activation.context)
+        .expect("Native class's vtable should initialize");
+
     class
 }

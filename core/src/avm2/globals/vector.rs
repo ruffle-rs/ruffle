@@ -922,6 +922,12 @@ pub fn create_generic_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<
 
     class.set_attributes(mc, ClassAttributes::GENERIC | ClassAttributes::FINAL);
     class.set_instance_allocator(mc, generic_vector_allocator);
+
+    class.mark_traits_loaded(activation.context.gc_context);
+    class
+        .init_vtable(&mut activation.context)
+        .expect("Native class's vtable should initialize");
+
     class
 }
 
@@ -1006,6 +1012,11 @@ pub fn create_builtin_class<'gc>(
         activation.avm2().as3_namespace,
         AS3_INSTANCE_METHODS,
     );
+
+    class.mark_traits_loaded(activation.context.gc_context);
+    class
+        .init_vtable(&mut activation.context)
+        .expect("Native class's vtable should initialize");
 
     class
 }
