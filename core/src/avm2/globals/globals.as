@@ -384,6 +384,9 @@ include "flash/text/engine/TextLineValidity.as"
 include "flash/text/engine/TextRotation.as"
 include "flash/text/engine/TypographicCase.as"
 
+include "flash/text/ime/CompositionAttributeRange.as"
+include "flash/text/ime/IIMEClient.as"
+
 include "flash/ui/ContextMenu.as"
 include "flash/ui/ContextMenuBuiltInItems.as"
 include "flash/ui/ContextMenuClipboardItems.as"
