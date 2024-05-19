@@ -75,5 +75,10 @@ pub fn create_class<'gc>(
         PUBLIC_INSTANCE_PROPERTIES,
     );
 
+    class_class.mark_traits_loaded(activation.context.gc_context);
+    class_class
+        .init_vtable(&mut activation.context)
+        .expect("Native class's vtable should initialize");
+
     class_class
 }

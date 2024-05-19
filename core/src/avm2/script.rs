@@ -229,6 +229,7 @@ impl<'gc> TranslationUnit<'gc> {
         self.0.write(activation.context.gc_context).classes[class_index as usize] = Some(class);
 
         class.load_traits(activation, self, class_index)?;
+        class.init_vtable(&mut activation.context)?;
 
         Ok(class)
     }
@@ -258,8 +259,14 @@ impl<'gc> TranslationUnit<'gc> {
 
         let global_obj = global_class.construct(activation, &[])?;
 
-        let mut script =
-            Script::from_abc_index(self, script_index, global_obj, domain, activation)?;
+        let mut script = Script::from_abc_index(
+            self,
+            script_index,
+            global_obj,
+            global_classdef,
+            domain,
+            activation,
+        )?;
         self.0.write(activation.context.gc_context).scripts[script_index as usize] = Some(script);
 
         script.load_traits(self, script_index, activation)?;
@@ -416,6 +423,9 @@ pub struct ScriptData<'gc> {
     /// The global object for the script.
     globals: Object<'gc>,
 
+    /// The class of this script's global object.
+    global_class: Option<Class<'gc>>,
+
     /// The domain associated with this script.
     domain: Domain<'gc>,
 
@@ -451,6 +461,7 @@ impl<'gc> Script<'gc> {
             mc,
             ScriptData {
                 globals,
+                global_class: None,
                 domain,
                 init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
@@ -478,6 +489,7 @@ impl<'gc> Script<'gc> {
         unit: TranslationUnit<'gc>,
         script_index: u32,
         globals: Object<'gc>,
+        global_class: Class<'gc>,
         domain: Domain<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
@@ -494,6 +506,7 @@ impl<'gc> Script<'gc> {
             activation.context.gc_context,
             ScriptData {
                 globals,
+                global_class: Some(global_class),
                 domain,
                 init,
                 traits: Vec::new(),
@@ -542,8 +555,18 @@ impl<'gc> Script<'gc> {
                     .export_class(newtrait.name(), *class, activation.context.gc_context);
             }
 
-            write.traits.push(newtrait);
+            write.traits.push(newtrait.clone());
+            write
+                .global_class
+                .expect("Global class should be initialized")
+                .define_instance_trait(activation.context.gc_context, newtrait);
         }
+
+        drop(write);
+
+        self.global_class()
+            .mark_traits_loaded(activation.context.gc_context);
+        self.global_class().init_vtable(&mut activation.context)?;
 
         Ok(())
     }
@@ -560,6 +583,17 @@ impl<'gc> Script<'gc> {
 
     pub fn translation_unit(self) -> Option<TranslationUnit<'gc>> {
         self.0.read().translation_unit
+    }
+
+    pub fn global_class(self) -> Class<'gc> {
+        self.0
+            .read()
+            .global_class
+            .expect("Global class should be initialized if it is accessed")
+    }
+
+    pub fn set_global_class(self, mc: &Mutation<'gc>, global_class: Class<'gc>) {
+        self.0.write(mc).global_class = Some(global_class);
     }
 
     /// Return the global scope for the script.
@@ -581,12 +615,17 @@ impl<'gc> Script<'gc> {
             let scope = ScopeChain::new(domain);
 
             globals.vtable().unwrap().init_vtable(
-                globals.instance_of().unwrap(),
+                globals.instance_of(),
+                globals
+                    .instance_of()
+                    .unwrap()
+                    .inner_class_definition()
+                    .protected_namespace(),
                 &self.traits()?,
-                scope,
+                Some(scope),
                 None,
-                &mut null_activation,
-            )?;
+                &mut null_activation.context,
+            );
             globals.install_instance_slots(context.gc_context);
 
             Avm2::run_script_initializer(*self, context)?;

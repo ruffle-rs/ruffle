@@ -248,12 +248,13 @@ impl<'gc> ClassObject<'gc> {
         class.validate_class(self.superclass_object())?;
 
         self.instance_vtable().init_vtable(
-            self,
+            Some(self),
+            class.protected_namespace(),
             &class.instance_traits(),
-            self.instance_scope(),
+            Some(self.instance_scope()),
             self.superclass_object().map(|cls| cls.instance_vtable()),
-            activation,
-        )?;
+            &mut activation.context,
+        );
         Ok(())
     }
 
@@ -283,12 +284,13 @@ impl<'gc> ClassObject<'gc> {
 
         // class vtable == class traits + Class instance traits
         self.class_vtable().init_vtable(
-            self,
+            Some(self),
+            class.protected_namespace(),
             &class.class_traits(),
-            self.class_scope(),
+            Some(self.class_scope()),
             Some(self.instance_of().unwrap().instance_vtable()),
-            activation,
-        )?;
+            &mut activation.context,
+        );
 
         self.link_interfaces(activation)?;
         self.install_class_vtable_and_slots(activation.context.gc_context);
@@ -327,22 +329,13 @@ impl<'gc> ClassObject<'gc> {
     pub fn link_interfaces(self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
         let mut write = self.0.write(activation.context.gc_context);
         let class = write.class;
-        let scope = write.class_scope;
 
-        let interface_names = class.direct_interfaces().to_vec();
-        let mut interfaces = Vec::with_capacity(interface_names.len());
+        let mut interfaces = Vec::with_capacity(class.direct_interfaces().len());
 
         let mut dedup = HashSet::new();
         let mut queue = vec![class];
         while let Some(cls) = queue.pop() {
-            for interface_name in &*cls.direct_interfaces() {
-                let interface = scope
-                    .domain()
-                    .get_class(&mut activation.context, interface_name)
-                    .ok_or_else(|| {
-                        Error::from(format!("Could not resolve interface {interface_name:?}"))
-                    })?;
-
+            for interface in &*cls.direct_interfaces() {
                 if !interface.is_interface() {
                     return Err(format!(
                         "Class {:?} is not an interface and cannot be implemented by classes",
@@ -351,9 +344,9 @@ impl<'gc> ClassObject<'gc> {
                     .into());
                 }
 
-                if dedup.insert(ClassHashWrapper(interface)) {
-                    queue.push(interface);
-                    interfaces.push(interface);
+                if dedup.insert(ClassHashWrapper(*interface)) {
+                    queue.push(*interface);
+                    interfaces.push(*interface);
                 }
             }
 
@@ -569,8 +562,13 @@ impl<'gc> ClassObject<'gc> {
                 scope,
                 method,
             } = self.instance_vtable().get_full_method(disp_id).unwrap();
-            let callee =
-                FunctionObject::from_method(activation, method, scope, Some(receiver), Some(class));
+            let callee = FunctionObject::from_method(
+                activation,
+                method,
+                scope.expect("Scope should exist here"),
+                Some(receiver),
+                class,
+            );
 
             callee.call(receiver.into(), arguments, activation)
         } else {
@@ -626,9 +624,9 @@ impl<'gc> ClassObject<'gc> {
                 let callee = FunctionObject::from_method(
                     activation,
                     method,
-                    scope,
+                    scope.expect("Scope should exist here"),
                     Some(receiver),
-                    Some(class),
+                    class,
                 );
 
                 // We call getters, but return the actual function object for normal methods
@@ -706,7 +704,7 @@ impl<'gc> ClassObject<'gc> {
                     method,
                 } = self.instance_vtable().get_full_method(disp_id).unwrap();
                 let callee =
-                    FunctionObject::from_method(activation, method, scope, Some(receiver), Some(class));
+                    FunctionObject::from_method(activation, method, scope.expect("Scope should exist here"), Some(receiver), class);
 
                 callee.call(receiver.into(), &[value], activation)?;
                 Ok(())
