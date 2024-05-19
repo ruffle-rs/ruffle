@@ -1,4 +1,4 @@
-use crate::avm2::function::{display_function, Executable};
+use crate::avm2::function::display_function;
 use crate::avm2::method::Method;
 use crate::avm2::object::ClassObject;
 use crate::string::WString;
@@ -27,11 +27,8 @@ impl<'gc> CallStack<'gc> {
         Self { stack: Vec::new() }
     }
 
-    pub fn push(&mut self, exec: &Executable<'gc>) {
-        self.stack.push(CallNode::Method {
-            method: exec.as_method(),
-            superclass: exec.bound_superclass(),
-        })
+    pub fn push(&mut self, method: Method<'gc>, superclass: Option<ClassObject<'gc>>) {
+        self.stack.push(CallNode::Method { method, superclass })
     }
 
     pub fn push_global_init(&mut self, script: Script<'gc>) {
