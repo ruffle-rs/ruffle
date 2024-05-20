@@ -307,6 +307,23 @@ pub fn make_error_1089<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1098<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    prefix: &AvmString<'gc>,
+) -> Error<'gc> {
+    let err = type_error(
+        activation,
+        &format!("Error #1098: Illegal prefix {} for no namespace.", prefix),
+        1098,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1107<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = verify_error(
         activation,

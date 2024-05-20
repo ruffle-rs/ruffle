@@ -6,6 +6,7 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Namespace;
+use crate::string::AvmString;
 use core::fmt;
 use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use std::cell::{Ref, RefMut};
@@ -17,11 +18,17 @@ pub fn namespace_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
+    let namespace = activation.context.avm2.public_namespace_base_version;
     Ok(NamespaceObject(GcCell::new(
         activation.context.gc_context,
         NamespaceObjectData {
             base,
-            namespace: activation.context.avm2.public_namespace_base_version,
+            namespace,
+            prefix: if namespace.as_uri_opt().is_some() {
+                Some("".into())
+            } else {
+                None
+            },
         },
     ))
     .into())
@@ -52,6 +59,9 @@ pub struct NamespaceObjectData<'gc> {
 
     /// The namespace name this object is associated with.
     namespace: Namespace<'gc>,
+
+    /// The prefix that this namespace has been given.
+    prefix: Option<AvmString<'gc>>,
 }
 
 impl<'gc> NamespaceObject<'gc> {
@@ -65,7 +75,15 @@ impl<'gc> NamespaceObject<'gc> {
 
         let this: Object<'gc> = NamespaceObject(GcCell::new(
             activation.context.gc_context,
-            NamespaceObjectData { base, namespace },
+            NamespaceObjectData {
+                base,
+                namespace,
+                prefix: if namespace.as_uri_opt().is_some() {
+                    Some("".into())
+                } else {
+                    None
+                },
+            },
         ))
         .into();
         this.install_instance_slots(activation.context.gc_context);
@@ -81,6 +99,14 @@ impl<'gc> NamespaceObject<'gc> {
 
     pub fn namespace(self) -> Namespace<'gc> {
         return self.0.read().namespace;
+    }
+
+    pub fn prefix(&self) -> Option<AvmString<'gc>> {
+        self.0.read().prefix
+    }
+
+    pub fn set_prefix(&self, mc: &Mutation<'gc>, prefix: Option<AvmString<'gc>>) {
+        self.0.write(mc).prefix = prefix;
     }
 }
 
