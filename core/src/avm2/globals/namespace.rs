@@ -10,6 +10,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
+use crate::string::AvmString;
 
 // All of these methods will be defined as both
 // AS3 instance methods and methods on the `Namespace` class prototype.
@@ -26,11 +27,13 @@ pub fn instance_init<'gc>(
 
         let (prefix, namespace) = match args {
             [prefix, uri] => {
-                let namespace = Namespace::package(
-                    uri.coerce_to_string(activation)?,
-                    api_version,
-                    &mut activation.borrow_gc(),
-                );
+                let namespace_uri = if let Value::Object(Object::QNameObject(qname)) = uri {
+                    qname.uri().unwrap_or_else(|| AvmString::from(""))
+                } else {
+                    uri.coerce_to_string(activation)?
+                };
+                let namespace =
+                    Namespace::package(namespace_uri, api_version, &mut activation.borrow_gc());
                 let prefix_str = prefix.coerce_to_string(activation)?;
 
                 // The order is important here to match Flash
@@ -144,11 +147,9 @@ pub fn prefix<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(o) = this.as_namespace_object() {
-        return if let Some(prefix) = o.prefix() {
-            Ok(prefix.into())
-        } else {
-            Ok(Value::Undefined)
-        };
+        if let Some(prefix) = o.prefix() {
+            return Ok(prefix.into());
+        }
     }
 
     Ok(Value::Undefined)

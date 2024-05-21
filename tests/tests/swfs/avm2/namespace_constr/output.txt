@@ -1,3 +1,7 @@
+namespace example = "value"
+ prefix: undefined
+ uri: "value"
+
 new Namespace()
  prefix: ""
  uri: ""
@@ -50,6 +54,14 @@ Namespace(otherNS)
  prefix: "otherPrefix"
  uri: "otherUri"
 
+new Namespace(qName)
+ prefix: undefined
+ uri: "namespace"
+
+Namespace(qName)
+ prefix: undefined
+ uri: "namespace"
+
 new Namespace(null, null)
  prefix: undefined
  uri: "null"
@@ -72,6 +84,10 @@ new Namespace(null, "NOT A VALID PREFIX")
 new Namespace(null, otherNS)
  prefix: undefined
  uri: "otherUri"
+
+new Namespace(null, qName)
+ prefix: undefined
+ uri: "namespace"
 
 new Namespace(undefined, null)
  prefix: undefined
@@ -96,6 +112,10 @@ new Namespace(undefined, otherNS)
  prefix: undefined
  uri: "otherUri"
 
+new Namespace(undefined, qName)
+ prefix: undefined
+ uri: "namespace"
+
 new Namespace("test", null)
  prefix: "test"
  uri: "null"
@@ -118,6 +138,10 @@ new Namespace("test", "NOT A VALID PREFIX")
 new Namespace("test", otherNS)
  prefix: "test"
  uri: "otherUri"
+
+new Namespace("test", qName)
+ prefix: "test"
+ uri: "namespace"
 
 new Namespace("", null)
  prefix: ""
@@ -143,6 +167,10 @@ new Namespace("", otherNS)
  prefix: ""
  uri: "otherUri"
 
+new Namespace("", qName)
+ prefix: ""
+ uri: "namespace"
+
 new Namespace("NOT A VALID PREFIX", null)
  prefix: undefined
  uri: "null"
@@ -166,6 +194,10 @@ new Namespace("NOT A VALID PREFIX", otherNS)
  prefix: undefined
  uri: "otherUri"
 
+new Namespace("NOT A VALID PREFIX", qName)
+ prefix: undefined
+ uri: "namespace"
+
 new Namespace(otherNS, null)
  prefix: "otherUri"
  uri: "null"
@@ -188,4 +220,35 @@ new Namespace(otherNS, "NOT A VALID PREFIX")
 new Namespace(otherNS, otherNS)
  prefix: "otherUri"
  uri: "otherUri"
+
+new Namespace(otherNS, qName)
+ prefix: "otherUri"
+ uri: "namespace"
+
+new Namespace(qName, null)
+ prefix: undefined
+ uri: "null"
+
+new Namespace(qName, undefined)
+ prefix: undefined
+ uri: "undefined"
+
+new Namespace(qName, "test")
+ prefix: undefined
+ uri: "test"
+
+new Namespace(qName, "")
+! TypeError: Error #1098: Illegal prefix namespace::name for no namespace.
+
+new Namespace(qName, "NOT A VALID PREFIX")
+ prefix: undefined
+ uri: "NOT A VALID PREFIX"
+
+new Namespace(qName, otherNS)
+ prefix: undefined
+ uri: "otherUri"
+
+new Namespace(qName, qName)
+ prefix: undefined
+ uri: "namespace"
 

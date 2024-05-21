@@ -24,7 +24,7 @@ pub fn namespace_allocator<'gc>(
         NamespaceObjectData {
             base,
             namespace,
-            prefix: if namespace.as_uri_opt().is_some() {
+            prefix: if namespace.as_uri().is_empty() {
                 Some("".into())
             } else {
                 None
@@ -78,7 +78,7 @@ impl<'gc> NamespaceObject<'gc> {
             NamespaceObjectData {
                 base,
                 namespace,
-                prefix: if namespace.as_uri_opt().is_some() {
+                prefix: if namespace.as_uri().is_empty() {
                     Some("".into())
                 } else {
                     None
