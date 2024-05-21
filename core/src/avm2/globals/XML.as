@@ -132,7 +132,7 @@ package {
             self.AS3::setName(name);
         };
 
-        prototype.namespace = function(prefix:String = null):* {
+        prototype.namespace = function(prefix:* = null):* {
             var self:XML = this;
             return self.AS3::namespace.apply(self, arguments);
         };
@@ -162,7 +162,7 @@ package {
             return self.AS3::child(name);
         };
 
-        prototype.childIndex = function():XMLList {
+        prototype.childIndex = function():int {
             var self:XML = this;
             return self.AS3::childIndex();
         };
@@ -254,27 +254,27 @@ package {
             return self.AS3::comments();
         }
 
-        prototype.processingInstructions = function(name:String = "*"):XMLList {
+        prototype.processingInstructions = function(name:* = "*"):XMLList {
             var self:XML = this;
             return self.AS3::processingInstructions(name);
         }
 
-        prototype.insertChildAfter = function(child1:Object, child2:Object):* {
+        prototype.insertChildAfter = function(child1:*, child2:*):* {
             var self:XML = this;
             return self.AS3::insertChildAfter(child1, child2);
         }
 
-        prototype.insertChildBefore = function(child1:Object, child2:Object):* {
+        prototype.insertChildBefore = function(child1:*, child2:*):* {
             var self:XML = this;
             return self.AS3::insertChildBefore(child1, child2);
         }
 
-        prototype.replace = function(propertyName:Object, value:*):XML {
+        prototype.replace = function(propertyName:*, value:*):XML {
             var self:XML = this;
             return self.AS3::replace(propertyName, value);
         }
 
-        prototype.setChildren = function(value:Object):XML {
+        prototype.setChildren = function(value:*):XML {
             var self:XML = this;
             return self.AS3::setChildren(value);
         }
