@@ -299,7 +299,7 @@ pub fn optimize<'gc>(
     }
 
     let mut has_simple_scoping = false;
-    if !jump_targets.contains_key(&0) || !jump_targets.contains_key(&1) {
+    if !jump_targets.contains_key(&0) && !jump_targets.contains_key(&1) {
         if matches!(code.get(0), Some(Op::GetLocal { index: 0 }))
             && matches!(code.get(1), Some(Op::PushScope))
         {
