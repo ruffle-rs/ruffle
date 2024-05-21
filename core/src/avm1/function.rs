@@ -472,19 +472,12 @@ impl<'gc> From<Gc<'gc, Avm1Function<'gc>>> for Executable<'gc> {
 /// Represents an `Object` that holds executable code.
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct FunctionObject<'gc> {
-    /// The script object base.
-    ///
-    /// TODO: Can we move the object's data into our own struct?
-    base: ScriptObject<'gc>,
-
-    data: GcCell<'gc, FunctionObjectData<'gc>>,
-}
+pub struct FunctionObject<'gc>(GcCell<'gc, FunctionObjectData<'gc>>);
 
 impl fmt::Debug for FunctionObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("FunctionObject")
-            .field("ptr", &self.data.as_ptr())
+            .field("ptr", &self.0.as_ptr())
             .finish()
     }
 }
@@ -492,6 +485,8 @@ impl fmt::Debug for FunctionObject<'_> {
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 struct FunctionObjectData<'gc> {
+    /// The script object base.
+    base: ScriptObject<'gc>,
     /// The code that will be invoked when this object is called.
     function: Option<Executable<'gc>>,
     /// The code that will be invoked when this object is constructed.
@@ -506,16 +501,14 @@ impl<'gc> FunctionObject<'gc> {
         constructor: Option<Executable<'gc>>,
         fn_proto: Object<'gc>,
     ) -> Self {
-        Self {
-            base: ScriptObject::new(gc_context, Some(fn_proto)),
-            data: GcCell::new(
-                gc_context,
-                FunctionObjectData {
-                    function,
-                    constructor,
-                },
-            ),
-        }
+        Self(GcCell::new(
+            gc_context,
+            FunctionObjectData {
+                base: ScriptObject::new(gc_context, Some(fn_proto)),
+                function,
+                constructor,
+            },
+        ))
     }
 
     /// Construct a function with any combination of regular and constructor parts.
@@ -581,7 +574,7 @@ impl<'gc> FunctionObject<'gc> {
 
 impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     fn raw_script_object(&self) -> ScriptObject<'gc> {
-        self.base
+        self.0.read().base
     }
 
     fn call(
@@ -626,7 +619,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             );
         }
         // TODO: de-duplicate code.
-        if let Some(exec) = &self.data.read().constructor {
+        if let Some(exec) = &self.0.read().constructor {
             let _ = exec.exec(
                 ExecutionName::Static("[ctor]"),
                 activation,
@@ -636,7 +629,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
                 ExecutionReason::FunctionCall,
                 (*self).into(),
             )?;
-        } else if let Some(exec) = &self.data.read().function {
+        } else if let Some(exec) = &self.0.read().function {
             let _ = exec.exec(
                 ExecutionName::Static("[ctor]"),
                 activation,
@@ -675,7 +668,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             );
         }
         // TODO: de-duplicate code.
-        if let Some(exec) = &self.data.read().constructor {
+        if let Some(exec) = &self.0.read().constructor {
             // Native constructors will return the constructed `this`.
             // This allows for `new Object` etc. returning different types.
             let this = exec.exec(
@@ -688,7 +681,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
                 (*self).into(),
             )?;
             Ok(this)
-        } else if let Some(exec) = &self.data.read().function {
+        } else if let Some(exec) = &self.0.read().function {
             let _ = exec.exec(
                 ExecutionName::Static("[ctor]"),
                 activation,
@@ -709,25 +702,23 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         prototype: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        Ok(FunctionObject {
-            base: ScriptObject::new(activation.context.gc_context, Some(prototype)),
-            data: GcCell::new(
-                activation.context.gc_context,
-                FunctionObjectData {
-                    function: None,
-                    constructor: None,
-                },
-            ),
-        }
+        Ok(FunctionObject(GcCell::new(
+            activation.context.gc_context,
+            FunctionObjectData {
+                base: ScriptObject::new(activation.context.gc_context, Some(prototype)),
+                function: None,
+                constructor: None,
+            },
+        ))
         .into())
     }
 
     fn as_executable(&self) -> Option<Executable<'gc>> {
-        self.data.read().function.clone()
+        self.0.read().function.clone()
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
-        self.base.as_ptr()
+        self.0.read().base.as_ptr()
     }
 }
 
