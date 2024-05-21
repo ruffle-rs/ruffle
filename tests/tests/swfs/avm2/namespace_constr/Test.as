@@ -1,8 +1,15 @@
 ﻿package {
 	public class Test {
 		function Test() {
+			namespace example = "value";
+
+			trace("namespace example = \"value\"");
+			dump(example);
+			trace("");
+
 			var otherNS = new Namespace("otherPrefix", "otherUri");
-			var values = [null, undefined, "test", "", "NOT A VALID PREFIX", otherNS];
+			var qName = new QName("namespace", "name");
+			var values = [null, undefined, "test", "", "NOT A VALID PREFIX", otherNS, qName];
 			
 			trace("new Namespace()");
 			try {
@@ -63,6 +70,8 @@
 					return "null";
 				} else if (value === otherNS) {
 					return "otherNS";
+				} else if (value === qName) {
+					return "qName";
 				} else if (value is String) {
 					return escapeString(value);
 				} else {
