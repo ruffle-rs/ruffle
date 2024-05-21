@@ -59,7 +59,7 @@ egui_extras = { git = "https://github.com/emilk/egui.git", rev = "738ea75453567c
 png = { version = "0.17.13", optional = true }
 flv-rs = { path = "../flv" }
 async-channel = { workspace = true }
-jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", branch = "ruffle", optional = true }
+jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "db88651220688d2883a90d5477048071507b0493", optional = true }
 image = { workspace = true, features = ["tiff"] }
 enum-map = { workspace = true }
 ttf-parser = "0.21"
