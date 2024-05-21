@@ -134,4 +134,44 @@ impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
     fn as_namespace_object(&self) -> Option<Self> {
         Some(*self)
     }
+
+    fn property_is_enumerable(&self, name: AvmString<'gc>) -> bool {
+        &name == b"prefix" || &name == b"uri"
+    }
+
+    fn get_next_enumerant(
+        self,
+        last_index: u32,
+        _activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Option<u32>, Error<'gc>> {
+        Ok(if last_index < 2 {
+            Some(last_index + 1)
+        } else {
+            Some(0)
+        })
+    }
+
+    fn get_enumerant_value(
+        self,
+        index: u32,
+        _activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        Ok(match index {
+            1 => self.namespace().as_uri().into(),
+            2 => self.prefix().map(Into::into).unwrap_or(Value::Undefined),
+            _ => Value::Undefined,
+        })
+    }
+
+    fn get_enumerant_name(
+        self,
+        index: u32,
+        _activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        Ok(match index {
+            1 => "uri".into(),
+            2 => "prefix".into(),
+            _ => Value::Undefined,
+        })
+    }
 }
