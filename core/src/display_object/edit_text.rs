@@ -1256,11 +1256,17 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_selection(self, selection: Option<TextSelection>, gc_context: &Mutation<'gc>) {
         let mut text = self.0.write(gc_context);
+        let old_selection = text.selection;
         if let Some(mut selection) = selection {
             selection.clamp(text.text_spans.text().len());
             text.selection = Some(selection);
         } else {
             text.selection = None;
+        }
+
+        if old_selection != text.selection {
+            drop(text);
+            self.invalidate_cached_bitmap(gc_context);
         }
     }
 
@@ -2342,8 +2348,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         let mut link_to_open = None;
 
         if let Some(position) = self.screen_position_to_index(*context.mouse_position) {
-            self.0.write(context.gc_context).selection =
-                Some(TextSelection::for_position(position));
+            self.set_selection(Some(TextSelection::for_position(position)), context.gc());
 
             if let Some((span_index, _)) =
                 self.0.read().text_spans.resolve_position_as_span(position)
@@ -2356,8 +2361,10 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
                     .map(|s| (s.url.clone(), s.target.clone()));
             }
         } else {
-            self.0.write(context.gc_context).selection =
-                Some(TextSelection::for_position(self.text_length()));
+            self.set_selection(
+                Some(TextSelection::for_position(self.text_length())),
+                context.gc(),
+            );
         }
 
         if let Some((url, target)) = link_to_open {
@@ -2442,7 +2449,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
     ) {
         let is_avm1 = !self.movie().is_action_script_3();
         if !focused && is_avm1 {
-            self.0.write(context.gc_context).selection = None;
+            self.set_selection(None, context.gc_context);
         }
     }
 
@@ -2503,6 +2510,14 @@ pub struct TextSelection {
     /// The time the caret should begin blinking
     blink_epoch: DateTime<Utc>,
 }
+
+impl PartialEq for TextSelection {
+    fn eq(&self, other: &Self) -> bool {
+        self.from == other.from && self.to == other.to
+    }
+}
+
+impl Eq for TextSelection {}
 
 /// Information about the start and end y-coordinates of a given line of text
 #[derive(Copy, Clone, Debug)]
