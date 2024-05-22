@@ -1,0 +1,45 @@
+===== clip
+Object: _level0.clip
+Made visible
+Focus changed
+  old: null
+  new: _level0.clip
+Focus: _level0.clip
+Focus changed
+  old: _level0.clip
+  new: null
+Made invisible
+Focus: null
+Made visible
+Focus: null
+Made invisible
+===== text
+Object: _level0.text
+Made visible
+Focus changed
+  old: null
+  new: _level0.text
+Focus: _level0.text
+Focus changed
+  old: _level0.text
+  new: null
+Made invisible
+Focus: null
+Made visible
+Focus: null
+Made invisible
+===== button
+Object: _level0.button
+Made visible
+Focus changed
+  old: null
+  new: _level0.button
+Focus: _level0.button
+Focus changed
+  old: _level0.button
+  new: null
+Made invisible
+Focus: null
+Made visible
+Focus: null
+Made invisible
