@@ -617,7 +617,7 @@ pub fn set_visible<'gc>(
     if let Some(dobj) = this.as_display_object() {
         let new_visible = args.get_bool(0);
 
-        dobj.set_visible(activation.context.gc_context, new_visible);
+        dobj.set_visible(&mut activation.context, new_visible);
     }
 
     Ok(Value::Undefined)

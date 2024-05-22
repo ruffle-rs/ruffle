@@ -855,7 +855,7 @@ impl DisplayObjectWindow {
                 ui.checkbox(&mut is_visible, "Visible");
                 ui.end_row();
                 if is_visible != was_visible {
-                    object.set_visible(context.gc_context, is_visible);
+                    object.set_visible(context, is_visible);
                 }
 
                 ui.label("Blend mode");
