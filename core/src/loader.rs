@@ -17,6 +17,7 @@ use crate::backend::navigator::{ErrorResponse, OwnedFuture, Request, SuccessResp
 use crate::backend::ui::DialogResultFuture;
 use crate::bitmap::bitmap_data::Color;
 use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
+use crate::character::Character;
 use crate::context::{ActionQueue, ActionType, UpdateContext};
 use crate::display_object::{
     DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
@@ -2040,6 +2041,7 @@ impl<'gc> Loader<'gc> {
 
         match sniffed_type {
             ContentType::Swf => {
+                let gc_context = activation.context.gc_context;
                 let library = activation
                     .context
                     .library
@@ -2062,6 +2064,17 @@ impl<'gc> Loader<'gc> {
                         Some(movie.clone()),
                         true,
                         loader_info,
+                    );
+
+                    let library = activation
+                        .context
+                        .library
+                        .library_for_movie_mut(movie.clone());
+                    library.register_character(
+                        0,
+                        // Use 'instantiate' to clone movie clip data, so future instantiations
+                        // don't reflect changes made to the loaded main timeline instance.
+                        Character::MovieClip(mc.instantiate(gc_context).as_movie_clip().unwrap()),
                     );
 
                     if matches!(vm_data, MovieLoaderVMData::Avm2 { .. })

@@ -159,7 +159,6 @@ pub struct MovieClipData<'gc> {
     frame_scripts: Vec<Option<Avm2Object<'gc>>>,
     #[collect(require_static)]
     flags: MovieClipFlags,
-    avm2_class: Option<Avm2ClassObject<'gc>>,
     #[collect(require_static)]
     drawing: Drawing,
     avm2_enabled: bool,
@@ -209,7 +208,6 @@ impl<'gc> MovieClip<'gc> {
                 clip_event_flags: ClipEventFlag::empty(),
                 frame_scripts: Vec::new(),
                 flags: MovieClipFlags::empty(),
-                avm2_class: None,
                 drawing: Drawing::new(),
                 avm2_enabled: true,
                 avm2_use_hand_cursor: true,
@@ -234,7 +232,7 @@ impl<'gc> MovieClip<'gc> {
         class: Avm2ClassObject<'gc>,
         gc_context: &Mutation<'gc>,
     ) -> Self {
-        MovieClip(GcCell::new(
+        let clip = MovieClip(GcCell::new(
             gc_context,
             MovieClipData {
                 base: Default::default(),
@@ -251,7 +249,6 @@ impl<'gc> MovieClip<'gc> {
                 clip_event_flags: ClipEventFlag::empty(),
                 frame_scripts: Vec::new(),
                 flags: MovieClipFlags::empty(),
-                avm2_class: Some(class),
                 drawing: Drawing::new(),
                 avm2_enabled: true,
                 avm2_use_hand_cursor: true,
@@ -267,7 +264,9 @@ impl<'gc> MovieClip<'gc> {
                 queued_tags: HashMap::new(),
                 attached_audio: None,
             },
-        ))
+        ));
+        clip.set_avm2_class(gc_context, Some(class));
+        clip
     }
 
     /// Constructs a non-root movie
@@ -294,7 +293,6 @@ impl<'gc> MovieClip<'gc> {
                 clip_event_flags: ClipEventFlag::empty(),
                 frame_scripts: Vec::new(),
                 flags: MovieClipFlags::PLAYING,
-                avm2_class: None,
                 drawing: Drawing::new(),
                 avm2_enabled: true,
                 avm2_use_hand_cursor: true,
@@ -362,7 +360,6 @@ impl<'gc> MovieClip<'gc> {
                 clip_event_flags: ClipEventFlag::empty(),
                 frame_scripts: Vec::new(),
                 flags: MovieClipFlags::PLAYING,
-                avm2_class: None,
                 drawing: Drawing::new(),
                 avm2_enabled: true,
                 avm2_use_hand_cursor: true,
@@ -866,6 +863,7 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         reader: &mut SwfStream<'_>,
     ) -> Result<(), Error> {
+        assert!(self.is_root(), "Found SymbolClass in non-root movie");
         let movie = self.movie();
         let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
@@ -917,7 +915,6 @@ impl<'gc> MovieClip<'gc> {
                         .library_for_movie_mut(movie.clone());
 
                     if id == 0 {
-                        //TODO: This assumes only the root movie has `SymbolClass` tags.
                         self.set_avm2_class(activation.context.gc_context, Some(class_object));
                     } else {
                         match library.character_by_id(id) {
@@ -1370,8 +1367,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn set_avm2_class(self, gc_context: &Mutation<'gc>, constr: Option<Avm2ClassObject<'gc>>) {
-        let mut write = self.0.write(gc_context);
-        write.avm2_class = constr;
+        *self.0.read().static_data.avm2_class.write(gc_context) = constr;
     }
 
     pub fn frame_label_to_number(
@@ -2192,7 +2188,9 @@ impl<'gc> MovieClip<'gc> {
         let class_object = self
             .0
             .read()
+            .static_data
             .avm2_class
+            .read()
             .unwrap_or_else(|| context.avm2.classes().movieclip);
 
         let mut constr_thing = || {
@@ -2222,7 +2220,9 @@ impl<'gc> MovieClip<'gc> {
         let class_object = self
             .0
             .read()
+            .static_data
             .avm2_class
+            .read()
             .unwrap_or_else(|| context.avm2.classes().movieclip);
 
         if let Avm2Value::Object(object) = self.object2() {
@@ -4611,6 +4611,7 @@ struct MovieClipStatic<'gc> {
     /// The last known symbol name under which this movie clip was exported.
     /// Used for looking up constructors registered with `Object.registerClass`.
     exported_name: GcCell<'gc, Option<AvmString<'gc>>>,
+    avm2_class: GcCell<'gc, Option<Avm2ClassObject<'gc>>>,
     /// Only set if this MovieClip is the root movie in an SWF
     /// (either the root SWF initially loaded by the player,
     /// or an SWF dynamically loaded by `Loader`)
@@ -4657,6 +4658,7 @@ impl<'gc> MovieClipStatic<'gc> {
             audio_stream_info: None,
             audio_stream_handle: None,
             exported_name: GcCell::new(gc_context, None),
+            avm2_class: GcCell::new(gc_context, None),
             loader_info,
             preload_progress: GcCell::new(gc_context, Default::default()),
             processed_bytecode_tags_pos: GcCell::new(gc_context, -1),
