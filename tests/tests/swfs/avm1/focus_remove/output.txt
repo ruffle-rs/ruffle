@@ -4,6 +4,9 @@ Focus changed
   old: null
   new: _level0.clip
 Focus: _level0.clip
+Focus changed
+  old: _level0.clip
+  new: null
 Focus: null
 Focus: null
 ===== text
@@ -12,6 +15,9 @@ Focus changed
   old: null
   new: _level0.clip.text
 Focus: _level0.clip.text
+Focus changed
+  old: _level0.clip.text
+  new: null
 Focus: null
 Focus: null
 ===== button
@@ -20,5 +26,8 @@ Focus changed
   old: null
   new: _level0.clip.button
 Focus: _level0.clip.button
+Focus changed
+  old: _level0.clip.button
+  new: null
 Focus: null
 Focus: null
