@@ -23,6 +23,8 @@ pub struct OpenDialog {
     // These are outside of PlayerOptions as it can be an invalid value (ie URL) during typing,
     // and we don't want to clear the value if the user, ie, toggles the checkbox.
     spoof_url: OptionalField<UrlField>,
+    referer: OptionalField<UrlField>,
+    cookie: OptionalField<CookieField>,
     base_url: OptionalField<UrlField>,
     proxy_url: OptionalField<UrlField>,
     path: PathOrUrlField,
@@ -52,6 +54,14 @@ impl OpenDialog {
         let spoof_url = OptionalField::new(
             defaults.player.spoof_url.as_ref().map(Url::to_string),
             UrlField::new("https://example.org/game.swf"),
+        );
+        let referer = OptionalField::new(
+            defaults.player.referer.as_ref().map(Url::to_string),
+            UrlField::new("https://example.org"),
+        );
+        let cookie = OptionalField::new(
+            defaults.player.cookie.clone(),
+            CookieField::new("value1=cookie1; value2=cookie2"),
         );
         let base_url = OptionalField::new(
             defaults.player.base.as_ref().map(Url::to_string),
@@ -242,6 +252,8 @@ impl OpenDialog {
             options: defaults,
             event_loop,
             spoof_url,
+            referer,
+            cookie,
             base_url,
             proxy_url,
             path,
@@ -351,6 +363,20 @@ impl OpenDialog {
                 is_valid &= self
                     .spoof_url
                     .ui(ui, &mut self.options.player.spoof_url, locale)
+                    .is_valid();
+                ui.end_row();
+
+                ui.label(text(locale, "referer-url"));
+                is_valid &= self
+                    .referer
+                    .ui(ui, &mut self.options.player.referer, locale)
+                    .is_valid();
+                ui.end_row();
+
+                ui.label(text(locale, "cookie"));
+                is_valid &= self
+                    .cookie
+                    .ui(ui, &mut self.options.player.cookie, locale)
                     .is_valid();
                 ui.end_row();
 
@@ -591,6 +617,40 @@ impl InnerField for UrlField {
 
     fn value_to_result(&self, value: &Self::Value) -> Result<Self::Result, ()> {
         Url::parse(value).map_err(|_| ())
+    }
+}
+
+struct CookieField {
+    hint: &'static str,
+}
+
+impl CookieField {
+    pub fn new(hint: &'static str) -> Self {
+        Self { hint }
+    }
+}
+
+impl InnerField for CookieField {
+    type Value = String;
+    type Result = String;
+
+    fn value_if_missing(&self) -> Self::Value {
+        String::new()
+    }
+
+    fn ui(&self, ui: &mut Ui, value: &mut Self::Value, error: bool, _locale: &LanguageIdentifier) {
+        TextEdit::singleline(value)
+            .hint_text(self.hint)
+            .text_color_opt(if error {
+                Some(ui.style().visuals.error_fg_color)
+            } else {
+                None
+            })
+            .ui(ui);
+    }
+
+    fn value_to_result(&self, value: &Self::Value) -> Result<Self::Result, ()> {
+        Ok(value.clone())
     }
 }
 

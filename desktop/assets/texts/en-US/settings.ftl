@@ -5,6 +5,8 @@ movie-parameters = Movie Parameters
 custom-base-url = Custom Base URL
 
 spoof-swf-url = Spoof SWF URL
+referer-url = Referer URL
+cookie = Cookie
 
 proxy = Proxy
 
