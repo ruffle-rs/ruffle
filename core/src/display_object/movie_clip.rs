@@ -375,7 +375,6 @@ impl<'gc> MovieClip<'gc> {
                 flags: MovieClipFlags::PLAYING,
                 avm2_class: None,
                 drawing: Drawing::new(),
-                has_focus: false,
                 avm2_enabled: true,
                 avm2_use_hand_cursor: true,
                 button_mode: false,
