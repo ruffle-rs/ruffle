@@ -1864,9 +1864,6 @@ impl<'a> Reader<'a> {
         let num_imports = self.read_u16()?;
         let mut imports = Vec::with_capacity(num_imports as usize);
 
-        log::warn!("ImportAssets2: {}", num_imports);
-        log::warn!("ImportAssets2: {:?}", url);
-
         for _ in 0..num_imports {
             imports.push(ExportedAsset {
                 id: self.read_u16()?,

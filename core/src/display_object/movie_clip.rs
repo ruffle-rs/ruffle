@@ -189,10 +189,7 @@ pub struct MovieClipData<'gc> {
     /// Attached audio (AVM1)
     attached_audio: Option<NetStream<'gc>>,
 
-    // TODO Consider moving this to InteractiveObject along with
-    //      TextField's and Button's tab indices after AVM2 analysis
-    tab_index: Option<i32>,
-
+    // If this movie was loaded from ImportAssets(2), this will be the parent movie.
     importer_movie: Option<Arc<SwfMovie>>,
 }
 
@@ -229,7 +226,6 @@ impl<'gc> MovieClip<'gc> {
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
                 attached_audio: None,
-                tab_index: None,
                 importer_movie: None,
             },
         ))
@@ -272,7 +268,6 @@ impl<'gc> MovieClip<'gc> {
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
                 attached_audio: None,
-                tab_index: None,
                 importer_movie: None,
             },
         ));
@@ -318,7 +313,6 @@ impl<'gc> MovieClip<'gc> {
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
                 attached_audio: None,
-                tab_index: None,
                 importer_movie: None,
             },
         ))
@@ -387,8 +381,6 @@ impl<'gc> MovieClip<'gc> {
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
                 attached_audio: None,
-                tab_index: None,
-                //importer_movie: None,
                 importer_movie: Some(parent.clone()),
             },
         ));
@@ -459,7 +451,6 @@ impl<'gc> MovieClip<'gc> {
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
                 attached_audio: None,
-                tab_index: None,
                 importer_movie: None,
             },
         ));
