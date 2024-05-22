@@ -1293,14 +1293,14 @@ impl Player {
                 // Turn the dragged object invisible so that we don't pick it.
                 // TODO: This could be handled via adding a `HitTestOptions::SKIP_DRAGGED`.
                 let was_visible = display_object.visible();
-                display_object.set_visible(context.gc_context, false);
+                display_object.set_visible(context, false);
                 // Set `_droptarget` to the object the mouse is hovering over.
                 let drop_target_object = run_mouse_pick(context, false);
                 movie_clip.set_drop_target(
                     context.gc_context,
                     drop_target_object.map(|d| d.as_displayobject()),
                 );
-                display_object.set_visible(context.gc_context, was_visible);
+                display_object.set_visible(context, was_visible);
             }
         }
     }

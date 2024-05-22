@@ -1738,11 +1738,11 @@ pub trait TDisplayObject<'gc>:
     /// Sets whether this display object will be visible.
     /// Invisible objects are not rendered, but otherwise continue to exist normally.
     /// Returned by the `_visible`/`visible` ActionScript properties.
-    fn set_visible(&self, gc_context: &Mutation<'gc>, value: bool) {
-        if self.base_mut(gc_context).set_visible(value) {
+    fn set_visible(&self, context: &mut UpdateContext<'_, 'gc>, value: bool) {
+        if self.base_mut(context.gc()).set_visible(value) {
             if let Some(parent) = self.parent() {
                 // We don't need to invalidate ourselves, we're just toggling if the bitmap is rendered.
-                parent.invalidate_cached_bitmap(gc_context);
+                parent.invalidate_cached_bitmap(context.gc());
             }
         }
     }
@@ -2209,7 +2209,7 @@ pub trait TDisplayObject<'gc>:
             }
             if self.swf_version() >= 11 {
                 if let Some(visible) = place_object.is_visible {
-                    self.set_visible(context.gc_context, visible);
+                    self.set_visible(context, visible);
                 }
                 if let Some(mut color) = place_object.background_color {
                     let color = if color.a > 0 {

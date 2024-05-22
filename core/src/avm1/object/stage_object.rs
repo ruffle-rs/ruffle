@@ -592,7 +592,7 @@ fn set_visible<'gc>(
     // Because this property dates to the era of Flash 4, this is actually coerced to an integer.
     // `_visible = "false";` coerces to NaN and has no effect.
     if let Some(n) = property_coerce_to_number(activation, val)? {
-        this.set_visible(activation.context.gc_context, n != 0.0);
+        this.set_visible(&mut activation.context, n != 0.0);
     }
     Ok(())
 }
