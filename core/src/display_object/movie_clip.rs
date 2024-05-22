@@ -32,13 +32,12 @@ use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::font::{Font, FontType};
 use crate::limits::ExecutionLimit;
 use crate::loader::{self, ContentType};
-use crate::loader::{LoadManager, Loader, MovieLoaderVMData};
+use crate::loader::{LoadManager, Loader};
 use crate::prelude::*;
 use crate::streams::NetStream;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::{self, ControlFlow, DecodeResult, Error, SwfMovie, SwfSlice, SwfStream};
 use crate::vminterface::{AvmObject, Instantiator};
-use crate::{context_stub, library};
 use core::fmt;
 use gc_arena::{Collect, Gc, GcCell, GcWeakCell, Mutation};
 use smallvec::SmallVec;
@@ -4138,8 +4137,6 @@ impl<'gc, 'a> MovieClipData<'gc> {
 
     #[inline]
     fn import_exports_of_importer(&mut self, context: &mut UpdateContext<'_, 'gc>) {
-        tracing::warn!("import_exports_of_importer!!!!!");
-
         if let Some(importer_movie) = self.importer_movie.as_ref() {
             let exported_from_importer =
                 { self.get_exported_from_importer(context, importer_movie.clone()) };
@@ -4165,7 +4162,6 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
         chunk_limit: &mut ExecutionLimit,
     ) -> Result<(), Error> {
-        tracing::warn!("ImportAssets!!!!!");
         let import_assets = reader.read_import_assets()?;
         self.import_assets_load(
             context,
@@ -4183,7 +4179,6 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
         chunk_limit: &mut ExecutionLimit,
     ) -> Result<(), Error> {
-        tracing::warn!("ImportAssets2!!!!!");
         let import_assets = reader.read_import_assets_2()?;
         self.import_assets_load(
             context,
@@ -4201,21 +4196,13 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
         url: &swf::SwfStr,
         exported_assets: Vec<swf::ExportedAsset>,
-        chunk_limit: &mut ExecutionLimit,
+        _chunk_limit: &mut ExecutionLimit,
     ) -> Result<(), Error> {
-        let mut activation = Avm2Activation::from_nothing(context.reborrow());
         let library = context.library.library_for_movie_mut(self.movie());
 
         let asset_url = url.to_string_lossy(UTF_8);
 
         let request = Request::get(asset_url);
-
-        let url = request.url().to_string();
-
-        let target_clip = MovieClip::new(
-            Arc::new(SwfMovie::empty(context.swf.version())),
-            context.gc_context,
-        );
 
         for asset in exported_assets {
             let name = asset.name.decode(reader.encoding());
@@ -4227,19 +4214,9 @@ impl<'gc, 'a> MovieClipData<'gc> {
         }
 
         let player = context.player.clone();
-        let fut = LoadManager::load_asset_movie(
-            player,
-            target_clip.into(),
-            request,
-            Some(url),
-            context,
-            chunk_limit,
-            self.movie(),
-        );
+        let fut = LoadManager::load_asset_movie(player, request, self.movie());
 
         context.navigator.spawn_future(fut);
-
-        //context_stub!(context, "ImportAssets2 tag");
 
         Ok(())
     }
