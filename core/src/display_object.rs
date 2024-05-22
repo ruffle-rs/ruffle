@@ -1745,6 +1745,13 @@ pub trait TDisplayObject<'gc>:
                 parent.invalidate_cached_bitmap(context.gc());
             }
         }
+
+        if !value {
+            if let Some(int) = self.as_interactive() {
+                // The focus is dropped when it's made invisible.
+                int.drop_focus(context);
+            }
+        }
     }
 
     fn meta_data(&self) -> Option<Avm2Object<'gc>> {
