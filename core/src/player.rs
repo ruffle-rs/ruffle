@@ -1125,6 +1125,19 @@ impl Player {
                 }
             }
 
+            // KeyPress events also take precedence over tabbing.
+            if !key_press_handled {
+                if let PlayerEvent::KeyDown {
+                    key_code: KeyCode::Tab,
+                    ..
+                } = event
+                {
+                    let reversed = context.input.is_key_down(KeyCode::Shift);
+                    let tracker = context.focus_tracker;
+                    tracker.cycle(context, reversed);
+                }
+            }
+
             // KeyPress events also take precedence over keyboard navigation.
             // Note that keyboard navigation works only when the highlight is visible.
             if !key_press_handled && context.focus_tracker.highlight().is_visible() {
@@ -1198,18 +1211,6 @@ impl Player {
             if self.update_mouse_state(is_mouse_button_changed, true) {
                 self.needs_render = true;
             }
-        }
-
-        if let PlayerEvent::KeyDown {
-            key_code: KeyCode::Tab,
-            ..
-        } = event
-        {
-            self.mutate_with_update_context(|context| {
-                let reversed = context.input.is_key_down(KeyCode::Shift);
-                let tracker = context.focus_tracker;
-                tracker.cycle(context, reversed);
-            });
         }
 
         if self.should_reset_highlight(event) {
