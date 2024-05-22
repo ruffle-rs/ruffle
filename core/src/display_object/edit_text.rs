@@ -788,10 +788,10 @@ impl<'gc> EditText<'gc> {
                 .drawing
                 .draw_command(DrawCommand::LineTo(Point::new(width, Twips::ZERO)));
             write.drawing.draw_command(DrawCommand::LineTo(Point::ZERO));
-
-            drop(write);
-            self.invalidate_cached_bitmap(gc_context);
         }
+
+        drop(write);
+        self.invalidate_cached_bitmap(gc_context);
     }
 
     /// Internal padding between the bounds of the EditText and the text.
