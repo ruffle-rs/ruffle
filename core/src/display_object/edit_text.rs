@@ -2314,7 +2314,9 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         event: ClipEvent,
     ) -> ClipEventResult {
         match event {
-            ClipEvent::Press | ClipEvent::MouseWheel { .. } => ClipEventResult::Handled,
+            ClipEvent::Press | ClipEvent::MouseWheel { .. } | ClipEvent::MouseMove => {
+                ClipEventResult::Handled
+            }
             _ => ClipEventResult::NotHandled,
         }
     }
@@ -2339,44 +2341,60 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
             return ClipEventResult::Handled;
         }
 
-        if self.is_editable() || self.is_selectable() {
-            let tracker = context.focus_tracker;
-            tracker.set(Some(self.into()), context);
-        }
-
-        // We can't hold self as any link may end up modifying this object, so pull the info out
-        let mut link_to_open = None;
-
-        if let Some(position) = self.screen_position_to_index(*context.mouse_position) {
-            self.set_selection(Some(TextSelection::for_position(position)), context.gc());
-
-            if let Some((span_index, _)) =
-                self.0.read().text_spans.resolve_position_as_span(position)
-            {
-                link_to_open = self
-                    .0
-                    .read()
-                    .text_spans
-                    .span(span_index)
-                    .map(|s| (s.url.clone(), s.target.clone()));
+        if let ClipEvent::Press = event {
+            if self.is_editable() || self.is_selectable() {
+                let tracker = context.focus_tracker;
+                tracker.set(Some(self.into()), context);
             }
-        } else {
-            self.set_selection(
-                Some(TextSelection::for_position(self.text_length())),
-                context.gc(),
-            );
+
+            // We can't hold self as any link may end up modifying this object, so pull the info out
+            let mut link_to_open = None;
+
+            if let Some(position) = self.screen_position_to_index(*context.mouse_position) {
+                self.set_selection(Some(TextSelection::for_position(position)), context.gc());
+
+                if let Some((span_index, _)) =
+                    self.0.read().text_spans.resolve_position_as_span(position)
+                {
+                    link_to_open = self
+                        .0
+                        .read()
+                        .text_spans
+                        .span(span_index)
+                        .map(|s| (s.url.clone(), s.target.clone()));
+                }
+            } else {
+                self.set_selection(
+                    Some(TextSelection::for_position(self.text_length())),
+                    context.gc(),
+                );
+            }
+
+            if let Some((url, target)) = link_to_open {
+                if !url.is_empty() {
+                    // TODO: This fires on mouse DOWN but it should be mouse UP...
+                    // but only if it went down in the same span.
+                    // Needs more advanced focus handling than we have at time of writing this comment.
+                    self.open_url(context, &url, &target);
+                }
+            }
+
+            return ClipEventResult::Handled;
         }
 
-        if let Some((url, target)) = link_to_open {
-            if !url.is_empty() {
-                // TODO: This fires on mouse DOWN but it should be mouse UP...
-                // but only if it went down in the same span.
-                // Needs more advanced focus handling than we have at time of writing this comment.
-                self.open_url(context, &url, &target);
+        if let ClipEvent::MouseMove = event {
+            // If a mouse has moved and this EditTest is pressed, we need to update the selection.
+            if InteractiveObject::option_ptr_eq(context.mouse_data.pressed, self.as_interactive()) {
+                if let Some(mut selection) = self.selection() {
+                    if let Some(position) = self.screen_position_to_index(*context.mouse_position) {
+                        selection.to = position;
+                        self.set_selection(Some(selection), context.gc());
+                    }
+                }
             }
         }
 
-        ClipEventResult::Handled
+        ClipEventResult::NotHandled
     }
 
     fn mouse_pick_avm1(
