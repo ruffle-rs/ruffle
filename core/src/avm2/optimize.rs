@@ -850,15 +850,9 @@ pub fn optimize<'gc>(
                             // is unlikely to cause any real problems with SWFs.
                             *op = Op::GetScriptGlobals { script };
 
-                            let script_globals = script.globals_if_init();
-
-                            if let Some(script_globals) = script_globals {
+                            if script.traits_loaded() {
                                 stack_push_done = true;
-                                if let Some(global_class) = script_globals.instance_of() {
-                                    stack.push_class_object(global_class);
-                                } else {
-                                    stack.push_any();
-                                }
+                                stack.push_class(script.global_class());
                             }
                         }
                     }
