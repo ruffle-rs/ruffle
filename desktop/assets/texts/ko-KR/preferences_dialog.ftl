@@ -15,3 +15,4 @@ storage-backend = 파일 저장 위치
 storage-backend-disk = 디스크
 storage-backend-memory = 메모리
 recent-limit = 최대 최근 항목 수
+recent-clear = 비우기
