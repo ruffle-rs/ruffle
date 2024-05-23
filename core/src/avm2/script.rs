@@ -585,6 +585,10 @@ impl<'gc> Script<'gc> {
         self.0.read().translation_unit
     }
 
+    pub fn traits_loaded(self) -> bool {
+        self.0.read().traits_loaded
+    }
+
     pub fn global_class(self) -> Class<'gc> {
         self.0
             .read()
@@ -633,19 +637,6 @@ impl<'gc> Script<'gc> {
             Ok(globals)
         } else {
             Ok(write.globals)
-        }
-    }
-
-    /// Return the global scope for the script.
-    ///
-    /// If the script has not yet been initialized, this will return None.
-    pub fn globals_if_init(&self) -> Option<Object<'gc>> {
-        let read = self.0.read();
-
-        if !read.initialized {
-            None
-        } else {
-            Some(read.globals)
         }
     }
 
