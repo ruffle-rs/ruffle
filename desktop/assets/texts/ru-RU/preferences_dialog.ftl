@@ -15,3 +15,4 @@ storage-backend = Место сохранения файла
 storage-backend-disk = Диск
 storage-backend-memory = Память
 recent-limit = Недавний лимит
+recent-clear = Очистить
