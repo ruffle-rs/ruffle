@@ -149,6 +149,15 @@ pub struct Opt {
     #[clap(long, value_parser)]
     pub spoof_url: Option<Url>,
 
+    /// Spoofs the HTTP referer header.
+    #[clap(long, value_parser)]
+    pub referer: Option<Url>,
+
+    /// Spoofs the HTTP cookie header.
+    /// This is a string of the form "name1=value1; name2=value2".
+    #[clap(long)]
+    pub cookie: Option<String>,
+
     /// The version of the player to emulate
     #[clap(long)]
     pub player_version: Option<u8>,

@@ -75,6 +75,8 @@ impl From<&GlobalPreferences> for LaunchOptions {
                 load_behavior: value.cli.load_behavior,
                 letterbox: value.cli.letterbox,
                 spoof_url: value.cli.spoof_url.clone(),
+                referer: value.cli.referer.clone(),
+                cookie: value.cli.cookie.clone(),
                 player_version: value.cli.player_version,
                 player_runtime: value.cli.player_runtime,
                 frame_rate: value.cli.frame_rate,
@@ -192,6 +194,8 @@ impl ActivePlayer {
                 .base
                 .to_owned()
                 .unwrap_or_else(|| movie_url.clone()),
+            opt.player.referer.clone(),
+            opt.player.cookie.clone(),
             future_spawner,
             opt.proxy.clone(),
             opt.player.upgrade_to_https.unwrap_or_default(),
