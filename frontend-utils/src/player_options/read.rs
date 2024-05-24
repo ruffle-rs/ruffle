@@ -57,12 +57,6 @@ pub fn read_player_options<'a>(
     // Spoof Url
     result.spoof_url = table.parse_from_str(cx, "spoof_url");
 
-    // Referer
-    result.referer = table.parse_from_str(cx, "referer");
-
-    // Cookie
-    result.cookie = table.parse_from_str(cx, "cookie");
-
     // Player version
     result.player_version = table.get_integer(cx, "version").map(|x| x as u8);
 
@@ -598,40 +592,6 @@ mod tests {
         assert_eq!(
             &PlayerOptions {
                 spoof_url: Some(Url::parse("https://ruffle.rs/spoofed_file.swf").unwrap()),
-                ..Default::default()
-            },
-            result.values()
-        );
-        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
-    }
-
-    #[test]
-    fn referer() {
-        let result = read("referer = false");
-        assert_eq!(&PlayerOptions::default(), result.values());
-        assert_eq!(
-            vec![ParseWarning::UnexpectedType {
-                expected: "string",
-                actual: "boolean",
-                path: "referer".to_string()
-            }],
-            result.warnings
-        );
-
-        let result = read("referer = \"invalid\"");
-        assert_eq!(&PlayerOptions::default(), result.values());
-        assert_eq!(
-            vec![ParseWarning::UnsupportedValue {
-                value: "invalid".to_string(),
-                path: "referer".to_string(),
-            }],
-            result.warnings
-        );
-
-        let result = read("referer = \"https://ruffle.rs/\"");
-        assert_eq!(
-            &PlayerOptions {
-                referer: Some(Url::parse("https://ruffle.rs/").unwrap()),
                 ..Default::default()
             },
             result.values()
