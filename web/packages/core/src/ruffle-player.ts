@@ -2372,6 +2372,16 @@ export class RufflePlayer extends HTMLElement {
         // TODO: Move this to whatever function changes the ReadyState to Loaded when we have streaming support.
         this.dispatchEvent(new CustomEvent(RufflePlayer.LOADED_DATA));
     }
+
+    /** @ignore */
+    public PercentLoaded(): number {
+        // [NA] This is a stub - we need to research how this is actually implemented (is it just base swf loadedBytes?)
+        if (this._readyState === ReadyState.Loaded) {
+            return 100;
+        } else {
+            return 0;
+        }
+    }
 }
 
 /**
