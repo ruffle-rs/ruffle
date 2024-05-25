@@ -39,14 +39,10 @@ impl<'a> RecentsWriter<'a> {
                 // Existing entry, just move it to the top.
 
                 // Update TOML first, then internal values.
-                // TODO: Unfortunately, ArrayOfTables does not return the removed entry, so we need to recreate it.
-                //       https://github.com/toml-rs/toml/issues/712
                 array.remove(index);
-                let mut table = Table::new();
-                table["url"] = value(recent.url.as_str());
-                array.push(table);
+                array.push(Self::create_recent_table(&recent));
 
-                let recent = values.remove(index);
+                values.remove(index);
                 values.push(recent);
             } else {
                 // New entry.
@@ -63,12 +59,17 @@ impl<'a> RecentsWriter<'a> {
                 }
 
                 // Create a new table and push it.
-                let mut table = Table::new();
-                table["url"] = value(recent.url.as_str());
-                array.push(table);
+                array.push(Self::create_recent_table(&recent));
                 values.push(recent);
             }
         });
+    }
+
+    fn create_recent_table(recent: &Recent) -> Table {
+        let mut table = Table::new();
+        table["url"] = value(recent.url.as_str());
+        table["name"] = value(&recent.name);
+        table
     }
 }
 
@@ -88,11 +89,12 @@ mod tests {
                 writer.push(
                     Recent {
                         url: Url::parse("file:///1.swf").unwrap(),
+                        name: "Test 1".to_string(),
                     },
                     10,
                 )
             },
-            "[[recent]]\nurl = \"file:///1.swf\"\n",
+            "[[recent]]\nurl = \"file:///1.swf\"\nname = \"Test 1\"\n",
         );
     }
 
@@ -100,14 +102,16 @@ mod tests {
     fn test_limit() {
         test("[[recent]]\nurl = \"file:///1.swf\"\n[[recent]]\nurl = \"file:///2.swf\"\n[[recent]]\nurl = \"file:///3.swf\"\n", |writer| writer.push(Recent {
             url: Url::parse("file:///very_important_file.swf").unwrap(),
-        }, 2), "[[recent]]\nurl = \"file:///3.swf\"\n\n[[recent]]\nurl = \"file:///very_important_file.swf\"\n");
+            name: "Important File".to_string(),
+        }, 2), "[[recent]]\nurl = \"file:///3.swf\"\n\n[[recent]]\nurl = \"file:///very_important_file.swf\"\nname = \"Important File\"\n");
     }
 
     #[test]
     fn test_move_to_top() {
         test("[[recent]]\nurl = \"file:///very_important_file.swf\"\n[[recent]]\nurl = \"file:///2.swf\"\n[[recent]]\nurl = \"file:///3.swf\"\n", |writer| writer.push(Recent {
             url: Url::parse("file:///very_important_file.swf").unwrap(),
-        }, 3), "[[recent]]\nurl = \"file:///2.swf\"\n[[recent]]\nurl = \"file:///3.swf\"\n\n[[recent]]\nurl = \"file:///very_important_file.swf\"\n");
+            name: "Important File".to_string()
+        }, 3), "[[recent]]\nurl = \"file:///2.swf\"\n[[recent]]\nurl = \"file:///3.swf\"\n\n[[recent]]\nurl = \"file:///very_important_file.swf\"\nname = \"Important File\"\n");
     }
 
     #[test]
@@ -123,11 +127,29 @@ mod tests {
                 writer.push(
                     Recent {
                         url: Url::parse("file:///no_crash.swf").unwrap(),
+                        name: "".to_string(),
                     },
                     0,
                 )
             },
             "",
+        );
+    }
+
+    #[test]
+    fn name() {
+        test(
+            "",
+            |writer| {
+                writer.push(
+                    Recent {
+                        url: Url::parse("file:///cake.swf").unwrap(),
+                        name: "The cake is a lie!".to_string(),
+                    },
+                    10,
+                )
+            },
+            "[[recent]]\nurl = \"file:///cake.swf\"\nname = \"The cake is a lie!\"\n",
         );
     }
 }

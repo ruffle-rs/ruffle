@@ -225,7 +225,7 @@ impl MenuBar {
 
                     if let Some(recents) = &self.cached_recents {
                         for recent in recents {
-                            if ui.button(recent.url.as_str()).clicked() {
+                            if ui.button(&recent.name).clicked() {
                                 ui.close_menu();
                                 let _ = self.event_loop.send_event(RuffleEvent::OpenURL(
                                     recent.url.clone(),
