@@ -3,7 +3,7 @@
 pub use crate::avm2::object::xml_list_allocator;
 use crate::avm2::{
     e4x::{name_to_multiname, simple_content_to_string, E4XNode, E4XNodeKind},
-    error::type_error,
+    error::make_error_1086,
     multiname::Multiname,
     object::{E4XOrXml, XmlListObject, XmlObject},
     parameters::ParametersExt,
@@ -297,28 +297,6 @@ pub fn attributes<'gc>(
     .into())
 }
 
-pub fn name<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let list = this.as_xml_list_object().unwrap();
-
-    let mut children = list.children_mut(activation.context.gc_context);
-    match &mut children[..] {
-        [child] => {
-            child
-                .get_or_create_xml(activation)
-                .call_public_property("name", &[], activation)
-        }
-        _ => Err(Error::AvmError(type_error(
-            activation,
-            "Error #1086: The name method only works on lists containing one item.",
-            1086,
-        )?)),
-    }
-}
-
 pub fn descendants<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -440,4 +418,74 @@ pub fn processing_instructions<'gc>(
     // FIXME: This should call XmlObject's processing_instructions() and concat everything together
     //        (Necessary for correct target object/property and dirty flag).
     Ok(XmlListObject::new_with_children(activation, nodes, Some(xml_list.into()), None).into())
+}
+
+macro_rules! define_xml_proxy {
+    ( $( ($rust_name:ident, $as_name:expr) ),*, ) => {
+        $(
+            pub fn $rust_name<'gc>(
+                activation: &mut Activation<'_, 'gc>,
+                this: Object<'gc>,
+                args: &[Value<'gc>],
+            ) -> Result<Value<'gc>, Error<'gc>> {
+                let list = this.as_xml_list_object().unwrap();
+
+                let mut children = list.children_mut(activation.context.gc_context);
+                match &mut children[..] {
+                    [child] => {
+                        child
+                            .get_or_create_xml(activation)
+                            .call_property(&Multiname::new(activation.avm2().as3_namespace, $as_name), args, activation)
+                    }
+                    _ => Err(make_error_1086(activation, $as_name)),
+                }
+            }
+        )*
+    };
+}
+
+define_xml_proxy!(
+    (add_namespace, "addNamespace"),
+    (append_child, "appendChild"),
+    (child_index, "childIndex"),
+    (in_scope_namespaces, "inScopeNamespaces"),
+    (insert_child_after, "insertChildAfter"),
+    (insert_child_before, "insertChildBefore"),
+    (local_name, "localName"),
+    (name, "name"),
+    (namespace_declarations, "namespaceDeclarations"),
+    (node_kind, "nodeKind"),
+    (prepend_child, "prependChild"),
+    (remove_namespace, "removeNamespace"),
+    (replace, "replace"),
+    (set_children, "setChildren"),
+    (set_local_name, "setLocalName"),
+    (set_name, "setName"),
+    (set_namespace, "setNamespace"),
+);
+
+// Special case since the XMLObject's method has to know if prefix was passed or not.
+// namespace_internal_impl(hasPrefix:Boolean, prefix:String = null):*
+pub fn namespace_internal_impl<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let list = this.as_xml_list_object().unwrap();
+    let mut children = list.children_mut(activation.context.gc_context);
+
+    let args = if args[0] == Value::Bool(true) {
+        &args[1..]
+    } else {
+        &[]
+    };
+
+    match &mut children[..] {
+        [child] => child.get_or_create_xml(activation).call_property(
+            &Multiname::new(activation.avm2().as3_namespace, "namespace"),
+            args,
+            activation,
+        ),
+        _ => Err(make_error_1086(activation, "namespace")),
+    }
 }
