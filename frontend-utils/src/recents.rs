@@ -9,6 +9,7 @@ use url::Url;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Recent {
     pub url: Url,
+    pub name: String,
 }
 
 impl Recent {

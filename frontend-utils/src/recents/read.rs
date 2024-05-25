@@ -24,7 +24,11 @@ pub fn read_recents(input: &str) -> ParseDetails<Recents> {
                 None => Url::parse(crate::INVALID_URL).expect("Url is constant and valid"),
             };
 
-            result.push(Recent { url });
+            let name = recent
+                .parse_from_str(cx, "name")
+                .unwrap_or_else(|| crate::url_to_readable_name(&url).into_owned());
+
+            result.push(Recent { url, name });
         }
     });
 
@@ -65,6 +69,7 @@ mod tests {
         assert_eq!(
             &vec![Recent {
                 url: Url::parse(crate::INVALID_URL).unwrap(),
+                name: "".to_string(),
             }],
             result.values()
         );
@@ -77,6 +82,7 @@ mod tests {
         assert_eq!(
             &vec![Recent {
                 url: Url::parse(crate::INVALID_URL).unwrap(),
+                name: "".to_string()
             }],
             result.values()
         );
@@ -95,6 +101,23 @@ mod tests {
         assert_eq!(
             &vec![Recent {
                 url: Url::parse("https://ruffle.rs/logo-anim.swf").unwrap(),
+                name: "logo-anim.swf".to_string()
+            }],
+            result.values()
+        );
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
+    }
+
+    #[test]
+    fn name() {
+        let result = read_recents(
+            "[[recent]]\nurl = \"file:///name_test.swf\"\nname = \"This is not a test!\"",
+        );
+
+        assert_eq!(
+            &vec![Recent {
+                url: Url::parse("file:///name_test.swf").unwrap(),
+                name: "This is not a test!".to_string(),
             }],
             result.values()
         );
@@ -116,9 +139,11 @@ mod tests {
             &vec![
                 Recent {
                     url: Url::parse("file:///first.swf").unwrap(),
+                    name: "first.swf".to_string()
                 },
                 Recent {
                     url: Url::parse("file:///second.swf").unwrap(),
+                    name: "second.swf".to_string(),
                 }
             ],
             result.values()
@@ -149,18 +174,23 @@ mod tests {
             &vec![
                 Recent {
                     url: Url::parse("file:///first.swf").unwrap(),
+                    name: "first.swf".to_string()
                 },
                 Recent {
                     url: Url::parse(crate::INVALID_URL).unwrap(),
+                    name: "".to_string()
                 },
                 Recent {
                     url: Url::parse(crate::INVALID_URL).unwrap(),
+                    name: "".to_string()
                 },
                 Recent {
                     url: Url::parse(crate::INVALID_URL).unwrap(),
+                    name: "".to_string()
                 },
                 Recent {
                     url: Url::parse("file:///second.swf").unwrap(),
+                    name: "second.swf".to_string(),
                 },
             ],
             result.values()

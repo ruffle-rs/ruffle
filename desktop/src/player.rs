@@ -17,6 +17,7 @@ use ruffle_frontend_utils::bundle::source::BundleSourceError;
 use ruffle_frontend_utils::bundle::{Bundle, BundleError};
 use ruffle_frontend_utils::content::PlayingContent;
 use ruffle_frontend_utils::player_options::PlayerOptions;
+use ruffle_frontend_utils::recents::Recent;
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
@@ -165,6 +166,19 @@ impl ActivePlayer {
                     }
                 }
             }
+        }
+
+        let recent_limit = preferences.recent_limit();
+        if let Err(e) = preferences.write_recents(|writer| {
+            writer.push(
+                Recent {
+                    url: movie_url.clone(),
+                    name: content.name(),
+                },
+                recent_limit,
+            )
+        }) {
+            tracing::warn!("Couldn't update recents: {e}");
         }
 
         let opt = match &content {

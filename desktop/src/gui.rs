@@ -7,7 +7,6 @@ mod widgets;
 
 pub use controller::GuiController;
 pub use movie::MovieView;
-use ruffle_frontend_utils::recents::Recent;
 use std::borrow::Cow;
 use url::Url;
 
@@ -185,17 +184,6 @@ impl RuffleGui {
         mut player: MutexGuard<Player>,
     ) {
         self.menu_bar.currently_opened = Some((movie_url.clone(), opt.clone()));
-        let recent_limit = self.preferences.recent_limit();
-        if let Err(e) = self.preferences.write_recents(|writer| {
-            writer.push(
-                Recent {
-                    url: movie_url.clone(),
-                },
-                recent_limit,
-            )
-        }) {
-            tracing::warn!("Couldn't update recents: {e}");
-        }
 
         // Update dialog state to reflect the newly-opened movie's options.
         self.dialogs
