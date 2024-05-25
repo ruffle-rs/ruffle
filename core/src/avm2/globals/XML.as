@@ -2,8 +2,6 @@ package {
     [Ruffle(InstanceAllocator)]
     [Ruffle(CallHandler)]
     public final dynamic class XML {
-        import __ruffle__.stub_method;
-
         AS3 native function normalize(): XML;
 
         AS3 static function setSettings(settings:Object = null): void {
@@ -61,6 +59,9 @@ package {
         AS3 function namespace(prefix:* = null):* {
             return namespace_internal_impl(arguments.length > 0, prefix);
         }
+        AS3 native function addNamespace(ns:*):XML;
+        AS3 native function setNamespace(ns:*):void;
+        AS3 native function removeNamespace(ns:*):XML;
         AS3 native function inScopeNamespaces():Array;
         AS3 native function namespaceDeclarations():Array;
         AS3 native function localName():Object;
@@ -135,6 +136,21 @@ package {
         prototype.namespace = function(prefix:* = null):* {
             var self:XML = this;
             return self.AS3::namespace.apply(self, arguments);
+        };
+
+        prototype.addNamespace = function(ns:*):XML {
+            var self:XML = this;
+            return self.AS3::addNamespace(ns);
+        };
+
+        prototype.setNamespace = function(ns:*):void {
+            var self:XML = this;
+            self.AS3::setNamespace(ns);
+        };
+
+        prototype.removeNamespace = function(ns:*):XML {
+            var self:XML = this;
+            return self.AS3::removeNamespace(ns);
         };
 
         prototype.namespaceDeclarations = function():Array {

@@ -230,6 +230,40 @@ pub fn namespace_internal_impl<'gc>(
     }
 }
 
+// ECMA-357 13.4.4.2 XML.prototype.addNamespace (namespace)
+pub fn add_namespace<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "XML", "addNamespace");
+
+    // 3. Return x
+    Ok(this.into())
+}
+
+// ECMA-357 13.4.4.36 XML.prototype.setNamespace (ns)
+pub fn set_namespace<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "XML", "setNamespace");
+    Ok(Value::Undefined)
+}
+
+// ECMA-357 13.4.4.31 XML.prototype.removeNamespace (namespace)
+pub fn remove_namespace<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "XML", "removeNamespace");
+
+    // 9. Return x
+    Ok(this.into())
+}
+
 pub fn in_scope_namespaces<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
