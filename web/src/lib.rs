@@ -99,6 +99,9 @@ extern "C" {
     #[wasm_bindgen(method, js_name = "onCallbackAvailable")]
     fn on_callback_available(this: &JavascriptPlayer, name: &str);
 
+    #[wasm_bindgen(method, js_name = "getObjectId")]
+    fn get_object_id(this: &JavascriptPlayer) -> Option<String>;
+
     #[wasm_bindgen(method, catch, js_name = "onFSCommand")]
     fn on_fs_command(this: &JavascriptPlayer, command: &str, args: &str) -> Result<bool, JsValue>;
 
@@ -1584,6 +1587,10 @@ impl ExternalInterfaceProvider for JavascriptInterface {
 
     fn on_callback_available(&self, name: &str) {
         self.js_player.on_callback_available(name);
+    }
+
+    fn get_id(&self) -> Option<String> {
+        self.js_player.get_object_id()
     }
 }
 

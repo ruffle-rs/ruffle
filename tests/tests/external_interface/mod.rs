@@ -51,4 +51,8 @@ impl ExternalInterfaceProvider for ExternalInterfaceTestProvider {
     }
 
     fn on_callback_available(&self, _name: &str) {}
+
+    fn get_id(&self) -> Option<String> {
+        None
+    }
 }

@@ -1868,6 +1868,10 @@ export class RufflePlayer extends HTMLElement {
         };
     }
 
+    protected getObjectId(): string | null {
+        return this.getAttribute("name");
+    }
+
     /**
      * Sets a trace observer on this flash player.
      *
