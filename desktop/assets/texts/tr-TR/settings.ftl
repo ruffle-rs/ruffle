@@ -3,6 +3,7 @@ player-settings = Oyuncu Ayarları
 movie-parameters = Film Parametreleri
 custom-base-url = Özel Temel URL
 spoof-swf-url = Sahte SWF URL'si
+cookie = Çerez
 proxy = Vekil Sunucu
 upgrade-http = HTTP'yi HTTPS'e Yükselt
 tcp-connections = TCP Bağlantıları
