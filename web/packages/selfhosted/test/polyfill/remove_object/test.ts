@@ -23,7 +23,7 @@ describe("Remove object", () => {
     it("deletes ruffle player by id", async () => {
         await browser.execute(() => {
             const obj = document.getElementById("foo");
-            obj.remove();
+            obj?.remove();
         });
         const actual = await browser.$("#test-container").getHTML(false);
         const expected = "";

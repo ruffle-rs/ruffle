@@ -5,12 +5,12 @@ import fs from "fs";
 
 use(chaiHtml);
 
-describe("Flash inside frame with injected ruffle", () => {
+describe("Flash inside iframe with injected ruffle", () => {
     it("loads the test", async () => {
         await openTest(browser, import.meta.dirname);
     });
 
-    it("polyfills inside a frame", async () => {
+    it("polyfills inside an iframe", async () => {
         await injectRuffleAndWait(browser);
         await browser.switchToFrame(await browser.$("#test-frame"));
         await browser.$("<ruffle-object />").waitForExist();
@@ -26,12 +26,11 @@ describe("Flash inside frame with injected ruffle", () => {
     it("polyfills even after a reload", async () => {
         // Contaminate the old contents, to ensure we get a "fresh" state
         await browser.execute(() => {
-            document.getElementById("test-container").remove();
+            document.getElementById("test-container")?.remove();
         });
 
         // Then reload
         await browser.switchToParentFrame();
-        await browser.switchToFrame(await browser.$("#nav-frame"));
         await browser.$("#reload-link").click();
 
         // And finally, check
