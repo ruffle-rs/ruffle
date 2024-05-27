@@ -22,6 +22,19 @@ export async function isRuffleLoaded(browser: WebdriverIO.Browser) {
     );
 }
 
+export async function isRufflePlayerLoaded(
+    browser: WebdriverIO.Browser,
+    player: WebdriverIO.Element,
+) {
+    return await browser.execute(
+        (player) =>
+            // https://github.com/webdriverio/webdriverio/issues/6486
+            // TODO: How can we import ReadyState enum?
+            (player as unknown as RufflePlayer).readyState === 2,
+        player,
+    );
+}
+
 export async function waitForRuffle(browser: WebdriverIO.Browser) {
     await browser.waitUntil(async () => await isRuffleLoaded(browser), {
         timeoutMsg: "Expected Ruffle to load",
@@ -69,23 +82,17 @@ export async function playAndMonitor(
     expectedOutput: string = "Hello from Flash!\n",
 ) {
     await throwIfError(browser);
+    await waitForPlayerToLoad(browser, player);
+    await setupAndPlay(browser, player);
 
-    // TODO: better way to test for this in the API
-    await browser.waitUntil(
-        async () =>
-            (await hasError(browser)) ||
-            (await browser.execute(
-                (player) =>
-                    // https://github.com/webdriverio/webdriverio/issues/6486
-                    // TODO: How can we import ReadyState enum?
-                    (player as unknown as RufflePlayer).readyState === 2,
-                player,
-            )),
-        {
-            timeoutMsg: "Expected player to have initialized",
-        },
-    );
+    const actualOutput = await getTraceOutput(browser, player);
+    expect(actualOutput).to.eql(expectedOutput);
+}
 
+export async function setupAndPlay(
+    browser: WebdriverIO.Browser,
+    player: WebdriverIO.Element,
+) {
     await browser.execute((playerElement) => {
         // https://github.com/webdriverio/webdriverio/issues/6486
         const player = playerElement as unknown as RufflePlayer;
@@ -95,9 +102,6 @@ export async function playAndMonitor(
         };
         player.play();
     }, player);
-
-    const actualOutput = await getTraceOutput(browser, player);
-    expect(actualOutput).to.eql(expectedOutput);
 }
 
 export async function getTraceOutput(
@@ -132,6 +136,19 @@ export async function getTraceOutput(
 export async function injectRuffleAndWait(browser: WebdriverIO.Browser) {
     await injectRuffle(browser);
     await waitForRuffle(browser);
+}
+
+export async function waitForPlayerToLoad(
+    browser: WebdriverIO.Browser,
+    player: WebdriverIO.Element,
+) {
+    await browser.waitUntil(
+        async () => await isRufflePlayerLoaded(browser, player),
+        {
+            timeoutMsg: "Expected Ruffle to load",
+        },
+    );
+    await throwIfError(browser);
 }
 
 export async function openTest(
