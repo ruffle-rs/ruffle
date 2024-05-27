@@ -1,4 +1,4 @@
-import { jsApiBefore, playAndMonitor } from "../utils.js";
+import { loadJsAPI, playAndMonitor } from "../utils.js";
 import { use } from "chai";
 import chaiHtml from "chai-html";
 import { RufflePlayer } from "ruffle-core";
@@ -6,7 +6,7 @@ import { RufflePlayer } from "ruffle-core";
 use(chaiHtml);
 
 describe("RufflePlayer.load", () => {
-    jsApiBefore();
+    loadJsAPI();
 
     it("loads and plays a URL", async () => {
         const player = await browser.$("<ruffle-player>");

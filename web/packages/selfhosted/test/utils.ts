@@ -14,7 +14,7 @@ declare module "ruffle-core" {
     }
 }
 
-async function isRuffleLoaded(browser: WebdriverIO.Browser) {
+export async function isRuffleLoaded(browser: WebdriverIO.Browser) {
     return await browser.execute(
         () =>
             window !== undefined &&
@@ -23,14 +23,14 @@ async function isRuffleLoaded(browser: WebdriverIO.Browser) {
     );
 }
 
-async function waitForRuffle(browser: WebdriverIO.Browser) {
+export async function waitForRuffle(browser: WebdriverIO.Browser) {
     await browser.waitUntil(async () => await isRuffleLoaded(browser), {
         timeoutMsg: "Expected Ruffle to load",
     });
     await throwIfError(browser);
 }
 
-async function setupErrorHandler(browser: WebdriverIO.Browser) {
+export async function setupErrorHandler(browser: WebdriverIO.Browser) {
     await browser.execute(() => {
         window.ruffleErrors = [];
         window.addEventListener("error", (error) => {
@@ -39,13 +39,13 @@ async function setupErrorHandler(browser: WebdriverIO.Browser) {
     });
 }
 
-async function hasError(browser: WebdriverIO.Browser) {
+export async function hasError(browser: WebdriverIO.Browser) {
     return await browser.execute(
         () => window.ruffleErrors && window.ruffleErrors.length > 0,
     );
 }
 
-async function throwIfError(browser: WebdriverIO.Browser) {
+export async function throwIfError(browser: WebdriverIO.Browser) {
     return await browser.execute(() => {
         if (window.ruffleErrors && window.ruffleErrors.length > 0) {
             throw window.ruffleErrors[0];
@@ -53,7 +53,7 @@ async function throwIfError(browser: WebdriverIO.Browser) {
     });
 }
 
-async function injectRuffle(browser: WebdriverIO.Browser) {
+export async function injectRuffle(browser: WebdriverIO.Browser) {
     await setupErrorHandler(browser);
     await browser.execute(() => {
         const script = document.createElement("script");
@@ -64,10 +64,10 @@ async function injectRuffle(browser: WebdriverIO.Browser) {
     await throwIfError(browser);
 }
 
-async function playAndMonitor(
+export async function playAndMonitor(
     browser: WebdriverIO.Browser,
     player: WebdriverIO.Element,
-    expectedOutput: string | undefined = undefined,
+    expectedOutput: string = "Hello from Flash!\n",
 ) {
     await throwIfError(browser);
 
@@ -92,15 +92,11 @@ async function playAndMonitor(
         player.play();
     }, player);
 
-    if (expectedOutput === undefined) {
-        expectedOutput = "Hello from Flash!\n";
-    }
-
     const actualOutput = await getTraceOutput(browser, player);
     expect(actualOutput).to.eql(expectedOutput);
 }
 
-async function getTraceOutput(
+export async function getTraceOutput(
     browser: WebdriverIO.Browser,
     player: WebdriverIO.Element,
 ) {
@@ -129,27 +125,24 @@ async function getTraceOutput(
     }, player);
 }
 
-async function injectRuffleAndWait(browser: WebdriverIO.Browser) {
+export async function injectRuffleAndWait(browser: WebdriverIO.Browser) {
     await injectRuffle(browser);
     await waitForRuffle(browser);
 }
 
-async function openTest(
+export async function openTest(
     browser: WebdriverIO.Browser,
     absoluteDir: string,
-    filename: string | undefined = undefined,
+    filename: string = "index.html",
 ) {
     const dirname = path.basename(absoluteDir);
-    if (filename === undefined) {
-        filename = "index.html";
-    }
     await browser.url(
         `http://localhost:4567/test/polyfill/${dirname}/${filename}`,
     );
 }
 
 /** Test set-up for JS API testing. */
-function jsApiBefore(swf: string | undefined = undefined) {
+export function loadJsAPI(swf?: string) {
     let player = null;
 
     before("Loads the test", async () => {
@@ -179,15 +172,3 @@ function jsApiBefore(swf: string | undefined = undefined) {
         }
     });
 }
-
-export {
-    isRuffleLoaded,
-    waitForRuffle,
-    playAndMonitor,
-    injectRuffle,
-    injectRuffleAndWait,
-    openTest,
-    setupErrorHandler,
-    jsApiBefore,
-    getTraceOutput,
-};
