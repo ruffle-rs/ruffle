@@ -11,12 +11,14 @@ use crate::{as_texture, Descriptors, MaskState, Pipelines, Transforms};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::{BitmapHandle, PixelSnapping};
 use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
+use ruffle_render::lines::{emulate_line, emulate_line_rect};
 use ruffle_render::matrix::Matrix;
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
 use std::mem;
-use swf::{BlendMode, Color, ColorTransform};
+use swf::{BlendMode, Color, ColorTransform, Twips};
+use wgpu::Backend;
 
 use super::target::PoolOrArcTexture;
 
@@ -93,6 +95,12 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 transform_buffer,
             } => self.render_shape(shape, *transform_buffer),
             DrawCommand::DrawRect { transform_buffer } => self.draw_rect(*transform_buffer),
+            DrawCommand::DrawLine { transform_buffer } => {
+                self.draw_lines::<false>(*transform_buffer)
+            }
+            DrawCommand::DrawLineRect { transform_buffer } => {
+                self.draw_lines::<true>(*transform_buffer)
+            }
             DrawCommand::PushMask => self.push_mask(),
             DrawCommand::ActivateMask => self.activate_mask(),
             DrawCommand::DeactivateMask => self.deactivate_mask(),
@@ -107,6 +115,16 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         } else {
             self.render_pass
                 .set_pipeline(self.pipelines.color.stencilless_pipeline());
+        }
+    }
+
+    pub fn prep_lines(&mut self) {
+        if self.needs_stencil {
+            self.render_pass
+                .set_pipeline(self.pipelines.lines.pipeline_for(self.mask_state));
+        } else {
+            self.render_pass
+                .set_pipeline(self.pipelines.lines.stencilless_pipeline());
         }
     }
 
@@ -302,6 +320,32 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         }
     }
 
+    pub fn draw_lines<const RECT: bool>(&mut self, transform_buffer: wgpu::DynamicOffset) {
+        if cfg!(feature = "render_debug_labels") {
+            self.render_pass.push_debug_group("draw_lines");
+        }
+        self.prep_lines();
+
+        self.render_pass.set_bind_group(
+            1,
+            &self.dynamic_transforms.bind_group,
+            &[transform_buffer],
+        );
+
+        self.draw(
+            self.descriptors.quad.vertices_pos_color.slice(..),
+            if RECT {
+                self.descriptors.quad.indices_line_rect.slice(..)
+            } else {
+                self.descriptors.quad.indices_line.slice(..)
+            },
+            if RECT { 5 } else { 2 },
+        );
+        if cfg!(feature = "render_debug_labels") {
+            self.render_pass.pop_debug_group();
+        }
+    }
+
     pub fn push_mask(&mut self) {
         debug_assert!(
             self.mask_state == MaskState::NoMask || self.mask_state == MaskState::DrawMaskedContent
@@ -376,6 +420,12 @@ pub enum DrawCommand {
     DrawRect {
         transform_buffer: wgpu::DynamicOffset,
     },
+    DrawLine {
+        transform_buffer: wgpu::DynamicOffset,
+    },
+    DrawLineRect {
+        transform_buffer: wgpu::DynamicOffset,
+    },
     PushMask,
     ActivateMask,
     DeactivateMask,
@@ -431,6 +481,7 @@ struct WgpuCommandHandler<'a> {
     dynamic_transforms: &'a DynamicTransforms,
     draw_encoder: &'a mut wgpu::CommandEncoder,
     texture_pool: &'a mut TexturePool,
+    emulate_lines: bool,
 
     result: Vec<Chunk>,
     current: Vec<DrawCommand>,
@@ -454,6 +505,12 @@ impl<'a> WgpuCommandHandler<'a> {
         texture_pool: &'a mut TexturePool,
     ) -> Self {
         let transforms = Self::new_transforms(descriptors, dynamic_transforms);
+
+        // DirectX does support drawing lines, but it's very inconsistent.
+        // With MSAA, lines have 1.4px thickness, which makes them too thick.
+        // Without MSAA, lines have 1px thickness, but their placement is sometimes off.
+        let emulate_lines = descriptors.backend == Backend::Dx12;
+
         Self {
             descriptors,
             quality,
@@ -465,6 +522,7 @@ impl<'a> WgpuCommandHandler<'a> {
             dynamic_transforms,
             draw_encoder,
             texture_pool,
+            emulate_lines,
 
             result: vec![],
             current: vec![],
@@ -717,12 +775,36 @@ impl<'a> CommandHandler for WgpuCommandHandler<'a> {
         );
     }
 
-    fn draw_line(&mut self, _color: Color, _matrix: Matrix) {
-        // TODO implement
+    fn draw_line(&mut self, color: Color, mut matrix: Matrix) {
+        if self.emulate_lines {
+            let mut cl = CommandList::new();
+            emulate_line(&mut cl, color, matrix);
+            cl.execute(self);
+        } else {
+            matrix.tx += Twips::HALF;
+            matrix.ty += Twips::HALF;
+            self.add_to_current(
+                matrix,
+                ColorTransform::multiply_from(color),
+                |transform_buffer| DrawCommand::DrawLine { transform_buffer },
+            );
+        }
     }
 
-    fn draw_line_rect(&mut self, _color: Color, _matrix: Matrix) {
-        // TODO implement
+    fn draw_line_rect(&mut self, color: Color, mut matrix: Matrix) {
+        if self.emulate_lines {
+            let mut cl = CommandList::new();
+            emulate_line_rect(&mut cl, color, matrix);
+            cl.execute(self);
+        } else {
+            matrix.tx += Twips::HALF;
+            matrix.ty += Twips::HALF;
+            self.add_to_current(
+                matrix,
+                ColorTransform::multiply_from(color),
+                |transform_buffer| DrawCommand::DrawLineRect { transform_buffer },
+            );
+        }
     }
 
     fn push_mask(&mut self) {

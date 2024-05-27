@@ -37,7 +37,7 @@ use std::path::Path;
 use std::sync::Arc;
 use swf::Color;
 use tracing::instrument;
-use wgpu::SubmissionIndex;
+use wgpu::{Backend, SubmissionIndex};
 
 pub struct WgpuRenderBackend<T: RenderTarget> {
     pub(crate) descriptors: Arc<Descriptors>,

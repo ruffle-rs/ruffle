@@ -9,12 +9,14 @@ use crate::{
 use fnv::FnvHashMap;
 use std::fmt::Debug;
 use std::sync::{Arc, Mutex};
+use wgpu::Backend;
 
 pub struct Descriptors {
     pub wgpu_instance: wgpu::Instance,
     pub adapter: wgpu::Adapter,
     pub device: wgpu::Device,
     pub limits: wgpu::Limits,
+    pub backend: Backend,
     pub queue: wgpu::Queue,
     pub bitmap_samplers: BitmapSamplers,
     pub bind_layouts: BindLayouts,
@@ -45,12 +47,14 @@ impl Descriptors {
         let shaders = Shaders::new(&device);
         let quad = Quad::new(&device);
         let filters = Filters::new(&device);
+        let backend = adapter.get_info().backend;
 
         Self {
             wgpu_instance: instance,
             adapter,
             device,
             limits,
+            backend,
             queue,
             bitmap_samplers,
             bind_layouts,
@@ -226,6 +230,8 @@ pub struct Quad {
     pub vertices_pos_color: wgpu::Buffer,
     pub filter_vertices: wgpu::Buffer,
     pub indices: wgpu::Buffer,
+    pub indices_line: wgpu::Buffer,
+    pub indices_line_rect: wgpu::Buffer,
     pub texture_transforms: wgpu::Buffer,
 }
 
@@ -282,6 +288,8 @@ impl Quad {
             },
         ];
         let indices: [u32; 6] = [0, 1, 2, 0, 2, 3];
+        let indices_line: [u32; 2] = [0, 1];
+        let indices_line_rect: [u32; 5] = [0, 1, 2, 3, 0];
 
         let vbo_pos = create_buffer_with_data(
             device,
@@ -310,6 +318,18 @@ impl Quad {
             wgpu::BufferUsages::INDEX,
             create_debug_label!("Quad ibo"),
         );
+        let ibo_line = create_buffer_with_data(
+            device,
+            bytemuck::cast_slice(&indices_line),
+            wgpu::BufferUsages::INDEX,
+            create_debug_label!("Line ibo"),
+        );
+        let ibo_line_rect = create_buffer_with_data(
+            device,
+            bytemuck::cast_slice(&indices_line_rect),
+            wgpu::BufferUsages::INDEX,
+            create_debug_label!("Line rect ibo"),
+        );
 
         let tex_transforms = create_buffer_with_data(
             device,
@@ -330,6 +350,8 @@ impl Quad {
             vertices_pos_color: vbo_pos_color,
             filter_vertices: vbo_filter,
             indices: ibo,
+            indices_line: ibo_line,
+            indices_line_rect: ibo_line_rect,
             texture_transforms: tex_transforms,
         }
     }
