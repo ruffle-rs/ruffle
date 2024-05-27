@@ -25,7 +25,7 @@ describe("Flash inside frame with provided ruffle", () => {
     it("polyfills even after a reload", async () => {
         // Contaminate the old contents, to ensure we get a "fresh" state
         await browser.execute(() => {
-            document.getElementById("test-container").remove();
+            document.getElementById("test-container")?.remove();
         });
 
         // Then reload
