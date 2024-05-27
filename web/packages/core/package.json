@@ -14,7 +14,8 @@
         "build": "tsc --build --force",
         "postbuild": "node tools/set_version.js && node tools/bundle_texts.js",
         "docs": "typedoc",
-        "test": "cross-env TS_NODE_COMPILER_OPTIONS={\\\"module\\\":\\\"commonjs\\\"} mocha"
+        "test": "cross-env TS_NODE_COMPILER_OPTIONS={\\\"module\\\":\\\"commonjs\\\"} mocha",
+        "checkTypes": "tsc --noemit"
     },
     "dependencies": {
         "jszip": "^3.10.1",

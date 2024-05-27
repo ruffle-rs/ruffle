@@ -15,7 +15,8 @@
     "scripts": {
         "build": "webpack",
         "serve": "webpack-dev-server",
-        "test": "wdio run wdio.conf.ts"
+        "test": "wdio run wdio.conf.ts",
+        "checkTypes": "tsc --noemit"
     },
     "dependencies": {
         "ruffle-core": "^0.1.0"

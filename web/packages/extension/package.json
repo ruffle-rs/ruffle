@@ -9,7 +9,8 @@
         "build": "tsc -p jsconfig.json && npm run build:generic && npm run build:firefox",
         "build:generic": "webpack --env generic && node tools/inject_plugin_polyfill.js && node tools/zip.js dist/ruffle_extension.zip",
         "build:firefox": "webpack --env firefox && node tools/inject_plugin_polyfill.js && node tools/zip.js dist/firefox_unsigned.xpi && npm run sign-firefox",
-        "sign-firefox": "node tools/submit_xpi.js dist/firefox_unsigned.xpi ../../../reproducible-source.zip"
+        "sign-firefox": "node tools/submit_xpi.js dist/firefox_unsigned.xpi ../../../reproducible-source.zip",
+        "checkTypes": "tsc --noemit"
     },
     "dependencies": {
         "ruffle-core": "^0.1.0"
