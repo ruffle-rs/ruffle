@@ -130,6 +130,39 @@ impl Twips {
     pub fn to_pixels(self) -> f64 {
         f64::from(self.0) / Self::TWIPS_PER_PIXEL as f64
     }
+
+    /// Truncates this twips to a pixel.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use swf::Twips;
+    ///
+    /// assert_eq!(Twips::new(23).trunc_to_pixel(), Twips::new(20));
+    /// assert_eq!(Twips::new(439).trunc_to_pixel(), Twips::new(420));
+    /// assert_eq!(Twips::new(-47).trunc_to_pixel(), Twips::new(-40));
+    /// ```
+    #[inline]
+    pub fn trunc_to_pixel(self) -> Self {
+        Self::new(self.0 / Twips::TWIPS_PER_PIXEL * Twips::TWIPS_PER_PIXEL)
+    }
+
+    /// Rounds this twips to the nearest pixel.
+    /// Rounds half-way cases to the nearest even pixel.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use swf::Twips;
+    ///
+    /// assert_eq!(Twips::new(29).round_to_pixel_ties_even(), Twips::new(20));
+    /// assert_eq!(Twips::new(30).round_to_pixel_ties_even(), Twips::new(40));
+    /// assert_eq!(Twips::new(31).round_to_pixel_ties_even(), Twips::new(40));
+    /// ```
+    #[inline]
+    pub fn round_to_pixel_ties_even(self) -> Self {
+        Self::from_pixels(self.to_pixels().round_ties_even())
+    }
 }
 
 impl std::ops::Add for Twips {
