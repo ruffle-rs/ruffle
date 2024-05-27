@@ -80,6 +80,18 @@ Some ways to install Binaryen:
 
 Just make sure the `wasm-opt` program is in `$PATH`, and that it works.
 
+#### Optional features
+
+##### `jpegxr`
+
+The release version of the extension is compiled with `jpegxr`.
+To enable it, set the the env `CARGO_FEATURES="jpegxr"`.
+
+Windows dependencies:
+
+- Install LLVM and add the full path of its `bin` folder (example: `C:\Program Files\LLVM-18.1.6\bin`) to your env `PATH`.
+- Set env `LIBCLANG_PATH` with the same `bin` folder.
+
 ### Building
 
 In this project, you may run the following commands to build all packages:
