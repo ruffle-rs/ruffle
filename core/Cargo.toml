@@ -46,7 +46,7 @@ regress = "0.10"
 flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "cbd18e1a79cf902f8ff1d2bf551801c4021b3be6" }
 lzma-rs = {version = "0.3.0", optional = true }
 dasp = { version = "0.11.0", features = ["interpolate", "interpolate-linear", "signal"], optional = true }
-symphonia = { version = "0.5.4", default-features = false, features = ["mp3"], optional = true }
+symphonia = { version = "0.5.4", default-features = false, optional = true }
 enumset = "1.1.5"
 bytemuck = { workspace = true }
 clap = { workspace = true, optional=true }
@@ -83,7 +83,7 @@ avm_debug = []
 tracy_avm = ["dep:tracy-client"]
 deterministic = []
 timeline_debug = []
-mp3 = ["symphonia"]
+mp3 = ["symphonia", "symphonia/mp3"]
 nellymoser = ["nellymoser-rs"]
 audio = ["dasp"]
 known_stubs = ["linkme", "serde"]
