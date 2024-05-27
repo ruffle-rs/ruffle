@@ -7,7 +7,7 @@ use(chaiHtml);
 
 describe("Embed without src attribute", () => {
     it("loads the test", async () => {
-        await openTest(browser, import.meta.dirname);
+        await openTest(browser, `polyfill/embed_missing_src`);
     });
 
     it("doesn't polyfill with ruffle", async () => {

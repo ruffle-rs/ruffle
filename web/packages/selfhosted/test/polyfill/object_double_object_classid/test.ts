@@ -7,7 +7,7 @@ use(chaiHtml);
 
 describe("Object using classid with another object tag without classid", () => {
     it("loads the test", async () => {
-        await openTest(browser, import.meta.dirname);
+        await openTest(browser, `polyfill/object_double_object_classid`);
     });
 
     it("polyfills only the second tag with ruffle", async () => {

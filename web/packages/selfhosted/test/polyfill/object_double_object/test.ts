@@ -7,7 +7,7 @@ use(chaiHtml);
 
 describe("Object with another object tag", () => {
     it("loads the test", async () => {
-        await openTest(browser, import.meta.dirname);
+        await openTest(browser, `polyfill/object_double_object`);
     });
 
     it("polyfills only the first tag with ruffle", async () => {

@@ -7,7 +7,7 @@ use(chaiHtml);
 
 describe("Object with wrong type attribute value", () => {
     it("loads the test", async () => {
-        await openTest(browser, import.meta.dirname);
+        await openTest(browser, `polyfill/object_wrong_type`);
     });
 
     it("polyfills with ruffle", async () => {

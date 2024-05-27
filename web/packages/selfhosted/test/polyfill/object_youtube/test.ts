@@ -7,7 +7,7 @@ use(chaiHtml);
 
 describe("Object with Flash YouTube video", () => {
     it("loads the test", async () => {
-        await openTest(browser, import.meta.dirname);
+        await openTest(browser, `polyfill/object_youtube`);
     });
 
     it("doesn't polyfill with ruffle", async () => {

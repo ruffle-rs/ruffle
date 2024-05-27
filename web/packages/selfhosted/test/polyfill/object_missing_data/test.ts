@@ -7,7 +7,7 @@ use(chaiHtml);
 
 describe("Object without data attribute", () => {
     it("loads the test", async () => {
-        await openTest(browser, import.meta.dirname);
+        await openTest(browser, `polyfill/object_missing_data`);
     });
 
     it("doesn't polyfill with ruffle", async () => {

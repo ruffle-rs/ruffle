@@ -7,7 +7,7 @@ use(chaiHtml);
 
 describe("Object with case-insensitive clsid", () => {
     it("loads the test", async () => {
-        await openTest(browser, import.meta.dirname);
+        await openTest(browser, `polyfill/object_clsid_insensitive`);
     });
 
     it("Polyfills", async () => {

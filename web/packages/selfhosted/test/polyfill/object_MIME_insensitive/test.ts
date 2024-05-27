@@ -7,7 +7,7 @@ use(chaiHtml);
 
 describe("Object with case-insensitive MIME type", () => {
     it("loads the test", async () => {
-        await openTest(browser, import.meta.dirname);
+        await openTest(browser, `polyfill/object_MIME_insensitive`);
     });
 
     it("Polyfills", async () => {

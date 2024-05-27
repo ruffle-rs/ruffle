@@ -7,7 +7,7 @@ use(chaiHtml);
 
 describe("Object for old IE must work everywhere", () => {
     it("loads the test", async () => {
-        await openTest(browser, import.meta.dirname);
+        await openTest(browser, `polyfill/object_ie_only`);
     });
 
     it("polyfills with ruffle", async () => {

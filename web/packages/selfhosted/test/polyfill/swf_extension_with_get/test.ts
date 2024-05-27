@@ -7,7 +7,7 @@ use(chaiHtml);
 
 describe("SWF extension, file with GET parameter", () => {
     it("loads the test", async () => {
-        await openTest(browser, import.meta.dirname);
+        await openTest(browser, `polyfill/swf_extension_with_get`);
     });
 
     it("Polyfills", async () => {

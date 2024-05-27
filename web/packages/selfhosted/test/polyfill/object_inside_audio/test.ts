@@ -7,7 +7,7 @@ use(chaiHtml);
 
 describe("Object inside audio node", () => {
     it("loads the test", async () => {
-        await openTest(browser, import.meta.dirname);
+        await openTest(browser, `polyfill/object_inside_audio`);
     });
 
     it("doesn't polyfill with ruffle", async () => {

@@ -7,7 +7,7 @@ use(chaiHtml);
 
 describe("PDF with .swf GET", () => {
     it("loads the test", async () => {
-        await openTest(browser, import.meta.dirname);
+        await openTest(browser, `polyfill/pdf_with_get`);
     });
 
     it("doesn't polyfill with ruffle", async () => {

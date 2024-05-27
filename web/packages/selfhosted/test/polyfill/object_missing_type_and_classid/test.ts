@@ -7,7 +7,7 @@ use(chaiHtml);
 
 describe("Object without type and classid attributes", () => {
     it("loads the test", async () => {
-        await openTest(browser, import.meta.dirname);
+        await openTest(browser, `polyfill/object_missing_type_and_classid`);
     });
 
     it("polyfills with ruffle", async () => {

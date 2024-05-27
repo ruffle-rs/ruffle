@@ -7,7 +7,7 @@ use(chaiHtml);
 
 describe("Object with ruffle-embed tag", () => {
     it("loads the test", async () => {
-        await openTest(browser, import.meta.dirname);
+        await openTest(browser, `polyfill/object_with_ruffle_embed`);
     });
 
     it("already polyfilled with ruffle", async () => {
