@@ -61,12 +61,15 @@ export function copyToAudioBufferInterleaved(
 }
 
 /**
- * Gets a property of an arbitrary JavaScript value.
- * This is necessary because Reflect.get does not work for primitive targets.
+ * Performs the ActionScript `ExternalInterface.call(name, ...values)`
  *
  * @internal
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function getProperty(target: any, key: string): any {
-    return target[key];
+// @ts-expect-error defined but not used
+// eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars
+export function callExternalInterface(name: string, args: any[]): any {
+    // [NA] Yes, this is direct eval. Yes, this is a Bad Thing when it comes to security.
+    // In fact, yes this is vulnerable to an XSS attack!
+    // But plot twist: Flash allowed for this and many content *relies on it*. :(
+    return eval(`(${name})(...args)`);
 }
