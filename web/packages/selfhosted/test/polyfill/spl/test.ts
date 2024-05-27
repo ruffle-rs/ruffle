@@ -7,7 +7,7 @@ use(chaiHtml);
 
 describe("SPL", () => {
     it("loads the test", async () => {
-        await openTest(browser, import.meta.dirname);
+        await openTest(browser, `polyfill/spl`);
     });
 
     it("polyfills with ruffle", async () => {

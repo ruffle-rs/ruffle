@@ -7,7 +7,7 @@ use(chaiHtml);
 
 describe("Embed with case-insensitive MIME type", () => {
     it("loads the test", async () => {
-        await openTest(browser, import.meta.dirname);
+        await openTest(browser, `polyfill/embed_insensitive`);
     });
 
     it("Polyfills", async () => {

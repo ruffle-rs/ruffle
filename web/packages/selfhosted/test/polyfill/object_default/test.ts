@@ -7,7 +7,7 @@ use(chaiHtml);
 
 describe("Object tag", () => {
     it("loads the test", async () => {
-        await openTest(browser, import.meta.dirname);
+        await openTest(browser, `polyfill/object_default`);
     });
 
     it("polyfills with ruffle", async () => {

@@ -8,7 +8,7 @@ use(chaiHtml);
 // [NA] Disabled for now as the test can take too long on CI
 describe.skip("Doesn't error with cross-origin frames", () => {
     it("Loads the test", async () => {
-        await openTest(browser, import.meta.dirname);
+        await openTest(browser, `polyfill/crossorigin_broken_cors`);
     });
 
     it("Polyfills with ruffle", async () => {

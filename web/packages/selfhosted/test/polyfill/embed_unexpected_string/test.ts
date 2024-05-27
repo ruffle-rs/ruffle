@@ -7,7 +7,7 @@ use(chaiHtml);
 
 describe("Embed with unexpected string", () => {
     it("loads the test", async () => {
-        await openTest(browser, import.meta.dirname);
+        await openTest(browser, `polyfill/embed_unexpected_string`);
     });
 
     it("polyfills with ruffle", async () => {

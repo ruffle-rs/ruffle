@@ -7,7 +7,7 @@ use(chaiHtml);
 
 describe("Object with clsid and embed", () => {
     it("loads the test", async () => {
-        await openTest(browser, import.meta.dirname);
+        await openTest(browser, `polyfill/object_clsid_with_embed`);
     });
 
     it("polyfills with ruffle", async () => {

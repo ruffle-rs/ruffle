@@ -1,4 +1,3 @@
-import path from "path";
 import { expect } from "chai";
 import { PublicAPI, RufflePlayer } from "ruffle-core";
 
@@ -132,13 +131,10 @@ export async function injectRuffleAndWait(browser: WebdriverIO.Browser) {
 
 export async function openTest(
     browser: WebdriverIO.Browser,
-    absoluteDir: string,
+    directory: string,
     filename: string = "index.html",
 ) {
-    const dirname = path.basename(absoluteDir);
-    await browser.url(
-        `http://localhost:4567/test/polyfill/${dirname}/${filename}`,
-    );
+    await browser.url(`http://localhost:4567/test/${directory}/${filename}`);
 }
 
 /** Test set-up for JS API testing. */

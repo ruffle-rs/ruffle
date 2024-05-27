@@ -7,7 +7,7 @@ use(chaiHtml);
 
 describe("Embed without type attribute", () => {
     it("loads the test", async () => {
-        await openTest(browser, import.meta.dirname);
+        await openTest(browser, `polyfill/embed_missing_type`);
     });
 
     it("polyfills with ruffle", async () => {

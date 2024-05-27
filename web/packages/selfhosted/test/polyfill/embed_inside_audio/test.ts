@@ -7,7 +7,7 @@ use(chaiHtml);
 
 describe("Embed inside audio node", () => {
     it("loads the test", async () => {
-        await openTest(browser, import.meta.dirname);
+        await openTest(browser, `polyfill/embed_inside_audio`);
     });
 
     it("doesn't polyfill with ruffle", async () => {

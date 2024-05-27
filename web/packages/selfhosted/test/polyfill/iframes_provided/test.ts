@@ -7,7 +7,7 @@ use(chaiHtml);
 
 describe("Flash inside iframe with provided ruffle", () => {
     it("loads the test", async () => {
-        await openTest(browser, import.meta.dirname);
+        await openTest(browser, `polyfill/iframes_provided`);
     });
 
     it("polyfills inside an iframe", async () => {
