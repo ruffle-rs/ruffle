@@ -1,4 +1,4 @@
-import { jsApiBefore, getTraceOutput } from "../../utils.js";
+import { loadJsAPI, getTraceOutput } from "../../utils.js";
 import { use, expect } from "chai";
 import chaiHtml from "chai-html";
 import { Key } from "webdriverio";
@@ -6,7 +6,7 @@ import { Key } from "webdriverio";
 use(chaiHtml);
 
 describe("Key up and down events work", () => {
-    jsApiBefore("/test/integration_tests/keyboard_input/test.swf");
+    loadJsAPI("/test/integration_tests/keyboard_input/test.swf");
 
     it("'a' key is recognised", async () => {
         const player = await browser.$("<ruffle-player>");

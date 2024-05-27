@@ -1,4 +1,4 @@
-import { jsApiBefore } from "../utils.js";
+import { loadJsAPI } from "../utils.js";
 import { expect, use } from "chai";
 import chaiHtml from "chai-html";
 import { RufflePlayer } from "ruffle-core";
@@ -6,7 +6,7 @@ import { RufflePlayer } from "ruffle-core";
 use(chaiHtml);
 
 describe("RufflePlayer.metadata", () => {
-    jsApiBefore("/test_assets/example.swf");
+    loadJsAPI("/test_assets/example.swf");
 
     it("has metadata after load", async () => {
         const player = await browser.$("<ruffle-player>");
