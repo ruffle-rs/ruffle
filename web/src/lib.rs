@@ -1418,12 +1418,6 @@ pub enum RuffleInstanceError {
     InstanceNotFound,
 }
 
-#[wasm_bindgen(raw_module = "./ruffle-imports")]
-extern "C" {
-    #[wasm_bindgen(catch, js_name = "getProperty")]
-    pub fn get_property(target: &JsValue, key: &JsValue) -> Result<JsValue, JsValue>;
-}
-
 async fn create_renderer(
     builder: PlayerBuilder,
     document: &web_sys::Document,

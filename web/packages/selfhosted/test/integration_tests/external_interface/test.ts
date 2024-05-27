@@ -229,8 +229,7 @@ log called with 1 argument
         );
     });
 
-    // [NA] Broken on Ruffle at time of writing
-    it.skip("supports a JS function as name", async () => {
+    it("supports a JS function as name", async () => {
         const player = await browser.$("<ruffle-object>");
         await browser.execute((player) => {
             player.callMethodWithDelay(
@@ -238,6 +237,9 @@ log called with 1 argument
                 "test",
             );
         }, player);
+
+        // [NA] Because of the delay, if we fetch immediately we *may* just get part of the log.
+        await browser.pause(200);
 
         const actualValue = await getCalledValue(browser);
         expect(actualValue).to.eql(["test"]);
@@ -249,7 +251,7 @@ log called with 1 argument
     "function(name){window.RuffleTest.set(name)}"
     "test"
   ]
-  call(function(name){window.RuffleTest.set(name)}, ...) = "success!"
+  call(function(name){window.RuffleTest.set(name)}, ...) = undefined
 `,
         );
     });
@@ -259,6 +261,9 @@ log called with 1 argument
         await browser.execute((player) => {
             player.callMethodWithDelay("does.not.exist");
         }, player);
+
+        // [NA] Because of the delay, if we fetch immediately we *may* just get part of the log.
+        await browser.pause(200);
 
         const actualOutput = await getTraceOutput(browser, player);
         expect(actualOutput).to.eql(
