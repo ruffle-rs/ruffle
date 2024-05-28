@@ -74,8 +74,13 @@ export async function playAndMonitor(
     await browser.waitUntil(
         async () =>
             (await hasError(browser)) ||
-            // @ts-expect-error TS2341
-            (await browser.execute((player) => player.instance, player)),
+            (await browser.execute(
+                (player) =>
+                    // https://github.com/webdriverio/webdriverio/issues/6486
+                    // TODO: How can we import ReadyState enum?
+                    (player as unknown as RufflePlayer).readyState === 2,
+                player,
+            )),
         {
             timeoutMsg: "Expected player to have initialized",
         },
