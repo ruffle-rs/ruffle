@@ -46,6 +46,16 @@ export class RuffleEmbed extends RufflePlayer {
     }
 
     /**
+     * Polyfill of HTMLEmbedElement.
+     *
+     * @ignore
+     * @internal
+     */
+    override get nodeName(): string {
+        return "EMBED";
+    }
+
+    /**
      * Polyfill of HTMLObjectElement.
      *
      * @ignore
