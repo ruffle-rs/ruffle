@@ -230,6 +230,33 @@ pub fn children<'gc>(
     .into())
 }
 
+/// 13.5.4.8 XMLList.prototype.contains (value)
+pub fn contains<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let list = this.as_xml_list_object().unwrap();
+    let value = args.get_value(0);
+    let length = list.length();
+
+    // 1. For i = 0 to list.[[Length]]-1
+    // NOTE: cannot use children_mut here since the value can be this same list, which causes a panic.
+    for index in 0..length {
+        let child = list
+            .xml_object_child(index, activation)
+            .expect("index should be in between 0 and length");
+
+        // 2.a. If the result of the comparison list[i] == value is true, return true
+        if child.abstract_eq(&value, activation)? {
+            return Ok(true.into());
+        }
+    }
+
+    // 2. Return false
+    Ok(false.into())
+}
+
 pub fn copy<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,

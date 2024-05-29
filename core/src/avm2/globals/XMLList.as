@@ -14,6 +14,7 @@ package {
         AS3 native function length():int;
         AS3 native function child(name:Object):XMLList;
         AS3 native function children():XMLList;
+        AS3 native function contains(value:*):Boolean;
         AS3 native function copy():XMLList;
         AS3 native function attribute(name:*):XMLList;
         AS3 native function attributes():XMLList;
@@ -85,6 +86,11 @@ package {
         prototype.children = function():XMLList {
             var self:XMLList = this;
             return self.AS3::children();
+        }
+
+        prototype.contains = function(value:*):Boolean {
+            var self:XMLList = this;
+            return self.AS3::contains(value);
         }
 
         prototype.copy = function():XMLList {
