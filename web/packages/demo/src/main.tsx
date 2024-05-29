@@ -24,6 +24,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                 letterbox: Letterbox.On,
                 forceScale: true,
                 forceAlign: true,
+                favorFlash: false,
             }}
             allowSampleSwfs={true}
             allowUrlLoading={false}
