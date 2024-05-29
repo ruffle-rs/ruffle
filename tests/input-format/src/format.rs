@@ -73,6 +73,12 @@ pub enum AutomatedEvent {
         btn: MouseButton,
     },
 
+    /// Mouse scroll.
+    MouseWheel {
+        lines: Option<f64>,
+        pixels: Option<f64>,
+    },
+
     /// Press a key
     KeyDown { key_code: u8 },
 
