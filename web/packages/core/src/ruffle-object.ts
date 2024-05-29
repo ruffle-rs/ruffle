@@ -145,6 +145,16 @@ export class RuffleObject extends RufflePlayer {
      * @ignore
      * @internal
      */
+    override get nodeName(): string {
+        return "OBJECT";
+    }
+
+    /**
+     * Polyfill of HTMLObjectElement.
+     *
+     * @ignore
+     * @internal
+     */
     get data(): string | null {
         return this.getAttribute("data");
     }
