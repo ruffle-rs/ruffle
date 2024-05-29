@@ -1,5 +1,3 @@
-// vim:syntax=javascript
-
 class Main extends MovieClip {
 
     var first : Boolean;
