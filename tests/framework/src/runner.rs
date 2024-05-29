@@ -9,8 +9,8 @@ use anyhow::{anyhow, Result};
 use image::ImageFormat;
 use pretty_assertions::Comparison;
 use ruffle_core::backend::navigator::NullExecutor;
-use ruffle_core::events::MouseButton as RuffleMouseButton;
 use ruffle_core::events::{KeyCode, TextControlCode as RuffleTextControlCode};
+use ruffle_core::events::{MouseButton as RuffleMouseButton, MouseWheelDelta};
 use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Player, PlayerBuilder, PlayerEvent};
@@ -224,6 +224,13 @@ impl TestRunner {
                         InputMouseButton::Left => RuffleMouseButton::Left,
                         InputMouseButton::Middle => RuffleMouseButton::Middle,
                         InputMouseButton::Right => RuffleMouseButton::Right,
+                    },
+                },
+                AutomatedEvent::MouseWheel { lines, pixels } => PlayerEvent::MouseWheel {
+                    delta: match (lines, pixels) {
+                        (Some(lines), None) => MouseWheelDelta::Lines(*lines),
+                        (None, Some(pixels)) => MouseWheelDelta::Pixels(*pixels),
+                        _ => panic!("MouseWheel: expected only one of 'lines' or 'pixels'"),
                     },
                 },
                 AutomatedEvent::KeyDown { key_code } => PlayerEvent::KeyDown {
