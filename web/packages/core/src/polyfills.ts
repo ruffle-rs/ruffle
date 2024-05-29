@@ -25,7 +25,7 @@ let embeds: HTMLCollectionOf<HTMLEmbedElement>;
  *
  * @returns Whether this browser has a plugin indicating pre-existing Flash support.
  */
-function isFlashEnabledBrowser(): boolean {
+export function isFlashEnabledBrowser(): boolean {
     // If the user sets a configuration value not to favor Flash, pretend the browser does not support Flash so Ruffle takes effect.
     if ("favorFlash" in globalConfig && globalConfig["favorFlash"] === false) {
         return false;

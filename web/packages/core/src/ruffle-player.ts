@@ -12,6 +12,7 @@ import {
     WindowMode,
 } from "./load-options";
 import type { MovieMetadata } from "./movie-metadata";
+import { isFlashEnabledBrowser } from "./polyfills";
 import { swfFileName } from "./swf-utils";
 import { buildInfo } from "./build-info";
 import { text, textAsParagraphs } from "./i18n";
@@ -985,7 +986,52 @@ export class RufflePlayer extends HTMLElement {
                 this.container.style.backgroundColor =
                     this.loadedConfig.backgroundColor;
             }
-
+            if (
+                this.loadedConfig.favorFlash &&
+                isFlashEnabledBrowser() &&
+                "url" in options
+            ) {
+                this.swfUrl = new URL(options.url, document.baseURI);
+                const flashEmbed = document.createElement("embed");
+                // TS thinks these can be undefined, but it is not since loadedConfig uses DEFAULT_CONFIG as a fallback
+                if (this.loadedConfig.base !== null) {
+                    flashEmbed.setAttribute("base", this.loadedConfig.base!);
+                }
+                flashEmbed.setAttribute(
+                    "allowScriptAccess",
+                    this.loadedConfig.allowScriptAccess!.toString(),
+                );
+                flashEmbed.setAttribute("wmode", this.loadedConfig.wmode!);
+                flashEmbed.setAttribute(
+                    "allowFullScreen",
+                    this.loadedConfig.allowFullscreen!.toString(),
+                );
+                flashEmbed.setAttribute(
+                    "menu",
+                    this.loadedConfig.menu!.toString(),
+                );
+                flashEmbed.setAttribute("scale", this.loadedConfig.scale!);
+                flashEmbed.setAttribute("salign", this.loadedConfig.salign!);
+                flashEmbed.setAttribute("quality", this.loadedConfig.quality!);
+                const sanitizedParameters = sanitizeParameters(
+                    options.parameters,
+                );
+                const flashVars = Object.keys(sanitizedParameters)
+                    .map(
+                        (key) =>
+                            `${key}=${encodeURIComponent(sanitizedParameters[key]!)}`,
+                    )
+                    .join("&");
+                if (flashVars) {
+                    flashEmbed.setAttribute("FlashVars", flashVars);
+                }
+                flashEmbed.src = this.swfUrl.href;
+                flashEmbed.width = "100%";
+                flashEmbed.height = "100%";
+                this.container.textContent = "";
+                this.container.appendChild(flashEmbed);
+                return;
+            }
             await this.ensureFreshInstance();
 
             if ("url" in options) {
