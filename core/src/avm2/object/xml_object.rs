@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::api_version::ApiVersion;
-use crate::avm2::e4x::{string_to_multiname, E4XNode, E4XNodeKind};
+use crate::avm2::e4x::{string_to_multiname, E4XNamespace, E4XNode, E4XNodeKind};
 use crate::avm2::error::make_error_1087;
 use crate::avm2::multiname::NamespaceSet;
 use crate::avm2::object::script_object::ScriptObjectData;
@@ -161,7 +161,7 @@ impl<'gc> XmlObject<'gc> {
     pub fn namespace(&self, activation: &mut Activation<'_, 'gc>) -> Namespace<'gc> {
         match self.0.read().node.namespace() {
             Some(ns) => Namespace::package(
-                ns,
+                ns.uri,
                 ApiVersion::AllVersions,
                 &mut activation.context.borrow_gc(),
             ),
@@ -560,7 +560,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
                 // 12.b.iii. Create a new XML object y with y.[[Name]] = name, y.[[Class]] = "element" and y.[[Parent]] = x
                 let node = E4XNode::element(
                     activation.gc(),
-                    name.explicit_namespace(),
+                    name.explicit_namespace().map(E4XNamespace::new_uri),
                     name.local_name().unwrap(),
                     Some(*self_node),
                 );

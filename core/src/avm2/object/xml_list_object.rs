@@ -1,6 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::api_version::ApiVersion;
-use crate::avm2::e4x::{E4XNode, E4XNodeKind};
+use crate::avm2::e4x::{E4XNamespace, E4XNode, E4XNodeKind};
 use crate::avm2::error::make_error_1089;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
@@ -175,7 +175,7 @@ impl<'gc> XmlListObject<'gc> {
                 if let Some(name) = last_node.local_name() {
                     let ns = match last_node.namespace() {
                         Some(ns) => Namespace::package(
-                            ns,
+                            ns.uri,
                             ApiVersion::AllVersions,
                             &mut activation.context.borrow_gc(),
                         ),
@@ -716,7 +716,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                             // 2.c.vi. Else let y.[[Class]] = "element"
                             Some(property) => E4XNode::element(
                                 activation.gc(),
-                                property.explicit_namespace(),
+                                property.explicit_namespace().map(E4XNamespace::new_uri),
                                 property.local_name().expect("Local name should exist"),
                                 r,
                             ),
@@ -786,7 +786,10 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                                         y.set_local_name(name, activation.gc());
                                     }
                                     if let Some(namespace) = target_property.explicit_namespace() {
-                                        y.set_namespace(namespace, activation.gc());
+                                        y.set_namespace(
+                                            E4XNamespace::new_uri(namespace),
+                                            activation.gc(),
+                                        );
                                     }
                                 }
                             }

@@ -35,7 +35,7 @@ pub struct E4XNode<'gc>(GcCell<'gc, E4XNodeData<'gc>>);
 #[collect(no_drop)]
 pub struct E4XNodeData<'gc> {
     parent: Option<E4XNode<'gc>>,
-    namespace: Option<AvmString<'gc>>,
+    namespace: Option<E4XNamespace<'gc>>,
     local_name: Option<AvmString<'gc>>,
     kind: E4XNodeKind<'gc>,
     notification: Option<FunctionObject<'gc>>,
@@ -99,6 +99,19 @@ fn make_xml_error<'gc>(activation: &mut Activation<'_, 'gc>, err: XmlError) -> E
     }
 }
 
+#[derive(Copy, Clone, Collect, Debug)]
+#[collect(no_drop)]
+pub struct E4XNamespace<'gc> {
+    pub uri: AvmString<'gc>,
+    pub prefix: Option<AvmString<'gc>>,
+}
+
+impl<'gc> E4XNamespace<'gc> {
+    pub fn new_uri(uri: AvmString<'gc>) -> Self {
+        E4XNamespace { prefix: None, uri }
+    }
+}
+
 #[derive(Collect, Debug)]
 #[collect(no_drop)]
 pub enum E4XNodeKind<'gc> {
@@ -145,7 +158,7 @@ impl<'gc> E4XNode<'gc> {
 
     pub fn element(
         mc: &Mutation<'gc>,
-        namespace: Option<AvmString<'gc>>,
+        namespace: Option<E4XNamespace<'gc>>,
         name: AvmString<'gc>,
         parent: Option<Self>,
     ) -> Self {
@@ -932,16 +945,18 @@ impl<'gc> E4XNode<'gc> {
             attributes.map_err(|e| make_xml_error(activation, XmlError::InvalidAttr(e)))?
         {
             let (ns, local_name) = parser.resolve_attribute(attribute.key);
-            let name =
-                AvmString::new_utf8_bytes(activation.context.gc_context, local_name.into_inner());
+            let name = AvmString::new_utf8_bytes(activation.gc(), local_name.into_inner());
             let namespace = match ns {
                 ResolveResult::Bound(ns) if ns.into_inner() == b"http://www.w3.org/2000/xmlns/" => {
                     continue
                 }
-                ResolveResult::Bound(ns) => Some(AvmString::new_utf8_bytes(
-                    activation.context.gc_context,
-                    ns.into_inner(),
-                )),
+                ResolveResult::Bound(ns) => {
+                    let prefix = attribute.key.prefix().map(|prefix| {
+                        AvmString::new_utf8_bytes(activation.gc(), prefix.into_inner())
+                    });
+                    let uri = AvmString::new_utf8_bytes(activation.gc(), ns.into_inner());
+                    Some(E4XNamespace { prefix, uri })
+                }
                 ResolveResult::Unknown(ns) => {
                     return Err(Error::AvmError(type_error(
                         activation,
@@ -976,10 +991,14 @@ impl<'gc> E4XNode<'gc> {
         let name =
             AvmString::new_utf8_bytes(activation.context.gc_context, local_name.into_inner());
         let namespace = match ns {
-            ResolveResult::Bound(ns) => Some(AvmString::new_utf8_bytes(
-                activation.context.gc_context,
-                ns.into_inner(),
-            )),
+            ResolveResult::Bound(ns) => {
+                let prefix = bs
+                    .name()
+                    .prefix()
+                    .map(|prefix| AvmString::new_utf8_bytes(activation.gc(), prefix.into_inner()));
+                let uri = AvmString::new_utf8_bytes(activation.gc(), ns.into_inner());
+                Some(E4XNamespace { prefix, uri })
+            }
             ResolveResult::Unknown(ns) => {
                 return Err(Error::AvmError(type_error(
                     activation,
@@ -1017,11 +1036,11 @@ impl<'gc> E4XNode<'gc> {
         Ok(result)
     }
 
-    pub fn set_namespace(&self, namespace: AvmString<'gc>, mc: &Mutation<'gc>) {
+    pub fn set_namespace(&self, namespace: E4XNamespace<'gc>, mc: &Mutation<'gc>) {
         self.0.write(mc).namespace = Some(namespace);
     }
 
-    pub fn namespace(&self) -> Option<AvmString<'gc>> {
+    pub fn namespace(&self) -> Option<E4XNamespace<'gc>> {
         self.0.read().namespace
     }
 
@@ -1074,7 +1093,7 @@ impl<'gc> E4XNode<'gc> {
             return true;
         }
 
-        let self_ns = self.namespace().unwrap_or_default();
+        let self_ns = self.namespace().map(|ns| ns.uri).unwrap_or_default();
         // FIXME: For cases where we don't have *any* explicit namespace
         // we just give up and assume we should match the default public namespace.
         if !name.namespace_set().iter().any(|ns| ns.is_namespace()) {

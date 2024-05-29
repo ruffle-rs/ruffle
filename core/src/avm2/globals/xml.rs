@@ -219,7 +219,7 @@ pub fn namespace_internal_impl<'gc>(
         Ok(match node.namespace() {
             Some(ns) if prefix.is_empty() => {
                 let namespace = Namespace::package(
-                    ns,
+                    ns.uri,
                     ApiVersion::AllVersions,
                     &mut activation.context.borrow_gc(),
                 );
