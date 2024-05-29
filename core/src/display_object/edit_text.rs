@@ -1310,7 +1310,8 @@ impl<'gc> EditText<'gc> {
             scroll as usize
         };
         let clamped = scroll_lines.clamp(1, self.maxscroll());
-        self.0.write(context.gc_context).scroll = clamped;
+        self.0.write(context.gc()).scroll = clamped;
+        self.invalidate_cached_bitmap(context.gc());
     }
 
     pub fn max_chars(self) -> i32 {
