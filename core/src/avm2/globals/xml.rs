@@ -316,13 +316,37 @@ pub fn remove_namespace<'gc>(
     Ok(this.into())
 }
 
+// ECMA-357 13.4.4.17 XML.prototype.inScopeNamespaces ()
 pub fn in_scope_namespaces<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "XML", "inScopeNamespaces");
-    Ok(ArrayObject::empty(activation)?.into())
+    let xml = this.as_xml_object().unwrap();
+    let node = xml.node();
+
+    // 1. Let y = x
+    // 2. Let inScopeNS = { }
+    // 3. While (y is not null)
+    // ...
+    let mut in_scope_ns: Vec<Value<'gc>> = Vec::new();
+    for ns in node.in_scope_namespaces() {
+        in_scope_ns.push(ns.as_namespace_object(activation)?.into());
+    }
+
+    // Note: Non-standard avmplus behavior doesn't allow an empty array.
+    if in_scope_ns.is_empty() {
+        in_scope_ns.push(
+            E4XNamespace::default_namespace()
+                .as_namespace_object(activation)?
+                .into(),
+        );
+    }
+
+    // 4. Let a be a new Array created as if by calling the constructor, new Array()
+    // ...
+    // 7. Return a
+    Ok(ArrayObject::from_storage(activation, ArrayStorage::from_iter(in_scope_ns))?.into())
 }
 
 pub fn namespace_declarations<'gc>(
