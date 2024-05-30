@@ -356,7 +356,7 @@ jobs:
         if: ${{ !matrix.demo }}
         shell: bash -l {0}
         run: |
-          zip -r reproducible-source.zip . -x '/web/node_modules/*' '/web/*/node_modules/*' '/web/packages/*/dist/*' '/web/docker/docker_builds/*' '/target/*' '/.git/*' '/tests/tests/swfs/*'
+          zip -r reproducible-source.zip . -x '/web/node_modules/*' '/web/*/node_modules/*' '/web/packages/*/dist/*' '/web/docker/docker_builds/packages/*' '/target/*' '/.git/*' '/tests/tests/swfs/*'
           cp reproducible-source.zip "${{ needs.create-nightly-release.outputs.package_prefix }}-reproducible-source.zip"
 
       - name: Upload reproducible source archive
