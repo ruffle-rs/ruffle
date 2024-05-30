@@ -102,6 +102,10 @@ impl<'gc> XmlListObject<'gc> {
         }
     }
 
+    pub fn node_child(&self, index: usize) -> Option<E4XNode<'gc>> {
+        self.0.read().children.get(index).map(|x| *x.node())
+    }
+
     pub fn children(&self) -> Ref<'_, Vec<E4XOrXml<'gc>>> {
         Ref::map(self.0.read(), |d| &d.children)
     }

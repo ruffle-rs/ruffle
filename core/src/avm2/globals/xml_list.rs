@@ -9,6 +9,7 @@ use crate::avm2::{
     parameters::ParametersExt,
     Activation, Error, Object, TObject, Value,
 };
+use crate::string::AvmString;
 
 fn has_complex_content_inner(children: &[E4XOrXml<'_>]) -> bool {
     match children {
@@ -445,6 +446,97 @@ pub fn processing_instructions<'gc>(
     // FIXME: This should call XmlObject's processing_instructions() and concat everything together
     //        (Necessary for correct target object/property and dirty flag).
     Ok(XmlListObject::new_with_children(activation, nodes, Some(xml_list.into()), None).into())
+}
+
+pub fn normalize<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let list = this.as_xml_list_object().unwrap();
+    let public_namespace = activation.avm2().public_namespace_base_version;
+
+    // 1. Let i = 0
+    let mut index = 0;
+
+    // 2. While i < list.[[Length]]
+    while index < list.length() {
+        let child = list
+            .node_child(index)
+            .expect("index should be between 0 and length");
+
+        // a. If list[i].[[Class]] == "element"
+        if child.is_element() {
+            // i. Call the normalize method of list[i]
+            child.normalize(activation.gc());
+
+            // ii. Let i = i + 1
+            index += 1;
+        // b. Else if list[i].[[Class]] == "text"
+        } else if child.is_text() {
+            let should_remove = {
+                let (E4XNodeKind::Text(text) | E4XNodeKind::CData(text)) =
+                    &mut *child.kind_mut(activation.gc())
+                else {
+                    unreachable!()
+                };
+
+                // i. While ((i+1) < list.[[Length]]) and (list[i + 1].[[Class]] == "text")
+                while index + 1 < list.length()
+                    && list
+                        .node_child(index + 1)
+                        .expect("index should be between 0 and length")
+                        .is_text()
+                {
+                    let other = list
+                        .node_child(index + 1)
+                        .expect("index should be between 0 and length");
+
+                    let (E4XNodeKind::Text(other) | E4XNodeKind::CData(other)) = &*other.kind()
+                    else {
+                        unreachable!()
+                    };
+
+                    // 1. Let list[i].[[Value]] be the result of concatenating list[i].[[Value]] and list[i + 1].[[Value]]
+                    *text = AvmString::concat(activation.gc(), *text, *other);
+
+                    // 2. Call the [[Delete]] method of list with argument ToString(i + 1)
+                    list.delete_property_local(
+                        activation,
+                        &Multiname::new(
+                            public_namespace,
+                            AvmString::new_utf8(activation.gc(), (index + 1).to_string()),
+                        ),
+                    )?;
+                }
+
+                text.len() == 0
+            };
+
+            // ii. If list[i].[[Value]].length == 0
+            if should_remove {
+                // 1. Call the [[Delete]] method of list with argument ToString(i)
+                list.delete_property_local(
+                    activation,
+                    &Multiname::new(
+                        public_namespace,
+                        AvmString::new_utf8(activation.gc(), index.to_string()),
+                    ),
+                )?;
+            // iii. Else
+            } else {
+                // 1. Let i = i + 1
+                index += 1;
+            }
+        // c. Else
+        } else {
+            // i. Let i = i + 1
+            index += 1;
+        }
+    }
+
+    // 3. Return list
+    Ok(this.into())
 }
 
 macro_rules! define_xml_proxy {
