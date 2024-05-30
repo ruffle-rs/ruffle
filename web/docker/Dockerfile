@@ -1,5 +1,5 @@
 # Run this file from ruffle root dir (not the docker dir) like this:
-# rm -rf web/docker/docker_builds/*
+# rm -rf web/docker/docker_builds/packages/*
 # docker build --tag ruffle-web-docker -f web/docker/Dockerfile .
 # docker cp $(docker create ruffle-web-docker:latest):/ruffle/web/packages web/docker/docker_builds/packages
 FROM node:20

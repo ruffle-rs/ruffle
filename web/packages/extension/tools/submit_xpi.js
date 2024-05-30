@@ -112,7 +112,7 @@ async function submit(
 \n\
 We highly recommend using the Docker build workflow. You can invoke it using the following three commands:\n\
 \n\
-rm -rf web/docker/docker_builds/*\n\
+rm -rf web/docker/docker_builds/packages/*\n\
 # Normally these commands:\n\
 docker build --tag ruffle-web-docker -f web/docker/Dockerfile .\n\
 docker cp $(docker create ruffle-web-docker:latest):/ruffle/web/packages web/docker/docker_builds/packages\n\
