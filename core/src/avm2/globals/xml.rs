@@ -252,10 +252,55 @@ pub fn add_namespace<'gc>(
 // ECMA-357 13.4.4.36 XML.prototype.setNamespace (ns)
 pub fn set_namespace<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "XML", "setNamespace");
+    let xml = this.as_xml_object().unwrap();
+    let node = xml.node();
+
+    // 1. If x.[[Class]] ∈ {"text", "comment", "processing-instruction"}, return
+    if matches!(
+        &*node.kind(),
+        E4XNodeKind::Text(_)
+            | E4XNodeKind::CData(_)
+            | E4XNodeKind::Comment(_)
+            | E4XNodeKind::ProcessingInstruction(_)
+    ) {
+        return Ok(Value::Undefined);
+    }
+
+    // 2. Let ns2 be a new Namespace created as if by calling the constructor new Namespace(ns)
+    let value = args.get_value(0);
+    let ns = activation
+        .avm2()
+        .classes()
+        .namespace
+        .construct(activation, &[value])?
+        .as_namespace_object()
+        .unwrap();
+    let ns = E4XNamespace {
+        prefix: ns.prefix(),
+        uri: ns.namespace().as_uri(),
+    };
+
+    // 3. Let x.[[Name]] be a new QName created as if by calling the constructor new QName(ns2, x.[[Name]])
+    node.set_namespace(ns, activation.gc());
+
+    // 4. If x.[[Class]] == "attribute"
+    if node.is_attribute() {
+        // 4.a. If x.[[Parent]] == null, return
+        // 4.b. Call x.[[Parent]].[[AddInScopeNamespace]](ns2)
+        if let Some(parent) = node.parent() {
+            parent.add_in_scope_namespace(activation.gc(), ns);
+        }
+    }
+
+    // 5. If x.[[Class]] == "element"
+    if node.is_element() {
+        // 5.a. Call x.[[AddInScopeNamespace]](ns2)
+        node.add_in_scope_namespace(activation.gc(), ns);
+    }
+
     Ok(Value::Undefined)
 }
 
