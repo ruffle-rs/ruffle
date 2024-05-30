@@ -26,6 +26,7 @@ package {
         AS3 native function parent():*;
         AS3 native function processingInstructions(name:* = "*"):XMLList;
         AS3 native function elements(name:* = "*"):XMLList;
+        AS3 native function normalize():XMLList;
 
         // The following native methods are not declared in the documentation,
         // but still exist
@@ -240,6 +241,11 @@ package {
         prototype.elements = function(name:* = "*"):XMLList {
             var self:XMLList = this;
             return self.AS3::elements(name);
+        }
+
+        prototype.normalize = function():XMLList {
+            var self:XMLList = this;
+            return self.AS3::normalize();
         }
 
         public static const length:int = 1;
