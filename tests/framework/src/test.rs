@@ -15,6 +15,26 @@ pub struct Font {
     pub italic: bool,
 }
 
+#[derive(Clone, Copy)]
+pub enum TestKind {
+    Slow,
+}
+
+impl TestKind {
+    pub fn name(self) -> &'static str {
+        match self {
+            TestKind::Slow => "slow",
+        }
+    }
+
+    pub fn ord(kind: &str) -> impl Ord {
+        match kind {
+            "slow" => 0,
+            _ => 1,
+        }
+    }
+}
+
 pub struct Test {
     pub options: TestOptions,
     pub swf_path: VfsPath,
@@ -23,6 +43,7 @@ pub struct Test {
     pub output_path: VfsPath,
     pub root_path: VfsPath,
     pub name: String,
+    pub kind: Option<TestKind>,
 }
 
 impl Test {
@@ -31,6 +52,7 @@ impl Test {
         let input_path = test_dir.join("input.json")?;
         let socket_path = test_dir.join("socket.json")?;
         let output_path = options.output_path(&test_dir)?;
+        let is_slow = options.is_slow || options.sleep_to_meet_frame_rate;
 
         Ok(Self {
             options,
@@ -40,6 +62,7 @@ impl Test {
             output_path,
             root_path: test_dir,
             name,
+            kind: if is_slow { Some(TestKind::Slow) } else { None },
         })
     }
 
@@ -106,6 +129,9 @@ impl Test {
 
     pub fn should_run(&self, check_renderer: bool, environment: &impl Environment) -> bool {
         if self.options.ignore {
+            return false;
+        }
+        if cfg!(feature = "fast") && matches!(self.kind, Some(TestKind::Slow)) {
             return false;
         }
         self.options.required_features.can_run()
