@@ -311,6 +311,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         let matched_children = if let E4XNodeKind::Element {
             children,
             attributes,
+            ..
         } = &*read.node.kind()
         {
             let search_children = if name.is_attribute() {

@@ -99,7 +99,7 @@ fn make_xml_error<'gc>(activation: &mut Activation<'_, 'gc>, err: XmlError) -> E
     }
 }
 
-#[derive(Copy, Clone, Collect, Debug)]
+#[derive(Copy, Clone, Collect, PartialEq, Debug)]
 #[collect(no_drop)]
 pub struct E4XNamespace<'gc> {
     pub uri: AvmString<'gc>,
@@ -123,6 +123,7 @@ pub enum E4XNodeKind<'gc> {
     Element {
         attributes: Vec<E4XNode<'gc>>,
         children: Vec<E4XNode<'gc>>,
+        namespaces: Vec<E4XNamespace<'gc>>,
     },
 }
 
@@ -137,6 +138,7 @@ impl<'gc> E4XNode<'gc> {
                 kind: E4XNodeKind::Element {
                     attributes: vec![],
                     children: vec![],
+                    namespaces: vec![],
                 },
                 notification: None,
             },
@@ -171,6 +173,7 @@ impl<'gc> E4XNode<'gc> {
                 kind: E4XNodeKind::Element {
                     attributes: vec![],
                     children: vec![],
+                    namespaces: vec![],
                 },
                 notification: None,
             },
@@ -245,10 +248,12 @@ impl<'gc> E4XNode<'gc> {
                 E4XNodeKind::Element {
                     children: children_a,
                     attributes: attributes_a,
+                    ..
                 },
                 E4XNodeKind::Element {
                     children: children_b,
                     attributes: attributes_b,
+                    ..
                 },
             ) => {
                 if children_a.len() != children_b.len() || attributes_a.len() != attributes_b.len()
@@ -287,9 +292,11 @@ impl<'gc> E4XNode<'gc> {
             E4XNodeKind::Element {
                 attributes,
                 children,
+                namespaces,
             } => E4XNodeKind::Element {
                 attributes: attributes.iter().map(|attr| attr.deep_copy(mc)).collect(),
                 children: children.iter().map(|child| child.deep_copy(mc)).collect(),
+                namespaces: namespaces.clone(),
             },
         };
 
@@ -307,6 +314,7 @@ impl<'gc> E4XNode<'gc> {
         if let E4XNodeKind::Element {
             attributes,
             children,
+            ..
         } = &mut node.0.write(mc).kind
         {
             for attr in attributes.iter_mut() {
@@ -610,6 +618,7 @@ impl<'gc> E4XNode<'gc> {
             if let E4XNodeKind::Element {
                 children,
                 attributes,
+                ..
             } = &*self.kind()
             {
                 let search_children = if name.is_attribute() {
@@ -939,16 +948,25 @@ impl<'gc> E4XNode<'gc> {
         decoder: quick_xml::Decoder,
     ) -> Result<Self, Error<'gc>> {
         let mut attribute_nodes = Vec::new();
+        let mut namespaces = Vec::new();
 
         let attributes: Result<Vec<_>, _> = bs.attributes().collect();
         for attribute in
             attributes.map_err(|e| make_xml_error(activation, XmlError::InvalidAttr(e)))?
         {
+            let value_str = custom_unescape(&attribute.value, decoder)
+                .map_err(|e| make_xml_error(activation, e))?;
+            let value = AvmString::new_utf8_bytes(activation.gc(), value_str.as_bytes());
+
             let (ns, local_name) = parser.resolve_attribute(attribute.key);
             let name = AvmString::new_utf8_bytes(activation.gc(), local_name.into_inner());
             let namespace = match ns {
                 ResolveResult::Bound(ns) if ns.into_inner() == b"http://www.w3.org/2000/xmlns/" => {
-                    continue
+                    namespaces.push(E4XNamespace {
+                        uri: value,
+                        prefix: Some(name),
+                    });
+                    continue;
                 }
                 ResolveResult::Bound(ns) => {
                     let prefix = attribute.key.prefix().map(|prefix| {
@@ -968,13 +986,18 @@ impl<'gc> E4XNode<'gc> {
                         1083,
                     )?))
                 }
-                ResolveResult::Unbound => None,
+                ResolveResult::Unbound => {
+                    // The default XML namespace declaration
+                    if &*name == b"xmlns" {
+                        namespaces.push(E4XNamespace {
+                            uri: value,
+                            prefix: None,
+                        });
+                        continue;
+                    }
+                    None
+                }
             };
-
-            let value_str = custom_unescape(&attribute.value, decoder)
-                .map_err(|e| make_xml_error(activation, e))?;
-            let value =
-                AvmString::new_utf8_bytes(activation.context.gc_context, value_str.as_bytes());
 
             let attribute_data = E4XNodeData {
                 parent: None,
@@ -1020,6 +1043,7 @@ impl<'gc> E4XNode<'gc> {
             kind: E4XNodeKind::Element {
                 attributes: attribute_nodes,
                 children: Vec::new(),
+                namespaces,
             },
             notification: None,
         };
@@ -1066,6 +1090,32 @@ impl<'gc> E4XNode<'gc> {
 
     pub fn notification(&self) -> Option<FunctionObject<'gc>> {
         self.0.read().notification
+    }
+
+    pub fn in_scope_namespaces(&self) -> Vec<E4XNamespace<'gc>> {
+        let mut result: Vec<E4XNamespace<'gc>> = Vec::new();
+
+        let mut next_node = Some(*self);
+        while let Some(node) = next_node {
+            if let E4XNodeKind::Element { namespaces, .. } = &*node.kind() {
+                for new_ns in namespaces {
+                    let found = result.iter().any(|ns| {
+                        if new_ns.prefix.is_some() {
+                            new_ns.prefix == ns.prefix
+                        } else {
+                            // XXX check ns.prefix == None?
+                            new_ns.uri == ns.uri
+                        }
+                    });
+                    if !found {
+                        result.push(*new_ns);
+                    }
+                }
+            }
+            next_node = node.parent();
+        }
+
+        result
     }
 
     // FIXME - avmplus constructs an actual QName here, and does the normal
@@ -1246,9 +1296,12 @@ pub fn escape_element_value(s: AvmString) -> WString {
     r
 }
 
-fn to_xml_string_inner(xml: E4XOrXml, buf: &mut WString, pretty: Option<(u32, u32)>) {
-    // FIXME: Namespace support.
-
+fn to_xml_string_inner<'gc>(
+    xml: E4XOrXml<'gc>,
+    buf: &mut WString,
+    ancestor_namespaces: &[E4XNamespace<'gc>],
+    pretty: Option<(u32, u32)>,
+) {
     let node = xml.node();
     let node_kind = node.kind();
 
@@ -1291,21 +1344,72 @@ fn to_xml_string_inner(xml: E4XOrXml, buf: &mut WString, pretty: Option<(u32, u3
         E4XNodeKind::Element {
             children,
             attributes,
+            ..
         } => (children, attributes),
     };
 
+    // 9. Let namespaceDeclarations = { }
+    let mut namespace_declarations = Vec::new();
+
+    // 10. For each ns in x.[[InScopeNamespaces]]
+    for ns in node.in_scope_namespaces() {
+        // 10.a If there is no ans ∈ AncestorNamespaces, such that ans.uri == ns.uri
+        //      and ans.prefix == ns.prefix
+        if !ancestor_namespaces.contains(&ns) {
+            // 10.a.i. Let ns1 be a copy of ns
+            // 10.a.ii. Let namespaceDeclarations = namespaceDeclarations ∪ { ns1 }
+            namespace_declarations.push(ns)
+        }
+    }
+
+    // 11. For each name in the set of names consisting of x.[[Name]] and
+    //     the name of each attribute in x.[[Attributes]]
+    if let Some(ns) = node.namespace() {
+        if !ancestor_namespaces.contains(&ns) && !namespace_declarations.contains(&ns) {
+            namespace_declarations.push(ns);
+        }
+    }
+    for attribute in attributes {
+        // XXX Implement [[GetNamespace]]
+        if let Some(ns) = attribute.namespace() {
+            if !ancestor_namespaces.contains(&ns) && !namespace_declarations.contains(&ns) {
+                namespace_declarations.push(ns);
+            }
+        }
+    }
+
     buf.push_char('<');
+    if let Some(prefix) = node.namespace().and_then(|ns| ns.prefix) {
+        buf.push_str(&prefix);
+        buf.push_char(':');
+    }
     buf.push_str(&node.local_name().unwrap());
 
     for attribute in attributes {
         if let E4XNodeKind::Attribute(value) = &*attribute.kind() {
             buf.push_char(' ');
+            if let Some(prefix) = attribute.namespace().and_then(|ns| ns.prefix) {
+                buf.push_str(&prefix);
+                buf.push_char(':');
+            }
             buf.push_str(&attribute.local_name().unwrap());
             buf.push_char('=');
             buf.push_char('"');
             buf.push_str(&escape_attribute_value(*value));
             buf.push_char('"');
         }
+    }
+
+    for ns in &namespace_declarations {
+        buf.push_utf8(" xmlns");
+        if let Some(prefix) = ns.prefix {
+            buf.push_char(':');
+            buf.push_str(&prefix);
+        }
+        buf.push_char('=');
+        buf.push_char('"');
+        buf.push_str(&escape_attribute_value(ns.uri));
+        buf.push_char('"');
     }
 
     if children.is_empty() {
@@ -1326,11 +1430,14 @@ fn to_xml_string_inner(xml: E4XOrXml, buf: &mut WString, pretty: Option<(u32, u3
         None
     };
 
+    let mut all_namespaces = namespace_declarations;
+    all_namespaces.extend_from_slice(ancestor_namespaces);
+
     for child in children {
         if pretty.is_some() && indent_children {
             buf.push_char('\n');
         }
-        to_xml_string_inner(E4XOrXml::E4X(*child), buf, child_pretty);
+        to_xml_string_inner(E4XOrXml::E4X(*child), buf, &all_namespaces, child_pretty);
     }
 
     if let Some((indent_level, _)) = pretty {
@@ -1343,6 +1450,10 @@ fn to_xml_string_inner(xml: E4XOrXml, buf: &mut WString, pretty: Option<(u32, u3
     }
 
     buf.push_utf8("</");
+    if let Some(prefix) = node.namespace().and_then(|ns| ns.prefix) {
+        buf.push_str(&prefix);
+        buf.push_char(':');
+    }
     buf.push_str(&node.local_name().unwrap());
     buf.push_char('>');
 }
@@ -1380,7 +1491,8 @@ pub fn to_xml_string<'gc>(
     };
 
     let mut buf = WString::new();
-    to_xml_string_inner(xml, &mut buf, pretty);
+    let ancestor_namespaces = Vec::new();
+    to_xml_string_inner(xml, &mut buf, &ancestor_namespaces, pretty);
     AvmString::new(activation.context.gc_context, buf)
 }
 
