@@ -1,15 +1,12 @@
 //! XML builtin and prototype
 
-use crate::avm2::api_version::ApiVersion;
 use crate::avm2::e4x::{name_to_multiname, E4XNamespace, E4XNode, E4XNodeKind};
 use crate::avm2::error::{make_error_1117, type_error};
 pub use crate::avm2::object::xml_allocator;
-use crate::avm2::object::{
-    E4XOrXml, NamespaceObject, QNameObject, TObject, XmlListObject, XmlObject,
-};
+use crate::avm2::object::{E4XOrXml, QNameObject, TObject, XmlListObject, XmlObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::string::AvmString;
-use crate::avm2::{Activation, ArrayObject, Error, Multiname, Namespace, Object, Value};
+use crate::avm2::{Activation, ArrayObject, Error, Multiname, Object, Value};
 use crate::avm2_stub_method;
 
 fn ill_formed_markup_err<'gc>(
@@ -121,7 +118,7 @@ pub fn name<'gc>(
     let xml = this.as_xml_object().unwrap();
 
     if let Some(local_name) = xml.local_name() {
-        let namespace = xml.namespace(activation);
+        let namespace = xml.namespace_object(activation, &[])?.namespace();
         let mut multiname = Multiname::new(namespace, local_name);
         multiname.set_is_attribute(xml.node().is_attribute());
         Ok(QNameObject::from_name(activation, multiname)?.into())
@@ -179,17 +176,15 @@ pub fn namespace_internal_impl<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "XML", "namespace");
+    let xml = this.as_xml_object().unwrap();
+    let node = xml.node();
 
-    // FIXME:
     // 1. Let y = x
     // 2. Let inScopeNS = { }
     // 3. While (y is not null)
     //     a. For each ns in y.[[InScopeNamespaces]]
     //     ....
-
-    let xml = this.as_xml_object().unwrap();
-    let node = xml.node();
+    let in_scope_ns = node.in_scope_namespaces();
 
     // 4. If prefix was not specified
     if args[0] == Value::Bool(false) {
@@ -205,28 +200,20 @@ pub fn namespace_internal_impl<'gc>(
         }
 
         // b. Return the result of calling the [[GetNamespace]] method of x.[[Name]] with argument inScopeNS
-        // FIXME: Use inScopeNS
-        let namespace = xml.namespace(activation);
-        Ok(NamespaceObject::from_namespace(activation, namespace)?.into())
+        Ok(xml.namespace_object(activation, &in_scope_ns)?.into())
     } else {
         // a. Let prefix = ToString(prefix)
         let prefix = args.get_string(activation, 1)?;
 
         // b. Find a Namespace ns ∈ inScopeNS, such that ns.prefix = prefix. If no such ns exists, let ns = undefined.
         // c. Return ns
-
-        // FIXME: Nodes currently either have zero or one namespace, which has the prefix "" (empty string)
-        Ok(match node.namespace() {
-            Some(ns) if prefix.is_empty() => {
-                let namespace = Namespace::package(
-                    ns.uri,
-                    ApiVersion::AllVersions,
-                    &mut activation.context.borrow_gc(),
-                );
-                NamespaceObject::from_namespace(activation, namespace)?.into()
-            }
-            _ => Value::Undefined,
-        })
+        Ok(
+            if let Some(ns) = in_scope_ns.iter().find(|ns| ns.prefix == Some(prefix)) {
+                ns.as_namespace_object(activation)?.into()
+            } else {
+                Value::Undefined
+            },
+        )
     }
 }
 
