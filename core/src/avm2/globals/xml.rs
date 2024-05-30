@@ -6,7 +6,7 @@ pub use crate::avm2::object::xml_allocator;
 use crate::avm2::object::{E4XOrXml, QNameObject, TObject, XmlListObject, XmlObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::string::AvmString;
-use crate::avm2::{Activation, ArrayObject, Error, Multiname, Object, Value};
+use crate::avm2::{Activation, ArrayObject, ArrayStorage, Error, Multiname, Object, Value};
 use crate::avm2_stub_method;
 
 fn ill_formed_markup_err<'gc>(
@@ -294,11 +294,34 @@ pub fn namespace_declarations<'gc>(
         return Ok(ArrayObject::empty(activation)?.into());
     }
 
-    // TODO: (We are missing [[InScopeNamespaces]])
-    // Step 3. Let y = x.[[Parent]
+    // 3. Let y = x.[[Parent]]
+    // 4. Let ancestorNS = { }
+    // 5. While (y is not null)
     // ....
-    avm2_stub_method!(activation, "XML", "namespaceDeclarations");
-    Ok(ArrayObject::empty(activation)?.into())
+    // Note: in_scope_namespaces implements the whole loop
+    let ancestor_namespaces = node
+        .parent()
+        .map(|parent| parent.in_scope_namespaces())
+        .unwrap_or_default();
+
+    // 6. Let declaredNS = { }
+    let mut declared_namespaces: Vec<Value<'gc>> = Vec::new();
+
+    // 7. For each ns in x.[[InScopeNamespaces]]
+    for ns in node.in_scope_namespaces() {
+        // 7.a. If there exists no n ∈ ancestorNS, such that n.prefix == ns.prefix and n.uri == ns.uri
+        if !ancestor_namespaces.contains(&ns) {
+            // 7.a.i. Let declaredNS = declaredNS ∪ { ns }
+            declared_namespaces.push(ns.as_namespace_object(activation)?.into());
+        }
+    }
+
+    // 8. Let i = 0
+    // 9. For each ns in declaredNS
+    // 9.a. Call the [[Put]] method of a with arguments ToString(i) and ns
+    // 9.b. Let i = i + 1
+    // 10. Return a
+    Ok(ArrayObject::from_storage(activation, ArrayStorage::from_iter(declared_namespaces))?.into())
 }
 
 pub fn local_name<'gc>(
