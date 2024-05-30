@@ -14,7 +14,7 @@ use crate::{avm2::TObject, xml::custom_unescape};
 
 use super::{
     error::{make_error_1010, make_error_1118, type_error},
-    object::{E4XOrXml, FunctionObject},
+    object::{E4XOrXml, FunctionObject, NamespaceObject},
     string::AvmString,
     Activation, Error, Multiname, Value,
 };
@@ -109,6 +109,34 @@ pub struct E4XNamespace<'gc> {
 impl<'gc> E4XNamespace<'gc> {
     pub fn new_uri(uri: AvmString<'gc>) -> Self {
         E4XNamespace { prefix: None, uri }
+    }
+
+    pub fn default_namespace() -> Self {
+        E4XNamespace {
+            prefix: None,
+            uri: "".into(),
+        }
+    }
+}
+
+impl<'gc> E4XNamespace<'gc> {
+    pub fn as_namespace_object(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<NamespaceObject<'gc>, Error<'gc>> {
+        let args = if let Some(prefix) = self.prefix {
+            vec![prefix.into(), self.uri.into()]
+        } else {
+            vec![self.uri.into()]
+        };
+        let obj = activation
+            .avm2()
+            .classes()
+            .namespace
+            .construct(activation, &args)?;
+        Ok(obj
+            .as_namespace_object()
+            .expect("just constructed a namespace"))
     }
 }
 
