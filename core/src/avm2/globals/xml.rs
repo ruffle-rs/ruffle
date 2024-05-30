@@ -1,7 +1,7 @@
 //! XML builtin and prototype
 
 use crate::avm2::api_version::ApiVersion;
-use crate::avm2::e4x::{name_to_multiname, E4XNode, E4XNodeKind};
+use crate::avm2::e4x::{name_to_multiname, E4XNamespace, E4XNode, E4XNodeKind};
 use crate::avm2::error::{make_error_1117, type_error};
 pub use crate::avm2::object::xml_allocator;
 use crate::avm2::object::{
@@ -234,9 +234,29 @@ pub fn namespace_internal_impl<'gc>(
 pub fn add_namespace<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_method!(activation, "XML", "addNamespace");
+    let xml = this.as_xml_object().unwrap();
+    let node = xml.node();
+
+    // 1. Let ns a Namespace constructed as if by calling the function Namespace(namespace)
+    let value = args.get_value(0);
+    let ns = activation
+        .avm2()
+        .classes()
+        .namespace
+        .construct(activation, &[value])?
+        .as_namespace_object()
+        .unwrap();
+
+    // 2. Call the [[AddInScopeNamespace]] method of x with parameter ns
+    node.add_in_scope_namespace(
+        activation.gc(),
+        E4XNamespace {
+            prefix: ns.prefix(),
+            uri: ns.namespace().as_uri(),
+        },
+    );
 
     // 3. Return x
     Ok(this.into())

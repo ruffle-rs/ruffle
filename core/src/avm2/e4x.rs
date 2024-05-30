@@ -1118,6 +1118,75 @@ impl<'gc> E4XNode<'gc> {
         result
     }
 
+    // ECMA-357 9.1.1.13 [[AddInScopeNamespace]] (N)
+    pub fn add_in_scope_namespace(&self, gc: &Mutation<'gc>, namespace: E4XNamespace<'gc>) {
+        // 1. If x.[[Class]] ∈ {"text", "comment", "processing-instruction", “attribute”}, return
+        if !self.is_element() {
+            return;
+        }
+
+        // 2. If N.prefix != undefined
+        let Some(prefix) = namespace.prefix else {
+            // 3. Return
+            return;
+        };
+
+        // 2.a. If N.prefix == "" and x.[[Name]].uri == "", return
+        if prefix.is_empty() && self.namespace().map_or(true, |ns| ns.uri.is_empty()) {
+            return;
+        }
+
+        {
+            let E4XNodeKind::Element {
+                ref mut namespaces, ..
+            } = &mut *self.kind_mut(gc)
+            else {
+                unreachable!("must be an element");
+            };
+
+            // 2.b. Let match be null
+            // 2.c. For each ns in x.[[InScopeNamespaces]]
+            // 2.c.i. If N.prefix == ns.prefix, let match = ns
+            let found_index = namespaces.iter().position(|ns| Some(prefix) == ns.prefix);
+
+            // 2.d. If match is not null and match.uri is not equal to N.uri
+            if let Some(found_index) = found_index {
+                if namespaces[found_index].uri != namespace.uri {
+                    // 2.d.i. Remove match from x.[[InScopeNamespaces]]
+                    namespaces.remove(found_index);
+                }
+            }
+
+            // 2.e. Let x.[[InScopeNamespaces]] = x.[[InScopeNamespaces]] ∪ { N }
+            namespaces.push(namespace);
+        }
+
+        // 2.f. If x.[[Name]].[[Prefix]] == N.prefix
+        match self.namespace() {
+            Some(self_ns) if self_ns.prefix == Some(prefix) => {
+                // 2.f.i. Let x.[[Name]].prefix = undefined
+                self.0.write(gc).namespace = Some(E4XNamespace::new_uri(self_ns.uri));
+            }
+            _ => {}
+        }
+
+        // 2.g. For each attr in x.[[Attributes]]
+        if let E4XNodeKind::Element {
+            ref mut attributes, ..
+        } = &mut *self.kind_mut(gc)
+        {
+            for attr in attributes.iter_mut() {
+                // 2.g.i. If attr.[[Name]].[[Prefix]] == N.prefix, let attr.[[Name]].prefix = undefined
+                match attr.namespace() {
+                    Some(attr_ns) if attr_ns.prefix == Some(prefix) => {
+                        attr.0.write(gc).namespace = Some(E4XNamespace::new_uri(attr_ns.uri));
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
     // FIXME - avmplus constructs an actual QName here, and does the normal
     // Multiname matching logic. We should do the same.
     pub fn matches_name(&self, name: &Multiname<'gc>) -> bool {
