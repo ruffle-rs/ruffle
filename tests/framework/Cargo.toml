@@ -11,7 +11,7 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-ruffle_core = { path = "../../core", features = ["deterministic", "timeline_debug", "avm_debug", "audio", "mp3", "default_font", "serde"] }
+ruffle_core = { path = "../../core", features = ["deterministic", "timeline_debug", "avm_debug", "audio", "mp3", "aac", "default_font", "serde"] }
 ruffle_render = { path = "../../render", features = ["serde"] }
 ruffle_input_format = { path = "../input-format" }
 ruffle_socket_format = { path = "../socket-format" }
