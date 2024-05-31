@@ -36,7 +36,7 @@ pub(crate) mod glow_filter;
 pub(crate) mod gradient_filter;
 mod key;
 mod load_vars;
-mod local_connection;
+pub(crate) mod local_connection;
 mod math;
 mod matrix;
 pub(crate) mod mouse;

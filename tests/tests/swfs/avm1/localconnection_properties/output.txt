@@ -1,0 +1,8 @@
+/// Enumeration
+
+/// Known Properties
+domain: DONT_ENUM | DONT_DELETE
+connect: DONT_ENUM | DONT_DELETE
+close: DONT_ENUM | DONT_DELETE
+isPerUser NOT FOUND
+send: DONT_ENUM | DONT_DELETE

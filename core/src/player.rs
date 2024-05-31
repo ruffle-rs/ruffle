@@ -1715,6 +1715,7 @@ impl Player {
             run_all_phases_avm2(context);
             Avm1::run_frame(context);
             AudioManager::update_sounds(context);
+            LocalConnections::update_connections(context);
 
             // Only run the current list of callbacks - any callbacks added during callback execution
             // will be run at the end of the *next* frame.
