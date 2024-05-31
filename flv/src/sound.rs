@@ -104,6 +104,10 @@ impl TryFrom<u8> for SoundType {
     }
 }
 
+/// NOTE: For the `Aac*` variants, the discriminator byte is kept in the payload.
+///
+/// This is `0x00` for `AacSequenceHeader` and `0x01` for `AacRaw`.
+/// While it's redundant, it's useful for the substream decoder.
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum AudioDataType<'a> {
     Raw(&'a [u8]),
@@ -149,10 +153,11 @@ impl<'a> AudioData<'a> {
         let data = match format {
             SoundFormat::Aac => {
                 let aac_packet_type = data.first().ok_or(Error::ShortAudioBlock)?;
+                // NOTE: The first byte is kept in the payload.
                 match aac_packet_type {
                     //TODO: The FLV spec says this is explained in ISO 14496-3.
-                    0 => AudioDataType::AacSequenceHeader(&data[1..]),
-                    1 => AudioDataType::AacRaw(&data[1..]),
+                    0 => AudioDataType::AacSequenceHeader(data),
+                    1 => AudioDataType::AacRaw(data),
                     unk => return Err(Error::UnknownAacPacketType(*unk)),
                 }
             }
@@ -232,7 +237,7 @@ mod tests {
                 rate: SoundRate::R44_000,
                 size: SoundSize::Bits8,
                 sound_type: SoundType::Stereo,
-                data: AudioDataType::AacRaw(&[0x12, 0x34, 0x56, 0x78])
+                data: AudioDataType::AacRaw(&[0x01, 0x12, 0x34, 0x56, 0x78])
             })
         );
     }
