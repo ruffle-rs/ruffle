@@ -3,7 +3,11 @@ import { loadRuffle } from "./load-ruffle";
 import { applyStaticStyles, ruffleShadowTemplate } from "./shadow-template";
 import { lookupElement } from "./register-element";
 import { DEFAULT_CONFIG } from "./config";
-import type { DataLoadOptions, URLLoadOptions } from "./load-options";
+import type {
+    BaseLoadOptions,
+    DataLoadOptions,
+    URLLoadOptions,
+} from "./load-options";
 import {
     AutoPlay,
     ContextMenu,
@@ -925,6 +929,25 @@ export class RufflePlayer extends HTMLElement {
         }
     }
 
+    private setAttibutesFromConfig(embed: HTMLElement, attributes: string[]) {
+        if (this.loadedConfig) {
+            for (const attribute of attributes) {
+                if (
+                    this.loadedConfig[attribute as keyof BaseLoadOptions] !==
+                    null
+                ) {
+                    // TS thinks these can be undefined, but they are not since loadedConfig uses DEFAULT_CONFIG as a fallback
+                    embed.setAttribute(
+                        attribute,
+                        this.loadedConfig[
+                            attribute as keyof BaseLoadOptions
+                        ]!.toString(),
+                    );
+                }
+            }
+        }
+    }
+
     /**
      * Loads a specified movie into this player.
      *
@@ -993,26 +1016,17 @@ export class RufflePlayer extends HTMLElement {
             ) {
                 this.swfUrl = new URL(options.url, document.baseURI);
                 const flashEmbed = document.createElement("embed");
-                // TS thinks these can be undefined, but it is not since loadedConfig uses DEFAULT_CONFIG as a fallback
-                if (this.loadedConfig.base !== null) {
-                    flashEmbed.setAttribute("base", this.loadedConfig.base!);
-                }
-                flashEmbed.setAttribute(
+                const attributes = [
+                    "base",
                     "allowScriptAccess",
-                    this.loadedConfig.allowScriptAccess!.toString(),
-                );
-                flashEmbed.setAttribute("wmode", this.loadedConfig.wmode!);
-                flashEmbed.setAttribute(
-                    "allowFullScreen",
-                    this.loadedConfig.allowFullscreen!.toString(),
-                );
-                flashEmbed.setAttribute(
+                    "wmode",
+                    "allowFullscreen",
                     "menu",
-                    this.loadedConfig.menu!.toString(),
-                );
-                flashEmbed.setAttribute("scale", this.loadedConfig.scale!);
-                flashEmbed.setAttribute("salign", this.loadedConfig.salign!);
-                flashEmbed.setAttribute("quality", this.loadedConfig.quality!);
+                    "scale",
+                    "salign",
+                    "quality",
+                ];
+                this.setAttibutesFromConfig(flashEmbed, attributes);
                 const sanitizedParameters = sanitizeParameters(
                     options.parameters,
                 );
@@ -1023,7 +1037,7 @@ export class RufflePlayer extends HTMLElement {
                     )
                     .join("&");
                 if (flashVars) {
-                    flashEmbed.setAttribute("FlashVars", flashVars);
+                    flashEmbed.setAttribute("flashvars", flashVars);
                 }
                 flashEmbed.src = this.swfUrl.href;
                 flashEmbed.width = "100%";
