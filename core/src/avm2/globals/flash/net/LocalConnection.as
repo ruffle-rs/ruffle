@@ -25,21 +25,7 @@ package flash.net {
 
         public native function connect(connectionName:String):void;
 
-        public function send(connectionName: String, methodName: String, ... arguments):void {
-            if (connectionName === null) {
-                throw new TypeError("Error #2007: Parameter connectionName must be non-null.", 2007);
-            }
-            if (methodName === null) {
-                throw new TypeError("Error #2007: Parameter methodName must be non-null.", 2007);
-            }
-
-            var self = this;
-            setTimeout(function() {
-                self.send_internal(connectionName, methodName, arguments);
-            }, 0);
-        }
-
-        private native function send_internal(connectionName: String, methodName: String, args: Array):void;
+        public native function send(connectionName: String, methodName: String, ... arguments):void;
 
         public function allowDomain(... domains): void {
             stub_method("flash.net.LocalConnection", "allowDomain");
