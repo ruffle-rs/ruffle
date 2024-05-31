@@ -1,5 +1,7 @@
 //! Audio decoders.
 
+#[cfg(feature = "aac")]
+mod aac;
 mod adpcm;
 #[cfg(feature = "mp3")]
 mod mp3;
@@ -26,6 +28,10 @@ pub enum Error {
     #[cfg(feature = "mp3")]
     #[error("Couldn't decode MP3: {0}")]
     InvalidMp3(#[from] mp3::Error),
+
+    #[cfg(feature = "aac")]
+    #[error("Couldn't decode AAC: {0}")]
+    InvalidAac(#[from] symphonia::core::errors::Error),
 
     #[error("Couldn't decode ADPCM: {0}")]
     InvalidAdpcm(#[from] adpcm::Error),
@@ -496,12 +502,12 @@ pub fn make_substream_decoder(
     stream_info: &SoundStreamInfo,
     data_stream: Substream,
 ) -> Result<Box<dyn Decoder + Send>, Error> {
-    let decoder: Box<dyn Decoder + Send> =
-        if stream_info.stream_format.compression == AudioCompression::Adpcm {
-            Box::new(AdpcmSubstreamDecoder::new(stream_info, data_stream)?)
-        } else {
-            Box::new(StandardSubstreamDecoder::new(stream_info, data_stream)?)
-        };
+    let decoder: Box<dyn Decoder + Send> = match stream_info.stream_format.compression {
+        #[cfg(feature = "aac")]
+        AudioCompression::Aac => Box::new(aac::AacSubstreamDecoder::new(stream_info, data_stream)?),
+        AudioCompression::Adpcm => Box::new(AdpcmSubstreamDecoder::new(stream_info, data_stream)?),
+        _ => Box::new(StandardSubstreamDecoder::new(stream_info, data_stream)?),
+    };
     Ok(decoder)
 }
 
