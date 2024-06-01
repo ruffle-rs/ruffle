@@ -50,12 +50,10 @@ pub fn init<'gc>(
         let api_version = activation.avm2().root_api_version;
 
         let namespace = match ns_arg {
-            Value::Object(o) if o.as_namespace().is_some() => o.as_namespace().as_deref().copied(),
-            Value::Object(o) if o.as_qname_object().is_some() => {
-                o.as_qname_object().unwrap().uri().map(|uri| {
-                    Namespace::package(uri, ApiVersion::AllVersions, &mut activation.borrow_gc())
-                })
-            }
+            Value::Object(Object::NamespaceObject(ns)) => Some(ns.namespace()),
+            Value::Object(Object::QNameObject(qname)) => qname.uri().map(|uri| {
+                Namespace::package(uri, ApiVersion::AllVersions, &mut activation.borrow_gc())
+            }),
             Value::Undefined | Value::Null => None,
             v => Some(Namespace::package(
                 v.coerce_to_string(activation)?,

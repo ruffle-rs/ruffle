@@ -1161,19 +1161,15 @@ impl<'gc> Value<'gc> {
             }
 
             if let Some(self_qname) = obj.as_qname_object() {
-                if let Value::Object(other_obj) = other {
-                    if let Some(other_qname) = other_obj.as_qname_object() {
-                        return Ok(self_qname.uri() == other_qname.uri()
-                            && self_qname.local_name() == other_qname.local_name());
-                    }
+                if let Value::Object(Object::QNameObject(other_qname)) = other {
+                    return Ok(self_qname.uri() == other_qname.uri()
+                        && self_qname.local_name() == other_qname.local_name());
                 }
             }
 
             if let Some(self_ns) = obj.as_namespace_object() {
-                if let Value::Object(other_obj) = other {
-                    if let Some(other_ns) = other_obj.as_namespace_object() {
-                        return Ok(self_ns.namespace().as_uri() == other_ns.namespace().as_uri());
-                    }
+                if let Value::Object(Object::NamespaceObject(other_ns)) = other {
+                    return Ok(self_ns.namespace().as_uri() == other_ns.namespace().as_uri());
                 }
             }
         }
