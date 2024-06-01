@@ -1151,7 +1151,6 @@ impl<'gc> Value<'gc> {
         // for XML and XMLList types. Because they are objects in Ruffle we
         // have to be a bit more complicated and factor out the code into
         // a separate method.
-        // TODO: QName handling
         if let Value::Object(obj) = self {
             if let Some(xml_list_obj) = obj.as_xml_list_object() {
                 return xml_list_obj.equals(other, activation);
@@ -1159,6 +1158,15 @@ impl<'gc> Value<'gc> {
 
             if let Some(xml_obj) = obj.as_xml_object() {
                 return xml_obj.abstract_eq(other, activation);
+            }
+
+            if let Some(self_qname) = obj.as_qname_object() {
+                if let Value::Object(other_obj) = other {
+                    if let Some(other_qname) = other_obj.as_qname_object() {
+                        return Ok(self_qname.uri() == other_qname.uri()
+                            && self_qname.local_name() == other_qname.local_name());
+                    }
+                }
             }
 
             if let Some(self_ns) = obj.as_namespace_object() {
