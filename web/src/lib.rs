@@ -67,6 +67,52 @@ thread_local! {
 
 type AnimationHandler = Closure<dyn FnMut(f64)>;
 
+struct JsCallback<E> {
+    target: EventTarget,
+    name: &'static str,
+    is_capture: bool,
+    closure: Closure<dyn FnMut(E)>,
+}
+
+impl<E> JsCallback<E> {
+    pub fn register<T: AsRef<EventTarget>>(
+        target: &T,
+        name: &'static str,
+        closure: Closure<dyn FnMut(E)>,
+        is_capture: bool,
+    ) -> Self {
+        let target = target.as_ref();
+        target
+            .add_event_listener_with_callback_and_add_event_listener_options(
+                name,
+                closure.as_ref().unchecked_ref(),
+                AddEventListenerOptions::new()
+                    .passive(false)
+                    .capture(is_capture),
+            )
+            .warn_on_error();
+
+        Self {
+            target: target.clone(),
+            name,
+            is_capture,
+            closure,
+        }
+    }
+}
+
+impl<E> Drop for JsCallback<E> {
+    fn drop(&mut self) {
+        self.target
+            .remove_event_listener_with_callback_and_bool(
+                self.name,
+                self.closure.as_ref().unchecked_ref(),
+                self.is_capture,
+            )
+            .warn_on_error()
+    }
+}
+
 struct RuffleInstance {
     core: Arc<Mutex<Player>>,
     callstack: Option<StaticCallstack>,
@@ -80,18 +126,18 @@ struct RuffleInstance {
     animation_handler: Option<AnimationHandler>, // requestAnimationFrame callback
     animation_handler_id: Option<NonZeroI32>,    // requestAnimationFrame id
     #[allow(dead_code)]
-    mouse_move_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
-    mouse_enter_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
-    mouse_leave_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
-    mouse_down_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
-    player_mouse_down_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
-    window_mouse_down_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
-    mouse_up_callback: Option<Closure<dyn FnMut(PointerEvent)>>,
-    mouse_wheel_callback: Option<Closure<dyn FnMut(WheelEvent)>>,
-    key_down_callback: Option<Closure<dyn FnMut(KeyboardEvent)>>,
-    key_up_callback: Option<Closure<dyn FnMut(KeyboardEvent)>>,
-    paste_callback: Option<Closure<dyn FnMut(ClipboardEvent)>>,
-    unload_callback: Option<Closure<dyn FnMut(Event)>>,
+    mouse_move_callback: Option<JsCallback<PointerEvent>>,
+    mouse_enter_callback: Option<JsCallback<PointerEvent>>,
+    mouse_leave_callback: Option<JsCallback<PointerEvent>>,
+    mouse_down_callback: Option<JsCallback<PointerEvent>>,
+    player_mouse_down_callback: Option<JsCallback<PointerEvent>>,
+    window_mouse_down_callback: Option<JsCallback<PointerEvent>>,
+    mouse_up_callback: Option<JsCallback<PointerEvent>>,
+    mouse_wheel_callback: Option<JsCallback<WheelEvent>>,
+    key_down_callback: Option<JsCallback<KeyboardEvent>>,
+    key_up_callback: Option<JsCallback<KeyboardEvent>>,
+    paste_callback: Option<JsCallback<ClipboardEvent>>,
+    unload_callback: Option<JsCallback<Event>>,
     has_focus: bool,
     trace_observer: Rc<RefCell<JsValue>>,
     log_subscriber: Arc<Layered<WASMLayer, Registry>>,
@@ -816,13 +862,12 @@ impl RuffleHandle {
                 });
             });
 
-            canvas
-                .add_event_listener_with_callback(
-                    "pointermove",
-                    mouse_move_callback.as_ref().unchecked_ref(),
-                )
-                .warn_on_error();
-            instance.mouse_move_callback = Some(mouse_move_callback);
+            instance.mouse_move_callback = Some(JsCallback::register(
+                &canvas,
+                "pointermove",
+                mouse_move_callback,
+                false,
+            ));
 
             // Create mouse enter handler.
             let mouse_enter_callback = Closure::new(move |_js_event: PointerEvent| {
@@ -833,13 +878,12 @@ impl RuffleHandle {
                 });
             });
 
-            canvas
-                .add_event_listener_with_callback(
-                    "pointerenter",
-                    mouse_enter_callback.as_ref().unchecked_ref(),
-                )
-                .warn_on_error();
-            instance.mouse_enter_callback = Some(mouse_enter_callback);
+            instance.mouse_enter_callback = Some(JsCallback::register(
+                &canvas,
+                "pointerenter",
+                mouse_enter_callback,
+                false,
+            ));
 
             // Create mouse leave handler.
             let mouse_leave_callback = Closure::new(move |_js_event: PointerEvent| {
@@ -851,13 +895,12 @@ impl RuffleHandle {
                 });
             });
 
-            canvas
-                .add_event_listener_with_callback(
-                    "pointerleave",
-                    mouse_leave_callback.as_ref().unchecked_ref(),
-                )
-                .warn_on_error();
-            instance.mouse_leave_callback = Some(mouse_leave_callback);
+            instance.mouse_leave_callback = Some(JsCallback::register(
+                &canvas,
+                "pointerleave",
+                mouse_leave_callback,
+                false,
+            ));
 
             // Create mouse down handler.
             let mouse_down_callback = Closure::new(move |js_event: PointerEvent| {
@@ -886,13 +929,12 @@ impl RuffleHandle {
                 });
             });
 
-            canvas
-                .add_event_listener_with_callback(
-                    "pointerdown",
-                    mouse_down_callback.as_ref().unchecked_ref(),
-                )
-                .warn_on_error();
-            instance.mouse_down_callback = Some(mouse_down_callback);
+            instance.mouse_down_callback = Some(JsCallback::register(
+                &canvas,
+                "pointerdown",
+                mouse_down_callback,
+                false,
+            ));
 
             // Create player mouse down handler.
             let player_mouse_down_callback = Closure::new(move |_js_event| {
@@ -904,13 +946,12 @@ impl RuffleHandle {
                 });
             });
 
-            js_player
-                .add_event_listener_with_callback(
-                    "pointerdown",
-                    player_mouse_down_callback.as_ref().unchecked_ref(),
-                )
-                .warn_on_error();
-            instance.player_mouse_down_callback = Some(player_mouse_down_callback);
+            instance.player_mouse_down_callback = Some(JsCallback::register(
+                &js_player,
+                "pointerdown",
+                player_mouse_down_callback,
+                false,
+            ));
 
             // Create window mouse down handler.
             let window_mouse_down_callback = Closure::new(move |_js_event| {
@@ -921,14 +962,12 @@ impl RuffleHandle {
                 });
             });
 
-            window
-                .add_event_listener_with_callback_and_bool(
-                    "pointerdown",
-                    window_mouse_down_callback.as_ref().unchecked_ref(),
-                    true, // Use capture so this first *before* the player mouse down handler.
-                )
-                .warn_on_error();
-            instance.window_mouse_down_callback = Some(window_mouse_down_callback);
+            instance.window_mouse_down_callback = Some(JsCallback::register(
+                &window,
+                "pointerdown",
+                window_mouse_down_callback,
+                true, // Use capture so this first *before* the player mouse down handler.
+            ));
 
             // Create mouse up handler.
             let mouse_up_callback = Closure::new(move |js_event: PointerEvent| {
@@ -958,13 +997,12 @@ impl RuffleHandle {
                 });
             });
 
-            canvas
-                .add_event_listener_with_callback(
-                    "pointerup",
-                    mouse_up_callback.as_ref().unchecked_ref(),
-                )
-                .warn_on_error();
-            instance.mouse_up_callback = Some(mouse_up_callback);
+            instance.mouse_up_callback = Some(JsCallback::register(
+                &canvas,
+                "pointerup",
+                mouse_up_callback,
+                false,
+            ));
 
             // Create mouse wheel handler.
             let mouse_wheel_callback = Closure::new(move |js_event: WheelEvent| {
@@ -983,14 +1021,12 @@ impl RuffleHandle {
                 });
             });
 
-            canvas
-                .add_event_listener_with_callback_and_add_event_listener_options(
-                    "wheel",
-                    mouse_wheel_callback.as_ref().unchecked_ref(),
-                    AddEventListenerOptions::new().passive(false),
-                )
-                .warn_on_error();
-            instance.mouse_wheel_callback = Some(mouse_wheel_callback);
+            instance.mouse_wheel_callback = Some(JsCallback::register(
+                &canvas,
+                "wheel",
+                mouse_wheel_callback,
+                false,
+            ));
 
             // Create keydown event handler.
             let key_down_callback = Closure::new(move |js_event: KeyboardEvent| {
@@ -1029,13 +1065,12 @@ impl RuffleHandle {
                 });
             });
 
-            window
-                .add_event_listener_with_callback(
-                    "keydown",
-                    key_down_callback.as_ref().unchecked_ref(),
-                )
-                .warn_on_error();
-            instance.key_down_callback = Some(key_down_callback);
+            instance.key_down_callback = Some(JsCallback::register(
+                &window,
+                "keydown",
+                key_down_callback,
+                false,
+            ));
 
             let paste_callback = Closure::new(move |js_event: ClipboardEvent| {
                 let _ = ruffle.with_instance(|instance| {
@@ -1057,10 +1092,12 @@ impl RuffleHandle {
                 });
             });
 
-            window
-                .add_event_listener_with_callback("paste", paste_callback.as_ref().unchecked_ref())
-                .warn_on_error();
-            instance.paste_callback = Some(paste_callback);
+            instance.paste_callback = Some(JsCallback::register(
+                &window,
+                "paste",
+                paste_callback,
+                false,
+            ));
 
             // Create keyup event handler.
             let key_up_callback = Closure::new(move |js_event: KeyboardEvent| {
@@ -1076,10 +1113,12 @@ impl RuffleHandle {
                 });
             });
 
-            window
-                .add_event_listener_with_callback("keyup", key_up_callback.as_ref().unchecked_ref())
-                .warn_on_error();
-            instance.key_up_callback = Some(key_up_callback);
+            instance.key_up_callback = Some(JsCallback::register(
+                &window,
+                "keyup",
+                key_up_callback,
+                false,
+            ));
 
             let unload_callback = Closure::new(move |_| {
                 let _ = ruffle.with_core_mut(|core| {
@@ -1087,13 +1126,12 @@ impl RuffleHandle {
                 });
             });
 
-            window
-                .add_event_listener_with_callback(
-                    "unload",
-                    unload_callback.as_ref().unchecked_ref(),
-                )
-                .warn_on_error();
-            instance.unload_callback = Some(unload_callback);
+            instance.unload_callback = Some(JsCallback::register(
+                &window,
+                "unload",
+                unload_callback,
+                false,
+            ));
         })?;
 
         // Set initial timestamp and do initial tick to start animation loop.
@@ -1378,105 +1416,6 @@ impl Drop for RuffleInstance {
             core.audio_mut().stop_all_sounds();
             core.flush_shared_objects();
         });
-
-        // Clean up all event listeners.
-        if let Some(mouse_move_callback) = self.mouse_move_callback.take() {
-            self.canvas
-                .remove_event_listener_with_callback(
-                    "pointermove",
-                    mouse_move_callback.as_ref().unchecked_ref(),
-                )
-                .warn_on_error();
-        }
-        if let Some(mouse_enter_callback) = self.mouse_enter_callback.take() {
-            self.canvas
-                .remove_event_listener_with_callback(
-                    "pointerenter",
-                    mouse_enter_callback.as_ref().unchecked_ref(),
-                )
-                .warn_on_error();
-        }
-        if let Some(mouse_leave_callback) = self.mouse_leave_callback.take() {
-            self.canvas
-                .remove_event_listener_with_callback(
-                    "pointerleave",
-                    mouse_leave_callback.as_ref().unchecked_ref(),
-                )
-                .warn_on_error();
-        }
-        if let Some(mouse_down_callback) = self.mouse_down_callback.take() {
-            self.canvas
-                .remove_event_listener_with_callback(
-                    "pointerdown",
-                    mouse_down_callback.as_ref().unchecked_ref(),
-                )
-                .warn_on_error();
-        }
-        if let Some(player_mouse_down_callback) = self.player_mouse_down_callback.take() {
-            self.js_player
-                .remove_event_listener_with_callback(
-                    "pointerdown",
-                    player_mouse_down_callback.as_ref().unchecked_ref(),
-                )
-                .warn_on_error();
-        }
-        if let Some(window_mouse_down_callback) = self.window_mouse_down_callback.take() {
-            self.window
-                .remove_event_listener_with_callback_and_bool(
-                    "pointerdown",
-                    window_mouse_down_callback.as_ref().unchecked_ref(),
-                    true,
-                )
-                .warn_on_error();
-        }
-        if let Some(mouse_up_callback) = self.mouse_up_callback.take() {
-            self.canvas
-                .remove_event_listener_with_callback(
-                    "pointerup",
-                    mouse_up_callback.as_ref().unchecked_ref(),
-                )
-                .warn_on_error();
-        }
-        if let Some(mouse_wheel_callback) = self.mouse_wheel_callback.take() {
-            self.canvas
-                .remove_event_listener_with_callback(
-                    "wheel",
-                    mouse_wheel_callback.as_ref().unchecked_ref(),
-                )
-                .warn_on_error();
-        }
-        if let Some(key_down_callback) = self.key_down_callback.take() {
-            self.window
-                .remove_event_listener_with_callback(
-                    "keydown",
-                    key_down_callback.as_ref().unchecked_ref(),
-                )
-                .warn_on_error();
-        }
-        if let Some(paste_callback) = self.paste_callback.take() {
-            self.window
-                .remove_event_listener_with_callback(
-                    "paste",
-                    paste_callback.as_ref().unchecked_ref(),
-                )
-                .warn_on_error();
-        }
-        if let Some(key_up_callback) = self.key_up_callback.take() {
-            self.window
-                .remove_event_listener_with_callback(
-                    "keyup",
-                    key_up_callback.as_ref().unchecked_ref(),
-                )
-                .warn_on_error();
-        }
-        if let Some(unload_callback) = self.unload_callback.take() {
-            self.window
-                .remove_event_listener_with_callback(
-                    "unload",
-                    unload_callback.as_ref().unchecked_ref(),
-                )
-                .warn_on_error();
-        }
 
         // Cancel the animation handler, if it's still active.
         if let Some(id) = self.animation_handler_id {
