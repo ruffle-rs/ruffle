@@ -18,7 +18,7 @@ egui_extras = { git = "https://github.com/emilk/egui.git", rev = "738ea75453567c
 egui-wgpu = { git = "https://github.com/emilk/egui.git", rev = "738ea75453567c5f17a543e68aec8c48097cae7b", features = ["winit"] }
 image = { workspace = true, features = ["png"] }
 egui-winit = { git = "https://github.com/emilk/egui.git", rev = "738ea75453567c5f17a543e68aec8c48097cae7b" }
-fontdb = "0.17"
+fontdb = "0.18"
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymoser", "default_compatibility_rules", "egui"] }
 ruffle_render = { path = "../render", features = ["clap"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
