@@ -29,7 +29,7 @@ use ruffle_render::quality::StageQuality;
 use ruffle_video_software::backend::SoftwareVideoBackend;
 use ruffle_web_common::JsResult;
 use serde::{Deserialize, Serialize};
-use slotmap::{DefaultKey, SlotMap};
+use slotmap::{new_key_type, SlotMap};
 use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Once;
@@ -48,11 +48,19 @@ use web_sys::{
 
 static RUFFLE_GLOBAL_PANIC: Once = Once::new();
 
+new_key_type! {
+    /// An opaque handle to a `RuffleInstance` inside the pool.
+    ///
+    /// This type is exported to JS, and is used to interact with the library.
+    #[wasm_bindgen]
+    pub struct RuffleHandle;
+}
+
 thread_local! {
     /// We store the actual instances of the ruffle core in a static pool.
     /// This gives us a clear boundary between the JS side and Rust side, avoiding
     /// issues with lifetimes and type parameters (which cannot be exported with wasm-bindgen).
-    static INSTANCES: RefCell<SlotMap<DefaultKey, RefCell<RuffleInstance>>> = RefCell::new(SlotMap::new());
+    static INSTANCES: RefCell<SlotMap<RuffleHandle, RefCell<RuffleInstance>>> = RefCell::new(SlotMap::with_key());
 
     static CURRENT_CONTEXT: RefCell<Option<*mut UpdateContext<'static, 'static>>> = const { RefCell::new(None) };
 }
@@ -335,13 +343,6 @@ struct MovieMetadata {
     #[serde(rename = "uncompressedLength")]
     uncompressed_len: i32,
 }
-
-/// An opaque handle to a `RuffleInstance` inside the pool.
-///
-/// This type is exported to JS, and is used to interact with the library.
-#[wasm_bindgen]
-#[derive(Clone, Copy)]
-pub struct RuffleHandle(DefaultKey);
 
 #[wasm_bindgen]
 impl RuffleHandle {
@@ -1105,7 +1106,7 @@ impl RuffleHandle {
     fn add_instance(instance: RuffleInstance) -> Result<Self, RuffleInstanceError> {
         INSTANCES.try_with(|instances| {
             let mut instances = instances.try_borrow_mut()?;
-            let ruffle = Self(instances.insert(RefCell::new(instance)));
+            let ruffle = instances.insert(RefCell::new(instance));
             Ok(ruffle)
         })?
     }
@@ -1114,7 +1115,7 @@ impl RuffleHandle {
     fn remove_instance(&self) -> Result<RuffleInstance, RuffleInstanceError> {
         INSTANCES.try_with(|instances| {
             let mut instances = instances.try_borrow_mut()?;
-            if let Some(instance) = instances.remove(self.0) {
+            if let Some(instance) = instances.remove(*self) {
                 Ok(instance.into_inner())
             } else {
                 Err(RuffleInstanceError::InstanceNotFound)
@@ -1130,7 +1131,7 @@ impl RuffleHandle {
         let ret = INSTANCES
             .try_with(|instances| {
                 let instances = instances.try_borrow()?;
-                if let Some(instance) = instances.get(self.0) {
+                if let Some(instance) = instances.get(*self) {
                     let instance = instance.try_borrow()?;
                     let _subscriber =
                         tracing::subscriber::set_default(instance.log_subscriber.clone());
@@ -1155,7 +1156,7 @@ impl RuffleHandle {
         let ret = INSTANCES
             .try_with(|instances| {
                 let instances = instances.try_borrow()?;
-                if let Some(instance) = instances.get(self.0) {
+                if let Some(instance) = instances.get(*self) {
                     let mut instance = instance.try_borrow_mut()?;
                     let _subscriber =
                         tracing::subscriber::set_default(instance.log_subscriber.clone());
@@ -1180,7 +1181,7 @@ impl RuffleHandle {
         let ret = INSTANCES
             .try_with(|instances| {
                 let instances = instances.try_borrow()?;
-                if let Some(instance) = instances.get(self.0) {
+                if let Some(instance) = instances.get(*self) {
                     let instance = instance.try_borrow()?;
                     let _subscriber =
                         tracing::subscriber::set_default(instance.log_subscriber.clone());
@@ -1212,7 +1213,7 @@ impl RuffleHandle {
         let ret = INSTANCES
             .try_with(|instances| {
                 let instances = instances.try_borrow()?;
-                if let Some(instance) = instances.get(self.0) {
+                if let Some(instance) = instances.get(*self) {
                     let instance = instance.try_borrow()?;
                     let _subscriber =
                         tracing::subscriber::set_default(instance.log_subscriber.clone());
