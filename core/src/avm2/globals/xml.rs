@@ -829,12 +829,24 @@ pub fn replace<'gc>(
     // 2. If Type(value) ∉ {XML, XMLList}, let c = ToString(value)
     // 3. Else let c be the result of calling the [[DeepCopy]] method of value
     let value = if let Some(xml) = value.as_object().and_then(|x| x.as_xml_object()) {
-        let node = xml.node();
-        XmlObject::new(node.deep_copy(activation.context.gc_context), activation).into()
+        xml.deep_copy(activation).into()
     } else if let Some(list) = value.as_object().and_then(|x| x.as_xml_list_object()) {
         list.deep_copy(activation).into()
     } else {
-        value
+        // NOTE: Depends on root swf version.
+        // See https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/XMLObject.cpp#L1540
+        if activation.context.swf.version() <= 9 {
+            // SWF version 9 edge case, call XML constructor.
+            // https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/XMLObject.cpp#L2241-L2242
+            activation
+                .avm2()
+                .classes()
+                .xml
+                .construct(activation, &[value])?
+                .into()
+        } else {
+            value
+        }
     };
 
     // 4. If ToString(ToUint32(P)) == P

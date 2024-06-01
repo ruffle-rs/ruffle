@@ -717,6 +717,18 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                                 E4XNode::text(activation.gc(), "".into(), r)
                             }
                             None => E4XNode::text(activation.gc(), "".into(), r),
+                            // NOTE: avmplus edge case.
+                            //       See https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/XMLListObject.cpp#L297-L300
+                            _ if value
+                                .as_object()
+                                .and_then(|x| x.as_xml_object())
+                                .map_or(false, |x| {
+                                    x.node().is_text() || x.node().is_attribute()
+                                }) =>
+                            {
+                                E4XNode::text(activation.gc(), "".into(), r)
+                            }
+
                             // 2.c.vi. Else let y.[[Class]] = "element"
                             Some(property) => E4XNode::element(
                                 activation.gc(),
