@@ -3,24 +3,22 @@
 
 //! Ruffle web frontend.
 mod audio;
+mod external_interface;
 mod input;
 mod log_adapter;
 mod navigator;
 mod storage;
 mod ui;
 
+use external_interface::{external_to_js_value, js_to_external_value, JavascriptInterface};
 use input::{web_key_to_codepoint, web_to_ruffle_key_code, web_to_ruffle_text_control};
-use js_sys::{Array, Error as JsError, Function, Object, Promise, Uint8Array};
+use js_sys::{Error as JsError, Promise, Uint8Array};
 use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_core::backend::ui::FontDefinition;
 use ruffle_core::compatibility_rules::CompatibilityRules;
 use ruffle_core::config::{Letterbox, NetworkingAccessMode};
 use ruffle_core::context::UpdateContext;
 use ruffle_core::events::{MouseButton, MouseWheelDelta, TextControlCode};
-use ruffle_core::external::{
-    ExternalInterfaceMethod, ExternalInterfaceProvider, FsCommandProvider, Value as ExternalValue,
-    Value,
-};
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{swf, DefaultFont};
 use ruffle_core::{
@@ -32,7 +30,6 @@ use ruffle_video_software::backend::SoftwareVideoBackend;
 use ruffle_web_common::JsResult;
 use serde::{Deserialize, Serialize};
 use slotmap::{DefaultKey, SlotMap};
-use std::collections::BTreeMap;
 use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Once;
@@ -133,11 +130,6 @@ extern "C" {
 
     #[wasm_bindgen(method, js_name = "displayUnsupportedVideo")]
     fn display_unsupported_video(this: &JavascriptPlayer, url: &str);
-}
-
-#[derive(Clone)]
-struct JavascriptInterface {
-    js_player: JavascriptPlayer,
 }
 
 fn deserialize_color<'de, D>(deserializer: D) -> Result<Option<Color>, D::Error>
@@ -556,7 +548,7 @@ impl Ruffle {
 
     #[allow(clippy::boxed_local)] // for js_bind
     pub fn call_exposed_callback(&self, name: &str, args: Box<[JsValue]>) -> JsValue {
-        let args: Vec<ExternalValue> = args.iter().map(js_to_external_value).collect();
+        let args: Vec<_> = args.iter().map(js_to_external_value).collect();
 
         // Re-entrant callbacks need to return through the hole that was punched through for them
         // We record the context of external functions, and then if we get an internal callback
@@ -1508,163 +1500,10 @@ pub enum RuffleInstanceError {
     InstanceNotFound,
 }
 
-struct JavascriptMethod {
-    this: JsValue,
-    function: JsValue,
-}
-
-impl ExternalInterfaceMethod for JavascriptMethod {
-    fn call(&self, context: &mut UpdateContext<'_, '_>, args: &[ExternalValue]) -> ExternalValue {
-        let old_context = CURRENT_CONTEXT.with(|v| {
-            v.replace(Some(unsafe {
-                std::mem::transmute::<&mut UpdateContext, &mut UpdateContext<'static, 'static>>(
-                    context,
-                )
-            } as *mut UpdateContext))
-        });
-        let result = if let Some(function) = self.function.dyn_ref::<Function>() {
-            let args_array = Array::new();
-            for arg in args {
-                args_array.push(&external_to_js_value(arg.to_owned()));
-            }
-            if let Ok(result) = function.apply(&self.this, &args_array) {
-                js_to_external_value(&result)
-            } else {
-                ExternalValue::Undefined
-            }
-        } else {
-            ExternalValue::Undefined
-        };
-        CURRENT_CONTEXT.with(|v| v.replace(old_context));
-        result
-    }
-}
-
 #[wasm_bindgen(raw_module = "./ruffle-imports")]
 extern "C" {
     #[wasm_bindgen(catch, js_name = "getProperty")]
     pub fn get_property(target: &JsValue, key: &JsValue) -> Result<JsValue, JsValue>;
-}
-
-impl JavascriptInterface {
-    fn new(js_player: JavascriptPlayer) -> Self {
-        Self { js_player }
-    }
-
-    fn find_method(&self, root: JsValue, name: &str) -> Option<JavascriptMethod> {
-        let mut parent = JsValue::UNDEFINED;
-        let mut value = root;
-        for key in name.split('.') {
-            parent = value;
-            value = get_property(&parent, &JsValue::from_str(key)).ok()?;
-        }
-        if value.is_function() {
-            Some(JavascriptMethod {
-                this: parent,
-                function: value,
-            })
-        } else {
-            None
-        }
-    }
-}
-
-impl ExternalInterfaceProvider for JavascriptInterface {
-    fn get_method(&self, name: &str) -> Option<Box<dyn ExternalInterfaceMethod>> {
-        if let Some(method) = self.find_method(self.js_player.clone().into(), name) {
-            return Some(Box::new(method));
-        }
-        if let Some(window) = web_sys::window() {
-            if let Some(method) = self.find_method(window.into(), name) {
-                return Some(Box::new(method));
-            }
-        }
-
-        // Return a dummy method, as `ExternalInterface.call` must return `undefined`, not `null`.
-        Some(Box::new(JavascriptMethod {
-            this: JsValue::UNDEFINED,
-            function: JsValue::UNDEFINED,
-        }))
-    }
-
-    fn on_callback_available(&self, name: &str) {
-        self.js_player.on_callback_available(name);
-    }
-
-    fn get_id(&self) -> Option<String> {
-        self.js_player.get_object_id()
-    }
-}
-
-impl FsCommandProvider for JavascriptInterface {
-    fn on_fs_command(&self, command: &str, args: &str) -> bool {
-        self.js_player
-            .on_fs_command(command, args)
-            .unwrap_or_default()
-    }
-}
-
-fn js_to_external_value(js: &JsValue) -> ExternalValue {
-    if let Some(value) = js.as_f64() {
-        ExternalValue::Number(value)
-    } else if let Some(value) = js.as_string() {
-        ExternalValue::String(value)
-    } else if let Some(value) = js.as_bool() {
-        ExternalValue::Bool(value)
-    } else if let Some(array) = js.dyn_ref::<Array>() {
-        let values: Vec<_> = array
-            .values()
-            .into_iter()
-            .flatten()
-            .map(|v| js_to_external_value(&v))
-            .collect();
-        ExternalValue::List(values)
-    } else if let Some(object) = js.dyn_ref::<Object>() {
-        let mut values = BTreeMap::new();
-        for entry in Object::entries(object).values() {
-            if let Ok(entry) = entry.and_then(|v| v.dyn_into::<Array>()) {
-                if let Some(key) = entry.get(0).as_string() {
-                    values.insert(key, js_to_external_value(&entry.get(1)));
-                }
-            }
-        }
-        ExternalValue::Object(values)
-    } else if js.is_null() {
-        ExternalValue::Null
-    } else {
-        ExternalValue::Undefined
-    }
-}
-
-fn external_to_js_value(external: ExternalValue) -> JsValue {
-    match external {
-        Value::Undefined => JsValue::UNDEFINED,
-        Value::Null => JsValue::NULL,
-        Value::Bool(value) => JsValue::from_bool(value),
-        Value::Number(value) => JsValue::from_f64(value),
-        Value::String(value) => JsValue::from_str(&value),
-        Value::Object(object) => {
-            let entries = Array::new();
-            for (key, value) in object {
-                entries.push(&Array::of2(
-                    &JsValue::from_str(&key),
-                    &external_to_js_value(value),
-                ));
-            }
-            if let Ok(result) = Object::from_entries(&entries) {
-                result.into()
-            } else {
-                JsValue::NULL
-            }
-        }
-        Value::List(values) => {
-            let array = Array::new();
-            for value in values {
-                array.push(&external_to_js_value(value));
-            }
-            array.into()
-        }
-    }
 }
 
 async fn create_renderer(
