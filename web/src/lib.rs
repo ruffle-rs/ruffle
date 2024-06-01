@@ -847,289 +847,269 @@ impl RuffleHandle {
             }));
 
             // Create mouse move handler.
-            let mouse_move_callback = Closure::new(move |js_event: PointerEvent| {
-                let _ = ruffle.with_instance(move |instance| {
-                    let event = PlayerEvent::MouseMove {
-                        x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
-                        y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
-                    };
-                    let _ = instance.with_core_mut(|core| {
-                        core.handle_event(event);
-                    });
-                    if instance.has_focus {
-                        js_event.prevent_default();
-                    }
-                });
-            });
-
             instance.mouse_move_callback = Some(JsCallback::register(
                 &canvas,
                 "pointermove",
-                mouse_move_callback,
+                Closure::new(move |js_event: PointerEvent| {
+                    let _ = ruffle.with_instance(move |instance| {
+                        let event = PlayerEvent::MouseMove {
+                            x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
+                            y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
+                        };
+                        let _ = instance.with_core_mut(|core| {
+                            core.handle_event(event);
+                        });
+                        if instance.has_focus {
+                            js_event.prevent_default();
+                        }
+                    });
+                }),
                 false,
             ));
 
             // Create mouse enter handler.
-            let mouse_enter_callback = Closure::new(move |_js_event: PointerEvent| {
-                let _ = ruffle.with_instance(move |instance| {
-                    let _ = instance.with_core_mut(|core| {
-                        core.set_mouse_in_stage(true);
-                    });
-                });
-            });
-
             instance.mouse_enter_callback = Some(JsCallback::register(
                 &canvas,
                 "pointerenter",
-                mouse_enter_callback,
+                Closure::new(move |_js_event: PointerEvent| {
+                    let _ = ruffle.with_instance(move |instance| {
+                        let _ = instance.with_core_mut(|core| {
+                            core.set_mouse_in_stage(true);
+                        });
+                    });
+                }),
                 false,
             ));
 
             // Create mouse leave handler.
-            let mouse_leave_callback = Closure::new(move |_js_event: PointerEvent| {
-                let _ = ruffle.with_instance(move |instance| {
-                    let _ = instance.with_core_mut(|core| {
-                        core.set_mouse_in_stage(false);
-                        core.handle_event(PlayerEvent::MouseLeave);
-                    });
-                });
-            });
-
             instance.mouse_leave_callback = Some(JsCallback::register(
                 &canvas,
                 "pointerleave",
-                mouse_leave_callback,
+                Closure::new(move |_js_event: PointerEvent| {
+                    let _ = ruffle.with_instance(move |instance| {
+                        let _ = instance.with_core_mut(|core| {
+                            core.set_mouse_in_stage(false);
+                            core.handle_event(PlayerEvent::MouseLeave);
+                        });
+                    });
+                }),
                 false,
             ));
 
             // Create mouse down handler.
-            let mouse_down_callback = Closure::new(move |js_event: PointerEvent| {
-                let _ = ruffle.with_instance(move |instance| {
-                    if let Some(target) = js_event.current_target() {
-                        let _ = target
-                            .unchecked_ref::<Element>()
-                            .set_pointer_capture(js_event.pointer_id());
-                    }
-                    let device_pixel_ratio = instance.device_pixel_ratio;
-                    let event = PlayerEvent::MouseDown {
-                        x: f64::from(js_event.offset_x()) * device_pixel_ratio,
-                        y: f64::from(js_event.offset_y()) * device_pixel_ratio,
-                        button: match js_event.button() {
-                            0 => MouseButton::Left,
-                            1 => MouseButton::Middle,
-                            2 => MouseButton::Right,
-                            _ => MouseButton::Unknown,
-                        },
-                    };
-                    let _ = instance.with_core_mut(|core| {
-                        core.handle_event(event);
-                    });
-
-                    js_event.prevent_default();
-                });
-            });
-
             instance.mouse_down_callback = Some(JsCallback::register(
                 &canvas,
                 "pointerdown",
-                mouse_down_callback,
+                Closure::new(move |js_event: PointerEvent| {
+                    let _ = ruffle.with_instance(move |instance| {
+                        if let Some(target) = js_event.current_target() {
+                            let _ = target
+                                .unchecked_ref::<Element>()
+                                .set_pointer_capture(js_event.pointer_id());
+                        }
+                        let device_pixel_ratio = instance.device_pixel_ratio;
+                        let event = PlayerEvent::MouseDown {
+                            x: f64::from(js_event.offset_x()) * device_pixel_ratio,
+                            y: f64::from(js_event.offset_y()) * device_pixel_ratio,
+                            button: match js_event.button() {
+                                0 => MouseButton::Left,
+                                1 => MouseButton::Middle,
+                                2 => MouseButton::Right,
+                                _ => MouseButton::Unknown,
+                            },
+                        };
+                        let _ = instance.with_core_mut(|core| {
+                            core.handle_event(event);
+                        });
+
+                        js_event.prevent_default();
+                    });
+                }),
                 false,
             ));
 
             // Create player mouse down handler.
-            let player_mouse_down_callback = Closure::new(move |_js_event| {
-                let _ = ruffle.with_instance_mut(|instance| {
-                    instance.has_focus = true;
-                    // Ensure the parent window gets focus. This is necessary for events
-                    // to be received when the player is inside a frame.
-                    instance.window.focus().warn_on_error();
-                });
-            });
-
             instance.player_mouse_down_callback = Some(JsCallback::register(
                 &js_player,
                 "pointerdown",
-                player_mouse_down_callback,
+                Closure::new(move |_js_event| {
+                    let _ = ruffle.with_instance_mut(|instance| {
+                        instance.has_focus = true;
+                        // Ensure the parent window gets focus. This is necessary for events
+                        // to be received when the player is inside a frame.
+                        instance.window.focus().warn_on_error();
+                    });
+                }),
                 false,
             ));
 
             // Create window mouse down handler.
-            let window_mouse_down_callback = Closure::new(move |_js_event| {
-                let _ = ruffle.with_instance_mut(|instance| {
-                    // If we actually clicked on the player, this will be reset to true
-                    // after the event bubbles down to the player.
-                    instance.has_focus = false;
-                });
-            });
-
             instance.window_mouse_down_callback = Some(JsCallback::register(
                 &window,
                 "pointerdown",
-                window_mouse_down_callback,
+                Closure::new(move |_js_event| {
+                    let _ = ruffle.with_instance_mut(|instance| {
+                        // If we actually clicked on the player, this will be reset to true
+                        // after the event bubbles down to the player.
+                        instance.has_focus = false;
+                    });
+                }),
                 true, // Use capture so this first *before* the player mouse down handler.
             ));
 
             // Create mouse up handler.
-            let mouse_up_callback = Closure::new(move |js_event: PointerEvent| {
-                let _ = ruffle.with_instance(|instance| {
-                    if let Some(target) = js_event.current_target() {
-                        let _ = target
-                            .unchecked_ref::<Element>()
-                            .release_pointer_capture(js_event.pointer_id());
-                    }
-                    let event = PlayerEvent::MouseUp {
-                        x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
-                        y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
-                        button: match js_event.button() {
-                            0 => MouseButton::Left,
-                            1 => MouseButton::Middle,
-                            2 => MouseButton::Right,
-                            _ => MouseButton::Unknown,
-                        },
-                    };
-                    let _ = instance.with_core_mut(|core| {
-                        core.handle_event(event);
-                    });
-
-                    if instance.has_focus {
-                        js_event.prevent_default();
-                    }
-                });
-            });
-
             instance.mouse_up_callback = Some(JsCallback::register(
                 &canvas,
                 "pointerup",
-                mouse_up_callback,
+                Closure::new(move |js_event: PointerEvent| {
+                    let _ = ruffle.with_instance(|instance| {
+                        if let Some(target) = js_event.current_target() {
+                            let _ = target
+                                .unchecked_ref::<Element>()
+                                .release_pointer_capture(js_event.pointer_id());
+                        }
+                        let event = PlayerEvent::MouseUp {
+                            x: f64::from(js_event.offset_x()) * instance.device_pixel_ratio,
+                            y: f64::from(js_event.offset_y()) * instance.device_pixel_ratio,
+                            button: match js_event.button() {
+                                0 => MouseButton::Left,
+                                1 => MouseButton::Middle,
+                                2 => MouseButton::Right,
+                                _ => MouseButton::Unknown,
+                            },
+                        };
+                        let _ = instance.with_core_mut(|core| {
+                            core.handle_event(event);
+                        });
+
+                        if instance.has_focus {
+                            js_event.prevent_default();
+                        }
+                    });
+                }),
                 false,
             ));
 
             // Create mouse wheel handler.
-            let mouse_wheel_callback = Closure::new(move |js_event: WheelEvent| {
-                let _ = ruffle.with_instance(|instance| {
-                    let delta = match js_event.delta_mode() {
-                        WheelEvent::DOM_DELTA_LINE => MouseWheelDelta::Lines(-js_event.delta_y()),
-                        WheelEvent::DOM_DELTA_PIXEL => MouseWheelDelta::Pixels(-js_event.delta_y()),
-                        _ => return,
-                    };
-                    let _ = instance.with_core_mut(|core| {
-                        core.handle_event(PlayerEvent::MouseWheel { delta });
-                        if core.should_prevent_scrolling() {
-                            js_event.prevent_default();
-                        }
-                    });
-                });
-            });
-
             instance.mouse_wheel_callback = Some(JsCallback::register(
                 &canvas,
                 "wheel",
-                mouse_wheel_callback,
+                Closure::new(move |js_event: WheelEvent| {
+                    let _ = ruffle.with_instance(|instance| {
+                        let delta = match js_event.delta_mode() {
+                            WheelEvent::DOM_DELTA_LINE => {
+                                MouseWheelDelta::Lines(-js_event.delta_y())
+                            }
+                            WheelEvent::DOM_DELTA_PIXEL => {
+                                MouseWheelDelta::Pixels(-js_event.delta_y())
+                            }
+                            _ => return,
+                        };
+                        let _ = instance.with_core_mut(|core| {
+                            core.handle_event(PlayerEvent::MouseWheel { delta });
+                            if core.should_prevent_scrolling() {
+                                js_event.prevent_default();
+                            }
+                        });
+                    });
+                }),
                 false,
             ));
 
             // Create keydown event handler.
-            let key_down_callback = Closure::new(move |js_event: KeyboardEvent| {
-                let _ = ruffle.with_instance(|instance| {
-                    if instance.has_focus {
-                        let mut paste_event = false;
-                        let _ = instance.with_core_mut(|core| {
-                            let key_code = web_to_ruffle_key_code(&js_event.code());
-                            let key_char = web_key_to_codepoint(&js_event.key());
-                            let is_ctrl_cmd = js_event.ctrl_key() || js_event.meta_key();
-                            core.handle_event(PlayerEvent::KeyDown { key_code, key_char });
-
-                            if let Some(control_code) = web_to_ruffle_text_control(
-                                &js_event.key(),
-                                is_ctrl_cmd,
-                                js_event.shift_key(),
-                            ) {
-                                paste_event = control_code == TextControlCode::Paste;
-                                // The JS paste event fires separately and the clipboard text is not available until then,
-                                // so we need to wait before handling it
-                                if !paste_event {
-                                    core.handle_event(PlayerEvent::TextControl {
-                                        code: control_code,
-                                    });
-                                }
-                            } else if let Some(codepoint) = key_char {
-                                core.handle_event(PlayerEvent::TextInput { codepoint });
-                            }
-                        });
-
-                        // Don't prevent the JS paste event from firing
-                        if !paste_event {
-                            js_event.prevent_default();
-                        }
-                    }
-                });
-            });
-
             instance.key_down_callback = Some(JsCallback::register(
                 &window,
                 "keydown",
-                key_down_callback,
+                Closure::new(move |js_event: KeyboardEvent| {
+                    let _ = ruffle.with_instance(|instance| {
+                        if instance.has_focus {
+                            let mut paste_event = false;
+                            let _ = instance.with_core_mut(|core| {
+                                let key_code = web_to_ruffle_key_code(&js_event.code());
+                                let key_char = web_key_to_codepoint(&js_event.key());
+                                let is_ctrl_cmd = js_event.ctrl_key() || js_event.meta_key();
+                                core.handle_event(PlayerEvent::KeyDown { key_code, key_char });
+
+                                if let Some(control_code) = web_to_ruffle_text_control(
+                                    &js_event.key(),
+                                    is_ctrl_cmd,
+                                    js_event.shift_key(),
+                                ) {
+                                    paste_event = control_code == TextControlCode::Paste;
+                                    // The JS paste event fires separately and the clipboard text is not available until then,
+                                    // so we need to wait before handling it
+                                    if !paste_event {
+                                        core.handle_event(PlayerEvent::TextControl {
+                                            code: control_code,
+                                        });
+                                    }
+                                } else if let Some(codepoint) = key_char {
+                                    core.handle_event(PlayerEvent::TextInput { codepoint });
+                                }
+                            });
+
+                            // Don't prevent the JS paste event from firing
+                            if !paste_event {
+                                js_event.prevent_default();
+                            }
+                        }
+                    });
+                }),
                 false,
             ));
-
-            let paste_callback = Closure::new(move |js_event: ClipboardEvent| {
-                let _ = ruffle.with_instance(|instance| {
-                    if instance.has_focus {
-                        let _ = instance.with_core_mut(|core| {
-                            let clipboard_content = if let Some(content) = js_event.clipboard_data()
-                            {
-                                content.get_data("text/plain").unwrap_or_default()
-                            } else {
-                                "".into()
-                            };
-                            core.ui_mut().set_clipboard_content(clipboard_content);
-                            core.handle_event(PlayerEvent::TextControl {
-                                code: TextControlCode::Paste,
-                            });
-                        });
-                        js_event.prevent_default();
-                    }
-                });
-            });
 
             instance.paste_callback = Some(JsCallback::register(
                 &window,
                 "paste",
-                paste_callback,
+                Closure::new(move |js_event: ClipboardEvent| {
+                    let _ = ruffle.with_instance(|instance| {
+                        if instance.has_focus {
+                            let _ = instance.with_core_mut(|core| {
+                                let clipboard_content =
+                                    if let Some(content) = js_event.clipboard_data() {
+                                        content.get_data("text/plain").unwrap_or_default()
+                                    } else {
+                                        "".into()
+                                    };
+                                core.ui_mut().set_clipboard_content(clipboard_content);
+                                core.handle_event(PlayerEvent::TextControl {
+                                    code: TextControlCode::Paste,
+                                });
+                            });
+                            js_event.prevent_default();
+                        }
+                    });
+                }),
                 false,
             ));
 
             // Create keyup event handler.
-            let key_up_callback = Closure::new(move |js_event: KeyboardEvent| {
-                let _ = ruffle.with_instance(|instance| {
-                    if instance.has_focus {
-                        let _ = instance.with_core_mut(|core| {
-                            let key_code = web_to_ruffle_key_code(&js_event.code());
-                            let key_char = web_key_to_codepoint(&js_event.key());
-                            core.handle_event(PlayerEvent::KeyUp { key_code, key_char });
-                        });
-                        js_event.prevent_default();
-                    }
-                });
-            });
-
             instance.key_up_callback = Some(JsCallback::register(
                 &window,
                 "keyup",
-                key_up_callback,
+                Closure::new(move |js_event: KeyboardEvent| {
+                    let _ = ruffle.with_instance(|instance| {
+                        if instance.has_focus {
+                            let _ = instance.with_core_mut(|core| {
+                                let key_code = web_to_ruffle_key_code(&js_event.code());
+                                let key_char = web_key_to_codepoint(&js_event.key());
+                                core.handle_event(PlayerEvent::KeyUp { key_code, key_char });
+                            });
+                            js_event.prevent_default();
+                        }
+                    });
+                }),
                 false,
             ));
-
-            let unload_callback = Closure::new(move |_| {
-                let _ = ruffle.with_core_mut(|core| {
-                    core.flush_shared_objects();
-                });
-            });
 
             instance.unload_callback = Some(JsCallback::register(
                 &window,
                 "unload",
-                unload_callback,
+                Closure::new(move |_| {
+                    let _ = ruffle.with_core_mut(|core| {
+                        core.flush_shared_objects();
+                    });
+                }),
                 false,
             ));
         })?;
