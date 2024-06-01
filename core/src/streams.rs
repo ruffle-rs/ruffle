@@ -218,6 +218,10 @@ pub struct NetStreamData<'gc> {
     /// Seeks are only executed on the next stream tick.
     queued_seek_time: Option<f64>,
 
+    /// The number of seconds of video data that should be buffered. This is
+    /// currently unsupported and changing it has no effect.
+    buffer_time: f64,
+
     /// The last decoded bitmap.
     ///
     /// Any `Video`s on the stage will display the bitmap here when attached to
@@ -263,6 +267,7 @@ impl<'gc> NetStream<'gc> {
                 stream_type: None,
                 stream_time: 0.0,
                 queued_seek_time: None,
+                buffer_time: 0.1,
                 last_decoded_bitmap: None,
                 avm_object,
                 avm2_client: None,
@@ -360,7 +365,7 @@ impl<'gc> NetStream<'gc> {
     }
 
     pub fn report_error(self, _error: Error) {
-        //TODO: Report an `asyncError` to AVM1 or 2.
+        // TODO: Report an `asyncError` to AVM1 or 2.
     }
 
     pub fn bytes_loaded(self) -> usize {
@@ -376,6 +381,14 @@ impl<'gc> NetStream<'gc> {
 
     pub fn time(self) -> f64 {
         self.0.read().stream_time
+    }
+
+    pub fn buffer_time(self) -> f64 {
+        self.0.read().buffer_time
+    }
+
+    pub fn set_buffer_time(self, mc: &Mutation<'gc>, buffer_time: f64) {
+        self.0.write(mc).buffer_time = buffer_time;
     }
 
     /// Queue a seek to be executed on the next frame tick.
