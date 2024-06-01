@@ -79,8 +79,8 @@ impl<E: FromWasmAbi + 'static> JsCallback<E> {
     pub fn register<T: AsRef<EventTarget>, C: FnMut(E) + 'static>(
         target: &T,
         name: &'static str,
-        closure: C,
         is_capture: bool,
+        closure: C,
     ) -> Self {
         let target = target.as_ref();
         let closure = Closure::new(closure);
@@ -853,6 +853,7 @@ impl RuffleHandle {
             instance.mouse_move_callback = Some(JsCallback::register(
                 &canvas,
                 "pointermove",
+                false,
                 move |js_event: PointerEvent| {
                     let _ = ruffle.with_instance(move |instance| {
                         let event = PlayerEvent::MouseMove {
@@ -867,13 +868,13 @@ impl RuffleHandle {
                         }
                     });
                 },
-                false,
             ));
 
             // Create mouse enter handler.
             instance.mouse_enter_callback = Some(JsCallback::register(
                 &canvas,
                 "pointerenter",
+                false,
                 move |_js_event: PointerEvent| {
                     let _ = ruffle.with_instance(move |instance| {
                         let _ = instance.with_core_mut(|core| {
@@ -881,13 +882,13 @@ impl RuffleHandle {
                         });
                     });
                 },
-                false,
             ));
 
             // Create mouse leave handler.
             instance.mouse_leave_callback = Some(JsCallback::register(
                 &canvas,
                 "pointerleave",
+                false,
                 move |_js_event: PointerEvent| {
                     let _ = ruffle.with_instance(move |instance| {
                         let _ = instance.with_core_mut(|core| {
@@ -896,13 +897,13 @@ impl RuffleHandle {
                         });
                     });
                 },
-                false,
             ));
 
             // Create mouse down handler.
             instance.mouse_down_callback = Some(JsCallback::register(
                 &canvas,
                 "pointerdown",
+                false,
                 move |js_event: PointerEvent| {
                     let _ = ruffle.with_instance(move |instance| {
                         if let Some(target) = js_event.current_target() {
@@ -928,13 +929,13 @@ impl RuffleHandle {
                         js_event.prevent_default();
                     });
                 },
-                false,
             ));
 
             // Create player mouse down handler.
             instance.player_mouse_down_callback = Some(JsCallback::register(
                 &js_player,
                 "pointerdown",
+                false,
                 move |_js_event| {
                     let _ = ruffle.with_instance_mut(|instance| {
                         instance.has_focus = true;
@@ -943,13 +944,13 @@ impl RuffleHandle {
                         instance.window.focus().warn_on_error();
                     });
                 },
-                false,
             ));
 
             // Create window mouse down handler.
             instance.window_mouse_down_callback = Some(JsCallback::register(
                 &window,
                 "pointerdown",
+                true,
                 move |_js_event| {
                     let _ = ruffle.with_instance_mut(|instance| {
                         // If we actually clicked on the player, this will be reset to true
@@ -957,13 +958,13 @@ impl RuffleHandle {
                         instance.has_focus = false;
                     });
                 },
-                true, // Use capture so this first *before* the player mouse down handler.
             ));
 
             // Create mouse up handler.
             instance.mouse_up_callback = Some(JsCallback::register(
                 &canvas,
                 "pointerup",
+                false,
                 move |js_event: PointerEvent| {
                     let _ = ruffle.with_instance(|instance| {
                         if let Some(target) = js_event.current_target() {
@@ -990,13 +991,13 @@ impl RuffleHandle {
                         }
                     });
                 },
-                false,
             ));
 
             // Create mouse wheel handler.
             instance.mouse_wheel_callback = Some(JsCallback::register(
                 &canvas,
                 "wheel",
+                false,
                 move |js_event: WheelEvent| {
                     let _ = ruffle.with_instance(|instance| {
                         let delta = match js_event.delta_mode() {
@@ -1016,13 +1017,13 @@ impl RuffleHandle {
                         });
                     });
                 },
-                false,
             ));
 
             // Create keydown event handler.
             instance.key_down_callback = Some(JsCallback::register(
                 &window,
                 "keydown",
+                false,
                 move |js_event: KeyboardEvent| {
                     let _ = ruffle.with_instance(|instance| {
                         if instance.has_focus {
@@ -1058,12 +1059,12 @@ impl RuffleHandle {
                         }
                     });
                 },
-                false,
             ));
 
             instance.paste_callback = Some(JsCallback::register(
                 &window,
                 "paste",
+                false,
                 move |js_event: ClipboardEvent| {
                     let _ = ruffle.with_instance(|instance| {
                         if instance.has_focus {
@@ -1083,13 +1084,13 @@ impl RuffleHandle {
                         }
                     });
                 },
-                false,
             ));
 
             // Create keyup event handler.
             instance.key_up_callback = Some(JsCallback::register(
                 &window,
                 "keyup",
+                false,
                 move |js_event: KeyboardEvent| {
                     let _ = ruffle.with_instance(|instance| {
                         if instance.has_focus {
@@ -1102,19 +1103,14 @@ impl RuffleHandle {
                         }
                     });
                 },
-                false,
             ));
 
-            instance.unload_callback = Some(JsCallback::register(
-                &window,
-                "unload",
-                move |_| {
+            instance.unload_callback =
+                Some(JsCallback::register(&window, "unload", false, move |_| {
                     let _ = ruffle.with_core_mut(|core| {
                         core.flush_shared_objects();
                     });
-                },
-                false,
-            ));
+                }));
         })?;
 
         // Set initial timestamp and do initial tick to start animation loop.
