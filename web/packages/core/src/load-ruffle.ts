@@ -9,7 +9,7 @@ import {
     signExtensions,
     referenceTypes,
 } from "wasm-feature-detect";
-import type { Ruffle } from "../dist/ruffle_web";
+import type { RuffleHandle } from "../dist/ruffle_web";
 import { setPolyfillsOnLoad } from "./js-polyfills";
 import { publicPath } from "./public-path";
 import { BaseLoadOptions } from "./load-options";
@@ -36,7 +36,7 @@ type ProgressCallback = (bytesLoaded: number, bytesTotal: number) => void;
 async function fetchRuffle(
     config: BaseLoadOptions,
     progressCallback?: ProgressCallback,
-): Promise<typeof Ruffle> {
+): Promise<typeof RuffleHandle> {
     // Apply some pure JavaScript polyfills to prevent conflicts with external
     // libraries, if needed.
     setPolyfillsOnLoad();
@@ -66,7 +66,7 @@ async function fetchRuffle(
 
     // Note: The argument passed to import() has to be a simple string literal,
     // otherwise some bundler will get confused and won't include the module?
-    const { default: init, Ruffle } = await (extensionsSupported
+    const { default: init, RuffleHandle } = await (extensionsSupported
         ? import("../dist/ruffle_web-wasm_extensions")
         : import("../dist/ruffle_web"));
     let response;
@@ -114,10 +114,10 @@ async function fetchRuffle(
 
     await init(response);
 
-    return Ruffle;
+    return RuffleHandle;
 }
 
-let nativeConstructor: Promise<typeof Ruffle> | null = null;
+let nativeConstructor: Promise<typeof RuffleHandle> | null = null;
 
 /**
  * Obtain an instance of `Ruffle`.
@@ -135,7 +135,7 @@ export async function loadRuffle(
     player: RufflePlayer,
     config: BaseLoadOptions,
     progressCallback?: ProgressCallback,
-): Promise<Ruffle> {
+): Promise<RuffleHandle> {
     if (nativeConstructor === null) {
         nativeConstructor = fetchRuffle(config, progressCallback);
     }
