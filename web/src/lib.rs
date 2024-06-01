@@ -341,10 +341,10 @@ struct MovieMetadata {
 /// This type is exported to JS, and is used to interact with the library.
 #[wasm_bindgen]
 #[derive(Clone, Copy)]
-pub struct Ruffle(DefaultKey);
+pub struct RuffleHandle(DefaultKey);
 
 #[wasm_bindgen]
-impl Ruffle {
+impl RuffleHandle {
     #[allow(clippy::new_ret_no_self)]
     #[wasm_bindgen(constructor)]
     pub fn new(parent: HtmlElement, js_player: JavascriptPlayer, config: JsValue) -> Promise {
@@ -593,7 +593,7 @@ impl Ruffle {
     }
 }
 
-impl Ruffle {
+impl RuffleHandle {
     async fn new_internal(
         parent: HtmlElement,
         js_player: JavascriptPlayer,

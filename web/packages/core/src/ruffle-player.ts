@@ -1,4 +1,4 @@
-import type { Ruffle } from "../dist/ruffle_web";
+import type { RuffleHandle } from "../dist/ruffle_web";
 import { loadRuffle } from "./load-ruffle";
 import { applyStaticStyles, ruffleShadowTemplate } from "./shadow-template";
 import { lookupElement } from "./register-element";
@@ -165,7 +165,7 @@ export class RufflePlayer extends HTMLElement {
     private loadedConfig?: URLLoadOptions | DataLoadOptions;
 
     private swfUrl?: URL;
-    private instance: Ruffle | null;
+    private instance: RuffleHandle | null;
     private lastActivePlayingState: boolean;
 
     private _metadata: MovieMetadata | null;
@@ -767,7 +767,7 @@ export class RufflePlayer extends HTMLElement {
         }
 
         const actuallyUsedRendererName = this.instance!.renderer_name();
-        const constructor = <typeof Ruffle>this.instance!.constructor;
+        const constructor = <typeof RuffleHandle>this.instance!.constructor;
 
         console.log(
             "%c" +
