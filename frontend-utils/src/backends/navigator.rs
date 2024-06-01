@@ -81,7 +81,13 @@ impl<F: FutureSpawner, I: NavigatorInterface> ExternalNavigatorBackend<F, I> {
         content: Rc<PlayingContent>,
         interface: I,
     ) -> Self {
-        let mut builder = reqwest::ClientBuilder::new().cookie_store(true);
+        let mut builder = reqwest::ClientBuilder::new()
+            .cookie_store(true)
+            .user_agent(concat!(
+                "Ruffle/",
+                env!("CARGO_PKG_VERSION"),
+                " (https://ruffle.rs)"
+            ));
 
         if let Some(referer) = referer {
             let mut headers = header::HeaderMap::new();
