@@ -24,10 +24,10 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum Error {
     #[cfg(feature = "mp3")]
-    #[error("Couldn't decode MP3")]
+    #[error("Couldn't decode MP3: {0}")]
     InvalidMp3(#[from] mp3::Error),
 
-    #[error("Couldn't decode ADPCM")]
+    #[error("Couldn't decode ADPCM: {0}")]
     InvalidAdpcm(#[from] adpcm::Error),
 
     #[error("Unhandled compression {0:?}")]

@@ -12,7 +12,7 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("Couldn't decode MP3 frame")]
+    #[error("Couldn't decode MP3 frame: {0}")]
     FrameDecode(#[from] errors::Error),
 
     #[error("No default track")]
