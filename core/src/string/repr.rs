@@ -158,7 +158,7 @@ impl<'gc> AvmStringRepr<'gc> {
                     left_origin.chars_used.set(new_chars_used as u32);
 
                     let new_len = left.len() + right.len();
-                    if new_len >= WStr::MAX_LEN {
+                    if new_len > WStr::MAX_LEN {
                         panic_on_invalid_length(new_len);
                     }
 
