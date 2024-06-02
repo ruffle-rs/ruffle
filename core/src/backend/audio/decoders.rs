@@ -1,12 +1,12 @@
 //! Audio decoders.
 
 mod adpcm;
+mod g711;
 #[cfg(feature = "mp3")]
 mod mp3;
 #[cfg(feature = "nellymoser")]
 mod nellymoser;
 mod pcm;
-mod g711;
 
 pub use adpcm::AdpcmDecoder;
 
