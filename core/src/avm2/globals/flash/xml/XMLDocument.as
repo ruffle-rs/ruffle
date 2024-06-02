@@ -42,21 +42,35 @@ import flash.xml.XMLNodeType;
 
       private function _convertXmlNode(original: XML): XMLNode {
          var nodeType = _convertXmlNodeType(original.nodeKind());
-         // TODO: Use namespace().prefix
          var nodeValue = nodeType == XMLNodeType.ELEMENT_NODE ?
-            original.localName() : original.toString();
+            _convertXmlName(original) : original.toString();
          var result = new XMLNode(nodeType, nodeValue);
          for each (var originalChild in original.children()) {
             result.appendChild(_convertXmlNode(originalChild));
          }
-         var attributeList = original.attributes();
+
          var attributes = {};
-         for each (var attribute in attributeList) {
-            // TODO: Use namespace().prefix
-            attributes[attribute.localName()] = attribute.toString();
+         for each (var attribute in original.attributes()) {
+            attributes[_convertXmlName(attribute)] = attribute.toString();
          }
+         for each (var ns in original.namespaceDeclarations()) {
+            var name = "xmlns";
+            if (ns.prefix) {
+               name += ":" + ns.prefix;
+            }
+            attributes[name] = ns.uri;
+         }
+
          result.attributes = attributes;
          return result;
+      }
+
+      private function _convertXmlName(node: XML): String {
+         var ns = node.namespace();
+         if (ns.prefix) {
+            return ns.prefix + ":" + node.localName();
+         }
+         return node.localName();
       }
 
       private function _convertXmlNodeType(kind: String): uint {
