@@ -535,6 +535,12 @@ fn substr<'gc>(
         .unwrap_or(&Value::Number(0x7fffffff as f64))
         .coerce_to_number(activation)?;
 
+    let len = if len.is_nan() {
+        0.0
+    } else {
+        len.min(0x7fffffff as f64)
+    };
+
     let len = if len < 0. {
         if len.is_infinite() {
             0.
@@ -551,11 +557,7 @@ fn substr<'gc>(
         len
     };
 
-    let end_index = if len == f64::INFINITY {
-        this.len()
-    } else {
-        this.len().min(start_index + len as usize)
-    };
+    let end_index = this.len().min(start_index + len as usize);
 
     Ok(activation
         .context

@@ -10,6 +10,7 @@ Substr of 0--0.3:
 Substr of 0-4: 1234
 Substr of 0-1: 1
 Substr of 0--1: 12345678
+Substr of 0-1e+21: 123456789
 Substr of 0: 123456789
 Substr of -0.01-0: 
 Substr of -0.01--0.01: 
@@ -23,6 +24,7 @@ Substr of -0.01--0.3:
 Substr of -0.01-4: 1234
 Substr of -0.01-1: 1
 Substr of -0.01--1: 12345678
+Substr of -0.01-1e+21: 123456789
 Substr of -0.01: 123456789
 Substr of Infinity-0: 
 Substr of Infinity--0.01: 
@@ -36,6 +38,7 @@ Substr of Infinity--0.3:
 Substr of Infinity-4: 
 Substr of Infinity-1: 
 Substr of Infinity--1: 
+Substr of Infinity-1e+21: 
 Substr of Infinity: 
 Substr of -Infinity-0: 
 Substr of -Infinity--0.01: 
@@ -49,6 +52,7 @@ Substr of -Infinity--0.3:
 Substr of -Infinity-4: 1234
 Substr of -Infinity-1: 1
 Substr of -Infinity--1: 12345678
+Substr of -Infinity-1e+21: 123456789
 Substr of -Infinity: 123456789
 Substr of NaN-0: 
 Substr of NaN--0.01: 
@@ -62,6 +66,7 @@ Substr of NaN--0.3:
 Substr of NaN-4: 1234
 Substr of NaN-1: 1
 Substr of NaN--1: 12345678
+Substr of NaN-1e+21: 123456789
 Substr of NaN: 123456789
 Substr of NaN-0: 
 Substr of NaN--0.01: 
@@ -75,6 +80,7 @@ Substr of NaN--0.3:
 Substr of NaN-4: 1234
 Substr of NaN-1: 1
 Substr of NaN--1: 12345678
+Substr of NaN-1e+21: 123456789
 Substr of NaN: 123456789
 Substr of 1.001-0: 
 Substr of 1.001--0.01: 
@@ -88,6 +94,7 @@ Substr of 1.001--0.3:
 Substr of 1.001-4: 2345
 Substr of 1.001-1: 2
 Substr of 1.001--1: 
+Substr of 1.001-1e+21: 23456789
 Substr of 1.001: 23456789
 Substr of -0.6-0: 
 Substr of -0.6--0.01: 
@@ -101,6 +108,7 @@ Substr of -0.6--0.3:
 Substr of -0.6-4: 1234
 Substr of -0.6-1: 1
 Substr of -0.6--1: 12345678
+Substr of -0.6-1e+21: 123456789
 Substr of -0.6: 123456789
 Substr of -0.3-0: 
 Substr of -0.3--0.01: 
@@ -114,6 +122,7 @@ Substr of -0.3--0.3:
 Substr of -0.3-4: 1234
 Substr of -0.3-1: 1
 Substr of -0.3--1: 12345678
+Substr of -0.3-1e+21: 123456789
 Substr of -0.3: 123456789
 Substr of 4-0: 
 Substr of 4--0.01: 
@@ -127,6 +136,7 @@ Substr of 4--0.3:
 Substr of 4-4: 5678
 Substr of 4-1: 5
 Substr of 4--1: 
+Substr of 4-1e+21: 56789
 Substr of 4: 56789
 Substr of 1-0: 
 Substr of 1--0.01: 
@@ -140,6 +150,7 @@ Substr of 1--0.3:
 Substr of 1-4: 2345
 Substr of 1-1: 2
 Substr of 1--1: 
+Substr of 1-1e+21: 23456789
 Substr of 1: 23456789
 Substr of -1-0: 
 Substr of -1--0.01: 
@@ -153,4 +164,19 @@ Substr of -1--0.3:
 Substr of -1-4: 9
 Substr of -1-1: 9
 Substr of -1--1: 
+Substr of -1-1e+21: 9
 Substr of -1: 9
+Substr of 1e+21-0: 
+Substr of 1e+21--0.01: 
+Substr of 1e+21-Infinity: 
+Substr of 1e+21--Infinity: 
+Substr of 1e+21-NaN: 
+Substr of 1e+21-NaN: 
+Substr of 1e+21-1.001: 
+Substr of 1e+21--0.6: 
+Substr of 1e+21--0.3: 
+Substr of 1e+21-4: 
+Substr of 1e+21-1: 
+Substr of 1e+21--1: 
+Substr of 1e+21-1e+21: 
+Substr of 1e+21: 
