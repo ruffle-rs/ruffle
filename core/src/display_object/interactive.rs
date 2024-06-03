@@ -592,14 +592,7 @@ pub trait TInteractiveObject<'gc>:
             Avm1::run_stack_frame_for_method(self_do, object, context, method_name, &[other]);
         } else if let Avm2Value::Object(object) = self_do.object2() {
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
-            let event_name = if focused {
-                "focusIn"
-            } else {
-                // `focusOut` is not this simple in FP,
-                // firing it might break SWFs that rely
-                // on the specific behavior
-                return;
-            };
+            let event_name = if focused { "focusIn" } else { "focusOut" };
             let event = EventObject::focus_event(&mut activation, event_name, false, other, 0);
             Avm2::dispatch_event(&mut activation.context, event, object);
         }
