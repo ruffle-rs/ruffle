@@ -1461,22 +1461,39 @@ fn to_xml_string_inner<'gc>(
 
     // 11. For each name in the set of names consisting of x.[[Name]] and
     //     the name of each attribute in x.[[Attributes]]
+
+    // TODO: Generate fake namespace prefixes when required.
+    let get_namespace = |namespace_declarations: &[E4XNamespace<'gc>], ns: &E4XNamespace<'gc>| {
+        ancestor_namespaces
+            .iter()
+            .chain(namespace_declarations.iter())
+            .find(|ancestor_ns| ancestor_ns.uri == ns.uri)
+            .copied()
+    };
+
     if let Some(ns) = node.namespace() {
-        if !ancestor_namespaces.contains(&ns) && !namespace_declarations.contains(&ns) {
+        if get_namespace(&namespace_declarations, &ns).is_none() {
             namespace_declarations.push(ns);
         }
     }
     for attribute in attributes {
-        // XXX Implement [[GetNamespace]]
         if let Some(ns) = attribute.namespace() {
-            if !ancestor_namespaces.contains(&ns) && !namespace_declarations.contains(&ns) {
+            if get_namespace(&namespace_declarations, &ns).is_none() {
                 namespace_declarations.push(ns);
             }
         }
     }
 
+    let get_prefix = |node: &E4XNode<'gc>| {
+        node.namespace().and_then(|ns| {
+            get_namespace(&namespace_declarations, &ns)
+                .and_then(|ns| ns.prefix)
+                .filter(|p| !p.is_empty())
+        })
+    };
+
     buf.push_char('<');
-    if let Some(prefix) = node.namespace().and_then(|ns| ns.prefix) {
+    if let Some(prefix) = get_prefix(&node) {
         buf.push_str(&prefix);
         buf.push_char(':');
     }
@@ -1485,7 +1502,7 @@ fn to_xml_string_inner<'gc>(
     for attribute in attributes {
         if let E4XNodeKind::Attribute(value) = &*attribute.kind() {
             buf.push_char(' ');
-            if let Some(prefix) = attribute.namespace().and_then(|ns| ns.prefix) {
+            if let Some(prefix) = get_prefix(attribute) {
                 buf.push_str(&prefix);
                 buf.push_char(':');
             }
@@ -1527,8 +1544,8 @@ fn to_xml_string_inner<'gc>(
         None
     };
 
-    let mut all_namespaces = namespace_declarations;
-    all_namespaces.extend_from_slice(ancestor_namespaces);
+    let mut all_namespaces = ancestor_namespaces.to_vec();
+    all_namespaces.extend_from_slice(&namespace_declarations);
 
     for child in children {
         if pretty.is_some() && indent_children {
@@ -1547,7 +1564,7 @@ fn to_xml_string_inner<'gc>(
     }
 
     buf.push_utf8("</");
-    if let Some(prefix) = node.namespace().and_then(|ns| ns.prefix) {
+    if let Some(prefix) = get_prefix(&node) {
         buf.push_str(&prefix);
         buf.push_char(':');
     }
