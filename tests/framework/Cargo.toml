@@ -24,7 +24,7 @@ chrono = { workspace = true }
 approx = "0.5.1"
 pretty_assertions = "1.4.0"
 serde = { workspace = true }
-toml = "0.8.13"
+toml = "0.8.14"
 anyhow = { workspace = true }
 async-channel = { workspace = true }
 vfs = "0.12.0"
