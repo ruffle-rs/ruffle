@@ -233,13 +233,13 @@ impl TestRunner {
                         _ => panic!("MouseWheel: expected only one of 'lines' or 'pixels'"),
                     },
                 },
-                AutomatedEvent::KeyDown { key_code } => PlayerEvent::KeyDown {
-                    key_code: KeyCode::from_u8(*key_code).expect("Invalid keycode in test"),
-                    key_char: None,
+                AutomatedEvent::KeyDown { key_code, key_char } => PlayerEvent::KeyDown {
+                    key_code: KeyCode::from_u8(*key_code).expect("KeyDown: Invalid key code"),
+                    key_char: *key_char,
                 },
-                AutomatedEvent::KeyUp { key_code } => PlayerEvent::KeyUp {
-                    key_code: KeyCode::from_u8(*key_code).expect("Invalid keycode in test"),
-                    key_char: None,
+                AutomatedEvent::KeyUp { key_code, key_char } => PlayerEvent::KeyUp {
+                    key_code: KeyCode::from_u8(*key_code).expect("KeyUp: Invalid key code"),
+                    key_char: *key_char,
                 },
                 AutomatedEvent::TextInput { codepoint } => PlayerEvent::TextInput {
                     codepoint: *codepoint,
