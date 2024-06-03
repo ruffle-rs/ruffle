@@ -23,7 +23,7 @@
     },
     "devDependencies": {
         "webdriverio": "^8.33.1",
-        "@wdio/cli": "^8.38.1",
+        "@wdio/cli": "^8.38.2",
         "json5": "^2.2.3",
         "webpack": "^5.91.0",
         "webpack-cli": "^5.1.4",
