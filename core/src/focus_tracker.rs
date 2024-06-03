@@ -1,11 +1,13 @@
 use crate::avm1::Avm1;
 use crate::avm1::Value;
+use crate::avm2::{Activation, Avm2, EventObject, TObject};
 use crate::context::{RenderContext, UpdateContext};
 pub use crate::display_object::{
     DisplayObject, TDisplayObject, TDisplayObjectContainer, TextSelection,
 };
 use crate::display_object::{EditText, InteractiveObject, TInteractiveObject};
-use crate::events::ClipEvent;
+use crate::events::{ClipEvent, KeyCode};
+use crate::prelude::Avm2Value;
 use crate::Player;
 use either::Either;
 use gc_arena::barrier::unlock;
@@ -47,6 +49,21 @@ impl Highlight {
     }
 }
 
+/// This enum describes the source of the focus change.
+///
+/// It is important when dispatching events in AVM2.
+#[derive(Copy, Clone)]
+pub enum FocusChangeSource {
+    /// Focus changed using a pointer device.
+    Mouse,
+
+    /// Focus changed using keyboard navigation.
+    Keyboard { key_code: KeyCode },
+
+    /// Focus changed programmatically.
+    Code,
+}
+
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
 pub struct FocusTracker<'gc>(Gc<'gc, FocusTrackerData<'gc>>);
@@ -84,7 +101,7 @@ impl<'gc> FocusTracker<'gc> {
     }
 
     pub fn set(&self, new: Option<InteractiveObject<'gc>>, context: &mut UpdateContext<'_, 'gc>) {
-        self.set_internal(new, context, false);
+        self.set_internal(new, context, false, FocusChangeSource::Code);
     }
 
     fn set_internal(
@@ -92,6 +109,7 @@ impl<'gc> FocusTracker<'gc> {
         new: Option<InteractiveObject<'gc>>,
         context: &mut UpdateContext<'_, 'gc>,
         run_actions: bool,
+        source: FocusChangeSource,
     ) {
         Self::roll_over(context, new);
 
@@ -106,6 +124,10 @@ impl<'gc> FocusTracker<'gc> {
 
         // Check if the focused element changed.
         if !InteractiveObject::option_ptr_eq(old, new) {
+            if Self::dispatch_focus_change_event(context, source, old, new) {
+                return;
+            }
+
             let focus = unlock!(Gc::write(context.gc(), self.0), FocusTrackerData, focus);
             focus.set(new);
 
@@ -154,6 +176,34 @@ impl<'gc> FocusTracker<'gc> {
                 context.ui.open_virtual_keyboard();
             }
         }
+    }
+
+    /// Dispatches the AVM2's focus change event.
+    ///
+    /// Returns `true` if the focus change operation should be canceled.
+    fn dispatch_focus_change_event(
+        context: &mut UpdateContext<'_, 'gc>,
+        source: FocusChangeSource,
+        old: Option<InteractiveObject<'gc>>,
+        new: Option<InteractiveObject<'gc>>,
+    ) -> bool {
+        let Some(Avm2Value::Object(old)) = old.map(|int| int.as_displayobject().object2()) else {
+            // If there's no old object, we cannot send the event,
+            // just continue without cancellation.
+            return false;
+        };
+
+        let mut activation = Activation::from_nothing(context.reborrow());
+        let (event_name, key_code) = match source {
+            FocusChangeSource::Mouse => ("mouseFocusChange", 0),
+            FocusChangeSource::Keyboard { key_code } => ("keyFocusChange", key_code as u8),
+            _ => return false,
+        };
+        let event = EventObject::focus_event(&mut activation, event_name, true, new, key_code);
+        Avm2::dispatch_event(&mut activation.context, event, old);
+
+        let canceled = event.as_event().unwrap().is_cancelled();
+        canceled
     }
 
     fn roll_over(context: &mut UpdateContext<'_, 'gc>, new: Option<InteractiveObject<'gc>>) {
@@ -207,7 +257,14 @@ impl<'gc> FocusTracker<'gc> {
         };
 
         if next.is_some() {
-            self.set_internal(next.copied(), context, true);
+            self.set_internal(
+                next.copied(),
+                context,
+                true,
+                FocusChangeSource::Keyboard {
+                    key_code: KeyCode::Tab,
+                },
+            );
             self.update_highlight(context);
         }
     }
