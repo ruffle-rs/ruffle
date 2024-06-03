@@ -259,7 +259,7 @@ impl<'gc> TranslationUnit<'gc> {
 
         let global_obj = global_class.construct(activation, &[])?;
 
-        let mut script = Script::from_abc_index(
+        let script = Script::from_abc_index(
             self,
             script_index,
             global_obj,
@@ -524,7 +524,7 @@ impl<'gc> Script<'gc> {
     /// or double-borrows. It should be done before the script is actually
     /// executed.
     pub fn load_traits(
-        &mut self,
+        self,
         unit: TranslationUnit<'gc>,
         script_index: u32,
         activation: &mut Activation<'_, 'gc>,
@@ -548,7 +548,7 @@ impl<'gc> Script<'gc> {
             let newtrait = Trait::from_abc_trait(unit, abc_trait, activation)?;
             write
                 .domain
-                .export_definition(newtrait.name(), *self, activation.context.gc_context);
+                .export_definition(newtrait.name(), self, activation.context.gc_context);
             if let TraitKind::Class { class, .. } = newtrait.kind() {
                 write
                     .domain
@@ -604,7 +604,7 @@ impl<'gc> Script<'gc> {
     ///
     /// If the script has not yet been initialized, this will initialize it on
     /// the same stack.
-    pub fn globals(&self, context: &mut UpdateContext<'_, 'gc>) -> Result<Object<'gc>, Error<'gc>> {
+    pub fn globals(self, context: &mut UpdateContext<'_, 'gc>) -> Result<Object<'gc>, Error<'gc>> {
         let mut write = self.0.write(context.gc_context);
 
         if !write.initialized {
@@ -632,7 +632,7 @@ impl<'gc> Script<'gc> {
             );
             globals.install_instance_slots(context.gc_context);
 
-            Avm2::run_script_initializer(*self, context)?;
+            Avm2::run_script_initializer(self, context)?;
 
             Ok(globals)
         } else {
