@@ -1,0 +1,245 @@
+// root namespace()
+ = 
+
+// root inScopeNamespaces()
+ = 
+
+// root inScopeNamespaces()
+ = 
+
+// root namespaceDeclarations()
+
+// root namespace("middlens")
+undefined
+
+// outer namespace()
+ = 
+
+// outer inScopeNamespaces()
+ = 
+
+// outer inScopeNamespaces()
+ = 
+
+// outer namespaceDeclarations()
+
+// outer namespace("middlens")
+undefined
+
+// top namespace()
+ = 
+
+// top inScopeNamespaces()
+topns = https://example.org/top
+
+// top inScopeNamespaces()
+topns = https://example.org/top
+
+// top namespaceDeclarations()
+topns = https://example.org/top
+
+// top namespace("middlens")
+undefined
+
+// middle namespace()
+ = 
+
+// middle inScopeNamespaces()
+middlens = https://example.org/middle
+topns = https://example.org/top
+
+// middle inScopeNamespaces()
+middlens = https://example.org/middle
+topns = https://example.org/top
+
+// middle namespaceDeclarations()
+middlens = https://example.org/middle
+
+// middle namespace("middlens")
+https://example.org/middle
+
+// bottom namespace()
+ = 
+
+// bottom inScopeNamespaces()
+bottomns = https://example.org/bottom
+middlens = https://example.org/middle
+topns = https://example.org/top
+
+// bottom inScopeNamespaces()
+bottomns = https://example.org/bottom
+middlens = https://example.org/middle
+topns = https://example.org/top
+
+// bottom namespaceDeclarations()
+bottomns = https://example.org/bottom
+
+// bottom namespace("middlens")
+https://example.org/middle
+
+// namespacedTopnsSibling namespace()
+topns = https://example.org/top
+
+// namespacedTopnsSibling inScopeNamespaces()
+middlens = https://example.org/middle
+topns = https://example.org/top
+
+// namespacedTopnsSibling inScopeNamespaces()
+middlens = https://example.org/middle
+topns = https://example.org/top
+
+// namespacedTopnsSibling namespaceDeclarations()
+
+// namespacedTopnsSibling namespace("middlens")
+https://example.org/middle
+
+// namespacedMiddlensSibling namespace()
+middlens = https://example.org/middle
+
+// namespacedMiddlensSibling inScopeNamespaces()
+middlens = https://example.org/middle
+topns = https://example.org/top
+
+// namespacedMiddlensSibling inScopeNamespaces()
+middlens = https://example.org/middle
+topns = https://example.org/top
+
+// namespacedMiddlensSibling namespaceDeclarations()
+
+// namespacedMiddlensSibling namespace("middlens")
+https://example.org/middle
+
+
+top.addNamespace(new Namespace("topns", "https://example.org/top/but/replaced"))
+top.addNamespace(new Namespace("middlens", "https://example.org/middle/but/replaced"))
+top.addNamespace(new Namespace("newns", "https://example.org/new"))
+top.addNamespace(new Namespace(undefined, "https://example.org/undefined"))
+
+// root namespace()
+ = 
+
+// root inScopeNamespaces()
+ = 
+
+// root inScopeNamespaces()
+ = 
+
+// root namespaceDeclarations()
+
+// root namespace("middlens")
+undefined
+
+// outer namespace()
+ = 
+
+// outer inScopeNamespaces()
+ = 
+
+// outer inScopeNamespaces()
+ = 
+
+// outer namespaceDeclarations()
+
+// outer namespace("middlens")
+undefined
+
+// top namespace()
+ = 
+
+// top inScopeNamespaces()
+topns = https://example.org/top/but/replaced
+middlens = https://example.org/middle/but/replaced
+newns = https://example.org/new
+
+// top inScopeNamespaces()
+topns = https://example.org/top/but/replaced
+middlens = https://example.org/middle/but/replaced
+newns = https://example.org/new
+
+// top namespaceDeclarations()
+topns = https://example.org/top/but/replaced
+middlens = https://example.org/middle/but/replaced
+newns = https://example.org/new
+
+// top namespace("middlens")
+https://example.org/middle/but/replaced
+
+// middle namespace()
+ = 
+
+// middle inScopeNamespaces()
+middlens = https://example.org/middle
+topns = https://example.org/top/but/replaced
+newns = https://example.org/new
+
+// middle inScopeNamespaces()
+middlens = https://example.org/middle
+topns = https://example.org/top/but/replaced
+newns = https://example.org/new
+
+// middle namespaceDeclarations()
+middlens = https://example.org/middle
+
+// middle namespace("middlens")
+https://example.org/middle
+
+// bottom namespace()
+ = 
+
+// bottom inScopeNamespaces()
+bottomns = https://example.org/bottom
+middlens = https://example.org/middle
+topns = https://example.org/top/but/replaced
+newns = https://example.org/new
+
+// bottom inScopeNamespaces()
+bottomns = https://example.org/bottom
+middlens = https://example.org/middle
+topns = https://example.org/top/but/replaced
+newns = https://example.org/new
+
+// bottom namespaceDeclarations()
+bottomns = https://example.org/bottom
+
+// bottom namespace("middlens")
+https://example.org/middle
+
+// namespacedTopnsSibling namespace()
+undefined = https://example.org/top
+
+// namespacedTopnsSibling inScopeNamespaces()
+middlens = https://example.org/middle
+topns = https://example.org/top/but/replaced
+newns = https://example.org/new
+
+// namespacedTopnsSibling inScopeNamespaces()
+middlens = https://example.org/middle
+topns = https://example.org/top/but/replaced
+newns = https://example.org/new
+
+// namespacedTopnsSibling namespaceDeclarations()
+
+// namespacedTopnsSibling namespace("middlens")
+https://example.org/middle
+
+// namespacedMiddlensSibling namespace()
+middlens = https://example.org/middle
+
+// namespacedMiddlensSibling inScopeNamespaces()
+middlens = https://example.org/middle
+topns = https://example.org/top/but/replaced
+newns = https://example.org/new
+
+// namespacedMiddlensSibling inScopeNamespaces()
+middlens = https://example.org/middle
+topns = https://example.org/top/but/replaced
+newns = https://example.org/new
+
+// namespacedMiddlensSibling namespaceDeclarations()
+
+// namespacedMiddlensSibling namespace("middlens")
+https://example.org/middle
+
+
+
+<root><outer><top test="top with topns" xmlns:topns="https://example.org/top/but/replaced" xmlns:middlens="https://example.org/middle/but/replaced" xmlns:newns="https://example.org/new" xmlns="https://example.org/top"><middle test="middle with topns" xmlns:middlens="https://example.org/middle"><bottom test="bottom with topns" bottomns:test="bottom with bottomns" xmlns:bottomns="https://example.org/bottom"/><namespacedTopnsSibling/><middlens:namespacedMiddlensSibling/></middle></top></outer></root>
