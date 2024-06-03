@@ -486,7 +486,7 @@ impl<'gc> Avm2<'gc> {
 
     /// Add an object to the broadcast list.
     ///
-    /// Each broadcastable event contains it's own broadcast list. You must
+    /// Each broadcastable event contains its own broadcast list. You must
     /// register all objects that have event handlers with that event's
     /// broadcast list by calling this function. Attempting to register a
     /// broadcast listener for a non-broadcast event will do nothing.
