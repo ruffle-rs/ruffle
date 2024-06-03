@@ -307,6 +307,38 @@ impl<'gc> EventObject<'gc> {
             )
             .unwrap() // we don't expect to break here
     }
+
+    pub fn focus_event<S>(
+        activation: &mut Activation<'_, 'gc>,
+        event_type: S,
+        cancelable: bool,
+        related_object: Option<InteractiveObject<'gc>>,
+        key_code: u8,
+    ) -> Object<'gc>
+    where
+        S: Into<AvmString<'gc>>,
+    {
+        let event_type: AvmString<'gc> = event_type.into();
+        let shift_key = activation.context.input.is_key_down(KeyCode::Shift);
+
+        let class = activation.avm2().classes().focusevent;
+        class
+            .construct(
+                activation,
+                &[
+                    event_type.into(),
+                    true.into(),
+                    cancelable.into(),
+                    related_object
+                        .map(|o| o.as_displayobject().object2())
+                        .unwrap_or(Value::Null),
+                    shift_key.into(),
+                    key_code.into(),
+                    "none".into(), // TODO implement direction
+                ],
+            )
+            .unwrap()
+    }
 }
 
 impl<'gc> TObject<'gc> for EventObject<'gc> {
