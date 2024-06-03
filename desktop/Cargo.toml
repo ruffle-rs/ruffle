@@ -42,7 +42,7 @@ wgpu = { workspace = true }
 futures = { workspace = true }
 chrono = { workspace = true }
 fluent-templates = "0.9.4"
-toml_edit = { version = "0.22.13", features = ["parse"] }
+toml_edit = { version = "0.22.14", features = ["parse"] }
 gilrs = "0.10"
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"]}
 
