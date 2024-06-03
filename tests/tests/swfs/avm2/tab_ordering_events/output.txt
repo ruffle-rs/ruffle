@@ -1,0 +1,126 @@
+===== Setting focus manually
+Setting the focus to clip
+clip.focusIn: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0]
+Focus set to clip
+Setting the focus to button
+clip.focusOut: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object SimpleButton] shiftKey=false keyCode=0]
+button.focusIn: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=0]
+Focus set to button
+Setting the focus to text
+button.focusOut: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object TextField] shiftKey=false keyCode=0]
+text.focusIn: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object SimpleButton] shiftKey=false keyCode=0]
+Focus set to text
+Setting the focus to button2
+text.focusOut: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object SimpleButton] shiftKey=false keyCode=0]
+button2.focusIn: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object TextField] shiftKey=false keyCode=0]
+Focus set to button2
+Setting the focus to clip2
+button2.focusOut: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=0]
+clip2.focusIn: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object SimpleButton] shiftKey=false keyCode=0]
+Focus set to clip2
+===== Stage 0
+clip2.keyDown: [KeyboardEvent type="keyDown" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+Tab pressed
+clip2.keyFocusChange: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=9]
+clip2.focusOut: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=0]
+clip.focusIn: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=0]
+clip.keyUp: [KeyboardEvent type="keyUp" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+clip.keyDown: [KeyboardEvent type="keyDown" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+Tab pressed
+clip.keyFocusChange: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object SimpleButton] shiftKey=false keyCode=9]
+clip.focusOut: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object SimpleButton] shiftKey=false keyCode=0]
+button.focusIn: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=0]
+button.keyUp: [KeyboardEvent type="keyUp" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+button.keyDown: [KeyboardEvent type="keyDown" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+Tab pressed
+button.keyFocusChange: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object SimpleButton] shiftKey=false keyCode=9]
+button.focusOut: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object SimpleButton] shiftKey=false keyCode=0]
+button2.focusIn: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object SimpleButton] shiftKey=false keyCode=0]
+button2.keyUp: [KeyboardEvent type="keyUp" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+button2.keyDown: [KeyboardEvent type="keyDown" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+Tab pressed
+button2.keyFocusChange: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object TextField] shiftKey=false keyCode=9]
+button2.focusOut: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object TextField] shiftKey=false keyCode=0]
+text.focusIn: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object SimpleButton] shiftKey=false keyCode=0]
+text.keyUp: [KeyboardEvent type="keyUp" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+text.keyDown: [KeyboardEvent type="keyDown" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+Tab pressed
+text.keyFocusChange: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=9]
+text.focusOut: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=0]
+clip2.focusIn: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object TextField] shiftKey=false keyCode=0]
+clip2.keyUp: [KeyboardEvent type="keyUp" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+clip2.keyDown: [KeyboardEvent type="keyDown" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+Tab pressed
+clip2.keyFocusChange: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=9]
+clip2.focusOut: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=0]
+clip.focusIn: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=0]
+clip.keyUp: [KeyboardEvent type="keyUp" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+clip.keyDown: [KeyboardEvent type="keyDown" bubbles=true cancelable=false eventPhase=2 charCode=0 keyCode=16 keyLocation=0 ctrlKey=false altKey=false shiftKey=true]
+clip.keyDown: [KeyboardEvent type="keyDown" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=true]
+Tab pressed
+clip.keyFocusChange: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object MovieClip] shiftKey=true keyCode=9]
+clip.focusOut: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=true keyCode=0]
+clip2.focusIn: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=true keyCode=0]
+clip2.keyUp: [KeyboardEvent type="keyUp" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=true]
+clip2.keyDown: [KeyboardEvent type="keyDown" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=true]
+Tab pressed
+clip2.keyFocusChange: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object TextField] shiftKey=true keyCode=9]
+clip2.focusOut: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object TextField] shiftKey=true keyCode=0]
+text.focusIn: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=true keyCode=0]
+text.keyUp: [KeyboardEvent type="keyUp" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=true]
+text.keyDown: [KeyboardEvent type="keyDown" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=true]
+Tab pressed
+text.keyFocusChange: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object SimpleButton] shiftKey=true keyCode=9]
+text.focusOut: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object SimpleButton] shiftKey=true keyCode=0]
+button2.focusIn: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object TextField] shiftKey=true keyCode=0]
+button2.keyUp: [KeyboardEvent type="keyUp" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=true]
+button2.keyDown: [KeyboardEvent type="keyDown" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=true]
+Tab pressed
+button2.keyFocusChange: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object SimpleButton] shiftKey=true keyCode=9]
+button2.focusOut: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object SimpleButton] shiftKey=true keyCode=0]
+button.focusIn: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object SimpleButton] shiftKey=true keyCode=0]
+button.keyUp: [KeyboardEvent type="keyUp" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=true]
+button.keyDown: [KeyboardEvent type="keyDown" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=true]
+Tab pressed
+button.keyFocusChange: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object MovieClip] shiftKey=true keyCode=9]
+button.focusOut: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=true keyCode=0]
+clip.focusIn: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object SimpleButton] shiftKey=true keyCode=0]
+clip.keyUp: [KeyboardEvent type="keyUp" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=true]
+clip.keyDown: [KeyboardEvent type="keyDown" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=true]
+Tab pressed
+clip.keyFocusChange: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object MovieClip] shiftKey=true keyCode=9]
+clip.focusOut: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=true keyCode=0]
+clip2.focusIn: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=true keyCode=0]
+clip2.keyUp: [KeyboardEvent type="keyUp" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=true]
+clip2.keyUp: [KeyboardEvent type="keyUp" bubbles=true cancelable=false eventPhase=2 charCode=0 keyCode=16 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+clip2.keyDown: [KeyboardEvent type="keyDown" bubbles=true cancelable=false eventPhase=2 charCode=27 keyCode=27 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+Escape pressed
+===== Stage 1
+clip2.keyUp: [KeyboardEvent type="keyUp" bubbles=true cancelable=false eventPhase=2 charCode=27 keyCode=27 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+clip2.keyDown: [KeyboardEvent type="keyDown" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+Tab pressed
+clip2.keyFocusChange: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=9]
+clip2.keyUp: [KeyboardEvent type="keyUp" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+clip2.keyDown: [KeyboardEvent type="keyDown" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+Tab pressed
+clip2.keyFocusChange: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=9]
+clip2.keyUp: [KeyboardEvent type="keyUp" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+clip2.keyDown: [KeyboardEvent type="keyDown" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+Tab pressed
+clip2.keyFocusChange: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=9]
+clip2.keyUp: [KeyboardEvent type="keyUp" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+clip2.keyDown: [KeyboardEvent type="keyDown" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+Tab pressed
+clip2.keyFocusChange: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=9]
+clip2.keyUp: [KeyboardEvent type="keyUp" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+clip2.keyDown: [KeyboardEvent type="keyDown" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+Tab pressed
+clip2.keyFocusChange: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=9]
+clip2.keyUp: [KeyboardEvent type="keyUp" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+clip2.keyDown: [KeyboardEvent type="keyDown" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+Tab pressed
+clip2.keyFocusChange: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=9]
+clip2.keyUp: [KeyboardEvent type="keyUp" bubbles=true cancelable=false eventPhase=2 charCode=9 keyCode=9 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+clip2.keyDown: [KeyboardEvent type="keyDown" bubbles=true cancelable=false eventPhase=2 charCode=27 keyCode=27 keyLocation=0 ctrlKey=false altKey=false shiftKey=false]
+Escape pressed
+===== Stage 2
