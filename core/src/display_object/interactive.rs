@@ -3,9 +3,7 @@
 use crate::avm1::Avm1;
 use crate::avm1::Value as Avm1Value;
 use crate::avm2::activation::Activation as Avm2Activation;
-use crate::avm2::{
-    Avm2, EventObject as Avm2EventObject, TObject as Avm2TObject, Value as Avm2Value,
-};
+use crate::avm2::{Avm2, EventObject as Avm2EventObject, EventObject, Value as Avm2Value};
 use crate::backend::ui::MouseCursor;
 use crate::context::UpdateContext;
 use crate::display_object::avm1_button::Avm1Button;
@@ -582,9 +580,10 @@ pub trait TInteractiveObject<'gc>:
         other: Option<InteractiveObject<'gc>>,
     ) {
         let self_do = self.as_displayobject();
-        let other = other.map(|d| d.as_displayobject());
         if let Avm1Value::Object(object) = self_do.object() {
-            let other = other.map(|d| d.object()).unwrap_or(Avm1Value::Null);
+            let other = other
+                .map(|d| d.as_displayobject().object())
+                .unwrap_or(Avm1Value::Null);
             let method_name = if focused {
                 "onSetFocus".into()
             } else {
@@ -594,29 +593,14 @@ pub trait TInteractiveObject<'gc>:
         } else if let Avm2Value::Object(object) = self_do.object2() {
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
             let event_name = if focused {
-                "focusIn".into()
+                "focusIn"
             } else {
                 // `focusOut` is not this simple in FP,
                 // firing it might break SWFs that rely
                 // on the specific behavior
                 return;
             };
-            let event = activation
-                .avm2()
-                .classes()
-                .focusevent
-                .construct(
-                    &mut activation,
-                    &[
-                        event_name,
-                        true.into(),
-                        false.into(),
-                        other.map(|o| o.object2()).unwrap_or(Avm2Value::Null),
-                        // Rest of the properties are not yet implemented
-                    ],
-                )
-                .expect("Event should construct!");
-
+            let event = EventObject::focus_event(&mut activation, event_name, false, other, 0);
             Avm2::dispatch_event(&mut activation.context, event, object);
         }
     }
