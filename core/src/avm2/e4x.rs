@@ -1088,8 +1088,8 @@ impl<'gc> E4XNode<'gc> {
         Ok(result)
     }
 
-    pub fn set_namespace(&self, namespace: E4XNamespace<'gc>, mc: &Mutation<'gc>) {
-        self.0.write(mc).namespace = Some(namespace);
+    pub fn set_namespace(&self, namespace: Option<E4XNamespace<'gc>>, mc: &Mutation<'gc>) {
+        self.0.write(mc).namespace = namespace;
     }
 
     pub fn namespace(&self) -> Option<E4XNamespace<'gc>> {

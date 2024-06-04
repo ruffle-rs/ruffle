@@ -787,9 +787,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                                 if let Some(name) = xml.node().local_name() {
                                     y.set_local_name(name, activation.gc());
                                 }
-                                if let Some(namespace) = xml.node().namespace() {
-                                    y.set_namespace(namespace, activation.gc());
-                                }
+                                y.set_namespace(xml.node().namespace(), activation.gc());
                             }
 
                             // 2.c.viii.3. Else if Type(V) is XMLList, let y.[[Name]] = V.[[TargetProperty]]
@@ -803,7 +801,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                                     }
                                     if let Some(namespace) = target_property.explicit_namespace() {
                                         y.set_namespace(
-                                            E4XNamespace::new_uri(namespace),
+                                            Some(E4XNamespace::new_uri(namespace)),
                                             activation.gc(),
                                         );
                                     }
