@@ -1104,23 +1104,24 @@ fn extract_maybe_array_values<'gc>(
     Ok(extract_array_values(activation, value)?.unwrap_or_else(|| vec![value]))
 }
 
-/// Given a value, extract its array values and coerce them to strings.
-///
-/// If the value is not an array, it will be returned as if it was present in a
-/// one-element array containing itself. This is intended for use with parsing
-/// parameters which are optionally arrays. The returned value will still be
-/// coerced into a string in this case.
-fn extract_maybe_array_strings<'gc>(
+/// If called with sortOn(Array), yields vec of stringified elements.
+/// If called with sortOn(String), yields this one string.
+/// Otherwise, yields an empty vec.
+fn extract_field_names<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<Vec<AvmString<'gc>>, Error<'gc>> {
-    let values = extract_maybe_array_values(activation, value)?;
-
-    let mut out = Vec::with_capacity(values.len());
-    for value in values {
-        out.push(value.coerce_to_string(activation)?);
+    if let Some(values) = extract_array_values(activation, value)? {
+        let mut out = Vec::with_capacity(values.len());
+        for value in values {
+            out.push(value.coerce_to_string(activation)?);
+        }
+        Ok(out)
+    } else if let Value::String(s) = value {
+        Ok(vec![s])
+    } else {
+        Ok(vec![])
     }
-    Ok(out)
 }
 
 /// Given a value, extract its array values and coerce them to SortOptions.
@@ -1151,7 +1152,7 @@ pub fn sort_on<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(field_names_value) = args.get(0).cloned() {
-        let field_names = extract_maybe_array_strings(activation, field_names_value)?;
+        let field_names = extract_field_names(activation, field_names_value)?;
         let mut options = extract_maybe_array_sort_options(
             activation,
             args.get(1).cloned().unwrap_or_else(|| 0.into()),
