@@ -538,6 +538,15 @@ pub trait TInteractiveObject<'gc>:
         true
     }
 
+    /// Whether this object is focusable using mouse,
+    /// i.e. when it's clicked the focus should be updated.
+    fn is_focusable_by_mouse(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        // Only select interactive objects are focusable by mouse in AVM1,
+        // whereas most are focusable by mouse in AVM2.
+        let self_do = self.as_displayobject();
+        self_do.movie().is_action_script_3()
+    }
+
     /// Called whenever the focus tracker has deemed this display object worthy, or no longer worthy,
     /// of being the currently focused object.
     /// This should only be called by the focus manager. To change a focus, go through that.

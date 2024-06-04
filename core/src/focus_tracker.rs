@@ -187,9 +187,10 @@ impl<'gc> FocusTracker<'gc> {
         old: Option<InteractiveObject<'gc>>,
         new: Option<InteractiveObject<'gc>>,
     ) -> bool {
-        let Some(Avm2Value::Object(old)) = old.map(|int| int.as_displayobject().object2()) else {
-            // If there's no old object, we cannot send the event,
-            // just continue without cancellation.
+        let target = old.map(|int| int.as_displayobject())
+            .unwrap_or_else(|| context.stage.as_displayobject())
+            .object2();
+        let Avm2Value::Object(target) = target else {
             return false;
         };
 
@@ -200,7 +201,7 @@ impl<'gc> FocusTracker<'gc> {
             _ => return false,
         };
         let event = EventObject::focus_event(&mut activation, event_name, true, new, key_code);
-        Avm2::dispatch_event(&mut activation.context, event, old);
+        Avm2::dispatch_event(&mut activation.context, event, target);
 
         let canceled = event.as_event().unwrap().is_cancelled();
         canceled

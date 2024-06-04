@@ -2529,6 +2529,10 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         }
     }
 
+    fn is_focusable_by_mouse(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+        self.is_editable() || self.is_selectable()
+    }
+
     fn is_highlightable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
         // TextField is incapable of rendering a highlight.
         false
