@@ -4198,7 +4198,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             let name = asset.name.decode(reader.encoding());
             let name = AvmString::new(context.gc_context, name);
             let id = asset.id;
-            tracing::warn!("Importing asset: {} (ID: {})", name, id);
+            tracing::debug!("Importing asset: {} (ID: {})", name, id);
 
             library.register_import(name, id);
         }
@@ -4263,7 +4263,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
                     .exported_name
                     .write(context.gc_context) = Some(*name);
             } else {
-                tracing::warn!(
+                tracing::debug!(
                     "Registering export for non-movie clip: {} (ID: {})",
                     name,
                     id
@@ -4285,7 +4285,6 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
         let exports = reader.read_export_assets()?;
-        //return Ok(());
         for export in exports {
             let name = export.name.decode(reader.encoding());
             let name = AvmString::new(context.gc_context, name);
@@ -4293,7 +4292,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
             let character = self.get_registered_character_by_id(context, export.id)?;
 
             self.register_export(context, export.id, &name, self.movie());
-            tracing::warn!("register_export asset: {} (ID: {})", name, export.id);
+            tracing::debug!("register_export asset: {} (ID: {})", name, export.id);
 
             if self.importer_movie.is_some() {
                 let parent = self.importer_movie.as_ref().unwrap().clone();
@@ -4303,7 +4302,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
                     parent_library.register_character(id, character);
 
                     self.register_export(context, id, &name, parent);
-                    tracing::warn!(
+                    tracing::debug!(
                         "Registering parent asset: {} (Parent ID: {})(ID: {})",
                         name,
                         id,
@@ -4311,8 +4310,6 @@ impl<'gc, 'a> MovieClipData<'gc> {
                     );
                 }
             }
-
-            tracing::warn!("Exporting asset: {} (ID: {})", name, export.id);
         }
         Ok(())
     }
