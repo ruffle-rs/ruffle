@@ -554,6 +554,17 @@ pub trait TInteractiveObject<'gc>:
         true
     }
 
+    /// Whether this object is focusable using a pointer device,
+    /// i.e. whether the focus should be updated when it's clicked.
+    ///
+    /// The default behavior is following:
+    /// * in AVM1 objects cannot be focused by mouse,
+    /// * in AVM2 objects can be focused by mouse when they are tab enabled.
+    fn is_focusable_by_mouse(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        let self_do = self.as_displayobject();
+        self_do.movie().is_action_script_3() && self.tab_enabled(context)
+    }
+
     /// Called whenever the focus tracker has deemed this display object worthy, or no longer worthy,
     /// of being the currently focused object.
     /// This should only be called by the focus manager. To change a focus, go through that.
