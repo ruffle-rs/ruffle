@@ -2593,11 +2593,6 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         }
 
         if let ClipEvent::Press { index } = event {
-            if self.is_editable() || self.is_selectable() {
-                let tracker = context.focus_tracker;
-                tracker.set(Some(self.into()), context);
-            }
-
             // We can't hold self as any link may end up modifying this object, so pull the info out
             let mut link_to_open = None;
 
@@ -2719,6 +2714,10 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         if !focused && is_avm1 {
             self.set_selection(None, context.gc_context);
         }
+    }
+
+    fn is_focusable_by_mouse(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+        self.movie().is_action_script_3() || self.is_editable() || self.is_selectable()
     }
 
     fn is_highlightable(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {

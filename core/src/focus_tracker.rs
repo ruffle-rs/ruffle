@@ -114,6 +114,11 @@ impl<'gc> FocusTracker<'gc> {
             return;
         }
 
+        // When clicking an object that is not focusable by mouse,
+        // the real object will be used to dispatch focus change events,
+        // but `None` will be used when setting the focus.
+        let new = new.filter(|new| new.is_focusable_by_mouse(context));
+
         self.set_internal(new, context, false);
     }
 

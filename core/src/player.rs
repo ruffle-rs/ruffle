@@ -1717,25 +1717,29 @@ impl Player {
         needs_render
     }
 
-    fn update_focus_on_mouse_press(context: &mut UpdateContext, pressed_object: DisplayObject) {
+    fn update_focus_on_mouse_press<'gc>(
+        context: &mut UpdateContext<'_, 'gc>,
+        pressed_object: DisplayObject<'gc>,
+    ) {
         let tracker = context.focus_tracker;
-        let Some(focus) = tracker.get() else {
-            return;
-        };
-        let focus_do = focus.as_displayobject();
+        let mut pressed_object = pressed_object.as_interactive();
+        if InteractiveObject::option_ptr_eq(pressed_object, context.stage.as_interactive()) {
+            pressed_object = None;
+        }
 
-        let is_avm2 = focus_do.movie().is_action_script_3();
-
-        // Update AVM1 focus
-        if !is_avm2 {
-            // In AVM1 text fields are somewhat special when handling focus.
-            // When a text field is clicked, it gains focus,
-            // when something else is clicked, it loses the focus.
-            // However, this logic only applies to text fields, other objects
-            // (buttons, movie clips) neither gain focus nor lose it upon press.
-            if focus_do.as_edit_text().is_some() && pressed_object.as_edit_text().is_none() {
-                tracker.set(None, context);
-            }
+        let should_focus = pressed_object.is_some_and(|int| {
+            // AVM2 fires focus change events even if the related object is not focusable
+            int.as_displayobject().movie().is_action_script_3()
+                || int.is_focusable_by_mouse(context)
+        });
+        if should_focus {
+            tracker.set_by_mouse(pressed_object, context);
+        } else if tracker
+            .get()
+            .is_some_and(|int| int.is_focusable_by_mouse(context))
+        {
+            // Need to clear the focus if an object focusable by mouse was un-focused.
+            tracker.set_by_mouse(None, context);
         }
     }
 
