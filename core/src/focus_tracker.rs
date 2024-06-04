@@ -100,8 +100,18 @@ impl<'gc> FocusTracker<'gc> {
             .and_then(|o| o.as_edit_text())
     }
 
+    /// Set the focus programmatically.
     pub fn set(&self, new: Option<InteractiveObject<'gc>>, context: &mut UpdateContext<'_, 'gc>) {
         self.set_internal(new, context, false, FocusChangeSource::Code);
+    }
+
+    /// Set the focus and acknowledge that this change was caused by a pointer device.
+    pub fn set_by_mouse(
+        &self,
+        new: Option<InteractiveObject<'gc>>,
+        context: &mut UpdateContext<'_, 'gc>,
+    ) {
+        self.set_internal(new, context, false, FocusChangeSource::Mouse);
     }
 
     fn set_internal(
