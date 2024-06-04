@@ -127,6 +127,7 @@ pub fn name<'gc>(
     }
 }
 
+// ECMA-357 13.4.4.35 XML.prototype.setName (name)
 pub fn set_name<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -135,37 +136,67 @@ pub fn set_name<'gc>(
     let xml = this.as_xml_object().unwrap();
     let node = xml.node();
 
-    let is_attribute_or_element = matches!(
-        &*node.kind(),
-        E4XNodeKind::Attribute(_)
-            | E4XNodeKind::ProcessingInstruction(_)
-            | E4XNodeKind::Element { .. }
-    );
-
-    if !is_attribute_or_element {
+    // 1. If x.[[Class]] ∈ {"text", "comment"}, return
+    if node.is_text() || node.is_comment() {
         return Ok(Value::Undefined);
     }
 
-    let new_name = args.get_value(0);
-
-    let new_name = if let Some(qname) = new_name.as_object().and_then(|q| q.as_qname_object()) {
-        let has_no_ns = qname.name().is_any_namespace()
-            || (qname.name().namespace_set().len() == 1
-                && qname.name().namespace_set()[0].is_public());
-        if !has_no_ns {
-            avm2_stub_method!(activation, "XML", "setName", "with QName namespaces");
+    let name = match args.get_value(0) {
+        // 2. If (Type(name) is Object) and (name.[[Class]] == "QName") and (name.uri == null)
+        Value::Object(Object::QNameObject(qname)) if qname.uri().is_none() => {
+            // a. Let name = name.localName
+            qname.local_name().into()
         }
-        qname.local_name()
-    } else {
-        new_name.coerce_to_string(activation)?
+        value => value,
     };
 
-    let is_name_valid = crate::avm2::e4x::is_xml_name(new_name);
-    if !is_name_valid {
-        return Err(make_error_1117(activation, new_name));
+    // 3. Let n be a new QName created if by calling the constructor new QName(name)
+    let new_name = activation
+        .avm2()
+        .classes()
+        .qname
+        .construct(activation, &[name])?
+        .as_qname_object()
+        .unwrap();
+
+    // NOTE: avmplus addition
+    if !crate::avm2::e4x::is_xml_name(new_name.local_name()) {
+        return Err(make_error_1117(activation, new_name.local_name()));
     }
 
-    node.set_local_name(new_name, activation.context.gc_context);
+    // 4. If x.[[Class]] == "processing-instruction", let n.uri be the empty string
+    // 6. Let ns be a new Namespace created as if by calling the constructor new Namespace(n.prefix, n.uri)
+    // TODO: QName doesn't have a prefix
+    let ns = if matches!(&*node.kind(), E4XNodeKind::ProcessingInstruction(_)) {
+        None
+    } else {
+        new_name
+            .uri()
+            .filter(|uri| !uri.is_empty())
+            .map(E4XNamespace::new_uri)
+    };
+
+    // 5. Let x.[[Name]] = n
+    node.set_namespace(ns, activation.gc());
+    node.set_local_name(new_name.local_name(), activation.gc());
+
+    // NOTE: avmplus addition
+    if let Some(ns) = ns {
+        // 7. If x.[[Class]] == "attribute"
+        if node.is_attribute() {
+            // 7.a. If x.[[Parent]] == null, return
+            // 7.b. Call x.[[Parent]].[[AddInScopeNamespace]](ns)
+            if let Some(parent) = node.parent() {
+                parent.add_in_scope_namespace(activation.gc(), ns);
+            }
+        }
+
+        // 7. If x.[[Class]] == "element"
+        if node.is_element() {
+            // 7.a. Call x.[[AddInScopeNamespace]](ns2)
+            node.add_in_scope_namespace(activation.gc(), ns);
+        }
+    }
 
     Ok(Value::Undefined)
 }
@@ -284,7 +315,7 @@ pub fn set_namespace<'gc>(
     };
 
     // 3. Let x.[[Name]] be a new QName created as if by calling the constructor new QName(ns2, x.[[Name]])
-    node.set_namespace(ns, activation.gc());
+    node.set_namespace(Some(ns), activation.gc());
 
     // 4. If x.[[Class]] == "attribute"
     if node.is_attribute() {
