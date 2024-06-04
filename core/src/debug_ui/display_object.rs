@@ -801,6 +801,14 @@ impl DisplayObjectWindow {
                 }
                 ui.end_row();
 
+                ui.label("Is Root");
+                if object.is_root() {
+                    ui.label("Yes");
+                } else {
+                    ui.label("No");
+                }
+                ui.end_row();
+
                 if let Some(other) = object.masker() {
                     ui.label("Masker");
                     open_display_object_button(
