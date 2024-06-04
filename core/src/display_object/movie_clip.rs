@@ -3367,6 +3367,12 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         }
     }
 
+    fn is_highlightable(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+        // Root movie clips are not highlightable.
+        // This applies only to AVM2, as in AVM1 they are also not focusable.
+        !self.is_root() && self.is_highlight_enabled(context)
+    }
+
     fn is_tabbable(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
         if self.is_root() {
             // Root movie clips are never tabbable.
