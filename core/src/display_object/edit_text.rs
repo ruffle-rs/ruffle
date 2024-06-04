@@ -2400,11 +2400,6 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         }
 
         if let ClipEvent::Press = event {
-            if self.is_editable() || self.is_selectable() {
-                let tracker = context.focus_tracker;
-                tracker.set(Some(self.into()), context);
-            }
-
             // We can't hold self as any link may end up modifying this object, so pull the info out
             let mut link_to_open = None;
 
