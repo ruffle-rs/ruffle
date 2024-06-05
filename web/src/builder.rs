@@ -1,6 +1,7 @@
 use crate::{set_panic_hook, JavascriptPlayer, RuffleHandle, SocketProxy, RUFFLE_GLOBAL_PANIC};
 use js_sys::Promise;
 use ruffle_core::backend::navigator::OpenURLMode;
+use ruffle_core::compatibility_rules::CompatibilityRules;
 use ruffle_core::config::{Letterbox, NetworkingAccessMode};
 use ruffle_core::{Color, PlayerRuntime, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
@@ -16,7 +17,7 @@ pub struct RuffleInstanceBuilder {
     pub(crate) background_color: Option<Color>,
     pub(crate) letterbox: Letterbox,
     pub(crate) upgrade_to_https: bool,
-    pub(crate) compatibility_rules: bool,
+    pub(crate) compatibility_rules: CompatibilityRules,
     pub(crate) base_url: Option<String>,
     pub(crate) show_menu: bool,
     pub(crate) allow_fullscreen: bool,
@@ -51,7 +52,7 @@ impl Default for RuffleInstanceBuilder {
             background_color: None,
             letterbox: Letterbox::Fullscreen,
             upgrade_to_https: true,
-            compatibility_rules: true,
+            compatibility_rules: CompatibilityRules::default(),
             base_url: None,
             show_menu: true,
             allow_fullscreen: false,
@@ -99,7 +100,11 @@ impl RuffleInstanceBuilder {
 
     #[wasm_bindgen(js_name = "setCompatibilityRules")]
     pub fn set_compatibility_rules(&mut self, value: bool) {
-        self.compatibility_rules = value;
+        self.compatibility_rules = if value {
+            CompatibilityRules::default()
+        } else {
+            CompatibilityRules::empty()
+        };
     }
 
     #[wasm_bindgen(js_name = "setLetterbox")]
