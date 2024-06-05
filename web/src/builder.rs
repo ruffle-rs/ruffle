@@ -1,5 +1,6 @@
-use crate::{JavascriptPlayer, RuffleHandle, SocketProxy, RUFFLE_GLOBAL_PANIC};
+use crate::{audio, JavascriptPlayer, RuffleHandle, SocketProxy, RUFFLE_GLOBAL_PANIC};
 use js_sys::Promise;
+use ruffle_core::backend::audio::{AudioBackend, NullAudioBackend};
 use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_core::backend::ui::FontDefinition;
 use ruffle_core::compatibility_rules::CompatibilityRules;
@@ -511,5 +512,17 @@ impl RuffleInstanceBuilder {
             }
         }
         Err("Unable to create renderer".into())
+    }
+
+    pub fn create_audio_backend(
+        &self,
+        log_subscriber: Arc<Layered<WASMLayer, Registry>>,
+    ) -> Box<dyn AudioBackend> {
+        if let Ok(audio) = audio::WebAudioBackend::new(log_subscriber.clone()) {
+            Box::new(audio)
+        } else {
+            tracing::error!("Unable to create audio backend. No audio will be played.");
+            Box::new(NullAudioBackend::new())
+        }
     }
 }

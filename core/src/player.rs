@@ -2312,6 +2312,13 @@ impl PlayerBuilder {
         self
     }
 
+    /// Sets the audio backend of the player.
+    #[inline]
+    pub fn with_boxed_audio(mut self, audio: Box<dyn AudioBackend>) -> Self {
+        self.audio = Some(audio);
+        self
+    }
+
     /// Sets the logging backend of the player.
     #[inline]
     pub fn with_log(mut self, log: impl 'static + LogBackend) -> Self {
