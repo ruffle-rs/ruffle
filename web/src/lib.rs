@@ -398,16 +398,7 @@ impl RuffleHandle {
         let mut builder = PlayerBuilder::new()
             .with_boxed_renderer(renderer)
             .with_boxed_audio(config.create_audio_backend(log_subscriber.clone()))
-            .with_navigator(navigator::WebNavigatorBackend::new(
-                allow_script_access,
-                allow_networking,
-                config.upgrade_to_https,
-                config.base_url.clone(),
-                log_subscriber.clone(),
-                config.open_url_mode,
-                config.socket_proxy.clone(),
-                config.credential_allow_list.clone(),
-            ));
+            .with_navigator(config.create_navigator(log_subscriber.clone()));
 
         match window.local_storage() {
             Ok(Some(s)) => {

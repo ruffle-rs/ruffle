@@ -1,3 +1,4 @@
+use crate::navigator::WebNavigatorBackend;
 use crate::{audio, JavascriptPlayer, RuffleHandle, SocketProxy, RUFFLE_GLOBAL_PANIC};
 use js_sys::Promise;
 use ruffle_core::backend::audio::{AudioBackend, NullAudioBackend};
@@ -524,5 +525,21 @@ impl RuffleInstanceBuilder {
             tracing::error!("Unable to create audio backend. No audio will be played.");
             Box::new(NullAudioBackend::new())
         }
+    }
+
+    pub fn create_navigator(
+        &self,
+        log_subscriber: Arc<Layered<WASMLayer, Registry>>,
+    ) -> WebNavigatorBackend {
+        WebNavigatorBackend::new(
+            self.allow_script_access,
+            self.allow_networking,
+            self.upgrade_to_https,
+            self.base_url.clone(),
+            log_subscriber.clone(),
+            self.open_url_mode,
+            self.socket_proxy.clone(),
+            self.credential_allow_list.clone(),
+        )
     }
 }
