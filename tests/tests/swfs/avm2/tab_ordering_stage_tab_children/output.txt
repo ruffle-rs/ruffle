@@ -1,0 +1,32 @@
+stage.tabChildren = true
+root.tabChildren = true
+clip1.tabChildren = true
+clip2.tabChildren = true
+clip3.tabChildren = true
+clip1 focusIn: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0]
+clip2 focusIn: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=0]
+clip1 focusIn: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=0]
+clip2 focusIn: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=0]
+Escape pressed
+Setting tabChildren to false
+stage.tabChildren = true
+root.tabChildren = false
+clip1.tabChildren = true
+clip2.tabChildren = true
+clip3.tabChildren = true
+clip1 focusIn: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0]
+Escape pressed
+Setting tabChildren to true
+stage.tabChildren = true
+root.tabChildren = true
+clip1.tabChildren = true
+clip2.tabChildren = true
+clip3.tabChildren = true
+Adding a child at 0 and setting tabChildren to false
+stage.tabChildren = true
+root.tabChildren = false
+clip1.tabChildren = true
+clip2.tabChildren = true
+clip3.tabChildren = true
+clip1 focusIn: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=0]
+clip1 focusIn: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object MovieClip] shiftKey=false keyCode=0]
