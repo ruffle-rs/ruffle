@@ -40,6 +40,7 @@ const baseExtensionConfig = {
     letterbox: "on" as Letterbox,
     forceScale: true,
     forceAlign: true,
+    showSwfDownload: true,
 };
 
 const swfToFlashVersion: { [key: number]: string } = {
