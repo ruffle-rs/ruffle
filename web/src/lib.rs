@@ -389,10 +389,9 @@ impl RuffleHandle {
         let allow_networking = config.allow_networking;
 
         let window = web_sys::window().ok_or("Expected window")?;
-        let document = window.document().ok_or("Expected document")?;
 
-        let (mut builder, canvas) =
-            create_renderer(PlayerBuilder::new(), &document, &config).await?;
+        let (renderer, canvas) = config.create_renderer().await?;
+        let mut builder = PlayerBuilder::new().with_boxed_renderer(renderer);
 
         parent
             .append_child(&canvas.clone().into())
@@ -1075,133 +1074,6 @@ pub enum RuffleInstanceError {
     TryLockError,
     #[error("Ruffle Instance ID does not exist")]
     InstanceNotFound,
-}
-
-async fn create_renderer(
-    builder: PlayerBuilder,
-    document: &web_sys::Document,
-    config: &RuffleInstanceBuilder,
-) -> Result<(PlayerBuilder, HtmlCanvasElement), Box<dyn Error>> {
-    #[cfg(not(any(
-        feature = "canvas",
-        feature = "webgl",
-        feature = "webgpu",
-        feature = "wgpu-webgl"
-    )))]
-    std::compile_error!("You must enable one of the render backend features (e.g., webgl).");
-
-    let _is_transparent = config.wmode.as_deref() == Some("transparent");
-
-    let mut renderer_list = vec!["wgpu-webgl", "webgpu", "webgl", "canvas"];
-    if let Some(preferred_renderer) = &config.preferred_renderer {
-        if let Some(pos) = renderer_list.iter().position(|&r| r == preferred_renderer) {
-            renderer_list.remove(pos);
-            renderer_list.insert(0, preferred_renderer.as_str());
-        } else {
-            tracing::error!("Unrecognized renderer name: {}", preferred_renderer);
-        }
-    }
-
-    // Try to create a backend, falling through to the next backend on failure.
-    // We must recreate the canvas each attempt, as only a single context may be created per canvas
-    // with `getContext`.
-    for renderer in renderer_list {
-        match renderer {
-            #[cfg(all(feature = "webgpu", target_family = "wasm"))]
-            "webgpu" => {
-                // Check that we have access to WebGPU (navigator.gpu should exist).
-                if web_sys::window()
-                    .ok_or(JsValue::FALSE)
-                    .and_then(|window| {
-                        js_sys::Reflect::has(&window.navigator(), &JsValue::from_str("gpu"))
-                    })
-                    .unwrap_or_default()
-                {
-                    tracing::info!("Creating wgpu webgpu renderer...");
-                    let canvas: HtmlCanvasElement = document
-                        .create_element("canvas")
-                        .into_js_result()?
-                        .dyn_into()
-                        .map_err(|_| "Expected HtmlCanvasElement")?;
-
-                    match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(
-                        canvas.clone(),
-                        true,
-                    )
-                    .await
-                    {
-                        Ok(renderer) => {
-                            return Ok((builder.with_renderer(renderer), canvas));
-                        }
-                        Err(error) => {
-                            tracing::error!("Error creating wgpu webgpu renderer: {}", error)
-                        }
-                    }
-                }
-            }
-            #[cfg(all(feature = "wgpu-webgl", target_family = "wasm"))]
-            "wgpu-webgl" => {
-                tracing::info!("Creating wgpu webgl renderer...");
-                let canvas: HtmlCanvasElement = document
-                    .create_element("canvas")
-                    .into_js_result()?
-                    .dyn_into()
-                    .map_err(|_| "Expected HtmlCanvasElement")?;
-
-                match ruffle_render_wgpu::backend::WgpuRenderBackend::for_canvas(
-                    canvas.clone(),
-                    false,
-                )
-                .await
-                {
-                    Ok(renderer) => {
-                        return Ok((builder.with_renderer(renderer), canvas));
-                    }
-                    Err(error) => {
-                        tracing::error!("Error creating wgpu webgl renderer: {}", error)
-                    }
-                }
-            }
-            #[cfg(feature = "webgl")]
-            "webgl" => {
-                tracing::info!("Creating WebGL renderer...");
-                let canvas: HtmlCanvasElement = document
-                    .create_element("canvas")
-                    .into_js_result()?
-                    .dyn_into()
-                    .map_err(|_| "Expected HtmlCanvasElement")?;
-                match ruffle_render_webgl::WebGlRenderBackend::new(
-                    &canvas,
-                    _is_transparent,
-                    config.quality,
-                ) {
-                    Ok(renderer) => {
-                        return Ok((builder.with_renderer(renderer), canvas));
-                    }
-                    Err(error) => {
-                        tracing::error!("Error creating WebGL renderer: {}", error)
-                    }
-                }
-            }
-            #[cfg(feature = "canvas")]
-            "canvas" => {
-                tracing::info!("Creating Canvas renderer...");
-                let canvas: HtmlCanvasElement = document
-                    .create_element("canvas")
-                    .into_js_result()?
-                    .dyn_into()
-                    .map_err(|_| "Expected HtmlCanvasElement")?;
-                match ruffle_render_canvas::WebCanvasRenderBackend::new(&canvas, _is_transparent) {
-                    Ok(renderer) => {
-                        return Ok((builder.with_renderer(renderer), canvas));
-                    }
-                    Err(error) => tracing::error!("Error creating canvas renderer: {}", error),
-                }
-            }
-            _ => {}
-        }
-    }
-    Err("Unable to create renderer".into())
 }
 
 fn parse_movie_parameters(input: &JsValue) -> Vec<(String, String)> {
