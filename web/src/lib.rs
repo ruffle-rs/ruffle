@@ -383,14 +383,7 @@ impl RuffleHandle {
         js_player: JavascriptPlayer,
         config: RuffleInstanceBuilder,
     ) -> Result<Self, Box<dyn Error>> {
-        let log_subscriber = Arc::new(
-            Registry::default().with(WASMLayer::new(
-                WASMLayerConfigBuilder::new()
-                    .set_report_logs_in_timings(cfg!(feature = "profiling"))
-                    .set_max_level(config.log_level)
-                    .build(),
-            )),
-        );
+        let log_subscriber = config.create_log_subscriber();
         let _subscriber = tracing::subscriber::set_default(log_subscriber.clone());
         let allow_script_access = config.allow_script_access;
         let allow_networking = config.allow_networking;

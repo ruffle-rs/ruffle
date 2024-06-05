@@ -8,7 +8,11 @@ use ruffle_core::{swf, Color, DefaultFont, Player, PlayerRuntime, StageAlign, St
 use ruffle_render::quality::StageQuality;
 use std::collections::HashMap;
 use std::str::FromStr;
+use std::sync::Arc;
 use std::time::Duration;
+use tracing_subscriber::layer::{Layered, SubscriberExt};
+use tracing_subscriber::Registry;
+use tracing_wasm::{WASMLayer, WASMLayerConfigBuilder};
 use wasm_bindgen::prelude::*;
 use web_sys::HtmlElement;
 
@@ -364,5 +368,15 @@ impl RuffleInstanceBuilder {
         for (default, names) in &self.default_fonts {
             player.set_default_font(*default, names.clone());
         }
+    }
+
+    pub fn create_log_subscriber(&self) -> Arc<Layered<WASMLayer, Registry>> {
+        let layer = WASMLayer::new(
+            WASMLayerConfigBuilder::new()
+                .set_report_logs_in_timings(cfg!(feature = "profiling"))
+                .set_max_level(self.log_level)
+                .build(),
+        );
+        Arc::new(tracing_subscriber::registry().with(layer))
     }
 }
