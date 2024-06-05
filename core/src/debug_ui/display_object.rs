@@ -897,6 +897,16 @@ impl DisplayObjectWindow {
                         }
                     });
                     ui.end_row();
+
+                    ui.label("Tab children enabled");
+                    ui.horizontal(|ui| {
+                        let mut enabled = obj.is_tab_children(context);
+                        Checkbox::new(&mut enabled, "Enabled").ui(ui);
+                        if enabled != obj.is_tab_children(context) {
+                            obj.set_tab_children(context, enabled);
+                        }
+                    });
+                    ui.end_row();
                 }
             });
 
