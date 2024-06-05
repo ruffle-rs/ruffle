@@ -506,7 +506,8 @@ pub trait TDisplayObjectContainer<'gc>:
         if context.swf.is_action_script_3() {
             self.raw_container_mut(context.gc()).tab_children = value;
         } else {
-            tracing::warn!("Trying to set tab_children on an AVM1 object, this has no effect")
+            let self_do: DisplayObject<'gc> = (*self).into();
+            self_do.set_avm1_property(context, "tabChildren", value.into());
         }
     }
 
