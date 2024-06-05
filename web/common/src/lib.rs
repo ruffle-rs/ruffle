@@ -39,14 +39,3 @@ impl<T> JsResult<T> for Result<T, JsValue> {
         self.map_err(|value| JsError { value })
     }
 }
-
-/// Very bad way to guess if we're running on a tablet/mobile.
-pub fn is_mobile_or_tablet() -> bool {
-    if let Some(window) = web_sys::window() {
-        if let Ok(val) = js_sys::Reflect::get(&window, &JsValue::from("orientation")) {
-            return !val.is_undefined();
-        }
-    }
-
-    false
-}

@@ -4668,10 +4668,8 @@ dependencies = [
 name = "ruffle_web_common"
 version = "0.1.0"
 dependencies = [
- "js-sys",
  "tracing",
  "wasm-bindgen",
- "web-sys",
 ]
 
 [[package]]

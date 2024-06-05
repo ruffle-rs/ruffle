@@ -175,7 +175,11 @@ fn as_registry_data(handle: &BitmapHandle) -> &RegistryData {
 const MAX_GRADIENT_COLORS: usize = 15;
 
 impl WebGlRenderBackend {
-    pub fn new(canvas: &HtmlCanvasElement, is_transparent: bool) -> Result<Self, Error> {
+    pub fn new(
+        canvas: &HtmlCanvasElement,
+        is_transparent: bool,
+        quality: StageQuality,
+    ) -> Result<Self, Error> {
         // Create WebGL context.
         let options = [
             ("stencil", JsValue::TRUE),
@@ -200,13 +204,7 @@ impl WebGlRenderBackend {
                 .map_err(|_| Error::CantCreateGLContext)?;
 
             // Determine MSAA sample count.
-            // Default to 4x MSAA on desktop, 2x on mobile/tablets.
-            let mut msaa_sample_count = if ruffle_web_common::is_mobile_or_tablet() {
-                log::info!("Running on a mobile device; defaulting to 2x MSAA");
-                2
-            } else {
-                4
-            };
+            let mut msaa_sample_count = quality.sample_count().min(4);
 
             // Ensure that we don't exceed the max MSAA of this device.
             if let Ok(max_samples) = gl2.get_parameter(Gl2::MAX_SAMPLES) {
