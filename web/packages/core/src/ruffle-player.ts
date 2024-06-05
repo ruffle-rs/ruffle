@@ -715,17 +715,13 @@ export class RufflePlayer extends HTMLElement {
             throw e;
         });
         configureBuilder(builder, this.loadedConfig || {});
-        this.instance = await builder.build(this.container, this).catch((e) => {
-            console.error(`Serious error loading Ruffle: ${e}`);
-            this.panic(e);
-            throw e;
-        });
+        builder.setVolume(this.volumeSettings.get_volume());
 
         if (this.loadedConfig?.fontSources) {
             for (const url of this.loadedConfig.fontSources) {
                 try {
                     const response = await fetch(url);
-                    this.instance!.add_font(
+                    builder.addFont(
                         url,
                         new Uint8Array(await response.arrayBuffer()),
                     );
@@ -739,25 +735,29 @@ export class RufflePlayer extends HTMLElement {
         }
 
         if (this.loadedConfig?.defaultFonts?.sans) {
-            this.instance!.set_default_font(
+            builder.setDefaultFont(
                 "sans",
                 this.loadedConfig?.defaultFonts.sans,
             );
         }
         if (this.loadedConfig?.defaultFonts?.serif) {
-            this.instance!.set_default_font(
+            builder!.setDefaultFont(
                 "serif",
                 this.loadedConfig?.defaultFonts.serif,
             );
         }
         if (this.loadedConfig?.defaultFonts?.typewriter) {
-            this.instance!.set_default_font(
+            builder!.setDefaultFont(
                 "typewriter",
                 this.loadedConfig?.defaultFonts.typewriter,
             );
         }
 
-        this.instance!.set_volume(this.volumeSettings.get_volume());
+        this.instance = await builder.build(this.container, this).catch((e) => {
+            console.error(`Serious error loading Ruffle: ${e}`);
+            this.panic(e);
+            throw e;
+        });
 
         this.rendererDebugInfo = this.instance!.renderer_debug_info();
 

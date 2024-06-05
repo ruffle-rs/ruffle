@@ -1,10 +1,12 @@
 use crate::{set_panic_hook, JavascriptPlayer, RuffleHandle, SocketProxy, RUFFLE_GLOBAL_PANIC};
 use js_sys::Promise;
 use ruffle_core::backend::navigator::OpenURLMode;
+use ruffle_core::backend::ui::FontDefinition;
 use ruffle_core::compatibility_rules::CompatibilityRules;
 use ruffle_core::config::{Letterbox, NetworkingAccessMode};
-use ruffle_core::{Color, PlayerRuntime, StageAlign, StageScaleMode};
+use ruffle_core::{swf, Color, DefaultFont, Player, PlayerRuntime, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
+use std::collections::HashMap;
 use std::str::FromStr;
 use std::time::Duration;
 use wasm_bindgen::prelude::*;
@@ -37,8 +39,9 @@ pub struct RuffleInstanceBuilder {
     pub(crate) socket_proxy: Vec<SocketProxy>,
     pub(crate) credential_allow_list: Vec<String>,
     pub(crate) player_runtime: PlayerRuntime,
-    // TODO: Add font related options
-    // TODO: Add volume
+    pub(crate) volume: f32,
+    pub(crate) default_fonts: HashMap<DefaultFont, Vec<String>>,
+    pub(crate) custom_fonts: Vec<(String, Vec<u8>)>,
 }
 
 impl Default for RuffleInstanceBuilder {
@@ -72,6 +75,9 @@ impl Default for RuffleInstanceBuilder {
             socket_proxy: vec![],
             credential_allow_list: vec![],
             player_runtime: PlayerRuntime::FlashPlayer,
+            volume: 1.0,
+            default_fonts: HashMap::new(),
+            custom_fonts: vec![],
         }
     }
 }
@@ -262,6 +268,35 @@ impl RuffleInstanceBuilder {
         };
     }
 
+    #[wasm_bindgen(js_name = "setVolume")]
+    pub fn set_volume(&mut self, value: f32) {
+        self.volume = value;
+    }
+
+    #[wasm_bindgen(js_name = "addFont")]
+    pub fn add_font(&mut self, font_name: String, data: Vec<u8>) {
+        self.custom_fonts.push((font_name, data))
+    }
+
+    #[wasm_bindgen(js_name = "setDefaultFont")]
+    pub fn set_default_font(&mut self, default_name: &str, fonts: Vec<JsValue>) {
+        let default = match default_name {
+            "sans" => DefaultFont::Sans,
+            "serif" => DefaultFont::Serif,
+            "typewriter" => DefaultFont::Typewriter,
+            _ => {
+                return;
+            }
+        };
+        self.default_fonts.insert(
+            default,
+            fonts
+                .into_iter()
+                .flat_map(|value| value.as_string())
+                .collect(),
+        );
+    }
+
     // TODO: This should be split into two methods that either load url or load data
     // Right now, that's done immediately afterwards in TS
     pub async fn build(&self, parent: HtmlElement, js_player: JavascriptPlayer) -> Promise {
@@ -279,5 +314,56 @@ impl RuffleInstanceBuilder {
                 .map_err(|err| JsValue::from(format!("Error creating player: {}", err)))?;
             Ok(JsValue::from(ruffle))
         })
+    }
+}
+
+impl RuffleInstanceBuilder {
+    pub fn setup_fonts(&self, player: &mut Player) {
+        for (font_name, bytes) in &self.custom_fonts {
+            if let Ok(swf_stream) = swf::decompress_swf(&bytes[..]) {
+                if let Ok(swf) = swf::parse_swf(&swf_stream) {
+                    let encoding = swf::SwfStr::encoding_for_version(swf.header.version());
+                    for tag in swf.tags {
+                        match tag {
+                            swf::Tag::DefineFont(_font) => {
+                                tracing::warn!("DefineFont1 tag is not yet supported by Ruffle, inside font swf {font_name}");
+                            }
+                            swf::Tag::DefineFont2(font) => {
+                                tracing::debug!(
+                                    "Loaded font {} from font swf {font_name}",
+                                    font.name.to_str_lossy(encoding)
+                                );
+                                player
+                                    .register_device_font(FontDefinition::SwfTag(*font, encoding));
+                            }
+                            swf::Tag::DefineFont4(font) => {
+                                let name = font.name.to_str_lossy(encoding);
+                                if let Some(data) = font.data {
+                                    tracing::debug!("Loaded font {name} from font swf {font_name}");
+                                    player.register_device_font(FontDefinition::FontFile {
+                                        name: name.to_string(),
+                                        is_bold: font.is_bold,
+                                        is_italic: font.is_bold,
+                                        data: data.to_vec(),
+                                        index: 0,
+                                    })
+                                } else {
+                                    tracing::warn!(
+                                        "Font {name} from font swf {font_name} contains no data"
+                                    );
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                    continue;
+                }
+            }
+            tracing::warn!("Font source {font_name} was not recognised (not a valid SWF?)");
+        }
+
+        for (default, names) in &self.default_fonts {
+            player.set_default_font(*default, names.clone());
+        }
     }
 }
