@@ -1,8 +1,9 @@
 use crate::navigator::WebNavigatorBackend;
-use crate::{audio, JavascriptPlayer, RuffleHandle, SocketProxy, RUFFLE_GLOBAL_PANIC};
+use crate::{audio, storage, JavascriptPlayer, RuffleHandle, SocketProxy, RUFFLE_GLOBAL_PANIC};
 use js_sys::Promise;
 use ruffle_core::backend::audio::{AudioBackend, NullAudioBackend};
 use ruffle_core::backend::navigator::OpenURLMode;
+use ruffle_core::backend::storage::{MemoryStorageBackend, StorageBackend};
 use ruffle_core::backend::ui::FontDefinition;
 use ruffle_core::compatibility_rules::CompatibilityRules;
 use ruffle_core::config::{Letterbox, NetworkingAccessMode};
@@ -541,5 +542,15 @@ impl RuffleInstanceBuilder {
             self.socket_proxy.clone(),
             self.credential_allow_list.clone(),
         )
+    }
+
+    pub fn create_storage_backend(&self) -> Box<dyn StorageBackend> {
+        match web_sys::window().expect("window()").local_storage() {
+            Ok(Some(s)) => Box::new(storage::LocalStorageBackend::new(s)),
+            err => {
+                tracing::warn!("Unable to use localStorage: {:?}\nData will not save.", err);
+                Box::new(MemoryStorageBackend::new())
+            }
+        }
     }
 }

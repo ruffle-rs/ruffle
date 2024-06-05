@@ -398,16 +398,8 @@ impl RuffleHandle {
         let mut builder = PlayerBuilder::new()
             .with_boxed_renderer(renderer)
             .with_boxed_audio(config.create_audio_backend(log_subscriber.clone()))
-            .with_navigator(config.create_navigator(log_subscriber.clone()));
-
-        match window.local_storage() {
-            Ok(Some(s)) => {
-                builder = builder.with_storage(Box::new(storage::LocalStorageBackend::new(s)));
-            }
-            err => {
-                tracing::warn!("Unable to use localStorage: {:?}\nData will not save.", err);
-            }
-        };
+            .with_navigator(config.create_navigator(log_subscriber.clone()))
+            .with_storage(config.create_storage_backend());
 
         // Create the external interface.
         if allow_script_access && allow_networking == NetworkingAccessMode::All {
