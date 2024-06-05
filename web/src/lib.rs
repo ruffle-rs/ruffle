@@ -12,17 +12,13 @@ mod storage;
 mod ui;
 
 use crate::builder::RuffleInstanceBuilder;
-use external_interface::{external_to_js_value, js_to_external_value, JavascriptInterface};
+use external_interface::{external_to_js_value, js_to_external_value};
 use input::{web_key_to_codepoint, web_to_ruffle_key_code, web_to_ruffle_text_control};
 use js_sys::{Error as JsError, Uint8Array};
-use ruffle_core::config::NetworkingAccessMode;
 use ruffle_core::context::UpdateContext;
 use ruffle_core::events::{MouseButton, MouseWheelDelta, TextControlCode};
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::{
-    Player, PlayerBuilder, PlayerEvent, SandboxType, StaticCallstack, ViewportDimensions,
-};
-use ruffle_video_software::backend::SoftwareVideoBackend;
+use ruffle_core::{Player, PlayerEvent, StaticCallstack, ViewportDimensions};
 use ruffle_web_common::JsResult;
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SlotMap};
@@ -385,67 +381,27 @@ impl RuffleHandle {
     ) -> Result<Self, Box<dyn Error>> {
         let log_subscriber = config.create_log_subscriber();
         let _subscriber = tracing::subscriber::set_default(log_subscriber.clone());
-        let allow_script_access = config.allow_script_access;
-        let allow_networking = config.allow_networking;
-
         let window = web_sys::window().ok_or("Expected window")?;
 
-        let (renderer, canvas) = config.create_renderer().await?;
+        let player = config
+            .create_player(js_player.clone(), log_subscriber.clone())
+            .await?;
+
         parent
-            .append_child(&canvas.clone().into())
+            .append_child(&player.canvas.clone().into())
             .into_js_result()?;
 
-        let mut builder = PlayerBuilder::new()
-            .with_boxed_renderer(renderer)
-            .with_boxed_audio(config.create_audio_backend(log_subscriber.clone()))
-            .with_navigator(config.create_navigator(log_subscriber.clone()))
-            .with_storage(config.create_storage_backend());
-
-        // Create the external interface.
-        if allow_script_access && allow_networking == NetworkingAccessMode::All {
-            let interface = Box::new(JavascriptInterface::new(js_player.clone()));
-            builder = builder
-                .with_external_interface(interface.clone())
-                .with_fs_commands(interface);
-        }
-
-        let trace_observer = Rc::new(RefCell::new(JsValue::UNDEFINED));
-        let core = builder
-            .with_log(log_adapter::WebLogBackend::new(trace_observer.clone()))
-            .with_ui(ui::WebUiBackend::new(js_player.clone(), &canvas))
-            .with_video(SoftwareVideoBackend::new())
-            .with_letterbox(config.letterbox)
-            .with_max_execution_duration(config.max_execution_duration)
-            .with_player_version(config.player_version)
-            .with_player_runtime(config.player_runtime)
-            .with_compatibility_rules(config.compatibility_rules.clone())
-            .with_quality(config.quality)
-            .with_align(config.stage_align, config.force_align)
-            .with_scale_mode(config.scale, config.force_scale)
-            .with_frame_rate(config.frame_rate)
-            // FIXME - should this be configurable?
-            .with_sandbox_type(SandboxType::Remote)
-            .with_page_url(window.location().href().ok())
-            .build();
-
         let mut callstack = None;
-        if let Ok(mut core) = core.try_lock() {
-            // Set config parameters.
-            core.set_volume(config.volume);
-            core.set_background_color(config.background_color);
-            core.set_show_menu(config.show_menu);
-            core.set_allow_fullscreen(config.allow_fullscreen);
-            core.set_window_mode(config.wmode.as_deref().unwrap_or("window"));
-            config.setup_fonts(&mut core);
+        if let Ok(core) = player.core.try_lock() {
             callstack = Some(core.callstack());
         }
 
         // Create instance.
         let instance = RuffleInstance {
-            core,
+            core: player.core,
             callstack,
             js_player: js_player.clone(),
-            canvas: canvas.clone(),
+            canvas: player.canvas.clone(),
             canvas_width: 0, // Initialize canvas width and height to 0 to force an initial canvas resize.
             canvas_height: 0,
             device_pixel_ratio: window.device_pixel_ratio(),
@@ -466,12 +422,13 @@ impl RuffleHandle {
             unload_callback: None,
             timestamp: None,
             has_focus: false,
-            trace_observer,
+            trace_observer: player.trace_observer,
             log_subscriber,
         };
 
         // Prevent touch-scrolling on canvas.
-        canvas
+        player
+            .canvas
             .style()
             .set_property("touch-action", "none")
             .warn_on_error();
@@ -487,7 +444,7 @@ impl RuffleHandle {
 
             // Create mouse move handler.
             instance.mouse_move_callback = Some(JsCallback::register(
-                &canvas,
+                &player.canvas,
                 "pointermove",
                 false,
                 move |js_event: PointerEvent| {
@@ -508,7 +465,7 @@ impl RuffleHandle {
 
             // Create mouse enter handler.
             instance.mouse_enter_callback = Some(JsCallback::register(
-                &canvas,
+                &player.canvas,
                 "pointerenter",
                 false,
                 move |_js_event: PointerEvent| {
@@ -522,7 +479,7 @@ impl RuffleHandle {
 
             // Create mouse leave handler.
             instance.mouse_leave_callback = Some(JsCallback::register(
-                &canvas,
+                &player.canvas,
                 "pointerleave",
                 false,
                 move |_js_event: PointerEvent| {
@@ -537,7 +494,7 @@ impl RuffleHandle {
 
             // Create mouse down handler.
             instance.mouse_down_callback = Some(JsCallback::register(
-                &canvas,
+                &player.canvas,
                 "pointerdown",
                 false,
                 move |js_event: PointerEvent| {
@@ -598,7 +555,7 @@ impl RuffleHandle {
 
             // Create mouse up handler.
             instance.mouse_up_callback = Some(JsCallback::register(
-                &canvas,
+                &player.canvas,
                 "pointerup",
                 false,
                 move |js_event: PointerEvent| {
@@ -631,7 +588,7 @@ impl RuffleHandle {
 
             // Create mouse wheel handler.
             instance.mouse_wheel_callback = Some(JsCallback::register(
-                &canvas,
+                &player.canvas,
                 "wheel",
                 false,
                 move |js_event: WheelEvent| {

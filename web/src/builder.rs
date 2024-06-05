@@ -1,5 +1,9 @@
+use crate::external_interface::JavascriptInterface;
 use crate::navigator::WebNavigatorBackend;
-use crate::{audio, storage, JavascriptPlayer, RuffleHandle, SocketProxy, RUFFLE_GLOBAL_PANIC};
+use crate::{
+    audio, log_adapter, storage, ui, JavascriptPlayer, RuffleHandle, SocketProxy,
+    RUFFLE_GLOBAL_PANIC,
+};
 use js_sys::Promise;
 use ruffle_core::backend::audio::{AudioBackend, NullAudioBackend};
 use ruffle_core::backend::navigator::OpenURLMode;
@@ -7,14 +11,20 @@ use ruffle_core::backend::storage::{MemoryStorageBackend, StorageBackend};
 use ruffle_core::backend::ui::FontDefinition;
 use ruffle_core::compatibility_rules::CompatibilityRules;
 use ruffle_core::config::{Letterbox, NetworkingAccessMode};
-use ruffle_core::{swf, Color, DefaultFont, Player, PlayerRuntime, StageAlign, StageScaleMode};
+use ruffle_core::{
+    swf, Color, DefaultFont, Player, PlayerBuilder, PlayerRuntime, SandboxType, StageAlign,
+    StageScaleMode,
+};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
+use ruffle_video_software::backend::SoftwareVideoBackend;
 use ruffle_web_common::JsResult;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::error::Error;
+use std::rc::Rc;
 use std::str::FromStr;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tracing_subscriber::layer::{Layered, SubscriberExt};
 use tracing_subscriber::Registry;
@@ -553,4 +563,69 @@ impl RuffleInstanceBuilder {
             }
         }
     }
+
+    pub async fn create_player(
+        &self,
+        js_player: JavascriptPlayer,
+        log_subscriber: Arc<Layered<WASMLayer, Registry>>,
+    ) -> Result<BuiltPlayer, Box<dyn Error>> {
+        let window = web_sys::window().ok_or("Expected window")?;
+
+        let (renderer, canvas) = self.create_renderer().await?;
+
+        let mut builder = PlayerBuilder::new()
+            .with_boxed_renderer(renderer)
+            .with_boxed_audio(self.create_audio_backend(log_subscriber.clone()))
+            .with_navigator(self.create_navigator(log_subscriber.clone()))
+            .with_storage(self.create_storage_backend());
+
+        // Create the external interface.
+        if self.allow_script_access && self.allow_networking == NetworkingAccessMode::All {
+            let interface = Box::new(JavascriptInterface::new(js_player.clone()));
+            builder = builder
+                .with_external_interface(interface.clone())
+                .with_fs_commands(interface);
+        }
+
+        let trace_observer = Rc::new(RefCell::new(JsValue::UNDEFINED));
+        let core = builder
+            .with_log(log_adapter::WebLogBackend::new(trace_observer.clone()))
+            .with_ui(ui::WebUiBackend::new(js_player.clone(), &canvas))
+            .with_video(SoftwareVideoBackend::new())
+            .with_letterbox(self.letterbox)
+            .with_max_execution_duration(self.max_execution_duration)
+            .with_player_version(self.player_version)
+            .with_player_runtime(self.player_runtime)
+            .with_compatibility_rules(self.compatibility_rules.clone())
+            .with_quality(self.quality)
+            .with_align(self.stage_align, self.force_align)
+            .with_scale_mode(self.scale, self.force_scale)
+            .with_frame_rate(self.frame_rate)
+            // FIXME - should this be configurable?
+            .with_sandbox_type(SandboxType::Remote)
+            .with_page_url(window.location().href().ok())
+            .build();
+
+        if let Ok(mut core) = core.try_lock() {
+            // Set config parameters.
+            core.set_volume(self.volume);
+            core.set_background_color(self.background_color);
+            core.set_show_menu(self.show_menu);
+            core.set_allow_fullscreen(self.allow_fullscreen);
+            core.set_window_mode(self.wmode.as_deref().unwrap_or("window"));
+            self.setup_fonts(&mut core);
+        }
+
+        Ok(BuiltPlayer {
+            core,
+            canvas,
+            trace_observer,
+        })
+    }
+}
+
+pub struct BuiltPlayer {
+    pub core: Arc<Mutex<Player>>,
+    pub canvas: HtmlCanvasElement,
+    pub trace_observer: Rc<RefCell<JsValue>>,
 }
