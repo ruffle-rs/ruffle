@@ -7,7 +7,9 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
-use crate::display_object::{StageDisplayState, TDisplayObject, TInteractiveObject};
+use crate::display_object::{
+    StageDisplayState, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
+};
 use crate::string::{AvmString, WString};
 use crate::{avm2_stub_getter, avm2_stub_setter};
 use swf::Color;
@@ -479,4 +481,26 @@ pub fn get_full_screen_width<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.display.Stage", "fullScreenWidth");
     Ok(1024.into())
+}
+
+pub fn set_tab_children<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(stage) = this.as_display_object().and_then(|this| this.as_stage()) {
+        // TODO FP actually refers here to the original root,
+        //      even if it has been removed.
+        //      See the test tab_ordering_stage_tab_children_remove_root.
+        if let Some(root) = stage.root_clip() {
+            if let Some(root) = root.as_container() {
+                // Stage's tabChildren setter just propagates the value to the AVM2 root.
+                // It does not affect the value of tabChildren of the stage, which is always true.
+                let value = args.get_bool(0);
+                root.set_tab_children(&mut activation.context, value);
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
 }

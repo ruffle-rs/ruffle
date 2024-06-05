@@ -145,13 +145,12 @@ package flash.display {
         }
 
         override public function get tabChildren():Boolean {
-            return super.tabChildren;
+            // stage.tabChildren is always true,
+            // even if its setter was called with false
+            return true;
         }
 
-        override public function set tabChildren(value:Boolean):void {
-            // Docs say that this operation throws IllegalOperationError,
-            // but in reality this call is just ignored.
-        }
+        override public native function set tabChildren(value:Boolean):void;
 
         override public function set tabEnabled(value:Boolean):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
