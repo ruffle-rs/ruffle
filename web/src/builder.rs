@@ -23,7 +23,7 @@ pub struct RuffleInstanceBuilder {
     pub(crate) allow_fullscreen: bool,
     pub(crate) stage_align: StageAlign,
     pub(crate) force_align: bool,
-    pub(crate) quality: Option<StageQuality>,
+    pub(crate) quality: StageQuality,
     pub(crate) scale: StageScaleMode,
     pub(crate) force_scale: bool,
     pub(crate) frame_rate: Option<f64>,
@@ -58,7 +58,7 @@ impl Default for RuffleInstanceBuilder {
             allow_fullscreen: false,
             stage_align: StageAlign::empty(),
             force_align: false,
-            quality: None,
+            quality: StageQuality::High,
             scale: StageScaleMode::ShowAll,
             force_scale: false,
             frame_rate: None,
@@ -159,14 +159,14 @@ impl RuffleInstanceBuilder {
     #[wasm_bindgen(js_name = "setQuality")]
     pub fn set_quality(&mut self, value: &str) {
         self.quality = match value {
-            "low" => Some(StageQuality::Low),
-            "medium" => Some(StageQuality::Medium),
-            "high" => Some(StageQuality::High),
-            "best" => Some(StageQuality::Best),
-            "8x8" => Some(StageQuality::High8x8),
-            "8x8linear" => Some(StageQuality::High8x8Linear),
-            "16x16" => Some(StageQuality::High16x16),
-            "16x16linear" => Some(StageQuality::High16x16Linear),
+            "low" => StageQuality::Low,
+            "medium" => StageQuality::Medium,
+            "high" => StageQuality::High,
+            "best" => StageQuality::Best,
+            "8x8" => StageQuality::High8x8,
+            "8x8linear" => StageQuality::High8x8Linear,
+            "16x16" => StageQuality::High16x16,
+            "16x16linear" => StageQuality::High16x16Linear,
             _ => return,
         };
     }

@@ -24,7 +24,6 @@ use ruffle_core::{swf, DefaultFont};
 use ruffle_core::{
     Player, PlayerBuilder, PlayerEvent, SandboxType, StaticCallstack, ViewportDimensions,
 };
-use ruffle_render::quality::StageQuality;
 use ruffle_video_software::backend::SoftwareVideoBackend;
 use ruffle_web_common::JsResult;
 use serde::{Deserialize, Serialize};
@@ -498,13 +497,6 @@ impl RuffleHandle {
             }
         };
 
-        let default_quality = if ruffle_web_common::is_mobile_or_tablet() {
-            tracing::info!("Running on a mobile device; defaulting to low quality");
-            StageQuality::Low
-        } else {
-            StageQuality::High
-        };
-
         // Create the external interface.
         if allow_script_access && allow_networking == NetworkingAccessMode::All {
             let interface = Box::new(JavascriptInterface::new(js_player.clone()));
@@ -523,7 +515,7 @@ impl RuffleHandle {
             .with_player_version(config.player_version)
             .with_player_runtime(config.player_runtime)
             .with_compatibility_rules(config.compatibility_rules)
-            .with_quality(config.quality.unwrap_or(default_quality))
+            .with_quality(config.quality)
             .with_align(config.stage_align, config.force_align)
             .with_scale_mode(config.scale, config.force_scale)
             .with_frame_rate(config.frame_rate)
@@ -1250,11 +1242,17 @@ async fn create_renderer(
                     .into_js_result()?
                     .dyn_into()
                     .map_err(|_| "Expected HtmlCanvasElement")?;
-                match ruffle_render_webgl::WebGlRenderBackend::new(&canvas, _is_transparent) {
+                match ruffle_render_webgl::WebGlRenderBackend::new(
+                    &canvas,
+                    _is_transparent,
+                    config.quality,
+                ) {
                     Ok(renderer) => {
                         return Ok((builder.with_renderer(renderer), canvas));
                     }
-                    Err(error) => tracing::error!("Error creating WebGL renderer: {}", error),
+                    Err(error) => {
+                        tracing::error!("Error creating WebGL renderer: {}", error)
+                    }
                 }
             }
             #[cfg(feature = "canvas")]

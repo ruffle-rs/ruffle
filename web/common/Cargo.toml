@@ -9,10 +9,5 @@ license = "MIT OR Apache-2.0"
 workspace = true
 
 [dependencies]
-js-sys = { workspace = true }
 tracing = { workspace = true }
 wasm-bindgen = { workspace = true }
-
-[dependencies.web-sys]
-version = "0.3.69"
-features = ["Window"]

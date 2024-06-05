@@ -61,6 +61,9 @@ export function configureBuilder(
     }
     if (isExplicit(config.quality)) {
         builder.setQuality(config.quality.toLowerCase());
+    } else if (isMobileOrTablet()) {
+        console.log("Running on a mobile device; defaulting to low quality");
+        builder.setQuality("low");
     }
     if (isExplicit(config.scale)) {
         builder.setScale(config.scale.toLowerCase());
@@ -147,4 +150,14 @@ export function parseDuration(value: Duration): SecsDuration {
         return value;
     }
     return value.secs;
+}
+
+/**
+ * Very bad way to guess if we're running on a tablet/mobile.
+ *
+ * @returns True if we believe this may be a mobile or tablet device
+ */
+function isMobileOrTablet(): boolean {
+    // noinspection JSDeprecatedSymbols
+    return typeof window.orientation !== "undefined";
 }
