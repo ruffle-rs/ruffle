@@ -9,6 +9,76 @@ async function contentScriptRegistered() {
 }
 
 async function enable() {
+    if (utils.declarativeNetRequest) {
+        const playerPage = utils.runtime.getURL("/player.html");
+        const rules = [
+            {
+                id: 1,
+                action: {
+                    type: chrome.declarativeNetRequest.RuleActionType.REDIRECT,
+                    redirect: { regexSubstitution: playerPage + "#\\0" },
+                },
+                condition: {
+                    regexFilter: ".*",
+                    responseHeaders: [
+                        {
+                            header: "content-type",
+                            values: [
+                                "application/x-shockwave-flash",
+                                "application/futuresplash",
+                                "application/x-shockwave-flash2-preview",
+                                "application/vnd.adobe.flash.movie",
+                            ],
+                        },
+                    ],
+                    resourceTypes: [
+                        chrome.declarativeNetRequest.ResourceType.MAIN_FRAME,
+                    ],
+                },
+            },
+            {
+                id: 2,
+                action: {
+                    type: chrome.declarativeNetRequest.RuleActionType.REDIRECT,
+                    redirect: { regexSubstitution: playerPage + "#\\0" },
+                },
+                condition: {
+                    regexFilter: "^.*\\.s(?:wf|pl)(\\?.*|#.*|)$",
+                    responseHeaders: [
+                        {
+                            header: "content-type",
+                            values: [
+                                "application/octet-stream",
+                                "application/binary-stream",
+                                "",
+                            ],
+                        },
+                    ],
+                    resourceTypes: [
+                        chrome.declarativeNetRequest.ResourceType.MAIN_FRAME,
+                    ],
+                },
+            },
+            {
+                id: 3,
+                action: {
+                    type: chrome.declarativeNetRequest.RuleActionType.REDIRECT,
+                    redirect: { regexSubstitution: playerPage + "#\\0" },
+                },
+                condition: {
+                    regexFilter: "^.*\\.s(?:wf|pl)(\\?.*|#.*|)$",
+                    excludedResponseHeaders: [{ header: "content-type" }],
+                    resourceTypes: [
+                        chrome.declarativeNetRequest.ResourceType.MAIN_FRAME,
+                    ],
+                },
+            },
+        ];
+        await utils.declarativeNetRequest.updateDynamicRules({
+            removeRuleIds: [1, 2, 3],
+            addRules: rules,
+        });
+    }
     if (
         !utils.scripting ||
         (utils.scripting.ExecutionWorld && !utils.scripting.ExecutionWorld.MAIN)
@@ -46,6 +116,11 @@ async function enable() {
 }
 
 async function disable() {
+    if (utils.declarativeNetRequest) {
+        await utils.declarativeNetRequest.updateDynamicRules({
+            removeRuleIds: [1, 2, 3],
+        });
+    }
     if (
         !utils.scripting ||
         (utils.scripting.ExecutionWorld && !utils.scripting.ExecutionWorld.MAIN)
