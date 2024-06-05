@@ -9,11 +9,10 @@ import {
     signExtensions,
     referenceTypes,
 } from "wasm-feature-detect";
-import type { RuffleHandle } from "../dist/ruffle_web";
+import type { RuffleInstanceBuilder } from "../dist/ruffle_web";
 import { setPolyfillsOnLoad } from "./js-polyfills";
 import { publicPath } from "./public-path";
 import { BaseLoadOptions } from "./load-options";
-import { RufflePlayer } from "./ruffle-player";
 
 declare global {
     let __webpack_public_path__: string;
@@ -30,13 +29,13 @@ type ProgressCallback = (bytesLoaded: number, bytesTotal: number) => void;
  *
  * @param config The `window.RufflePlayer.config` object.
  * @param progressCallback The callback that will be run with Ruffle's download progress.
- * @returns A ruffle constructor that may be used to create new Ruffle
+ * @returns A ruffle-builder constructor that may be used to create new RuffleInstanceBuilder
  * instances.
  */
 async function fetchRuffle(
     config: BaseLoadOptions,
     progressCallback?: ProgressCallback,
-): Promise<typeof RuffleHandle> {
+): Promise<typeof RuffleInstanceBuilder> {
     // Apply some pure JavaScript polyfills to prevent conflicts with external
     // libraries, if needed.
     setPolyfillsOnLoad();
@@ -66,7 +65,7 @@ async function fetchRuffle(
 
     // Note: The argument passed to import() has to be a simple string literal,
     // otherwise some bundler will get confused and won't include the module?
-    const { default: init, RuffleHandle } = await (extensionsSupported
+    const { default: init, RuffleInstanceBuilder } = await (extensionsSupported
         ? import("../dist/ruffle_web-wasm_extensions")
         : import("../dist/ruffle_web"));
     let response;
@@ -114,32 +113,28 @@ async function fetchRuffle(
 
     await init(response);
 
-    return RuffleHandle;
+    return RuffleInstanceBuilder;
 }
 
-let nativeConstructor: Promise<typeof RuffleHandle> | null = null;
+let nativeConstructor: Promise<typeof RuffleInstanceBuilder> | null = null;
 
 /**
  * Obtain an instance of `Ruffle`.
  *
- * This function returns a promise which yields `Ruffle` asynchronously.
+ * This function returns a promise which yields a new `RuffleInstanceBuilder` asynchronously.
  *
- * @param container The container that the resulting canvas will be added to.
- * @param player The `RufflePlayer` object responsible for this instance of Ruffle.
  * @param config The `window.RufflePlayer.config` object.
  * @param progressCallback The callback that will be run with Ruffle's download progress.
- * @returns A ruffle instance.
+ * @returns A ruffle instance builder.
  */
-export async function loadRuffle(
-    container: HTMLElement,
-    player: RufflePlayer,
+export async function createRuffleBuilder(
     config: BaseLoadOptions,
     progressCallback?: ProgressCallback,
-): Promise<RuffleHandle> {
+): Promise<RuffleInstanceBuilder> {
     if (nativeConstructor === null) {
         nativeConstructor = fetchRuffle(config, progressCallback);
     }
 
     const constructor = await nativeConstructor;
-    return new constructor(container, player, config);
+    return new constructor();
 }

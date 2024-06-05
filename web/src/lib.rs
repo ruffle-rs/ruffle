@@ -3,6 +3,7 @@
 
 //! Ruffle web frontend.
 mod audio;
+mod builder;
 mod external_interface;
 mod input;
 mod log_adapter;
@@ -10,20 +11,19 @@ mod navigator;
 mod storage;
 mod ui;
 
+use crate::builder::RuffleInstanceBuilder;
 use external_interface::{external_to_js_value, js_to_external_value, JavascriptInterface};
 use input::{web_key_to_codepoint, web_to_ruffle_key_code, web_to_ruffle_text_control};
-use js_sys::{Error as JsError, Promise, Uint8Array};
-use ruffle_core::backend::navigator::OpenURLMode;
+use js_sys::{Error as JsError, Uint8Array};
 use ruffle_core::backend::ui::FontDefinition;
 use ruffle_core::compatibility_rules::CompatibilityRules;
-use ruffle_core::config::{Letterbox, NetworkingAccessMode};
+use ruffle_core::config::NetworkingAccessMode;
 use ruffle_core::context::UpdateContext;
 use ruffle_core::events::{MouseButton, MouseWheelDelta, TextControlCode};
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{swf, DefaultFont};
 use ruffle_core::{
-    Color, Player, PlayerBuilder, PlayerEvent, PlayerRuntime, SandboxType, StageAlign,
-    StageScaleMode, StaticCallstack, ViewportDimensions,
+    Player, PlayerBuilder, PlayerEvent, SandboxType, StaticCallstack, ViewportDimensions,
 };
 use ruffle_render::quality::StageQuality;
 use ruffle_video_software::backend::SoftwareVideoBackend;
@@ -34,7 +34,6 @@ use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Once;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
 use std::{cell::RefCell, error::Error, num::NonZeroI32};
 use tracing_subscriber::layer::{Layered, SubscriberExt};
 use tracing_subscriber::registry::Registry;
@@ -188,193 +187,13 @@ extern "C" {
     fn display_unsupported_video(this: &JavascriptPlayer, url: &str);
 }
 
-fn deserialize_color<'de, D>(deserializer: D) -> Result<Option<Color>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let color: Option<String> = serde::Deserialize::deserialize(deserializer)?;
-    let color = match color {
-        Some(color) => color,
-        None => return Ok(None),
-    };
-
-    // Parse classic HTML hex color (XXXXXX or #XXXXXX), attempting to match browser behavior.
-    // Optional leading #.
-    let color = color.strip_prefix('#').unwrap_or(&color);
-
-    // Fail if less than 6 digits.
-    let color = match color.get(..6) {
-        Some(color) => color,
-        None => return Ok(None),
-    };
-
-    let rgb = color.chars().fold(0, |acc, c| {
-        // Each char represents 4-bits. Invalid hex digit is allowed (converts to 0).
-        let digit = c.to_digit(16).unwrap_or_default();
-        (acc << 4) | digit
-    });
-    Ok(Some(Color::from_rgb(rgb, 255)))
-}
-
-fn deserialize_log_level<'de, D>(deserializer: D) -> Result<tracing::Level, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    use serde::de::Error;
-    let value: String = serde::Deserialize::deserialize(deserializer)?;
-    tracing::Level::from_str(&value).map_err(Error::custom)
-}
-
-fn deserialize_player_runtime<'de, D>(deserializer: D) -> Result<PlayerRuntime, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let value: String = serde::Deserialize::deserialize(deserializer)?;
-    Ok(match value.as_str() {
-        "air" => PlayerRuntime::AIR,
-        "flashPlayer" => PlayerRuntime::FlashPlayer,
-        _ => Default::default(),
-    })
-}
-
-fn deserialize_duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    use serde::de::Error;
-
-    struct DurationVisitor;
-
-    impl<'de> serde::de::Visitor<'de> for DurationVisitor {
-        type Value = Duration;
-
-        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-            formatter.write_str(
-                "Either a non-negative number (indicating seconds) or a {secs: number, nanos: number}."
-            )
-        }
-
-        fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
-        where
-            E: Error,
-        {
-            Ok(Duration::from_secs_f64(if value < 1 {
-                1.0
-            } else {
-                value as f64
-            }))
-        }
-
-        fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
-        where
-            E: Error,
-        {
-            Ok(Duration::from_secs_f64(if value.is_nan() || value < 1.0 {
-                1.0
-            } else {
-                value
-            }))
-        }
-
-        fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
-        where
-            A: serde::de::MapAccess<'de>,
-        {
-            let mut secs = None;
-            let mut nanos = None;
-            while let Some(key) = map.next_key::<String>()? {
-                let key_s = key.as_str();
-
-                match key_s {
-                    "secs" => {
-                        if secs.is_some() {
-                            return Err(Error::duplicate_field("secs"));
-                        }
-                        secs = Some(map.next_value()?);
-                    }
-                    "nanos" => {
-                        if nanos.is_some() {
-                            return Err(Error::duplicate_field("nanos"));
-                        }
-                        nanos = Some(map.next_value()?);
-                    }
-                    _ => return Err(Error::unknown_field(key_s, &["secs", "nanos"])),
-                }
-            }
-            let secs = secs.ok_or_else(|| Error::missing_field("secs"))?;
-            let nanos = nanos.ok_or_else(|| Error::missing_field("nanos"))?;
-            Ok(Duration::new(secs, nanos))
-        }
-    }
-
-    deserializer.deserialize_any(DurationVisitor)
-}
-
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SocketProxy {
     host: String,
     port: u16,
 
     proxy_url: String,
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct Config {
-    allow_script_access: bool,
-
-    #[serde(deserialize_with = "deserialize_color")]
-    background_color: Option<Color>,
-
-    letterbox: Letterbox,
-
-    upgrade_to_https: bool,
-
-    compatibility_rules: bool,
-
-    #[serde(rename = "base")]
-    base_url: Option<String>,
-
-    #[serde(rename = "menu")]
-    show_menu: bool,
-
-    allow_fullscreen: bool,
-
-    salign: Option<String>,
-
-    force_align: bool,
-
-    quality: Option<String>,
-
-    scale: Option<String>,
-
-    force_scale: bool,
-
-    frame_rate: Option<f64>,
-
-    wmode: Option<String>,
-
-    #[serde(deserialize_with = "deserialize_log_level")]
-    log_level: tracing::Level,
-
-    #[serde(deserialize_with = "deserialize_duration")]
-    max_execution_duration: Duration,
-
-    player_version: Option<u8>,
-
-    preferred_renderer: Option<String>,
-
-    open_url_mode: OpenURLMode,
-
-    allow_networking: NetworkingAccessMode,
-
-    socket_proxy: Vec<SocketProxy>,
-
-    credential_allow_list: Vec<String>,
-
-    #[serde(deserialize_with = "deserialize_player_runtime")]
-    player_runtime: PlayerRuntime,
 }
 
 /// Metadata about the playing SWF file to be passed back to JavaScript.
@@ -394,27 +213,6 @@ struct MovieMetadata {
 
 #[wasm_bindgen]
 impl RuffleHandle {
-    #[allow(clippy::new_ret_no_self)]
-    #[wasm_bindgen(constructor)]
-    pub fn new(parent: HtmlElement, js_player: JavascriptPlayer, config: JsValue) -> Promise {
-        wasm_bindgen_futures::future_to_promise(async move {
-            let config: Config = serde_wasm_bindgen::from_value(config)
-                .map_err(|e| format!("Error parsing config: {e}"))?;
-
-            if RUFFLE_GLOBAL_PANIC.is_completed() {
-                // If an actual panic happened, then we can't trust the state it left us in.
-                // Prevent future players from loading so that they can inform the user about the error.
-                return Err("Ruffle is panicking!".into());
-            }
-            set_panic_hook();
-
-            let ruffle = Self::new_internal(parent, js_player, config)
-                .await
-                .map_err(|err| JsValue::from(format!("Error creating player: {}", err)))?;
-            Ok(JsValue::from(ruffle))
-        })
-    }
-
     /// Stream an arbitrary movie file from (presumably) the Internet.
     ///
     /// This method should only be called once per player.
@@ -646,7 +444,7 @@ impl RuffleHandle {
     async fn new_internal(
         parent: HtmlElement,
         js_player: JavascriptPlayer,
-        config: Config,
+        config: RuffleInstanceBuilder,
     ) -> Result<Self, Box<dyn Error>> {
         // Redirect Log to Tracing if it isn't already
         let _ = tracing_log::LogTracer::builder()
@@ -730,63 +528,9 @@ impl RuffleHandle {
             } else {
                 CompatibilityRules::empty()
             })
-            .with_quality(
-                config
-                    .quality
-                    .and_then(|q| {
-                        let quality = match q.to_ascii_lowercase().as_str() {
-                            "low" => StageQuality::Low,
-                            "medium" => StageQuality::Medium,
-                            "high" => StageQuality::High,
-                            "best" => StageQuality::Best,
-                            "8x8" => StageQuality::High8x8,
-                            "8x8linear" => StageQuality::High8x8Linear,
-                            "16x16" => StageQuality::High16x16,
-                            "16x16linear" => StageQuality::High16x16Linear,
-                            _ => return None,
-                        };
-
-                        Some(quality)
-                    })
-                    .unwrap_or(default_quality),
-            )
-            .with_align(
-                config
-                    .salign
-                    .map(|s| {
-                        // Chars get converted into flags.
-                        // This means "tbbtlbltblbrllrbltlrtbl" is valid, resulting in "TBLR".
-                        let mut align = StageAlign::default();
-                        for c in s.bytes().map(|c| c.to_ascii_uppercase()) {
-                            match c {
-                                b'T' => align.insert(StageAlign::TOP),
-                                b'B' => align.insert(StageAlign::BOTTOM),
-                                b'L' => align.insert(StageAlign::LEFT),
-                                b'R' => align.insert(StageAlign::RIGHT),
-                                _ => (),
-                            }
-                        }
-                        align
-                    })
-                    .unwrap_or_default(),
-                config.force_align,
-            )
-            .with_scale_mode(
-                config
-                    .scale
-                    .and_then(|s| {
-                        let scale_mode = match s.to_ascii_lowercase().as_str() {
-                            "exactfit" => StageScaleMode::ExactFit,
-                            "noborder" => StageScaleMode::NoBorder,
-                            "noscale" => StageScaleMode::NoScale,
-                            "showall" => StageScaleMode::ShowAll,
-                            _ => return None,
-                        };
-                        Some(scale_mode)
-                    })
-                    .unwrap_or_default(),
-                config.force_scale,
-            )
+            .with_quality(config.quality.unwrap_or(default_quality))
+            .with_align(config.stage_align, config.force_align)
+            .with_scale_mode(config.scale.unwrap_or_default(), config.force_scale)
             .with_frame_rate(config.frame_rate)
             // FIXME - should this be configurable?
             .with_sandbox_type(SandboxType::Remote)
@@ -1421,7 +1165,7 @@ pub enum RuffleInstanceError {
 async fn create_renderer(
     builder: PlayerBuilder,
     document: &web_sys::Document,
-    config: &Config,
+    config: &RuffleInstanceBuilder,
 ) -> Result<(PlayerBuilder, HtmlCanvasElement), Box<dyn Error>> {
     #[cfg(not(any(
         feature = "canvas",
