@@ -16,7 +16,6 @@ use external_interface::{external_to_js_value, js_to_external_value, JavascriptI
 use input::{web_key_to_codepoint, web_to_ruffle_key_code, web_to_ruffle_text_control};
 use js_sys::{Error as JsError, Uint8Array};
 use ruffle_core::backend::ui::FontDefinition;
-use ruffle_core::compatibility_rules::CompatibilityRules;
 use ruffle_core::config::NetworkingAccessMode;
 use ruffle_core::context::UpdateContext;
 use ruffle_core::events::{MouseButton, MouseWheelDelta, TextControlCode};
@@ -523,11 +522,7 @@ impl RuffleHandle {
             .with_max_execution_duration(config.max_execution_duration)
             .with_player_version(config.player_version)
             .with_player_runtime(config.player_runtime)
-            .with_compatibility_rules(if config.compatibility_rules {
-                CompatibilityRules::default()
-            } else {
-                CompatibilityRules::empty()
-            })
+            .with_compatibility_rules(config.compatibility_rules)
             .with_quality(config.quality.unwrap_or(default_quality))
             .with_align(config.stage_align, config.force_align)
             .with_scale_mode(config.scale.unwrap_or_default(), config.force_scale)
