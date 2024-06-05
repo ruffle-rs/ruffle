@@ -1,0 +1,5 @@
+stage.tabChildren = true
+root.tabChildren = true
+Removing the root movie and setting tabChildren to false
+stage.tabChildren = true
+root.tabChildren = false
