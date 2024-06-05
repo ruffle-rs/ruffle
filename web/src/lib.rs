@@ -391,27 +391,23 @@ impl RuffleHandle {
         let window = web_sys::window().ok_or("Expected window")?;
 
         let (renderer, canvas) = config.create_renderer().await?;
-        let mut builder = PlayerBuilder::new().with_boxed_renderer(renderer);
-
         parent
             .append_child(&canvas.clone().into())
             .into_js_result()?;
 
-        if let Ok(audio) = audio::WebAudioBackend::new(log_subscriber.clone()) {
-            builder = builder.with_audio(audio);
-        } else {
-            tracing::error!("Unable to create audio backend. No audio will be played.");
-        }
-        builder = builder.with_navigator(navigator::WebNavigatorBackend::new(
-            allow_script_access,
-            allow_networking,
-            config.upgrade_to_https,
-            config.base_url.clone(),
-            log_subscriber.clone(),
-            config.open_url_mode,
-            config.socket_proxy.clone(),
-            config.credential_allow_list.clone(),
-        ));
+        let mut builder = PlayerBuilder::new()
+            .with_boxed_renderer(renderer)
+            .with_boxed_audio(config.create_audio_backend(log_subscriber.clone()))
+            .with_navigator(navigator::WebNavigatorBackend::new(
+                allow_script_access,
+                allow_networking,
+                config.upgrade_to_https,
+                config.base_url.clone(),
+                log_subscriber.clone(),
+                config.open_url_mode,
+                config.socket_proxy.clone(),
+                config.credential_allow_list.clone(),
+            ));
 
         match window.local_storage() {
             Ok(Some(s)) => {
