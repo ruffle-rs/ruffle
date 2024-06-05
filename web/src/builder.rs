@@ -1,4 +1,4 @@
-use crate::{set_panic_hook, JavascriptPlayer, RuffleHandle, SocketProxy, RUFFLE_GLOBAL_PANIC};
+use crate::{JavascriptPlayer, RuffleHandle, SocketProxy, RUFFLE_GLOBAL_PANIC};
 use js_sys::Promise;
 use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_core::backend::ui::FontDefinition;
@@ -307,7 +307,6 @@ impl RuffleInstanceBuilder {
                 // Prevent future players from loading so that they can inform the user about the error.
                 return Err("Ruffle is panicking!".into());
             }
-            set_panic_hook();
 
             let ruffle = RuffleHandle::new_internal(parent, js_player, copy)
                 .await

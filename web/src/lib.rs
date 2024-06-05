@@ -383,12 +383,6 @@ impl RuffleHandle {
         js_player: JavascriptPlayer,
         config: RuffleInstanceBuilder,
     ) -> Result<Self, Box<dyn Error>> {
-        // Redirect Log to Tracing if it isn't already
-        let _ = tracing_log::LogTracer::builder()
-            // wgpu crates are extremely verbose
-            .ignore_crate("wgpu_hal")
-            .ignore_crate("wgpu_core")
-            .init();
         let log_subscriber = Arc::new(
             Registry::default().with(WASMLayer::new(
                 WASMLayerConfigBuilder::new()
@@ -1217,48 +1211,6 @@ async fn create_renderer(
     Err("Unable to create renderer".into())
 }
 
-fn set_panic_hook() {
-    static HOOK_HAS_BEEN_SET: Once = Once::new();
-    HOOK_HAS_BEEN_SET.call_once(|| {
-        std::panic::set_hook(Box::new(|info| {
-            RUFFLE_GLOBAL_PANIC.call_once(|| {
-                console_error_panic_hook::hook(info);
-
-                let _ = INSTANCES.try_with(|instances| {
-                    let mut players = Vec::new();
-
-                    // We have to be super cautious to not panic here, and not hold any borrows for
-                    // longer than we need to.
-                    // We grab all of the JsPlayers out from the list and release our hold, as they
-                    // may call back to destroy() - which will mutably borrow instances.
-
-                    if let Ok(instances) = instances.try_borrow() {
-                        for (_, instance) in instances.iter() {
-                            if let Ok((player, Some(callstack))) = instance
-                                .try_borrow()
-                                .map(|i| (i.js_player.clone(), i.callstack.clone()))
-                            {
-                                players.push((player, callstack));
-                            }
-                        }
-                    }
-                    for (player, callstack) in players {
-                        let error = JsError::new(&info.to_string());
-                        callstack.avm2(|callstack| {
-                            let _ = js_sys::Reflect::set(
-                                &error,
-                                &"avmStack".into(),
-                                &callstack.to_string().into(),
-                            );
-                        });
-                        player.panic(&error);
-                    }
-                });
-            });
-        }));
-    });
-}
-
 fn parse_movie_parameters(input: &JsValue) -> Vec<(String, String)> {
     let mut params = Vec::new();
     if let Ok(keys) = js_sys::Reflect::own_keys(input) {
@@ -1271,4 +1223,64 @@ fn parse_movie_parameters(input: &JsValue) -> Vec<(String, String)> {
         }
     }
     params
+}
+
+#[wasm_bindgen(start)]
+fn global_init() {
+    // Redirect Log to Tracing
+    let _ = tracing_log::LogTracer::builder()
+        // wgpu crates are extremely verbose
+        .ignore_crate("wgpu_hal")
+        .ignore_crate("wgpu_core")
+        .init();
+
+    // This is the default, global log subscriber.
+    // It should only catch things that aren't attached to a specific Ruffle instance,
+    // as they have their own configurable loggers.
+    let _ = tracing::subscriber::set_global_default(
+        Registry::default().with(WASMLayer::new(
+            WASMLayerConfigBuilder::new()
+                .set_max_level(tracing::Level::INFO)
+                .build(),
+        )),
+    );
+
+    std::panic::set_hook(Box::new(|info| {
+        RUFFLE_GLOBAL_PANIC.call_once(|| {
+            console_error_panic_hook::hook(info);
+
+            let _ = INSTANCES.try_with(|instances| {
+                let mut players = Vec::new();
+
+                // We have to be super cautious to not panic here, and not hold any borrows for
+                // longer than we need to.
+                // We grab all of the JsPlayers out from the list and release our hold, as they
+                // may call back to destroy() - which will mutably borrow instances.
+
+                if let Ok(instances) = instances.try_borrow() {
+                    for (_, instance) in instances.iter() {
+                        if let Ok((player, Some(callstack))) = instance
+                            .try_borrow()
+                            .map(|i| (i.js_player.clone(), i.callstack.clone()))
+                        {
+                            players.push((player, callstack));
+                        }
+                    }
+                }
+                for (player, callstack) in players {
+                    let error = JsError::new(&info.to_string());
+                    callstack.avm2(|callstack| {
+                        let _ = js_sys::Reflect::set(
+                            &error,
+                            &"avmStack".into(),
+                            &callstack.to_string().into(),
+                        );
+                    });
+                    player.panic(&error);
+                }
+            });
+        });
+    }));
+
+    tracing::info!("Ruffle WASM module has been initialized");
 }
