@@ -1,5 +1,5 @@
 import type { RuffleHandle } from "../dist/ruffle_web";
-import { loadRuffle } from "./load-ruffle";
+import { createRuffleBuilder } from "./load-ruffle";
 import { applyStaticStyles, ruffleShadowTemplate } from "./shadow-template";
 import { lookupElement } from "./register-element";
 import { DEFAULT_CONFIG } from "./config";
@@ -17,6 +17,7 @@ import { buildInfo } from "./build-info";
 import { text, textAsParagraphs } from "./i18n";
 import JSZip from "jszip";
 import { isExtension } from "./current-script";
+import { configureBuilder } from "./internal/builder";
 
 const RUFFLE_ORIGIN = "https://ruffle.rs";
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
@@ -672,9 +673,7 @@ export class RufflePlayer extends HTMLElement {
                 'The configuration option contextMenu no longer takes a boolean. Use "on", "off", or "rightClickOnly".',
             );
         }
-        this.instance = await loadRuffle(
-            this.container,
-            this,
+        const builder = await createRuffleBuilder(
             this.loadedConfig || {},
             this.onRuffleDownloadProgress.bind(this),
         ).catch((e) => {
@@ -712,6 +711,12 @@ export class RufflePlayer extends HTMLElement {
                     e.ruffleIndexError = PanicError.WasmDisabledMicrosoftEdge;
                 }
             }
+            this.panic(e);
+            throw e;
+        });
+        configureBuilder(builder, this.loadedConfig || {});
+        this.instance = await builder.build(this.container, this).catch((e) => {
+            console.error(`Serious error loading Ruffle: ${e}`);
             this.panic(e);
             throw e;
         });
