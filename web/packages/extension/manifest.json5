@@ -43,7 +43,7 @@
         "page": "options.html",
         "open_in_tab": true,
     },
-    "host_permissions": ["<all_urls>"], // To allow script injecting + the internal player to bypass CORS
+    "host_permissions": ["<all_urls>"], // To allow script injecting + the internal player to bypass CORS + SWF takeover
     "permissions": [
         "storage",
         "scripting",

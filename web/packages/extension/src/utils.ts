@@ -28,6 +28,10 @@ export let runtime: typeof browser.runtime | typeof chrome.runtime;
 
 export let permissions: typeof browser.permissions | typeof chrome.permissions;
 
+export let declarativeNetRequest:
+    | typeof browser.declarativeNetRequest
+    | typeof chrome.declarativeNetRequest;
+
 function promisify<T>(
     func: (callback: (result: T) => void) => void,
 ): Promise<T> {
@@ -50,6 +54,7 @@ if (typeof browser !== "undefined") {
     tabs = browser.tabs;
     runtime = browser.runtime;
     permissions = browser.permissions;
+    declarativeNetRequest = browser.declarativeNetRequest;
 } else if (typeof chrome !== "undefined") {
     i18n = chrome.i18n;
     scripting = chrome.scripting as ScriptingType;
@@ -57,6 +62,7 @@ if (typeof browser !== "undefined") {
     tabs = chrome.tabs;
     runtime = chrome.runtime;
     permissions = chrome.permissions;
+    declarativeNetRequest = chrome.declarativeNetRequest;
 } else {
     throw new Error("Extension API not found.");
 }
