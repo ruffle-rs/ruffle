@@ -15,12 +15,10 @@ use crate::builder::RuffleInstanceBuilder;
 use external_interface::{external_to_js_value, js_to_external_value, JavascriptInterface};
 use input::{web_key_to_codepoint, web_to_ruffle_key_code, web_to_ruffle_text_control};
 use js_sys::{Error as JsError, Uint8Array};
-use ruffle_core::backend::ui::FontDefinition;
 use ruffle_core::config::NetworkingAccessMode;
 use ruffle_core::context::UpdateContext;
 use ruffle_core::events::{MouseButton, MouseWheelDelta, TextControlCode};
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::{swf, DefaultFont};
 use ruffle_core::{
     Player, PlayerBuilder, PlayerEvent, SandboxType, StaticCallstack, ViewportDimensions,
 };
@@ -332,65 +330,6 @@ impl RuffleHandle {
         // Instance is dropped at this point.
     }
 
-    pub fn add_font(&mut self, font_name: &str, data: Uint8Array) {
-        let _ = self.with_core_mut(|core| {
-            let bytes: Vec<u8> = data.to_vec();
-            if let Ok(swf_stream) = swf::decompress_swf(&bytes[..]) {
-                if let Ok(swf) = swf::parse_swf(&swf_stream) {
-                    let encoding = swf::SwfStr::encoding_for_version(swf.header.version());
-                    for tag in swf.tags {
-                        match tag {
-                            swf::Tag::DefineFont(_font) => {
-                                tracing::warn!("DefineFont1 tag is not yet supported by Ruffle, inside font swf {font_name}");
-                            }
-                            swf::Tag::DefineFont2(font) => {
-                                tracing::debug!(
-                                    "Loaded font {} from font swf {font_name}",
-                                    font.name.to_str_lossy(encoding)
-                                );
-                                core.register_device_font(FontDefinition::SwfTag(*font, encoding));
-                            }
-                            swf::Tag::DefineFont4(font) => {
-                                let name = font.name.to_str_lossy(encoding);
-                                if let Some(data) = font.data {
-                                    tracing::debug!("Loaded font {name} from font swf {font_name}");
-                                    core.register_device_font(FontDefinition::FontFile { name: name.to_string(), is_bold: font.is_bold, is_italic: font.is_bold, data: data.to_vec(), index: 0 })
-                                } else {
-                                    tracing::warn!("Font {name} from font swf {font_name} contains no data");
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
-                    return;
-                }
-            }
-
-            tracing::warn!("Font source {font_name} was not recognised (not a valid SWF?)");
-        });
-    }
-
-    pub fn set_default_font(&mut self, default_name: &str, fonts: Vec<JsValue>) {
-        let _ = self.with_core_mut(|core| {
-            let default = match default_name {
-                "sans" => DefaultFont::Sans,
-                "serif" => DefaultFont::Serif,
-                "typewriter" => DefaultFont::Typewriter,
-                name => {
-                    tracing::error!("Unknown default font name '{name}'");
-                    return;
-                }
-            };
-            core.set_default_font(
-                default,
-                fonts
-                    .into_iter()
-                    .flat_map(|value| value.as_string())
-                    .collect(),
-            );
-        });
-    }
-
     #[allow(clippy::boxed_local)] // for js_bind
     pub fn call_exposed_callback(&self, name: &str, args: Box<[JsValue]>) -> JsValue {
         let args: Vec<_> = args.iter().map(js_to_external_value).collect();
@@ -481,11 +420,11 @@ impl RuffleHandle {
             allow_script_access,
             allow_networking,
             config.upgrade_to_https,
-            config.base_url,
+            config.base_url.clone(),
             log_subscriber.clone(),
             config.open_url_mode,
-            config.socket_proxy,
-            config.credential_allow_list,
+            config.socket_proxy.clone(),
+            config.credential_allow_list.clone(),
         ));
 
         match window.local_storage() {
@@ -514,7 +453,7 @@ impl RuffleHandle {
             .with_max_execution_duration(config.max_execution_duration)
             .with_player_version(config.player_version)
             .with_player_runtime(config.player_runtime)
-            .with_compatibility_rules(config.compatibility_rules)
+            .with_compatibility_rules(config.compatibility_rules.clone())
             .with_quality(config.quality)
             .with_align(config.stage_align, config.force_align)
             .with_scale_mode(config.scale, config.force_scale)
@@ -527,10 +466,12 @@ impl RuffleHandle {
         let mut callstack = None;
         if let Ok(mut core) = core.try_lock() {
             // Set config parameters.
+            core.set_volume(config.volume);
             core.set_background_color(config.background_color);
             core.set_show_menu(config.show_menu);
             core.set_allow_fullscreen(config.allow_fullscreen);
             core.set_window_mode(config.wmode.as_deref().unwrap_or("window"));
+            config.setup_fonts(&mut core);
             callstack = Some(core.callstack());
         }
 
