@@ -525,7 +525,7 @@ impl RuffleHandle {
             .with_compatibility_rules(config.compatibility_rules)
             .with_quality(config.quality.unwrap_or(default_quality))
             .with_align(config.stage_align, config.force_align)
-            .with_scale_mode(config.scale.unwrap_or_default(), config.force_scale)
+            .with_scale_mode(config.scale, config.force_scale)
             .with_frame_rate(config.frame_rate)
             // FIXME - should this be configurable?
             .with_sandbox_type(SandboxType::Remote)

@@ -24,7 +24,7 @@ pub struct RuffleInstanceBuilder {
     pub(crate) stage_align: StageAlign,
     pub(crate) force_align: bool,
     pub(crate) quality: Option<StageQuality>,
-    pub(crate) scale: Option<StageScaleMode>,
+    pub(crate) scale: StageScaleMode,
     pub(crate) force_scale: bool,
     pub(crate) frame_rate: Option<f64>,
     pub(crate) wmode: Option<String>, // TODO: Enumify? `Player` is working in strings here too...
@@ -59,7 +59,7 @@ impl Default for RuffleInstanceBuilder {
             stage_align: StageAlign::empty(),
             force_align: false,
             quality: None,
-            scale: None,
+            scale: StageScaleMode::ShowAll,
             force_scale: false,
             frame_rate: None,
             wmode: None,
@@ -174,10 +174,10 @@ impl RuffleInstanceBuilder {
     #[wasm_bindgen(js_name = "setScale")]
     pub fn set_scale(&mut self, value: &str) {
         self.scale = match value {
-            "exactfit" => Some(StageScaleMode::ExactFit),
-            "noborder" => Some(StageScaleMode::NoBorder),
-            "noscale" => Some(StageScaleMode::NoScale),
-            "showall" => Some(StageScaleMode::ShowAll),
+            "exactfit" => StageScaleMode::ExactFit,
+            "noborder" => StageScaleMode::NoBorder,
+            "noscale" => StageScaleMode::NoScale,
+            "showall" => StageScaleMode::ShowAll,
             _ => return,
         };
     }
