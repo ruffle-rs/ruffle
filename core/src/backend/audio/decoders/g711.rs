@@ -88,7 +88,7 @@ impl<R: AsRef<[u8]> + Send + Sync> SeekableDecoder for G711ALawDecoder<Cursor<R>
 
     #[inline]
     fn seek_to_sample_frame(&mut self, frame: u32) {
-        let pos = u64::from(frame) * u64::from(self.num_channels()) * 2;
+        let pos = u64::from(frame);
         self.reader.set_position(pos);
     }
 }
@@ -138,7 +138,7 @@ impl<R: AsRef<[u8]> + Send + Sync> SeekableDecoder for G711MuLawDecoder<Cursor<R
 
     #[inline]
     fn seek_to_sample_frame(&mut self, frame: u32) {
-        let pos: u64 = u64::from(frame) * u64::from(self.num_channels()) * 2;
+        let pos: u64 = u64::from(frame);
         self.reader.set_position(pos);
     }
 }
