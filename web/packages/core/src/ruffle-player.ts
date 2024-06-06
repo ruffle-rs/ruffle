@@ -734,23 +734,15 @@ export class RufflePlayer extends HTMLElement {
             }
         }
 
-        if (this.loadedConfig?.defaultFonts?.sans) {
-            builder.setDefaultFont(
-                "sans",
-                this.loadedConfig?.defaultFonts.sans,
-            );
-        }
-        if (this.loadedConfig?.defaultFonts?.serif) {
-            builder!.setDefaultFont(
-                "serif",
-                this.loadedConfig?.defaultFonts.serif,
-            );
-        }
-        if (this.loadedConfig?.defaultFonts?.typewriter) {
-            builder!.setDefaultFont(
-                "typewriter",
-                this.loadedConfig?.defaultFonts.typewriter,
-            );
+        for (const key in this.loadedConfig?.defaultFonts) {
+            const names = (
+                this.loadedConfig.defaultFonts as {
+                    [key: string]: Array<string>;
+                }
+            )[key];
+            if (names) {
+                builder.setDefaultFont(key, names);
+            }
         }
 
         this.instance = await builder.build(this.container, this).catch((e) => {
