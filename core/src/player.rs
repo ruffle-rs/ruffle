@@ -675,6 +675,9 @@ impl Player {
                     ContextMenuCallback::QualityHigh => {
                         context.stage.set_quality(context, StageQuality::High)
                     }
+                    ContextMenuCallback::TextControl { code, text } => {
+                        text.text_control_input(*code, context)
+                    }
                     _ => {}
                 }
                 Self::run_actions(context);
