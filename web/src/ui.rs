@@ -222,6 +222,12 @@ impl UiBackend for WebUiBackend {
         self.clipboard_content.to_owned()
     }
 
+    fn clipboard_available(&mut self) -> bool {
+        // On web, we have to assume that the clipboard
+        // is available due to the JS `paste` event.
+        true
+    }
+
     fn set_clipboard_content(&mut self, content: String) {
         self.clipboard_content = content.to_owned();
         // We use `document.execCommand("copy")` as `navigator.clipboard.writeText("string")`

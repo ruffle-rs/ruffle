@@ -142,7 +142,7 @@ impl<'gc> ContextMenuState<'gc> {
         let language = &context.ui.language();
         self.push(
             ContextMenuItem {
-                enabled: text.is_text_control_applicable(TextControlCode::Cut),
+                enabled: text.is_text_control_applicable(TextControlCode::Cut, context),
                 separator_before: true,
                 caption: core_text(language, "context-menu-cut"),
                 checked: false,
@@ -154,7 +154,7 @@ impl<'gc> ContextMenuState<'gc> {
         );
         self.push(
             ContextMenuItem {
-                enabled: text.is_text_control_applicable(TextControlCode::Copy),
+                enabled: text.is_text_control_applicable(TextControlCode::Copy, context),
                 separator_before: false,
                 caption: core_text(language, "context-menu-copy"),
                 checked: false,
@@ -166,7 +166,7 @@ impl<'gc> ContextMenuState<'gc> {
         );
         self.push(
             ContextMenuItem {
-                enabled: text.is_text_control_applicable(TextControlCode::Paste),
+                enabled: text.is_text_control_applicable(TextControlCode::Paste, context),
                 separator_before: false,
                 caption: core_text(language, "context-menu-paste"),
                 checked: false,
@@ -178,7 +178,7 @@ impl<'gc> ContextMenuState<'gc> {
         );
         self.push(
             ContextMenuItem {
-                enabled: text.is_text_control_applicable(TextControlCode::Delete),
+                enabled: text.is_text_control_applicable(TextControlCode::Delete, context),
                 separator_before: false,
                 caption: core_text(language, "context-menu-delete"),
                 checked: false,
@@ -190,7 +190,7 @@ impl<'gc> ContextMenuState<'gc> {
         );
         self.push(
             ContextMenuItem {
-                enabled: text.is_text_control_applicable(TextControlCode::SelectAll),
+                enabled: text.is_text_control_applicable(TextControlCode::SelectAll, context),
                 separator_before: true,
                 caption: core_text(language, "context-menu-select-all"),
                 checked: false,

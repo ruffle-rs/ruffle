@@ -1420,7 +1420,11 @@ impl<'gc> EditText<'gc> {
         }
     }
 
-    pub fn is_text_control_applicable(self, control_code: TextControlCode) -> bool {
+    pub fn is_text_control_applicable(
+        self,
+        control_code: TextControlCode,
+        context: &mut UpdateContext<'_, 'gc>,
+    ) -> bool {
         if !self.is_editable() && control_code.is_edit_input() {
             return false;
         }
@@ -1439,7 +1443,10 @@ impl<'gc> EditText<'gc> {
             | TextControlCode::SelectRightLine
             | TextControlCode::SelectRightDocument
             | TextControlCode::SelectAll => self.is_selectable(),
-            TextControlCode::Copy | TextControlCode::Cut => !selection.is_caret(),
+            TextControlCode::Copy | TextControlCode::Cut => {
+                !selection.is_caret()
+            }
+            TextControlCode::Paste => context.ui.clipboard_available(),
             _ => true,
         }
     }
@@ -1449,7 +1456,7 @@ impl<'gc> EditText<'gc> {
         control_code: TextControlCode,
         context: &mut UpdateContext<'_, 'gc>,
     ) {
-        if !self.is_text_control_applicable(control_code) {
+        if !self.is_text_control_applicable(control_code, context) {
             return;
         }
 
@@ -1525,8 +1532,15 @@ impl<'gc> EditText<'gc> {
                 let text = &self.text()[selection.start()..selection.end()];
                 context.ui.set_clipboard_content(text.to_string());
             }
-            TextControlCode::Paste => {
+            TextControlCode::Paste => 'paste: {
                 let text = context.ui.clipboard_content();
+                if text.is_empty() {
+                    // When the clipboard is empty, nothing is pasted
+                    // and the already selected text is not removed.
+                    // Note that if the clipboard is not empty, but does not have
+                    // any allowed characters, the selected text is removed.
+                    break 'paste;
+                }
 
                 let mut text = self.0.read().restrict.filter_allowed(&text);
 
