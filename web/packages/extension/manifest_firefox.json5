@@ -49,6 +49,7 @@
     },
     "permissions": [
         "<all_urls>", // // To allow script injecting + the internal player to bypass CORS
+        "scripting",
         "storage"
     ],
     "web_accessible_resources": ["*"],

@@ -53,6 +53,7 @@ function transformManifest(content, env) {
         manifest.browser_specific_settings = {
             gecko: {
                 id: firefoxExtensionId,
+                strict_min_version: "128.0a1",
             },
         };
     } else {

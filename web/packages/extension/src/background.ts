@@ -5,7 +5,7 @@ async function contentScriptRegistered() {
     const matchingScripts = await chrome.scripting.getRegisteredContentScripts({
         ids: ["plugin-polyfill"],
     });
-    return matchingScripts.length > 0;
+    return matchingScripts?.length > 0;
 }
 
 async function enable() {
