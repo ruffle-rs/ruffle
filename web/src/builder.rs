@@ -362,7 +362,7 @@ impl RuffleInstanceBuilder {
                                     player.register_device_font(FontDefinition::FontFile {
                                         name: name.to_string(),
                                         is_bold: font.is_bold,
-                                        is_italic: font.is_bold,
+                                        is_italic: font.is_italic,
                                         data: data.to_vec(),
                                         index: 0,
                                     })
