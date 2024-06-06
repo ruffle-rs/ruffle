@@ -1,0 +1,108 @@
+Starting tone: tone_mono_22050hz.flv
+Measuring...
+Fake freqs: 888 222
+PASS
+Fake freqs: 1776 111
+PASS
+Fake freqs: 483 408
+PASS
+Fake freqs: 967 204
+PASS
+Fake freqs: 1933 102
+PASS
+Fake freqs: 242 816
+PASS
+Fake freqs: 121 1632
+PASS
+Actual freq:
+PASS
+Starting tone: tone_mono_44100hz.flv
+Measuring...
+Fake freqs: 888 222
+PASS
+Fake freqs: 1776 111
+PASS
+Fake freqs: 483 408
+PASS
+Fake freqs: 967 204
+PASS
+Fake freqs: 1933 102
+PASS
+Fake freqs: 242 816
+PASS
+Fake freqs: 121 1632
+PASS
+Actual freq:
+PASS
+Starting tone: tone_mono_48000hz.flv
+Measuring...
+Fake freqs: 888 222
+PASS
+Fake freqs: 1776 111
+PASS
+Fake freqs: 483 408
+PASS
+Fake freqs: 967 204
+PASS
+Fake freqs: 1933 102
+PASS
+Fake freqs: 242 816
+PASS
+Fake freqs: 121 1632
+PASS
+Actual freq:
+PASS
+Starting tone: tone_stereo_22050hz.flv
+Measuring...
+Fake freqs: 888 222
+PASS
+Fake freqs: 1776 111
+PASS
+Fake freqs: 483 408
+PASS
+Fake freqs: 967 204
+PASS
+Fake freqs: 1933 102
+PASS
+Fake freqs: 242 816
+PASS
+Fake freqs: 121 1632
+PASS
+Actual freq:
+PASS
+Starting tone: tone_stereo_44100hz.flv
+Measuring...
+Fake freqs: 888 222
+PASS
+Fake freqs: 1776 111
+PASS
+Fake freqs: 483 408
+PASS
+Fake freqs: 967 204
+PASS
+Fake freqs: 1933 102
+PASS
+Fake freqs: 242 816
+PASS
+Fake freqs: 121 1632
+PASS
+Actual freq:
+PASS
+Starting tone: tone_stereo_48000hz.flv
+Measuring...
+Fake freqs: 888 222
+PASS
+Fake freqs: 1776 111
+PASS
+Fake freqs: 483 408
+PASS
+Fake freqs: 967 204
+PASS
+Fake freqs: 1933 102
+PASS
+Fake freqs: 242 816
+PASS
+Fake freqs: 121 1632
+PASS
+Actual freq:
+PASS
