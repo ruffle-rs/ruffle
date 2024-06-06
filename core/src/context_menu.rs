@@ -6,10 +6,10 @@
 
 use crate::avm1;
 use crate::avm2;
+use crate::context::UpdateContext;
 use crate::display_object::Stage;
 use crate::display_object::TDisplayObject;
 use crate::i18n::core_text;
-use fluent_templates::LanguageIdentifier;
 use gc_arena::Collect;
 use ruffle_render::quality::StageQuality;
 use serde::Serialize;
@@ -26,22 +26,28 @@ impl<'gc> ContextMenuState<'gc> {
     pub fn new() -> Self {
         Self::default()
     }
+
     pub fn push(&mut self, item: ContextMenuItem, callback: ContextMenuCallback<'gc>) {
         self.info.push(item);
         self.callbacks.push(callback);
     }
+
     pub fn info(&self) -> &Vec<ContextMenuItem> {
         &self.info
     }
+
     pub fn callback(&self, index: usize) -> &ContextMenuCallback<'gc> {
         &self.callbacks[index]
     }
+
     pub fn build_builtin_items(
         &mut self,
         item_flags: BuiltInItemFlags,
-        stage: Stage<'gc>,
-        language: &LanguageIdentifier,
+        context: &mut UpdateContext<'_, 'gc>,
     ) {
+        let stage = context.stage;
+        let language = &context.ui.language();
+
         let Some(root_mc) = stage.root_clip().and_then(|c| c.as_movie_clip()) else {
             return;
         };

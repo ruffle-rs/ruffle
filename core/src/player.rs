@@ -602,7 +602,7 @@ impl Player {
                 // no AVM1 or AVM2 object - so just prepare the builtin items
                 let mut menu = ContextMenuState::new();
                 let builtin_items = BuiltInItemFlags::for_stage(context.stage);
-                menu.build_builtin_items(builtin_items, context.stage, &context.ui.language());
+                menu.build_builtin_items(builtin_items, context);
                 menu
             };
 
