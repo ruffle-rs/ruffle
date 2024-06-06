@@ -127,6 +127,70 @@ impl<'gc> ContextMenuState<'gc> {
             );
         }
     }
+
+    fn build_text_items(&mut self, text: EditText<'gc>, context: &mut UpdateContext<'_, 'gc>) {
+        let language = &context.ui.language();
+        self.push(
+            ContextMenuItem {
+                enabled: text.is_text_control_applicable(TextControlCode::Cut),
+                separator_before: true,
+                caption: core_text(language, "context-menu-cut"),
+                checked: false,
+            },
+            ContextMenuCallback::TextControl {
+                code: TextControlCode::Cut,
+                text,
+            },
+        );
+        self.push(
+            ContextMenuItem {
+                enabled: text.is_text_control_applicable(TextControlCode::Copy),
+                separator_before: false,
+                caption: core_text(language, "context-menu-copy"),
+                checked: false,
+            },
+            ContextMenuCallback::TextControl {
+                code: TextControlCode::Copy,
+                text,
+            },
+        );
+        self.push(
+            ContextMenuItem {
+                enabled: text.is_text_control_applicable(TextControlCode::Paste),
+                separator_before: false,
+                caption: core_text(language, "context-menu-paste"),
+                checked: false,
+            },
+            ContextMenuCallback::TextControl {
+                code: TextControlCode::Paste,
+                text,
+            },
+        );
+        self.push(
+            ContextMenuItem {
+                enabled: text.is_text_control_applicable(TextControlCode::Delete),
+                separator_before: false,
+                caption: core_text(language, "context-menu-delete"),
+                checked: false,
+            },
+            ContextMenuCallback::TextControl {
+                code: TextControlCode::Delete,
+                text,
+            },
+        );
+        self.push(
+            ContextMenuItem {
+                enabled: text.is_text_control_applicable(TextControlCode::SelectAll),
+                separator_before: true,
+                caption: core_text(language, "context-menu-select-all"),
+                checked: false,
+            },
+            ContextMenuCallback::TextControl {
+                code: TextControlCode::SelectAll,
+                text,
+            },
+        );
+    }
 }
 
 #[derive(Clone, Serialize)]

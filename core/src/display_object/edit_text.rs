@@ -1420,191 +1420,207 @@ impl<'gc> EditText<'gc> {
         }
     }
 
+    pub fn is_text_control_applicable(self, control_code: TextControlCode) -> bool {
+        if !self.is_editable() && control_code.is_edit_input() {
+            return false;
+        }
+
+        let Some(selection) = self.selection() else {
+            return false;
+        };
+
+        match control_code {
+            TextControlCode::SelectLeft
+            | TextControlCode::SelectLeftWord
+            | TextControlCode::SelectLeftLine
+            | TextControlCode::SelectLeftDocument
+            | TextControlCode::SelectRight
+            | TextControlCode::SelectRightWord
+            | TextControlCode::SelectRightLine
+            | TextControlCode::SelectRightDocument
+            | TextControlCode::SelectAll => self.is_selectable(),
+            TextControlCode::Copy | TextControlCode::Cut => !selection.is_caret(),
+            _ => true,
+        }
+    }
+
     pub fn text_control_input(
         self,
         control_code: TextControlCode,
         context: &mut UpdateContext<'_, 'gc>,
     ) {
-        if !self.is_editable() && control_code.is_edit_input() {
+        if !self.is_text_control_applicable(control_code) {
             return;
         }
 
-        if let Some(selection) = self.selection() {
-            let mut changed = false;
-            let is_selectable = self.is_selectable();
-            match control_code {
-                TextControlCode::Enter => {
-                    self.text_input(Self::INPUT_NEWLINE, context);
-                }
-                TextControlCode::MoveLeft
-                | TextControlCode::MoveLeftWord
-                | TextControlCode::MoveLeftLine
-                | TextControlCode::MoveLeftDocument => {
-                    let new_pos = if selection.is_caret() {
-                        self.find_new_position(control_code, selection.to)
-                    } else {
-                        selection.start()
-                    };
+        let Some(selection) = self.selection() else {
+            return;
+        };
+
+        let mut changed = false;
+        let is_selectable = self.is_selectable();
+        match control_code {
+            TextControlCode::Enter => {
+                self.text_input(Self::INPUT_NEWLINE, context);
+            }
+            TextControlCode::MoveLeft
+            | TextControlCode::MoveLeftWord
+            | TextControlCode::MoveLeftLine
+            | TextControlCode::MoveLeftDocument => {
+                let new_pos = if selection.is_caret() {
+                    self.find_new_position(control_code, selection.to)
+                } else {
+                    selection.start()
+                };
+                self.set_selection(
+                    Some(TextSelection::for_position(new_pos)),
+                    context.gc_context,
+                );
+            }
+            TextControlCode::MoveRight
+            | TextControlCode::MoveRightWord
+            | TextControlCode::MoveRightLine
+            | TextControlCode::MoveRightDocument => {
+                let new_pos = if selection.is_caret() && selection.to < self.text().len() {
+                    self.find_new_position(control_code, selection.to)
+                } else {
+                    selection.end()
+                };
+                self.set_selection(
+                    Some(TextSelection::for_position(new_pos)),
+                    context.gc_context,
+                );
+            }
+            TextControlCode::SelectLeft
+            | TextControlCode::SelectLeftWord
+            | TextControlCode::SelectLeftLine
+            | TextControlCode::SelectLeftDocument => {
+                if selection.to > 0 {
+                    let new_pos = self.find_new_position(control_code, selection.to);
                     self.set_selection(
-                        Some(TextSelection::for_position(new_pos)),
+                        Some(TextSelection::for_range(selection.from, new_pos)),
                         context.gc_context,
                     );
                 }
-                TextControlCode::MoveRight
-                | TextControlCode::MoveRightWord
-                | TextControlCode::MoveRightLine
-                | TextControlCode::MoveRightDocument => {
-                    let new_pos = if selection.is_caret() && selection.to < self.text().len() {
-                        self.find_new_position(control_code, selection.to)
-                    } else {
-                        selection.end()
-                    };
+            }
+            TextControlCode::SelectRight
+            | TextControlCode::SelectRightWord
+            | TextControlCode::SelectRightLine
+            | TextControlCode::SelectRightDocument => {
+                if selection.to < self.text().len() {
+                    let new_pos = self.find_new_position(control_code, selection.to);
                     self.set_selection(
-                        Some(TextSelection::for_position(new_pos)),
+                        Some(TextSelection::for_range(selection.from, new_pos)),
                         context.gc_context,
+                    )
+                }
+            }
+            TextControlCode::SelectAll => {
+                self.set_selection(
+                    Some(TextSelection::for_range(0, self.text().len())),
+                    context.gc_context,
+                );
+            }
+            TextControlCode::Copy => {
+                let text = &self.text()[selection.start()..selection.end()];
+                context.ui.set_clipboard_content(text.to_string());
+            }
+            TextControlCode::Paste => {
+                let text = context.ui.clipboard_content();
+
+                let mut text = self.0.read().restrict.filter_allowed(&text);
+
+                if text.len() > self.available_chars() && self.available_chars() > 0 {
+                    text = text[0..self.available_chars()].to_owned();
+                }
+
+                if text.len() <= self.available_chars() {
+                    self.replace_text(
+                        selection.start(),
+                        selection.end(),
+                        &WString::from_utf8(&text),
+                        context,
                     );
-                }
-                TextControlCode::SelectLeft
-                | TextControlCode::SelectLeftWord
-                | TextControlCode::SelectLeftLine
-                | TextControlCode::SelectLeftDocument => {
-                    if is_selectable && selection.to > 0 {
-                        let new_pos = self.find_new_position(control_code, selection.to);
-                        self.set_selection(
-                            Some(TextSelection::for_range(selection.from, new_pos)),
-                            context.gc_context,
-                        );
-                    }
-                }
-                TextControlCode::SelectRight
-                | TextControlCode::SelectRightWord
-                | TextControlCode::SelectRightLine
-                | TextControlCode::SelectRightDocument => {
-                    if is_selectable && selection.to < self.text().len() {
-                        let new_pos = self.find_new_position(control_code, selection.to);
-                        self.set_selection(
-                            Some(TextSelection::for_range(selection.from, new_pos)),
-                            context.gc_context,
-                        )
-                    }
-                }
-                TextControlCode::SelectAll => {
+                    let new_pos = selection.start() + text.len();
                     if is_selectable {
                         self.set_selection(
-                            Some(TextSelection::for_range(0, self.text().len())),
+                            Some(TextSelection::for_position(new_pos)),
+                            context.gc_context,
+                        );
+                    } else {
+                        self.set_selection(
+                            Some(TextSelection::for_position(self.text().len())),
                             context.gc_context,
                         );
                     }
+                    changed = true;
                 }
-                TextControlCode::Copy => {
-                    if !selection.is_caret() {
-                        let text = &self.text()[selection.start()..selection.end()];
-                        context.ui.set_clipboard_content(text.to_string());
-                    }
-                }
-                TextControlCode::Paste => {
-                    let text = context.ui.clipboard_content();
-                    let mut text = self.0.read().restrict.filter_allowed(&text);
+            }
+            TextControlCode::Cut => {
+                let text = &self.text()[selection.start()..selection.end()];
+                context.ui.set_clipboard_content(text.to_string());
 
-                    if text.len() > self.available_chars() && self.available_chars() > 0 {
-                        text = text[0..self.available_chars()].to_owned();
-                    }
-
-                    if text.len() <= self.available_chars() {
-                        self.replace_text(
-                            selection.start(),
-                            selection.end(),
-                            &WString::from_utf8(&text),
-                            context,
-                        );
-                        let new_pos = selection.start() + text.len();
-                        if is_selectable {
-                            self.set_selection(
-                                Some(TextSelection::for_position(new_pos)),
-                                context.gc_context,
-                            );
-                        } else {
-                            self.set_selection(
-                                Some(TextSelection::for_position(self.text().len())),
-                                context.gc_context,
-                            );
-                        }
-                        changed = true;
-                    }
-                }
-                TextControlCode::Cut => {
-                    if !selection.is_caret() {
-                        let text = &self.text()[selection.start()..selection.end()];
-                        context.ui.set_clipboard_content(text.to_string());
-
-                        self.replace_text(
-                            selection.start(),
-                            selection.end(),
-                            WStr::empty(),
-                            context,
-                        );
-                        if is_selectable {
-                            self.set_selection(
-                                Some(TextSelection::for_position(selection.start())),
-                                context.gc_context,
-                            );
-                        } else {
-                            self.set_selection(
-                                Some(TextSelection::for_position(self.text().len())),
-                                context.gc_context,
-                            );
-                        }
-                        changed = true;
-                    }
-                }
-                TextControlCode::Backspace
-                | TextControlCode::BackspaceWord
-                | TextControlCode::Delete
-                | TextControlCode::DeleteWord
-                    if !selection.is_caret() =>
-                {
-                    // Backspace or delete with multiple characters selected
-                    self.replace_text(selection.start(), selection.end(), WStr::empty(), context);
+                self.replace_text(selection.start(), selection.end(), WStr::empty(), context);
+                if is_selectable {
                     self.set_selection(
                         Some(TextSelection::for_position(selection.start())),
                         context.gc_context,
                     );
+                } else {
+                    self.set_selection(
+                        Some(TextSelection::for_position(self.text().len())),
+                        context.gc_context,
+                    );
+                }
+                changed = true;
+            }
+            TextControlCode::Backspace
+            | TextControlCode::BackspaceWord
+            | TextControlCode::Delete
+            | TextControlCode::DeleteWord
+                if !selection.is_caret() =>
+            {
+                // Backspace or delete with multiple characters selected
+                self.replace_text(selection.start(), selection.end(), WStr::empty(), context);
+                self.set_selection(
+                    Some(TextSelection::for_position(selection.start())),
+                    context.gc_context,
+                );
+                changed = true;
+            }
+            TextControlCode::Backspace | TextControlCode::BackspaceWord => {
+                // Backspace with caret
+                if selection.start() > 0 {
+                    // Delete previous character(s)
+                    let start = self.find_new_position(control_code, selection.start());
+                    self.replace_text(start, selection.start(), WStr::empty(), context);
+                    self.set_selection(
+                        Some(TextSelection::for_position(start)),
+                        context.gc_context,
+                    );
                     changed = true;
                 }
-                TextControlCode::Backspace | TextControlCode::BackspaceWord => {
-                    // Backspace with caret
-                    if selection.start() > 0 {
-                        // Delete previous character(s)
-                        let start = self.find_new_position(control_code, selection.start());
-                        self.replace_text(start, selection.start(), WStr::empty(), context);
-                        self.set_selection(
-                            Some(TextSelection::for_position(start)),
-                            context.gc_context,
-                        );
-                        changed = true;
-                    }
-                }
-                TextControlCode::Delete | TextControlCode::DeleteWord => {
-                    // Delete with caret
-                    if selection.end() < self.text_length() {
-                        // Delete next character(s)
-                        let end = self.find_new_position(control_code, selection.start());
-                        self.replace_text(selection.start(), end, WStr::empty(), context);
-                        // No need to change selection, reset it to prevent caret from blinking
-                        self.reset_selection_blinking(context.gc_context);
-                        changed = true;
-                    }
+            }
+            TextControlCode::Delete | TextControlCode::DeleteWord => {
+                // Delete with caret
+                if selection.end() < self.text_length() {
+                    // Delete next character(s)
+                    let end = self.find_new_position(control_code, selection.start());
+                    self.replace_text(selection.start(), end, WStr::empty(), context);
+                    // No need to change selection, reset it to prevent caret from blinking
+                    self.reset_selection_blinking(context.gc_context);
+                    changed = true;
                 }
             }
-            if changed {
-                let mut activation = Avm1Activation::from_nothing(
-                    context.reborrow(),
-                    ActivationIdentifier::root("[Propagate Text Binding]"),
-                    self.into(),
-                );
-                self.propagate_text_binding(&mut activation);
-                self.on_changed(&mut activation);
-            }
+        }
+        if changed {
+            let mut activation = Avm1Activation::from_nothing(
+                context.reborrow(),
+                ActivationIdentifier::root("[Propagate Text Binding]"),
+                self.into(),
+            );
+            self.propagate_text_binding(&mut activation);
+            self.on_changed(&mut activation);
         }
     }
 
