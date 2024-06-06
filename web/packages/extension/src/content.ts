@@ -46,17 +46,6 @@ function sendMessageToPage(data: unknown): Promise<unknown> {
 }
 
 /**
- * Inject a raw script to the main world.
- * @param {string} src - Script to inject.
- */
-function injectScriptRaw(src: string) {
-    const script = document.createElement("script");
-    script.textContent = src;
-    (document.head || document.documentElement).append(script);
-    script.remove();
-}
-
-/**
  * Inject a script by URL to the main world.
  * @param {string} url - Script URL to inject.
  */
@@ -144,18 +133,6 @@ function isXMLDocument(): boolean {
 
     if (!shouldLoad) {
         return;
-    }
-
-    // We must run the plugin polyfill before any flash detection scripts.
-    // Unfortunately, this might still be too late for some websites (issue #969).
-    // NOTE: The script code injected here is the compiled form of
-    // plugin-polyfill.ts. It is injected by tools/inject_plugin_polyfill.js
-    // which just search-and-replaces for this particular string.
-    const permissions = (chrome || browser).runtime.getManifest().permissions;
-    if (!permissions?.includes("scripting")) {
-        // Chrome does this differently, by injecting it straight into the main world.
-        // This isn't as fast, oh well.
-        injectScriptRaw("%PLUGIN_POLYFILL_SOURCE%");
     }
 
     await injectScriptURL(utils.runtime.getURL(`dist/ruffle.js?id=${ID}`));
