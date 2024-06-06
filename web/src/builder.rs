@@ -304,9 +304,10 @@ impl RuffleInstanceBuilder {
             "sans" => DefaultFont::Sans,
             "serif" => DefaultFont::Serif,
             "typewriter" => DefaultFont::Typewriter,
-            _ => {
-                return;
-            }
+            "japaneseGothic" => DefaultFont::JapaneseGothic,
+            "japaneseGothicMono" => DefaultFont::JapaneseGothicMono,
+            "japaneseMincho" => DefaultFont::JapaneseMincho,
+            _ => return,
         };
         self.default_fonts.insert(
             default,

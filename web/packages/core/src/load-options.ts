@@ -308,17 +308,17 @@ export interface DefaultFonts {
     /**
      * `_ゴシック`, a Japanese Gothic font
      */
-    JapaneseGothic?: Array<string>;
+    japaneseGothic?: Array<string>;
 
     /**
      * `_等幅`, a Japanese Gothic Mono font
      */
-    JapaneseGothicMono?: Array<string>;
+    japaneseGothicMono?: Array<string>;
 
     /**
      * `_明朝`, a Japanese Mincho font
      */
-    JapaneseMincho?: Array<string>;
+    japaneseMincho?: Array<string>;
 }
 
 /**
