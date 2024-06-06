@@ -1019,7 +1019,7 @@ impl<'gc> E4XNode<'gc> {
                     if &*name == b"xmlns" {
                         namespaces.push(E4XNamespace {
                             uri: value,
-                            prefix: None,
+                            prefix: Some("".into()),
                         });
                         continue;
                     }
@@ -1516,7 +1516,7 @@ fn to_xml_string_inner<'gc>(
 
     for ns in &namespace_declarations {
         buf.push_utf8(" xmlns");
-        if let Some(prefix) = ns.prefix {
+        if let Some(prefix) = ns.prefix.filter(|p| !p.is_empty()) {
             buf.push_char(':');
             buf.push_str(&prefix);
         }
