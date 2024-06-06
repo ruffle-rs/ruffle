@@ -898,26 +898,28 @@ fn create_text_field<'gc>(
         .cloned()
         .unwrap_or(Value::Undefined)
         .coerce_to_f64(activation)?;
+
+    // x, y, width, and height are integers here
     let x = args
         .get(2)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .coerce_to_f64(activation)?;
+        .coerce_to_i32(activation)? as f64;
     let y = args
         .get(3)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .coerce_to_f64(activation)?;
+        .coerce_to_i32(activation)? as f64;
     let width = args
         .get(4)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .coerce_to_f64(activation)?;
+        .coerce_to_i32(activation)? as f64;
     let height = args
         .get(5)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .coerce_to_f64(activation)?;
+        .coerce_to_i32(activation)? as f64;
 
     let text_field: DisplayObject<'gc> =
         EditText::new(&mut activation.context, movie, x, y, width, height).into();
