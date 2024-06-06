@@ -7,7 +7,7 @@ describe("Color parsing", function () {
     });
 
     it("should parse a valid RRGGBB hex, without hash", function () {
-        assert.strictEqual(parseColor("#1A2B3C"), 0x1a2b3c);
+        assert.strictEqual(parseColor("1A2B3C"), 0x1a2b3c);
     });
 
     it("should fail with not enough digits", function () {
