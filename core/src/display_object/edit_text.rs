@@ -1444,7 +1444,7 @@ impl<'gc> EditText<'gc> {
             | TextControlCode::SelectRightDocument
             | TextControlCode::SelectAll => self.is_selectable(),
             TextControlCode::Copy | TextControlCode::Cut => {
-                !selection.is_caret()
+                !self.is_password() && !selection.is_caret()
             }
             TextControlCode::Paste => context.ui.clipboard_available(),
             _ => true,
