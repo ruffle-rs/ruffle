@@ -73,6 +73,11 @@ pub trait UiBackend: Downcast {
     /// Get the clipboard content
     fn clipboard_content(&mut self) -> String;
 
+    /// Check if the clipboard is available and not empty
+    fn clipboard_available(&mut self) -> bool {
+        !self.clipboard_content().is_empty()
+    }
+
     /// Sets the clipboard to the given content.
     fn set_clipboard_content(&mut self, content: String);
 
