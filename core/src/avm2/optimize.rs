@@ -678,6 +678,7 @@ pub fn optimize<'gc>(
                 stack.push_class_not_null(types.function);
             }
             Op::NewClass { .. } => {
+                stack.pop();
                 stack.push_class_not_null(types.class);
             }
             Op::NewCatch { .. } => {
@@ -766,7 +767,7 @@ pub fn optimize<'gc>(
             }
             Op::Coerce { class } => {
                 let stack_value = stack.pop_or_any();
-                stack.push_class(*class);
+                let mut new_value = OptValue::of_type(*class);
 
                 if stack_value.is_null() {
                     // Coercing null to a non-primitive or void is a noop.
@@ -777,13 +778,17 @@ pub fn optimize<'gc>(
                         && *class != types.void
                     {
                         *op = Op::Nop;
+                        new_value.null_state = NullState::IsNull;
                     }
                 } else if let Some(stack_class) = stack_value.class {
                     // TODO: this could check for inheritance
                     if *class == stack_class {
                         *op = Op::Nop;
+                        new_value.null_state = stack_value.null_state;
                     }
                 }
+
+                stack.push(new_value);
             }
             Op::PushScope => {
                 let stack_value = stack.pop();
