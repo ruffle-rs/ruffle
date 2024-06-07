@@ -24,7 +24,7 @@ lyon_geom = "1.0.5"
 thiserror = { workspace = true }
 wasm-bindgen = { workspace = true, optional = true }
 enum-map = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
+serde = { workspace = true, features = ["derive"], optional = true }
 clap = { workspace = true, optional = true }
 h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "f0fa94c366a1d0383df99aa835add175658d6bad"}
 num-traits = { workspace = true }
@@ -50,3 +50,4 @@ default = []
 tessellator = ["lyon"]
 web = ["wasm-bindgen"]
 wgpu = ["dep:wgpu"]
+serde = ["dep:serde"]
