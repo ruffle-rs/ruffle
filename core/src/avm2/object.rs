@@ -607,7 +607,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 class,
                 arguments,
                 activation,
-                ScriptObject::custom_object(activation.context.gc_context, None, None), // Callee deliberately invalid.
+                self.into(), // Callee deliberately invalid.
             );
         }
 
