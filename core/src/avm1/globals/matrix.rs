@@ -340,7 +340,7 @@ fn create_box<'gc>(
         0.0
     };
 
-    let matrix = Matrix::create_box(
+    let matrix = Matrix::create_box_with_rotation(
         scale_x as f32,
         scale_y as f32,
         rotation as f32,

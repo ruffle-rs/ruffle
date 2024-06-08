@@ -615,7 +615,6 @@ impl<'gc> Stage<'gc> {
                     Matrix::create_box(
                         viewport_width,
                         margin_top,
-                        0.0,
                         Twips::default(),
                         Twips::default(),
                     ),
@@ -627,7 +626,6 @@ impl<'gc> Stage<'gc> {
                     Matrix::create_box(
                         viewport_width,
                         margin_bottom,
-                        0.0,
                         Twips::default(),
                         Twips::from_pixels((viewport_height - margin_bottom) as f64),
                     ),
@@ -641,7 +639,6 @@ impl<'gc> Stage<'gc> {
                     Matrix::create_box(
                         margin_left,
                         viewport_height,
-                        0.0,
                         Twips::default(),
                         Twips::default(),
                     ),
@@ -653,7 +650,6 @@ impl<'gc> Stage<'gc> {
                     Matrix::create_box(
                         margin_right,
                         viewport_height,
-                        0.0,
                         Twips::from_pixels((viewport_width - margin_right) as f64),
                         Twips::default(),
                     ),
