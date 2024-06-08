@@ -21,7 +21,7 @@ use ruffle_core::events::{MouseButton, MouseWheelDelta, TextControlCode};
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Player, PlayerEvent, StaticCallstack, ViewportDimensions};
 use ruffle_web_common::JsResult;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use slotmap::{new_key_type, SlotMap};
 use std::rc::Rc;
 use std::str::FromStr;
@@ -180,8 +180,7 @@ extern "C" {
     fn display_unsupported_video(this: &JavascriptPlayer, url: &str);
 }
 
-#[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone)]
 pub struct SocketProxy {
     host: String,
     port: u16,
