@@ -5,7 +5,6 @@ use crate::socket::{ConnectionState, SocketAction, SocketHandle};
 use crate::string::WStr;
 use async_channel::{Receiver, Sender};
 use indexmap::IndexMap;
-use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::fmt;
 use std::fmt::Display;
@@ -57,18 +56,19 @@ pub enum SocketMode {
 
 /// The handling mode of links opening a new website.
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum OpenURLMode {
     /// Allow all links to open a new website.
-    #[serde(rename = "allow")]
+    #[cfg_attr(feature = "serde", serde(rename = "allow"))]
     Allow,
 
     /// A confirmation dialog opens with every link trying to open a new website.
-    #[serde(rename = "confirm")]
+    #[cfg_attr(feature = "serde", serde(rename = "confirm"))]
     Confirm,
 
     /// Deny all links to open a new website.
-    #[serde(rename = "deny")]
+    #[cfg_attr(feature = "serde", serde(rename = "deny"))]
     Deny,
 }
 

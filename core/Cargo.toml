@@ -39,7 +39,7 @@ chrono = { workspace = true, features = ["clock"] }
 web-time = "1.1.0"
 encoding_rs = "0.8.34"
 rand = { version = "0.8.5", features = ["std", "small_rng"], default-features = false }
-serde = { workspace = true, features = ["derive"] }
+serde = { workspace = true }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser", rev = "754b1184037aa9952a907107284fb73897e26adc", optional = true }
 regress = "0.10"
@@ -83,12 +83,13 @@ timeline_debug = []
 mp3 = ["symphonia"]
 nellymoser = ["nellymoser-rs"]
 audio = ["dasp"]
-known_stubs = ["linkme"]
+known_stubs = ["linkme", "serde"]
 default_compatibility_rules = []
 egui = ["dep:egui", "dep:egui_extras", "png"]
 jpegxr = ["dep:jpegxr", "lzma"]
 default_font = []
 test_only_as3 = []
+serde = ["serde/derive"]
 
 [build-dependencies]
 build_playerglobal = { path = "build_playerglobal" }
