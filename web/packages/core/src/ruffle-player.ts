@@ -1366,7 +1366,7 @@ export class RufflePlayer extends HTMLElement {
                 zip.addFile(solName + ".sol", array);
             }
         });
-        const blob = new Blob([zip.save()]);
+        const blob = new Blob([zip.save()], { type: "application/zip" });
         this.saveFile(blob, "saves.zip");
     }
 
