@@ -4662,6 +4662,7 @@ dependencies = [
  "wasm-bindgen-futures",
  "wasm-streams",
  "web-sys",
+ "zip",
 ]
 
 [[package]]
