@@ -1046,7 +1046,6 @@ impl<'gc> EditText<'gc> {
             * Matrix::create_box(
                 width.to_pixels() as f32,
                 height.to_pixels() as f32,
-                0.0,
                 x,
                 Twips::ZERO,
             );
@@ -1065,7 +1064,6 @@ impl<'gc> EditText<'gc> {
             * Matrix::create_box(
                 cursor_width.to_pixels() as f32,
                 height.to_pixels() as f32,
-                0.0,
                 x - cursor_width,
                 Twips::ZERO,
             );
@@ -2173,7 +2171,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         let mask = Matrix::create_box(
             edit_text.bounds.width().to_pixels() as f32,
             edit_text.bounds.height().to_pixels() as f32,
-            0.0,
             Twips::ZERO,
             Twips::ZERO,
         );
