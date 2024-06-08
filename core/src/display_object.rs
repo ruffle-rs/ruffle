@@ -971,7 +971,6 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                 Matrix::create_box(
                     bounds.width().to_pixels() as f32,
                     bounds.height().to_pixels() as f32,
-                    0.0,
                     bounds.x_min,
                     bounds.y_min,
                 ),
