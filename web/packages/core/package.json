@@ -18,7 +18,6 @@
         "checkTypes": "tsc --noemit"
     },
     "dependencies": {
-        "jszip": "^3.10.1",
         "wasm-feature-detect": "^1.6.1"
     },
     "devDependencies": {

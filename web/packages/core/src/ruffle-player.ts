@@ -1,4 +1,4 @@
-import type { RuffleHandle } from "../dist/ruffle_web";
+import type { RuffleHandle, ZipWriter } from "../dist/ruffle_web";
 import { createRuffleBuilder } from "./load-ruffle";
 import { applyStaticStyles, ruffleShadowTemplate } from "./shadow-template";
 import { lookupElement } from "./register-element";
@@ -15,7 +15,6 @@ import type { MovieMetadata } from "./movie-metadata";
 import { swfFileName } from "./swf-utils";
 import { buildInfo } from "./build-info";
 import { text, textAsParagraphs } from "./i18n";
-import JSZip from "jszip";
 import { isExtension } from "./current-script";
 import { configureBuilder } from "./internal/builder";
 
@@ -167,6 +166,7 @@ export class RufflePlayer extends HTMLElement {
 
     private swfUrl?: URL;
     private instance: RuffleHandle | null;
+    private newZipWriter: (() => ZipWriter) | null;
     private lastActivePlayingState: boolean;
 
     private _metadata: MovieMetadata | null;
@@ -333,6 +333,7 @@ export class RufflePlayer extends HTMLElement {
         );
 
         this.instance = null;
+        this.newZipWriter = null;
         this.onFSCommand = null;
 
         this._readyState = ReadyState.HaveNothing;
@@ -673,7 +674,8 @@ export class RufflePlayer extends HTMLElement {
                 'The configuration option contextMenu no longer takes a boolean. Use "on", "off", or "rightClickOnly".',
             );
         }
-        const builder = await createRuffleBuilder(
+
+        const [builder, zipWriterClass] = await createRuffleBuilder(
             this.loadedConfig || {},
             this.onRuffleDownloadProgress.bind(this),
         ).catch((e) => {
@@ -714,6 +716,7 @@ export class RufflePlayer extends HTMLElement {
             this.panic(e);
             throw e;
         });
+        this.newZipWriter = zipWriterClass;
         configureBuilder(builder, this.loadedConfig || {});
         builder.setVolume(this.volumeSettings.get_volume());
 
@@ -1159,13 +1162,17 @@ export class RufflePlayer extends HTMLElement {
             event.pointerType === "touch" || event.pointerType === "pen";
     }
 
-    private base64ToBlob(bytesBase64: string, mimeString: string): Blob {
+    private base64ToArray(bytesBase64: string): Uint8Array {
         const byteString = atob(bytesBase64);
-        const ab = new ArrayBuffer(byteString.length);
-        const ia = new Uint8Array(ab);
+        const ia = new Uint8Array(byteString.length);
         for (let i = 0; i < byteString.length; i++) {
             ia[i] = byteString.charCodeAt(i);
         }
+        return ia;
+    }
+
+    private base64ToBlob(bytesBase64: string, mimeString: string): Blob {
+        const ab = this.base64ToArray(bytesBase64);
         const blob = new Blob([ab], { type: mimeString });
         return blob;
     }
@@ -1342,16 +1349,13 @@ export class RufflePlayer extends HTMLElement {
      * Gets the local save information as SOL files and downloads them as a single ZIP file.
      */
     private async backupSaves(): Promise<void> {
-        const zip = new JSZip();
+        const zip = this.newZipWriter!();
         const duplicateNames: string[] = [];
         Object.keys(localStorage).forEach((key) => {
             let solName = String(key.split("/").pop());
             const solData = localStorage.getItem(key);
             if (solData && this.isB64SOL(solData)) {
-                const blob = this.base64ToBlob(
-                    solData,
-                    "application/octet-stream",
-                );
+                const array = this.base64ToArray(solData);
                 const duplicate = duplicateNames.filter(
                     (value) => value === solName,
                 ).length;
@@ -1359,10 +1363,10 @@ export class RufflePlayer extends HTMLElement {
                 if (duplicate > 0) {
                     solName += ` (${duplicate + 1})`;
                 }
-                zip.file(solName + ".sol", blob);
+                zip.addFile(solName + ".sol", array);
             }
         });
-        const blob = await zip.generateAsync({ type: "blob" });
+        const blob = new Blob([zip.save()]);
         this.saveFile(blob, "saves.zip");
     }
 

@@ -9,7 +9,7 @@ import {
     signExtensions,
     referenceTypes,
 } from "wasm-feature-detect";
-import type { RuffleInstanceBuilder } from "../dist/ruffle_web";
+import type { RuffleInstanceBuilder, ZipWriter } from "../dist/ruffle_web";
 import { setPolyfillsOnLoad } from "./js-polyfills";
 import { publicPath } from "./public-path";
 import { BaseLoadOptions } from "./load-options";
@@ -35,7 +35,7 @@ type ProgressCallback = (bytesLoaded: number, bytesTotal: number) => void;
 async function fetchRuffle(
     config: BaseLoadOptions,
     progressCallback?: ProgressCallback,
-): Promise<typeof RuffleInstanceBuilder> {
+): Promise<[typeof RuffleInstanceBuilder, typeof ZipWriter]> {
     // Apply some pure JavaScript polyfills to prevent conflicts with external
     // libraries, if needed.
     setPolyfillsOnLoad();
@@ -65,7 +65,11 @@ async function fetchRuffle(
 
     // Note: The argument passed to import() has to be a simple string literal,
     // otherwise some bundler will get confused and won't include the module?
-    const { default: init, RuffleInstanceBuilder } = await (extensionsSupported
+    const {
+        default: init,
+        RuffleInstanceBuilder,
+        ZipWriter,
+    } = await (extensionsSupported
         ? import("../dist/ruffle_web-wasm_extensions")
         : import("../dist/ruffle_web"));
     let response;
@@ -113,10 +117,12 @@ async function fetchRuffle(
 
     await init(response);
 
-    return RuffleInstanceBuilder;
+    return [RuffleInstanceBuilder, ZipWriter];
 }
 
-let nativeConstructor: Promise<typeof RuffleInstanceBuilder> | null = null;
+let nativeConstructors: Promise<
+    [typeof RuffleInstanceBuilder, typeof ZipWriter]
+> | null = null;
 
 /**
  * Obtain an instance of `Ruffle`.
@@ -130,11 +136,11 @@ let nativeConstructor: Promise<typeof RuffleInstanceBuilder> | null = null;
 export async function createRuffleBuilder(
     config: BaseLoadOptions,
     progressCallback?: ProgressCallback,
-): Promise<RuffleInstanceBuilder> {
-    if (nativeConstructor === null) {
-        nativeConstructor = fetchRuffle(config, progressCallback);
+): Promise<[RuffleInstanceBuilder, () => ZipWriter]> {
+    if (nativeConstructors === null) {
+        nativeConstructors = fetchRuffle(config, progressCallback);
     }
 
-    const constructor = await nativeConstructor;
-    return new constructor();
+    const constructors = await nativeConstructors;
+    return [new constructors[0](), () => new constructors[1]()];
 }

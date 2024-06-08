@@ -10,6 +10,7 @@ mod log_adapter;
 mod navigator;
 mod storage;
 mod ui;
+mod zip;
 
 use crate::builder::RuffleInstanceBuilder;
 use external_interface::{external_to_js_value, js_to_external_value};
