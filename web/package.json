@@ -31,7 +31,8 @@
         "typescript": "^5.4.5",
         "wdio-chromedriver-service": "^8.1.1",
         "webpack": "^5.91.0",
-        "webpack-cli": "^5.1.4"
+        "webpack-cli": "^5.1.4",
+        "tsx": "^4.14.0"
     },
     "optionalDependencies": {
         "chromedriver": "^125.0.3"
@@ -46,6 +47,6 @@
         "docs": "npm run docs --workspaces --if-present",
         "lint": "npm run checkTypes --workspaces --if-present && eslint . && stylelint **.css",
         "format": "eslint . --fix && stylelint --fix **.css",
-        "version-seal": "cross-env ENABLE_VERSION_SEAL=true node packages/core/tools/set_version.js"
+        "version-seal": "cross-env ENABLE_VERSION_SEAL=true tsx packages/core/tools/set_version.ts"
     }
 }

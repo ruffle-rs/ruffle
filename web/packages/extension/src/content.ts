@@ -156,7 +156,7 @@ function isXMLDocument(): boolean {
     // We must run the plugin polyfill before any flash detection scripts.
     // Unfortunately, this might still be too late for some websites (issue #969).
     // NOTE: The script code injected here is the compiled form of
-    // plugin-polyfill.ts. It is injected by tools/inject_plugin_polyfill.js
+    // plugin-polyfill.ts. It is injected by tools/inject_plugin_polyfill.ts
     // which just search-and-replaces for this particular string.
     // On browsers which support ExecutionWorld MAIN this will be done earlier.
     if (
