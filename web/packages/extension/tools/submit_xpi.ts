@@ -8,11 +8,7 @@ import FormData from "form-data";
 // This script implements the same basic procedure as described here:
 // https://blog.mozilla.org/addons/2022/03/17/new-api-for-submitting-and-updating-add-ons/
 
-/**
- * @param {string} apiKey
- * @param {string} apiSecret
- */
-function getJwtToken(apiKey, apiSecret) {
+function getJwtToken(apiKey: string, apiSecret: string) {
     const payload = {
         iss: apiKey,
         jti: crypto.randomBytes(32).toString("hex"),
@@ -23,21 +19,13 @@ function getJwtToken(apiKey, apiSecret) {
     return jwt.sign(payload, apiSecret, { algorithm: "HS256" });
 }
 
-/**
- * @param {string} apiKey
- * @param {string} apiSecret
- * @param {string} extensionId
- * @param {string} unsignedPath
- * @param {string} sourcePath
- * @param {string} sourceTag
- */
 async function submit(
-    apiKey,
-    apiSecret,
-    extensionId,
-    unsignedPath,
-    sourcePath,
-    sourceTag,
+    apiKey: string,
+    apiSecret: string,
+    extensionId: string,
+    unsignedPath: string,
+    sourcePath: string,
+    sourceTag: string,
 ) {
     // The uploading, waiting for validation, and submitting parts could be done by this:
     // https://extensionworkshop.com/documentation/develop/getting-started-with-web-ext/
@@ -160,28 +148,31 @@ As this is indeed a complicated build process, please let me know if there is an
     );
 }
 
-try {
-    if (
-        process.env["MOZILLA_API_KEY"] &&
-        process.env["MOZILLA_API_SECRET"] &&
-        process.env["FIREFOX_EXTENSION_ID"] &&
-        process.env["SOURCE_TAG"]
-    ) {
-        await submit(
-            process.env["MOZILLA_API_KEY"], // "user:12345678:123"
-            process.env["MOZILLA_API_SECRET"], // 64 hexadecimal characters
-            process.env["FIREFOX_EXTENSION_ID"], // "{UUID}"
-            /** @type {string} */ (process.argv[2]), // "firefox_unsigned.xpi"
-            /** @type {string} */ (process.argv[3]), // "reproducible-source.zip"
-            process.env["SOURCE_TAG"], // "nightly-YYYY-MM-DD"
-        );
-    } else {
-        console.log(
-            "Skipping submission of Firefox extension. To enable this, please set the MOZILLA_API_KEY, MOZILLA_API_SECRET, FIREFOX_EXTENSION_ID, and SOURCE_TAG environment variables.",
-        );
+async function main() {
+    try {
+        if (
+            process.env["MOZILLA_API_KEY"] &&
+            process.env["MOZILLA_API_SECRET"] &&
+            process.env["FIREFOX_EXTENSION_ID"] &&
+            process.env["SOURCE_TAG"]
+        ) {
+            await submit(
+                process.env["MOZILLA_API_KEY"], // "user:12345678:123"
+                process.env["MOZILLA_API_SECRET"], // 64 hexadecimal characters
+                process.env["FIREFOX_EXTENSION_ID"], // "{UUID}"
+                process.argv[2] ?? "", // "firefox_unsigned.xpi"
+                process.argv[3] ?? "", // "reproducible-source.zip"
+                process.env["SOURCE_TAG"], // "nightly-YYYY-MM-DD"
+            );
+        } else {
+            console.log(
+                "Skipping submission of Firefox extension. To enable this, please set the MOZILLA_API_KEY, MOZILLA_API_SECRET, FIREFOX_EXTENSION_ID, and SOURCE_TAG environment variables.",
+            );
+        }
+    } catch (error) {
+        console.error("Error while submitting Firefox extension:");
+        console.error(error);
+        process.exit(-1);
     }
-} catch (error) {
-    console.error("Error while submitting Firefox extension:");
-    console.error(error);
-    process.exit(-1);
 }
+main();
