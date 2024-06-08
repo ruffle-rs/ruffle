@@ -13,7 +13,6 @@ use crate::events::TextControlCode;
 use crate::i18n::core_text;
 use gc_arena::Collect;
 use ruffle_render::quality::StageQuality;
-use serde::Serialize;
 
 #[derive(Collect, Default)]
 #[collect(no_drop)]
@@ -203,10 +202,11 @@ impl<'gc> ContextMenuState<'gc> {
     }
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct ContextMenuItem {
     pub enabled: bool,
-    #[serde(rename = "separatorBefore")]
+    #[cfg_attr(feature = "serde", serde(rename = "separatorBefore"))]
     pub separator_before: bool,
     pub checked: bool,
     pub caption: String,

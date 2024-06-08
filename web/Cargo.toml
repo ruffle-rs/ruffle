@@ -63,7 +63,7 @@ zip = { version = "2.1.2", default-features = false}
 
 [dependencies.ruffle_core]
 path = "../core"
-features = ["audio", "mp3", "nellymoser", "default_compatibility_rules", "default_font"]
+features = ["audio", "mp3", "nellymoser", "default_compatibility_rules", "default_font", "serde"]
 
 [dependencies.web-sys]
 version = "0.3.69"

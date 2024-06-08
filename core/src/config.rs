@@ -1,4 +1,3 @@
-use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 /// Controls whether the content is letterboxed or pillarboxed when the
@@ -7,19 +6,23 @@ use std::str::FromStr;
 /// When letterboxed, black bars will be rendered around the exterior
 /// margins of the content.
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename = "letterbox")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename = "letterbox")
+)]
 pub enum Letterbox {
     /// The content will never be letterboxed.
-    #[serde(rename = "off")]
+    #[cfg_attr(feature = "serde", serde(rename = "off"))]
     Off,
 
     /// The content will only be letterboxed if the content is running fullscreen.
-    #[serde(rename = "fullscreen")]
+    #[cfg_attr(feature = "serde", serde(rename = "fullscreen"))]
     Fullscreen,
 
     /// The content will always be letterboxed.
-    #[serde(rename = "on")]
+    #[cfg_attr(feature = "serde", serde(rename = "on"))]
     On,
 }
 
@@ -41,17 +44,18 @@ impl FromStr for Letterbox {
 
 /// The networking API access mode of the Ruffle player.
 /// This setting is only used on web.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum NetworkingAccessMode {
     /// All networking APIs are permitted in the SWF file.
-    #[serde(rename = "all")]
+    #[cfg_attr(feature = "serde", serde(rename = "all"))]
     All,
 
     /// The SWF file may not call browser navigation or browser interaction APIs.
     ///
     /// The APIs getURL(), navigateToURL(), fscommand() and ExternalInterface.call()
     /// are prevented in this mode.
-    #[serde(rename = "internal")]
+    #[cfg_attr(feature = "serde", serde(rename = "internal"))]
     Internal,
 
     /// The SWF file may not call browser navigation or browser interaction APIs
@@ -65,6 +69,6 @@ pub enum NetworkingAccessMode {
     /// URLStream.load() and XMLSocket.connect() are prevented in this mode.
     ///
     /// This mode is not implemented yet.
-    #[serde(rename = "none")]
+    #[cfg_attr(feature = "serde", serde(rename = "none"))]
     None,
 }

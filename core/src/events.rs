@@ -1,5 +1,4 @@
 use crate::display_object::InteractiveObject;
-use serde::Deserialize;
 use swf::ClipEventFlag;
 
 #[derive(Debug, Clone, Copy)]
@@ -341,7 +340,8 @@ impl<'gc> ClipEvent<'gc> {
 }
 
 /// Control inputs to a text field
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
 pub enum TextControlCode {
     MoveLeft,
     MoveLeftWord,
