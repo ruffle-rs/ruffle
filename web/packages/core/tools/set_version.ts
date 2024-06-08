@@ -1,13 +1,13 @@
-const replace = require("replace-in-file");
-const childProcess = require("child_process");
-const fs = require("fs");
-const path = require("path");
+import replace from "replace-in-file";
+import childProcess from "child_process";
+import fs from "fs";
+import path from "path";
 
 let buildDate = new Date().toISOString();
-let versionNumber = process.env.npm_package_version;
-let versionChannel = process.env.CFG_RELEASE_CHANNEL || "nightly";
+let versionNumber = process.env["npm_package_version"] ?? "";
+let versionChannel = process.env["CFG_RELEASE_CHANNEL"] || "nightly";
 const firefoxExtensionId =
-    process.env.FIREFOX_EXTENSION_ID || "ruffle@ruffle.rs";
+    process.env["FIREFOX_EXTENSION_ID"] || "ruffle@ruffle.rs";
 
 let commitHash = "unknown";
 
@@ -20,16 +20,28 @@ try {
 let versionName =
     versionChannel === "nightly"
         ? `nightly ${buildDate.substr(0, 10)}`
-        : process.env.npm_package_version;
+        : process.env["npm_package_version"] ?? "";
 
-let versionSeal = {};
+interface VersionInformation {
+    version_number: string;
+    version_name: string;
+    version_channel: string;
+    build_date: string;
+    commitHash: string;
+    build_id: string;
+    firefox_extension_id: string;
+}
 
-if (process.env.ENABLE_VERSION_SEAL === "true") {
+let versionSeal: VersionInformation;
+
+if (process.env["ENABLE_VERSION_SEAL"] === "true") {
     const sealFile = path.resolve(__dirname, "../../../version_seal.json");
     if (fs.existsSync(sealFile)) {
         console.log("Using version seal");
         // Using the version seal stored previously.
-        versionSeal = JSON.parse(fs.readFileSync(sealFile));
+        versionSeal = JSON.parse(
+            fs.readFileSync(sealFile, { encoding: "utf8" }),
+        ) as VersionInformation;
 
         versionNumber = versionSeal.version_number;
         versionName = versionSeal.version_name;
@@ -44,7 +56,7 @@ if (process.env.ENABLE_VERSION_SEAL === "true") {
             version_channel: versionChannel,
             build_date: buildDate,
             commitHash: commitHash,
-            build_id: process.env.BUILD_ID,
+            build_id: process.env["BUILD_ID"] ?? "",
             firefox_extension_id: firefoxExtensionId,
         };
 

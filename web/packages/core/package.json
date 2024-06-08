@@ -10,12 +10,12 @@
         "dist/"
     ],
     "scripts": {
-        "prebuild": "node tools/build_wasm.js",
+        "prebuild": "ts-node tools/build_wasm.ts",
         "build": "tsc --build --force",
-        "postbuild": "node tools/set_version.js && node tools/bundle_texts.js",
+        "postbuild": "ts-node tools/set_version.ts && ts-node tools/bundle_texts.ts",
         "docs": "typedoc",
         "test": "cross-env TS_NODE_COMPILER_OPTIONS={\\\"module\\\":\\\"commonjs\\\"} mocha",
-        "checkTypes": "tsc --noemit"
+        "checkTypes": "tsc --noemit && tsc --noemit -p tools"
     },
     "dependencies": {
         "wasm-feature-detect": "^1.6.1"

@@ -1,8 +1,8 @@
-const { execFileSync } = require("child_process");
-const { copyFileSync, mkdirSync, rmSync } = require("fs");
-const process = require("process");
+import { execFileSync } from "child_process";
+import { copyFileSync, mkdirSync, rmSync } from "fs";
+import * as process from "process";
 
-function runWasmOpt({ path, flags }) {
+function runWasmOpt({ path, flags }: { path: string; flags?: string[] }) {
     let args = ["-o", path, "-O", "-g", path];
     if (flags) {
         args = args.concat(flags);
@@ -11,7 +11,17 @@ function runWasmOpt({ path, flags }) {
         stdio: "inherit",
     });
 }
-function runWasmBindgen({ path, outName, flags, dir }) {
+function runWasmBindgen({
+    path,
+    outName,
+    flags,
+    dir,
+}: {
+    path: string;
+    outName: string;
+    flags?: string[];
+    dir: string;
+}) {
     let args = [
         path,
         "--target",
@@ -28,7 +38,15 @@ function runWasmBindgen({ path, outName, flags, dir }) {
         stdio: "inherit",
     });
 }
-function cargoBuild({ profile, features, rustFlags }) {
+function cargoBuild({
+    profile,
+    features,
+    rustFlags,
+}: {
+    profile?: string;
+    features?: string[];
+    rustFlags?: string[];
+}) {
     let args = ["build", "--locked", "--target", "wasm32-unknown-unknown"];
     if (profile) {
         args.push("--profile", profile);
@@ -59,7 +77,13 @@ function cargoBuild({ profile, features, rustFlags }) {
         stdio: "inherit",
     });
 }
-function buildWasm(profile, filename, optimise, extensions, wasmSource) {
+function buildWasm(
+    profile: string,
+    filename: string,
+    optimise: boolean,
+    extensions: boolean,
+    wasmSource: string,
+) {
     const rustFlags = ["-Aunknown_lints"];
     const wasmBindgenFlags = [];
     const wasmOptFlags = [];
@@ -105,7 +129,7 @@ function buildWasm(profile, filename, optimise, extensions, wasmSource) {
         });
     }
 }
-function copyStandIn(from, to) {
+function copyStandIn(from: string, to: string) {
     const suffixes = [`_bg.wasm`, `_bg.wasm.d.ts`, `.js`, `.d.ts`];
     console.log(`Copying ${from} as a stand-in for ${to}...`);
     for (const suffix of suffixes) {
