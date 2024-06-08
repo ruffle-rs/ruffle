@@ -10,11 +10,11 @@
         "dist/"
     ],
     "scripts": {
-        "prebuild": "ts-node tools/build_wasm.ts",
+        "prebuild": "tsx tools/build_wasm.ts",
         "build": "tsc --build --force",
-        "postbuild": "ts-node tools/set_version.ts && ts-node tools/bundle_texts.ts",
+        "postbuild": "tsx tools/set_version.ts && tsx tools/bundle_texts.ts",
         "docs": "typedoc",
-        "test": "cross-env TS_NODE_COMPILER_OPTIONS={\\\"module\\\":\\\"commonjs\\\"} mocha",
+        "test": "mocha",
         "checkTypes": "tsc --noemit && tsc --noemit -p tools"
     },
     "dependencies": {
@@ -29,9 +29,9 @@
         "eslint-plugin-jsdoc": "^48.2.9",
         "mocha": "^10.4.0",
         "replace-in-file": "^7.2.0",
-        "ts-node": "^10.9.2",
         "typedoc": "^0.25.13",
-        "typescript": "^5.4.5"
+        "typescript": "^5.4.5",
+        "tsx": "^4.14.0"
     },
     "sideEffects": false
 }
