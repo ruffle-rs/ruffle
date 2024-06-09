@@ -104,7 +104,10 @@ pub struct ClassData<'gc> {
     /// superinterfaces, nor interfaces implemented by the superclass.
     direct_interfaces: Vec<Class<'gc>>,
 
-    /// The list of all interfaces implemented by this class.
+    /// Interfaces implemented by this class, including interfaces
+    /// from parent classes and superinterfaces (recursively).
+    /// TODO - avoid cloning this when a subclass implements the
+    /// same interface as its superclass.
     all_interfaces: Vec<Class<'gc>>,
 
     /// The instance allocator for this class.
@@ -633,7 +636,7 @@ impl<'gc> Class<'gc> {
                     .into());
                 }
 
-                if dedup.insert(ClassHashWrapper(*interface)) {
+                if dedup.insert(*interface) {
                     queue.push(*interface);
                     interfaces.push(*interface);
                 }
@@ -1147,20 +1150,5 @@ impl<'gc> Class<'gc> {
     /// Determine if this class is generic (can be specialized)
     pub fn is_generic(self) -> bool {
         self.0.read().attributes.contains(ClassAttributes::GENERIC)
-    }
-}
-
-pub struct ClassHashWrapper<'gc>(pub Class<'gc>);
-
-impl<'gc> PartialEq for ClassHashWrapper<'gc> {
-    fn eq(&self, other: &Self) -> bool {
-        GcCell::ptr_eq(self.0 .0, other.0 .0)
-    }
-}
-impl<'gc> Eq for ClassHashWrapper<'gc> {}
-
-impl<'gc> Hash for ClassHashWrapper<'gc> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0 .0.as_ptr().hash(state);
     }
 }

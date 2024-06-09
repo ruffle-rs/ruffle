@@ -1,7 +1,7 @@
 //! Class object impl
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::{Allocator, AllocatorFn, Class, ClassHashWrapper};
+use crate::avm2::class::{Allocator, AllocatorFn, Class};
 use crate::avm2::error::{argument_error, make_error_1127, reference_error, type_error};
 use crate::avm2::function::exec;
 use crate::avm2::method::Method;
@@ -20,7 +20,6 @@ use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use std::cell::{BorrowError, Ref, RefMut};
-use std::collections::HashSet;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
@@ -81,12 +80,6 @@ pub struct ClassObjectData<'gc> {
     /// classes, though we consider the parameter to be the class `Object` when
     /// we get a param of `null`.
     applications: FnvHashMap<Option<Class<'gc>>, ClassObject<'gc>>,
-
-    /// Interfaces implemented by this class, including interfaces
-    /// from parent classes and superinterfaces (recursively).
-    /// TODO - avoid cloning this when a subclass implements the
-    /// same interface as its superclass.
-    interfaces: Vec<Class<'gc>>,
 
     /// VTable used for instances of this class.
     instance_vtable: VTable<'gc>,
@@ -205,7 +198,6 @@ impl<'gc> ClassObject<'gc> {
                 native_constructor: class.native_instance_init(),
                 call_handler: class.call_handler(),
                 applications: Default::default(),
-                interfaces: Vec::new(),
                 instance_vtable: VTable::empty(activation.context.gc_context),
                 class_vtable: VTable::empty(activation.context.gc_context),
             },
@@ -318,43 +310,13 @@ impl<'gc> ClassObject<'gc> {
     /// instance traits will be resolved to their corresponding methods at this
     /// time.
     pub fn link_interfaces(self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
-        let mut write = self.0.write(activation.context.gc_context);
-        let class = write.class;
-
-        let mut interfaces = Vec::with_capacity(class.direct_interfaces().len());
-
-        let mut dedup = HashSet::new();
-        let mut queue = vec![class];
-        while let Some(cls) = queue.pop() {
-            for interface in &*cls.direct_interfaces() {
-                if !interface.is_interface() {
-                    return Err(format!(
-                        "Class {:?} is not an interface and cannot be implemented by classes",
-                        interface.name().local_name()
-                    )
-                    .into());
-                }
-
-                if dedup.insert(ClassHashWrapper(*interface)) {
-                    queue.push(*interface);
-                    interfaces.push(*interface);
-                }
-            }
-
-            if let Some(super_class) = cls.super_class() {
-                queue.push(super_class);
-            }
-        }
-        write.interfaces = interfaces;
-        drop(write);
-
-        let read = self.0.read();
+        let class = self.inner_class_definition();
 
         // FIXME - we should only be copying properties for newly-implemented
         // interfaces (i.e. those that were not already implemented by the superclass)
         // Otherwise, our behavior diverges from Flash Player in certain cases.
         // See the ignored test 'tests/tests/swfs/avm2/weird_superinterface_properties/'
-        for interface in &read.interfaces {
+        for interface in &*class.all_interfaces() {
             for interface_trait in &*interface.instance_traits() {
                 if !interface_trait.name().namespace().is_public() {
                     let public_name = QName::new(
@@ -758,10 +720,6 @@ impl<'gc> ClassObject<'gc> {
 
     pub fn prototype(self) -> Object<'gc> {
         self.0.read().prototype.unwrap()
-    }
-
-    pub fn interfaces(self) -> Vec<Class<'gc>> {
-        self.0.read().interfaces.clone()
     }
 
     pub fn class_scope(self) -> ScopeChain<'gc> {
