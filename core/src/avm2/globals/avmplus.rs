@@ -275,7 +275,7 @@ fn describe_internal_body<'gc>(
     let super_vtable = if use_instance_traits {
         class_obj.superclass_object().map(|c| c.instance_vtable())
     } else {
-        class_obj.instance_of().map(|c| c.instance_vtable())
+        class_obj.instance_class().map(|c| c.instance_vtable())
     };
 
     if flags.contains(DescribeTypeFlags::INCLUDE_INTERFACES) && use_instance_traits {
