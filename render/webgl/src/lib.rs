@@ -23,7 +23,7 @@ use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
 use std::borrow::Cow;
 use std::sync::Arc;
-use swf::{BlendMode, Color};
+use swf::{BlendMode, Color, Twips};
 use thiserror::Error;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{
@@ -919,7 +919,7 @@ impl WebGlRenderBackend {
         }
     }
 
-    fn draw_quad(&mut self, color: Color, matrix: Matrix) {
+    fn draw_quad<const MODE: u32, const COUNT: i32>(&mut self, color: Color, matrix: Matrix) {
         let world_matrix = [
             [matrix.a, matrix.b, 0.0, 0.0],
             [matrix.c, matrix.d, 0.0, 0.0],
@@ -973,8 +973,13 @@ impl WebGlRenderBackend {
         let quad = &self.color_quad_draws;
         self.bind_vertex_array(Some(&quad[0].vao));
 
+        let count = if COUNT < 0 {
+            quad[0].num_indices
+        } else {
+            COUNT
+        };
         self.gl
-            .draw_elements_with_i32(Gl::TRIANGLE_FAN, quad[0].num_indices, Gl::UNSIGNED_INT, 0);
+            .draw_elements_with_i32(MODE, count, Gl::UNSIGNED_INT, 0);
     }
 }
 
@@ -1496,15 +1501,19 @@ impl CommandHandler for WebGlRenderBackend {
     }
 
     fn draw_rect(&mut self, color: Color, matrix: Matrix) {
-        self.draw_quad(color, matrix);
+        self.draw_quad::<{ Gl::TRIANGLE_FAN }, -1>(color, matrix)
     }
 
-    fn draw_line(&mut self, _color: Color, _matrix: Matrix) {
-        // TODO implement
+    fn draw_line(&mut self, color: Color, mut matrix: Matrix) {
+        matrix.tx += Twips::HALF;
+        matrix.ty += Twips::HALF;
+        self.draw_quad::<{ Gl::LINE_STRIP }, 2>(color, matrix)
     }
 
-    fn draw_line_rect(&mut self, _color: Color, _matrix: Matrix) {
-        // TODO implement
+    fn draw_line_rect(&mut self, color: Color, mut matrix: Matrix) {
+        matrix.tx += Twips::HALF;
+        matrix.ty += Twips::HALF;
+        self.draw_quad::<{ Gl::LINE_LOOP }, -1>(color, matrix)
     }
 
     fn push_mask(&mut self) {
@@ -1805,8 +1814,6 @@ impl ShaderProgram {
         );
     }
 }
-
-impl WebGlRenderBackend {}
 
 trait GlExt {
     fn check_error(&self, error_msg: &'static str) -> Result<(), Error>;
