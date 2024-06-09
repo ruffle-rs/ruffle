@@ -1,7 +1,8 @@
 //! `flash.net` namespace
 
-use crate::avm2::error::make_error_2007;
+use crate::avm2::error::{make_error_2007, reference_error};
 use crate::avm2::object::TObject;
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, Value};
 use crate::backend::navigator::NavigationMethod;
 use indexmap::IndexMap;
@@ -98,5 +99,41 @@ pub fn navigate_to_url<'gc>(
             );
             Ok(Value::Undefined)
         }
+    }
+}
+
+pub fn register_class_alias<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let name = args.get_string_non_null(activation, 0, "aliasName")?;
+    let class_object = args
+        .get_object(activation, 1, "classObject")?
+        .as_class_object()
+        .unwrap();
+
+    activation.avm2().register_class_alias(name, class_object);
+    Ok(Value::Undefined)
+}
+
+pub fn get_class_by_alias<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let name = args.get_string_non_null(activation, 0, "aliasName")?;
+
+    if let Some(class_object) = activation.avm2().get_class_by_alias(name) {
+        Ok(class_object.into())
+    } else {
+        // can't create error 1014 normally,
+        // as this is one place where it's a ReferenceError for some reason
+        let error = reference_error(
+            activation,
+            &format!("Error #1014: Class {} could not be found.", name),
+            1014,
+        )?;
+        Err(Error::AvmError(error))
     }
 }

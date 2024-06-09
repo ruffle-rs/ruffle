@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use crate::avm2::bytearray::ByteArrayStorage;
-use crate::avm2::object::{ByteArrayObject, TObject, VectorObject};
+use crate::avm2::object::{ByteArrayObject, ClassObject, TObject, VectorObject};
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::ArrayObject;
 use crate::avm2::ArrayStorage;
@@ -14,7 +14,6 @@ use flash_lso::types::{Attribute, ClassDefinition, Value as AmfValue};
 use fnv::FnvHashMap;
 
 use super::property::Property;
-use super::{ClassObject, QName};
 
 pub type ObjectTable<'gc> = FnvHashMap<Object<'gc>, Rc<AmfValue>>;
 
@@ -167,46 +166,18 @@ fn alias_to_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
     alias: AvmString<'gc>,
 ) -> Result<ClassObject<'gc>, Error<'gc>> {
-    let mut target_class = activation.avm2().classes().object;
-
-    let qname = QName::new(activation.avm2().flash_net_internal, "_getClassByAlias");
-    let method = activation
-        .avm2()
-        .playerglobals_domain
-        .get_defined_value(activation, qname)?;
-
-    let class = method
-        .as_object()
-        .unwrap()
-        .as_function_object()
-        .unwrap()
-        .call(Value::Undefined, &[alias.into()], activation)?;
-    if let Some(class_obj) = class.as_object().and_then(|o| o.as_class_object()) {
-        target_class = class_obj;
+    if let Some(class_object) = activation.avm2().get_class_by_alias(alias) {
+        Ok(class_object)
+    } else {
+        Ok(activation.avm2().classes().object)
     }
-    Ok(target_class)
 }
 
 fn class_to_alias<'gc>(activation: &mut Activation<'_, 'gc>, class: ClassObject<'gc>) -> String {
-    let qname = QName::new(activation.avm2().flash_net_internal, "_getAliasByClass");
-    let method = activation
-        .avm2()
-        .playerglobals_domain
-        .get_defined_value(activation, qname)
-        .expect("Failed to lookup flash.net._getAliasByClass");
-
-    let alias = method
-        .as_object()
-        .unwrap()
-        .as_function_object()
-        .unwrap()
-        .call(Value::Undefined, &[class.into()], activation)
-        .expect("Failed to call flash.net._getAliasByClass");
-
-    if let Value::Null = alias {
-        "".to_string()
+    if let Some(alias) = activation.avm2().get_alias_by_class(class) {
+        alias.to_string()
     } else {
-        alias.coerce_to_string(activation).unwrap().to_string()
+        "".to_string()
     }
 }
 
