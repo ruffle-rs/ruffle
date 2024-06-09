@@ -597,14 +597,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             let ClassBoundMethod {
                 method,
                 scope,
-                class,
+                class_obj,
+                ..
             } = full_method;
 
             return exec(
                 method,
                 scope.expect("Scope should exist here"),
                 self.into(),
-                class,
+                class_obj,
                 arguments,
                 activation,
                 self.into(), // Callee deliberately invalid.

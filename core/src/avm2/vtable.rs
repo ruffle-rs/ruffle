@@ -7,10 +7,7 @@ use crate::avm2::property_map::PropertyMap;
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
-use crate::avm2::Multiname;
-use crate::avm2::Namespace;
-use crate::avm2::QName;
+use crate::avm2::{Class, Error, Multiname, Namespace, QName};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, Mutation};
@@ -52,7 +49,8 @@ pub struct VTableData<'gc> {
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct ClassBoundMethod<'gc> {
-    pub class: Option<ClassObject<'gc>>,
+    pub class: Class<'gc>,
+    pub class_obj: Option<ClassObject<'gc>>,
     pub scope: Option<ScopeChain<'gc>>,
     pub method: Method<'gc>,
 }
@@ -211,8 +209,8 @@ impl<'gc> VTable<'gc> {
     #[allow(clippy::if_same_then_else)]
     pub fn init_vtable(
         self,
+        defining_class_def: Class<'gc>,
         defining_class: Option<ClassObject<'gc>>,
-        protected_namespace: Option<Namespace<'gc>>,
         traits: &[Trait<'gc>],
         scope: Option<ScopeChain<'gc>>,
         superclass_vtable: Option<Self>,
@@ -274,7 +272,7 @@ impl<'gc> VTable<'gc> {
 
         write.scope = scope;
 
-        write.protected_namespace = protected_namespace;
+        write.protected_namespace = defining_class_def.protected_namespace();
 
         if let Some(superclass_vtable) = superclass_vtable {
             write.resolved_traits = superclass_vtable.0.read().resolved_traits.clone();
@@ -321,7 +319,8 @@ impl<'gc> VTable<'gc> {
             match trait_data.kind() {
                 TraitKind::Method { method, .. } => {
                     let entry = ClassBoundMethod {
-                        class: defining_class,
+                        class: defining_class_def,
+                        class_obj: defining_class,
                         scope,
                         method: *method,
                     };
@@ -349,7 +348,8 @@ impl<'gc> VTable<'gc> {
                 }
                 TraitKind::Getter { method, .. } => {
                     let entry = ClassBoundMethod {
-                        class: defining_class,
+                        class: defining_class_def,
+                        class_obj: defining_class,
                         scope,
                         method: *method,
                     };
@@ -386,7 +386,8 @@ impl<'gc> VTable<'gc> {
                 }
                 TraitKind::Setter { method, .. } => {
                     let entry = ClassBoundMethod {
-                        class: defining_class,
+                        class: defining_class_def,
+                        class_obj: defining_class,
                         scope,
                         method: *method,
                     };
@@ -512,9 +513,10 @@ impl<'gc> VTable<'gc> {
         method: ClassBoundMethod<'gc>,
     ) -> FunctionObject<'gc> {
         let ClassBoundMethod {
-            class,
+            class_obj,
             scope,
             method,
+            ..
         } = method;
 
         FunctionObject::from_method(
@@ -522,7 +524,7 @@ impl<'gc> VTable<'gc> {
             method,
             scope.expect("Scope should exist here"),
             Some(receiver),
-            class,
+            class_obj,
         )
     }
 

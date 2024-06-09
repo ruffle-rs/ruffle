@@ -383,14 +383,12 @@ fn describe_internal_body<'gc>(
                 let declared_by = method.class;
 
                 if flags.contains(DescribeTypeFlags::HIDE_OBJECT)
-                    && declared_by == Some(activation.avm2().classes().object)
+                    && declared_by == activation.avm2().classes().object.inner_class_definition()
                 {
                     continue;
                 }
 
                 let declared_by_name = declared_by
-                    .unwrap()
-                    .inner_class_definition()
                     .name()
                     .to_qualified_name(activation.context.gc_context);
 
@@ -477,8 +475,6 @@ fn describe_internal_body<'gc>(
                 let accessor_type =
                     method_type.to_qualified_name_or_star(activation.context.gc_context);
                 let declared_by = defining_class
-                    .unwrap()
-                    .inner_class_definition()
                     .name()
                     .to_qualified_name(activation.context.gc_context);
 
