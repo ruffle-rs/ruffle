@@ -224,7 +224,7 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let class = self.inner_class_definition();
-        self.instance_of().ok_or(
+        self.instance_class().ok_or(
             "Cannot finish initialization of core class without it being linked to a type!",
         )?;
 
