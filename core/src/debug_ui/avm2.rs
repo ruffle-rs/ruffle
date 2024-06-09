@@ -438,7 +438,7 @@ fn object_name<'gc>(mc: &Mutation<'gc>, object: Object<'gc>) -> String {
             .to_string()
     } else {
         let name = object
-            .instance_of_class_definition()
+            .instance_class()
             .map(|r| Cow::Owned(r.name().local_name().to_string()))
             .unwrap_or(Cow::Borrowed("Object"));
         format!("{} {:p}", name, object.as_ptr())

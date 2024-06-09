@@ -1,8 +1,9 @@
 //! Represents AVM2 scope chain resolution.
 
 use crate::avm2::activation::Activation;
+use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
-use crate::avm2::object::{ClassObject, Object, TObject};
+use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::{Multiname, Namespace};
@@ -237,7 +238,7 @@ impl<'gc> ScopeChain<'gc> {
     pub fn get_entry_for_multiname(
         &self,
         multiname: &Multiname<'gc>,
-    ) -> Option<Option<(Option<ClassObject<'gc>>, u32)>> {
+    ) -> Option<Option<(Option<Class<'gc>>, u32)>> {
         if let Some(container) = self.container {
             for (index, scope) in container.scopes.iter().enumerate().skip(1).rev() {
                 if scope.with() {
@@ -248,7 +249,7 @@ impl<'gc> ScopeChain<'gc> {
 
                 let values = scope.values();
                 if values.has_trait(multiname) {
-                    return Some(Some((values.instance_of(), index as u32)));
+                    return Some(Some((values.instance_class(), index as u32)));
                 }
             }
         }

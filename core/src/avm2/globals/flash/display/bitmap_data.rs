@@ -92,7 +92,7 @@ pub fn init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     // We set the underlying BitmapData instance - we start out with a dummy BitmapDataWrapper,
     // which makes custom classes see a disposed BitmapData before they call super()
-    let name = this.instance_of_class_definition().map(|c| c.name());
+    let name = this.instance_class().map(|c| c.name());
     let character = this
         .instance_of()
         .and_then(|t| {
@@ -374,7 +374,7 @@ pub fn get_vector<'gc>(
             height,
         );
 
-        let value_type = activation.avm2().classes().uint;
+        let value_type = activation.avm2().classes().uint.inner_class_definition();
         let new_storage = VectorStorage::from_values(pixels, false, Some(value_type));
 
         return Ok(VectorObject::from_vector(new_storage, activation)?.into());

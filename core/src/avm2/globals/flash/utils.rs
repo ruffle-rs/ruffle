@@ -199,15 +199,14 @@ pub fn get_qualified_class_name<'gc>(
     let obj = val.coerce_to_object(activation)?;
 
     let class = match obj.as_class_object() {
-        Some(class) => class,
-        None => match obj.instance_of() {
+        Some(class) => class.inner_class_definition(),
+        None => match obj.instance_class() {
             Some(cls) => cls,
             None => return Ok(Value::Null),
         },
     };
 
     Ok(class
-        .inner_class_definition()
         .name()
         .to_qualified_name(activation.context.gc_context)
         .into())
@@ -225,16 +224,15 @@ pub fn get_qualified_superclass_name<'gc>(
         .coerce_to_object(activation)?;
 
     let class = match obj.as_class_object() {
-        Some(class) => class,
-        None => match obj.instance_of() {
+        Some(class) => class.inner_class_definition(),
+        None => match obj.instance_class() {
             Some(cls) => cls,
             None => return Ok(Value::Null),
         },
     };
 
-    if let Some(super_class) = class.superclass_object() {
+    if let Some(super_class) = class.super_class() {
         Ok(super_class
-            .inner_class_definition()
             .name()
             .to_qualified_name(activation.context.gc_context)
             .into())

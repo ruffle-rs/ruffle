@@ -1,6 +1,7 @@
 //! Default AVM2 object impl
 
 use crate::avm2::activation::Activation;
+use crate::avm2::class::Class;
 use crate::avm2::dynamic_map::{DynamicKey, DynamicMap};
 use crate::avm2::error;
 use crate::avm2::object::{ClassObject, FunctionObject, Object, ObjectPtr, TObject};
@@ -164,7 +165,7 @@ impl<'gc> ScriptObjectData<'gc> {
                 activation,
                 error::ReferenceErrorCode::InvalidRead,
                 multiname,
-                self.instance_of(),
+                self.instance_class(),
             ));
         }
 
@@ -174,7 +175,7 @@ impl<'gc> ScriptObjectData<'gc> {
                 activation,
                 error::ReferenceErrorCode::InvalidRead,
                 multiname,
-                self.instance_of(),
+                self.instance_class(),
             ));
         };
 
@@ -205,7 +206,7 @@ impl<'gc> ScriptObjectData<'gc> {
                 activation,
                 error::ReferenceErrorCode::InvalidRead,
                 multiname,
-                self.instance_of(),
+                self.instance_class(),
             ));
         } else {
             Ok(Value::Undefined)
@@ -223,7 +224,7 @@ impl<'gc> ScriptObjectData<'gc> {
                 activation,
                 error::ReferenceErrorCode::InvalidWrite,
                 multiname,
-                self.instance_of(),
+                self.instance_class(),
             ));
         }
 
@@ -232,7 +233,7 @@ impl<'gc> ScriptObjectData<'gc> {
                 activation,
                 error::ReferenceErrorCode::InvalidWrite,
                 multiname,
-                self.instance_of(),
+                self.instance_class(),
             ));
         };
 
@@ -394,14 +395,18 @@ impl<'gc> ScriptObjectData<'gc> {
         self.instance_of
     }
 
+    pub fn instance_class(&self) -> Option<Class<'gc>> {
+        self.instance_of.map(|cls| cls.inner_class_definition())
+    }
+
     /// Get the vtable for this object, if it has one.
     pub fn vtable(&self) -> Option<VTable<'gc>> {
         self.vtable
     }
 
     pub fn is_sealed(&self) -> bool {
-        self.instance_of()
-            .map(|cls| cls.inner_class_definition().is_sealed())
+        self.instance_class()
+            .map(|cls| cls.is_sealed())
             .unwrap_or(false)
     }
 
@@ -416,9 +421,7 @@ impl<'gc> ScriptObjectData<'gc> {
     }
 
     pub fn debug_class_name(&self) -> Box<dyn std::fmt::Debug + 'gc> {
-        let class_name = self
-            .instance_of()
-            .map(|class_obj| class_obj.debug_class_name());
+        let class_name = self.instance_class().map(|cls| cls.debug_name());
 
         match class_name {
             Some(class_name) => Box::new(class_name),

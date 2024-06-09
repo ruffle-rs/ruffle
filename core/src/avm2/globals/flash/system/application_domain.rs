@@ -123,7 +123,7 @@ pub fn get_qualified_definition_names<'gc>(
                 .map(|name| Value::String(name.to_qualified_name(activation.context.gc_context)))
                 .collect(),
             false,
-            Some(activation.avm2().classes().string),
+            Some(activation.avm2().classes().string.inner_class_definition()),
         );
 
         let name_vector = VectorObject::from_vector(storage, activation)?;

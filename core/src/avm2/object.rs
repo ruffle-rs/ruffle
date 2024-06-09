@@ -268,7 +268,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     activation,
                     error::ReferenceErrorCode::ReadFromWriteOnly,
                     multiname,
-                    self.instance_of(),
+                    self.instance_class(),
                 ));
             }
             None => self.get_property_local(multiname, activation),
@@ -359,7 +359,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     activation,
                     error::ReferenceErrorCode::AssignToMethod,
                     multiname,
-                    self.instance_of(),
+                    self.instance_class(),
                 ));
             }
             Some(Property::Virtual { set: Some(set), .. }) => {
@@ -370,7 +370,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     activation,
                     error::ReferenceErrorCode::WriteToReadOnly,
                     multiname,
-                    self.instance_of(),
+                    self.instance_class(),
                 ));
             }
             None => self.set_property_local(multiname, value, activation),
@@ -437,7 +437,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     activation,
                     error::ReferenceErrorCode::AssignToMethod,
                     multiname,
-                    self.instance_of(),
+                    self.instance_class(),
                 ));
             }
             Some(Property::Virtual { set: Some(set), .. }) => {
@@ -448,7 +448,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     activation,
                     error::ReferenceErrorCode::WriteToReadOnly,
                     multiname,
-                    self.instance_of(),
+                    self.instance_class(),
                 ));
             }
             None => self.init_property_local(multiname, value, activation),
@@ -518,7 +518,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     activation,
                     error::ReferenceErrorCode::ReadFromWriteOnly,
                     multiname,
-                    self.instance_of(),
+                    self.instance_class(),
                 ));
             }
             None => self.call_property_local(multiname, arguments, activation),
@@ -705,14 +705,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 activation,
                 error::ReferenceErrorCode::InvalidDelete,
                 multiname,
-                self.instance_of(),
+                self.instance_class(),
             ));
         }
 
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
             None => {
                 if self
-                    .instance_of_class_definition()
+                    .instance_class()
                     .map(|c| c.is_sealed())
                     .unwrap_or(false)
                 {
@@ -968,7 +968,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// coercions.
     fn to_string(&self, activation: &mut Activation<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>> {
         let class_name = self
-            .instance_of_class_definition()
+            .instance_class()
             .map(|c| c.name().local_name())
             .unwrap_or_else(|| "Object".into());
 
@@ -988,7 +988,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let class_name = self
-            .instance_of_class_definition()
+            .instance_class()
             .map(|c| c.name().local_name())
             .unwrap_or_else(|| "Object".into());
 
@@ -1086,7 +1086,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// The given object should be the class object for the given type we are
     /// checking against this object.
     fn is_of_type(&self, test_class: Class<'gc>, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        let my_class = self.instance_of();
+        let my_class = self.instance_class();
 
         // ES3 objects are not class instances but are still treated as
         // instances of Object, which is an ES4 class.
@@ -1123,13 +1123,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Get this object's class's `Class`, if it has one.
-    fn instance_of_class_definition(&self) -> Option<Class<'gc>> {
+    fn instance_class(&self) -> Option<Class<'gc>> {
         self.instance_of().map(|cls| cls.inner_class_definition())
     }
 
     /// Get this object's class's name, formatted for debug output.
     fn instance_of_class_name(&self, mc: &Mutation<'gc>) -> AvmString<'gc> {
-        self.instance_of_class_definition()
+        self.instance_class()
             .map(|r| r.name().to_qualified_name(mc))
             .unwrap_or_else(|| "<Unknown type>".into())
     }
