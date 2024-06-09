@@ -604,8 +604,8 @@ impl<'gc> Class<'gc> {
         }
 
         read.instance_vtable.init_vtable(
+            self,
             None,
-            self.protected_namespace(),
             &read.instance_traits,
             None,
             read.super_class.map(|c| c.instance_vtable()),

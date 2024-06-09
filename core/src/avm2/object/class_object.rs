@@ -239,8 +239,8 @@ impl<'gc> ClassObject<'gc> {
         class.validate_class(self.superclass_object())?;
 
         self.instance_vtable().init_vtable(
+            class,
             Some(self),
-            class.protected_namespace(),
             &class.instance_traits(),
             Some(self.instance_scope()),
             self.superclass_object().map(|cls| cls.instance_vtable()),
@@ -275,8 +275,8 @@ impl<'gc> ClassObject<'gc> {
 
         // class vtable == class traits + Class instance traits
         self.class_vtable().init_vtable(
+            class,
             Some(self),
-            class.protected_namespace(),
             &class.class_traits(),
             Some(self.class_scope()),
             Some(self.instance_of().unwrap().instance_vtable()),
@@ -516,16 +516,17 @@ impl<'gc> ClassObject<'gc> {
         if let Some(Property::Method { disp_id, .. }) = property {
             // todo: handle errors
             let ClassBoundMethod {
-                class,
+                class_obj,
                 scope,
                 method,
+                ..
             } = self.instance_vtable().get_full_method(disp_id).unwrap();
             let callee = FunctionObject::from_method(
                 activation,
                 method,
                 scope.expect("Scope should exist here"),
                 Some(receiver),
-                class,
+                class_obj,
             );
 
             callee.call(receiver.into(), arguments, activation)
@@ -575,16 +576,17 @@ impl<'gc> ClassObject<'gc> {
             ) => {
                 // todo: handle errors
                 let ClassBoundMethod {
-                    class,
+                    class_obj,
                     scope,
                     method,
+                    ..
                 } = self.instance_vtable().get_full_method(disp_id).unwrap();
                 let callee = FunctionObject::from_method(
                     activation,
                     method,
                     scope.expect("Scope should exist here"),
                     Some(receiver),
-                    class,
+                    class_obj,
                 );
 
                 // We call getters, but return the actual function object for normal methods
@@ -657,12 +659,13 @@ impl<'gc> ClassObject<'gc> {
             }) => {
                 // todo: handle errors
                 let ClassBoundMethod {
-                    class,
+                    class_obj,
                     scope,
                     method,
+                    ..
                 } = self.instance_vtable().get_full_method(disp_id).unwrap();
                 let callee =
-                    FunctionObject::from_method(activation, method, scope.expect("Scope should exist here"), Some(receiver), class);
+                    FunctionObject::from_method(activation, method, scope.expect("Scope should exist here"), Some(receiver), class_obj);
 
                 callee.call(receiver.into(), &[value], activation)?;
                 Ok(())
