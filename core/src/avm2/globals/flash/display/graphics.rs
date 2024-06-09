@@ -1166,7 +1166,11 @@ pub fn read_graphics_data<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.display.Graphics", "readGraphicsData");
-    let value_type = activation.avm2().classes().igraphicsdata;
+    let value_type = activation
+        .avm2()
+        .classes()
+        .igraphicsdata
+        .inner_class_definition();
     let new_storage = VectorStorage::new(0, false, Some(value_type), activation);
     Ok(VectorObject::from_vector(new_storage, activation)?.into())
 }
@@ -1298,17 +1302,41 @@ fn handle_igraphics_data<'gc>(
     drawing: &mut Drawing,
     obj: &Object<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let class = obj.instance_of().expect("No class");
+    let class = obj.instance_class().expect("No class");
 
-    if class == activation.avm2().classes().graphicsbitmapfill {
+    if class
+        == activation
+            .avm2()
+            .classes()
+            .graphicsbitmapfill
+            .inner_class_definition()
+    {
         let style = handle_bitmap_fill(activation, drawing, obj)?;
         drawing.set_fill_style(Some(style));
-    } else if class == activation.avm2().classes().graphicsendfill {
+    } else if class
+        == activation
+            .avm2()
+            .classes()
+            .graphicsendfill
+            .inner_class_definition()
+    {
         drawing.set_fill_style(None);
-    } else if class == activation.avm2().classes().graphicsgradientfill {
+    } else if class
+        == activation
+            .avm2()
+            .classes()
+            .graphicsgradientfill
+            .inner_class_definition()
+    {
         let style = handle_gradient_fill(activation, obj)?;
         drawing.set_fill_style(Some(style));
-    } else if class == activation.avm2().classes().graphicspath {
+    } else if class
+        == activation
+            .avm2()
+            .classes()
+            .graphicspath
+            .inner_class_definition()
+    {
         let commands = obj
             .get_public_property("commands", activation)?
             .coerce_to_object(activation)?;
@@ -1330,13 +1358,31 @@ fn handle_igraphics_data<'gc>(
                 .expect("commands is not a Vector"),
             &data.as_vector_storage().expect("data is not a Vector"),
         )?;
-    } else if class == activation.avm2().classes().graphicssolidfill {
+    } else if class
+        == activation
+            .avm2()
+            .classes()
+            .graphicssolidfill
+            .inner_class_definition()
+    {
         let style = handle_solid_fill(activation, obj)?;
         drawing.set_fill_style(Some(style));
-    } else if class == activation.avm2().classes().graphicsshaderfill {
+    } else if class
+        == activation
+            .avm2()
+            .classes()
+            .graphicsshaderfill
+            .inner_class_definition()
+    {
         tracing::warn!("Graphics shader fill unimplemented {:?}", class);
         drawing.set_fill_style(None);
-    } else if class == activation.avm2().classes().graphicsstroke {
+    } else if class
+        == activation
+            .avm2()
+            .classes()
+            .graphicsstroke
+            .inner_class_definition()
+    {
         let thickness = obj
             .get_public_property("thickness", activation)?
             .coerce_to_number(activation)?;
@@ -1392,7 +1438,13 @@ fn handle_igraphics_data<'gc>(
 
             drawing.set_line_style(Some(line_style));
         }
-    } else if class == activation.avm2().classes().graphicstrianglepath {
+    } else if class
+        == activation
+            .avm2()
+            .classes()
+            .graphicstrianglepath
+            .inner_class_definition()
+    {
         handle_graphics_triangle_path(activation, drawing, obj)?;
     } else {
         panic!("Unknown graphics data class {:?}", class);
@@ -1528,20 +1580,50 @@ fn handle_igraphics_fill<'gc>(
     drawing: &mut Drawing,
     obj: &Object<'gc>,
 ) -> Result<Option<FillStyle>, Error<'gc>> {
-    let class = obj.instance_of().expect("No class");
+    let class = obj.instance_class().expect("No class");
 
-    if class == activation.avm2().classes().graphicsbitmapfill {
+    if class
+        == activation
+            .avm2()
+            .classes()
+            .graphicsbitmapfill
+            .inner_class_definition()
+    {
         let style = handle_bitmap_fill(activation, drawing, obj)?;
         Ok(Some(style))
-    } else if class == activation.avm2().classes().graphicsendfill {
+    } else if class
+        == activation
+            .avm2()
+            .classes()
+            .graphicsendfill
+            .inner_class_definition()
+    {
         Ok(None)
-    } else if class == activation.avm2().classes().graphicsgradientfill {
+    } else if class
+        == activation
+            .avm2()
+            .classes()
+            .graphicsgradientfill
+            .inner_class_definition()
+    {
         let style = handle_gradient_fill(activation, obj)?;
         Ok(Some(style))
-    } else if class == activation.avm2().classes().graphicssolidfill {
+    } else if class
+        == activation
+            .avm2()
+            .classes()
+            .graphicssolidfill
+            .inner_class_definition()
+    {
         let style = handle_solid_fill(activation, obj)?;
         Ok(Some(style))
-    } else if class == activation.avm2().classes().graphicsshaderfill {
+    } else if class
+        == activation
+            .avm2()
+            .classes()
+            .graphicsshaderfill
+            .inner_class_definition()
+    {
         tracing::warn!("Graphics shader fill unimplemented {:?}", class);
         Ok(None)
     } else {

@@ -620,11 +620,7 @@ impl<'gc> Script<'gc> {
 
             globals.vtable().unwrap().init_vtable(
                 globals.instance_of(),
-                globals
-                    .instance_of()
-                    .unwrap()
-                    .inner_class_definition()
-                    .protected_namespace(),
+                globals.instance_class().unwrap().protected_namespace(),
                 &self.traits()?,
                 Some(scope),
                 None,

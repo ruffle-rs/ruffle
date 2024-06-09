@@ -64,9 +64,12 @@ impl<'gc> BitmapClass<'gc> {
         class: Avm2ClassObject<'gc>,
         context: &mut UpdateContext<'_, 'gc>,
     ) -> Option<Self> {
-        if class.has_class_in_chain(context.avm2.classes().bitmap.inner_class_definition()) {
+        let class_definition = class.inner_class_definition();
+        if class_definition
+            .has_class_in_chain(context.avm2.classes().bitmap.inner_class_definition())
+        {
             Some(BitmapClass::Bitmap(class))
-        } else if class
+        } else if class_definition
             .has_class_in_chain(context.avm2.classes().bitmapdata.inner_class_definition())
         {
             Some(BitmapClass::BitmapData(class))

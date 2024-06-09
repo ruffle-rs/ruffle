@@ -123,7 +123,7 @@ impl<'gc> TObject<'gc> for PrimitiveObject<'gc> {
             val @ Value::Integer(_) => Ok(val),
             _ => {
                 let class_name = self
-                    .instance_of_class_definition()
+                    .instance_class()
                     .map(|c| c.name().local_name())
                     .unwrap_or_else(|| "Object".into());
 

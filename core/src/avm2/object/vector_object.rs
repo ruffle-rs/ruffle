@@ -19,7 +19,8 @@ pub fn vector_allocator<'gc>(
     let base = ScriptObjectData::new(class);
 
     let param_type = class
-        .as_class_params()
+        .inner_class_definition()
+        .param()
         .ok_or("Cannot convert to unparametrized Vector")?;
 
     Ok(VectorObject(GcCell::new(
@@ -65,10 +66,10 @@ impl<'gc> VectorObject<'gc> {
         vector: VectorStorage<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        let value_type = vector.value_type().map(|o| o.into()).unwrap_or(Value::Null);
+        let value_type = vector.value_type();
         let vector_class = activation.avm2().classes().generic_vector;
 
-        let applied_class = vector_class.apply(activation, &[value_type])?;
+        let applied_class = vector_class.parametrize(activation, value_type)?;
 
         let object: Object<'gc> = VectorObject(GcCell::new(
             activation.context.gc_context,
@@ -129,12 +130,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
-                    let type_of = self
-                        .0
-                        .read()
-                        .vector
-                        .value_type_for_coercion(activation)
-                        .inner_class_definition();
+                    let type_of = self.0.read().vector.value_type_for_coercion(activation);
                     let value = match value.coerce_to_type(activation, type_of)? {
                         Value::Undefined => self.0.read().vector.default(activation),
                         Value::Null => self.0.read().vector.default(activation),
@@ -165,12 +161,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
-                    let type_of = self
-                        .0
-                        .read()
-                        .vector
-                        .value_type_for_coercion(activation)
-                        .inner_class_definition();
+                    let type_of = self.0.read().vector.value_type_for_coercion(activation);
                     let value = match value.coerce_to_type(activation, type_of)? {
                         Value::Undefined => self.0.read().vector.default(activation),
                         Value::Null => self.0.read().vector.default(activation),

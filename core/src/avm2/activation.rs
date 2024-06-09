@@ -1632,6 +1632,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_get_outer_scope(&mut self, index: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
         // Verifier ensures that this points to a valid outer scope
+
         let scope = self.outer.get_unchecked(index as usize);
 
         self.push_stack(scope.values());
@@ -1730,10 +1731,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else {
             // Even if it's an object with the "descendants" property, we won't support it.
             let class_name = object
-                .instance_of()
+                .instance_class()
                 .map(|cls| {
-                    cls.inner_class_definition()
-                        .name()
+                    cls.name()
                         .to_qualified_name_err_message(self.context.gc_context)
                 })
                 .unwrap_or_else(|| AvmString::from("<UNKNOWN>"));

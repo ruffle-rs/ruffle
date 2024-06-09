@@ -113,8 +113,8 @@ impl<'gc> ErrorObject<'gc> {
             .try_read()
             .map(|obj| {
                 obj.base
-                    .instance_of()
-                    .map(|cls| cls.debug_class_name())
+                    .instance_class()
+                    .map(|cls| cls.debug_name())
                     .unwrap_or_else(|| Box::new("None"))
             })
             .unwrap_or_else(|err| Box::new(err))

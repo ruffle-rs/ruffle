@@ -1,10 +1,7 @@
 use ruffle_wstr::WString;
 
 use crate::avm2::object::TObject;
-use crate::avm2::Activation;
-use crate::avm2::AvmString;
-use crate::avm2::Multiname;
-use crate::avm2::Value;
+use crate::avm2::{Activation, AvmString, Class, Multiname, Value};
 use std::borrow::Cow;
 use std::fmt::Debug;
 use std::mem::size_of;
@@ -94,13 +91,12 @@ pub fn make_reference_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     code: ReferenceErrorCode,
     multiname: &Multiname<'gc>,
-    object_class: Option<ClassObject<'gc>>,
+    object_class: Option<Class<'gc>>,
 ) -> Error<'gc> {
     let qualified_name = multiname.as_uri(activation.context.gc_context);
     let class_name = object_class
         .map(|cls| {
-            cls.inner_class_definition()
-                .name()
+            cls.name()
                 .to_qualified_name_err_message(activation.context.gc_context)
         })
         .unwrap_or_else(|| AvmString::from("<UNKNOWN>"));

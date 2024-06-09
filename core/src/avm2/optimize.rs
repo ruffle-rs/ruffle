@@ -2,7 +2,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::{BytecodeMethod, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
-use crate::avm2::object::{ClassObject, TObject};
+use crate::avm2::object::TObject;
 use crate::avm2::op::Op;
 use crate::avm2::property::Property;
 use crate::avm2::verify::JumpSources;
@@ -145,11 +145,6 @@ struct Stack<'gc>(Vec<OptValue<'gc>>);
 impl<'gc> Stack<'gc> {
     fn new() -> Self {
         Self(Vec::new())
-    }
-
-    fn push_class_object(&mut self, class: ClassObject<'gc>) {
-        self.0
-            .push(OptValue::of_type(class.inner_class_definition()));
     }
 
     fn push_class(&mut self, class: Class<'gc>) {
@@ -867,7 +862,7 @@ pub fn optimize<'gc>(
 
                                 stack_push_done = true;
                                 if let Some(class) = class {
-                                    stack.push_class_object(class);
+                                    stack.push_class(class);
                                 } else {
                                     stack.push_any();
                                 }
@@ -1292,8 +1287,8 @@ pub fn optimize<'gc>(
                     let global_scope = outer_scope.get_unchecked(0);
 
                     stack_push_done = true;
-                    if let Some(class) = global_scope.values().instance_of() {
-                        stack.push_class_object(class);
+                    if let Some(class) = global_scope.values().instance_class() {
+                        stack.push_class(class);
                     } else {
                         stack.push_any();
                     }
@@ -1310,7 +1305,7 @@ pub fn optimize<'gc>(
                 if !outer_scope.is_empty() {
                     let global_scope = outer_scope.get_unchecked(0);
 
-                    if let Some(class) = global_scope.values().instance_of() {
+                    if let Some(class) = global_scope.values().instance_class() {
                         let mut value_class =
                             class.instance_vtable().slot_classes()[*slot_id as usize];
                         let resolved_value_class = value_class.get_class(activation);

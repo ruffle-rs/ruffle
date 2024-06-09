@@ -72,14 +72,6 @@ pub struct ClassObjectData<'gc> {
     /// If None, a simple coercion is done.
     call_handler: Option<Method<'gc>>,
 
-    /// The parameters of this specialized class.
-    ///
-    /// None flags that this class has not been specialized.
-    ///
-    /// An individual parameter of `None` signifies the parameter `*`, which is
-    /// represented in AVM2 as `null` with regards to type application.
-    params: Option<Option<ClassObject<'gc>>>,
-
     /// List of all applications of this class.
     ///
     /// Only applicable if this class is generic.
@@ -88,7 +80,7 @@ pub struct ClassObjectData<'gc> {
     /// as `None` here. AVM2 considers both applications to be separate
     /// classes, though we consider the parameter to be the class `Object` when
     /// we get a param of `null`.
-    applications: FnvHashMap<Option<ClassObject<'gc>>, ClassObject<'gc>>,
+    applications: FnvHashMap<Option<Class<'gc>>, ClassObject<'gc>>,
 
     /// Interfaces implemented by this class, including interfaces
     /// from parent classes and superinterfaces (recursively).
@@ -212,7 +204,6 @@ impl<'gc> ClassObject<'gc> {
                 constructor: class.instance_init(),
                 native_constructor: class.native_instance_init(),
                 call_handler: class.call_handler(),
-                params: None,
                 applications: Default::default(),
                 interfaces: Vec::new(),
                 instance_vtable: VTable::empty(activation.context.gc_context),
@@ -427,39 +418,6 @@ impl<'gc> ClassObject<'gc> {
         }
 
         Ok(())
-    }
-
-    /// Determine if this class has a given type in its superclass chain.
-    ///
-    /// The given object `test_class` should be either a superclass or
-    /// interface we are checking against this class.
-    ///
-    /// To test if a class *instance* is of a given type, see is_of_type.
-    pub fn has_class_in_chain(self, test_class: Class<'gc>) -> bool {
-        let mut my_class = Some(self);
-
-        while let Some(class) = my_class {
-            if class.inner_class_definition() == test_class {
-                return true;
-            }
-
-            my_class = class.superclass_object()
-        }
-
-        // A `ClassObject` stores all of the interfaces it implements,
-        // including those from superinterfaces and superclasses (recursively).
-        // Therefore, we only need to check interfaces once, and we can skip
-        // checking them when we processing superclasses in the `while`
-        // further down in this method.
-        if test_class.is_interface() {
-            for interface in self.interfaces() {
-                if interface == test_class {
-                    return true;
-                }
-            }
-        }
-
-        false
     }
 
     /// Call the instance initializer.
@@ -722,10 +680,44 @@ impl<'gc> ClassObject<'gc> {
     pub fn add_application(
         &self,
         gc_context: &Mutation<'gc>,
-        param: Option<ClassObject<'gc>>,
+        param: Option<Class<'gc>>,
         cls: ClassObject<'gc>,
     ) {
         self.0.write(gc_context).applications.insert(param, cls);
+    }
+
+    /// Parametrize this class. This does not check to ensure that this class is generic.
+    pub fn parametrize(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        class_param: Option<Class<'gc>>,
+    ) -> Result<ClassObject<'gc>, Error<'gc>> {
+        let self_class = self.inner_class_definition();
+
+        if let Some(application) = self.0.read().applications.get(&class_param) {
+            return Ok(*application);
+        }
+
+        // if it's not a known application, then it's not int/uint/Number/*,
+        // so it must be a simple Vector.<*>-derived class.
+
+        let parameterized_class =
+            Class::with_type_param(&mut activation.context, self_class, class_param);
+
+        // NOTE: this isn't fully accurate, but much simpler.
+        // FP's Vector is more of special case that literally copies some parent class's properties
+        // main example: Vector.<Object>.prototype === Vector.<*>.prototype
+
+        let vector_star_cls = activation.avm2().classes().object_vector;
+        let class_object =
+            Self::from_class(activation, parameterized_class, Some(vector_star_cls))?;
+
+        self.0
+            .write(activation.context.gc_context)
+            .applications
+            .insert(class_param, class_object);
+
+        Ok(class_object)
     }
 
     pub fn translation_unit(self) -> Option<TranslationUnit<'gc>> {
@@ -779,14 +771,6 @@ impl<'gc> ClassObject<'gc> {
 
     pub fn superclass_object(self) -> Option<ClassObject<'gc>> {
         self.0.read().superclass_object
-    }
-
-    pub fn set_param(self, gc_context: &Mutation<'gc>, param: Option<Option<ClassObject<'gc>>>) {
-        self.0.write(gc_context).params = param;
-    }
-
-    pub fn as_class_params(self) -> Option<Option<ClassObject<'gc>>> {
-        self.0.read().params
     }
 
     fn instance_allocator(self) -> Option<AllocatorFn> {
@@ -947,7 +931,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             Value::Null => None,
             v => Some(v),
         };
-        let object_param = match object_param {
+        let class_param = match object_param {
             None => None,
             Some(cls) => Some(
                 cls.as_object()
@@ -958,38 +942,12 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
                             "Cannot apply class {:?} with non-class parameter",
                             self_class.name()
                         )
-                    })?,
+                    })?
+                    .inner_class_definition(),
             ),
         };
 
-        if let Some(application) = self.0.read().applications.get(&object_param) {
-            return Ok(*application);
-        }
-
-        // if it's not a known application, then it's not int/uint/Number/*,
-        // so it must be a simple Vector.<*>-derived class.
-
-        let class_param = object_param.map(|c| c.inner_class_definition());
-
-        let parameterized_class =
-            Class::with_type_param(&mut activation.context, self_class, class_param);
-
-        // NOTE: this isn't fully accurate, but much simpler.
-        // FP's Vector is more of special case that literally copies some parent class's properties
-        // main example: Vector.<Object>.prototype === Vector.<*>.prototype
-
-        let vector_star_cls = activation.avm2().classes().object_vector;
-        let class_object =
-            Self::from_class(activation, parameterized_class, Some(vector_star_cls))?;
-
-        class_object.0.write(activation.context.gc_context).params = Some(object_param);
-
-        self.0
-            .write(activation.context.gc_context)
-            .applications
-            .insert(object_param, class_object);
-
-        Ok(class_object)
+        self.parametrize(activation, class_param)
     }
 }
 

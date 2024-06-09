@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use crate::avm2::bytearray::ByteArrayStorage;
+use crate::avm2::class::Class;
 use crate::avm2::object::{ByteArrayObject, ClassObject, TObject, VectorObject};
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::ArrayObject;
@@ -72,7 +73,7 @@ pub fn serialize_value<'gc>(
                 Some(AmfValue::ECMAArray(dense, sparse, len))
             } else if let Some(vec) = o.as_vector_storage() {
                 let val_type = vec.value_type();
-                if val_type == Some(activation.avm2().classes().int) {
+                if val_type == Some(activation.avm2().classes().int.inner_class_definition()) {
                     let int_vec: Vec<_> = vec
                         .iter()
                         .map(|v| {
@@ -81,7 +82,9 @@ pub fn serialize_value<'gc>(
                         })
                         .collect();
                     Some(AmfValue::VectorInt(int_vec, vec.is_fixed()))
-                } else if val_type == Some(activation.avm2().classes().uint) {
+                } else if val_type
+                    == Some(activation.avm2().classes().uint.inner_class_definition())
+                {
                     let uint_vec: Vec<_> = vec
                         .iter()
                         .map(|v| {
@@ -90,7 +93,9 @@ pub fn serialize_value<'gc>(
                         })
                         .collect();
                     Some(AmfValue::VectorUInt(uint_vec, vec.is_fixed()))
-                } else if val_type == Some(activation.avm2().classes().number) {
+                } else if val_type
+                    == Some(activation.avm2().classes().number.inner_class_definition())
+                {
                     let num_vec: Vec<_> = vec
                         .iter()
                         .map(|v| {
@@ -108,7 +113,8 @@ pub fn serialize_value<'gc>(
                         })
                         .collect();
 
-                    let val_type = val_type.unwrap_or(activation.avm2().classes().object);
+                    let val_type = val_type
+                        .unwrap_or(activation.avm2().classes().object.inner_class_definition());
 
                     let name = class_to_alias(activation, val_type);
                     Some(AmfValue::VectorObject(obj_vec, name, vec.is_fixed()))
@@ -125,11 +131,11 @@ pub fn serialize_value<'gc>(
             } else if let Some(bytearray) = o.as_bytearray() {
                 Some(AmfValue::ByteArray(bytearray.bytes().to_vec()))
             } else {
-                let class = o.instance_of().expect("Missing ClassObject");
+                let class = o.instance_class().expect("Missing Class");
                 let name = class_to_alias(activation, class);
 
                 let mut attributes = EnumSet::empty();
-                if !class.inner_class_definition().is_sealed() {
+                if !class.is_sealed() {
                     attributes.insert(Attribute::Dynamic);
                 }
 
@@ -173,7 +179,7 @@ fn alias_to_class<'gc>(
     }
 }
 
-fn class_to_alias<'gc>(activation: &mut Activation<'_, 'gc>, class: ClassObject<'gc>) -> String {
+fn class_to_alias<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'gc>) -> String {
     if let Some(alias) = activation.avm2().get_alias_by_class(class) {
         alias.to_string()
     } else {
@@ -359,7 +365,7 @@ pub fn deserialize_value<'gc>(
             let storage = VectorStorage::from_values(
                 vec.iter().map(|v| (*v).into()).collect(),
                 *is_fixed,
-                Some(activation.avm2().classes().number),
+                Some(activation.avm2().classes().number.inner_class_definition()),
             );
             VectorObject::from_vector(storage, activation)?.into()
         }
@@ -367,7 +373,7 @@ pub fn deserialize_value<'gc>(
             let storage = VectorStorage::from_values(
                 vec.iter().map(|v| (*v).into()).collect(),
                 *is_fixed,
-                Some(activation.avm2().classes().uint),
+                Some(activation.avm2().classes().uint.inner_class_definition()),
             );
             VectorObject::from_vector(storage, activation)?.into()
         }
@@ -375,7 +381,7 @@ pub fn deserialize_value<'gc>(
             let storage = VectorStorage::from_values(
                 vec.iter().map(|v| (*v).into()).collect(),
                 *is_fixed,
-                Some(activation.avm2().classes().int),
+                Some(activation.avm2().classes().int.inner_class_definition()),
             );
             VectorObject::from_vector(storage, activation)?.into()
         }
@@ -397,7 +403,7 @@ pub fn deserialize_value<'gc>(
                     })
                     .collect::<Result<Vec<_>, _>>()?,
                 *is_fixed,
-                Some(class),
+                Some(class.inner_class_definition()),
             );
             VectorObject::from_vector(storage, activation)?.into()
         }

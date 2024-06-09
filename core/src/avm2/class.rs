@@ -104,6 +104,9 @@ pub struct ClassData<'gc> {
     /// superinterfaces, nor interfaces implemented by the superclass.
     direct_interfaces: Vec<Class<'gc>>,
 
+    /// The list of all interfaces implemented by this class.
+    all_interfaces: Vec<Class<'gc>>,
+
     /// The instance allocator for this class.
     ///
     /// If `None`, then instances of this object will be allocated the same way
@@ -163,7 +166,7 @@ pub struct ClassData<'gc> {
     /// Maps a type parameter to the application of this class with that parameter.
     ///
     /// Only applicable if this class is generic.
-    applications: FnvHashMap<Option<ClassKey<'gc>>, Class<'gc>>,
+    applications: FnvHashMap<Option<Class<'gc>>, Class<'gc>>,
 
     /// Whether or not this is a system-defined class.
     ///
@@ -184,29 +187,17 @@ impl PartialEq for Class<'_> {
     }
 }
 
+impl Eq for Class<'_> {}
+
+impl Hash for Class<'_> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.as_ptr().hash(state);
+    }
+}
+
 impl<'gc> core::fmt::Debug for Class<'gc> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("Class").field("name", &self.name()).finish()
-    }
-}
-
-/// Allows using a `Class<'gc>` as a HashMap key,
-/// using the pointer address for hashing/equality.
-#[derive(Collect, Copy, Clone)]
-#[collect(no_drop)]
-struct ClassKey<'gc>(Class<'gc>);
-
-impl PartialEq for ClassKey<'_> {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-}
-
-impl Eq for ClassKey<'_> {}
-
-impl Hash for ClassKey<'_> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0 .0.as_ptr().hash(state);
     }
 }
 
@@ -237,6 +228,7 @@ impl<'gc> Class<'gc> {
                 attributes: ClassAttributes::empty(),
                 protected_namespace: None,
                 direct_interfaces: Vec::new(),
+                all_interfaces: Vec::new(),
                 instance_allocator: None,
                 instance_init,
                 native_instance_init,
@@ -255,8 +247,7 @@ impl<'gc> Class<'gc> {
     }
 
     pub fn add_application(self, mc: &Mutation<'gc>, param: Option<Class<'gc>>, cls: Class<'gc>) {
-        let key = param.map(ClassKey);
-        self.0.write(mc).applications.insert(key, cls);
+        self.0.write(mc).applications.insert(param, cls);
     }
 
     /// Apply type parameters to an existing class.
@@ -271,9 +262,7 @@ impl<'gc> Class<'gc> {
         let mc = context.gc_context;
         let this_read = this.0.read();
 
-        let key = param.map(ClassKey);
-
-        if let Some(application) = this_read.applications.get(&key) {
+        if let Some(application) = this_read.applications.get(&param) {
             return *application;
         }
 
@@ -312,7 +301,7 @@ impl<'gc> Class<'gc> {
 
         drop(this_read);
 
-        this.0.write(mc).applications.insert(key, new_class);
+        this.0.write(mc).applications.insert(Some(param), new_class);
         new_class
     }
 
@@ -464,6 +453,7 @@ impl<'gc> Class<'gc> {
                 attributes,
                 protected_namespace,
                 direct_interfaces: interfaces,
+                all_interfaces: Vec::new(),
                 instance_allocator,
                 instance_init,
                 native_instance_init,
@@ -658,7 +648,7 @@ impl<'gc> Class<'gc> {
         // interfaces (i.e. those that were not already implemented by the superclass)
         // Otherwise, our behavior diverges from Flash Player in certain cases.
         // See the ignored test 'tests/tests/swfs/avm2/weird_superinterface_properties/'
-        for interface in interfaces {
+        for interface in &interfaces {
             for interface_trait in &*interface.instance_traits() {
                 if !interface_trait.name().namespace().is_public() {
                     let public_name = QName::new(
@@ -673,6 +663,8 @@ impl<'gc> Class<'gc> {
                 }
             }
         }
+
+        self.0.write(context.gc_context).all_interfaces = interfaces;
 
         Ok(())
     }
@@ -704,6 +696,7 @@ impl<'gc> Class<'gc> {
                 attributes: ClassAttributes::empty(),
                 protected_namespace: None,
                 direct_interfaces: Vec::new(),
+                all_interfaces: Vec::new(),
                 instance_allocator: None,
                 instance_init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
@@ -737,6 +730,36 @@ impl<'gc> Class<'gc> {
         Ok(class)
     }
 
+    /// Determine if this class has a given type in its superclass chain.
+    ///
+    /// The given class `test_class` should be either a superclass or
+    /// interface we are checking against this class.
+    ///
+    /// To test if a class *instance* is of a given type, see `Object::is_of_type`.
+    pub fn has_class_in_chain(self, test_class: Class<'gc>) -> bool {
+        let mut my_class = Some(self);
+
+        while let Some(class) = my_class {
+            if class == test_class {
+                return true;
+            }
+
+            my_class = class.super_class()
+        }
+
+        // A `Class` stores all of the interfaces it implements, including
+        // those from superinterfaces and superclasses (recursively).
+        if test_class.is_interface() {
+            for interface in &*self.all_interfaces() {
+                if *interface == test_class {
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
+
     pub fn instance_vtable(self) -> VTable<'gc> {
         self.0.read().instance_vtable
     }
@@ -747,6 +770,26 @@ impl<'gc> Class<'gc> {
 
     pub fn try_name(self) -> Result<QName<'gc>, std::cell::BorrowError> {
         self.0.try_read().map(|r| r.name)
+    }
+
+    /// Attempts to obtain the name of this class.
+    /// If we are unable to read from the necessary `GcCell`,
+    /// the returned value will be some kind of error message.
+    ///
+    /// This should only be used in a debug context, where
+    /// we need infallible access to *something* to print
+    /// out.
+    pub fn debug_name(self) -> Box<dyn fmt::Debug + 'gc> {
+        let class_name = self.try_name();
+
+        match class_name {
+            Ok(class_name) => Box::new(class_name),
+            Err(err) => Box::new(err),
+        }
+    }
+
+    pub fn param(self) -> Option<Option<Class<'gc>>> {
+        self.0.read().param
     }
 
     pub fn set_param(self, mc: &Mutation<'gc>, param: Option<Option<Class<'gc>>>) {
@@ -1077,6 +1120,10 @@ impl<'gc> Class<'gc> {
 
     pub fn direct_interfaces(&self) -> Ref<Vec<Class<'gc>>> {
         Ref::map(self.0.read(), |c| &c.direct_interfaces)
+    }
+
+    pub fn all_interfaces(&self) -> Ref<Vec<Class<'gc>>> {
+        Ref::map(self.0.read(), |c| &c.all_interfaces)
     }
 
     /// Determine if this class is sealed (no dynamic properties)

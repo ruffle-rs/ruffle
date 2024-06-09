@@ -423,7 +423,7 @@ pub fn get_stage3ds<'gc>(
                 .map(|obj| Value::Object(*obj))
                 .collect(),
             false,
-            Some(activation.avm2().classes().stage3d),
+            Some(activation.avm2().classes().stage3d.inner_class_definition()),
         );
         let stage3ds = VectorObject::from_vector(storage, activation)?;
         return Ok(stage3ds.into());

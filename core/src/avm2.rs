@@ -72,6 +72,7 @@ mod vtable;
 pub use crate::avm2::activation::Activation;
 pub use crate::avm2::array::ArrayStorage;
 pub use crate::avm2::call_stack::{CallNode, CallStack};
+pub use crate::avm2::class::Class;
 #[allow(unused)] // For debug_ui
 pub use crate::avm2::domain::{Domain, DomainPtr};
 pub use crate::avm2::error::Error;
@@ -179,7 +180,7 @@ pub struct Avm2<'gc> {
     orphan_objects: Rc<Vec<DisplayObjectWeak<'gc>>>,
 
     alias_to_class_map: FnvHashMap<AvmString<'gc>, ClassObject<'gc>>,
-    class_to_alias_map: FnvHashMap<ClassObject<'gc>, AvmString<'gc>>,
+    class_to_alias_map: FnvHashMap<Class<'gc>, AvmString<'gc>>,
 
     /// The api version of our root movie clip. Note - this is used as the
     /// api version for swfs loaded via `Loader`, overriding the api version
@@ -293,14 +294,15 @@ impl<'gc> Avm2<'gc> {
 
     pub fn register_class_alias(&mut self, name: AvmString<'gc>, class_object: ClassObject<'gc>) {
         self.alias_to_class_map.insert(name, class_object);
-        self.class_to_alias_map.insert(class_object, name);
+        self.class_to_alias_map
+            .insert(class_object.inner_class_definition(), name);
     }
 
     pub fn get_class_by_alias(&self, name: AvmString<'gc>) -> Option<ClassObject<'gc>> {
         self.alias_to_class_map.get(&name).copied()
     }
 
-    pub fn get_alias_by_class(&self, cls: ClassObject<'gc>) -> Option<AvmString<'gc>> {
+    pub fn get_alias_by_class(&self, cls: Class<'gc>) -> Option<AvmString<'gc>> {
         self.class_to_alias_map.get(&cls).copied()
     }
 
