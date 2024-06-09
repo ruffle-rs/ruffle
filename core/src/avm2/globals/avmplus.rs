@@ -279,7 +279,7 @@ fn describe_internal_body<'gc>(
     };
 
     if flags.contains(DescribeTypeFlags::INCLUDE_INTERFACES) && use_instance_traits {
-        for interface in class_obj.interfaces() {
+        for interface in &*class_obj.inner_class_definition().all_interfaces() {
             let interface_name = interface
                 .name()
                 .to_qualified_name(activation.context.gc_context);
