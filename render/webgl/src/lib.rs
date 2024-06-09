@@ -367,7 +367,7 @@ impl WebGlRenderBackend {
             .bind_buffer(Gl::ELEMENT_ARRAY_BUFFER, Some(&index_buffer));
         self.gl.buffer_data_with_u8_array(
             Gl::ELEMENT_ARRAY_BUFFER,
-            bytemuck::cast_slice(&[0u32, 1, 2, 0, 2, 3]),
+            bytemuck::cast_slice(&[0u32, 1, 2, 3]),
             Gl::STATIC_DRAW,
         );
 
@@ -422,8 +422,8 @@ impl WebGlRenderBackend {
                 gl: self.gl.clone(),
                 buffer: index_buffer,
             },
-            num_indices: 6,
-            num_mask_indices: 6,
+            num_indices: 4,
+            num_mask_indices: 4,
         });
         Ok(draws)
     }
@@ -892,8 +892,12 @@ impl WebGlRenderBackend {
             // Render the quad.
             let quad = &self.bitmap_quad_draws;
             self.bind_vertex_array(Some(&quad[0].vao));
-            self.gl
-                .draw_elements_with_i32(Gl::TRIANGLES, quad[0].num_indices, Gl::UNSIGNED_INT, 0);
+            self.gl.draw_elements_with_i32(
+                Gl::TRIANGLE_FAN,
+                quad[0].num_indices,
+                Gl::UNSIGNED_INT,
+                0,
+            );
         }
     }
 
@@ -970,7 +974,7 @@ impl WebGlRenderBackend {
         self.bind_vertex_array(Some(&quad[0].vao));
 
         self.gl
-            .draw_elements_with_i32(Gl::TRIANGLES, quad[0].num_indices, Gl::UNSIGNED_INT, 0);
+            .draw_elements_with_i32(Gl::TRIANGLE_FAN, quad[0].num_indices, Gl::UNSIGNED_INT, 0);
     }
 }
 
@@ -1336,7 +1340,7 @@ impl CommandHandler for WebGlRenderBackend {
 
         // Draw the triangles.
         self.gl
-            .draw_elements_with_i32(Gl::TRIANGLES, draw.num_indices, Gl::UNSIGNED_INT, 0);
+            .draw_elements_with_i32(Gl::TRIANGLE_FAN, draw.num_indices, Gl::UNSIGNED_INT, 0);
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: Transform) {
