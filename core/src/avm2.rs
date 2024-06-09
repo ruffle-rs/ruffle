@@ -178,6 +178,9 @@ pub struct Avm2<'gc> {
     /// strong references around (this matches Flash's behavior).
     orphan_objects: Rc<Vec<DisplayObjectWeak<'gc>>>,
 
+    alias_to_class_map: FnvHashMap<AvmString<'gc>, ClassObject<'gc>>,
+    class_to_alias_map: FnvHashMap<ClassObject<'gc>, AvmString<'gc>>,
+
     /// The api version of our root movie clip. Note - this is used as the
     /// api version for swfs loaded via `Loader`, overriding the api version
     /// specified in the loaded SWF. This is only used for API versioning (hiding
@@ -254,6 +257,9 @@ impl<'gc> Avm2<'gc> {
 
             orphan_objects: Default::default(),
 
+            alias_to_class_map: Default::default(),
+            class_to_alias_map: Default::default(),
+
             // Set the lowest version for now - this will be overridden when we set our movie
             root_api_version: ApiVersion::AllVersions,
 
@@ -283,6 +289,19 @@ impl<'gc> Avm2<'gc> {
 
     pub fn toplevel_global_object(&self) -> Option<Object<'gc>> {
         self.toplevel_global_object
+    }
+
+    pub fn register_class_alias(&mut self, name: AvmString<'gc>, class_object: ClassObject<'gc>) {
+        self.alias_to_class_map.insert(name, class_object);
+        self.class_to_alias_map.insert(class_object, name);
+    }
+
+    pub fn get_class_by_alias(&self, name: AvmString<'gc>) -> Option<ClassObject<'gc>> {
+        self.alias_to_class_map.get(&name).copied()
+    }
+
+    pub fn get_alias_by_class(&self, cls: ClassObject<'gc>) -> Option<AvmString<'gc>> {
+        self.class_to_alias_map.get(&cls).copied()
     }
 
     /// Run a script's initializer method.
