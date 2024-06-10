@@ -23,8 +23,8 @@ impl BlurFilter {
     }
 
     pub fn scale(&mut self, x: f32, y: f32) {
-        self.blur_x *= Fixed16::from_f32(x);
-        self.blur_y *= Fixed16::from_f32(y);
+        self.blur_x = Self::scale_blur(self.blur_x, x);
+        self.blur_y = Self::scale_blur(self.blur_y, y);
     }
 
     pub fn impotent(&self) -> bool {
@@ -41,6 +41,11 @@ impl BlurFilter {
             y_min: source_rect.y_min - y,
             y_max: source_rect.y_max + y,
         }
+    }
+
+    #[inline]
+    pub(crate) fn scale_blur(blur: Fixed16, factor: f32) -> Fixed16 {
+        (blur - Fixed16::ONE) * Fixed16::from_f32(factor) + Fixed16::ONE
     }
 }
 
