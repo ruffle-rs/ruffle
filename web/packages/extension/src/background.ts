@@ -2,15 +2,21 @@ import * as utils from "./utils";
 import { isMessage } from "./messages";
 
 async function contentScriptRegistered() {
-    const matchingScripts = await chrome.scripting.getRegisteredContentScripts({
+    const matchingScripts = await utils.scripting.getRegisteredContentScripts({
         ids: ["plugin-polyfill"],
     });
     return matchingScripts?.length > 0;
 }
 
 async function enable() {
-    if (chrome?.scripting && !(await contentScriptRegistered())) {
-        await chrome.scripting.registerContentScripts([
+    if (
+        utils.scripting.ExecutionWorld &&
+        !utils.scripting.ExecutionWorld.MAIN
+    ) {
+        return;
+    }
+    if (!(await contentScriptRegistered())) {
+        await utils.scripting.registerContentScripts([
             {
                 id: "plugin-polyfill",
                 js: ["dist/pluginPolyfill.js"],
@@ -33,8 +39,14 @@ async function enable() {
 }
 
 async function disable() {
-    if (chrome?.scripting && (await contentScriptRegistered())) {
-        await chrome.scripting.unregisterContentScripts({
+    if (
+        utils.scripting.ExecutionWorld &&
+        !utils.scripting.ExecutionWorld.MAIN
+    ) {
+        return;
+    }
+    if (await contentScriptRegistered()) {
+        await utils.scripting.unregisterContentScripts({
             ids: ["plugin-polyfill"],
         });
     }

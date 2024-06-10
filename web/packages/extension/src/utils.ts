@@ -19,6 +19,15 @@ interface StorageArea {
     set: (items: Record<string, unknown>) => Promise<void>;
 }
 
+type ScriptingType = (typeof browser.scripting | typeof chrome.scripting) & {
+    ExecutionWorld: {
+        MAIN: string | undefined;
+        ISOLATED: string;
+    };
+};
+
+export let scripting: ScriptingType;
+
 export let storage: {
     local: StorageArea;
     sync: StorageArea;
@@ -95,6 +104,7 @@ function promisifyStorageArea(
 
 if (typeof chrome !== "undefined") {
     i18n = chrome.i18n;
+    scripting = chrome.scripting as ScriptingType;
 
     storage = {
         local: promisifyStorageArea(chrome.storage.local),
@@ -136,6 +146,7 @@ if (typeof chrome !== "undefined") {
         );
 } else if (typeof browser !== "undefined") {
     i18n = browser.i18n;
+    scripting = browser.scripting as ScriptingType;
     storage = browser.storage;
     tabs = browser.tabs;
     runtime = browser.runtime;
