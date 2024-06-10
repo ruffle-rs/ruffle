@@ -1,3 +1,4 @@
+# FIXME this test produces vastly different results compared to FP (output.txt + render)
 num_ticks = 1
 
 [image_comparisons.output]
