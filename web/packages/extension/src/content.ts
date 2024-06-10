@@ -23,6 +23,7 @@ import { isMessage } from "./messages";
 
 declare global {
     interface Navigator {
+        // Only supported in Firefox, see https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Sharing_objects_with_page_scripts#accessing_page_script_objects_from_content_scripts
         wrappedJSObject?: Navigator;
     }
 }
