@@ -10,8 +10,8 @@ async function contentScriptRegistered() {
 
 async function enable() {
     if (
-        utils.scripting.ExecutionWorld &&
-        !utils.scripting.ExecutionWorld.MAIN
+        !utils.scripting ||
+        (utils.scripting.ExecutionWorld && !utils.scripting.ExecutionWorld.MAIN)
     ) {
         return;
     }
@@ -40,8 +40,8 @@ async function enable() {
 
 async function disable() {
     if (
-        utils.scripting.ExecutionWorld &&
-        !utils.scripting.ExecutionWorld.MAIN
+        !utils.scripting ||
+        (utils.scripting.ExecutionWorld && !utils.scripting.ExecutionWorld.MAIN)
     ) {
         return;
     }
