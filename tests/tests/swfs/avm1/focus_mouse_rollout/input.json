@@ -1,0 +1,6 @@
+[
+  { "type": "MouseMove", "pos": [360, 190] },
+  { "type": "MouseDown", "pos": [360, 190], "btn": "Left" }, { "type": "MouseUp", "pos": [360, 190], "btn": "Left" },
+  { "type": "MouseMove", "pos": [70, 175] },
+  { "type": "MouseDown", "pos": [70, 175], "btn": "Left" }, { "type": "MouseUp", "pos": [70, 175], "btn": "Left" }
+]
