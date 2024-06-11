@@ -62,10 +62,12 @@ jobs:
           sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev libgtk-3-dev mesa-vulkan-drivers libpango1.0-dev libudev-dev
 
       # Needed after: https://github.com/rust-lang/rust/pull/124129
-      # Based on: https://github.com/dtolnay/linkme/pull/88
-      - name: Disable rust-lld
-        if: matrix.rust_version == 'nightly'
-        run: echo RUSTFLAGS=${RUSTFLAGS}\ -Zlinker-features=-lld >> $GITHUB_ENV
+      # See also: https://github.com/dtolnay/linkme/issues/94
+      # Additionally: https://lld.llvm.org/ELF/start-stop-gc
+      - name: Disable linker start-stop-gc
+        # Note: We also use `rust-lld` on Windows, see `config.toml`.
+        if: runner.os != 'macOS'
+        run: echo RUSTFLAGS=${RUSTFLAGS}\ -Clink-args=-znostart-stop-gc >> $GITHUB_ENV
 
       - name: Cache Cargo output
         uses: Swatinem/rust-cache@v2
