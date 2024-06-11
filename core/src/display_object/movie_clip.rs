@@ -3378,7 +3378,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             return true;
         }
 
-        let is_avm1 = !context.swf.is_action_script_3();
+        let is_avm1 = !self.movie().is_action_script_3();
         if is_avm1 && self.tab_index().is_some() {
             return true;
         }

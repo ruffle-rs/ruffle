@@ -615,7 +615,7 @@ pub trait TInteractiveObject<'gc>:
     /// Note: This value does not mean that a highlight should actually be rendered,
     /// for that see [`Self::is_highlightable()`].
     fn is_highlight_enabled(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        if context.swf.version() >= 6 {
+        if self.as_displayobject().movie().version() >= 6 {
             self.focus_rect()
                 .unwrap_or_else(|| context.stage.stage_focus_rect())
         } else {
@@ -638,7 +638,7 @@ pub trait TInteractiveObject<'gc>:
     /// Some objects may be excluded from tab ordering
     /// even if it's enabled, see [`Self::is_tabbable()`].
     fn tab_enabled(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        if context.swf.is_action_script_3() {
+        if self.as_displayobject().movie().is_action_script_3() {
             self.raw_interactive()
                 .tab_enabled
                 .unwrap_or_else(|| self.tab_enabled_default(context))
@@ -655,7 +655,7 @@ pub trait TInteractiveObject<'gc>:
     }
 
     fn set_tab_enabled(&self, context: &mut UpdateContext<'_, 'gc>, value: bool) {
-        if context.swf.is_action_script_3() {
+        if self.as_displayobject().movie().is_action_script_3() {
             self.raw_interactive_mut(context.gc()).tab_enabled = Some(value)
         } else {
             self.as_displayobject()
@@ -687,7 +687,7 @@ pub trait TInteractiveObject<'gc>:
         event: ClipEvent,
     ) -> bool {
         // Event handlers are supported only by SWF6+.
-        if context.swf.version() < 6 {
+        if self.as_displayobject().movie().version() < 6 {
             return false;
         }
 

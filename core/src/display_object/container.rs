@@ -495,7 +495,8 @@ pub trait TDisplayObjectContainer<'gc>:
     /// According to the AS2 documentation, it should affect only automatic tab ordering.
     /// However, that does not seem to be the case, as it also affects custom ordering.
     fn is_tab_children(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        if context.swf.is_action_script_3() {
+        let this: DisplayObject<'_> = (*self).into();
+        if this.movie().is_action_script_3() {
             self.raw_container().tab_children
         } else {
             self.is_tab_children_avm1(context)
@@ -503,11 +504,11 @@ pub trait TDisplayObjectContainer<'gc>:
     }
 
     fn set_tab_children(&self, context: &mut UpdateContext<'_, 'gc>, value: bool) {
-        if context.swf.is_action_script_3() {
+        let this: DisplayObject<'_> = (*self).into();
+        if this.movie().is_action_script_3() {
             self.raw_container_mut(context.gc()).tab_children = value;
         } else {
-            let self_do: DisplayObject<'gc> = (*self).into();
-            self_do.set_avm1_property(context, "tabChildren", value.into());
+            this.set_avm1_property(context, "tabChildren", value.into());
         }
     }
 
