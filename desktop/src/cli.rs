@@ -202,6 +202,7 @@ pub struct Opt {
     /// - space
     /// - comma, semicolon
     /// - key0, key1, ..., key9
+    ///
     /// The complete list of supported key-names can be found by using -B start=nonexistent.
     #[clap(
         long,

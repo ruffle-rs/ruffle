@@ -59,8 +59,8 @@ bitflags! {
 /// Parameters for the allocator are:
 ///
 ///  * `class` - The class object that is being allocated. This must be the
-///  current class (using a superclass will cause the wrong class to be
-///  read for traits).
+///    current class (using a superclass will cause the wrong class to be
+///    read for traits).
 ///  * `activation` - The current AVM2 activation.
 pub type AllocatorFn =
     for<'gc> fn(ClassObject<'gc>, &mut Activation<'_, 'gc>) -> Result<Object<'gc>, Error<'gc>>;
