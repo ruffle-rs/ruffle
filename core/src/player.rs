@@ -1545,12 +1545,12 @@ impl Player {
                 for (object, event) in events {
                     let display_object = object.as_displayobject();
                     if !display_object.avm1_removed() {
-                        if event == ClipEvent::Press {
-                            Self::update_focus_on_mouse_press(context, display_object);
-                        }
                         object.handle_clip_event(context, event);
                         if display_object.movie().is_action_script_3() {
                             object.event_dispatch_to_avm2(context, event);
+                        }
+                        if event == ClipEvent::Press {
+                            Self::update_focus_on_mouse_press(context, display_object);
                         }
                     }
                     if !refresh && event.is_button_event() {
