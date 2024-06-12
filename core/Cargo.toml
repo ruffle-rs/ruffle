@@ -67,6 +67,7 @@ num-bigint = "0.4"
 unic-segment = "0.9.0"
 id3 = "1.13.1"
 either = "1.12.0"
+chardetng = "0.1.17"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 workspace = true
