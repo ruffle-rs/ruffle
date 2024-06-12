@@ -17,6 +17,7 @@ use external_interface::{external_to_js_value, js_to_external_value};
 use input::{web_key_to_codepoint, web_to_ruffle_key_code, web_to_ruffle_text_control};
 use js_sys::{Error as JsError, Uint8Array};
 use ruffle_core::context::UpdateContext;
+use ruffle_core::context_menu::ContextMenuCallback;
 use ruffle_core::events::{MouseButton, MouseWheelDelta, TextControlCode};
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Player, PlayerEvent, StaticCallstack, ViewportDimensions};
@@ -214,7 +215,7 @@ impl RuffleHandle {
     ///
     /// `parameters` are *extra* parameters to set on the LoaderInfo -
     /// parameters from `movie_url` query parameters will be automatically added.
-    pub fn stream_from(&mut self, movie_url: String, parameters: JsValue) -> Result<(), JsValue> {
+    pub fn stream_from(&self, movie_url: String, parameters: JsValue) -> Result<(), JsValue> {
         let _ = self.with_core_mut(|core| {
             let parameters_to_load = parse_movie_parameters(&parameters);
 
@@ -232,7 +233,7 @@ impl RuffleHandle {
     ///
     /// This method should only be called once per player.
     pub fn load_data(
-        &mut self,
+        &self,
         swf_data: Uint8Array,
         parameters: JsValue,
         swf_name: String,
@@ -268,19 +269,19 @@ impl RuffleHandle {
         Ok(())
     }
 
-    pub fn play(&mut self) {
+    pub fn play(&self) {
         let _ = self.with_core_mut(|core| {
             core.set_is_playing(true);
         });
     }
 
-    pub fn pause(&mut self) {
+    pub fn pause(&self) {
         let _ = self.with_core_mut(|core| {
             core.set_is_playing(false);
         });
     }
 
-    pub fn is_playing(&mut self) -> bool {
+    pub fn is_playing(&self) -> bool {
         self.with_core(|core| core.is_playing()).unwrap_or_default()
     }
 
@@ -288,7 +289,7 @@ impl RuffleHandle {
         self.with_core(|core| core.volume()).unwrap_or_default()
     }
 
-    pub fn set_volume(&mut self, value: f32) {
+    pub fn set_volume(&self, value: f32) {
         let _ = self.with_core_mut(|core| core.set_volume(value));
     }
 
@@ -303,7 +304,7 @@ impl RuffleHandle {
     }
 
     // after the context menu is closed, remember to call `clear_custom_menu_items`!
-    pub fn prepare_context_menu(&mut self) -> JsValue {
+    pub fn prepare_context_menu(&self) -> JsValue {
         self.with_core_mut(|core| {
             let info = core.prepare_context_menu();
             serde_wasm_bindgen::to_value(&info).unwrap_or(JsValue::UNDEFINED)
@@ -311,19 +312,76 @@ impl RuffleHandle {
         .unwrap_or(JsValue::UNDEFINED)
     }
 
-    pub fn run_context_menu_callback(&mut self, index: usize) {
-        let _ = self.with_core_mut(|core| core.run_context_menu_callback(index));
+    pub async fn run_context_menu_callback(&self, index: usize) {
+        let is_paste = self
+            .with_core_mut(|core| {
+                let is_paste = core.mutate_with_update_context(|context| {
+                    matches!(
+                        context
+                            .current_context_menu
+                            .as_ref()
+                            .map(|menu| menu.callback(index)),
+                        Some(ContextMenuCallback::TextControl {
+                            code: TextControlCode::Paste,
+                            ..
+                        })
+                    )
+                });
+                if !is_paste {
+                    core.run_context_menu_callback(index)
+                }
+                is_paste
+            })
+            .unwrap_or_default();
+
+        // When the user selects paste, we need to use the Clipboard API which
+        // requests the clipboard asynchronously, so that the browser can ask for permission.
+        if is_paste {
+            self.run_context_menu_callback_paste(index).await;
+        }
     }
 
-    pub fn set_fullscreen(&mut self, is_fullscreen: bool) {
+    async fn run_context_menu_callback_paste(&self, index: usize) {
+        let window = web_sys::window().expect("Missing window");
+        let Some(clipboard) = window.navigator().clipboard() else {
+            tracing::warn!("Clipboard unsupported");
+            let _ = self.with_instance(|inst| inst.js_player.display_clipboard_modal(false));
+            return;
+        };
+
+        let promise = clipboard.read_text();
+        tracing::debug!("Requested text from clipboard");
+        let clipboard = wasm_bindgen_futures::JsFuture::from(promise)
+            .await
+            .ok()
+            .and_then(|value| value.as_string());
+        let Some(clipboard) = clipboard else {
+            tracing::warn!("Clipboard permission denied");
+            let _ = self.with_instance(|inst| inst.js_player.display_clipboard_modal(true));
+            return;
+        };
+
+        if !clipboard.is_empty() {
+            let _ = self.with_core_mut(|core| {
+                core.mutate_with_update_context(|context| {
+                    context.ui.set_clipboard_content(clipboard);
+                });
+                core.run_context_menu_callback(index);
+            });
+        } else {
+            tracing::info!("Clipboard was empty");
+        }
+    }
+
+    pub fn set_fullscreen(&self, is_fullscreen: bool) {
         let _ = self.with_core_mut(|core| core.set_fullscreen(is_fullscreen));
     }
 
-    pub fn clear_custom_menu_items(&mut self) {
+    pub fn clear_custom_menu_items(&self) {
         let _ = self.with_core_mut(Player::clear_custom_menu_items);
     }
 
-    pub fn destroy(&mut self) {
+    pub fn destroy(&self) {
         // Remove instance from the active list.
         let _ = self.remove_instance();
         // Instance is dropped at this point.
