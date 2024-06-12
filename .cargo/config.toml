@@ -1,3 +1,11 @@
+[target.'cfg(all())']
+# NOTE that the web build overrides this setting in package.json via the RUSTFLAGS environment variable
+rustflags = [
+    # We need to specify this flag for all targets because Clippy checks all of our code against all targets
+    # and our web code does not compile without this flag
+    "--cfg=web_sys_unstable_apis",
+]
+
 [target.x86_64-pc-windows-msvc]
 # Use the LLD linker, it should be faster than the default.
 # See: https://github.com/rust-lang/rust/issues/71520
