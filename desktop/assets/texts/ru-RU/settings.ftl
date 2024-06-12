@@ -3,6 +3,7 @@ player-settings = Настройки проигрывателя
 movie-parameters = Параметры ролика
 custom-base-url = Польз. базовый URL
 spoof-swf-url = Поддельный URL для SWF
+referer-url = URL реферера
 cookie = Значения Cookie
 proxy = Прокси
 upgrade-http = Заменять HTTP на HTTPS

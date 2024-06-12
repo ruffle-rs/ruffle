@@ -14,6 +14,7 @@ file-menu-open-advanced = Gelişmiş Aç...
 file-menu-close = Kapat
 file-menu-reload = Yeniden Yükle
 file-menu-recents = Son kullanılanlar
+file-menu-recents-empty = Yeni giriş yok
 file-menu-preferences = Tercihler...
 file-menu-exit = Çıkış Yap
 controls-menu = Denetim
