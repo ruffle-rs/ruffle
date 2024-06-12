@@ -30,6 +30,7 @@ use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use crate::{avm2_stub_method, avm2_stub_method_context};
+use chardetng::EncodingDetector;
 use encoding_rs::UTF_8;
 use gc_arena::{Collect, GcCell};
 use indexmap::IndexMap;
@@ -1232,7 +1233,18 @@ impl<'gc> Loader<'gc> {
                     ActivationIdentifier::root("[Form Loader]"),
                 );
 
-                for (k, v) in form_urlencoded::parse(&body) {
+                let utf8_string;
+                let utf8_body = if activation.context.system.use_codepage {
+                    let mut encoding_detector = EncodingDetector::new();
+                    encoding_detector.feed(&body, true);
+                    let encoding = encoding_detector.guess(None, true);
+                    utf8_string = encoding.decode(&body).0;
+                    utf8_string.as_bytes()
+                } else {
+                    &body
+                };
+
+                for (k, v) in form_urlencoded::parse(utf8_body) {
                     let k = AvmString::new_utf8(activation.context.gc_context, k);
                     let v = AvmString::new_utf8(activation.context.gc_context, v);
                     that.set(k, v.into(), &mut activation)?;
