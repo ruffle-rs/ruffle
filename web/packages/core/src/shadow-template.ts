@@ -815,6 +815,36 @@ hardwareModalLink.target = "_blank";
 hardwareModalLink.className = "acceleration-link";
 hardwareModalLink.textContent = text("enable-hardware-acceleration");
 
+// Clipboard message
+const clipboardModal = createElement("div", "clipboard-modal", "modal hidden");
+const clipboardModalArea = createElement("div", undefined, "modal-area");
+const clipboardModalClose = createElement("span", undefined, "close-modal");
+clipboardModalClose.textContent = "\u00D7";
+const clipboardModalHeading = createElement("h2", undefined);
+clipboardModalHeading.textContent = text("clipboard-message-title");
+const clipboardModalTextDescription = createElement(
+    "p",
+    "clipboard-modal-description",
+);
+const shortcutModifier = navigator.userAgent.includes("Mac OS X")
+    ? "Command"
+    : "Ctrl";
+const clipboardModalTextCopy = createElement("p", undefined);
+const clipboardModalTextCopyShortcut = createElement("b", undefined);
+clipboardModalTextCopyShortcut.textContent = `${shortcutModifier}+C`;
+const clipboardModalTextCopyText = createElement("span", undefined);
+clipboardModalTextCopyText.textContent = text("clipboard-message-copy");
+const clipboardModalTextCut = createElement("p", undefined);
+const clipboardModalTextCutShortcut = createElement("b", undefined);
+clipboardModalTextCutShortcut.textContent = `${shortcutModifier}+X`;
+const clipboardModalTextCutText = createElement("span", undefined);
+clipboardModalTextCutText.textContent = text("clipboard-message-cut");
+const clipboardModalTextPaste = createElement("p", undefined);
+const clipboardModalTextPasteShortcut = createElement("b", undefined);
+clipboardModalTextPasteShortcut.textContent = `${shortcutModifier}+V`;
+const clipboardModalTextPasteText = createElement("span", undefined);
+clipboardModalTextPasteText.textContent = text("clipboard-message-paste");
+
 // Context menu overlay elements
 const contextMenuOverlay = createElement(
     "div",
@@ -888,6 +918,21 @@ appendElement(ruffleShadowTemplate.content, hardwareModal);
 appendElement(hardwareModal, hardwareModalArea);
 appendElement(hardwareModalArea, hardwareModalClose);
 appendElement(hardwareModalArea, hardwareModalLink);
+// Clipboard modal append
+appendElement(ruffleShadowTemplate.content, clipboardModal);
+appendElement(clipboardModal, clipboardModalArea);
+appendElement(clipboardModalArea, clipboardModalClose);
+appendElement(clipboardModalArea, clipboardModalHeading);
+appendElement(clipboardModalArea, clipboardModalTextDescription);
+appendElement(clipboardModalArea, clipboardModalTextCopy);
+appendElement(clipboardModalTextCopy, clipboardModalTextCopyShortcut);
+appendElement(clipboardModalTextCopy, clipboardModalTextCopyText);
+appendElement(clipboardModalArea, clipboardModalTextCut);
+appendElement(clipboardModalTextCut, clipboardModalTextCutShortcut);
+appendElement(clipboardModalTextCut, clipboardModalTextCutText);
+appendElement(clipboardModalArea, clipboardModalTextPaste);
+appendElement(clipboardModalTextPaste, clipboardModalTextPasteShortcut);
+appendElement(clipboardModalTextPaste, clipboardModalTextPasteText);
 // Context menu overlay append
 appendElement(ruffleShadowTemplate.content, contextMenuOverlay);
 appendElement(contextMenuOverlay, contextMenu);

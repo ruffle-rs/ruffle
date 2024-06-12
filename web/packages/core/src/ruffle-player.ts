@@ -146,6 +146,7 @@ export class RufflePlayer extends HTMLElement {
     private readonly volumeControls: HTMLDivElement;
     private readonly videoModal: HTMLDivElement;
     private readonly hardwareAccelerationModal: HTMLDivElement;
+    private readonly clipboardModal: HTMLDivElement;
 
     private readonly contextMenuOverlay: HTMLElement;
     // Firefox has a read-only "contextMenu" property,
@@ -271,10 +272,14 @@ export class RufflePlayer extends HTMLElement {
         this.volumeControls = <HTMLDivElement>(
             this.shadow.getElementById("volume-controls-modal")
         );
+        this.clipboardModal = <HTMLDivElement>(
+            this.shadow.getElementById("clipboard-modal")
+        );
         this.addModalJavaScript(this.saveManager);
         this.addModalJavaScript(this.volumeControls);
         this.addModalJavaScript(this.videoModal);
         this.addModalJavaScript(this.hardwareAccelerationModal);
+        this.addModalJavaScript(this.clipboardModal);
 
         this.volumeSettings = new VolumeControls(false, 100);
         this.addVolumeControlsJavaScript(this.volumeControls);
@@ -2363,6 +2368,18 @@ export class RufflePlayer extends HTMLElement {
             videoHolder.textContent = "";
             videoHolder.appendChild(video);
             this.videoModal.classList.remove("hidden");
+        }
+    }
+
+    protected displayClipboardModal(accessDenied: boolean): void {
+        const description = this.clipboardModal.querySelector(
+            "#clipboard-modal-description",
+        );
+        if (description) {
+            description.textContent = text("clipboard-message-description", {
+                variant: accessDenied ? "access-denied" : "unsupported",
+            });
+            this.clipboardModal.classList.remove("hidden");
         }
     }
 

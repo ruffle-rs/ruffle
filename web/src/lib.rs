@@ -178,6 +178,9 @@ extern "C" {
 
     #[wasm_bindgen(method, js_name = "displayUnsupportedVideo")]
     fn display_unsupported_video(this: &JavascriptPlayer, url: &str);
+
+    #[wasm_bindgen(method, js_name = "displayClipboardModal")]
+    fn display_clipboard_modal(this: &JavascriptPlayer, access_denied: bool);
 }
 
 #[derive(Debug, Clone)]
