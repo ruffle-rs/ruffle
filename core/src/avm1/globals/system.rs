@@ -265,8 +265,8 @@ pub struct SystemProperties {
     /// If true then settings should be saved and read from the exact same domain of the player
     /// If false then they should be saved to the super domain
     pub exact_settings: bool,
-    /// If true then the system codepage should be used instead of unicode for text files
-    /// If false then unicode should be used
+    /// If true, the system codepage should be used for text files
+    /// If false, UTF-8 should be used for SWF version >= 6 and ISO Latin-1 for SWF version <= 5
     pub use_codepage: bool,
     /// The capabilities of the player
     pub capabilities: SystemCapabilities,

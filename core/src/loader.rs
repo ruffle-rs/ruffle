@@ -31,7 +31,7 @@ use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use crate::{avm2_stub_method, avm2_stub_method_context};
 use chardetng::EncodingDetector;
-use encoding_rs::UTF_8;
+use encoding_rs::{UTF_8, WINDOWS_1252};
 use gc_arena::{Collect, GcCell};
 use indexmap::IndexMap;
 use ruffle_render::utils::{determine_jpeg_tag_format, JpegTagFormat};
@@ -1247,6 +1247,9 @@ impl<'gc> Loader<'gc> {
 
                     // Convert the text into UTF-8
                     utf8_string = encoding.decode(&body).0;
+                    utf8_string.as_bytes()
+                } else if activation.context.swf.version() <= 5 {
+                    utf8_string = WINDOWS_1252.decode(&body).0;
                     utf8_string.as_bytes()
                 } else {
                     &body
