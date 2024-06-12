@@ -70,7 +70,7 @@ interface ContextMenuItem {
      *
      * @param event The mouse event that triggered the click.
      */
-    onClick: (event: MouseEvent) => void;
+    onClick: (event: MouseEvent) => Promise<void>;
 
     /**
      * Whether this item is clickable.
@@ -1380,7 +1380,7 @@ export class RufflePlayer extends HTMLElement {
     /**
      * Opens the save manager.
      */
-    private openSaveManager(): void {
+    private async openSaveManager(): Promise<void> {
         this.saveManager.classList.remove("hidden");
     }
 
@@ -1467,7 +1467,7 @@ export class RufflePlayer extends HTMLElement {
                     // TODO: better checkboxes
                     text:
                         item.caption + (item.checked ? ` (${CHECKMARK})` : ``),
-                    onClick: () =>
+                    onClick: async () =>
                         this.instance?.run_context_menu_callback(index),
                     enabled: item.enabled,
                 });
@@ -1480,19 +1480,19 @@ export class RufflePlayer extends HTMLElement {
             if (this.isFullscreen) {
                 items.push({
                     text: text("context-menu-exit-fullscreen"),
-                    onClick: () => this.setFullscreen(false),
+                    onClick: async () => this.setFullscreen(false),
                 });
             } else {
                 items.push({
                     text: text("context-menu-enter-fullscreen"),
-                    onClick: () => this.setFullscreen(true),
+                    onClick: async () => this.setFullscreen(true),
                 });
             }
         }
 
         items.push({
             text: text("context-menu-volume-controls"),
-            onClick: () => {
+            onClick: async () => {
                 this.openVolumeControls();
             },
         });
@@ -1533,7 +1533,7 @@ export class RufflePlayer extends HTMLElement {
                 flavor: isExtension ? "extension" : "",
                 version: buildInfo.versionName,
             }),
-            onClick() {
+            async onClick() {
                 window.open(RUFFLE_ORIGIN, "_blank");
             },
         });
@@ -1543,7 +1543,9 @@ export class RufflePlayer extends HTMLElement {
             addSeparator();
             items.push({
                 text: text("context-menu-hide"),
-                onClick: () => (this.contextMenuForceDisabled = true),
+                onClick: async () => {
+                    this.contextMenuForceDisabled = true;
+                },
             });
         }
         return items;
@@ -1663,7 +1665,17 @@ export class RufflePlayer extends HTMLElement {
                 if (enabled !== false) {
                     menuItem.addEventListener(
                         this.contextMenuSupported ? "click" : "pointerup",
-                        onClick,
+                        async (event: MouseEvent) => {
+                            // Prevent the menu from being destroyed.
+                            // It's required when we're dealing with async callbacks,
+                            // as the async callback may still use the menu in the future.
+                            event.stopPropagation();
+
+                            await onClick(event);
+
+                            // Then we have to close the context menu manually after the callback finishes.
+                            this.hideContextMenu();
+                        },
                     );
                 } else {
                     menuItem.classList.add("disabled");
