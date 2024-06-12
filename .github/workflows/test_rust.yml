@@ -69,7 +69,7 @@ jobs:
       - name: Disable linker start-stop-gc
         # Note: We also use `rust-lld` on Windows, see `config.toml`.
         if: runner.os != 'macOS'
-        run: echo RUSTFLAGS=${RUSTFLAGS}\ -Clink-args=-znostart-stop-gc >> $GITHUB_ENV
+        run: echo RUSTFLAGS=${RUSTFLAGS}\ --cfg=web_sys_unstable_apis\ -Clink-args=-znostart-stop-gc >> $GITHUB_ENV
 
       - name: Cache Cargo output
         uses: Swatinem/rust-cache@v2
