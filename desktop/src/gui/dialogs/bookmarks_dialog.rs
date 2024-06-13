@@ -175,13 +175,17 @@ impl BookmarksDialog {
                             }
 
                             row.col(|ui| {
-                                ui.add(Label::new(&bookmark.name).selectable(false).wrap(false));
+                                ui.add(
+                                    Label::new(&bookmark.name)
+                                        .selectable(false)
+                                        .wrap_mode(egui::TextWrapMode::Extend),
+                                );
                             });
                             row.col(|ui| {
                                 ui.add(
                                     Label::new(bookmark.url.as_str())
                                         .selectable(false)
-                                        .wrap(false),
+                                        .wrap_mode(egui::TextWrapMode::Extend),
                                 );
                             });
 
