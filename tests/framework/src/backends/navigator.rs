@@ -34,14 +34,8 @@ impl SuccessResponse for TestResponse {
         Box::pin(async move { Ok(self.body) })
     }
 
-    fn next_chunk(&mut self) -> OwnedFuture<Option<Vec<u8>>, Error> {
-        if !self.chunk_gotten {
-            self.chunk_gotten = true;
-            let body = self.body.clone();
-            Box::pin(async move { Ok(Some(body)) })
-        } else {
-            Box::pin(async move { Ok(None) })
-        }
+    fn text_encoding(&self) -> Option<&'static Encoding> {
+        None
     }
 
     fn status(&self) -> u16 {
@@ -52,12 +46,18 @@ impl SuccessResponse for TestResponse {
         self.redirected
     }
 
-    fn expected_length(&self) -> Result<Option<u64>, Error> {
-        Ok(Some(self.body.len() as u64))
+    fn next_chunk(&mut self) -> OwnedFuture<Option<Vec<u8>>, Error> {
+        if !self.chunk_gotten {
+            self.chunk_gotten = true;
+            let body = self.body.clone();
+            Box::pin(async move { Ok(Some(body)) })
+        } else {
+            Box::pin(async move { Ok(None) })
+        }
     }
 
-    fn text_encoding(&self) -> Option<&'static Encoding> {
-        None
+    fn expected_length(&self) -> Result<Option<u64>, Error> {
+        Ok(Some(self.body.len() as u64))
     }
 }
 
