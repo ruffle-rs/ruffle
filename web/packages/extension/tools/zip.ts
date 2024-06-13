@@ -1,5 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
+import url from "url";
 import archiver from "archiver";
 
 async function zip(source: string, destination: string) {
@@ -31,5 +32,5 @@ async function zip(source: string, destination: string) {
 
     await archive.finalize();
 }
-
-zip("../assets/", process.argv[2] ?? "").catch(console.error);
+const assets = url.fileURLToPath(new URL("../assets/", import.meta.url));
+zip(assets, process.argv[2] ?? "").catch(console.error);
