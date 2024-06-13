@@ -16,6 +16,7 @@ use std::sync::{Arc, MutexGuard};
 use std::time::{Duration, Instant};
 use unic_langid::LanguageIdentifier;
 use url::Url;
+use wgpu::SurfaceError;
 use winit::dpi::PhysicalSize;
 use winit::event::WindowEvent;
 use winit::event_loop::EventLoop;
@@ -143,27 +144,31 @@ impl GuiController {
 
     pub fn resize(&mut self, size: PhysicalSize<u32>) {
         if size.width > 0 && size.height > 0 {
-            self.surface.configure(
-                &self.descriptors.device,
-                &wgpu::SurfaceConfiguration {
-                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                    format: self.surface_format,
-                    width: size.width,
-                    height: size.height,
-                    present_mode: Default::default(),
-                    desired_maximum_frame_latency: 2,
-                    alpha_mode: Default::default(),
-                    view_formats: Default::default(),
-                },
-            );
-            self.movie_view_renderer.update_resolution(
-                &self.descriptors,
-                self.window.fullscreen().is_none() && !self.no_gui,
-                size.height,
-                self.window.scale_factor(),
-            );
             self.size = size;
+            self.reconfigure_surface();
         }
+    }
+
+    pub fn reconfigure_surface(&mut self) {
+        self.surface.configure(
+            &self.descriptors.device,
+            &wgpu::SurfaceConfiguration {
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                format: self.surface_format,
+                width: self.size.width,
+                height: self.size.height,
+                present_mode: Default::default(),
+                desired_maximum_frame_latency: 2,
+                alpha_mode: Default::default(),
+                view_formats: Default::default(),
+            },
+        );
+        self.movie_view_renderer.update_resolution(
+            &self.descriptors,
+            self.window.fullscreen().is_none() && !self.no_gui,
+            self.size.height,
+            self.window.scale_factor(),
+        );
     }
 
     #[must_use]
@@ -224,10 +229,33 @@ impl GuiController {
     }
 
     pub fn render(&mut self, mut player: Option<MutexGuard<Player>>) {
-        let surface_texture = self
-            .surface
-            .get_current_texture()
-            .expect("Surface became unavailable");
+        let surface_texture = match self.surface.get_current_texture() {
+            Ok(surface_texture) => surface_texture,
+            Err(e @ (SurfaceError::Lost | SurfaceError::Outdated)) => {
+                // Reconfigure the surface if lost or outdated.
+                // Some sources suggest ignoring `Outdated` and waiting for the next frame,
+                // but I suspect this advice is related explicitly to resizing,
+                // because the future resize event will reconfigure the surface.
+                // However, resizing is not the only possible reason for the surface
+                // to become outdated (resolution / refresh rate change, some internal
+                // platform-specific reasons, wgpu bugs?).
+                // Testing on Vulkan shows that reconfiguring the surface works in that case.
+                tracing::warn!("Surface became unavailable: {:?}, reconfiguring", e);
+                self.reconfigure_surface();
+                return;
+            }
+            Err(e @ SurfaceError::Timeout) => {
+                // An operation related to the surface took too long to complete.
+                // This error may happen due to many reasons (GPU overload, GPU driver bugs, etc.),
+                // the best thing we can do is skip a frame and wait.
+                tracing::warn!("Surface became unavailable: {:?}, skipping a frame", e);
+                return;
+            }
+            Err(SurfaceError::OutOfMemory) => {
+                // Cannot help with that :(
+                panic!("wgpu: Out of memory: no more memory left to allocate a new frame");
+            }
+        };
 
         let raw_input = self.egui_winit.take_egui_input(&self.window);
         let show_menu = self.window.fullscreen().is_none() && !self.no_gui;
