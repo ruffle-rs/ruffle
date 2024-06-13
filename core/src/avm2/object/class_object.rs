@@ -258,7 +258,7 @@ impl<'gc> ClassObject<'gc> {
             Some(self),
             &class.class_traits(),
             Some(self.class_scope()),
-            Some(self.instance_of().unwrap().instance_vtable()),
+            Some(activation.avm2().classes().class.instance_vtable()),
             &mut activation.context,
         );
 
