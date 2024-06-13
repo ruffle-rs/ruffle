@@ -351,20 +351,16 @@ impl<'gc> ClassObject<'gc> {
         let scope = self.0.read().class_scope;
         let class = self.0.read().class;
 
-        if !class.is_class_initialized() {
-            let class_initializer = class.class_init();
-            let class_init_fn = FunctionObject::from_method(
-                activation,
-                class_initializer,
-                scope,
-                Some(object),
-                Some(self),
-            );
+        let class_initializer = class.class_init();
+        let class_init_fn = FunctionObject::from_method(
+            activation,
+            class_initializer,
+            scope,
+            Some(object),
+            Some(self),
+        );
 
-            class.mark_class_initialized(activation.context.gc_context);
-
-            class_init_fn.call(object.into(), &[], activation)?;
-        }
+        class_init_fn.call(object.into(), &[], activation)?;
 
         Ok(())
     }
