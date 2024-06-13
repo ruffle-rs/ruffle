@@ -151,9 +151,6 @@ pub struct ClassData<'gc> {
     /// Must be called once and only once prior to any use of this class.
     class_init: Method<'gc>,
 
-    /// Whether or not the class initializer has already been called.
-    class_initializer_called: bool,
-
     /// The customization point for `Class(args...)` without `new`
     /// If None, a simple coercion is done.
     call_handler: Option<Method<'gc>>,
@@ -238,7 +235,6 @@ impl<'gc> Class<'gc> {
                 instance_traits: Vec::new(),
                 instance_vtable: VTable::empty(mc),
                 class_init,
-                class_initializer_called: false,
                 call_handler: None,
                 class_traits: Vec::new(),
                 traits_loaded: true,
@@ -463,7 +459,6 @@ impl<'gc> Class<'gc> {
                 instance_traits: Vec::new(),
                 instance_vtable: VTable::empty(activation.context.gc_context),
                 class_init,
-                class_initializer_called: false,
                 call_handler: native_call_handler,
                 class_traits: Vec::new(),
                 traits_loaded: false,
@@ -718,7 +713,6 @@ impl<'gc> Class<'gc> {
                     "<Activation object class constructor>",
                     activation.context.gc_context,
                 ),
-                class_initializer_called: false,
                 call_handler: None,
                 class_traits: Vec::new(),
                 traits_loaded: true,
@@ -1109,16 +1103,6 @@ impl<'gc> Class<'gc> {
     /// Get this class's call handler.
     pub fn call_handler(self) -> Option<Method<'gc>> {
         self.0.read().call_handler
-    }
-
-    /// Check if the class has already been initialized.
-    pub fn is_class_initialized(self) -> bool {
-        self.0.read().class_initializer_called
-    }
-
-    /// Mark the class as initialized.
-    pub fn mark_class_initialized(self, mc: &Mutation<'gc>) {
-        self.0.write(mc).class_initializer_called = true;
     }
 
     pub fn direct_interfaces(&self) -> Ref<Vec<Class<'gc>>> {
