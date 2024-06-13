@@ -61,16 +61,6 @@ pub struct ClassObjectData<'gc> {
     #[collect(require_static)]
     instance_allocator: Allocator,
 
-    /// The instance constructor function
-    constructor: Method<'gc>,
-
-    /// The native instance constructor function
-    native_constructor: Method<'gc>,
-
-    /// The customization point for `Class(args...)` without `new`
-    /// If None, a simple coercion is done.
-    call_handler: Option<Method<'gc>>,
-
     /// List of all applications of this class.
     ///
     /// Only applicable if this class is generic.
@@ -194,9 +184,6 @@ impl<'gc> ClassObject<'gc> {
                 instance_scope: scope,
                 superclass_object,
                 instance_allocator: Allocator(instance_allocator),
-                constructor: class.instance_init(),
-                native_constructor: class.native_instance_init(),
-                call_handler: class.call_handler(),
                 applications: Default::default(),
                 instance_vtable: VTable::empty(activation.context.gc_context),
                 class_vtable: VTable::empty(activation.context.gc_context),
@@ -390,7 +377,7 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let scope = self.0.read().instance_scope;
-        let method = self.0.read().constructor;
+        let method = self.constructor();
         exec(
             method,
             scope,
@@ -414,7 +401,7 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let scope = self.0.read().instance_scope;
-        let method = self.0.read().native_constructor;
+        let method = self.native_constructor();
         exec(
             method,
             scope,
@@ -686,7 +673,7 @@ impl<'gc> ClassObject<'gc> {
     }
 
     pub fn translation_unit(self) -> Option<TranslationUnit<'gc>> {
-        if let Method::Bytecode(bc) = self.0.read().constructor {
+        if let Method::Bytecode(bc) = self.constructor() {
             Some(bc.txunit)
         } else {
             None
@@ -694,7 +681,15 @@ impl<'gc> ClassObject<'gc> {
     }
 
     pub fn constructor(self) -> Method<'gc> {
-        self.0.read().constructor
+        self.inner_class_definition().instance_init()
+    }
+
+    pub fn native_constructor(self) -> Method<'gc> {
+        self.inner_class_definition().native_instance_init()
+    }
+
+    pub fn call_handler(self) -> Option<Method<'gc>> {
+        self.inner_class_definition().call_handler()
     }
 
     pub fn instance_vtable(self) -> VTable<'gc> {
@@ -795,7 +790,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if let Some(call_handler) = self.0.read().call_handler {
+        if let Some(call_handler) = self.call_handler() {
             let scope = self.0.read().class_scope;
             exec(
                 call_handler,

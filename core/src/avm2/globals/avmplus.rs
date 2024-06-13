@@ -524,7 +524,7 @@ fn describe_internal_body<'gc>(
         }
     }
 
-    let constructor = class_obj.constructor();
+    let constructor = class_obj.inner_class_definition().instance_init();
     // Flash only shows a <constructor> element if it has at least one parameter
     if flags.contains(DescribeTypeFlags::INCLUDE_CONSTRUCTOR)
         && use_instance_traits
