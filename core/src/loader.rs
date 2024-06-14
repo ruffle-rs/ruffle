@@ -146,14 +146,6 @@ impl ContentType {
     }
 }
 
-#[derive(Clone, Collect, Copy)]
-#[collect(no_drop)]
-pub enum DataFormat {
-    Binary,
-    Text,
-    Variables,
-}
-
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("Load cancelled")]
@@ -1481,33 +1473,18 @@ impl<'gc> Loader<'gc> {
                         .coerce_to_string(activation)
                         .expect("The dataFormat field is typed String");
 
-                    let data_format = if &data_format == b"binary" {
-                        DataFormat::Binary
-                    } else if &data_format == b"text" {
-                        DataFormat::Text
+                    let data_object = if &data_format == b"binary" {
+                        let storage = ByteArrayStorage::from_vec(body);
+                        let bytearray = ByteArrayObject::from_storage(activation, storage).unwrap();
+
+                        Some(bytearray.into())
                     } else if &data_format == b"variables" {
-                        DataFormat::Variables
-                    } else {
-                        tracing::warn!("Invalid URLLoaderDataFormat: {}", data_format);
-                        DataFormat::Text
-                    };
-
-                    let data_object = match data_format {
-                        DataFormat::Binary => {
-                            let storage = ByteArrayStorage::from_vec(body);
-                            let bytearray =
-                                ByteArrayObject::from_storage(activation, storage).unwrap();
-
-                            Some(bytearray.into())
-                        }
-                        DataFormat::Text => {
+                        if body.is_empty() {
+                            None
+                        } else {
                             let string_value =
                                 AvmString::new_utf8_bytes(activation.context.gc_context, &body);
-                            Some(Avm2Value::String(string_value))
-                        }
-                        DataFormat::Variables => {
-                            let string_value =
-                                AvmString::new_utf8_bytes(activation.context.gc_context, &body);
+
                             activation
                                 .avm2()
                                 .classes()
@@ -1516,6 +1493,15 @@ impl<'gc> Loader<'gc> {
                                 .ok()
                                 .map(|o| o.into())
                         }
+                    } else {
+                        if &data_format != b"text" {
+                            tracing::warn!("Invalid URLLoaderDataFormat: {}", data_format);
+                        }
+
+                        let string_value =
+                            AvmString::new_utf8_bytes(activation.context.gc_context, &body);
+
+                        Some(Avm2Value::String(string_value))
                     };
 
                     if let Some(data_object) = data_object {
