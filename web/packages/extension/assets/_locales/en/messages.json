@@ -94,5 +94,59 @@
     },
     "settings_saved": {
         "message": "Settings Saved"
+    },
+    "player_title": {
+        "message": "Ruffle Player"
+    },
+    "player_swf_url": {
+        "message": "URL of a .swf file on the web"
+    },
+    "player_load": {
+        "message": "Load"
+    },
+    "player_loading": {
+        "message": "Loading"
+    },
+    "player_select_file": {
+        "message": "Select File"
+    },
+    "player_no_file_selected": {
+        "message": "No file selected."
+    },
+    "player_aria_label": {
+        "message": "Select a demo or drag an SWF"
+    },
+    "player_confirm_reload": {
+        "message": "Reload the current SWF?"
+    },
+    "player_not_available": {
+        "message": "N/A"
+    },
+    "player_uncompressed_length": {
+        "message": "Uncompressed Length:"
+    },
+    "player_swf_version": {
+        "message": "SWF Version:"
+    },
+    "player_fp_version": {
+        "message": "FP Version:"
+    },
+    "player_actionscript_3": {
+        "message": "ActionScript 3:"
+    },
+    "player_total_frames": {
+        "message": "Total Frames:"
+    },
+    "player_frame_rate": {
+        "message": "Frame Rate:"
+    },
+    "player_swf_width": {
+        "message": "SWF Width:"
+    },
+    "player_swf_height": {
+        "message": "SWF Height:"
+    },
+    "player_swf_background_color": {
+        "message": "SWF Background Color:"
     }
 }
