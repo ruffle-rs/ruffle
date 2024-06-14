@@ -35,6 +35,24 @@ package flash.geom {
 				];
 		}
 
+		// Based on https://github.com/openfl/openfl/blob/develop/src/openfl/geom/Matrix3D.hx#L844C1-L854
+		public static function interpolate(thisMat:Matrix3D, toMat:Matrix3D, percent:Number):Matrix3D {
+			var m = new Matrix3D();
+
+			for (var i = 0; i < 16; i++) {
+				m._rawData[i] = thisMat._rawData[i] + (toMat._rawData[i] - thisMat._rawData[i]) * percent;
+			}
+
+			return m;
+		}
+
+		// Based on https://github.com/openfl/openfl/blob/develop/src/openfl/geom/Matrix3D.hx#L888C1-L894
+		public function interpolateTo(toMat:Matrix3D, percent:Number):void {
+			for (var i = 0; i < 16; i++) {
+				this._rawData[i] = this._rawData[i] + (toMat._rawData[i] - this._rawData[i]) * percent;
+			}
+		}
+
 		public function appendTranslation(x:Number, y:Number, z:Number):void {
 			this._rawData[12] += x;
 			this._rawData[13] += y;
