@@ -15,7 +15,9 @@ async function enable() {
             {
                 id: 1,
                 action: {
-                    type: chrome.declarativeNetRequest.RuleActionType.REDIRECT,
+                    type:
+                        chrome.declarativeNetRequest.RuleActionType?.REDIRECT ??
+                        "redirect",
                     redirect: { regexSubstitution: playerPage + "#\\0" },
                 },
                 condition: {
@@ -32,14 +34,17 @@ async function enable() {
                         },
                     ],
                     resourceTypes: [
-                        chrome.declarativeNetRequest.ResourceType.MAIN_FRAME,
+                        chrome.declarativeNetRequest.ResourceType?.MAIN_FRAME ??
+                            "main_frame",
                     ],
                 },
             },
             {
                 id: 2,
                 action: {
-                    type: chrome.declarativeNetRequest.RuleActionType.REDIRECT,
+                    type:
+                        chrome.declarativeNetRequest.RuleActionType?.REDIRECT ??
+                        "redirect",
                     redirect: { regexSubstitution: playerPage + "#\\0" },
                 },
                 condition: {
@@ -55,29 +60,39 @@ async function enable() {
                         },
                     ],
                     resourceTypes: [
-                        chrome.declarativeNetRequest.ResourceType.MAIN_FRAME,
+                        chrome.declarativeNetRequest.ResourceType?.MAIN_FRAME ??
+                            "main_frame",
                     ],
                 },
             },
             {
                 id: 3,
                 action: {
-                    type: chrome.declarativeNetRequest.RuleActionType.REDIRECT,
+                    type:
+                        chrome.declarativeNetRequest.RuleActionType?.REDIRECT ??
+                        "redirect",
                     redirect: { regexSubstitution: playerPage + "#\\0" },
                 },
                 condition: {
                     regexFilter: "^.*\\.s(?:wf|pl)(\\?.*|#.*|)$",
                     excludedResponseHeaders: [{ header: "content-type" }],
                     resourceTypes: [
-                        chrome.declarativeNetRequest.ResourceType.MAIN_FRAME,
+                        chrome.declarativeNetRequest.ResourceType?.MAIN_FRAME ??
+                            "main_frame",
                     ],
                 },
             },
         ];
-        await utils.declarativeNetRequest.updateDynamicRules({
-            removeRuleIds: [1, 2, 3],
-            addRules: rules,
-        });
+        try {
+            await utils.declarativeNetRequest.updateDynamicRules({
+                removeRuleIds: [1, 2, 3],
+                addRules: rules,
+            });
+        } catch (e) {
+            console.info(
+                "Failed to register rules: responseHeaders condition unsupported",
+            );
+        }
     }
     if (
         !utils.scripting ||
