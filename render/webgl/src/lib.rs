@@ -1499,6 +1499,14 @@ impl CommandHandler for WebGlRenderBackend {
         self.draw_quad(color, matrix);
     }
 
+    fn draw_line(&mut self, _color: Color, _matrix: Matrix) {
+        // TODO implement
+    }
+
+    fn draw_line_rect(&mut self, _color: Color, _matrix: Matrix) {
+        // TODO implement
+    }
+
     fn push_mask(&mut self) {
         debug_assert!(
             self.mask_state == MaskState::NoMask || self.mask_state == MaskState::DrawMaskedContent

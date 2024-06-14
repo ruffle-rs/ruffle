@@ -717,6 +717,14 @@ impl<'a> CommandHandler for WgpuCommandHandler<'a> {
         );
     }
 
+    fn draw_line(&mut self, _color: Color, _matrix: Matrix) {
+        // TODO implement
+    }
+
+    fn draw_line_rect(&mut self, _color: Color, _matrix: Matrix) {
+        // TODO implement
+    }
+
     fn push_mask(&mut self) {
         self.needs_stencil = true;
         self.num_masks += 1;

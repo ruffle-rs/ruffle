@@ -772,6 +772,14 @@ impl CommandHandler for WebCanvasRenderBackend {
         }
     }
 
+    fn draw_line(&mut self, _color: Color, _matrix: Matrix) {
+        // TODO implement
+    }
+
+    fn draw_line_rect(&mut self, _color: Color, _matrix: Matrix) {
+        // TODO implement
+    }
+
     fn push_mask(&mut self) {
         if self.mask_state == MaskState::DrawContent {
             // Save the current mask layer so that it can be restored when the mask is popped.
