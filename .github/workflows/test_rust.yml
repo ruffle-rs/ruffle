@@ -61,6 +61,11 @@ jobs:
           sudo apt-get update
           sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev libgtk-3-dev mesa-vulkan-drivers libpango1.0-dev libudev-dev
 
+      # Source: https://github.com/actions/runner-images/issues/10004#issuecomment-2167242138
+      - name: Delete broken MSVCRT DLLs
+        if: runner.os == 'Windows'
+        run: Get-ChildItem -Path "C:\hostedtoolcache\windows" -File -Include msvcp*.dll,concrt*.dll,vccorlib*.dll,vcruntime*.dll -Recurse | Remove-Item -Force -Verbose
+
       # Needed after: https://github.com/rust-lang/rust/pull/124129
       # See also: https://github.com/dtolnay/linkme/issues/94
       # Additionally: https://lld.llvm.org/ELF/start-stop-gc
