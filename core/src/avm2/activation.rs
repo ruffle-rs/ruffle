@@ -74,7 +74,7 @@ enum FrameControl<'gc> {
 }
 
 /// Represents a single activation of a given AVM2 function or keyframe.
-pub struct Activation<'a, 'gc: 'a> {
+pub struct Activation<'player, 'gc: 'player> {
     /// The instruction index.
     ip: i32,
 
@@ -141,10 +141,10 @@ pub struct Activation<'a, 'gc: 'a> {
     /// Maximum size for the scope frame.
     max_scope_size: usize,
 
-    pub context: UpdateContext<'a, 'gc>,
+    pub context: UpdateContext<'player, 'gc>,
 }
 
-impl<'a, 'gc> Activation<'a, 'gc> {
+impl<'player, 'gc> Activation<'player, 'gc> {
     /// Convenience method to retrieve the current GC context. Note that explicitly writing
     /// `self.context.gc_context` can be sometimes necessary to satisfy the borrow checker.
     #[inline(always)]
@@ -160,7 +160,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ///
     /// It is a logic error to attempt to run AVM2 code in a nothing
     /// `Activation`.
-    pub fn from_nothing(context: UpdateContext<'a, 'gc>) -> Self {
+    pub fn from_nothing(context: UpdateContext<'player, 'gc>) -> Self {
         let local_registers = RegisterSet::new(0);
 
         Self {
@@ -189,7 +189,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// The 'Domain' should come from the SwfMovie associated with whatever
     /// action you're performing. When running frame scripts, this is the
     /// `SwfMovie` associated with the `MovieClip` being processed.
-    pub fn from_domain(context: UpdateContext<'a, 'gc>, domain: Domain<'gc>) -> Self {
+    pub fn from_domain(context: UpdateContext<'player, 'gc>, domain: Domain<'gc>) -> Self {
         let local_registers = RegisterSet::new(0);
 
         Self {
@@ -212,7 +212,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Construct an activation for the execution of a particular script's
     /// initializer method.
     pub fn from_script(
-        mut context: UpdateContext<'a, 'gc>,
+        mut context: UpdateContext<'player, 'gc>,
         script: Script<'gc>,
     ) -> Result<Self, Error<'gc>> {
         let (method, global_object, domain) = script.init();
@@ -525,7 +525,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// function to construct a new activation for the builtin so that it can
     /// properly supercall.
     pub fn from_builtin(
-        context: UpdateContext<'a, 'gc>,
+        context: UpdateContext<'player, 'gc>,
         subclass_object: Option<ClassObject<'gc>>,
         outer: ScopeChain<'gc>,
         caller_domain: Option<Domain<'gc>>,
