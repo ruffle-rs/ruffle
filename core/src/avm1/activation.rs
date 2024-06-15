@@ -24,6 +24,7 @@ use smallvec::SmallVec;
 use std::borrow::Cow;
 use std::cmp::min;
 use std::fmt;
+use std::rc::Rc;
 use swf::avm1::read::Reader;
 use swf::avm1::types::*;
 use url::form_urlencoded;
@@ -99,17 +100,17 @@ enum FrameControl<'gc> {
 }
 
 #[derive(Clone)]
-pub struct ActivationIdentifier<'a> {
-    parent: Option<&'a ActivationIdentifier<'a>>,
+pub struct ActivationIdentifier {
+    parent: Option<Rc<ActivationIdentifier>>,
     name: Cow<'static, str>,
     depth: u16,
     function_count: u16,
     special_count: u8,
 }
 
-impl fmt::Display for ActivationIdentifier<'_> {
+impl fmt::Display for ActivationIdentifier {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if let Some(parent) = self.parent {
+        if let Some(parent) = &self.parent {
             write!(f, "{parent} / ")?;
         }
 
@@ -119,7 +120,7 @@ impl fmt::Display for ActivationIdentifier<'_> {
     }
 }
 
-impl<'a> ActivationIdentifier<'a> {
+impl ActivationIdentifier {
     pub fn root<S: Into<Cow<'static, str>>>(name: S) -> Self {
         Self {
             parent: None,
@@ -130,42 +131,42 @@ impl<'a> ActivationIdentifier<'a> {
         }
     }
 
-    pub fn child<S: Into<Cow<'static, str>>>(&'a self, name: S) -> Self {
+    pub fn child<S: Into<Cow<'static, str>>>(parent: Rc<ActivationIdentifier>, name: S) -> Self {
         Self {
-            parent: Some(self),
             name: name.into(),
-            depth: self.depth + 1,
-            function_count: self.function_count,
-            special_count: self.special_count,
+            depth: parent.depth + 1,
+            function_count: parent.function_count,
+            special_count: parent.special_count,
+            parent: Some(parent),
         }
     }
 
     pub fn function<'gc, S: Into<Cow<'static, str>>>(
-        &'a self,
+        parent: Rc<ActivationIdentifier>,
         name: S,
         reason: ExecutionReason,
         max_recursion_depth: u16,
     ) -> Result<Self, Error<'gc>> {
         let (function_count, special_count) = match reason {
             ExecutionReason::FunctionCall => {
-                if self.function_count >= max_recursion_depth - 1 {
+                if parent.function_count >= max_recursion_depth - 1 {
                     return Err(Error::FunctionRecursionLimit(max_recursion_depth));
                 }
-                (self.function_count + 1, self.special_count)
+                (parent.function_count + 1, parent.special_count)
             }
             ExecutionReason::Special => {
-                if self.special_count == 65 {
+                if parent.special_count == 65 {
                     return Err(Error::SpecialRecursionLimit);
                 }
-                (self.function_count, self.special_count + 1)
+                (parent.function_count, parent.special_count + 1)
             }
         };
         Ok(Self {
-            parent: Some(self),
             name: name.into(),
-            depth: self.depth + 1,
+            depth: parent.depth + 1,
             function_count,
             special_count,
+            parent: Some(parent),
         })
     }
 
@@ -226,7 +227,7 @@ pub struct Activation<'player, 'gc: 'player> {
     /// An identifier to refer to this activation by, when debugging.
     /// This is often the name of a function (if known), or some static name to indicate where
     /// in the code it is (for example, a with{} block).
-    pub id: ActivationIdentifier<'player>,
+    pub id: Rc<ActivationIdentifier>,
 }
 
 impl Drop for Activation<'_, '_> {
@@ -246,7 +247,7 @@ impl<'player, 'gc> Activation<'player, 'gc> {
     #[allow(clippy::too_many_arguments)]
     pub fn from_action(
         context: UpdateContext<'player, 'gc>,
-        id: ActivationIdentifier<'player>,
+        id: ActivationIdentifier,
         swf_version: u8,
         scope: Gc<'gc, Scope<'gc>>,
         constant_pool: Gc<'gc, Vec<Value<'gc>>>,
@@ -257,7 +258,7 @@ impl<'player, 'gc> Activation<'player, 'gc> {
         avm_debug!(context.avm1, "START {id}");
         Self {
             context,
-            id,
+            id: Rc::new(id),
             swf_version,
             scope,
             constant_pool,
@@ -276,10 +277,10 @@ impl<'player, 'gc> Activation<'player, 'gc> {
         name: S,
         scope: Gc<'gc, Scope<'gc>>,
     ) -> Activation<'b, 'gc> {
-        let id = self.id.child(name);
+        let id = ActivationIdentifier::child(self.id.clone(), name);
         avm_debug!(self.context.avm1, "START {id}");
         Activation {
-            id,
+            id: Rc::new(id),
             context: self.context.reborrow(),
             swf_version: self.swf_version,
             scope,
@@ -302,13 +303,13 @@ impl<'player, 'gc> Activation<'player, 'gc> {
     /// to define new local variables is a logic error, and will corrupt the global scope.
     pub fn from_nothing(
         context: UpdateContext<'player, 'gc>,
-        id: ActivationIdentifier<'player>,
+        id: ActivationIdentifier,
         base_clip: DisplayObject<'gc>,
     ) -> Self {
         avm_debug!(context.avm1, "START {id}");
 
         Self {
-            id,
+            id: Rc::new(id),
             swf_version: base_clip.swf_version(),
             scope: context.avm1.global_scope(),
             constant_pool: context.avm1.constant_pool(),
@@ -324,10 +325,7 @@ impl<'player, 'gc> Activation<'player, 'gc> {
 
     /// Construct an empty stack frame with no code running on the root move in
     /// layer 0.
-    pub fn from_stub(
-        context: UpdateContext<'player, 'gc>,
-        id: ActivationIdentifier<'player>,
-    ) -> Self {
+    pub fn from_stub(context: UpdateContext<'player, 'gc>, id: ActivationIdentifier) -> Self {
         // [NA]: we have 3 options here:
         // 1 - Don't execute anything (return None and handle that at the caller)
         // 2 - Execute something with a temporary orphaned movie
@@ -346,7 +344,7 @@ impl<'player, 'gc> Activation<'player, 'gc> {
     /// layer 0.
     pub fn try_from_stub(
         context: UpdateContext<'player, 'gc>,
-        id: ActivationIdentifier<'player>,
+        id: ActivationIdentifier,
     ) -> Option<Self> {
         if let Some(level0) = context.stage.root_clip() {
             Some(Self::from_nothing(context, id, level0))
@@ -364,7 +362,7 @@ impl<'player, 'gc> Activation<'player, 'gc> {
     ) -> Result<ReturnType<'gc>, Error<'gc>> {
         let mut parent_activation = Activation::from_nothing(
             self.context.reborrow(),
-            self.id.child("[Actions Parent]"),
+            ActivationIdentifier::child(self.id.clone(), "[Actions Parent]"),
             active_clip,
         );
         let clip_obj = active_clip
@@ -379,7 +377,7 @@ impl<'player, 'gc> Activation<'player, 'gc> {
             ),
         );
         let constant_pool = parent_activation.context.avm1.constant_pool();
-        let child_name = parent_activation.id.child(name);
+        let child_name = ActivationIdentifier::child(parent_activation.id.clone(), name);
         let mut child_activation = Activation::from_action(
             parent_activation.context.reborrow(),
             child_name,
@@ -419,7 +417,7 @@ impl<'player, 'gc> Activation<'player, 'gc> {
         let constant_pool = self.context.avm1.constant_pool();
         let mut activation = Activation::from_action(
             self.context.reborrow(),
-            self.id.child(name),
+            ActivationIdentifier::child(self.id.clone(), name),
             swf_version,
             child_scope,
             constant_pool,
@@ -2270,7 +2268,7 @@ impl<'player, 'gc> Activation<'player, 'gc> {
             if let Err(Error::ThrownValue(value)) = &result {
                 let mut activation = Activation::from_action(
                     self.context.reborrow(),
-                    self.id.child("[Catch]"),
+                    ActivationIdentifier::child(self.id.clone(), "[Catch]"),
                     self.swf_version,
                     self.scope,
                     self.constant_pool,

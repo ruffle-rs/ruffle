@@ -153,7 +153,7 @@ impl<'gc> Avm1<'gc> {
             ),
         );
         let constant_pool = parent_activation.context.avm1.constant_pool;
-        let child_name = parent_activation.id.child(name);
+        let child_name = ActivationIdentifier::child(parent_activation.id.clone(), name);
         let mut child_activation = Activation::from_action(
             parent_activation.context.reborrow(),
             child_name,
@@ -238,7 +238,7 @@ impl<'gc> Avm1<'gc> {
         );
         parent_activation.context.avm1.push(Value::Undefined);
         let constant_pool = parent_activation.context.avm1.constant_pool;
-        let child_name = parent_activation.id.child("[Init]");
+        let child_name = ActivationIdentifier::child(parent_activation.id.clone(), "[Init]");
         let mut child_activation = Activation::from_action(
             parent_activation.context.reborrow(),
             child_name,

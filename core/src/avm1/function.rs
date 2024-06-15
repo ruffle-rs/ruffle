@@ -6,7 +6,7 @@ use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
-use crate::avm1::{ArrayObject, Object, ObjectPtr, ScriptObject, TObject};
+use crate::avm1::{ActivationIdentifier, ArrayObject, Object, ObjectPtr, ScriptObject, TObject};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::{AvmString, SwfStrExt as _};
 use crate::tag_utils::SwfSlice;
@@ -418,7 +418,12 @@ impl<'gc> Executable<'gc> {
         let max_recursion_depth = activation.context.avm1.max_recursion_depth();
         let mut frame = Activation::from_action(
             activation.context.reborrow(),
-            activation.id.function(name, reason, max_recursion_depth)?,
+            ActivationIdentifier::function(
+                activation.id.clone(),
+                name,
+                reason,
+                max_recursion_depth,
+            )?,
             swf_version,
             child_scope,
             af.constant_pool,
