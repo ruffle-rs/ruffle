@@ -5,7 +5,7 @@ use crate::avm2::multiname::Multiname;
 use crate::avm2::object::TObject;
 use crate::avm2::op::Op;
 use crate::avm2::property::Property;
-use crate::avm2::verify::JumpSources;
+use crate::avm2::verify::JumpSource;
 use crate::avm2::vtable::VTable;
 
 use gc_arena::Gc;
@@ -202,7 +202,7 @@ pub fn optimize<'gc>(
     code: &mut Vec<Op<'gc>>,
     resolved_parameters: &[ResolvedParamConfig<'gc>],
     return_type: Option<Class<'gc>>,
-    jump_targets: HashMap<i32, JumpSources>,
+    jump_targets: HashMap<i32, Vec<JumpSource>>,
 ) {
     // These make the code less readable
     #![allow(clippy::collapsible_if)]
@@ -357,12 +357,10 @@ pub fn optimize<'gc>(
 
     for (i, op) in code.iter_mut().enumerate() {
         if let Some(jump_sources) = jump_targets.get(&(i as i32)) {
-            if let JumpSources::Known(sources) = jump_sources {
-                // Avoid handling multiple sources for now
-                if sources.len() == 1 {
+            // Avoid handling multiple sources for now
+            if jump_sources.len() == 1 {
+                if let JumpSource::JumpFrom(source_i) = jump_sources[0] {
                     // We can merge the locals easily, now
-                    let source_i = sources[0];
-
                     if let Some(source_local_types) = state_map.get(&source_i) {
                         let mut merged_types = initial_local_types.clone();
                         assert_eq!(source_local_types.len(), local_types.len());
