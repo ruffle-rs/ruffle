@@ -332,7 +332,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         run_frame: bool,
     ) {
         if self.movie().is_action_script_3() {
-            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let mut activation = Avm2Activation::from_nothing(context);
             if !instantiated_by.is_avm() {
                 let bitmap_cls = self
                     .avm2_bitmap_class()
@@ -362,7 +362,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
                 .expect("can't throw from post_instantiation -_-");
 
                 self.set_bitmap_data(
-                    &mut activation.context,
+                    activation.context,
                     bitmap_data_obj.as_bitmap_data().unwrap(),
                 );
             }

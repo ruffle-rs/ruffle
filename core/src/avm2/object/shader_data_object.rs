@@ -15,7 +15,7 @@ use std::cell::{Cell, Ref, RefMut};
 /// A class instance allocator that allocates ShaderData objects.
 pub fn shader_data_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     Ok(ShaderDataObject(Gc::new(
         activation.gc(),

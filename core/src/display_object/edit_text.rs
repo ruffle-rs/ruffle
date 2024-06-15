@@ -1765,7 +1765,7 @@ impl<'gc> EditText<'gc> {
         if let Avm2Value::Object(target) = self.object2() {
             let character_string = AvmString::new_utf8(context.gc_context, character.to_string());
 
-            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let mut activation = Avm2Activation::from_nothing(context);
             let text_evt = Avm2EventObject::text_event(
                 &mut activation,
                 "textInput",
@@ -1773,7 +1773,7 @@ impl<'gc> EditText<'gc> {
                 true,
                 true,
             );
-            Avm2::dispatch_event(&mut activation.context, text_evt, target);
+            Avm2::dispatch_event(activation.context, text_evt, target);
 
             if text_evt.as_event().unwrap().is_cancelled() {
                 return;
@@ -1891,7 +1891,7 @@ impl<'gc> EditText<'gc> {
         display_object: DisplayObject<'gc>,
     ) {
         let textfield_constr = context.avm2.classes().textfield;
-        let mut activation = Avm2Activation::from_nothing(context.reborrow());
+        let mut activation = Avm2Activation::from_nothing(context);
 
         match Avm2StageObject::for_display_object_childless(
             &mut activation,
@@ -2041,11 +2041,11 @@ impl<'gc> EditText<'gc> {
             }
         } else if let Some(address) = url.strip_prefix(WStr::from_units(b"event:")) {
             if let Avm2Value::Object(object) = self.object2() {
-                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                let mut activation = Avm2Activation::from_nothing(context);
                 let text = AvmString::new(activation.context.gc_context, address);
                 let event = Avm2EventObject::text_event(&mut activation, "link", text, true, false);
 
-                Avm2::dispatch_event(&mut activation.context, event, object);
+                Avm2::dispatch_event(activation.context, event, object);
             }
         } else {
             context

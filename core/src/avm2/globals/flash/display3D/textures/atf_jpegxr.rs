@@ -14,7 +14,7 @@ use std::io::Read;
 use std::io::Seek;
 
 pub fn do_compressed_upload<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     texture: TextureObject<'gc>,
     data: Object<'gc>,
     byte_array_offset: usize,

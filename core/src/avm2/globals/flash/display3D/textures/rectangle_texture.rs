@@ -7,7 +7,7 @@ use crate::avm2::{Error, Object};
 use super::texture::do_copy;
 
 pub fn upload_from_byte_array<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -20,7 +20,7 @@ pub fn upload_from_byte_array<'gc>(
 }
 
 pub fn upload_from_bitmap_data<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

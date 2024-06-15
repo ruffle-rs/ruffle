@@ -1627,7 +1627,7 @@ pub fn get_vector<'gc>(
 }
 
 pub fn set_vector<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     target: BitmapDataWrapper<'gc>,
     x_min: u32,
     y_min: u32,
@@ -1667,7 +1667,7 @@ pub fn set_vector<'gc>(
 }
 
 pub fn get_pixels_as_byte_array<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     target: BitmapDataWrapper,
     x: i32,
     y: i32,

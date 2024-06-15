@@ -7,7 +7,7 @@ use crate::avm2_stub_getter;
 use crate::string::AvmString;
 
 pub fn get_caps_lock<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -16,7 +16,7 @@ pub fn get_caps_lock<'gc>(
 }
 
 pub fn get_has_virtual_keyboard<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -25,7 +25,7 @@ pub fn get_has_virtual_keyboard<'gc>(
 }
 
 pub fn get_num_lock<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -34,7 +34,7 @@ pub fn get_num_lock<'gc>(
 }
 
 pub fn get_physical_keyboard_type<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -43,7 +43,7 @@ pub fn get_physical_keyboard_type<'gc>(
 }
 
 pub fn is_accessible<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

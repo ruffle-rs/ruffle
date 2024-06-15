@@ -11,7 +11,7 @@ use crate::avm2_stub_method;
 
 // Implements `avmplus.describeTypeJSON`
 pub fn describe_type_json<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -84,7 +84,7 @@ bitflags::bitflags! {
 }
 
 fn describe_type_json_null<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     flags: DescribeTypeFlags,
 ) -> Result<Value<'gc>, Error<'gc>> {
     if flags.contains(DescribeTypeFlags::USE_ITRAITS) {
@@ -180,7 +180,7 @@ fn describe_type_json_null<'gc>(
 }
 
 fn describe_internal_body<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     class_obj: ClassObject<'gc>,
     is_static: bool,
     flags: DescribeTypeFlags,
@@ -556,7 +556,7 @@ fn describe_internal_body<'gc>(
 
 fn write_params<'gc>(
     method: &Method<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let params = ArrayObject::empty(activation)?;
     let mut params_array = params
@@ -582,7 +582,7 @@ fn write_params<'gc>(
 fn write_metadata<'gc>(
     metadata_object: Object<'gc>,
     trait_metadata: &[Metadata<'gc>],
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<(), Error<'gc>> {
     let mut metadata_array = metadata_object
         .as_array_storage_mut(activation.context.gc_context)

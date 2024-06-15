@@ -41,7 +41,7 @@ pub struct LoaderDisplayData<'gc> {
 }
 
 impl<'gc> LoaderDisplay<'gc> {
-    pub fn empty(activation: &mut Activation<'_, 'gc>, movie: Arc<SwfMovie>) -> Self {
+    pub fn empty(activation: &mut Activation<'_, '_, 'gc>, movie: Arc<SwfMovie>) -> Self {
         let obj = LoaderDisplay(GcCell::new(
             activation.context.gc_context,
             LoaderDisplayData {

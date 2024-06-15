@@ -24,7 +24,7 @@ pub struct TextureObjectWeak<'gc>(pub GcWeak<'gc, TextureObjectData<'gc>>);
 
 impl<'gc> TextureObject<'gc> {
     pub fn from_handle(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         context3d: Context3DObject<'gc>,
         handle: Rc<dyn Texture>,
         original_format: Context3DTextureFormat,

@@ -12,7 +12,7 @@ pub use crate::avm2::object::application_domain_allocator;
 /// Implements `flash.system.ApplicationDomain`'s init method, which
 /// is called from the constructor
 pub fn init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -31,7 +31,7 @@ pub fn init<'gc>(
 
 /// `currentDomain` static property.
 pub fn get_current_domain<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -44,7 +44,7 @@ pub fn get_current_domain<'gc>(
 
 /// `parentDomain` property
 pub fn get_parent_domain<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -62,7 +62,7 @@ pub fn get_parent_domain<'gc>(
 
 /// `getDefinition` method
 pub fn get_definition<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -80,7 +80,7 @@ pub fn get_definition<'gc>(
 
 /// `hasDefinition` method
 pub fn has_definition<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -104,7 +104,7 @@ pub fn has_definition<'gc>(
 ///
 /// NOTE: Normally only available in Flash Player 11.3+.
 pub fn get_qualified_definition_names<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -136,7 +136,7 @@ pub fn get_qualified_definition_names<'gc>(
 
 /// `domainMemory` property setter
 pub fn set_domain_memory<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -154,7 +154,7 @@ pub fn set_domain_memory<'gc>(
 
 /// `domainMemory` property getter
 pub fn get_domain_memory<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

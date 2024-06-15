@@ -16,7 +16,7 @@ use swf::Color;
 
 /// Implements `flash.display.Stage`'s native instance constructor.
 pub fn native_instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -27,7 +27,7 @@ pub fn native_instance_init<'gc>(
 
 /// Implement `align`'s getter
 pub fn get_align<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -56,7 +56,7 @@ pub fn get_align<'gc>(
 
 /// Implement `align`'s setter
 pub fn set_align<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -64,13 +64,13 @@ pub fn set_align<'gc>(
     activation
         .context
         .stage
-        .set_align(&mut activation.context, align);
+        .set_align(activation.context, align);
     Ok(Value::Undefined)
 }
 
 /// Implement `browserZoomFactor`'s getter
 pub fn get_browser_zoom_factor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -92,7 +92,7 @@ pub fn get_browser_zoom_factor<'gc>(
 
 /// Implement `color`'s getter
 pub fn get_color<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -106,7 +106,7 @@ pub fn get_color<'gc>(
 
 /// Implement `color`'s setter
 pub fn set_color<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -120,7 +120,7 @@ pub fn set_color<'gc>(
 
 /// Implement `contentsScaleFactor`'s getter
 pub fn get_contents_scale_factor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -142,7 +142,7 @@ pub fn get_contents_scale_factor<'gc>(
 
 /// Implement `displayState`'s getter
 pub fn get_display_state<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -155,7 +155,7 @@ pub fn get_display_state<'gc>(
 
 /// Implement `displayState`'s setter
 pub fn set_display_state<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -168,7 +168,7 @@ pub fn set_display_state<'gc>(
         activation
             .context
             .stage
-            .set_display_state(&mut activation.context, display_state);
+            .set_display_state(activation.context, display_state);
     } else {
         return Err(make_error_2008(activation, "displayState"));
     }
@@ -177,7 +177,7 @@ pub fn set_display_state<'gc>(
 
 /// Implement `focus`'s getter
 pub fn get_focus<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -193,16 +193,16 @@ pub fn get_focus<'gc>(
 
 /// Implement `focus`'s setter
 pub fn set_focus<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let focus = activation.context.focus_tracker;
     match args.try_get_object(activation, 0) {
-        None => focus.set(None, &mut activation.context),
+        None => focus.set(None, activation.context),
         Some(obj) => {
             if let Some(dobj) = obj.as_display_object().and_then(|o| o.as_interactive()) {
-                focus.set(Some(dobj), &mut activation.context);
+                focus.set(Some(dobj), activation.context);
             } else {
                 return Err("Cannot set focus to non-DisplayObject".into());
             }
@@ -214,7 +214,7 @@ pub fn set_focus<'gc>(
 
 /// Implement `frameRate`'s getter
 pub fn get_frame_rate<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -223,7 +223,7 @@ pub fn get_frame_rate<'gc>(
 
 /// Implement `frameRate`'s setter
 pub fn set_frame_rate<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -236,7 +236,7 @@ pub fn set_frame_rate<'gc>(
 }
 
 pub fn get_show_default_context_menu<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -244,7 +244,7 @@ pub fn get_show_default_context_menu<'gc>(
 }
 
 pub fn set_show_default_context_menu<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -252,13 +252,13 @@ pub fn set_show_default_context_menu<'gc>(
     activation
         .context
         .stage
-        .set_show_menu(&mut activation.context, show_default_context_menu);
+        .set_show_menu(activation.context, show_default_context_menu);
     Ok(Value::Undefined)
 }
 
 /// Implement `scaleMode`'s getter
 pub fn get_scale_mode<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -271,7 +271,7 @@ pub fn get_scale_mode<'gc>(
 
 /// Implement `scaleMode`'s setter
 pub fn set_scale_mode<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -279,7 +279,7 @@ pub fn set_scale_mode<'gc>(
         activation
             .context
             .stage
-            .set_scale_mode(&mut activation.context, scale_mode);
+            .set_scale_mode(activation.context, scale_mode);
     } else {
         return Err(make_error_2008(activation, "scaleMode"));
     }
@@ -288,7 +288,7 @@ pub fn set_scale_mode<'gc>(
 
 /// Implement `stageFocusRect`'s getter
 pub fn get_stage_focus_rect<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -301,7 +301,7 @@ pub fn get_stage_focus_rect<'gc>(
 
 /// Implement `stageFocusRect`'s setter
 pub fn set_stage_focus_rect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -315,7 +315,7 @@ pub fn set_stage_focus_rect<'gc>(
 
 /// Implement `stageWidth`'s getter
 pub fn get_stage_width<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -328,7 +328,7 @@ pub fn get_stage_width<'gc>(
 
 /// Implement `stageWidth`'s setter
 pub fn set_stage_width<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -338,7 +338,7 @@ pub fn set_stage_width<'gc>(
 
 /// Implement `stageHeight`'s getter
 pub fn get_stage_height<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -351,7 +351,7 @@ pub fn get_stage_height<'gc>(
 
 /// Implement `stageHeight`'s setter
 pub fn set_stage_height<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -361,7 +361,7 @@ pub fn set_stage_height<'gc>(
 
 /// Implement `allowsFullScreen`'s getter
 pub fn get_allows_full_screen<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -371,7 +371,7 @@ pub fn get_allows_full_screen<'gc>(
 
 /// Implement `allowsFullScreenInteractive`'s getter
 pub fn get_allows_full_screen_interactive<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -385,7 +385,7 @@ pub fn get_allows_full_screen_interactive<'gc>(
 
 /// Implement `quality`'s getter
 pub fn get_quality<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -395,7 +395,7 @@ pub fn get_quality<'gc>(
 
 /// Implement `quality`'s setter
 pub fn set_quality<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -404,14 +404,14 @@ pub fn set_quality<'gc>(
         activation
             .context
             .stage
-            .set_quality(&mut activation.context, quality);
+            .set_quality(activation.context, quality);
     }
     Ok(Value::Undefined)
 }
 
 /// Implement `stage3Ds`'s getter
 pub fn get_stage3ds<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -433,7 +433,7 @@ pub fn get_stage3ds<'gc>(
 
 /// Implement `invalidate`
 pub fn invalidate<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -445,7 +445,7 @@ pub fn invalidate<'gc>(
 
 /// Stage.fullScreenSourceRect's getter
 pub fn get_full_screen_source_rect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -455,7 +455,7 @@ pub fn get_full_screen_source_rect<'gc>(
 
 /// Stage.fullScreenSourceRect's setter
 pub fn set_full_screen_source_rect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -465,7 +465,7 @@ pub fn set_full_screen_source_rect<'gc>(
 
 /// Stage.fullScreenHeight's getter
 pub fn get_full_screen_height<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -475,7 +475,7 @@ pub fn get_full_screen_height<'gc>(
 
 /// Stage.fullScreenWidth's getter
 pub fn get_full_screen_width<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -484,7 +484,7 @@ pub fn get_full_screen_width<'gc>(
 }
 
 pub fn set_tab_children<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -497,7 +497,7 @@ pub fn set_tab_children<'gc>(
                 // Stage's tabChildren setter just propagates the value to the AVM2 root.
                 // It does not affect the value of tabChildren of the stage, which is always true.
                 let value = args.get_bool(0);
-                root.set_tab_children(&mut activation.context, value);
+                root.set_tab_children(activation.context, value);
             }
         }
     }

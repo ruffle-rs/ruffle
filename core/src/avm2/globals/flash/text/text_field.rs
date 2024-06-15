@@ -15,7 +15,7 @@ use swf::Color;
 
 pub fn text_field_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let textfield_cls = activation.avm2().classes().textfield;
 
@@ -25,7 +25,7 @@ pub fn text_field_allocator<'gc>(
         if class == textfield_cls {
             let movie = activation.caller_movie_or_root();
             let display_object =
-                EditText::new(&mut activation.context, movie, 0.0, 0.0, 100.0, 100.0).into();
+                EditText::new(activation.context, movie, 0.0, 0.0, 100.0, 100.0).into();
             return initialize_for_allocator(activation, display_object, orig_class);
         }
 
@@ -49,7 +49,7 @@ pub fn text_field_allocator<'gc>(
 }
 
 pub fn get_always_show_selection<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -58,7 +58,7 @@ pub fn get_always_show_selection<'gc>(
 }
 
 pub fn set_always_show_selection<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -67,7 +67,7 @@ pub fn set_always_show_selection<'gc>(
 }
 
 pub fn get_auto_size<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -87,7 +87,7 @@ pub fn get_auto_size<'gc>(
 }
 
 pub fn set_auto_size<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -108,7 +108,7 @@ pub fn set_auto_size<'gc>(
             } else {
                 return Err(make_error_2008(activation, "autoSize"));
             },
-            &mut activation.context,
+            activation.context,
         );
     }
 
@@ -116,7 +116,7 @@ pub fn set_auto_size<'gc>(
 }
 
 pub fn get_background<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -131,7 +131,7 @@ pub fn get_background<'gc>(
 }
 
 pub fn set_background<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -147,7 +147,7 @@ pub fn set_background<'gc>(
 }
 
 pub fn get_background_color<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -162,7 +162,7 @@ pub fn get_background_color<'gc>(
 }
 
 pub fn set_background_color<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -179,7 +179,7 @@ pub fn set_background_color<'gc>(
 }
 
 pub fn get_border<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -194,7 +194,7 @@ pub fn get_border<'gc>(
 }
 
 pub fn set_border<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -210,7 +210,7 @@ pub fn set_border<'gc>(
 }
 
 pub fn get_border_color<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -225,7 +225,7 @@ pub fn get_border_color<'gc>(
 }
 
 pub fn set_border_color<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -242,7 +242,7 @@ pub fn set_border_color<'gc>(
 }
 
 pub fn get_condense_white<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -251,7 +251,7 @@ pub fn get_condense_white<'gc>(
 }
 
 pub fn set_condense_white<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -260,7 +260,7 @@ pub fn set_condense_white<'gc>(
 }
 
 pub fn get_default_text_format<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -275,7 +275,7 @@ pub fn get_default_text_format<'gc>(
 }
 
 pub fn set_default_text_format<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -287,7 +287,7 @@ pub fn set_default_text_format<'gc>(
 
         if let Some(new_text_format) = new_text_format {
             if let Some(new_text_format) = new_text_format.as_text_format() {
-                this.set_new_text_format(new_text_format.clone(), &mut activation.context);
+                this.set_new_text_format(new_text_format.clone(), activation.context);
             }
         }
     }
@@ -296,7 +296,7 @@ pub fn set_default_text_format<'gc>(
 }
 
 pub fn get_display_as_password<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -311,7 +311,7 @@ pub fn get_display_as_password<'gc>(
 }
 
 pub fn set_display_as_password<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -321,14 +321,14 @@ pub fn set_display_as_password<'gc>(
     {
         let is_password = args.get_bool(0);
 
-        this.set_password(is_password, &mut activation.context);
+        this.set_password(is_password, activation.context);
     }
 
     Ok(Value::Undefined)
 }
 
 pub fn get_embed_fonts<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -343,7 +343,7 @@ pub fn get_embed_fonts<'gc>(
 }
 
 pub fn set_embed_fonts<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -353,14 +353,14 @@ pub fn set_embed_fonts<'gc>(
     {
         let is_embed_fonts = args.get_bool(0);
 
-        this.set_is_device_font(&mut activation.context, !is_embed_fonts);
+        this.set_is_device_font(activation.context, !is_embed_fonts);
     }
 
     Ok(Value::Undefined)
 }
 
 pub fn get_html_text<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -375,7 +375,7 @@ pub fn get_html_text<'gc>(
 }
 
 pub fn set_html_text<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -385,15 +385,15 @@ pub fn set_html_text<'gc>(
     {
         let html_text = args.get_string(activation, 0)?;
 
-        this.set_is_html(&mut activation.context, true);
-        this.set_html_text(&html_text, &mut activation.context);
+        this.set_is_html(activation.context, true);
+        this.set_html_text(&html_text, activation.context);
     }
 
     Ok(Value::Undefined)
 }
 
 pub fn get_length<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -408,7 +408,7 @@ pub fn get_length<'gc>(
 }
 
 pub fn get_multiline<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -423,7 +423,7 @@ pub fn get_multiline<'gc>(
 }
 
 pub fn set_multiline<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -433,14 +433,14 @@ pub fn set_multiline<'gc>(
     {
         let is_multiline = args.get_bool(0);
 
-        this.set_multiline(is_multiline, &mut activation.context);
+        this.set_multiline(is_multiline, activation.context);
     }
 
     Ok(Value::Undefined)
 }
 
 pub fn get_selectable<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -455,7 +455,7 @@ pub fn get_selectable<'gc>(
 }
 
 pub fn set_selectable<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -465,14 +465,14 @@ pub fn set_selectable<'gc>(
     {
         let is_selectable = args.get_bool(0);
 
-        this.set_selectable(is_selectable, &mut activation.context);
+        this.set_selectable(is_selectable, activation.context);
     }
 
     Ok(Value::Undefined)
 }
 
 pub fn get_text<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -487,7 +487,7 @@ pub fn get_text<'gc>(
 }
 
 pub fn set_text<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -497,15 +497,15 @@ pub fn set_text<'gc>(
     {
         let text = args.get_string_non_null(activation, 0, "text")?;
 
-        this.set_is_html(&mut activation.context, false);
-        this.set_text(&text, &mut activation.context);
+        this.set_is_html(activation.context, false);
+        this.set_text(&text, activation.context);
     }
 
     Ok(Value::Undefined)
 }
 
 pub fn get_text_color<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -524,7 +524,7 @@ pub fn get_text_color<'gc>(
 }
 
 pub fn set_text_color<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -546,16 +546,16 @@ pub fn set_text_color<'gc>(
             0,
             this.text_length(),
             desired_format.clone(),
-            &mut activation.context,
+            activation.context,
         );
-        this.set_new_text_format(desired_format, &mut activation.context);
+        this.set_new_text_format(desired_format, activation.context);
     }
 
     Ok(Value::Undefined)
 }
 
 pub fn get_text_height<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -563,7 +563,7 @@ pub fn get_text_height<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let metrics = this.measure_text(&mut activation.context);
+        let metrics = this.measure_text(activation.context);
         return Ok(metrics.1.to_pixels().into());
     }
 
@@ -571,7 +571,7 @@ pub fn get_text_height<'gc>(
 }
 
 pub fn get_text_width<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -579,7 +579,7 @@ pub fn get_text_width<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let metrics = this.measure_text(&mut activation.context);
+        let metrics = this.measure_text(activation.context);
         return Ok(metrics.0.to_pixels().into());
     }
 
@@ -587,7 +587,7 @@ pub fn get_text_width<'gc>(
 }
 
 pub fn get_type<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -605,7 +605,7 @@ pub fn get_type<'gc>(
 }
 
 pub fn set_type<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -616,9 +616,9 @@ pub fn set_type<'gc>(
         let is_editable = args.get_string_non_null(activation, 0, "type")?;
 
         if &is_editable == b"input" {
-            this.set_editable(true, &mut activation.context);
+            this.set_editable(true, activation.context);
         } else if &is_editable == b"dynamic" {
-            this.set_editable(false, &mut activation.context);
+            this.set_editable(false, activation.context);
         } else {
             return Err(make_error_2008(activation, "type"));
         }
@@ -628,7 +628,7 @@ pub fn set_type<'gc>(
 }
 
 pub fn get_word_wrap<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -643,7 +643,7 @@ pub fn get_word_wrap<'gc>(
 }
 
 pub fn set_word_wrap<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -653,14 +653,14 @@ pub fn set_word_wrap<'gc>(
     {
         let is_word_wrap = args.get_bool(0);
 
-        this.set_word_wrap(is_word_wrap, &mut activation.context);
+        this.set_word_wrap(is_word_wrap, activation.context);
     }
 
     Ok(Value::Undefined)
 }
 
 pub fn append_text<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -675,7 +675,7 @@ pub fn append_text<'gc>(
             existing_length,
             existing_length,
             &new_text,
-            &mut activation.context,
+            activation.context,
         );
     }
 
@@ -683,7 +683,7 @@ pub fn append_text<'gc>(
 }
 
 pub fn get_text_format<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -718,7 +718,7 @@ pub fn get_text_format<'gc>(
 }
 
 pub fn replace_selected_text<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -735,7 +735,7 @@ pub fn replace_selected_text<'gc>(
             selection.start(),
             selection.end(),
             &value,
-            &mut activation.context,
+            activation.context,
         );
     }
 
@@ -743,7 +743,7 @@ pub fn replace_selected_text<'gc>(
 }
 
 pub fn replace_text<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -767,7 +767,7 @@ pub fn replace_text<'gc>(
             begin_index as usize,
             end_index as usize,
             &value,
-            &mut activation.context,
+            activation.context,
         );
     }
 
@@ -775,7 +775,7 @@ pub fn replace_text<'gc>(
 }
 
 pub fn get_caret_index<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -794,7 +794,7 @@ pub fn get_caret_index<'gc>(
 }
 
 pub fn get_selection_begin_index<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -813,7 +813,7 @@ pub fn get_selection_begin_index<'gc>(
 }
 
 pub fn get_selection_end_index<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -832,7 +832,7 @@ pub fn get_selection_end_index<'gc>(
 }
 
 pub fn set_selection<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -864,7 +864,7 @@ pub fn set_selection<'gc>(
 }
 
 pub fn set_text_format<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -904,7 +904,7 @@ pub fn set_text_format<'gc>(
                     begin_index as usize,
                     end_index as usize,
                     tf.clone(),
-                    &mut activation.context,
+                    activation.context,
                 );
             }
         }
@@ -914,7 +914,7 @@ pub fn set_text_format<'gc>(
 }
 
 pub fn get_anti_alias_type<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -933,7 +933,7 @@ pub fn get_anti_alias_type<'gc>(
 }
 
 pub fn set_anti_alias_type<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -960,7 +960,7 @@ pub fn set_anti_alias_type<'gc>(
 }
 
 pub fn get_grid_fit_type<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -979,7 +979,7 @@ pub fn get_grid_fit_type<'gc>(
 }
 
 pub fn set_grid_fit_type<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1012,7 +1012,7 @@ pub fn set_grid_fit_type<'gc>(
 }
 
 pub fn get_thickness<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1027,7 +1027,7 @@ pub fn get_thickness<'gc>(
 }
 
 pub fn set_thickness<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1055,7 +1055,7 @@ pub fn set_thickness<'gc>(
 }
 
 pub fn get_sharpness<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1070,7 +1070,7 @@ pub fn get_sharpness<'gc>(
 }
 
 pub fn set_sharpness<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1098,7 +1098,7 @@ pub fn set_sharpness<'gc>(
 }
 
 pub fn get_num_lines<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1113,7 +1113,7 @@ pub fn get_num_lines<'gc>(
 }
 
 pub fn get_line_metrics<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1148,7 +1148,7 @@ pub fn get_line_metrics<'gc>(
 }
 
 pub fn get_line_text<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1168,7 +1168,7 @@ pub fn get_line_text<'gc>(
 }
 
 pub fn get_bottom_scroll_v<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1183,7 +1183,7 @@ pub fn get_bottom_scroll_v<'gc>(
 }
 
 pub fn get_max_scroll_v<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1198,7 +1198,7 @@ pub fn get_max_scroll_v<'gc>(
 }
 
 pub fn get_max_scroll_h<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1213,7 +1213,7 @@ pub fn get_max_scroll_h<'gc>(
 }
 
 pub fn get_scroll_v<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1228,7 +1228,7 @@ pub fn get_scroll_v<'gc>(
 }
 
 pub fn set_scroll_v<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1241,14 +1241,14 @@ pub fn set_scroll_v<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_i32(activation)?;
-        this.set_scroll(input as f64, &mut activation.context);
+        this.set_scroll(input as f64, activation.context);
     }
 
     Ok(Value::Undefined)
 }
 
 pub fn get_scroll_h<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1263,7 +1263,7 @@ pub fn get_scroll_h<'gc>(
 }
 
 pub fn set_scroll_h<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1280,14 +1280,14 @@ pub fn set_scroll_h<'gc>(
             .unwrap_or(Value::Undefined)
             .coerce_to_i32(activation)?;
         let clamped = input.clamp(0, this.maxhscroll() as i32);
-        this.set_hscroll(clamped as f64, &mut activation.context);
+        this.set_hscroll(clamped as f64, activation.context);
     }
 
     Ok(Value::Undefined)
 }
 
 pub fn get_max_chars<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1302,7 +1302,7 @@ pub fn get_max_chars<'gc>(
 }
 
 pub fn set_max_chars<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1315,14 +1315,14 @@ pub fn set_max_chars<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_i32(activation)?;
-        this.set_max_chars(input, &mut activation.context);
+        this.set_max_chars(input, activation.context);
     }
 
     Ok(Value::Undefined)
 }
 
 pub fn get_mouse_wheel_enabled<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1331,7 +1331,7 @@ pub fn get_mouse_wheel_enabled<'gc>(
 }
 
 pub fn set_mouse_wheel_enabled<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1340,7 +1340,7 @@ pub fn set_mouse_wheel_enabled<'gc>(
 }
 
 pub fn get_restrict<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1358,7 +1358,7 @@ pub fn get_restrict<'gc>(
 }
 
 pub fn set_restrict<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1368,14 +1368,14 @@ pub fn set_restrict<'gc>(
     {
         this.set_restrict(
             args.try_get_string(activation, 0)?.as_deref(),
-            &mut activation.context,
+            activation.context,
         );
     }
     Ok(Value::Undefined)
 }
 
 pub fn get_selected_text<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

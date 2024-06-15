@@ -14,7 +14,7 @@ use std::cell::{Ref, RefMut};
 /// A class instance allocator that allocates Dictionary objects.
 pub fn dictionary_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
@@ -130,7 +130,7 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
     fn get_enumerant_value(
         self,
         index: u32,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(*self
             .0

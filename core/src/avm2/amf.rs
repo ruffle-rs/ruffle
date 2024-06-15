@@ -20,7 +20,7 @@ pub type ObjectTable<'gc> = FnvHashMap<Object<'gc>, Rc<AmfValue>>;
 
 /// Serialize a Value to an AmfValue
 pub fn serialize_value<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     elem: Value<'gc>,
     amf_version: AMFVersion,
     object_table: &mut ObjectTable<'gc>,
@@ -169,7 +169,7 @@ pub fn serialize_value<'gc>(
 }
 
 fn alias_to_class<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     alias: AvmString<'gc>,
 ) -> Result<ClassObject<'gc>, Error<'gc>> {
     if let Some(class_object) = activation.avm2().get_class_by_alias(alias) {
@@ -179,7 +179,7 @@ fn alias_to_class<'gc>(
     }
 }
 
-fn class_to_alias<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'gc>) -> String {
+fn class_to_alias<'gc>(activation: &mut Activation<'_, '_, 'gc>, class: Class<'gc>) -> String {
     if let Some(alias) = activation.avm2().get_alias_by_class(class) {
         alias.to_string()
     } else {
@@ -189,7 +189,7 @@ fn class_to_alias<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'gc>) 
 
 /// Serialize an Object and any children to a AMF object
 pub fn recursive_serialize<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     obj: Object<'gc>,
     elements: &mut Vec<Element>,
     static_properties: Option<&mut Vec<String>>,
@@ -243,7 +243,7 @@ pub fn recursive_serialize<'gc>(
 }
 
 fn get_or_create_element<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     name: String,
     val: Value<'gc>,
     object_table: &mut ObjectTable<'gc>,
@@ -282,7 +282,7 @@ fn get_or_create_element<'gc>(
 
 /// Deserialize a AmfValue to a Value
 pub fn deserialize_value<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     val: &AmfValue,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(match val {
@@ -446,7 +446,7 @@ pub fn deserialize_value<'gc>(
 
 /// Deserializes a Lso into an object containing the properties stored
 pub fn deserialize_lso<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     lso: &Lso,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let obj = activation

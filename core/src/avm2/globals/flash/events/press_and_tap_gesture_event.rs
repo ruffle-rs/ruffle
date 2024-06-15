@@ -5,7 +5,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 
 pub fn get_tap_stage_x<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -13,7 +13,7 @@ pub fn get_tap_stage_x<'gc>(
 }
 
 pub fn get_tap_stage_y<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

@@ -715,7 +715,7 @@ impl<'gc> Stage<'gc> {
             }
         } else if let Avm2Value::Object(stage) = self.object2() {
             let full_screen_event_cls = context.avm2.classes().fullscreenevent;
-            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let mut activation = Avm2Activation::from_nothing(context);
             let full_screen_event = full_screen_event_cls
                 .construct(
                     &mut activation,
@@ -773,7 +773,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         // TODO: We should only do this if the movie is actually an AVM2 movie.
         // This is necessary for EventDispatcher super-constructor to run.
         let global_domain = context.avm2.stage_domain();
-        let mut activation = Avm2Activation::from_domain(context.reborrow(), global_domain);
+        let mut activation = Avm2Activation::from_domain(context, global_domain);
         let avm2_stage = Avm2StageObject::for_display_object_childless(
             &mut activation,
             (*self).into(),

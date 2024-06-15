@@ -14,7 +14,7 @@ use std::cell::{Cell, Ref, RefMut};
 /// A class instance allocator that allocates Stage3D objects.
 pub fn stage_3d_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     Ok(Stage3DObject(Gc::new(
         activation.gc(),

@@ -739,7 +739,7 @@ impl<'gc> ChildContainer<'gc> {
                 );
                 if child.has_explicit_name() {
                     if let Avm2Value::Object(parent_obj) = parent.object2() {
-                        let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                        let mut activation = Avm2Activation::from_nothing(context);
                         let name = Avm2Multiname::new(
                             activation.avm2().find_public_namespace(),
                             child.name(),

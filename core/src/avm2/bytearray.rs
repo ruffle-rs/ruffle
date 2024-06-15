@@ -33,7 +33,7 @@ pub enum ByteArrayError {
 
 impl ByteArrayError {
     #[inline(never)]
-    pub fn to_avm<'gc>(self, activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    pub fn to_avm<'gc>(self, activation: &mut Activation<'_, '_, 'gc>) -> Error<'gc> {
         match self {
             ByteArrayError::EndOfFile => match eof_error(
                 activation,

@@ -197,9 +197,9 @@ impl<'gc> Trait<'gc> {
     pub fn from_abc_trait(
         unit: TranslationUnit<'gc>,
         abc_trait: &AbcTrait,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
-        let name = QName::from_abc_multiname(unit, abc_trait.name, &mut activation.context)?;
+        let name = QName::from_abc_multiname(unit, abc_trait.name, activation.context)?;
 
         Ok(match &abc_trait.kind {
             AbcTraitKind::Slot {
@@ -208,7 +208,7 @@ impl<'gc> Trait<'gc> {
                 value,
             } => {
                 let type_name = unit
-                    .pool_multiname_static_any(*type_name, &mut activation.context)?
+                    .pool_multiname_static_any(*type_name, activation.context)?
                     .deref()
                     .clone();
                 let default_value = slot_default_value(unit, value, &type_name, activation)?;
@@ -275,7 +275,7 @@ impl<'gc> Trait<'gc> {
                 value,
             } => {
                 let type_name = unit
-                    .pool_multiname_static_any(*type_name, &mut activation.context)?
+                    .pool_multiname_static_any(*type_name, activation.context)?
                     .deref()
                     .clone();
                 let default_value = slot_default_value(unit, value, &type_name, activation)?;
@@ -396,7 +396,7 @@ fn slot_default_value<'gc>(
     translation_unit: TranslationUnit<'gc>,
     value: &Option<AbcDefaultValue>,
     type_name: &Multiname<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(value) = value {
         // TODO: This should verify that the default value is compatible with the type.

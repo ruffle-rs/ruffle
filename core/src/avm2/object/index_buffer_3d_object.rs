@@ -23,7 +23,7 @@ pub struct IndexBuffer3DObjectWeak<'gc>(pub GcWeak<'gc, IndexBuffer3DObjectData<
 
 impl<'gc> IndexBuffer3DObject<'gc> {
     pub fn from_handle(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         context3d: Context3DObject<'gc>,
         handle: Box<dyn IndexBuffer>,
     ) -> Result<Object<'gc>, Error<'gc>> {

@@ -7,7 +7,7 @@ use swf::Point;
 
 /// Implements `stageX`'s getter.
 pub fn get_stage_x<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -16,7 +16,7 @@ pub fn get_stage_x<'gc>(
 
 /// Implements `stageY`'s getter.
 pub fn get_stage_y<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -24,7 +24,7 @@ pub fn get_stage_y<'gc>(
 }
 
 pub fn update_after_event<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -33,7 +33,7 @@ pub fn update_after_event<'gc>(
 }
 
 pub(super) fn local_to_stage_x<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     label_x: &'static str,
     label_y: &'static str,
@@ -63,7 +63,7 @@ pub(super) fn local_to_stage_x<'gc>(
 }
 
 pub(super) fn local_to_stage_y<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     label_x: &'static str,
     label_y: &'static str,

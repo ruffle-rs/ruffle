@@ -13,7 +13,7 @@ use std::fmt;
 /// A class instance allocator that allocates ShaderData objects.
 pub fn socket_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class).into();
 

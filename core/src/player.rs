@@ -561,7 +561,7 @@ impl Player {
 
                 crate::avm1::make_context_menu_state(menu_object, &mut activation)
             } else if let Some(Avm2Value::Object(hit_obj)) = root_dobj.map(|root| root.object2()) {
-                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                let mut activation = Avm2Activation::from_nothing(context);
 
                 let menu_object = root_dobj
                     .expect("Root is confirmed to exist here")
@@ -587,7 +587,7 @@ impl Player {
                         )
                         .expect("Context menu event should be constructed!");
 
-                    Avm2::dispatch_event(&mut activation.context, menu_evt, menu_object);
+                    Avm2::dispatch_event(activation.context, menu_evt, menu_object);
                 }
 
                 crate::avm2::make_context_menu_state(menu_object, &mut activation)
@@ -630,7 +630,7 @@ impl Player {
 
                         if let Some(root_dobj) = root_dobj {
                             let menu_item = *item;
-                            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                            let mut activation = Avm2Activation::from_nothing(context);
 
                             let menu_obj = root_dobj
                                 .as_interactive()
@@ -998,7 +998,7 @@ impl Player {
                 let alt_key = context.input.is_key_down(KeyCode::Alt);
                 let shift_key = context.input.is_key_down(KeyCode::Shift);
 
-                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                let mut activation = Avm2Activation::from_nothing(context);
 
                 let event_name = match event {
                     PlayerEvent::KeyDown { .. } => "keyDown",
@@ -1043,7 +1043,7 @@ impl Player {
                         .coerce_to_object(&mut activation)
                         .expect("DisplayObject is not an object!");
 
-                    Avm2::dispatch_event(&mut activation.context, keyboard_event, target);
+                    Avm2::dispatch_event(activation.context, keyboard_event, target);
                 }
             }
 
@@ -1649,7 +1649,7 @@ impl Player {
                 did_finish = root.preload(context, limit);
 
                 if let Some(loader_info) = root.loader_info().filter(|_| !was_root_movie_loaded) {
-                    let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                    let mut activation = Avm2Activation::from_nothing(context);
 
                     let progress_evt = activation.avm2().classes().progressevent.construct(
                         &mut activation,
@@ -2099,7 +2099,7 @@ impl Player {
                 }
             }
 
-            let mut avm2_activation = Avm2Activation::from_nothing(context.reborrow());
+            let mut avm2_activation = Avm2Activation::from_nothing(context);
             for so in avm2_activation.context.avm2_shared_objects.clone().values() {
                 if let Err(e) = crate::avm2::globals::flash::net::shared_object::flush(
                     &mut avm2_activation,

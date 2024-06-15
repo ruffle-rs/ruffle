@@ -10,7 +10,7 @@ use crate::avm2::{Activation, ArrayObject, ArrayStorage, Error, Multiname, Objec
 use crate::avm2_stub_method;
 
 fn ill_formed_markup_err<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     type_error(
         activation,
@@ -20,7 +20,7 @@ fn ill_formed_markup_err<'gc>(
 }
 
 pub fn init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -101,7 +101,7 @@ pub fn init<'gc>(
 }
 
 pub fn normalize<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -111,7 +111,7 @@ pub fn normalize<'gc>(
 }
 
 pub fn name<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -129,7 +129,7 @@ pub fn name<'gc>(
 
 // ECMA-357 13.4.4.35 XML.prototype.setName (name)
 pub fn set_name<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -203,7 +203,7 @@ pub fn set_name<'gc>(
 
 // namespace_internal_impl(hasPrefix:Boolean, prefix:String = null):*
 pub fn namespace_internal_impl<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -250,7 +250,7 @@ pub fn namespace_internal_impl<'gc>(
 
 // ECMA-357 13.4.4.2 XML.prototype.addNamespace (namespace)
 pub fn add_namespace<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -282,7 +282,7 @@ pub fn add_namespace<'gc>(
 
 // ECMA-357 13.4.4.36 XML.prototype.setNamespace (ns)
 pub fn set_namespace<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -337,7 +337,7 @@ pub fn set_namespace<'gc>(
 
 // ECMA-357 13.4.4.31 XML.prototype.removeNamespace (namespace)
 pub fn remove_namespace<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -349,7 +349,7 @@ pub fn remove_namespace<'gc>(
 
 // ECMA-357 13.4.4.17 XML.prototype.inScopeNamespaces ()
 pub fn in_scope_namespaces<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -381,7 +381,7 @@ pub fn in_scope_namespaces<'gc>(
 }
 
 pub fn namespace_declarations<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -425,7 +425,7 @@ pub fn namespace_declarations<'gc>(
 }
 
 pub fn local_name<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -434,7 +434,7 @@ pub fn local_name<'gc>(
 }
 
 pub fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -444,7 +444,7 @@ pub fn to_string<'gc>(
 }
 
 pub fn to_xml_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -453,7 +453,7 @@ pub fn to_xml_string<'gc>(
 }
 
 pub fn child<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -465,7 +465,7 @@ pub fn child<'gc>(
 }
 
 pub fn child_index<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -479,7 +479,7 @@ pub fn child_index<'gc>(
 }
 
 pub fn children<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -501,7 +501,7 @@ pub fn children<'gc>(
 }
 
 pub fn contains<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -516,7 +516,7 @@ pub fn contains<'gc>(
 }
 
 pub fn copy<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -525,7 +525,7 @@ pub fn copy<'gc>(
 }
 
 pub fn parent<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -537,7 +537,7 @@ pub fn parent<'gc>(
 }
 
 pub fn elements<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -549,7 +549,7 @@ pub fn elements<'gc>(
 }
 
 pub fn attributes<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -571,7 +571,7 @@ pub fn attributes<'gc>(
 }
 
 pub fn attribute<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -595,7 +595,7 @@ pub fn attribute<'gc>(
 }
 
 pub fn call_handler<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -626,7 +626,7 @@ pub fn call_handler<'gc>(
 }
 
 pub fn node_kind<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -643,7 +643,7 @@ pub fn node_kind<'gc>(
 }
 
 pub fn append_child<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -673,7 +673,7 @@ pub fn append_child<'gc>(
 
 // ECMA-357 13.4.4.29 XML.prototype.prependChild ( value )
 pub fn prepend_child<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -689,7 +689,7 @@ pub fn prepend_child<'gc>(
 }
 
 pub fn descendants<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -705,7 +705,7 @@ pub fn descendants<'gc>(
 
 // ECMA-357 13.4.4.37 XML.prototype.text ( )
 pub fn text<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -733,7 +733,7 @@ pub fn text<'gc>(
 }
 
 pub fn length<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -741,7 +741,7 @@ pub fn length<'gc>(
 }
 
 pub fn has_complex_content<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -751,7 +751,7 @@ pub fn has_complex_content<'gc>(
 }
 
 pub fn has_simple_content<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -762,7 +762,7 @@ pub fn has_simple_content<'gc>(
 
 // ECMA-357 13.4.4.9 XML.prototype.comments ( )
 pub fn comments<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -791,7 +791,7 @@ pub fn comments<'gc>(
 
 // ECMA-357 13.4.4.28 XML.prototype.processingInstructions ( [ name ] )
 pub fn processing_instructions<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -824,7 +824,7 @@ pub fn processing_instructions<'gc>(
 
 // ECMA-357 13.4.4.18 XML.prototype.insertChildAfter (child1, child2)
 pub fn insert_child_after<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -880,7 +880,7 @@ pub fn insert_child_after<'gc>(
 
 // ECMA-357 13.4.4.19 XML.prototype.insertChildBefore (child1, child2)
 pub fn insert_child_before<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -942,7 +942,7 @@ pub fn insert_child_before<'gc>(
 
 // ECMA-357 13.4.4.32 XML.prototype.replace (propertyName, value)
 pub fn replace<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1013,7 +1013,7 @@ pub fn replace<'gc>(
 
 // ECMA-357 13.4.4.33 XML.prototype.setChildren (value)
 pub fn set_children<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1029,7 +1029,7 @@ pub fn set_children<'gc>(
 
 // ECMA-357 13.4.4.34 XML.prototype.setLocalName ( name )
 pub fn set_local_name<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1064,7 +1064,7 @@ pub fn set_local_name<'gc>(
 }
 
 pub fn set_notification<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1080,7 +1080,7 @@ pub fn set_notification<'gc>(
 }
 
 pub fn notification<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

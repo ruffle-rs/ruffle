@@ -11,7 +11,7 @@ use crate::avm2::{AvmString, Error};
 
 /// Implements `Number`'s instance initializer.
 fn instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -31,7 +31,7 @@ fn instance_init<'gc>(
 
 /// Implements `Number`'s native instance initializer.
 fn native_instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -42,7 +42,7 @@ fn native_instance_init<'gc>(
 
 /// Implements `Number`'s class initializer.
 fn class_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -134,7 +134,7 @@ fn class_init<'gc>(
 }
 
 pub fn call_handler<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -148,7 +148,7 @@ pub fn call_handler<'gc>(
 
 /// Implements `Number.toExponential`
 pub fn to_exponential<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -178,7 +178,7 @@ pub fn to_exponential<'gc>(
 
 /// Implements `Number.toFixed`
 pub fn to_fixed<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -202,7 +202,7 @@ pub fn to_fixed<'gc>(
 }
 
 pub fn print_with_precision<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     number: f64,
     wanted_digits: u32,
 ) -> Result<AvmString<'gc>, Error<'gc>> {
@@ -234,7 +234,7 @@ pub fn print_with_precision<'gc>(
 
 /// Implements `Number.toPrecision`
 pub fn to_precision<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -256,7 +256,7 @@ pub fn to_precision<'gc>(
 }
 
 pub fn print_with_radix<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     mut number: f64,
     radix: usize,
 ) -> Result<AvmString<'gc>, Error<'gc>> {
@@ -311,7 +311,7 @@ pub fn print_with_radix<'gc>(
 
 /// Implements `Number.prototype.toString`
 fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -345,7 +345,7 @@ fn to_string<'gc>(
 
 /// Implements `Number.valueOf`
 fn value_of<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -366,7 +366,7 @@ fn value_of<'gc>(
 }
 
 /// Construct `Number`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, '_, 'gc>) -> Class<'gc> {
     let mc = activation.context.gc_context;
     let class = Class::new(
         QName::new(activation.avm2().public_namespace_base_version, "Number"),
@@ -434,7 +434,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
 
     class.mark_traits_loaded(activation.context.gc_context);
     class
-        .init_vtable(&mut activation.context)
+        .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");
 
     class

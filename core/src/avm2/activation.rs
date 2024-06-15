@@ -74,7 +74,7 @@ enum FrameControl<'gc> {
 }
 
 /// Represents a single activation of a given AVM2 function or keyframe.
-pub struct Activation<'player, 'gc: 'player> {
+pub struct Activation<'player: 'update, 'update, 'gc: 'player> {
     /// The instruction index.
     ip: i32,
 
@@ -141,10 +141,10 @@ pub struct Activation<'player, 'gc: 'player> {
     /// Maximum size for the scope frame.
     max_scope_size: usize,
 
-    pub context: UpdateContext<'player, 'gc>,
+    pub context: &'update mut UpdateContext<'player, 'gc>,
 }
 
-impl<'player, 'gc> Activation<'player, 'gc> {
+impl<'player: 'update, 'update, 'gc> Activation<'player, 'update, 'gc> {
     /// Convenience method to retrieve the current GC context. Note that explicitly writing
     /// `self.context.gc_context` can be sometimes necessary to satisfy the borrow checker.
     #[inline(always)]
@@ -160,7 +160,7 @@ impl<'player, 'gc> Activation<'player, 'gc> {
     ///
     /// It is a logic error to attempt to run AVM2 code in a nothing
     /// `Activation`.
-    pub fn from_nothing(context: UpdateContext<'player, 'gc>) -> Self {
+    pub fn from_nothing(context: &'update mut UpdateContext<'player, 'gc>) -> Self {
         let local_registers = RegisterSet::new(0);
 
         Self {
@@ -189,7 +189,10 @@ impl<'player, 'gc> Activation<'player, 'gc> {
     /// The 'Domain' should come from the SwfMovie associated with whatever
     /// action you're performing. When running frame scripts, this is the
     /// `SwfMovie` associated with the `MovieClip` being processed.
-    pub fn from_domain(context: UpdateContext<'player, 'gc>, domain: Domain<'gc>) -> Self {
+    pub fn from_domain(
+        context: &'update mut UpdateContext<'player, 'gc>,
+        domain: Domain<'gc>,
+    ) -> Self {
         let local_registers = RegisterSet::new(0);
 
         Self {
@@ -212,7 +215,7 @@ impl<'player, 'gc> Activation<'player, 'gc> {
     /// Construct an activation for the execution of a particular script's
     /// initializer method.
     pub fn from_script(
-        mut context: UpdateContext<'player, 'gc>,
+        context: &'update mut UpdateContext<'player, 'gc>,
         script: Script<'gc>,
     ) -> Result<Self, Error<'gc>> {
         let (method, global_object, domain) = script.init();
@@ -242,7 +245,7 @@ impl<'player, 'gc> Activation<'player, 'gc> {
             BytecodeMethod::get_or_init_activation_class(method, context.gc_context, || {
                 let translation_unit = method.translation_unit();
                 let abc_method = method.method();
-                let mut dummy_activation = Activation::from_domain(context.reborrow(), domain);
+                let mut dummy_activation = Activation::from_domain(context, domain);
                 dummy_activation.set_outer(ScopeChain::new(domain));
                 let activation_class = Class::for_activation(
                     &mut dummy_activation,
@@ -418,8 +421,7 @@ impl<'player, 'gc> Activation<'player, 'gc> {
             BytecodeMethod::get_or_init_activation_class(method, self.context.gc_context, || {
                 let translation_unit = method.translation_unit();
                 let abc_method = method.method();
-                let mut dummy_activation =
-                    Activation::from_domain(self.context.reborrow(), outer.domain());
+                let mut dummy_activation = Activation::from_domain(self.context, outer.domain());
                 dummy_activation.set_outer(outer);
                 let activation_class = Class::for_activation(
                     &mut dummy_activation,
@@ -525,7 +527,7 @@ impl<'player, 'gc> Activation<'player, 'gc> {
     /// function to construct a new activation for the builtin so that it can
     /// properly supercall.
     pub fn from_builtin(
-        context: UpdateContext<'player, 'gc>,
+        context: &'update mut UpdateContext<'player, 'gc>,
         subclass_object: Option<ClassObject<'gc>>,
         outer: ScopeChain<'gc>,
         caller_domain: Option<Domain<'gc>>,
@@ -738,7 +740,7 @@ impl<'player, 'gc> Activation<'player, 'gc> {
     ) -> Result<Namespace<'gc>, Error<'gc>> {
         method
             .translation_unit()
-            .pool_namespace(index, &mut self.context)
+            .pool_namespace(index, self.context)
     }
 
     /// Retrieve a method entry from the current ABC file's method table.
@@ -815,7 +817,7 @@ impl<'player, 'gc> Activation<'player, 'gc> {
                 } else if let Ok(err_object) = err_object {
                     let target_class = e.target_class.expect("Just confirmed to be non-None");
 
-                    matches = err_object.is_of_type(target_class, &mut self.context);
+                    matches = err_object.is_of_type(target_class, self.context);
                 }
 
                 if matches {
@@ -1670,7 +1672,7 @@ impl<'player, 'gc> Activation<'player, 'gc> {
 
         avm_debug!(self.avm2(), "Resolving {:?}", *multiname);
         let (_, script) = self.domain().find_defining_script(self, &multiname)?;
-        let obj = script.globals(&mut self.context)?;
+        let obj = script.globals(self.context)?;
         self.push_stack(obj);
         Ok(FrameControl::Continue)
     }
@@ -1713,7 +1715,7 @@ impl<'player, 'gc> Activation<'player, 'gc> {
         &mut self,
         script: Script<'gc>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let globals = script.globals(&mut self.context)?;
+        let globals = script.globals(self.context)?;
 
         self.push_stack(globals);
 
@@ -2007,8 +2009,7 @@ impl<'player, 'gc> Activation<'player, 'gc> {
         let xml_list = self.avm2().classes().xml_list.inner_class_definition();
         let value = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
 
-        if value.is_of_type(xml, &mut self.context) || value.is_of_type(xml_list, &mut self.context)
-        {
+        if value.is_of_type(xml, self.context) || value.is_of_type(xml_list, self.context) {
             self.push_stack(value);
         } else {
             return Err(Error::AvmError(type_error(

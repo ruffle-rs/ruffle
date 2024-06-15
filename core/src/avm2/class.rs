@@ -63,7 +63,7 @@ bitflags! {
 ///    read for traits).
 ///  * `activation` - The current AVM2 activation.
 pub type AllocatorFn =
-    for<'gc> fn(ClassObject<'gc>, &mut Activation<'_, 'gc>) -> Result<Object<'gc>, Error<'gc>>;
+    for<'gc> fn(ClassObject<'gc>, &mut Activation<'_, '_, 'gc>) -> Result<Object<'gc>, Error<'gc>>;
 
 #[derive(Clone, Copy)]
 pub struct Allocator(pub AllocatorFn);
@@ -335,7 +335,7 @@ impl<'gc> Class<'gc> {
     pub fn from_abc_index(
         unit: TranslationUnit<'gc>,
         class_index: u32,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
         let abc = unit.abc();
         let abc_class: Result<&AbcClass, Error<'gc>> = abc
@@ -350,17 +350,17 @@ impl<'gc> Class<'gc> {
             .ok_or_else(|| "LoadError: Instance index not valid".into());
         let abc_instance = abc_instance?;
 
-        let name = QName::from_abc_multiname(unit, abc_instance.name, &mut activation.context)?;
+        let name = QName::from_abc_multiname(unit, abc_instance.name, activation.context)?;
         let super_class = if abc_instance.super_name.0 == 0 {
             None
         } else {
             let multiname =
-                unit.pool_multiname_static(abc_instance.super_name, &mut activation.context)?;
+                unit.pool_multiname_static(abc_instance.super_name, activation.context)?;
 
             Some(
                 activation
                     .domain()
-                    .get_class(&mut activation.context, &multiname)
+                    .get_class(activation.context, &multiname)
                     .ok_or_else(|| {
                         make_error_1014(
                             activation,
@@ -371,19 +371,19 @@ impl<'gc> Class<'gc> {
         };
 
         let protected_namespace = if let Some(ns) = &abc_instance.protected_namespace {
-            Some(unit.pool_namespace(*ns, &mut activation.context)?)
+            Some(unit.pool_namespace(*ns, activation.context)?)
         } else {
             None
         };
 
         let mut interfaces = Vec::with_capacity(abc_instance.interfaces.len());
         for interface_name in &abc_instance.interfaces {
-            let multiname = unit.pool_multiname_static(*interface_name, &mut activation.context)?;
+            let multiname = unit.pool_multiname_static(*interface_name, activation.context)?;
 
             interfaces.push(
                 activation
                     .domain()
-                    .get_class(&mut activation.context, &multiname)
+                    .get_class(activation.context, &multiname)
                     .ok_or_else(|| {
                         make_error_1014(
                             activation,
@@ -477,7 +477,7 @@ impl<'gc> Class<'gc> {
     /// instantiated into an `Object`.
     pub fn load_traits(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         unit: TranslationUnit<'gc>,
         class_index: u32,
     ) -> Result<(), Error<'gc>> {
@@ -668,7 +668,7 @@ impl<'gc> Class<'gc> {
     }
 
     pub fn for_activation(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         translation_unit: TranslationUnit<'gc>,
         method: &AbcMethod,
         body: &AbcMethodBody,
@@ -722,7 +722,7 @@ impl<'gc> Class<'gc> {
             },
         ));
 
-        class.init_vtable(&mut activation.context)?;
+        class.init_vtable(activation.context)?;
 
         Ok(class)
     }
@@ -812,7 +812,7 @@ impl<'gc> Class<'gc> {
     #[inline(never)]
     pub fn define_constant_class_instance_trait(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         name: QName<'gc>,
         value: Value<'gc>,
     ) {
@@ -828,7 +828,7 @@ impl<'gc> Class<'gc> {
     #[inline(never)]
     pub fn define_constant_function_instance_trait(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         name: QName<'gc>,
         value: Value<'gc>,
     ) {
@@ -846,7 +846,7 @@ impl<'gc> Class<'gc> {
         self,
         namespace: Namespace<'gc>,
         items: &[(&'static str, f64)],
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) {
         for &(name, value) in items {
             self.define_class_trait(
@@ -864,7 +864,7 @@ impl<'gc> Class<'gc> {
         self,
         namespace: Namespace<'gc>,
         items: &[(&'static str, u32)],
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) {
         for &(name, value) in items {
             self.define_class_trait(
@@ -882,7 +882,7 @@ impl<'gc> Class<'gc> {
         self,
         namespace: Namespace<'gc>,
         items: &[(&'static str, i32)],
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) {
         for &(name, value) in items {
             self.define_class_trait(
@@ -1022,7 +1022,7 @@ impl<'gc> Class<'gc> {
         self,
         namespace: Namespace<'gc>,
         items: &[(&'static str, Option<f64>)],
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) {
         for &(name, value) in items {
             self.define_instance_trait(

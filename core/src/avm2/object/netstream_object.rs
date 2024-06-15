@@ -12,7 +12,7 @@ use std::fmt::Debug;
 
 pub fn netstream_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
     let ns = NetStream::new(activation.context.gc_context, None);

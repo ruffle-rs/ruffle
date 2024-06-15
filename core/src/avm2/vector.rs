@@ -44,7 +44,7 @@ impl<'gc> VectorStorage<'gc> {
         length: usize,
         is_fixed: bool,
         value_type: Option<Class<'gc>>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Self {
         let storage = Vec::new();
 
@@ -61,7 +61,7 @@ impl<'gc> VectorStorage<'gc> {
         self_vec
     }
 
-    pub fn check_fixed(&self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
+    pub fn check_fixed(&self, activation: &mut Activation<'_, '_, 'gc>) -> Result<(), Error<'gc>> {
         if self.is_fixed {
             return Err(Error::AvmError(range_error(
                 activation,
@@ -107,7 +107,7 @@ impl<'gc> VectorStorage<'gc> {
     pub fn resize(
         &mut self,
         new_length: usize,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         self.check_fixed(activation)?;
         self.storage.resize(new_length, self.default(activation));
@@ -116,7 +116,7 @@ impl<'gc> VectorStorage<'gc> {
     }
 
     /// Get the default value for this vector.
-    pub fn default(&self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
+    pub fn default(&self, activation: &mut Activation<'_, '_, 'gc>) -> Value<'gc> {
         if let Some(value_type) = self.value_type {
             if value_type == activation.avm2().classes().int.inner_class_definition()
                 || value_type == activation.avm2().classes().uint.inner_class_definition()
@@ -138,7 +138,7 @@ impl<'gc> VectorStorage<'gc> {
     }
 
     /// Get the value type this vector coerces things to.
-    pub fn value_type_for_coercion(&self, activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
+    pub fn value_type_for_coercion(&self, activation: &mut Activation<'_, '_, 'gc>) -> Class<'gc> {
         self.value_type
             .unwrap_or_else(|| activation.avm2().classes().object.inner_class_definition())
     }
@@ -165,7 +165,7 @@ impl<'gc> VectorStorage<'gc> {
     pub fn get(
         &self,
         pos: usize,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(val) = self.get_optional(pos) {
             Ok(val)
@@ -199,7 +199,7 @@ impl<'gc> VectorStorage<'gc> {
         &mut self,
         pos: usize,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         if !self.is_fixed && pos == self.length() {
             self.storage.resize(pos + 1, self.default(activation));
@@ -231,7 +231,7 @@ impl<'gc> VectorStorage<'gc> {
     pub fn push(
         &mut self,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         self.check_fixed(activation)?;
         self.storage.push(value);
@@ -242,7 +242,10 @@ impl<'gc> VectorStorage<'gc> {
     /// Pop a value off the end of the vector.
     ///
     /// This function returns an error if the vector is fixed.
-    pub fn pop(&mut self, activation: &mut Activation<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>> {
+    pub fn pop(
+        &mut self,
+        activation: &mut Activation<'_, '_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
         self.check_fixed(activation)?;
 
         if let Some(v) = self.storage.pop() {
@@ -273,7 +276,7 @@ impl<'gc> VectorStorage<'gc> {
     pub fn unshift(
         &mut self,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         self.check_fixed(activation)?;
 
@@ -287,7 +290,7 @@ impl<'gc> VectorStorage<'gc> {
     /// This function returns an error if the vector is fixed.
     pub fn shift(
         &mut self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         self.check_fixed(activation)?;
 
@@ -323,7 +326,7 @@ impl<'gc> VectorStorage<'gc> {
         &mut self,
         position: i32,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         self.check_fixed(activation)?;
 
@@ -348,7 +351,7 @@ impl<'gc> VectorStorage<'gc> {
     pub fn remove(
         &mut self,
         position: i32,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         self.check_fixed(activation)?;
 

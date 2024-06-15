@@ -17,7 +17,7 @@ use crate::display_object::{Bitmap, TDisplayObject};
 
 pub fn bitmap_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let bitmap_cls = activation.avm2().classes().bitmap;
     let bitmapdata_cls = activation.context.avm2.classes().bitmapdata;
@@ -84,7 +84,7 @@ pub fn bitmap_allocator<'gc>(
 
 /// Implements `flash.display.Bitmap`'s `init` method, which is called from the constructor
 pub fn init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -98,7 +98,7 @@ pub fn init<'gc>(
 
     if let Some(bitmap) = this.as_display_object().and_then(|dobj| dobj.as_bitmap()) {
         if let Some(bitmap_data) = bitmap_data {
-            bitmap.set_bitmap_data(&mut activation.context, bitmap_data);
+            bitmap.set_bitmap_data(activation.context, bitmap_data);
         }
         bitmap.set_smoothing(activation.context.gc_context, smoothing);
         bitmap.set_pixel_snapping(activation.context.gc_context, pixel_snapping);
@@ -111,7 +111,7 @@ pub fn init<'gc>(
 
 /// Implements `Bitmap.bitmapData`'s getter.
 pub fn get_bitmap_data<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -130,7 +130,7 @@ pub fn get_bitmap_data<'gc>(
 
 /// Implements `Bitmap.bitmapData`'s setter.
 pub fn set_bitmap_data<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -144,7 +144,7 @@ pub fn set_bitmap_data<'gc>(
                 .as_bitmap_data()
                 .ok_or_else(|| Error::RustError("Argument was not a BitmapData".into()))?
         };
-        bitmap.set_bitmap_data(&mut activation.context, bitmap_data);
+        bitmap.set_bitmap_data(activation.context, bitmap_data);
     }
 
     Ok(Value::Undefined)
@@ -152,7 +152,7 @@ pub fn set_bitmap_data<'gc>(
 
 /// Stub `Bitmap.pixelSnapping`'s getter
 pub fn get_pixel_snapping<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -165,7 +165,7 @@ pub fn get_pixel_snapping<'gc>(
 
 /// Stub `Bitmap.pixelSnapping`'s setter
 pub fn set_pixel_snapping<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -180,7 +180,7 @@ pub fn set_pixel_snapping<'gc>(
 
 /// Implement `Bitmap.smoothing`'s getter
 pub fn get_smoothing<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -193,7 +193,7 @@ pub fn get_smoothing<'gc>(
 
 /// Implement `Bitmap.smoothing`'s setter
 pub fn set_smoothing<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

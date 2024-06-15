@@ -12,7 +12,7 @@ use std::cell::{Ref, RefMut};
 /// A class instance allocator that allocates LocalConnection objects.
 pub fn local_connection_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
@@ -61,7 +61,7 @@ impl<'gc> LocalConnectionObject<'gc> {
         self.0.read().connection_handle
     }
 
-    pub fn connect(&self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) {
+    pub fn connect(&self, activation: &mut Activation<'_, '_, 'gc>, name: AvmString<'gc>) {
         assert!(!self.is_connected());
 
         let connection_handle = activation
@@ -73,7 +73,7 @@ impl<'gc> LocalConnectionObject<'gc> {
             .connection_handle = Some(connection_handle);
     }
 
-    pub fn disconnect(&self, activation: &mut Activation<'_, 'gc>) {
+    pub fn disconnect(&self, activation: &mut Activation<'_, '_, 'gc>) {
         if let Some(conn_handle) = self.0.read().connection_handle {
             activation.context.local_connections.remove(conn_handle);
         }

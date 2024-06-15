@@ -40,7 +40,7 @@ impl<'gc> StageObject<'gc> {
     /// Display objects that do not need to use this flow should use
     /// `for_display_object_childless`.
     pub fn for_display_object(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         display_object: DisplayObject<'gc>,
         class: ClassObject<'gc>,
     ) -> Result<Self, Error<'gc>> {
@@ -62,7 +62,7 @@ impl<'gc> StageObject<'gc> {
     /// This function is intended for display objects that do not have children
     /// and thus do not need to be allocated and initialized in separate phases.
     pub fn for_display_object_childless(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         display_object: DisplayObject<'gc>,
         class: ClassObject<'gc>,
     ) -> Result<Self, Error<'gc>> {
@@ -76,7 +76,7 @@ impl<'gc> StageObject<'gc> {
     /// Same as for_display_object_childless, but allows passing
     /// constructor arguments.
     pub fn for_display_object_childless_with_args(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         display_object: DisplayObject<'gc>,
         class: ClassObject<'gc>,
         args: &[Value<'gc>],
@@ -90,7 +90,7 @@ impl<'gc> StageObject<'gc> {
 
     /// Create a `graphics` object for a given display object.
     pub fn graphics(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         display_object: DisplayObject<'gc>,
     ) -> Result<Self, Error<'gc>> {
         let class = activation.avm2().classes().graphics;

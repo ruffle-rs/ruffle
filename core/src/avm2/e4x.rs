@@ -52,7 +52,7 @@ impl<'gc> Debug for E4XNodeData<'gc> {
     }
 }
 
-fn make_xml_error<'gc>(activation: &mut Activation<'_, 'gc>, err: XmlError) -> Error<'gc> {
+fn make_xml_error<'gc>(activation: &mut Activation<'_, '_, 'gc>, err: XmlError) -> Error<'gc> {
     let error = match err {
         XmlError::InvalidAttr(XmlAttrError::Duplicated(_, _)) => type_error(
             activation,
@@ -122,7 +122,7 @@ impl<'gc> E4XNamespace<'gc> {
 impl<'gc> E4XNamespace<'gc> {
     pub fn as_namespace_object(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<NamespaceObject<'gc>, Error<'gc>> {
         let args = if let Some(prefix) = self.prefix {
             vec![prefix.into(), self.uri.into()]
@@ -486,7 +486,7 @@ impl<'gc> E4XNode<'gc> {
     }
 
     // ECMA-357 9.1.1.4 [[DeleteByIndex]] (P)
-    pub fn delete_by_index(&self, index: usize, activation: &mut Activation<'_, 'gc>) {
+    pub fn delete_by_index(&self, index: usize, activation: &mut Activation<'_, '_, 'gc>) {
         let E4XNodeKind::Element { children, .. } = &mut *self.kind_mut(activation.gc()) else {
             return;
         };
@@ -506,7 +506,7 @@ impl<'gc> E4XNode<'gc> {
         &self,
         index: usize,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         // 1. If x.[[Class]] ∈ {"text", "comment", "processing-instruction", "attribute"}, return
         if !self.is_element() {
@@ -553,7 +553,7 @@ impl<'gc> E4XNode<'gc> {
         &self,
         index: usize,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         // 1. If x.[[Class]] ∈ {"text", "comment", "processing-instruction", "attribute"}, return
         if !self.is_element() {
@@ -744,7 +744,7 @@ impl<'gc> E4XNode<'gc> {
     /// is correct (for XML, there should be exactly one.)
     pub fn parse(
         mut value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         ignore_comments: bool,
         ignore_processing_instructions: bool,
         ignore_white: bool,
@@ -775,7 +775,7 @@ impl<'gc> E4XNode<'gc> {
             node: E4XNode<'gc>,
             open_tags: &mut [E4XNode<'gc>],
             top_level: &mut Vec<E4XNode<'gc>>,
-            activation: &mut Activation<'_, 'gc>,
+            activation: &mut Activation<'_, '_, 'gc>,
         ) -> Result<(), Error<'gc>> {
             if let Some(current_tag) = open_tags.last_mut() {
                 current_tag.append_child(activation.context.gc_context, node)?;
@@ -815,7 +815,7 @@ impl<'gc> E4XNode<'gc> {
             open_tags: &mut [E4XNode<'gc>],
             top_level: &mut Vec<E4XNode<'gc>>,
             is_text: bool,
-            activation: &mut Activation<'_, 'gc>,
+            activation: &mut Activation<'_, '_, 'gc>,
         ) -> Result<(), Error<'gc>> {
             let is_whitespace_char = |c: &u8| matches!(*c, b'\t' | b'\n' | b'\r' | b' ');
             let is_whitespace_text = text.iter().all(is_whitespace_char);
@@ -970,7 +970,7 @@ impl<'gc> E4XNode<'gc> {
     /// The returned node will always be an `Element`, and it must only contain
     /// valid encoded UTF-8 data. (Other encoding support is planned later.)
     pub fn from_start_event(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         parser: &NsReader<&[u8]>,
         bs: &BytesStart<'_>,
         decoder: quick_xml::Decoder,
@@ -1297,7 +1297,7 @@ impl<'gc> E4XNode<'gc> {
         }
     }
 
-    pub fn xml_to_string(&self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
+    pub fn xml_to_string(&self, activation: &mut Activation<'_, '_, 'gc>) -> AvmString<'gc> {
         match &self.0.read().kind {
             E4XNodeKind::Text(text) | E4XNodeKind::CData(text) => *text,
             E4XNodeKind::Attribute(text) => *text,
@@ -1317,7 +1317,7 @@ impl<'gc> E4XNode<'gc> {
         }
     }
 
-    pub fn xml_to_xml_string(&self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
+    pub fn xml_to_xml_string(&self, activation: &mut Activation<'_, '_, 'gc>) -> AvmString<'gc> {
         return to_xml_string(E4XOrXml::E4X(*self), activation);
     }
 
@@ -1336,7 +1336,7 @@ impl<'gc> E4XNode<'gc> {
 
 pub fn simple_content_to_string<'gc>(
     children: impl Iterator<Item = E4XOrXml<'gc>>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> AvmString<'gc> {
     let mut out = AvmString::default();
     for child in children {
@@ -1575,7 +1575,7 @@ fn to_xml_string_inner<'gc>(
 // Implementation of `ToXMLString` from ECMA-357 (10.2.1)
 pub fn to_xml_string<'gc>(
     xml: E4XOrXml<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> AvmString<'gc> {
     let pretty_printing = activation
         .avm2()
@@ -1612,7 +1612,7 @@ pub fn to_xml_string<'gc>(
 
 // 10.6.1. ToXMLName Applied to the String Type
 pub fn string_to_multiname<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     name: AvmString<'gc>,
 ) -> Multiname<'gc> {
     if let Some(name) = name.strip_prefix(b'@') {
@@ -1637,7 +1637,7 @@ pub fn string_to_multiname<'gc>(
 // for example, the first layer doesn't propagate IS_QNAME on QNames, but latter does
 // TODO: figure out if this matters for us, maybe there are some edge cases
 pub fn name_to_multiname<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     name: &Value<'gc>,
     force_attribute: bool,
 ) -> Result<Multiname<'gc>, Error<'gc>> {
@@ -1666,7 +1666,7 @@ pub fn name_to_multiname<'gc>(
 // Based on https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/XMLObject.cpp#L1543
 // This is needed to reproduce some weird behavior in SWFv9.
 pub fn maybe_escape_child<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     child: Value<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // NOTE: This depends on root SWF version, not caller movie version.

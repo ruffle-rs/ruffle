@@ -11,7 +11,7 @@ use crate::html::TextFormat;
 use crate::string::WStr;
 
 pub fn create_text_line<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -65,9 +65,9 @@ pub fn create_text_line<'gc>(
 
     // FIXME: TextLine should be its own DisplayObject
     let display_object: EditText =
-        EditText::new_tlf(&mut activation.context, movie, 0.0, 0.0, width, 15.0);
+        EditText::new_tlf(activation.context, movie, 0.0, 0.0, width, 15.0);
 
-    display_object.set_text(text.as_wstr(), &mut activation.context);
+    display_object.set_text(text.as_wstr(), activation.context);
 
     // FIXME: This needs to use `intrinsic_bounds` to measure the width
     // of the provided text, and set the width of the EditText to that.
@@ -125,7 +125,7 @@ pub fn create_text_line<'gc>(
 }
 
 fn apply_format<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     display_object: EditText<'gc>,
     text: &WStr,
     element_format: Option<Object<'gc>>,
@@ -180,18 +180,18 @@ fn apply_format<'gc>(
             ..TextFormat::default()
         };
 
-        display_object.set_is_device_font(&mut activation.context, is_device_font);
-        display_object.set_text_format(0, text.len(), format.clone(), &mut activation.context);
-        display_object.set_new_text_format(format, &mut activation.context);
+        display_object.set_is_device_font(activation.context, is_device_font);
+        display_object.set_text_format(0, text.len(), format.clone(), activation.context);
+        display_object.set_new_text_format(format, activation.context);
     } else {
-        display_object.set_is_device_font(&mut activation.context, true);
+        display_object.set_is_device_font(activation.context, true);
     }
 
-    display_object.set_word_wrap(true, &mut activation.context);
+    display_object.set_word_wrap(true, activation.context);
 
-    let measured_text = display_object.measure_text(&mut activation.context);
+    let measured_text = display_object.measure_text(activation.context);
 
-    display_object.set_height(&mut activation.context, measured_text.1.to_pixels());
+    display_object.set_height(activation.context, measured_text.1.to_pixels());
 
     Ok(())
 }

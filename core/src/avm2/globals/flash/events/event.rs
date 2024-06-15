@@ -9,7 +9,7 @@ pub use crate::avm2::object::event_allocator;
 use crate::avm2::parameters::ParametersExt;
 
 pub fn init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -22,7 +22,7 @@ pub fn init<'gc>(
 
 /// Implements `bubbles` property's getter
 pub fn get_bubbles<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -35,7 +35,7 @@ pub fn get_bubbles<'gc>(
 
 /// Implements `cancelable` property's getter
 pub fn get_cancelable<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -48,7 +48,7 @@ pub fn get_cancelable<'gc>(
 
 /// Implements `type` property's getter
 pub fn get_type<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -61,7 +61,7 @@ pub fn get_type<'gc>(
 
 /// Implements `target` property's getter
 pub fn get_target<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -74,7 +74,7 @@ pub fn get_target<'gc>(
 
 /// Implements `currentTarget` property's getter
 pub fn get_current_target<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -90,7 +90,7 @@ pub fn get_current_target<'gc>(
 
 /// Implements `eventPhase` property's getter
 pub fn get_event_phase<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -104,7 +104,7 @@ pub fn get_event_phase<'gc>(
 
 /// Implements `isDefaultPrevented`
 pub fn is_default_prevented<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -117,7 +117,7 @@ pub fn is_default_prevented<'gc>(
 
 /// Implements `preventDefault`
 pub fn prevent_default<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -130,7 +130,7 @@ pub fn prevent_default<'gc>(
 
 /// Implements `stopPropagation`
 pub fn stop_propagation<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -143,7 +143,7 @@ pub fn stop_propagation<'gc>(
 
 /// Implements `stopImmediatePropagation`
 pub fn stop_immediate_propagation<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

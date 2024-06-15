@@ -16,7 +16,7 @@ use tracing::{enabled, Level};
 /// A class instance allocator that allocates Error objects.
 pub fn error_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 

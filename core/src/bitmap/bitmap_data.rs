@@ -451,7 +451,7 @@ mod wrapper {
 
         pub fn check_valid(
             &self,
-            activation: &mut crate::avm2::Activation<'_, 'gc>,
+            activation: &mut crate::avm2::Activation<'_, '_, 'gc>,
         ) -> Result<(), crate::avm2::Error<'gc>> {
             if self.disposed() {
                 return Err(crate::avm2::Error::AvmError(

@@ -5,7 +5,7 @@ use crate::avm2::{Activation, Error, Object, TObject, Value};
 pub use crate::avm2::object::netstream_allocator as net_stream_allocator;
 
 pub fn get_bytes_loaded<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -17,7 +17,7 @@ pub fn get_bytes_loaded<'gc>(
 }
 
 pub fn get_bytes_total<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -29,7 +29,7 @@ pub fn get_bytes_total<'gc>(
 }
 
 pub fn play<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -41,50 +41,50 @@ pub fn play<'gc>(
             .map(|v| v.coerce_to_string(activation))
             .transpose()?;
 
-        ns.play(&mut activation.context, name);
+        ns.play(activation.context, name);
     }
 
     Ok(Value::Undefined)
 }
 
 pub fn pause<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(ns) = this.as_netstream() {
-        ns.pause(&mut activation.context, true);
+        ns.pause(activation.context, true);
     }
 
     Ok(Value::Undefined)
 }
 
 pub fn resume<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(ns) = this.as_netstream() {
-        ns.resume(&mut activation.context);
+        ns.resume(activation.context);
     }
 
     Ok(Value::Undefined)
 }
 
 pub fn toggle_pause<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(ns) = this.as_netstream() {
-        ns.toggle_paused(&mut activation.context);
+        ns.toggle_paused(activation.context);
     }
 
     Ok(Value::Undefined)
 }
 
 pub fn get_client<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -96,7 +96,7 @@ pub fn get_client<'gc>(
 }
 
 pub fn set_client<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -118,20 +118,20 @@ pub fn set_client<'gc>(
 }
 
 pub fn seek<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(ns) = this.as_netstream() {
         let offset = args.get_f64(activation, 0)?;
-        ns.seek(&mut activation.context, offset * 1000.0, true);
+        ns.seek(activation.context, offset * 1000.0, true);
     }
 
     Ok(Value::Undefined)
 }
 
 pub fn get_time<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

@@ -8,7 +8,7 @@ use crate::{
 
 pub trait PixelBenderTypeExt {
     fn from_avm2_value<'gc>(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Value<'gc>,
         kind: &PixelBenderTypeOpcode,
     ) -> Result<Self, Error<'gc>>
@@ -17,14 +17,14 @@ pub trait PixelBenderTypeExt {
 
     fn as_avm2_value<'gc>(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         tint_as_int: bool,
     ) -> Result<Value<'gc>, Error<'gc>>;
 }
 
 impl PixelBenderTypeExt for PixelBenderType {
     fn from_avm2_value<'gc>(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Value<'gc>,
         kind: &PixelBenderTypeOpcode,
     ) -> Result<Self, Error<'gc>>
@@ -121,7 +121,7 @@ impl PixelBenderTypeExt for PixelBenderType {
     }
     fn as_avm2_value<'gc>(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         tint_as_int: bool,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // Flash appears to use a uint/int if the float has no fractional part

@@ -11,7 +11,7 @@ use crate::avm2::{AvmString, Error, Multiname, QName};
 
 /// Implements `int`'s instance initializer.
 fn instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -31,7 +31,7 @@ fn instance_init<'gc>(
 
 /// Implements `int`'s native instance initializer.
 fn native_instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -42,7 +42,7 @@ fn native_instance_init<'gc>(
 
 /// Implements `int`'s class initializer.
 fn class_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -135,7 +135,7 @@ fn class_init<'gc>(
 }
 
 pub fn call_handler<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -158,7 +158,7 @@ use crate::avm2::globals::number::to_precision;
 
 /// Implements `int.toString`
 fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -191,7 +191,7 @@ fn to_string<'gc>(
 
 /// Implements `int.valueOf`
 fn value_of<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -211,7 +211,7 @@ fn value_of<'gc>(
 }
 
 /// Construct `int`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, '_, 'gc>) -> Class<'gc> {
     let mc = activation.context.gc_context;
     let class = Class::new(
         QName::new(activation.avm2().public_namespace_base_version, "int"),
@@ -275,7 +275,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
 
     class.mark_traits_loaded(activation.context.gc_context);
     class
-        .init_vtable(&mut activation.context)
+        .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");
 
     class

@@ -23,7 +23,7 @@ use std::str::FromStr;
 
 pub fn display_object_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let class_name = class.inner_class_definition().name().local_name();
 
@@ -38,18 +38,18 @@ pub fn display_object_allocator<'gc>(
 /// This should be called from the AVM2 class's native allocator
 /// (e.g. `sprite_allocator`)
 pub fn initialize_for_allocator<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     dobj: DisplayObject<'gc>,
     class: ClassObject<'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let obj: StageObject = StageObject::for_display_object(activation, dobj, class)?;
     dobj.set_placed_by_script(activation.context.gc_context, true);
-    dobj.set_object2(&mut activation.context, obj.into());
+    dobj.set_object2(activation.context, obj.into());
 
     // [NA] Should these run for everything?
-    dobj.post_instantiation(&mut activation.context, None, Instantiator::Avm2, false);
-    dobj.enter_frame(&mut activation.context);
-    dobj.construct_frame(&mut activation.context);
+    dobj.post_instantiation(activation.context, None, Instantiator::Avm2, false);
+    dobj.enter_frame(activation.context);
+    dobj.construct_frame(activation.context);
 
     // Movie clips created from ActionScript skip the next enterFrame,
     // and consequently are observed to have their currentFrame lag one
@@ -57,14 +57,14 @@ pub fn initialize_for_allocator<'gc>(
     // both placed in the same frame to begin with).
     dobj.base_mut(activation.context.gc_context)
         .set_skip_next_enter_frame(true);
-    dobj.on_construction_complete(&mut activation.context);
+    dobj.on_construction_complete(activation.context);
 
     Ok(obj.into())
 }
 
 /// Implements `flash.display.DisplayObject`'s native instance constructor.
 pub fn native_instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -77,7 +77,7 @@ pub fn native_instance_init<'gc>(
 
         if let Some(container) = dobj.as_container() {
             for child in container.iter_render_list() {
-                child.construct_frame(&mut activation.context);
+                child.construct_frame(activation.context);
             }
         }
 
@@ -91,7 +91,7 @@ pub fn native_instance_init<'gc>(
 
 /// Implements `alpha`'s getter.
 pub fn get_alpha<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -104,7 +104,7 @@ pub fn get_alpha<'gc>(
 
 /// Implements `alpha`'s setter.
 pub fn set_alpha<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -118,7 +118,7 @@ pub fn set_alpha<'gc>(
 
 /// Implements `height`'s getter.
 pub fn get_height<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -131,14 +131,14 @@ pub fn get_height<'gc>(
 
 /// Implements `height`'s setter.
 pub fn set_height<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.as_display_object() {
         let new_height = args.get_f64(activation, 0)?;
         if new_height >= 0.0 {
-            dobj.set_height(&mut activation.context, new_height);
+            dobj.set_height(activation.context, new_height);
         }
     }
 
@@ -147,7 +147,7 @@ pub fn set_height<'gc>(
 
 /// Implements `scale9Grid`'s getter.
 pub fn get_scale9grid<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -167,7 +167,7 @@ pub fn get_scale9grid<'gc>(
 
 /// Implements `scale9Grid`'s setter.
 pub fn set_scale9grid<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -185,7 +185,7 @@ pub fn set_scale9grid<'gc>(
 
 /// Implements `scaleY`'s getter.
 pub fn get_scale_y<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -198,7 +198,7 @@ pub fn get_scale_y<'gc>(
 
 /// Implements `scaleY`'s setter.
 pub fn set_scale_y<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -212,7 +212,7 @@ pub fn set_scale_y<'gc>(
 
 /// Implements `width`'s getter.
 pub fn get_width<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -225,14 +225,14 @@ pub fn get_width<'gc>(
 
 /// Implements `width`'s setter.
 pub fn set_width<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.as_display_object() {
         let new_width = args.get_f64(activation, 0)?;
         if new_width >= 0.0 {
-            dobj.set_width(&mut activation.context, new_width);
+            dobj.set_width(activation.context, new_width);
         }
     }
 
@@ -241,7 +241,7 @@ pub fn set_width<'gc>(
 
 /// Implements `scaleX`'s getter.
 pub fn get_scale_x<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -254,7 +254,7 @@ pub fn get_scale_x<'gc>(
 
 /// Implements `scaleX`'s setter.
 pub fn set_scale_x<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -267,7 +267,7 @@ pub fn set_scale_x<'gc>(
 }
 
 pub fn get_filters<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -283,7 +283,7 @@ pub fn get_filters<'gc>(
 }
 
 fn build_argument_type_error<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Err(Error::AvmError(crate::avm2::error::argument_error(
         activation,
@@ -293,7 +293,7 @@ fn build_argument_type_error<'gc>(
 }
 
 pub fn set_filters<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -313,7 +313,7 @@ pub fn set_filters<'gc>(
                         } else {
                             let filter_object = filter.coerce_to_object(activation)?;
 
-                            if !filter_object.is_of_type(filter_class, &mut activation.context) {
+                            if !filter_object.is_of_type(filter_class, activation.context) {
                                 return build_argument_type_error(activation);
                             }
 
@@ -334,7 +334,7 @@ pub fn set_filters<'gc>(
 
 /// Implements `x`'s getter.
 pub fn get_x<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -347,7 +347,7 @@ pub fn get_x<'gc>(
 
 /// Implements `x`'s setter.
 pub fn set_x<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -361,7 +361,7 @@ pub fn set_x<'gc>(
 
 /// Implements `y`'s getter.
 pub fn get_y<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -374,7 +374,7 @@ pub fn get_y<'gc>(
 
 /// Implements `y`'s setter.
 pub fn set_y<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -387,7 +387,7 @@ pub fn set_y<'gc>(
 }
 
 pub fn get_z<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -396,7 +396,7 @@ pub fn get_z<'gc>(
 }
 
 pub fn set_z<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -405,7 +405,7 @@ pub fn set_z<'gc>(
 }
 
 pub fn get_rotation_x<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -414,7 +414,7 @@ pub fn get_rotation_x<'gc>(
 }
 
 pub fn set_rotation_x<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -423,7 +423,7 @@ pub fn set_rotation_x<'gc>(
 }
 
 pub fn get_rotation_y<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -432,7 +432,7 @@ pub fn get_rotation_y<'gc>(
 }
 
 pub fn set_rotation_y<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -441,7 +441,7 @@ pub fn set_rotation_y<'gc>(
 }
 
 pub fn get_rotation_z<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -450,7 +450,7 @@ pub fn get_rotation_z<'gc>(
 }
 
 pub fn set_rotation_z<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -459,7 +459,7 @@ pub fn set_rotation_z<'gc>(
 }
 
 pub fn get_scale_z<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -468,7 +468,7 @@ pub fn get_scale_z<'gc>(
 }
 
 pub fn set_scale_z<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -478,7 +478,7 @@ pub fn set_scale_z<'gc>(
 
 /// Implements `rotation`'s getter.
 pub fn get_rotation<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -498,7 +498,7 @@ pub fn get_rotation<'gc>(
 
 /// Implements `rotation`'s setter.
 pub fn set_rotation<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -513,7 +513,7 @@ pub fn set_rotation<'gc>(
 
 /// Implements `name`'s getter.
 pub fn get_name<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -526,7 +526,7 @@ pub fn get_name<'gc>(
 
 /// Implements `name`'s setter.
 pub fn set_name<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -549,7 +549,7 @@ pub fn set_name<'gc>(
 
 /// Implements `parent`.
 pub fn get_parent<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -565,7 +565,7 @@ pub fn get_parent<'gc>(
 
 /// Implements `root`.
 pub fn get_root<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -581,13 +581,13 @@ pub fn get_root<'gc>(
 
 /// Implements `stage`.
 pub fn get_stage<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.as_display_object() {
         return Ok(dobj
-            .avm2_stage(&activation.context)
+            .avm2_stage(activation.context)
             .map(|stage| stage.object2())
             .unwrap_or(Value::Null));
     }
@@ -597,7 +597,7 @@ pub fn get_stage<'gc>(
 
 /// Implements `visible`'s getter.
 pub fn get_visible<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -610,14 +610,14 @@ pub fn get_visible<'gc>(
 
 /// Implements `visible`'s setter.
 pub fn set_visible<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.as_display_object() {
         let new_visible = args.get_bool(0);
 
-        dobj.set_visible(&mut activation.context, new_visible);
+        dobj.set_visible(activation.context, new_visible);
     }
 
     Ok(Value::Undefined)
@@ -625,7 +625,7 @@ pub fn set_visible<'gc>(
 
 /// Implements `metaData`'s getter.
 pub fn get_meta_data<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -639,7 +639,7 @@ pub fn get_meta_data<'gc>(
 
 /// Implements `metaData`'s setter.
 pub fn set_meta_data<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -653,12 +653,12 @@ pub fn set_meta_data<'gc>(
 
 /// Implements `mouseX`.
 pub fn get_mouse_x<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.as_display_object() {
-        let local_mouse = dobj.local_mouse_position(&activation.context);
+        let local_mouse = dobj.local_mouse_position(activation.context);
         return Ok(local_mouse.x.to_pixels().into());
     }
 
@@ -667,12 +667,12 @@ pub fn get_mouse_x<'gc>(
 
 /// Implements `mouseY`.
 pub fn get_mouse_y<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.as_display_object() {
-        let local_mouse = dobj.local_mouse_position(&activation.context);
+        let local_mouse = dobj.local_mouse_position(activation.context);
         return Ok(local_mouse.y.to_pixels().into());
     }
 
@@ -681,7 +681,7 @@ pub fn get_mouse_y<'gc>(
 
 /// Implements `hitTestPoint`.
 pub fn hit_test_point<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -697,16 +697,12 @@ pub fn hit_test_point<'gc>(
             .map_or(local, |root| root.local_to_global(local));
 
         if shape_flag {
-            if !dobj.is_on_stage(&activation.context) {
+            if !dobj.is_on_stage(activation.context) {
                 return Ok(false.into());
             }
 
             return Ok(dobj
-                .hit_test_shape(
-                    &mut activation.context,
-                    global,
-                    HitTestOptions::AVM_HIT_TEST,
-                )
+                .hit_test_shape(activation.context, global, HitTestOptions::AVM_HIT_TEST)
                 .into());
         } else {
             return Ok(dobj.hit_test_bounds(global).into());
@@ -718,7 +714,7 @@ pub fn hit_test_point<'gc>(
 
 /// Implements `hitTestObject`.
 pub fn hit_test_object<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -733,7 +729,7 @@ pub fn hit_test_object<'gc>(
 
 /// Implements `loaderInfo` getter
 pub fn get_loader_info<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -753,7 +749,7 @@ pub fn get_loader_info<'gc>(
 }
 
 pub fn get_transform<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -766,7 +762,7 @@ pub fn get_transform<'gc>(
 }
 
 pub fn set_transform<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -803,7 +799,7 @@ pub fn set_transform<'gc>(
 
 /// Implements `DisplayObject.blendMode`'s getter.
 pub fn get_blend_mode<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -817,7 +813,7 @@ pub fn get_blend_mode<'gc>(
 
 /// Implements `DisplayObject.blendMode`'s setter.
 pub fn set_blend_mode<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -835,7 +831,7 @@ pub fn set_blend_mode<'gc>(
 }
 
 fn new_rectangle<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     rectangle: Rectangle<Twips>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let x = rectangle.x_min.to_pixels();
@@ -851,7 +847,7 @@ fn new_rectangle<'gc>(
 }
 
 pub fn get_scroll_rect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -866,7 +862,7 @@ pub fn get_scroll_rect<'gc>(
 }
 
 pub fn object_to_rectangle<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     object: Object<'gc>,
 ) -> Result<Rectangle<Twips>, Error<'gc>> {
     const NAMES: &[&str] = &["x", "y", "width", "height"];
@@ -886,7 +882,7 @@ pub fn object_to_rectangle<'gc>(
 }
 
 pub fn set_scroll_rect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -914,7 +910,7 @@ pub fn set_scroll_rect<'gc>(
 }
 
 pub fn local_to_global<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -944,7 +940,7 @@ pub fn local_to_global<'gc>(
 }
 
 pub fn global_to_local<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -974,7 +970,7 @@ pub fn global_to_local<'gc>(
 }
 
 pub fn get_bounds<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1006,7 +1002,7 @@ pub fn get_bounds<'gc>(
 }
 
 pub fn get_rect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1016,7 +1012,7 @@ pub fn get_rect<'gc>(
 }
 
 pub fn get_mask<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1027,7 +1023,7 @@ pub fn get_mask<'gc>(
 }
 
 pub fn set_mask<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1049,7 +1045,7 @@ pub fn set_mask<'gc>(
 }
 
 pub fn get_cache_as_bitmap<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1060,7 +1056,7 @@ pub fn get_cache_as_bitmap<'gc>(
 }
 
 pub fn set_cache_as_bitmap<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1073,7 +1069,7 @@ pub fn set_cache_as_bitmap<'gc>(
 
 /// `opaqueBackground`'s getter.
 pub fn get_opaque_background<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1089,7 +1085,7 @@ pub fn get_opaque_background<'gc>(
 
 /// `opaqueBackground`'s setter.
 pub fn set_opaque_background<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1106,7 +1102,7 @@ pub fn set_opaque_background<'gc>(
 }
 
 pub fn set_blend_shader<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

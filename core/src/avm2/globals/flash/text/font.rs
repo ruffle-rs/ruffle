@@ -15,7 +15,7 @@ use crate::font::FontType;
 
 /// Implements `Font.fontName`
 pub fn get_font_name<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -30,7 +30,7 @@ pub fn get_font_name<'gc>(
 
 /// Implements `Font.fontStyle`
 pub fn get_font_style<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -48,7 +48,7 @@ pub fn get_font_style<'gc>(
 
 /// Implements `Font.fontType`
 pub fn get_font_type<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -66,7 +66,7 @@ pub fn get_font_type<'gc>(
 
 /// Implements `Font.hasGlyphs`
 pub fn has_glyphs<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -80,7 +80,7 @@ pub fn has_glyphs<'gc>(
 
 /// `Font.enumerateFonts`
 pub fn enumerate_fonts<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -122,7 +122,7 @@ pub fn enumerate_fonts<'gc>(
 
 /// `Font.registerFont`
 pub fn register_font<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

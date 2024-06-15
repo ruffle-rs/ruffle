@@ -5,7 +5,7 @@ use crate::avm2::value::Value;
 use crate::display_object::TDisplayObject;
 
 pub fn native_instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -14,25 +14,25 @@ pub fn native_instance_init<'gc>(
 }
 
 pub fn get_text_width<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let display_object = this.as_display_object().unwrap();
     let edit_text = display_object.as_edit_text().unwrap();
 
-    let measured_text = edit_text.measure_text(&mut activation.context);
+    let measured_text = edit_text.measure_text(activation.context);
     Ok(measured_text.0.to_pixels().into())
 }
 
 pub fn get_text_height<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let display_object = this.as_display_object().unwrap();
     let edit_text = display_object.as_edit_text().unwrap();
 
-    let measured_text = edit_text.measure_text(&mut activation.context);
+    let measured_text = edit_text.measure_text(activation.context);
     Ok(measured_text.1.to_pixels().into())
 }

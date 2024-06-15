@@ -278,7 +278,7 @@ pub trait TInteractiveObject<'gc>:
             return ClipEventResult::NotHandled;
         };
 
-        let mut activation = Avm2Activation::from_nothing(context.reborrow());
+        let mut activation = Avm2Activation::from_nothing(context);
 
         match event {
             ClipEvent::Press => {
@@ -291,7 +291,7 @@ pub trait TInteractiveObject<'gc>:
                     true,
                 );
 
-                Avm2::dispatch_event(&mut activation.context, avm2_event, target);
+                Avm2::dispatch_event(activation.context, avm2_event, target);
 
                 ClipEventResult::Handled
             }
@@ -305,7 +305,7 @@ pub trait TInteractiveObject<'gc>:
                     true,
                 );
 
-                Avm2::dispatch_event(&mut activation.context, avm2_event, target);
+                Avm2::dispatch_event(activation.context, avm2_event, target);
 
                 ClipEventResult::Handled
             }
@@ -333,7 +333,7 @@ pub trait TInteractiveObject<'gc>:
                         true,
                     );
 
-                    Avm2::dispatch_event(&mut activation.context, avm2_event, target);
+                    Avm2::dispatch_event(activation.context, avm2_event, target);
 
                     self.raw_interactive_mut(context.gc_context).last_click = None;
                 } else {
@@ -346,7 +346,7 @@ pub trait TInteractiveObject<'gc>:
                         true,
                     );
 
-                    Avm2::dispatch_event(&mut activation.context, avm2_event, target);
+                    Avm2::dispatch_event(activation.context, avm2_event, target);
 
                     self.raw_interactive_mut(context.gc_context).last_click = Some(this_click);
                 }
@@ -363,7 +363,7 @@ pub trait TInteractiveObject<'gc>:
                     true,
                 );
 
-                Avm2::dispatch_event(&mut activation.context, avm2_event, target);
+                Avm2::dispatch_event(activation.context, avm2_event, target);
 
                 self.raw_interactive_mut(context.gc_context).last_click = None;
 
@@ -379,7 +379,7 @@ pub trait TInteractiveObject<'gc>:
                     true,
                 );
 
-                Avm2::dispatch_event(&mut activation.context, avm2_event, target);
+                Avm2::dispatch_event(activation.context, avm2_event, target);
 
                 let lca = lowest_common_ancestor(
                     self.as_displayobject(),
@@ -397,7 +397,7 @@ pub trait TInteractiveObject<'gc>:
                         Avm2EventObject::mouse_event(&mut activation, "rollOut", tgt, to, 0, false);
 
                     if let Avm2Value::Object(avm2_target) = tgt.object2() {
-                        Avm2::dispatch_event(&mut activation.context, avm2_event, avm2_target);
+                        Avm2::dispatch_event(activation.context, avm2_event, avm2_target);
                     }
 
                     rollout_target = tgt.parent();
@@ -430,7 +430,7 @@ pub trait TInteractiveObject<'gc>:
                     );
 
                     if let Avm2Value::Object(avm2_target) = tgt.object2() {
-                        Avm2::dispatch_event(&mut activation.context, avm2_event, avm2_target);
+                        Avm2::dispatch_event(activation.context, avm2_event, avm2_target);
                     }
 
                     rollover_target = tgt.parent();
@@ -445,7 +445,7 @@ pub trait TInteractiveObject<'gc>:
                     true,
                 );
 
-                Avm2::dispatch_event(&mut activation.context, avm2_event, target);
+                Avm2::dispatch_event(activation.context, avm2_event, target);
 
                 ClipEventResult::Handled
             }
@@ -459,7 +459,7 @@ pub trait TInteractiveObject<'gc>:
                     true,
                 );
 
-                Avm2::dispatch_event(&mut activation.context, avm2_event, target);
+                Avm2::dispatch_event(activation.context, avm2_event, target);
 
                 ClipEventResult::Handled
             }
@@ -473,7 +473,7 @@ pub trait TInteractiveObject<'gc>:
                     true,
                 );
 
-                Avm2::dispatch_event(&mut activation.context, avm2_event, target);
+                Avm2::dispatch_event(activation.context, avm2_event, target);
 
                 ClipEventResult::Handled
             }
@@ -576,7 +576,7 @@ pub trait TInteractiveObject<'gc>:
             };
             Avm1::run_stack_frame_for_method(self_do, object, context, method_name, &[other]);
         } else if let Avm2Value::Object(object) = self_do.object2() {
-            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let mut activation = Avm2Activation::from_nothing(context);
             let event_name = if focused {
                 "focusIn".into()
             } else {
@@ -601,7 +601,7 @@ pub trait TInteractiveObject<'gc>:
                 )
                 .expect("Event should construct!");
 
-            Avm2::dispatch_event(&mut activation.context, event, object);
+            Avm2::dispatch_event(activation.context, event, object);
         }
     }
 

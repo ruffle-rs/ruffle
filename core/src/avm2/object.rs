@@ -215,7 +215,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn get_property_local(
         self,
         name: &Multiname<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         self.base().get_property_local(name, activation)
     }
@@ -231,7 +231,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn get_property(
         mut self,
         multiname: &Multiname<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
@@ -279,7 +279,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn get_public_property(
         self,
         name: impl Into<AvmString<'gc>>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         self.get_property(
             &Multiname::new(activation.avm2().find_public_namespace(), name),
@@ -302,7 +302,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self,
         name: &Multiname<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let mut base = self.base_mut(activation.context.gc_context);
         base.set_property_local(name, value, activation)
@@ -316,7 +316,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self,
         name: impl Into<AvmString<'gc>>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let name = Multiname::new(activation.avm2().public_namespace_vm_internal, name);
         self.set_property_local(&name, value, activation)
@@ -333,7 +333,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &self,
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
             Some(Property::Slot { slot_id }) => {
@@ -382,7 +382,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &self,
         name: impl Into<AvmString<'gc>>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         self.set_property(
             &Multiname::new(activation.avm2().public_namespace_vm_internal, name),
@@ -403,7 +403,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self,
         name: &Multiname<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let mut base = self.base_mut(activation.context.gc_context);
         base.init_property_local(name, value, activation)
@@ -418,7 +418,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &self,
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
@@ -465,7 +465,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self,
         multiname: &Multiname<'gc>,
         arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // Note: normally this would just call into ScriptObjectData::call_property_local
         // but because calling into ScriptObjectData borrows it for entire duration,
@@ -489,7 +489,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         mut self,
         multiname: &Multiname<'gc>,
         arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
@@ -530,7 +530,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self,
         name: impl Into<AvmString<'gc>>,
         arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         self.call_property(
             &Multiname::new(activation.avm2().find_public_namespace(), name),
@@ -551,7 +551,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self,
         id: u32,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let value = self
             .vtable()
@@ -580,7 +580,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self,
         id: u32,
         arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(bound_method) = self.get_bound_method(id) {
             return bound_method.call(Value::from(self.into()), arguments, activation);
@@ -625,7 +625,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// other object types to change the behavior of the `in` operator only.
     fn has_property_via_in(
         self,
-        _activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, '_, 'gc>,
         name: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
         Ok(self.has_property(name))
@@ -646,7 +646,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn has_public_property(
         self,
         name: impl Into<AvmString<'gc>>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> bool {
         self.has_property(&Multiname::new(
             activation.avm2().find_public_namespace(),
@@ -664,7 +664,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn has_own_property_string(
         self,
         name: impl Into<AvmString<'gc>>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<bool, Error<'gc>> {
         Ok(self.has_own_property(&Multiname::new(
             activation.avm2().find_public_namespace(),
@@ -685,7 +685,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// methods.
     fn delete_property_local(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         name: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
         let mut base = self.base_mut(activation.context.gc_context);
@@ -698,7 +698,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Returns false if the property cannot be deleted.
     fn delete_property(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         multiname: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
         if self.as_primitive().is_some() {
@@ -737,7 +737,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Same as delete_property, but constructs a public Multiname for you.
     fn delete_public_property(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         name: impl Into<AvmString<'gc>>,
     ) -> Result<bool, Error<'gc>> {
         let name = Multiname::new(activation.avm2().public_namespace_base_version, name);
@@ -780,7 +780,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn get_next_enumerant(
         self,
         last_index: u32,
-        _activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Option<u32>, Error<'gc>> {
         let base = self.base();
 
@@ -796,7 +796,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn get_enumerant_name(
         self,
         index: u32,
-        _activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let base = self.base();
 
@@ -810,7 +810,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn get_enumerant_value(
         self,
         index: u32,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let name = self
             .get_enumerant_name(index, activation)?
@@ -878,7 +878,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self,
         _receiver: Value<'gc>,
         _arguments: &[Value<'gc>],
-        _activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         Err("Object is not callable".into())
     }
@@ -901,7 +901,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// ignored.)
     fn construct(
         self,
-        _activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, '_, 'gc>,
         _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         Err("Object is not constructable".into())
@@ -914,7 +914,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self,
         multiname: &Multiname<'gc>,
         args: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let ctor = self.get_property(multiname, activation)?.as_callable(
             activation,
@@ -943,7 +943,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// parameters.
     fn apply(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         _params: &[Value<'gc>],
     ) -> Result<ClassObject<'gc>, Error<'gc>> {
         Err(error::make_error_1127(activation))
@@ -967,7 +967,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// coercions happen by defining `toString` in a downstream class or
     /// prototype; this is then picked up by the VM runtime when doing
     /// coercions.
-    fn to_string(&self, activation: &mut Activation<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>> {
+    fn to_string(
+        &self,
+        activation: &mut Activation<'_, '_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let class_name = self
             .instance_class()
             .map(|c| c.name().local_name())
@@ -986,7 +989,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// of the class that created this object).
     fn to_locale_string(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let class_name = self
             .instance_class()
@@ -1018,7 +1021,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// searched in the prototype chain of this object.
     fn is_instance_of(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         class: Object<'gc>,
     ) -> Result<bool, Error<'gc>> {
         let type_proto = class
@@ -1038,7 +1041,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     // FIXME - the order doesn't currently match Flash Player
     fn public_vtable_properties(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Vec<(AvmString<'gc>, Value<'gc>)>, Error<'gc>> {
         if let Some(vtable) = self.vtable() {
             let mut values = Vec::new();
@@ -1346,7 +1349,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     fn xml_descendants(
         &self,
-        _activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, '_, 'gc>,
         _multiname: &Multiname<'gc>,
     ) -> Option<XmlListObject<'gc>> {
         None

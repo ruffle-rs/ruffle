@@ -33,7 +33,7 @@ use swf::avm2::types::{
 ///
 /// Native functions are allowed to return a Value or an Error.
 pub type NativeMethodImpl = for<'gc> fn(
-    &mut Activation<'_, 'gc>,
+    &mut Activation<'_, '_, 'gc>,
     Object<'gc>,
     &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>>;
@@ -71,7 +71,7 @@ impl<'gc> ParamConfig<'gc> {
     fn from_abc_param(
         config: &AbcMethodParam,
         txunit: TranslationUnit<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
         let param_name = if let Some(name) = &config.name {
             txunit
@@ -81,7 +81,7 @@ impl<'gc> ParamConfig<'gc> {
             AvmString::from("<Unnamed Parameter>")
         };
         let param_type_name = txunit
-            .pool_multiname_static_any(config.kind, &mut activation.context)?
+            .pool_multiname_static_any(config.kind, activation.context)?
             .deref()
             .clone();
 
@@ -161,7 +161,7 @@ impl<'gc> BytecodeMethod<'gc> {
         txunit: TranslationUnit<'gc>,
         abc_method: Index<AbcMethod>,
         is_function: bool,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
         let abc = txunit.abc();
         let mut signature = Vec::new();
@@ -174,7 +174,7 @@ impl<'gc> BytecodeMethod<'gc> {
             }
 
             return_type = txunit
-                .pool_multiname_static_any(method.return_type, &mut activation.context)?
+                .pool_multiname_static_any(method.return_type, activation.context)?
                 .deref()
                 .clone();
 
@@ -240,7 +240,7 @@ impl<'gc> BytecodeMethod<'gc> {
     }
 
     #[inline(never)]
-    pub fn verify(&self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
+    pub fn verify(&self, activation: &mut Activation<'_, '_, 'gc>) -> Result<(), Error<'gc>> {
         // TODO: avmplus seems to eaglerly verify some methods
 
         *self.verified_info.write(activation.context.gc_context) =
@@ -355,7 +355,7 @@ pub struct NativeMethod<'gc> {
 impl<'gc> NativeMethod<'gc> {
     pub fn resolve_signature(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         *self.resolved_signature.write(activation.context.gc_context) =
             Some(resolve_param_config(activation, &self.signature)?);

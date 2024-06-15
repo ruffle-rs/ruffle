@@ -2016,7 +2016,7 @@ pub trait TDisplayObject<'gc>:
                         .library_for_movie(self.movie())
                         .unwrap()
                         .avm2_domain();
-                    let mut activation = Avm2Activation::from_domain(context.reborrow(), domain);
+                    let mut activation = Avm2Activation::from_domain(context, domain);
                     let name =
                         Avm2Multiname::new(activation.avm2().find_public_namespace(), self.name());
                     if let Err(e) = p.init_property(&name, c.into(), &mut activation) {
@@ -2696,7 +2696,7 @@ impl SoundTransform {
     }
 
     pub fn from_avm2_object<'gc>(
-        activation: &mut Avm2Activation<'_, 'gc>,
+        activation: &mut Avm2Activation<'_, '_, 'gc>,
         as3_st: Avm2Object<'gc>,
     ) -> Result<Self, Avm2Error<'gc>> {
         Ok(SoundTransform {
@@ -2725,7 +2725,7 @@ impl SoundTransform {
 
     pub fn into_avm2_object<'gc>(
         self,
-        activation: &mut Avm2Activation<'_, 'gc>,
+        activation: &mut Avm2Activation<'_, '_, 'gc>,
     ) -> Result<Avm2Object<'gc>, Avm2Error<'gc>> {
         let as3_st = activation
             .avm2()

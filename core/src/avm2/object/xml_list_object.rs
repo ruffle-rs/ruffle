@@ -18,7 +18,7 @@ use super::{ClassObject, XmlObject};
 /// A class instance allocator that allocates XMLList objects.
 pub fn xml_list_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
@@ -55,7 +55,7 @@ impl<'gc> Debug for XmlListObject<'gc> {
 
 impl<'gc> XmlListObject<'gc> {
     pub fn new(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         target_object: Option<XmlOrXmlListObject<'gc>>,
         target_property: Option<Multiname<'gc>>,
     ) -> Self {
@@ -63,7 +63,7 @@ impl<'gc> XmlListObject<'gc> {
     }
 
     pub fn new_with_children(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         children: Vec<E4XOrXml<'gc>>,
         target_object: Option<XmlOrXmlListObject<'gc>>,
         target_property: Option<Multiname<'gc>>,
@@ -92,7 +92,7 @@ impl<'gc> XmlListObject<'gc> {
     pub fn xml_object_child(
         &self,
         index: usize,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Option<XmlObject<'gc>> {
         let mut write = self.0.write(activation.context.gc_context);
         if let Some(child) = write.children.get_mut(index) {
@@ -126,7 +126,7 @@ impl<'gc> XmlListObject<'gc> {
         self.0.read().target_property.clone()
     }
 
-    pub fn deep_copy(&self, activation: &mut Activation<'_, 'gc>) -> XmlListObject<'gc> {
+    pub fn deep_copy(&self, activation: &mut Activation<'_, '_, 'gc>) -> XmlListObject<'gc> {
         self.reevaluate_target_object(activation);
 
         let children = self
@@ -142,7 +142,7 @@ impl<'gc> XmlListObject<'gc> {
         )
     }
 
-    pub fn as_xml_string(&self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
+    pub fn as_xml_string(&self, activation: &mut Activation<'_, '_, 'gc>) -> AvmString<'gc> {
         let children = self.children();
         let mut out = WString::new();
         for (i, child) in children.iter().enumerate() {
@@ -155,7 +155,7 @@ impl<'gc> XmlListObject<'gc> {
     }
 
     // Based on https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/XMLListObject.cpp#L621
-    pub fn reevaluate_target_object(&self, activation: &mut Activation<'_, 'gc>) {
+    pub fn reevaluate_target_object(&self, activation: &mut Activation<'_, '_, 'gc>) {
         let mut write = self.0.write(activation.gc());
 
         if write.target_dirty && !write.children.is_empty() {
@@ -220,7 +220,7 @@ impl<'gc> XmlListObject<'gc> {
     // ECMA-357 9.2.1.10 [[ResolveValue]] ( )
     pub fn resolve_value(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Option<XmlOrXmlListObject<'gc>>, Error<'gc>> {
         // 1. If x.[[Length]] > 0, return x
         if self.length() > 0 {
@@ -285,7 +285,7 @@ impl<'gc> XmlListObject<'gc> {
     pub fn equals(
         &self,
         other: &Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<bool, Error<'gc>> {
         if *other == Value::Undefined && self.length() == 0 {
             return Ok(true);
@@ -354,7 +354,10 @@ pub enum E4XOrXml<'gc> {
 }
 
 impl<'gc> E4XOrXml<'gc> {
-    pub fn get_or_create_xml(&mut self, activation: &mut Activation<'_, 'gc>) -> XmlObject<'gc> {
+    pub fn get_or_create_xml(
+        &mut self,
+        activation: &mut Activation<'_, '_, 'gc>,
+    ) -> XmlObject<'gc> {
         match self {
             E4XOrXml::E4X(node) => {
                 let xml = XmlObject::new(*node, activation);
@@ -411,7 +414,7 @@ impl<'gc> XmlOrXmlListObject<'gc> {
 
     pub fn resolve_value(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Option<XmlOrXmlListObject<'gc>>, Error<'gc>> {
         match self {
             // NOTE: XmlObjects just resolve to themselves.
@@ -430,7 +433,7 @@ impl<'gc> XmlOrXmlListObject<'gc> {
     pub fn get_property_local(
         &self,
         name: &Multiname<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Option<XmlOrXmlListObject<'gc>>, Error<'gc>> {
         let value = self.as_object().get_property_local(name, activation)?;
 
@@ -488,7 +491,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
 
     fn xml_descendants(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         multiname: &Multiname<'gc>,
     ) -> Option<XmlListObject<'gc>> {
         let mut descendants = Vec::new();
@@ -511,7 +514,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
     fn get_property_local(
         self,
         name: &Multiname<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let mut write = self.0.write(activation.gc());
 
@@ -565,7 +568,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         self,
         multiname: &Multiname<'gc>,
         arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let method = self
             .proto()
@@ -634,7 +637,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         self,
         name: &Multiname<'gc>,
         mut value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         // 1. Let i = ToUint32(P)
         // 2. If ToString(i) == P
@@ -1021,7 +1024,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
     fn get_next_enumerant(
         self,
         last_index: u32,
-        _activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Option<u32>, Error<'gc>> {
         let read = self.0.read();
         if (last_index as usize) < read.children.len() {
@@ -1036,7 +1039,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
     fn get_enumerant_value(
         self,
         index: u32,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let mut write = self.0.write(activation.context.gc_context);
         let children_len = write.children.len() as u32;
@@ -1058,7 +1061,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
     fn get_enumerant_name(
         self,
         index: u32,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let children_len = self.0.read().children.len() as u32;
         if children_len >= index {
@@ -1076,7 +1079,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
 
     fn delete_property_local(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         name: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
         let mut write = self.0.write(activation.context.gc_context);

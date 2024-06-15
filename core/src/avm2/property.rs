@@ -56,7 +56,7 @@ impl<'gc> PropertyClass<'gc> {
     /// to cache a class resolution, and `false` if it was not modified.
     pub fn coerce(
         &mut self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Value<'gc>,
     ) -> Result<(Value<'gc>, bool), Error<'gc>> {
         let (class, changed) = match self {
@@ -75,7 +75,7 @@ impl<'gc> PropertyClass<'gc> {
                     // so use that domain if we don't have a translation unit.
                     let domain =
                         unit.map_or(activation.avm2().playerglobals_domain, |u| u.domain());
-                    if let Some(class) = domain.get_class(&mut activation.context, name) {
+                    if let Some(class) = domain.get_class(activation.context, name) {
                         *self = PropertyClass::Class(class);
                         (Some(class), true)
                     } else {
@@ -100,7 +100,7 @@ impl<'gc> PropertyClass<'gc> {
 
     pub fn get_class(
         &mut self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Option<Class<'gc>>, Error<'gc>> {
         match self {
             PropertyClass::Class(class) => Ok(Some(*class)),
@@ -112,7 +112,7 @@ impl<'gc> PropertyClass<'gc> {
                 } else {
                     let domain =
                         unit.map_or(activation.avm2().playerglobals_domain, |u| u.domain());
-                    if let Some(class) = domain.get_class(&mut activation.context, name) {
+                    if let Some(class) = domain.get_class(activation.context, name) {
                         *self = PropertyClass::Class(class);
                         Ok(Some(class))
                     } else {

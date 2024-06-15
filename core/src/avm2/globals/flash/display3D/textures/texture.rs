@@ -15,7 +15,7 @@ use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use crate::bitmap::bitmap_data::Color;
 
 pub fn do_copy<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     data: Object<'gc>,
     texture: TextureObject<'gc>,
     byte_array_offset: u32,
@@ -71,7 +71,7 @@ pub fn do_copy<'gc>(
 }
 
 pub fn upload_compressed_texture_from_byte_array_internal<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -98,7 +98,7 @@ pub fn upload_compressed_texture_from_byte_array_internal<'gc>(
 }
 
 pub fn upload_from_byte_array<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -112,7 +112,7 @@ pub fn upload_from_byte_array<'gc>(
 }
 
 pub fn upload_from_bitmap_data<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

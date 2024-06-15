@@ -24,7 +24,7 @@ pub struct VertexBuffer3DObjectWeak<'gc>(pub GcWeak<'gc, VertexBuffer3DObjectDat
 
 impl<'gc> VertexBuffer3DObject<'gc> {
     pub fn from_handle(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         context3d: Context3DObject<'gc>,
         handle: Rc<dyn VertexBuffer>,
         data32_per_vertex: u8,

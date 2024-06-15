@@ -17,7 +17,7 @@ pub trait ParametersExt<'gc> {
     /// If the value is null or is undefined, a TypeError 2007 is raised.
     fn get_object(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         index: usize,
         name: &'static str,
     ) -> Result<Object<'gc>, Error<'gc>>;
@@ -27,7 +27,7 @@ pub trait ParametersExt<'gc> {
     /// If the value is null or is undefined, None is returned.
     fn try_get_object(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         index: usize,
     ) -> Option<Object<'gc>>;
 
@@ -37,7 +37,7 @@ pub trait ParametersExt<'gc> {
     /// If the object cannot be coerced to an f64, a TypeError 1050 is raised.
     fn get_f64(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         index: usize,
     ) -> Result<f64, Error<'gc>>;
 
@@ -47,7 +47,7 @@ pub trait ParametersExt<'gc> {
     /// If the object cannot be coerced to a u32, a TypeError 1050 is raised.
     fn get_u32(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         index: usize,
     ) -> Result<u32, Error<'gc>>;
 
@@ -57,7 +57,7 @@ pub trait ParametersExt<'gc> {
     /// If the object cannot be coerced to an i32, a TypeError 1050 is raised.
     fn get_i32(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         index: usize,
     ) -> Result<i32, Error<'gc>>;
 
@@ -73,12 +73,12 @@ pub trait ParametersExt<'gc> {
     /// If the object cannot be coerced to a string, a TypeError 1050 is raised.
     fn get_string(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         index: usize,
     ) -> Result<AvmString<'gc>, Error<'gc>>;
     fn get_string_non_null(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         index: usize,
         name: &'static str,
     ) -> Result<AvmString<'gc>, Error<'gc>>;
@@ -89,7 +89,7 @@ pub trait ParametersExt<'gc> {
     /// If the object cannot be coerced to a string, a TypeError 1050 is raised.
     fn try_get_string(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         index: usize,
     ) -> Result<Option<AvmString<'gc>>, Error<'gc>>;
 }
@@ -102,7 +102,7 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
 
     fn get_object(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         index: usize,
         name: &'static str,
     ) -> Result<Object<'gc>, Error<'gc>> {
@@ -116,7 +116,7 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
 
     fn try_get_object(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         index: usize,
     ) -> Option<Object<'gc>> {
         match self[index] {
@@ -131,7 +131,7 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
 
     fn get_f64(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         index: usize,
     ) -> Result<f64, Error<'gc>> {
         self[index].coerce_to_number(activation)
@@ -139,7 +139,7 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
 
     fn get_u32(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         index: usize,
     ) -> Result<u32, Error<'gc>> {
         self[index].coerce_to_u32(activation)
@@ -147,7 +147,7 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
 
     fn get_i32(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         index: usize,
     ) -> Result<i32, Error<'gc>> {
         self[index].coerce_to_i32(activation)
@@ -159,7 +159,7 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
 
     fn get_string(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         index: usize,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         self[index].coerce_to_string(activation)
@@ -167,7 +167,7 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
 
     fn get_string_non_null(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         index: usize,
         name: &'static str,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
@@ -179,7 +179,7 @@ impl<'gc> ParametersExt<'gc> for &[Value<'gc>] {
 
     fn try_get_string(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         index: usize,
     ) -> Result<Option<AvmString<'gc>>, Error<'gc>> {
         match self[index] {

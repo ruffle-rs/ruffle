@@ -515,7 +515,7 @@ pub fn abc_double<'gc>(
 pub fn abc_default_value<'gc>(
     translation_unit: TranslationUnit<'gc>,
     default: &AbcDefaultValue,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     match default {
         AbcDefaultValue::Int(i) => abc_int(translation_unit, *i).map(|v| v.into()),
@@ -535,7 +535,7 @@ pub fn abc_default_value<'gc>(
         | AbcDefaultValue::Explicit(ns)
         | AbcDefaultValue::StaticProtected(ns)
         | AbcDefaultValue::Private(ns) => {
-            let ns = translation_unit.pool_namespace(*ns, &mut activation.context)?;
+            let ns = translation_unit.pool_namespace(*ns, activation.context)?;
             NamespaceObject::from_namespace(activation, ns).map(Into::into)
         }
     }
@@ -647,7 +647,7 @@ impl<'gc> Value<'gc> {
     pub fn coerce_to_primitive(
         &self,
         hint: Option<Hint>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let hint = hint.unwrap_or_else(|| match self {
             Value::Object(o) => o.default_hint(),
@@ -728,7 +728,7 @@ impl<'gc> Value<'gc> {
     /// ToNumber algorithm which appears to match AVM2.
     pub fn coerce_to_number(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<f64, Error<'gc>> {
         Ok(match self {
             Value::Undefined => f64::NAN,
@@ -754,7 +754,10 @@ impl<'gc> Value<'gc> {
     ///
     /// Numerical conversions occur according to ECMA-262 3rd Edition's
     /// ToUint32 algorithm which appears to match AVM2.
-    pub fn coerce_to_u32(&self, activation: &mut Activation<'_, 'gc>) -> Result<u32, Error<'gc>> {
+    pub fn coerce_to_u32(
+        &self,
+        activation: &mut Activation<'_, '_, 'gc>,
+    ) -> Result<u32, Error<'gc>> {
         Ok(match self {
             Value::Integer(i) => *i as u32,
             Value::Number(n) => f64_to_wrapping_u32(*n),
@@ -773,7 +776,10 @@ impl<'gc> Value<'gc> {
     ///
     /// Numerical conversions occur according to ECMA-262 3rd Edition's
     /// ToInt32 algorithm which appears to match AVM2.
-    pub fn coerce_to_i32(&self, activation: &mut Activation<'_, 'gc>) -> Result<i32, Error<'gc>> {
+    pub fn coerce_to_i32(
+        &self,
+        activation: &mut Activation<'_, '_, 'gc>,
+    ) -> Result<i32, Error<'gc>> {
         Ok(match self {
             Value::Integer(i) => *i,
             Value::Number(n) => f64_to_wrapping_i32(*n),
@@ -816,7 +822,7 @@ impl<'gc> Value<'gc> {
     /// Animate CC 2020 significantly reduces them (towards zero).
     pub fn coerce_to_string<'a>(
         &'a self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         Ok(match self {
             Value::Undefined => "undefined".into(),
@@ -868,7 +874,7 @@ impl<'gc> Value<'gc> {
     /// properties as part of the string.
     pub fn coerce_to_debug_string<'a>(
         &'a self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         Ok(match self {
             Value::String(s) => {
@@ -887,7 +893,7 @@ impl<'gc> Value<'gc> {
     /// to be removed too, since all that this will do then is a null/undefined check.
     pub fn coerce_to_object(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         match self {
             Value::Undefined => return Err("TypeError: undefined is not an Object".into()),
@@ -904,7 +910,7 @@ impl<'gc> Value<'gc> {
     /// Note: The error may contain a non-spec info about the way in which it was to be used.
     pub fn coerce_to_object_or_typeerror(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         name: Option<&Multiname<'gc>>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         if matches!(self, Value::Null | Value::Undefined) {
@@ -933,7 +939,7 @@ impl<'gc> Value<'gc> {
     /// in the error message, if provided.
     pub fn as_callable(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         name: Option<&Multiname<'gc>>,
         receiver: Option<Value<'gc>>,
         as_constructor: bool,
@@ -993,7 +999,7 @@ impl<'gc> Value<'gc> {
     /// If the type is not coercible to the given type, an error is thrown.
     pub fn coerce_to_type(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         class: Class<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if class == activation.avm2().classes().int.inner_class_definition() {
@@ -1024,7 +1030,7 @@ impl<'gc> Value<'gc> {
         }
 
         if let Ok(object) = self.coerce_to_object(activation) {
-            if object.is_of_type(class, &mut activation.context) {
+            if object.is_of_type(class, activation.context) {
                 return Ok(*self);
             }
         }
@@ -1096,7 +1102,7 @@ impl<'gc> Value<'gc> {
     /// `Number`.
     pub fn is_of_type(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         type_object: Class<'gc>,
     ) -> bool {
         if type_object == activation.avm2().classes().number.inner_class_definition() {
@@ -1116,7 +1122,7 @@ impl<'gc> Value<'gc> {
         }
 
         if let Ok(o) = self.coerce_to_object(activation) {
-            o.is_of_type(type_object, &mut activation.context)
+            o.is_of_type(type_object, activation.context)
         } else {
             false
         }
@@ -1145,7 +1151,7 @@ impl<'gc> Value<'gc> {
     pub fn abstract_eq(
         &self,
         other: &Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<bool, Error<'gc>> {
         // ECMA-357 extends the abstract equality algorithm with steps
         // for XML and XMLList types. Because they are objects in Ruffle we
@@ -1260,7 +1266,7 @@ impl<'gc> Value<'gc> {
     pub fn abstract_lt(
         &self,
         other: &Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Option<bool>, Error<'gc>> {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Some(a < b)),

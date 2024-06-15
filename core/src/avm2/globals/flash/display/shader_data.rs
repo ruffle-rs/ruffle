@@ -15,7 +15,7 @@ pub use crate::avm2::object::shader_data_allocator;
 
 /// Implements `ShaderData.init`, which is called from the constructor
 pub fn init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

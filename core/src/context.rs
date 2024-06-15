@@ -375,7 +375,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
         self.stage.set_movie(self.gc_context, self.swf.clone());
 
         let stage_domain = self.avm2.stage_domain();
-        let mut activation = Avm2Activation::from_domain(self.reborrow(), stage_domain);
+        let mut activation = Avm2Activation::from_domain(self, stage_domain);
 
         activation
             .context

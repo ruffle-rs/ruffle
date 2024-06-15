@@ -93,7 +93,7 @@ impl<'gc> TObject<'gc> for DispatchObject<'gc> {
 
     fn construct(
         self,
-        _activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, '_, 'gc>,
         _args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         Err("Cannot construct internal event dispatcher structures.".into())

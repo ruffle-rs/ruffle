@@ -24,7 +24,7 @@ pub struct Program3DObjectWeak<'gc>(pub GcWeak<'gc, Program3DObjectData<'gc>>);
 
 impl<'gc> Program3DObject<'gc> {
     pub fn from_context(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         context3d: Context3DObject<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().program3d;

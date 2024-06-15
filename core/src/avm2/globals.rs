@@ -311,7 +311,7 @@ impl<'gc> SystemClasses<'gc> {
 ///
 /// This expects the looked-up value to be a function.
 fn define_fn_on_global<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     package: impl Into<AvmString<'gc>>,
     name: &'static str,
     script: Script<'gc>,
@@ -345,7 +345,7 @@ fn define_fn_on_global<'gc>(
 /// This allows the caller to pre-populate the class's prototype with dynamic
 /// properties, if necessary.
 fn dynamic_class<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     class_object: ClassObject<'gc>,
     script: Script<'gc>,
     // The `ClassObject` of the `Class` class
@@ -376,7 +376,7 @@ fn dynamic_class<'gc>(
 fn class<'gc>(
     class_def: Class<'gc>,
     script: Script<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<ClassObject<'gc>, Error<'gc>> {
     let mc = activation.context.gc_context;
     let (_, global, mut domain) = script.init();
@@ -414,7 +414,7 @@ fn vector_class<'gc>(
     param_class: Option<ClassObject<'gc>>,
     legacy_name: &'static str,
     script: Script<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<ClassObject<'gc>, Error<'gc>> {
     let mc = activation.context.gc_context;
     let (_, global, mut domain) = script.init();
@@ -463,7 +463,7 @@ macro_rules! avm2_system_class {
 /// stored on the AVM. All relevant declarations will also be attached to the
 /// given domain.
 pub fn load_player_globals<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     domain: Domain<'gc>,
 ) -> Result<(), Error<'gc>> {
     let mc = activation.context.gc_context;
@@ -649,7 +649,7 @@ pub fn load_player_globals<'gc>(
     define_fn_on_global(activation, "", "parseInt", script);
 
     global_classdef.mark_traits_loaded(mc);
-    global_classdef.init_vtable(&mut activation.context)?;
+    global_classdef.init_vtable(activation.context)?;
 
     Ok(())
 }
@@ -665,7 +665,7 @@ mod native {
 /// Loads classes from our custom 'playerglobal' (which are written in ActionScript)
 /// into the environment. See 'core/src/avm2/globals/README.md' for more information
 fn load_playerglobal<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     domain: Domain<'gc>,
 ) -> Result<(), Error<'gc>> {
     activation.avm2().native_method_table = native::NATIVE_METHOD_TABLE;
@@ -688,7 +688,7 @@ fn load_playerglobal<'gc>(
                 .read_do_abc_2()
                 .expect("playerglobal.swf should be valid");
             Avm2::do_abc(
-                &mut activation.context,
+                activation.context,
                 do_abc.data,
                 None,
                 do_abc.flags,

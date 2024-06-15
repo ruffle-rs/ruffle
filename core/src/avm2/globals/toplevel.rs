@@ -12,7 +12,7 @@ use ruffle_wstr::Integer;
 use std::fmt::Write;
 
 pub fn trace<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -36,7 +36,7 @@ pub fn trace<'gc>(
 }
 
 pub fn is_finite<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -46,7 +46,7 @@ pub fn is_finite<'gc>(
 }
 
 pub fn is_na_n<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -56,7 +56,7 @@ pub fn is_na_n<'gc>(
 }
 
 pub fn parse_int<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -68,7 +68,7 @@ pub fn parse_int<'gc>(
 }
 
 pub fn parse_float<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -83,7 +83,7 @@ pub fn parse_float<'gc>(
 }
 
 pub fn is_xml_name<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -98,7 +98,7 @@ pub fn is_xml_name<'gc>(
 }
 
 pub fn escape<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -127,7 +127,7 @@ pub fn escape<'gc>(
 }
 
 pub fn unescape<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -170,7 +170,7 @@ pub fn unescape<'gc>(
 }
 
 pub fn encode_uri<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -183,7 +183,7 @@ pub fn encode_uri<'gc>(
 }
 
 pub fn encode_uri_component<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -196,7 +196,7 @@ pub fn encode_uri_component<'gc>(
 }
 
 fn encode_utf8_with_exclusions<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     args: &[Value<'gc>],
     not_converted: &str,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -229,7 +229,7 @@ fn encode_utf8_with_exclusions<'gc>(
 }
 
 pub fn decode_uri<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -243,7 +243,7 @@ pub fn decode_uri<'gc>(
 }
 
 pub fn decode_uri_component<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -262,7 +262,7 @@ where
 // code derived from flash.utils.unescapeMultiByte
 // FIXME: support bugzilla #538107
 fn decode<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     args: &[Value<'gc>],
     reserved_set: &str,
     func_name: &str,

@@ -30,7 +30,7 @@ fn color_from_args(rgb: u32, alpha: f64) -> Color {
 
 /// Implements `Graphics.beginFill`.
 pub fn begin_fill<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -48,7 +48,7 @@ pub fn begin_fill<'gc>(
 
 /// Implements `Graphics.beginBitmapFill`.
 pub fn begin_bitmap_fill<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -95,7 +95,7 @@ pub fn begin_bitmap_fill<'gc>(
 
 /// Implements `Graphics.beginGradientFill`.
 pub fn begin_gradient_fill<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -157,7 +157,7 @@ pub fn begin_gradient_fill<'gc>(
 }
 
 fn build_gradient_records<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     colors: &ArrayStorage<'gc>,
     alphas: &ArrayStorage<'gc>,
     ratios: &ArrayStorage<'gc>,
@@ -186,7 +186,7 @@ fn build_gradient_records<'gc>(
 }
 
 fn parse_gradient_type<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     gradient_type: AvmString<'gc>,
 ) -> Result<GradientType, Error<'gc>> {
     if &gradient_type == b"linear" {
@@ -218,7 +218,7 @@ fn parse_spread_method(spread_method: AvmString) -> GradientSpread {
 
 /// Implements `Graphics.clear`
 pub fn clear<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -233,7 +233,7 @@ pub fn clear<'gc>(
 
 /// Implements `Graphics.curveTo`.
 pub fn curve_to<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -256,7 +256,7 @@ pub fn curve_to<'gc>(
 
 /// Implements `Graphics.endFill`.
 pub fn end_fill<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -311,7 +311,7 @@ fn scale_mode_to_allow_scale_bits<'gc>(scale_mode: &WStr) -> Result<(bool, bool)
 
 /// Implements `Graphics.lineStyle`.
 pub fn line_style<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -358,7 +358,7 @@ pub fn line_style<'gc>(
 
 /// Implements `Graphics.lineTo`.
 pub fn line_to<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -376,7 +376,7 @@ pub fn line_to<'gc>(
 
 /// Implements `Graphics.moveTo`.
 pub fn move_to<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -394,7 +394,7 @@ pub fn move_to<'gc>(
 
 /// Implements `Graphics.drawRect`.
 pub fn draw_rect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -671,7 +671,7 @@ fn draw_round_rect_internal(
 
 /// Implements `Graphics.drawRoundRect`.
 pub fn draw_round_rect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -701,7 +701,7 @@ pub fn draw_round_rect<'gc>(
 
 /// Implements `Graphics.drawCircle`.
 pub fn draw_circle<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -728,7 +728,7 @@ pub fn draw_circle<'gc>(
 
 /// Implements `Graphics.drawEllipse`.
 pub fn draw_ellipse<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -748,7 +748,7 @@ pub fn draw_ellipse<'gc>(
 
 /// Implements `Graphics.lineGradientStyle`
 pub fn line_gradient_style<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -811,7 +811,7 @@ pub fn line_gradient_style<'gc>(
 
 /// Implements `Graphics.cubicCurveTo`
 pub fn cubic_curve_to<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -837,7 +837,7 @@ pub fn cubic_curve_to<'gc>(
 
 /// Implements `Graphics.copyFrom`
 pub fn copy_from<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -862,7 +862,7 @@ pub fn copy_from<'gc>(
 
 /// Implements `Graphics.drawPath`
 pub fn draw_path<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -893,7 +893,7 @@ pub fn draw_path<'gc>(
 
 /// Implements `Graphics.drawRoundRectComplex`
 pub fn draw_round_rect_complex<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -903,7 +903,7 @@ pub fn draw_round_rect_complex<'gc>(
 
 /// Implements `Graphics.drawTriangles`
 pub fn draw_triangles<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -944,7 +944,7 @@ pub fn draw_triangles<'gc>(
 }
 
 fn draw_triangles_internal<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     drawing: &mut Drawing,
     vertices: &Object<'gc>,
     indices: Option<&Object<'gc>>,
@@ -963,7 +963,7 @@ fn draw_triangles_internal<'gc>(
         fn read_point<'gc>(
             vertices: &VectorStorage<'gc>,
             index: usize,
-            activation: &mut Activation<'_, 'gc>,
+            activation: &mut Activation<'_, '_, 'gc>,
         ) -> Result<Point<Twips>, Error<'gc>> {
             let x = {
                 let x = vertices
@@ -984,7 +984,7 @@ fn draw_triangles_internal<'gc>(
         fn next_triangle<'gc>(
             vertices: &VectorStorage<'gc>,
             indices: &mut impl Iterator<Item = Value<'gc>>,
-            activation: &mut Activation<'_, 'gc>,
+            activation: &mut Activation<'_, '_, 'gc>,
         ) -> Result<Option<Triangle>, Error<'gc>> {
             match (indices.next(), indices.next(), indices.next()) {
                 (Some(i0), Some(i1), Some(i2)) => {
@@ -1012,7 +1012,7 @@ fn draw_triangles_internal<'gc>(
 
         fn read_point<'gc>(
             vertices: &mut impl Iterator<Item = Value<'gc>>,
-            activation: &mut Activation<'_, 'gc>,
+            activation: &mut Activation<'_, '_, 'gc>,
         ) -> Result<Option<Point<Twips>>, Error<'gc>> {
             let x = {
                 let x = vertices.next();
@@ -1036,7 +1036,7 @@ fn draw_triangles_internal<'gc>(
 
         fn next_triangle<'gc>(
             vertices: &mut impl Iterator<Item = Value<'gc>>,
-            activation: &mut Activation<'_, 'gc>,
+            activation: &mut Activation<'_, '_, 'gc>,
         ) -> Result<Option<Triangle>, Error<'gc>> {
             match (
                 read_point(vertices, activation)?,
@@ -1057,7 +1057,7 @@ fn draw_triangles_internal<'gc>(
 }
 
 fn draw_triangle_internal(
-    activation: &mut Activation<'_, '_>,
+    activation: &mut Activation<'_, '_, '_>,
     (a, b, c): Triangle,
     drawing: &mut Drawing,
     culling: TriangleCulling,
@@ -1091,7 +1091,7 @@ fn draw_triangle_internal(
 
 /// Implements `Graphics.drawGraphicsData`
 pub fn draw_graphics_data<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1117,7 +1117,7 @@ pub fn draw_graphics_data<'gc>(
 
 /// Implements `Graphics.lineBitmapStyle`
 pub fn line_bitmap_style<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1164,7 +1164,7 @@ pub fn line_bitmap_style<'gc>(
 
 /// Implements `Graphics.readGraphicsData`
 pub fn read_graphics_data<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1179,7 +1179,7 @@ pub fn read_graphics_data<'gc>(
 }
 
 fn read_point<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     data: &VectorStorage<'gc>,
     data_index: &mut usize,
 ) -> Result<Point<Twips>, Error<'gc>> {
@@ -1211,7 +1211,7 @@ fn read_point<'gc>(
 }
 
 fn process_commands<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     drawing: &mut Drawing,
     commands: &VectorStorage<'gc>,
     data: &VectorStorage<'gc>,
@@ -1301,7 +1301,7 @@ fn process_commands<'gc>(
 }
 
 fn handle_igraphics_data<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     drawing: &mut Drawing,
     obj: &Object<'gc>,
 ) -> Result<(), Error<'gc>> {
@@ -1464,7 +1464,7 @@ enum TriangleCulling {
 }
 
 fn culling_to_triangle_culling<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     culling: AvmString,
 ) -> Result<TriangleCulling, Error<'gc>> {
     if &culling == b"none" {
@@ -1481,7 +1481,7 @@ fn culling_to_triangle_culling<'gc>(
 type Triangle = (Point<Twips>, Point<Twips>, Point<Twips>);
 
 fn handle_graphics_triangle_path<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     drawing: &mut Drawing,
     obj: &Object<'gc>,
 ) -> Result<(), Error<'gc>> {
@@ -1521,7 +1521,7 @@ fn handle_graphics_triangle_path<'gc>(
             fn read_point<'gc>(
                 vertices: &VectorStorage<'gc>,
                 index: usize,
-                activation: &mut Activation<'_, 'gc>,
+                activation: &mut Activation<'_, '_, 'gc>,
             ) -> Result<Point<Twips>, Error<'gc>> {
                 let x = {
                     let x = vertices
@@ -1542,7 +1542,7 @@ fn handle_graphics_triangle_path<'gc>(
             fn next_triangle<'gc>(
                 vertices: &VectorStorage<'gc>,
                 indices: &mut impl Iterator<Item = Value<'gc>>,
-                activation: &mut Activation<'_, 'gc>,
+                activation: &mut Activation<'_, '_, 'gc>,
             ) -> Result<Option<Triangle>, Error<'gc>> {
                 match (indices.next(), indices.next(), indices.next()) {
                     (Some(i0), Some(i1), Some(i2)) => {
@@ -1579,7 +1579,7 @@ fn handle_graphics_triangle_path<'gc>(
 }
 
 fn handle_igraphics_fill<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     drawing: &mut Drawing,
     obj: &Object<'gc>,
 ) -> Result<Option<FillStyle>, Error<'gc>> {
@@ -1636,7 +1636,7 @@ fn handle_igraphics_fill<'gc>(
 }
 
 fn handle_solid_fill<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     obj: &Object<'gc>,
 ) -> Result<FillStyle, Error<'gc>> {
     let alpha = obj
@@ -1653,7 +1653,7 @@ fn handle_solid_fill<'gc>(
 }
 
 fn handle_gradient_fill<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     obj: &Object<'gc>,
 ) -> Result<FillStyle, Error<'gc>> {
     let alphas = obj
@@ -1742,7 +1742,7 @@ fn handle_gradient_fill<'gc>(
 }
 
 fn handle_bitmap_fill<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     drawing: &mut Drawing,
     obj: &Object<'gc>,
 ) -> Result<FillStyle, Error<'gc>> {

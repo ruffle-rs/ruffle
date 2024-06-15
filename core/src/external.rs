@@ -216,7 +216,7 @@ impl Value {
         }
     }
 
-    pub fn into_avm2<'gc>(self, activation: &mut Avm2Activation<'_, 'gc>) -> Avm2Value<'gc> {
+    pub fn into_avm2<'gc>(self, activation: &mut Avm2Activation<'_, '_, 'gc>) -> Avm2Value<'gc> {
         match self {
             Value::Undefined => Avm2Value::Undefined,
             Value::Null => Avm2Value::Null,
@@ -299,7 +299,7 @@ impl<'gc> Callback<'gc> {
                     .library_for_movie(context.swf.clone())
                     .unwrap()
                     .avm2_domain();
-                let mut activation = Avm2Activation::from_domain(context.reborrow(), domain);
+                let mut activation = Avm2Activation::from_domain(context, domain);
                 let args: Vec<Avm2Value> = args
                     .into_iter()
                     .map(|v| v.into_avm2(&mut activation))

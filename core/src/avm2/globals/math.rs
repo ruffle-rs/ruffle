@@ -10,7 +10,7 @@ use rand::Rng;
 macro_rules! wrap_std {
     ($name:ident, $std:expr) => {
         pub fn $name<'gc>(
-            activation: &mut Activation<'_, 'gc>,
+            activation: &mut Activation<'_, '_, 'gc>,
             _this: Object<'gc>,
             args: &[Value<'gc>],
         ) -> Result<Value<'gc>, Error<'gc>> {
@@ -37,7 +37,7 @@ wrap_std!(sqrt, f64::sqrt);
 wrap_std!(tan, f64::tan);
 
 pub fn call_handler<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -50,7 +50,7 @@ pub fn call_handler<'gc>(
 
 pub fn math_allocator<'gc>(
     _class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     Err(Error::AvmError(type_error(
         activation,
@@ -60,7 +60,7 @@ pub fn math_allocator<'gc>(
 }
 
 pub fn round<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -75,7 +75,7 @@ pub fn round<'gc>(
 }
 
 pub fn atan2<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -91,7 +91,7 @@ pub fn atan2<'gc>(
 }
 
 pub fn max<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -108,7 +108,7 @@ pub fn max<'gc>(
 }
 
 pub fn min<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -125,7 +125,7 @@ pub fn min<'gc>(
 }
 
 pub fn pow<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -141,7 +141,7 @@ pub fn pow<'gc>(
 }
 
 pub fn random<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

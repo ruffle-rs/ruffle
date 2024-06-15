@@ -8,7 +8,7 @@ use crate::avm2::Error;
 
 /// Implements `SoundTransform.pan`'s getter.
 pub fn get_pan<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -32,7 +32,7 @@ pub fn get_pan<'gc>(
 
 /// Implements `SoundTransform.pan`'s setter.
 pub fn set_pan<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

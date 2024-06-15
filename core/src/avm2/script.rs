@@ -115,7 +115,7 @@ impl<'gc> TranslationUnit<'gc> {
         ))
     }
 
-    pub fn load_classes(self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
+    pub fn load_classes(self, activation: &mut Activation<'_, '_, 'gc>) -> Result<(), Error<'gc>> {
         // Classes must be loaded in the order they appear in the constant pool,
         // to ensure that superclasses are loaded before subclasses
 
@@ -168,7 +168,7 @@ impl<'gc> TranslationUnit<'gc> {
         self,
         method_index: Index<AbcMethod>,
         is_function: bool,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Method<'gc>, Error<'gc>> {
         let read = self.0.read();
         if let Some(Some(method)) = read.methods.get(method_index.0 as usize) {
@@ -216,7 +216,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn load_class(
         self,
         class_index: u32,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Class<'gc>, Error<'gc>> {
         let read = self.0.read();
         if let Some(Some(class)) = read.classes.get(class_index as usize) {
@@ -229,7 +229,7 @@ impl<'gc> TranslationUnit<'gc> {
         self.0.write(activation.context.gc_context).classes[class_index as usize] = Some(class);
 
         class.load_traits(activation, self, class_index)?;
-        class.init_vtable(&mut activation.context)?;
+        class.init_vtable(activation.context)?;
 
         Ok(class)
     }
@@ -238,7 +238,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn load_script(
         self,
         script_index: u32,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Script<'gc>, Error<'gc>> {
         let read = self.0.read();
         if let Some(Some(scripts)) = read.scripts.get(script_index as usize) {
@@ -491,7 +491,7 @@ impl<'gc> Script<'gc> {
         globals: Object<'gc>,
         global_class: Class<'gc>,
         domain: Domain<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
         let abc = unit.abc();
         let script: Result<&AbcScript, Error<'gc>> = abc
@@ -527,7 +527,7 @@ impl<'gc> Script<'gc> {
         self,
         unit: TranslationUnit<'gc>,
         script_index: u32,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let mut write = self.0.write(activation.context.gc_context);
 
@@ -566,7 +566,7 @@ impl<'gc> Script<'gc> {
 
         self.global_class()
             .mark_traits_loaded(activation.context.gc_context);
-        self.global_class().init_vtable(&mut activation.context)?;
+        self.global_class().init_vtable(activation.context)?;
 
         Ok(())
     }
@@ -611,7 +611,7 @@ impl<'gc> Script<'gc> {
             write.initialized = true;
 
             let globals = write.globals;
-            let mut null_activation = Activation::from_nothing(context.reborrow());
+            let null_activation = Activation::from_nothing(context);
             let domain = write.domain;
 
             drop(write);
@@ -624,7 +624,7 @@ impl<'gc> Script<'gc> {
                 &self.traits()?,
                 Some(scope),
                 None,
-                &mut null_activation.context,
+                null_activation.context,
             );
             globals.install_instance_slots(context.gc_context);
 

@@ -13,7 +13,7 @@ use std::cell::{Cell, Ref, RefMut};
 /// A class instance allocator that allocates Date objects.
 pub fn date_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     Ok(DateObject(Gc::new(
         activation.gc(),
@@ -42,7 +42,7 @@ impl fmt::Debug for DateObject<'_> {
 
 impl<'gc> DateObject<'gc> {
     pub fn from_date_time(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         date_time: DateTime<Utc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().date;

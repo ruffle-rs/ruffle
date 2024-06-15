@@ -22,7 +22,7 @@ use super::PrimitiveObject;
 /// A class instance allocator that allocates XML objects.
 pub fn xml_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
@@ -62,7 +62,7 @@ pub struct XmlObjectData<'gc> {
 }
 
 impl<'gc> XmlObject<'gc> {
-    pub fn new(node: E4XNode<'gc>, activation: &mut Activation<'_, 'gc>) -> Self {
+    pub fn new(node: E4XNode<'gc>, activation: &mut Activation<'_, '_, 'gc>) -> Self {
         XmlObject(GcCell::new(
             activation.context.gc_context,
             XmlObjectData {
@@ -75,7 +75,7 @@ impl<'gc> XmlObject<'gc> {
     pub fn child(
         &self,
         name: &Multiname<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> XmlListObject<'gc> {
         let children = if let E4XNodeKind::Element { children, .. } = &*self.node().kind() {
             if let Some(local_name) = name.local_name() {
@@ -118,7 +118,7 @@ impl<'gc> XmlObject<'gc> {
     pub fn elements(
         &self,
         name: &Multiname<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> XmlListObject<'gc> {
         let children = if let E4XNodeKind::Element { children, .. } = &*self.node().kind() {
             children
@@ -160,7 +160,7 @@ impl<'gc> XmlObject<'gc> {
 
     pub fn namespace_object(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         in_scope_ns: &[E4XNamespace<'gc>],
     ) -> Result<NamespaceObject<'gc>, Error<'gc>> {
         // 13.3.5.4 [[GetNamespace]] ( [ InScopeNamespaces ] )
@@ -195,12 +195,12 @@ impl<'gc> XmlObject<'gc> {
         Ref::map(self.0.read(), |data| &data.node)
     }
 
-    pub fn deep_copy(&self, activation: &mut Activation<'_, 'gc>) -> XmlObject<'gc> {
+    pub fn deep_copy(&self, activation: &mut Activation<'_, '_, 'gc>) -> XmlObject<'gc> {
         let node = self.node();
         XmlObject::new(node.deep_copy(activation.gc()), activation)
     }
 
-    pub fn as_xml_string(&self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
+    pub fn as_xml_string(&self, activation: &mut Activation<'_, '_, 'gc>) -> AvmString<'gc> {
         let node = self.node();
         node.xml_to_xml_string(activation)
     }
@@ -208,7 +208,7 @@ impl<'gc> XmlObject<'gc> {
     pub fn equals(
         &self,
         other: &Value<'gc>,
-        _activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<bool, Error<'gc>> {
         // 1. If Type(V) is not XML, return false.
         let other = if let Some(xml_obj) = other.as_object().and_then(|obj| obj.as_xml_object()) {
@@ -231,7 +231,7 @@ impl<'gc> XmlObject<'gc> {
     pub fn abstract_eq(
         &self,
         other: &Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<bool, Error<'gc>> {
         // 3.a. If both x and y are the same type (XML)
         if let Value::Object(obj) = other {
@@ -287,7 +287,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
 
     fn xml_descendants(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         multiname: &Multiname<'gc>,
     ) -> Option<XmlListObject<'gc>> {
         let mut descendants = Vec::new();
@@ -306,7 +306,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
     fn get_property_local(
         self,
         name: &Multiname<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // FIXME - implement everything from E4X spec (XMLObject::getMultinameProperty in avmplus)
         let read = self.0.read();
@@ -372,7 +372,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         self,
         multiname: &Multiname<'gc>,
         arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let this = self.as_xml_object().unwrap();
 
@@ -417,7 +417,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
 
     fn has_property_via_in(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         name: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
         let multiname = handle_input_multiname(name.clone(), activation);
@@ -427,7 +427,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
     fn has_own_property_string(
         self,
         name: impl Into<AvmString<'gc>>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<bool, Error<'gc>> {
         let multiname = string_to_multiname(activation, name.into());
         Ok(self.has_own_property(&multiname))
@@ -438,7 +438,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         self,
         name: &Multiname<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let name = handle_input_multiname(name.clone(), activation);
 
@@ -622,7 +622,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
     fn get_next_enumerant(
         self,
         last_index: u32,
-        _activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Option<u32>, Error<'gc>> {
         Ok(Some(if last_index == 0 { 1 } else { 0 }))
     }
@@ -630,7 +630,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
     fn get_enumerant_value(
         self,
         index: u32,
-        _activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if index == 1 {
             Ok(self.into())
@@ -642,7 +642,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
     fn get_enumerant_name(
         self,
         index: u32,
-        _activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if index == 1 {
             Ok(0.into())
@@ -653,7 +653,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
 
     fn delete_property_local(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         name: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
         let name = handle_input_multiname(name.clone(), activation);
@@ -698,7 +698,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
 
 fn handle_input_multiname<'gc>(
     name: Multiname<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Multiname<'gc> {
     // Special case to handle code like: xml["@attr"]
     // FIXME: Figure out the exact semantics.

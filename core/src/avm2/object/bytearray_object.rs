@@ -13,7 +13,7 @@ use std::cell::{Ref, RefMut};
 /// A class instance allocator that allocates ByteArray objects.
 pub fn byte_array_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let storage = if let Some((movie, id)) = activation
         .context
@@ -74,7 +74,7 @@ pub struct ByteArrayObjectData<'gc> {
 
 impl<'gc> ByteArrayObject<'gc> {
     pub fn from_storage(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         bytes: ByteArrayStorage,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().bytearray;
@@ -116,7 +116,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     fn get_property_local(
         self,
         name: &Multiname<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let read = self.0.read();
 
@@ -146,7 +146,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         self,
         name: &Multiname<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let mut write = self.0.write(activation.context.gc_context);
 
@@ -169,7 +169,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         self,
         name: &Multiname<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let mut write = self.0.write(activation.context.gc_context);
 
@@ -190,7 +190,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
 
     fn delete_property_local(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         name: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
         if name.contains_public_namespace() {

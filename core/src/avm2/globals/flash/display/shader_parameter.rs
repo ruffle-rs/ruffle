@@ -6,7 +6,7 @@ use crate::{
 };
 
 pub fn make_shader_parameter<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     param: &PixelBenderParam,
     index: usize,
 ) -> Result<Value<'gc>, Error<'gc>> {
