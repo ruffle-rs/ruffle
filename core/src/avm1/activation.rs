@@ -175,7 +175,7 @@ impl<'a> ActivationIdentifier<'a> {
 }
 
 /// Represents a single activation of a given AVM1 function or keyframe.
-pub struct Activation<'a, 'gc: 'a> {
+pub struct Activation<'player, 'gc: 'player> {
     /// Represents the SWF version of a given function.
     ///
     /// Certain AVM1 operations change behavior based on the version of the SWF
@@ -221,12 +221,12 @@ pub struct Activation<'a, 'gc: 'a> {
     /// Whether the base clip was removed when we started this frame.
     base_clip_unloaded: bool,
 
-    pub context: UpdateContext<'a, 'gc>,
+    pub context: UpdateContext<'player, 'gc>,
 
     /// An identifier to refer to this activation by, when debugging.
     /// This is often the name of a function (if known), or some static name to indicate where
     /// in the code it is (for example, a with{} block).
-    pub id: ActivationIdentifier<'a>,
+    pub id: ActivationIdentifier<'player>,
 }
 
 impl Drop for Activation<'_, '_> {
@@ -235,7 +235,7 @@ impl Drop for Activation<'_, '_> {
     }
 }
 
-impl<'a, 'gc> Activation<'a, 'gc> {
+impl<'player, 'gc> Activation<'player, 'gc> {
     /// Convenience method to retrieve the current GC context. Note that explicitly writing
     /// `self.context.gc_context` can be sometimes necessary to satisfy the borrow checker.
     #[inline(always)]
@@ -245,8 +245,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     #[allow(clippy::too_many_arguments)]
     pub fn from_action(
-        context: UpdateContext<'a, 'gc>,
-        id: ActivationIdentifier<'a>,
+        context: UpdateContext<'player, 'gc>,
+        id: ActivationIdentifier<'player>,
         swf_version: u8,
         scope: Gc<'gc, Scope<'gc>>,
         constant_pool: Gc<'gc, Vec<Value<'gc>>>,
@@ -301,8 +301,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Note: using the returned `Activation` directly to execute arbitrary bytecode and/or
     /// to define new local variables is a logic error, and will corrupt the global scope.
     pub fn from_nothing(
-        context: UpdateContext<'a, 'gc>,
-        id: ActivationIdentifier<'a>,
+        context: UpdateContext<'player, 'gc>,
+        id: ActivationIdentifier<'player>,
         base_clip: DisplayObject<'gc>,
     ) -> Self {
         avm_debug!(context.avm1, "START {id}");
@@ -324,7 +324,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Construct an empty stack frame with no code running on the root move in
     /// layer 0.
-    pub fn from_stub(context: UpdateContext<'a, 'gc>, id: ActivationIdentifier<'a>) -> Self {
+    pub fn from_stub(
+        context: UpdateContext<'player, 'gc>,
+        id: ActivationIdentifier<'player>,
+    ) -> Self {
         // [NA]: we have 3 options here:
         // 1 - Don't execute anything (return None and handle that at the caller)
         // 2 - Execute something with a temporary orphaned movie
@@ -342,8 +345,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Construct an empty stack frame with no code running on the root move in
     /// layer 0.
     pub fn try_from_stub(
-        context: UpdateContext<'a, 'gc>,
-        id: ActivationIdentifier<'a>,
+        context: UpdateContext<'player, 'gc>,
+        id: ActivationIdentifier<'player>,
     ) -> Option<Self> {
         if let Some(level0) = context.stage.root_clip() {
             Some(Self::from_nothing(context, id, level0))
