@@ -12,7 +12,7 @@ use gc_arena::Gc;
 use std::collections::HashMap;
 
 #[allow(clippy::enum_variant_names)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 enum NullState {
     NotNull,
     MaybeNull,
@@ -100,6 +100,33 @@ impl<'gc> OptValue<'gc> {
             || self.class == Some(classes.number.inner_class_definition())
             || self.class == Some(classes.boolean.inner_class_definition())
             || self.class == Some(classes.void.inner_class_definition())
+    }
+
+    pub fn merged_with(self, other: OptValue<'gc>) -> OptValue<'gc> {
+        let mut created_value = OptValue::any();
+
+        // TODO: Also check common superclasses.
+        if self.class == other.class {
+            created_value.class = self.class;
+        }
+
+        if self.vtable == other.vtable {
+            created_value.vtable = self.vtable;
+        }
+
+        if self.null_state == other.null_state {
+            created_value.null_state = self.null_state;
+        }
+
+        if self.contains_valid_integer && other.contains_valid_integer {
+            created_value.contains_valid_integer = true;
+        }
+
+        if self.contains_valid_unsigned && other.contains_valid_unsigned {
+            created_value.contains_valid_unsigned = true;
+        }
+
+        created_value
     }
 }
 
@@ -374,14 +401,8 @@ pub fn optimize<'gc>(
                         } else {
                             for (i, target_local) in local_types.0.iter().enumerate() {
                                 let source_local = source_local_types.at(i);
-                                // TODO: Check superclasses, too
-                                if let (Some(source_local_class), Some(target_local_class)) =
-                                    (source_local.class, target_local.class)
-                                {
-                                    if source_local_class == target_local_class {
-                                        merged_types.set(i, OptValue::of_type(source_local_class));
-                                    }
-                                }
+
+                                merged_types.set(i, source_local.merged_with(*target_local));
                             }
                         }
 
