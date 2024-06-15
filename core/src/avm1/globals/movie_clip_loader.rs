@@ -20,7 +20,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 };
 
 pub fn constructor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -39,7 +39,7 @@ pub fn constructor<'gc>(
 }
 
 fn load_clip<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -82,7 +82,7 @@ fn load_clip<'gc>(
 }
 
 fn unload_clip<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -106,9 +106,9 @@ fn unload_clip<'gc>(
             // does Flash also wait a frame to execute avm1_unload? Is avm1_unload_movie
             // the correct call?
             if let Some(mc) = target.as_movie_clip() {
-                mc.avm1_unload_movie(&mut activation.context);
+                mc.avm1_unload_movie(activation.context);
             } else {
-                target.avm1_unload(&mut activation.context);
+                target.avm1_unload(activation.context);
             }
             return Ok(true.into());
         }
@@ -120,7 +120,7 @@ fn unload_clip<'gc>(
 }
 
 fn get_progress<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

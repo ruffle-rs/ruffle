@@ -3,7 +3,7 @@ use crate::string::AvmString;
 use flv_rs::{Value as FlvValue, Variable as FlvVariable};
 
 fn avm1_object_from_flv_variables<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     variables: Vec<FlvVariable>,
 ) -> Avm1Value<'gc> {
     let object_proto = activation.context.avm1.prototypes().object;
@@ -25,7 +25,7 @@ fn avm1_object_from_flv_variables<'gc>(
 }
 
 fn avm1_date_from_flv_date<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     unix_time: f64,
     _local_offset: i16,
 ) -> Avm1Value<'gc> {
@@ -36,7 +36,7 @@ fn avm1_date_from_flv_date<'gc>(
 }
 
 fn avm1_array_from_flv_values<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     values: Vec<FlvValue>,
 ) -> Avm1Value<'gc> {
     ArrayObject::new(
@@ -48,11 +48,11 @@ fn avm1_array_from_flv_values<'gc>(
 }
 
 pub trait FlvValueAvm1Ext<'gc> {
-    fn to_avm1_value(self, activation: &mut Activation<'_, 'gc>) -> Avm1Value<'gc>;
+    fn to_avm1_value(self, activation: &mut Activation<'_, '_, 'gc>) -> Avm1Value<'gc>;
 }
 
 impl<'gc> FlvValueAvm1Ext<'gc> for FlvValue<'_> {
-    fn to_avm1_value(self, activation: &mut Activation<'_, 'gc>) -> Avm1Value<'gc> {
+    fn to_avm1_value(self, activation: &mut Activation<'_, '_, 'gc>) -> Avm1Value<'gc> {
         match self {
             FlvValue::EcmaArray(vars) | FlvValue::Object(vars) => {
                 avm1_object_from_flv_variables(activation, vars)

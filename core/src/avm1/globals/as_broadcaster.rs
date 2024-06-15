@@ -72,7 +72,7 @@ impl<'gc> BroadcasterFunctions<'gc> {
 }
 
 fn add_listener<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -96,7 +96,7 @@ fn add_listener<'gc>(
 }
 
 fn remove_listener<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -122,7 +122,7 @@ fn remove_listener<'gc>(
 }
 
 fn broadcast_message<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -137,7 +137,7 @@ fn broadcast_message<'gc>(
 }
 
 pub fn broadcast_internal<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     call_args: &[Value<'gc>],
     method_name: AvmString<'gc>,
@@ -173,7 +173,7 @@ pub fn broadcast_internal<'gc>(
 // class, Flash accepts expressions like `new AsBroadcaster()`, and a newly-created object is
 // returned in such cases.
 fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -181,7 +181,7 @@ fn constructor<'gc>(
 }
 
 fn initialize<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

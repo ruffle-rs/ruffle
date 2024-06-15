@@ -322,7 +322,7 @@ pub trait TDisplayObjectContainer<'gc>:
         if !self.raw_container().movie().is_action_script_3() {
             let should_delay_removal = {
                 let mut activation = Activation::from_nothing(
-                    context.reborrow(),
+                    context,
                     ActivationIdentifier::root("[Unload Handler Check]"),
                     this.avm1_root(),
                 );
@@ -1066,7 +1066,7 @@ impl<'gc> ChildContainer<'gc> {
     ///
     /// Checks recursively for unload handlers
     pub fn should_delay_removal(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         child: DisplayObject<'gc>,
     ) -> bool {
         // Do we have an unload event handler

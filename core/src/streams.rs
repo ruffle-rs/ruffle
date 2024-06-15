@@ -1291,7 +1291,7 @@ impl<'gc> NetStream<'gc> {
                 let root = context.stage.root_clip().expect("root");
                 let object_proto = context.avm1.prototypes().object;
                 let mut activation = Avm1Activation::from_nothing(
-                    context.reborrow(),
+                    context,
                     Avm1ActivationIdentifier::root("[NetStream Status Event]"),
                     root,
                 );
@@ -1340,7 +1340,7 @@ impl<'gc> NetStream<'gc> {
 
                 let root = context.stage.root_clip().expect("root");
                 let mut activation = Avm1Activation::from_nothing(
-                    context.reborrow(),
+                    context,
                     Avm1ActivationIdentifier::root(format!("[FLV {}]", avm_string_name)),
                     root,
                 );

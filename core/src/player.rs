@@ -547,18 +547,12 @@ impl Player {
             let root_dobj = context.stage.root_clip();
 
             let menu = if let Some(Value::Object(obj)) = root_dobj.map(|root| root.object()) {
-                let mut activation = Activation::from_stub(
-                    context.reborrow(),
-                    ActivationIdentifier::root("[ContextMenu]"),
-                );
+                let mut activation =
+                    Activation::from_stub(context, ActivationIdentifier::root("[ContextMenu]"));
                 let menu_object = if let Ok(Value::Object(menu)) = obj.get("menu", &mut activation)
                 {
                     if let Ok(Value::Object(on_select)) = menu.get("onSelect", &mut activation) {
-                        Self::run_context_menu_custom_callback(
-                            menu,
-                            on_select,
-                            &mut activation.context,
-                        );
+                        Self::run_context_menu_custom_callback(menu, on_select, activation.context);
                     }
                     Some(menu)
                 } else {
@@ -691,7 +685,7 @@ impl Player {
     ) {
         if let Some(root_clip) = context.stage.root_clip() {
             let mut activation = Activation::from_nothing(
-                context.reborrow(),
+                context,
                 ActivationIdentifier::root("[Context Menu Callback]"),
                 root_clip,
             );
@@ -915,7 +909,7 @@ impl Player {
                         let mut dumper = VariableDumper::new("  ");
 
                         let mut activation = Activation::from_stub(
-                            context.reborrow(),
+                            context,
                             ActivationIdentifier::root("[Variable Dumper]"),
                         );
 
@@ -1858,7 +1852,7 @@ impl Player {
                     events,
                 } => {
                     let mut activation = Activation::from_nothing(
-                        context.reborrow(),
+                        context,
                         ActivationIdentifier::root("[Construct]"),
                         action.clip,
                     );
@@ -2094,7 +2088,7 @@ impl Player {
     pub fn flush_shared_objects(&mut self) {
         self.update(|context| {
             if let Some(mut avm1_activation) =
-                Activation::try_from_stub(context.reborrow(), ActivationIdentifier::root("[Flush]"))
+                Activation::try_from_stub(context, ActivationIdentifier::root("[Flush]"))
             {
                 for so in avm1_activation.context.avm1_shared_objects.clone().values() {
                     if let Err(e) =

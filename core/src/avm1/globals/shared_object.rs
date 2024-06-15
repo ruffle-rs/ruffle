@@ -52,7 +52,7 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
 };
 
 fn delete_all<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -61,7 +61,7 @@ fn delete_all<'gc>(
 }
 
 fn get_disk_usage<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -69,7 +69,7 @@ fn get_disk_usage<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -> AmfValue {
+pub fn serialize<'gc>(activation: &mut Activation<'_, '_, 'gc>, value: Value<'gc>) -> AmfValue {
     match value {
         Value::Undefined => AmfValue::Undefined,
         Value::Null => AmfValue::Null,
@@ -86,7 +86,7 @@ pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -
 
 /// Serialize an Object and any children to a JSON object
 fn recursive_serialize<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     obj: Object<'gc>,
     writer: &mut dyn ObjWriter<'_>,
 ) {
@@ -146,7 +146,7 @@ fn recursive_serialize<'gc>(
 
 /// Deserialize a AmfValue to a Value
 pub fn deserialize_value<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     val: &AmfValue,
     lso: &AMF0Decoder,
     reference_cache: &mut BTreeMap<Reference, Value<'gc>>,
@@ -252,7 +252,7 @@ pub fn deserialize_value<'gc>(
 
 /// Deserializes a Lso into an object containing the properties stored
 fn deserialize_lso<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     lso: &Lso,
     decoder: &AMF0Decoder,
 ) -> Result<Object<'gc>, Error<'gc>> {
@@ -275,7 +275,7 @@ fn deserialize_lso<'gc>(
     Ok(obj.into())
 }
 
-fn new_lso<'gc>(activation: &mut Activation<'_, 'gc>, name: &str, data: Object<'gc>) -> Lso {
+fn new_lso<'gc>(activation: &mut Activation<'_, '_, 'gc>, name: &str, data: Object<'gc>) -> Lso {
     let mut w = Amf0Writer::default();
     recursive_serialize(activation, data, &mut w);
     w.commit_lso(
@@ -288,7 +288,7 @@ fn new_lso<'gc>(activation: &mut Activation<'_, 'gc>, name: &str, data: Object<'
 }
 
 fn get_local<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -458,7 +458,7 @@ fn get_local<'gc>(
 }
 
 fn get_remote<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -467,7 +467,7 @@ fn get_remote<'gc>(
 }
 
 fn clear<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -486,7 +486,7 @@ fn clear<'gc>(
 }
 
 fn close<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -495,7 +495,7 @@ fn close<'gc>(
 }
 
 fn connect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -504,7 +504,7 @@ fn connect<'gc>(
 }
 
 pub(crate) fn flush<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -525,7 +525,7 @@ pub(crate) fn flush<'gc>(
 }
 
 fn get_size<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -545,7 +545,7 @@ fn get_size<'gc>(
 }
 
 fn send<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -554,7 +554,7 @@ fn send<'gc>(
 }
 
 fn set_fps<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -563,7 +563,7 @@ fn set_fps<'gc>(
 }
 
 fn on_status<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -572,7 +572,7 @@ fn on_status<'gc>(
 }
 
 fn on_sync<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -581,7 +581,7 @@ fn on_sync<'gc>(
 }
 
 fn constructor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

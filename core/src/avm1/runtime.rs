@@ -136,7 +136,7 @@ impl<'gc> Avm1<'gc> {
         }
 
         let mut parent_activation = Activation::from_nothing(
-            context.reborrow(),
+            context,
             ActivationIdentifier::root("[Actions Parent]"),
             active_clip,
         );
@@ -155,7 +155,7 @@ impl<'gc> Avm1<'gc> {
         let constant_pool = parent_activation.context.avm1.constant_pool;
         let child_name = ActivationIdentifier::child(parent_activation.id.clone(), name);
         let mut child_activation = Activation::from_action(
-            parent_activation.context.reborrow(),
+            parent_activation.context,
             child_name,
             active_clip.swf_version(),
             child_scope,
@@ -172,13 +172,13 @@ impl<'gc> Avm1<'gc> {
     /// Add a stack frame that executes code in initializer scope.
     ///
     /// This creates a new frame stack.
-    pub fn run_with_stack_frame_for_display_object<'a, F, R>(
+    pub fn run_with_stack_frame_for_display_object<'player, 'a, F, R>(
         active_clip: DisplayObject<'gc>,
-        action_context: &mut UpdateContext<'_, 'gc>,
+        action_context: &mut UpdateContext<'player, 'gc>,
         function: F,
     ) -> R
     where
-        for<'b> F: FnOnce(&mut Activation<'b, 'gc>) -> R,
+        for<'b> F: FnOnce(&mut Activation<'player, 'b, 'gc>) -> R,
     {
         let clip_obj = match active_clip.object() {
             Value::Object(o) => o,
@@ -194,7 +194,7 @@ impl<'gc> Avm1<'gc> {
         );
         let constant_pool = action_context.avm1.constant_pool;
         let mut activation = Activation::from_action(
-            action_context.reborrow(),
+            action_context,
             ActivationIdentifier::root("[Display Object]"),
             active_clip.swf_version(),
             child_scope,
@@ -220,7 +220,7 @@ impl<'gc> Avm1<'gc> {
         }
 
         let mut parent_activation = Activation::from_nothing(
-            context.reborrow(),
+            context,
             ActivationIdentifier::root("[Init Parent]"),
             active_clip,
         );
@@ -240,7 +240,7 @@ impl<'gc> Avm1<'gc> {
         let constant_pool = parent_activation.context.avm1.constant_pool;
         let child_name = ActivationIdentifier::child(parent_activation.id.clone(), "[Init]");
         let mut child_activation = Activation::from_action(
-            parent_activation.context.reborrow(),
+            parent_activation.context,
             child_name,
             active_clip.swf_version(),
             child_scope,
@@ -271,7 +271,7 @@ impl<'gc> Avm1<'gc> {
         }
 
         let mut activation = Activation::from_nothing(
-            context.reborrow(),
+            context,
             ActivationIdentifier::root(name.to_string()),
             active_clip,
         );
@@ -287,7 +287,7 @@ impl<'gc> Avm1<'gc> {
         args: &[Value<'gc>],
     ) {
         let mut activation = Activation::from_nothing(
-            context.reborrow(),
+            context,
             ActivationIdentifier::root("[System Listeners]"),
             active_clip,
         );
@@ -582,7 +582,7 @@ pub fn skip_actions(reader: &mut Reader<'_>, num_actions_to_skip: u8) {
     }
 }
 
-pub fn root_error_handler<'gc>(activation: &mut Activation<'_, 'gc>, error: Error<'gc>) {
+pub fn root_error_handler<'gc>(activation: &mut Activation<'_, '_, 'gc>, error: Error<'gc>) {
     match &error {
         Error::ThrownValue(value) => {
             let message = value

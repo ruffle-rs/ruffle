@@ -112,7 +112,10 @@ impl<'gc> From<ruffle_render::filters::DisplacementMapFilter> for DisplacementMa
 pub struct DisplacementMapFilter<'gc>(GcCell<'gc, DisplacementMapFilterData<'gc>>);
 
 impl<'gc> DisplacementMapFilter<'gc> {
-    fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
+    fn new(
+        activation: &mut Activation<'_, '_, 'gc>,
+        args: &[Value<'gc>],
+    ) -> Result<Self, Error<'gc>> {
         let displacement_map_filter = Self(GcCell::new(
             activation.context.gc_context,
             Default::default(),
@@ -153,7 +156,7 @@ impl<'gc> DisplacementMapFilter<'gc> {
 
     fn set_map_bitmap(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(Value::Object(object)) = value {
@@ -164,7 +167,10 @@ impl<'gc> DisplacementMapFilter<'gc> {
         Ok(())
     }
 
-    fn map_point(&self, activation: &mut Activation<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>> {
+    fn map_point(
+        &self,
+        activation: &mut Activation<'_, '_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let map_point = self.0.read().map_point;
         let args = &[map_point.x.into(), map_point.y.into()];
         let constructor = activation.context.avm1.prototypes().point_constructor;
@@ -173,7 +179,7 @@ impl<'gc> DisplacementMapFilter<'gc> {
 
     fn set_map_point(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         let Some(value) = value else { return Ok(()) };
@@ -199,7 +205,7 @@ impl<'gc> DisplacementMapFilter<'gc> {
 
     fn set_component_x(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -215,7 +221,7 @@ impl<'gc> DisplacementMapFilter<'gc> {
 
     fn set_component_y(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -231,7 +237,7 @@ impl<'gc> DisplacementMapFilter<'gc> {
 
     fn set_scale_x(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -249,7 +255,7 @@ impl<'gc> DisplacementMapFilter<'gc> {
 
     fn set_scale_y(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -267,7 +273,7 @@ impl<'gc> DisplacementMapFilter<'gc> {
 
     fn set_mode(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -283,7 +289,7 @@ impl<'gc> DisplacementMapFilter<'gc> {
 
     fn set_color(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -296,7 +302,7 @@ impl<'gc> DisplacementMapFilter<'gc> {
 
     fn set_alpha(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -347,7 +353,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 };
 
 fn method<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
     index: u8,
@@ -388,7 +394,7 @@ fn method<'gc>(
 
     Ok(match index {
         GET_MAP_BITMAP => this
-            .map_bitmap(&mut activation.context)
+            .map_bitmap(activation.context)
             .map_or(Value::Undefined, Value::from),
         SET_MAP_BITMAP => {
             this.set_map_bitmap(activation, args.get(0))?;

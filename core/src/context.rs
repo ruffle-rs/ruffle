@@ -426,10 +426,8 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
         self.stage.replace_at_depth(self, root, 0);
 
         // Set the version parameter on the root.
-        let mut activation = Activation::from_stub(
-            self.reborrow(),
-            ActivationIdentifier::root("[Version Setter]"),
-        );
+        let mut activation =
+            Activation::from_stub(self, ActivationIdentifier::root("[Version Setter]"));
         let object = root.object().coerce_to_object(&mut activation);
         let version_string = activation
             .context
@@ -443,7 +441,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
         );
 
         let stage = activation.context.stage;
-        stage.build_matrices(&mut activation.context);
+        stage.build_matrices(activation.context);
 
         drop(activation);
 

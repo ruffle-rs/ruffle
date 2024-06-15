@@ -716,7 +716,11 @@ impl<'gc> EditText<'gc> {
         }
     }
 
-    pub fn set_variable(self, variable: Option<String>, activation: &mut Avm1Activation<'_, 'gc>) {
+    pub fn set_variable(
+        self,
+        variable: Option<String>,
+        activation: &mut Avm1Activation<'_, '_, 'gc>,
+    ) {
         // Clear previous binding.
         if let Some(stage_object) = self
             .0
@@ -740,7 +744,7 @@ impl<'gc> EditText<'gc> {
             .initial_text
             .clone()
             .unwrap_or_default();
-        self.set_text(&text, &mut activation.context);
+        self.set_text(&text, activation.context);
 
         self.0.write(activation.context.gc_context).variable = variable;
         self.try_bind_text_field_variable(activation, true);
@@ -1126,7 +1130,7 @@ impl<'gc> EditText<'gc> {
     /// This is called when the text field is created, and, if the text field is in the unbound list, anytime a display object is created.
     pub fn try_bind_text_field_variable(
         self,
-        activation: &mut Avm1Activation<'_, 'gc>,
+        activation: &mut Avm1Activation<'_, '_, 'gc>,
         set_initial_value: bool,
     ) -> bool {
         if let Some(var_path) = self.variable() {
@@ -1162,7 +1166,7 @@ impl<'gc> EditText<'gc> {
                                 let value = object.get(property, activation).unwrap();
                                 self.set_html_text(
                                     &value.coerce_to_string(activation).unwrap_or_default(),
-                                    &mut activation.context,
+                                    activation.context,
                                 );
                             } else {
                                 // Otherwise, we initialize the property with the text field's text, if it's non-empty.
@@ -1209,7 +1213,7 @@ impl<'gc> EditText<'gc> {
 
     /// Propagates a text change to the bound display object.
     ///
-    pub fn propagate_text_binding(self, activation: &mut Avm1Activation<'_, 'gc>) {
+    pub fn propagate_text_binding(self, activation: &mut Avm1Activation<'_, '_, 'gc>) {
         if !self
             .0
             .read()
@@ -1629,7 +1633,7 @@ impl<'gc> EditText<'gc> {
         }
         if changed {
             let mut activation = Avm1Activation::from_nothing(
-                context.reborrow(),
+                context,
                 ActivationIdentifier::root("[Propagate Text Binding]"),
                 self.into(),
             );
@@ -1789,7 +1793,7 @@ impl<'gc> EditText<'gc> {
         );
 
         let mut activation = Avm1Activation::from_nothing(
-            context.reborrow(),
+            context,
             ActivationIdentifier::root("[Propagate Text Binding]"),
             self.into(),
         );
@@ -1797,7 +1801,7 @@ impl<'gc> EditText<'gc> {
         self.on_changed(&mut activation);
     }
 
-    fn initialize_as_broadcaster(&self, activation: &mut Avm1Activation<'_, 'gc>) {
+    fn initialize_as_broadcaster(&self, activation: &mut Avm1Activation<'_, '_, 'gc>) {
         if let Avm1Value::Object(object) = self.object() {
             activation.context.avm1.broadcaster_functions().initialize(
                 activation.context.gc_context,
@@ -1818,7 +1822,7 @@ impl<'gc> EditText<'gc> {
         }
     }
 
-    fn on_changed(&self, activation: &mut Avm1Activation<'_, 'gc>) {
+    fn on_changed(&self, activation: &mut Avm1Activation<'_, '_, 'gc>) {
         if let Avm1Value::Object(object) = self.object() {
             let _ = object.call_method(
                 "broadcastMessage".into(),
@@ -1828,16 +1832,16 @@ impl<'gc> EditText<'gc> {
             );
         } else if let Avm2Value::Object(object) = self.object2() {
             let change_evt = Avm2EventObject::bare_event(
-                &mut activation.context,
+                activation.context,
                 "change",
                 true,  /* bubbles */
                 false, /* cancelable */
             );
-            Avm2::dispatch_event(&mut activation.context, change_evt, object);
+            Avm2::dispatch_event(activation.context, change_evt, object);
         }
     }
 
-    fn on_scroller(&self, activation: &mut Avm1Activation<'_, 'gc>) {
+    fn on_scroller(&self, activation: &mut Avm1Activation<'_, '_, 'gc>) {
         if let Avm1Value::Object(object) = self.object() {
             let _ = object.call_method(
                 "broadcastMessage".into(),
@@ -2009,7 +2013,7 @@ impl<'gc> EditText<'gc> {
         };
 
         let mut activation = Avm1Activation::from_nothing(
-            context.reborrow(),
+            context,
             ActivationIdentifier::root("[EditText URL]"),
             parent,
         );
@@ -2363,7 +2367,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
                 self.set_scroll(new_scroll, context);
 
                 let mut activation = Avm1Activation::from_nothing(
-                    context.reborrow(),
+                    context,
                     ActivationIdentifier::root("[On Scroller]"),
                     self.into(),
                 );

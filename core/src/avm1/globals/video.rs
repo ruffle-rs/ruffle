@@ -24,7 +24,7 @@ macro_rules! video_method {
 
 /// Implements `Video`
 pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -37,7 +37,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 
 pub fn attach_video<'gc>(
     video: Video<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let source = args
@@ -47,7 +47,7 @@ pub fn attach_video<'gc>(
         .coerce_to_object(activation);
 
     if let NativeObject::NetStream(ns) = source.native() {
-        video.attach_netstream(&mut activation.context, ns);
+        video.attach_netstream(activation.context, ns);
     } else {
         tracing::warn!("Cannot use object of type {:?} as video source", source);
     }

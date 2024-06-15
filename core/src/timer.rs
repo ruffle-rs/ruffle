@@ -71,7 +71,7 @@ impl<'gc> Timers<'gc> {
                 TimerCallback::Avm1Function { func, params } => {
                     if let Some(level0) = level0 {
                         let mut avm1_activation = Activation::from_nothing(
-                            context.reborrow(),
+                            context,
                             ActivationIdentifier::root("[Timer Callback]"),
                             level0,
                         );
@@ -116,7 +116,7 @@ impl<'gc> Timers<'gc> {
                     if !removed {
                         if let Some(level0) = level0 {
                             let mut avm1_activation = Activation::from_nothing(
-                                context.reborrow(),
+                                context,
                                 ActivationIdentifier::root("[Timer Callback]"),
                                 level0,
                             );

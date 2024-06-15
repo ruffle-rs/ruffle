@@ -1057,7 +1057,7 @@ impl<'gc> Loader<'gc> {
                         let clip_value = mc.object();
                         if let Value::Object(clip_object) = clip_value {
                             let mut activation = Activation::from_nothing(
-                                uc.reborrow(),
+                                uc,
                                 ActivationIdentifier::root("unknown"),
                                 clip,
                             );
@@ -1087,7 +1087,7 @@ impl<'gc> Loader<'gc> {
                             let root_val = root.object();
                             if let Value::Object(root_object) = root_val {
                                 let mut activation = Activation::from_nothing(
-                                    uc.reborrow(),
+                                    uc,
                                     ActivationIdentifier::root("unknown"),
                                     root,
                                 );
@@ -1108,7 +1108,7 @@ impl<'gc> Loader<'gc> {
                                 let val = root.object();
                                 if let Value::Object(clip_object) = val {
                                     let mut activation = Activation::from_nothing(
-                                        uc.reborrow(),
+                                        uc,
                                         ActivationIdentifier::root("unknown"),
                                         root,
                                     );
@@ -1236,10 +1236,8 @@ impl<'gc> Loader<'gc> {
                     _ => return Err(Error::NotFormLoader),
                 };
 
-                let mut activation = Activation::from_stub(
-                    uc.reborrow(),
-                    ActivationIdentifier::root("[Form Loader]"),
-                );
+                let mut activation =
+                    Activation::from_stub(uc, ActivationIdentifier::root("[Form Loader]"));
 
                 for (k, v) in form_urlencoded::parse(&body) {
                     let k = AvmString::new_utf8(activation.context.gc_context, k);
@@ -1259,7 +1257,7 @@ impl<'gc> Loader<'gc> {
                             },
                             false,
                         );
-                        movie_clip.event_dispatch(&mut activation.context, ClipEvent::Data);
+                        movie_clip.event_dispatch(activation.context, ClipEvent::Data);
                     }
                 }
 
@@ -1299,7 +1297,7 @@ impl<'gc> Loader<'gc> {
                 };
 
                 let mut activation =
-                    Activation::from_stub(uc.reborrow(), ActivationIdentifier::root("[Loader]"));
+                    Activation::from_stub(uc, ActivationIdentifier::root("[Loader]"));
 
                 match response {
                     Ok((body, _, status, _)) => {
@@ -1399,7 +1397,7 @@ impl<'gc> Loader<'gc> {
                 };
 
                 let mut activation =
-                    Activation::from_stub(uc.reborrow(), ActivationIdentifier::root("[Loader]"));
+                    Activation::from_stub(uc, ActivationIdentifier::root("[Loader]"));
 
                 match response {
                     Ok((body, _, _, _)) => {
@@ -1675,7 +1673,7 @@ impl<'gc> Loader<'gc> {
                     .is_ok();
 
                 let mut activation =
-                    Activation::from_stub(uc.reborrow(), ActivationIdentifier::root("[Loader]"));
+                    Activation::from_stub(uc, ActivationIdentifier::root("[Loader]"));
                 let _ = sound_object.call_method(
                     "onLoad".into(),
                     &[success.into()],
@@ -2386,11 +2384,8 @@ impl<'gc> Loader<'gc> {
 
                 let flashvars = movie.clone().unwrap().parameters().to_owned();
                 if !flashvars.is_empty() {
-                    let mut activation = Activation::from_nothing(
-                        uc.reborrow(),
-                        ActivationIdentifier::root("[Loader]"),
-                        dobj,
-                    );
+                    let mut activation =
+                        Activation::from_nothing(uc, ActivationIdentifier::root("[Loader]"), dobj);
                     let object = dobj.object().coerce_to_object(&mut activation);
                     for (key, value) in flashvars.iter() {
                         object.define_value(
@@ -2740,10 +2735,8 @@ impl<'gc> Loader<'gc> {
                             _ => panic!("NativeObject must be FileReference"),
                         };
 
-                        let mut activation = Activation::from_stub(
-                            uc.reborrow(),
-                            ActivationIdentifier::root("[File Dialog]"),
-                        );
+                        let mut activation =
+                            Activation::from_stub(uc, ActivationIdentifier::root("[File Dialog]"));
 
                         match dialog_result {
                             Ok(dialog_result) => {
@@ -2974,10 +2967,8 @@ impl<'gc> Loader<'gc> {
                     _ => panic!("NativeObject must be FileReference"),
                 };
 
-                let mut activation = Activation::from_stub(
-                    uc.reborrow(),
-                    ActivationIdentifier::root("[File Dialog]"),
-                );
+                let mut activation =
+                    Activation::from_stub(uc, ActivationIdentifier::root("[File Dialog]"));
                 use crate::avm1::globals::as_broadcaster;
 
                 match dialog_result {
@@ -3208,10 +3199,8 @@ impl<'gc> Loader<'gc> {
                     _ => return Err(Error::NotFileUploadLoader),
                 };
 
-                let mut activation = Activation::from_stub(
-                    uc.reborrow(),
-                    ActivationIdentifier::root("[File Dialog]"),
-                );
+                let mut activation =
+                    Activation::from_stub(uc, ActivationIdentifier::root("[File Dialog]"));
 
                 use crate::avm1::globals::as_broadcaster;
                 as_broadcaster::broadcast_internal(

@@ -214,7 +214,7 @@ impl<'gc> Avm1Button<'gc> {
     ) -> bool {
         if let Value::Object(object) = self.object() {
             let mut activation = Activation::from_nothing(
-                context.reborrow(),
+                context,
                 ActivationIdentifier::root("[AVM1 Boolean Property]"),
                 self.avm1_root(),
             );

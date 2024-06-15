@@ -2068,7 +2068,7 @@ impl<'gc> MovieClip<'gc> {
             // If we are not, then this must be queued to be ran first-thing
             if let Some(constructor) = avm1_constructor.filter(|_| instantiated_by.is_avm()) {
                 let mut activation = Avm1Activation::from_nothing(
-                    context.reborrow(),
+                    context,
                     ActivationIdentifier::root("[Construct]"),
                     self.into(),
                 );
@@ -2086,7 +2086,7 @@ impl<'gc> MovieClip<'gc> {
                     self.0.write(activation.context.gc_context).object = Some(object.into());
 
                     if run_frame {
-                        self.run_frame_avm1(&mut activation.context);
+                        self.run_frame_avm1(activation.context);
                     }
 
                     if let Some(init_object) = init_object {
@@ -2122,7 +2122,7 @@ impl<'gc> MovieClip<'gc> {
 
             if let Some(init_object) = init_object {
                 let mut activation = Avm1Activation::from_nothing(
-                    context.reborrow(),
+                    context,
                     ActivationIdentifier::root("[Init]"),
                     self.into(),
                 );
@@ -2394,7 +2394,7 @@ impl<'gc> MovieClip<'gc> {
             let object = self.object();
             if let Avm1Value::Object(object) = object {
                 let mut activation = Avm1Activation::from_nothing(
-                    context.reborrow(),
+                    context,
                     ActivationIdentifier::root("[Mouse Pick]"),
                     self.avm1_root(),
                 );

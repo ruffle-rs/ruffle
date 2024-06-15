@@ -124,7 +124,7 @@ impl<'gc> Scope<'gc> {
     pub fn resolve(
         &self,
         name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<CallableValue<'gc>, Error<'gc>> {
         self.resolve_recursive(name, activation, true)
     }
@@ -134,7 +134,7 @@ impl<'gc> Scope<'gc> {
     fn resolve_recursive(
         &self,
         name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         top_level: bool,
     ) -> Result<CallableValue<'gc>, Error<'gc>> {
         if self.locals().has_property(activation, name) {
@@ -176,7 +176,7 @@ impl<'gc> Scope<'gc> {
         &self,
         name: AvmString<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let removed = if let Some(s) = self.values.as_stage_object() {
             s.as_display_object().unwrap().avm1_removed()
@@ -211,7 +211,7 @@ impl<'gc> Scope<'gc> {
         &self,
         name: AvmString<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         // When defining a local in a with scope, we first need to check if that local already exists on the with target
         // If it does, then the property of the target itself should be modified
@@ -239,7 +239,7 @@ impl<'gc> Scope<'gc> {
     }
 
     /// Delete a value from scope.
-    pub fn delete(&self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) -> bool {
+    pub fn delete(&self, activation: &mut Activation<'_, '_, 'gc>, name: AvmString<'gc>) -> bool {
         if self.locals().has_property(activation, name) {
             return self.locals().delete(activation, name);
         }

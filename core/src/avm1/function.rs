@@ -29,7 +29,7 @@ use swf::{avm1::types::FunctionFlags, SwfStr};
 /// your function yields `None`, you must ensure that the top-most activation
 /// in the AVM1 runtime will return with the value of this function.
 pub type NativeFunction = for<'gc> fn(
-    &mut Activation<'_, 'gc>,
+    &mut Activation<'_, '_, 'gc>,
     Object<'gc>,
     &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>>;
@@ -160,7 +160,7 @@ impl<'gc> Avm1Function<'gc> {
         result
     }
 
-    fn load_this(&self, frame: &mut Activation<'_, 'gc>, this: Value<'gc>, preload_r: &mut u8) {
+    fn load_this(&self, frame: &mut Activation<'_, '_, 'gc>, this: Value<'gc>, preload_r: &mut u8) {
         let preload = self.flags.contains(FunctionFlags::PRELOAD_THIS);
         let suppress = self.flags.contains(FunctionFlags::SUPPRESS_THIS);
 
@@ -174,7 +174,7 @@ impl<'gc> Avm1Function<'gc> {
 
     fn load_arguments(
         &self,
-        frame: &mut Activation<'_, 'gc>,
+        frame: &mut Activation<'_, '_, 'gc>,
         args: &[Value<'gc>],
         caller: Option<Object<'gc>>,
         preload_r: &mut u8,
@@ -219,7 +219,7 @@ impl<'gc> Avm1Function<'gc> {
 
     fn load_super(
         &self,
-        frame: &mut Activation<'_, 'gc>,
+        frame: &mut Activation<'_, '_, 'gc>,
         this: Option<Object<'gc>>,
         depth: u8,
         preload_r: &mut u8,
@@ -242,7 +242,7 @@ impl<'gc> Avm1Function<'gc> {
         }
     }
 
-    fn load_root(&self, frame: &mut Activation<'_, 'gc>, preload_r: &mut u8) {
+    fn load_root(&self, frame: &mut Activation<'_, '_, 'gc>, preload_r: &mut u8) {
         if self.flags.contains(FunctionFlags::PRELOAD_ROOT) {
             let root = frame.base_clip().avm1_root().object();
             frame.set_local_register(*preload_r, root);
@@ -250,7 +250,7 @@ impl<'gc> Avm1Function<'gc> {
         }
     }
 
-    fn load_parent(&self, frame: &mut Activation<'_, 'gc>, preload_r: &mut u8) {
+    fn load_parent(&self, frame: &mut Activation<'_, '_, 'gc>, preload_r: &mut u8) {
         if self.flags.contains(FunctionFlags::PRELOAD_PARENT) {
             // If _parent is undefined (because this is a root timeline), it actually does not get pushed,
             // and _global ends up incorrectly taking _parent's register.
@@ -262,7 +262,7 @@ impl<'gc> Avm1Function<'gc> {
         }
     }
 
-    fn load_global(&self, frame: &mut Activation<'_, 'gc>, preload_r: &mut u8) {
+    fn load_global(&self, frame: &mut Activation<'_, '_, 'gc>, preload_r: &mut u8) {
         if self.flags.contains(FunctionFlags::PRELOAD_GLOBAL) {
             let global = frame.context.avm1.global_object();
             frame.set_local_register(*preload_r, global.into());
@@ -332,7 +332,7 @@ impl<'gc> Executable<'gc> {
     pub fn exec(
         &self,
         name: ExecutionName<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         this: Value<'gc>,
         depth: u8,
         args: &[Value<'gc>],
@@ -417,7 +417,7 @@ impl<'gc> Executable<'gc> {
 
         let max_recursion_depth = activation.context.avm1.max_recursion_depth();
         let mut frame = Activation::from_action(
-            activation.context.reborrow(),
+            activation.context,
             ActivationIdentifier::function(
                 activation.id.clone(),
                 name,
@@ -585,7 +585,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     fn call(
         &self,
         name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         this: Value<'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -605,7 +605,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn construct_on_existing(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         this: Object<'gc>,
         args: &[Value<'gc>],
     ) -> Result<(), Error<'gc>> {
@@ -650,7 +650,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn construct(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         let prototype = self
@@ -704,7 +704,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn create_bare_object(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         prototype: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         Ok(FunctionObject(GcCell::new(
@@ -735,7 +735,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 macro_rules! constructor_to_fn {
     ($f:expr) => {{
         fn _constructor_fn<'gc>(
-            activation: &mut $crate::avm1::activation::Activation<'_, 'gc>,
+            activation: &mut $crate::avm1::activation::Activation<'_, '_, 'gc>,
             this: $crate::avm1::Object<'gc>,
             args: &[$crate::avm1::Value<'gc>],
         ) -> Result<$crate::avm1::Value<'gc>, $crate::avm1::error::Error<'gc>> {

@@ -21,7 +21,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 };
 
 pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -29,7 +29,7 @@ pub fn constructor<'gc>(
 }
 
 pub fn clone<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -98,7 +98,7 @@ pub fn avm1_to_filter<'gc>(
     }
 }
 
-pub fn filter_to_avm1<'gc>(activation: &mut Activation<'_, 'gc>, filter: Filter) -> Value<'gc> {
+pub fn filter_to_avm1<'gc>(activation: &mut Activation<'_, '_, 'gc>, filter: Filter) -> Value<'gc> {
     let (native, proto) = match filter {
         Filter::BevelFilter(filter) => (
             NativeObject::BevelFilter(BevelFilter::from_filter(
@@ -174,7 +174,7 @@ pub fn filter_to_avm1<'gc>(activation: &mut Activation<'_, 'gc>, filter: Filter)
 }
 
 pub fn create_instance<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     native: NativeObject<'gc>,
     proto: Option<Value<'gc>>,
 ) -> ScriptObject<'gc> {

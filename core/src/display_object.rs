@@ -2450,7 +2450,7 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
-    fn bind_text_field_variables(&self, activation: &mut Activation<'_, 'gc>) {
+    fn bind_text_field_variables(&self, activation: &mut Activation<'_, '_, 'gc>) {
         // Check all unbound text fields to see if they apply to this object.
         // TODO: Replace with `Vec::drain_filter` when stable.
         let mut i = 0;
@@ -2492,17 +2492,17 @@ pub trait TDisplayObject<'gc>:
     {
         if let Avm1Value::Object(object) = self.object() {
             let mut activation = Activation::from_nothing(
-                context.reborrow(),
+                context,
                 Avm1ActivationIdentifier::root("[AVM1 Boolean Property]"),
                 self.avm1_root(),
             );
             if let Ok(value) = object.get(name, &mut activation) {
                 match value {
-                    Avm1Value::Undefined => default(&mut activation.context),
+                    Avm1Value::Undefined => default(activation.context),
                     _ => value.as_bool(activation.swf_version()),
                 }
             } else {
-                default(&mut activation.context)
+                default(activation.context)
             }
         } else {
             false
@@ -2517,7 +2517,7 @@ pub trait TDisplayObject<'gc>:
     ) {
         if let Avm1Value::Object(object) = self.object() {
             let mut activation = Activation::from_nothing(
-                context.reborrow(),
+                context,
                 Avm1ActivationIdentifier::root("[AVM1 Property Set]"),
                 self.avm1_root(),
             );

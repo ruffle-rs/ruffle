@@ -46,7 +46,7 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
 macro_rules! capabilities_func {
     ($func_name: ident, $capability: expr) => {
         pub fn $func_name<'gc>(
-            activation: &mut Activation<'_, 'gc>,
+            activation: &mut Activation<'_, '_, 'gc>,
             _this: Object<'gc>,
             _args: &[Value<'gc>],
         ) -> Result<Value<'gc>, Error<'gc>> {
@@ -58,7 +58,7 @@ macro_rules! capabilities_func {
 macro_rules! inverse_capabilities_func {
     ($func_name: ident, $capability: expr) => {
         pub fn $func_name<'gc>(
-            activation: &mut Activation<'_, 'gc>,
+            activation: &mut Activation<'_, '_, 'gc>,
             _this: Object<'gc>,
             _args: &[Value<'gc>],
         ) -> Result<Value<'gc>, Error<'gc>> {
@@ -99,7 +99,7 @@ inverse_capabilities_func!(get_is_av_hardware_disabled, SystemCapabilities::AV_H
 inverse_capabilities_func!(get_is_windowless_disabled, SystemCapabilities::WINDOW_LESS);
 
 pub fn get_player_type<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -111,7 +111,7 @@ pub fn get_player_type<'gc>(
 }
 
 pub fn get_screen_color<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -123,7 +123,7 @@ pub fn get_screen_color<'gc>(
 }
 
 pub fn get_language<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -139,7 +139,7 @@ pub fn get_language<'gc>(
 }
 
 pub fn get_screen_resolution_x<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -150,7 +150,7 @@ pub fn get_screen_resolution_x<'gc>(
 }
 
 pub fn get_screen_resolution_y<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -161,7 +161,7 @@ pub fn get_screen_resolution_y<'gc>(
 }
 
 pub fn get_pixel_aspect_ratio<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -169,7 +169,7 @@ pub fn get_pixel_aspect_ratio<'gc>(
 }
 
 pub fn get_screen_dpi<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -177,7 +177,7 @@ pub fn get_screen_dpi<'gc>(
 }
 
 pub fn get_manufacturer<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -193,7 +193,7 @@ pub fn get_manufacturer<'gc>(
 }
 
 pub fn get_os_name<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -205,7 +205,7 @@ pub fn get_os_name<'gc>(
 }
 
 pub fn get_version<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -220,19 +220,19 @@ pub fn get_version<'gc>(
 }
 
 pub fn get_server_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let server_string = activation
         .context
         .system
-        .get_server_string(&activation.context);
+        .get_server_string(activation.context);
     Ok(AvmString::new_utf8(activation.context.gc_context, server_string).into())
 }
 
 pub fn get_cpu_architecture<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -244,7 +244,7 @@ pub fn get_cpu_architecture<'gc>(
 }
 
 pub fn get_max_idc_level<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

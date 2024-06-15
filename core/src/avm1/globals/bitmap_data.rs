@@ -78,7 +78,7 @@ fn new_bitmap_data<'gc>(
 }
 
 fn constructor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -115,7 +115,7 @@ fn constructor<'gc>(
 }
 
 fn height<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -129,7 +129,7 @@ fn height<'gc>(
 }
 
 fn width<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -143,7 +143,7 @@ fn width<'gc>(
 }
 
 fn get_transparent<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -157,7 +157,7 @@ fn get_transparent<'gc>(
 }
 
 fn get_rectangle<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -181,7 +181,7 @@ fn get_rectangle<'gc>(
 }
 
 fn get_pixel<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -202,7 +202,7 @@ fn get_pixel<'gc>(
 }
 
 fn get_pixel32<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -223,7 +223,7 @@ fn get_pixel32<'gc>(
 }
 
 fn set_pixel<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -254,7 +254,7 @@ fn set_pixel<'gc>(
 }
 
 fn set_pixel32<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -285,7 +285,7 @@ fn set_pixel32<'gc>(
 }
 
 fn copy_channel<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -354,7 +354,7 @@ fn copy_channel<'gc>(
 }
 
 fn fill_rect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -396,7 +396,7 @@ fn fill_rect<'gc>(
 }
 
 fn clone<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -415,7 +415,7 @@ fn clone<'gc>(
 }
 
 fn dispose<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -430,7 +430,7 @@ fn dispose<'gc>(
 }
 
 fn flood_fill<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -460,7 +460,7 @@ fn flood_fill<'gc>(
 }
 
 fn noise<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -505,7 +505,7 @@ fn noise<'gc>(
 }
 
 fn draw<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -562,7 +562,7 @@ fn draw<'gc>(
             // if we're actually going to draw something.
             let quality = activation.context.stage.quality();
             match operations::draw(
-                &mut activation.context,
+                activation.context,
                 bitmap_data,
                 source,
                 Transform {
@@ -590,7 +590,7 @@ fn draw<'gc>(
 }
 
 fn apply_filter<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -640,11 +640,11 @@ fn apply_filter<'gc>(
                 .get(3)
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_object(activation);
-            let filter = bitmap_filter::avm1_to_filter(filter_object, &mut activation.context);
+            let filter = bitmap_filter::avm1_to_filter(filter_object, activation.context);
 
             if let Some(filter) = filter {
                 operations::apply_filter(
-                    &mut activation.context,
+                    activation.context,
                     bitmap_data,
                     source,
                     (src_min_x, src_min_y),
@@ -661,7 +661,7 @@ fn apply_filter<'gc>(
 }
 
 fn generate_filter_rect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -676,7 +676,7 @@ fn generate_filter_rect<'gc>(
 }
 
 fn color_transform<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -722,7 +722,7 @@ fn color_transform<'gc>(
 }
 
 fn get_color_bounds_rect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -757,7 +757,7 @@ fn get_color_bounds_rect<'gc>(
 }
 
 fn perlin_noise<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -833,7 +833,7 @@ fn perlin_noise<'gc>(
 }
 
 fn hit_test<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -956,7 +956,7 @@ fn hit_test<'gc>(
 }
 
 fn copy_pixels<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1028,7 +1028,7 @@ fn copy_pixels<'gc>(
                                 as i32;
 
                             operations::copy_pixels_with_alpha_source(
-                                &mut activation.context,
+                                activation.context,
                                 bitmap_data,
                                 src_bitmap,
                                 (src_min_x, src_min_y, src_width, src_height),
@@ -1040,7 +1040,7 @@ fn copy_pixels<'gc>(
                         }
                     } else {
                         operations::copy_pixels(
-                            &mut activation.context,
+                            activation.context,
                             bitmap_data,
                             src_bitmap,
                             (src_min_x, src_min_y, src_width, src_height),
@@ -1061,7 +1061,7 @@ fn copy_pixels<'gc>(
 }
 
 fn merge<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1140,7 +1140,7 @@ fn merge<'gc>(
 }
 
 fn palette_map<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1220,7 +1220,7 @@ fn palette_map<'gc>(
 }
 
 fn pixel_dissolve<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1299,7 +1299,7 @@ fn pixel_dissolve<'gc>(
 }
 
 fn scroll<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1330,7 +1330,7 @@ fn scroll<'gc>(
 }
 
 fn threshold<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1422,7 +1422,7 @@ fn threshold<'gc>(
 }
 
 fn compare<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1479,7 +1479,7 @@ fn compare<'gc>(
 }
 
 fn load_bitmap<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

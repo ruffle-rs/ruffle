@@ -7,7 +7,7 @@ use crate::display_object::TDisplayObject;
 
 pub fn with_avm<F>(swf_version: u8, test: F)
 where
-    F: for<'a, 'gc> FnOnce(&mut Activation<'_, 'gc>, Object<'gc>) -> Result<(), Error<'gc>>,
+    F: for<'a, 'gc> FnOnce(&mut Activation<'_, '_, 'gc>, Object<'gc>) -> Result<(), Error<'gc>>,
 {
     let movie = crate::tag_utils::SwfMovie::empty(swf_version);
     let player = crate::player::PlayerBuilder::new()
@@ -15,7 +15,6 @@ where
         .build();
     let mut player = player.lock().unwrap();
     player.mutate_with_update_context(|context| {
-        let context = context.reborrow();
         let root = context
             .stage
             .root_clip()

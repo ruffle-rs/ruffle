@@ -238,7 +238,7 @@ impl<'gc> Sockets<'gc> {
                         }
                         SocketKind::Avm1(target) => {
                             let mut activation = Avm1Activation::from_stub(
-                                context.reborrow(),
+                                context,
                                 ActivationIdentifier::root("[XMLSocket]"),
                             );
 
@@ -290,7 +290,7 @@ impl<'gc> Sockets<'gc> {
                         // TODO: Not sure if avm1 xmlsocket has a way to notify a error. (Probably should just fire connect event with success as false).
                         SocketKind::Avm1(target) => {
                             let mut activation = Avm1Activation::from_stub(
-                                context.reborrow(),
+                                context,
                                 ActivationIdentifier::root("[XMLSocket]"),
                             );
 
@@ -342,7 +342,7 @@ impl<'gc> Sockets<'gc> {
                         }
                         SocketKind::Avm1(target) => {
                             let mut activation = Avm1Activation::from_stub(
-                                context.reborrow(),
+                                context,
                                 ActivationIdentifier::root("[XMLSocket]"),
                             );
 
@@ -424,7 +424,7 @@ impl<'gc> Sockets<'gc> {
                         }
                         SocketKind::Avm1(target) => {
                             let mut activation = Avm1Activation::from_stub(
-                                context.reborrow(),
+                                context,
                                 ActivationIdentifier::root("[XMLSocket]"),
                             );
 

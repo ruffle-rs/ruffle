@@ -19,7 +19,7 @@ pub struct TransformObject<'gc> {
 }
 
 impl<'gc> TransformObject<'gc> {
-    fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Option<Self> {
+    fn new(activation: &mut Activation<'_, '_, 'gc>, args: &[Value<'gc>]) -> Option<Self> {
         let clip = match args {
             // `Transform` constructor accepts exactly 1 argument.
             [Value::MovieClip(clip)] => Some(*clip),
@@ -32,7 +32,7 @@ impl<'gc> TransformObject<'gc> {
         Some(Self { clip })
     }
 
-    pub fn clip(&self, activation: &mut Activation<'_, 'gc>) -> Option<DisplayObject<'gc>> {
+    pub fn clip(&self, activation: &mut Activation<'_, '_, 'gc>) -> Option<DisplayObject<'gc>> {
         let (_, _, clip) = self.clip?.resolve_reference(activation)?;
         Some(clip)
     }
@@ -53,7 +53,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 };
 
 fn method<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
     index: u8,
