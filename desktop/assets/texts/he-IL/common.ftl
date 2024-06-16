@@ -4,3 +4,5 @@ browse = עיון
 save = שמור
 cancel = ביטול
 remove = הסר
+enable = אפשר
+disable = השבת
