@@ -133,6 +133,7 @@ pub enum Op<'gc> {
     },
     GetGlobalScope,
     GetGlobalSlot {
+        // note: 0-indexed, as opposed to FP.
         index: u32,
     },
     GetLocal {
@@ -151,6 +152,7 @@ pub enum Op<'gc> {
         script: Script<'gc>,
     },
     GetSlot {
+        // note: 0-indexed, as opposed to FP.
         index: u32,
     },
     GetSuper {
@@ -301,6 +303,7 @@ pub enum Op<'gc> {
     ReturnVoid,
     RShift,
     SetGlobalSlot {
+        // note: 0-indexed, as opposed to FP.
         index: u32,
     },
     SetLocal {
@@ -310,9 +313,11 @@ pub enum Op<'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
     },
     SetSlot {
+        // note: 0-indexed, as opposed to FP.
         index: u32,
     },
     SetSlotNoCoerce {
+        // note: 0-indexed, as opposed to FP.
         index: u32,
     },
     SetSuper {
