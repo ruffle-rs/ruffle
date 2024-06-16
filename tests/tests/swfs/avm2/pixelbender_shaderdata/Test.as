@@ -17,6 +17,9 @@
 			var data = new ShaderData(shader);
 			trace(data);
 			dumpObject(data);
+			trace("Setting size to null");
+			data.size.value = null;
+			trace("Size: " + data.size.value);
 		}
 	
 		private function dumpObject(obj: Object, prefix: String = "") {

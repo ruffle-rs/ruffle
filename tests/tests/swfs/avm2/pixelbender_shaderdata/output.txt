@@ -1,7 +1,27 @@
 [object ShaderData]
-description: A shader that does nothing, but does it well. (String)
+description: My new shader that does nothing, but does it well. (String)
 name: DoNothing (String)
 namespace: Adobe::Example (String)
+noDefault: [object ShaderParameter] (flash.display::ShaderParameter)
+ description: Float Param with no default (String)
+ maxValue: 4.199999809265137 (Array)
+  0: 4.199999809265137 (Number)
+ minValue: 3.0999999046325684 (Array)
+  0: 3.0999999046325684 (Number)
+ name: noDefault (String)
+ index: 2
+ type: float
+ value: null
+noDefault2: [object ShaderParameter] (flash.display::ShaderParameter)
+ description: Float2 Param with no default (String)
+ maxValue: 4.199999809265137 (Array)
+  0: 4.199999809265137 (Number)
+ minValue: 3.0999999046325684 (Array)
+  0: 3.0999999046325684 (Number)
+ name: noDefault2 (String)
+ index: 3
+ type: float
+ value: null
 otherSrc: [object ShaderInput] (flash.display::ShaderInput)
  name: otherSrc (String)
  channels: 4
@@ -47,3 +67,5 @@ src: [object ShaderInput] (flash.display::ShaderInput)
  width: 0
 vendor: Adobe examples (String)
 version: 1 (int)
+Setting size to null
+Size: null
