@@ -2,6 +2,7 @@
 use crate::avm1::{Object as Avm1Object, StageObject, TObject as Avm1TObject, Value as Avm1Value};
 use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;
+use crate::avm2::script::Script;
 use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::{
     Avm2, ClassObject as Avm2ClassObject, Error as Avm2Error, Object as Avm2Object,
@@ -703,6 +704,16 @@ impl<'gc> MovieClip<'gc> {
                     .0
                     .write(context.gc_context)
                     .import_assets_2(context, reader),
+                TagCode::DoAbc | TagCode::DoAbc2 => self.preload_bytecode_tag(
+                    tag_code,
+                    reader,
+                    context,
+                    cur_frame - 1,
+                    &mut static_data,
+                ),
+                TagCode::SymbolClass => {
+                    self.preload_symbol_class(reader, context, cur_frame - 1, &mut static_data)
+                }
                 TagCode::End => {
                     end_tag_found = true;
                     return Ok(ControlFlow::Exit);
@@ -798,10 +809,10 @@ impl<'gc> MovieClip<'gc> {
         self,
         context: &mut UpdateContext<'_, 'gc>,
         reader: &mut SwfStream<'_>,
-    ) -> Result<(), Error> {
+    ) -> Result<Option<Script<'gc>>, Error> {
         if !context.swf.is_action_script_3() {
             tracing::warn!("DoABC tag with non-AVM2 root");
-            return Ok(());
+            return Ok(None);
         }
 
         let data = reader.read_slice_to_end();
@@ -810,7 +821,7 @@ impl<'gc> MovieClip<'gc> {
             let domain = context.library.library_for_movie_mut(movie).avm2_domain();
 
             // DoAbc tag seems to be equivalent to a DoAbc2 with Lazy flag set
-            if let Err(e) = Avm2::do_abc(
+            match Avm2::do_abc(
                 context,
                 data,
                 None,
@@ -818,11 +829,15 @@ impl<'gc> MovieClip<'gc> {
                 domain,
                 self.movie(),
             ) {
-                tracing::warn!("Error loading ABC file: {e:?}");
+                Ok(res) => return Ok(res),
+                Err(e) => {
+                    tracing::warn!("Error loading ABC file: {e:?}");
+                    return Ok(None);
+                }
             }
         }
 
-        Ok(())
+        Ok(None)
     }
 
     #[inline]
@@ -830,10 +845,10 @@ impl<'gc> MovieClip<'gc> {
         self,
         context: &mut UpdateContext<'_, 'gc>,
         reader: &mut SwfStream<'_>,
-    ) -> Result<(), Error> {
+    ) -> Result<Option<Script<'gc>>, Error> {
         if !context.swf.is_action_script_3() {
             tracing::warn!("DoABC2 tag with non-AVM2 root");
-            return Ok(());
+            return Ok(None);
         }
 
         let do_abc = reader.read_do_abc_2()?;
@@ -842,7 +857,7 @@ impl<'gc> MovieClip<'gc> {
             let domain = context.library.library_for_movie_mut(movie).avm2_domain();
             let name = AvmString::new(context.gc_context, do_abc.name.decode(reader.encoding()));
 
-            if let Err(e) = Avm2::do_abc(
+            match Avm2::do_abc(
                 context,
                 do_abc.data,
                 Some(name),
@@ -850,126 +865,14 @@ impl<'gc> MovieClip<'gc> {
                 domain,
                 self.movie(),
             ) {
-                tracing::warn!("Error loading ABC file: {e:?}");
-            }
-        }
-
-        Ok(())
-    }
-
-    #[inline]
-    fn symbol_class(
-        self,
-        context: &mut UpdateContext<'_, 'gc>,
-        reader: &mut SwfStream<'_>,
-    ) -> Result<(), Error> {
-        let movie = self.movie();
-        let mut activation = Avm2Activation::from_nothing(context.reborrow());
-
-        let num_symbols = reader.read_u16()?;
-
-        for _ in 0..num_symbols {
-            let id = reader.read_u16()?;
-            let class_name = AvmString::new(
-                activation.context.gc_context,
-                reader.read_str()?.decode(reader.encoding()),
-            );
-
-            let name = Avm2QName::from_qualified_name(
-                class_name,
-                activation.avm2().root_api_version,
-                &mut activation,
-            );
-            let library = activation
-                .context
-                .library
-                .library_for_movie_mut(movie.clone());
-            let domain = library.avm2_domain();
-            let class_object = domain
-                .get_defined_value(&mut activation, name)
-                .and_then(|v| {
-                    v.as_object()
-                        .and_then(|o| o.as_class_object())
-                        .ok_or_else(|| {
-                            format!(
-                                "Attempted to assign a non-class {} to symbol {}",
-                                class_name,
-                                name.to_qualified_name(activation.context.gc_context)
-                            )
-                            .into()
-                        })
-                });
-
-            match class_object {
-                Ok(class_object) => {
-                    activation
-                        .context
-                        .library
-                        .avm2_class_registry_mut()
-                        .set_class_symbol(class_object, movie.clone(), id);
-
-                    let library = activation
-                        .context
-                        .library
-                        .library_for_movie_mut(movie.clone());
-
-                    if id == 0 {
-                        //TODO: This assumes only the root movie has `SymbolClass` tags.
-                        self.set_avm2_class(activation.context.gc_context, Some(class_object));
-                    } else {
-                        match library.character_by_id(id) {
-                            Some(Character::MovieClip(mc)) => {
-                                mc.set_avm2_class(activation.context.gc_context, Some(class_object))
-                            }
-                            Some(Character::Avm2Button(btn)) => {
-                                btn.set_avm2_class(activation.context.gc_context, class_object)
-                            }
-                            Some(Character::BinaryData(_)) => {}
-                            Some(Character::Font(_)) => {}
-                            Some(Character::Sound(_)) => {}
-                            Some(Character::Bitmap { .. }) => {
-                                if let Some(bitmap_class) = BitmapClass::from_class_object(
-                                    class_object,
-                                    &mut activation.context,
-                                ) {
-                                    // We need to re-fetch the library and character to satisfy the borrow checker
-                                    let library = activation
-                                        .context
-                                        .library
-                                        .library_for_movie_mut(movie.clone());
-
-                                    let Some(Character::Bitmap {
-                                        avm2_bitmapdata_class,
-                                        ..
-                                    }) = library.character_by_id(id)
-                                    else {
-                                        unreachable!();
-                                    };
-                                    *avm2_bitmapdata_class.write(activation.context.gc_context) =
-                                        bitmap_class;
-                                } else {
-                                    tracing::error!("Associated class {:?} for symbol {} must extend flash.display.Bitmap or BitmapData, does neither", class_object.inner_class_definition().name(), self.id());
-                                }
-                            }
-                            _ => {
-                                tracing::warn!(
-                                    "Symbol class {} cannot be assigned to invalid character id {}",
-                                    class_name,
-                                    id
-                                );
-                            }
-                        }
-                    }
+                Ok(res) => return Ok(res),
+                Err(e) => {
+                    tracing::warn!("Error loading ABC file: {e:?}");
                 }
-                Err(e) => tracing::error!(
-                    "Got AVM2 error {:?} when attempting to assign symbol class {}",
-                    e,
-                    class_name
-                ),
             }
         }
 
-        Ok(())
+        Ok(None)
     }
 
     #[inline]
@@ -1584,9 +1487,6 @@ impl<'gc> MovieClip<'gc> {
                 TagCode::SetBackgroundColor => self.set_background_color(context, reader),
                 TagCode::StartSound if run_sounds => self.start_sound_1(context, reader),
                 TagCode::SoundStreamBlock if run_sounds => self.sound_stream_block(context, reader),
-                TagCode::DoAbc | TagCode::DoAbc2 | TagCode::SymbolClass => {
-                    self.handle_bytecode_tag(tag_code, reader, context)
-                }
                 TagCode::ShowFrame => return Ok(ControlFlow::Exit),
                 _ => Ok(()),
             }?;
@@ -1594,6 +1494,7 @@ impl<'gc> MovieClip<'gc> {
             Ok(ControlFlow::Continue)
         };
         let _ = tag_utils::decode_tags(&mut reader, tag_callback);
+        self.run_eager_script_and_symbol(context, self.0.read().current_frame);
 
         // On AS3, we deliberately run all removals before the frame number or
         // tag position updates. This ensures that code that runs gotos when a
@@ -1901,9 +1802,6 @@ impl<'gc> MovieClip<'gc> {
                         from_frame,
                         &mut removed_frame_scripts,
                     ),
-                    TagCode::DoAbc | TagCode::DoAbc2 | TagCode::SymbolClass => {
-                        self.handle_bytecode_tag(tag_code, reader, context)
-                    }
                     TagCode::ShowFrame => return Ok(ControlFlow::Exit),
                     _ => Ok(()),
                 }?;
@@ -1911,6 +1809,7 @@ impl<'gc> MovieClip<'gc> {
                 Ok(ControlFlow::Continue)
             };
             let _ = tag_utils::decode_tags(&mut reader, tag_callback);
+            self.run_eager_script_and_symbol(context, self.current_frame() - 1);
         }
         let hit_target_frame = self.0.read().current_frame == frame;
 
@@ -4309,31 +4208,184 @@ impl<'gc, 'a> MovieClip<'gc> {
         Ok(())
     }
 
-    /// Handles a DoAbc, DoAbc2, or SymbolClass tag
-    fn handle_bytecode_tag(
+    /// Handles a DoAbc or DoAbc2 tag
+    fn preload_bytecode_tag(
         self,
         tag_code: TagCode,
         reader: &mut SwfStream<'a>,
         context: &mut UpdateContext<'_, 'gc>,
+        cur_frame: FrameNumber,
+        static_data: &mut MovieClipStatic<'gc>,
     ) -> Result<(), Error> {
-        let mc = self.0.read();
-        let tag_stream_start = mc.static_data.swf.as_ref().as_ptr() as u64;
-        let tag_start = reader.get_ref().as_ptr() as u64 - tag_stream_start;
-        let processed_pos = self.0.read().static_data.processed_bytecode_tags_pos;
+        let res = match tag_code {
+            TagCode::DoAbc => self.do_abc(context, reader)?,
+            TagCode::DoAbc2 => self.do_abc_2(context, reader)?,
+            _ => unreachable!(),
+        };
+        let Some(eager_script) = res else {
+            return Ok(());
+        };
+        // If we got an eager script (which happens for non-lazy DoAbc2 tags).
+        // we store it for later. It will be run the first time we execute this frame
+        // (for any instance of this MovieClip) in `run_eager_script_and_symbol`
+        static_data
+            .eager_abc_scripts
+            .write(context.gc_context)
+            .entry(cur_frame)
+            .or_default()
+            .push(eager_script);
+        Ok(())
+    }
 
-        if *processed_pos.read() < tag_start as i64 {
-            *processed_pos.write(context.gc_context) = tag_start as i64;
-            drop(mc);
+    fn preload_symbol_class(
+        self,
+        reader: &mut SwfStream<'a>,
+        context: &mut UpdateContext<'_, 'gc>,
+        cur_frame: FrameNumber,
+        static_data: &mut MovieClipStatic<'gc>,
+    ) -> Result<(), Error> {
+        let mut symbolclass_names = static_data.symbolclass_names.write(context.gc_context);
+        let symbolclass_names = symbolclass_names.entry(cur_frame).or_default();
+        let num_symbols = reader.read_u16()?;
 
-            match tag_code {
-                TagCode::DoAbc => self.do_abc(context, reader),
-                TagCode::DoAbc2 => self.do_abc_2(context, reader),
-                TagCode::SymbolClass => self.symbol_class(context, reader),
-                _ => unreachable!(),
-            }
-        } else {
-            Ok(())
+        for _ in 0..num_symbols {
+            let id = reader.read_u16()?;
+            let class_name = AvmString::new(
+                context.gc_context,
+                reader.read_str()?.decode(reader.encoding()),
+            );
+
+            let name =
+                Avm2QName::from_qualified_name(class_name, context.avm2.root_api_version, context);
+            // Store the name and symbol with in the global data for this frame. The first time
+            // we execute this frame (for any instance of this MovieClip), we will load the symbolclass
+            // from `run_eager_script_and_symbol`
+            symbolclass_names.push((name, id));
         }
+        Ok(())
+    }
+
+    // Flash Player handles SymbolClass tags and eager (non-lazy) DoAbc2 tags in an unusual way:
+    // During the first time that a given frame is executed:
+    // 1. All SymbolClass tags are processed in order, triggering ClassObject loading (and the associated
+    //    script initializer execution, if it hasn't already been run)
+    // 2. All eager (non-lazy) DoAbc/DoAbc2 tags have their *final* script initializer executed.
+    //
+    // The relative order is preserved between SymbolClass tags and between DoAbc2 tags. However, all
+    // of the SymbolClass tags in the frame will run before any of the 'eager' DoAbc2 tags have
+    // their final script initializers run.
+    //
+    // We need to match this behavior exactly, in order for flascc/crossbridge games like 'minidash'
+    // to work correctly.
+    fn run_eager_script_and_symbol(
+        self,
+        context: &mut UpdateContext<'_, 'gc>,
+        current_frame: FrameNumber,
+    ) {
+        let read = self.0.read();
+        if let Some(symbols) = read
+            .static_data
+            .symbolclass_names
+            .write(context.gc_context)
+            .remove(&current_frame)
+        {
+            let movie = self.movie();
+            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            for (name, id) in symbols {
+                let library = activation
+                    .context
+                    .library
+                    .library_for_movie_mut(movie.clone());
+                let domain = library.avm2_domain();
+                let class_object = domain
+                    .get_defined_value(&mut activation, name)
+                    .and_then(|v| {
+                        v.as_object()
+                            .and_then(|o| o.as_class_object())
+                            .ok_or_else(|| {
+                                format!("Attempted to assign a non-class {name:?} in SymbolClass",)
+                                    .into()
+                            })
+                    });
+
+                match class_object {
+                    Ok(class_object) => {
+                        activation
+                            .context
+                            .library
+                            .avm2_class_registry_mut()
+                            .set_class_symbol(class_object, movie.clone(), id);
+
+                        let library = activation
+                            .context
+                            .library
+                            .library_for_movie_mut(movie.clone());
+
+                        if id == 0 {
+                            //TODO: This assumes only the root movie has `SymbolClass` tags.
+                            self.set_avm2_class(activation.context.gc_context, Some(class_object));
+                        } else {
+                            match library.character_by_id(id) {
+                                Some(Character::MovieClip(mc)) => mc.set_avm2_class(
+                                    activation.context.gc_context,
+                                    Some(class_object),
+                                ),
+                                Some(Character::Avm2Button(btn)) => {
+                                    btn.set_avm2_class(activation.context.gc_context, class_object)
+                                }
+                                Some(Character::BinaryData(_)) => {}
+                                Some(Character::Font(_)) => {}
+                                Some(Character::Sound(_)) => {}
+                                Some(Character::Bitmap { .. }) => {
+                                    if let Some(bitmap_class) = BitmapClass::from_class_object(
+                                        class_object,
+                                        &mut activation.context,
+                                    ) {
+                                        // We need to re-fetch the library and character to satisfy the borrow checker
+                                        let library = activation
+                                            .context
+                                            .library
+                                            .library_for_movie_mut(movie.clone());
+
+                                        let Some(Character::Bitmap {
+                                            avm2_bitmapdata_class,
+                                            ..
+                                        }) = library.character_by_id(id)
+                                        else {
+                                            unreachable!();
+                                        };
+                                        *avm2_bitmapdata_class
+                                            .write(activation.context.gc_context) = bitmap_class;
+                                    } else {
+                                        tracing::error!("Associated class {:?} for symbol {} must extend flash.display.Bitmap or BitmapData, does neither", class_object.inner_class_definition().name(), self.id());
+                                    }
+                                }
+                                _ => {
+                                    tracing::warn!(
+                                    "Symbol class {name:?} cannot be assigned to invalid character id {id}",
+                                );
+                                }
+                            }
+                        }
+                    }
+                    Err(e) => tracing::error!(
+                        "Got AVM2 error {e:?} when attempting to assign symbol class {name:?}",
+                    ),
+                }
+            }
+        }
+        if let Some(scripts) = read
+            .static_data
+            .eager_abc_scripts
+            .write(context.gc_context)
+            .remove(&current_frame)
+        {
+            for script in scripts {
+                if let Err(e) = script.globals(context) {
+                    tracing::error!("Error running eager script: {:?}", e);
+                }
+            }
+        };
     }
 
     fn queue_place_object(
@@ -4633,6 +4685,12 @@ struct MovieClipStatic<'gc> {
     /// is observable by ActionScript, which might load a class in a stop()'d MovieClip,
     /// and then advance to a frame containing a SymbolClass that references the loaded class.
     processed_bytecode_tags_pos: GcCell<'gc, i64>,
+
+    // These two maps hold DoAbc/SymbolClass data that was loaded during preloading, but
+    // hasn't yet been executed yet. The first time we encounter a frame, we will remove
+    // the `Vec` from this map, and process it in `run_eager_script_and_symbol`
+    eager_abc_scripts: GcCell<'gc, HashMap<FrameNumber, Vec<Script<'gc>>>>,
+    symbolclass_names: GcCell<'gc, HashMap<FrameNumber, Vec<(Avm2QName<'gc>, u16)>>>,
 }
 
 impl<'gc> MovieClipStatic<'gc> {
@@ -4666,6 +4724,8 @@ impl<'gc> MovieClipStatic<'gc> {
             loader_info,
             preload_progress: GcCell::new(gc_context, Default::default()),
             processed_bytecode_tags_pos: GcCell::new(gc_context, -1),
+            eager_abc_scripts: GcCell::new(gc_context, Default::default()),
+            symbolclass_names: GcCell::new(gc_context, Default::default()),
         }
     }
 }

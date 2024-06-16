@@ -58,7 +58,7 @@ mod property_map;
 mod qname;
 mod regexp;
 mod scope;
-mod script;
+pub mod script;
 #[cfg(feature = "known_stubs")]
 pub mod specification;
 mod string;
@@ -580,7 +580,7 @@ impl<'gc> Avm2<'gc> {
         flags: DoAbc2Flag,
         domain: Domain<'gc>,
         movie: Arc<SwfMovie>,
-    ) -> Result<(), Error<'gc>> {
+    ) -> Result<Option<Script<'gc>>, Error<'gc>> {
         let mut reader = Reader::new(data);
         let abc = match reader.read() {
             Ok(abc) => abc,
@@ -604,13 +604,9 @@ impl<'gc> Avm2<'gc> {
         }
 
         if !flags.contains(DoAbc2Flag::LAZY_INITIALIZE) {
-            for i in 0..num_scripts {
-                if let Some(script) = tunit.get_script(i) {
-                    script.globals(&mut activation.context)?;
-                }
-            }
+            return Ok(Some(tunit.get_script(num_scripts - 1).unwrap()));
         }
-        Ok(())
+        Ok(None)
     }
 
     pub fn stage_domain(&self) -> Domain<'gc> {
