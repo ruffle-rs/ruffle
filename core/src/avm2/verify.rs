@@ -972,10 +972,12 @@ fn resolve_op<'gc>(
 
             Op::GetDescendants { multiname }
         }
-        AbcOp::GetSlot { index } => Op::GetSlot { index },
-        AbcOp::SetSlot { index } => Op::SetSlot { index },
-        AbcOp::GetGlobalSlot { index } => Op::GetGlobalSlot { index },
-        AbcOp::SetGlobalSlot { index } => Op::SetGlobalSlot { index },
+        // Turn 1-based representation into 0-based representation
+        AbcOp::GetSlot { index } => Op::GetSlot { index: index - 1 },
+        AbcOp::SetSlot { index } => Op::SetSlot { index: index - 1 },
+        AbcOp::GetGlobalSlot { index } => Op::GetGlobalSlot { index: index - 1 },
+        AbcOp::SetGlobalSlot { index } => Op::SetGlobalSlot { index: index - 1 },
+
         AbcOp::Construct { num_args } => Op::Construct { num_args },
         AbcOp::ConstructProp { index, num_args } => {
             let multiname = pool_multiname(activation, translation_unit, index)?;
