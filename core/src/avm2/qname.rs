@@ -1,5 +1,5 @@
 use crate::avm2::script::TranslationUnit;
-use crate::avm2::{Activation, Error, Namespace};
+use crate::avm2::{Error, Namespace};
 use crate::context::UpdateContext;
 use crate::string::{AvmString, WStr, WString};
 use either::Either;
@@ -100,13 +100,13 @@ impl<'gc> QName<'gc> {
     pub fn from_qualified_name(
         name: AvmString<'gc>,
         api_version: ApiVersion,
-        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'_, 'gc>,
     ) -> Self {
         let parts = name
             .rsplit_once(WStr::from_units(b"::"))
             .or_else(|| name.rsplit_once(WStr::from_units(b".")));
 
-        let mut context = activation.borrow_gc();
+        let mut context = context.borrow_gc();
         if let Some((package_name, local_name)) = parts {
             let package_name = context
                 .interner

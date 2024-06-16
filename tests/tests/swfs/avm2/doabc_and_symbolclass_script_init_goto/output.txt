@@ -1,0 +1,6 @@
+New
+before gotoAndStop
+C
+Z
+B
+after gotoAndStop
