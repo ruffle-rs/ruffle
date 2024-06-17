@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "condition": {
+      "domains": ["4399.com"],
+      "resourceTypes": ["main_frame", "xmlhttprequest"]
+    },
+    "action": {
+      "type": "modifyHeaders",
+      "responseHeaders": [
+        {
+          "header": "Access-Control-Allow-Origin",
+          "operation": "set",
+          "value": "https://www.4399.com"
+        }
+      ]
+    }
+  }
+]
