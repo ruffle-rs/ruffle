@@ -8,8 +8,62 @@ async function contentScriptRegistered() {
     return matchingScripts?.length > 0;
 }
 
+// Copied from https://github.com/w3c/webextensions/issues/638#issuecomment-2181124486
+async function isHeaderConditionSupported() {
+    let needCleanup = false;
+    const ruleId = 4;
+    try {
+        // Throws synchronously if not supported.
+        await utils.declarativeNetRequest.updateDynamicRules({
+            addRules: [
+                {
+                    id: ruleId,
+                    condition: { responseHeaders: [{ header: "whatever" }] },
+                    action: {
+                        type:
+                            chrome.declarativeNetRequest.RuleActionType
+                                ?.BLOCK ?? "block",
+                    },
+                },
+            ],
+        });
+        needCleanup = true;
+    } catch {
+        return false; // responseHeaders condition not supported.
+    }
+    // Chrome may recognize the properties but have the implementation behind a flag.
+    // When the implementation is disabled, validation is skipped too.
+    try {
+        await utils.declarativeNetRequest.updateDynamicRules({
+            removeRuleIds: [ruleId],
+            addRules: [
+                {
+                    id: ruleId,
+                    condition: { responseHeaders: [] },
+                    action: {
+                        type:
+                            chrome.declarativeNetRequest.RuleActionType
+                                ?.BLOCK ?? "block",
+                    },
+                },
+            ],
+        });
+        needCleanup = true;
+        return false; // Validation skipped = feature disabled.
+    } catch {
+        return true; // Validation worked = feature enabled.
+    } finally {
+        if (needCleanup) {
+            await utils.declarativeNetRequest.updateDynamicRules({
+                removeRuleIds: [ruleId],
+            });
+        }
+    }
+}
+
 async function enable() {
-    if (utils.declarativeNetRequest) {
+    // Checks if the responseHeaders condition is supported and not behind a disabled flag.
+    if (utils.declarativeNetRequest && (await isHeaderConditionSupported())) {
         const playerPage = utils.runtime.getURL("/player.html");
         const rules = [
             {
@@ -83,16 +137,10 @@ async function enable() {
                 },
             },
         ];
-        try {
-            await utils.declarativeNetRequest.updateDynamicRules({
-                removeRuleIds: [1, 2, 3],
-                addRules: rules,
-            });
-        } catch (e) {
-            console.info(
-                "Failed to register rules: responseHeaders condition unsupported",
-            );
-        }
+        await utils.declarativeNetRequest.updateDynamicRules({
+            removeRuleIds: [1, 2, 3],
+            addRules: rules,
+        });
     }
     if (
         !utils.scripting ||
