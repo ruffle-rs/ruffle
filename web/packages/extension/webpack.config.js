@@ -131,7 +131,7 @@ export default function (/** @type {Record<string, any>} */ env, _argv) {
                     },
                     { from: "LICENSE*" },
                     { from: "README.md" },
-                    { from: "4399_rules.json"},
+                    { from: "4399_rules.json" },
                 ],
             }),
         ],

@@ -1,6 +1,8 @@
 try {
     Object.defineProperty(window, "showBlockFlash", {
-        value: () => { },
+        value: () => {},
         writable: false,
     });
-} catch (e) { }
+} catch (e) {
+    // Ignore.
+}
