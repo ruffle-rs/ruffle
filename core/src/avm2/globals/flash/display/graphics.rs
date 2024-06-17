@@ -917,7 +917,8 @@ pub fn draw_triangles<'gc>(
 
             let culling = {
                 let culling = args.get_string(activation, 3)?;
-                culling_to_triangle_culling(activation, culling)?
+                TriangleCulling::from_string(culling)
+                    .ok_or_else(|| make_error_2004(activation, Error2004Type::ArgumentError))?
             };
 
             draw_triangles_internal(
@@ -942,6 +943,18 @@ enum TriangleCulling {
 }
 
 impl TriangleCulling {
+    fn from_string(value: AvmString) -> Option<Self> {
+        if &value == b"none" {
+            Some(Self::None)
+        } else if &value == b"positive" {
+            Some(Self::Positive)
+        } else if &value == b"negative" {
+            Some(Self::Negative)
+        } else {
+            None
+        }
+    }
+
     fn cull(self, (a, b, c): Triangle) -> bool {
         fn triangle_orientation((a, b, c): Triangle) -> i64 {
             let ax = a.x.get() as i64;
@@ -958,21 +971,6 @@ impl TriangleCulling {
             Self::Positive => triangle_orientation((a, b, c)) >= 0,
             Self::Negative => triangle_orientation((a, b, c)) <= 0,
         }
-    }
-}
-
-fn culling_to_triangle_culling<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    culling: AvmString,
-) -> Result<TriangleCulling, Error<'gc>> {
-    if &culling == b"none" {
-        Ok(TriangleCulling::None)
-    } else if &culling == b"positive" {
-        Ok(TriangleCulling::Positive)
-    } else if &culling == b"negative" {
-        Ok(TriangleCulling::Negative)
-    } else {
-        Err(make_error_2008(activation, "culling"))
     }
 }
 
@@ -1485,7 +1483,8 @@ fn handle_graphics_triangle_path<'gc>(
             .get_public_property("culling", activation)?
             .coerce_to_string(activation)?;
 
-        culling_to_triangle_culling(activation, culling)?
+        TriangleCulling::from_string(culling)
+            .ok_or_else(|| make_error_2008(activation, "culling"))?
     };
 
     let vertices = obj.get_public_property("vertices", activation)?.as_object();
