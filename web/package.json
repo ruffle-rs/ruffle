@@ -35,7 +35,7 @@
         "tsx": "^4.15.6"
     },
     "optionalDependencies": {
-        "chromedriver": "^125.0.3"
+        "chromedriver": "^126.0.1"
     },
     "scripts": {
         "build": "npm run build --workspace=ruffle-core && npm run build --workspace=ruffle-demo --workspace=ruffle-extension --workspace=ruffle-selfhosted",
