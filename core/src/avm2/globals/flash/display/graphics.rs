@@ -984,6 +984,15 @@ fn draw_triangles_internal<'gc>(
     uvt_data: Option<&Object<'gc>>,
     culling: TriangleCulling,
 ) -> Result<(), Error<'gc>> {
+    // FIXME Triangles should be drawn using non-zero winding rule.
+    //   When fixed, update output.expected.png of avm2/graphics_draw_triangles.
+    avm2_stub_method!(
+        activation,
+        "flash.display.Graphics",
+        "drawTriangles",
+        "winding behavior"
+    );
+
     if uvt_data.is_some() {
         avm2_stub_method!(
             activation,
