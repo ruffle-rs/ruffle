@@ -1029,26 +1029,26 @@ fn draw_triangles_internal<'gc>(
             vertices: &VectorStorage<'gc>,
             indices: &mut impl Iterator<Item = Value<'gc>>,
             activation: &mut Activation<'_, 'gc>,
-        ) -> Result<Option<Triangle>, Error<'gc>> {
+        ) -> Option<Triangle> {
             match (indices.next(), indices.next(), indices.next()) {
                 (Some(i0), Some(i1), Some(i2)) => {
-                    let i0 = i0.coerce_to_u32(activation)? as usize;
-                    let i1 = i1.coerce_to_u32(activation)? as usize;
-                    let i2 = i2.coerce_to_u32(activation)? as usize;
+                    let i0 = i0.coerce_to_u32(activation).ok()? as usize;
+                    let i1 = i1.coerce_to_u32(activation).ok()? as usize;
+                    let i2 = i2.coerce_to_u32(activation).ok()? as usize;
 
-                    let p0 = read_point(vertices, i0, activation)?;
-                    let p1 = read_point(vertices, i1, activation)?;
-                    let p2 = read_point(vertices, i2, activation)?;
+                    let p0 = read_point(vertices, i0, activation).ok()?;
+                    let p1 = read_point(vertices, i1, activation).ok()?;
+                    let p2 = read_point(vertices, i2, activation).ok()?;
 
-                    Ok(Some((p0, p1, p2)))
+                    Some((p0, p1, p2))
                 }
-                _ => Ok(None),
+                _ => None,
             }
         }
 
         let indices = &mut indices.iter();
 
-        while let Some(triangle) = next_triangle(&vertices, indices, activation)? {
+        while let Some(triangle) = next_triangle(&vertices, indices, activation) {
             draw_triangle_internal(triangle, drawing, culling);
         }
     } else {
