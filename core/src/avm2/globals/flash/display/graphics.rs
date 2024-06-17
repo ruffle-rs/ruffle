@@ -941,6 +941,26 @@ enum TriangleCulling {
     Negative,
 }
 
+impl TriangleCulling {
+    fn cull(self, (a, b, c): Triangle) -> bool {
+        fn triangle_orientation((a, b, c): Triangle) -> i64 {
+            let ax = a.x.get() as i64;
+            let ay = a.y.get() as i64;
+            let bx = b.x.get() as i64;
+            let by = b.y.get() as i64;
+            let cx = c.x.get() as i64;
+            let cy = c.y.get() as i64;
+            (bx - ax) * (cy - ay) - (by - ay) * (cx - ax)
+        }
+
+        match self {
+            Self::None => false,
+            Self::Positive => triangle_orientation((a, b, c)) >= 0,
+            Self::Negative => triangle_orientation((a, b, c)) <= 0,
+        }
+    }
+}
+
 fn culling_to_triangle_culling<'gc>(
     activation: &mut Activation<'_, 'gc>,
     culling: AvmString,
@@ -1029,7 +1049,7 @@ fn draw_triangles_internal<'gc>(
         let indices = &mut indices.iter();
 
         while let Some(triangle) = next_triangle(&vertices, indices, activation)? {
-            draw_triangle_internal(activation, triangle, drawing, culling);
+            draw_triangle_internal(triangle, drawing, culling);
         }
     } else {
         let mut vertices = vertices.iter();
@@ -1073,44 +1093,24 @@ fn draw_triangles_internal<'gc>(
         }
 
         while let Some(triangle) = next_triangle(&mut vertices, activation)? {
-            draw_triangle_internal(activation, triangle, drawing, culling);
+            draw_triangle_internal(triangle, drawing, culling);
         }
     }
 
     Ok(())
 }
 
-fn draw_triangle_internal(
-    activation: &mut Activation<'_, '_>,
-    (a, b, c): Triangle,
-    drawing: &mut Drawing,
-    culling: TriangleCulling,
-) {
-    match culling {
-        TriangleCulling::None => {
-            drawing.draw_command(DrawCommand::MoveTo(a));
-
-            drawing.draw_command(DrawCommand::LineTo(b));
-            drawing.draw_command(DrawCommand::LineTo(c));
-            drawing.draw_command(DrawCommand::LineTo(a));
-        }
-        TriangleCulling::Positive => {
-            avm2_stub_method!(
-                activation,
-                "flash.display.Graphics",
-                "drawTriangles",
-                "with positive culling"
-            );
-        }
-        TriangleCulling::Negative => {
-            avm2_stub_method!(
-                activation,
-                "flash.display.Graphics",
-                "drawTriangles",
-                "with negative culling"
-            );
-        }
+#[inline]
+fn draw_triangle_internal((a, b, c): Triangle, drawing: &mut Drawing, culling: TriangleCulling) {
+    if culling.cull((a, b, c)) {
+        return;
     }
+
+    drawing.draw_command(DrawCommand::MoveTo(a));
+
+    drawing.draw_command(DrawCommand::LineTo(b));
+    drawing.draw_command(DrawCommand::LineTo(c));
+    drawing.draw_command(DrawCommand::LineTo(a));
 }
 
 /// Implements `Graphics.drawGraphicsData`
