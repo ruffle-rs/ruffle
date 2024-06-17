@@ -380,6 +380,24 @@ pub fn make_error_1118<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1125<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    index: usize,
+    range: usize,
+) -> Error<'gc> {
+    let err = range_error(
+        activation,
+        &format!("Error #1125: The index {index} is out of range {range}."),
+        1125,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1127<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = type_error(
         activation,

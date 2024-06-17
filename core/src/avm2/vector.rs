@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::error::range_error;
+use crate::avm2::error::{make_error_1125, range_error};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::Collect;
@@ -170,14 +170,7 @@ impl<'gc> VectorStorage<'gc> {
         if let Some(val) = self.get_optional(pos) {
             Ok(val)
         } else {
-            Err(Error::AvmError(range_error(
-                activation,
-                &format!(
-                    "Error #1125: The index {pos} is out of range {}.",
-                    self.length()
-                ),
-                1125,
-            )?))
+            Err(make_error_1125(activation, pos, self.length()))
         }
     }
 
@@ -209,14 +202,7 @@ impl<'gc> VectorStorage<'gc> {
             *v = value;
             Ok(())
         } else {
-            Err(Error::AvmError(range_error(
-                activation,
-                &format!(
-                    "Error #1125: The index {pos} is out of range {}.",
-                    self.length()
-                ),
-                1125,
-            )?))
+            Err(make_error_1125(activation, pos, self.length()))
         }
     }
 
@@ -359,14 +345,7 @@ impl<'gc> VectorStorage<'gc> {
         };
 
         if position >= self.storage.len() {
-            Err(Error::AvmError(range_error(
-                activation,
-                &format!(
-                    "Error #1125: The index {position} is out of range {}.",
-                    self.length()
-                ),
-                1125,
-            )?))
+            Err(make_error_1125(activation, position, self.length()))
         } else {
             Ok(self.storage.remove(position))
         }
