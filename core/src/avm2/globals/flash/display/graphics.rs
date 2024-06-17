@@ -4,7 +4,7 @@
 #![allow(clippy::doc_lazy_continuation)]
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{argument_error, make_error_2008};
+use crate::avm2::error::{make_error_2004, make_error_2008, Error2004Type};
 use crate::avm2::globals::flash::geom::transform::object_to_matrix;
 use crate::avm2::object::{Object, TObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
@@ -1184,11 +1184,7 @@ fn read_point<'gc>(
     data_index: &mut usize,
 ) -> Result<Point<Twips>, Error<'gc>> {
     if *data_index + 1 >= data.length() {
-        return Err(Error::AvmError(argument_error(
-            activation,
-            "Error #2004: One of the parameters is invalid.",
-            2004,
-        )?));
+        return Err(make_error_2004(activation, Error2004Type::ArgumentError));
     }
     let x = data
         .get(*data_index, activation)
