@@ -4,7 +4,8 @@
     "priority": 1,
     "condition": {
       "domains": ["4399.com"],
-      "resourceTypes": ["main_frame", "xmlhttprequest"]
+      "urlFilter": "|*.swf",
+      "resourceTypes": ["xmlhttprequest"]
     },
     "action": {
       "type": "modifyHeaders",
