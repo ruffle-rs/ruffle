@@ -25,7 +25,7 @@
         "webdriverio": "^8.33.1",
         "@wdio/cli": "^8.38.2",
         "json5": "^2.2.3",
-        "webpack": "^5.91.0",
+        "webpack": "^5.92.0",
         "webpack-cli": "^5.1.4",
         "webpack-dev-server": "^5.0.4",
         "ts-node": "^10.9.2",
