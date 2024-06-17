@@ -915,15 +915,6 @@ pub fn draw_triangles<'gc>(
 
             let uvt_data = args.try_get_object(activation, 2);
 
-            if uvt_data.is_some() {
-                avm2_stub_method!(
-                    activation,
-                    "flash.display.Graphics",
-                    "drawTriangles",
-                    "with uvt data"
-                );
-            }
-
             let culling = {
                 let culling = args.get_string(activation, 3)?;
                 culling_to_triangle_culling(activation, culling)?
@@ -943,14 +934,47 @@ pub fn draw_triangles<'gc>(
     Ok(Value::Undefined)
 }
 
+#[derive(Debug, Clone, Copy)]
+enum TriangleCulling {
+    None,
+    Positive,
+    Negative,
+}
+
+fn culling_to_triangle_culling<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    culling: AvmString,
+) -> Result<TriangleCulling, Error<'gc>> {
+    if &culling == b"none" {
+        Ok(TriangleCulling::None)
+    } else if &culling == b"positive" {
+        Ok(TriangleCulling::Positive)
+    } else if &culling == b"negative" {
+        Ok(TriangleCulling::Negative)
+    } else {
+        Err(make_error_2008(activation, "culling"))
+    }
+}
+
+type Triangle = (Point<Twips>, Point<Twips>, Point<Twips>);
+
 fn draw_triangles_internal<'gc>(
     activation: &mut Activation<'_, 'gc>,
     drawing: &mut Drawing,
     vertices: &Object<'gc>,
     indices: Option<&Object<'gc>>,
-    _uvt_data: Option<&Object<'gc>>,
+    uvt_data: Option<&Object<'gc>>,
     culling: TriangleCulling,
 ) -> Result<(), Error<'gc>> {
+    if uvt_data.is_some() {
+        avm2_stub_method!(
+            activation,
+            "flash.display.Graphics",
+            "drawTriangles",
+            "with uvt data"
+        );
+    }
+
     let vertices = vertices
         .as_vector_storage()
         .expect("vertices is not a Vector");
@@ -1451,30 +1475,6 @@ fn handle_igraphics_data<'gc>(
     Ok(())
 }
 
-#[derive(Debug, Clone, Copy)]
-enum TriangleCulling {
-    None,
-    Positive,
-    Negative,
-}
-
-fn culling_to_triangle_culling<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    culling: AvmString,
-) -> Result<TriangleCulling, Error<'gc>> {
-    if &culling == b"none" {
-        Ok(TriangleCulling::None)
-    } else if &culling == b"positive" {
-        Ok(TriangleCulling::Positive)
-    } else if &culling == b"negative" {
-        Ok(TriangleCulling::Negative)
-    } else {
-        Err(make_error_2008(activation, "culling"))
-    }
-}
-
-type Triangle = (Point<Twips>, Point<Twips>, Point<Twips>);
-
 fn handle_graphics_triangle_path<'gc>(
     activation: &mut Activation<'_, 'gc>,
     drawing: &mut Drawing,
@@ -1489,85 +1489,18 @@ fn handle_graphics_triangle_path<'gc>(
     };
 
     let vertices = obj.get_public_property("vertices", activation)?.as_object();
-
     let indices = obj.get_public_property("indices", activation)?.as_object();
-
-    let _uvt_data = obj.get_public_property("uvtData", activation)?.as_object();
-
-    if _uvt_data.is_some() {
-        avm2_stub_method!(
-            activation,
-            "flash.display.Graphics",
-            "drawGraphicsData",
-            "with uvt data"
-        );
-    }
+    let uvt_data = obj.get_public_property("uvtData", activation)?.as_object();
 
     if let Some(vertices) = vertices {
-        if let Some(indices) = indices {
-            let vertices = vertices
-                .as_vector_storage()
-                .expect("vertices is not a Vector");
-
-            let indices = indices
-                .as_vector_storage()
-                .expect("indices is not a Vector");
-
-            fn read_point<'gc>(
-                vertices: &VectorStorage<'gc>,
-                index: usize,
-                activation: &mut Activation<'_, 'gc>,
-            ) -> Result<Point<Twips>, Error<'gc>> {
-                let x = {
-                    let x = vertices
-                        .get(2 * index, activation)?
-                        .coerce_to_number(activation)?;
-                    Twips::from_pixels(x)
-                };
-                let y = {
-                    let y = vertices
-                        .get(2 * index + 1, activation)?
-                        .coerce_to_number(activation)?;
-                    Twips::from_pixels(y)
-                };
-
-                Ok(Point::new(x, y))
-            }
-
-            fn next_triangle<'gc>(
-                vertices: &VectorStorage<'gc>,
-                indices: &mut impl Iterator<Item = Value<'gc>>,
-                activation: &mut Activation<'_, 'gc>,
-            ) -> Result<Option<Triangle>, Error<'gc>> {
-                match (indices.next(), indices.next(), indices.next()) {
-                    (Some(i0), Some(i1), Some(i2)) => {
-                        let i0 = i0.coerce_to_u32(activation)? as usize;
-                        let i1 = i1.coerce_to_u32(activation)? as usize;
-                        let i2 = i2.coerce_to_u32(activation)? as usize;
-
-                        let p0 = read_point(vertices, i0, activation)?;
-                        let p1 = read_point(vertices, i1, activation)?;
-                        let p2 = read_point(vertices, i2, activation)?;
-
-                        Ok(Some((p0, p1, p2)))
-                    }
-                    _ => Ok(None),
-                }
-            }
-
-            let indices = &mut indices.iter();
-
-            while let Some(triangle) = next_triangle(&vertices, indices, activation)? {
-                draw_triangle_internal(activation, triangle, drawing, culling);
-            }
-        } else {
-            avm2_stub_method!(
-                activation,
-                "flash.display.Graphics",
-                "drawGraphicsData",
-                "with null indices"
-            );
-        };
+        draw_triangles_internal(
+            activation,
+            drawing,
+            &vertices,
+            indices.as_ref(),
+            uvt_data.as_ref(),
+            culling,
+        )?;
     }
 
     Ok(())
