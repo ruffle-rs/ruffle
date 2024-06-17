@@ -72,11 +72,11 @@ impl<'gc> VTable<'gc> {
         ))
     }
 
-    /// A special case for newcatch. A single variable (q)name that maps to slot 1.
+    /// A special case for newcatch. A single variable (q)name that maps to slot 0.
     pub fn newcatch(mc: &Mutation<'gc>, vname: &QName<'gc>) -> Self {
         let mut rt = PropertyMap::new();
 
-        rt.insert(*vname, Property::Slot { slot_id: 1 });
+        rt.insert(*vname, Property::Slot { slot_id: 0 });
 
         let vt = VTable(GcCell::new(
             mc,
@@ -87,12 +87,8 @@ impl<'gc> VTable<'gc> {
                 slot_metadata_table: HashMap::new(),
                 disp_metadata_table: HashMap::new(),
                 method_table: vec![],
-                // Compilers expect `setslot 1` to work on the `newcatch` object.
-                // `setslot 1` maps to index 1, so we need two slots here, because Ruffle
-                // maps setslot arg directly to the slot array index, unlike AVM which does the
-                // -1 shift.
-                default_slots: vec![None, None],
-                slot_classes: vec![PropertyClass::Any, PropertyClass::Any],
+                default_slots: vec![None],
+                slot_classes: vec![PropertyClass::Any],
             },
         ));
 
@@ -433,16 +429,20 @@ impl<'gc> VTable<'gc> {
                     let new_slot_id = if slot_id == 0 {
                         default_slots.push(value);
                         default_slots.len() as u32 - 1
-                    } else if let Some(Some(_)) = default_slots.get(slot_id as usize) {
-                        // slot_id conflict
-                        default_slots.push(value);
-                        default_slots.len() as u32 - 1
                     } else {
-                        if slot_id as usize >= default_slots.len() {
-                            default_slots.resize_with(slot_id as usize + 1, Default::default);
+                        // it's non-zero, so let's turn it from 1-based to 0-based.
+                        let slot_id = slot_id - 1;
+                        if let Some(Some(_)) = default_slots.get(slot_id as usize) {
+                            // slot_id conflict
+                            default_slots.push(value);
+                            default_slots.len() as u32 - 1
+                        } else {
+                            if slot_id as usize >= default_slots.len() {
+                                default_slots.resize_with(slot_id as usize + 1, Default::default);
+                            }
+                            default_slots[slot_id as usize] = value;
+                            slot_id
                         }
-                        default_slots[slot_id as usize] = value;
-                        slot_id
                     };
 
                     if new_slot_id as usize >= slot_classes.len() {

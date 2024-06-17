@@ -65,7 +65,7 @@ impl<'gc> ErrorObject<'gc> {
         // by hardcoded slot id. Our `Error` class definition should fully match
         // Flash Player, and we have lots of test coverage around error, so
         // there should be very little risk to doing this.
-        let name = match self.base().get_slot(1)? {
+        let name = match self.base().get_slot(0)? {
             Value::String(string) => string,
             Value::Null => "null".into(),
             Value::Undefined => "undefined".into(),
@@ -75,7 +75,7 @@ impl<'gc> ErrorObject<'gc> {
                 ))
             }
         };
-        let message = match self.base().get_slot(2)? {
+        let message = match self.base().get_slot(1)? {
             Value::String(string) => string,
             Value::Null => "null".into(),
             Value::Undefined => "undefined".into(),
