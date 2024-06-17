@@ -39,7 +39,10 @@ jobs:
       fail-fast: false
       matrix:
         rust_version: [stable]
-        os: [ubuntu-22.04, windows-latest, macos-14]
+        # TODO: Switch to Windows 2022 once it's unbroken again:
+        # https://github.com/actions/runner-images/issues/10004
+        # https://github.com/actions/runner-images/issues/10055
+        os: [ubuntu-22.04, windows-2019, macos-14]
         include:
           - rust_version: nightly
             os: ubuntu-22.04
@@ -181,7 +184,8 @@ jobs:
     strategy:
       matrix:
         rust_version: [stable]
-        os: [ubuntu-22.04, windows-latest, macos-14]
+        # TODO: Switch to Windows 2022 once it's unbroken again, see above.
+        os: [ubuntu-22.04, windows-2019, macos-14]
         include:
           - rust_version: nightly
             os: ubuntu-22.04
