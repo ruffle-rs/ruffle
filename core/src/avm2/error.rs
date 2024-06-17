@@ -423,6 +423,31 @@ pub fn make_error_1508<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &s
     }
 }
 
+pub enum Error2004Type {
+    Error,
+    ArgumentError,
+    TypeError,
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2004<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    kind: Error2004Type,
+) -> Error<'gc> {
+    let message = "Error #2004: One of the parameters is invalid.";
+    let code = 2004;
+    let err = match kind {
+        Error2004Type::Error => error(activation, message, code),
+        Error2004Type::ArgumentError => argument_error(activation, message, code),
+        Error2004Type::TypeError => type_error(activation, message, code),
+    };
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
 #[inline(never)]
 #[cold]
 pub fn make_error_2006<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
