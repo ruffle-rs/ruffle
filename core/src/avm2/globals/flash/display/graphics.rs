@@ -998,6 +998,10 @@ fn draw_triangles_internal<'gc>(
         .expect("vertices is not a Vector");
 
     if let Some(indices) = indices {
+        if vertices.length() % 2 != 0 {
+            return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+        }
+
         let indices = indices
             .as_vector_storage()
             .expect("indices is not a Vector");
@@ -1050,6 +1054,10 @@ fn draw_triangles_internal<'gc>(
             draw_triangle_internal(triangle, drawing, culling);
         }
     } else {
+        if vertices.length() % 6 != 0 {
+            return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+        }
+
         let mut vertices = vertices.iter();
 
         fn read_point<'gc>(
