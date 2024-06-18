@@ -5,6 +5,7 @@ use std::{
 
 use gc_arena::{Collect, GcCell, Mutation};
 use quick_xml::{
+    errors::SyntaxError as XmlSyntaxError,
     events::{attributes::AttrError as XmlAttrError, BytesStart, Event},
     name::ResolveResult,
     Error as XmlError, NsReader,
@@ -59,23 +60,24 @@ fn make_xml_error<'gc>(activation: &mut Activation<'_, 'gc>, err: XmlError) -> E
             "Error #1104: Attribute was already specified for element.",
             1104,
         ),
-        XmlError::UnexpectedEof(currently_parsing) => match currently_parsing.as_str() {
-            "CData" => type_error(
+
+        XmlError::Syntax(syntax_error) => match syntax_error {
+            XmlSyntaxError::UnclosedCData => type_error(
                 activation,
                 "Error #1091: XML parser failure: Unterminated CDATA section.",
                 1091,
             ),
-            "DOCTYPE" => type_error(
+            XmlSyntaxError::UnclosedDoctype => type_error(
                 activation,
                 "Error #1093: XML parser failure: Unterminated DOCTYPE declaration.",
                 1093,
             ),
-            "Comment" => type_error(
+            XmlSyntaxError::UnclosedComment => type_error(
                 activation,
                 "Error #1094: XML parser failure: Unterminated comment.",
                 1094,
             ),
-            "XmlDecl" => type_error(
+            XmlSyntaxError::UnclosedPIOrXmlDecl => type_error(
                 activation,
                 "Error #1097: XML parser failure: Unterminated processing instruction.",
                 1097,
