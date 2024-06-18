@@ -15,7 +15,7 @@ use std::cell::{Ref, RefMut};
 /// A class instance allocator that allocates QName objects.
 pub fn q_name_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
@@ -59,7 +59,7 @@ pub struct QNameObjectData<'gc> {
 impl<'gc> QNameObject<'gc> {
     /// Box a Multiname into an object.
     pub fn from_name(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         name: Multiname<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().qname;
@@ -152,7 +152,7 @@ impl<'gc> TObject<'gc> for QNameObject<'gc> {
     fn get_next_enumerant(
         self,
         last_index: u32,
-        _activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Option<u32>, Error<'gc>> {
         Ok(if last_index < 2 {
             Some(last_index + 1)
@@ -164,7 +164,7 @@ impl<'gc> TObject<'gc> for QNameObject<'gc> {
     fn get_enumerant_value(
         self,
         index: u32,
-        _activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // NOTE: Weird avmplus behavior, get_enumerant_name returns uri first, but get_enumerant_value returns localName first.
         Ok(match index {
@@ -177,7 +177,7 @@ impl<'gc> TObject<'gc> for QNameObject<'gc> {
     fn get_enumerant_name(
         self,
         index: u32,
-        _activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // NOTE: Weird avmplus behavior, get_enumerant_name returns uri first, but get_enumerant_value returns localName first.
         Ok(match index {

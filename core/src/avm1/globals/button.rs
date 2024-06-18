@@ -63,7 +63,7 @@ pub fn create_proto<'gc>(
 
 /// Implements `Button` constructor.
 pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -72,7 +72,7 @@ pub fn constructor<'gc>(
 
 fn blend_mode<'gc>(
     this: Avm1Button<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mode = AvmString::new_utf8(activation.context.gc_context, this.blend_mode().to_string());
     Ok(mode.into())
@@ -80,7 +80,7 @@ fn blend_mode<'gc>(
 
 fn set_blend_mode<'gc>(
     this: Avm1Button<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     // No-op if value is not a valid blend mode.
@@ -94,7 +94,7 @@ fn set_blend_mode<'gc>(
 
 fn filters<'gc>(
     this: Avm1Button<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(ArrayObject::new(
         activation.context.gc_context,
@@ -108,16 +108,14 @@ fn filters<'gc>(
 
 fn set_filters<'gc>(
     this: Avm1Button<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let mut filters = vec![];
     if let Value::Object(value) = value {
         for index in value.get_keys(activation, false).into_iter().rev() {
             let filter_object = value.get(index, activation)?.coerce_to_object(activation);
-            if let Some(filter) =
-                bitmap_filter::avm1_to_filter(filter_object, &mut activation.context)
-            {
+            if let Some(filter) = bitmap_filter::avm1_to_filter(filter_object, activation.context) {
                 filters.push(filter);
             }
         }
@@ -128,7 +126,7 @@ fn set_filters<'gc>(
 
 fn cache_as_bitmap<'gc>(
     this: Avm1Button<'gc>,
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Note that the *getter* returns actual, and *setter* is preference
     Ok(this.is_bitmap_cached().into())
@@ -136,7 +134,7 @@ fn cache_as_bitmap<'gc>(
 
 fn set_cache_as_bitmap<'gc>(
     this: Avm1Button<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     // Note that the *getter* returns actual, and *setter* is preference
@@ -149,7 +147,7 @@ fn set_cache_as_bitmap<'gc>(
 
 fn scale_9_grid<'gc>(
     this: Avm1Button<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm1_stub!(activation, "Button", "scale9Grid");
     let rect = this.scaling_grid();
@@ -162,7 +160,7 @@ fn scale_9_grid<'gc>(
 
 fn set_scale_9_grid<'gc>(
     this: Avm1Button<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     avm1_stub!(activation, "Button", "scale9Grid");
@@ -178,7 +176,7 @@ fn set_scale_9_grid<'gc>(
 
 fn tab_index<'gc>(
     this: Avm1Button<'gc>,
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(index) = this.as_interactive().and_then(|this| this.tab_index()) {
         Ok(Value::Number(index as f64))
@@ -189,7 +187,7 @@ fn tab_index<'gc>(
 
 fn set_tab_index<'gc>(
     this: Avm1Button<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(this) = this.as_interactive() {
@@ -203,7 +201,7 @@ fn set_tab_index<'gc>(
             }
             _ => Some(i32::MIN),
         };
-        this.set_tab_index(&mut activation.context, value);
+        this.set_tab_index(activation.context, value);
     }
     Ok(())
 }

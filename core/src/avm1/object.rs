@@ -95,7 +95,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     fn get_local_stored(
         &self,
         name: impl Into<AvmString<'gc>>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         is_slash_path: bool,
     ) -> Option<Value<'gc>> {
         self.raw_script_object()
@@ -106,7 +106,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     fn get_non_slash_path(
         &self,
         name: impl Into<AvmString<'gc>>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // TODO: Extract logic to a `lookup` function.
         let (this, proto) = if let Some(super_object) = self.as_super_object() {
@@ -124,7 +124,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     fn get(
         &self,
         name: impl Into<AvmString<'gc>>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // TODO: Extract logic to a `lookup` function.
         let (this, proto) = if let Some(super_object) = self.as_super_object() {
@@ -142,7 +142,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     fn get_stored(
         &self,
         name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let this = (*self).into();
 
@@ -169,7 +169,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
         &self,
         name: AvmString<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
         self.raw_script_object()
@@ -181,7 +181,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
         &self,
         name: impl Into<AvmString<'gc>>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let name = name.into();
         if name.is_empty() {
@@ -233,7 +233,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     fn call(
         &self,
         name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         this: Value<'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -244,7 +244,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     /// Calling this on something other than a constructor will return a new Undefined object.
     fn construct(
         &self,
-        _activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, '_, 'gc>,
         _args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Undefined)
@@ -253,7 +253,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     /// Takes an already existing object and performs this constructor (if valid) on it.
     fn construct_on_existing(
         &self,
-        _activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, '_, 'gc>,
         mut _this: Object<'gc>,
         _args: &[Value<'gc>],
     ) -> Result<(), Error<'gc>> {
@@ -271,7 +271,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
         &self,
         name: AvmString<'gc>,
         args: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         reason: ExecutionReason,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let this = (*self).into();
@@ -312,7 +312,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     fn getter(
         &self,
         name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Option<Object<'gc>> {
         self.raw_script_object().getter(name, activation)
     }
@@ -321,7 +321,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     fn setter(
         &self,
         name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Option<Object<'gc>> {
         self.raw_script_object().setter(name, activation)
     }
@@ -335,14 +335,14 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     /// initialize the object.
     fn create_bare_object(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>>;
 
     /// Delete a named property from the object.
     ///
     /// Returns false if the property cannot be deleted.
-    fn delete(&self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) -> bool {
+    fn delete(&self, activation: &mut Activation<'_, '_, 'gc>, name: AvmString<'gc>) -> bool {
         self.raw_script_object().delete(activation, name)
     }
 
@@ -351,7 +351,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     /// The proto is another object used to resolve methods across a class of
     /// multiple objects. It should also be accessible as `__proto__` from
     /// `get`.
-    fn proto(&self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
+    fn proto(&self, activation: &mut Activation<'_, '_, 'gc>) -> Value<'gc> {
         self.raw_script_object().proto(activation)
     }
 
@@ -429,7 +429,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     /// as `__proto__`.
     fn add_property_with_case(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         name: AvmString<'gc>,
         get: Object<'gc>,
         set: Option<Object<'gc>>,
@@ -442,7 +442,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     /// Calls the 'watcher' of a given property, if it exists.
     fn call_watcher(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         name: AvmString<'gc>,
         value: &mut Value<'gc>,
         this: Object<'gc>,
@@ -456,7 +456,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     /// The property does not need to exist at the time of this being called.
     fn watch(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         name: AvmString<'gc>,
         callback: Object<'gc>,
         user_data: Value<'gc>,
@@ -469,31 +469,39 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     ///
     /// The return value will indicate if there was a watcher present before this method was
     /// called.
-    fn unwatch(&self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) -> bool {
+    fn unwatch(&self, activation: &mut Activation<'_, '_, 'gc>, name: AvmString<'gc>) -> bool {
         self.raw_script_object().unwatch(activation, name)
     }
 
     /// Checks if the object has a given named property.
-    fn has_property(&self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) -> bool {
+    fn has_property(&self, activation: &mut Activation<'_, '_, 'gc>, name: AvmString<'gc>) -> bool {
         self.raw_script_object().has_property(activation, name)
     }
 
     /// Checks if the object has a given named property on itself (and not,
     /// say, the object's prototype or superclass)
-    fn has_own_property(&self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) -> bool {
+    fn has_own_property(
+        &self,
+        activation: &mut Activation<'_, '_, 'gc>,
+        name: AvmString<'gc>,
+    ) -> bool {
         self.raw_script_object().has_own_property(activation, name)
     }
 
     /// Checks if the object has a given named property on itself that is
     /// virtual.
-    fn has_own_virtual(&self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) -> bool {
+    fn has_own_virtual(
+        &self,
+        activation: &mut Activation<'_, '_, 'gc>,
+        name: AvmString<'gc>,
+    ) -> bool {
         self.raw_script_object().has_own_virtual(activation, name)
     }
 
     /// Checks if a named property appears when enumerating the object.
     fn is_property_enumerable(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         name: AvmString<'gc>,
     ) -> bool {
         self.raw_script_object()
@@ -503,7 +511,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     /// Enumerate the object.
     fn get_keys(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         include_hidden: bool,
     ) -> Vec<AvmString<'gc>> {
         self.raw_script_object()
@@ -534,7 +542,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     /// somehow could this would support that, too.
     fn is_instance_of(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         constructor: Object<'gc>,
         prototype: Object<'gc>,
     ) -> Result<bool, Error<'gc>> {
@@ -621,7 +629,11 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     fn as_ptr(&self) -> *const ObjectPtr;
 
     /// Check if this object is in the prototype chain of the specified test object.
-    fn is_prototype_of(&self, activation: &mut Activation<'_, 'gc>, other: Object<'gc>) -> bool {
+    fn is_prototype_of(
+        &self,
+        activation: &mut Activation<'_, '_, 'gc>,
+        other: Object<'gc>,
+    ) -> bool {
         let mut proto = other.proto(activation);
 
         while let Value::Object(proto_ob) = proto {
@@ -636,33 +648,33 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     }
 
     /// Gets the length of this object, as if it were an array.
-    fn length(&self, activation: &mut Activation<'_, 'gc>) -> Result<i32, Error<'gc>> {
+    fn length(&self, activation: &mut Activation<'_, '_, 'gc>) -> Result<i32, Error<'gc>> {
         self.raw_script_object().length(activation)
     }
 
     /// Sets the length of this object, as if it were an array.
     fn set_length(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         length: i32,
     ) -> Result<(), Error<'gc>> {
         self.raw_script_object().set_length(activation, length)
     }
 
     /// Checks if this object has an element.
-    fn has_element(&self, activation: &mut Activation<'_, 'gc>, index: i32) -> bool {
+    fn has_element(&self, activation: &mut Activation<'_, '_, 'gc>, index: i32) -> bool {
         self.raw_script_object().has_element(activation, index)
     }
 
     /// Gets a property of this object, as if it were an array.
-    fn get_element(&self, activation: &mut Activation<'_, 'gc>, index: i32) -> Value<'gc> {
+    fn get_element(&self, activation: &mut Activation<'_, '_, 'gc>, index: i32) -> Value<'gc> {
         self.raw_script_object().get_element(activation, index)
     }
 
     /// Sets a property of this object, as if it were an array.
     fn set_element(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         index: i32,
         value: Value<'gc>,
     ) -> Result<(), Error<'gc>> {
@@ -671,7 +683,7 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
     }
 
     /// Deletes a property of this object as if it were an array.
-    fn delete_element(&self, activation: &mut Activation<'_, 'gc>, index: i32) -> bool {
+    fn delete_element(&self, activation: &mut Activation<'_, '_, 'gc>, index: i32) -> bool {
         self.raw_script_object().delete_element(activation, index)
     }
 }
@@ -695,7 +707,7 @@ impl<'gc> Object<'gc> {
 pub fn search_prototype<'gc>(
     mut proto: Value<'gc>,
     name: AvmString<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     is_slash_path: bool,
 ) -> Result<Option<(Value<'gc>, u8)>, Error<'gc>> {
@@ -746,7 +758,7 @@ pub fn search_prototype<'gc>(
 /// Finds the appropriate `__resolve` method for an object, searching its hierarchy too.
 pub fn find_resolve_method<'gc>(
     mut proto: Value<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Option<Object<'gc>>, Error<'gc>> {
     let mut depth = 0;
 

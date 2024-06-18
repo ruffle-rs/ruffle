@@ -6,7 +6,7 @@ use crate::avm2::Error;
 pub use crate::avm2::object::proxy_allocator;
 
 pub fn is_attribute<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

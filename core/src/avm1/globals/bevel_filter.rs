@@ -169,7 +169,10 @@ impl BevelFilterData {
 pub struct BevelFilter<'gc>(GcCell<'gc, BevelFilterData>);
 
 impl<'gc> BevelFilter<'gc> {
-    fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
+    fn new(
+        activation: &mut Activation<'_, '_, 'gc>,
+        args: &[Value<'gc>],
+    ) -> Result<Self, Error<'gc>> {
         let bevel_filter = Self(GcCell::new(
             activation.context.gc_context,
             Default::default(),
@@ -203,7 +206,7 @@ impl<'gc> BevelFilter<'gc> {
 
     fn set_distance(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -219,7 +222,7 @@ impl<'gc> BevelFilter<'gc> {
 
     fn set_angle(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -235,7 +238,7 @@ impl<'gc> BevelFilter<'gc> {
 
     fn set_highlight_color(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -252,7 +255,7 @@ impl<'gc> BevelFilter<'gc> {
 
     fn set_highlight_alpha(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -268,7 +271,7 @@ impl<'gc> BevelFilter<'gc> {
 
     fn set_shadow_color(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -285,7 +288,7 @@ impl<'gc> BevelFilter<'gc> {
 
     fn set_shadow_alpha(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -301,7 +304,7 @@ impl<'gc> BevelFilter<'gc> {
 
     fn set_quality(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -317,7 +320,7 @@ impl<'gc> BevelFilter<'gc> {
 
     fn set_strength(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -334,7 +337,7 @@ impl<'gc> BevelFilter<'gc> {
 
     fn set_knockout(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -350,7 +353,7 @@ impl<'gc> BevelFilter<'gc> {
 
     fn set_blur_x(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -366,7 +369,7 @@ impl<'gc> BevelFilter<'gc> {
 
     fn set_blur_y(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -382,7 +385,7 @@ impl<'gc> BevelFilter<'gc> {
 
     fn set_type(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -419,7 +422,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 };
 
 fn method<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
     index: u8,

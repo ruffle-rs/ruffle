@@ -16,13 +16,13 @@ use super::globals::flash::display::shader_job::get_shader_args;
 
 pub trait FilterAvm2Ext {
     fn from_avm2_object<'gc>(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         object: Object<'gc>,
     ) -> Result<Filter, Error<'gc>>;
 
     fn as_avm2_object<'gc>(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Object<'gc>, Error<'gc>>;
 }
 
@@ -56,7 +56,7 @@ impl Debug for ObjectWrapper {
 
 impl FilterAvm2Ext for Filter {
     fn from_avm2_object<'gc>(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         object: Object<'gc>,
     ) -> Result<Filter, Error<'gc>> {
         let bevel_filter = activation
@@ -64,7 +64,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .bevelfilter
             .inner_class_definition();
-        if object.is_of_type(bevel_filter, &mut activation.context) {
+        if object.is_of_type(bevel_filter, activation.context) {
             return avm2_to_bevel_filter(activation, object);
         }
 
@@ -73,7 +73,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .blurfilter
             .inner_class_definition();
-        if object.is_of_type(blur_filter, &mut activation.context) {
+        if object.is_of_type(blur_filter, activation.context) {
             return avm2_to_blur_filter(activation, object);
         }
 
@@ -82,7 +82,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .colormatrixfilter
             .inner_class_definition();
-        if object.is_of_type(color_matrix_filter, &mut activation.context) {
+        if object.is_of_type(color_matrix_filter, activation.context) {
             return avm2_to_color_matrix_filter(activation, object);
         }
 
@@ -91,7 +91,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .convolutionfilter
             .inner_class_definition();
-        if object.is_of_type(convolution_filter, &mut activation.context) {
+        if object.is_of_type(convolution_filter, activation.context) {
             return avm2_to_convolution_filter(activation, object);
         }
 
@@ -100,7 +100,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .displacementmapfilter
             .inner_class_definition();
-        if object.is_of_type(displacement_map_filter, &mut activation.context) {
+        if object.is_of_type(displacement_map_filter, activation.context) {
             return avm2_to_displacement_map_filter(activation, object);
         }
 
@@ -109,7 +109,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .dropshadowfilter
             .inner_class_definition();
-        if object.is_of_type(drop_shadow_filter, &mut activation.context) {
+        if object.is_of_type(drop_shadow_filter, activation.context) {
             return avm2_to_drop_shadow_filter(activation, object);
         }
 
@@ -118,7 +118,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .glowfilter
             .inner_class_definition();
-        if object.is_of_type(glow_filter, &mut activation.context) {
+        if object.is_of_type(glow_filter, activation.context) {
             return avm2_to_glow_filter(activation, object);
         }
 
@@ -127,7 +127,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .gradientbevelfilter
             .inner_class_definition();
-        if object.is_of_type(gradient_bevel_filter, &mut activation.context) {
+        if object.is_of_type(gradient_bevel_filter, activation.context) {
             return Ok(Filter::GradientBevelFilter(avm2_to_gradient_filter(
                 activation, object,
             )?));
@@ -138,7 +138,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .gradientglowfilter
             .inner_class_definition();
-        if object.is_of_type(gradient_glow_filter, &mut activation.context) {
+        if object.is_of_type(gradient_glow_filter, activation.context) {
             return Ok(Filter::GradientGlowFilter(avm2_to_gradient_filter(
                 activation, object,
             )?));
@@ -149,7 +149,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .shaderfilter
             .inner_class_definition();
-        if object.is_of_type(shader_filter, &mut activation.context) {
+        if object.is_of_type(shader_filter, activation.context) {
             return Ok(Filter::ShaderFilter(avm2_to_shader_filter(
                 activation, object,
             )?));
@@ -166,7 +166,7 @@ impl FilterAvm2Ext for Filter {
 
     fn as_avm2_object<'gc>(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         match self {
             Filter::BevelFilter(filter) => bevel_filter_to_avm2(activation, filter),
@@ -192,7 +192,7 @@ impl FilterAvm2Ext for Filter {
 }
 
 fn avm2_to_bevel_filter<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     object: Object<'gc>,
 ) -> Result<Filter, Error<'gc>> {
     let angle = object
@@ -252,7 +252,7 @@ fn avm2_to_bevel_filter<'gc>(
 }
 
 fn bevel_filter_to_avm2<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     filter: &BevelFilter,
 ) -> Result<Object<'gc>, Error<'gc>> {
     activation.avm2().classes().bevelfilter.construct(
@@ -282,7 +282,7 @@ fn bevel_filter_to_avm2<'gc>(
 }
 
 fn avm2_to_blur_filter<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     object: Object<'gc>,
 ) -> Result<Filter, Error<'gc>> {
     let blur_x = object
@@ -302,7 +302,7 @@ fn avm2_to_blur_filter<'gc>(
 }
 
 fn blur_filter_to_avm2<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     filter: &BlurFilter,
 ) -> Result<Object<'gc>, Error<'gc>> {
     activation.avm2().classes().blurfilter.construct(
@@ -316,7 +316,7 @@ fn blur_filter_to_avm2<'gc>(
 }
 
 fn avm2_to_color_matrix_filter<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     object: Object<'gc>,
 ) -> Result<Filter, Error<'gc>> {
     let mut matrix = [0.0; 20];
@@ -337,7 +337,7 @@ fn avm2_to_color_matrix_filter<'gc>(
 }
 
 fn color_matrix_filter_to_avm2<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     filter: &ColorMatrixFilter,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let matrix = ArrayObject::from_storage(
@@ -352,7 +352,7 @@ fn color_matrix_filter_to_avm2<'gc>(
 }
 
 fn avm2_to_convolution_filter<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     object: Object<'gc>,
 ) -> Result<Filter, Error<'gc>> {
     let mut matrix = vec![];
@@ -412,7 +412,7 @@ fn avm2_to_convolution_filter<'gc>(
 }
 
 fn convolution_filter_to_avm2<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     filter: &ConvolutionFilter,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let matrix = ArrayObject::from_storage(
@@ -440,7 +440,7 @@ fn convolution_filter_to_avm2<'gc>(
 }
 
 fn avm2_to_displacement_map_filter<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     object: Object<'gc>,
 ) -> Result<Filter, Error<'gc>> {
     let alpha = object
@@ -521,7 +521,7 @@ fn avm2_to_displacement_map_filter<'gc>(
 }
 
 fn displacement_map_filter_to_avm2<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     filter: &DisplacementMapFilter,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let point = activation.avm2().classes().point;
@@ -552,7 +552,7 @@ fn displacement_map_filter_to_avm2<'gc>(
 }
 
 fn avm2_to_drop_shadow_filter<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     object: Object<'gc>,
 ) -> Result<Filter, Error<'gc>> {
     let alpha = object
@@ -607,7 +607,7 @@ fn avm2_to_drop_shadow_filter<'gc>(
 }
 
 fn drop_shadow_filter_to_avm2<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     filter: &DropShadowFilter,
 ) -> Result<Object<'gc>, Error<'gc>> {
     activation.avm2().classes().dropshadowfilter.construct(
@@ -629,7 +629,7 @@ fn drop_shadow_filter_to_avm2<'gc>(
 }
 
 fn avm2_to_glow_filter<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     object: Object<'gc>,
 ) -> Result<Filter, Error<'gc>> {
     let alpha = object
@@ -670,7 +670,7 @@ fn avm2_to_glow_filter<'gc>(
 }
 
 fn glow_filter_to_avm2<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     filter: &GlowFilter,
 ) -> Result<Object<'gc>, Error<'gc>> {
     activation.avm2().classes().glowfilter.construct(
@@ -689,7 +689,7 @@ fn glow_filter_to_avm2<'gc>(
 }
 
 fn avm2_to_gradient_filter<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     object: Object<'gc>,
 ) -> Result<GradientFilter, Error<'gc>> {
     let angle = object
@@ -737,7 +737,7 @@ fn avm2_to_gradient_filter<'gc>(
 }
 
 fn gradient_filter_to_avm2<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     filter: &GradientFilter,
     class: ClassObject<'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
@@ -787,7 +787,7 @@ fn gradient_filter_to_avm2<'gc>(
 }
 
 fn avm2_to_shader_filter<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     object: Object<'gc>,
 ) -> Result<ShaderFilter<'static>, Error<'gc>> {
     let bottom_extension = object
@@ -830,7 +830,7 @@ fn avm2_to_shader_filter<'gc>(
 }
 
 fn shader_filter_to_avm2<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     filter: &ShaderFilter<'static>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let object_wrapper: &ObjectWrapper = filter
@@ -847,7 +847,7 @@ fn shader_filter_to_avm2<'gc>(
 }
 
 fn get_gradient_colors<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     object: Object<'gc>,
 ) -> Result<Vec<GradientRecord>, Error<'gc>> {
     let mut colors = vec![];

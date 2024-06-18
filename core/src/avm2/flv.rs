@@ -6,7 +6,7 @@ use chrono::DateTime;
 use flv_rs::{Value as FlvValue, Variable as FlvVariable};
 
 fn avm2_object_from_flv_variables<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     variables: Vec<FlvVariable>,
 ) -> Avm2Value<'gc> {
     let info_object = activation
@@ -33,7 +33,7 @@ fn avm2_object_from_flv_variables<'gc>(
 }
 
 fn avm2_array_from_flv_values<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     values: Vec<FlvValue>,
 ) -> Avm2Value<'gc> {
     let storage = ArrayStorage::from_storage(
@@ -49,7 +49,7 @@ fn avm2_array_from_flv_values<'gc>(
 }
 
 fn avm2_date_from_flv_date<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     unix_time: f64,
     _local_offset: i16,
 ) -> Avm2Value<'gc> {
@@ -61,11 +61,11 @@ fn avm2_date_from_flv_date<'gc>(
 }
 
 pub trait FlvValueAvm2Ext<'gc> {
-    fn to_avm2_value(self, activation: &mut Activation<'_, 'gc>) -> Avm2Value<'gc>;
+    fn to_avm2_value(self, activation: &mut Activation<'_, '_, 'gc>) -> Avm2Value<'gc>;
 }
 
 impl<'gc> FlvValueAvm2Ext<'gc> for FlvValue<'_> {
-    fn to_avm2_value(self, activation: &mut Activation<'_, 'gc>) -> Avm2Value<'gc> {
+    fn to_avm2_value(self, activation: &mut Activation<'_, '_, 'gc>) -> Avm2Value<'gc> {
         match self {
             FlvValue::Object(variables) | FlvValue::EcmaArray(variables) => {
                 avm2_object_from_flv_variables(activation, variables)

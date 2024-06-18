@@ -100,7 +100,7 @@ impl<'gc> QName<'gc> {
     pub fn from_qualified_name(
         name: AvmString<'gc>,
         api_version: ApiVersion,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Self {
         let parts = name
             .rsplit_once(WStr::from_units(b"::"))

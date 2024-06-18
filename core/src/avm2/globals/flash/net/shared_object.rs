@@ -12,7 +12,7 @@ use flash_lso::types::{AMFVersion, Lso};
 use std::borrow::Cow;
 
 fn new_lso<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     name: &str,
     data: Object<'gc>,
 ) -> Result<Lso, Error<'gc>> {
@@ -36,7 +36,7 @@ fn new_lso<'gc>(
 }
 
 pub fn get_local<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -197,7 +197,7 @@ pub fn get_local<'gc>(
 }
 
 pub fn flush<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -238,7 +238,7 @@ pub fn flush<'gc>(
 }
 
 pub fn get_size<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -270,7 +270,7 @@ pub fn get_size<'gc>(
 }
 
 pub fn close<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -279,7 +279,7 @@ pub fn close<'gc>(
 }
 
 pub fn clear<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -311,7 +311,7 @@ pub fn clear<'gc>(
 }
 
 pub fn get_object_encoding<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -320,7 +320,7 @@ pub fn get_object_encoding<'gc>(
 }
 
 pub fn set_object_encoding<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

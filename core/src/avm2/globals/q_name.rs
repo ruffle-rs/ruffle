@@ -10,7 +10,7 @@ use crate::avm2::Namespace;
 pub use crate::avm2::object::q_name_allocator;
 
 pub fn call_handler<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -38,7 +38,7 @@ pub fn call_handler<'gc>(
 
 /// Implements `QName`'s `init` method, which is called from the constructor.
 pub fn init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -101,7 +101,7 @@ pub fn init<'gc>(
 
 /// Implements `QName.localName`'s getter
 pub fn get_local_name<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -114,7 +114,7 @@ pub fn get_local_name<'gc>(
 
 /// Implements `QName.uri`'s getter
 pub fn get_uri<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -127,7 +127,7 @@ pub fn get_uri<'gc>(
 
 /// Implements `QName.AS3::toString` and `QName.prototype.toString`
 pub fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

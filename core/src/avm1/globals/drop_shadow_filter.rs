@@ -96,7 +96,10 @@ impl DropShadowFilterData {
 pub struct DropShadowFilter<'gc>(GcCell<'gc, DropShadowFilterData>);
 
 impl<'gc> DropShadowFilter<'gc> {
-    fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
+    fn new(
+        activation: &mut Activation<'_, '_, 'gc>,
+        args: &[Value<'gc>],
+    ) -> Result<Self, Error<'gc>> {
         let drop_shadow_filter = Self(GcCell::new(
             activation.context.gc_context,
             Default::default(),
@@ -129,7 +132,7 @@ impl<'gc> DropShadowFilter<'gc> {
 
     fn set_distance(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -145,7 +148,7 @@ impl<'gc> DropShadowFilter<'gc> {
 
     fn set_angle(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -161,7 +164,7 @@ impl<'gc> DropShadowFilter<'gc> {
 
     fn set_color(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -178,7 +181,7 @@ impl<'gc> DropShadowFilter<'gc> {
 
     fn set_alpha(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -194,7 +197,7 @@ impl<'gc> DropShadowFilter<'gc> {
 
     fn set_quality(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -210,7 +213,7 @@ impl<'gc> DropShadowFilter<'gc> {
 
     fn set_inner(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -226,7 +229,7 @@ impl<'gc> DropShadowFilter<'gc> {
 
     fn set_knockout(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -242,7 +245,7 @@ impl<'gc> DropShadowFilter<'gc> {
 
     fn set_blur_x(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -258,7 +261,7 @@ impl<'gc> DropShadowFilter<'gc> {
 
     fn set_blur_y(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -274,7 +277,7 @@ impl<'gc> DropShadowFilter<'gc> {
 
     fn set_strength(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -291,7 +294,7 @@ impl<'gc> DropShadowFilter<'gc> {
 
     fn set_hide_object(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -327,7 +330,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 };
 
 fn method<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
     index: u8,

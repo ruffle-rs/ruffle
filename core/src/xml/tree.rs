@@ -76,7 +76,7 @@ impl<'gc> XmlNode<'gc> {
     /// The returned node will always be an `Element`, and it must only contain
     /// valid encoded UTF-8 data. (Other encoding support is planned later.)
     pub fn from_start_event(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         bs: BytesStart<'_>,
         id_map: ScriptObject<'gc>,
         decoder: quick_xml::Decoder,
@@ -355,7 +355,7 @@ impl<'gc> XmlNode<'gc> {
 
     /// Obtain the script object for a given XML tree node, constructing a new
     /// script object if one does not exist.
-    pub fn script_object(&mut self, activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
+    pub fn script_object(&mut self, activation: &mut Activation<'_, '_, 'gc>) -> Object<'gc> {
         match self.get_script_object() {
             Some(object) => object,
             None => {
@@ -380,7 +380,7 @@ impl<'gc> XmlNode<'gc> {
     /// Gets a lazy-created .childNodes array
     pub fn get_or_init_cached_child_nodes(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<ArrayObject<'gc>, Error<'gc>> {
         let array = self.0.read().cached_child_nodes;
         if let Some(array) = array {
@@ -398,7 +398,7 @@ impl<'gc> XmlNode<'gc> {
     /// Refreshes the .childNodes array. Call this after every child list mutation.
     pub fn refresh_cached_child_nodes(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let array = self.0.read().cached_child_nodes;
         if let Some(array) = array {
@@ -467,7 +467,10 @@ impl<'gc> XmlNode<'gc> {
     }
 
     /// Convert the given node to a string of UTF-8 encoded XML.
-    pub fn into_string(self, activation: &mut Activation<'_, 'gc>) -> Result<WString, Error<'gc>> {
+    pub fn into_string(
+        self,
+        activation: &mut Activation<'_, '_, 'gc>,
+    ) -> Result<WString, Error<'gc>> {
         let mut result = WString::new();
         self.write_node_to_string(activation, &mut result)?;
         Ok(result)
@@ -476,7 +479,7 @@ impl<'gc> XmlNode<'gc> {
     /// Write the contents of this node, including its children, to the given string.
     fn write_node_to_string(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         result: &mut WString,
     ) -> Result<(), Error<'gc>> {
         // TODO: we convert some strings to utf8, replacing unpaired surrogates by the replacement char.

@@ -12,7 +12,7 @@ pub use crate::avm2::object::reg_exp_allocator;
 
 /// Implements `RegExp`'s `init` method, which is called from the constructor
 pub fn init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -65,7 +65,7 @@ pub fn init<'gc>(
 }
 
 pub fn call_handler<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -82,7 +82,7 @@ pub fn call_handler<'gc>(
 
 /// Implements `RegExp.dotall`
 pub fn get_dotall<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -95,7 +95,7 @@ pub fn get_dotall<'gc>(
 
 /// Implements `RegExp.extended`
 pub fn get_extended<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -108,7 +108,7 @@ pub fn get_extended<'gc>(
 
 /// Implements `RegExp.global`
 pub fn get_global<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -121,7 +121,7 @@ pub fn get_global<'gc>(
 
 /// Implements `RegExp.ignoreCase`
 pub fn get_ignore_case<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -134,7 +134,7 @@ pub fn get_ignore_case<'gc>(
 
 /// Implements `RegExp.multiline`
 pub fn get_multiline<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -147,7 +147,7 @@ pub fn get_multiline<'gc>(
 
 /// Implements `RegExp.lastIndex`'s getter
 pub fn get_last_index<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -160,7 +160,7 @@ pub fn get_last_index<'gc>(
 
 /// Implements `RegExp.lastIndex`'s setter
 pub fn set_last_index<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -177,7 +177,7 @@ pub fn set_last_index<'gc>(
 
 /// Implements `RegExp.source`
 pub fn get_source<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -190,7 +190,7 @@ pub fn get_source<'gc>(
 
 /// Implements `RegExp.exec`
 pub fn exec<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -230,7 +230,7 @@ pub fn exec<'gc>(
 
 /// Implements `RegExp.test`
 pub fn test<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

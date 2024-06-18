@@ -18,7 +18,7 @@ const PUBLIC_INSTANCE_AND_PROTO_METHODS: &[(&str, NativeMethodImpl)] = &[("toStr
 
 /// Implements `Namespace`'s instance initializer.
 pub fn instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -88,7 +88,7 @@ pub fn instance_init<'gc>(
 }
 
 fn class_call<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -102,7 +102,7 @@ fn class_call<'gc>(
 
 /// Implements `Namespace`'s native instance initializer.
 pub fn native_instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -113,7 +113,7 @@ pub fn native_instance_init<'gc>(
 
 /// Implements `Namespace`'s class initializer.
 pub fn class_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -142,7 +142,7 @@ pub fn class_init<'gc>(
 
 /// Implements `Namespace.prefix`'s getter
 pub fn prefix<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -157,7 +157,7 @@ pub fn prefix<'gc>(
 
 /// Implements `Namespace.uri`'s getter
 pub fn uri<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -169,7 +169,7 @@ pub fn uri<'gc>(
 }
 
 /// Construct `Namespace`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, '_, 'gc>) -> Class<'gc> {
     let mc = activation.context.gc_context;
     let class = Class::new(
         QName::new(activation.avm2().public_namespace_base_version, "Namespace"),
@@ -219,7 +219,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
 
     class.mark_traits_loaded(activation.context.gc_context);
     class
-        .init_vtable(&mut activation.context)
+        .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");
 
     class

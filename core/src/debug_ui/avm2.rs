@@ -44,7 +44,7 @@ impl Avm2ObjectWindow {
     ) -> bool {
         let mut keep_open = true;
         let domain = context.avm2.stage_domain();
-        let mut activation = Activation::from_domain(context.reborrow(), domain);
+        let mut activation = Activation::from_domain(context, domain);
         Window::new(object_name(activation.context.gc_context, object))
             .id(Id::new(object.as_ptr()))
             .open(&mut keep_open)
@@ -80,7 +80,7 @@ impl Avm2ObjectWindow {
         &mut self,
         object: Object<'gc>,
         messages: &mut Vec<Message>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         ui: &mut Ui,
     ) {
         Grid::new(ui.id().with("info"))
@@ -89,7 +89,7 @@ impl Avm2ObjectWindow {
             .show(ui, |ui| {
                 if let Some(class) = object.instance_of() {
                     ui.label("Instance Of");
-                    show_avm2_value(ui, &mut activation.context, class.into(), messages);
+                    show_avm2_value(ui, activation.context, class.into(), messages);
                     ui.end_row();
                 }
 
@@ -97,7 +97,7 @@ impl Avm2ObjectWindow {
                     ui.label("Display Object");
                     open_display_object_button(
                         ui,
-                        &mut activation.context,
+                        activation.context,
                         messages,
                         object,
                         &mut self.hovered_debug_rect,
@@ -176,7 +176,7 @@ impl Avm2ObjectWindow {
         &mut self,
         class: ClassObject<'gc>,
         messages: &mut Vec<Message>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         ui: &mut Ui,
     ) {
         Grid::new(ui.id().with("class"))
@@ -205,7 +205,7 @@ impl Avm2ObjectWindow {
                 ui.vertical(|ui| {
                     let mut superclass = Some(class);
                     while let Some(class) = superclass {
-                        show_avm2_value(ui, &mut activation.context, class.into(), messages);
+                        show_avm2_value(ui, activation.context, class.into(), messages);
                         superclass = class.superclass_object();
                     }
                 });
@@ -231,7 +231,7 @@ impl Avm2ObjectWindow {
         &mut self,
         object: Object<'gc>,
         messages: &mut Vec<Message>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         ui: &mut Ui,
     ) {
         let mut entries = Vec::<(String, Namespace<'gc>, Property)>::new();
@@ -293,7 +293,7 @@ impl Avm2ObjectWindow {
         &mut self,
         object: Object<'gc>,
         messages: &mut Vec<Message>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         body: &mut TableBody,
         name: &str,
         ns: Namespace<'gc>,
@@ -399,11 +399,11 @@ enum ValueResultWidget {
 
 impl ValueResultWidget {
     fn new<'gc>(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Result<Value<'gc>, Error<'gc>>,
     ) -> Self {
         match value {
-            Ok(value) => Self::Value(ValueWidget::new(&mut activation.context, value)),
+            Ok(value) => Self::Value(ValueWidget::new(activation.context, value)),
             Err(error) => Self::Error(format!("{error:?})")),
         }
     }

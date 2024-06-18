@@ -18,7 +18,7 @@ use std::fmt::Debug;
 /// A class instance allocator that allocates Event objects.
 pub fn event_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
@@ -94,7 +94,7 @@ impl<'gc> EventObject<'gc> {
     }
 
     pub fn mouse_event<S>(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         event_type: S,
         target: DisplayObject<'gc>,
         related_object: Option<InteractiveObject<'gc>>,
@@ -104,7 +104,7 @@ impl<'gc> EventObject<'gc> {
     where
         S: Into<AvmString<'gc>>,
     {
-        let local = target.local_mouse_position(&activation.context);
+        let local = target.local_mouse_position(activation.context);
 
         let event_type: AvmString<'gc> = event_type.into();
 
@@ -146,7 +146,7 @@ impl<'gc> EventObject<'gc> {
     }
 
     pub fn text_event<S>(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         event_type: S,
         text: AvmString<'gc>,
         bubbles: bool,
@@ -175,7 +175,7 @@ impl<'gc> EventObject<'gc> {
     }
 
     pub fn net_status_event<S>(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         event_type: S,
         info: Vec<(impl Into<AvmString<'gc>>, impl Into<AvmString<'gc>>)>,
     ) -> Object<'gc>
@@ -213,7 +213,7 @@ impl<'gc> EventObject<'gc> {
     }
 
     pub fn progress_event<S>(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         event_type: S,
         bytes_loaded: u64,
         bytes_total: u64,

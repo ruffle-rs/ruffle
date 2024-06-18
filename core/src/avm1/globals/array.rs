@@ -31,7 +31,7 @@ const DEFAULT_ORDERING: Ordering = Ordering::Equal;
 type CompareFn<'a, 'gc> = Box<
     dyn 'a
         + Fn(
-            &mut Activation<'_, 'gc>,
+            &mut Activation<'_, '_, 'gc>,
             &Value<'gc>,
             &Value<'gc>,
             SortOptions,
@@ -84,7 +84,7 @@ pub fn create_array_object<'gc>(
 
 /// Implements `Array` constructor and function
 pub fn constructor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -103,7 +103,7 @@ pub fn constructor<'gc>(
 }
 
 pub fn push<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -118,7 +118,7 @@ pub fn push<'gc>(
 }
 
 pub fn unshift<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -147,7 +147,7 @@ pub fn unshift<'gc>(
 }
 
 pub fn shift<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -177,7 +177,7 @@ pub fn shift<'gc>(
 }
 
 pub fn pop<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -198,7 +198,7 @@ pub fn pop<'gc>(
 }
 
 pub fn reverse<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -244,7 +244,7 @@ pub fn reverse<'gc>(
 }
 
 pub fn join<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -282,7 +282,7 @@ fn make_index_absolute(index: i32, length: i32) -> i32 {
 }
 
 pub fn slice<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -311,7 +311,7 @@ pub fn slice<'gc>(
 }
 
 pub fn splice<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -347,7 +347,7 @@ pub fn splice<'gc>(
     }
 
     fn splice_internal<'gc>(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         this: Object<'gc>,
         delete_count: i32,
         items: &[Value<'gc>],
@@ -376,7 +376,7 @@ pub fn splice<'gc>(
 }
 
 pub fn concat<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -411,7 +411,7 @@ pub fn concat<'gc>(
 }
 
 pub fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -419,7 +419,7 @@ pub fn to_string<'gc>(
 }
 
 fn sort<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -450,7 +450,7 @@ fn sort<'gc>(
 }
 
 fn sort_on<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -538,7 +538,7 @@ fn sort_on<'gc>(
 
 /// Compare between two values, with specified sort options.
 fn sort_compare<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     a: &Value<'gc>,
     b: &Value<'gc>,
     options: SortOptions,
@@ -605,7 +605,7 @@ fn sort_on_compare<'a, 'gc>(fields: &'a [(AvmString<'gc>, SortOptions)]) -> Comp
 
 /// Common code for both `Array.sort` and `Array.sortOn`.
 fn sort_internal<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     compare_fn: CompareFn<'_, 'gc>,
     mut options: SortOptions,
@@ -665,7 +665,7 @@ fn sort_internal<'gc>(
 
 /// Sort elements using the quicksort algorithm, mimicking Flash's behavior.
 fn qsort<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     elements: &mut [(i32, Value<'gc>)],
     compare_fn: &CompareFn<'_, 'gc>,
     options: SortOptions,

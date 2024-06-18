@@ -25,7 +25,7 @@ impl<'gc> CallableValue<'gc> {
         self,
         default_this: Object<'gc>,
         name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
         match self {

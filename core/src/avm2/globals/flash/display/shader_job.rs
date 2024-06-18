@@ -18,7 +18,7 @@ use crate::{
 
 pub fn get_shader_args<'gc>(
     shader_obj: Object<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<
     (
         PixelBenderShaderHandle,
@@ -183,7 +183,7 @@ pub fn get_shader_args<'gc>(
 
 /// Implements `ShaderJob.start`.
 pub fn start<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

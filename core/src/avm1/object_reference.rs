@@ -67,7 +67,7 @@ struct MovieClipReferenceData<'gc> {
 
 impl<'gc> MovieClipReference<'gc> {
     pub fn try_from_stage_object(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         stage_object: StageObject<'gc>,
     ) -> Option<Self> {
         // We can't use as_display_object + as_movie_clip here as we explicitly don't want to convert `SuperObjects`
@@ -94,7 +94,7 @@ impl<'gc> MovieClipReference<'gc> {
 
     /// Handle the logic of swfv5 DisplayObjects
     fn process_swf5_references(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         mut display_object: DisplayObject<'gc>,
     ) -> Option<DisplayObject<'gc>> {
         // In swfv5 paths resolve to the first MovieClip parent if the target isn't a movieclip
@@ -116,7 +116,7 @@ impl<'gc> MovieClipReference<'gc> {
     /// First tuple param indificates if this path came from the cache or not
     pub fn resolve_reference(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Option<(bool, Object<'gc>, DisplayObject<'gc>)> {
         // Check if we have a cache we can use
         if let Some(cache) = self.0.cached_stage_object.get() {
@@ -179,13 +179,16 @@ impl<'gc> MovieClipReference<'gc> {
     }
 
     /// Convert this reference to an `Object`
-    pub fn coerce_to_object(&self, activation: &mut Activation<'_, 'gc>) -> Option<Object<'gc>> {
+    pub fn coerce_to_object(
+        &self,
+        activation: &mut Activation<'_, '_, 'gc>,
+    ) -> Option<Object<'gc>> {
         let (_, object, _) = self.resolve_reference(activation)?;
         Some(object)
     }
 
     /// Convert this reference to a `String`
-    pub fn coerce_to_string(&self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
+    pub fn coerce_to_string(&self, activation: &mut Activation<'_, '_, 'gc>) -> AvmString<'gc> {
         match self.resolve_reference(activation) {
             // Couldn't find the reference
             None => "".into(),

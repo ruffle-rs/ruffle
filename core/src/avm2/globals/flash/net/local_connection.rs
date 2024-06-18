@@ -10,7 +10,7 @@ pub use crate::avm2::object::local_connection_allocator;
 
 /// Implements `domain` getter
 pub fn get_domain<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -35,7 +35,7 @@ pub fn get_domain<'gc>(
 
 /// Implements `LocalConnection.send`
 pub fn send_internal<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -68,14 +68,14 @@ pub fn send_internal<'gc>(
         ],
     )?;
 
-    Avm2::dispatch_event(&mut activation.context, event, this);
+    Avm2::dispatch_event(activation.context, event, this);
 
     Ok(Value::Undefined)
 }
 
 /// Implements `LocalConnection.connect`
 pub fn connect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -102,7 +102,7 @@ pub fn connect<'gc>(
 
 /// Implements `LocalConnection.close`
 pub fn close<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

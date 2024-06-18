@@ -2016,7 +2016,7 @@ pub trait TDisplayObject<'gc>:
                         .library_for_movie(self.movie())
                         .unwrap()
                         .avm2_domain();
-                    let mut activation = Avm2Activation::from_domain(context.reborrow(), domain);
+                    let mut activation = Avm2Activation::from_domain(context, domain);
                     let name =
                         Avm2Multiname::new(activation.avm2().find_public_namespace(), self.name());
                     if let Err(e) = p.init_property(&name, c.into(), &mut activation) {
@@ -2450,7 +2450,7 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
-    fn bind_text_field_variables(&self, activation: &mut Activation<'_, 'gc>) {
+    fn bind_text_field_variables(&self, activation: &mut Activation<'_, '_, 'gc>) {
         // Check all unbound text fields to see if they apply to this object.
         // TODO: Replace with `Vec::drain_filter` when stable.
         let mut i = 0;
@@ -2492,17 +2492,17 @@ pub trait TDisplayObject<'gc>:
     {
         if let Avm1Value::Object(object) = self.object() {
             let mut activation = Activation::from_nothing(
-                context.reborrow(),
+                context,
                 Avm1ActivationIdentifier::root("[AVM1 Boolean Property]"),
                 self.avm1_root(),
             );
             if let Ok(value) = object.get(name, &mut activation) {
                 match value {
-                    Avm1Value::Undefined => default(&mut activation.context),
+                    Avm1Value::Undefined => default(activation.context),
                     _ => value.as_bool(activation.swf_version()),
                 }
             } else {
-                default(&mut activation.context)
+                default(activation.context)
             }
         } else {
             false
@@ -2517,7 +2517,7 @@ pub trait TDisplayObject<'gc>:
     ) {
         if let Avm1Value::Object(object) = self.object() {
             let mut activation = Activation::from_nothing(
-                context.reborrow(),
+                context,
                 Avm1ActivationIdentifier::root("[AVM1 Property Set]"),
                 self.avm1_root(),
             );
@@ -2696,7 +2696,7 @@ impl SoundTransform {
     }
 
     pub fn from_avm2_object<'gc>(
-        activation: &mut Avm2Activation<'_, 'gc>,
+        activation: &mut Avm2Activation<'_, '_, 'gc>,
         as3_st: Avm2Object<'gc>,
     ) -> Result<Self, Avm2Error<'gc>> {
         Ok(SoundTransform {
@@ -2725,7 +2725,7 @@ impl SoundTransform {
 
     pub fn into_avm2_object<'gc>(
         self,
-        activation: &mut Avm2Activation<'_, 'gc>,
+        activation: &mut Avm2Activation<'_, '_, 'gc>,
     ) -> Result<Avm2Object<'gc>, Avm2Error<'gc>> {
         let as3_st = activation
             .avm2()

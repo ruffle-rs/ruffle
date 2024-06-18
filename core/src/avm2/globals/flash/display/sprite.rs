@@ -12,7 +12,7 @@ use swf::{Rectangle, Twips};
 
 pub fn sprite_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let sprite_cls = activation.avm2().classes().sprite;
 
@@ -46,7 +46,7 @@ pub fn sprite_allocator<'gc>(
 
 /// Implements `dropTarget`'s getter
 pub fn get_drop_target<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -63,7 +63,7 @@ pub fn get_drop_target<'gc>(
 
 /// Implements `graphics`.
 pub fn get_graphics<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -92,7 +92,7 @@ pub fn get_graphics<'gc>(
 
 /// Implements `soundTransform`'s getter
 pub fn get_sound_transform<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -107,7 +107,7 @@ pub fn get_sound_transform<'gc>(
 
 /// Implements `soundTransform`'s setter
 pub fn set_sound_transform<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -115,7 +115,7 @@ pub fn set_sound_transform<'gc>(
         let as3_st = args.get_object(activation, 0, "value")?;
         let dobj_st = SoundTransform::from_avm2_object(activation, as3_st)?;
 
-        dobj.set_sound_transform(&mut activation.context, dobj_st);
+        dobj.set_sound_transform(activation.context, dobj_st);
     }
 
     Ok(Value::Undefined)
@@ -123,7 +123,7 @@ pub fn set_sound_transform<'gc>(
 
 /// Implements `buttonMode`'s getter
 pub fn get_button_mode<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -136,14 +136,14 @@ pub fn get_button_mode<'gc>(
 
 /// Implements `buttonMode`'s setter
 pub fn set_button_mode<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mc) = this.as_display_object().and_then(|o| o.as_movie_clip()) {
         let forced_button_mode = args.get_bool(0);
 
-        mc.set_forced_button_mode(&mut activation.context, forced_button_mode);
+        mc.set_forced_button_mode(activation.context, forced_button_mode);
     }
 
     Ok(Value::Undefined)
@@ -151,7 +151,7 @@ pub fn set_button_mode<'gc>(
 
 /// Starts dragging this display object, making it follow the cursor.
 pub fn start_drag<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -211,7 +211,7 @@ pub fn start_drag<'gc>(
 }
 
 pub fn stop_drag<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -220,7 +220,7 @@ pub fn stop_drag<'gc>(
     // We might not have had an opportunity to call `update_drag`
     // if AS did `startDrag(mc); stopDrag();` in one go,
     // so let's do it here.
-    crate::player::Player::update_drag(&mut activation.context);
+    crate::player::Player::update_drag(activation.context);
 
     *activation.context.drag_object = None;
     Ok(Value::Undefined)
@@ -228,7 +228,7 @@ pub fn stop_drag<'gc>(
 
 /// Implements `useHandCursor`'s getter
 pub fn get_use_hand_cursor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -244,7 +244,7 @@ pub fn get_use_hand_cursor<'gc>(
 
 /// Implements `useHandCursor`'s setter
 pub fn set_use_hand_cursor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -252,7 +252,7 @@ pub fn set_use_hand_cursor<'gc>(
         .as_display_object()
         .and_then(|this| this.as_movie_clip())
     {
-        mc.set_avm2_use_hand_cursor(&mut activation.context, args.get_bool(0));
+        mc.set_avm2_use_hand_cursor(activation.context, args.get_bool(0));
     }
 
     Ok(Value::Undefined)
@@ -260,7 +260,7 @@ pub fn set_use_hand_cursor<'gc>(
 
 /// Implements `hitArea`'s getter
 pub fn get_hit_area<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -277,7 +277,7 @@ pub fn get_hit_area<'gc>(
 
 /// Implements `hitArea`'s setter
 pub fn set_hit_area<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -288,7 +288,7 @@ pub fn set_hit_area<'gc>(
         let object = args
             .try_get_object(activation, 0)
             .and_then(|hit_area| hit_area.as_display_object());
-        mc.set_hit_area(&mut activation.context, object);
+        mc.set_hit_area(activation.context, object);
     }
 
     Ok(Value::Undefined)

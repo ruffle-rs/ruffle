@@ -13,7 +13,7 @@ use std::cell::{Ref, RefMut};
 /// A class instance allocator that allocates AppDomain objects.
 pub fn application_domain_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let domain = activation.domain();
     let base = ScriptObjectData::new(class);
@@ -57,7 +57,7 @@ impl<'gc> DomainObject<'gc> {
     /// This function will call instance initializers. You do not need to do so
     /// yourself.
     pub fn from_domain(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         domain: Domain<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().application_domain;

@@ -149,7 +149,7 @@ impl<'gc> VTable<'gc> {
         &self,
         slot_id: u32,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // Drop the `write()` guard, as 'slot_class.coerce' may need to access this vtable.
         let mut slot_class = { self.0.read().slot_classes[slot_id as usize] };
@@ -498,7 +498,7 @@ impl<'gc> VTable<'gc> {
     /// fail.
     pub fn make_bound_method(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         receiver: Object<'gc>,
         disp_id: u32,
     ) -> Option<FunctionObject<'gc>> {
@@ -508,7 +508,7 @@ impl<'gc> VTable<'gc> {
 
     /// Bind an instance method to a receiver, allowing it to be used as a value. See `VTable::make_bound_method`
     pub fn bind_method(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         receiver: Object<'gc>,
         method: ClassBoundMethod<'gc>,
     ) -> FunctionObject<'gc> {

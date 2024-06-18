@@ -271,7 +271,7 @@ impl<'gc> Multiname<'gc> {
 
     pub fn fill_with_runtime_params(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
         let name = if self.has_lazy_name() {
             let name_value = activation.pop_stack();

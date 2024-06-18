@@ -113,7 +113,7 @@ struct VariableInfo {
 }
 
 impl VariableInfo {
-    pub fn from_value<'gc>(value: Value<'gc>, activation: &mut Activation<'_, 'gc>) -> Self {
+    pub fn from_value<'gc>(value: Value<'gc>, activation: &mut Activation<'_, '_, 'gc>) -> Self {
         Self {
             type_info: match value {
                 Value::Bool(_) => Some("Boolean".to_string()),
@@ -265,7 +265,7 @@ impl ClassStubs {
 impl Definition {
     fn from_class<'gc>(
         class_object: ClassObject<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         stubs: &ClassStubs,
     ) -> Self {
         let mut definition = Self::default();
@@ -339,7 +339,7 @@ impl Definition {
         name: &AvmString<'gc>,
         value: Value<'gc>,
         output: &mut Option<TraitList>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) {
         if let Some(object) = value.as_object() {
             if let Some(executable) = object.as_executable() {
@@ -463,7 +463,7 @@ pub fn capture_specification(context: &mut UpdateContext, output: &Path) {
     let mut definitions = FnvHashMap::<String, Definition>::default();
 
     let defs = context.avm2.playerglobals_domain.defs().clone();
-    let mut activation = Activation::from_nothing(context.reborrow());
+    let mut activation = Activation::from_nothing(context);
     for (name, namespace, _) in defs.iter() {
         let value = activation
             .context

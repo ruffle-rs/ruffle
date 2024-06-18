@@ -19,7 +19,7 @@ pub mod url_loader;
 pub mod xml_socket;
 
 fn object_to_index_map<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     obj: &Object<'gc>,
 ) -> Result<IndexMap<String, String>, Error<'gc>> {
     let mut map = IndexMap::new();
@@ -42,7 +42,7 @@ fn object_to_index_map<'gc>(
 }
 
 fn parse_data<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     url: &String,
     data: &Value<'gc>,
 ) -> Result<(String, IndexMap<String, String>), Error<'gc>> {
@@ -68,7 +68,7 @@ fn parse_data<'gc>(
 
 /// Implements `flash.net.navigateToURL`
 pub fn navigate_to_url<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -103,7 +103,7 @@ pub fn navigate_to_url<'gc>(
 }
 
 pub fn register_class_alias<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -118,7 +118,7 @@ pub fn register_class_alias<'gc>(
 }
 
 pub fn get_class_by_alias<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

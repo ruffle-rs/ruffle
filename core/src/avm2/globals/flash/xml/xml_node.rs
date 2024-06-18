@@ -7,7 +7,7 @@ use crate::string::AvmString;
 use ruffle_wstr::from_utf8;
 
 pub fn _escape_xml<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

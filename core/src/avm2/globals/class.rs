@@ -13,7 +13,7 @@ use crate::avm2::QName;
 /// Notably, you cannot construct new classes this way, so this returns an
 /// error.
 pub fn instance_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -22,7 +22,7 @@ pub fn instance_init<'gc>(
 
 /// Implement's `Class`'s class initializer.
 pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -30,7 +30,7 @@ pub fn class_init<'gc>(
 }
 
 fn prototype<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -43,7 +43,7 @@ fn prototype<'gc>(
 
 /// Construct `Class`'s class.
 pub fn create_class<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     object_class: Class<'gc>,
 ) -> Class<'gc> {
     let gc_context = activation.context.gc_context;
@@ -77,7 +77,7 @@ pub fn create_class<'gc>(
 
     class_class.mark_traits_loaded(activation.context.gc_context);
     class_class
-        .init_vtable(&mut activation.context)
+        .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");
 
     class_class

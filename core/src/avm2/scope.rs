@@ -173,7 +173,7 @@ impl<'gc> ScopeChain<'gc> {
     fn find_internal(
         &self,
         multiname: &Multiname<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Option<(Option<Namespace<'gc>>, Object<'gc>)>, Error<'gc>> {
         if let Some(container) = self.container {
             // We skip the scope at depth 0 (the global scope). The global scope will be checked in a different phase.
@@ -199,7 +199,7 @@ impl<'gc> ScopeChain<'gc> {
         if let Some((qname, script)) = self.domain.get_defining_script(multiname)? {
             return Ok(Some((
                 Some(qname.namespace()),
-                script.globals(&mut activation.context)?,
+                script.globals(activation.context)?,
             )));
         }
         Ok(None)
@@ -208,7 +208,7 @@ impl<'gc> ScopeChain<'gc> {
     pub fn find(
         &self,
         multiname: &Multiname<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Option<Object<'gc>>, Error<'gc>> {
         // First we check the cache of our container
         if let Some(container) = self.container {
@@ -262,7 +262,7 @@ impl<'gc> ScopeChain<'gc> {
     pub fn resolve(
         &self,
         name: &Multiname<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Option<Value<'gc>>, Error<'gc>> {
         if let Some(object) = self.find(name, activation)? {
             Ok(Some(object.get_property(name, activation)?))

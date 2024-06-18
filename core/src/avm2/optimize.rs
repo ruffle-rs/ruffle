@@ -87,7 +87,7 @@ impl<'gc> OptValue<'gc> {
         matches!(self.null_state, NullState::IsNull)
     }
 
-    pub fn not_null(self, activation: &mut Activation<'_, 'gc>) -> bool {
+    pub fn not_null(self, activation: &mut Activation<'_, '_, 'gc>) -> bool {
         if matches!(self.null_state, NullState::NotNull) {
             return true;
         }
@@ -197,7 +197,7 @@ impl<'gc> Stack<'gc> {
 }
 
 pub fn optimize<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     method: &BytecodeMethod<'gc>,
     code: &mut Vec<Op<'gc>>,
     resolved_parameters: &[ResolvedParamConfig<'gc>],

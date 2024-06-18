@@ -21,7 +21,7 @@ use std::cell::{Ref, RefMut};
 /// or `FunctionObject::from_function`.
 pub fn function_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
@@ -90,7 +90,7 @@ impl<'gc> FunctionObject<'gc> {
     /// This associated constructor will also create and initialize an empty
     /// `Object` prototype for the function.
     pub fn from_function(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         method: Method<'gc>,
         scope: ScopeChain<'gc>,
     ) -> Result<FunctionObject<'gc>, Error<'gc>> {
@@ -113,7 +113,7 @@ impl<'gc> FunctionObject<'gc> {
     /// The given `receiver`, if supplied, will override any user-specified
     /// `this` parameter.
     pub fn from_method(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         method: Method<'gc>,
         scope: ScopeChain<'gc>,
         receiver: Option<Object<'gc>>,
@@ -160,7 +160,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn to_locale_string(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         self.to_string(activation)
     }
@@ -181,7 +181,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self,
         receiver: Value<'gc>,
         arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // NOTE: Cloning an executable does not allocate new memory
         let exec = self.0.read().exec.clone();
@@ -191,7 +191,7 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn construct(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         arguments: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         let prototype = if let Some(proto) = self.prototype() {

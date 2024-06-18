@@ -120,7 +120,7 @@ impl From<Vec<Value>> for Value {
 
 impl Value {
     pub fn from_avm1<'gc>(
-        activation: &mut Avm1Activation<'_, 'gc>,
+        activation: &mut Avm1Activation<'_, '_, 'gc>,
         value: Avm1Value<'gc>,
     ) -> Result<Value, Avm1Error<'gc>> {
         Ok(match value {
@@ -153,7 +153,7 @@ impl Value {
         })
     }
 
-    pub fn into_avm1<'gc>(self, activation: &mut Avm1Activation<'_, 'gc>) -> Avm1Value<'gc> {
+    pub fn into_avm1<'gc>(self, activation: &mut Avm1Activation<'_, '_, 'gc>) -> Avm1Value<'gc> {
         match self {
             Value::Undefined => Avm1Value::Undefined,
             Value::Null => Avm1Value::Null,
@@ -216,7 +216,7 @@ impl Value {
         }
     }
 
-    pub fn into_avm2<'gc>(self, activation: &mut Avm2Activation<'_, 'gc>) -> Avm2Value<'gc> {
+    pub fn into_avm2<'gc>(self, activation: &mut Avm2Activation<'_, '_, 'gc>) -> Avm2Value<'gc> {
         match self {
             Value::Undefined => Avm2Value::Undefined,
             Value::Null => Avm2Value::Null,
@@ -274,7 +274,7 @@ impl<'gc> Callback<'gc> {
             Callback::Avm1 { this, method } => {
                 if let Some(base_clip) = context.stage.root_clip() {
                     let mut activation = Avm1Activation::from_nothing(
-                        context.reborrow(),
+                        context,
                         Avm1ActivationIdentifier::root("[ExternalInterface]"),
                         base_clip,
                     );
@@ -299,7 +299,7 @@ impl<'gc> Callback<'gc> {
                     .library_for_movie(context.swf.clone())
                     .unwrap()
                     .avm2_domain();
-                let mut activation = Avm2Activation::from_domain(context.reborrow(), domain);
+                let mut activation = Avm2Activation::from_domain(context, domain);
                 let args: Vec<Avm2Value> = args
                     .into_iter()
                     .map(|v| v.into_avm2(&mut activation))

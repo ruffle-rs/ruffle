@@ -15,7 +15,7 @@ use std::cell::{Ref, RefMut};
 /// A class instance allocator that allocates SoundChannel objects.
 pub fn sound_channel_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
@@ -75,7 +75,7 @@ pub enum SoundChannelData {
 
 impl<'gc> SoundChannelObject<'gc> {
     /// Convert a bare sound instance into it's object representation.
-    pub fn empty(activation: &mut Activation<'_, 'gc>) -> Result<Self, Error<'gc>> {
+    pub fn empty(activation: &mut Activation<'_, '_, 'gc>) -> Result<Self, Error<'gc>> {
         let class = activation.avm2().classes().soundchannel;
         let base = ScriptObjectData::new(class);
 
@@ -120,7 +120,7 @@ impl<'gc> SoundChannelObject<'gc> {
 
     pub fn set_sound_instance(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         instance: SoundInstanceHandle,
     ) {
         let mut this = self.0.write(activation.context.gc_context);
@@ -150,7 +150,10 @@ impl<'gc> SoundChannelObject<'gc> {
         }
     }
 
-    pub fn sound_transform(self, activation: &mut Activation<'_, 'gc>) -> Option<SoundTransform> {
+    pub fn sound_transform(
+        self,
+        activation: &mut Activation<'_, '_, 'gc>,
+    ) -> Option<SoundTransform> {
         let this = self.0.read();
         match &this.sound_channel_data {
             SoundChannelData::NotLoaded {
@@ -165,7 +168,7 @@ impl<'gc> SoundChannelObject<'gc> {
 
     pub fn set_sound_transform(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         new_sound_transform: SoundTransform,
     ) {
         let mut this = self.0.write(activation.context.gc_context);
@@ -183,7 +186,7 @@ impl<'gc> SoundChannelObject<'gc> {
         }
     }
 
-    pub fn stop(self, activation: &mut Activation<'_, 'gc>) {
+    pub fn stop(self, activation: &mut Activation<'_, '_, 'gc>) {
         let mut this = self.0.write(activation.context.gc_context);
         match &mut this.sound_channel_data {
             SoundChannelData::NotLoaded {

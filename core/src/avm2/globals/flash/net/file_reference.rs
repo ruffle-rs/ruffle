@@ -7,7 +7,7 @@ use crate::backend::ui::FileFilter;
 use crate::string::AvmString;
 
 pub fn get_creation_date<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -28,7 +28,7 @@ pub fn get_creation_date<'gc>(
 }
 
 pub fn get_data<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -48,7 +48,7 @@ pub fn get_data<'gc>(
 }
 
 pub fn get_modification_date<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -69,7 +69,7 @@ pub fn get_modification_date<'gc>(
 }
 
 pub fn get_name<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -87,7 +87,7 @@ pub fn get_name<'gc>(
 }
 
 pub fn get_size<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -102,7 +102,7 @@ pub fn get_size<'gc>(
 }
 
 pub fn get_type<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -120,7 +120,7 @@ pub fn get_type<'gc>(
 }
 
 pub fn browse<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -136,7 +136,7 @@ pub fn browse<'gc>(
                         .classes()
                         .filefilter
                         .inner_class_definition();
-                    if !obj.is_of_type(filefilter, &mut activation.context) {
+                    if !obj.is_of_type(filefilter, activation.context) {
                         return Err(make_error_2097(activation));
                     }
 
@@ -190,7 +190,7 @@ pub fn browse<'gc>(
 }
 
 pub fn load<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -204,29 +204,29 @@ pub fn load<'gc>(
         FileReference::FileDialogResult(ref dialog_result) => dialog_result.size().unwrap_or(0),
     };
 
-    let open_evt = EventObject::bare_default_event(&mut activation.context, "open");
-    Avm2::dispatch_event(&mut activation.context, open_evt, this.into());
+    let open_evt = EventObject::bare_default_event(activation.context, "open");
+    Avm2::dispatch_event(activation.context, open_evt, this.into());
 
     let progress_evt = EventObject::progress_event(activation, "progress", 0, size, false, false);
-    Avm2::dispatch_event(&mut activation.context, progress_evt, this.into());
+    Avm2::dispatch_event(activation.context, progress_evt, this.into());
 
-    let open_evt2 = EventObject::bare_default_event(&mut activation.context, "open");
-    Avm2::dispatch_event(&mut activation.context, open_evt2, this.into());
+    let open_evt2 = EventObject::bare_default_event(activation.context, "open");
+    Avm2::dispatch_event(activation.context, open_evt2, this.into());
 
     let progress_evt2 =
         EventObject::progress_event(activation, "progress", size, size, false, false);
-    Avm2::dispatch_event(&mut activation.context, progress_evt2, this.into());
+    Avm2::dispatch_event(activation.context, progress_evt2, this.into());
 
     this.set_loaded(true);
 
-    let complete_evt = EventObject::bare_default_event(&mut activation.context, "complete");
-    Avm2::dispatch_event(&mut activation.context, complete_evt, this.into());
+    let complete_evt = EventObject::bare_default_event(activation.context, "complete");
+    Avm2::dispatch_event(activation.context, complete_evt, this.into());
 
     Ok(Value::Undefined)
 }
 
 pub fn save<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

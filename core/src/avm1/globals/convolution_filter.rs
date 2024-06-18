@@ -100,7 +100,10 @@ impl Default for ConvolutionFilterData {
 pub struct ConvolutionFilter<'gc>(GcCell<'gc, ConvolutionFilterData>);
 
 impl<'gc> ConvolutionFilter<'gc> {
-    fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
+    fn new(
+        activation: &mut Activation<'_, '_, 'gc>,
+        args: &[Value<'gc>],
+    ) -> Result<Self, Error<'gc>> {
         let convolution_filter = Self(GcCell::new(
             activation.context.gc_context,
             Default::default(),
@@ -139,7 +142,7 @@ impl<'gc> ConvolutionFilter<'gc> {
 
     fn set_matrix_x(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -157,7 +160,7 @@ impl<'gc> ConvolutionFilter<'gc> {
 
     fn set_matrix_y(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -179,7 +182,7 @@ impl<'gc> ConvolutionFilter<'gc> {
 
     fn set_matrix(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         let Some(value) = value else { return Ok(()) };
@@ -207,7 +210,7 @@ impl<'gc> ConvolutionFilter<'gc> {
 
     fn set_divisor(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -223,7 +226,7 @@ impl<'gc> ConvolutionFilter<'gc> {
 
     fn set_bias(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -239,7 +242,7 @@ impl<'gc> ConvolutionFilter<'gc> {
 
     fn set_preserve_alpha(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -255,7 +258,7 @@ impl<'gc> ConvolutionFilter<'gc> {
 
     fn set_clamp(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -271,7 +274,7 @@ impl<'gc> ConvolutionFilter<'gc> {
 
     fn set_color(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -284,7 +287,7 @@ impl<'gc> ConvolutionFilter<'gc> {
 
     fn set_alpha(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
@@ -318,7 +321,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 };
 
 fn method<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
     index: u8,
@@ -368,7 +371,7 @@ fn method<'gc>(
             this.set_matrix_y(activation, args.get(0))?;
             Value::Undefined
         }
-        GET_MATRIX => this.matrix(&mut activation.context).into(),
+        GET_MATRIX => this.matrix(activation.context).into(),
         SET_MATRIX => {
             this.set_matrix(activation, args.get(0))?;
             Value::Undefined

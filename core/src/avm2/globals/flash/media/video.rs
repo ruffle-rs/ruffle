@@ -5,7 +5,7 @@ use crate::display_object::{TDisplayObject, Video};
 
 pub fn video_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let video_class = activation.avm2().classes().video;
 
@@ -40,7 +40,7 @@ pub fn video_allocator<'gc>(
 
 /// Implements `flash.media.Video`'s `init` method, which is called from the constructor
 pub fn init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -55,7 +55,7 @@ pub fn init<'gc>(
 }
 
 pub fn attach_net_stream<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -63,7 +63,7 @@ pub fn attach_net_stream<'gc>(
         let source = args.get(0).cloned().and_then(|v| v.as_object());
 
         if let Some(stream) = source.and_then(|o| o.as_netstream()) {
-            video.attach_netstream(&mut activation.context, stream);
+            video.attach_netstream(activation.context, stream);
         } else {
             return Err(format!(
                 "Cannot use value of type {:?} as video source",

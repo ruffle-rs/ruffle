@@ -4,7 +4,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 
 pub fn update_after_event<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

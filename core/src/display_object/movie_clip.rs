@@ -318,7 +318,7 @@ impl<'gc> MovieClip<'gc> {
     /// Construct a movie clip that represents the root movie
     /// for the entire `Player`.
     pub fn player_root_movie(
-        activation: &mut Avm2Activation<'_, 'gc>,
+        activation: &mut Avm2Activation<'_, '_, 'gc>,
         movie: Arc<SwfMovie>,
     ) -> Self {
         let num_frames = movie.num_frames();
@@ -864,7 +864,7 @@ impl<'gc> MovieClip<'gc> {
         reader: &mut SwfStream<'_>,
     ) -> Result<(), Error> {
         let movie = self.movie();
-        let mut activation = Avm2Activation::from_nothing(context.reborrow());
+        let mut activation = Avm2Activation::from_nothing(context);
 
         let num_symbols = reader.read_u16()?;
 
@@ -928,10 +928,9 @@ impl<'gc> MovieClip<'gc> {
                             Some(Character::Font(_)) => {}
                             Some(Character::Sound(_)) => {}
                             Some(Character::Bitmap { .. }) => {
-                                if let Some(bitmap_class) = BitmapClass::from_class_object(
-                                    class_object,
-                                    &mut activation.context,
-                                ) {
+                                if let Some(bitmap_class) =
+                                    BitmapClass::from_class_object(class_object, activation.context)
+                                {
                                     // We need to re-fetch the library and character to satisfy the borrow checker
                                     let library = activation
                                         .context
@@ -2068,7 +2067,7 @@ impl<'gc> MovieClip<'gc> {
             // If we are not, then this must be queued to be ran first-thing
             if let Some(constructor) = avm1_constructor.filter(|_| instantiated_by.is_avm()) {
                 let mut activation = Avm1Activation::from_nothing(
-                    context.reborrow(),
+                    context,
                     ActivationIdentifier::root("[Construct]"),
                     self.into(),
                 );
@@ -2086,7 +2085,7 @@ impl<'gc> MovieClip<'gc> {
                     self.0.write(activation.context.gc_context).object = Some(object.into());
 
                     if run_frame {
-                        self.run_frame_avm1(&mut activation.context);
+                        self.run_frame_avm1(activation.context);
                     }
 
                     if let Some(init_object) = init_object {
@@ -2122,7 +2121,7 @@ impl<'gc> MovieClip<'gc> {
 
             if let Some(init_object) = init_object {
                 let mut activation = Avm1Activation::from_nothing(
-                    context.reborrow(),
+                    context,
                     ActivationIdentifier::root("[Init]"),
                     self.into(),
                 );
@@ -2194,7 +2193,7 @@ impl<'gc> MovieClip<'gc> {
             .unwrap_or_else(|| context.avm2.classes().movieclip);
 
         let mut constr_thing = || {
-            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let mut activation = Avm2Activation::from_nothing(context);
             let object =
                 Avm2StageObject::for_display_object(&mut activation, display_object, class_object)?
                     .into();
@@ -2227,7 +2226,7 @@ impl<'gc> MovieClip<'gc> {
 
         if let Avm2Value::Object(object) = self.object2() {
             let mut constr_thing = || {
-                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                let mut activation = Avm2Activation::from_nothing(context);
                 class_object.call_native_init(object.into(), &[], &mut activation)?;
 
                 Ok(())
@@ -2394,7 +2393,7 @@ impl<'gc> MovieClip<'gc> {
             let object = self.object();
             if let Avm1Value::Object(object) = object {
                 let mut activation = Avm1Activation::from_nothing(
-                    context.reborrow(),
+                    context,
                     ActivationIdentifier::root("[Mouse Pick]"),
                     self.avm1_root(),
                 );

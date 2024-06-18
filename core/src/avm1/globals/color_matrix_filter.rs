@@ -50,7 +50,10 @@ impl Default for ColorMatrixFilterData {
 pub struct ColorMatrixFilter<'gc>(GcCell<'gc, ColorMatrixFilterData>);
 
 impl<'gc> ColorMatrixFilter<'gc> {
-    fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
+    fn new(
+        activation: &mut Activation<'_, '_, 'gc>,
+        args: &[Value<'gc>],
+    ) -> Result<Self, Error<'gc>> {
         let color_matrix_filter = Self(GcCell::new(
             activation.context.gc_context,
             Default::default(),
@@ -67,7 +70,7 @@ impl<'gc> ColorMatrixFilter<'gc> {
         Self(GcCell::new(gc_context, self.0.read().clone()))
     }
 
-    fn matrix(&self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
+    fn matrix(&self, activation: &mut Activation<'_, '_, 'gc>) -> Value<'gc> {
         ArrayObject::new(
             activation.context.gc_context,
             activation.context.avm1.prototypes().array,
@@ -78,7 +81,7 @@ impl<'gc> ColorMatrixFilter<'gc> {
 
     fn set_matrix(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         // Note that FP 11 and FP 32 behave differently here:
@@ -124,7 +127,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 };
 
 fn method<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
     index: u8,

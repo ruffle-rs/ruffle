@@ -7,7 +7,7 @@ use crate::context::GcContext;
 use crate::streams::NetStream;
 
 pub fn constructor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -33,7 +33,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 };
 
 fn get_buffer_length<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -47,7 +47,7 @@ fn get_buffer_length<'gc>(
 }
 
 fn get_buffer_time<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -59,7 +59,7 @@ fn get_buffer_time<'gc>(
 }
 
 fn get_bytes_loaded<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -71,7 +71,7 @@ fn get_bytes_loaded<'gc>(
 }
 
 fn get_bytes_total<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -83,7 +83,7 @@ fn get_bytes_total<'gc>(
 }
 
 fn play<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -94,14 +94,14 @@ fn play<'gc>(
             .unwrap_or(Value::Undefined)
             .coerce_to_string(activation)?;
 
-        ns.play(&mut activation.context, Some(name));
+        ns.play(activation.context, Some(name));
     }
 
     Ok(Value::Undefined)
 }
 
 fn pause<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -110,11 +110,11 @@ fn pause<'gc>(
         let is_pause = action.as_bool(activation.swf_version());
 
         if matches!(action, Value::Undefined) {
-            ns.toggle_paused(&mut activation.context);
+            ns.toggle_paused(activation.context);
         } else if is_pause {
-            ns.pause(&mut activation.context, true);
+            ns.pause(activation.context, true);
         } else {
-            ns.resume(&mut activation.context);
+            ns.resume(activation.context);
         }
     }
 
@@ -122,7 +122,7 @@ fn pause<'gc>(
 }
 
 fn seek<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -133,14 +133,14 @@ fn seek<'gc>(
             .unwrap_or(Value::Undefined)
             .coerce_to_f64(activation)?;
 
-        ns.seek(&mut activation.context, offset * 1000.0, false);
+        ns.seek(activation.context, offset * 1000.0, false);
     }
 
     Ok(Value::Undefined)
 }
 
 fn set_buffer_time<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -160,7 +160,7 @@ fn set_buffer_time<'gc>(
 }
 
 fn get_time<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

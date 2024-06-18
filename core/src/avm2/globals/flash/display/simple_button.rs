@@ -15,7 +15,7 @@ use crate::avm2::parameters::ParametersExt;
 
 pub fn simple_button_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     use crate::vminterface::Instantiator;
 
@@ -25,12 +25,12 @@ pub fn simple_button_allocator<'gc>(
     let orig_class = class;
     while let Some(class) = class_object {
         if class == simplebutton_cls {
-            let button = Avm2Button::empty_button(&mut activation.context);
+            let button = Avm2Button::empty_button(activation.context);
             // [NA] Buttons specifically need to PO'd
-            button.post_instantiation(&mut activation.context, None, Instantiator::Avm2, false);
+            button.post_instantiation(activation.context, None, Instantiator::Avm2, false);
             let display_object = button.into();
             let obj = StageObject::for_display_object(activation, display_object, orig_class)?;
-            display_object.set_object2(&mut activation.context, obj.into());
+            display_object.set_object2(activation.context, obj.into());
             return Ok(obj.into());
         }
 
@@ -55,7 +55,7 @@ pub fn simple_button_allocator<'gc>(
 
 /// Implements `flash.display.SimpleButton`'s 'init' method. which is called from the constructor
 pub fn init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -67,32 +67,32 @@ pub fn init<'gc>(
             .try_get_object(activation, 0)
             .and_then(|o| o.as_display_object());
         if up_state.is_some() {
-            new_do.set_state_child(&mut activation.context, ButtonState::UP, up_state);
+            new_do.set_state_child(activation.context, ButtonState::UP, up_state);
         }
 
         let over_state = args
             .try_get_object(activation, 1)
             .and_then(|o| o.as_display_object());
         if over_state.is_some() {
-            new_do.set_state_child(&mut activation.context, ButtonState::OVER, over_state);
+            new_do.set_state_child(activation.context, ButtonState::OVER, over_state);
         }
 
         let down_state = args
             .try_get_object(activation, 2)
             .and_then(|o| o.as_display_object());
         if down_state.is_some() {
-            new_do.set_state_child(&mut activation.context, ButtonState::DOWN, down_state);
+            new_do.set_state_child(activation.context, ButtonState::DOWN, down_state);
         }
 
         let hit_state = args
             .try_get_object(activation, 3)
             .and_then(|o| o.as_display_object());
         if hit_state.is_some() {
-            new_do.set_state_child(&mut activation.context, ButtonState::HIT_TEST, hit_state);
+            new_do.set_state_child(activation.context, ButtonState::HIT_TEST, hit_state);
         }
 
         // This performs the child state construction.
-        new_do.construct_frame(&mut activation.context);
+        new_do.construct_frame(activation.context);
     } else {
         unreachable!();
     }
@@ -102,7 +102,7 @@ pub fn init<'gc>(
 
 /// Implements `downState`'s getter.
 pub fn get_down_state<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -121,7 +121,7 @@ pub fn get_down_state<'gc>(
 
 /// Implements `downState`'s setter.
 pub fn set_down_state<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -133,7 +133,7 @@ pub fn set_down_state<'gc>(
             .try_get_object(activation, 0)
             .and_then(|val| val.as_display_object());
 
-        btn.set_state_child(&mut activation.context, ButtonState::DOWN, new_state);
+        btn.set_state_child(activation.context, ButtonState::DOWN, new_state);
     }
 
     Ok(Value::Undefined)
@@ -141,7 +141,7 @@ pub fn set_down_state<'gc>(
 
 /// Implements `overState`'s getter.
 pub fn get_over_state<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -160,7 +160,7 @@ pub fn get_over_state<'gc>(
 
 /// Implements `overState`'s setter.
 pub fn set_over_state<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -172,7 +172,7 @@ pub fn set_over_state<'gc>(
             .try_get_object(activation, 0)
             .and_then(|val| val.as_display_object());
 
-        btn.set_state_child(&mut activation.context, ButtonState::OVER, new_state);
+        btn.set_state_child(activation.context, ButtonState::OVER, new_state);
     }
 
     Ok(Value::Undefined)
@@ -180,7 +180,7 @@ pub fn set_over_state<'gc>(
 
 /// Implements `hitTestState`'s getter.
 pub fn get_hit_test_state<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -199,7 +199,7 @@ pub fn get_hit_test_state<'gc>(
 
 /// Implements `hitTestState`'s setter.
 pub fn set_hit_test_state<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -211,7 +211,7 @@ pub fn set_hit_test_state<'gc>(
             .try_get_object(activation, 0)
             .and_then(|val| val.as_display_object());
 
-        btn.set_state_child(&mut activation.context, ButtonState::HIT_TEST, new_state);
+        btn.set_state_child(activation.context, ButtonState::HIT_TEST, new_state);
     }
 
     Ok(Value::Undefined)
@@ -219,7 +219,7 @@ pub fn set_hit_test_state<'gc>(
 
 /// Implements `upState`'s getter.
 pub fn get_up_state<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -238,7 +238,7 @@ pub fn get_up_state<'gc>(
 
 /// Implements `upState`'s setter.
 pub fn set_up_state<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -250,7 +250,7 @@ pub fn set_up_state<'gc>(
             .try_get_object(activation, 0)
             .and_then(|val| val.as_display_object());
 
-        btn.set_state_child(&mut activation.context, ButtonState::UP, new_state);
+        btn.set_state_child(activation.context, ButtonState::UP, new_state);
     }
 
     Ok(Value::Undefined)
@@ -258,7 +258,7 @@ pub fn set_up_state<'gc>(
 
 /// Implements `trackAsMenu`'s getter
 pub fn get_track_as_menu<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -274,7 +274,7 @@ pub fn get_track_as_menu<'gc>(
 
 /// Implements `trackAsMenu`'s setter
 pub fn set_track_as_menu<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -293,7 +293,7 @@ pub fn set_track_as_menu<'gc>(
 
 /// Implements `enabled`'s getter
 pub fn get_enabled<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -309,7 +309,7 @@ pub fn get_enabled<'gc>(
 
 /// Implements `enabled`'s setter
 pub fn set_enabled<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -317,7 +317,7 @@ pub fn set_enabled<'gc>(
         .as_display_object()
         .and_then(|this| this.as_avm2_button())
     {
-        btn.set_enabled(&mut activation.context, args.get_bool(0));
+        btn.set_enabled(activation.context, args.get_bool(0));
     }
 
     Ok(Value::Undefined)
@@ -325,7 +325,7 @@ pub fn set_enabled<'gc>(
 
 /// Implements `useHandCursor`'s getter
 pub fn get_use_hand_cursor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -341,7 +341,7 @@ pub fn get_use_hand_cursor<'gc>(
 
 /// Implements `useHandCursor`'s setter
 pub fn set_use_hand_cursor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

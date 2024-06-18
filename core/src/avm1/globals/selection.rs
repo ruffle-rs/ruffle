@@ -16,7 +16,7 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
 };
 
 pub fn get_begin_index<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -33,7 +33,7 @@ pub fn get_begin_index<'gc>(
 }
 
 pub fn get_end_index<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -50,7 +50,7 @@ pub fn get_end_index<'gc>(
 }
 
 pub fn get_caret_index<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -67,7 +67,7 @@ pub fn get_caret_index<'gc>(
 }
 
 pub fn set_selection<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -95,7 +95,7 @@ pub fn set_selection<'gc>(
 }
 
 pub fn get_focus<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -112,7 +112,7 @@ pub fn get_focus<'gc>(
 }
 
 pub fn set_focus<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -120,15 +120,15 @@ pub fn set_focus<'gc>(
     match args.get(0) {
         None => Ok(false.into()),
         Some(Value::Undefined | Value::Null) => {
-            tracker.set(None, &mut activation.context);
+            tracker.set(None, activation.context);
             Ok(true.into())
         }
         Some(focus) => {
             let start_clip = activation.target_clip_or_root();
             let object = activation.resolve_target_display_object(start_clip, *focus, false)?;
             if let Some(object) = object.and_then(|o| o.as_interactive()) {
-                if object.is_focusable(&mut activation.context) {
-                    tracker.set(Some(object), &mut activation.context);
+                if object.is_focusable(activation.context) {
+                    tracker.set(Some(object), activation.context);
                     return Ok(true.into());
                 }
             }

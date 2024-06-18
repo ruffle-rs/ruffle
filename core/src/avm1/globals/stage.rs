@@ -34,7 +34,7 @@ pub fn create_stage_object<'gc>(
 }
 
 fn align<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -62,7 +62,7 @@ fn align<'gc>(
 }
 
 fn set_align<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -75,12 +75,12 @@ fn set_align<'gc>(
     activation
         .context
         .stage
-        .set_align(&mut activation.context, align);
+        .set_align(activation.context, align);
     Ok(Value::Undefined)
 }
 
 fn height<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -88,7 +88,7 @@ fn height<'gc>(
 }
 
 fn scale_mode<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -100,7 +100,7 @@ fn scale_mode<'gc>(
 }
 
 fn set_scale_mode<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -113,12 +113,12 @@ fn set_scale_mode<'gc>(
     activation
         .context
         .stage
-        .set_scale_mode(&mut activation.context, scale_mode);
+        .set_scale_mode(activation.context, scale_mode);
     Ok(Value::Undefined)
 }
 
 fn display_state<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -130,7 +130,7 @@ fn display_state<'gc>(
 }
 
 fn set_display_state<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -143,19 +143,19 @@ fn set_display_state<'gc>(
         activation
             .context
             .stage
-            .set_display_state(&mut activation.context, StageDisplayState::FullScreen);
+            .set_display_state(activation.context, StageDisplayState::FullScreen);
     } else if display_state.eq_ignore_case(WStr::from_units(b"normal")) {
         activation
             .context
             .stage
-            .set_display_state(&mut activation.context, StageDisplayState::Normal);
+            .set_display_state(activation.context, StageDisplayState::Normal);
     }
 
     Ok(Value::Undefined)
 }
 
 fn show_menu<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -163,7 +163,7 @@ fn show_menu<'gc>(
 }
 
 fn set_show_menu<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -175,12 +175,12 @@ fn set_show_menu<'gc>(
     activation
         .context
         .stage
-        .set_show_menu(&mut activation.context, show_menu);
+        .set_show_menu(activation.context, show_menu);
     Ok(Value::Undefined)
 }
 
 fn width<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

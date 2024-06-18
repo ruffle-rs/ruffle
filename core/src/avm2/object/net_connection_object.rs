@@ -15,7 +15,7 @@ use std::fmt::Debug;
 
 pub fn net_connection_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class).into();
     let this: Object<'gc> = NetConnectionObject(Gc::new(

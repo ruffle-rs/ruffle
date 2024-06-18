@@ -4,7 +4,7 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, Value};
 
 pub fn init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

@@ -17,7 +17,7 @@ pub use crate::avm2::object::sound_allocator;
 
 /// Implements `flash.media.Sound`'s 'init' method. which is called from the constructor.
 pub fn init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -39,7 +39,7 @@ pub fn init<'gc>(
                 .character_by_id(symbol)
             {
                 let sound = *sound;
-                sound_object.set_sound(&mut activation.context, sound)?;
+                sound_object.set_sound(activation.context, sound)?;
             } else {
                 tracing::warn!("Attempted to construct subclass of Sound, {}, which is associated with non-Sound character {}", class_object.inner_class_definition().name().local_name(), symbol);
             }
@@ -55,7 +55,7 @@ pub fn init<'gc>(
 
 /// Implements `Sound.bytesTotal`
 pub fn get_bytes_total<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -72,7 +72,7 @@ pub fn get_bytes_total<'gc>(
 }
 
 pub fn get_bytes_loaded<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -83,7 +83,7 @@ pub fn get_bytes_loaded<'gc>(
 
 /// Implements `Sound.isBuffering`
 pub fn get_is_buffering<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -94,7 +94,7 @@ pub fn get_is_buffering<'gc>(
 
 /// Implements `Sound.isURLInaccessible`
 pub fn get_is_url_inaccessible<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -105,7 +105,7 @@ pub fn get_is_url_inaccessible<'gc>(
 
 /// Implements `Sound.url`
 pub fn get_url<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -116,7 +116,7 @@ pub fn get_url<'gc>(
 
 /// Implements `Sound.length`
 pub fn get_length<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -134,7 +134,7 @@ pub fn get_length<'gc>(
 
 /// Implements `Sound.play`
 pub fn play<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -195,7 +195,7 @@ pub fn play<'gc>(
 
 /// `Sound.extract`
 pub fn extract<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -221,7 +221,7 @@ pub fn extract<'gc>(
 
 /// `Sound.close`
 pub fn close<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -231,7 +231,7 @@ pub fn close<'gc>(
 
 /// `Sound.load`
 pub fn load<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -265,7 +265,7 @@ pub fn load<'gc>(
 
 /// `Sound.loadCompressedDataFromByteArray`
 pub fn load_compressed_data_from_byte_array<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -298,7 +298,7 @@ pub fn load_compressed_data_from_byte_array<'gc>(
         )
         .map_err(|e| Error::AvmError(AvmString::new_utf8(activation.gc(), e.to_string()).into()))?;
 
-    Avm2::dispatch_event(&mut activation.context, progress_evt, this);
+    Avm2::dispatch_event(activation.context, progress_evt, this);
 
     this.as_sound_object()
         .unwrap()
@@ -306,14 +306,14 @@ pub fn load_compressed_data_from_byte_array<'gc>(
 
     this.as_sound_object()
         .unwrap()
-        .set_sound(&mut activation.context, handle)?;
+        .set_sound(activation.context, handle)?;
 
     Ok(Value::Undefined)
 }
 
 /// `Sound.loadPCMFromByteArray`
 pub fn load_pcm_from_byte_array<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -323,7 +323,7 @@ pub fn load_pcm_from_byte_array<'gc>(
 
 /// Implements `Sound.id3`
 pub fn get_id3<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

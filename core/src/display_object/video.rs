@@ -473,7 +473,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
         if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
             let video_constr = context.avm2.classes().video;
-            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let mut activation = Avm2Activation::from_nothing(context);
             let size = self.0.read().size;
             match Avm2StageObject::for_display_object_childless_with_args(
                 &mut activation,

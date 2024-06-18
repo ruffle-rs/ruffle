@@ -10,7 +10,7 @@ pub use crate::avm2::object::sound_channel_allocator;
 
 /// Implements `SoundChannel.leftPeak`
 pub fn get_left_peak<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -28,7 +28,7 @@ pub fn get_left_peak<'gc>(
 
 /// Implements `SoundChannel.rightPeak`
 pub fn get_right_peak<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -46,19 +46,19 @@ pub fn get_right_peak<'gc>(
 
 /// Impl `SoundChannel.position`
 pub fn get_position<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(instance) = this.as_sound_channel() {
-        return Ok(instance.position(&mut activation.context).into());
+        return Ok(instance.position(activation.context).into());
     }
     Ok(Value::Undefined)
 }
 
 /// Implements `soundTransform`'s getter
 pub fn get_sound_transform<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -73,7 +73,7 @@ pub fn get_sound_transform<'gc>(
 
 /// Implements `soundTransform`'s setter
 pub fn set_sound_transform<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -93,7 +93,7 @@ pub fn set_sound_transform<'gc>(
 
 /// Impl `SoundChannel.stop`
 pub fn stop<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

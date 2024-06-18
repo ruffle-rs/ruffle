@@ -14,7 +14,7 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
 };
 
 pub fn get_available<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -22,7 +22,7 @@ pub fn get_available<'gc>(
 }
 
 pub fn add_callback<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -49,7 +49,7 @@ pub fn add_callback<'gc>(
 }
 
 pub fn call<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -76,7 +76,7 @@ pub fn call<'gc>(
             }
         }
         Ok(method
-            .call(&mut activation.context, &external_args)
+            .call(activation.context, &external_args)
             .into_avm1(activation))
     } else {
         Ok(Value::Null)

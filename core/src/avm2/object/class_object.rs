@@ -86,7 +86,7 @@ impl<'gc> ClassObject<'gc> {
     /// prototypes are weaved together separately.
     fn allocate_prototype(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         superclass_object: Option<ClassObject<'gc>>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let proto = activation
@@ -112,7 +112,7 @@ impl<'gc> ClassObject<'gc> {
     /// in the VM. This corresponds to no base class, and in practice appears
     /// to be limited to interfaces.
     pub fn from_class(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         class: Class<'gc>,
         superclass_object: Option<ClassObject<'gc>>,
     ) -> Result<Self, Error<'gc>> {
@@ -146,7 +146,7 @@ impl<'gc> ClassObject<'gc> {
     /// further manipulation of the class once it's dependent types have been
     /// allocated.
     pub fn from_class_partial(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         class: Class<'gc>,
         superclass_object: Option<ClassObject<'gc>>,
     ) -> Result<Self, Error<'gc>> {
@@ -208,7 +208,7 @@ impl<'gc> ClassObject<'gc> {
 
     pub fn init_instance_vtable(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let class = self.inner_class_definition();
         self.instance_class().ok_or(
@@ -223,7 +223,7 @@ impl<'gc> ClassObject<'gc> {
             &class.instance_traits(),
             Some(self.instance_scope()),
             self.superclass_object().map(|cls| cls.instance_vtable()),
-            &mut activation.context,
+            activation.context,
         );
         Ok(())
     }
@@ -248,7 +248,7 @@ impl<'gc> ClassObject<'gc> {
     /// errors will be raised at this time.
     pub fn into_finished_class(
         mut self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
         let class = self.inner_class_definition();
 
@@ -259,7 +259,7 @@ impl<'gc> ClassObject<'gc> {
             &class.class_traits(),
             Some(self.class_scope()),
             Some(activation.avm2().classes().class.instance_vtable()),
-            &mut activation.context,
+            activation.context,
         );
 
         self.link_interfaces(activation)?;
@@ -277,7 +277,7 @@ impl<'gc> ClassObject<'gc> {
     /// Link this class to a prototype.
     pub fn link_prototype(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         class_proto: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
         self.0.write(activation.context.gc_context).prototype = Some(class_proto);
@@ -296,7 +296,10 @@ impl<'gc> ClassObject<'gc> {
     /// This should be done after all instance traits has been resolved, as
     /// instance traits will be resolved to their corresponding methods at this
     /// time.
-    pub fn link_interfaces(self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
+    pub fn link_interfaces(
+        self,
+        activation: &mut Activation<'_, '_, 'gc>,
+    ) -> Result<(), Error<'gc>> {
         let class = self.inner_class_definition();
 
         // FIXME - we should only be copying properties for newly-implemented
@@ -344,7 +347,7 @@ impl<'gc> ClassObject<'gc> {
     /// Run the class's initializer method.
     pub fn run_class_initializer(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let object: Object<'gc> = self.into();
 
@@ -370,7 +373,7 @@ impl<'gc> ClassObject<'gc> {
         self,
         receiver: Value<'gc>,
         arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let scope = self.0.read().instance_scope;
         let method = self.constructor();
@@ -394,7 +397,7 @@ impl<'gc> ClassObject<'gc> {
         self,
         receiver: Value<'gc>,
         arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let scope = self.0.read().instance_scope;
         let method = self.native_constructor();
@@ -438,7 +441,7 @@ impl<'gc> ClassObject<'gc> {
         multiname: &Multiname<'gc>,
         receiver: Object<'gc>,
         arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let property = self.instance_vtable().get_trait(multiname);
         if property.is_none() {
@@ -508,7 +511,7 @@ impl<'gc> ClassObject<'gc> {
         self,
         multiname: &Multiname<'gc>,
         receiver: Object<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let property = self.instance_vtable().get_trait(multiname);
 
@@ -587,7 +590,7 @@ impl<'gc> ClassObject<'gc> {
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
         mut receiver: Object<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let property = self.instance_vtable().get_trait(multiname);
         if property.is_none() {
@@ -637,7 +640,7 @@ impl<'gc> ClassObject<'gc> {
     /// Parametrize this class. This does not check to ensure that this class is generic.
     pub fn parametrize(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         class_param: Option<Class<'gc>>,
     ) -> Result<ClassObject<'gc>, Error<'gc>> {
         let self_class = self.inner_class_definition();
@@ -650,7 +653,7 @@ impl<'gc> ClassObject<'gc> {
         // so it must be a simple Vector.<*>-derived class.
 
         let parameterized_class =
-            Class::with_type_param(&mut activation.context, self_class, class_param);
+            Class::with_type_param(activation.context, self_class, class_param);
 
         // NOTE: this isn't fully accurate, but much simpler.
         // FP's Vector is more of special case that literally copies some parent class's properties
@@ -761,7 +764,10 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         self.0.as_ptr() as *const ObjectPtr
     }
 
-    fn to_string(&self, activation: &mut Activation<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>> {
+    fn to_string(
+        &self,
+        activation: &mut Activation<'_, '_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(AvmString::new_utf8(
             activation.context.gc_context,
             format!("[class {}]", self.0.read().class.name().local_name()),
@@ -771,7 +777,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
     fn to_locale_string(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         self.to_string(activation)
     }
@@ -784,7 +790,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         self,
         receiver: Value<'gc>,
         arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(call_handler) = self.call_handler() {
             let scope = self.0.read().class_scope;
@@ -813,7 +819,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
     fn construct(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         arguments: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         let instance_allocator = self.0.read().instance_allocator.0;
@@ -851,7 +857,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
     fn apply(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         nullable_params: &[Value<'gc>],
     ) -> Result<ClassObject<'gc>, Error<'gc>> {
         let self_class = self.inner_class_definition();

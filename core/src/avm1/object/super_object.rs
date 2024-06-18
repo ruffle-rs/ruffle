@@ -41,7 +41,7 @@ pub struct SuperObjectData<'gc> {
 
 impl<'gc> SuperObject<'gc> {
     /// Construct a `super` for an incoming stack frame.
-    pub fn new(activation: &mut Activation<'_, 'gc>, this: Object<'gc>, depth: u8) -> Self {
+    pub fn new(activation: &mut Activation<'_, '_, 'gc>, this: Object<'gc>, depth: u8) -> Self {
         Self(Gc::new(
             activation.context.gc_context,
             SuperObjectData { this, depth },
@@ -52,7 +52,7 @@ impl<'gc> SuperObject<'gc> {
         self.0.this
     }
 
-    fn base_proto(&self, activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
+    fn base_proto(&self, activation: &mut Activation<'_, '_, 'gc>) -> Object<'gc> {
         let depth = self.0.depth;
         let mut proto = self.0.this;
         for _ in 0..depth {
@@ -74,7 +74,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     fn get_local_stored(
         &self,
         _name: impl Into<AvmString<'gc>>,
-        _activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, '_, 'gc>,
         _is_slash_path: bool,
     ) -> Option<Value<'gc>> {
         None
@@ -84,7 +84,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         &self,
         _name: AvmString<'gc>,
         _value: Value<'gc>,
-        _activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, '_, 'gc>,
         _this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
         //TODO: What happens if you set `super.__proto__`?
@@ -94,7 +94,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
     fn call(
         &self,
         name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         _this: Value<'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -120,7 +120,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         &self,
         name: AvmString<'gc>,
         args: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         reason: ExecutionReason,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let this = self.0.this;
@@ -146,7 +146,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn create_bare_object(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         this: Object<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         if let Value::Object(proto) = self.proto(activation) {
@@ -158,12 +158,12 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         }
     }
 
-    fn delete(&self, _activation: &mut Activation<'_, 'gc>, _name: AvmString<'gc>) -> bool {
+    fn delete(&self, _activation: &mut Activation<'_, '_, 'gc>, _name: AvmString<'gc>) -> bool {
         //`super` cannot have properties deleted from it
         false
     }
 
-    fn proto(&self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
+    fn proto(&self, activation: &mut Activation<'_, '_, 'gc>) -> Value<'gc> {
         self.base_proto(activation).proto(activation)
     }
 
@@ -200,7 +200,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn add_property_with_case(
         &self,
-        _activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, '_, 'gc>,
         _name: AvmString<'gc>,
         _get: Object<'gc>,
         _set: Option<Object<'gc>>,
@@ -211,7 +211,7 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
 
     fn watch(
         &self,
-        _activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, '_, 'gc>,
         _name: AvmString<'gc>,
         _callback: Object<'gc>,
         _user_data: Value<'gc>,
@@ -219,49 +219,49 @@ impl<'gc> TObject<'gc> for SuperObject<'gc> {
         //`super` cannot have properties defined on it
     }
 
-    fn unwatch(&self, _activation: &mut Activation<'_, 'gc>, _name: AvmString<'gc>) -> bool {
+    fn unwatch(&self, _activation: &mut Activation<'_, '_, 'gc>, _name: AvmString<'gc>) -> bool {
         //`super` cannot have properties defined on it
         false
     }
 
     fn get_keys(
         &self,
-        _activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, '_, 'gc>,
         _include_hidden: bool,
     ) -> Vec<AvmString<'gc>> {
         vec![]
     }
 
-    fn length(&self, _activation: &mut Activation<'_, 'gc>) -> Result<i32, Error<'gc>> {
+    fn length(&self, _activation: &mut Activation<'_, '_, 'gc>) -> Result<i32, Error<'gc>> {
         Ok(0)
     }
 
     fn set_length(
         &self,
-        _activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, '_, 'gc>,
         _length: i32,
     ) -> Result<(), Error<'gc>> {
         Ok(())
     }
 
-    fn has_element(&self, _activation: &mut Activation<'_, 'gc>, _index: i32) -> bool {
+    fn has_element(&self, _activation: &mut Activation<'_, '_, 'gc>, _index: i32) -> bool {
         false
     }
 
-    fn get_element(&self, _activation: &mut Activation<'_, 'gc>, _index: i32) -> Value<'gc> {
+    fn get_element(&self, _activation: &mut Activation<'_, '_, 'gc>, _index: i32) -> Value<'gc> {
         Value::Undefined
     }
 
     fn set_element(
         &self,
-        _activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, '_, 'gc>,
         _index: i32,
         _value: Value<'gc>,
     ) -> Result<(), Error<'gc>> {
         Ok(())
     }
 
-    fn delete_element(&self, _activation: &mut Activation<'_, 'gc>, _index: i32) -> bool {
+    fn delete_element(&self, _activation: &mut Activation<'_, '_, 'gc>, _index: i32) -> bool {
         false
     }
 

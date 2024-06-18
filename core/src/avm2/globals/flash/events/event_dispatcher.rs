@@ -10,7 +10,7 @@ use crate::avm2::{Avm2, Error};
 
 /// Get an object's dispatch list, lazily initializing it if necessary.
 fn dispatch_list<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     match this.get_property(
@@ -33,7 +33,7 @@ fn dispatch_list<'gc>(
 
 /// Implements `EventDispatcher.addEventListener`.
 pub fn add_event_listener<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -51,14 +51,14 @@ pub fn add_event_listener<'gc>(
         .ok_or_else(|| Error::from("Internal properties should have what I put in them"))?
         .add_event_listener(event_type, priority, listener, use_capture);
 
-    Avm2::register_broadcast_listener(&mut activation.context, this, event_type);
+    Avm2::register_broadcast_listener(activation.context, this, event_type);
 
     Ok(Value::Undefined)
 }
 
 /// Implements `EventDispatcher.removeEventListener`.
 pub fn remove_event_listener<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -79,7 +79,7 @@ pub fn remove_event_listener<'gc>(
 
 /// Implements `EventDispatcher.hasEventListener`.
 pub fn has_event_listener<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -97,7 +97,7 @@ pub fn has_event_listener<'gc>(
 
 /// Implements `EventDispatcher.willTrigger`.
 pub fn will_trigger<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -129,7 +129,7 @@ pub fn will_trigger<'gc>(
 
 /// Implements `EventDispatcher.dispatchEvent`.
 pub fn dispatch_event<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -147,7 +147,7 @@ pub fn dispatch_event<'gc>(
 /// This is an undocumented function, but MX will VerifyError if this isn't
 /// present.
 pub fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

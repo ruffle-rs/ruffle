@@ -10,7 +10,7 @@ use crate::loader::DataFormat;
 
 /// Native function definition for `URLLoader.load`
 pub fn load<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -37,7 +37,7 @@ pub fn load<'gc>(
 }
 
 fn spawn_fetch<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     loader_object: Object<'gc>,
     url_request: Object<'gc>,
     data_format: DataFormat,

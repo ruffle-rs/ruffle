@@ -24,7 +24,7 @@ use std::sync::Arc;
 
 pub fn loader_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     // Loader does not have an associated `Character` variant, and can never be
     // instantiated from the timeline.
@@ -57,7 +57,7 @@ pub fn loader_allocator<'gc>(
 }
 
 pub fn load<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -116,7 +116,7 @@ pub fn load<'gc>(
 }
 
 pub fn request_from_url_request<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     url_request: Object<'gc>,
 ) -> Result<Request, Error<'gc>> {
     // FIXME: set `followRedirects`  and `userAgent`
@@ -203,7 +203,7 @@ pub fn request_from_url_request<'gc>(
 }
 
 pub fn load_bytes<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -233,7 +233,7 @@ pub fn load_bytes<'gc>(
         .expect("Missing caller domain in Loader.loadBytes");
 
     if let Err(e) = LoadManager::load_movie_into_clip_bytes(
-        &mut activation.context,
+        activation.context,
         content.into(),
         bytes,
         MovieLoaderVMData::Avm2 {
@@ -251,7 +251,7 @@ pub fn load_bytes<'gc>(
 }
 
 pub fn unload<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

@@ -52,7 +52,7 @@ impl<'gc> BoundMethod<'gc> {
         &self,
         unbound_receiver: Value<'gc>,
         arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         callee: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let receiver = if let Some(receiver) = self.bound_receiver {
@@ -137,7 +137,7 @@ pub fn exec<'gc>(
     receiver: Object<'gc>,
     bound_class: Option<ClassObject<'gc>>,
     mut arguments: &[Value<'gc>],
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     callee: Object<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let ret = match method {
@@ -145,7 +145,7 @@ pub fn exec<'gc>(
             let caller_domain = activation.caller_domain();
             let caller_movie = activation.caller_movie();
             let mut activation = Activation::from_builtin(
-                activation.context.reborrow(),
+                activation.context,
                 bound_class,
                 scope,
                 caller_domain,
@@ -191,7 +191,7 @@ pub fn exec<'gc>(
 
             // This used to be a one step called Activation::from_method,
             // but avoiding moving an Activation around helps perf
-            let mut activation = Activation::from_nothing(activation.context.reborrow());
+            let mut activation = Activation::from_nothing(activation.context);
             activation.init_from_method(bm, scope, receiver, arguments, bound_class, callee)?;
             activation
                 .context

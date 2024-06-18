@@ -28,7 +28,7 @@ fn has_simple_content_inner(children: &[E4XOrXml<'_>]) -> bool {
 }
 
 pub fn init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -73,7 +73,7 @@ pub fn init<'gc>(
 }
 
 pub fn call_handler<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -96,7 +96,7 @@ pub fn call_handler<'gc>(
 
 // ECMA-357 13.5.4.11 XMLList.prototype.elements ([name])
 pub fn elements<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -129,7 +129,7 @@ pub fn elements<'gc>(
 }
 
 pub fn has_complex_content<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -139,7 +139,7 @@ pub fn has_complex_content<'gc>(
 }
 
 pub fn has_simple_content<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -149,7 +149,7 @@ pub fn has_simple_content<'gc>(
 }
 
 pub fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -163,7 +163,7 @@ pub fn to_string<'gc>(
 }
 
 pub fn to_xml_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -172,7 +172,7 @@ pub fn to_xml_string<'gc>(
 }
 
 pub fn length<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -182,7 +182,7 @@ pub fn length<'gc>(
 }
 
 pub fn child<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -209,7 +209,7 @@ pub fn child<'gc>(
 }
 
 pub fn children<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -233,7 +233,7 @@ pub fn children<'gc>(
 
 /// 13.5.4.8 XMLList.prototype.contains (value)
 pub fn contains<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -259,7 +259,7 @@ pub fn contains<'gc>(
 }
 
 pub fn copy<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -268,7 +268,7 @@ pub fn copy<'gc>(
 }
 
 pub fn attribute<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -302,7 +302,7 @@ pub fn attribute<'gc>(
 }
 
 pub fn attributes<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -326,7 +326,7 @@ pub fn attributes<'gc>(
 }
 
 pub fn descendants<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -340,7 +340,7 @@ pub fn descendants<'gc>(
 
 // ECMA-357 13.5.4.20 XMLList.prototype.text ( )
 pub fn text<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -362,7 +362,7 @@ pub fn text<'gc>(
 }
 
 pub fn comments<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -386,7 +386,7 @@ pub fn comments<'gc>(
 
 // ECMA-357 13.5.4.17 XMLList.prototype.parent ( )
 pub fn parent<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -422,7 +422,7 @@ pub fn parent<'gc>(
 }
 
 pub fn processing_instructions<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -449,7 +449,7 @@ pub fn processing_instructions<'gc>(
 }
 
 pub fn normalize<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -543,7 +543,7 @@ macro_rules! define_xml_proxy {
     ( $( ($rust_name:ident, $as_name:expr) ),*, ) => {
         $(
             pub fn $rust_name<'gc>(
-                activation: &mut Activation<'_, 'gc>,
+                activation: &mut Activation<'_, '_, 'gc>,
                 this: Object<'gc>,
                 args: &[Value<'gc>],
             ) -> Result<Value<'gc>, Error<'gc>> {
@@ -586,7 +586,7 @@ define_xml_proxy!(
 // Special case since the XMLObject's method has to know if prefix was passed or not.
 // namespace_internal_impl(hasPrefix:Boolean, prefix:String = null):*
 pub fn namespace_internal_impl<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

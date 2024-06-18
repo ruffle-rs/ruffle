@@ -13,7 +13,7 @@ use std::cell::{Ref, RefMut};
 /// A class instance allocator that allocates BitmapData objects.
 pub fn bitmap_data_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
@@ -66,7 +66,7 @@ impl<'gc> BitmapDataObject<'gc> {
     // to produce a new BitmapData object from a `BitmapData` method
     // like `clone()`
     pub fn from_bitmap_data_internal(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         bitmap_data: BitmapDataWrapper<'gc>,
         class: ClassObject<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {

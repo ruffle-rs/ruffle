@@ -13,7 +13,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 };
 
 pub fn constructor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -49,7 +49,7 @@ pub fn constructor<'gc>(
 }
 
 pub fn copy<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -123,7 +123,7 @@ pub fn copy<'gc>(
 }
 
 pub fn hide_builtin_items<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -152,7 +152,7 @@ pub fn create_proto<'gc>(
 
 pub fn make_context_menu_state<'gc>(
     menu: Option<Object<'gc>>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> context_menu::ContextMenuState<'gc> {
     let mut result = context_menu::ContextMenuState::new();
 
@@ -186,7 +186,7 @@ pub fn make_context_menu_state<'gc>(
         }
     }
 
-    result.build_builtin_items(builtin_items, &mut activation.context);
+    result.build_builtin_items(builtin_items, activation.context);
 
     if let Some(menu) = menu {
         if let Ok(Value::Object(custom_items)) = menu.get("customItems", activation) {

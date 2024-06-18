@@ -35,7 +35,7 @@ pub struct Context3DObjectWeak<'gc>(pub GcWeak<'gc, Context3DData<'gc>>);
 
 impl<'gc> Context3DObject<'gc> {
     pub fn from_context(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         context: Box<dyn Context3D>,
         stage3d: Stage3DObject<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
@@ -94,7 +94,7 @@ impl<'gc> Context3DObject<'gc> {
     pub fn create_index_buffer(
         &self,
         num_indices: u32,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let index_buffer = self
             .with_context_3d(|ctx| ctx.create_index_buffer(BufferUsage::StaticDraw, num_indices));
@@ -115,7 +115,7 @@ impl<'gc> Context3DObject<'gc> {
         optimize_for_render_to_texture: bool,
         streaming_levels: u32,
         class: ClassObject<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         check_texture_stub(activation, format);
         let texture = self.with_context_3d(|ctx| {
@@ -138,7 +138,7 @@ impl<'gc> Context3DObject<'gc> {
         num_vertices: u32,
         data_32_per_vertex: u8,
         usage: BufferUsage,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let handle = self.with_context_3d(|ctx| {
             ctx.create_vertex_buffer(usage, num_vertices, data_32_per_vertex)
@@ -201,7 +201,7 @@ impl<'gc> Context3DObject<'gc> {
 
     pub fn create_program(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Value::Object(Program3DObject::from_context(
             activation, *self,
@@ -303,7 +303,7 @@ impl<'gc> Context3DObject<'gc> {
         self.with_context_3d(|ctx| ctx.process_command(Context3DCommand::SetRenderToBackBuffer));
     }
 
-    pub fn present(&self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
+    pub fn present(&self, activation: &mut Activation<'_, '_, 'gc>) -> Result<(), Error<'gc>> {
         Ok(self.with_context_3d(|ctx| activation.context.renderer.context3d_present(ctx))?)
     }
 
@@ -439,7 +439,7 @@ impl<'gc> Context3DObject<'gc> {
         format: Context3DTextureFormat,
         optimize_for_render_to_texture: bool,
         streaming_levels: u32,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         check_texture_stub(activation, format);
         let texture = self.with_context_3d(|ctx| {
@@ -522,7 +522,7 @@ impl std::fmt::Debug for Context3DObject<'_> {
 
 // This would ideally be placed closer to the actual usage, but
 // we don't have stub support in 'render' crates
-fn check_texture_stub(activation: &mut Activation<'_, '_>, format: Context3DTextureFormat) {
+fn check_texture_stub(activation: &mut Activation<'_, '_, '_>, format: Context3DTextureFormat) {
     match format {
         Context3DTextureFormat::BgrPacked => {
             avm2_stub_method!(

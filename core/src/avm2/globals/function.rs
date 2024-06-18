@@ -12,7 +12,7 @@ use crate::avm2::QName;
 
 /// Implements `Function`'s instance initializer.
 pub fn instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -30,7 +30,7 @@ pub fn instance_init<'gc>(
 }
 
 pub fn class_call<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -44,7 +44,7 @@ pub fn class_call<'gc>(
 
 /// Implements `Function`'s class initializer.
 pub fn class_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -126,7 +126,7 @@ pub fn class_init<'gc>(
 
 /// Implements `Function.prototype.call`
 fn call<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     func: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -141,7 +141,7 @@ fn call<'gc>(
 
 /// Implements `Function.prototype.apply`
 fn apply<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     func: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -171,7 +171,7 @@ fn apply<'gc>(
 
 /// Implements `Function.prototype.toString` and `Function.prototype.toLocaleString`
 fn to_string<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -179,7 +179,7 @@ fn to_string<'gc>(
 }
 
 fn length<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -191,7 +191,7 @@ fn length<'gc>(
 }
 
 fn prototype<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -207,7 +207,7 @@ fn prototype<'gc>(
 }
 
 fn set_prototype<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -221,7 +221,7 @@ fn set_prototype<'gc>(
 
 /// Construct `Function`'s class.
 pub fn create_class<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     object_classdef: Class<'gc>,
 ) -> Class<'gc> {
     let gc_context = activation.context.gc_context;
@@ -270,7 +270,7 @@ pub fn create_class<'gc>(
 
     function_class.mark_traits_loaded(activation.context.gc_context);
     function_class
-        .init_vtable(&mut activation.context)
+        .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");
 
     function_class

@@ -116,7 +116,10 @@ impl<'gc> Domain<'gc> {
     ///
     /// This function must not be called before the player globals have been
     /// fully allocated.
-    pub fn movie_domain(activation: &mut Activation<'_, 'gc>, parent: Domain<'gc>) -> Domain<'gc> {
+    pub fn movie_domain(
+        activation: &mut Activation<'_, '_, 'gc>,
+        parent: Domain<'gc>,
+    ) -> Domain<'gc> {
         let this = Self(GcCell::new(
             activation.context.gc_context,
             DomainData {
@@ -239,7 +242,7 @@ impl<'gc> Domain<'gc> {
     /// If a name does not exist or cannot be resolved, an error will be thrown.
     pub fn find_defining_script(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         multiname: &Multiname<'gc>,
     ) -> Result<(QName<'gc>, Script<'gc>), Error<'gc>> {
         match self.get_defining_script(multiname)? {
@@ -260,11 +263,11 @@ impl<'gc> Domain<'gc> {
     /// Retrieve a value from this domain.
     pub fn get_defined_value(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         name: QName<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let (name, script) = self.find_defining_script(activation, &name.into())?;
-        let globals = script.globals(&mut activation.context)?;
+        let globals = script.globals(activation.context)?;
 
         globals.get_property(&name.into(), activation)
     }
@@ -273,7 +276,7 @@ impl<'gc> Domain<'gc> {
     /// This is used by `getQualifiedClassName, ApplicationDomain.getDefinition, and ApplicationDomain.hasDefinition`.
     pub fn get_defined_value_handling_vector(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         mut name: AvmString<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // Special-case lookups of `Vector.<SomeType>` - these get internally converted
@@ -362,7 +365,7 @@ impl<'gc> Domain<'gc> {
 
     pub fn set_domain_memory(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         domain_memory: Option<ByteArrayObject<'gc>>,
     ) -> Result<(), Error<'gc>> {
         let mut write = self.0.write(activation.context.gc_context);
@@ -392,7 +395,7 @@ impl<'gc> Domain<'gc> {
     /// domains.
     pub fn init_default_domain_memory(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let bytearray_class = activation.avm2().classes().bytearray;
 

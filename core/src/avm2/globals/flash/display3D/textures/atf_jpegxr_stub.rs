@@ -4,7 +4,7 @@ use crate::avm2::Error;
 use crate::avm2::Object;
 
 pub fn do_compressed_upload<'gc>(
-    _: &mut Activation<'_, 'gc>,
+    _: &mut Activation<'_, '_, 'gc>,
     _: TextureObject<'gc>,
     _: Object<'gc>,
     _: usize,

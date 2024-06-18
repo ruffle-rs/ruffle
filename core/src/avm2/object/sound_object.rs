@@ -23,7 +23,7 @@ use super::SoundChannelObject;
 /// A class instance allocator that allocates Sound objects.
 pub fn sound_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
@@ -105,7 +105,7 @@ impl<'gc> SoundObject<'gc> {
     pub fn play(
         self,
         queued: QueuedPlay<'gc>,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<bool, Error<'gc>> {
         let mut this = self.0.write(activation.context.gc_context);
         match &mut this.sound_data {
@@ -124,7 +124,7 @@ impl<'gc> SoundObject<'gc> {
         sound: SoundHandle,
     ) -> Result<(), Error<'gc>> {
         let mut this = self.0.write(context.gc_context);
-        let mut activation = Activation::from_nothing(context.reborrow());
+        let mut activation = Activation::from_nothing(context);
         match &mut this.sound_data {
             SoundData::NotLoaded { queued_plays } => {
                 for queued in std::mem::take(queued_plays) {
@@ -149,7 +149,7 @@ impl<'gc> SoundObject<'gc> {
         this.id3 = id3;
     }
 
-    pub fn read_and_call_id3_event(self, activation: &mut Activation<'_, 'gc>, bytes: &[u8]) {
+    pub fn read_and_call_id3_event(self, activation: &mut Activation<'_, '_, 'gc>, bytes: &[u8]) {
         let id3 = activation
             .avm2()
             .classes()
@@ -217,8 +217,8 @@ impl<'gc> SoundObject<'gc> {
         }
         self.set_id3(activation.context.gc_context, Some(id3));
         if tag.is_ok() {
-            let id3_evt = EventObject::bare_default_event(&mut activation.context, "id3");
-            Avm2::dispatch_event(&mut activation.context, id3_evt, self.into());
+            let id3_evt = EventObject::bare_default_event(activation.context, "id3");
+            Avm2::dispatch_event(activation.context, id3_evt, self.into());
         }
     }
 }
@@ -227,7 +227,7 @@ impl<'gc> SoundObject<'gc> {
 fn play_queued<'gc>(
     queued: QueuedPlay<'gc>,
     sound: SoundHandle,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<bool, Error<'gc>> {
     if let Some(duration) = activation.context.audio.get_sound_duration(sound) {
         if queued.position > duration {

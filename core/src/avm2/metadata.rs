@@ -26,7 +26,7 @@ pub struct Metadata<'gc> {
 impl<'gc> Metadata<'gc> {
     // Converts an AbcMetadata into a Metadata by resolving all the indexes.
     pub fn from_abc_index(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         translation_unit: TranslationUnit<'gc>,
         metadata: &[AbcIndex<AbcMetadata>],
     ) -> Result<Option<Box<[Metadata<'gc>]>>, Error<'gc>> {
@@ -75,7 +75,7 @@ impl<'gc> Metadata<'gc> {
     // Converts the Metadata to an Object of the form used in avmplus:describeTypeJSON().
     pub fn as_json_object(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let object = activation
             .avm2()

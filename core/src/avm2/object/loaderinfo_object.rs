@@ -20,7 +20,7 @@ use std::sync::Arc;
 /// ActionScript cannot construct a LoaderInfo. Note that LoaderInfo isn't a final class.
 pub fn loader_info_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let class_name = class.inner_class_definition().name().local_name();
 
@@ -121,7 +121,7 @@ pub struct LoaderInfoObjectData<'gc> {
 impl<'gc> LoaderInfoObject<'gc> {
     /// Box a movie into a loader info object.
     pub fn from_movie(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         movie: Arc<SwfMovie>,
         root: DisplayObject<'gc>,
         loader: Option<Object<'gc>>,
@@ -169,7 +169,7 @@ impl<'gc> LoaderInfoObject<'gc> {
     /// Use `None` as the root clip to indicate that this is the stage's loader
     /// info.
     pub fn not_yet_loaded(
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         movie: Arc<SwfMovie>,
         loader: Option<Object<'gc>>,
         root_clip: Option<DisplayObject<'gc>>,
@@ -277,7 +277,7 @@ impl<'gc> LoaderInfoObject<'gc> {
             };
 
             if should_complete {
-                let mut activation = Activation::from_nothing(context.reborrow());
+                let mut activation = Activation::from_nothing(context);
                 if from_url {
                     let http_status_evt = activation
                         .avm2()
@@ -339,7 +339,7 @@ impl<'gc> LoaderInfoObject<'gc> {
     /// it doesn't exist yet, creates it.
     pub fn get_or_init_avm1movie(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, '_, 'gc>,
         obj: DisplayObject<'gc>,
     ) -> Object<'gc> {
         let cached_avm1movie = self.0.read().cached_avm1movie;
@@ -358,7 +358,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         return self.0.read().cached_avm1movie.unwrap();
     }
 
-    pub fn unload(&self, activation: &mut Activation<'_, 'gc>) {
+    pub fn unload(&self, activation: &mut Activation<'_, '_, 'gc>) {
         let empty_swf = Arc::new(SwfMovie::empty(activation.context.swf.version()));
         let loader_stream = LoaderStream::NotYetLoaded(empty_swf, None, false);
         self.set_loader_stream(loader_stream, activation.context.gc_context);

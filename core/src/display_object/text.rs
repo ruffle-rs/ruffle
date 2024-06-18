@@ -249,7 +249,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                 .library_for_movie(self.movie())
                 .unwrap()
                 .avm2_domain();
-            let mut activation = Avm2Activation::from_domain(context.reborrow(), domain);
+            let mut activation = Avm2Activation::from_domain(context, domain);
             let statictext = activation.avm2().classes().statictext;
             match Avm2StageObject::for_display_object_childless(
                 &mut activation,

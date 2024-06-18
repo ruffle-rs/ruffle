@@ -13,7 +13,7 @@ use std::fmt;
 /// A class instance allocator that allocates Responder objects.
 pub fn responder_allocator<'gc>(
     class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
@@ -89,7 +89,7 @@ impl<'gc> ResponderObject<'gc> {
         };
 
         if let Some(function) = function {
-            let mut activation = Activation::from_nothing(context.reborrow());
+            let mut activation = Activation::from_nothing(context);
             let value = crate::avm2::amf::deserialize_value(&mut activation, message)?;
             function.call((*self).into(), &[value], &mut activation)?;
         }

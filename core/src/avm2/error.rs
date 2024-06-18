@@ -52,7 +52,7 @@ const _: () = assert!(size_of::<Result<Value<'_>, Error<'_>>>() == 32);
 #[inline(never)]
 #[cold]
 pub fn make_null_or_undefined_error<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     value: Value<'gc>,
     name: Option<&Multiname<'gc>>,
 ) -> Error<'gc> {
@@ -88,7 +88,7 @@ pub enum ReferenceErrorCode {
 #[inline(never)]
 #[cold]
 pub fn make_reference_error<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     code: ReferenceErrorCode,
     multiname: &Multiname<'gc>,
     object_class: Option<Class<'gc>>,
@@ -133,7 +133,7 @@ pub fn make_reference_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1002<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+pub fn make_error_1002<'gc>(activation: &mut Activation<'_, '_, 'gc>) -> Error<'gc> {
     let err = range_error(
         activation,
         "Error #1002: Number.toPrecision has a range of 1 to 21. Number.toFixed and Number.toExponential have a range of 0 to 20. Specified value is not within expected range.",
@@ -147,7 +147,7 @@ pub fn make_error_1002<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1003<'gc>(activation: &mut Activation<'_, 'gc>, radix: i32) -> Error<'gc> {
+pub fn make_error_1003<'gc>(activation: &mut Activation<'_, '_, 'gc>, radix: i32) -> Error<'gc> {
     let err = range_error(
         activation,
         &format!(
@@ -164,7 +164,10 @@ pub fn make_error_1003<'gc>(activation: &mut Activation<'_, 'gc>, radix: i32) ->
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1004<'gc>(activation: &mut Activation<'_, 'gc>, method_name: &str) -> Error<'gc> {
+pub fn make_error_1004<'gc>(
+    activation: &mut Activation<'_, '_, 'gc>,
+    method_name: &str,
+) -> Error<'gc> {
     let err = type_error(
         activation,
         &format!(
@@ -182,7 +185,7 @@ pub fn make_error_1004<'gc>(activation: &mut Activation<'_, 'gc>, method_name: &
 #[inline(never)]
 #[cold]
 pub fn make_error_1010<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     name: Option<&Multiname<'gc>>,
 ) -> Error<'gc> {
     let mut msg = "Error #1010: A term is undefined and has no properties.".to_string();
@@ -202,7 +205,7 @@ pub fn make_error_1010<'gc>(
 #[inline(never)]
 #[cold]
 pub fn make_error_1014<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     class_name: AvmString<'gc>,
 ) -> Error<'gc> {
     let err = verify_error(
@@ -219,7 +222,7 @@ pub fn make_error_1014<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1021<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+pub fn make_error_1021<'gc>(activation: &mut Activation<'_, '_, 'gc>) -> Error<'gc> {
     let err = verify_error(
         activation,
         "Error #1021: At least one branch target was not on a valid instruction in the method.",
@@ -233,7 +236,7 @@ pub fn make_error_1021<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1025<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) -> Error<'gc> {
+pub fn make_error_1025<'gc>(activation: &mut Activation<'_, '_, 'gc>, index: u32) -> Error<'gc> {
     let err = verify_error(
         activation,
         &format!("Error #1025: An invalid register {} was accessed.", index),
@@ -247,7 +250,7 @@ pub fn make_error_1025<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) ->
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1032<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) -> Error<'gc> {
+pub fn make_error_1032<'gc>(activation: &mut Activation<'_, '_, 'gc>, index: u32) -> Error<'gc> {
     let err = verify_error(
         activation,
         &format!("Error #1032: Cpool index {} is out of range.", index),
@@ -261,7 +264,7 @@ pub fn make_error_1032<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) ->
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1054<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+pub fn make_error_1054<'gc>(activation: &mut Activation<'_, '_, 'gc>) -> Error<'gc> {
     let err = verify_error(
         activation,
         "Error #1054: Illegal range or target offsets in exception handler.",
@@ -275,7 +278,10 @@ pub fn make_error_1054<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1086<'gc>(activation: &mut Activation<'_, 'gc>, method_name: &str) -> Error<'gc> {
+pub fn make_error_1086<'gc>(
+    activation: &mut Activation<'_, '_, 'gc>,
+    method_name: &str,
+) -> Error<'gc> {
     let err = type_error(
         activation,
         &format!("Error #1086: The {method_name} method only works on lists containing one item."),
@@ -289,7 +295,7 @@ pub fn make_error_1086<'gc>(activation: &mut Activation<'_, 'gc>, method_name: &
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1087<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+pub fn make_error_1087<'gc>(activation: &mut Activation<'_, '_, 'gc>) -> Error<'gc> {
     let err = type_error(
         activation,
         "Error #1087: Assignment to indexed XML is not allowed.",
@@ -303,7 +309,7 @@ pub fn make_error_1087<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1089<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+pub fn make_error_1089<'gc>(activation: &mut Activation<'_, '_, 'gc>) -> Error<'gc> {
     let err = type_error(
         activation,
         "Error #1089: Assignment to lists with more than one item is not supported.",
@@ -318,7 +324,7 @@ pub fn make_error_1089<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 #[inline(never)]
 #[cold]
 pub fn make_error_1098<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     prefix: &AvmString<'gc>,
 ) -> Error<'gc> {
     let err = type_error(
@@ -334,7 +340,7 @@ pub fn make_error_1098<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1107<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+pub fn make_error_1107<'gc>(activation: &mut Activation<'_, '_, 'gc>) -> Error<'gc> {
     let err = verify_error(
         activation,
         "Error #1107: The ABC data is corrupt, attempt to read out of bounds.",
@@ -349,7 +355,7 @@ pub fn make_error_1107<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 #[inline(never)]
 #[cold]
 pub fn make_error_1117<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     name: AvmString<'gc>,
 ) -> Error<'gc> {
     let err = type_error(
@@ -366,7 +372,7 @@ pub fn make_error_1117<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1118<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+pub fn make_error_1118<'gc>(activation: &mut Activation<'_, '_, 'gc>) -> Error<'gc> {
     let err = type_error(
         activation,
         "Error #1118: Illegal cyclical loop between nodes.",
@@ -380,7 +386,7 @@ pub fn make_error_1118<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1127<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+pub fn make_error_1127<'gc>(activation: &mut Activation<'_, '_, 'gc>) -> Error<'gc> {
     let err = type_error(
         activation,
         "Error #1127: Type application attempted on a non-parameterized type.",
@@ -394,7 +400,7 @@ pub fn make_error_1127<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1506<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+pub fn make_error_1506<'gc>(activation: &mut Activation<'_, '_, 'gc>) -> Error<'gc> {
     let err = range_error(
         activation,
         "Error #1506: The range specified is invalid.",
@@ -408,7 +414,10 @@ pub fn make_error_1506<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1508<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &str) -> Error<'gc> {
+pub fn make_error_1508<'gc>(
+    activation: &mut Activation<'_, '_, 'gc>,
+    param_name: &str,
+) -> Error<'gc> {
     let err = argument_error(
         activation,
         &format!(
@@ -425,7 +434,7 @@ pub fn make_error_1508<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &s
 
 #[inline(never)]
 #[cold]
-pub fn make_error_2006<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+pub fn make_error_2006<'gc>(activation: &mut Activation<'_, '_, 'gc>) -> Error<'gc> {
     let err = range_error(
         activation,
         "Error #2006: The supplied index is out of bounds.",
@@ -439,7 +448,10 @@ pub fn make_error_2006<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
-pub fn make_error_2007<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &str) -> Error<'gc> {
+pub fn make_error_2007<'gc>(
+    activation: &mut Activation<'_, '_, 'gc>,
+    param_name: &str,
+) -> Error<'gc> {
     let err = type_error(
         activation,
         &format!("Error #2007: Parameter {} must be non-null.", param_name),
@@ -453,7 +465,10 @@ pub fn make_error_2007<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &s
 
 #[inline(never)]
 #[cold]
-pub fn make_error_2008<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &str) -> Error<'gc> {
+pub fn make_error_2008<'gc>(
+    activation: &mut Activation<'_, '_, 'gc>,
+    param_name: &str,
+) -> Error<'gc> {
     let err = argument_error(
         activation,
         &format!(
@@ -470,7 +485,7 @@ pub fn make_error_2008<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &s
 
 #[inline(never)]
 #[cold]
-pub fn make_error_2027<'gc>(activation: &mut Activation<'_, 'gc>, value: i32) -> Error<'gc> {
+pub fn make_error_2027<'gc>(activation: &mut Activation<'_, '_, 'gc>, value: i32) -> Error<'gc> {
     let err = range_error(
         activation,
         &format!(
@@ -487,7 +502,7 @@ pub fn make_error_2027<'gc>(activation: &mut Activation<'_, 'gc>, value: i32) ->
 
 #[inline(never)]
 #[cold]
-pub fn make_error_2037<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+pub fn make_error_2037<'gc>(activation: &mut Activation<'_, '_, 'gc>) -> Error<'gc> {
     let err = error(
         activation,
         "Error #2037: Functions called in incorrect sequence, or earlier call was unsuccessful.",
@@ -501,7 +516,7 @@ pub fn make_error_2037<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
-pub fn make_error_2097<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+pub fn make_error_2097<'gc>(activation: &mut Activation<'_, '_, 'gc>) -> Error<'gc> {
     let err = argument_error(
         activation,
         "Error #2097: The FileFilter Array is not in the correct format.",
@@ -515,7 +530,7 @@ pub fn make_error_2097<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
-pub fn make_error_2025<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+pub fn make_error_2025<'gc>(activation: &mut Activation<'_, '_, 'gc>) -> Error<'gc> {
     let err = argument_error(
         activation,
         "Error #2025: The supplied DisplayObject must be a child of the caller.",
@@ -529,7 +544,7 @@ pub fn make_error_2025<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
-pub fn make_error_2126<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+pub fn make_error_2126<'gc>(activation: &mut Activation<'_, '_, 'gc>) -> Error<'gc> {
     let err = argument_error(
         activation,
         "Error #2126: NetConnection object must be connected.",
@@ -544,7 +559,7 @@ pub fn make_error_2126<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 #[inline(never)]
 #[cold]
 pub fn range_error<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     message: &str,
     code: u32,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -555,7 +570,7 @@ pub fn range_error<'gc>(
 #[inline(never)]
 #[cold]
 pub fn eval_error<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     message: &str,
     code: u32,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -566,7 +581,7 @@ pub fn eval_error<'gc>(
 #[inline(never)]
 #[cold]
 pub fn argument_error<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     message: &str,
     code: u32,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -577,7 +592,7 @@ pub fn argument_error<'gc>(
 #[inline(never)]
 #[cold]
 pub fn security_error<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     message: &str,
     code: u32,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -588,7 +603,7 @@ pub fn security_error<'gc>(
 #[inline(never)]
 #[cold]
 pub fn type_error<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     message: &str,
     code: u32,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -599,7 +614,7 @@ pub fn type_error<'gc>(
 #[inline(never)]
 #[cold]
 pub fn reference_error<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     message: &str,
     code: u32,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -610,7 +625,7 @@ pub fn reference_error<'gc>(
 #[inline(never)]
 #[cold]
 pub fn verify_error<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     message: &str,
     code: u32,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -621,7 +636,7 @@ pub fn verify_error<'gc>(
 #[inline(never)]
 #[cold]
 pub fn illegal_operation_error<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     message: &str,
     code: u32,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -632,7 +647,7 @@ pub fn illegal_operation_error<'gc>(
 #[inline(never)]
 #[cold]
 pub fn io_error<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     message: &str,
     code: u32,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -643,7 +658,7 @@ pub fn io_error<'gc>(
 #[inline(never)]
 #[cold]
 pub fn eof_error<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     message: &str,
     code: u32,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -654,7 +669,7 @@ pub fn eof_error<'gc>(
 #[inline(never)]
 #[cold]
 pub fn uri_error<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     message: &str,
     code: u32,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -665,7 +680,7 @@ pub fn uri_error<'gc>(
 #[inline(never)]
 #[cold]
 pub fn syntax_error<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     message: &str,
     code: u32,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -676,7 +691,7 @@ pub fn syntax_error<'gc>(
 #[inline(never)]
 #[cold]
 pub fn error<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     message: &str,
     code: u32,
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -687,7 +702,7 @@ pub fn error<'gc>(
 #[inline(never)]
 #[cold]
 pub fn make_mismatch_error<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     method: Method<'gc>,
     user_arguments: &[Value<'gc>],
     callee: Option<Object<'gc>>,
@@ -723,7 +738,7 @@ pub fn make_mismatch_error<'gc>(
 }
 
 fn error_constructor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     class: ClassObject<'gc>,
     message: &str,
     code: u32,

@@ -5,7 +5,7 @@ use crate::external::{Callback, Value as ExternalValue};
 use crate::string::AvmString;
 
 pub fn call<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -22,14 +22,14 @@ pub fn call<'gc>(
             external_args.push(ExternalValue::from_avm2(arg.to_owned()));
         }
         Ok(method
-            .call(&mut activation.context, &external_args)
+            .call(activation.context, &external_args)
             .into_avm2(activation))
     } else {
         Ok(Value::Null)
     }
 }
 
-fn check_available<'gc>(activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
+fn check_available<'gc>(activation: &mut Activation<'_, '_, 'gc>) -> Result<(), Error<'gc>> {
     if !activation.context.external_interface.available() {
         return Err(Error::AvmError(error(
             activation,
@@ -41,7 +41,7 @@ fn check_available<'gc>(activation: &mut Activation<'_, 'gc>) -> Result<(), Erro
 }
 
 pub fn get_available<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -49,7 +49,7 @@ pub fn get_available<'gc>(
 }
 
 pub fn add_callback<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -66,7 +66,7 @@ pub fn add_callback<'gc>(
 }
 
 pub fn get_object_id<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

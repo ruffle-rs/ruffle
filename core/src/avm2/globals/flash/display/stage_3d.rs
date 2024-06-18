@@ -31,7 +31,7 @@ const PROFILES_HIGH_TO_LOW: &[(&[u8], Context3DProfile)] = [
 .as_slice();
 
 pub fn request_context3d_internal<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -75,7 +75,7 @@ pub fn request_context3d_internal<'gc>(
 }
 
 pub fn get_context_3d<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -86,7 +86,7 @@ pub fn get_context_3d<'gc>(
 }
 
 pub fn get_visible<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -97,7 +97,7 @@ pub fn get_visible<'gc>(
 }
 
 pub fn set_visible<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

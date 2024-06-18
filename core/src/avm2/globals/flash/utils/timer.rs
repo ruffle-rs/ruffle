@@ -9,7 +9,7 @@ use crate::timer::TimerCallback;
 
 /// Implements `Timer.stop`
 pub fn stop<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -35,7 +35,7 @@ pub fn stop<'gc>(
 
 /// Implements `Timer.start`
 pub fn start<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -84,7 +84,7 @@ pub fn start<'gc>(
 
 /// Implements `Timer.updateDelay`
 pub fn update_delay<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, '_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {

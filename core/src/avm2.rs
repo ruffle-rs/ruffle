@@ -273,7 +273,7 @@ impl<'gc> Avm2<'gc> {
 
     pub fn load_player_globals(context: &mut UpdateContext<'_, 'gc>) -> Result<(), Error<'gc>> {
         let globals = context.avm2.playerglobals_domain;
-        let mut activation = Activation::from_domain(context.reborrow(), globals);
+        let mut activation = Activation::from_domain(context, globals);
         globals::load_player_globals(&mut activation, globals)
     }
 
@@ -311,7 +311,7 @@ impl<'gc> Avm2<'gc> {
         script: Script<'gc>,
         context: &mut UpdateContext<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mut init_activation = Activation::from_script(context.reborrow(), script)?;
+        let mut init_activation = Activation::from_script(context, script)?;
 
         let (method, scope, _domain) = script.init();
         match method {
@@ -444,7 +444,7 @@ impl<'gc> Avm2<'gc> {
             .map(|e| e.event_type())
             .unwrap_or_else(|| panic!("cannot dispatch non-event object: {:?}", event));
 
-        let mut activation = Activation::from_nothing(context.reborrow());
+        let mut activation = Activation::from_nothing(context);
         if let Err(err) = events::dispatch_event(&mut activation, target, event) {
             tracing::error!(
                 "Encountered AVM2 error when dispatching `{}` event: {:?}",
@@ -534,9 +534,9 @@ impl<'gc> Avm2<'gc> {
                 .copied();
 
             if let Some(object) = object.and_then(|obj| obj.upgrade(context.gc_context)) {
-                let mut activation = Activation::from_nothing(context.reborrow());
+                let mut activation = Activation::from_nothing(context);
 
-                if object.is_of_type(on_type.inner_class_definition(), &mut activation.context) {
+                if object.is_of_type(on_type.inner_class_definition(), activation.context) {
                     if let Err(err) = events::dispatch_event(&mut activation, object, event) {
                         tracing::error!(
                             "Encountered AVM2 error when broadcasting `{}` event: {:?}",
@@ -564,7 +564,7 @@ impl<'gc> Avm2<'gc> {
         domain: Domain<'gc>,
         context: &mut UpdateContext<'_, 'gc>,
     ) -> Result<(), String> {
-        let mut evt_activation = Activation::from_domain(context.reborrow(), domain);
+        let mut evt_activation = Activation::from_domain(context, domain);
         callable
             .call(receiver, args, &mut evt_activation)
             .map_err(|e| format!("{e:?}"))?;
@@ -585,12 +585,12 @@ impl<'gc> Avm2<'gc> {
         let abc = match reader.read() {
             Ok(abc) => abc,
             Err(_) => {
-                let mut activation = Activation::from_nothing(context.reborrow());
+                let mut activation = Activation::from_nothing(context);
                 return Err(make_error_1107(&mut activation));
             }
         };
 
-        let mut activation = Activation::from_domain(context.reborrow(), domain);
+        let mut activation = Activation::from_domain(context, domain);
         // Make sure we have the correct domain for code that tries to access it
         // using `activation.domain()`
         activation.set_outer(ScopeChain::new(domain));
@@ -606,7 +606,7 @@ impl<'gc> Avm2<'gc> {
         if !flags.contains(DoAbc2Flag::LAZY_INITIALIZE) {
             for i in 0..num_scripts {
                 if let Some(script) = tunit.get_script(i) {
-                    script.globals(&mut activation.context)?;
+                    script.globals(activation.context)?;
                 }
             }
         }
