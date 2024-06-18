@@ -1182,25 +1182,22 @@ fn read_point<'gc>(
     activation: &mut Activation<'_, 'gc>,
     data: &VectorStorage<'gc>,
     data_index: &mut usize,
-) -> Result<Point<Twips>, Error<'gc>> {
-    if *data_index + 1 >= data.length() {
-        return Err(make_error_2004(activation, Error2004Type::ArgumentError));
-    }
+) -> Option<Point<Twips>> {
     let x = data
         .get(*data_index, activation)
-        .expect("missing data")
+        .ok()?
         .as_number(activation.context.gc_context)
         .expect("data is not a Vec.<Number>");
 
     let y = data
         .get(*data_index + 1, activation)
-        .expect("missing data")
+        .ok()?
         .as_number(activation.context.gc_context)
         .expect("data is not a Vec.<Number>");
 
     *data_index += 2;
 
-    Ok(Point {
+    Some(Point {
         x: Twips::from_pixels(x),
         y: Twips::from_pixels(y),
     })
@@ -1212,15 +1209,77 @@ fn process_commands<'gc>(
     commands: &VectorStorage<'gc>,
     data: &VectorStorage<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let mut data_index = 0;
-    let mut parsed_commands = vec![];
-
-    // Flash special cases this, and doesn't throw an error, even if there are
-    // commands that try to use points from 'data'
-    if data.length() == 0 {
+    // Flash special cases this, and doesn't throw an error,
+    // even if data has odd number of coordinates.
+    if commands.length() == 0 {
         return Ok(());
     }
 
+    // This error is always thrown at this point,
+    // no matter if data is superfluous.
+    if data.length() % 2 != 0 {
+        return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+    }
+
+    fn process_command<'gc>(
+        activation: &mut Activation<'_, 'gc>,
+        drawing: &mut Drawing,
+        data: &VectorStorage<'gc>,
+        command: i32,
+        data_index: &mut usize,
+    ) -> Option<()> {
+        // Flash ignores commands which do not have data associated with them.
+        match command {
+            // NO_OP
+            0 => {}
+            // MOVE_TO
+            1 => {
+                let point = read_point(activation, data, data_index)?;
+                drawing.draw_command(DrawCommand::MoveTo(point));
+            }
+            // LINE_TO
+            2 => {
+                let point = read_point(activation, data, data_index)?;
+                drawing.draw_command(DrawCommand::LineTo(point));
+            }
+            // CURVE_TO
+            3 => {
+                let control = read_point(activation, data, data_index)?;
+                let anchor = read_point(activation, data, data_index)?;
+                drawing.draw_command(DrawCommand::QuadraticCurveTo { control, anchor });
+            }
+            // WIDE_MOVE_TO
+            4 => {
+                *data_index += 2;
+                let point = read_point(activation, data, data_index)?;
+                drawing.draw_command(DrawCommand::MoveTo(point));
+            }
+            // WIDE_LINE_TO
+            5 => {
+                *data_index += 2;
+                let point = read_point(activation, data, data_index)?;
+                drawing.draw_command(DrawCommand::LineTo(point));
+            }
+            // CUBIC_CURVE_TO
+            6 => {
+                let control_a = read_point(activation, data, data_index)?;
+                let control_b = read_point(activation, data, data_index)?;
+                let anchor = read_point(activation, data, data_index)?;
+                drawing.draw_command(DrawCommand::CubicCurveTo {
+                    control_a,
+                    control_b,
+                    anchor,
+                });
+            }
+            _ => {
+                // Unknown commands stop processing
+                return None;
+            }
+        }
+        Some(())
+    }
+
+    let mut data_index = 0;
     for i in 0..commands.length() {
         let command = commands
             .get(i, activation)
@@ -1228,71 +1287,11 @@ fn process_commands<'gc>(
             .as_integer(activation.context.gc_context)
             .expect("commands is not a Vec.<int>");
 
-        // FIXME - determine correct behavior when data is missing or invalid commands
-        // are used. Flash doesn't throw an error, and it's unclear what the correct
-        // behavior is, exactly. For now, just panic when this happens, so we can determine
-        // if there are any SWFS in the wild relying on this.
-        let draw_command = match command {
-            // NO_OP
-            0 => None,
-            // MOVE_TO
-            1 => Some(DrawCommand::MoveTo(read_point(
-                activation,
-                data,
-                &mut data_index,
-            )?)),
-            // LINE_TO
-            2 => Some(DrawCommand::LineTo(read_point(
-                activation,
-                data,
-                &mut data_index,
-            )?)),
-            // CURVE_TO
-            3 => {
-                let control = read_point(activation, data, &mut data_index)?;
-                let anchor = read_point(activation, data, &mut data_index)?;
-                Some(DrawCommand::QuadraticCurveTo { control, anchor })
-            }
-            // WIDE_MOVE_TO
-            4 => {
-                let _dummy = read_point(activation, data, &mut data_index)?;
-                Some(DrawCommand::MoveTo(read_point(
-                    activation,
-                    data,
-                    &mut data_index,
-                )?))
-            }
-            // WIDE_LINE_TO
-            5 => {
-                let _dummy = read_point(activation, data, &mut data_index)?;
-                Some(DrawCommand::LineTo(read_point(
-                    activation,
-                    data,
-                    &mut data_index,
-                )?))
-            }
-            // CUBIC_CURVE_TO
-            6 => {
-                let control_a = read_point(activation, data, &mut data_index)?;
-                let control_b = read_point(activation, data, &mut data_index)?;
-                let anchor = read_point(activation, data, &mut data_index)?;
-                Some(DrawCommand::CubicCurveTo {
-                    control_a,
-                    control_b,
-                    anchor,
-                })
-            }
-            _ => panic!("Unexpected command value {command}"),
-        };
-
-        if let Some(draw_command) = draw_command {
-            parsed_commands.push(draw_command);
+        if process_command(activation, drawing, data, command, &mut data_index).is_none() {
+            break;
         }
     }
-    // Once validation is done, draw everything
-    for command in parsed_commands {
-        drawing.draw_command(command);
-    }
+
     Ok(())
 }
 
