@@ -56,7 +56,6 @@
         "storage",
         "scripting",
         "declarativeNetRequest",
-        "declarativeNetRequestFeedback",
     ],
     "web_accessible_resources": [{
         "resources": ["*"],

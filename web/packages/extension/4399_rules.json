@@ -3,7 +3,7 @@
     "id": 1,
     "priority": 1,
     "condition": {
-      "domains": ["4399.com"],
+      "initiatorDomains": ["4399.com"],
       "urlFilter": "|*.swf",
       "resourceTypes": ["xmlhttprequest"]
     },
