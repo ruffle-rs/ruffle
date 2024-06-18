@@ -78,7 +78,7 @@ export const internalSourceApi = {
      */
     createPlayer(): RufflePlayer {
         const name = registerElement("ruffle-player", RufflePlayer);
-        return <RufflePlayer>document.createElement(name);
+        return document.createElement(name) as RufflePlayer;
     },
 
     /**
