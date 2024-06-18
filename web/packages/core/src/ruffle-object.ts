@@ -264,9 +264,9 @@ export class RuffleObject extends RufflePlayer {
      */
     static fromNativeObjectElement(elem: Element): RuffleObject {
         const externalName = registerElement("ruffle-object", RuffleObject);
-        const ruffleObj: RuffleObject = <RuffleObject>(
-            document.createElement(externalName)
-        );
+        const ruffleObj: RuffleObject = document.createElement(
+            externalName,
+        ) as RuffleObject;
 
         // Avoid copying embeds-inside-objects to avoid double polyfilling.
         for (const embedElem of Array.from(

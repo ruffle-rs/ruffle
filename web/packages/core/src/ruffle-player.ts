@@ -241,40 +241,40 @@ export class RufflePlayer extends HTMLElement {
         this.shadow = this.attachShadow({ mode: "open" });
         this.shadow.appendChild(ruffleShadowTemplate.content.cloneNode(true));
 
-        this.dynamicStyles = <HTMLStyleElement>(
-            this.shadow.getElementById("dynamic-styles")
-        );
-        this.staticStyles = <HTMLStyleElement>(
-            this.shadow.getElementById("static-styles")
-        );
+        this.dynamicStyles = this.shadow.getElementById(
+            "dynamic-styles",
+        ) as HTMLStyleElement;
+        this.staticStyles = this.shadow.getElementById(
+            "static-styles",
+        ) as HTMLStyleElement;
         this.container = this.shadow.getElementById("container")!;
         this.playButton = this.shadow.getElementById("play-button")!;
         this.playButton.addEventListener("click", () => this.play());
 
         this.unmuteOverlay = this.shadow.getElementById("unmute-overlay")!;
         this.splashScreen = this.shadow.getElementById("splash-screen")!;
-        this.virtualKeyboard = <HTMLInputElement>(
-            this.shadow.getElementById("virtual-keyboard")!
-        );
+        this.virtualKeyboard = this.shadow.getElementById(
+            "virtual-keyboard",
+        )! as HTMLInputElement;
         this.virtualKeyboard.addEventListener(
             "input",
             this.virtualKeyboardInput.bind(this),
         );
-        this.saveManager = <HTMLDivElement>(
-            this.shadow.getElementById("save-manager")!
-        );
-        this.videoModal = <HTMLDivElement>(
-            this.shadow.getElementById("video-modal")!
-        );
-        this.hardwareAccelerationModal = <HTMLDivElement>(
-            this.shadow.getElementById("hardware-acceleration-modal")!
-        );
-        this.volumeControls = <HTMLDivElement>(
-            this.shadow.getElementById("volume-controls-modal")
-        );
-        this.clipboardModal = <HTMLDivElement>(
-            this.shadow.getElementById("clipboard-modal")
-        );
+        this.saveManager = this.shadow.getElementById(
+            "save-manager",
+        )! as HTMLDivElement;
+        this.videoModal = this.shadow.getElementById(
+            "video-modal",
+        )! as HTMLDivElement;
+        this.hardwareAccelerationModal = this.shadow.getElementById(
+            "hardware-acceleration-modal",
+        )! as HTMLDivElement;
+        this.volumeControls = this.shadow.getElementById(
+            "volume-controls-modal",
+        ) as HTMLDivElement;
+        this.clipboardModal = this.shadow.getElementById(
+            "clipboard-modal",
+        ) as HTMLDivElement;
         this.addModalJavaScript(this.saveManager);
         this.addModalJavaScript(this.volumeControls);
         this.addModalJavaScript(this.videoModal);
@@ -284,21 +284,21 @@ export class RufflePlayer extends HTMLElement {
         this.volumeSettings = new VolumeControls(false, 100);
         this.addVolumeControlsJavaScript(this.volumeControls);
 
-        const backupSaves = <HTMLElement>(
-            this.saveManager.querySelector(".modal-button")
-        );
+        const backupSaves = this.saveManager.querySelector(
+            ".modal-button",
+        ) as HTMLElement;
         if (backupSaves) {
             backupSaves.addEventListener("click", this.backupSaves.bind(this));
             backupSaves.innerText = text("save-backup-all");
         }
 
-        const unmuteSvg = <SVGElement>(
-            this.unmuteOverlay.querySelector("#unmute-overlay-svg")
-        );
+        const unmuteSvg = this.unmuteOverlay.querySelector(
+            "#unmute-overlay-svg",
+        ) as SVGElement;
         if (unmuteSvg) {
-            const unmuteText = <SVGTextElement>(
-                unmuteSvg.querySelector("#unmute-text")
-            );
+            const unmuteText = unmuteSvg.querySelector(
+                "#unmute-text",
+            ) as SVGTextElement;
             unmuteText.textContent = text("click-to-unmute");
         }
 
@@ -777,7 +777,7 @@ export class RufflePlayer extends HTMLElement {
         }
 
         const actuallyUsedRendererName = this.instance!.renderer_name();
-        const constructor = <typeof RuffleHandle>this.instance!.constructor;
+        const constructor = this.instance!.constructor as typeof RuffleHandle;
 
         console.log(
             "%c" +
@@ -860,12 +860,12 @@ export class RufflePlayer extends HTMLElement {
      * @param bytesTotal The total size of the Ruffle WebAssembly file.
      */
     private onRuffleDownloadProgress(bytesLoaded: number, bytesTotal: number) {
-        const loadBar = <HTMLElement>(
-            this.splashScreen.querySelector(".loadbar-inner")
-        );
-        const outerLoadbar = <HTMLElement>(
-            this.splashScreen.querySelector(".loadbar")
-        );
+        const loadBar = this.splashScreen.querySelector(
+            ".loadbar-inner",
+        ) as HTMLElement;
+        const outerLoadbar = this.splashScreen.querySelector(
+            ".loadbar",
+        ) as HTMLElement;
         if (Number.isNaN(bytesTotal)) {
             if (outerLoadbar) {
                 outerLoadbar.style.display = "none";
@@ -1252,7 +1252,7 @@ export class RufflePlayer extends HTMLElement {
      * @param solKey The localStorage save file key
      */
     private replaceSOL(event: Event, solKey: string): void {
-        const fileInput = <HTMLInputElement>event.target;
+        const fileInput = event.target as HTMLInputElement;
         const reader = new FileReader();
         reader.addEventListener("load", () => {
             if (reader.result && typeof reader.result === "string") {
@@ -1337,16 +1337,16 @@ export class RufflePlayer extends HTMLElement {
                 });
                 downloadCol.appendChild(downloadSpan);
                 const replaceCol = document.createElement("TD");
-                const replaceInput = <HTMLInputElement>(
-                    document.createElement("INPUT")
-                );
+                const replaceInput = document.createElement(
+                    "INPUT",
+                ) as HTMLInputElement;
                 replaceInput.type = "file";
                 replaceInput.accept = ".sol";
                 replaceInput.className = "replace-save";
                 replaceInput.id = "replace-save-" + key;
-                const replaceLabel = <HTMLLabelElement>(
-                    document.createElement("LABEL")
-                );
+                const replaceLabel = document.createElement(
+                    "LABEL",
+                ) as HTMLLabelElement;
                 replaceLabel.htmlFor = "replace-save-" + key;
                 replaceLabel.className = "save-option";
                 replaceLabel.id = "replace-save";
@@ -1913,7 +1913,7 @@ export class RufflePlayer extends HTMLElement {
     protected onCallbackAvailable(name: string): void {
         const instance = this.instance;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (<any>this)[name] = (...args: unknown[]) => {
+        (this as any)[name] = (...args: unknown[]) => {
             return instance?.call_exposed_callback(name, args);
         };
     }
@@ -2279,14 +2279,14 @@ export class RufflePlayer extends HTMLElement {
         panicDiv.appendChild(panicFooter);
         this.container.textContent = "";
         this.container.appendChild(panicDiv);
-        const viewDetails = <HTMLLinkElement>(
-            this.container.querySelector("#panic-view-details")
-        );
+        const viewDetails = this.container.querySelector(
+            "#panic-view-details",
+        ) as HTMLLinkElement;
         if (viewDetails) {
             viewDetails.onclick = () => {
-                const panicBody = <HTMLDivElement>(
-                    this.container.querySelector("#panic-body")
-                );
+                const panicBody = this.container.querySelector(
+                    "#panic-body",
+                ) as HTMLDivElement;
                 panicBody.classList.add("details");
 
                 const panicText = document.createElement("textarea");
@@ -2375,9 +2375,9 @@ export class RufflePlayer extends HTMLElement {
         messageDiv.appendChild(buttonDiv);
         div.appendChild(messageDiv);
         this.container.prepend(div);
-        (<HTMLButtonElement>(
-            this.container.querySelector("#continue-btn")
-        )).onclick = () => {
+        (
+            this.container.querySelector("#continue-btn") as HTMLButtonElement
+        ).onclick = () => {
             div.parentNode!.removeChild(div);
         };
     }
