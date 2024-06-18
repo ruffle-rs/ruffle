@@ -671,8 +671,11 @@ impl FormatSpans {
         let mut last_closed_font: Option<TextSpanFont> = None;
 
         let mut reader = Reader::from_reader(&raw_bytes[..]);
-        reader.expand_empty_elements(true);
-        reader.check_end_names(false);
+        let reader_config = reader.config_mut();
+        reader_config.expand_empty_elements = true;
+        reader_config.check_end_names = false;
+        reader_config.allow_unmatched_ends = true;
+
         loop {
             match reader.read_event() {
                 Ok(Event::Start(ref e)) => {
