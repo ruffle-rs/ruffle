@@ -389,7 +389,7 @@ fn describe_internal_body<'gc>(
                 }
 
                 let declared_by_name = declared_by
-                    .name()
+                    .dollar_removed_name(activation.context.gc_context)
                     .to_qualified_name(activation.context.gc_context);
 
                 let trait_metadata = vtable.get_metadata_for_disp(disp_id);

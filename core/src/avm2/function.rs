@@ -231,12 +231,19 @@ pub fn display_function<'gc>(
     method: &Method<'gc>,
     superclass: Option<ClassObject<'gc>>,
 ) {
-    let class_def = superclass.map(|superclass| {
-        let class_def = superclass.inner_class_definition();
-        let name = class_def.name().to_qualified_name_no_mc();
+    let class_defs = superclass.map(|superclass| {
+        let i_class = superclass.inner_class_definition();
+        let name = i_class.name().to_qualified_name_no_mc();
         output.push_str(&name);
-        class_def
+
+        (
+            i_class,
+            i_class
+                .c_class()
+                .expect("inner_class_definition should be an i_class"),
+        )
     });
+
     match method {
         Method::Native(method) => {
             output.push_char('/');
@@ -245,15 +252,15 @@ pub fn display_function<'gc>(
         Method::Bytecode(method) => {
             // NOTE: The name of a bytecode method refers to the name of the trait that contains the method,
             // rather than the name of the method itself.
-            if let Some(class_def) = class_def {
-                if class_def
-                    .class_init()
+            if let Some((i_class, c_class)) = class_defs {
+                if c_class
+                    .instance_init()
                     .into_bytecode()
                     .map(|b| Gc::ptr_eq(b, *method))
                     .unwrap_or(false)
                 {
                     output.push_utf8("$cinit");
-                } else if !class_def
+                } else if !i_class
                     .instance_init()
                     .into_bytecode()
                     .map(|b| Gc::ptr_eq(b, *method))
@@ -264,7 +271,7 @@ pub fn display_function<'gc>(
                     let mut method_trait = None;
 
                     // First search instance traits for the method
-                    let instance_traits = class_def.instance_traits();
+                    let instance_traits = i_class.traits();
                     for t in &*instance_traits {
                         if let Some(b) = t.as_method().and_then(|m| m.into_bytecode().ok()) {
                             if Gc::ptr_eq(b, *method) {
@@ -274,7 +281,7 @@ pub fn display_function<'gc>(
                         }
                     }
 
-                    let class_traits = class_def.class_traits();
+                    let class_traits = c_class.traits();
                     if method_trait.is_none() {
                         // If we can't find it in instance traits, search class traits instead
                         for t in class_traits.iter() {

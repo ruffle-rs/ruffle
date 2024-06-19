@@ -249,29 +249,19 @@ pub fn init<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Construct `Object`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
+/// Construct `Object`'s i_class.
+pub fn create_i_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     let gc_context = activation.context.gc_context;
-    let object_class = Class::new(
+    let object_i_class = Class::custom_new(
         QName::new(activation.avm2().public_namespace_base_version, "Object"),
         None,
         Method::from_builtin(instance_init, "<Object instance initializer>", gc_context),
-        Method::from_builtin(class_init, "<Object class initializer>", gc_context),
         gc_context,
     );
 
-    object_class.set_call_handler(
+    object_i_class.set_call_handler(
         gc_context,
         Method::from_builtin(class_call, "<Object call handler>", gc_context),
-    );
-
-    object_class.define_class_trait(
-        gc_context,
-        Trait::from_const(
-            QName::new(activation.avm2().public_namespace_base_version, "length"),
-            Multiname::new(activation.avm2().public_namespace_base_version, "int"),
-            Some(1.into()),
-        ),
     );
 
     // Fixed traits (in AS3 namespace)
@@ -308,23 +298,53 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
             Multiname::new(activation.avm2().public_namespace_base_version, "Boolean"),
         ),
     ];
-    object_class.define_builtin_instance_methods_with_sig(
+    object_i_class.define_builtin_instance_methods_with_sig(
         gc_context,
         activation.avm2().as3_namespace,
         as3_instance_methods,
     );
 
+    object_i_class.mark_traits_loaded(activation.context.gc_context);
+    object_i_class
+        .init_vtable(&mut activation.context)
+        .expect("Native class's vtable should initialize");
+
+    object_i_class
+}
+
+/// Construct `Object`'s c_class.
+pub fn create_c_class<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    class_i_class: Class<'gc>,
+) -> Class<'gc> {
+    let gc_context = activation.context.gc_context;
+    let object_c_class = Class::custom_new(
+        QName::new(activation.avm2().public_namespace_base_version, "Object$"),
+        Some(class_i_class),
+        Method::from_builtin(class_init, "<Object class initializer>", gc_context),
+        gc_context,
+    );
+
+    object_c_class.define_instance_trait(
+        gc_context,
+        Trait::from_const(
+            QName::new(activation.avm2().public_namespace_base_version, "length"),
+            Multiname::new(activation.avm2().public_namespace_base_version, "int"),
+            Some(1.into()),
+        ),
+    );
+
     const INTERNAL_INIT_METHOD: &[(&str, NativeMethodImpl)] = &[("init", init)];
-    object_class.define_builtin_class_methods(
+    object_c_class.define_builtin_instance_methods(
         gc_context,
         activation.avm2().internal_namespace,
         INTERNAL_INIT_METHOD,
     );
 
-    object_class.mark_traits_loaded(activation.context.gc_context);
-    object_class
+    object_c_class.mark_traits_loaded(activation.context.gc_context);
+    object_c_class
         .init_vtable(&mut activation.context)
         .expect("Native class's vtable should initialize");
 
-    object_class
+    object_c_class
 }

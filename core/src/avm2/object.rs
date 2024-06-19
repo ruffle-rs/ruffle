@@ -123,7 +123,9 @@ pub use crate::avm2::object::regexp_object::{reg_exp_allocator, RegExpObject, Re
 pub use crate::avm2::object::responder_object::{
     responder_allocator, ResponderObject, ResponderObjectWeak,
 };
-pub use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData, ScriptObjectWeak};
+pub use crate::avm2::object::script_object::{
+    scriptobject_allocator, ScriptObject, ScriptObjectData, ScriptObjectWeak,
+};
 pub use crate::avm2::object::shader_data_object::{
     shader_data_allocator, ShaderDataObject, ShaderDataObjectWeak,
 };
