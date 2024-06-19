@@ -659,6 +659,20 @@ impl<'gc> EditText<'gc> {
         self.0.write(gc_context).is_tlf = is_tlf;
     }
 
+    pub fn draw_layout_boxes(self) -> bool {
+        self.0
+            .read()
+            .flags
+            .contains(EditTextFlag::DRAW_LAYOUT_BOXES)
+    }
+
+    pub fn set_draw_layout_boxes(self, context: &mut UpdateContext<'_, 'gc>, value: bool) {
+        self.0
+            .write(context.gc())
+            .flags
+            .set(EditTextFlag::DRAW_LAYOUT_BOXES, value);
+    }
+
     pub fn replace_text(
         self,
         from: usize,
@@ -2275,7 +2289,20 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
                 }
             }
         } else {
+            let draw_boxes = edit_text.flags.contains(EditTextFlag::DRAW_LAYOUT_BOXES);
+            if draw_boxes {
+                context.draw_rect_outline(
+                    Color::GREEN,
+                    edit_text.intrinsic_bounds.into(),
+                    Twips::ONE,
+                );
+            }
+
             for layout_box in edit_text.layout.iter() {
+                if draw_boxes {
+                    context.draw_rect_outline(Color::RED, layout_box.bounds().into(), Twips::ONE);
+                }
+
                 self.render_layout_box(context, layout_box);
             }
         }
@@ -2525,6 +2552,7 @@ bitflags::bitflags! {
     struct EditTextFlag: u16 {
         const FIRING_VARIABLE_BINDING = 1 << 0;
         const HAS_BACKGROUND = 1 << 1;
+        const DRAW_LAYOUT_BOXES = 1 << 2;
 
         // The following bits need to match `swf::EditTextFlag`.
         const READ_ONLY = 1 << 3;
