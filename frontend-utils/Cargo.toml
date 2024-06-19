@@ -21,13 +21,11 @@ ruffle_core = { path = "../core", default-features = false }
 ruffle_render = { path = "../render", default-features = false }
 async-channel = { workspace = true }
 slotmap = { workspace = true }
-futures = { workspace = true }
 async-io = "2.3.2"
-async-net = "2.0.0"
 futures-lite = "2.3.0"
 webbrowser = "1.0.1"
 reqwest = { version = "0.12.5", default-features = false, features = ["rustls-tls", "cookies", "charset", "http2", "macos-system-configuration"] }
-tokio = { workspace = true }
+tokio = { workspace = true, features = ["net"] }
 
 [dev-dependencies]
 tempfile = "3"
