@@ -21,6 +21,7 @@ use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
 use crate::drawing::Drawing;
 use crate::events::{ClipEvent, ClipEventResult, TextControlCode};
 use crate::font::{round_down_to_pixel, FontType, Glyph, TextRenderSettings};
+use crate::html;
 use crate::html::{
     BoxBounds, FormatSpans, LayoutBox, LayoutContent, LayoutMetrics, Position, TextFormat,
 };
@@ -287,7 +288,7 @@ impl<'gc> EditText<'gc> {
             FontType::Device
         };
 
-        let (layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(
+        let (layout, intrinsic_bounds) = html::lower_from_text_spans(
             &text_spans,
             context,
             swf_movie.clone(),
@@ -848,7 +849,7 @@ impl<'gc> EditText<'gc> {
             FontType::Embedded
         };
 
-        let (new_layout, intrinsic_bounds) = LayoutBox::lower_from_text_spans(
+        let (new_layout, intrinsic_bounds) = html::lower_from_text_spans(
             &edit_text.text_spans,
             context,
             movie,
