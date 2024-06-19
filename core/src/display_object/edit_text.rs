@@ -32,6 +32,7 @@ use crate::vminterface::{AvmObject, Instantiator};
 use chrono::DateTime;
 use chrono::Utc;
 use core::fmt;
+use either::Either;
 use gc_arena::{Collect, Gc, GcCell, Mutation};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::DrawCommand;
@@ -1865,59 +1866,42 @@ impl<'gc> EditText<'gc> {
 
     /// Calculate the layout metrics for a given line.
     ///
-    /// Returns None if the line does not exist or there is not enough data
+    /// Returns `None` if the line does not exist or there is not enough data
     /// about the line to calculate metrics with.
     pub fn layout_metrics(self, line: Option<usize>) -> Option<LayoutMetrics> {
-        let read = self.0.read();
-        let line = line.and_then(|line| read.layout.lines().get(line));
-        let mut union_bounds = None;
-        let mut font = None;
-        let mut text_format = None;
+        let layout = &self.0.read().layout;
+        let line = line.and_then(|line| layout.lines().get(line));
 
-        for layout_box in read.layout.boxes_iter() {
-            if let Some(line) = line {
-                if layout_box.bounds().offset_y() < line.offset()
-                    || layout_box.bounds().extent_y() > line.extent()
-                {
-                    continue;
+        let (boxes, union_bounds) = if let Some(line) = line {
+            (Either::Left(line.boxes_iter()), line.bounds())
+        } else {
+            (Either::Right(layout.boxes_iter()), layout.bounds())
+        };
+
+        let mut first_font = None;
+        let mut first_format = None;
+        for layout_box in boxes {
+            match layout_box.content() {
+                LayoutContent::Text {
+                    font, text_format, ..
                 }
-            }
-
-            if let Some(bounds) = &mut union_bounds {
-                *bounds += layout_box.bounds();
-            } else {
-                union_bounds = Some(layout_box.bounds());
-            }
-
-            if font.is_none() {
-                match layout_box.content() {
-                    LayoutContent::Text {
-                        font: box_font,
-                        text_format: box_text_format,
-                        ..
-                    } => {
-                        font = Some(box_font);
-                        text_format = Some(box_text_format);
-                    }
-                    LayoutContent::Bullet {
-                        font: box_font,
-                        text_format: box_text_format,
-                        ..
-                    } => {
-                        font = Some(box_font);
-                        text_format = Some(box_text_format);
-                    }
-                    LayoutContent::Drawing { .. } => {}
+                | LayoutContent::Bullet {
+                    font, text_format, ..
+                } => {
+                    first_font = Some(font);
+                    first_format = Some(text_format);
+                    break;
                 }
+                LayoutContent::Drawing { .. } => {}
             }
         }
 
-        let union_bounds = union_bounds?;
-        let font = font?;
-        let size = Twips::from_pixels(text_format?.size?);
+        let font = first_font?;
+        let text_format = first_format?;
+        let size = Twips::from_pixels(text_format.size?);
         let ascent = font.get_baseline_for_height(size);
         let descent = font.get_descent_for_height(size);
-        let leading = Twips::from_pixels(text_format?.leading?);
+        let leading = Twips::from_pixels(text_format.leading?);
 
         Some(LayoutMetrics {
             ascent,
