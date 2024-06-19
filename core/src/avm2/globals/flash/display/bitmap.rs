@@ -19,12 +19,12 @@ pub fn bitmap_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let bitmap_cls = activation.avm2().classes().bitmap;
+    let bitmap_cls = activation.avm2().classes().bitmap.inner_class_definition();
     let bitmapdata_cls = activation.context.avm2.classes().bitmapdata;
 
-    let mut class_object = Some(class);
+    let mut class_def = Some(class.inner_class_definition());
     let orig_class = class;
-    while let Some(class) = class_object {
+    while let Some(class) = class_def {
         if class == bitmap_cls {
             let bitmap_data = BitmapDataWrapper::dummy(activation.context.gc_context);
             let display_object = Bitmap::new_with_bitmap_data(
@@ -77,7 +77,7 @@ pub fn bitmap_allocator<'gc>(
                 return Ok(obj);
             }
         }
-        class_object = class.superclass_object();
+        class_def = class.super_class();
     }
     unreachable!("A Bitmap subclass should have Bitmap in superclass chain");
 }

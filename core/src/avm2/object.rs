@@ -1107,12 +1107,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Get a raw pointer value for this object.
     fn as_ptr(&self) -> *const ObjectPtr;
 
-    /// Get this object's class, if it has one.
-    fn instance_of(&self) -> Option<ClassObject<'gc>> {
-        let base = self.base();
-        base.instance_of()
-    }
-
     /// Get this object's vtable, if it has one.
     /// Every object with class should have a vtable
     fn vtable(&self) -> Option<VTable<'gc>> {
@@ -1127,7 +1121,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get this object's class's `Class`, if it has one.
     fn instance_class(&self) -> Option<Class<'gc>> {
-        self.instance_of().map(|cls| cls.inner_class_definition())
+        let base = self.base();
+        base.instance_class()
     }
 
     /// Get this object's class's name, formatted for debug output.
@@ -1137,11 +1132,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             .unwrap_or_else(|| "<Unknown type>".into())
     }
 
-    fn set_instance_of(&self, mc: &Mutation<'gc>, instance_of: ClassObject<'gc>) {
-        let instance_vtable = instance_of.instance_vtable();
-
+    fn set_instance_class(&self, mc: &Mutation<'gc>, instance_class: Class<'gc>) {
         let mut base = self.base_mut(mc);
-        base.set_instance_of(instance_of, instance_vtable);
+        base.set_instance_class(instance_class);
     }
 
     // Sets a different vtable for object, without changing instance_of.

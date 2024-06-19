@@ -267,7 +267,7 @@ impl<'gc> TranslationUnit<'gc> {
             self,
             script_index,
             global_obj,
-            global_classdef,
+            global_class,
             domain,
             activation,
         )?;
@@ -430,6 +430,9 @@ pub struct ScriptData<'gc> {
     /// The class of this script's global object.
     global_class: Option<Class<'gc>>,
 
+    /// The ClassObject of this script's global object.
+    global_class_obj: Option<ClassObject<'gc>>,
+
     /// The domain associated with this script.
     domain: Domain<'gc>,
 
@@ -468,6 +471,7 @@ impl<'gc> Script<'gc> {
             ScriptData {
                 globals,
                 global_class: None,
+                global_class_obj: None,
                 domain,
                 init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
@@ -496,7 +500,7 @@ impl<'gc> Script<'gc> {
         unit: TranslationUnit<'gc>,
         script_index: u32,
         globals: Object<'gc>,
-        global_class: Class<'gc>,
+        global_class_obj: ClassObject<'gc>,
         domain: Domain<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
@@ -513,7 +517,8 @@ impl<'gc> Script<'gc> {
             activation.context.gc_context,
             ScriptData {
                 globals,
-                global_class: Some(global_class),
+                global_class: Some(global_class_obj.inner_class_definition()),
+                global_class_obj: Some(global_class_obj),
                 domain,
                 init,
                 traits: Vec::new(),
@@ -608,6 +613,10 @@ impl<'gc> Script<'gc> {
         self.0.write(mc).global_class = Some(global_class);
     }
 
+    pub fn set_global_class_obj(self, mc: &Mutation<'gc>, global_class_obj: ClassObject<'gc>) {
+        self.0.write(mc).global_class_obj = Some(global_class_obj);
+    }
+
     /// Return the global scope for the script.
     ///
     /// If the script has not yet been initialized, this will initialize it on
@@ -628,7 +637,7 @@ impl<'gc> Script<'gc> {
 
             globals.vtable().unwrap().init_vtable(
                 globals.instance_class().unwrap(),
-                globals.instance_of(),
+                self.0.read().global_class_obj,
                 &self.traits()?,
                 Some(scope),
                 None,

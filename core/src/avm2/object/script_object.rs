@@ -53,9 +53,9 @@ pub struct ScriptObjectData<'gc> {
     /// Implicit prototype of this script object.
     proto: Option<Object<'gc>>,
 
-    /// The class object that this is an instance of.
+    /// The `Class` that this is an instance of.
     /// If `none`, this is not an ES4 object at all.
-    instance_of: Option<ClassObject<'gc>>,
+    instance_class: Option<Class<'gc>>,
 
     /// The table used for non-dynamic property lookups.
     vtable: Option<VTable<'gc>>,
@@ -143,7 +143,7 @@ impl<'gc> ScriptObjectData<'gc> {
             slots: Vec::new(),
             bound_methods: Vec::new(),
             proto,
-            instance_of,
+            instance_class: instance_of.map(|cls| cls.inner_class_definition()),
             vtable: instance_of.map(|cls| cls.instance_vtable()),
         }
     }
@@ -390,13 +390,9 @@ impl<'gc> ScriptObjectData<'gc> {
         *self.bound_methods.get_mut(disp_id as usize).unwrap() = Some(function);
     }
 
-    /// Get the class object for this object, if it has one.
-    pub fn instance_of(&self) -> Option<ClassObject<'gc>> {
-        self.instance_of
-    }
-
+    /// Get the `Class` for this object, if it has one.
     pub fn instance_class(&self) -> Option<Class<'gc>> {
-        self.instance_of.map(|cls| cls.inner_class_definition())
+        self.instance_class
     }
 
     /// Get the vtable for this object, if it has one.
@@ -411,9 +407,8 @@ impl<'gc> ScriptObjectData<'gc> {
     }
 
     /// Set the class object for this object.
-    pub fn set_instance_of(&mut self, instance_of: ClassObject<'gc>, vtable: VTable<'gc>) {
-        self.instance_of = Some(instance_of);
-        self.vtable = Some(vtable);
+    pub fn set_instance_class(&mut self, instance_class: Class<'gc>) {
+        self.instance_class = Some(instance_class);
     }
 
     pub fn set_vtable(&mut self, vtable: VTable<'gc>) {
