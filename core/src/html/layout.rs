@@ -807,111 +807,78 @@ impl<'gc> LayoutBox<'gc> {
             content: LayoutContent::Drawing(drawing),
         }
     }
+}
 
-    /// Construct a new layout hierarchy from text spans.
-    ///
-    /// The returned bounds will include both the text bounds itself, as well
-    /// as left and right margins on any of the lines.
-    pub fn lower_from_text_spans(
-        fs: &FormatSpans,
-        context: &mut UpdateContext<'_, 'gc>,
-        movie: Arc<SwfMovie>,
-        bounds: Twips,
-        is_word_wrap: bool,
-        font_type: FontType,
-    ) -> (Vec<LayoutBox<'gc>>, BoxBounds<Twips>) {
-        let mut layout_context = LayoutContext::new(movie, bounds, fs.displayed_text());
+/// Construct a new layout hierarchy from text spans.
+///
+/// The returned bounds will include both the text bounds itself, as well
+/// as left and right margins on any of the lines.
+pub fn lower_from_text_spans<'gc>(
+    fs: &FormatSpans,
+    context: &mut UpdateContext<'_, 'gc>,
+    movie: Arc<SwfMovie>,
+    bounds: Twips,
+    is_word_wrap: bool,
+    font_type: FontType,
+) -> (Vec<LayoutBox<'gc>>, BoxBounds<Twips>) {
+    let mut layout_context = LayoutContext::new(movie, bounds, fs.displayed_text());
 
-        for (span_start, _end, span_text, span) in fs.iter_spans() {
-            if let Some(font) = layout_context.resolve_font(context, span, font_type) {
-                layout_context.font = Some(font);
-                layout_context.newspan(span);
+    for (span_start, _end, span_text, span) in fs.iter_spans() {
+        if let Some(font) = layout_context.resolve_font(context, span, font_type) {
+            layout_context.font = Some(font);
+            layout_context.newspan(span);
 
-                let params = EvalParameters::from_span(span);
+            let params = EvalParameters::from_span(span);
 
-                for text in span_text.split(&[b'\n', b'\r', b'\t'][..]) {
-                    let slice_start = text.offset_in(span_text).unwrap();
-                    let delimiter = if slice_start > 0 {
-                        span_text
-                            .get(slice_start - 1)
-                            .and_then(|c| u8::try_from(c).ok())
-                    } else {
-                        None
-                    };
+            for text in span_text.split(&[b'\n', b'\r', b'\t'][..]) {
+                let slice_start = text.offset_in(span_text).unwrap();
+                let delimiter = if slice_start > 0 {
+                    span_text
+                        .get(slice_start - 1)
+                        .and_then(|c| u8::try_from(c).ok())
+                } else {
+                    None
+                };
 
-                    match delimiter {
-                        Some(b'\n' | b'\r') => layout_context.explicit_newline(
-                            context,
-                            fs.displayed_text(),
-                            span_start + slice_start - 1,
-                            span,
-                            font_type,
-                        ),
-                        Some(b'\t') => layout_context.tab(),
-                        _ => {}
-                    }
+                match delimiter {
+                    Some(b'\n' | b'\r') => layout_context.explicit_newline(
+                        context,
+                        fs.displayed_text(),
+                        span_start + slice_start - 1,
+                        span,
+                        font_type,
+                    ),
+                    Some(b'\t') => layout_context.tab(),
+                    _ => {}
+                }
 
-                    let start = span_start + slice_start;
+                let start = span_start + slice_start;
 
-                    let mut last_breakpoint = 0;
+                let mut last_breakpoint = 0;
 
-                    if is_word_wrap {
-                        let (mut width, mut offset) = layout_context.wrap_dimensions(span);
+                if is_word_wrap {
+                    let (mut width, mut offset) = layout_context.wrap_dimensions(span);
 
-                        while let Some(breakpoint) = font.wrap_line(
-                            &text[last_breakpoint..],
-                            params,
-                            width,
-                            offset,
-                            layout_context.is_start_of_line(),
-                        ) {
-                            // This ensures that the space causing the line break
-                            // is included in the line it broke.
-                            let next_breakpoint = string_utils::next_char_boundary(
-                                text,
-                                last_breakpoint + breakpoint,
-                            );
+                    while let Some(breakpoint) = font.wrap_line(
+                        &text[last_breakpoint..],
+                        params,
+                        width,
+                        offset,
+                        layout_context.is_start_of_line(),
+                    ) {
+                        // This ensures that the space causing the line break
+                        // is included in the line it broke.
+                        let next_breakpoint =
+                            string_utils::next_char_boundary(text, last_breakpoint + breakpoint);
 
-                            // If text doesn't fit at the start of a line, it
-                            // won't fit on the next either, abort and put the
-                            // whole text on the line (will be cut-off). This
-                            // can happen for small text fields with single
-                            // characters.
-                            if breakpoint == 0 && layout_context.is_start_of_line() {
-                                break;
-                            } else if breakpoint == 0 {
-                                layout_context.newline(
-                                    context,
-                                    fs.displayed_text(),
-                                    start + next_breakpoint,
-                                    span,
-                                    font_type,
-                                );
-
-                                let next_dim = layout_context.wrap_dimensions(span);
-
-                                width = next_dim.0;
-                                offset = next_dim.1;
-
-                                if last_breakpoint >= text.len() {
-                                    break;
-                                } else {
-                                    continue;
-                                }
-                            }
-
-                            layout_context.append_text(
-                                &text[last_breakpoint..next_breakpoint],
-                                start + last_breakpoint,
-                                start + next_breakpoint,
-                                span,
-                            );
-
-                            last_breakpoint = next_breakpoint;
-                            if last_breakpoint >= text.len() {
-                                break;
-                            }
-
+                        // If text doesn't fit at the start of a line, it
+                        // won't fit on the next either, abort and put the
+                        // whole text on the line (will be cut-off). This
+                        // can happen for small text fields with single
+                        // characters.
+                        if breakpoint == 0 && layout_context.is_start_of_line() {
+                            break;
+                        } else if breakpoint == 0 {
                             layout_context.newline(
                                 context,
                                 fs.displayed_text(),
@@ -919,30 +886,63 @@ impl<'gc> LayoutBox<'gc> {
                                 span,
                                 font_type,
                             );
+
                             let next_dim = layout_context.wrap_dimensions(span);
 
                             width = next_dim.0;
                             offset = next_dim.1;
+
+                            if last_breakpoint >= text.len() {
+                                break;
+                            } else {
+                                continue;
+                            }
                         }
-                    }
 
-                    let span_end = text.len();
-
-                    if last_breakpoint < span_end {
                         layout_context.append_text(
-                            &text[last_breakpoint..span_end],
+                            &text[last_breakpoint..next_breakpoint],
                             start + last_breakpoint,
-                            start + span_end,
+                            start + next_breakpoint,
                             span,
                         );
+
+                        last_breakpoint = next_breakpoint;
+                        if last_breakpoint >= text.len() {
+                            break;
+                        }
+
+                        layout_context.newline(
+                            context,
+                            fs.displayed_text(),
+                            start + next_breakpoint,
+                            span,
+                            font_type,
+                        );
+                        let next_dim = layout_context.wrap_dimensions(span);
+
+                        width = next_dim.0;
+                        offset = next_dim.1;
                     }
+                }
+
+                let span_end = text.len();
+
+                if last_breakpoint < span_end {
+                    layout_context.append_text(
+                        &text[last_breakpoint..span_end],
+                        start + last_breakpoint,
+                        start + span_end,
+                        span,
+                    );
                 }
             }
         }
-
-        layout_context.end_layout(context, fs, font_type)
     }
 
+    layout_context.end_layout(context, fs, font_type)
+}
+
+impl<'gc> LayoutBox<'gc> {
     pub fn bounds(&self) -> BoxBounds<Twips> {
         self.bounds
     }
