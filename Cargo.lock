@@ -4431,8 +4431,6 @@ version = "0.1.0"
 dependencies = [
  "async-channel",
  "async-io",
- "async-net",
- "futures",
  "futures-lite",
  "macro_rules_attribute",
  "reqwest",
