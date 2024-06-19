@@ -146,14 +146,6 @@ impl ContentType {
     }
 }
 
-#[derive(Clone, Collect, Copy)]
-#[collect(no_drop)]
-pub enum DataFormat {
-    Binary,
-    Text,
-    Variables,
-}
-
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("Load cancelled")]
@@ -461,7 +453,6 @@ impl<'gc> LoadManager<'gc> {
         player: Weak<Mutex<Player>>,
         target_object: Avm2Object<'gc>,
         request: Request,
-        data_format: DataFormat,
     ) -> OwnedFuture<(), Error> {
         let loader = Loader::LoadURLLoader {
             self_handle: None,
@@ -469,7 +460,7 @@ impl<'gc> LoadManager<'gc> {
         };
         let handle = self.add_loader(loader);
         let loader = self.get_loader_mut(handle).unwrap();
-        loader.load_url_loader(player, request, data_format)
+        loader.load_url_loader(player, request)
     }
 
     /// Kick off an AVM1 audio load.
@@ -1445,7 +1436,6 @@ impl<'gc> Loader<'gc> {
         &mut self,
         player: Weak<Mutex<Player>>,
         request: Request,
-        data_format: DataFormat,
     ) -> OwnedFuture<(), Error> {
         let handle = match self {
             Loader::LoadURLLoader { self_handle, .. } => {
@@ -1476,24 +1466,25 @@ impl<'gc> Loader<'gc> {
                     body: Vec<u8>,
                     activation: &mut Avm2Activation<'a, 'gc>,
                     target: Avm2Object<'gc>,
-                    data_format: DataFormat,
                 ) {
-                    let data_object = match data_format {
-                        DataFormat::Binary => {
-                            let storage = ByteArrayStorage::from_vec(body);
-                            let bytearray =
-                                ByteArrayObject::from_storage(activation, storage).unwrap();
+                    let data_format = target
+                        .get_public_property("dataFormat", activation)
+                        .expect("The dataFormat field exists on URLLoaders")
+                        .coerce_to_string(activation)
+                        .expect("The dataFormat field is typed String");
 
-                            Some(bytearray.into())
-                        }
-                        DataFormat::Text => {
+                    let data_object = if &data_format == b"binary" {
+                        let storage = ByteArrayStorage::from_vec(body);
+                        let bytearray = ByteArrayObject::from_storage(activation, storage).unwrap();
+
+                        Some(bytearray.into())
+                    } else if &data_format == b"variables" {
+                        if body.is_empty() {
+                            None
+                        } else {
                             let string_value =
                                 AvmString::new_utf8_bytes(activation.context.gc_context, &body);
-                            Some(Avm2Value::String(string_value))
-                        }
-                        DataFormat::Variables => {
-                            let string_value =
-                                AvmString::new_utf8_bytes(activation.context.gc_context, &body);
+
                             activation
                                 .avm2()
                                 .classes()
@@ -1502,6 +1493,15 @@ impl<'gc> Loader<'gc> {
                                 .ok()
                                 .map(|o| o.into())
                         }
+                    } else {
+                        if &data_format != b"text" {
+                            tracing::warn!("Invalid URLLoaderDataFormat: {}", data_format);
+                        }
+
+                        let string_value =
+                            AvmString::new_utf8_bytes(activation.context.gc_context, &body);
+
+                        Some(Avm2Value::String(string_value))
                     };
 
                     if let Some(data_object) = data_object {
@@ -1527,7 +1527,7 @@ impl<'gc> Loader<'gc> {
                         let open_evt =
                             Avm2EventObject::bare_default_event(&mut activation.context, "open");
                         Avm2::dispatch_event(&mut activation.context, open_evt, target);
-                        set_data(body, &mut activation, target, data_format);
+                        set_data(body, &mut activation, target);
 
                         // FIXME - we should fire "progress" events as we receive data, not
                         // just at the end
@@ -1577,7 +1577,7 @@ impl<'gc> Loader<'gc> {
                         // Testing with Flash shoes that the 'data' property is cleared
                         // when an error occurs
 
-                        set_data(Vec::new(), &mut activation, target, data_format);
+                        set_data(Vec::new(), &mut activation, target);
 
                         let (status_code, redirected) =
                             if let Error::HttpNotOk(_, status_code, redirected, _) = response.error

@@ -44,7 +44,8 @@ impl ContextMenu {
                             let clicked = if item.checked {
                                 Checkbox::new(&mut true, &item.caption).ui(ui).clicked()
                             } else {
-                                let button = Button::new(&item.caption).wrap(false);
+                                let button = Button::new(&item.caption)
+                                    .wrap_mode(egui::TextWrapMode::Extend);
 
                                 ui.add_enabled(item.enabled, button).clicked()
                             };
