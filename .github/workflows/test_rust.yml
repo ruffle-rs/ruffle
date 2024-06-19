@@ -38,9 +38,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # TODO: Return to latest "stable" once this is released:
-        # https://github.com/gfx-rs/wgpu/pull/5831 (probably in wgpu 0.20.2)
-        rust_version: ["1.78"]
+        rust_version: [stable]
         os: [ubuntu-22.04, windows-latest, macos-14]
         include:
           - rust_version: nightly
@@ -182,9 +180,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # TODO: Return to latest "stable" once this is released:
-        # https://github.com/gfx-rs/wgpu/pull/5831 (probably in wgpu 0.20.2)
-        rust_version: ["1.78"]
+        rust_version: [stable]
         os: [ubuntu-22.04, windows-latest, macos-14]
         include:
           - rust_version: nightly
