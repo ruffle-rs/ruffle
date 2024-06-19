@@ -1,12 +1,12 @@
+use crate::avm2::class::Class;
 pub use crate::avm2::globals::flash::utils::get_qualified_class_name;
 use crate::avm2::metadata::Metadata;
 use crate::avm2::method::Method;
 use crate::avm2::object::{ArrayObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::property::Property;
-use crate::avm2::{ClassObject, Namespace};
 
-use crate::avm2::{Activation, Error, Object, Value};
+use crate::avm2::{Activation, Error, Namespace, Object, Value};
 use crate::avm2_stub_method;
 
 // Implements `avmplus.describeTypeJSON`
@@ -21,42 +21,44 @@ pub fn describe_type_json<'gc>(
     }
 
     let value = args[0].coerce_to_object(activation)?;
-    let class_obj = value.as_class_object().or_else(|| value.instance_of());
+    let class_def = value.instance_class();
     let object = activation
         .avm2()
         .classes()
         .object
         .construct(activation, &[])?;
-    let Some(class_obj) = class_obj else {
+    let Some(class_def) = class_def else {
         return Ok(Value::Null);
     };
 
-    let is_static = value.as_class_object().is_some();
-    if !is_static && flags.contains(DescribeTypeFlags::USE_ITRAITS) {
-        return Ok(Value::Null);
+    let mut used_class_def = class_def;
+    if flags.contains(DescribeTypeFlags::USE_ITRAITS) {
+        if let Some(i_class) = used_class_def.i_class() {
+            used_class_def = i_class;
+        } else {
+            return Ok(Value::Null);
+        }
     }
 
-    let class = class_obj.inner_class_definition();
-
-    let qualified_name = class
-        .name()
+    let qualified_name = used_class_def
+        .dollar_removed_name(activation.context.gc_context)
         .to_qualified_name(activation.context.gc_context);
 
     object.set_public_property("name", qualified_name.into(), activation)?;
 
     object.set_public_property(
         "isDynamic",
-        (is_static || !class.is_sealed()).into(),
+        (!used_class_def.is_sealed()).into(),
         activation,
     )?;
+    object.set_public_property("isFinal", used_class_def.is_final().into(), activation)?;
     object.set_public_property(
-        "isFinal",
-        (is_static || class.is_final()).into(),
+        "isStatic",
+        value.as_class_object().is_some().into(),
         activation,
     )?;
-    object.set_public_property("isStatic", is_static.into(), activation)?;
 
-    let traits = describe_internal_body(activation, class_obj, is_static, flags)?;
+    let traits = describe_internal_body(activation, used_class_def, flags)?;
     if flags.contains(DescribeTypeFlags::INCLUDE_TRAITS) {
         object.set_public_property("traits", traits.into(), activation)?;
     } else {
@@ -181,14 +183,9 @@ fn describe_type_json_null<'gc>(
 
 fn describe_internal_body<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    class_obj: ClassObject<'gc>,
-    is_static: bool,
+    class_def: Class<'gc>,
     flags: DescribeTypeFlags,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    // If we were passed a non-ClassObject, or the caller specifically requested it, then
-    // look at the instance "traits" (our implementation is different than avmplus)
-
-    let use_instance_traits = !is_static || flags.contains(DescribeTypeFlags::USE_ITRAITS);
     let traits = activation
         .avm2()
         .classes()
@@ -247,39 +244,24 @@ fn describe_internal_body<'gc>(
         .as_array_storage_mut(activation.context.gc_context)
         .unwrap();
 
-    let superclass = if use_instance_traits {
-        class_obj.superclass_object()
-    } else {
-        Some(activation.avm2().classes().class)
-    };
+    let superclass = class_def.super_class();
 
     if flags.contains(DescribeTypeFlags::INCLUDE_BASES) {
-        let mut current_super_obj = superclass;
-        while let Some(super_obj) = current_super_obj {
-            let super_name = super_obj
-                .inner_class_definition()
+        let mut current_super_class = superclass;
+        while let Some(super_class) = current_super_class {
+            let super_name = super_class
                 .name()
                 .to_qualified_name(activation.context.gc_context);
             bases_array.push(super_name.into());
-            current_super_obj = super_obj.superclass_object();
+            current_super_class = super_class.super_class();
         }
     }
 
-    // When we're describing a Class object, we use the class vtable (which hides instance properties)
-    let vtable = if use_instance_traits {
-        class_obj.instance_vtable()
-    } else {
-        class_obj.class_vtable()
-    };
+    let vtable = class_def.instance_vtable();
+    let super_vtable = class_def.super_class().map(|c| c.instance_vtable());
 
-    let super_vtable = if use_instance_traits {
-        class_obj.superclass_object().map(|c| c.instance_vtable())
-    } else {
-        class_obj.instance_class().map(|c| c.instance_vtable())
-    };
-
-    if flags.contains(DescribeTypeFlags::INCLUDE_INTERFACES) && use_instance_traits {
-        for interface in &*class_obj.inner_class_definition().all_interfaces() {
+    if flags.contains(DescribeTypeFlags::INCLUDE_INTERFACES) {
+        for interface in &*class_def.all_interfaces() {
             let interface_name = interface
                 .name()
                 .to_qualified_name(activation.context.gc_context);
@@ -475,7 +457,7 @@ fn describe_internal_body<'gc>(
                 let accessor_type =
                     method_type.to_qualified_name_or_star(activation.context.gc_context);
                 let declared_by = defining_class
-                    .name()
+                    .dollar_removed_name(activation.context.gc_context)
                     .to_qualified_name(activation.context.gc_context);
 
                 let accessor_obj = activation
@@ -524,11 +506,9 @@ fn describe_internal_body<'gc>(
         }
     }
 
-    let constructor = class_obj.inner_class_definition().instance_init();
+    let constructor = class_def.instance_init();
     // Flash only shows a <constructor> element if it has at least one parameter
-    if flags.contains(DescribeTypeFlags::INCLUDE_CONSTRUCTOR)
-        && use_instance_traits
-        && !constructor.signature().is_empty()
+    if flags.contains(DescribeTypeFlags::INCLUDE_CONSTRUCTOR) && !constructor.signature().is_empty()
     {
         let params = write_params(&constructor, activation)?;
         traits.set_public_property("constructor", params.into(), activation)?;

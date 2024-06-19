@@ -112,19 +112,18 @@ impl<'gc> ClassObject<'gc> {
         class: Class<'gc>,
         superclass_object: Option<ClassObject<'gc>>,
     ) -> Result<Self, Error<'gc>> {
+        let c_class = class
+            .c_class()
+            .expect("Can only call ClassObject::from_class on i_classes");
+
         let class_object = Self::from_class_partial(activation, class, superclass_object)?;
         let class_proto = class_object.allocate_prototype(activation, superclass_object)?;
 
         class_object.link_prototype(activation, class_proto)?;
 
-        let class_class = activation.avm2().classes().class;
-        let class_class_proto = class_class.prototype();
+        let class_class_proto = activation.avm2().classes().class.prototype();
 
-        class_object.link_type(
-            activation.context.gc_context,
-            class_class_proto,
-            class_class,
-        );
+        class_object.link_type(activation.context.gc_context, class_class_proto, c_class);
         class_object.init_instance_vtable(activation)?;
         class_object.into_finished_class(activation)
     }
@@ -146,10 +145,6 @@ impl<'gc> ClassObject<'gc> {
         class: Class<'gc>,
         superclass_object: Option<ClassObject<'gc>>,
     ) -> Result<Self, Error<'gc>> {
-        // We should only be able to construct `i_class` Classes
-        // (if i_class() is None it means that the Class is an i_class)
-        assert!(class.i_class().is_none());
-
         let scope = activation.create_scopechain();
         if let Some(base_class) = superclass_object.map(|b| b.inner_class_definition()) {
             if base_class.is_final() {
@@ -324,17 +319,10 @@ impl<'gc> ClassObject<'gc> {
     /// This is intended to support initialization of early types such as
     /// `Class` and `Object`. All other types should pull `Class`'s prototype
     /// and type object from the `Avm2` instance.
-    pub fn link_type(
-        self,
-        gc_context: &Mutation<'gc>,
-        proto: Object<'gc>,
-        instance_of: ClassObject<'gc>,
-    ) {
-        let instance_vtable = instance_of.instance_vtable();
-
+    pub fn link_type(self, gc_context: &Mutation<'gc>, proto: Object<'gc>, c_class: Class<'gc>) {
         let mut write = self.0.write(gc_context);
 
-        write.base.set_instance_of(instance_of, instance_vtable);
+        write.base.set_instance_class(c_class);
         write.base.set_proto(proto);
     }
 

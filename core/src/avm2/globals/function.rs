@@ -1,7 +1,7 @@
 //! Function builtin and prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
+use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::error::eval_error;
 use crate::avm2::globals::array::resolve_array_hole;
 use crate::avm2::method::{Method, NativeMethodImpl};
@@ -239,6 +239,7 @@ pub fn create_class<'gc>(
         Method::from_builtin(class_init, "<Function class initializer>", gc_context),
         gc_context,
     );
+    function_c_class.set_attributes(gc_context, ClassAttributes::FINAL);
 
     function_i_class.set_c_class(gc_context, function_c_class);
     function_c_class.set_i_class(gc_context, function_i_class);

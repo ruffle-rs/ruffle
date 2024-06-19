@@ -519,15 +519,19 @@ pub fn load_player_globals<'gc>(
     let fn_proto = ScriptObject::custom_object(mc, Some(fn_class), Some(object_proto));
     domain.export_class(fn_classdef.name(), fn_classdef, mc);
 
+    let fn_c_class = fn_classdef
+        .c_class()
+        .expect("function::create_class returns an i_class");
+
     // Now to weave the Gordian knot...
     object_class.link_prototype(activation, object_proto)?;
-    object_class.link_type(mc, class_proto, class_class);
+    object_class.link_type(mc, class_proto, object_c_class);
 
     fn_class.link_prototype(activation, fn_proto)?;
-    fn_class.link_type(mc, class_proto, class_class);
+    fn_class.link_type(mc, class_proto, fn_c_class);
 
     class_class.link_prototype(activation, class_proto)?;
-    class_class.link_type(mc, class_proto, class_class);
+    class_class.link_type(mc, class_proto, class_c_class);
 
     // At this point, we need at least a partial set of system classes in
     // order to continue initializing the player. The rest of the classes
@@ -561,11 +565,13 @@ pub fn load_player_globals<'gc>(
     let global_class = ClassObject::from_class(activation, global_classdef, Some(object_class))?;
 
     globals.set_proto(mc, global_class.prototype());
-    globals.set_instance_of(mc, global_class);
+    globals.set_instance_class(mc, global_classdef);
+    globals.set_vtable(mc, global_class.instance_vtable());
 
     activation.context.avm2.toplevel_global_object = Some(globals);
 
     script.set_global_class(mc, global_classdef);
+    script.set_global_class_obj(mc, global_class);
 
     // From this point, `globals` is safe to be modified
 

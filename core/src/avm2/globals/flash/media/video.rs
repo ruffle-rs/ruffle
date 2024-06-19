@@ -7,9 +7,9 @@ pub fn video_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let video_class = activation.avm2().classes().video;
+    let video_class = activation.avm2().classes().video.inner_class_definition();
 
-    let mut target_class = Some(class);
+    let mut target_class = Some(class.inner_class_definition());
     while let Some(target) = target_class {
         if target == video_class {
             let movie = activation.caller_movie_or_root();
@@ -32,7 +32,7 @@ pub fn video_allocator<'gc>(
             return initialize_for_allocator(activation, child, class);
         }
 
-        target_class = target.superclass_object();
+        target_class = target.super_class();
     }
 
     unreachable!("A Video subclass should have Video in superclass chain");

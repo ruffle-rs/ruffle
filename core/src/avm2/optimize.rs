@@ -280,33 +280,30 @@ pub fn optimize<'gc>(
     // but this works since it's guaranteed to be set in `Activation::from_method`.
     let this_value = activation.local_register(0);
 
-    let (this_class, this_vtable) = if let Some(this_class) = activation.subclass_object() {
+    let this_class = if let Some(this_class) = activation.subclass_object() {
         if this_value.is_of_type(activation, this_class.inner_class_definition()) {
-            (
-                Some(this_class),
-                Some(this_class.inner_class_definition().instance_vtable()),
-            )
-        } else if this_value
-            .as_object()
-            .and_then(|o| o.as_class_object())
-            .map(|c| c.inner_class_definition() == this_class.inner_class_definition())
-            .unwrap_or(false)
-        {
-            // Static method
-            (
-                Some(activation.avm2().classes().class),
-                Some(this_class.class_vtable()),
-            )
+            Some(this_class.inner_class_definition())
+        } else if let Some(this_object) = this_value.as_object() {
+            if this_object
+                .as_class_object()
+                .map(|c| c.inner_class_definition() == this_class.inner_class_definition())
+                .unwrap_or(false)
+            {
+                // Static method
+                this_object.instance_class()
+            } else {
+                None
+            }
         } else {
-            (None, None)
+            None
         }
     } else {
-        (None, None)
+        None
     };
 
     let this_value = OptValue {
-        class: this_class.map(|c| c.inner_class_definition()),
-        vtable: this_vtable,
+        class: this_class,
+        vtable: this_class.map(|cls| cls.instance_vtable()),
         contains_valid_integer: false,
         contains_valid_unsigned: false,
         null_state: NullState::NotNull,
@@ -861,7 +858,7 @@ pub fn optimize<'gc>(
                 if !multiname.has_lazy_component() && has_simple_scoping {
                     let outer_scope = activation.outer();
                     if !outer_scope.is_empty() {
-                        if let Some(this_vtable) = this_vtable {
+                        if let Some(this_vtable) = this_class.map(|cls| cls.instance_vtable()) {
                             if this_vtable.has_trait(&multiname) {
                                 *op = Op::GetScopeObject { index: 0 };
 

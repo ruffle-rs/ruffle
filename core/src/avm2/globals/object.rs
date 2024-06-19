@@ -1,7 +1,7 @@
 //! Object builtin and prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
+use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl, ParamConfig};
 use crate::avm2::object::{FunctionObject, Object, TObject};
 use crate::avm2::traits::Trait;
@@ -324,6 +324,7 @@ pub fn create_c_class<'gc>(
         Method::from_builtin(class_init, "<Object class initializer>", gc_context),
         gc_context,
     );
+    object_c_class.set_attributes(gc_context, ClassAttributes::FINAL);
 
     object_c_class.define_instance_trait(
         gc_context,

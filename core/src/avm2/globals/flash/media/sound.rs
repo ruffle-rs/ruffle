@@ -22,15 +22,15 @@ pub fn init<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(sound_object) = this.as_sound_object() {
-        let class_object = this
-            .instance_of()
+        let class_def = this
+            .instance_class()
             .ok_or("Attempted to construct Sound on a bare object.")?;
 
         if let Some((movie, symbol)) = activation
             .context
             .library
             .avm2_class_registry()
-            .class_symbol(class_object)
+            .class_symbol(class_def)
         {
             if let Some(Character::Sound(sound)) = activation
                 .context
@@ -41,7 +41,7 @@ pub fn init<'gc>(
                 let sound = *sound;
                 sound_object.set_sound(&mut activation.context, sound)?;
             } else {
-                tracing::warn!("Attempted to construct subclass of Sound, {}, which is associated with non-Sound character {}", class_object.inner_class_definition().name().local_name(), symbol);
+                tracing::warn!("Attempted to construct subclass of Sound, {}, which is associated with non-Sound character {}", class_def.name().local_name(), symbol);
             }
         }
     }
