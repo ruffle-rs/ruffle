@@ -23,7 +23,7 @@ use crate::events::{ClipEvent, ClipEventResult, TextControlCode};
 use crate::font::{round_down_to_pixel, FontType, Glyph, TextRenderSettings};
 use crate::html;
 use crate::html::{
-    BoxBounds, FormatSpans, LayoutBox, LayoutContent, LayoutMetrics, Position, TextFormat,
+    FormatSpans, Layout, LayoutBox, LayoutContent, LayoutMetrics, Position, TextFormat,
 };
 use crate::prelude::*;
 use crate::string::{utils as string_utils, AvmString, SwfStrExt as _, WStr, WString};
@@ -108,8 +108,8 @@ pub struct EditTextData<'gc> {
     #[collect(require_static)]
     drawing: Drawing,
 
-    /// Whether or not the width of the field should change in response to text
-    /// changes, and in what direction should added or removed width should
+    /// Whether the width of the field should change in response to text
+    /// changes, and in what direction the added or removed width should
     /// apply.
     autosize: AutoSizeMode,
 
@@ -120,12 +120,8 @@ pub struct EditTextData<'gc> {
     #[collect(require_static)]
     requested_height: Twips,
 
-    /// The calculated layout box.
-    layout: Vec<LayoutBox<'gc>>,
-
-    /// The intrinsic bounds of the laid-out text.
-    #[collect(require_static)]
-    intrinsic_bounds: BoxBounds<Twips>,
+    /// The calculated layout.
+    layout: Layout<'gc>,
 
     /// The current intrinsic bounds of the text field.
     #[collect(require_static)]
@@ -157,10 +153,6 @@ pub struct EditTextData<'gc> {
     /// How many pixels right the text is offset by. 0-based index.
     hscroll: f64,
 
-    /// Information about the layout's current lines. Used by scroll properties.
-    #[collect(require_static)]
-    line_data: Vec<LineData>,
-
     /// How many lines down the text is offset by. 1-based index.
     scroll: usize,
 
@@ -186,10 +178,10 @@ pub struct EditTextData<'gc> {
 impl<'gc> EditTextData<'gc> {
     fn vertical_scroll_offset(&self) -> Twips {
         if self.scroll > 1 {
-            let line_data = &self.line_data;
+            let lines = self.layout.lines();
 
-            if let Some(line_data) = line_data.get(self.scroll - 1) {
-                line_data.offset
+            if let Some(line_data) = lines.get(self.scroll - 1) {
+                line_data.offset_y()
             } else {
                 Twips::ZERO
             }
@@ -197,54 +189,6 @@ impl<'gc> EditTextData<'gc> {
             Twips::ZERO
         }
     }
-}
-
-// TODO: would be nicer to compute (and return) this during layout, instead of afterwards
-/// Compute line (index, offset, extent) from the layout data.
-fn get_line_data(layout: &[LayoutBox]) -> Vec<LineData> {
-    // if there are no boxes, there are no lines
-    if layout.is_empty() {
-        return Vec::new();
-    }
-
-    let first_box = &layout[0];
-
-    let mut index = 1;
-    let mut offset = first_box.bounds().offset_y();
-    let mut extent = first_box.bounds().extent_y();
-
-    let mut line_data = Vec::new();
-
-    for layout_box in layout.get(1..).unwrap() {
-        let bounds = layout_box.bounds();
-
-        // if the top of the new box is lower than the bottom of the old box, it's a new line
-        if bounds.offset_y() > extent {
-            // save old line and reset
-            line_data.push(LineData {
-                index,
-                offset,
-                extent,
-            });
-
-            index += 1;
-            offset = bounds.offset_y();
-            extent = bounds.extent_y();
-        } else {
-            // otherwise we continue from the previous box
-            offset = offset.min(bounds.offset_y());
-            extent = extent.max(bounds.extent_y());
-        }
-    }
-
-    // save the final line
-    line_data.push(LineData {
-        index,
-        offset,
-        extent,
-    });
-
-    line_data
 }
 
 impl<'gc> EditText<'gc> {
@@ -288,7 +232,7 @@ impl<'gc> EditText<'gc> {
             FontType::Device
         };
 
-        let (layout, intrinsic_bounds) = html::lower_from_text_spans(
+        let layout = html::lower_from_text_spans(
             &text_spans,
             context,
             swf_movie.clone(),
@@ -296,7 +240,6 @@ impl<'gc> EditText<'gc> {
             swf_tag.is_word_wrap(),
             font_type,
         );
-        let line_data = get_line_data(&layout);
 
         let mut base = InteractiveObjectBase::default();
 
@@ -330,7 +273,7 @@ impl<'gc> EditText<'gc> {
             EditTextData {
                 base,
                 text_spans,
-                static_data: gc_arena::Gc::new(
+                static_data: Gc::new(
                     context.gc_context,
                     EditTextStatic {
                         swf: swf_movie,
@@ -347,7 +290,6 @@ impl<'gc> EditText<'gc> {
                 drawing: Drawing::new(),
                 object: None,
                 layout,
-                intrinsic_bounds,
                 bounds: swf_tag.bounds().clone(),
                 autosize,
                 requested_width: swf_tag.bounds().width(),
@@ -357,7 +299,6 @@ impl<'gc> EditText<'gc> {
                 selection,
                 render_settings: Default::default(),
                 hscroll: 0.0,
-                line_data,
                 scroll: 1,
                 max_chars: swf_tag.max_length().unwrap_or_default() as i32,
                 mouse_wheel_enabled: true,
@@ -387,7 +328,7 @@ impl<'gc> EditText<'gc> {
         let swf_tag = swf::EditText::new()
             .with_font_id(0, Twips::from_pixels_i32(12))
             .with_color(Some(Color::BLACK))
-            .with_bounds(swf::Rectangle {
+            .with_bounds(Rectangle {
                 x_min: Twips::ZERO,
                 x_max: Twips::from_pixels(width),
                 y_min: Twips::ZERO,
@@ -849,7 +790,7 @@ impl<'gc> EditText<'gc> {
             FontType::Embedded
         };
 
-        let (new_layout, intrinsic_bounds) = html::lower_from_text_spans(
+        let new_layout = html::lower_from_text_spans(
             &edit_text.text_spans,
             context,
             movie,
@@ -858,17 +799,17 @@ impl<'gc> EditText<'gc> {
             font_type,
         );
 
-        edit_text.line_data = get_line_data(&new_layout);
         edit_text.layout = new_layout;
-        edit_text.intrinsic_bounds = intrinsic_bounds;
         // reset scroll
         edit_text.hscroll = 0.0;
         edit_text.scroll = 1;
 
+        let layout_exterior_bounds = edit_text.layout.exterior_bounds();
+
         if autosize != AutoSizeMode::None {
             if !is_word_wrap {
                 // The edit text's bounds needs to have the padding baked in.
-                let width = intrinsic_bounds.width() + padding;
+                let width = layout_exterior_bounds.width() + padding;
                 let new_x = match autosize {
                     AutoSizeMode::Left => edit_text.bounds.x_min,
                     AutoSizeMode::Center => {
@@ -883,7 +824,7 @@ impl<'gc> EditText<'gc> {
                 let width = edit_text.requested_width;
                 edit_text.bounds.set_width(width);
             }
-            let height = intrinsic_bounds.height() + padding;
+            let height = layout_exterior_bounds.height() + padding;
             edit_text.bounds.set_height(height);
         } else {
             let width = edit_text.requested_width;
@@ -900,12 +841,8 @@ impl<'gc> EditText<'gc> {
     ///
     /// The returned tuple should be interpreted as width, then height.
     pub fn measure_text(self, _context: &mut UpdateContext<'_, 'gc>) -> (Twips, Twips) {
-        let edit_text = self.0.read();
-
-        (
-            edit_text.intrinsic_bounds.width(),
-            edit_text.intrinsic_bounds.height(),
-        )
+        let exterior_bounds = self.0.read().layout.exterior_bounds();
+        (exterior_bounds.width(), exterior_bounds.height())
     }
 
     /// How far the text can be scrolled right, in pixels.
@@ -917,10 +854,11 @@ impl<'gc> EditText<'gc> {
             return 0.0;
         }
 
-        let base =
-            round_down_to_pixel(edit_text.intrinsic_bounds.width() - edit_text.bounds.width())
-                .to_pixels()
-                .max(0.0);
+        let base = round_down_to_pixel(
+            edit_text.layout.exterior_bounds().width() - edit_text.bounds.width(),
+        )
+        .to_pixels()
+        .max(0.0);
 
         // input text boxes get extra space at the end
         if !edit_text.flags.contains(EditTextFlag::READ_ONLY) {
@@ -934,21 +872,21 @@ impl<'gc> EditText<'gc> {
     pub fn maxscroll(self) -> usize {
         let edit_text = self.0.read();
 
-        let line_data = &edit_text.line_data;
+        let lines = edit_text.layout.lines();
 
-        if line_data.is_empty() {
+        if lines.is_empty() {
             return 1;
         }
 
-        let target = line_data.last().unwrap().extent - edit_text.bounds.height();
+        let target = lines.last().unwrap().extent_y() - edit_text.bounds.height();
 
         // minimum line n such that n.offset > max.extent - bounds.height()
-        let max_line = line_data.iter().find(|&&l| target < l.offset);
+        let max_line = lines.iter().find(|&l| target < l.offset_y());
         if let Some(line) = max_line {
-            line.index
+            line.index() + 1
         } else {
             // I don't know how this could happen, so return the limit
-            line_data.last().unwrap().index
+            lines.last().unwrap().index() + 1
         }
     }
 
@@ -956,24 +894,24 @@ impl<'gc> EditText<'gc> {
     pub fn bottom_scroll(self) -> usize {
         let edit_text = self.0.read();
 
-        let line_data = &edit_text.line_data;
+        let lines = edit_text.layout.lines();
 
-        if line_data.is_empty() {
+        if lines.is_empty() {
             return 1;
         }
 
-        let scroll_offset = line_data
+        let scroll_offset = lines
             .get(edit_text.scroll - 1)
-            .map_or(Twips::ZERO, |l| l.offset);
+            .map_or(Twips::ZERO, |l| l.offset_y());
         let target = edit_text.bounds.height() + scroll_offset;
 
         // Line before first line with extent greater than bounds.height() + line "scroll"'s offset
-        let too_far = line_data.iter().find(|&&l| l.extent > target);
+        let too_far = lines.iter().find(|&l| l.extent_y() > target);
         if let Some(line) = too_far {
-            line.index - 1
+            line.index()
         } else {
             // all lines are visible
-            line_data.last().unwrap().index
+            lines.last().unwrap().index() + 1
         }
     }
 
@@ -1345,7 +1283,7 @@ impl<'gc> EditText<'gc> {
 
         // First determine which *row* of text is the closest match to the Y position...
         let mut closest_row_extent_y = None;
-        for layout_box in text.layout.iter() {
+        for layout_box in text.layout.boxes_iter() {
             if layout_box.is_text_box() {
                 if let Some(closest_extent_y) = closest_row_extent_y {
                     if layout_box.bounds().extent_y() > closest_extent_y
@@ -1362,7 +1300,7 @@ impl<'gc> EditText<'gc> {
         // ...then find the box within that row that is the closest match to the X position.
         let mut closest_layout_box: Option<&LayoutBox<'gc>> = None;
         if let Some(closest_extent_y) = closest_row_extent_y {
-            for layout_box in text.layout.iter() {
+            for layout_box in text.layout.boxes_iter() {
                 if layout_box.is_text_box() {
                     match layout_box.bounds().extent_y().cmp(&closest_extent_y) {
                         Ordering::Less => {}
@@ -1922,7 +1860,7 @@ impl<'gc> EditText<'gc> {
 
     /// Count the number of lines in the text box's layout.
     pub fn layout_lines(self) -> usize {
-        self.0.read().line_data.len()
+        self.0.read().layout.lines().len()
     }
 
     /// Calculate the layout metrics for a given line.
@@ -1930,17 +1868,16 @@ impl<'gc> EditText<'gc> {
     /// Returns None if the line does not exist or there is not enough data
     /// about the line to calculate metrics with.
     pub fn layout_metrics(self, line: Option<usize>) -> Option<LayoutMetrics> {
-        let line = line.and_then(|line| self.0.read().line_data.get(line).copied());
+        let read = self.0.read();
+        let line = line.and_then(|line| read.layout.lines().get(line));
         let mut union_bounds = None;
         let mut font = None;
         let mut text_format = None;
 
-        let read = self.0.read();
-
-        for layout_box in read.layout.iter() {
+        for layout_box in read.layout.boxes_iter() {
             if let Some(line) = line {
-                if layout_box.bounds().offset_y() < line.offset
-                    || layout_box.bounds().extent_y() > line.extent
+                if layout_box.bounds().offset_y() < line.offset()
+                    || layout_box.bounds().extent_y() > line.extent()
                 {
                     continue;
                 }
@@ -1994,12 +1931,12 @@ impl<'gc> EditText<'gc> {
 
     pub fn line_text(self, line: usize) -> Option<WString> {
         let read = self.0.read();
-        let line = read.line_data.get(line).copied()?;
+        let line = read.layout.lines().get(line)?;
 
         let mut text = WString::new();
-        for layout_box in read.layout.iter() {
-            if layout_box.bounds().offset_y() < line.offset
-                || layout_box.bounds().extent_y() > line.extent
+        for layout_box in read.layout.boxes_iter() {
+            if layout_box.bounds().offset_y() < line.offset()
+                || layout_box.bounds().extent_y() > line.extent()
             {
                 continue;
             }
@@ -2073,7 +2010,7 @@ impl<'gc> EditText<'gc> {
         position.x += Twips::from_pixels(Self::INTERNAL_PADDING) + Twips::from_pixels(text.hscroll);
         position.y += Twips::from_pixels(Self::INTERNAL_PADDING) + text.vertical_scroll_offset();
 
-        text.layout.iter().any(|layout| {
+        text.layout.boxes_iter().any(|layout| {
             layout.is_link()
                 && layout
                     .bounds()
@@ -2273,7 +2210,10 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             ..Default::default()
         });
 
-        if edit_text.layout.is_empty() && !edit_text.flags.contains(EditTextFlag::READ_ONLY) {
+        if edit_text.layout.boxes_iter().next().is_none()
+            && !edit_text.flags.contains(EditTextFlag::READ_ONLY)
+        {
+            // TODO should not be possible
             let visible_selection = if self.has_focus() {
                 edit_text.selection
             } else {
@@ -2294,16 +2234,15 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             if draw_boxes {
                 context.draw_rect_outline(
                     Color::GREEN,
-                    edit_text.intrinsic_bounds.into(),
+                    edit_text.layout.exterior_bounds().into(),
                     Twips::ONE,
                 );
             }
 
-            for layout_box in edit_text.layout.iter() {
+            for layout_box in edit_text.layout.boxes_iter() {
                 if draw_boxes {
                     context.draw_rect_outline(Color::RED, layout_box.bounds().into(), Twips::ONE);
                 }
-
                 self.render_layout_box(context, layout_box);
             }
         }
@@ -2596,16 +2535,6 @@ impl PartialEq for TextSelection {
 }
 
 impl Eq for TextSelection {}
-
-/// Information about the start and end y-coordinates of a given line of text
-#[derive(Copy, Clone, Debug)]
-pub struct LineData {
-    index: usize,
-    /// How many twips down the highest point of the line is
-    offset: Twips,
-    /// How many twips down the lowest point of the line is
-    extent: Twips,
-}
 
 impl TextSelection {
     const BLINK_CYCLE_DURATION_MS: u32 = 1000;
