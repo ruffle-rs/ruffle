@@ -269,21 +269,24 @@ impl Definition {
         stubs: &ClassStubs,
     ) -> Self {
         let mut definition = Self::default();
-        let class = class_object.inner_class_definition();
+        let i_class = class_object.inner_class_definition();
+        let c_class = i_class
+            .c_class()
+            .expect("inner_class_definition should be an i_class");
 
-        if class.is_final() {
+        if i_class.is_final() {
             definition
                 .classinfo
                 .get_or_insert_with(Default::default)
                 .is_final = true;
         }
-        if !class.is_sealed() {
+        if !i_class.is_sealed() {
             definition
                 .classinfo
                 .get_or_insert_with(Default::default)
                 .dynamic = true;
         }
-        if let Some(super_name) = class
+        if let Some(super_name) = i_class
             .super_class_name()
             .as_ref()
             .and_then(|n| n.local_name())
@@ -321,13 +324,13 @@ impl Definition {
 
         Self::fill_traits(
             activation.avm2(),
-            &class.class_traits(),
+            &c_class.traits(),
             &mut definition.static_traits,
             stubs,
         );
         Self::fill_traits(
             activation.avm2(),
-            &class.instance_traits(),
+            &i_class.traits(),
             &mut definition.instance_traits,
             stubs,
         );

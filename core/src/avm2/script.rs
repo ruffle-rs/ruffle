@@ -229,7 +229,12 @@ impl<'gc> TranslationUnit<'gc> {
         self.0.write(activation.context.gc_context).classes[class_index as usize] = Some(class);
 
         class.load_traits(activation, self, class_index)?;
+
         class.init_vtable(&mut activation.context)?;
+        class
+            .c_class()
+            .expect("Class::from_abc_index returns an i_class")
+            .init_vtable(&mut activation.context)?;
 
         Ok(class)
     }
@@ -251,8 +256,7 @@ impl<'gc> TranslationUnit<'gc> {
 
         let object_class = activation.avm2().classes().object;
 
-        let global_classdef =
-            global_scope::create_class(activation, object_class.inner_class_definition());
+        let global_classdef = global_scope::create_class(activation);
 
         let global_class =
             ClassObject::from_class(activation, global_classdef, Some(object_class))?;

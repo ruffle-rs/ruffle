@@ -490,32 +490,34 @@ pub fn load_player_globals<'gc>(
     //  - Function's prototype is an instance of itself
     //  - All methods created by the above-mentioned classes are also instances
     //    of Function
-    //  - All classes are put on Global's trait list, but Global needs
-    //    to be initialized first, but you can't do that until Object/Class are ready.
     //
     // Hence, this ridiculously complicated dance of classdef, type allocation,
     // and partial initialization.
-    let object_classdef = object::create_class(activation);
-    let object_class = ClassObject::from_class_partial(activation, object_classdef, None)?;
-    let object_proto = ScriptObject::custom_object(mc, Some(object_class), None);
-    domain.export_class(object_classdef.name(), object_classdef, mc);
+    let object_i_class = object::create_i_class(activation);
+    let class_i_class = class::create_i_class(activation, object_i_class);
 
-    let fn_classdef = function::create_class(activation, object_classdef);
+    let object_c_class = object::create_c_class(activation, class_i_class);
+    object_i_class.set_c_class(mc, object_c_class);
+    object_c_class.set_i_class(mc, object_i_class);
+
+    let class_c_class = class::create_c_class(activation, class_i_class);
+    class_i_class.set_c_class(mc, class_c_class);
+    class_c_class.set_i_class(mc, class_i_class);
+
+    let object_class = ClassObject::from_class_partial(activation, object_i_class, None)?;
+    let object_proto = ScriptObject::custom_object(mc, Some(object_class), None);
+    domain.export_class(object_i_class.name(), object_i_class, mc);
+
+    let class_class =
+        ClassObject::from_class_partial(activation, class_i_class, Some(object_class))?;
+    let class_proto = ScriptObject::custom_object(mc, Some(object_class), Some(object_proto));
+    domain.export_class(class_i_class.name(), class_i_class, mc);
+
+    // Function is more of a "normal" class than the other two, so we can create it normally.
+    let fn_classdef = function::create_class(activation, object_i_class, class_i_class);
     let fn_class = ClassObject::from_class_partial(activation, fn_classdef, Some(object_class))?;
     let fn_proto = ScriptObject::custom_object(mc, Some(fn_class), Some(object_proto));
     domain.export_class(fn_classdef.name(), fn_classdef, mc);
-
-    let class_classdef = class::create_class(activation, object_classdef);
-    let class_class =
-        ClassObject::from_class_partial(activation, class_classdef, Some(object_class))?;
-    let class_proto = ScriptObject::custom_object(mc, Some(object_class), Some(object_proto));
-    domain.export_class(class_classdef.name(), class_classdef, mc);
-
-    let global_classdef = global_scope::create_class(activation, object_classdef);
-    let global_class =
-        ClassObject::from_class_partial(activation, global_classdef, Some(object_class))?;
-    let global_proto = ScriptObject::custom_object(mc, Some(object_class), Some(object_proto));
-    domain.export_class(global_classdef.name(), global_classdef, mc);
 
     // Now to weave the Gordian knot...
     object_class.link_prototype(activation, object_proto)?;
@@ -526,9 +528,6 @@ pub fn load_player_globals<'gc>(
 
     class_class.link_prototype(activation, class_proto)?;
     class_class.link_type(mc, class_proto, class_class);
-
-    global_class.link_prototype(activation, global_proto)?;
-    global_class.link_type(mc, class_proto, class_class);
 
     // At this point, we need at least a partial set of system classes in
     // order to continue initializing the player. The rest of the classes
@@ -544,22 +543,24 @@ pub fn load_player_globals<'gc>(
 
     // First, initialize the instance vtable, starting with `Object`. This
     // ensures that properties defined in `Object` (e.g. `hasOwnProperty`)
-    // get copied into the vtable of `Class`, `Function`, and `Global`.
-    // (which are all subclasses of `Object`)
+    // get copied into the vtable of `Class` and `Function` (which are both
+    // subclasses of `Object`).
     object_class.init_instance_vtable(activation)?;
     class_class.init_instance_vtable(activation)?;
     fn_class.init_instance_vtable(activation)?;
-    global_class.init_instance_vtable(activation)?;
 
     // Now, construct the `ClassObject`s, starting with `Class`. This ensures
     // that the `prototype` property of `Class` gets copied into the *class*
-    // vtables for `Object`, `Function`, and `Global`.
+    // vtables for `Object` and `Function`.
     let class_class = class_class.into_finished_class(activation)?;
     let object_class = object_class.into_finished_class(activation)?;
     let fn_class = fn_class.into_finished_class(activation)?;
-    let global_class = global_class.into_finished_class(activation)?;
 
-    globals.set_proto(mc, global_proto);
+    // Construct the global class.
+    let global_classdef = global_scope::create_class(activation);
+    let global_class = ClassObject::from_class(activation, global_classdef, Some(object_class))?;
+
+    globals.set_proto(mc, global_class.prototype());
     globals.set_instance_of(mc, global_class);
 
     activation.context.avm2.toplevel_global_object = Some(globals);

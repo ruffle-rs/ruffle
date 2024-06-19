@@ -1,12 +1,12 @@
 //! Class object impl
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::{Allocator, AllocatorFn, Class};
+use crate::avm2::class::{AllocatorFn, Class};
 use crate::avm2::error::{argument_error, make_error_1127, reference_error, type_error};
 use crate::avm2::function::exec;
 use crate::avm2::method::Method;
 use crate::avm2::object::function_object::FunctionObject;
-use crate::avm2::object::script_object::{scriptobject_allocator, ScriptObjectData};
+use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::scope::{Scope, ScopeChain};
@@ -56,10 +56,6 @@ pub struct ClassObjectData<'gc> {
     /// If `None`, this class has no parent. In practice, this is only used for
     /// interfaces (at least by the AS3 compiler in Animate CC 2020.)
     superclass_object: Option<ClassObject<'gc>>,
-
-    /// The instance allocator for this class.
-    #[collect(require_static)]
-    instance_allocator: Allocator,
 
     /// List of all applications of this class.
     ///
@@ -150,6 +146,10 @@ impl<'gc> ClassObject<'gc> {
         class: Class<'gc>,
         superclass_object: Option<ClassObject<'gc>>,
     ) -> Result<Self, Error<'gc>> {
+        // We should only be able to construct `i_class` Classes
+        // (if i_class() is None it means that the Class is an i_class)
+        assert!(class.i_class().is_none());
+
         let scope = activation.create_scopechain();
         if let Some(base_class) = superclass_object.map(|b| b.inner_class_definition()) {
             if base_class.is_final() {
@@ -169,11 +169,6 @@ impl<'gc> ClassObject<'gc> {
             }
         }
 
-        let instance_allocator = class
-            .instance_allocator()
-            .or_else(|| superclass_object.and_then(|c| c.instance_allocator()))
-            .unwrap_or(scriptobject_allocator);
-
         let class_object = ClassObject(GcCell::new(
             activation.context.gc_context,
             ClassObjectData {
@@ -183,7 +178,6 @@ impl<'gc> ClassObject<'gc> {
                 class_scope: scope,
                 instance_scope: scope,
                 superclass_object,
-                instance_allocator: Allocator(instance_allocator),
                 applications: Default::default(),
                 instance_vtable: VTable::empty(activation.context.gc_context),
                 class_vtable: VTable::empty(activation.context.gc_context),
@@ -220,7 +214,7 @@ impl<'gc> ClassObject<'gc> {
         self.instance_vtable().init_vtable(
             class,
             Some(self),
-            &class.instance_traits(),
+            &class.traits(),
             Some(self.instance_scope()),
             self.superclass_object().map(|cls| cls.instance_vtable()),
             &mut activation.context,
@@ -250,13 +244,16 @@ impl<'gc> ClassObject<'gc> {
         mut self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
-        let class = self.inner_class_definition();
+        let i_class = self.inner_class_definition();
+        let c_class = i_class
+            .c_class()
+            .expect("ClassObject should have an i_class");
 
         // class vtable == class traits + Class instance traits
         self.class_vtable().init_vtable(
-            class,
+            c_class,
             Some(self),
-            &class.class_traits(),
+            &c_class.traits(),
             Some(self.class_scope()),
             Some(activation.avm2().classes().class.instance_vtable()),
             &mut activation.context,
@@ -304,7 +301,7 @@ impl<'gc> ClassObject<'gc> {
         // Otherwise, our behavior diverges from Flash Player in certain cases.
         // See the ignored test 'tests/tests/swfs/avm2/weird_superinterface_properties/'
         for interface in &*class.all_interfaces() {
-            for interface_trait in &*interface.instance_traits() {
+            for interface_trait in &*interface.traits() {
                 if !interface_trait.name().namespace().is_public() {
                     let public_name = QName::new(
                         activation.context.avm2.public_namespace_vm_internal,
@@ -725,8 +722,8 @@ impl<'gc> ClassObject<'gc> {
         self.0.read().superclass_object
     }
 
-    fn instance_allocator(self) -> Option<AllocatorFn> {
-        Some(self.0.read().instance_allocator.0)
+    fn instance_allocator(self) -> AllocatorFn {
+        self.inner_class_definition().instance_allocator().0
     }
 
     /// Attempts to obtain the name of this class.
@@ -816,7 +813,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         arguments: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
-        let instance_allocator = self.0.read().instance_allocator.0;
+        let instance_allocator = self.instance_allocator();
 
         let instance = instance_allocator(self, activation)?;
 

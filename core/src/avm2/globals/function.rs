@@ -222,20 +222,30 @@ fn set_prototype<'gc>(
 /// Construct `Function`'s class.
 pub fn create_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    object_classdef: Class<'gc>,
+    object_i_class: Class<'gc>,
+    class_i_class: Class<'gc>,
 ) -> Class<'gc> {
     let gc_context = activation.context.gc_context;
-    let function_class = Class::new(
+    let function_i_class = Class::custom_new(
         QName::new(activation.avm2().public_namespace_base_version, "Function"),
-        Some(object_classdef),
+        Some(object_i_class),
         Method::from_builtin(instance_init, "<Function instance initializer>", gc_context),
+        gc_context,
+    );
+
+    let function_c_class = Class::custom_new(
+        QName::new(activation.avm2().public_namespace_base_version, "Function"),
+        Some(class_i_class),
         Method::from_builtin(class_init, "<Function class initializer>", gc_context),
         gc_context,
     );
 
+    function_i_class.set_c_class(gc_context, function_c_class);
+    function_c_class.set_i_class(gc_context, function_i_class);
+
     // Fixed traits (in AS3 namespace)
     const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[("call", call), ("apply", apply)];
-    function_class.define_builtin_instance_methods(
+    function_i_class.define_builtin_instance_methods(
         gc_context,
         activation.avm2().as3_namespace,
         AS3_INSTANCE_METHODS,
@@ -249,29 +259,34 @@ pub fn create_class<'gc>(
         ("prototype", Some(prototype), Some(set_prototype)),
         ("length", Some(length), None),
     ];
-    function_class.define_builtin_instance_properties(
+    function_i_class.define_builtin_instance_properties(
         gc_context,
         activation.avm2().public_namespace_base_version,
         PUBLIC_INSTANCE_PROPERTIES,
     );
 
     const CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
-    function_class.define_constant_int_class_traits(
+    function_c_class.define_constant_int_instance_traits(
         activation.avm2().public_namespace_base_version,
         CONSTANTS_INT,
         activation,
     );
 
-    function_class.set_instance_allocator(gc_context, function_allocator);
-    function_class.set_call_handler(
+    function_i_class.set_instance_allocator(gc_context, function_allocator);
+    function_i_class.set_call_handler(
         gc_context,
         Method::from_builtin(class_call, "<Function call handler>", gc_context),
     );
 
-    function_class.mark_traits_loaded(activation.context.gc_context);
-    function_class
+    function_i_class.mark_traits_loaded(activation.context.gc_context);
+    function_i_class
         .init_vtable(&mut activation.context)
         .expect("Native class's vtable should initialize");
 
-    function_class
+    function_c_class.mark_traits_loaded(activation.context.gc_context);
+    function_c_class
+        .init_vtable(&mut activation.context)
+        .expect("Native class's vtable should initialize");
+
+    function_i_class
 }
