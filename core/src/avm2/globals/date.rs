@@ -1328,6 +1328,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
         Some(activation.avm2().classes().object.inner_class_definition()),
         Method::from_builtin(instance_init, "<Date instance initializer>", mc),
         Method::from_builtin(class_init, "<Date class initializer>", mc),
+        activation.avm2().classes().class.inner_class_definition(),
         mc,
     );
 
@@ -1394,6 +1395,13 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
 
     class.mark_traits_loaded(activation.context.gc_context);
     class
+        .init_vtable(&mut activation.context)
+        .expect("Native class's vtable should initialize");
+
+    let c_class = class.c_class().expect("Class::new returns an i_class");
+
+    c_class.mark_traits_loaded(activation.context.gc_context);
+    c_class
         .init_vtable(&mut activation.context)
         .expect("Native class's vtable should initialize");
 

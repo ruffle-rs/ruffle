@@ -41,27 +41,17 @@ fn prototype<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Construct `Class`'s class.
-pub fn create_class<'gc>(
+/// Construct `Class`'s i_class.
+pub fn create_i_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    object_class: Class<'gc>,
+    object_i_class: Class<'gc>,
 ) -> Class<'gc> {
     let gc_context = activation.context.gc_context;
-    let class_class = Class::new(
+    let class_i_class = Class::custom_new(
         QName::new(activation.avm2().public_namespace_base_version, "Class"),
-        Some(object_class),
+        Some(object_i_class),
         Method::from_builtin(instance_init, "<Class instance initializer>", gc_context),
-        Method::from_builtin(class_init, "<Class class initializer>", gc_context),
         gc_context,
-    );
-
-    // 'length' is a weird undocumented constant in Class.
-    // We need to define it, since it shows up in 'describeType'
-    const CLASS_CONSTANTS: &[(&str, i32)] = &[("length", 1)];
-    class_class.define_constant_int_class_traits(
-        activation.avm2().public_namespace_base_version,
-        CLASS_CONSTANTS,
-        activation,
     );
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
@@ -69,16 +59,46 @@ pub fn create_class<'gc>(
         Option<NativeMethodImpl>,
         Option<NativeMethodImpl>,
     )] = &[("prototype", Some(prototype), None)];
-    class_class.define_builtin_instance_properties(
+    class_i_class.define_builtin_instance_properties(
         gc_context,
         activation.avm2().public_namespace_base_version,
         PUBLIC_INSTANCE_PROPERTIES,
     );
 
-    class_class.mark_traits_loaded(activation.context.gc_context);
-    class_class
+    class_i_class.mark_traits_loaded(activation.context.gc_context);
+    class_i_class
         .init_vtable(&mut activation.context)
         .expect("Native class's vtable should initialize");
 
-    class_class
+    class_i_class
+}
+
+/// Construct `Class`'s c_class.
+pub fn create_c_class<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    class_i_class: Class<'gc>,
+) -> Class<'gc> {
+    let gc_context = activation.context.gc_context;
+    let class_c_class = Class::custom_new(
+        QName::new(activation.avm2().public_namespace_base_version, "Class$"),
+        Some(class_i_class),
+        Method::from_builtin(class_init, "<Class class initializer>", gc_context),
+        gc_context,
+    );
+
+    // 'length' is a weird undocumented constant in Class.
+    // We need to define it, since it shows up in 'describeType'
+    const CLASS_CONSTANTS: &[(&str, i32)] = &[("length", 1)];
+    class_c_class.define_constant_int_instance_traits(
+        activation.avm2().public_namespace_base_version,
+        CLASS_CONSTANTS,
+        activation,
+    );
+
+    class_c_class.mark_traits_loaded(activation.context.gc_context);
+    class_c_class
+        .init_vtable(&mut activation.context)
+        .expect("Native class's vtable should initialize");
+
+    class_c_class
 }
