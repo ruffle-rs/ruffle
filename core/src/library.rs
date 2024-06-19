@@ -1,5 +1,5 @@
 use crate::avm1::{PropertyMap as Avm1PropertyMap, PropertyMap};
-use crate::avm2::{ClassObject as Avm2ClassObject, Domain as Avm2Domain};
+use crate::avm2::{Class as Avm2Class, Domain as Avm2Domain};
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
 use std::borrow::Cow;
@@ -48,7 +48,7 @@ impl WeakElement for WeakMovieSymbol {
 pub struct Avm2ClassRegistry<'gc> {
     /// A list of AVM2 class objects and the character IDs they are expected to
     /// instantiate.
-    class_map: WeakValueHashMap<Avm2ClassObject<'gc>, WeakMovieSymbol>,
+    class_map: WeakValueHashMap<Avm2Class<'gc>, WeakMovieSymbol>,
 }
 
 unsafe impl Collect for Avm2ClassRegistry<'_> {
@@ -76,24 +76,21 @@ impl<'gc> Avm2ClassRegistry<'gc> {
     ///
     /// A value of `None` indicates that this AVM2 class is not associated with
     /// a library symbol.
-    pub fn class_symbol(
-        &self,
-        class_object: Avm2ClassObject<'gc>,
-    ) -> Option<(Arc<SwfMovie>, CharacterId)> {
-        match self.class_map.get(&class_object) {
+    pub fn class_symbol(&self, class_def: Avm2Class<'gc>) -> Option<(Arc<SwfMovie>, CharacterId)> {
+        match self.class_map.get(&class_def) {
             Some(MovieSymbol(movie, symbol)) => Some((movie, symbol)),
             None => None,
         }
     }
 
-    /// Associate an AVM2 class object with a given library symbol.
+    /// Associate an AVM2 class definition with a given library symbol.
     pub fn set_class_symbol(
         &mut self,
-        class_object: Avm2ClassObject<'gc>,
+        class_def: Avm2Class<'gc>,
         movie: Arc<SwfMovie>,
         symbol: CharacterId,
     ) {
-        if let Some(old) = self.class_map.get(&class_object) {
+        if let Some(old) = self.class_map.get(&class_def) {
             if Arc::ptr_eq(&movie, &old.0) && symbol != old.1 {
                 // Flash player actually allows using the same class in multiple SymbolClass
                 // entries in the same swf, with *different* symbol ids. Whichever one
@@ -102,7 +99,7 @@ impl<'gc> Avm2ClassRegistry<'gc> {
                 // of deliberately crafted SWFs.
                 tracing::warn!(
                     "Tried to overwrite class {:?} id={:?} with symbol id={:?} from same movie",
-                    class_object,
+                    class_def,
                     old.1,
                     symbol,
                 );
@@ -114,8 +111,7 @@ impl<'gc> Avm2ClassRegistry<'gc> {
             // instantiates the clip on the timeline.
             return;
         }
-        self.class_map
-            .insert(class_object, MovieSymbol(movie, symbol));
+        self.class_map.insert(class_def, MovieSymbol(movie, symbol));
     }
 }
 

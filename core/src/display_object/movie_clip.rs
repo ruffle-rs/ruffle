@@ -4548,7 +4548,11 @@ impl<'gc, 'a> MovieClip<'gc> {
                             .context
                             .library
                             .avm2_class_registry_mut()
-                            .set_class_symbol(class_object, movie.clone(), id);
+                            .set_class_symbol(
+                                class_object.inner_class_definition(),
+                                movie.clone(),
+                                id,
+                            );
 
                         let library = activation
                             .context

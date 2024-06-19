@@ -19,11 +19,15 @@ pub fn simple_button_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     use crate::vminterface::Instantiator;
 
-    let simplebutton_cls = activation.avm2().classes().simplebutton;
+    let simplebutton_cls = activation
+        .avm2()
+        .classes()
+        .simplebutton
+        .inner_class_definition();
 
-    let mut class_object = Some(class);
+    let mut class_def = Some(class.inner_class_definition());
     let orig_class = class;
-    while let Some(class) = class_object {
+    while let Some(class) = class_def {
         if class == simplebutton_cls {
             let button = Avm2Button::empty_button(&mut activation.context);
             // [NA] Buttons specifically need to PO'd
@@ -48,7 +52,7 @@ pub fn simple_button_allocator<'gc>(
 
             return initialize_for_allocator(activation, child, orig_class);
         }
-        class_object = class.superclass_object();
+        class_def = class.super_class();
     }
     unreachable!("A SimpleButton subclass should have SimpleButton in superclass chain");
 }

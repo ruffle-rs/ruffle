@@ -1,7 +1,7 @@
 //! `Class` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
+use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
@@ -85,6 +85,7 @@ pub fn create_c_class<'gc>(
         Method::from_builtin(class_init, "<Class class initializer>", gc_context),
         gc_context,
     );
+    class_c_class.set_attributes(gc_context, ClassAttributes::FINAL);
 
     // 'length' is a weird undocumented constant in Class.
     // We need to define it, since it shows up in 'describeType'

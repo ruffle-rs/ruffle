@@ -17,11 +17,15 @@ pub fn text_field_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let textfield_cls = activation.avm2().classes().textfield;
+    let textfield_cls = activation
+        .avm2()
+        .classes()
+        .textfield
+        .inner_class_definition();
 
-    let mut class_object = Some(class);
+    let mut class_def = Some(class.inner_class_definition());
     let orig_class = class;
-    while let Some(class) = class_object {
+    while let Some(class) = class_def {
         if class == textfield_cls {
             let movie = activation.caller_movie_or_root();
             let display_object =
@@ -43,7 +47,7 @@ pub fn text_field_allocator<'gc>(
 
             return initialize_for_allocator(activation, child, orig_class);
         }
-        class_object = class.superclass_object();
+        class_def = class.super_class();
     }
     unreachable!("A TextField subclass should have TextField in superclass chain");
 }

@@ -96,7 +96,7 @@ pub fn init<'gc>(
     // which makes custom classes see a disposed BitmapData before they call super()
     let name = this.instance_class().map(|c| c.name());
     let character = this
-        .instance_of()
+        .instance_class()
         .and_then(|t| {
             activation
                 .context

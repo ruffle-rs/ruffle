@@ -564,7 +564,7 @@ impl<'gc> Class<'gc> {
                 param: None,
                 super_class: Some(activation.avm2().classes().class.inner_class_definition()),
                 attributes: ClassAttributes::FINAL,
-                protected_namespace: None,
+                protected_namespace,
                 direct_interfaces: Vec::new(),
                 all_interfaces: Vec::new(),
                 instance_allocator: Allocator(scriptobject_allocator),
@@ -944,7 +944,7 @@ impl<'gc> Class<'gc> {
 
         // Matching avmplus, this doesn't check whether the class is a
         // c_class; it strips the suffix even for i_classes
-        if let Some(stripped) = local_name_wstr.strip_suffix('$' as u8) {
+        if let Some(stripped) = local_name_wstr.strip_suffix(b'$') {
             let new_local_name = AvmString::new(mc, stripped);
 
             QName::new(namespace, new_local_name)
