@@ -78,6 +78,13 @@ pub struct LayoutContext<'a, 'gc> {
     /// A growing list of layout boxes that form the line currently being laid out.
     boxes: Vec<LayoutBox<'gc>>,
 
+    /// The bounds of all laid-out text, excluding margins.
+    ///
+    /// None indicates that no bounds have yet to be calculated. If the layout
+    /// ends without a line having been generated, the default bounding box
+    /// should be used.
+    bounds: Option<BoxBounds<Twips>>,
+
     /// The exterior bounds of all laid-out text, including left and right
     /// margins.
     ///
@@ -115,6 +122,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             lines: Vec::new(),
             current_line_index: 0,
             boxes: Vec::new(),
+            bounds: None,
             exterior_bounds: None,
             is_first_line: true,
             has_line_break: false,
@@ -357,6 +365,12 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                 boxes,
             });
             self.current_line_index += 1;
+
+            if let Some(lb) = &mut self.bounds {
+                *lb += bounds;
+            } else {
+                self.bounds = Some(bounds);
+            }
         }
     }
 
@@ -690,6 +704,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         );
 
         Layout {
+            bounds: self.bounds.unwrap_or_default(),
             exterior_bounds: self.exterior_bounds.unwrap_or_default(),
             lines: self.lines,
         }
@@ -706,12 +721,20 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 #[collect(no_drop)]
 pub struct Layout<'gc> {
     #[collect(require_static)]
+    bounds: BoxBounds<Twips>,
+
+    #[collect(require_static)]
     exterior_bounds: BoxBounds<Twips>,
 
     lines: Vec<LayoutLine<'gc>>,
 }
 
 impl<'gc> Layout<'gc> {
+    /// Bounds of this layout, i.e. a union of bounds of all layout boxes.
+    pub fn bounds(&self) -> BoxBounds<Twips> {
+        self.bounds
+    }
+
     /// Exterior bounds of this layout.
     ///
     /// The returned bounds will include the text bounds itself,
