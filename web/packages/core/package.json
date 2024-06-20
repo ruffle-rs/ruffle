@@ -18,7 +18,7 @@
         "checkTypes": "tsc --noemit && tsc --noemit -p tools"
     },
     "dependencies": {
-        "wasm-feature-detect": "^1.6.1"
+        "wasm-feature-detect": "^1.6.2"
     },
     "devDependencies": {
         "@fluent/bundle": "^0.18.0",
