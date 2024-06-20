@@ -335,9 +335,12 @@ impl<'gc> ClassObject<'gc> {
         let object: Object<'gc> = self.into();
 
         let scope = self.0.read().class_scope;
-        let class = self.0.read().class;
+        let c_class = self
+            .inner_class_definition()
+            .c_class()
+            .expect("ClassObject stores an i_class");
 
-        let class_initializer = class.class_init();
+        let class_initializer = c_class.instance_init();
         let class_init_fn = FunctionObject::from_method(
             activation,
             class_initializer,

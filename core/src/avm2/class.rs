@@ -334,10 +334,14 @@ impl<'gc> Class<'gc> {
         // This can only happen for non-builtin Vector types,
         // so let's create one here directly.
 
-        let object_vector_cls = this_read
+        let object_vector_i_class = this_read
             .applications
             .get(&None)
             .expect("Vector.<*> not initialized?");
+
+        let object_vector_c_class = object_vector_i_class
+            .c_class()
+            .expect("T$ cannot be generic");
 
         let param = param.expect("Trying to create Vector<*>, which shouldn't happen here");
         let name = format!("Vector.<{}>", param.name().to_qualified_name(mc));
@@ -353,14 +357,14 @@ impl<'gc> Class<'gc> {
                     .object_vector
                     .inner_class_definition(),
             ),
-            object_vector_cls.instance_init(),
-            object_vector_cls.class_init(),
+            object_vector_i_class.instance_init(),
+            object_vector_c_class.instance_init(),
             context.avm2.classes().class.inner_class_definition(),
             mc,
         );
 
         new_class.set_param(mc, Some(Some(param)));
-        new_class.0.write(mc).call_handler = object_vector_cls.call_handler();
+        new_class.0.write(mc).call_handler = object_vector_i_class.call_handler();
 
         new_class.mark_traits_loaded(context.gc_context);
         new_class
@@ -1300,17 +1304,6 @@ impl<'gc> Class<'gc> {
     /// Set a native-code instance initializer for this class.
     pub fn set_native_instance_init(self, mc: &Mutation<'gc>, new_native_init: Method<'gc>) {
         self.0.write(mc).native_instance_init = new_native_init;
-    }
-
-    /// Get this class's class initializer.
-    pub fn class_init(self) -> Method<'gc> {
-        self.0
-            .read()
-            .c_class
-            .expect("Accessed class_init on a c_class")
-            .0
-            .read()
-            .instance_init
     }
 
     /// Set a call handler for this class.
