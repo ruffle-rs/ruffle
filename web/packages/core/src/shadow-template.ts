@@ -215,45 +215,38 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             background: #ffffff4c;
         }`,
 
-        `#context-menu-overlay {
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-            position: absolute;
-        }`,
-
         `#context-menu {
-            color: black;
-            background: #fafafa;
+            color: rgb(var(--modal-foreground-rgb));
+            background-color: var(--modal-background);
             border: 1px solid gray;
             box-shadow: 0px 5px 10px -5px black;
             position: absolute;
             font-size: 14px;
             text-align: left;
             list-style: none;
-            padding: 0;
+            padding: 3px 0;
             margin: 0;
+            pointer-events: all;
         }`,
 
         `#context-menu .menu-item {
             padding: 5px 10px;
-            cursor: pointer;
-            color: black;
+            color: rgb(var(--modal-foreground-rgb));
         }`,
 
         `#context-menu .menu-item.disabled {
             cursor: default;
-            color: gray;
+            color: rgba(var(--modal-foreground-rgb), 0.5);
         }`,
 
         `#context-menu .menu-item:not(.disabled):hover {
-            background: lightgray;
+            background-color: rgba(var(--modal-foreground-rgb), 0.15);
         }`,
 
         `#context-menu .menu-separator hr {
             border: none;
-            border-bottom: 1px solid lightgray;
-            margin: 2px;
+            border-bottom: 1px solid rgba(var(--modal-foreground-rgb), 0.2);
+            margin: 3px;
         }`,
 
         `#splash-screen {
@@ -316,78 +309,103 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
         }`,
 
         `.modal {
-            height: inherit;
-            user-select: text;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            position: absolute;
+            pointer-events: none;
         }`,
 
         `.modal-area {
             position: sticky;
-            background: white;
+            background-color: var(--modal-background);
+            color: rgb(var(--modal-foreground-rgb));
             width: fit-content;
-            padding: 16px 28px 16px 16px;
-            border: 3px solid black;
             margin: auto;
+            padding: 8px 12px;
+            border-radius: 12px;
+            box-shadow: 0 2px 6px 0px #0008;
+            pointer-events: all;
         }`,
 
         `#modal-area {
-            height: 500px;
-            max-height: calc(100% - 38px);
-            min-height: 80px;
-        }`,
-
-        `#restore-save {
-            display: none;
-        }`,
-
-        `.replace-save {
-            display: none;
-        }`,
-
-        `.save-option {
-            display: inline-block;
-            padding: 3px 10px;
-            margin: 5px 2px;
-            cursor: pointer;
-            border-radius: 50px;
-            background-color: var(--ruffle-blue);
-            color: white;
+            width: min(100%, 450px);
+            height: min(100%, 300px);
         }`,
 
         `.close-modal {
-            position: absolute;
-            top: 5px;
-            right: 10px;
+            width: 16px;
+            height: 16px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='16px' viewBox='0 -960 960 960' width='16px' fill='black'%3E%3Cpath d='M480-392 300-212q-18 18-44 18t-44-18q-18-18-18-44t18-44l180-180-180-180q-18-18-18-44t18-44q18-18 44-18t44 18l180 180 180-180q18-18 44-18t44 18q18 18 18 44t-18 44L568-480l180 180q18 18 18 44t-18 44q-18 18-44 18t-44-18L480-392Z'/%3E%3C/svg%3E");
             cursor: pointer;
-            font-size: x-large;
+            filter: var(--modal-foreground-filter);
+        }`,
+
+        `:not(#volume-controls) > .close-modal {
+            position: absolute;
+            top: 14px;
+            right: 16px;
         }`,
 
         `.general-save-options {
             text-align: center;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #888;
+            padding: 4px 0 12px;
+            border-bottom: 2px solid rgba(var(--modal-foreground-rgb), 0.3);
+        }`,
+        
+        `#backup-saves {
+            background-color: rgba(var(--modal-foreground-rgb), 0.2);
+            padding: 4px 8px;
+            border-radius: 6px;
+            cursor: pointer;
         }`,
 
         `#local-saves {
             border-collapse: collapse;
             overflow-y: auto;
             display: block;
-            padding-right: 16px;
             height: calc(100% - 45px);
             min-height: 30px;
         }`,
-
+        
         `#local-saves td {
-            border-bottom: 1px solid #bbb;
+            border-bottom: 2px solid rgba(var(--modal-foreground-rgb), 0.15);
             height: 30px;
         }`,
-
-        `#local-saves tr td:nth-child(1) {
-            padding-right: 1em;
+        
+        `#local-saves td:nth-child(1) {
+            width: 100%;
             word-break: break-all;
         }`,
+        
+        `.save-option {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            filter: var(--modal-foreground-filter);
+            vertical-align: middle;
+            opacity: 0.4;
+        }`,
+        
+        `#local-saves > tr:hover .save-option {
+            opacity: 1;
+        }`,
+        
+        `#download-save {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='0 -960 960 960' width='24px' fill='black'%3E%3Cpath d='M480-337q-8 0-15-2.5t-13-8.5L308-492q-12-12-11.5-28t11.5-28q12-12 28.5-12.5T365-549l75 75v-286q0-17 11.5-28.5T480-800q17 0 28.5 11.5T520-760v286l75-75q12-12 28.5-11.5T652-548q11 12 11.5 28T652-492L508-348q-6 6-13 8.5t-15 2.5ZM240-160q-33 0-56.5-23.5T160-240v-80q0-17 11.5-28.5T200-360q17 0 28.5 11.5T240-320v80h480v-80q0-17 11.5-28.5T760-360q17 0 28.5 11.5T800-320v80q0 33-23.5 56.5T720-160H240Z'/%3E%3C/svg%3E");
+        }`,
+        
+        `#replace-save {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='0 -1080 960 1200' width='24px' fill='black'%3E%3Cpath d='M440-367v127q0 17 11.5 28.5T480-200q17 0 28.5-11.5T520-240v-127l36 36q6 6 13.5 9t15 2.5q7.5-.5 14.5-3.5t13-9q11-12 11.5-28T612-388L508-492q-6-6-13-8.5t-15-2.5q-8 0-15 2.5t-13 8.5L348-388q-12 12-11.5 28t12.5 28q12 11 28 11.5t28-11.5l35-35ZM240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h287q16 0 30.5 6t25.5 17l194 194q11 11 17 25.5t6 30.5v447q0 33-23.5 56.5T720-80H240Zm280-560q0 17 11.5 28.5T560-600h160L520-800v160Z'/%3E%3C/svg%3E");
+        }`,
+        
+        `#delete-save {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='0 -1020 960 1080' width='24px' fill='black'%3E%3Cpath d='M280-120q-33 0-56.5-23.5T200-200v-520q-17 0-28.5-11.5T160-760q0-17 11.5-28.5T200-800h160q0-17 11.5-28.5T400-840h160q17 0 28.5 11.5T600-800h160q17 0 28.5 11.5T800-760q0 17-11.5 28.5T760-720v520q0 33-23.5 56.5T680-120H280Zm120-160q17 0 28.5-11.5T440-320v-280q0-17-11.5-28.5T400-640q-17 0-28.5 11.5T360-600v280q0 17 11.5 28.5T400-280Zm160 0q17 0 28.5-11.5T600-320v-280q0-17-11.5-28.5T560-640q-17 0-28.5 11.5T520-600v280q0 17 11.5 28.5T560-280Z'/%3E%3C/svg%3E");
+        }`,
 
-        `#local-saves tr:nth-child(even) {
-            background-color: #f2f2f2;
+        `.replace-save {
+            display: none;
         }`,
 
         `#video-holder {
@@ -399,20 +417,44 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             height: calc(100% - 58px);
         }`,
 
-        `.slider-container {
-            margin-top: 10px;
+        `#volume-controls {
             display: flex;
             align-items: center;
+            gap: 6px;
         }`,
 
-        `#volume-slider {
-            margin-left: 10px;
-            margin-right: 10px;
+        `#mute-checkbox {
+            display: none;
+        }`,
+
+        `label[for="mute-checkbox"] {
+            width: 24px;
+            height: 24px;
+            line-height: 0;
+            cursor: pointer;
+            filter: var(--modal-foreground-filter);
+        }`,
+
+        `#volume-mute {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='0 -960 960 960' width='24px' fill='black'%3E%3Cpath d='m719.13-419.35-71.67 71.68Q634.78-335 617.13-335t-30.33-12.67q-12.67-12.68-12.67-30.33t12.67-30.33L658.48-480l-71.68-71.67q-12.67-12.68-12.67-30.33t12.67-30.33Q599.48-625 617.13-625t30.33 12.67l71.67 71.68 71.67-71.68Q803.48-625 821.13-625t30.33 12.67q12.67 12.68 12.67 30.33t-12.67 30.33L779.78-480l71.68 71.67q12.67 12.68 12.67 30.33t-12.67 30.33Q838.78-335 821.13-335t-30.33-12.67l-71.67-71.68ZM278-357.87H161.22q-17.66 0-30.33-12.67-12.67-12.68-12.67-30.33v-158.26q0-17.65 12.67-30.33 12.67-12.67 30.33-12.67H278l130.15-129.91q20.63-20.63 46.98-9.45 26.35 11.19 26.35 39.77v443.44q0 28.58-26.35 39.77-26.35 11.18-46.98-9.45L278-357.87Z'/%3E%3C/svg%3E");
+        }`,
+
+        `#volume-min {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='161 -960 960 960' width='24px' fill='black'%3E%3Cpath d='M438.65-357.87H321.87q-17.65 0-30.33-12.67-12.67-12.68-12.67-30.33v-158.26q0-17.65 12.67-30.33 12.68-12.67 30.33-12.67h116.78L568.8-732.04q20.63-20.63 46.98-9.45 26.35 11.19 26.35 39.77v443.44q0 28.58-26.35 39.77-26.35 11.18-46.98-9.45L438.65-357.87Z'/%3E%3C/svg%3E");
+        }`,
+
+        `#volume-mid {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='80 -960 960 960' width='24px' fill='black'%3E%3Cpath d='M357.98-357.87H241.2q-17.66 0-30.33-12.67-12.67-12.68-12.67-30.33v-158.26q0-17.65 12.67-30.33 12.67-12.67 30.33-12.67h116.78L487.65-731.8q20.63-20.64 47.1-9.57 26.47 11.07 26.47 39.65v443.44q0 28.58-26.47 39.65t-47.1-9.57L357.98-357.87ZM741.8-480q0 42.48-20.47 80.09-20.48 37.61-54.94 60.82-10.22 5.98-20.19.25-9.98-5.73-9.98-17.44v-248.44q0-11.71 9.98-17.32 9.97-5.61 20.19.37 34.46 23.71 54.94 61.45Q741.8-522.48 741.8-480Z'/%3E%3C/svg%3E");
+        }`,
+
+        `#volume-max {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='9 -960 960 960' width='24px' fill='black'%3E%3Cpath d='M754.22-480.5q0-78.52-41.88-143.9-41.88-65.38-111.91-98.62-14.47-6.74-20.47-20.96-6-14.22-.53-28.93 5.74-15.72 20.34-22.46t29.58 0q92.48 42.46 147.97 127.05 55.48 84.6 55.48 187.82t-55.48 187.82q-55.49 84.59-147.97 127.05-14.98 6.74-29.58 0-14.6-6.74-20.34-22.46-5.47-14.71.53-28.93 6-14.22 20.47-20.96 70.03-33.24 111.91-98.62 41.88-65.38 41.88-143.9ZM286.98-357.87H170.2q-17.66 0-30.33-12.67-12.67-12.68-12.67-30.33v-158.26q0-17.65 12.67-30.33 12.67-12.67 30.33-12.67h116.78L416.65-731.8q20.63-20.64 47.1-9.57 26.47 11.07 26.47 39.65v443.44q0 28.58-26.47 39.65t-47.1-9.57L286.98-357.87ZM670.8-480q0 42.48-20.47 80.09-20.48 37.61-54.94 60.82-10.22 5.98-20.19.25-9.98-5.73-9.98-17.44v-248.44q0-11.71 9.98-17.32 9.97-5.61 20.19.37 34.46 23.71 54.94 61.45Q670.8-522.48 670.8-480Z'/%3E%3C/svg%3E");
         }`,
 
         `#volume-slider-text {
-            text-align: right;
-            width: 28px;
+            width: 4.8ch;
+            text-align: center;
+            user-select: none;
         }`,
 
         `.acceleration-link {
@@ -422,6 +464,23 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
 
         `.acceleration-link:hover {
             text-decoration: underline;
+        }`,
+
+        /* Handle preferred color scheme. */
+        `@media (prefers-color-scheme: light) {
+            :host {
+                --modal-background: #fafafa;
+                --modal-foreground-rgb: 0, 0, 0;
+                --modal-foreground-filter: none;
+            }
+        }`,
+
+        `@media (prefers-color-scheme: dark) {
+            :host {
+                --modal-background: #282828;
+                --modal-foreground-rgb: 221, 221, 221;
+                --modal-foreground-filter: invert(90%);
+            }
         }`,
     ];
     insertRules(styleElement.sheet, rules);
@@ -753,13 +812,12 @@ const loadbarInner = createElement("div", undefined, "loadbar-inner");
 const saveManager = createElement("div", "save-manager", "modal hidden");
 const saveModalArea = createElement("div", "modal-area", "modal-area");
 const saveModalClose = createElement("span", undefined, "close-modal");
-saveModalClose.textContent = "\u00D7";
 const generalSaveOptions = createElement(
     "div",
     undefined,
     "general-save-options",
 );
-const backupSaves = createElement("span", "backup-saves", "save-option");
+const backupSaves = createElement("span", "backup-saves");
 const localSaves = createElement("table", "local-saves");
 
 // Volume control elements
@@ -769,20 +827,8 @@ const volumeControlsModal = createElement(
     "modal hidden",
 );
 const volumeModalArea = createElement("div", undefined, "modal-area");
-const volumeModalClose = createElement("span", undefined, "close-modal");
-volumeModalClose.textContent = "\u00D7";
 const volumeControls = createElement("div", "volume-controls");
-const volumeControlsHeading = createElement("h2", "volume-controls-heading");
-const muteCheckboxLabel = createLabelElement(
-    "mute-checkbox-label",
-    "mute-checkbox",
-);
-const muteCheckbox = createInputElement("checkbox", "mute-checkbox");
-const sliderContainer = createElement("div", undefined, "slider-container");
-const volumeSliderLabel = createLabelElement(
-    "volume-slider-label",
-    "volume-slider",
-);
+const volumeMuteCheckbox = createInputElement("checkbox", "mute-checkbox");
 const volumeSlider = createInputElement(
     "range",
     "volume-slider",
@@ -790,13 +836,20 @@ const volumeSlider = createInputElement(
     "100",
     "1",
 );
+const volumeMuteIcon = createLabelElement("volume-mute", "mute-checkbox");
+volumeMuteIcon.title = text("volume-controls-unmute");
+const volumeMinIcon = createLabelElement("volume-min", "mute-checkbox");
+const volumeMidIcon = createLabelElement("volume-mid", "mute-checkbox");
+const volumeMaxIcon = createLabelElement("volume-max", "mute-checkbox");
+[volumeMinIcon, volumeMidIcon, volumeMaxIcon]
+    .forEach(icon => icon.title = text("volume-controls-mute"));
 const volumeSliderText = createElement("span", "volume-slider-text");
+const volumeModalClose = createElement("span", undefined, "close-modal");
 
 // Video modal elements
 const videoModal = createElement("div", "video-modal", "modal hidden");
 const videoModalArea = createElement("div", undefined, "modal-area");
 const videoModalClose = createElement("span", undefined, "close-modal");
-videoModalClose.textContent = "\u00D7";
 const videoHolder = createElement("div", "video-holder");
 
 // Hardware acceleration modal elements
@@ -807,7 +860,6 @@ const hardwareModal = createElement(
 );
 const hardwareModalArea = createElement("div", undefined, "modal-area");
 const hardwareModalClose = createElement("span", undefined, "close-modal");
-hardwareModalClose.textContent = "\u00D7";
 const hardwareModalLink = document.createElement("a");
 hardwareModalLink.href =
     "https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users#chrome-hardware-acceleration";
@@ -849,7 +901,7 @@ clipboardModalTextPasteText.textContent = text("clipboard-message-paste");
 const contextMenuOverlay = createElement(
     "div",
     "context-menu-overlay",
-    "hidden",
+    "modal hidden",
 );
 const contextMenu = createElement("ul", "context-menu");
 
@@ -899,15 +951,15 @@ appendElement(saveModalArea, localSaves);
 // Volume control append
 appendElement(ruffleShadowTemplate.content, volumeControlsModal);
 appendElement(volumeControlsModal, volumeModalArea);
-appendElement(volumeModalArea, volumeModalClose);
 appendElement(volumeModalArea, volumeControls);
-appendElement(volumeControls, volumeControlsHeading);
-appendElement(volumeControls, muteCheckboxLabel);
-appendElement(volumeControls, muteCheckbox);
-appendElement(volumeControls, sliderContainer);
-appendElement(sliderContainer, volumeSliderLabel);
-appendElement(sliderContainer, volumeSlider);
-appendElement(sliderContainer, volumeSliderText);
+appendElement(volumeControls, volumeMuteCheckbox);
+appendElement(volumeControls, volumeMuteIcon);
+appendElement(volumeControls, volumeMinIcon);
+appendElement(volumeControls, volumeMidIcon);
+appendElement(volumeControls, volumeMaxIcon);
+appendElement(volumeControls, volumeSlider);
+appendElement(volumeControls, volumeSliderText);
+appendElement(volumeControls, volumeModalClose);
 // Video modal append
 appendElement(ruffleShadowTemplate.content, videoModal);
 appendElement(videoModal, videoModalArea);
