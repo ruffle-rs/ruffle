@@ -470,10 +470,10 @@ impl<'gc> VTable<'gc> {
                             Property::new_const_slot(new_slot_id),
                             PropertyClass::name(context.gc_context, type_name.clone(), *unit),
                         ),
-                        TraitKind::Class { .. } => (
+                        TraitKind::Class { class, .. } => (
                             Property::new_const_slot(new_slot_id),
                             PropertyClass::Class(
-                                context.avm2.classes().class.inner_class_definition(),
+                                class.c_class().expect("Trait should hold an i_class"),
                             ),
                         ),
                         _ => unreachable!(),
