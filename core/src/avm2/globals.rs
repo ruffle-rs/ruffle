@@ -564,6 +564,10 @@ pub fn load_player_globals<'gc>(
     let object_class = object_class.into_finished_class(activation)?;
     let fn_class = fn_class.into_finished_class(activation)?;
 
+    // Function's prototype is an instance of itself
+    let fn_proto = fn_class.construct(activation, &[])?;
+    fn_class.link_prototype(activation, fn_proto)?;
+
     // Construct the global class.
     let global_classdef = global_scope::create_class(activation);
     let global_class = ClassObject::from_class(activation, global_classdef, Some(object_class))?;
