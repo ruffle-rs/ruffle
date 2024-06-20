@@ -493,45 +493,49 @@ pub fn load_player_globals<'gc>(
     //
     // Hence, this ridiculously complicated dance of classdef, type allocation,
     // and partial initialization.
+
+    // Object extends nothing
     let object_i_class = object::create_i_class(activation);
+
+    // Class extends Object
     let class_i_class = class::create_i_class(activation, object_i_class);
 
+    // Object$ extends Class
     let object_c_class = object::create_c_class(activation, class_i_class);
     object_i_class.set_c_class(mc, object_c_class);
     object_c_class.set_i_class(mc, object_i_class);
 
+    // Class$ extends Class
     let class_c_class = class::create_c_class(activation, class_i_class);
     class_i_class.set_c_class(mc, class_c_class);
     class_c_class.set_i_class(mc, class_i_class);
 
-    let object_class = ClassObject::from_class_partial(activation, object_i_class, None)?;
-    let object_proto = ScriptObject::custom_object(mc, Some(object_class), None);
     domain.export_class(object_i_class.name(), object_i_class, mc);
-
-    let class_class =
-        ClassObject::from_class_partial(activation, class_i_class, Some(object_class))?;
-    let class_proto = ScriptObject::custom_object(mc, Some(object_class), Some(object_proto));
     domain.export_class(class_i_class.name(), class_i_class, mc);
 
     // Function is more of a "normal" class than the other two, so we can create it normally.
     let fn_classdef = function::create_class(activation, object_i_class, class_i_class);
-    let fn_class = ClassObject::from_class_partial(activation, fn_classdef, Some(object_class))?;
-    let fn_proto = ScriptObject::custom_object(mc, Some(fn_class), Some(object_proto));
     domain.export_class(fn_classdef.name(), fn_classdef, mc);
 
-    let fn_c_class = fn_classdef
-        .c_class()
-        .expect("function::create_class returns an i_class");
+    let object_class = ClassObject::from_class_partial(activation, object_i_class, None)?;
+    let object_proto = ScriptObject::custom_object(mc, Some(object_class), None);
+
+    let class_class =
+        ClassObject::from_class_partial(activation, class_i_class, Some(object_class))?;
+    let class_proto = ScriptObject::custom_object(mc, Some(object_class), Some(object_proto));
+
+    let fn_class = ClassObject::from_class_partial(activation, fn_classdef, Some(object_class))?;
+    let fn_proto = ScriptObject::custom_object(mc, Some(fn_class), Some(object_proto));
 
     // Now to weave the Gordian knot...
     object_class.link_prototype(activation, object_proto)?;
-    object_class.link_type(mc, class_proto, object_c_class);
+    object_class.link_type(mc, class_proto);
 
     fn_class.link_prototype(activation, fn_proto)?;
-    fn_class.link_type(mc, class_proto, fn_c_class);
+    fn_class.link_type(mc, class_proto);
 
     class_class.link_prototype(activation, class_proto)?;
-    class_class.link_type(mc, class_proto, class_c_class);
+    class_class.link_type(mc, class_proto);
 
     // At this point, we need at least a partial set of system classes in
     // order to continue initializing the player. The rest of the classes
