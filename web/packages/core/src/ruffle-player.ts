@@ -355,12 +355,14 @@ export class RufflePlayer extends HTMLElement {
      */
     private addModalJavaScript(modalElement: HTMLDivElement): void {
         const videoHolder = modalElement.querySelector("#video-holder");
-        this.container.addEventListener("click", () => {
+        const hideModal = () => {
             modalElement.classList.add("hidden");
             if (videoHolder) {
                 videoHolder.textContent = "";
             }
-        });
+        }
+        
+        this.container.addEventListener("click", hideModal);
         const modalArea = modalElement.querySelector(".modal-area");
         if (modalArea) {
             modalArea.addEventListener("click", (event) =>
@@ -369,12 +371,7 @@ export class RufflePlayer extends HTMLElement {
         }
         const closeModal = modalElement.querySelector(".close-modal");
         if (closeModal) {
-            closeModal.addEventListener("click", () => {
-                modalElement.classList.add("hidden");
-                if (videoHolder) {
-                    videoHolder.textContent = "";
-                }
-            });
+            closeModal.addEventListener("click", hideModal);
         }
     }
 
@@ -387,9 +384,17 @@ export class RufflePlayer extends HTMLElement {
     private addVolumeControlsJavaScript(
         volumeControlsModal: HTMLDivElement,
     ): void {
-        const muteCheckbox = volumeControlsModal.querySelector(
+        const volumeMuteCheckbox = volumeControlsModal.querySelector(
             "#mute-checkbox",
         ) as HTMLInputElement;
+        const volumeMuteIcon = volumeControlsModal.querySelector(
+            "#volume-mute",
+        ) as HTMLLabelElement;
+        const volumeIcons = [
+            volumeControlsModal.querySelector("#volume-min") as HTMLLabelElement,
+            volumeControlsModal.querySelector("#volume-mid") as HTMLLabelElement,
+            volumeControlsModal.querySelector("#volume-max") as HTMLLabelElement,
+        ];
         const volumeSlider = volumeControlsModal.querySelector(
             "#volume-slider",
         ) as HTMLInputElement;
@@ -397,45 +402,42 @@ export class RufflePlayer extends HTMLElement {
             "#volume-slider-text",
         ) as HTMLSpanElement;
 
-        const heading = volumeControlsModal.querySelector(
-            "#volume-controls-heading",
-        ) as HTMLHeadingElement;
-        const muteCheckboxLabel = volumeControlsModal.querySelector(
-            "#mute-checkbox-label",
-        ) as HTMLLabelElement;
-        const volumeSliderLabel = volumeControlsModal.querySelector(
-            "#volume-slider-label",
-        ) as HTMLLabelElement;
-
-        // Add the texts.
-        heading.textContent = text("volume-controls");
-        muteCheckboxLabel.textContent = text("volume-controls-mute");
-        volumeSliderLabel.textContent = text("volume-controls-volume");
+        const setVolumeIcon = () => {
+            if (this.volumeSettings.isMuted) {
+                volumeMuteIcon.style.display = "inline";
+                volumeIcons.forEach(icon => {
+                    icon.style.display = "none";
+                });
+            } else {
+                volumeMuteIcon.style.display = "none";
+                const iconIndex = Math.round(this.volumeSettings.volume / 50);
+                volumeIcons.forEach((icon, i) => {
+                    icon.style.display = i == iconIndex
+                        ? "inline"
+                        : "none";
+                });
+            }
+        };
 
         // Set the controls to the current settings.
-        muteCheckbox.checked = this.volumeSettings.isMuted;
-        volumeSlider.disabled = muteCheckbox.checked;
+        volumeMuteCheckbox.checked = this.volumeSettings.isMuted;
+        volumeSlider.disabled = volumeMuteCheckbox.checked;
         volumeSlider.valueAsNumber = this.volumeSettings.volume;
-        volumeSliderLabel.style.color = muteCheckbox.checked ? "grey" : "black";
-        volumeSliderText.style.color = muteCheckbox.checked ? "grey" : "black";
-        volumeSliderText.textContent = String(this.volumeSettings.volume);
+        volumeSliderText.textContent = volumeSlider.value + "%";
+        setVolumeIcon();
 
         // Add event listeners to update the settings and controls.
-        muteCheckbox.addEventListener("change", () => {
-            volumeSlider.disabled = muteCheckbox.checked;
-            volumeSliderLabel.style.color = muteCheckbox.checked
-                ? "grey"
-                : "black";
-            volumeSliderText.style.color = muteCheckbox.checked
-                ? "grey"
-                : "black";
-            this.volumeSettings.isMuted = muteCheckbox.checked;
+        volumeMuteCheckbox.addEventListener("change", () => {
+            volumeSlider.disabled = volumeMuteCheckbox.checked;
+            this.volumeSettings.isMuted = volumeMuteCheckbox.checked;
             this.instance?.set_volume(this.volumeSettings.get_volume());
+            setVolumeIcon();
         });
         volumeSlider.addEventListener("input", () => {
-            volumeSliderText.textContent = volumeSlider.value;
+            volumeSliderText.textContent = volumeSlider.value + "%";
             this.volumeSettings.volume = volumeSlider.valueAsNumber;
             this.instance?.set_volume(this.volumeSettings.get_volume());
+            setVolumeIcon();
         });
     }
 
@@ -1303,8 +1305,9 @@ export class RufflePlayer extends HTMLElement {
                 keyCol.title = key;
                 const downloadCol = document.createElement("TD");
                 const downloadSpan = document.createElement("SPAN");
-                downloadSpan.textContent = text("save-download");
                 downloadSpan.className = "save-option";
+                downloadSpan.id = "download-save";
+                downloadSpan.title = text("save-download");
                 downloadSpan.addEventListener("click", () => {
                     const blob = this.base64ToBlob(
                         solData,
@@ -1325,8 +1328,9 @@ export class RufflePlayer extends HTMLElement {
                     document.createElement("LABEL")
                 );
                 replaceLabel.htmlFor = "replace-save-" + key;
-                replaceLabel.textContent = text("save-replace");
                 replaceLabel.className = "save-option";
+                replaceLabel.id = "replace-save";
+                replaceLabel.title = text("save-replace");
                 replaceInput.addEventListener("change", (event) =>
                     this.replaceSOL(event, key),
                 );
@@ -1334,8 +1338,9 @@ export class RufflePlayer extends HTMLElement {
                 replaceCol.appendChild(replaceLabel);
                 const deleteCol = document.createElement("TD");
                 const deleteSpan = document.createElement("SPAN");
-                deleteSpan.textContent = text("save-delete");
                 deleteSpan.className = "save-option";
+                deleteSpan.id = "delete-save";
+                deleteSpan.title = text("save-delete");
                 deleteSpan.addEventListener("click", () =>
                     this.deleteSave(key),
                 );
