@@ -2726,25 +2726,24 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Value::Bool(_) => "boolean",
             Value::Number(_) | Value::Integer(_) => "number",
             Value::Object(o) => {
-                // Subclasses always have a typeof = "object", must be a subclass if the prototype chain is > 2, or not a subclass if <=2
-                let is_not_subclass = o
-                    .proto()
-                    .and_then(|p| p.proto())
-                    .and_then(|p| p.proto())
-                    .is_none();
+                let classes = self.avm2().classes();
 
                 match o {
                     Object::FunctionObject(_) => {
-                        if is_not_subclass {
+                        if o.instance_class() == Some(classes.function.inner_class_definition()) {
                             "function"
                         } else {
+                            // Subclasses always have a typeof = "object"
                             "object"
                         }
                     }
                     Object::XmlObject(_) | Object::XmlListObject(_) => {
-                        if is_not_subclass {
+                        if o.instance_class() == Some(classes.xml_list.inner_class_definition())
+                            || o.instance_class() == Some(classes.xml.inner_class_definition())
+                        {
                             "xml"
                         } else {
+                            // Subclasses always have a typeof = "object"
                             "object"
                         }
                     }
