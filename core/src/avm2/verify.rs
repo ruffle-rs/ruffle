@@ -14,7 +14,7 @@ use gc_arena::{Collect, Gc};
 use std::collections::{HashMap, HashSet};
 use swf::avm2::read::Reader;
 use swf::avm2::types::{
-    Index, MethodFlags as AbcMethodFlags, Multiname as AbcMultiname, Op as AbcOp,
+    Class as AbcClass, Index, MethodFlags as AbcMethodFlags, Multiname as AbcMultiname, Op as AbcOp,
 };
 use swf::error::Error as AbcReadError;
 
@@ -828,6 +828,14 @@ fn pool_string<'gc>(
     translation_unit.pool_string(index.0, &mut activation.borrow_gc())
 }
 
+fn pool_class<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    translation_unit: TranslationUnit<'gc>,
+    index: Index<AbcClass>,
+) -> Result<Class<'gc>, Error<'gc>> {
+    translation_unit.load_class(index.0, activation)
+}
+
 fn resolve_op<'gc>(
     activation: &mut Activation<'_, 'gc>,
     translation_unit: TranslationUnit<'gc>,
@@ -998,7 +1006,10 @@ fn resolve_op<'gc>(
         AbcOp::NewActivation => Op::NewActivation,
         AbcOp::NewObject { num_args } => Op::NewObject { num_args },
         AbcOp::NewFunction { index } => Op::NewFunction { index },
-        AbcOp::NewClass { index } => Op::NewClass { index },
+        AbcOp::NewClass { index } => {
+            let class = pool_class(activation, translation_unit, index)?;
+            Op::NewClass { class }
+        }
         AbcOp::ApplyType { num_types } => Op::ApplyType { num_types },
         AbcOp::NewArray { num_args } => Op::NewArray { num_args },
         AbcOp::CoerceA => Op::CoerceA,
