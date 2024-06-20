@@ -29,8 +29,7 @@ use smallvec::SmallVec;
 use std::cmp::{min, Ordering};
 use std::sync::Arc;
 use swf::avm2::types::{
-    Class as AbcClass, Exception, Index, Method as AbcMethod, MethodFlags as AbcMethodFlags,
-    Namespace as AbcNamespace,
+    Exception, Index, Method as AbcMethod, MethodFlags as AbcMethodFlags, Namespace as AbcNamespace,
 };
 
 use super::error::make_mismatch_error;
@@ -753,15 +752,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .load_method(index, is_function, self)
     }
 
-    /// Retrieve a class entry from the current ABC file's method table.
-    fn table_class(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcClass>,
-    ) -> Result<Class<'gc>, Error<'gc>> {
-        method.translation_unit().load_class(index.0, self)
-    }
-
     pub fn run_actions(
         &mut self,
         method: Gc<'gc, BytecodeMethod<'gc>>,
@@ -938,7 +928,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::NewActivation => self.op_new_activation(),
                 Op::NewObject { num_args } => self.op_new_object(*num_args),
                 Op::NewFunction { index } => self.op_new_function(method, *index),
-                Op::NewClass { index } => self.op_new_class(method, *index),
+                Op::NewClass { class } => self.op_new_class(*class),
                 Op::ApplyType { num_types } => self.op_apply_type(*num_types),
                 Op::NewArray { num_args } => self.op_new_array(*num_args),
                 Op::CoerceA => Ok(FrameControl::Continue),
@@ -1878,11 +1868,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    fn op_new_class(
-        &mut self,
-        method: Gc<'gc, BytecodeMethod<'gc>>,
-        index: Index<AbcClass>,
-    ) -> Result<FrameControl<'gc>, Error<'gc>> {
+    fn op_new_class(&mut self, class: Class<'gc>) -> Result<FrameControl<'gc>, Error<'gc>> {
         let base_value = self.pop_stack();
         let base_class = match base_value {
             Value::Object(o) => match o.as_class_object() {
@@ -1893,9 +1879,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             _ => return Err("Base class for new class is not Object or null.".into()),
         };
 
-        let class_entry = self.table_class(method, index)?;
-
-        let new_class = ClassObject::from_class(self, class_entry, base_class)?;
+        let new_class = ClassObject::from_class(self, class, base_class)?;
 
         self.push_raw(new_class);
 

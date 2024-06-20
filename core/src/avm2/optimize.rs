@@ -243,7 +243,6 @@ pub fn optimize<'gc>(
         pub uint: Class<'gc>,
         pub number: Class<'gc>,
         pub boolean: Class<'gc>,
-        pub class: Class<'gc>,
         pub string: Class<'gc>,
         pub array: Class<'gc>,
         pub function: Class<'gc>,
@@ -256,7 +255,6 @@ pub fn optimize<'gc>(
         uint: activation.avm2().classes().uint.inner_class_definition(),
         number: activation.avm2().classes().number.inner_class_definition(),
         boolean: activation.avm2().classes().boolean.inner_class_definition(),
-        class: activation.avm2().classes().class.inner_class_definition(),
         string: activation.avm2().classes().string.inner_class_definition(),
         array: activation.avm2().classes().array.inner_class_definition(),
         function: activation
@@ -688,9 +686,11 @@ pub fn optimize<'gc>(
             Op::NewFunction { .. } => {
                 stack.push_class_not_null(types.function);
             }
-            Op::NewClass { .. } => {
+            Op::NewClass { class } => {
+                let c_class = class.c_class().expect("NewClass holds an i_class");
+
                 stack.pop();
-                stack.push_class_not_null(types.class);
+                stack.push_class_not_null(c_class);
             }
             Op::NewCatch { .. } => {
                 // Avoid handling for now
