@@ -16,6 +16,15 @@ enable-hardware-acceleration =
 view-error-details = 檢視錯誤詳細資料
 open-in-new-tab = 開啟新增分頁
 click-to-unmute = 點擊以取消靜音
+clipboard-message-title = 在Ruffle執行複製、貼上。
+clipboard-message-description =
+    { $variant ->
+       *[unsupported] 你的瀏覽器不支援完整剪貼簿使用,
+        [access-denied] 剪貼簿使用權被拒絕訪問,
+    } 你可以直接使用快捷鍵:
+clipboard-message-copy = { " " } 複製
+clipboard-message-cut = { " " } 剪下
+clipboard-message-paste = { " " } 貼上
 error-file-protocol =
     看起來你想要用Ruffle來執行"file:"的協議。
     因為瀏覽器禁了很多功能以資安的理由來講。
