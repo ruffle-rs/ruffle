@@ -106,5 +106,8 @@
     },
     "grant_single_site_permission": {
         "message": "Permanently enable for this site"
-    }
+    },
+	"permissions_explanation": {
+        "message": "The Ruffle extension works best with the ability to access data on all websites. This allows it to run when any website first loads, therefore allowing it to convince websites that do Flash Player detection immediately to let the Flash content run. It also gives it the ability to load SWF files into its internal player page from other locations on the web. If you do not grant this permission, you will need to enable Ruffle manually on every website on which you wish to use it by clicking the icon for the extension and enabling it for that website."
+	}
 }
