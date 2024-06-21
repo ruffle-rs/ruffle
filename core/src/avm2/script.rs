@@ -628,7 +628,6 @@ impl<'gc> Script<'gc> {
             write.initialized = true;
 
             let globals = write.globals;
-            let mut null_activation = Activation::from_nothing(context.reborrow());
             let domain = write.domain;
 
             drop(write);
@@ -641,7 +640,7 @@ impl<'gc> Script<'gc> {
                 &self.traits()?,
                 Some(scope),
                 None,
-                &mut null_activation.context,
+                context.gc_context,
             );
             globals.install_instance_slots(context.gc_context);
 

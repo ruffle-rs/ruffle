@@ -745,7 +745,7 @@ impl<'gc> Class<'gc> {
             &read.traits,
             None,
             read.super_class.map(|c| c.vtable()),
-            context,
+            context.gc_context,
         );
         drop(read);
 
