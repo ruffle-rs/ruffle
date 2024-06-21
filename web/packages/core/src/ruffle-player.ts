@@ -1272,6 +1272,29 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /**
+     * Check if there are any saves.
+     *
+     * @returns True if there is at least one save.
+     */
+    private checkSaves(): boolean {
+        if (!this.saveManager.querySelector("#local-saves")) {
+            return false;
+        }
+        try {
+            if (localStorage === null) {
+                return false;
+            }
+        } catch (e: unknown) {
+            return false;
+        }
+        return Object.keys(localStorage).some((key) => {
+            const solName = key.split("/").pop();
+            const solData = localStorage.getItem(key);
+            return solName && solData && this.isB64SOL(solData);
+        });
+    }
+
+    /**
      * Delete local save.
      *
      * @param key The key to remove from local storage
@@ -1287,17 +1310,10 @@ export class RufflePlayer extends HTMLElement {
      * Puts the local save SOL file keys in a table.
      */
     private populateSaves(): void {
-        const saveTable = this.saveManager.querySelector("#local-saves");
-        if (!saveTable) {
+        if (!this.checkSaves()) {
             return;
         }
-        try {
-            if (localStorage === null) {
-                return;
-            }
-        } catch (e: unknown) {
-            return;
-        }
+        const saveTable = this.saveManager.querySelector("#local-saves")!;
         saveTable.textContent = "";
         Object.keys(localStorage).forEach((key) => {
             const solName = key.split("/").pop();
@@ -1394,6 +1410,7 @@ export class RufflePlayer extends HTMLElement {
      * Opens the save manager.
      */
     private async openSaveManager(): Promise<void> {
+        this.populateSaves();
         this.saveManager.classList.remove("hidden");
     }
 
@@ -1530,9 +1547,8 @@ export class RufflePlayer extends HTMLElement {
                     navigator.clipboard.writeText(this.getPanicData()),
             });
         }
-        this.populateSaves();
-        const localSaveTable = this.saveManager.querySelector("#local-saves");
-        if (localSaveTable && localSaveTable.textContent !== "") {
+
+        if (this.checkSaves()) {
             items.push({
                 text: text("context-menu-open-save-manager"),
                 onClick: this.openSaveManager.bind(this),
