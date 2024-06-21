@@ -94,13 +94,7 @@ export async function getExplicitOptions(): Promise<Options> {
 
 export const hasAllUrlsPermission = async () => {
     const allPermissions = await permissions.getAll();
-    if (Object.prototype.hasOwnProperty.call(allPermissions, "origins")) {
-        return (
-            allPermissions.origins &&
-            allPermissions.origins.indexOf("<all_urls>") > -1
-        );
-    }
-    return false;
+    return allPermissions.origins?.includes("<all_urls>") ?? false;
 };
 
 export async function hasHostPermissionForActiveTab() {
@@ -110,11 +104,7 @@ export async function hasHostPermissionForActiveTab() {
     });
 
     try {
-        return activeTab?.url
-            ? await permissions.contains({
-                  origins: [activeTab.url],
-              })
-            : await hasAllUrlsPermission();
+        return activeTab?.url ? true : await hasAllUrlsPermission();
     } catch {
         // catch error that occurs for special urls like about:
         return false;
