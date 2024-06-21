@@ -1,0 +1,62 @@
+fn.prototype =
+[object Object]
+
+fn.prototype = undefined
+
+fn.prototype =
+undefined
+
+fn.prototype = null
+
+fn.prototype =
+undefined
+
+Inside new fn()
+this =
+[object Object]
+
+this.hasOwnProperty =
+function Function() {}
+
+getQualifiedName(this) =
+Object
+
+Finished calling new fn()
+
+fn.prototype =
+[object Object]
+
+fn =
+function Function() {}
+
+Inside new fn()
+this =
+[object Object]
+
+this.hasOwnProperty =
+function Function() {}
+
+getQualifiedName(this) =
+Object
+
+Finished calling new fn()
+
+fn instance =
+[object Object]
+
+fn instance.a =
+4
+
+fn instance.desc =
+<type name="Object" isDynamic="true" isFinal="false" isStatic="false">
+  <method name="hasOwnProperty" declaredBy="Object" returnType="Boolean" uri="http://adobe.com/AS3/2006/builtin">
+      <parameter index="1" type="*" optional="true"/>
+  </method>
+  <method name="isPrototypeOf" declaredBy="Object" returnType="Boolean" uri="http://adobe.com/AS3/2006/builtin">
+      <parameter index="1" type="*" optional="true"/>
+  </method>
+  <method name="propertyIsEnumerable" declaredBy="Object" returnType="Boolean" uri="http://adobe.com/AS3/2006/builtin">
+      <parameter index="1" type="*" optional="true"/>
+  </method>
+</type>
+
