@@ -115,9 +115,8 @@ impl<'gc> ClassObject<'gc> {
         class_object.link_prototype(activation, class_proto)?;
 
         let class_class_proto = activation.avm2().classes().class.prototype();
-
         class_object.link_type(activation.context.gc_context, class_class_proto);
-        class_object.init_instance_vtable(activation)?;
+
         class_object.into_finished_class(activation)
     }
 
@@ -185,6 +184,7 @@ impl<'gc> ClassObject<'gc> {
             .0
             .write(activation.context.gc_context)
             .instance_scope = instance_scope;
+        class_object.init_instance_vtable(activation)?;
 
         class_object.set_instance_class(activation.context.gc_context, c_class);
 
@@ -193,14 +193,8 @@ impl<'gc> ClassObject<'gc> {
         Ok(class_object)
     }
 
-    pub fn init_instance_vtable(
-        self,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
+    fn init_instance_vtable(self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
         let class = self.inner_class_definition();
-        self.instance_class().ok_or(
-            "Cannot finish initialization of core class without it being linked to a type!",
-        )?;
 
         class.validate_class(self.superclass_object())?;
 
@@ -221,15 +215,13 @@ impl<'gc> ClassObject<'gc> {
     /// Finish initialization of the class.
     ///
     /// This is intended for classes that were pre-allocated with
-    /// `from_class_partial`. It skips several critical initialization steps
+    /// `from_class_partial`. It skips two critical initialization steps
     /// that are necessary to obtain a functioning class object:
     ///
     ///  - The `link_type` step, which makes the class an instance of another
     ///    type
     ///  - The `link_prototype` step, which installs a prototype for instances
     ///    of this type to inherit
-    ///  - The `init_instance_vtable` steps, which initializes the instance vtable
-    ///    using the superclass vtable.
     ///
     /// Make sure to call them before calling this function, or it may yield an
     /// error.
