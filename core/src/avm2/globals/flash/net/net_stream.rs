@@ -1,4 +1,4 @@
-use crate::avm2::error::type_error;
+use crate::avm2::error::{make_error_2004, Error2004Type};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, TObject, Value};
 
@@ -107,11 +107,7 @@ pub fn set_client<'gc>(
             ns.set_client(activation.context.gc_context, client);
         }
     } else {
-        return Err(Error::AvmError(type_error(
-            activation,
-            "Error #2004: One of the parameters is invalid.",
-            2004,
-        )?));
+        return Err(make_error_2004(activation, Error2004Type::TypeError));
     }
 
     Ok(Value::Undefined)

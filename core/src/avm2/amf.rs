@@ -55,22 +55,27 @@ pub fn serialize_value<'gc>(
                 // Don't serialize properties from the vtable (we don't want a 'length' field)
                 recursive_serialize(activation, o, &mut values, None, amf_version, object_table)
                     .unwrap();
-
-                let mut dense = vec![];
-                let mut sparse = vec![];
-                // ActionScript `Array`s can have non-number properties, and these properties
-                // are confirmed and tested to also be serialized, so do not limit the values
-                // iterated over by the length of the internal array data.
-                for (i, elem) in values.into_iter().enumerate() {
-                    if elem.name == i.to_string() {
-                        dense.push(elem.value.clone());
-                    } else {
-                        sparse.push(elem);
-                    }
-                }
-
                 let len = o.as_array_storage().unwrap().length() as u32;
-                Some(AmfValue::ECMAArray(dense, sparse, len))
+
+                if amf_version == AMFVersion::AMF3 {
+                    let mut dense = vec![];
+                    let mut sparse = vec![];
+                    // ActionScript `Array`s can have non-number properties, and these properties
+                    // are confirmed and tested to also be serialized, so do not limit the values
+                    // iterated over by the length of the internal array data.
+                    for (i, elem) in values.into_iter().enumerate() {
+                        if elem.name == i.to_string() {
+                            dense.push(elem.value.clone());
+                        } else {
+                            sparse.push(elem);
+                        }
+                    }
+
+                    Some(AmfValue::ECMAArray(dense, sparse, len))
+                } else {
+                    // TODO: is this right?
+                    Some(AmfValue::ECMAArray(vec![], values, len))
+                }
             } else if let Some(vec) = o.as_vector_storage() {
                 let val_type = vec.value_type();
                 if val_type == Some(activation.avm2().classes().int.inner_class_definition()) {

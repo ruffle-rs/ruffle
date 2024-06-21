@@ -43,6 +43,12 @@ pub struct VTableData<'gc> {
     default_slots: Vec<Option<Value<'gc>>>,
 }
 
+impl PartialEq for VTable<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        GcCell::ptr_eq(self.0, other.0)
+    }
+}
+
 // TODO: it might make more sense to just bind the Method to the VTable (and this its class and scope) directly
 // would also be nice to somehow remove the Option-ness from `defining_class` and `scope` fields for this
 // to be more intuitive and cheaper

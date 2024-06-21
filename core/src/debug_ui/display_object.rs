@@ -460,6 +460,16 @@ impl DisplayObjectWindow {
                     ui.weak("None");
                 }
                 ui.end_row();
+
+                ui.label("Draw Layout Boxes");
+                ui.horizontal(|ui| {
+                    let mut draw_layout_boxes = object.draw_layout_boxes();
+                    ui.checkbox(&mut draw_layout_boxes, "Enabled");
+                    if draw_layout_boxes != object.draw_layout_boxes() {
+                        object.set_draw_layout_boxes(context, draw_layout_boxes);
+                    }
+                });
+                ui.end_row();
             });
 
         CollapsingHeader::new("Span List")

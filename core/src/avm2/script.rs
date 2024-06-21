@@ -415,7 +415,7 @@ impl<'gc> TranslationUnit<'gc> {
 /// A loaded Script from an ABC file.
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
-pub struct Script<'gc>(GcCell<'gc, ScriptData<'gc>>);
+pub struct Script<'gc>(pub GcCell<'gc, ScriptData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
@@ -443,6 +443,8 @@ pub struct ScriptData<'gc> {
 
     /// The `TranslationUnit` this script was loaded from.
     translation_unit: Option<TranslationUnit<'gc>>,
+
+    pub abc_index: Option<u32>,
 }
 
 impl<'gc> Script<'gc> {
@@ -472,6 +474,7 @@ impl<'gc> Script<'gc> {
                 traits_loaded: true,
                 initialized: false,
                 translation_unit: None,
+                abc_index: None,
             },
         ))
     }
@@ -513,6 +516,7 @@ impl<'gc> Script<'gc> {
                 traits_loaded: false,
                 initialized: false,
                 translation_unit: Some(unit),
+                abc_index: Some(script_index),
             },
         )))
     }

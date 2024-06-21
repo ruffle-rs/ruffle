@@ -2,7 +2,9 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
-use crate::avm2::error::{argument_error, make_error_2007, make_error_2008, range_error};
+use crate::avm2::error::{
+    argument_error, make_error_2004, make_error_2007, make_error_2008, range_error, Error2004Type,
+};
 use crate::avm2::filters::FilterAvm2Ext;
 pub use crate::avm2::object::bitmap_data_allocator;
 use crate::avm2::object::{BitmapDataObject, ByteArrayObject, Object, TObject, VectorObject};
@@ -1025,13 +1027,7 @@ pub fn draw_with_quality<'gc>(
         let quality = if let Some(quality) = args.try_get_string(activation, 6)? {
             match quality.parse() {
                 Ok(quality) => quality,
-                Err(_) => {
-                    return Err(Error::AvmError(argument_error(
-                        activation,
-                        "Error #2004: One of the parameters is invalid.",
-                        2004,
-                    )?));
-                }
+                Err(_) => return Err(make_error_2004(activation, Error2004Type::ArgumentError)),
             }
         } else {
             activation.context.stage.quality()

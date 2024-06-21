@@ -4,7 +4,7 @@
 #![allow(clippy::doc_lazy_continuation)]
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{argument_error, make_error_2008};
+use crate::avm2::error::{make_error_2004, make_error_2008, Error2004Type};
 use crate::avm2::globals::flash::geom::transform::object_to_matrix;
 use crate::avm2::object::{Object, TObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
@@ -915,18 +915,10 @@ pub fn draw_triangles<'gc>(
 
             let uvt_data = args.try_get_object(activation, 2);
 
-            if uvt_data.is_some() {
-                avm2_stub_method!(
-                    activation,
-                    "flash.display.Graphics",
-                    "drawTriangles",
-                    "with uvt data"
-                );
-            }
-
             let culling = {
                 let culling = args.get_string(activation, 3)?;
-                culling_to_triangle_culling(activation, culling)?
+                TriangleCulling::from_string(culling)
+                    .ok_or_else(|| make_error_2004(activation, Error2004Type::ArgumentError))?
             };
 
             draw_triangles_internal(
@@ -943,19 +935,82 @@ pub fn draw_triangles<'gc>(
     Ok(Value::Undefined)
 }
 
+#[derive(Debug, Clone, Copy)]
+enum TriangleCulling {
+    None,
+    Positive,
+    Negative,
+}
+
+impl TriangleCulling {
+    fn from_string(value: AvmString) -> Option<Self> {
+        if &value == b"none" {
+            Some(Self::None)
+        } else if &value == b"positive" {
+            Some(Self::Positive)
+        } else if &value == b"negative" {
+            Some(Self::Negative)
+        } else {
+            None
+        }
+    }
+
+    fn cull(self, (a, b, c): Triangle) -> bool {
+        fn triangle_orientation((a, b, c): Triangle) -> i64 {
+            let ax = a.x.get() as i64;
+            let ay = a.y.get() as i64;
+            let bx = b.x.get() as i64;
+            let by = b.y.get() as i64;
+            let cx = c.x.get() as i64;
+            let cy = c.y.get() as i64;
+            (bx - ax) * (cy - ay) - (by - ay) * (cx - ax)
+        }
+
+        match self {
+            Self::None => false,
+            Self::Positive => triangle_orientation((a, b, c)) >= 0,
+            Self::Negative => triangle_orientation((a, b, c)) <= 0,
+        }
+    }
+}
+
+type Triangle = (Point<Twips>, Point<Twips>, Point<Twips>);
+
 fn draw_triangles_internal<'gc>(
     activation: &mut Activation<'_, 'gc>,
     drawing: &mut Drawing,
     vertices: &Object<'gc>,
     indices: Option<&Object<'gc>>,
-    _uvt_data: Option<&Object<'gc>>,
+    uvt_data: Option<&Object<'gc>>,
     culling: TriangleCulling,
 ) -> Result<(), Error<'gc>> {
+    // FIXME Triangles should be drawn using non-zero winding rule.
+    //   When fixed, update output.expected.png of avm2/graphics_draw_triangles.
+    avm2_stub_method!(
+        activation,
+        "flash.display.Graphics",
+        "drawTriangles",
+        "winding behavior"
+    );
+
+    if uvt_data.is_some() {
+        avm2_stub_method!(
+            activation,
+            "flash.display.Graphics",
+            "drawTriangles",
+            "with uvt data"
+        );
+    }
+
     let vertices = vertices
         .as_vector_storage()
         .expect("vertices is not a Vector");
 
     if let Some(indices) = indices {
+        if vertices.length() % 2 != 0 {
+            return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+        }
+
         let indices = indices
             .as_vector_storage()
             .expect("indices is not a Vector");
@@ -985,29 +1040,33 @@ fn draw_triangles_internal<'gc>(
             vertices: &VectorStorage<'gc>,
             indices: &mut impl Iterator<Item = Value<'gc>>,
             activation: &mut Activation<'_, 'gc>,
-        ) -> Result<Option<Triangle>, Error<'gc>> {
+        ) -> Option<Triangle> {
             match (indices.next(), indices.next(), indices.next()) {
                 (Some(i0), Some(i1), Some(i2)) => {
-                    let i0 = i0.coerce_to_u32(activation)? as usize;
-                    let i1 = i1.coerce_to_u32(activation)? as usize;
-                    let i2 = i2.coerce_to_u32(activation)? as usize;
+                    let i0 = i0.coerce_to_u32(activation).ok()? as usize;
+                    let i1 = i1.coerce_to_u32(activation).ok()? as usize;
+                    let i2 = i2.coerce_to_u32(activation).ok()? as usize;
 
-                    let p0 = read_point(vertices, i0, activation)?;
-                    let p1 = read_point(vertices, i1, activation)?;
-                    let p2 = read_point(vertices, i2, activation)?;
+                    let p0 = read_point(vertices, i0, activation).ok()?;
+                    let p1 = read_point(vertices, i1, activation).ok()?;
+                    let p2 = read_point(vertices, i2, activation).ok()?;
 
-                    Ok(Some((p0, p1, p2)))
+                    Some((p0, p1, p2))
                 }
-                _ => Ok(None),
+                _ => None,
             }
         }
 
         let indices = &mut indices.iter();
 
-        while let Some(triangle) = next_triangle(&vertices, indices, activation)? {
-            draw_triangle_internal(activation, triangle, drawing, culling);
+        while let Some(triangle) = next_triangle(&vertices, indices, activation) {
+            draw_triangle_internal(triangle, drawing, culling);
         }
     } else {
+        if vertices.length() % 6 != 0 {
+            return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+        }
+
         let mut vertices = vertices.iter();
 
         fn read_point<'gc>(
@@ -1049,44 +1108,24 @@ fn draw_triangles_internal<'gc>(
         }
 
         while let Some(triangle) = next_triangle(&mut vertices, activation)? {
-            draw_triangle_internal(activation, triangle, drawing, culling);
+            draw_triangle_internal(triangle, drawing, culling);
         }
     }
 
     Ok(())
 }
 
-fn draw_triangle_internal(
-    activation: &mut Activation<'_, '_>,
-    (a, b, c): Triangle,
-    drawing: &mut Drawing,
-    culling: TriangleCulling,
-) {
-    match culling {
-        TriangleCulling::None => {
-            drawing.draw_command(DrawCommand::MoveTo(a));
-
-            drawing.draw_command(DrawCommand::LineTo(b));
-            drawing.draw_command(DrawCommand::LineTo(c));
-            drawing.draw_command(DrawCommand::LineTo(a));
-        }
-        TriangleCulling::Positive => {
-            avm2_stub_method!(
-                activation,
-                "flash.display.Graphics",
-                "drawTriangles",
-                "with positive culling"
-            );
-        }
-        TriangleCulling::Negative => {
-            avm2_stub_method!(
-                activation,
-                "flash.display.Graphics",
-                "drawTriangles",
-                "with negative culling"
-            );
-        }
+#[inline]
+fn draw_triangle_internal((a, b, c): Triangle, drawing: &mut Drawing, culling: TriangleCulling) {
+    if culling.cull((a, b, c)) {
+        return;
     }
+
+    drawing.draw_command(DrawCommand::MoveTo(a));
+
+    drawing.draw_command(DrawCommand::LineTo(b));
+    drawing.draw_command(DrawCommand::LineTo(c));
+    drawing.draw_command(DrawCommand::LineTo(a));
 }
 
 /// Implements `Graphics.drawGraphicsData`
@@ -1182,29 +1221,22 @@ fn read_point<'gc>(
     activation: &mut Activation<'_, 'gc>,
     data: &VectorStorage<'gc>,
     data_index: &mut usize,
-) -> Result<Point<Twips>, Error<'gc>> {
-    if *data_index + 1 >= data.length() {
-        return Err(Error::AvmError(argument_error(
-            activation,
-            "Error #2004: One of the parameters is invalid.",
-            2004,
-        )?));
-    }
+) -> Option<Point<Twips>> {
     let x = data
         .get(*data_index, activation)
-        .expect("missing data")
+        .ok()?
         .as_number(activation.context.gc_context)
         .expect("data is not a Vec.<Number>");
 
     let y = data
         .get(*data_index + 1, activation)
-        .expect("missing data")
+        .ok()?
         .as_number(activation.context.gc_context)
         .expect("data is not a Vec.<Number>");
 
     *data_index += 2;
 
-    Ok(Point {
+    Some(Point {
         x: Twips::from_pixels(x),
         y: Twips::from_pixels(y),
     })
@@ -1216,15 +1248,77 @@ fn process_commands<'gc>(
     commands: &VectorStorage<'gc>,
     data: &VectorStorage<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let mut data_index = 0;
-    let mut parsed_commands = vec![];
-
-    // Flash special cases this, and doesn't throw an error, even if there are
-    // commands that try to use points from 'data'
-    if data.length() == 0 {
+    // Flash special cases this, and doesn't throw an error,
+    // even if data has odd number of coordinates.
+    if commands.length() == 0 {
         return Ok(());
     }
 
+    // This error is always thrown at this point,
+    // no matter if data is superfluous.
+    if data.length() % 2 != 0 {
+        return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+    }
+
+    fn process_command<'gc>(
+        activation: &mut Activation<'_, 'gc>,
+        drawing: &mut Drawing,
+        data: &VectorStorage<'gc>,
+        command: i32,
+        data_index: &mut usize,
+    ) -> Option<()> {
+        // Flash ignores commands which do not have data associated with them.
+        match command {
+            // NO_OP
+            0 => {}
+            // MOVE_TO
+            1 => {
+                let point = read_point(activation, data, data_index)?;
+                drawing.draw_command(DrawCommand::MoveTo(point));
+            }
+            // LINE_TO
+            2 => {
+                let point = read_point(activation, data, data_index)?;
+                drawing.draw_command(DrawCommand::LineTo(point));
+            }
+            // CURVE_TO
+            3 => {
+                let control = read_point(activation, data, data_index)?;
+                let anchor = read_point(activation, data, data_index)?;
+                drawing.draw_command(DrawCommand::QuadraticCurveTo { control, anchor });
+            }
+            // WIDE_MOVE_TO
+            4 => {
+                *data_index += 2;
+                let point = read_point(activation, data, data_index)?;
+                drawing.draw_command(DrawCommand::MoveTo(point));
+            }
+            // WIDE_LINE_TO
+            5 => {
+                *data_index += 2;
+                let point = read_point(activation, data, data_index)?;
+                drawing.draw_command(DrawCommand::LineTo(point));
+            }
+            // CUBIC_CURVE_TO
+            6 => {
+                let control_a = read_point(activation, data, data_index)?;
+                let control_b = read_point(activation, data, data_index)?;
+                let anchor = read_point(activation, data, data_index)?;
+                drawing.draw_command(DrawCommand::CubicCurveTo {
+                    control_a,
+                    control_b,
+                    anchor,
+                });
+            }
+            _ => {
+                // Unknown commands stop processing
+                return None;
+            }
+        }
+        Some(())
+    }
+
+    let mut data_index = 0;
     for i in 0..commands.length() {
         let command = commands
             .get(i, activation)
@@ -1232,71 +1326,11 @@ fn process_commands<'gc>(
             .as_integer(activation.context.gc_context)
             .expect("commands is not a Vec.<int>");
 
-        // FIXME - determine correct behavior when data is missing or invalid commands
-        // are used. Flash doesn't throw an error, and it's unclear what the correct
-        // behavior is, exactly. For now, just panic when this happens, so we can determine
-        // if there are any SWFS in the wild relying on this.
-        let draw_command = match command {
-            // NO_OP
-            0 => None,
-            // MOVE_TO
-            1 => Some(DrawCommand::MoveTo(read_point(
-                activation,
-                data,
-                &mut data_index,
-            )?)),
-            // LINE_TO
-            2 => Some(DrawCommand::LineTo(read_point(
-                activation,
-                data,
-                &mut data_index,
-            )?)),
-            // CURVE_TO
-            3 => {
-                let control = read_point(activation, data, &mut data_index)?;
-                let anchor = read_point(activation, data, &mut data_index)?;
-                Some(DrawCommand::QuadraticCurveTo { control, anchor })
-            }
-            // WIDE_MOVE_TO
-            4 => {
-                let _dummy = read_point(activation, data, &mut data_index)?;
-                Some(DrawCommand::MoveTo(read_point(
-                    activation,
-                    data,
-                    &mut data_index,
-                )?))
-            }
-            // WIDE_LINE_TO
-            5 => {
-                let _dummy = read_point(activation, data, &mut data_index)?;
-                Some(DrawCommand::LineTo(read_point(
-                    activation,
-                    data,
-                    &mut data_index,
-                )?))
-            }
-            // CUBIC_CURVE_TO
-            6 => {
-                let control_a = read_point(activation, data, &mut data_index)?;
-                let control_b = read_point(activation, data, &mut data_index)?;
-                let anchor = read_point(activation, data, &mut data_index)?;
-                Some(DrawCommand::CubicCurveTo {
-                    control_a,
-                    control_b,
-                    anchor,
-                })
-            }
-            _ => panic!("Unexpected command value {command}"),
-        };
-
-        if let Some(draw_command) = draw_command {
-            parsed_commands.push(draw_command);
+        if process_command(activation, drawing, data, command, &mut data_index).is_none() {
+            break;
         }
     }
-    // Once validation is done, draw everything
-    for command in parsed_commands {
-        drawing.draw_command(command);
-    }
+
     Ok(())
 }
 
@@ -1456,30 +1490,6 @@ fn handle_igraphics_data<'gc>(
     Ok(())
 }
 
-#[derive(Debug, Clone, Copy)]
-enum TriangleCulling {
-    None,
-    Positive,
-    Negative,
-}
-
-fn culling_to_triangle_culling<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    culling: AvmString,
-) -> Result<TriangleCulling, Error<'gc>> {
-    if &culling == b"none" {
-        Ok(TriangleCulling::None)
-    } else if &culling == b"positive" {
-        Ok(TriangleCulling::Positive)
-    } else if &culling == b"negative" {
-        Ok(TriangleCulling::Negative)
-    } else {
-        Err(make_error_2008(activation, "culling"))
-    }
-}
-
-type Triangle = (Point<Twips>, Point<Twips>, Point<Twips>);
-
 fn handle_graphics_triangle_path<'gc>(
     activation: &mut Activation<'_, 'gc>,
     drawing: &mut Drawing,
@@ -1490,89 +1500,23 @@ fn handle_graphics_triangle_path<'gc>(
             .get_public_property("culling", activation)?
             .coerce_to_string(activation)?;
 
-        culling_to_triangle_culling(activation, culling)?
+        TriangleCulling::from_string(culling)
+            .ok_or_else(|| make_error_2008(activation, "culling"))?
     };
 
     let vertices = obj.get_public_property("vertices", activation)?.as_object();
-
     let indices = obj.get_public_property("indices", activation)?.as_object();
-
-    let _uvt_data = obj.get_public_property("uvtData", activation)?.as_object();
-
-    if _uvt_data.is_some() {
-        avm2_stub_method!(
-            activation,
-            "flash.display.Graphics",
-            "drawGraphicsData",
-            "with uvt data"
-        );
-    }
+    let uvt_data = obj.get_public_property("uvtData", activation)?.as_object();
 
     if let Some(vertices) = vertices {
-        if let Some(indices) = indices {
-            let vertices = vertices
-                .as_vector_storage()
-                .expect("vertices is not a Vector");
-
-            let indices = indices
-                .as_vector_storage()
-                .expect("indices is not a Vector");
-
-            fn read_point<'gc>(
-                vertices: &VectorStorage<'gc>,
-                index: usize,
-                activation: &mut Activation<'_, 'gc>,
-            ) -> Result<Point<Twips>, Error<'gc>> {
-                let x = {
-                    let x = vertices
-                        .get(2 * index, activation)?
-                        .coerce_to_number(activation)?;
-                    Twips::from_pixels(x)
-                };
-                let y = {
-                    let y = vertices
-                        .get(2 * index + 1, activation)?
-                        .coerce_to_number(activation)?;
-                    Twips::from_pixels(y)
-                };
-
-                Ok(Point::new(x, y))
-            }
-
-            fn next_triangle<'gc>(
-                vertices: &VectorStorage<'gc>,
-                indices: &mut impl Iterator<Item = Value<'gc>>,
-                activation: &mut Activation<'_, 'gc>,
-            ) -> Result<Option<Triangle>, Error<'gc>> {
-                match (indices.next(), indices.next(), indices.next()) {
-                    (Some(i0), Some(i1), Some(i2)) => {
-                        let i0 = i0.coerce_to_u32(activation)? as usize;
-                        let i1 = i1.coerce_to_u32(activation)? as usize;
-                        let i2 = i2.coerce_to_u32(activation)? as usize;
-
-                        let p0 = read_point(vertices, i0, activation)?;
-                        let p1 = read_point(vertices, i1, activation)?;
-                        let p2 = read_point(vertices, i2, activation)?;
-
-                        Ok(Some((p0, p1, p2)))
-                    }
-                    _ => Ok(None),
-                }
-            }
-
-            let indices = &mut indices.iter();
-
-            while let Some(triangle) = next_triangle(&vertices, indices, activation)? {
-                draw_triangle_internal(activation, triangle, drawing, culling);
-            }
-        } else {
-            avm2_stub_method!(
-                activation,
-                "flash.display.Graphics",
-                "drawGraphicsData",
-                "with null indices"
-            );
-        };
+        draw_triangles_internal(
+            activation,
+            drawing,
+            &vertices,
+            indices.as_ref(),
+            uvt_data.as_ref(),
+            culling,
+        )?;
     }
 
     Ok(())

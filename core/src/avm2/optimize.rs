@@ -5,14 +5,14 @@ use crate::avm2::multiname::Multiname;
 use crate::avm2::object::TObject;
 use crate::avm2::op::Op;
 use crate::avm2::property::Property;
-use crate::avm2::verify::JumpSources;
+use crate::avm2::verify::JumpSource;
 use crate::avm2::vtable::VTable;
 
 use gc_arena::Gc;
 use std::collections::HashMap;
 
 #[allow(clippy::enum_variant_names)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 enum NullState {
     NotNull,
     MaybeNull,
@@ -100,6 +100,33 @@ impl<'gc> OptValue<'gc> {
             || self.class == Some(classes.number.inner_class_definition())
             || self.class == Some(classes.boolean.inner_class_definition())
             || self.class == Some(classes.void.inner_class_definition())
+    }
+
+    pub fn merged_with(self, other: OptValue<'gc>) -> OptValue<'gc> {
+        let mut created_value = OptValue::any();
+
+        // TODO: Also check common superclasses.
+        if self.class == other.class {
+            created_value.class = self.class;
+        }
+
+        if self.vtable == other.vtable {
+            created_value.vtable = self.vtable;
+        }
+
+        if self.null_state == other.null_state {
+            created_value.null_state = self.null_state;
+        }
+
+        if self.contains_valid_integer && other.contains_valid_integer {
+            created_value.contains_valid_integer = true;
+        }
+
+        if self.contains_valid_unsigned && other.contains_valid_unsigned {
+            created_value.contains_valid_unsigned = true;
+        }
+
+        created_value
     }
 }
 
@@ -202,7 +229,7 @@ pub fn optimize<'gc>(
     code: &mut Vec<Op<'gc>>,
     resolved_parameters: &[ResolvedParamConfig<'gc>],
     return_type: Option<Class<'gc>>,
-    jump_targets: HashMap<i32, JumpSources>,
+    jump_targets: HashMap<i32, Vec<JumpSource>>,
 ) {
     // These make the code less readable
     #![allow(clippy::collapsible_if)]
@@ -357,12 +384,10 @@ pub fn optimize<'gc>(
 
     for (i, op) in code.iter_mut().enumerate() {
         if let Some(jump_sources) = jump_targets.get(&(i as i32)) {
-            if let JumpSources::Known(sources) = jump_sources {
-                // Avoid handling multiple sources for now
-                if sources.len() == 1 {
+            // Avoid handling multiple sources for now
+            if jump_sources.len() == 1 {
+                if let JumpSource::JumpFrom(source_i) = jump_sources[0] {
                     // We can merge the locals easily, now
-                    let source_i = sources[0];
-
                     if let Some(source_local_types) = state_map.get(&source_i) {
                         let mut merged_types = initial_local_types.clone();
                         assert_eq!(source_local_types.len(), local_types.len());
@@ -376,14 +401,8 @@ pub fn optimize<'gc>(
                         } else {
                             for (i, target_local) in local_types.0.iter().enumerate() {
                                 let source_local = source_local_types.at(i);
-                                // TODO: Check superclasses, too
-                                if let (Some(source_local_class), Some(target_local_class)) =
-                                    (source_local.class, target_local.class)
-                                {
-                                    if source_local_class == target_local_class {
-                                        merged_types.set(i, OptValue::of_type(source_local_class));
-                                    }
-                                }
+
+                                merged_types.set(i, source_local.merged_with(*target_local));
                             }
                         }
 
