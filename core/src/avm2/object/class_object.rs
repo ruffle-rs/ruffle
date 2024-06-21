@@ -210,7 +210,7 @@ impl<'gc> ClassObject<'gc> {
             &class.traits(),
             Some(self.instance_scope()),
             self.superclass_object().map(|cls| cls.instance_vtable()),
-            &mut activation.context,
+            activation.context.gc_context,
         );
 
         self.link_interfaces(activation)?;
@@ -253,7 +253,7 @@ impl<'gc> ClassObject<'gc> {
             &c_class.traits(),
             Some(self.class_scope()),
             Some(activation.avm2().classes().class.instance_vtable()),
-            &mut activation.context,
+            activation.context.gc_context,
         );
 
         self.set_vtable(activation.context.gc_context, class_vtable);

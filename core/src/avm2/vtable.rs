@@ -8,7 +8,6 @@ use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::Value;
 use crate::avm2::{Class, Error, Multiname, Namespace, QName};
-use crate::context::UpdateContext;
 use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, Mutation};
 use std::cell::Ref;
@@ -216,7 +215,7 @@ impl<'gc> VTable<'gc> {
         traits: &[Trait<'gc>],
         scope: Option<ScopeChain<'gc>>,
         superclass_vtable: Option<Self>,
-        context: &mut UpdateContext<'_, 'gc>,
+        mc: &Mutation<'gc>,
     ) {
         // Let's talk about slot_ids and disp_ids.
         // Specification is one thing, but reality is another.
@@ -269,7 +268,7 @@ impl<'gc> VTable<'gc> {
         // so long-term it's still something we should verify.
         // (and it's far from the only verification check we lack anyway)
 
-        let mut write = self.0.write(context.gc_context);
+        let mut write = self.0.write(mc);
         let write = write.deref_mut();
 
         write.scope = scope;
@@ -462,13 +461,13 @@ impl<'gc> VTable<'gc> {
                             type_name, unit, ..
                         } => (
                             Property::new_slot(new_slot_id),
-                            PropertyClass::name(context.gc_context, type_name.clone(), *unit),
+                            PropertyClass::name(mc, type_name.clone(), *unit),
                         ),
                         TraitKind::Const {
                             type_name, unit, ..
                         } => (
                             Property::new_const_slot(new_slot_id),
-                            PropertyClass::name(context.gc_context, type_name.clone(), *unit),
+                            PropertyClass::name(mc, type_name.clone(), *unit),
                         ),
                         TraitKind::Class { class, .. } => (
                             Property::new_const_slot(new_slot_id),
