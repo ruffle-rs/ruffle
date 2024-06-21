@@ -163,7 +163,7 @@ impl<'gc> ClassObject<'gc> {
         let class_object = ClassObject(GcCell::new(
             activation.context.gc_context,
             ClassObjectData {
-                base: ScriptObjectData::custom_new(None, None),
+                base: ScriptObjectData::custom_new(c_class, None, None),
                 class,
                 prototype: None,
                 class_scope: scope,
@@ -185,8 +185,6 @@ impl<'gc> ClassObject<'gc> {
             .write(activation.context.gc_context)
             .instance_scope = instance_scope;
         class_object.init_instance_vtable(activation)?;
-
-        class_object.set_instance_class(activation.context.gc_context, c_class);
 
         class.add_class_object(activation.context.gc_context, class_object);
 

@@ -1589,9 +1589,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let vname = ex.variable_name;
 
         let so = if let Some(vname) = vname {
-            ScriptObject::catch_scope(self.context.gc_context, &vname)
+            ScriptObject::catch_scope(self, &vname)
         } else {
-            // for `finally` scopes, FP just creates a bare object.
+            // for `finally` scopes, FP just creates a normal object.
             self.avm2().classes().object.construct(self, &[])?
         };
 
