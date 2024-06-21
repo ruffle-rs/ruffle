@@ -202,8 +202,11 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
             proto
         };
 
-        let instance =
-            ScriptObject::custom_object(activation.context.gc_context, None, Some(prototype));
+        let instance = ScriptObject::custom_object(
+            activation.context.gc_context,
+            Some(activation.avm2().classes().object),
+            Some(prototype),
+        );
 
         self.call(instance.into(), arguments, activation)?;
 
