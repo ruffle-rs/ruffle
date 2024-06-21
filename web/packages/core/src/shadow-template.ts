@@ -231,6 +231,7 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             font-size: 14px;
             text-align: left;
             list-style: none;
+            white-space: nowrap;
             padding: 3px 0;
             margin: 0;
         }`,
