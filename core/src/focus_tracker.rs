@@ -158,6 +158,18 @@ impl<'gc> FocusTracker<'gc> {
 
     fn roll_over(context: &mut UpdateContext<'_, 'gc>, new: Option<InteractiveObject<'gc>>) {
         let old = context.mouse_data.hovered;
+
+        // TODO It seems that AVM2 has a slightly different behavior here.
+        //   It may be related to the fact that AVM2 handles key and mouse focus differently.
+        //   AVM2 is being bypassed here conditionally until
+        //   a proper support for AVM2 events is implemented.
+        //   See https://github.com/ruffle-rs/ruffle/issues/16789
+        if new.is_some_and(|int| int.as_displayobject().movie().is_action_script_3())
+            || old.is_some_and(|int| int.as_displayobject().movie().is_action_script_3())
+        {
+            return;
+        }
+
         context.mouse_data.hovered = new;
         if let Some(old) = old {
             old.handle_clip_event(context, ClipEvent::RollOut { to: new });
