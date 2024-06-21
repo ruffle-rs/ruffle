@@ -104,7 +104,11 @@ export async function hasHostPermissionForActiveTab() {
     });
 
     try {
-        return activeTab?.url ? true : await hasAllUrlsPermission();
+        return activeTab?.url
+            ? await permissions.contains({
+                  origins: [activeTab.url],
+              })
+            : await hasAllUrlsPermission();
     } catch {
         // catch error that occurs for special urls like about:
         return false;
