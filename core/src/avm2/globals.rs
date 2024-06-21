@@ -549,15 +549,7 @@ pub fn load_player_globals<'gc>(
     // (e.g. `Object`) before subclasses, so that `into_finished_class` can
     // copy traits from the initialized superclass vtable.
 
-    // First, initialize the instance vtable, starting with `Object`. This
-    // ensures that properties defined in `Object` (e.g. `hasOwnProperty`)
-    // get copied into the vtable of `Class` and `Function` (which are both
-    // subclasses of `Object`).
-    object_class.init_instance_vtable(activation)?;
-    class_class.init_instance_vtable(activation)?;
-    fn_class.init_instance_vtable(activation)?;
-
-    // Now, construct the `ClassObject`s, starting with `Class`. This ensures
+    // Construct the `ClassObject`s, starting with `Class`. This ensures
     // that the `prototype` property of `Class` gets copied into the *class*
     // vtables for `Object` and `Function`.
     let class_class = class_class.into_finished_class(activation)?;
