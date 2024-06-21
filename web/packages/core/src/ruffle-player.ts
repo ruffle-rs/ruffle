@@ -362,7 +362,7 @@ export class RufflePlayer extends HTMLElement {
             }
         }
         
-        this.container.addEventListener("click", hideModal);
+        modalElement.parentNode!.addEventListener("click", hideModal);
         const modalArea = modalElement.querySelector(".modal-area");
         if (modalArea) {
             modalArea.addEventListener("click", (event) =>
@@ -1610,14 +1610,20 @@ export class RufflePlayer extends HTMLElement {
     }
 
     private showContextMenu(event: MouseEvent | PointerEvent): void {
-        const modalOpen = Array.from(
-            this.shadow.querySelectorAll(".modal"),
-        ).some((modal) => !modal.classList.contains("hidden"));
-        if (this.panicked || modalOpen) {
+        if (this.panicked) {
             return;
         }
 
         event.preventDefault();
+
+        let modalOpen = false;
+        this.shadow.querySelectorAll(".modal:not(.hidden)").forEach((modal) => {
+            modal.classList.add("hidden");
+            modalOpen = true;
+        });
+        if (modalOpen) {
+            return;
+        }
 
         if (event.type === "contextmenu") {
             this.contextMenuSupported = true;

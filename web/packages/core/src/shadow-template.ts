@@ -215,6 +215,13 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             background: #ffffff4c;
         }`,
 
+        `#context-menu-overlay, .modal {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            position: absolute;
+        }`,
+
         `#context-menu {
             color: rgb(var(--modal-foreground-rgb));
             background-color: var(--modal-background);
@@ -226,7 +233,6 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             list-style: none;
             padding: 3px 0;
             margin: 0;
-            pointer-events: all;
         }`,
 
         `#context-menu .menu-item {
@@ -309,11 +315,7 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
         }`,
 
         `.modal {
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-            position: absolute;
-            pointer-events: none;
+            background-color: #0008;
         }`,
 
         `.modal-area {
@@ -325,7 +327,6 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             padding: 8px 12px;
             border-radius: 12px;
             box-shadow: 0 2px 6px 0px #0008;
-            pointer-events: all;
         }`,
 
         `#modal-area {
@@ -901,7 +902,7 @@ clipboardModalTextPasteText.textContent = text("clipboard-message-paste");
 const contextMenuOverlay = createElement(
     "div",
     "context-menu-overlay",
-    "modal hidden",
+    "hidden",
 );
 const contextMenu = createElement("ul", "context-menu");
 
