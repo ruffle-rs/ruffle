@@ -282,7 +282,14 @@ impl<'gc> MovieClip<'gc> {
                 base: Default::default(),
                 static_data: Gc::new(
                     gc_context,
-                    MovieClipStatic::with_data(id, swf.clone(), num_frames, None, gc_context),
+                    MovieClipStatic::with_data(
+                        id,
+                        swf.clone(),
+                        num_frames,
+                        None,
+                        false,
+                        gc_context,
+                    ),
                 ),
                 tag_stream_pos: 0,
                 current_frame: 0,
@@ -348,6 +355,7 @@ impl<'gc> MovieClip<'gc> {
                         movie.clone().into(),
                         num_frames,
                         loader_info,
+                        true,
                         activation.context.gc_context,
                     ),
                 ),
@@ -426,6 +434,7 @@ impl<'gc> MovieClip<'gc> {
                 movie.clone().into(),
                 total_frames,
                 loader_info.map(|l| l.into()),
+                is_root,
                 context.gc_context,
             ),
         );
@@ -737,13 +746,7 @@ impl<'gc> MovieClip<'gc> {
             } else {
                 (reader.get_ref().as_ptr() as u64).saturating_sub(data.data().as_ptr() as u64)
             };
-            write.cur_preload_frame = if is_finished {
-                // Flag the movie as fully preloaded when we hit the end of the
-                // tag stream.
-                static_data.total_frames + 1
-            } else {
-                cur_frame
-            };
+            write.cur_preload_frame = cur_frame;
             write.last_frame_start_pos = start_pos;
         }
 
@@ -1049,7 +1052,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn next_frame(self, context: &mut UpdateContext<'_, 'gc>) {
-        if self.current_frame() < self.total_frames() {
+        if self.current_frame() < self.total_frames_ignore_header() {
             self.goto_frame(context, self.current_frame() + 1, true);
         }
     }
@@ -1281,6 +1284,10 @@ impl<'gc> MovieClip<'gc> {
         self.0.read().total_frames()
     }
 
+    pub fn total_frames_ignore_header(self) -> FrameNumber {
+        self.0.read().total_frames_ignore_header()
+    }
+
     #[allow(dead_code)]
     pub fn has_frame_script(self, frame: FrameNumber) -> bool {
         self.0
@@ -1309,6 +1316,10 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn frames_loaded(self) -> i32 {
         self.0.read().frames_loaded()
+    }
+
+    pub fn frames_loaded_ignore_header(self) -> i32 {
+        self.0.read().frames_loaded_ignore_header()
     }
 
     pub fn total_bytes(self) -> i32 {
@@ -1423,7 +1434,7 @@ impl<'gc> MovieClip<'gc> {
         let frame = frame.unwrap();
 
         if scene <= frame {
-            let mut end = self.total_frames();
+            let mut end = self.total_frames_ignore_header();
             for Scene {
                 start: new_scene_start,
                 ..
@@ -1501,9 +1512,9 @@ impl<'gc> MovieClip<'gc> {
 
     /// Determine what the clip's next frame should be.
     fn determine_next_frame(self) -> NextFrame {
-        if self.current_frame() < self.total_frames() {
+        if self.current_frame() < self.total_frames_ignore_header() {
             NextFrame::Next
-        } else if self.total_frames() > 1 {
+        } else if self.total_frames_ignore_header() > 1 {
             NextFrame::First
         } else {
             NextFrame::Same
@@ -1850,8 +1861,17 @@ impl<'gc> MovieClip<'gc> {
         let data = mc.static_data.swf.clone();
         let mut index = 0;
 
-        // Sanity; let's make sure we don't seek way too far.
-        let clamped_frame = frame.min(max(mc.frames_loaded(), 0) as FrameNumber);
+        let clamped_frame = if self.movie().is_action_script_3() {
+            // Make sure we don't allow a negative seek. Note that we do
+            // *not* check this against the frame count in the SWF header - flash player
+            // ignores that value and allows you to seek to any frame, even if the total
+            // number of frames exceeds the frame count in the header.
+            frame.min(max(mc.frames_loaded_ignore_header(), 0) as FrameNumber)
+        } else {
+            // Sanity; let's make sure we don't seek way too far.
+            frame.min(max(mc.frames_loaded(), 0) as FrameNumber)
+        };
+
         drop(mc);
 
         let mut removed_frame_scripts: Vec<DisplayObject<'gc>> = vec![];
@@ -1904,7 +1924,7 @@ impl<'gc> MovieClip<'gc> {
                     TagCode::DoAbc | TagCode::DoAbc2 | TagCode::SymbolClass => {
                         self.handle_bytecode_tag(tag_code, reader, context)
                     }
-                    TagCode::ShowFrame => return Ok(ControlFlow::Exit),
+                    TagCode::ShowFrame | TagCode::End => return Ok(ControlFlow::Exit),
                     _ => Ok(()),
                 }?;
 
@@ -2636,7 +2656,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         // AVM1 code expects to execute in line with timeline instructions, so
         // it's exempted from frame construction.
         if self.movie().is_action_script_3()
-            && (self.frames_loaded() >= 1 || self.total_frames() == 0)
+            && (self.frames_loaded() >= 1 || self.total_frames_ignore_header() == 0)
         {
             let is_load_frame = !self.0.read().initialized();
             let needs_construction = if matches!(self.object2(), Avm2Value::Null) {
@@ -3400,7 +3420,21 @@ impl<'gc> MovieClipData<'gc> {
         self.static_data.total_frames
     }
 
+    fn total_frames_ignore_header(&self) -> FrameNumber {
+        self.static_data.show_frame_count
+    }
+
     fn frames_loaded(&self) -> i32 {
+        (self
+            .static_data
+            .preload_progress
+            .read()
+            .cur_preload_frame
+            .min(self.static_data.total_frames + 1)) as i32
+            - 1
+    }
+
+    fn frames_loaded_ignore_header(&self) -> i32 {
         (self.static_data.preload_progress.read().cur_preload_frame) as i32 - 1
     }
 
@@ -3434,7 +3468,7 @@ impl<'gc> MovieClipData<'gc> {
 
     fn play(&mut self) {
         // Can only play clips with multiple frames.
-        if self.total_frames() > 1 {
+        if self.total_frames_ignore_header() > 1 {
             self.set_playing(true);
         }
     }
@@ -4612,6 +4646,7 @@ struct MovieClipStatic<'gc> {
     #[collect(require_static)]
     audio_stream_handle: Option<SoundHandle>,
     total_frames: FrameNumber,
+    show_frame_count: FrameNumber,
     /// The last known symbol name under which this movie clip was exported.
     /// Used for looking up constructors registered with `Object.registerClass`.
     exported_name: GcCell<'gc, Option<AvmString<'gc>>>,
@@ -4637,7 +4672,7 @@ struct MovieClipStatic<'gc> {
 
 impl<'gc> MovieClipStatic<'gc> {
     fn empty(movie: Arc<SwfMovie>, gc_context: &Mutation<'gc>) -> Self {
-        let s = Self::with_data(0, SwfSlice::empty(movie), 1, None, gc_context);
+        let s = Self::with_data(0, SwfSlice::empty(movie), 1, None, false, gc_context);
 
         s.preload_progress.write(gc_context).cur_preload_frame = s.total_frames + 1;
 
@@ -4649,12 +4684,35 @@ impl<'gc> MovieClipStatic<'gc> {
         swf: SwfSlice,
         total_frames: FrameNumber,
         loader_info: Option<Avm2Object<'gc>>,
+        is_root: bool,
         gc_context: &Mutation<'gc>,
     ) -> Self {
+        let mut show_frame_count = 0;
+        let tag_callback = |_reader: &mut SwfStream<'_>, tag_code, _tag_len| {
+            match tag_code {
+                TagCode::ShowFrame => {
+                    show_frame_count += 1;
+                }
+                TagCode::End => {
+                    return Ok(ControlFlow::Exit);
+                }
+                _ => {}
+            };
+            Ok(ControlFlow::Continue)
+        };
+
+        if is_root && !swf.is_empty() {
+            let mut reader = swf.read_from(0);
+            let _ = tag_utils::decode_tags(&mut reader, tag_callback);
+        } else {
+            show_frame_count = total_frames;
+        }
+
         Self {
             id,
             swf,
             total_frames,
+            show_frame_count,
             frame_labels: Vec::new(),
             frame_labels_map: HashMap::new(),
             scene_labels: Vec::new(),
