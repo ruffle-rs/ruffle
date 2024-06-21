@@ -81,7 +81,7 @@ fn class_call<'gc>(
     let arg = args.get(0).cloned().unwrap();
     let arg = arg.as_object().ok_or("Cannot convert to Vector")?;
 
-    if arg.instance_class() == Some(this_class.inner_class_definition()) {
+    if arg.instance_class() == this_class.inner_class_definition() {
         return Ok(arg.into());
     }
 
@@ -285,9 +285,7 @@ pub fn concat<'gc>(
         for val in old_vec {
             if let Ok(val_obj) = val.coerce_to_object(activation) {
                 if !val.is_of_type(activation, val_class) {
-                    let other_val_class = val_obj
-                        .instance_class()
-                        .ok_or("TypeError: Tried to concat a bare object into a Vector")?;
+                    let other_val_class = val_obj.instance_class();
                     return Err(format!(
                         "TypeError: Cannot coerce Vector value of type {:?} to type {:?}",
                         other_val_class.name(),
@@ -447,7 +445,6 @@ pub fn filter<'gc>(
 
     let value_type = this
         .instance_class()
-        .unwrap()
         .param()
         .ok_or("Cannot filter unparameterized vector")?; // technically unreachable
     let mut new_storage = VectorStorage::new(0, false, value_type, activation);
@@ -576,7 +573,6 @@ pub fn map<'gc>(
 
     let value_type = this
         .instance_class()
-        .unwrap()
         .param()
         .ok_or("Cannot filter unparameterized vector")?; // technically unreachable
     let mut new_storage = VectorStorage::new(0, false, value_type, activation);

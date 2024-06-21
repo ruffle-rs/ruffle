@@ -1992,7 +1992,7 @@ pub trait TDisplayObject<'gc>:
             // the corresponding `SymbolClass` *not* extend `MovieClip` (e.g. extending `Sprite` directly.)
             // When this occurs, Flash Player will run the first frame, and immediately stop.
             // However, Flash Player runs frames for the root movie clip, even if it doesn't extend `MovieClip`.
-            if !obj.is_of_type(movieclip_class, context) && !movie.is_root() {
+            if !obj.is_of_type(movieclip_class) && !movie.is_root() {
                 movie.stop(context);
             }
             movie.set_initialized(context.gc_context);

@@ -22,9 +22,7 @@ pub fn init<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(sound_object) = this.as_sound_object() {
-        let class_def = this
-            .instance_class()
-            .ok_or("Attempted to construct Sound on a bare object.")?;
+        let class_def = this.instance_class();
 
         if let Some((movie, symbol)) = activation
             .context

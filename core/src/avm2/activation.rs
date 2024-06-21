@@ -5,8 +5,7 @@ use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::e4x::{escape_attribute_value, escape_element_value};
 use crate::avm2::error::{
-    make_error_1127, make_error_1506, make_null_or_undefined_error, make_reference_error,
-    type_error, ReferenceErrorCode,
+    make_error_1065, make_error_1127, make_error_1506, make_null_or_undefined_error, type_error,
 };
 use crate::avm2::method::{BytecodeMethod, Method, ResolvedParamConfig};
 use crate::avm2::object::{
@@ -805,7 +804,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 } else if let Ok(err_object) = err_object {
                     let target_class = e.target_class.expect("Just confirmed to be non-None");
 
-                    matches = err_object.is_of_type(target_class, &mut self.context);
+                    matches = err_object.is_of_type(target_class);
                 }
 
                 if matches {
@@ -1688,10 +1687,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         avm_debug!(self.context.avm2, "Resolving {:?}", *multiname);
 
         let multiname = multiname.fill_with_runtime_params(self)?;
-        let found: Result<Object<'gc>, Error<'gc>> =
-            self.find_definition(&multiname)?.ok_or_else(|| {
-                make_reference_error(self, ReferenceErrorCode::InvalidLookup, &multiname, None)
-            });
+        let found: Result<Object<'gc>, Error<'gc>> = self
+            .find_definition(&multiname)?
+            .ok_or_else(|| make_error_1065(self, &multiname));
         let result: Value<'gc> = found?.into();
 
         self.push_stack(result);
@@ -1722,11 +1720,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             // Even if it's an object with the "descendants" property, we won't support it.
             let class_name = object
                 .instance_class()
-                .map(|cls| {
-                    cls.name()
-                        .to_qualified_name_err_message(self.context.gc_context)
-                })
-                .unwrap_or_else(|| AvmString::from("<UNKNOWN>"));
+                .name()
+                .to_qualified_name_err_message(self.context.gc_context);
             return Err(Error::AvmError(type_error(
                 self,
                 &format!(
@@ -1991,8 +1986,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let xml_list = self.avm2().classes().xml_list.inner_class_definition();
         let value = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
 
-        if value.is_of_type(xml, &mut self.context) || value.is_of_type(xml_list, &mut self.context)
-        {
+        if value.is_of_type(xml) || value.is_of_type(xml_list) {
             self.push_stack(value);
         } else {
             return Err(Error::AvmError(type_error(
@@ -2714,7 +2708,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
                 match o {
                     Object::FunctionObject(_) => {
-                        if o.instance_class() == Some(classes.function.inner_class_definition()) {
+                        if o.instance_class() == classes.function.inner_class_definition() {
                             "function"
                         } else {
                             // Subclasses always have a typeof = "object"
@@ -2722,8 +2716,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         }
                     }
                     Object::XmlObject(_) | Object::XmlListObject(_) => {
-                        if o.instance_class() == Some(classes.xml_list.inner_class_definition())
-                            || o.instance_class() == Some(classes.xml.inner_class_definition())
+                        if o.instance_class() == classes.xml_list.inner_class_definition()
+                            || o.instance_class() == classes.xml.inner_class_definition()
                         {
                             "xml"
                         } else {

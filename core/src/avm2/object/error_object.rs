@@ -111,12 +111,7 @@ impl<'gc> ErrorObject<'gc> {
     fn debug_class_name(&self) -> Box<dyn Debug + 'gc> {
         self.0
             .try_read()
-            .map(|obj| {
-                obj.base
-                    .instance_class()
-                    .map(|cls| cls.debug_name())
-                    .unwrap_or_else(|| Box::new("None"))
-            })
+            .map(|obj| obj.base.instance_class().debug_name())
             .unwrap_or_else(|err| Box::new(err))
     }
 }

@@ -136,7 +136,7 @@ pub fn serialize_value<'gc>(
             } else if let Some(bytearray) = o.as_bytearray() {
                 Some(AmfValue::ByteArray(bytearray.bytes().to_vec()))
             } else {
-                let class = o.instance_class().expect("Missing Class");
+                let class = o.instance_class();
                 let name = class_to_alias(activation, class);
 
                 let mut attributes = EnumSet::empty();

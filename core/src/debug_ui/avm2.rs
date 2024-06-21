@@ -87,7 +87,7 @@ impl Avm2ObjectWindow {
             .num_columns(2)
             .striped(true)
             .show(ui, |ui| {
-                if let Some(class) = object.instance_class().and_then(|o| o.class_object()) {
+                if let Some(class) = object.instance_class().class_object() {
                     ui.label("Instance Of");
                     show_avm2_value(ui, &mut activation.context, class.into(), messages);
                     ui.end_row();
@@ -437,10 +437,7 @@ fn object_name<'gc>(mc: &Mutation<'gc>, object: Object<'gc>) -> String {
             .to_qualified_name_err_message(mc)
             .to_string()
     } else {
-        let name = object
-            .instance_class()
-            .map(|r| Cow::Owned(r.name().local_name().to_string()))
-            .unwrap_or(Cow::Borrowed("Object"));
+        let name = object.instance_class().name().local_name().to_string();
         format!("{} {:p}", name, object.as_ptr())
     }
 }
