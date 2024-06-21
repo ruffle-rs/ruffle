@@ -78,7 +78,6 @@ pub fn make_null_or_undefined_error<'gc>(
 pub enum ReferenceErrorCode {
     AssignToMethod = 1037,
     InvalidWrite = 1056,
-    InvalidLookup = 1065,
     InvalidRead = 1069,
     WriteToReadOnly = 1074,
     ReadFromWriteOnly = 1077,
@@ -91,15 +90,12 @@ pub fn make_reference_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     code: ReferenceErrorCode,
     multiname: &Multiname<'gc>,
-    object_class: Option<Class<'gc>>,
+    object_class: Class<'gc>,
 ) -> Error<'gc> {
     let qualified_name = multiname.as_uri(activation.context.gc_context);
     let class_name = object_class
-        .map(|cls| {
-            cls.name()
-                .to_qualified_name_err_message(activation.context.gc_context)
-        })
-        .unwrap_or_else(|| AvmString::from("<UNKNOWN>"));
+        .name()
+        .to_qualified_name_err_message(activation.context.gc_context);
 
     let msg = match code {
         ReferenceErrorCode::AssignToMethod => format!(
@@ -108,7 +104,6 @@ pub fn make_reference_error<'gc>(
         ReferenceErrorCode::InvalidWrite => format!(
             "Error #1056: Cannot create property {qualified_name} on {class_name}.",
         ),
-        ReferenceErrorCode::InvalidLookup => format!("Error #1065: Variable {qualified_name} is not defined."),
         ReferenceErrorCode::InvalidRead => format!(
             "Error #1069: Property {qualified_name} not found on {class_name} and there is no default value.",
         ),
@@ -266,6 +261,25 @@ pub fn make_error_1054<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         activation,
         "Error #1054: Illegal range or target offsets in exception handler.",
         1054,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1065<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    name: &Multiname<'gc>,
+) -> Error<'gc> {
+    let qualified_name = name.as_uri(activation.context.gc_context);
+
+    let err = reference_error(
+        activation,
+        &format!("Error #1065: Variable {qualified_name} is not defined."),
+        1065,
     );
     match err {
         Ok(err) => Error::AvmError(err),

@@ -235,15 +235,13 @@ impl<'gc> AvmSerializer<'gc> {
                     )?));
                 }
                 self.obj_stack.push(obj);
-                let value = if obj.is_of_type(
-                    activation.avm2().classes().array.inner_class_definition(),
-                    &mut activation.context,
-                ) {
-                    // TODO: Vectors
-                    self.serialize_iterable(activation, obj)?
-                } else {
-                    self.serialize_object(activation, obj)?
-                };
+                let value =
+                    if obj.is_of_type(activation.avm2().classes().array.inner_class_definition()) {
+                        // TODO: Vectors
+                        self.serialize_iterable(activation, obj)?
+                    } else {
+                        self.serialize_object(activation, obj)?
+                    };
                 self.obj_stack
                     .pop()
                     .expect("Stack underflow during JSON serialization");

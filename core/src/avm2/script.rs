@@ -635,7 +635,7 @@ impl<'gc> Script<'gc> {
             let scope = ScopeChain::new(domain);
 
             globals.vtable().unwrap().init_vtable(
-                globals.instance_class().unwrap(),
+                globals.instance_class(),
                 self.0.read().global_class_obj,
                 &self.traits()?,
                 Some(scope),

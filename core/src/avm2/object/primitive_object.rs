@@ -122,10 +122,7 @@ impl<'gc> TObject<'gc> for PrimitiveObject<'gc> {
         match self.0.read().primitive {
             val @ Value::Integer(_) => Ok(val),
             _ => {
-                let class_name = self
-                    .instance_class()
-                    .map(|c| c.name().local_name())
-                    .unwrap_or_else(|| "Object".into());
+                let class_name = self.instance_class().name().local_name();
 
                 Ok(AvmString::new_utf8(
                     activation.context.gc_context,

@@ -288,7 +288,7 @@ pub fn optimize<'gc>(
                 .unwrap_or(false)
             {
                 // Static method
-                this_object.instance_class()
+                Some(this_object.instance_class())
             } else {
                 None
             }
@@ -877,11 +877,7 @@ pub fn optimize<'gc>(
                                 *op = Op::GetOuterScope { index };
 
                                 stack_push_done = true;
-                                if let Some(class) = class {
-                                    stack.push_class(class);
-                                } else {
-                                    stack.push_any();
-                                }
+                                stack.push_class(class);
                             } else {
                                 // If `get_entry_for_multiname` returned `Some(None)`, there was
                                 // a `with` scope in the outer ScopeChain- abort optimization.
@@ -1303,11 +1299,7 @@ pub fn optimize<'gc>(
                     let global_scope = outer_scope.get_unchecked(0);
 
                     stack_push_done = true;
-                    if let Some(class) = global_scope.values().instance_class() {
-                        stack.push_class(class);
-                    } else {
-                        stack.push_any();
-                    }
+                    stack.push_class(global_scope.values().instance_class());
                 }
 
                 if !stack_push_done {
@@ -1321,25 +1313,24 @@ pub fn optimize<'gc>(
                 if !outer_scope.is_empty() {
                     let global_scope = outer_scope.get_unchecked(0);
 
-                    if let Some(class) = global_scope.values().instance_class() {
-                        let mut value_class = class.vtable().slot_classes()[*slot_id as usize];
-                        let resolved_value_class = value_class.get_class(activation);
-                        if let Ok(class) = resolved_value_class {
-                            stack_push_done = true;
+                    let class = global_scope.values().instance_class();
+                    let mut value_class = class.vtable().slot_classes()[*slot_id as usize];
+                    let resolved_value_class = value_class.get_class(activation);
+                    if let Ok(class) = resolved_value_class {
+                        stack_push_done = true;
 
-                            if let Some(class) = class {
-                                stack.push_class(class);
-                            } else {
-                                stack.push_any();
-                            }
+                        if let Some(class) = class {
+                            stack.push_class(class);
+                        } else {
+                            stack.push_any();
                         }
-
-                        class.vtable().set_slot_class(
-                            activation.context.gc_context,
-                            *slot_id as usize,
-                            value_class,
-                        );
                     }
+
+                    class.vtable().set_slot_class(
+                        activation.context.gc_context,
+                        *slot_id as usize,
+                        value_class,
+                    );
                 }
 
                 if !stack_push_done {

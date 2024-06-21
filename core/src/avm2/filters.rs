@@ -64,7 +64,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .bevelfilter
             .inner_class_definition();
-        if object.is_of_type(bevel_filter, &mut activation.context) {
+        if object.is_of_type(bevel_filter) {
             return avm2_to_bevel_filter(activation, object);
         }
 
@@ -73,7 +73,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .blurfilter
             .inner_class_definition();
-        if object.is_of_type(blur_filter, &mut activation.context) {
+        if object.is_of_type(blur_filter) {
             return avm2_to_blur_filter(activation, object);
         }
 
@@ -82,7 +82,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .colormatrixfilter
             .inner_class_definition();
-        if object.is_of_type(color_matrix_filter, &mut activation.context) {
+        if object.is_of_type(color_matrix_filter) {
             return avm2_to_color_matrix_filter(activation, object);
         }
 
@@ -91,7 +91,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .convolutionfilter
             .inner_class_definition();
-        if object.is_of_type(convolution_filter, &mut activation.context) {
+        if object.is_of_type(convolution_filter) {
             return avm2_to_convolution_filter(activation, object);
         }
 
@@ -100,7 +100,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .displacementmapfilter
             .inner_class_definition();
-        if object.is_of_type(displacement_map_filter, &mut activation.context) {
+        if object.is_of_type(displacement_map_filter) {
             return avm2_to_displacement_map_filter(activation, object);
         }
 
@@ -109,7 +109,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .dropshadowfilter
             .inner_class_definition();
-        if object.is_of_type(drop_shadow_filter, &mut activation.context) {
+        if object.is_of_type(drop_shadow_filter) {
             return avm2_to_drop_shadow_filter(activation, object);
         }
 
@@ -118,7 +118,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .glowfilter
             .inner_class_definition();
-        if object.is_of_type(glow_filter, &mut activation.context) {
+        if object.is_of_type(glow_filter) {
             return avm2_to_glow_filter(activation, object);
         }
 
@@ -127,7 +127,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .gradientbevelfilter
             .inner_class_definition();
-        if object.is_of_type(gradient_bevel_filter, &mut activation.context) {
+        if object.is_of_type(gradient_bevel_filter) {
             return Ok(Filter::GradientBevelFilter(avm2_to_gradient_filter(
                 activation, object,
             )?));
@@ -138,7 +138,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .gradientglowfilter
             .inner_class_definition();
-        if object.is_of_type(gradient_glow_filter, &mut activation.context) {
+        if object.is_of_type(gradient_glow_filter) {
             return Ok(Filter::GradientGlowFilter(avm2_to_gradient_filter(
                 activation, object,
             )?));
@@ -149,7 +149,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .shaderfilter
             .inner_class_definition();
-        if object.is_of_type(shader_filter, &mut activation.context) {
+        if object.is_of_type(shader_filter) {
             return Ok(Filter::ShaderFilter(avm2_to_shader_filter(
                 activation, object,
             )?));

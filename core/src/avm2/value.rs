@@ -1024,7 +1024,7 @@ impl<'gc> Value<'gc> {
         }
 
         if let Ok(object) = self.coerce_to_object(activation) {
-            if object.is_of_type(class, &mut activation.context) {
+            if object.is_of_type(class) {
                 return Ok(*self);
             }
         }
@@ -1116,7 +1116,7 @@ impl<'gc> Value<'gc> {
         }
 
         if let Ok(o) = self.coerce_to_object(activation) {
-            o.is_of_type(type_object, &mut activation.context)
+            o.is_of_type(type_object)
         } else {
             false
         }

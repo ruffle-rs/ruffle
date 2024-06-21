@@ -313,7 +313,7 @@ pub fn set_filters<'gc>(
                         } else {
                             let filter_object = filter.coerce_to_object(activation)?;
 
-                            if !filter_object.is_of_type(filter_class, &mut activation.context) {
+                            if !filter_object.is_of_type(filter_class) {
                                 return build_argument_type_error(activation);
                             }
 

@@ -60,17 +60,14 @@ pub fn attach_net_stream<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(video) = this.as_display_object().and_then(|dobj| dobj.as_video()) {
-        let source = args.get(0).cloned().and_then(|v| v.as_object());
+        let source = args.get_value(0).as_object();
 
         if let Some(stream) = source.and_then(|o| o.as_netstream()) {
             video.attach_netstream(&mut activation.context, stream);
         } else {
             return Err(format!(
                 "Cannot use value of type {:?} as video source",
-                source
-                    .and_then(|o| o.instance_class())
-                    .map(|c| c.name().local_name())
-                    .unwrap_or_else(|| "Object".into())
+                source.map(|o| o.instance_class().name().local_name())
             )
             .into());
         }
