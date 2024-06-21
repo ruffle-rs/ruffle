@@ -68,7 +68,7 @@ impl<'gc> OptValue<'gc> {
     pub fn of_type(class: Class<'gc>) -> Self {
         Self {
             class: Some(class),
-            vtable: Some(class.instance_vtable()),
+            vtable: Some(class.vtable()),
             ..Self::any()
         }
     }
@@ -301,7 +301,7 @@ pub fn optimize<'gc>(
 
     let this_value = OptValue {
         class: this_class,
-        vtable: this_class.map(|cls| cls.instance_vtable()),
+        vtable: this_class.map(|cls| cls.vtable()),
         contains_valid_integer: false,
         contains_valid_unsigned: false,
         null_state: NullState::NotNull,
@@ -858,7 +858,7 @@ pub fn optimize<'gc>(
                 if !multiname.has_lazy_component() && has_simple_scoping {
                     let outer_scope = activation.outer();
                     if !outer_scope.is_empty() {
-                        if let Some(this_vtable) = this_class.map(|cls| cls.instance_vtable()) {
+                        if let Some(this_vtable) = this_class.map(|cls| cls.vtable()) {
                             if this_vtable.has_trait(&multiname) {
                                 *op = Op::GetScopeObject { index: 0 };
 
@@ -1322,8 +1322,7 @@ pub fn optimize<'gc>(
                     let global_scope = outer_scope.get_unchecked(0);
 
                     if let Some(class) = global_scope.values().instance_class() {
-                        let mut value_class =
-                            class.instance_vtable().slot_classes()[*slot_id as usize];
+                        let mut value_class = class.vtable().slot_classes()[*slot_id as usize];
                         let resolved_value_class = value_class.get_class(activation);
                         if let Ok(class) = resolved_value_class {
                             stack_push_done = true;
@@ -1335,7 +1334,7 @@ pub fn optimize<'gc>(
                             }
                         }
 
-                        class.instance_vtable().set_slot_class(
+                        class.vtable().set_slot_class(
                             activation.context.gc_context,
                             *slot_id as usize,
                             value_class,

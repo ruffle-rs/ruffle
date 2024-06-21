@@ -744,7 +744,7 @@ impl<'gc> Class<'gc> {
             None,
             &read.traits,
             None,
-            read.super_class.map(|c| c.instance_vtable()),
+            read.super_class.map(|c| c.vtable()),
             context,
         );
         drop(read);
@@ -936,7 +936,7 @@ impl<'gc> Class<'gc> {
         false
     }
 
-    pub fn instance_vtable(self) -> VTable<'gc> {
+    pub fn vtable(self) -> VTable<'gc> {
         self.0.read().vtable
     }
 
