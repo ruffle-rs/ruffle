@@ -1339,7 +1339,7 @@ fn handle_igraphics_data<'gc>(
     drawing: &mut Drawing,
     obj: &Object<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let class = obj.instance_class().expect("No class");
+    let class = obj.instance_class();
 
     if class
         == activation
@@ -1527,7 +1527,7 @@ fn handle_igraphics_fill<'gc>(
     drawing: &mut Drawing,
     obj: &Object<'gc>,
 ) -> Result<Option<FillStyle>, Error<'gc>> {
-    let class = obj.instance_class().expect("No class");
+    let class = obj.instance_class();
 
     if class
         == activation

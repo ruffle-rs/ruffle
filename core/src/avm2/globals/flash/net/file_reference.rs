@@ -136,7 +136,7 @@ pub fn browse<'gc>(
                         .classes()
                         .filefilter
                         .inner_class_definition();
-                    if !obj.is_of_type(filefilter, &mut activation.context) {
+                    if !obj.is_of_type(filefilter) {
                         return Err(make_error_2097(activation));
                     }
 

@@ -27,9 +27,6 @@ pub fn describe_type_json<'gc>(
         .classes()
         .object
         .construct(activation, &[])?;
-    let Some(class_def) = class_def else {
-        return Ok(Value::Null);
-    };
 
     let mut used_class_def = class_def;
     if flags.contains(DescribeTypeFlags::USE_ITRAITS) {

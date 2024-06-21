@@ -238,7 +238,7 @@ impl<'gc> ScopeChain<'gc> {
     pub fn get_entry_for_multiname(
         &self,
         multiname: &Multiname<'gc>,
-    ) -> Option<Option<(Option<Class<'gc>>, u32)>> {
+    ) -> Option<Option<(Class<'gc>, u32)>> {
         if let Some(container) = self.container {
             for (index, scope) in container.scopes.iter().enumerate().skip(1).rev() {
                 if scope.with() {

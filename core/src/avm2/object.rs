@@ -18,7 +18,6 @@ use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::bitmap::bitmap_data::BitmapDataWrapper;
-use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
 use crate::streams::NetStream;
@@ -714,11 +713,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
         match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
             None => {
-                if self
-                    .instance_class()
-                    .map(|c| c.is_sealed())
-                    .unwrap_or(false)
-                {
+                if self.instance_class().is_sealed() {
                     Ok(false)
                 } else {
                     self.delete_property_local(activation, multiname)
@@ -970,10 +965,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// prototype; this is then picked up by the VM runtime when doing
     /// coercions.
     fn to_string(&self, activation: &mut Activation<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        let class_name = self
-            .instance_class()
-            .map(|c| c.name().local_name())
-            .unwrap_or_else(|| "Object".into());
+        let class_name = self.instance_class().name().local_name();
 
         Ok(AvmString::new_utf8(activation.gc(), format!("[object {class_name}]")).into())
     }
@@ -990,10 +982,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let class_name = self
-            .instance_class()
-            .map(|c| c.name().local_name())
-            .unwrap_or_else(|| "Object".into());
+        let class_name = self.instance_class().name().local_name();
 
         Ok(AvmString::new_utf8(
             activation.context.gc_context,
@@ -1088,20 +1077,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ///
     /// The given object should be the class object for the given type we are
     /// checking against this object.
-    fn is_of_type(&self, test_class: Class<'gc>, context: &mut UpdateContext<'_, 'gc>) -> bool {
-        let my_class = self.instance_class();
-
-        // ES3 objects are not class instances but are still treated as
-        // instances of Object, which is an ES4 class.
-        if my_class.is_none()
-            && test_class == context.avm2.classes().object.inner_class_definition()
-        {
-            true
-        } else if let Some(my_class) = my_class {
-            my_class.has_class_in_chain(test_class)
-        } else {
-            false
-        }
+    fn is_of_type(&self, test_class: Class<'gc>) -> bool {
+        self.instance_class().has_class_in_chain(test_class)
     }
 
     /// Get a raw pointer value for this object.
@@ -1120,16 +1097,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Get this object's class's `Class`, if it has one.
-    fn instance_class(&self) -> Option<Class<'gc>> {
+    fn instance_class(&self) -> Class<'gc> {
         let base = self.base();
         base.instance_class()
     }
 
     /// Get this object's class's name, formatted for debug output.
     fn instance_of_class_name(&self, mc: &Mutation<'gc>) -> AvmString<'gc> {
-        self.instance_class()
-            .map(|r| r.name().to_qualified_name(mc))
-            .unwrap_or_else(|| "<Unknown type>".into())
+        self.instance_class().name().to_qualified_name(mc)
     }
 
     fn set_instance_class(&self, mc: &Mutation<'gc>, instance_class: Class<'gc>) {

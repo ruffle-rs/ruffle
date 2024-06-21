@@ -54,8 +54,7 @@ pub struct ScriptObjectData<'gc> {
     proto: Option<Object<'gc>>,
 
     /// The `Class` that this is an instance of.
-    /// If `none`, this is not an ES4 object at all.
-    instance_class: Option<Class<'gc>>,
+    instance_class: Class<'gc>,
 
     /// The table used for non-dynamic property lookups.
     vtable: Option<VTable<'gc>>,
@@ -152,7 +151,7 @@ impl<'gc> ScriptObjectData<'gc> {
     /// to do something weird or lazily initialize the object.
     /// You shouldn't let scripts observe this weirdness.
     pub fn custom_new(
-        class: Class<'gc>,
+        instance_class: Class<'gc>,
         proto: Option<Object<'gc>>,
         instance_of: Option<ClassObject<'gc>>,
     ) -> Self {
@@ -161,7 +160,7 @@ impl<'gc> ScriptObjectData<'gc> {
             slots: Vec::new(),
             bound_methods: Vec::new(),
             proto,
-            instance_class: Some(class),
+            instance_class,
             vtable: instance_of.map(|cls| cls.instance_vtable()),
         }
     }
@@ -408,8 +407,8 @@ impl<'gc> ScriptObjectData<'gc> {
         *self.bound_methods.get_mut(disp_id as usize).unwrap() = Some(function);
     }
 
-    /// Get the `Class` for this object, if it has one.
-    pub fn instance_class(&self) -> Option<Class<'gc>> {
+    /// Get the `Class` for this object.
+    pub fn instance_class(&self) -> Class<'gc> {
         self.instance_class
     }
 
@@ -419,14 +418,12 @@ impl<'gc> ScriptObjectData<'gc> {
     }
 
     pub fn is_sealed(&self) -> bool {
-        self.instance_class()
-            .map(|cls| cls.is_sealed())
-            .unwrap_or(false)
+        self.instance_class().is_sealed()
     }
 
     /// Set the class object for this object.
     pub fn set_instance_class(&mut self, instance_class: Class<'gc>) {
-        self.instance_class = Some(instance_class);
+        self.instance_class = instance_class;
     }
 
     pub fn set_vtable(&mut self, vtable: VTable<'gc>) {
@@ -434,12 +431,7 @@ impl<'gc> ScriptObjectData<'gc> {
     }
 
     pub fn debug_class_name(&self) -> Box<dyn std::fmt::Debug + 'gc> {
-        let class_name = self.instance_class().map(|cls| cls.debug_name());
-
-        match class_name {
-            Some(class_name) => Box::new(class_name),
-            None => Box::new("<None>"),
-        }
+        Box::new(self.instance_class().debug_name())
     }
 }
 
