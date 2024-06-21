@@ -69,9 +69,6 @@ pub struct ClassObjectData<'gc> {
 
     /// VTable used for instances of this class.
     instance_vtable: VTable<'gc>,
-
-    /// VTable used for a ScriptObject of this class object.
-    class_vtable: VTable<'gc>,
 }
 
 impl<'gc> ClassObject<'gc> {
@@ -175,7 +172,6 @@ impl<'gc> ClassObject<'gc> {
                 superclass_object,
                 applications: Default::default(),
                 instance_vtable: VTable::empty(activation.context.gc_context),
-                class_vtable: VTable::empty(activation.context.gc_context),
             },
         ));
 
@@ -216,6 +212,9 @@ impl<'gc> ClassObject<'gc> {
             self.superclass_object().map(|cls| cls.instance_vtable()),
             &mut activation.context,
         );
+
+        self.link_interfaces(activation)?;
+
         Ok(())
     }
 
@@ -238,7 +237,7 @@ impl<'gc> ClassObject<'gc> {
     /// This function is also when class trait validation happens. Verify
     /// errors will be raised at this time.
     pub fn into_finished_class(
-        mut self,
+        self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
         let i_class = self.inner_class_definition();
@@ -247,7 +246,8 @@ impl<'gc> ClassObject<'gc> {
             .expect("ClassObject should have an i_class");
 
         // class vtable == class traits + Class instance traits
-        self.class_vtable().init_vtable(
+        let class_vtable = VTable::empty(activation.context.gc_context);
+        class_vtable.init_vtable(
             c_class,
             Some(self),
             &c_class.traits(),
@@ -256,16 +256,13 @@ impl<'gc> ClassObject<'gc> {
             &mut activation.context,
         );
 
-        self.link_interfaces(activation)?;
-        self.install_class_vtable_and_slots(activation.context.gc_context);
+        self.set_vtable(activation.context.gc_context, class_vtable);
+        self.base_mut(activation.context.gc_context)
+            .install_instance_slots();
+
         self.run_class_initializer(activation)?;
 
         Ok(self)
-    }
-
-    fn install_class_vtable_and_slots(&mut self, mc: &Mutation<'gc>) {
-        self.set_vtable(mc, self.class_vtable());
-        self.base_mut(mc).install_instance_slots();
     }
 
     /// Link this class to a prototype.
@@ -681,10 +678,6 @@ impl<'gc> ClassObject<'gc> {
         self.0.read().instance_vtable
     }
 
-    pub fn class_vtable(self) -> VTable<'gc> {
-        self.0.read().class_vtable
-    }
-
     /// Like `inner_class_definition`, but returns an `Err(BorrowError)` instead of panicking
     /// if our `GcCell` is already mutably borrowed. This is useful
     /// in contexts where panicking would be extremely undesirable,
@@ -814,12 +807,6 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         self.call_init(instance.into(), arguments, activation)?;
 
         Ok(instance)
-    }
-
-    fn has_own_property(self, name: &Multiname<'gc>) -> bool {
-        let read = self.0.read();
-
-        read.base.has_own_dynamic_property(name) || self.class_vtable().has_trait(name)
     }
 
     fn as_class_object(&self) -> Option<ClassObject<'gc>> {
