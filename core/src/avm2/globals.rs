@@ -66,7 +66,7 @@ pub struct SystemClasses<'gc> {
     pub number: ClassObject<'gc>,
     pub int: ClassObject<'gc>,
     pub uint: ClassObject<'gc>,
-    pub void: ClassObject<'gc>,
+    pub void_def: Class<'gc>,
     pub namespace: ClassObject<'gc>,
     pub array: ClassObject<'gc>,
     pub movieclip: ClassObject<'gc>,
@@ -198,7 +198,7 @@ impl<'gc> SystemClasses<'gc> {
             number: object,
             int: object,
             uint: object,
-            void: object,
+            void_def: object.inner_class_definition(),
             namespace: object,
             array: object,
             movieclip: object,
@@ -604,9 +604,10 @@ pub fn load_player_globals<'gc>(
     );
     avm2_system_class!(array, activation, array::create_class(activation), script);
 
-    // TODO: this should _not_ be exposed as a ClassObject, getDefinitionByName etc.
-    // it should only be visible as an type for typecheck/cast purposes.
-    avm2_system_class!(void, activation, void::create_class(activation), script);
+    // void doesn't have a ClassObject
+    let void_def = void::create_class(activation);
+    activation.avm2().system_classes.as_mut().unwrap().void_def = void_def;
+    domain.export_class(void_def.name(), void_def, mc);
 
     avm2_system_class!(
         generic_vector,
