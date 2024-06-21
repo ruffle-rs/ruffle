@@ -94,5 +94,17 @@
     },
     "settings_saved": {
         "message": "Settings Saved"
+    },
+    "onboarding_page": {
+        "message": "Onboarding Page"
+    },
+    "permissions_grant": {
+        "message": "Grant Ruffle permission to access my data on all sites"
+    },
+    "permissions_not_granted": {
+        "message": "You will need to click the Ruffle icon on every site on which you want to use Ruffle"
+    },
+    "grant_single_site_permission": {
+        "message": "Permanently enable for this site"
     }
 }

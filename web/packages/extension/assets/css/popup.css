@@ -3,6 +3,10 @@ body {
     overflow: hidden;
 }
 
+.hidden {
+    display: none;
+}
+
 .logo {
     max-width: 200px;
 }

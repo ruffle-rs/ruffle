@@ -10,9 +10,6 @@
     "action": {
         "default_popup": "popup.html"
     },
-    "background": {
-        "service_worker": "dist/background.js"
-    },
     "content_scripts": [
         {
             "matches": ["<all_urls>"],
@@ -69,8 +66,4 @@
             "path": "dist/4399_rules.json"
         }]
     },
-
-    // Chrome runs the extension in a single shared process by default,
-    // which prevents extension pages from loading in Incognito tabs
-    "incognito": "split",
 }
