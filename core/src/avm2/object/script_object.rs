@@ -105,23 +105,33 @@ impl<'gc> ScriptObject<'gc> {
     /// is technically also equivalent and faster, but not recommended outside lower-level Core code)
     pub fn custom_object(
         mc: &Mutation<'gc>,
-        class: Option<ClassObject<'gc>>,
+        class: Class<'gc>,
+        class_obj: Option<ClassObject<'gc>>,
         proto: Option<Object<'gc>>,
     ) -> Object<'gc> {
-        ScriptObject(GcCell::new(mc, ScriptObjectData::custom_new(proto, class))).into()
+        ScriptObject(GcCell::new(
+            mc,
+            ScriptObjectData::custom_new(class, proto, class_obj),
+        ))
+        .into()
     }
 
     /// A special case for `newcatch` implementation. Basically a variable (q)name
     /// which maps to slot 1.
-    pub fn catch_scope(mc: &Mutation<'gc>, qname: &QName<'gc>) -> Object<'gc> {
+    pub fn catch_scope(activation: &mut Activation<'_, 'gc>, qname: &QName<'gc>) -> Object<'gc> {
         // TODO: use a proper ClassObject here; purposefully crafted bytecode
         // can observe (the lack of) it.
-        let mut base = ScriptObjectData::custom_new(None, None);
-        let vt = VTable::newcatch(mc, qname);
+        let mut base = ScriptObjectData::custom_new(
+            activation.avm2().classes().object.inner_class_definition(),
+            None,
+            None,
+        );
+
+        let vt = VTable::newcatch(activation.context.gc_context, qname);
         base.set_vtable(vt);
         base.install_instance_slots();
 
-        ScriptObject(GcCell::new(mc, base)).into()
+        ScriptObject(GcCell::new(activation.context.gc_context, base)).into()
     }
 }
 
@@ -129,7 +139,11 @@ impl<'gc> ScriptObjectData<'gc> {
     /// Create new object data of a given class.
     /// This is a low-level function used to implement things like object allocators.
     pub fn new(instance_of: ClassObject<'gc>) -> Self {
-        Self::custom_new(Some(instance_of.prototype()), Some(instance_of))
+        Self::custom_new(
+            instance_of.inner_class_definition(),
+            Some(instance_of.prototype()),
+            Some(instance_of),
+        )
     }
 
     /// Create new custom object data of a given possibly-none class and prototype.
@@ -137,13 +151,17 @@ impl<'gc> ScriptObjectData<'gc> {
     /// This should *not* be used, unless you really need
     /// to do something weird or lazily initialize the object.
     /// You shouldn't let scripts observe this weirdness.
-    pub fn custom_new(proto: Option<Object<'gc>>, instance_of: Option<ClassObject<'gc>>) -> Self {
+    pub fn custom_new(
+        class: Class<'gc>,
+        proto: Option<Object<'gc>>,
+        instance_of: Option<ClassObject<'gc>>,
+    ) -> Self {
         ScriptObjectData {
             values: Default::default(),
             slots: Vec::new(),
             bound_methods: Vec::new(),
             proto,
-            instance_class: instance_of.map(|cls| cls.inner_class_definition()),
+            instance_class: Some(class),
             vtable: instance_of.map(|cls| cls.instance_vtable()),
         }
     }

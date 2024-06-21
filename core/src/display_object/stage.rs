@@ -4,7 +4,7 @@ use crate::avm1::Object as Avm1Object;
 use crate::avm2::object::TObject;
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject, Object as Avm2Object,
-    ScriptObject as Avm2ScriptObject, StageObject as Avm2StageObject, Value as Avm2Value,
+    StageObject as Avm2StageObject, Value as Avm2Value,
 };
 use crate::backend::ui::MouseCursor;
 use crate::config::Letterbox;
@@ -130,10 +130,10 @@ pub struct StageData<'gc> {
     show_menu: bool,
 
     /// The AVM2 view of this stage object.
-    avm2_object: Avm2Object<'gc>,
+    avm2_object: Option<Avm2Object<'gc>>,
 
     /// The AVM2 'LoaderInfo' object for this stage object
-    loader_info: Avm2Object<'gc>,
+    loader_info: Option<Avm2Object<'gc>>,
 
     /// An array of AVM2 'Stage3D' instances
     stage3ds: Vec<Avm2Object<'gc>>,
@@ -183,8 +183,8 @@ impl<'gc> Stage<'gc> {
                 window_mode: Default::default(),
                 show_menu: true,
                 stage_focus_rect: true,
-                avm2_object: Avm2ScriptObject::custom_object(gc_context, None, None),
-                loader_info: Avm2ScriptObject::custom_object(gc_context, None, None),
+                avm2_object: None,
+                loader_info: None,
                 stage3ds: vec![],
                 movie,
                 viewport_matrix: Matrix::IDENTITY,
@@ -242,7 +242,7 @@ impl<'gc> Stage<'gc> {
     }
 
     pub fn set_loader_info(self, gc_context: &Mutation<'gc>, loader_info: Avm2Object<'gc>) {
-        self.0.write(gc_context).loader_info = loader_info;
+        self.0.write(gc_context).loader_info = Some(loader_info);
     }
 
     // Get the invalidation state
@@ -791,7 +791,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         match avm2_stage {
             Ok(avm2_stage) => {
                 let mut write = self.0.write(activation.context.gc_context);
-                write.avm2_object = avm2_stage.into();
+                write.avm2_object = Some(avm2_stage.into());
                 write.stage3ds = vec![stage3d];
             }
             Err(e) => tracing::error!("Unable to construct AVM2 Stage: {}", e),
@@ -868,11 +868,15 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
     }
 
     fn object2(&self) -> Avm2Value<'gc> {
-        self.0.read().avm2_object.into()
+        self.0
+            .read()
+            .avm2_object
+            .expect("Attempted to access Stage::object2 before initialization")
+            .into()
     }
 
     fn loader_info(&self) -> Option<Avm2Object<'gc>> {
-        Some(self.0.read().loader_info)
+        self.0.read().loader_info
     }
 
     fn movie(&self) -> Arc<SwfMovie> {

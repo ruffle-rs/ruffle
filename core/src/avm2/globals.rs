@@ -472,12 +472,7 @@ pub fn load_player_globals<'gc>(
 ) -> Result<(), Error<'gc>> {
     let mc = activation.context.gc_context;
 
-    let globals = ScriptObject::custom_object(mc, None, None);
-    let gs = ScopeChain::new(domain).chain(mc, &[Scope::new(globals)]);
-    let script = Script::empty_script(mc, globals, domain);
-
     // Set the outer scope of this activation to the global scope.
-    activation.set_outer(gs);
 
     // public / root package
     //
@@ -510,22 +505,31 @@ pub fn load_player_globals<'gc>(
     class_i_class.set_c_class(mc, class_c_class);
     class_c_class.set_i_class(mc, class_i_class);
 
-    domain.export_class(object_i_class.name(), object_i_class, mc);
-    domain.export_class(class_i_class.name(), class_i_class, mc);
-
     // Function is more of a "normal" class than the other two, so we can create it normally.
     let fn_classdef = function::create_class(activation, object_i_class, class_i_class);
+
+    // Register the classes in the domain, now
+    domain.export_class(object_i_class.name(), object_i_class, mc);
+    domain.export_class(class_i_class.name(), class_i_class, mc);
     domain.export_class(fn_classdef.name(), fn_classdef, mc);
 
+    // Initialize the script
+    let globals = ScriptObject::custom_object(mc, object_i_class, None, None);
+    let script = Script::empty_script(mc, globals, domain);
+
+    let gs = ScopeChain::new(domain).chain(mc, &[Scope::new(globals)]);
+    activation.set_outer(gs);
+
     let object_class = ClassObject::from_class_partial(activation, object_i_class, None)?;
-    let object_proto = ScriptObject::custom_object(mc, Some(object_class), None);
+    let object_proto = ScriptObject::custom_object(mc, object_i_class, Some(object_class), None);
 
     let class_class =
         ClassObject::from_class_partial(activation, class_i_class, Some(object_class))?;
-    let class_proto = ScriptObject::custom_object(mc, Some(object_class), Some(object_proto));
+    let class_proto =
+        ScriptObject::custom_object(mc, object_i_class, Some(object_class), Some(object_proto));
 
     let fn_class = ClassObject::from_class_partial(activation, fn_classdef, Some(object_class))?;
-    let fn_proto = ScriptObject::custom_object(mc, Some(fn_class), Some(object_proto));
+    let fn_proto = ScriptObject::custom_object(mc, fn_classdef, Some(fn_class), Some(object_proto));
 
     // Now to weave the Gordian knot...
     object_class.link_prototype(activation, object_proto)?;
