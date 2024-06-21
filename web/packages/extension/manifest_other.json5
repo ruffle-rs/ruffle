@@ -28,6 +28,12 @@
             "js": ["dist/content.js"],
             "all_frames": true,
             "run_at": "document_start",
+        },
+        {
+            "matches": ["https://www.4399.com/flash/*"],
+            "js": ["dist/siteContentScript4399.js"],
+            "world": "MAIN",
+            "run_at": "document_start",
         }
     ],
 
@@ -50,11 +56,19 @@
     "permissions": [
         "storage",
         "scripting",
+        "declarativeNetRequest",
     ],
     "web_accessible_resources": [{
         "resources": ["*"],
         "matches": ["<all_urls>"],
     }],
+    "declarative_net_request": {
+        "rule_resources": [{
+            "id": "4399_rules",
+            "enabled": true,
+            "path": "dist/4399_rules.json"
+        }]
+    },
 
     // Chrome runs the extension in a single shared process by default,
     // which prevents extension pages from loading in Incognito tabs

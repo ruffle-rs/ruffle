@@ -85,6 +85,7 @@ export default function (/** @type {Record<string, any>} */ env, _argv) {
             background: "./src/background.ts",
             player: "./src/player.ts",
             pluginPolyfill: "./src/plugin-polyfill.ts",
+            siteContentScript4399: "./src/4399-content-script.ts",
         },
         output: {
             path: url.fileURLToPath(new URL("assets/dist/", import.meta.url)),
@@ -130,6 +131,7 @@ export default function (/** @type {Record<string, any>} */ env, _argv) {
                     },
                     { from: "LICENSE*" },
                     { from: "README.md" },
+                    { from: "4399_rules.json" },
                 ],
             }),
         ],
