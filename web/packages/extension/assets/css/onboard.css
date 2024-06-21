@@ -1,0 +1,10 @@
+.logo {
+    max-width: 224px;
+}
+
+.container {
+    max-width: 600px;
+    margin: auto;
+    padding: 24px 32px;
+    font-size: larger;
+}

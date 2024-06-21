@@ -8,6 +8,8 @@ window.addEventListener("DOMContentLoaded", () => {
         vt.textContent = buildInfo.versionName;
     }
     {
+        const pe = document.getElementById("permissions-explanation")!;
+        pe.textContent = utils.i18n.getMessage("permissions_explanation");
         const gp = document.getElementById("grant-permissions")!;
         gp.textContent = utils.i18n.getMessage("permissions_grant");
         gp.addEventListener("click", async () => {
