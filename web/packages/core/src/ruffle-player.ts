@@ -360,8 +360,8 @@ export class RufflePlayer extends HTMLElement {
             if (videoHolder) {
                 videoHolder.textContent = "";
             }
-        }
-        
+        };
+
         modalElement.parentNode!.addEventListener("click", hideModal);
         const modalArea = modalElement.querySelector(".modal-area");
         if (modalArea) {
@@ -391,9 +391,15 @@ export class RufflePlayer extends HTMLElement {
             "#volume-mute",
         ) as HTMLLabelElement;
         const volumeIcons = [
-            volumeControlsModal.querySelector("#volume-min") as HTMLLabelElement,
-            volumeControlsModal.querySelector("#volume-mid") as HTMLLabelElement,
-            volumeControlsModal.querySelector("#volume-max") as HTMLLabelElement,
+            volumeControlsModal.querySelector(
+                "#volume-min",
+            ) as HTMLLabelElement,
+            volumeControlsModal.querySelector(
+                "#volume-mid",
+            ) as HTMLLabelElement,
+            volumeControlsModal.querySelector(
+                "#volume-max",
+            ) as HTMLLabelElement,
         ];
         const volumeSlider = volumeControlsModal.querySelector(
             "#volume-slider",
@@ -405,16 +411,14 @@ export class RufflePlayer extends HTMLElement {
         const setVolumeIcon = () => {
             if (this.volumeSettings.isMuted) {
                 volumeMuteIcon.style.display = "inline";
-                volumeIcons.forEach(icon => {
+                volumeIcons.forEach((icon) => {
                     icon.style.display = "none";
                 });
             } else {
                 volumeMuteIcon.style.display = "none";
                 const iconIndex = Math.round(this.volumeSettings.volume / 50);
                 volumeIcons.forEach((icon, i) => {
-                    icon.style.display = i == iconIndex
-                        ? "inline"
-                        : "none";
+                    icon.style.display = i === iconIndex ? "inline" : "none";
                 });
             }
         };
