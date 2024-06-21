@@ -257,8 +257,8 @@ fn describe_internal_body<'gc>(
         }
     }
 
-    let vtable = class_def.instance_vtable();
-    let super_vtable = class_def.super_class().map(|c| c.instance_vtable());
+    let vtable = class_def.vtable();
+    let super_vtable = class_def.super_class().map(|c| c.vtable());
 
     if flags.contains(DescribeTypeFlags::INCLUDE_INTERFACES) {
         for interface in &*class_def.all_interfaces() {
