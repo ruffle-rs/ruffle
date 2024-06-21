@@ -77,6 +77,14 @@ impl fmt::Debug for Allocator {
     }
 }
 
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
+enum ClassLink<'gc> {
+    Unlinked,
+    LinkToInstance(Class<'gc>),
+    LinkToClass(Class<'gc>),
+}
+
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct Class<'gc>(pub GcCell<'gc, ClassData<'gc>>);
@@ -162,9 +170,12 @@ pub struct ClassData<'gc> {
     /// without throwing a VerifyError.
     is_system: bool,
 
-    c_class: Option<Class<'gc>>,
-
-    i_class: Option<Class<'gc>>,
+    /// The Class this Class is linked to. If this class represents instance info,
+    /// this will be a ClassLink::LinkToClass. If this class represents class info,
+    /// this will be a ClassLink::LinkToInstance. This must be one of the two,
+    /// unless this class has not yet been fully initialized, in which case it will
+    /// be set to ClassLink::Unlinked.
+    linked_class: ClassLink<'gc>,
 
     /// The ClassObjects for this class.
     /// In almost all cases, this will either be empty or have a single object.
@@ -234,8 +245,7 @@ impl<'gc> Class<'gc> {
                 call_handler: None,
                 traits_loaded: false,
                 is_system: true,
-                i_class: None,
-                c_class: None,
+                linked_class: ClassLink::Unlinked,
                 applications: FnvHashMap::default(),
                 class_objects: Vec::new(),
             },
@@ -265,14 +275,13 @@ impl<'gc> Class<'gc> {
                 call_handler: None,
                 traits_loaded: false,
                 is_system: true,
-                i_class: Some(i_class),
-                c_class: None,
+                linked_class: ClassLink::LinkToInstance(i_class),
                 applications: FnvHashMap::default(),
                 class_objects: Vec::new(),
             },
         ));
 
-        i_class.0.write(mc).c_class = Some(c_class);
+        i_class.set_c_class(mc, c_class);
 
         i_class
     }
@@ -303,8 +312,7 @@ impl<'gc> Class<'gc> {
                 call_handler: None,
                 traits_loaded: true,
                 is_system: true,
-                i_class: None,
-                c_class: None,
+                linked_class: ClassLink::Unlinked,
                 applications: FnvHashMap::default(),
                 class_objects: Vec::new(),
             },
@@ -545,8 +553,7 @@ impl<'gc> Class<'gc> {
                 call_handler: native_call_handler,
                 traits_loaded: false,
                 is_system: false,
-                i_class: None,
-                c_class: None,
+                linked_class: ClassLink::Unlinked,
                 applications: Default::default(),
                 class_objects: Vec::new(),
             },
@@ -579,14 +586,13 @@ impl<'gc> Class<'gc> {
                 call_handler: None,
                 traits_loaded: false,
                 is_system: false,
-                i_class: Some(i_class),
-                c_class: None,
+                linked_class: ClassLink::LinkToInstance(i_class),
                 applications: FnvHashMap::default(),
                 class_objects: Vec::new(),
             },
         ));
 
-        i_class.0.write(activation.context.gc_context).c_class = Some(c_class);
+        i_class.set_c_class(activation.context.gc_context, c_class);
 
         Ok(i_class)
     }
@@ -612,9 +618,7 @@ impl<'gc> Class<'gc> {
         }
 
         let c_class = self
-            .0
-            .read()
-            .c_class
+            .c_class()
             .expect("Just checked that this class was an i_class");
         let mut c_class_write = c_class.0.write(activation.context.gc_context);
 
@@ -847,8 +851,7 @@ impl<'gc> Class<'gc> {
                 call_handler: None,
                 traits_loaded: true,
                 is_system: false,
-                i_class: None,
-                c_class: None,
+                linked_class: ClassLink::Unlinked,
                 applications: Default::default(),
                 class_objects: Vec::new(),
             },
@@ -889,14 +892,13 @@ impl<'gc> Class<'gc> {
                 call_handler: None,
                 traits_loaded: true,
                 is_system: false,
-                i_class: Some(i_class),
-                c_class: None,
+                linked_class: ClassLink::LinkToInstance(i_class),
                 applications: FnvHashMap::default(),
                 class_objects: Vec::new(),
             },
         ));
 
-        i_class.0.write(activation.context.gc_context).c_class = Some(c_class);
+        i_class.set_c_class(activation.context.gc_context, c_class);
 
         i_class.init_vtable(&mut activation.context)?;
         c_class.init_vtable(&mut activation.context)?;
@@ -1254,14 +1256,9 @@ impl<'gc> Class<'gc> {
     ///
     /// Class traits will be accessible as properties on the class object.
     pub fn define_class_trait(self, mc: &Mutation<'gc>, my_trait: Trait<'gc>) {
-        self.0
-            .read()
-            .c_class
+        self.c_class()
             .expect("Accessed class_traits on a c_class")
-            .0
-            .write(mc)
-            .traits
-            .push(my_trait);
+            .define_instance_trait(mc, my_trait);
     }
 
     /// Define a trait on instances of the class.
@@ -1348,18 +1345,30 @@ impl<'gc> Class<'gc> {
     }
 
     pub fn c_class(self) -> Option<Class<'gc>> {
-        self.0.read().c_class
+        if let ClassLink::LinkToClass(c_class) = self.0.read().linked_class {
+            Some(c_class)
+        } else {
+            None
+        }
     }
 
     pub fn set_c_class(self, mc: &Mutation<'gc>, c_class: Class<'gc>) {
-        self.0.write(mc).c_class = Some(c_class);
+        assert!(matches!(self.0.read().linked_class, ClassLink::Unlinked));
+
+        self.0.write(mc).linked_class = ClassLink::LinkToClass(c_class);
     }
 
     pub fn i_class(self) -> Option<Class<'gc>> {
-        self.0.read().i_class
+        if let ClassLink::LinkToInstance(i_class) = self.0.read().linked_class {
+            Some(i_class)
+        } else {
+            None
+        }
     }
 
     pub fn set_i_class(self, mc: &Mutation<'gc>, i_class: Class<'gc>) {
-        self.0.write(mc).i_class = Some(i_class);
+        assert!(matches!(self.0.read().linked_class, ClassLink::Unlinked));
+
+        self.0.write(mc).linked_class = ClassLink::LinkToInstance(i_class);
     }
 }
