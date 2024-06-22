@@ -1718,22 +1718,29 @@ export class RufflePlayer extends HTMLElement {
             }
         }
 
-        // Place a context menu in the top-left corner, so
-        // its `clientWidth` and `clientHeight` are not clamped.
-        this.contextMenuElement.style.left = "0";
-        this.contextMenuElement.style.top = "0";
         this.contextMenuOverlay.classList.remove("hidden");
 
-        const rect = this.getBoundingClientRect();
-        const x = event.clientX - rect.x;
-        const y = event.clientY - rect.y;
-        const maxX = rect.width - this.contextMenuElement.clientWidth - 1;
-        const maxY = rect.height - this.contextMenuElement.clientHeight - 1;
+        const playerRect = this.getBoundingClientRect();
+        const contextMenuRect = this.contextMenuElement.getBoundingClientRect();
 
-        this.contextMenuElement.style.left =
-            Math.floor(Math.min(x, maxX)) + "px";
-        this.contextMenuElement.style.top =
-            Math.floor(Math.min(y, maxY)) + "px";
+        // Keep the entire context menu inside the viewport.
+        // TODO: Allow the context menu to escape the document body while being mindful of scrollbars.
+        const overflowX = Math.max(
+            0,
+            event.clientX +
+                contextMenuRect.width -
+                document.documentElement.clientWidth,
+        );
+        const overflowY = Math.max(
+            0,
+            event.clientY +
+                contextMenuRect.height -
+                document.documentElement.clientHeight,
+        );
+        const x = event.clientX - playerRect.x - overflowX;
+        const y = event.clientY - playerRect.y - overflowY;
+
+        this.contextMenuElement.style.transform = `translate(${x}px, ${y}px)`;
     }
 
     private hideContextMenu(): void {

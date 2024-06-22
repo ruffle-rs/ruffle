@@ -320,19 +320,20 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
         }`,
 
         `.modal-area {
-            position: sticky;
+            position: relative;
+            left: 50%;
+            transform: translateX(-50%);
             background-color: var(--modal-background);
             color: rgb(var(--modal-foreground-rgb));
             width: fit-content;
-            margin: auto;
             padding: 8px 12px;
             border-radius: 12px;
             box-shadow: 0 2px 6px 0px #0008;
         }`,
 
         `#modal-area {
-            width: min(100%, 450px);
-            height: min(100%, 300px);
+            width: 450px;
+            height: 300px;
         }`,
 
         `.close-modal {
