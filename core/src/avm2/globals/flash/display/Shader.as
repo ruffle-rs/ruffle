@@ -1,4 +1,6 @@
 package flash.display {
+    import __ruffle__.stub_getter;
+    import __ruffle__.stub_setter;
     import flash.utils.ByteArray;
 
     public class Shader {
