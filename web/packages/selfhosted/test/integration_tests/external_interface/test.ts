@@ -275,4 +275,26 @@ log called with 1 argument
 `,
         );
     });
+
+    it("doesn't enforce Strict Mode", async () => {
+        const player = await browser.$("<ruffle-object>");
+        await browser.execute((player) => {
+            player.callMethodWithDelay(
+                "function(){return aPropertyThatDoesntExist = 'success!'}",
+            );
+        }, player);
+
+        // [NA] Because of the delay, if we fetch immediately we *may* just get part of the log.
+        await browser.pause(200);
+
+        const actualOutput = await getTraceOutput(browser, player);
+        expect(actualOutput).to.eql(
+            `callMethodWithDelay called with 1 argument
+  [
+    "function(){return aPropertyThatDoesntExist = 'success!'}"
+  ]
+  call(function(){return aPropertyThatDoesntExist = 'success!'}, ...) = "success!"
+`,
+        );
+    });
 });
