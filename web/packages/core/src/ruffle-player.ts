@@ -1636,12 +1636,7 @@ export class RufflePlayer extends HTMLElement {
 
         event.preventDefault();
 
-        let modalOpen = false;
-        this.shadow.querySelectorAll(".modal:not(.hidden)").forEach((modal) => {
-            modal.classList.add("hidden");
-            modalOpen = true;
-        });
-        if (modalOpen) {
+        if (this.shadow.querySelectorAll(".modal:not(.hidden)").length !== 0) {
             return;
         }
 
