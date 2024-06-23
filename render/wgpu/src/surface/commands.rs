@@ -653,13 +653,7 @@ pub fn chunk_blends<'a>(
                 needs_stencil,
                 descriptors,
                 matrix,
-                ColorTransform {
-                    r_multiply: Fixed8::from_f32(f32::from(color.r) / 255.0),
-                    g_multiply: Fixed8::from_f32(f32::from(color.g) / 255.0),
-                    b_multiply: Fixed8::from_f32(f32::from(color.b) / 255.0),
-                    a_multiply: Fixed8::from_f32(f32::from(color.a) / 255.0),
-                    ..Default::default()
-                },
+                ColorTransform::multiply_from(color),
                 |transform_buffer| DrawCommand::DrawRect { transform_buffer },
             ),
             Command::PushMask => {
