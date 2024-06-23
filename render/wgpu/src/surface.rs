@@ -132,7 +132,7 @@ impl Surface {
         let mut num_masks = 0;
         let mut mask_state = MaskState::NoMask;
         let chunks = chunk_blends(
-            commands.commands,
+            commands,
             descriptors,
             staging_belt,
             dynamic_transforms,
