@@ -411,13 +411,22 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             display: none;
         }`,
 
+        `#video-modal .modal-area {
+            width: 95%;
+            height: 95%;
+            box-sizing: border-box;
+        }`,
+
         `#video-holder {
-            padding-top: 20px;
+            height: 100%;
+            box-sizing: border-box;
+            padding: 36px 4px 6px;
         }`,
 
         `#video-holder video {
-            max-width: 100%;
-            height: calc(100% - 58px);
+            width: 100%;
+            height: 100%;
+            background-color: black;
         }`,
 
         `#volume-controls {
