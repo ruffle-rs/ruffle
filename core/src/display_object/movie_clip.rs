@@ -1494,7 +1494,9 @@ impl<'gc> MovieClip<'gc> {
             Ok(ControlFlow::Continue)
         };
         let _ = tag_utils::decode_tags(&mut reader, tag_callback);
-        self.run_eager_script_and_symbol(context, self.0.read().current_frame);
+        if let Err(e) = self.run_abc_and_symbol_tags(context, self.0.read().current_frame) {
+            tracing::error!("Error running abc/symbol in frame: {e:?}");
+        }
 
         // On AS3, we deliberately run all removals before the frame number or
         // tag position updates. This ensures that code that runs gotos when a
@@ -1809,7 +1811,9 @@ impl<'gc> MovieClip<'gc> {
                 Ok(ControlFlow::Continue)
             };
             let _ = tag_utils::decode_tags(&mut reader, tag_callback);
-            self.run_eager_script_and_symbol(context, self.current_frame() - 1);
+            if let Err(e) = self.run_abc_and_symbol_tags(context, self.current_frame() - 1) {
+                tracing::error!("Error running abc/symbols in goto: {e:?}");
+            }
         }
         let hit_target_frame = self.0.read().current_frame == frame;
 
@@ -4217,23 +4221,21 @@ impl<'gc, 'a> MovieClip<'gc> {
         cur_frame: FrameNumber,
         static_data: &mut MovieClipStatic<'gc>,
     ) -> Result<(), Error> {
-        let res = match tag_code {
-            TagCode::DoAbc => self.do_abc(context, reader)?,
-            TagCode::DoAbc2 => self.do_abc_2(context, reader)?,
+        let abc = match tag_code {
+            TagCode::DoAbc | TagCode::DoAbc2 => static_data
+                .swf
+                .resize_to_reader(reader, reader.as_slice().len()),
             _ => unreachable!(),
-        };
-        let Some(eager_script) = res else {
-            return Ok(());
         };
         // If we got an eager script (which happens for non-lazy DoAbc2 tags).
         // we store it for later. It will be run the first time we execute this frame
         // (for any instance of this MovieClip) in `run_eager_script_and_symbol`
         static_data
-            .eager_abc_scripts
+            .abc_tags
             .write(context.gc_context)
             .entry(cur_frame)
             .or_default()
-            .push(eager_script);
+            .push(AbcCodeAndTag { tag_code, abc });
         Ok(())
     }
 
@@ -4267,9 +4269,10 @@ impl<'gc, 'a> MovieClip<'gc> {
 
     // Flash Player handles SymbolClass tags and eager (non-lazy) DoAbc2 tags in an unusual way:
     // During the first time that a given frame is executed:
-    // 1. All SymbolClass tags are processed in order, triggering ClassObject loading (and the associated
+    // 1. All Abc/DoAbc2 tags have their ABC files parsed and loaded. No script initializers are run yet.
+    // 2. All SymbolClass tags are processed in order, triggering ClassObject loading (and the associated
     //    script initializer execution, if it hasn't already been run)
-    // 2. All eager (non-lazy) DoAbc/DoAbc2 tags have their *final* script initializer executed.
+    // 3. All eager (non-lazy) DoAbc/DoAbc2 tags have their *final* script initializer executed.
     //
     // The relative order is preserved between SymbolClass tags and between DoAbc2 tags. However, all
     // of the SymbolClass tags in the frame will run before any of the 'eager' DoAbc2 tags have
@@ -4277,12 +4280,32 @@ impl<'gc, 'a> MovieClip<'gc> {
     //
     // We need to match this behavior exactly, in order for flascc/crossbridge games like 'minidash'
     // to work correctly.
-    fn run_eager_script_and_symbol(
+    fn run_abc_and_symbol_tags(
         self,
         context: &mut UpdateContext<'_, 'gc>,
         current_frame: FrameNumber,
-    ) {
+    ) -> Result<(), Error> {
         let read = self.0.read();
+        let tags = read
+            .static_data
+            .abc_tags
+            .write(context.gc_context)
+            .remove(&current_frame);
+        let mut eager_scripts = Vec::new();
+        if let Some(tags) = tags {
+            for AbcCodeAndTag { tag_code, abc } in tags {
+                let mut reader = abc.read_from(0);
+                let eager_script = match tag_code {
+                    TagCode::DoAbc => self.do_abc(context, &mut reader)?,
+                    TagCode::DoAbc2 => self.do_abc_2(context, &mut reader)?,
+                    _ => unreachable!(),
+                };
+                if let Some(eager_script) = eager_script {
+                    eager_scripts.push(eager_script);
+                }
+            }
+        }
+
         if let Some(symbols) = read
             .static_data
             .symbolclass_names
@@ -4374,18 +4397,12 @@ impl<'gc, 'a> MovieClip<'gc> {
                 }
             }
         }
-        if let Some(scripts) = read
-            .static_data
-            .eager_abc_scripts
-            .write(context.gc_context)
-            .remove(&current_frame)
-        {
-            for script in scripts {
-                if let Err(e) = script.globals(context) {
-                    tracing::error!("Error running eager script: {:?}", e);
-                }
+        for script in eager_scripts {
+            if let Err(e) = script.globals(context) {
+                tracing::error!("Error running eager script: {:?}", e);
             }
-        };
+        }
+        Ok(())
     }
 
     fn queue_place_object(
@@ -4689,8 +4706,15 @@ struct MovieClipStatic<'gc> {
     // These two maps hold DoAbc/SymbolClass data that was loaded during preloading, but
     // hasn't yet been executed yet. The first time we encounter a frame, we will remove
     // the `Vec` from this map, and process it in `run_eager_script_and_symbol`
-    eager_abc_scripts: GcCell<'gc, HashMap<FrameNumber, Vec<Script<'gc>>>>,
+    abc_tags: GcCell<'gc, HashMap<FrameNumber, Vec<AbcCodeAndTag>>>,
     symbolclass_names: GcCell<'gc, HashMap<FrameNumber, Vec<(Avm2QName<'gc>, u16)>>>,
+}
+
+#[derive(Debug, Collect)]
+#[collect(require_static)]
+struct AbcCodeAndTag {
+    tag_code: TagCode,
+    abc: SwfSlice,
 }
 
 impl<'gc> MovieClipStatic<'gc> {
@@ -4724,7 +4748,7 @@ impl<'gc> MovieClipStatic<'gc> {
             loader_info,
             preload_progress: GcCell::new(gc_context, Default::default()),
             processed_bytecode_tags_pos: GcCell::new(gc_context, -1),
-            eager_abc_scripts: GcCell::new(gc_context, Default::default()),
+            abc_tags: GcCell::new(gc_context, Default::default()),
             symbolclass_names: GcCell::new(gc_context, Default::default()),
         }
     }
