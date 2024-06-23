@@ -126,22 +126,37 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         bind_group: &'pass wgpu::BindGroup,
         blend_mode: TrivialBlend,
         render_stage3d: bool,
+        uv: bool,
     ) {
         match (self.needs_stencil, render_stage3d) {
             (true, true) => {
+                assert!(!uv);
                 self.render_pass
                     .set_pipeline(&self.pipelines.bitmap_opaque_dummy_stencil);
             }
             (true, false) => {
-                self.render_pass
-                    .set_pipeline(self.pipelines.bitmap[blend_mode].pipeline_for(self.mask_state));
+                if uv {
+                    self.render_pass.set_pipeline(
+                        self.pipelines.bitmap_uvt[blend_mode].pipeline_for(self.mask_state),
+                    );
+                } else {
+                    self.render_pass.set_pipeline(
+                        self.pipelines.bitmap[blend_mode].pipeline_for(self.mask_state),
+                    );
+                }
             }
             (false, true) => {
+                assert!(!uv);
                 self.render_pass.set_pipeline(&self.pipelines.bitmap_opaque);
             }
             (false, false) => {
-                self.render_pass
-                    .set_pipeline(self.pipelines.bitmap[blend_mode].stencilless_pipeline());
+                if uv {
+                    self.render_pass
+                        .set_pipeline(self.pipelines.bitmap_uvt[blend_mode].stencilless_pipeline());
+                } else {
+                    self.render_pass
+                        .set_pipeline(self.pipelines.bitmap[blend_mode].stencilless_pipeline());
+                }
             }
         }
 
@@ -184,7 +199,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             bitmap.clone(),
             &descriptors.bitmap_samplers,
         );
-        self.prep_bitmap(&bind.bind_group, blend_mode, render_stage3d);
+        self.prep_bitmap(&bind.bind_group, blend_mode, render_stage3d, false);
         self.render_pass.set_bind_group(
             1,
             &self.dynamic_transforms.bind_group,
@@ -210,7 +225,7 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         if cfg!(feature = "render_debug_labels") {
             self.render_pass.push_debug_group("render_texture");
         }
-        self.prep_bitmap(bind_group, blend_mode, false);
+        self.prep_bitmap(bind_group, blend_mode, false, false);
 
         self.render_pass.set_bind_group(
             1,
@@ -258,8 +273,8 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 DrawType::Gradient { bind_group, .. } => {
                     self.prep_gradient(bind_group);
                 }
-                DrawType::Bitmap { binds, .. } => {
-                    self.prep_bitmap(&binds.bind_group, TrivialBlend::Normal, false);
+                DrawType::Bitmap { binds, has_uvt: uv } => {
+                    self.prep_bitmap(&binds.bind_group, TrivialBlend::Normal, false, *uv);
                 }
             }
             self.render_pass.set_bind_group(

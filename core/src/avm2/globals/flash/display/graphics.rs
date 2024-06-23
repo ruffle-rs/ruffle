@@ -993,32 +993,90 @@ fn draw_triangles_internal<'gc>(
         "winding behavior"
     );
 
-    if uvt_data.is_some() {
-        avm2_stub_method!(
-            activation,
-            "flash.display.Graphics",
-            "drawTriangles",
-            "with uvt data"
-        );
-    }
-
     let vertices = vertices
         .as_vector_storage()
         .expect("vertices is not a Vector");
+
+    let indices = indices.map(|indices| {
+        indices
+            .as_vector_storage()
+            .expect("indices is not a Vector")
+    });
+
+    if let Some(indices) = &indices {
+        // Flash player skips validation of UVT data if indices are empty.
+        if indices.length() == 0 {
+            return Ok(());
+        }
+    }
+
+    // The original uvt values (possibly with a 't' of 1.0 inserted)
+    let mut uvt_orig_vals = None;
+    // The 'expanded' uvt values - for each value in 'indices', we lookup the corresponding
+    // three values in 'uvt_orig_vals' and insert them into this vector. We do the same
+    // 'expansion' for vertices, so we do it for uvtData as well to keep the representations
+    // the same.
+    let mut uvt_expanded_index = Vec::new();
+
+    if let Some(uvt_data) = uvt_data {
+        if indices.is_none() {
+            avm2_stub_method!(
+                activation,
+                "flash.display.Graphics",
+                "drawTriangles",
+                "uvtData with null indices"
+            );
+            return Ok(());
+        }
+
+        // We don't return early, since we still want to run the rest
+        // of the validation below. The uvtData that we populate will
+        // get ignored by the render backend
+        if !activation.context.renderer.is_shape_uvt_supported() {
+            avm2_stub_method!(
+                activation,
+                "flash.display.Graphics",
+                "drawTriangles",
+                "uvtData with unsupported backend"
+            );
+        }
+
+        let mut vals: Vec<_> = uvt_data
+            .as_vector_storage()
+            .expect("uvtData is not a Vector")
+            .iter()
+            .map(|v| {
+                v.as_number(activation.context.gc_context)
+                    .expect("uvtData contained a non-Number value") as f32
+            })
+            .collect();
+
+        if vals.len() == vertices.length() {
+            vals = vals
+                .chunks_exact(2)
+                // Insert 't' value of 1.0
+                .flat_map(|chunk| [chunk[0], chunk[1], 1.0])
+                .collect()
+        } else if vals.len() != (vertices.length() * 3) / 2 {
+            return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+        }
+        uvt_orig_vals = Some(vals);
+    }
+
+    let mut temp_drawing = Drawing::new();
+    temp_drawing.set_fill_style(drawing.current_fill().map(|f| f.style().clone()));
 
     if let Some(indices) = indices {
         if vertices.length() % 2 != 0 {
             return Err(make_error_2004(activation, Error2004Type::ArgumentError));
         }
 
-        let indices = indices
-            .as_vector_storage()
-            .expect("indices is not a Vector");
-
         fn read_point<'gc>(
             vertices: &VectorStorage<'gc>,
             index: usize,
             activation: &mut Activation<'_, 'gc>,
+            uvt_orig_vals: Option<&[f32]>,
+            uvt_expanded_index: &mut Vec<f32>,
         ) -> Result<Point<Twips>, Error<'gc>> {
             let x = {
                 let x = vertices
@@ -1033,6 +1091,12 @@ fn draw_triangles_internal<'gc>(
                 Twips::from_pixels(y)
             };
 
+            if let Some(uv_orig_vals) = &uvt_orig_vals {
+                uvt_expanded_index.push(uv_orig_vals[3 * index]);
+                uvt_expanded_index.push(uv_orig_vals[3 * index + 1]);
+                uvt_expanded_index.push(uv_orig_vals[3 * index + 2]);
+            }
+
             Ok(Point::new(x, y))
         }
 
@@ -1040,6 +1104,8 @@ fn draw_triangles_internal<'gc>(
             vertices: &VectorStorage<'gc>,
             indices: &mut impl Iterator<Item = Value<'gc>>,
             activation: &mut Activation<'_, 'gc>,
+            uvt_orig_vals: Option<&[f32]>,
+            uvt_expanded_index: &mut Vec<f32>,
         ) -> Option<Triangle> {
             match (indices.next(), indices.next(), indices.next()) {
                 (Some(i0), Some(i1), Some(i2)) => {
@@ -1047,9 +1113,15 @@ fn draw_triangles_internal<'gc>(
                     let i1 = i1.coerce_to_u32(activation).ok()? as usize;
                     let i2 = i2.coerce_to_u32(activation).ok()? as usize;
 
-                    let p0 = read_point(vertices, i0, activation).ok()?;
-                    let p1 = read_point(vertices, i1, activation).ok()?;
-                    let p2 = read_point(vertices, i2, activation).ok()?;
+                    let p0 =
+                        read_point(vertices, i0, activation, uvt_orig_vals, uvt_expanded_index)
+                            .ok()?;
+                    let p1 =
+                        read_point(vertices, i1, activation, uvt_orig_vals, uvt_expanded_index)
+                            .ok()?;
+                    let p2 =
+                        read_point(vertices, i2, activation, uvt_orig_vals, uvt_expanded_index)
+                            .ok()?;
 
                     Some((p0, p1, p2))
                 }
@@ -1059,8 +1131,14 @@ fn draw_triangles_internal<'gc>(
 
         let indices = &mut indices.iter();
 
-        while let Some(triangle) = next_triangle(&vertices, indices, activation) {
-            draw_triangle_internal(triangle, drawing, culling);
+        while let Some(triangle) = next_triangle(
+            &vertices,
+            indices,
+            activation,
+            uvt_orig_vals.as_deref(),
+            &mut uvt_expanded_index,
+        ) {
+            draw_triangle_internal(triangle, &mut temp_drawing, culling);
         }
     } else {
         if vertices.length() % 6 != 0 {
@@ -1068,6 +1146,9 @@ fn draw_triangles_internal<'gc>(
         }
 
         let mut vertices = vertices.iter();
+        if let Some(uv_orig_vals) = uvt_orig_vals {
+            uvt_expanded_index = uv_orig_vals.clone();
+        }
 
         fn read_point<'gc>(
             vertices: &mut impl Iterator<Item = Value<'gc>>,
@@ -1108,10 +1189,24 @@ fn draw_triangles_internal<'gc>(
         }
 
         while let Some(triangle) = next_triangle(&mut vertices, activation)? {
-            draw_triangle_internal(triangle, drawing, culling);
+            draw_triangle_internal(triangle, &mut temp_drawing, culling);
         }
     }
 
+    drawing.apply_temp_triangle_drawing(temp_drawing, uvt_data.map(|_| uvt_expanded_index));
+    if uvt_data.is_some()
+        && !matches!(
+            drawing.current_fill().map(|f| f.style()),
+            Some(FillStyle::Bitmap { .. })
+        )
+    {
+        avm2_stub_method!(
+            activation,
+            "flash.display.Graphics",
+            "drawTriangles",
+            "uvtData with non-BitmapData fill"
+        );
+    }
     Ok(())
 }
 

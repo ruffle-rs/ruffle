@@ -92,6 +92,7 @@ pub enum DrawPath<'a> {
         style: &'a FillStyle,
         commands: Vec<DrawCommand>,
         winding_rule: FillRule,
+        uvt_data: Option<Vec<f32>>,
     },
 }
 
@@ -516,6 +517,7 @@ impl<'a> ShapeConverter<'a> {
                 style,
                 commands: path.to_draw_commands().collect(),
                 winding_rule: self.winding_rule,
+                uvt_data: None,
             });
             path.segments.clear();
         }
@@ -1386,6 +1388,7 @@ mod tests {
                 DrawCommand::LineTo(swf::Point::from_pixels(100.0, 100.0)),
             ],
             winding_rule: FillRule::EvenOdd,
+            uvt_data: None,
         }];
         assert_eq!(commands, expected);
     }
@@ -1432,6 +1435,7 @@ mod tests {
                 DrawCommand::LineTo(swf::Point::from_pixels(100.0, 100.0)),
             ],
             winding_rule: FillRule::EvenOdd,
+            uvt_data: None,
         }];
         assert_eq!(commands, expected);
     }
