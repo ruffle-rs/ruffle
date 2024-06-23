@@ -1059,7 +1059,7 @@ impl<'gc> Value<'gc> {
         match self {
             Value::Number(_) => true,
             Value::Integer(_) => true,
-            Value::Object(o) => o.as_primitive().map(|p| p.is_number()).unwrap_or(false),
+            Value::Object(o) => o.as_primitive().map_or(false, |p| p.is_number()),
             _ => false,
         }
     }
@@ -1071,7 +1071,7 @@ impl<'gc> Value<'gc> {
         match self {
             Value::Number(n) => *n == (*n as u32 as f64),
             Value::Integer(i) => *i >= 0,
-            Value::Object(o) => o.as_primitive().map(|p| p.is_u32()).unwrap_or(false),
+            Value::Object(o) => o.as_primitive().map_or(false, |p| p.is_u32()),
             _ => false,
         }
     }
@@ -1083,7 +1083,7 @@ impl<'gc> Value<'gc> {
         match self {
             Value::Number(n) => *n == (*n as i32 as f64),
             Value::Integer(_) => true,
-            Value::Object(o) => o.as_primitive().map(|p| p.is_i32()).unwrap_or(false),
+            Value::Object(o) => o.as_primitive().map_or(false, |p| p.is_i32()),
             _ => false,
         }
     }
