@@ -25,6 +25,16 @@ impl ColorTransform {
         a_add: 0,
     };
 
+    pub fn multiply_from(color: Color) -> Self {
+        Self {
+            r_multiply: Fixed8::from_f32(f32::from(color.r) / 255.0),
+            g_multiply: Fixed8::from_f32(f32::from(color.g) / 255.0),
+            b_multiply: Fixed8::from_f32(f32::from(color.b) / 255.0),
+            a_multiply: Fixed8::from_f32(f32::from(color.a) / 255.0),
+            ..Default::default()
+        }
+    }
+
     /// Returns the multiplicative component of this color transform in RGBA order
     /// with the values normalized [0.0, 1.0].
     pub fn mult_rgba_normalized(&self) -> [f32; 4] {
