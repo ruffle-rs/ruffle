@@ -27,7 +27,7 @@
         "@types/mocha": "^10.0.7",
         "eslint": "^8.57.0",
         "eslint-plugin-jsdoc": "^48.4.0",
-        "mocha": "^10.4.0",
+        "mocha": "^10.5.0",
         "replace-in-file": "^8.0.0",
         "typedoc": "^0.26.2",
         "typescript": "^5.5.2",
