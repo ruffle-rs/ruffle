@@ -73,9 +73,18 @@ async function queryTabStatus(
             type: "ping",
         });
     } catch (e) {
-        listener("status_result_protected");
-        reloadButton.disabled = true;
-        return;
+        // Try again after 0.2 seconds, Firefox takes some time to grant temporary
+        // host permissions when the <all_urls> permission has not been granted.
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        try {
+            response = await utils.tabs.sendMessage(activeTab.id!, {
+                type: "ping",
+            });
+        } catch (e) {
+            listener("status_result_protected");
+            reloadButton.disabled = true;
+            return;
+        }
     }
 
     if (!response) {
