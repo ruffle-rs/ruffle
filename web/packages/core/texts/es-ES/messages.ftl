@@ -14,6 +14,15 @@ enable-hardware-acceleration = Al parecer, la aceleración de hardware no esta h
 view-error-details = Ver los detalles del error
 open-in-new-tab = Abrir en una pestaña nueva
 click-to-unmute = Haz clic para dejar de silenciar
+clipboard-message-title = Para copiar y pegar en Ruffle
+clipboard-message-description =
+    { $variant ->
+       *[unsupported] Este navegador no apoya acceso completo al portapapeles,
+        [access-denied] Se ha denegado el acceso al portapapeles,
+    } pero siempre se puede utilizar estos atajos:
+clipboard-message-copy = Para copiar
+clipboard-message-cut = Para cortar
+clipboard-message-paste = Para pegar
 error-file-protocol =
     Parece que está ejecutando Ruffle en el protocolo "archivo:".
     Esto no funciona porque los navegadores bloquean que muchas características funcionen por razones de seguridad.

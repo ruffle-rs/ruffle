@@ -14,6 +14,15 @@ enable-hardware-acceleration = يبدو أن تسارع الأجهزة غير م
 view-error-details = عرض تفاصيل الخطأ
 open-in-new-tab = فتح في علامة تبويب جديدة
 click-to-unmute = انقر لإلغاء الكتم
+clipboard-message-title = النسخ واللصق في Ruffle
+clipboard-message-description =
+    {$variant ->
+       *[unsupported] متصفحك لا يدعم الوصول للحافظة الكاملة،
+        [access-denied] تم رفض الوصول للحافظة،
+    } لكن يمكنك إستخدام هذه الاختصارات دائمًا:
+clipboard-message-copy = { " " } للنسخ
+clipboard-message-cut = { " " } للقص
+clipboard-message-paste = { " " } للصق
 error-file-protocol =
     يبدو أنك تقوم بتشغيل Ruffle على بروتوكول "الملف:".
     هذا لن يعمل لأن المتصفحات تمنع العديد من الميزات من العمل لأسباب أمنية.
