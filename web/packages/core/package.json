@@ -24,14 +24,14 @@
         "@fluent/bundle": "^0.18.0",
         "@fluent/langneg": "^0.7.0",
         "@tsconfig/strictest": "^2.0.5",
-        "@types/mocha": "^10.0.6",
+        "@types/mocha": "^10.0.7",
         "eslint": "^8.57.0",
-        "eslint-plugin-jsdoc": "^48.2.12",
+        "eslint-plugin-jsdoc": "^48.4.0",
         "mocha": "^10.4.0",
         "replace-in-file": "^7.2.0",
-        "typedoc": "^0.25.13",
-        "typescript": "^5.4.5",
-        "tsx": "^4.15.6"
+        "typedoc": "^0.26.2",
+        "typescript": "^5.5.2",
+        "tsx": "^4.15.7"
     },
     "sideEffects": false
 }

@@ -25,17 +25,17 @@
         "mocha": "^10.4.0",
         "prettier": "^3.3.2",
         "stylelint": "^16.6.1",
-        "stylelint-config-standard": "^36.0.0",
+        "stylelint-config-standard": "^36.0.1",
         "stylelint-prettier": "^5.0.0",
         "ts-loader": "^9.5.1",
-        "typescript": "^5.4.5",
+        "typescript": "^5.5.2",
         "wdio-chromedriver-service": "^8.1.1",
         "webpack": "^5.92.1",
         "webpack-cli": "^5.1.4",
-        "tsx": "^4.15.6"
+        "tsx": "^4.15.7"
     },
     "optionalDependencies": {
-        "chromedriver": "^126.0.2"
+        "chromedriver": "^126.0.3"
     },
     "scripts": {
         "build": "npm run build --workspace=ruffle-core && npm run build --workspace=ruffle-demo --workspace=ruffle-extension --workspace=ruffle-selfhosted",
