@@ -55,7 +55,7 @@ async function disable() {
 function onAdded(permissions: chrome.permissions.Permissions) {
     if (
         permissions.origins &&
-        permissions.origins.length === 1 &&
+        permissions.origins.length >= 1 &&
         permissions.origins[0] !== "<all_urls>"
     ) {
         utils.tabs.reload();
