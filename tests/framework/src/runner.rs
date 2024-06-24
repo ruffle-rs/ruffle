@@ -236,11 +236,11 @@ impl TestRunner {
                     },
                 },
                 AutomatedEvent::KeyDown { key_code } => PlayerEvent::KeyDown {
-                    key_code: KeyCode::from_u8(*key_code).expect("Invalid keycode in test"),
+                    key_code: KeyCode::from_code(*key_code),
                     key_char: None,
                 },
                 AutomatedEvent::KeyUp { key_code } => PlayerEvent::KeyUp {
-                    key_code: KeyCode::from_u8(*key_code).expect("Invalid keycode in test"),
+                    key_code: KeyCode::from_code(*key_code),
                     key_char: None,
                 },
                 AutomatedEvent::TextInput { codepoint } => PlayerEvent::TextInput {

@@ -239,7 +239,7 @@ impl<'gc> FocusTracker<'gc> {
         };
 
         let mut activation = Activation::from_nothing(context);
-        let key_code = key_code.map(|k| k as u8).unwrap_or_default();
+        let key_code = key_code.map(|k| k.value()).unwrap_or_default();
         let event =
             EventObject::focus_event(&mut activation, event_type, true, related_object, key_code);
         Avm2::dispatch_event(activation.context, event, target);
@@ -300,7 +300,7 @@ impl<'gc> FocusTracker<'gc> {
         };
 
         if next.is_some() {
-            self.set_by_key(next.copied(), KeyCode::Tab, context);
+            self.set_by_key(next.copied(), KeyCode::TAB, context);
             self.update_highlight(context);
         }
     }
@@ -528,20 +528,20 @@ pub enum NavigationDirection {
 impl NavigationDirection {
     pub fn from_key_code(key_code: KeyCode) -> Option<Self> {
         Some(match key_code {
-            KeyCode::Up => Self::Up,
-            KeyCode::Right => Self::Right,
-            KeyCode::Down => Self::Down,
-            KeyCode::Left => Self::Left,
+            KeyCode::UP => Self::Up,
+            KeyCode::RIGHT => Self::Right,
+            KeyCode::DOWN => Self::Down,
+            KeyCode::LEFT => Self::Left,
             _ => return None,
         })
     }
 
     fn key(self) -> KeyCode {
         match self {
-            Self::Up => KeyCode::Up,
-            Self::Right => KeyCode::Right,
-            Self::Down => KeyCode::Down,
-            Self::Left => KeyCode::Left,
+            Self::Up => KeyCode::UP,
+            Self::Right => KeyCode::RIGHT,
+            Self::Down => KeyCode::DOWN,
+            Self::Left => KeyCode::LEFT,
         }
     }
 }
