@@ -344,6 +344,16 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             filter: var(--modal-foreground-filter);
         }`,
 
+        `.modal-button {
+            display: inline-block;
+            background-color: rgba(var(--modal-foreground-rgb), 0.2);
+            color: rgb(var(--modal-foreground-rgb));
+            text-decoration: none;
+            padding: 4px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+        }`,
+
         `:not(#volume-controls) > .close-modal {
             position: absolute;
             top: 14px;
@@ -352,15 +362,8 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
 
         `.general-save-options {
             text-align: center;
-            padding: 4px 0 12px;
+            padding-bottom: 8px;
             border-bottom: 2px solid rgba(var(--modal-foreground-rgb), 0.3);
-        }`,
-
-        `#backup-saves {
-            background-color: rgba(var(--modal-foreground-rgb), 0.2);
-            padding: 4px 8px;
-            border-radius: 6px;
-            cursor: pointer;
         }`,
 
         `#local-saves {
@@ -469,13 +472,16 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             user-select: none;
         }`,
 
-        `.acceleration-link {
-            color: var(--ruffle-blue);
-            text-decoration: none;
+        `#hardware-acceleration-modal .modal-area {
+            text-align: center;
+            padding: 16px 48px;
+            width: 95%;
+            box-sizing: border-box;
         }`,
 
-        `.acceleration-link:hover {
-            text-decoration: underline;
+        `#acceleration-text {
+            display: block;
+            margin-bottom: 8px;
         }`,
 
         /* Handle preferred color scheme. */
@@ -829,7 +835,7 @@ const generalSaveOptions = createElement(
     undefined,
     "general-save-options",
 );
-const backupSaves = createElement("span", "backup-saves");
+const backupSaves = createElement("span", undefined, "modal-button");
 const localSaves = createElement("table", "local-saves");
 
 // Volume control elements
@@ -873,12 +879,14 @@ const hardwareModal = createElement(
 );
 const hardwareModalArea = createElement("div", undefined, "modal-area");
 const hardwareModalClose = createElement("span", undefined, "close-modal");
+const hardwareModalText = createElement("span", "acceleration-text");
+hardwareModalText.textContent = text("enable-hardware-acceleration");
 const hardwareModalLink = document.createElement("a");
 hardwareModalLink.href =
     "https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users#chrome-hardware-acceleration";
 hardwareModalLink.target = "_blank";
-hardwareModalLink.className = "acceleration-link";
-hardwareModalLink.textContent = text("enable-hardware-acceleration");
+hardwareModalLink.className = "modal-button";
+hardwareModalLink.textContent = text("enable-hardware-acceleration-link");
 
 // Clipboard message
 const clipboardModal = createElement("div", "clipboard-modal", "modal hidden");
@@ -982,6 +990,7 @@ appendElement(videoModalArea, videoHolder);
 appendElement(ruffleShadowTemplate.content, hardwareModal);
 appendElement(hardwareModal, hardwareModalArea);
 appendElement(hardwareModalArea, hardwareModalClose);
+appendElement(hardwareModalArea, hardwareModalText);
 appendElement(hardwareModalArea, hardwareModalLink);
 // Clipboard modal append
 appendElement(ruffleShadowTemplate.content, clipboardModal);
