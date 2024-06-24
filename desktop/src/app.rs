@@ -346,8 +346,8 @@ impl App {
                             // but we may want to be better at this in the future.
                             let key_char = event.text.clone().and_then(|text| text.chars().last());
 
-                            match &event.state {
-                                ElementState::Pressed => {
+                            match (key_code, &event.state) {
+                                (Some(key_code), ElementState::Pressed) => {
                                     self.player
                                         .handle_event(PlayerEvent::KeyDown { key_code, key_char });
                                     if let Some(control_code) =
@@ -363,10 +363,11 @@ impl App {
                                         }
                                     }
                                 }
-                                ElementState::Released => {
+                                (Some(key_code), ElementState::Released) => {
                                     self.player
                                         .handle_event(PlayerEvent::KeyUp { key_code, key_char });
                                 }
+                                _ => {}
                             };
                             check_redraw = true;
                         }

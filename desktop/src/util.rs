@@ -59,14 +59,16 @@ pub fn winit_to_ruffle_text_control(
 
 /// Convert a winit event into a Ruffle `KeyCode`.
 /// Return `KeyCode::Unknown` if there is no matching Flash key code.
-pub fn winit_to_ruffle_key_code(event: &KeyEvent) -> KeyCode {
-    match event.logical_key.as_ref() {
+pub fn winit_to_ruffle_key_code(event: &KeyEvent) -> Option<KeyCode> {
+    let key_code = match event.logical_key.as_ref() {
         Key::Named(NamedKey::Backspace) => KeyCode::Backspace,
         Key::Named(NamedKey::Tab) => KeyCode::Tab,
         Key::Named(NamedKey::Enter) => KeyCode::Return,
         Key::Named(NamedKey::Shift) => KeyCode::Shift,
         Key::Named(NamedKey::Control) => KeyCode::Control,
         Key::Named(NamedKey::Alt) => KeyCode::Alt,
+        // AltGr is ignored by FP
+        Key::Named(NamedKey::AltGraph) => return None,
         Key::Named(NamedKey::CapsLock) => KeyCode::CapsLock,
         Key::Named(NamedKey::Escape) => KeyCode::Escape,
         Key::Named(NamedKey::Space) => KeyCode::Space,
@@ -170,7 +172,8 @@ pub fn winit_to_ruffle_key_code(event: &KeyEvent) -> KeyCode {
         Key::Named(NamedKey::F23) => KeyCode::F23,
         Key::Named(NamedKey::F24) => KeyCode::F24,
         _ => KeyCode::Unknown,
-    }
+    };
+    Some(key_code)
 }
 
 pub fn gilrs_button_to_gamepad_button(button: Button) -> Option<GamepadButton> {
