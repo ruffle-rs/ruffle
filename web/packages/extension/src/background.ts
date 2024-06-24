@@ -52,6 +52,16 @@ async function disable() {
     }
 }
 
+function onAdded(permissions: chrome.permissions.Permissions) {
+    if (
+        permissions.origins &&
+        permissions.origins.length === 1 &&
+        permissions.origins[0] !== "<all_urls>"
+    ) {
+        utils.tabs.reload();
+    }
+}
+
 function onMessage(
     request: unknown,
     _sender: chrome.runtime.MessageSender,
@@ -96,3 +106,4 @@ async function handleInstalled() {
 }
 
 utils.runtime.onInstalled.addListener(handleInstalled);
+utils.permissions.onAdded.addListener(onAdded);

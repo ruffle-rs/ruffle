@@ -200,16 +200,11 @@ window.addEventListener("DOMContentLoaded", async () => {
         !(await utils.hasHostPermissionForActiveTab())
     ) {
         permissionsButton.classList.remove("hidden");
-        permissionsButton.addEventListener("click", async () => {
-            const grant = await utils.permissions.request({
+        permissionsButton.addEventListener("click", () => {
+            utils.permissions.request({
                 origins: [url.toString()],
             });
-            if (grant) {
-                // Unfortunately, due to the way the popup disappears, this will
-                // only work if the popup and the permission dialog happen to overlap
-                await utils.tabs.reload(activeTab.id!);
-                window.close();
-            }
+            window.close();
         });
     }
 });
