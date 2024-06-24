@@ -104,32 +104,6 @@ pub fn winit_to_ruffle_key_code(event: &KeyEvent) -> Option<KeyCode> {
         Key::Character("7") | Key::Character("&") => KeyCode::Key7,
         Key::Character("8") | Key::Character("*") => KeyCode::Key8,
         Key::Character("9") | Key::Character("(") => KeyCode::Key9,
-        Key::Character("a") => KeyCode::A,
-        Key::Character("b") => KeyCode::B,
-        Key::Character("c") => KeyCode::C,
-        Key::Character("d") => KeyCode::D,
-        Key::Character("e") => KeyCode::E,
-        Key::Character("f") => KeyCode::F,
-        Key::Character("g") => KeyCode::G,
-        Key::Character("h") => KeyCode::H,
-        Key::Character("i") => KeyCode::I,
-        Key::Character("j") => KeyCode::J,
-        Key::Character("k") => KeyCode::K,
-        Key::Character("l") => KeyCode::L,
-        Key::Character("m") => KeyCode::M,
-        Key::Character("n") => KeyCode::N,
-        Key::Character("o") => KeyCode::O,
-        Key::Character("p") => KeyCode::P,
-        Key::Character("q") => KeyCode::Q,
-        Key::Character("r") => KeyCode::R,
-        Key::Character("s") => KeyCode::S,
-        Key::Character("t") => KeyCode::T,
-        Key::Character("u") => KeyCode::U,
-        Key::Character("v") => KeyCode::V,
-        Key::Character("w") => KeyCode::W,
-        Key::Character("x") => KeyCode::X,
-        Key::Character("y") => KeyCode::Y,
-        Key::Character("z") => KeyCode::Z,
         Key::Character(";") | Key::Character(":") => KeyCode::Semicolon,
         Key::Character("=") | Key::Character("+") => KeyCode::Equals,
         Key::Character(",") | Key::Character("<") => KeyCode::Comma,
@@ -178,9 +152,36 @@ pub fn winit_to_ruffle_key_code(event: &KeyEvent) -> Option<KeyCode> {
         Key::Named(NamedKey::F22) => KeyCode::F22,
         Key::Named(NamedKey::F23) => KeyCode::F23,
         Key::Named(NamedKey::F24) => KeyCode::F24,
+        Key::Character(char) => {
+            // Handle alphabetic characters
+            alpha_to_ruffle_key_code(char).unwrap_or(KeyCode::Unknown)
+        }
         _ => KeyCode::Unknown,
     };
     Some(key_code)
+}
+
+fn alpha_to_ruffle_key_code(char: &str) -> Option<KeyCode> {
+    if char.len() != 1 {
+        return None;
+    }
+
+    let char = char.chars().next()?;
+
+    if char.is_ascii_alphabetic() {
+        // ASCII alphabetic characters are all mapped to
+        // their respective KeyCodes, which happen to have
+        // the same numerical value as uppercase characters.
+        return KeyCode::from_u8(char.to_ascii_uppercase() as u8);
+    }
+
+    if !char.is_ascii() {
+        // TODO Non-ASCII inputs have codes equal to their Unicode codes and yes,
+        //   they overlap with other codes, so that typing '½' and '-' both produce 189.
+        return None;
+    }
+
+    None
 }
 
 pub fn gilrs_button_to_gamepad_button(button: Button) -> Option<GamepadButton> {
