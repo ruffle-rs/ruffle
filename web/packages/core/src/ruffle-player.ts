@@ -285,7 +285,7 @@ export class RufflePlayer extends HTMLElement {
         this.addVolumeControlsJavaScript(this.volumeControls);
 
         const backupSaves = <HTMLElement>(
-            this.saveManager.querySelector("#backup-saves")
+            this.saveManager.querySelector(".modal-button")
         );
         if (backupSaves) {
             backupSaves.addEventListener("click", this.backupSaves.bind(this));
