@@ -28,7 +28,7 @@
         "eslint": "^8.57.0",
         "eslint-plugin-jsdoc": "^48.4.0",
         "mocha": "^10.4.0",
-        "replace-in-file": "^7.2.0",
+        "replace-in-file": "^8.0.0",
         "typedoc": "^0.26.2",
         "typescript": "^5.5.2",
         "tsx": "^4.15.7"

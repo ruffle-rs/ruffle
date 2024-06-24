@@ -1,4 +1,4 @@
-import replace from "replace-in-file";
+import { replaceInFileSync } from "replace-in-file";
 import fs from "fs";
 
 const bundledTexts: { [name: string]: { [key: string]: string } } = {};
@@ -40,4 +40,4 @@ const options = {
     to: [JSON.stringify(bundledTexts, null, 2)],
 };
 
-replace.sync(options);
+replaceInFileSync(options);
