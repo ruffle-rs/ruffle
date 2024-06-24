@@ -1,4 +1,4 @@
-import replace from "replace-in-file";
+import { replaceInFileSync } from "replace-in-file";
 import childProcess from "child_process";
 import fs from "fs";
 import path from "path";
@@ -76,4 +76,4 @@ const options = {
     to: [versionNumber, versionName, versionChannel, buildDate, commitHash],
 };
 
-replace.sync(options);
+replaceInFileSync(options);

@@ -1,4 +1,4 @@
-import replace from "replace-in-file";
+import { replaceInFileSync } from "replace-in-file";
 import fs from "fs";
 
 // Search-and-replace the manual polyfill injection with the actual code it
@@ -9,7 +9,7 @@ const pluginPolyfillSource = fs
     .replaceAll("\n", "\\n")
     .replaceAll('"', '\\"');
 
-replace.sync({
+replaceInFileSync({
     files: "./assets/dist/content.js",
     from: [/%PLUGIN_POLYFILL_SOURCE%/g],
     to: pluginPolyfillSource,
