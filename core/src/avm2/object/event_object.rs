@@ -136,12 +136,12 @@ impl<'gc> EventObject<'gc> {
                     activation
                         .context
                         .input
-                        .is_key_down(KeyCode::Control)
+                        .is_key_down(KeyCode::CONTROL)
                         .into(),
                     // altKey
-                    activation.context.input.is_key_down(KeyCode::Alt).into(),
+                    activation.context.input.is_key_down(KeyCode::ALT).into(),
                     // shiftKey
-                    activation.context.input.is_key_down(KeyCode::Shift).into(),
+                    activation.context.input.is_key_down(KeyCode::SHIFT).into(),
                     // buttonDown
                     activation.context.input.is_key_down(button.into()).into(),
                     // delta
@@ -318,13 +318,13 @@ impl<'gc> EventObject<'gc> {
         event_type: S,
         cancelable: bool,
         related_object: Option<InteractiveObject<'gc>>,
-        key_code: u8,
+        key_code: u32,
     ) -> Object<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
         let event_type: AvmString<'gc> = event_type.into();
-        let shift_key = activation.context.input.is_key_down(KeyCode::Shift);
+        let shift_key = activation.context.input.is_key_down(KeyCode::SHIFT);
 
         let class = activation.avm2().classes().focusevent;
         class

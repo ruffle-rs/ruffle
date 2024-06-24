@@ -104,7 +104,7 @@ pub trait UiBackend: Downcast {
     ///
     /// You may call `register` any amount of times with any amount of found device fonts.
     /// If you do not call `register` with any fonts that match the request,
-    /// then the font will simply be marked as not found - this may or may not fall back to another font.  
+    /// then the font will simply be marked as not found - this may or may not fall back to another font.
     fn load_device_font(
         &self,
         name: &str,
@@ -183,7 +183,7 @@ impl InputManager {
         Self {
             keys_down: HashSet::new(),
             keys_toggled: HashSet::new(),
-            last_key: KeyCode::Unknown,
+            last_key: KeyCode::UNKNOWN,
             last_char: None,
             last_text_control: None,
             last_click: None,
@@ -192,13 +192,13 @@ impl InputManager {
 
     fn add_key(&mut self, key_code: KeyCode) {
         self.last_key = key_code;
-        if key_code != KeyCode::Unknown {
+        if key_code != KeyCode::UNKNOWN {
             self.keys_down.insert(key_code);
         }
     }
 
     fn toggle_key(&mut self, key_code: KeyCode) {
-        if key_code == KeyCode::Unknown || self.keys_down.contains(&key_code) {
+        if key_code == KeyCode::UNKNOWN || self.keys_down.contains(&key_code) {
             return;
         }
         if self.keys_toggled.contains(&key_code) {
@@ -210,7 +210,7 @@ impl InputManager {
 
     fn remove_key(&mut self, key_code: KeyCode) {
         self.last_key = key_code;
-        if key_code != KeyCode::Unknown {
+        if key_code != KeyCode::UNKNOWN {
             self.keys_down.remove(&key_code);
         }
     }
