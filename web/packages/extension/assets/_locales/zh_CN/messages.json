@@ -94,5 +94,20 @@
     },
     "settings_saved": {
         "message": "设置已保存"
+    },
+    "onboarding_page": {
+        "message": "引导页面"
+    },
+    "permissions_grant": {
+        "message": "允许Ruffle在所有网站上访问我的数据"
+    },
+    "permissions_not_granted": {
+        "message": "你需要在每个你想要使用 Ruffle 的网站上点击 Ruffle 图标"
+    },
+    "grant_single_site_permission": {
+        "message": "永久在此网站启用"
+    },
+    "permissions_explanation": {
+        "message": "Ruffle 扩展程序在能够访问所有网站的数据时效果最佳。这使得它可以在任何网站首次加载时运行，从而立即使进行 Flash Player 检测的网站上的 Flash 内容运行。这也使得它能够从网络上的其他位置加载 SWF 文件到其内部播放器页面。如果你不授予此权限，你将需要在每个想使用 Ruffle 的网站上手动启用 Ruffle，方法是点击扩展图标并为该网站启用它。"
     }
 }
