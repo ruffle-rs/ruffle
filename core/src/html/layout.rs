@@ -283,6 +283,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             box_count += 1;
         }
 
+        if self.boxes.is_empty() {
+            self.append_text(WStr::empty(), end, end, span);
+        }
+
         let mut line_bounds = line_bounds.unwrap_or_default();
 
         let left_adjustment =
@@ -334,10 +338,6 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             }
 
             box_count += 1;
-        }
-
-        if self.boxes.is_empty() {
-            self.append_text(WStr::empty(), end, end, span);
         }
 
         self.append_underlines();
