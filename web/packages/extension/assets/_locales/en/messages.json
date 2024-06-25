@@ -11,6 +11,9 @@
     "settings_autostart": {
         "message": "Autoplay Flash content (click to unmute)"
     },
+    "settings_swf_takeover": {
+        "message": "Redirect SWF links to SWF Player"
+    },
     "settings_log_level": {
         "message": "Log level"
     },

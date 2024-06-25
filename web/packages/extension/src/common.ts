@@ -6,6 +6,7 @@ export interface Options extends BaseLoadOptions {
     ignoreOptout: boolean;
     autostart: boolean;
     showReloadButton: boolean;
+    swfTakeover: boolean;
 }
 
 interface OptionElement<T> {

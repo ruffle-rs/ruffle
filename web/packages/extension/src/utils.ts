@@ -7,6 +7,7 @@ const DEFAULT_OPTIONS: Required<Options> = {
     ignoreOptout: false,
     autostart: false,
     showReloadButton: false,
+    swfTakeover: true,
 };
 
 export let i18n: typeof browser.i18n | typeof chrome.i18n;
