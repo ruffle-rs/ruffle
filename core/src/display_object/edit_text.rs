@@ -1008,15 +1008,17 @@ impl<'gc> EditText<'gc> {
         height: Twips,
         color: Color,
     ) {
-        let cursor_width = Twips::from_pixels(1.0);
-        let caret = context.transform_stack.transform().matrix
-            * Matrix::create_box(
-                cursor_width.to_pixels() as f32,
+        let mut caret = context.transform_stack.transform().matrix
+            * Matrix::create_box_with_rotation(
+                1.0,
                 height.to_pixels() as f32,
-                x - cursor_width,
+                std::f32::consts::FRAC_PI_2,
+                x,
                 Twips::ZERO,
             );
-        context.commands.draw_rect(color, caret);
+        let pixel_snapping = EditTextPixelSnapping::new(context.stage.quality());
+        pixel_snapping.apply(&mut caret);
+        context.commands.draw_line(color, caret);
     }
 
     /// Attempts to bind this text field to a property of a display object.
