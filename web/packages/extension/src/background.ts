@@ -61,7 +61,7 @@ async function isHeaderConditionSupported() {
     }
 }
 
-async function enable() {
+async function enableSWFTakeover() {
     // Checks if the responseHeaders condition is supported and not behind a disabled flag.
     if (utils.declarativeNetRequest && (await isHeaderConditionSupported())) {
         const playerPage = utils.runtime.getURL("/player.html");
@@ -142,6 +142,21 @@ async function enable() {
             addRules: rules,
         });
     }
+}
+
+async function disableSWFTakeover() {
+    if (utils.declarativeNetRequest) {
+        await utils.declarativeNetRequest.updateDynamicRules({
+            removeRuleIds: [1, 2, 3],
+        });
+    }
+}
+
+async function enable() {
+    const { swfTakeover } = await utils.getOptions();
+    if (swfTakeover) {
+        await enableSWFTakeover();
+    }
     if (
         !utils.scripting ||
         (utils.scripting.ExecutionWorld && !utils.scripting.ExecutionWorld.MAIN)
@@ -179,11 +194,6 @@ async function enable() {
 }
 
 async function disable() {
-    if (utils.declarativeNetRequest) {
-        await utils.declarativeNetRequest.updateDynamicRules({
-            removeRuleIds: [1, 2, 3],
-        });
-    }
     if (
         !utils.scripting ||
         (utils.scripting.ExecutionWorld && !utils.scripting.ExecutionWorld.MAIN)
@@ -195,6 +205,7 @@ async function disable() {
             ids: ["plugin-polyfill", "4399"],
         });
     }
+    await disableSWFTakeover();
 }
 
 async function onAdded(permissions: chrome.permissions.Permissions) {
@@ -224,9 +235,12 @@ function onMessage(
 }
 
 (async () => {
-    const { ruffleEnable } = await utils.getOptions();
+    const { ruffleEnable, swfTakeover } = await utils.getOptions();
     if (ruffleEnable) {
         await enable();
+    }
+    if (!swfTakeover) {
+        await disableSWFTakeover();
     }
 })();
 
@@ -242,6 +256,13 @@ utils.storage.onChanged.addListener(async (changes, namespace) => {
             await enable();
         } else {
             await disable();
+        }
+    }
+    if (namespace === "sync" && "swfTakeover" in changes) {
+        if (changes["swfTakeover"]!.newValue) {
+            await enableSWFTakeover();
+        } else {
+            await disableSWFTakeover();
         }
     }
 });
