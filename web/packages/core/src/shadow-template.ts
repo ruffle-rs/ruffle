@@ -484,6 +484,15 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
             margin-bottom: 8px;
         }`,
 
+        `#clipboard-modal h2 {
+            margin-top: 4px;
+            margin-right: 36px;
+        }`,
+
+        `#clipboard-modal p:last-child {
+            margin-bottom: 2px;
+        }`,
+
         /* Handle preferred color scheme. */
         `@media (prefers-color-scheme: light) {
             :host {
@@ -892,7 +901,6 @@ hardwareModalLink.textContent = text("enable-hardware-acceleration-link");
 const clipboardModal = createElement("div", "clipboard-modal", "modal hidden");
 const clipboardModalArea = createElement("div", undefined, "modal-area");
 const clipboardModalClose = createElement("span", undefined, "close-modal");
-clipboardModalClose.textContent = "\u00D7";
 const clipboardModalHeading = createElement("h2", undefined);
 clipboardModalHeading.textContent = text("clipboard-message-title");
 const clipboardModalTextDescription = createElement(
