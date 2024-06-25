@@ -2416,6 +2416,18 @@ export class RufflePlayer extends HTMLElement {
             return 0;
         }
     }
+
+    avmOutputJson(switcher: number): void {
+        if (this.instance) {
+            this.instance.avm_output_json(switcher);
+        }
+    }
+
+    avmOutputJsonCode(code: number): void {
+        if (this.instance) {
+            this.instance.avm_output_json_code(code);
+        }
+    }
 }
 
 /**

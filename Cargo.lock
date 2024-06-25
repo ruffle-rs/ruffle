@@ -4377,6 +4377,7 @@ dependencies = [
  "url",
  "wasm-bindgen-futures",
  "weak-table",
+ "web-sys",
  "web-time 1.1.0",
 ]
 
@@ -5184,6 +5185,7 @@ dependencies = [
  "lzma-rs",
  "num-derive",
  "num-traits",
+ "serde",
  "simple_asn1",
 ]
 
