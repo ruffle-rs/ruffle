@@ -2321,26 +2321,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             ..Default::default()
         });
 
-        if edit_text.layout.boxes_iter().next().is_none()
-            && !edit_text.flags.contains(EditTextFlag::READ_ONLY)
         {
-            // TODO should not be possible
-            let visible_selection = if self.has_focus() {
-                edit_text.selection
-            } else {
-                None
-            };
-            if let Some(visible_selection) = visible_selection {
-                if visible_selection.is_caret()
-                    && visible_selection.start() == 0
-                    && !visible_selection.blinks_now()
-                {
-                    let format = edit_text.text_spans.default_format();
-                    let caret_height = format.size.map(Twips::from_pixels).unwrap_or_default();
-                    self.render_caret(context, Twips::ZERO, caret_height, Color::BLACK);
-                }
-            }
-        } else {
             let draw_boxes = edit_text.flags.contains(EditTextFlag::DRAW_LAYOUT_BOXES);
             if draw_boxes {
                 context.draw_rect_outline(
