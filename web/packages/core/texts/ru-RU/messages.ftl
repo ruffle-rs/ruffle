@@ -18,7 +18,7 @@ clipboard-message-title = Копирование и вставка в Ruffle
 clipboard-message-description =
     { $variant ->
        *[unsupported] Ваш браузер не поддерживает полный доступ к буферу обмена.
-        [access-denied]  Ваш браузер не разрешает доступ к буферу обмена.
+        [access-denied]  Доступ к буферу обмена был отклонён.
     } Используйте сочетания клавиш для вырезания, копирования и вставки:
 clipboard-message-copy = { " " } копировать
 clipboard-message-cut = { " " } вырезать
