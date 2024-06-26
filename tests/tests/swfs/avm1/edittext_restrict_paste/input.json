@@ -1,17 +1,17 @@
 [
     { "type": "SetClipboardText", "text": "abc" },
     { "type": "TextControl", "code": "Paste" },
-    { "type": "KeyDown", "key_code": 27 },
+    { "type": "KeyDown", "key": "Escape" },
     { "type": "SetClipboardText", "text": "aaa" },
     { "type": "TextControl", "code": "Paste" },
-    { "type": "KeyDown", "key_code": 27 },
+    { "type": "KeyDown", "key": "Escape" },
     { "type": "SetClipboardText", "text": "aAbBcCdD" },
     { "type": "TextControl", "code": "Paste" },
-    { "type": "KeyDown", "key_code": 27 },
+    { "type": "KeyDown", "key": "Escape" },
     { "type": "SetClipboardText", "text": "aaaBBCC" },
     { "type": "TextControl", "code": "Paste" },
-    { "type": "KeyDown", "key_code": 27 },
+    { "type": "KeyDown", "key": "Escape" },
     { "type": "SetClipboardText", "text": "abcabc" },
     { "type": "TextControl", "code": "Paste" },
-    { "type": "KeyDown", "key_code": 27 }
+    { "type": "KeyDown", "key": "Escape" }
 ]

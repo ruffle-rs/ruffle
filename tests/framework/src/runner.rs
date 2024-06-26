@@ -15,7 +15,7 @@ use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Player, PlayerBuilder, PlayerEvent};
 use ruffle_input_format::{
-    AutomatedEvent, InputInjector, MouseButton as InputMouseButton,
+    AutomatedEvent, AutomatedKey, InputInjector, MouseButton as InputMouseButton,
     TextControlCode as InputTextControlCode,
 };
 use ruffle_render::backend::{RenderBackend, ViewportDimensions};
@@ -235,12 +235,12 @@ impl TestRunner {
                         _ => panic!("MouseWheel: expected only one of 'lines' or 'pixels'"),
                     },
                 },
-                AutomatedEvent::KeyDown { key_code } => PlayerEvent::KeyDown {
-                    key_code: KeyCode::from_code(*key_code),
+                AutomatedEvent::KeyDown { key } => PlayerEvent::KeyDown {
+                    key_code: automated_key_to_key_code(*key),
                     key_char: None,
                 },
-                AutomatedEvent::KeyUp { key_code } => PlayerEvent::KeyUp {
-                    key_code: KeyCode::from_code(*key_code),
+                AutomatedEvent::KeyUp { key } => PlayerEvent::KeyUp {
+                    key_code: automated_key_to_key_code(*key),
                     key_char: None,
                 },
                 AutomatedEvent::TextInput { codepoint } => PlayerEvent::TextInput {
@@ -572,5 +572,48 @@ fn assert_text_matches(ruffle: &str, flash: &str) -> Result<()> {
         ))
     } else {
         Ok(())
+    }
+}
+
+fn automated_key_to_key_code(automated_key: AutomatedKey) -> KeyCode {
+    match automated_key {
+        AutomatedKey::Char(ch) => KeyCode::from_code(ch.to_ascii_uppercase() as u32),
+        AutomatedKey::Numpad(ch) => match ch {
+            '0' => KeyCode::NUMPAD_0,
+            '1' => KeyCode::NUMPAD_1,
+            '2' => KeyCode::NUMPAD_2,
+            '3' => KeyCode::NUMPAD_3,
+            '4' => KeyCode::NUMPAD_4,
+            '5' => KeyCode::NUMPAD_5,
+            '6' => KeyCode::NUMPAD_6,
+            '7' => KeyCode::NUMPAD_7,
+            '8' => KeyCode::NUMPAD_8,
+            '9' => KeyCode::NUMPAD_9,
+            '*' => KeyCode::NUMPAD_MULTIPLY,
+            '+' => KeyCode::NUMPAD_ADD,
+            '-' => KeyCode::NUMPAD_SUBTRACT,
+            '.' | ',' => KeyCode::NUMPAD_DECIMAL,
+            '/' => KeyCode::NUMPAD_DIVIDE,
+            ch => panic!("Unknown numpad key: {}", ch),
+        },
+        AutomatedKey::ArrowDown => KeyCode::DOWN,
+        AutomatedKey::ArrowLeft => KeyCode::LEFT,
+        AutomatedKey::ArrowRight => KeyCode::RIGHT,
+        AutomatedKey::ArrowUp => KeyCode::UP,
+        AutomatedKey::Backspace => KeyCode::BACKSPACE,
+        AutomatedKey::CapsLock => KeyCode::CAPS_LOCK,
+        AutomatedKey::Control => KeyCode::CONTROL,
+        AutomatedKey::Delete => KeyCode::DELETE,
+        AutomatedKey::End => KeyCode::END,
+        AutomatedKey::Enter => KeyCode::ENTER,
+        AutomatedKey::Escape => KeyCode::ESCAPE,
+        AutomatedKey::Home => KeyCode::HOME,
+        AutomatedKey::Insert => KeyCode::INSERT,
+        AutomatedKey::PageDown => KeyCode::PAGE_DOWN,
+        AutomatedKey::PageUp => KeyCode::PAGE_UP,
+        AutomatedKey::Shift => KeyCode::SHIFT,
+        AutomatedKey::Space => KeyCode::SPACE,
+        AutomatedKey::Tab => KeyCode::TAB,
+        AutomatedKey::Unknown => KeyCode::UNKNOWN,
     }
 }

@@ -1,6 +1,6 @@
 [
     {
         "type": "KeyDown",
-        "key_code": 32
+        "key": "Space"
     }
 ]

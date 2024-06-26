@@ -1,7 +1,7 @@
 [
     {
         "type": "KeyDown",
-        "key_code": 65
+        "key": { "Char": "a" }
     },
     {
         "type": "MouseDown",
@@ -13,7 +13,7 @@
     },
     {
         "type": "KeyDown",
-        "key_code": 20
+        "key": "CapsLock"
     },
     {
         "type": "MouseUp",
@@ -30,6 +30,6 @@
     },
     {
         "type": "KeyDown",
-        "key_code": 0
+        "key": "Unknown"
     }
 ]
