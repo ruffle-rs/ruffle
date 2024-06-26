@@ -155,6 +155,14 @@ async function displayTabStatus() {
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
+    const data = await utils.storage.sync.get({
+        responseHeadersUnsupported: false,
+    });
+    if (data["responseHeadersUnsupported"]) {
+        document
+            .getElementById("swf_takeover")!
+            .parentElement!.classList.add("hidden");
+    }
     bindOptions((options) => {
         savedOptions = options;
         optionsChanged();

@@ -141,14 +141,18 @@ async function enableSWFTakeover() {
             removeRuleIds: [1, 2, 3],
             addRules: rules,
         });
+    } else {
+        utils.storage.sync.set({ responseHeadersUnsupported: true });
     }
 }
 
 async function disableSWFTakeover() {
-    if (utils.declarativeNetRequest) {
+    if (utils.declarativeNetRequest && (await isHeaderConditionSupported())) {
         await utils.declarativeNetRequest.updateDynamicRules({
             removeRuleIds: [1, 2, 3],
         });
+    } else {
+        utils.storage.sync.set({ responseHeadersUnsupported: true });
     }
 }
 
