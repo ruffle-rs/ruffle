@@ -1,11 +1,17 @@
 use anyhow::{anyhow, Error};
 use gilrs::Button;
-use ruffle_core::events::{GamepadButton, KeyCode, TextControlCode};
+use ruffle_core::events::{
+    GamepadButton, KeyDescriptor, KeyLocation, LogicalKey, NamedKey as RuffleNamedKey, PhysicalKey,
+    TextControlCode,
+};
 use std::path::Path;
 use url::Url;
 use winit::dpi::PhysicalSize;
 use winit::event::{KeyEvent, Modifiers};
-use winit::keyboard::{Key, KeyLocation, NamedKey};
+use winit::keyboard::{
+    Key, KeyCode as WinitKeyCode, KeyLocation as WinitKeyLocation, NamedKey,
+    PhysicalKey as WinitPhysicalKey,
+};
 use winit::window::Window;
 
 /// Converts a winit event to a Ruffle `TextControlCode`.
@@ -55,127 +61,276 @@ pub fn winit_to_ruffle_text_control(
     }
 }
 
-/// Convert a winit event into a Ruffle `KeyCode`.
-/// Return `KeyCode::Unknown` if there is no matching Flash key code.
-pub fn winit_to_ruffle_key_code(event: &KeyEvent) -> Option<KeyCode> {
+pub fn winit_input_to_ruffle_key_descriptor(event: &KeyEvent) -> KeyDescriptor {
+    let physical_key = map_physical_key(event);
+    let logical_key = map_logical_key(event);
+    let key_location = map_key_location(event);
+    KeyDescriptor {
+        physical_key,
+        logical_key,
+        key_location,
+    }
+}
+
+fn map_physical_key(event: &KeyEvent) -> PhysicalKey {
+    match event.physical_key {
+        WinitPhysicalKey::Code(key_code) => match key_code {
+            WinitKeyCode::Backquote => PhysicalKey::Backquote,
+            WinitKeyCode::Backslash => PhysicalKey::Backslash,
+            WinitKeyCode::BracketLeft => PhysicalKey::BracketLeft,
+            WinitKeyCode::BracketRight => PhysicalKey::BracketRight,
+            WinitKeyCode::Comma => PhysicalKey::Comma,
+            WinitKeyCode::Digit0 => PhysicalKey::Digit0,
+            WinitKeyCode::Digit1 => PhysicalKey::Digit1,
+            WinitKeyCode::Digit2 => PhysicalKey::Digit2,
+            WinitKeyCode::Digit3 => PhysicalKey::Digit3,
+            WinitKeyCode::Digit4 => PhysicalKey::Digit4,
+            WinitKeyCode::Digit5 => PhysicalKey::Digit5,
+            WinitKeyCode::Digit6 => PhysicalKey::Digit6,
+            WinitKeyCode::Digit7 => PhysicalKey::Digit7,
+            WinitKeyCode::Digit8 => PhysicalKey::Digit8,
+            WinitKeyCode::Digit9 => PhysicalKey::Digit9,
+            WinitKeyCode::Equal => PhysicalKey::Equal,
+            WinitKeyCode::IntlBackslash => PhysicalKey::IntlBackslash,
+            WinitKeyCode::IntlRo => PhysicalKey::IntlRo,
+            WinitKeyCode::IntlYen => PhysicalKey::IntlYen,
+            WinitKeyCode::KeyA => PhysicalKey::KeyA,
+            WinitKeyCode::KeyB => PhysicalKey::KeyB,
+            WinitKeyCode::KeyC => PhysicalKey::KeyC,
+            WinitKeyCode::KeyD => PhysicalKey::KeyD,
+            WinitKeyCode::KeyE => PhysicalKey::KeyE,
+            WinitKeyCode::KeyF => PhysicalKey::KeyF,
+            WinitKeyCode::KeyG => PhysicalKey::KeyG,
+            WinitKeyCode::KeyH => PhysicalKey::KeyH,
+            WinitKeyCode::KeyI => PhysicalKey::KeyI,
+            WinitKeyCode::KeyJ => PhysicalKey::KeyJ,
+            WinitKeyCode::KeyK => PhysicalKey::KeyK,
+            WinitKeyCode::KeyL => PhysicalKey::KeyL,
+            WinitKeyCode::KeyM => PhysicalKey::KeyM,
+            WinitKeyCode::KeyN => PhysicalKey::KeyN,
+            WinitKeyCode::KeyO => PhysicalKey::KeyO,
+            WinitKeyCode::KeyP => PhysicalKey::KeyP,
+            WinitKeyCode::KeyQ => PhysicalKey::KeyQ,
+            WinitKeyCode::KeyR => PhysicalKey::KeyR,
+            WinitKeyCode::KeyS => PhysicalKey::KeyS,
+            WinitKeyCode::KeyT => PhysicalKey::KeyT,
+            WinitKeyCode::KeyU => PhysicalKey::KeyU,
+            WinitKeyCode::KeyV => PhysicalKey::KeyV,
+            WinitKeyCode::KeyW => PhysicalKey::KeyW,
+            WinitKeyCode::KeyX => PhysicalKey::KeyX,
+            WinitKeyCode::KeyY => PhysicalKey::KeyY,
+            WinitKeyCode::KeyZ => PhysicalKey::KeyZ,
+            WinitKeyCode::Minus => PhysicalKey::Minus,
+            WinitKeyCode::Period => PhysicalKey::Period,
+            WinitKeyCode::Quote => PhysicalKey::Quote,
+            WinitKeyCode::Semicolon => PhysicalKey::Semicolon,
+            WinitKeyCode::Slash => PhysicalKey::Slash,
+            WinitKeyCode::AltLeft => PhysicalKey::AltLeft,
+            WinitKeyCode::AltRight => PhysicalKey::AltRight,
+            WinitKeyCode::Backspace => PhysicalKey::Backspace,
+            WinitKeyCode::CapsLock => PhysicalKey::CapsLock,
+            WinitKeyCode::ContextMenu => PhysicalKey::ContextMenu,
+            WinitKeyCode::ControlLeft => PhysicalKey::ControlLeft,
+            WinitKeyCode::ControlRight => PhysicalKey::ControlRight,
+            WinitKeyCode::Enter => PhysicalKey::Enter,
+            WinitKeyCode::SuperLeft => PhysicalKey::SuperLeft,
+            WinitKeyCode::SuperRight => PhysicalKey::SuperRight,
+            WinitKeyCode::ShiftLeft => PhysicalKey::ShiftLeft,
+            WinitKeyCode::ShiftRight => PhysicalKey::ShiftRight,
+            WinitKeyCode::Space => PhysicalKey::Space,
+            WinitKeyCode::Tab => PhysicalKey::Tab,
+            WinitKeyCode::Convert => PhysicalKey::Unknown,
+            WinitKeyCode::KanaMode => PhysicalKey::Unknown,
+            WinitKeyCode::Lang1 => PhysicalKey::Unknown,
+            WinitKeyCode::Lang2 => PhysicalKey::Unknown,
+            WinitKeyCode::Lang3 => PhysicalKey::Unknown,
+            WinitKeyCode::Lang4 => PhysicalKey::Unknown,
+            WinitKeyCode::Lang5 => PhysicalKey::Unknown,
+            WinitKeyCode::NonConvert => PhysicalKey::Unknown,
+            WinitKeyCode::Delete => PhysicalKey::Delete,
+            WinitKeyCode::End => PhysicalKey::End,
+            WinitKeyCode::Help => PhysicalKey::Unknown,
+            WinitKeyCode::Home => PhysicalKey::Home,
+            WinitKeyCode::Insert => PhysicalKey::Insert,
+            WinitKeyCode::PageDown => PhysicalKey::PageDown,
+            WinitKeyCode::PageUp => PhysicalKey::PageUp,
+            WinitKeyCode::ArrowDown => PhysicalKey::ArrowDown,
+            WinitKeyCode::ArrowLeft => PhysicalKey::ArrowLeft,
+            WinitKeyCode::ArrowRight => PhysicalKey::ArrowRight,
+            WinitKeyCode::ArrowUp => PhysicalKey::ArrowUp,
+            WinitKeyCode::NumLock => PhysicalKey::NumLock,
+            WinitKeyCode::Numpad0 => PhysicalKey::Numpad0,
+            WinitKeyCode::Numpad1 => PhysicalKey::Numpad1,
+            WinitKeyCode::Numpad2 => PhysicalKey::Numpad2,
+            WinitKeyCode::Numpad3 => PhysicalKey::Numpad3,
+            WinitKeyCode::Numpad4 => PhysicalKey::Numpad4,
+            WinitKeyCode::Numpad5 => PhysicalKey::Numpad5,
+            WinitKeyCode::Numpad6 => PhysicalKey::Numpad6,
+            WinitKeyCode::Numpad7 => PhysicalKey::Numpad7,
+            WinitKeyCode::Numpad8 => PhysicalKey::Numpad8,
+            WinitKeyCode::Numpad9 => PhysicalKey::Numpad9,
+            WinitKeyCode::NumpadAdd => PhysicalKey::NumpadAdd,
+            WinitKeyCode::NumpadComma => PhysicalKey::NumpadComma,
+            WinitKeyCode::NumpadDecimal => PhysicalKey::NumpadDecimal,
+            WinitKeyCode::NumpadDivide => PhysicalKey::NumpadDivide,
+            WinitKeyCode::NumpadEnter => PhysicalKey::NumpadEnter,
+            WinitKeyCode::NumpadMultiply => PhysicalKey::NumpadMultiply,
+            WinitKeyCode::NumpadSubtract => PhysicalKey::NumpadSubtract,
+            WinitKeyCode::Escape => PhysicalKey::Escape,
+            WinitKeyCode::Fn => PhysicalKey::Fn,
+            WinitKeyCode::FnLock => PhysicalKey::FnLock,
+            WinitKeyCode::PrintScreen => PhysicalKey::PrintScreen,
+            WinitKeyCode::ScrollLock => PhysicalKey::ScrollLock,
+            WinitKeyCode::Pause => PhysicalKey::Pause,
+            WinitKeyCode::F1 => PhysicalKey::F1,
+            WinitKeyCode::F2 => PhysicalKey::F2,
+            WinitKeyCode::F3 => PhysicalKey::F3,
+            WinitKeyCode::F4 => PhysicalKey::F4,
+            WinitKeyCode::F5 => PhysicalKey::F5,
+            WinitKeyCode::F6 => PhysicalKey::F6,
+            WinitKeyCode::F7 => PhysicalKey::F7,
+            WinitKeyCode::F8 => PhysicalKey::F8,
+            WinitKeyCode::F9 => PhysicalKey::F9,
+            WinitKeyCode::F10 => PhysicalKey::F10,
+            WinitKeyCode::F11 => PhysicalKey::F11,
+            WinitKeyCode::F12 => PhysicalKey::F12,
+            WinitKeyCode::F13 => PhysicalKey::F13,
+            WinitKeyCode::F14 => PhysicalKey::F14,
+            WinitKeyCode::F15 => PhysicalKey::F15,
+            WinitKeyCode::F16 => PhysicalKey::F16,
+            WinitKeyCode::F17 => PhysicalKey::F17,
+            WinitKeyCode::F18 => PhysicalKey::F18,
+            WinitKeyCode::F19 => PhysicalKey::F19,
+            WinitKeyCode::F20 => PhysicalKey::F20,
+            WinitKeyCode::F21 => PhysicalKey::F21,
+            WinitKeyCode::F22 => PhysicalKey::F22,
+            WinitKeyCode::F23 => PhysicalKey::F23,
+            WinitKeyCode::F24 => PhysicalKey::F24,
+            WinitKeyCode::F25 => PhysicalKey::F25,
+            WinitKeyCode::F26 => PhysicalKey::F26,
+            WinitKeyCode::F27 => PhysicalKey::F27,
+            WinitKeyCode::F28 => PhysicalKey::F28,
+            WinitKeyCode::F29 => PhysicalKey::F29,
+            WinitKeyCode::F30 => PhysicalKey::F30,
+            WinitKeyCode::F31 => PhysicalKey::F31,
+            WinitKeyCode::F32 => PhysicalKey::F32,
+            WinitKeyCode::F33 => PhysicalKey::F33,
+            WinitKeyCode::F34 => PhysicalKey::F34,
+            WinitKeyCode::F35 => PhysicalKey::F35,
+            _ => PhysicalKey::Unknown,
+        },
+        WinitPhysicalKey::Unidentified(_) => PhysicalKey::Unknown,
+    }
+}
+
+fn map_logical_key(event: &KeyEvent) -> LogicalKey {
     // Note: it would be tempting to use event.key_without_modifiers() here, but FP
     // does not care about keys without modifiers at all, it does its own mapping,
     // so that on English UK, Shift+3 produces 16+163, not 16+51.
 
-    let is_numpad = event.location == KeyLocation::Numpad;
-    let key_code = match event.logical_key.as_ref() {
-        Key::Named(NamedKey::Backspace) => KeyCode::BACKSPACE,
-        Key::Named(NamedKey::Tab) => KeyCode::TAB,
-        Key::Named(NamedKey::Enter) => KeyCode::ENTER,
-        Key::Named(NamedKey::Shift) => KeyCode::SHIFT,
-        Key::Named(NamedKey::Control) => KeyCode::CONTROL,
-        Key::Named(NamedKey::Alt) => KeyCode::ALT,
-        // AltGr is ignored by FP
-        Key::Named(NamedKey::AltGraph) => return None,
-        Key::Named(NamedKey::CapsLock) => KeyCode::CAPS_LOCK,
-        Key::Named(NamedKey::Escape) => KeyCode::ESCAPE,
-        Key::Named(NamedKey::Space) => KeyCode::SPACE,
-        // Note: FP DOES care about modifiers for numpad keys,
-        // so that Shift+Numpad7 produces 16+36, not 16+103.
-        Key::Character("0") if is_numpad => KeyCode::NUMPAD_0,
-        Key::Character("1") if is_numpad => KeyCode::NUMPAD_1,
-        Key::Character("2") if is_numpad => KeyCode::NUMPAD_2,
-        Key::Character("3") if is_numpad => KeyCode::NUMPAD_3,
-        Key::Character("4") if is_numpad => KeyCode::NUMPAD_4,
-        Key::Character("5") if is_numpad => KeyCode::NUMPAD_5,
-        Key::Character("6") if is_numpad => KeyCode::NUMPAD_6,
-        Key::Character("7") if is_numpad => KeyCode::NUMPAD_7,
-        Key::Character("8") if is_numpad => KeyCode::NUMPAD_8,
-        Key::Character("9") if is_numpad => KeyCode::NUMPAD_9,
-        Key::Character("*") if is_numpad => KeyCode::NUMPAD_MULTIPLY,
-        Key::Character("+") if is_numpad => KeyCode::NUMPAD_ADD,
-        Key::Character("-") if is_numpad => KeyCode::NUMPAD_SUBTRACT,
-        Key::Character(".") if is_numpad => KeyCode::NUMPAD_DECIMAL,
-        Key::Character("/") if is_numpad => KeyCode::NUMPAD_DIVIDE,
-        Key::Character("0") | Key::Character(")") => KeyCode::NUMBER_0,
-        Key::Character("1") | Key::Character("!") => KeyCode::NUMBER_1,
-        Key::Character("2") | Key::Character("@") => KeyCode::NUMBER_2,
-        Key::Character("3") | Key::Character("#") => KeyCode::NUMBER_3,
-        Key::Character("4") | Key::Character("$") => KeyCode::NUMBER_4,
-        Key::Character("5") | Key::Character("%") => KeyCode::NUMBER_5,
-        Key::Character("6") | Key::Character("^") => KeyCode::NUMBER_6,
-        Key::Character("7") | Key::Character("&") => KeyCode::NUMBER_7,
-        Key::Character("8") | Key::Character("*") => KeyCode::NUMBER_8,
-        Key::Character("9") | Key::Character("(") => KeyCode::NUMBER_9,
-        Key::Character(";") | Key::Character(":") => KeyCode::SEMICOLON,
-        Key::Character("=") | Key::Character("+") => KeyCode::EQUAL,
-        Key::Character(",") | Key::Character("<") => KeyCode::COMMA,
-        Key::Character("-") | Key::Character("_") => KeyCode::MINUS,
-        Key::Character(".") | Key::Character(">") => KeyCode::PERIOD,
-        Key::Character("/") | Key::Character("?") => KeyCode::SLASH,
-        Key::Character("`") | Key::Character("~") => KeyCode::BACKQUOTE,
-        Key::Character("[") | Key::Character("{") => KeyCode::LEFTBRACKET,
-        Key::Character("\\") | Key::Character("|") => KeyCode::BACKSLASH,
-        Key::Character("]") | Key::Character("}") => KeyCode::RIGHTBRACKET,
-        Key::Character("'") | Key::Character("\"") => KeyCode::QUOTE,
-        Key::Named(NamedKey::PageUp) => KeyCode::PAGE_UP,
-        Key::Named(NamedKey::PageDown) => KeyCode::PAGE_DOWN,
-        Key::Named(NamedKey::End) => KeyCode::END,
-        Key::Named(NamedKey::Home) => KeyCode::HOME,
-        Key::Named(NamedKey::ArrowLeft) => KeyCode::LEFT,
-        Key::Named(NamedKey::ArrowUp) => KeyCode::UP,
-        Key::Named(NamedKey::ArrowRight) => KeyCode::RIGHT,
-        Key::Named(NamedKey::ArrowDown) => KeyCode::DOWN,
-        Key::Named(NamedKey::Insert) => KeyCode::INSERT,
-        Key::Named(NamedKey::Delete) => KeyCode::DELETE,
-        Key::Named(NamedKey::Pause) => KeyCode::PAUSE,
-        Key::Named(NamedKey::NumLock) => KeyCode::NUM_LOCK,
-        Key::Named(NamedKey::ScrollLock) => KeyCode::SCROLL_LOCK,
-        Key::Named(NamedKey::F1) => KeyCode::F1,
-        Key::Named(NamedKey::F2) => KeyCode::F2,
-        Key::Named(NamedKey::F3) => KeyCode::F3,
-        Key::Named(NamedKey::F4) => KeyCode::F4,
-        Key::Named(NamedKey::F5) => KeyCode::F5,
-        Key::Named(NamedKey::F6) => KeyCode::F6,
-        Key::Named(NamedKey::F7) => KeyCode::F7,
-        Key::Named(NamedKey::F8) => KeyCode::F8,
-        Key::Named(NamedKey::F9) => KeyCode::F9,
-        Key::Named(NamedKey::F10) => KeyCode::F10,
-        Key::Named(NamedKey::F11) => KeyCode::F11,
-        Key::Named(NamedKey::F12) => KeyCode::F12,
-        Key::Named(NamedKey::F13) => KeyCode::F13,
-        Key::Named(NamedKey::F14) => KeyCode::F14,
-        Key::Named(NamedKey::F15) => KeyCode::F15,
-        Key::Named(NamedKey::F16) => KeyCode::F16,
-        Key::Named(NamedKey::F17) => KeyCode::F17,
-        Key::Named(NamedKey::F18) => KeyCode::F18,
-        Key::Named(NamedKey::F19) => KeyCode::F19,
-        Key::Named(NamedKey::F20) => KeyCode::F20,
-        Key::Named(NamedKey::F21) => KeyCode::F21,
-        Key::Named(NamedKey::F22) => KeyCode::F22,
-        Key::Named(NamedKey::F23) => KeyCode::F23,
-        Key::Named(NamedKey::F24) => KeyCode::F24,
-        Key::Character(char) => {
+    match event.logical_key.as_ref() {
+        Key::Named(NamedKey::Alt) => LogicalKey::Named(RuffleNamedKey::Alt),
+        Key::Named(NamedKey::AltGraph) => LogicalKey::Named(RuffleNamedKey::AltGraph),
+        Key::Named(NamedKey::CapsLock) => LogicalKey::Named(RuffleNamedKey::CapsLock),
+        Key::Named(NamedKey::Control) => LogicalKey::Named(RuffleNamedKey::Control),
+        Key::Named(NamedKey::Fn) => LogicalKey::Named(RuffleNamedKey::Fn),
+        Key::Named(NamedKey::FnLock) => LogicalKey::Named(RuffleNamedKey::FnLock),
+        Key::Named(NamedKey::NumLock) => LogicalKey::Named(RuffleNamedKey::NumLock),
+        Key::Named(NamedKey::ScrollLock) => LogicalKey::Named(RuffleNamedKey::ScrollLock),
+        Key::Named(NamedKey::Shift) => LogicalKey::Named(RuffleNamedKey::Shift),
+        Key::Named(NamedKey::Symbol) => LogicalKey::Named(RuffleNamedKey::Symbol),
+        Key::Named(NamedKey::SymbolLock) => LogicalKey::Named(RuffleNamedKey::SymbolLock),
+        Key::Named(NamedKey::Super) => LogicalKey::Named(RuffleNamedKey::Super),
+        Key::Named(NamedKey::Enter) => LogicalKey::Named(RuffleNamedKey::Enter),
+        Key::Named(NamedKey::Tab) => LogicalKey::Named(RuffleNamedKey::Tab),
+        Key::Named(NamedKey::Space) => LogicalKey::Character(' '),
+        Key::Named(NamedKey::ArrowDown) => LogicalKey::Named(RuffleNamedKey::ArrowDown),
+        Key::Named(NamedKey::ArrowLeft) => LogicalKey::Named(RuffleNamedKey::ArrowLeft),
+        Key::Named(NamedKey::ArrowRight) => LogicalKey::Named(RuffleNamedKey::ArrowRight),
+        Key::Named(NamedKey::ArrowUp) => LogicalKey::Named(RuffleNamedKey::ArrowUp),
+        Key::Named(NamedKey::End) => LogicalKey::Named(RuffleNamedKey::End),
+        Key::Named(NamedKey::Home) => LogicalKey::Named(RuffleNamedKey::Home),
+        Key::Named(NamedKey::PageDown) => LogicalKey::Named(RuffleNamedKey::PageDown),
+        Key::Named(NamedKey::PageUp) => LogicalKey::Named(RuffleNamedKey::PageUp),
+        Key::Named(NamedKey::Backspace) => LogicalKey::Named(RuffleNamedKey::Backspace),
+        Key::Named(NamedKey::Clear) => LogicalKey::Named(RuffleNamedKey::Clear),
+        Key::Named(NamedKey::Copy) => LogicalKey::Named(RuffleNamedKey::Copy),
+        Key::Named(NamedKey::CrSel) => LogicalKey::Named(RuffleNamedKey::CrSel),
+        Key::Named(NamedKey::Cut) => LogicalKey::Named(RuffleNamedKey::Cut),
+        Key::Named(NamedKey::Delete) => LogicalKey::Named(RuffleNamedKey::Delete),
+        Key::Named(NamedKey::EraseEof) => LogicalKey::Named(RuffleNamedKey::EraseEof),
+        Key::Named(NamedKey::ExSel) => LogicalKey::Named(RuffleNamedKey::ExSel),
+        Key::Named(NamedKey::Insert) => LogicalKey::Named(RuffleNamedKey::Insert),
+        Key::Named(NamedKey::Paste) => LogicalKey::Named(RuffleNamedKey::Paste),
+        Key::Named(NamedKey::Redo) => LogicalKey::Named(RuffleNamedKey::Redo),
+        Key::Named(NamedKey::Undo) => LogicalKey::Named(RuffleNamedKey::Undo),
+        Key::Named(NamedKey::ContextMenu) => LogicalKey::Named(RuffleNamedKey::ContextMenu),
+        Key::Named(NamedKey::Escape) => LogicalKey::Named(RuffleNamedKey::Escape),
+        Key::Named(NamedKey::Pause) => LogicalKey::Named(RuffleNamedKey::Pause),
+        Key::Named(NamedKey::Play) => LogicalKey::Named(RuffleNamedKey::Play),
+        Key::Named(NamedKey::Select) => LogicalKey::Named(RuffleNamedKey::Select),
+        Key::Named(NamedKey::ZoomIn) => LogicalKey::Named(RuffleNamedKey::ZoomIn),
+        Key::Named(NamedKey::ZoomOut) => LogicalKey::Named(RuffleNamedKey::ZoomOut),
+        Key::Named(NamedKey::PrintScreen) => LogicalKey::Named(RuffleNamedKey::PrintScreen),
+        Key::Named(NamedKey::F1) => LogicalKey::Named(RuffleNamedKey::F1),
+        Key::Named(NamedKey::F2) => LogicalKey::Named(RuffleNamedKey::F2),
+        Key::Named(NamedKey::F3) => LogicalKey::Named(RuffleNamedKey::F3),
+        Key::Named(NamedKey::F4) => LogicalKey::Named(RuffleNamedKey::F4),
+        Key::Named(NamedKey::F5) => LogicalKey::Named(RuffleNamedKey::F5),
+        Key::Named(NamedKey::F6) => LogicalKey::Named(RuffleNamedKey::F6),
+        Key::Named(NamedKey::F7) => LogicalKey::Named(RuffleNamedKey::F7),
+        Key::Named(NamedKey::F8) => LogicalKey::Named(RuffleNamedKey::F8),
+        Key::Named(NamedKey::F9) => LogicalKey::Named(RuffleNamedKey::F9),
+        Key::Named(NamedKey::F10) => LogicalKey::Named(RuffleNamedKey::F10),
+        Key::Named(NamedKey::F11) => LogicalKey::Named(RuffleNamedKey::F11),
+        Key::Named(NamedKey::F12) => LogicalKey::Named(RuffleNamedKey::F12),
+        Key::Named(NamedKey::F13) => LogicalKey::Named(RuffleNamedKey::F13),
+        Key::Named(NamedKey::F14) => LogicalKey::Named(RuffleNamedKey::F14),
+        Key::Named(NamedKey::F15) => LogicalKey::Named(RuffleNamedKey::F15),
+        Key::Named(NamedKey::F16) => LogicalKey::Named(RuffleNamedKey::F16),
+        Key::Named(NamedKey::F17) => LogicalKey::Named(RuffleNamedKey::F17),
+        Key::Named(NamedKey::F18) => LogicalKey::Named(RuffleNamedKey::F18),
+        Key::Named(NamedKey::F19) => LogicalKey::Named(RuffleNamedKey::F19),
+        Key::Named(NamedKey::F20) => LogicalKey::Named(RuffleNamedKey::F20),
+        Key::Named(NamedKey::F21) => LogicalKey::Named(RuffleNamedKey::F21),
+        Key::Named(NamedKey::F22) => LogicalKey::Named(RuffleNamedKey::F22),
+        Key::Named(NamedKey::F23) => LogicalKey::Named(RuffleNamedKey::F23),
+        Key::Named(NamedKey::F24) => LogicalKey::Named(RuffleNamedKey::F24),
+        Key::Named(NamedKey::F25) => LogicalKey::Named(RuffleNamedKey::F25),
+        Key::Named(NamedKey::F26) => LogicalKey::Named(RuffleNamedKey::F26),
+        Key::Named(NamedKey::F27) => LogicalKey::Named(RuffleNamedKey::F27),
+        Key::Named(NamedKey::F28) => LogicalKey::Named(RuffleNamedKey::F28),
+        Key::Named(NamedKey::F29) => LogicalKey::Named(RuffleNamedKey::F29),
+        Key::Named(NamedKey::F30) => LogicalKey::Named(RuffleNamedKey::F30),
+        Key::Named(NamedKey::F31) => LogicalKey::Named(RuffleNamedKey::F31),
+        Key::Named(NamedKey::F32) => LogicalKey::Named(RuffleNamedKey::F32),
+        Key::Named(NamedKey::F33) => LogicalKey::Named(RuffleNamedKey::F33),
+        Key::Named(NamedKey::F34) => LogicalKey::Named(RuffleNamedKey::F34),
+        Key::Named(NamedKey::F35) => LogicalKey::Named(RuffleNamedKey::F35),
+        Key::Character(ch) => {
             // Handle alphabetic characters
-            alpha_to_ruffle_key_code(char).unwrap_or(KeyCode::UNKNOWN)
+            alpha_to_logical(ch)
         }
-        _ => KeyCode::UNKNOWN,
-    };
-    Some(key_code)
+        _ => LogicalKey::Unknown,
+    }
 }
 
-fn alpha_to_ruffle_key_code(char: &str) -> Option<KeyCode> {
-    let char = char.chars().next()?;
-
-    if char.is_ascii_alphabetic() {
-        // ASCII alphabetic characters are all mapped to
-        // their respective KeyCodes, which happen to have
-        // the same numerical value as uppercase characters.
-        return Some(KeyCode::from_code(char.to_ascii_uppercase() as u32));
+fn alpha_to_logical(ch: &str) -> LogicalKey {
+    // TODO What if we get multiple chars?
+    if let Some(ch) = ch.chars().last() {
+        LogicalKey::Character(ch)
+    } else {
+        LogicalKey::Unknown
     }
+}
 
-    if !char.is_ascii() {
-        // Non-ASCII inputs have codes equal to their Unicode codes and yes,
-        // they overlap with other codes, so that typing '½' and '-' both produce 189.
-        return Some(KeyCode::from_code(char as u32));
+fn map_key_location(event: &KeyEvent) -> KeyLocation {
+    match event.location {
+        WinitKeyLocation::Standard => KeyLocation::Standard,
+        WinitKeyLocation::Left => KeyLocation::Left,
+        WinitKeyLocation::Right => KeyLocation::Right,
+        WinitKeyLocation::Numpad => KeyLocation::Numpad,
     }
-
-    None
 }
 
 pub fn gilrs_button_to_gamepad_button(button: Button) -> Option<GamepadButton> {
