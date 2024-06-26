@@ -1,7 +1,7 @@
 [
   { "type": "SetClipboardText", "text": "a\nb" },
-  { "type": "KeyDown", "key": "Control" },
+  { "type": "KeyDown", "key": "LeftControl" },
   { "type": "TextControl", "code": "Paste" },
-  { "type": "KeyUp", "key": "Control" },
+  { "type": "KeyUp", "key": "LeftControl" },
   { "type": "Wait" }
 ]

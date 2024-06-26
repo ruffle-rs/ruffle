@@ -14,7 +14,7 @@ mod zip;
 
 use crate::builder::RuffleInstanceBuilder;
 use external_interface::{external_to_js_value, js_to_external_value};
-use input::{web_key_to_codepoint, web_to_ruffle_key_code, web_to_ruffle_text_control};
+use input::{web_input_to_ruffle_key_descriptor, web_to_ruffle_text_control};
 use js_sys::{Error as JsError, Uint8Array};
 use ruffle_core::context::UpdateContext;
 use ruffle_core::context_menu::ContextMenuCallback;
@@ -694,10 +694,9 @@ impl RuffleHandle {
                         if instance.has_focus {
                             let mut paste_event = false;
                             let _ = instance.with_core_mut(|core| {
-                                let key_code = web_to_ruffle_key_code(&js_event.code());
-                                let key_char = web_key_to_codepoint(&js_event.key());
+                                let key = web_input_to_ruffle_key_descriptor(&js_event);
                                 let is_ctrl_cmd = js_event.ctrl_key() || js_event.meta_key();
-                                core.handle_event(PlayerEvent::KeyDown { key_code, key_char });
+                                core.handle_event(PlayerEvent::KeyDown { key });
 
                                 if let Some(control_code) = web_to_ruffle_text_control(
                                     &js_event.key(),
@@ -712,7 +711,7 @@ impl RuffleHandle {
                                             code: control_code,
                                         });
                                     }
-                                } else if let Some(codepoint) = key_char {
+                                } else if let Some(codepoint) = key.logical_key.character() {
                                     core.handle_event(PlayerEvent::TextInput { codepoint });
                                 }
                             });
@@ -763,9 +762,8 @@ impl RuffleHandle {
                     let _ = ruffle.with_instance(|instance| {
                         if instance.has_focus {
                             let _ = instance.with_core_mut(|core| {
-                                let key_code = web_to_ruffle_key_code(&js_event.code());
-                                let key_char = web_key_to_codepoint(&js_event.key());
-                                core.handle_event(PlayerEvent::KeyUp { key_code, key_char });
+                                let key = web_input_to_ruffle_key_descriptor(&js_event);
+                                core.handle_event(PlayerEvent::KeyUp { key });
                             });
                             js_event.prevent_default();
                         }

@@ -5,12 +5,10 @@ use swf::ClipEventFlag;
 #[derive(Debug, Clone)]
 pub enum PlayerEvent {
     KeyDown {
-        key_code: KeyCode,
-        key_char: Option<char>,
+        key: KeyDescriptor,
     },
     KeyUp {
-        key_code: KeyCode,
-        key_char: Option<char>,
+        key: KeyDescriptor,
     },
     MouseMove {
         x: f64,
@@ -829,4 +827,303 @@ impl FromStr for GamepadButton {
             _ => return Err(ParseEnumError),
         })
     }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct KeyDescriptor {
+    pub physical_key: PhysicalKey,
+    pub logical_key: LogicalKey,
+    pub key_location: KeyLocation,
+}
+
+/// Physical keys are keys that exist physically on a keyboard (or other devices).
+///
+/// For instance:
+/// * pressing <kbd>E</kbd> while using ANSI keyboard and Colemak keyboard layout
+///   will produce physical key [`PhysicalKey::KeyE`] and logical key `F`,
+/// * pressing left backslash on a UK keyboard will produce physical key
+///   [`PhysicalKey::IntlBackslash`] and logical key `\`.
+///
+/// See <https://w3c.github.io/uievents-code/#code-value-tables>.
+#[derive(Debug, Clone, Copy)]
+pub enum PhysicalKey {
+    Unknown = 0,
+
+    // Alphanumeric Section
+    Backquote,
+    Digit0,
+    Digit1,
+    Digit2,
+    Digit4,
+    Digit3,
+    Digit5,
+    Digit6,
+    Digit7,
+    Digit8,
+    Digit9,
+    Minus,
+    Equal,
+    IntlYen,
+    KeyA,
+    KeyB,
+    KeyC,
+    KeyD,
+    KeyE,
+    KeyF,
+    KeyG,
+    KeyH,
+    KeyI,
+    KeyJ,
+    KeyK,
+    KeyL,
+    KeyM,
+    KeyN,
+    KeyO,
+    KeyP,
+    KeyQ,
+    KeyR,
+    KeyS,
+    KeyT,
+    KeyU,
+    KeyV,
+    KeyW,
+    KeyX,
+    KeyY,
+    KeyZ,
+    BracketLeft,
+    BracketRight,
+    Backslash,
+    Semicolon,
+    Quote,
+    IntlBackslash,
+    Comma,
+    Period,
+    Slash,
+    IntlRo,
+    Backspace,
+    Tab,
+    CapsLock,
+    Enter,
+    ShiftLeft,
+    ShiftRight,
+    ControlLeft,
+    SuperLeft,
+    AltLeft,
+    Space,
+    AltRight,
+    SuperRight,
+    ContextMenu,
+    ControlRight,
+
+    // Control Pad Section
+    Insert,
+    Delete,
+    Home,
+    End,
+    PageUp,
+    PageDown,
+
+    // Arrow Pad Section
+    ArrowUp,
+    ArrowLeft,
+    ArrowDown,
+    ArrowRight,
+
+    // Numpad Section
+    NumLock,
+    NumpadDivide,
+    NumpadMultiply,
+    NumpadSubtract,
+    Numpad7,
+    Numpad8,
+    Numpad9,
+    Numpad4,
+    Numpad5,
+    Numpad6,
+    Numpad1,
+    Numpad2,
+    Numpad3,
+    Numpad0,
+    NumpadAdd,
+    NumpadComma,
+    NumpadEnter,
+    NumpadDecimal,
+
+    // Function Section
+    Escape,
+    F1,
+    F2,
+    F3,
+    F4,
+    F5,
+    F6,
+    F7,
+    F8,
+    F9,
+    F10,
+    F11,
+    F12,
+    F13,
+    F14,
+    F15,
+    F16,
+    F17,
+    F18,
+    F19,
+    F20,
+    F21,
+    F22,
+    F23,
+    F24,
+    F25,
+    F26,
+    F27,
+    F28,
+    F29,
+    F30,
+    F31,
+    F32,
+    F33,
+    F34,
+    F35,
+    Fn,
+    FnLock,
+    PrintScreen,
+    ScrollLock,
+    Pause,
+}
+
+/// Logical key represents the semantics behind a pressed physical key
+/// taking into account any system keyboard layouts and mappings.
+///
+/// Most keys will be mapped into a [`LogicalKey::Character`], but some keys that do not produce
+/// any characters (such as `F1...Fn` keys, `Home`, `Ctrl`, etc.) will be mapped into
+/// [`LogicalKey::Named`], which is similar to a physical key, but:
+/// * it does not take into account duplicate keys, e.g. there's only one Shift,
+/// * it respects the keyboard layout, so that e.g. pressing <kbd>CapsLock</kbd>
+///   with Colemak can produce `Backspace`.
+///
+/// See <https://w3c.github.io/uievents-key/>.
+#[derive(Debug, Clone, Copy)]
+pub enum LogicalKey {
+    Unknown,
+    Character(char),
+    Named(NamedKey),
+}
+
+impl LogicalKey {
+    pub fn character(self) -> Option<char> {
+        match self {
+            LogicalKey::Unknown => None,
+            LogicalKey::Character(ch) => Some(ch),
+            LogicalKey::Named(NamedKey::Backspace) => Some('\u{0008}'),
+            LogicalKey::Named(NamedKey::Tab) => Some('\u{0009}'),
+            LogicalKey::Named(NamedKey::Enter) => Some('\u{000D}'),
+            LogicalKey::Named(NamedKey::Escape) => Some('\u{001B}'),
+            LogicalKey::Named(NamedKey::Delete) => Some('\u{007F}'),
+            LogicalKey::Named(_) => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum NamedKey {
+    // Modifier Keys
+    Alt,
+    AltGraph,
+    CapsLock,
+    Control,
+    Fn,
+    FnLock,
+    Super,
+    NumLock,
+    ScrollLock,
+    Shift,
+    Symbol,
+    SymbolLock,
+
+    // Whitespace Keys
+    Enter,
+    Tab,
+
+    // Navigation Keys
+    ArrowDown,
+    ArrowLeft,
+    ArrowRight,
+    ArrowUp,
+    End,
+    Home,
+    PageDown,
+    PageUp,
+
+    // Editing Keys
+    Backspace,
+    Clear,
+    Copy,
+    CrSel,
+    Cut,
+    Delete,
+    EraseEof,
+    ExSel,
+    Insert,
+    Paste,
+    Redo,
+    Undo,
+
+    // UI Keys
+    ContextMenu,
+    Escape,
+    Pause,
+    Play,
+    Select,
+    ZoomIn,
+    ZoomOut,
+
+    // Device Keys
+    PrintScreen,
+
+    // General-Purpose Function Keys
+    F1,
+    F2,
+    F3,
+    F4,
+    F5,
+    F6,
+    F7,
+    F8,
+    F9,
+    F10,
+    F11,
+    F12,
+    F13,
+    F14,
+    F15,
+    F16,
+    F17,
+    F18,
+    F19,
+    F20,
+    F21,
+    F22,
+    F23,
+    F24,
+    F25,
+    F26,
+    F27,
+    F28,
+    F29,
+    F30,
+    F31,
+    F32,
+    F33,
+    F34,
+    F35,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum KeyLocation {
+    Standard = 0,
+    Left = 1,
+    Right = 2,
+    Numpad = 3,
 }

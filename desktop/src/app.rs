@@ -4,7 +4,7 @@ use crate::player::{LaunchOptions, PlayerController};
 use crate::preferences::GlobalPreferences;
 use crate::util::{
     get_screen_size, gilrs_button_to_gamepad_button, parse_url, plot_stats_in_tracy,
-    winit_to_ruffle_key_code, winit_to_ruffle_text_control,
+    winit_input_to_ruffle_key_descriptor, winit_to_ruffle_text_control,
 };
 use anyhow::Error;
 use gilrs::{Event, EventType, Gilrs};
@@ -205,15 +205,10 @@ impl MainWindow {
                         .send_event(RuffleEvent::ExitFullScreen);
                 }
 
-                let key_code = winit_to_ruffle_key_code(&event);
-                // [NA] TODO: This event used to give a single char. `last()` is functionally the same,
-                // but we may want to be better at this in the future.
-                let key_char = event.text.clone().and_then(|text| text.chars().last());
-
-                match (key_code, &event.state) {
-                    (Some(key_code), ElementState::Pressed) => {
-                        self.player
-                            .handle_event(PlayerEvent::KeyDown { key_code, key_char });
+                let key = winit_input_to_ruffle_key_descriptor(&event);
+                match event.state {
+                    ElementState::Pressed => {
+                        self.player.handle_event(PlayerEvent::KeyDown { key });
                         if let Some(control_code) =
                             winit_to_ruffle_text_control(&event, &self.modifiers)
                         {
@@ -226,11 +221,9 @@ impl MainWindow {
                             }
                         }
                     }
-                    (Some(key_code), ElementState::Released) => {
-                        self.player
-                            .handle_event(PlayerEvent::KeyUp { key_code, key_char });
+                    ElementState::Released => {
+                        self.player.handle_event(PlayerEvent::KeyUp { key });
                     }
-                    _ => {}
                 };
                 self.check_redraw();
             }
