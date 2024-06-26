@@ -1,8 +1,17 @@
 use crate::events::{
-    GamepadButton, KeyCode, MouseButton, MouseWheelDelta, PlayerEvent, TextControlCode,
+    GamepadButton, KeyCode, KeyDescriptor, KeyLocation, LogicalKey, MouseButton, MouseWheelDelta,
+    NamedKey, PhysicalKey, PlayerEvent, TextControlCode,
 };
 use chrono::{DateTime, TimeDelta, Utc};
 use std::collections::{HashMap, HashSet};
+
+pub enum KeyCodeMappingType {
+    // TODO Make this configurable, it's not
+    //   yet possible to use this mapping type.
+    #[allow(dead_code)]
+    Physical,
+    Logical,
+}
 
 /// An event describing input in general.
 ///
@@ -68,6 +77,8 @@ pub struct InputManager {
 
     /// A map from gamepad buttons to key codes.
     gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
+
+    key_code_mapping_type: KeyCodeMappingType,
 }
 
 impl InputManager {
@@ -79,6 +90,7 @@ impl InputManager {
             last_char: None,
             last_click: None,
             gamepad_button_mapping,
+            key_code_mapping_type: KeyCodeMappingType::Logical,
         }
     }
 
@@ -133,10 +145,16 @@ impl InputManager {
                 }
             }
 
-            PlayerEvent::KeyDown { key_code, key_char } => {
+            PlayerEvent::KeyDown { key } => {
+                let key_code = self.map_to_key_code(key)?;
+                let key_char = self.map_to_key_char(key);
                 InputEvent::KeyDown { key_code, key_char }
             }
-            PlayerEvent::KeyUp { key_code, key_char } => InputEvent::KeyUp { key_code, key_char },
+            PlayerEvent::KeyUp { key } => {
+                let key_code = self.map_to_key_code(key)?;
+                let key_char = self.map_to_key_char(key);
+                InputEvent::KeyUp { key_code, key_char }
+            }
 
             PlayerEvent::MouseMove { x, y } => InputEvent::MouseMove { x, y },
             PlayerEvent::MouseUp { x, y, button } => InputEvent::MouseUp { x, y, button },
@@ -164,6 +182,19 @@ impl InputManager {
         self.handle_event(&event);
 
         Some(event)
+    }
+
+    fn map_to_key_code(&self, descriptor: KeyDescriptor) -> Option<KeyCode> {
+        match self.key_code_mapping_type {
+            KeyCodeMappingType::Physical => map_to_key_code_physical(descriptor.physical_key),
+            KeyCodeMappingType::Logical => {
+                map_to_key_code_logical(descriptor.logical_key, descriptor.key_location)
+            }
+        }
+    }
+
+    fn map_to_key_char(&self, descriptor: KeyDescriptor) -> Option<char> {
+        descriptor.logical_key.character()
     }
 
     fn handle_event(&mut self, event: &InputEvent) {
@@ -246,4 +277,239 @@ impl InputManager {
         }
         buttons
     }
+}
+
+fn map_to_key_code_physical(key: PhysicalKey) -> Option<KeyCode> {
+    Some(match key {
+        PhysicalKey::Unknown => KeyCode::UNKNOWN,
+        PhysicalKey::Backquote => KeyCode::BACKQUOTE,
+        PhysicalKey::Digit0 => KeyCode::NUMBER_0,
+        PhysicalKey::Digit1 => KeyCode::NUMBER_1,
+        PhysicalKey::Digit2 => KeyCode::NUMBER_2,
+        PhysicalKey::Digit3 => KeyCode::NUMBER_3,
+        PhysicalKey::Digit4 => KeyCode::NUMBER_4,
+        PhysicalKey::Digit5 => KeyCode::NUMBER_5,
+        PhysicalKey::Digit6 => KeyCode::NUMBER_6,
+        PhysicalKey::Digit7 => KeyCode::NUMBER_7,
+        PhysicalKey::Digit8 => KeyCode::NUMBER_8,
+        PhysicalKey::Digit9 => KeyCode::NUMBER_9,
+        PhysicalKey::Minus => KeyCode::MINUS,
+        PhysicalKey::Equal => KeyCode::EQUAL,
+        PhysicalKey::KeyA => KeyCode::A,
+        PhysicalKey::KeyB => KeyCode::B,
+        PhysicalKey::KeyC => KeyCode::C,
+        PhysicalKey::KeyD => KeyCode::D,
+        PhysicalKey::KeyE => KeyCode::E,
+        PhysicalKey::KeyF => KeyCode::F,
+        PhysicalKey::KeyG => KeyCode::G,
+        PhysicalKey::KeyH => KeyCode::H,
+        PhysicalKey::KeyI => KeyCode::I,
+        PhysicalKey::KeyJ => KeyCode::J,
+        PhysicalKey::KeyK => KeyCode::K,
+        PhysicalKey::KeyL => KeyCode::L,
+        PhysicalKey::KeyM => KeyCode::M,
+        PhysicalKey::KeyN => KeyCode::N,
+        PhysicalKey::KeyO => KeyCode::O,
+        PhysicalKey::KeyP => KeyCode::P,
+        PhysicalKey::KeyQ => KeyCode::Q,
+        PhysicalKey::KeyR => KeyCode::R,
+        PhysicalKey::KeyS => KeyCode::S,
+        PhysicalKey::KeyT => KeyCode::T,
+        PhysicalKey::KeyU => KeyCode::U,
+        PhysicalKey::KeyV => KeyCode::V,
+        PhysicalKey::KeyW => KeyCode::W,
+        PhysicalKey::KeyX => KeyCode::X,
+        PhysicalKey::KeyY => KeyCode::Y,
+        PhysicalKey::KeyZ => KeyCode::Z,
+        PhysicalKey::BracketLeft => KeyCode::LEFTBRACKET,
+        PhysicalKey::BracketRight => KeyCode::RIGHTBRACKET,
+        PhysicalKey::Backslash => KeyCode::BACKSLASH,
+        PhysicalKey::Semicolon => KeyCode::SEMICOLON,
+        PhysicalKey::Quote => KeyCode::QUOTE,
+        PhysicalKey::Comma => KeyCode::COMMA,
+        PhysicalKey::Period => KeyCode::PERIOD,
+        PhysicalKey::Slash => KeyCode::SLASH,
+        PhysicalKey::Backspace => KeyCode::BACKSPACE,
+        PhysicalKey::Tab => KeyCode::TAB,
+        PhysicalKey::CapsLock => KeyCode::CAPS_LOCK,
+        PhysicalKey::Enter => KeyCode::ENTER,
+        PhysicalKey::Space => KeyCode::SPACE,
+        PhysicalKey::AltLeft => KeyCode::ALT,
+        PhysicalKey::AltRight => return None,
+        PhysicalKey::SuperLeft | PhysicalKey::SuperRight => return None,
+        PhysicalKey::ContextMenu => return None,
+        PhysicalKey::ShiftLeft | PhysicalKey::ShiftRight => KeyCode::SHIFT,
+        PhysicalKey::ControlRight | PhysicalKey::ControlLeft => KeyCode::CONTROL,
+        PhysicalKey::Insert => KeyCode::INSERT,
+        PhysicalKey::Delete => KeyCode::DELETE,
+        PhysicalKey::Home => KeyCode::HOME,
+        PhysicalKey::End => KeyCode::END,
+        PhysicalKey::PageUp => KeyCode::PAGE_UP,
+        PhysicalKey::PageDown => KeyCode::PAGE_DOWN,
+        PhysicalKey::ArrowUp => KeyCode::UP,
+        PhysicalKey::ArrowLeft => KeyCode::LEFT,
+        PhysicalKey::ArrowDown => KeyCode::DOWN,
+        PhysicalKey::ArrowRight => KeyCode::RIGHT,
+        PhysicalKey::NumLock => KeyCode::NUM_LOCK,
+        PhysicalKey::NumpadDivide => KeyCode::NUMPAD_DIVIDE,
+        PhysicalKey::NumpadMultiply => KeyCode::NUMPAD_MULTIPLY,
+        PhysicalKey::NumpadSubtract => KeyCode::NUMPAD_SUBTRACT,
+        PhysicalKey::Numpad1 => KeyCode::NUMPAD_1,
+        PhysicalKey::Numpad2 => KeyCode::NUMPAD_2,
+        PhysicalKey::Numpad3 => KeyCode::NUMPAD_3,
+        PhysicalKey::Numpad4 => KeyCode::NUMPAD_4,
+        PhysicalKey::Numpad5 => KeyCode::NUMPAD_5,
+        PhysicalKey::Numpad6 => KeyCode::NUMPAD_6,
+        PhysicalKey::Numpad7 => KeyCode::NUMPAD_7,
+        PhysicalKey::Numpad8 => KeyCode::NUMPAD_8,
+        PhysicalKey::Numpad9 => KeyCode::NUMPAD_9,
+        PhysicalKey::Numpad0 => KeyCode::NUMPAD_0,
+        PhysicalKey::NumpadAdd => KeyCode::NUMPAD_ADD,
+        PhysicalKey::NumpadEnter => KeyCode::NUMPAD_ENTER,
+        PhysicalKey::NumpadDecimal => KeyCode::NUMPAD_DECIMAL,
+        PhysicalKey::Escape => KeyCode::ESCAPE,
+        PhysicalKey::F1 => KeyCode::F1,
+        PhysicalKey::F2 => KeyCode::F2,
+        PhysicalKey::F3 => KeyCode::F3,
+        PhysicalKey::F4 => KeyCode::F4,
+        PhysicalKey::F5 => KeyCode::F5,
+        PhysicalKey::F6 => KeyCode::F6,
+        PhysicalKey::F7 => KeyCode::F7,
+        PhysicalKey::F8 => KeyCode::F8,
+        PhysicalKey::F9 => KeyCode::F9,
+        PhysicalKey::F10 => KeyCode::F10,
+        PhysicalKey::F11 => KeyCode::F11,
+        PhysicalKey::F12 => KeyCode::F12,
+        PhysicalKey::F13 => KeyCode::F13,
+        PhysicalKey::F14 => KeyCode::F14,
+        PhysicalKey::F15 => KeyCode::F15,
+        PhysicalKey::F16 => KeyCode::F16,
+        PhysicalKey::F17 => KeyCode::F17,
+        PhysicalKey::F18 => KeyCode::F18,
+        PhysicalKey::F19 => KeyCode::F19,
+        PhysicalKey::F20 => KeyCode::F20,
+        PhysicalKey::F21 => KeyCode::F21,
+        PhysicalKey::F22 => KeyCode::F22,
+        PhysicalKey::F23 => KeyCode::F23,
+        PhysicalKey::F24 => KeyCode::F24,
+        PhysicalKey::Fn => return None,
+        PhysicalKey::FnLock => return None,
+        // TODO FP returns -1 for PrintScreen?
+        PhysicalKey::PrintScreen => KeyCode::UNKNOWN,
+        PhysicalKey::ScrollLock => KeyCode::SCROLL_LOCK,
+        PhysicalKey::Pause => KeyCode::PAUSE,
+        _ => return None,
+    })
+}
+
+fn map_to_key_code_logical(key: LogicalKey, location: KeyLocation) -> Option<KeyCode> {
+    let is_numpad = matches!(location, KeyLocation::Numpad);
+    Some(match key {
+        LogicalKey::Named(NamedKey::Backspace) => KeyCode::BACKSPACE,
+        LogicalKey::Named(NamedKey::Tab) => KeyCode::TAB,
+        LogicalKey::Named(NamedKey::Enter) => KeyCode::ENTER,
+        LogicalKey::Named(NamedKey::Shift) => KeyCode::SHIFT,
+        LogicalKey::Named(NamedKey::Control) => KeyCode::CONTROL,
+        LogicalKey::Named(NamedKey::Alt) => KeyCode::ALT,
+        LogicalKey::Named(NamedKey::AltGraph) => return None,
+        LogicalKey::Named(NamedKey::ContextMenu) => return None,
+        LogicalKey::Named(NamedKey::CapsLock) => KeyCode::CAPS_LOCK,
+        LogicalKey::Named(NamedKey::Escape) => KeyCode::ESCAPE,
+        LogicalKey::Character(' ') => KeyCode::SPACE,
+        LogicalKey::Character('0') if is_numpad => KeyCode::NUMPAD_0,
+        LogicalKey::Character('1') if is_numpad => KeyCode::NUMPAD_1,
+        LogicalKey::Character('2') if is_numpad => KeyCode::NUMPAD_2,
+        LogicalKey::Character('3') if is_numpad => KeyCode::NUMPAD_3,
+        LogicalKey::Character('4') if is_numpad => KeyCode::NUMPAD_4,
+        LogicalKey::Character('5') if is_numpad => KeyCode::NUMPAD_5,
+        LogicalKey::Character('6') if is_numpad => KeyCode::NUMPAD_6,
+        LogicalKey::Character('7') if is_numpad => KeyCode::NUMPAD_7,
+        LogicalKey::Character('8') if is_numpad => KeyCode::NUMPAD_8,
+        LogicalKey::Character('9') if is_numpad => KeyCode::NUMPAD_9,
+        LogicalKey::Character('*') if is_numpad => KeyCode::NUMPAD_MULTIPLY,
+        LogicalKey::Character('+') if is_numpad => KeyCode::NUMPAD_ADD,
+        LogicalKey::Character('-') if is_numpad => KeyCode::NUMPAD_SUBTRACT,
+        LogicalKey::Character('.' | ',') if is_numpad => KeyCode::NUMPAD_DECIMAL,
+        LogicalKey::Character('/') if is_numpad => KeyCode::NUMPAD_DIVIDE,
+        LogicalKey::Character('0' | ')') => KeyCode::NUMBER_0,
+        LogicalKey::Character('1' | '!') => KeyCode::NUMBER_1,
+        LogicalKey::Character('2' | '@') => KeyCode::NUMBER_2,
+        LogicalKey::Character('3' | '#') => KeyCode::NUMBER_3,
+        LogicalKey::Character('4' | '$') => KeyCode::NUMBER_4,
+        LogicalKey::Character('5' | '%') => KeyCode::NUMBER_5,
+        LogicalKey::Character('6' | '^') => KeyCode::NUMBER_6,
+        LogicalKey::Character('7' | '&') => KeyCode::NUMBER_7,
+        LogicalKey::Character('8' | '*') => KeyCode::NUMBER_8,
+        LogicalKey::Character('9' | '(') => KeyCode::NUMBER_9,
+        LogicalKey::Character(';' | ':') => KeyCode::SEMICOLON,
+        LogicalKey::Character('=' | '+') => KeyCode::EQUAL,
+        LogicalKey::Character(',' | '<') => KeyCode::COMMA,
+        LogicalKey::Character('-' | '_') => KeyCode::MINUS,
+        LogicalKey::Character('.' | '>') => KeyCode::PERIOD,
+        LogicalKey::Character('/' | '?') => KeyCode::SLASH,
+        LogicalKey::Character('`' | '~') => KeyCode::BACKQUOTE,
+        LogicalKey::Character('[' | '{') => KeyCode::LEFTBRACKET,
+        LogicalKey::Character('\\' | '|') => KeyCode::BACKSLASH,
+        LogicalKey::Character(']' | '}') => KeyCode::RIGHTBRACKET,
+        LogicalKey::Character('\'' | '"') => KeyCode::QUOTE,
+        LogicalKey::Named(NamedKey::PageUp) => KeyCode::PAGE_UP,
+        LogicalKey::Named(NamedKey::PageDown) => KeyCode::PAGE_DOWN,
+        LogicalKey::Named(NamedKey::End) => KeyCode::END,
+        LogicalKey::Named(NamedKey::Home) => KeyCode::HOME,
+        LogicalKey::Named(NamedKey::ArrowLeft) => KeyCode::LEFT,
+        LogicalKey::Named(NamedKey::ArrowUp) => KeyCode::UP,
+        LogicalKey::Named(NamedKey::ArrowRight) => KeyCode::RIGHT,
+        LogicalKey::Named(NamedKey::ArrowDown) => KeyCode::DOWN,
+        LogicalKey::Named(NamedKey::Insert) => KeyCode::INSERT,
+        LogicalKey::Named(NamedKey::Delete) => KeyCode::DELETE,
+        LogicalKey::Named(NamedKey::Pause) => KeyCode::PAUSE,
+        LogicalKey::Named(NamedKey::NumLock) => KeyCode::NUM_LOCK,
+        LogicalKey::Named(NamedKey::ScrollLock) => KeyCode::SCROLL_LOCK,
+        LogicalKey::Named(NamedKey::F1) => KeyCode::F1,
+        LogicalKey::Named(NamedKey::F2) => KeyCode::F2,
+        LogicalKey::Named(NamedKey::F3) => KeyCode::F3,
+        LogicalKey::Named(NamedKey::F4) => KeyCode::F4,
+        LogicalKey::Named(NamedKey::F5) => KeyCode::F5,
+        LogicalKey::Named(NamedKey::F6) => KeyCode::F6,
+        LogicalKey::Named(NamedKey::F7) => KeyCode::F7,
+        LogicalKey::Named(NamedKey::F8) => KeyCode::F8,
+        LogicalKey::Named(NamedKey::F9) => KeyCode::F9,
+        LogicalKey::Named(NamedKey::F10) => KeyCode::F10,
+        LogicalKey::Named(NamedKey::F11) => KeyCode::F11,
+        LogicalKey::Named(NamedKey::F12) => KeyCode::F12,
+        LogicalKey::Named(NamedKey::F13) => KeyCode::F13,
+        LogicalKey::Named(NamedKey::F14) => KeyCode::F14,
+        LogicalKey::Named(NamedKey::F15) => KeyCode::F15,
+        LogicalKey::Named(NamedKey::F16) => KeyCode::F16,
+        LogicalKey::Named(NamedKey::F17) => KeyCode::F17,
+        LogicalKey::Named(NamedKey::F18) => KeyCode::F18,
+        LogicalKey::Named(NamedKey::F19) => KeyCode::F19,
+        LogicalKey::Named(NamedKey::F20) => KeyCode::F20,
+        LogicalKey::Named(NamedKey::F21) => KeyCode::F21,
+        LogicalKey::Named(NamedKey::F22) => KeyCode::F22,
+        LogicalKey::Named(NamedKey::F23) => KeyCode::F23,
+        LogicalKey::Named(NamedKey::F24) => KeyCode::F24,
+        LogicalKey::Character(char) => {
+            // Handle alphabetic characters
+            map_character_to_key_code(char).unwrap_or(KeyCode::UNKNOWN)
+        }
+        _ => return None,
+    })
+}
+
+fn map_character_to_key_code(char: char) -> Option<KeyCode> {
+    if char.is_ascii_alphabetic() {
+        // ASCII alphabetic characters are all mapped to
+        // their respective KeyCodes, which happen to have
+        // the same numerical value as uppercase characters.
+        return Some(KeyCode::from_code(char.to_ascii_uppercase() as u32));
+    }
+
+    if !char.is_ascii() {
+        // Non-ASCII inputs have codes equal to their Unicode codes and yes,
+        // they overlap with other codes, so that typing '½' and '-' both produce 189.
+        return Some(KeyCode::from_code(char as u32));
+    }
+
+    None
 }

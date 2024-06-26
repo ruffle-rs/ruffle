@@ -1,8 +1,8 @@
 [
   { "type": "SetClipboardText", "text": "Test" },
-  { "type": "KeyDown", "key": "Control" },
+  { "type": "KeyDown", "key": "LeftControl" },
   { "type": "TextControl", "code": "Paste" },
-  { "type": "KeyUp", "key": "Control" },
+  { "type": "KeyUp", "key": "LeftControl" },
   { "type": "KeyDown", "key": { "Char": "x" } },
   { "type": "TextInput", "codepoint": "x" },
   { "type": "KeyUp", "key": { "Char": "x" } },
