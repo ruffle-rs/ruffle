@@ -94,5 +94,8 @@
     },
     "settings_saved": {
         "message": "設定完成"
+    },
+    "onboarding_page": {
+        "message": "引導頁面"
     }
 }

@@ -12,6 +12,15 @@ enable-hardware-acceleration = 하드웨어 가속이 활성화되지 않은 것
 view-error-details = 오류 세부 정보 보기
 open-in-new-tab = 새 탭에서 열기
 click-to-unmute = 클릭하여 음소거 해제
+clipboard-message-title = Ruffle에서 복사하고 붙여넣기
+clipboard-message-description =
+    { $variant ->
+       *[unsupported] 이 브라우저는 클립보드 액세스를 지원하지 않습니다,
+        [access-denied] 클립보드 액세스가 거절되었습니다,
+    } 하지만 다음 단축키를 대신 사용할 수 있습니다:
+clipboard-message-copy = { " " } 복사
+clipboard-message-cut = { " " } 잘라내기
+clipboard-message-paste = { " " } 붙여넣기
 error-file-protocol =
     Ruffle을 "file:" 프로토콜에서 실행하고 있는 것으로 보입니다.
     브라우저에서는 이 프로토콜을 보안상의 이유로 많은 기능을 작동하지 않게 차단하므로 이 방법은 작동하지 않습니다.
