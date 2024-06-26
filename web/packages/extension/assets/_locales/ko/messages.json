@@ -94,5 +94,20 @@
     },
     "settings_saved": {
         "message": "설정이 저장되었습니다."
+    },
+    "onboarding_page": {
+        "message": "온보딩 페이지"
+    },
+    "permissions_grant": {
+        "message": "Ruffle에 모든 사이트에서 내 데이터에 액세스할 수 있는 권한을 부여합니다."
+    },
+    "permissions_not_granted": {
+        "message": "Ruffle을 사용하려는 모든 사이트에서 Ruffle 아이콘을 클릭해야 합니다."
+    },
+    "grant_single_site_permission": {
+        "message": "이 사이트에서 영구적으로 활성화"
+    },
+    "permissions_explanation": {
+        "message": "Ruffle 확장 프로그램은 모든 웹사이트의 데이터에 액세스할 수 있을 때 가장 잘 작동합니다. 따라서 웹 사이트가 처음 로드될 때 실행할 수 있으므로 플래시 플레이어를 감지하는 웹사이트에서 즉시 플래시 콘텐츠를 실행하도록 할 수 있습니다. 또한 웹의 다른 위치에서 내부 플레이어 페이지로 SWF 파일을 로드할 수 있는 기능도 제공합니다. 이 권한을 부여하지 않으면 확장 프로그램 아이콘을 클릭하고 해당 웹사이트에 대해 활성화하여 사용하려는 모든 웹사이트에서 수동으로 Ruffle을 활성화해야 합니다."
     }
 }
