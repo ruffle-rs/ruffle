@@ -323,38 +323,26 @@ impl<'gc> MovieClip<'gc> {
     }
 
     pub fn new_import_assets(
-        activation: &mut Avm2Activation<'_, 'gc>,
+        context: &mut UpdateContext<'_, 'gc>,
         movie: Arc<SwfMovie>,
         parent: Arc<SwfMovie>,
     ) -> Self {
         let num_frames = movie.num_frames();
 
-        let loader_info = if movie.is_action_script_3() {
-            // The root movie doesn't have a `Loader`
-            // We will replace this with a `LoaderStream::Swf` later in this function
-            let loader_info =
-                LoaderInfoObject::not_yet_loaded(activation, movie.clone(), None, None, false)
-                    .expect("Failed to construct LoaderInfoObject");
-            let loader_info_obj = loader_info.as_loader_info_object().unwrap();
-            loader_info_obj.set_expose_content(activation.context.gc_context);
-            loader_info_obj.set_content_type(ContentType::Swf, activation.context.gc_context);
-            Some(loader_info)
-        } else {
-            None
-        };
+        let loader_info = None;
 
         let mc = MovieClip(GcCell::new(
-            activation.context.gc_context,
+            context.gc_context,
             MovieClipData {
                 base: Default::default(),
                 static_data: Gc::new(
-                    activation.context.gc_context,
+                    context.gc_context,
                     MovieClipStatic::with_data(
                         0,
                         movie.clone().into(),
                         num_frames,
                         loader_info,
-                        activation.context.gc_context,
+                        context.gc_context,
                     ),
                 ),
                 tag_stream_pos: 0,
@@ -385,10 +373,6 @@ impl<'gc> MovieClip<'gc> {
         ));
 
         mc
-    }
-
-    pub fn get_importer_movie(&self) -> Option<Arc<SwfMovie>> {
-        self.0.read().importer_movie.clone()
     }
 
     /// Construct a movie clip that represents the root movie

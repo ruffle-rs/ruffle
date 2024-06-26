@@ -343,21 +343,6 @@ impl<'gc> LoadManager<'gc> {
         loader.movie_loader(player, request, loader_url)
     }
 
-    async fn wait_for_full_response(
-        response: OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse>,
-    ) -> Result<(Vec<u8>, String, u16, bool), ErrorResponse> {
-        let response = response.await?;
-        let url = response.url().to_string();
-        let status = response.status();
-        let redirected = response.redirected();
-        let body = response.body().await;
-
-        match body {
-            Ok(body) => Ok((body, url, status, redirected)),
-            Err(error) => Err(ErrorResponse { url, error }),
-        }
-    }
-
     pub fn load_asset_movie(
         player: Weak<Mutex<Player>>,
         request: Request,
@@ -370,7 +355,7 @@ impl<'gc> LoadManager<'gc> {
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
 
-            match Self::wait_for_full_response(fetch).await {
+            match Loader::wait_for_full_response(fetch).await {
                 Ok((body, url, _status, _redirected)) => {
                     let content_type = ContentType::sniff(&body);
                     tracing::info!("Loading imported movie: {:?}", url);
@@ -384,15 +369,7 @@ impl<'gc> LoadManager<'gc> {
                             let movie = Arc::new(movie);
 
                             player.lock().unwrap().mutate_with_update_context(|uc| {
-                                let stage_domain = uc.avm2.stage_domain();
-                                let mut activation =
-                                    Avm2Activation::from_domain(uc.reborrow(), stage_domain);
-
-                                let clip = MovieClip::new_import_assets(
-                                    &mut activation,
-                                    movie,
-                                    importer_movie,
-                                );
+                                let clip = MovieClip::new_import_assets(uc, movie, importer_movie);
 
                                 clip.set_cur_preload_frame(uc.gc_context, 0);
                                 let mut execution_limit = ExecutionLimit::none();
