@@ -102,7 +102,7 @@ async function enableSWFTakeover() {
                     redirect: { regexSubstitution: playerPage + "#\\0" },
                 },
                 condition: {
-                    regexFilter: "^.*\\.s(?:wf|pl)(\\?.*|#.*|)$",
+                    regexFilter: "^.*:\\/\\/.*\\/.*\\.s(?:wf|pl)(\\?.*|#.*|)$",
                     responseHeaders: [
                         {
                             header: "content-type",
@@ -128,7 +128,7 @@ async function enableSWFTakeover() {
                     redirect: { regexSubstitution: playerPage + "#\\0" },
                 },
                 condition: {
-                    regexFilter: "^.*\\.s(?:wf|pl)(\\?.*|#.*|)$",
+                    regexFilter: "^.*:\\/\\/.*\\/.*\\.s(?:wf|pl)(\\?.*|#.*|)$",
                     excludedResponseHeaders: [{ header: "content-type" }],
                     resourceTypes: [
                         chrome.declarativeNetRequest.ResourceType?.MAIN_FRAME ??
