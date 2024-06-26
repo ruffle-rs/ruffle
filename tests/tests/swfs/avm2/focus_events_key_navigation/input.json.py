@@ -1,40 +1,27 @@
 #!/usr/bin/env python3
 
 key_seq = [
-    'tab',
-    'tab',
-    'right',
-    'down',
-    'down',
-    'left',
-    'left',
-    'up',
-    'left',
-    'down',
-    'down',
-    'right',
-    'down',
-    'esc',
+    'Tab',
+    'Tab',
+    'ArrowRight',
+    'ArrowDown',
+    'ArrowDown',
+    'ArrowLeft',
+    'ArrowLeft',
+    'ArrowUp',
+    'ArrowLeft',
+    'ArrowDown',
+    'ArrowDown',
+    'ArrowRight',
+    'ArrowDown',
+    'Escape',
 ]
 
 print('[')
 
-for obj in key_seq:
-    key = None
-    if obj == 'esc':
-        key = 27
-    elif obj == 'tab':
-        key = 9
-    elif obj == 'left':
-        key = 37
-    elif obj == 'up':
-        key = 38
-    elif obj == 'right':
-        key = 39
-    elif obj == 'down':
-        key = 40
-    print(f'    {{ "type": "KeyDown", "key_code": {key} }},')
-    print(f'    {{ "type": "KeyUp", "key_code": {key} }},')
+for key in key_seq:
+    print(f'    {{ "type": "KeyDown", "key": "{key}" }},')
+    print(f'    {{ "type": "KeyUp", "key": "{key}" }},')
 
 print(f'    {{ "type": "Wait" }}')
 print(']')

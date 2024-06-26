@@ -112,5 +112,5 @@
     { "type": "TextInput", "codepoint": "𝼙" },
     { "type": "TextInput", "codepoint": "𝼞" },
     { "type": "TextInput", "codepoint": "စ" },
-    { "type": "KeyDown", "key_code": 27 }
+    { "type": "KeyDown", "key": "Escape" }
 ]

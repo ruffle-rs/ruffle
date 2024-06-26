@@ -1,4 +1,4 @@
 [
   { "type": "Wait" },
-  { "type": "KeyDown", "key_code": 27 }
+  { "type": "KeyDown", "key": "Escape" }
 ]

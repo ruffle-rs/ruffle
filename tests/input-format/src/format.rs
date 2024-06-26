@@ -47,6 +47,34 @@ pub enum TextControlCode {
     Delete,
 }
 
+/// All possible keys which can be simulated in tests.
+///
+/// Note: Add more keys if needed.
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+pub enum AutomatedKey {
+    Char(char),
+    Numpad(char),
+    ArrowDown,
+    ArrowLeft,
+    ArrowRight,
+    ArrowUp,
+    Backspace,
+    CapsLock,
+    Control,
+    Delete,
+    End,
+    Enter,
+    Escape,
+    Home,
+    Insert,
+    PageDown,
+    PageUp,
+    Shift,
+    Space,
+    Tab,
+    Unknown,
+}
+
 /// All automated event types supported by FlashTAS.
 ///
 /// A FlashTAS input file consists of a string of `AutomatedEvent`s which are
@@ -82,10 +110,10 @@ pub enum AutomatedEvent {
     },
 
     /// Press a key
-    KeyDown { key_code: u32 },
+    KeyDown { key: AutomatedKey },
 
     /// Release a key
-    KeyUp { key_code: u32 },
+    KeyUp { key: AutomatedKey },
 
     /// Input a character code
     TextInput { codepoint: char },

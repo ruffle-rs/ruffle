@@ -27,7 +27,7 @@
     },
     {
         "type": "KeyDown",
-        "key_code": 13
+        "key": "Enter"
     },
     {
         "type": "Wait"
