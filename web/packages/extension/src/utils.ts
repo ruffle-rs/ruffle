@@ -10,6 +10,10 @@ const DEFAULT_OPTIONS: Required<Options> = {
     swfTakeover: true,
 };
 
+// TODO: Once https://crbug.com/798169 is addressed, just use browser.
+// We have to wait until whatever version of Chromium supports that
+// is old enough to be the oldest version we want to support.
+
 export let i18n: typeof browser.i18n | typeof chrome.i18n;
 
 type ScriptingType = (typeof browser.scripting | typeof chrome.scripting) & {
