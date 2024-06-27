@@ -139,10 +139,7 @@ package flash.text {
             stub_method("flash.text.TextField", "insertXMLText");
         }
 
-        public function getCharIndexAtPoint(x:Number, y:Number):int {
-            stub_method("flash.text.TextField", "getCharIndexAtPoint");
-            return 0;
-        }
+        public native function getCharIndexAtPoint(x:Number, y:Number):int;
 
         public native function getLineLength(lineIndex:int):int;
 
@@ -165,10 +162,7 @@ package flash.text {
             return null;
         }
 
-        public function getLineIndexAtPoint(x:Number, y:Number):int {
-            stub_method("flash.text.TextField", "getLineIndexAtPoint");
-            return 0;
-        }
+        public native function getLineIndexAtPoint(x:Number, y:Number):int;
 
         public native function getLineIndexOfChar(charIndex:int):int;
 
