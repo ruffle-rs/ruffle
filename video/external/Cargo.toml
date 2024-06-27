@@ -22,9 +22,22 @@ reqwest = { version = "0.12.5", default-features = false, features = ["blocking"
 hex = { version = "0.4.3", optional = true }
 bzip2 = { version = "0.4.4", features = ["static"], optional = true }
 
+# Needed for WebCodecs:
+web-sys = { version = "0.3.69", features = [
+    "VideoDecoder", "VideoDecoderConfig", "VideoDecoderInit", "EncodedVideoChunk", "EncodedVideoChunkInit",
+    "EncodedVideoChunkType", "DomException", "CodecState", "VideoFrame",
+
+    "VideoFrameCopyToOptions", "VideoPixelFormat", "DomRectReadOnly"
+], optional = true }
+js-sys = { workspace = true, optional = true  }
+wasm-bindgen = { workspace = true, optional = true  }
 
 [package.metadata.cargo-machete]
 ignored = [
     # Renames itself to "md5", see: https://github.com/bnjbvr/cargo-machete/issues/8
     "md-5"
 ]
+
+[features]
+openh264 = ["libloading", "md-5", "reqwest", "hex", "bzip2"]
+webcodecs = ["web-sys", "js-sys", "wasm-bindgen"]

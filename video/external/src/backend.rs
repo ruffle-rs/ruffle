@@ -1,4 +1,5 @@
 use crate::decoder::VideoDecoder;
+
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, PixelRegion};
 use ruffle_video::backend::VideoBackend;
@@ -24,6 +25,7 @@ enum ProxyOrStream {
 /// except for H.264, for which it uses an external decoder.
 pub struct ExternalVideoBackend {
     streams: SlotMap<VideoStreamHandle, ProxyOrStream>,
+    #[allow(dead_code)]
     openh264_lib_filepath: Option<PathBuf>,
     software: SoftwareVideoBackend,
 }
