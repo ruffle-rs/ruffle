@@ -232,7 +232,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         }
 
         if has_underline {
-            self.append_box(LayoutBox::from_drawing(line_drawing));
+            let pos = self.last_box_end_position();
+            self.append_box(LayoutBox::from_drawing(pos, line_drawing));
         }
     }
 
@@ -629,12 +630,17 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             let bullet = WStr::from_units(&[0x2022u16]);
             let text_size = Size::from(bullet_font.measure(bullet, params, false));
             let text_bounds = BoxBounds::from_position_and_size(bullet_cursor, text_size);
-            let mut new_bullet = LayoutBox::from_bullet(bullet_font, span);
+            let pos = self.last_box_end_position();
+            let mut new_bullet = LayoutBox::from_bullet(pos, bullet_font, span);
 
             new_bullet.bounds = text_bounds;
 
             self.append_box(new_bullet);
         }
+    }
+
+    fn last_box_end_position(&self) -> usize {
+        self.boxes.last().map(|b| b.end()).unwrap_or(0)
     }
 
     /// Add a box to the current line of text.
@@ -821,10 +827,10 @@ pub enum LayoutContent<'gc> {
     /// The text is assumed to be pulled from the same `FormatSpans` that
     /// generated this layout box.
     Text {
-        /// The start position of the text to render.
+        /// The start position of the text to render (inclusive).
         start: usize,
 
-        /// The end position of the text to render.
+        /// The end position of the text to render (exclusive).
         end: usize,
 
         /// The formatting options for the text box.
@@ -849,6 +855,9 @@ pub enum LayoutContent<'gc> {
     /// This is almost identical to `Text`, but the text contents are assumed
     /// to be U+2022.
     Bullet {
+        /// The position of the bullet.
+        position: usize,
+
         /// The formatting options for the text box.
         #[collect(require_static)]
         text_format: TextFormat,
@@ -871,7 +880,13 @@ pub enum LayoutContent<'gc> {
     /// The drawing will be rendered with its origin at the position of the
     /// layout box's bounds. The size of those bounds do not affect the
     /// rendering of the drawing.
-    Drawing(#[collect(require_static)] Drawing),
+    Drawing {
+        /// The position of the drawing in text.
+        position: usize,
+
+        #[collect(require_static)]
+        drawing: Drawing,
+    },
 }
 
 impl<'gc> LayoutBox<'gc> {
@@ -893,12 +908,13 @@ impl<'gc> LayoutBox<'gc> {
     }
 
     /// Construct a bullet.
-    pub fn from_bullet(font: Font<'gc>, span: &TextSpan) -> Self {
+    pub fn from_bullet(position: usize, font: Font<'gc>, span: &TextSpan) -> Self {
         let params = EvalParameters::from_span(span);
 
         Self {
             bounds: Default::default(),
             content: LayoutContent::Bullet {
+                position,
                 text_format: span.get_text_format(),
                 font,
                 params,
@@ -908,10 +924,10 @@ impl<'gc> LayoutBox<'gc> {
     }
 
     /// Construct a drawing.
-    pub fn from_drawing(drawing: Drawing) -> Self {
+    pub fn from_drawing(position: usize, drawing: Drawing) -> Self {
         Self {
             bounds: Default::default(),
-            content: LayoutContent::Drawing(drawing),
+            content: LayoutContent::Drawing { position, drawing },
         }
     }
 }
@@ -1095,6 +1111,7 @@ impl<'gc> LayoutBox<'gc> {
                 font,
                 params,
                 color,
+                ..
             } => Some((
                 WStr::from_units(&[0x2022u16]),
                 text_format,
@@ -1102,7 +1119,7 @@ impl<'gc> LayoutBox<'gc> {
                 *params,
                 swf::Color::from_rgb(color.to_rgb(), 0xFF),
             )),
-            LayoutContent::Drawing(..) => None,
+            LayoutContent::Drawing { .. } => None,
         }
     }
 
@@ -1111,7 +1128,7 @@ impl<'gc> LayoutBox<'gc> {
         match &self.content {
             LayoutContent::Text { .. } => None,
             LayoutContent::Bullet { .. } => None,
-            LayoutContent::Drawing(drawing) => Some(drawing),
+            LayoutContent::Drawing { drawing, .. } => Some(drawing),
         }
     }
 
@@ -1121,6 +1138,22 @@ impl<'gc> LayoutBox<'gc> {
 
     pub fn is_bullet(&self) -> bool {
         matches!(&self.content, LayoutContent::Bullet { .. })
+    }
+
+    pub fn start(&self) -> usize {
+        match &self.content {
+            LayoutContent::Text { start, .. } => *start,
+            LayoutContent::Bullet { position, .. } => *position,
+            LayoutContent::Drawing { position, .. } => *position,
+        }
+    }
+
+    pub fn end(&self) -> usize {
+        match &self.content {
+            LayoutContent::Text { end, .. } => *end,
+            LayoutContent::Bullet { position, .. } => *position,
+            LayoutContent::Drawing { position, .. } => *position,
+        }
     }
 }
 
