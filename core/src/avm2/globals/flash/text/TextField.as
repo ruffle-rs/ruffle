@@ -170,10 +170,7 @@ package flash.text {
             return 0;
         }
 
-        public function getLineIndexOfChar(charIndex:int):int {
-            stub_method("flash.text.TextField", "getLineIndexOfChar");
-            return 0;
-        }
+        public native function getLineIndexOfChar(charIndex:int):int;
 
         public function getParagraphLength(charIndex:int):int {
             stub_method("flash.text.TextField", "getParagraphLength");

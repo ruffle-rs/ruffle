@@ -10,7 +10,7 @@ use crate::tag_utils::SwfMovie;
 use crate::DefaultFont;
 use gc_arena::Collect;
 use ruffle_render::shape_utils::DrawCommand;
-use std::cmp::{max, min};
+use std::cmp::{max, min, Ordering};
 use std::fmt::{Debug, Formatter};
 use std::mem;
 use std::ops::{Deref, Range};
@@ -772,6 +772,19 @@ impl<'gc> Layout<'gc> {
             lines_iter: self.lines.iter(),
             boxes_iter: None,
         }
+    }
+
+    pub fn find_line_index_by_position(&self, position: usize) -> Option<usize> {
+        let result = self.lines.binary_search_by(|probe| {
+            if probe.end <= position {
+                Ordering::Less
+            } else if position < probe.start {
+                Ordering::Greater
+            } else {
+                Ordering::Equal
+            }
+        });
+        result.ok()
     }
 }
 
