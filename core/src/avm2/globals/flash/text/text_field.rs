@@ -1191,6 +1191,30 @@ pub fn get_line_text<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn get_line_offset<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let Some(this) = this
+        .as_display_object()
+        .and_then(|this| this.as_edit_text())
+    else {
+        return Ok(Value::Undefined);
+    };
+
+    let line_num = args.get_i32(activation, 0)?;
+    if line_num < 0 {
+        return Err(make_error_2006(activation));
+    }
+
+    return if let Some(offset) = this.line_offset(line_num as usize) {
+        Ok(offset.into())
+    } else {
+        Err(make_error_2006(activation))
+    };
+}
+
 pub fn get_bottom_scroll_v<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
