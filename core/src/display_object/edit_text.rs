@@ -1920,18 +1920,8 @@ impl<'gc> EditText<'gc> {
     pub fn line_text(self, line: usize) -> Option<WString> {
         let read = self.0.read();
         let line = read.layout.lines().get(line)?;
-        let text = read.text_spans.text();
-
-        let mut line_text = WString::new();
-        for layout_box in line.boxes_iter() {
-            if let LayoutContent::Text { start, end, .. } = layout_box.content() {
-                if let Some(box_tex) = text.slice(*start..*end) {
-                    line_text.push_str(box_tex);
-                }
-            }
-        }
-
-        Some(line_text)
+        let line_text = read.text_spans.text().slice(line.text_range())?;
+        Some(WString::from_wstr(line_text))
     }
 
     pub fn line_offset(self, line: usize) -> Option<usize> {
