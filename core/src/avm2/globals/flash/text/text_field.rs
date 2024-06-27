@@ -1164,11 +1164,11 @@ pub fn get_line_length<'gc>(
         return Err(make_error_2006(activation));
     }
 
-    return if let Some(length) = this.line_length(line_num as usize) {
+    if let Some(length) = this.line_length(line_num as usize) {
         Ok(length.into())
     } else {
         Err(make_error_2006(activation))
-    };
+    }
 }
 
 pub fn get_line_text<'gc>(
@@ -1208,11 +1208,11 @@ pub fn get_line_offset<'gc>(
         return Err(make_error_2006(activation));
     }
 
-    return if let Some(offset) = this.line_offset(line_num as usize) {
+    if let Some(offset) = this.line_offset(line_num as usize) {
         Ok(offset.into())
     } else {
         Err(make_error_2006(activation))
-    };
+    }
 }
 
 pub fn get_bottom_scroll_v<'gc>(
