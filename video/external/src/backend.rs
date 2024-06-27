@@ -28,6 +28,7 @@ enum ProxyOrStream {
 /// except for H.264, for which it uses an external decoder.
 pub struct ExternalVideoBackend {
     streams: SlotMap<VideoStreamHandle, ProxyOrStream>,
+    #[allow(dead_code)]
     openh264_lib_filepath: Option<PathBuf>,
     software: SoftwareVideoBackend,
 }
