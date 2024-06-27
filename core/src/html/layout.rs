@@ -13,7 +13,7 @@ use ruffle_render::shape_utils::DrawCommand;
 use std::cmp::{max, min};
 use std::fmt::{Debug, Formatter};
 use std::mem;
-use std::ops::Deref;
+use std::ops::{Deref, Range};
 use std::slice::Iter;
 use std::sync::Arc;
 use swf::{Point, Twips};
@@ -345,7 +345,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         line_bounds += Position::from((left_adjustment + align_adjustment, Twips::ZERO));
         line_bounds += Size::from((Twips::ZERO, font_leading_adjustment));
 
-        self.flush_line();
+        self.flush_line(end);
 
         if let Some(eb) = &mut self.exterior_bounds {
             *eb += line_bounds;
@@ -354,24 +354,39 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         }
     }
 
-    fn flush_line(&mut self) {
-        if !self.boxes.is_empty() {
-            let boxes = mem::take(&mut self.boxes);
-            let bounds = boxes
-                .iter()
-                .fold(boxes[0].bounds, |bounds, b| bounds + b.bounds);
-            self.lines.push(LayoutLine {
-                index: self.current_line_index,
-                bounds,
-                boxes,
-            });
-            self.current_line_index += 1;
+    fn flush_line(&mut self, end: usize) {
+        if self.boxes.is_empty() {
+            return;
+        }
 
-            if let Some(lb) = &mut self.bounds {
-                *lb += bounds;
-            } else {
-                self.bounds = Some(bounds);
-            }
+        let boxes = mem::take(&mut self.boxes);
+        let first_box = boxes.first().unwrap();
+        let start = first_box.start();
+        let bounds = boxes
+            .iter()
+            .fold(first_box.bounds, |bounds, b| bounds + b.bounds);
+
+        // Update last line's end position to take into account the delimiter.
+        // It's easier to do it here, but maybe after some refactors this update
+        // will not be needed, and the end position will be calculated correctly.
+        if let Some(last_line) = self.lines.last_mut() {
+            last_line.end = start;
+        }
+
+        self.lines.push(LayoutLine {
+            index: self.current_line_index,
+            bounds,
+            start,
+            end,
+            boxes,
+        });
+        self.current_line_index += 1;
+
+        // Update layout bounds
+        if let Some(lb) = &mut self.bounds {
+            *lb += bounds;
+        } else {
+            self.bounds = Some(bounds);
         }
     }
 
@@ -775,6 +790,13 @@ pub struct LayoutLine<'gc> {
     #[collect(require_static)]
     bounds: BoxBounds<Twips>,
 
+    /// The start position of the line (inclusive).
+    start: usize,
+
+    /// The end position of the line (exclusive).
+    /// This position includes the line delimiter.
+    end: usize,
+
     /// Layout boxes contained within this line.
     boxes: Vec<LayoutBox<'gc>>,
 }
@@ -786,6 +808,22 @@ impl<'gc> LayoutLine<'gc> {
 
     pub fn bounds(&self) -> BoxBounds<Twips> {
         self.bounds
+    }
+
+    pub fn start(&self) -> usize {
+        self.start
+    }
+
+    pub fn end(&self) -> usize {
+        self.end
+    }
+
+    pub fn len(&self) -> usize {
+        self.end() - self.start()
+    }
+
+    pub fn text_range(&self) -> Range<usize> {
+        self.start..self.end
     }
 
     pub fn offset_y(&self) -> Twips {
