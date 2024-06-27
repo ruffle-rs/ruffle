@@ -11,6 +11,7 @@ use crate::DefaultFont;
 use gc_arena::Collect;
 use ruffle_render::shape_utils::DrawCommand;
 use std::cmp::{max, min};
+use std::fmt::{Debug, Formatter};
 use std::mem;
 use std::ops::Deref;
 use std::slice::Iter;
@@ -819,7 +820,7 @@ pub struct LayoutBox<'gc> {
 /// Represents different content modes of a given `LayoutBox`.
 ///
 /// Currently, a `LayoutBox` can contain `Text`, `Bullet`s, or a `Drawing`.
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub enum LayoutContent<'gc> {
     /// A layout box containing some part of a text span.
@@ -887,6 +888,26 @@ pub enum LayoutContent<'gc> {
         #[collect(require_static)]
         drawing: Drawing,
     },
+}
+
+impl<'gc> Debug for LayoutContent<'gc> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LayoutContent::Text { start, end, .. } => f
+                .debug_struct("Text")
+                .field("start", start)
+                .field("end", end)
+                .finish(),
+            LayoutContent::Bullet { position, .. } => f
+                .debug_struct("Bullet")
+                .field("position", position)
+                .finish(),
+            LayoutContent::Drawing { position, .. } => f
+                .debug_struct("Drawing")
+                .field("position", position)
+                .finish(),
+        }
+    }
 }
 
 impl<'gc> LayoutBox<'gc> {
