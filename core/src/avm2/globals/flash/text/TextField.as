@@ -144,10 +144,7 @@ package flash.text {
             return 0;
         }
 
-        public function getLineLength(lineIndex:int):int {
-            stub_method("flash.text.TextField", "getLineLength");
-            return 0;
-        }
+        public native function getLineLength(lineIndex:int):int;
 
         public native function getLineText(lineIndex:int):String;
 

@@ -1913,6 +1913,10 @@ impl<'gc> EditText<'gc> {
         })
     }
 
+    pub fn line_length(self, line: usize) -> Option<usize> {
+        Some(self.0.read().layout.lines().get(line)?.len())
+    }
+
     pub fn line_text(self, line: usize) -> Option<WString> {
         let read = self.0.read();
         let line = read.layout.lines().get(line)?;
