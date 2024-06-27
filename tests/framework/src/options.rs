@@ -180,8 +180,10 @@ impl PlayerOptions {
                 let current_exe = std::env::current_exe()?;
                 let directory = current_exe.parent().expect("Executable parent dir");
 
-                use ruffle_video_external::backend::ExternalVideoBackend;
-                let openh264 = ExternalVideoBackend::load_openh264(directory)
+                use ruffle_video_external::{
+                    backend::ExternalVideoBackend, decoder::openh264::OpenH264Codec,
+                };
+                let openh264 = OpenH264Codec::load(directory)
                     .map_err(|e| anyhow!("Couldn't load OpenH264: {}", e))?;
 
                 player_builder =
