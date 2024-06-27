@@ -1931,6 +1931,10 @@ impl<'gc> EditText<'gc> {
         Some(first_box.start())
     }
 
+    pub fn line_index_of_char(self, index: usize) -> Option<usize> {
+        self.0.read().layout.find_line_index_by_position(index)
+    }
+
     fn execute_avm1_asfunction(
         self,
         context: &mut UpdateContext<'_, 'gc>,

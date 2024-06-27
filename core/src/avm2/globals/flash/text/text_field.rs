@@ -1444,3 +1444,28 @@ pub fn get_selected_text<'gc>(
     }
     Ok("".into())
 }
+
+pub fn get_line_index_of_char<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let Some(this) = this
+        .as_display_object()
+        .and_then(|this| this.as_edit_text())
+    else {
+        return Ok(Value::Undefined);
+    };
+
+    let index = args.get_i32(activation, 0)?;
+    if index < 0 {
+        // Docs say "throw RangeError", reality says "return -1".
+        return Ok(Value::Number(-1f64));
+    }
+
+    if let Some(line) = this.line_index_of_char(index as usize) {
+        Ok(line.into())
+    } else {
+        Ok(Value::Number(-1f64))
+    }
+}
