@@ -94,5 +94,20 @@
     },
     "settings_saved": {
         "message": "Configuración grabada"
+    },
+    "onboarding_page": {
+        "message": "Página de bienvenida"
+    },
+    "permissions_grant": {
+        "message": "Permitir a Ruffle acceder a todos los datos en todos los sitios"
+    },
+    "permissions_not_granted": {
+        "message": "Necesitarás pulsar el icono de Ruffle en cada sitio en el que quieras usar Ruffle"
+    },
+    "grant_single_site_permission": {
+        "message": "Activar permanentemente en este sitio"
+    },
+    "permissions_explanation": {
+        "message": "La extensión de Ruffle funciona mejor si puede acceder a datos en todos los sitios web. Esto le permite ejecutarse cuando se carga cualquier sitio web por primera vez, lo que permite convencer a los sitios web que usan Flash Player inmediatamente para que permitan que se ejecute el contenido de Flash. También ofrece la posibilidad de cargar archivos SWF desde el reproductor interno en otras ubicaciones de la web. Si no otorga este permiso, tendrás que habilitar Ruffle manualmente en cada sitio web en el que quieras usarlo haciendo clic en el icono de la extension y habilitándolo para ese sitio web."
     }
 }
