@@ -1,6 +1,11 @@
 use core::slice;
-use std::ffi::{c_int, c_uchar};
-use std::ptr;
+use std::{
+    ffi::{c_int, c_uchar},
+    fs::File,
+    io::copy,
+    path::PathBuf,
+    ptr,
+};
 
 use crate::decoder::openh264_sys::{self, videoFormatI420, ISVCDecoder, OpenH264};
 use crate::decoder::VideoDecoder;
@@ -8,6 +13,9 @@ use crate::decoder::VideoDecoder;
 use ruffle_render::bitmap::BitmapFormat;
 use ruffle_video::error::Error;
 use ruffle_video::frame::{DecodedFrame, EncodedFrame, FrameDependency};
+
+use bzip2::read::BzDecoder;
+use md5::{Digest, Md5};
 
 /// H264 video decoder.
 pub struct H264Decoder {
@@ -19,6 +27,80 @@ pub struct H264Decoder {
 }
 
 impl H264Decoder {
+    fn get_openh264_data() -> Result<(&'static str, &'static str), Box<dyn std::error::Error>> {
+        // Source: https://github.com/cisco/openh264/releases/tag/v2.4.1
+        match (std::env::consts::OS, std::env::consts::ARCH) {
+            ("linux", "x86") => Ok((
+                "libopenh264-2.4.1-linux32.7.so",
+                "dd0743066117d63e1b2abc56a86506e5",
+            )),
+            ("linux", "x86_64") => Ok((
+                "libopenh264-2.4.1-linux64.7.so",
+                "19c561386a9564f8510fcb7586b9d402",
+            )),
+            ("linux", "arm") => Ok((
+                "libopenh264-2.4.1-linux-arm.7.so",
+                "2274a1bbd13f32b7afe22092e44fa2b5",
+            )),
+            ("linux", "aarch64") => Ok((
+                "libopenh264-2.4.1-linux-arm64.7.so",
+                "2aa205f08077aa2d049032e0b56c5b84",
+            )),
+            ("macos", "x86_64") => Ok((
+                "libopenh264-2.4.1-mac-x64.dylib",
+                "9fefa1e0279a49b8a4e9cf6fc148bc0c",
+            )),
+            ("macos", "aarch64") => Ok((
+                "libopenh264-2.4.1-mac-arm64.dylib",
+                "41f59bb5696ffeadbfba3a8a95ec39b7",
+            )),
+            ("windows", "x86") => Ok((
+                "openh264-2.4.1-win32.dll",
+                "a9360e6dd1e24320c3d65a0c65bf14a4",
+            )),
+            ("windows", "x86_64") => Ok((
+                "openh264-2.4.1-win64.dll",
+                "c85406e6b73812ec3fb9da5f898c6a9e",
+            )),
+            (os, arch) => Err(format!("Unsupported OS/ARCH: {} {}", os, arch).into()),
+        }
+    }
+
+    pub fn get_openh264() -> Result<PathBuf, Box<dyn std::error::Error>> {
+        // See the license at: https://www.openh264.org/BINARY_LICENSE.txt
+        const URL_BASE: &str = "http://ciscobinary.openh264.org/";
+        const URL_SUFFIX: &str = ".bz2";
+
+        let (filename, md5sum) = Self::get_openh264_data()?;
+
+        let filepath = std::env::current_exe()?
+            .parent()
+            .ok_or("Could not determine Ruffle location.")?
+            .join(filename);
+
+        // If the binary doesn't exist in the expected location, download it.
+        if !filepath.is_file() {
+            let url = format!("{}{}{}", URL_BASE, filename, URL_SUFFIX);
+            let response = reqwest::blocking::get(url)?;
+            let bytes = response.bytes()?;
+            let mut bzip2_reader = BzDecoder::new(bytes.as_ref());
+
+            let mut file = File::create(filepath.clone())?;
+            copy(&mut bzip2_reader, &mut file)?;
+        }
+
+        // Regardless of whether the library was already there, or we just downloaded it, let's check the MD5 hash.
+        let mut md5 = Md5::new();
+        copy(&mut File::open(filepath.clone())?, &mut md5)?;
+        let result: [u8; 16] = md5.finalize().into();
+
+        if result[..] != hex::decode(md5sum)?[..] {
+            return Err(format!("MD5 checksum mismatch for {}", filename).into());
+        }
+
+        Ok(filepath)
+    }
+
     /// `extradata` should hold "AVCC (MP4) format" decoder configuration, including PPS and SPS.
     /// Make sure it has any start code emulation prevention "three bytes" removed.
     pub fn new(openh264_lib_filename: &std::path::Path) -> Self {
