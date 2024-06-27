@@ -1147,6 +1147,30 @@ pub fn get_line_metrics<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn get_line_length<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let Some(this) = this
+        .as_display_object()
+        .and_then(|this| this.as_edit_text())
+    else {
+        return Ok(Value::Undefined);
+    };
+
+    let line_num = args.get_i32(activation, 0)?;
+    if line_num < 0 {
+        return Err(make_error_2006(activation));
+    }
+
+    return if let Some(length) = this.line_length(line_num as usize) {
+        Ok(length.into())
+    } else {
+        Err(make_error_2006(activation))
+    };
+}
+
 pub fn get_line_text<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
