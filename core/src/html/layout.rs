@@ -257,7 +257,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         only_line: bool,
         final_line_of_para: bool,
-        text: Option<(&'a WStr, usize, &TextSpan)>,
+        end: usize,
+        span: &TextSpan,
         font_type: FontType,
     ) {
         let mut line_bounds = None;
@@ -335,10 +336,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             box_count += 1;
         }
 
-        if let Some((text, end, span)) = text {
-            if box_count == 0 {
-                self.append_text(&text[end..end], end, end, span);
-            }
+        if self.boxes.is_empty() {
+            self.append_text(WStr::empty(), end, end, span);
         }
 
         self.append_underlines();
@@ -388,12 +387,11 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     fn explicit_newline(
         &mut self,
         context: &mut UpdateContext<'_, 'gc>,
-        text: &'a WStr,
         end: usize,
         span: &TextSpan,
         font_type: FontType,
     ) {
-        self.fixup_line(context, false, true, Some((text, end, span)), font_type);
+        self.fixup_line(context, false, true, end, span, font_type);
 
         self.cursor.set_x(Twips::ZERO);
         self.cursor += (
@@ -417,12 +415,11 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     fn newline(
         &mut self,
         context: &mut UpdateContext<'_, 'gc>,
-        text: &'a WStr,
         end: usize,
         span: &TextSpan,
         font_type: FontType,
     ) {
-        self.fixup_line(context, false, false, Some((text, end, span)), font_type);
+        self.fixup_line(context, false, false, end, span, font_type);
 
         self.cursor.set_x(Twips::ZERO);
         self.cursor += (
@@ -701,12 +698,13 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         fs: &'a FormatSpans,
         font_type: FontType,
     ) -> Layout<'gc> {
+        let last_span = fs.last_span().expect("At least one span should be present");
         self.fixup_line(
             context,
             !self.has_line_break,
             true,
-            fs.last_span()
-                .map(|ls| (fs.displayed_text(), fs.displayed_text().len(), ls)),
+            fs.displayed_text().len(),
+            last_span,
             font_type,
         );
 
@@ -984,7 +982,6 @@ pub fn lower_from_text_spans<'gc>(
                 match delimiter {
                     Some(b'\n' | b'\r') => layout_context.explicit_newline(
                         context,
-                        fs.displayed_text(),
                         span_start + slice_start - 1,
                         span,
                         font_type,
@@ -1022,7 +1019,6 @@ pub fn lower_from_text_spans<'gc>(
                         } else if breakpoint == 0 {
                             layout_context.newline(
                                 context,
-                                fs.displayed_text(),
                                 start + next_breakpoint,
                                 span,
                                 font_type,
@@ -1052,13 +1048,7 @@ pub fn lower_from_text_spans<'gc>(
                             break;
                         }
 
-                        layout_context.newline(
-                            context,
-                            fs.displayed_text(),
-                            start + next_breakpoint,
-                            span,
-                            font_type,
-                        );
+                        layout_context.newline(context, start + next_breakpoint, span, font_type);
                         let next_dim = layout_context.wrap_dimensions(span);
 
                         width = next_dim.0;
