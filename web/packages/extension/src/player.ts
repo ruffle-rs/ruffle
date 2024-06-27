@@ -299,11 +299,11 @@ window.addEventListener("load", () => {
 });
 
 async function loadSwf(swfUrl: string) {
-    try {
-        const pathname = new URL(swfUrl).pathname;
+    const url = await utils.resolveSwfUrl(swfUrl);
+    if (url !== null) {
+        swfUrl = url.toString();
+        const pathname = url.pathname;
         document.title = pathname.substring(pathname.lastIndexOf("/") + 1);
-    } catch (_) {
-        // Ignore URL parsing errors.
     }
 
     const options = await utils.getExplicitOptions();

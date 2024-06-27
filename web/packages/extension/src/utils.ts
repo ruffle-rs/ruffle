@@ -105,6 +105,84 @@ export async function getExplicitOptions(): Promise<Options> {
     return options;
 }
 
+/**
+ * Resolves a given string to a URL if possible.
+ * If the protocol is missing and the string is otherwise a valid web URL, https:// is inserted if the
+ * server supports https, otherwise http.
+ * If the protocol is missing and the string is otherwise a valid file URL, file:/// is inserted.
+ * If the string can't be resolved to a URL, null is returned.
+ * @param enteredUrl The string that should be resolved to a URL.
+ * @return The resolved URL object.
+ */
+export async function resolveSwfUrl(enteredUrl: string): Promise<URL | null> {
+    // TODO: Use canParse in the future when it doesn't break browser compatibility
+    // If the URL is (very likely) a file URL with missing file protocol, we return it as file URL
+    // Must be the first test as the URL constructor accepts C:\… as URL with protocol C
+    if (enteredUrl.match(/^[A-Za-z]:\\|^[/~\\]/)) {
+        try {
+            return new URL("file:///" + enteredUrl);
+        } catch {
+            return null;
+        }
+    }
+
+    try {
+        return new URL(enteredUrl);
+    } catch {
+        // The protocol is missing
+
+        // If the URL doesn't contain a dot, it can't be a valid web URL
+        // The URL constructor doesn't check this if a protocol exists
+        if (!enteredUrl.includes(".")) {
+            return null;
+        }
+
+        try {
+            // TODO: Make the loading animation appear before waiting for the server response
+            // Only use http if https doesn't work and http works
+            // (Otherwise, error logs for offline websites would always contain http)
+            if (
+                (await serverAvailable("https://" + enteredUrl, 200)) ||
+                !(await serverAvailable("http://" + enteredUrl, 100))
+            ) {
+                return new URL("https://" + enteredUrl);
+            } else {
+                return new URL("http://" + enteredUrl);
+            }
+        } catch {
+            return null;
+        }
+    }
+}
+
+/**
+ * Tests and returns whether a server exists under a given URL.
+ * @param url The URL that should be tested.
+ * @param timeout The maximum number of milliseconds that should be waited for a response.
+ * @return Whether a server exists under the given URL.
+ */
+async function serverAvailable(
+    url: string | URL,
+    timeout: number,
+): Promise<boolean> {
+    // Polyfill for older browsers
+    AbortSignal.timeout ??= function timeout(milliseconds) {
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(), milliseconds);
+        return controller.signal;
+    };
+
+    try {
+        await fetch(url, {
+            signal: AbortSignal.timeout(timeout),
+            mode: "no-cors",
+        });
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 export const hasAllUrlsPermission = async () => {
     const allPermissions = await permissions.getAll();
     return allPermissions.origins?.includes("<all_urls>") ?? false;
