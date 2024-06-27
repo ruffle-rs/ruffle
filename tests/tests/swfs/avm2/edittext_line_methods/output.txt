@@ -1,0 +1,294 @@
+Field: text1
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  text1.getLineLength(0) = 7
+  text1.getLineOffset(0) = 0
+  text1.getLineText(0) = line 1\n
+  text1.getLineLength(1) = 7
+  text1.getLineOffset(1) = 7
+  text1.getLineText(1) =  line2\n
+  text1.getLineLength(2) = 1
+  text1.getLineOffset(2) = 14
+  text1.getLineText(2) = \n
+  text1.getLineLength(3) = 8
+  text1.getLineOffset(3) = 15
+  text1.getLineText(3) =  line 4\n
+  text1.getLineLength(4) = 0
+  text1.getLineOffset(4) = 23
+  text1.getLineText(4) = 
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+Field: text2
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  text2.getLineLength(0) = 7
+  text2.getLineOffset(0) = 0
+  text2.getLineText(0) = line 1\n
+  text2.getLineLength(1) = 6
+  text2.getLineOffset(1) = 7
+  text2.getLineText(1) =  line2
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+Field: text3
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  text3.getLineLength(0) = 0
+  text3.getLineOffset(0) = 0
+  text3.getLineText(0) = 
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+Field: text4
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  text4.getLineLength(0) = 1
+  text4.getLineOffset(0) = 0
+  text4.getLineText(0) = \n
+  text4.getLineLength(1) = 0
+  text4.getLineOffset(1) = 1
+  text4.getLineText(1) = 
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+Field: text5
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  text5.getLineLength(0) = 4
+  text5.getLineOffset(0) = 0
+  text5.getLineText(0) = line
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+Field: text6
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  text6.getLineLength(0) = 12
+  text6.getLineOffset(0) = 0
+  text6.getLineText(0) = line 1line 2
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+Field: text7
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  text7.getLineLength(0) = 7
+  text7.getLineOffset(0) = 0
+  text7.getLineText(0) = line 1\n
+  text7.getLineLength(1) = 6
+  text7.getLineOffset(1) = 7
+  text7.getLineText(1) = line 2
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+Field: text8
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  text8.getLineLength(0) = 14
+  text8.getLineOffset(0) = 0
+  text8.getLineText(0) = line 1  line 2
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+Field: text9
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  text9.getLineLength(0) = 12
+  text9.getLineOffset(0) = 0
+  text9.getLineText(0) = line 1line 2
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+Field: text10
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  text10.getLineLength(0) = 8
+  text10.getLineOffset(0) = 0
+  text10.getLineText(0) = line 1 \n
+  text10.getLineLength(1) = 1
+  text10.getLineOffset(1) = 8
+  text10.getLineText(1) = \n
+  text10.getLineLength(2) = 7
+  text10.getLineOffset(2) = 9
+  text10.getLineText(2) =  line 2
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+Field: text11
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  text11.getLineLength(0) = 8
+  text11.getLineOffset(0) = 0
+  text11.getLineText(0) = line 1 \n
+  text11.getLineLength(1) = 1
+  text11.getLineOffset(1) = 8
+  text11.getLineText(1) = \n
+  text11.getLineLength(2) = 4
+  text11.getLineOffset(2) = 9
+  text11.getLineText(2) =  li\n
+  text11.getLineLength(3) = 4
+  text11.getLineOffset(3) = 13
+  text11.getLineText(3) = ne 2
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+Field: text12
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  text12.getLineLength(0) = 2
+  text12.getLineOffset(0) = 0
+  text12.getLineText(0) = a\n
+  text12.getLineLength(1) = 1
+  text12.getLineOffset(1) = 2
+  text12.getLineText(1) = \n
+  text12.getLineLength(2) = 2
+  text12.getLineOffset(2) = 3
+  text12.getLineText(2) = b\n
+  text12.getLineLength(3) = 1
+  text12.getLineOffset(3) = 5
+  text12.getLineText(3) = \n
+  text12.getLineLength(4) = 5
+  text12.getLineOffset(4) = 6
+  text12.getLineText(4) = c\t\td\n
+  text12.getLineLength(5) = 1
+  text12.getLineOffset(5) = 11
+  text12.getLineText(5) = \n
+  text12.getLineLength(6) = 2
+  text12.getLineOffset(6) = 12
+  text12.getLineText(6) = e\n
+  text12.getLineLength(7) = 1
+  text12.getLineOffset(7) = 14
+  text12.getLineText(7) = \n
+  text12.getLineLength(8) = 2
+  text12.getLineOffset(8) = 15
+  text12.getLineText(8) = f\n
+  text12.getLineLength(9) = 1
+  text12.getLineOffset(9) = 17
+  text12.getLineText(9) = \n
+  text12.getLineLength(10) = 1
+  text12.getLineOffset(10) = 18
+  text12.getLineText(10) = \n
+  text12.getLineLength(11) = 2
+  text12.getLineOffset(11) = 19
+  text12.getLineText(11) = g\n
+  text12.getLineLength(12) = 1
+  text12.getLineOffset(12) = 21
+  text12.getLineText(12) = \n
+  text12.getLineLength(13) = 1
+  text12.getLineOffset(13) = 22
+  text12.getLineText(13) = \n
+  text12.getLineLength(14) = 2
+  text12.getLineOffset(14) = 23
+  text12.getLineText(14) = h\n
+  text12.getLineLength(15) = 2
+  text12.getLineOffset(15) = 25
+  text12.getLineText(15) =  \n
+  text12.getLineLength(16) = 1
+  text12.getLineOffset(16) = 27
+  text12.getLineText(16) =  
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+Field: text13
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  text13.getLineLength(0) = 2
+  text13.getLineOffset(0) = 0
+  text13.getLineText(0) = a\n
+  text13.getLineLength(1) = 1
+  text13.getLineOffset(1) = 2
+  text13.getLineText(1) = \n
+  text13.getLineLength(2) = 2
+  text13.getLineOffset(2) = 3
+  text13.getLineText(2) = b\n
+  text13.getLineLength(3) = 1
+  text13.getLineOffset(3) = 5
+  text13.getLineText(3) = \n
+  text13.getLineLength(4) = 5
+  text13.getLineOffset(4) = 6
+  text13.getLineText(4) = c\t\td\n
+  text13.getLineLength(5) = 1
+  text13.getLineOffset(5) = 11
+  text13.getLineText(5) = \n
+  text13.getLineLength(6) = 2
+  text13.getLineOffset(6) = 12
+  text13.getLineText(6) = e\n
+  text13.getLineLength(7) = 1
+  text13.getLineOffset(7) = 14
+  text13.getLineText(7) = \n
+  text13.getLineLength(8) = 2
+  text13.getLineOffset(8) = 15
+  text13.getLineText(8) = f\n
+  text13.getLineLength(9) = 1
+  text13.getLineOffset(9) = 17
+  text13.getLineText(9) = \n
+  text13.getLineLength(10) = 1
+  text13.getLineOffset(10) = 18
+  text13.getLineText(10) = \n
+  text13.getLineLength(11) = 2
+  text13.getLineOffset(11) = 19
+  text13.getLineText(11) = g\n
+  text13.getLineLength(12) = 1
+  text13.getLineOffset(12) = 21
+  text13.getLineText(12) = \n
+  text13.getLineLength(13) = 1
+  text13.getLineOffset(13) = 22
+  text13.getLineText(13) = \n
+  text13.getLineLength(14) = 2
+  text13.getLineOffset(14) = 23
+  text13.getLineText(14) = h\n
+  text13.getLineLength(15) = 2
+  text13.getLineOffset(15) = 25
+  text13.getLineText(15) =  \n
+  text13.getLineLength(16) = 1
+  text13.getLineOffset(16) = 27
+  text13.getLineText(16) =  
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+Field: text14
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  text14.getLineLength(0) = 6
+  text14.getLineOffset(0) = 0
+  text14.getLineText(0) = first 
+  text14.getLineLength(1) = 7
+  text14.getLineOffset(1) = 6
+  text14.getLineText(1) = second\n
+  text14.getLineLength(2) = 5
+  text14.getLineOffset(2) = 13
+  text14.getLineText(2) = third
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+Field: text15
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  text15.getLineLength(0) = 6
+  text15.getLineOffset(0) = 0
+  text15.getLineText(0) = first 
+  text15.getLineLength(1) = 7
+  text15.getLineOffset(1) = 6
+  text15.getLineText(1) = second\n
+  text15.getLineLength(2) = 5
+  text15.getLineOffset(2) = 13
+  text15.getLineText(2) = third
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
+  Error: RangeError: Error #2006: The supplied index is out of bounds.
