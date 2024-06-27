@@ -14,6 +14,10 @@ enable-hardware-acceleration = נראה שהאצת החומרה שלך לא מו
 view-error-details = ראה פרטי שגיאה
 open-in-new-tab = פתח בכרטיסייה חדשה
 click-to-unmute = לחץ על מנת לבטל השתקה
+clipboard-message-title = העתקה והדבקה בRuffle
+clipboard-message-copy = { " " } עבור העתקה
+clipboard-message-cut = { " " } עבור גזירה
+clipboard-message-paste = { " " } עבור הדבקה
 error-file-protocol =
     נדמה שאתה מריץ את Ruffle תחת פרוטוקול "file:".
     זה לא יעבוד מכיוון שדפדפנים חוסמים אפשרויות רבות מלעבוד עקב סיבות אבטחה.
