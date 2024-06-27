@@ -1934,6 +1934,13 @@ impl<'gc> EditText<'gc> {
         Some(line_text)
     }
 
+    pub fn line_offset(self, line: usize) -> Option<usize> {
+        let read = self.0.read();
+        let line = read.layout.lines().get(line)?;
+        let first_box = line.boxes_iter().next()?;
+        Some(first_box.start())
+    }
+
     fn execute_avm1_asfunction(
         self,
         context: &mut UpdateContext<'_, 'gc>,
