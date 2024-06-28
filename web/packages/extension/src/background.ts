@@ -64,83 +64,88 @@ async function isHeaderConditionSupported() {
 async function enableSWFTakeover() {
     // Checks if the responseHeaders condition is supported and not behind a disabled flag.
     if (utils.declarativeNetRequest && (await isHeaderConditionSupported())) {
-        const playerPage = utils.runtime.getURL("/player.html");
-        const rules = [
-            {
-                id: 1,
-                action: {
-                    type:
-                        chrome.declarativeNetRequest.RuleActionType?.REDIRECT ??
-                        "redirect",
-                    redirect: { regexSubstitution: playerPage + "#\\0" },
+        const { ruffleEnable } = await utils.getOptions();
+        if (ruffleEnable) {
+            const playerPage = utils.runtime.getURL("/player.html");
+            const rules = [
+                {
+                    id: 1,
+                    action: {
+                        type:
+                            chrome.declarativeNetRequest.RuleActionType
+                                ?.REDIRECT ?? "redirect",
+                        redirect: { regexSubstitution: playerPage + "#\\0" },
+                    },
+                    condition: {
+                        regexFilter: ".*",
+                        responseHeaders: [
+                            {
+                                header: "content-type",
+                                values: [
+                                    "application/x-shockwave-flash",
+                                    "application/futuresplash",
+                                    "application/x-shockwave-flash2-preview",
+                                    "application/vnd.adobe.flash.movie",
+                                ],
+                            },
+                        ],
+                        resourceTypes: [
+                            chrome.declarativeNetRequest.ResourceType
+                                ?.MAIN_FRAME ?? "main_frame",
+                        ],
+                    },
                 },
-                condition: {
-                    regexFilter: ".*",
-                    responseHeaders: [
-                        {
-                            header: "content-type",
-                            values: [
-                                "application/x-shockwave-flash",
-                                "application/futuresplash",
-                                "application/x-shockwave-flash2-preview",
-                                "application/vnd.adobe.flash.movie",
-                            ],
-                        },
-                    ],
-                    resourceTypes: [
-                        chrome.declarativeNetRequest.ResourceType?.MAIN_FRAME ??
-                            "main_frame",
-                    ],
+                {
+                    id: 2,
+                    action: {
+                        type:
+                            chrome.declarativeNetRequest.RuleActionType
+                                ?.REDIRECT ?? "redirect",
+                        redirect: { regexSubstitution: playerPage + "#\\0" },
+                    },
+                    condition: {
+                        regexFilter:
+                            "^.*:\\/\\/.*\\/.*\\.s(?:wf|pl)(\\?.*|#.*|)$",
+                        responseHeaders: [
+                            {
+                                header: "content-type",
+                                values: [
+                                    "application/octet-stream",
+                                    "application/binary-stream",
+                                    "",
+                                ],
+                            },
+                        ],
+                        resourceTypes: [
+                            chrome.declarativeNetRequest.ResourceType
+                                ?.MAIN_FRAME ?? "main_frame",
+                        ],
+                    },
                 },
-            },
-            {
-                id: 2,
-                action: {
-                    type:
-                        chrome.declarativeNetRequest.RuleActionType?.REDIRECT ??
-                        "redirect",
-                    redirect: { regexSubstitution: playerPage + "#\\0" },
+                {
+                    id: 3,
+                    action: {
+                        type:
+                            chrome.declarativeNetRequest.RuleActionType
+                                ?.REDIRECT ?? "redirect",
+                        redirect: { regexSubstitution: playerPage + "#\\0" },
+                    },
+                    condition: {
+                        regexFilter:
+                            "^.*:\\/\\/.*\\/.*\\.s(?:wf|pl)(\\?.*|#.*|)$",
+                        excludedResponseHeaders: [{ header: "content-type" }],
+                        resourceTypes: [
+                            chrome.declarativeNetRequest.ResourceType
+                                ?.MAIN_FRAME ?? "main_frame",
+                        ],
+                    },
                 },
-                condition: {
-                    regexFilter: "^.*:\\/\\/.*\\/.*\\.s(?:wf|pl)(\\?.*|#.*|)$",
-                    responseHeaders: [
-                        {
-                            header: "content-type",
-                            values: [
-                                "application/octet-stream",
-                                "application/binary-stream",
-                                "",
-                            ],
-                        },
-                    ],
-                    resourceTypes: [
-                        chrome.declarativeNetRequest.ResourceType?.MAIN_FRAME ??
-                            "main_frame",
-                    ],
-                },
-            },
-            {
-                id: 3,
-                action: {
-                    type:
-                        chrome.declarativeNetRequest.RuleActionType?.REDIRECT ??
-                        "redirect",
-                    redirect: { regexSubstitution: playerPage + "#\\0" },
-                },
-                condition: {
-                    regexFilter: "^.*:\\/\\/.*\\/.*\\.s(?:wf|pl)(\\?.*|#.*|)$",
-                    excludedResponseHeaders: [{ header: "content-type" }],
-                    resourceTypes: [
-                        chrome.declarativeNetRequest.ResourceType?.MAIN_FRAME ??
-                            "main_frame",
-                    ],
-                },
-            },
-        ];
-        await utils.declarativeNetRequest.updateDynamicRules({
-            removeRuleIds: [1, 2, 3],
-            addRules: rules,
-        });
+            ];
+            await utils.declarativeNetRequest.updateDynamicRules({
+                removeRuleIds: [1, 2, 3],
+                addRules: rules,
+            });
+        }
     } else {
         utils.storage.sync.set({ responseHeadersUnsupported: true });
     }
