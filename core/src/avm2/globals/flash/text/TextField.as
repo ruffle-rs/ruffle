@@ -132,6 +132,7 @@ package flash.text {
         public native function replaceSelectedText(value:String):void;
         public native function replaceText(beginIndex:int, endIndex:int, newText:String):void;
         public native function setSelection(beginIndex:int, endIndex:int):void;
+        public native function getTextRuns():Array;
 
         public native function get selectedText():String;
 
