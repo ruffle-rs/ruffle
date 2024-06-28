@@ -36,6 +36,39 @@ async function submit(
         baseURL: "https://addons.mozilla.org/api/v5/addons/",
     });
 
+    console.log("Checking the status of the last submitted add-on version...");
+    const versionsResponse = await client.get(
+        `addon/${extensionId}/versions/`,
+        {
+            headers: {
+                Authorization: `JWT ${getJwtToken(apiKey, apiSecret)}`,
+            },
+            params: {
+                filter: "all_with_unlisted",
+            },
+        },
+    );
+
+    const lastVersion = versionsResponse.data.results[0];
+    switch (lastVersion.status) {
+        case "public":
+            console.log("Looks like we're good to go!");
+            break;
+        case "unreviewed":
+            console.log(
+                "Last version still awaiting review, skipping submission.",
+            );
+            return;
+        case "disabled":
+            throw new Error(
+                "Last version was either rejected, disabled, or not reviewed - skipping submission.",
+            );
+        default:
+            throw new Error(
+                "Last version has an unknown status: " + lastVersion.status,
+            );
+    }
+
     console.log("Uploading unsigned add-on...");
     const addonFormData = new FormData();
     addonFormData.append("channel", "listed");
