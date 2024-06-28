@@ -99,11 +99,14 @@ utils.storage.onChanged.addListener(async (changes, namespace) => {
     }
 });
 
-async function handleInstalled() {
-    if (!(await utils.hasAllUrlsPermission())) {
+async function handleInstalled(details: chrome.runtime.InstalledDetails) {
+    if (
+        details.reason === chrome.runtime.OnInstalledReason.INSTALL &&
+        !(await utils.hasAllUrlsPermission())
+    ) {
         await utils.openOnboardPage();
     }
 }
 
-utils.runtime.onInstalled.addListener(handleInstalled);
+chrome.runtime.onInstalled.addListener(handleInstalled);
 utils.permissions.onAdded.addListener(onAdded);
