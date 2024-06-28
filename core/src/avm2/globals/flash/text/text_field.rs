@@ -6,7 +6,7 @@ use crate::avm2::globals::flash::display::display_object::initialize_for_allocat
 use crate::avm2::object::{ClassObject, Object, TObject, TextFormatObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
+use crate::avm2::{ArrayObject, ArrayStorage, Error};
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
 use crate::html::TextFormat;
 use crate::string::AvmString;
@@ -1443,6 +1443,36 @@ pub fn get_selected_text<'gc>(
         return Ok(AvmString::new(activation.context.gc(), &text[start_index..end_index]).into());
     }
     Ok("".into())
+}
+
+pub fn get_text_runs<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let Some(this) = this
+        .as_display_object()
+        .and_then(|this| this.as_edit_text())
+    else {
+        return Ok(Value::Undefined);
+    };
+
+    let textrun_class = activation.avm2().classes().textrun;
+
+    let array = this
+        .spans()
+        .iter_spans()
+        .filter(|(start, end, _, _)| {
+            // Flash never returns empty spans here, but we currently require
+            // that at least one span is present albeit an empty one.
+            start != end
+        })
+        .map(|(start, end, _, format)| {
+            let tf = TextFormatObject::from_text_format(activation, format.get_text_format())?;
+            textrun_class.construct(activation, &[start.into(), end.into(), tf.into()])
+        })
+        .collect::<Result<ArrayStorage<'gc>, Error<'gc>>>()?;
+    Ok(ArrayObject::from_storage(activation, array)?.into())
 }
 
 pub fn get_line_index_of_char<'gc>(
