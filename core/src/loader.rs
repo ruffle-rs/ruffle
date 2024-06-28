@@ -364,8 +364,6 @@ impl<'gc> LoadManager<'gc> {
                             let movie = SwfMovie::from_data(&body, url.clone(), Some(url.clone()))
                                 .expect("Could not load movie");
 
-                            let _is_movie_as3 = movie.is_action_script_3();
-
                             let movie = Arc::new(movie);
 
                             player.lock().unwrap().mutate_with_update_context(|uc| {
