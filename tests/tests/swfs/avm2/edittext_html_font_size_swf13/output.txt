@@ -1,0 +1,273 @@
+==== font sizes
+    HTML set:    <font size="+1">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="13" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    Text runs (1):
+      from 0 to 4: size=13, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    Text runs (1):
+      from 0 to 4: size=13, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <font size="-1">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="11" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    Text runs (1):
+      from 0 to 4: size=11, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    Text runs (1):
+      from 0 to 4: size=11, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <font size="12">text</font><font size="+1">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text<FONT SIZE="13">text</FONT></FONT></P>
+    Text get:    texttext
+    Text runs (2):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 4 to 8: size=13, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    Text runs (2):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 4 to 8: size=13, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <font size="12">text</font><font size="-1">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text<FONT SIZE="11">text</FONT></FONT></P>
+    Text get:    texttext
+    Text runs (2):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 4 to 8: size=11, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    Text runs (2):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 4 to 8: size=11, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <font size="12">text<font size="+1">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text<FONT SIZE="13">text</FONT></FONT></P>
+    Text get:    texttext
+    Text runs (2):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 4 to 8: size=13, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    Text runs (2):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 4 to 8: size=13, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <font size="12">text<font size="-1">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text<FONT SIZE="11">text</FONT></FONT></P>
+    Text get:    texttext
+    Text runs (2):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 4 to 8: size=11, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    Text runs (2):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 4 to 8: size=11, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <font size="12">text<font size="+1">text<font size="+1">text<font size="+1">text</font></font></font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text<FONT SIZE="13">text<FONT SIZE="14">text<FONT SIZE="15">text</FONT></FONT></FONT></FONT></P>
+    Text get:    texttexttexttext
+    Text runs (4):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 4 to 8: size=13, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 8 to 12: size=14, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 12 to 16: size=15, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    texttexttexttext
+    Text runs (4):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 4 to 8: size=13, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 8 to 12: size=14, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 12 to 16: size=15, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <font size="12">text<font size="-1">text<font size="+1">text<font size="-1">text</font></font></font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text<FONT SIZE="11">text</FONT>text<FONT SIZE="11">text</FONT></FONT></P>
+    Text get:    texttexttexttext
+    Text runs (4):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 4 to 8: size=11, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 8 to 12: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 12 to 16: size=11, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    texttexttexttext
+    Text runs (4):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 4 to 8: size=11, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 8 to 12: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 12 to 16: size=11, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <font size="1.2">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="1" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    Text runs (1):
+      from 0 to 4: size=1, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    Text runs (1):
+      from 0 to 4: size=1, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <font size="1.2">text<font size="+0.2">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="1" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttext</FONT></P>
+    Text get:    texttext
+    Text runs (1):
+      from 0 to 8: size=1, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    Text runs (1):
+      from 0 to 8: size=1, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <font size="1.2">text<font size="-0.2">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="1" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttext</FONT></P>
+    Text get:    texttext
+    Text runs (1):
+      from 0 to 8: size=1, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    Text runs (1):
+      from 0 to 8: size=1, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <font size="1.9">text<font size="+0.2">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="1" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttext</FONT></P>
+    Text get:    texttext
+    Text runs (1):
+      from 0 to 8: size=1, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    Text runs (1):
+      from 0 to 8: size=1, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <font size="1.other text">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="1" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    Text runs (1):
+      from 0 to 4: size=1, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    Text runs (1):
+      from 0 to 4: size=1, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <font size="not a number">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    Text runs (1):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    Text runs (1):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <font size="13">text<font size="not a number">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="13" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttext</FONT></P>
+    Text get:    texttext
+    Text runs (1):
+      from 0 to 8: size=13, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    Text runs (1):
+      from 0 to 8: size=13, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <font size="13">text<font size="+not a number">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="13" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttext</FONT></P>
+    Text get:    texttext
+    Text runs (1):
+      from 0 to 8: size=13, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    Text runs (1):
+      from 0 to 8: size=13, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <font size="13">text<font size="-not a number">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="13" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttext</FONT></P>
+    Text get:    texttext
+    Text runs (1):
+      from 0 to 8: size=13, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    Text runs (1):
+      from 0 to 8: size=13, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <font size="+not a number">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    Text runs (1):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    Text runs (1):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <font size="-not a number">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    Text runs (1):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    text
+    Text runs (1):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <font size="32">text</font><font size="64">text</font><font size="128">text</font><font size="256">text</font><font size="65536">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="32" COLOR="#000000" LETTERSPACING="0" KERNING="0">text<FONT SIZE="64">text<FONT SIZE="128">text<FONT SIZE="256">text<FONT SIZE="65536">text</FONT></FONT></FONT></FONT></FONT></P>
+    Text get:    texttexttexttexttext
+    Text runs (5):
+      from 0 to 4: size=32, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 4 to 8: size=64, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 8 to 12: size=128, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 12 to 16: size=256, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 16 to 20: size=65536, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    texttexttexttexttext
+    Text runs (5):
+      from 0 to 4: size=32, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 4 to 8: size=64, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 8 to 12: size=128, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 12 to 16: size=256, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 16 to 20: size=65536, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <font size="126">text<font size="+1">text<font size="+1">text</font></font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="126" COLOR="#000000" LETTERSPACING="0" KERNING="0">text<FONT SIZE="127">text<FONT SIZE="128">text</FONT></FONT></FONT></P>
+    Text get:    texttexttext
+    Text runs (3):
+      from 0 to 4: size=126, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 4 to 8: size=127, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 8 to 12: size=128, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    texttexttext
+    Text runs (3):
+      from 0 to 4: size=126, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 4 to 8: size=127, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+      from 8 to 12: size=128, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <font size="1">text</font><font size="0">text<font size="-1">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="1" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttexttext</FONT></P>
+    Text get:    texttexttext
+    Text runs (1):
+      from 0 to 12: size=1, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    texttexttext
+    Text runs (1):
+      from 0 to 12: size=1, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <font size="1+1">text</font><font size="1-1">text<font size="-1+1">text</font></font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="1" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttexttext</FONT></P>
+    Text get:    texttexttext
+    Text runs (1):
+      from 0 to 12: size=1, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    texttexttext
+    Text runs (1):
+      from 0 to 12: size=1, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <font size="+">text</font><font size="-">text</font>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">texttext</FONT></P>
+    Text get:    texttext
+    Text runs (1):
+      from 0 to 8: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    texttext
+    Text runs (1):
+      from 0 to 8: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
