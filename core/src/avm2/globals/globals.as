@@ -348,6 +348,7 @@ include "flash/text/TextFormatDisplay.as"
 include "flash/text/TextInteractionMode.as"
 include "flash/text/TextLineMetrics.as"
 include "flash/text/TextRenderer.as"
+include "flash/text/TextRun.as"
 include "flash/text/TextSnapshot.as"
 
 include "flash/text/engine/BreakOpportunity.as"
