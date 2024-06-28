@@ -763,7 +763,13 @@ impl FormatSpans {
                                         Some(b'-') => format.size.map(|last_size| last_size - size),
                                         _ => Some(size),
                                     })
-                                    .map(|size| size.clamp(1.0, 127.0))
+                                    .map(|size| {
+                                        if swf_version < 13 {
+                                            size.clamp(1.0, 127.0)
+                                        } else {
+                                            size.max(1.0)
+                                        }
+                                    })
                                 {
                                     format.size = Some(size);
                                 } else {
