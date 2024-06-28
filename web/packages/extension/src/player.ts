@@ -99,12 +99,15 @@ function unload() {
     }
 }
 
-function load(options: string | DataLoadOptions | URLLoadOptions) {
+function load(
+    options: string | DataLoadOptions | URLLoadOptions,
+    urlResolveHook: ((url: string) => Promise<string>) | null = null,
+) {
     unload();
     player = ruffle.createPlayer();
     player.id = "player";
     playerContainer.append(player);
-    player.load(options, false);
+    player.load(options, false, urlResolveHook);
     player.addEventListener("loadedmetadata", () => {
         if (player.metadata) {
             for (const [key, value] of Object.entries(player.metadata)) {
@@ -236,22 +239,32 @@ window.addEventListener("load", () => {
 });
 
 async function loadSwf(swfUrl: string) {
-    const url = await resolveSwfUrl(swfUrl);
-    if (url !== null) {
-        swfUrl = url.toString();
-        const pathname = url.pathname;
-        document.title = pathname.substring(pathname.lastIndexOf("/") + 1);
-    }
+    document.title = swfUrl
+        .split("/")
+        .filter((item) => item !== "")
+        .slice(-1)[0]!;
+
+    const resolveUrlHook = async (swfUrl: string) => {
+        const url = await resolveSwfUrl(swfUrl);
+        if (url !== null) {
+            return url.toString();
+        } else {
+            return swfUrl;
+        }
+    };
 
     const options = await utils.getExplicitOptions();
     localFileName.textContent = document.title;
     localFileInput.value = "";
-    load({
-        ...options,
-        url: swfUrl,
-        base: swfUrl.substring(0, swfUrl.lastIndexOf("/") + 1),
-        ...baseExtensionConfig,
-    });
+    load(
+        {
+            ...options,
+            url: swfUrl,
+            base: swfUrl.substring(0, swfUrl.lastIndexOf("/") + 1),
+            ...baseExtensionConfig,
+        },
+        resolveUrlHook,
+    );
 }
 
 /**
@@ -287,11 +300,10 @@ async function resolveSwfUrl(enteredUrl: string): Promise<URL | null> {
         }
 
         try {
-            // TODO: Make the loading animation appear before waiting for the server response
             // Only use http if it works but https doesn't
             if (
-                (await serverAvailable("https://" + enteredUrl, 200)) ||
-                !(await serverAvailable("http://" + enteredUrl, 100))
+                (await serverAvailable("https://" + enteredUrl, 600)) ||
+                !(await serverAvailable("http://" + enteredUrl, 300))
             ) {
                 return new URL("https://" + enteredUrl);
             } else {

@@ -949,10 +949,13 @@ export class RufflePlayer extends HTMLElement {
      *
      * The options will be defaulted by the [[config]] field, which itself
      * is defaulted by a global `window.RufflePlayer.config`.
+     * @param urlResolveHook An optional function resolving the URL. This is used by the
+     * extension player to support URLs without an explicit protocol.
      */
     async load(
         options: string | URLLoadOptions | DataLoadOptions,
         isPolyfillElement: boolean = false,
+        urlResolveHook: ((url: string) => Promise<string>) | null = null,
     ): Promise<void> {
         options = this.checkOptions(options);
 
@@ -997,6 +1000,9 @@ export class RufflePlayer extends HTMLElement {
             await this.ensureFreshInstance();
 
             if ("url" in options) {
+                if (urlResolveHook !== null) {
+                    options.url = await urlResolveHook(options.url);
+                }
                 console.log(`Loading SWF file ${options.url}`);
                 this.swfUrl = new URL(options.url, document.baseURI);
 
