@@ -176,6 +176,7 @@ pub struct SystemClasses<'gc> {
     pub focusevent: ClassObject<'gc>,
     pub dictionary: ClassObject<'gc>,
     pub id3info: ClassObject<'gc>,
+    pub textrun: ClassObject<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -305,6 +306,7 @@ impl<'gc> SystemClasses<'gc> {
             focusevent: object,
             dictionary: object,
             id3info: object,
+            textrun: object,
         }
     }
 }
@@ -829,6 +831,7 @@ fn load_playerglobal<'gc>(
             ("flash.text", "TextFormat", textformat),
             ("flash.text", "TextField", textfield),
             ("flash.text", "TextLineMetrics", textlinemetrics),
+            ("flash.text", "TextRun", textrun),
             ("flash.text.engine", "TextLine", textline),
             ("flash.filters", "BevelFilter", bevelfilter),
             ("flash.filters", "BitmapFilter", bitmapfilter),
