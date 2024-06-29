@@ -4214,17 +4214,15 @@ impl<'gc, 'a> MovieClipData<'gc> {
         &mut self,
         context: &mut UpdateContext<'_, 'gc>,
         id: CharacterId,
-    ) -> Result<Character<'gc>, Error> {
+    ) -> Option<Character<'gc>> {
         let library_for_movie = context.library.library_for_movie(self.movie());
 
         if let Some(library) = library_for_movie {
             if let Some(character) = library.character_by_id(id) {
-                return Ok(character.clone());
+                return Some(character.clone());
             }
         }
-        Err(Error::InvalidSwf(swf::error::Error::invalid_data(
-            "message",
-        )))
+        None
     }
 
     fn register_export(
@@ -4247,7 +4245,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
                     .exported_name
                     .write(context.gc_context) = Some(*name);
             } else {
-                tracing::debug!(
+                tracing::warn!(
                     "Registering export for non-movie clip: {} (ID: {})",
                     name,
                     id
@@ -4273,26 +4271,32 @@ impl<'gc, 'a> MovieClipData<'gc> {
             let name = export.name.decode(reader.encoding());
             let name = AvmString::new(context.gc_context, name);
 
-            let character = self.get_registered_character_by_id(context, export.id)?;
+            if let Some(character) = self.get_registered_character_by_id(context, export.id) {
+                self.register_export(context, export.id, &name, self.movie());
+                tracing::debug!("register_export asset: {} (ID: {})", name, export.id);
 
-            self.register_export(context, export.id, &name, self.movie());
-            tracing::debug!("register_export asset: {} (ID: {})", name, export.id);
+                if self.importer_movie.is_some() {
+                    let parent = self.importer_movie.as_ref().unwrap().clone();
+                    let parent_library = context.library.library_for_movie_mut(parent.clone());
 
-            if self.importer_movie.is_some() {
-                let parent = self.importer_movie.as_ref().unwrap().clone();
-                let parent_library = context.library.library_for_movie_mut(parent.clone());
+                    if let Some(id) = parent_library.character_id_by_import_name(name) {
+                        parent_library.register_character(id, character);
 
-                if let Some(id) = parent_library.character_id_by_import_name(name) {
-                    parent_library.register_character(id, character);
-
-                    self.register_export(context, id, &name, parent);
-                    tracing::debug!(
-                        "Registering parent asset: {} (Parent ID: {})(ID: {})",
-                        name,
-                        id,
-                        export.id
-                    );
+                        self.register_export(context, id, &name, parent);
+                        tracing::debug!(
+                            "Registering parent asset: {} (Parent ID: {})(ID: {})",
+                            name,
+                            id,
+                            export.id
+                        );
+                    }
                 }
+            } else {
+                tracing::error!(
+                    "Export asset: {} (ID: {}) not found in library",
+                    name,
+                    export.id
+                );
             }
         }
         Ok(())

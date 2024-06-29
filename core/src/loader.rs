@@ -386,7 +386,10 @@ impl<'gc> LoadManager<'gc> {
                             Ok(())
                         }
                         _ => {
-                            tracing::warn!("Unsupported content type: {:?}", content_type);
+                            tracing::warn!(
+                                "Unsupported content type for ImportAssets: {:?}",
+                                content_type
+                            );
                             Ok(())
                         }
                     }
