@@ -12,7 +12,7 @@ import {
     UnmuteOverlay,
 } from "ruffle-core";
 
-window.RufflePlayer = installRuffle(window.RufflePlayer, "local");
+installRuffle("local");
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
