@@ -1149,6 +1149,17 @@ pub trait TDisplayObject<'gc>:
         self.bounds_with_transform(&self.local_to_global_matrix())
     }
 
+    /// Bounds used for drawing debug rects and picking objects.
+    fn debug_rect_bounds(&self) -> Rectangle<Twips> {
+        // Make the rect at least as big as highlight bounds to ensure that anything
+        // interactive is also highlighted even if not included in world bounds.
+        let highlight_bounds = self
+            .as_interactive()
+            .map(|int| int.highlight_bounds())
+            .unwrap_or_default();
+        self.world_bounds().union(&highlight_bounds)
+    }
+
     /// Gets the bounds of this object and all children, transformed by a given matrix.
     /// This function recurses down and transforms the AABB each child before adding
     /// it to the bounding box. This gives a tighter AABB then if we simply transformed

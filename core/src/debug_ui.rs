@@ -162,14 +162,14 @@ impl DebugUi {
         for (object, window) in self.display_objects.iter() {
             if let Some(color) = window.debug_rect_color() {
                 let object = object.fetch(dynamic_root_set);
-                let bounds = world_matrix * object.world_bounds();
+                let bounds = world_matrix * object.debug_rect_bounds();
 
                 draw_debug_rect(context, color, bounds, 3.0);
             }
 
             if let Some(object) = window.hovered_debug_rect() {
                 let object = object.fetch(dynamic_root_set);
-                let bounds = world_matrix * object.world_bounds();
+                let bounds = world_matrix * object.debug_rect_bounds();
 
                 draw_debug_rect(context, swf::Color::RED, bounds, 5.0);
             }
@@ -178,7 +178,7 @@ impl DebugUi {
         if let Some(window) = &self.display_object_search {
             for (color, object) in window.hovered_debug_rects() {
                 let object = object.fetch(dynamic_root_set);
-                let bounds = world_matrix * object.world_bounds();
+                let bounds = world_matrix * object.debug_rect_bounds();
 
                 draw_debug_rect(context, color, bounds, 5.0);
             }
@@ -187,7 +187,7 @@ impl DebugUi {
         for (_object, window) in self.avm1_objects.iter() {
             if let Some(object) = window.hovered_debug_rect() {
                 let object = object.fetch(dynamic_root_set);
-                let bounds = world_matrix * object.world_bounds();
+                let bounds = world_matrix * object.debug_rect_bounds();
 
                 draw_debug_rect(context, swf::Color::RED, bounds, 5.0);
             }
@@ -196,7 +196,7 @@ impl DebugUi {
         for (_object, window) in self.avm2_objects.iter() {
             if let Some(object) = window.hovered_debug_rect() {
                 let object = object.fetch(dynamic_root_set);
-                let bounds = world_matrix * object.world_bounds();
+                let bounds = world_matrix * object.debug_rect_bounds();
 
                 draw_debug_rect(context, swf::Color::RED, bounds, 5.0);
             }

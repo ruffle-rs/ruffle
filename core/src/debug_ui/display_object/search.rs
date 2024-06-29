@@ -118,7 +118,7 @@ impl DisplayObjectSearchWindow {
         {
             return false;
         }
-        object.world_bounds().contains(cursor)
+        object.debug_rect_bounds().contains(cursor)
     }
 
     fn create_result_tree<'gc>(
