@@ -16,11 +16,12 @@ use crate::display_object::{
 use crate::focus_tracker::Highlight;
 use egui::collapsing_header::CollapsingState;
 use egui::{
-    Button, Checkbox, CollapsingHeader, ComboBox, DragValue, Grid, Id, TextEdit, Ui, Widget, Window,
+    Button, Checkbox, CollapsingHeader, ComboBox, DragValue, Grid, Id, Label, Sense, TextEdit, Ui,
+    Widget, Window,
 };
 use ruffle_wstr::{WStr, WString};
 use std::borrow::Cow;
-use swf::{Color, ColorTransform, Fixed8};
+use swf::{Color, ColorTransform, Fixed8, Rectangle, Twips};
 
 const DEFAULT_DEBUG_COLORS: [[f32; 3]; 10] = [
     [0.00, 0.39, 0.00], // "darkgreen" / #006400
@@ -69,6 +70,7 @@ pub struct DisplayObjectWindow {
     debug_rect_color: [f32; 3],
     debug_rect_visible: bool,
     hovered_debug_rect: Option<DisplayObjectHandle>,
+    hovered_bounds: Option<Rectangle<Twips>>,
     search: String,
 }
 
@@ -84,15 +86,16 @@ impl Default for DisplayObjectWindow {
             debug_rect_color,
             debug_rect_visible: false,
             hovered_debug_rect: None,
+            hovered_bounds: None,
             search: Default::default(),
         }
     }
 }
 
 impl DisplayObjectWindow {
-    pub fn debug_rect_color(&self) -> Option<swf::Color> {
+    pub fn debug_rect_color(&self) -> Option<Color> {
         if self.debug_rect_visible {
-            Some(swf::Color {
+            Some(Color {
                 r: (self.debug_rect_color[0] * 255.0) as u8,
                 g: (self.debug_rect_color[1] * 255.0) as u8,
                 b: (self.debug_rect_color[2] * 255.0) as u8,
@@ -105,6 +108,10 @@ impl DisplayObjectWindow {
 
     pub fn hovered_debug_rect(&self) -> Option<DisplayObjectHandle> {
         self.hovered_debug_rect.clone()
+    }
+
+    pub fn hovered_bounds(&self) -> Option<Rectangle<Twips>> {
+        self.hovered_bounds.clone()
     }
 
     pub fn show<'gc>(
@@ -260,11 +267,7 @@ impl DisplayObjectWindow {
                 ui.end_row();
 
                 ui.label("Highlight Bounds");
-                if object.highlight_bounds().is_valid() {
-                    ui.label(object.highlight_bounds().to_string());
-                } else {
-                    ui.weak("Invalid");
-                }
+                bounds_label(ui, object.highlight_bounds(), &mut self.hovered_bounds);
                 ui.end_row();
 
                 ui.label("Derived Properties");
@@ -1007,36 +1010,20 @@ impl DisplayObjectWindow {
                 ui.end_row();
 
                 ui.label("World Bounds");
-                if object.world_bounds().is_valid() {
-                    ui.label(object.world_bounds().to_string());
-                } else {
-                    ui.weak("Invalid");
-                }
+                bounds_label(ui, object.world_bounds(), &mut self.hovered_bounds);
                 ui.end_row();
 
                 ui.label("Local Bounds");
-                if object.local_bounds().is_valid() {
-                    ui.label(object.local_bounds().to_string());
-                } else {
-                    ui.weak("Invalid");
-                }
+                bounds_label(ui, object.local_bounds(), &mut None);
                 ui.end_row();
 
                 ui.label("Self Bounds");
-                if object.self_bounds().is_valid() {
-                    ui.label(object.self_bounds().to_string());
-                } else {
-                    ui.weak("Invalid");
-                }
+                bounds_label(ui, object.self_bounds(), &mut None);
                 ui.end_row();
 
                 ui.label("Scroll Rect");
                 if let Some(scroll_rect) = object.scroll_rect() {
-                    if scroll_rect.is_valid() {
-                        ui.label(scroll_rect.to_string());
-                    } else {
-                        ui.weak("Invalid");
-                    }
+                    bounds_label(ui, scroll_rect, &mut None);
                 } else {
                     ui.label("None");
                 }
@@ -1261,6 +1248,20 @@ fn color_edit_button(ui: &mut Ui, color: &mut Color) {
         color.g = g;
         color.b = b;
         color.a = a;
+    }
+}
+
+fn bounds_label(ui: &mut Ui, bounds: Rectangle<Twips>, hover: &mut Option<Rectangle<Twips>>) {
+    if !bounds.is_valid() {
+        ui.weak("Invalid");
+        return;
+    }
+
+    let label = Label::new(bounds.to_string()).sense(Sense::hover());
+    if ui.add(label).hovered() {
+        *hover = Some(bounds);
+    } else {
+        *hover = None;
     }
 }
 
