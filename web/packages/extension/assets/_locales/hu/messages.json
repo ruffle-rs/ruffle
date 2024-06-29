@@ -94,5 +94,20 @@
     },
     "settings_saved": {
         "message": "Beállítások elmentve"
+    },
+    "onboarding_page": {
+        "message": "Bevezető oldal"
+    },
+    "permissions_grant": {
+        "message": "Engedélyezem a Ruffle-nek, hogy hozzáférjen az adataimhoz az összes webhelyen"
+    },
+    "permissions_not_granted": {
+        "message": "A Ruffle ikonra kell kattintanod minden olyan webhelyen, ahol a Ruffle-t használni szeretnéd"
+    },
+    "grant_single_site_permission": {
+        "message": "Végleges engedélyezés ezen a webhelyen"
+    },
+    "permissions_explanation": {
+        "message": "A Ruffle bővítmény akkor működik a legjobban, ha az összes weboldal adataihoz hozzá tud férni. Ez lehetővé teszi, hogy bármely weboldalnak már az első betöltésekor fusson, így meggyőzheti a Flash Player meglétét rögtön észelő weboldalakat, hogy futtassák a Flash tartalmat. Ez azt is lehetővé teszi számára, hogy SWF-fájlokat töltsön be a belső lejátszó oldalára más webhelyekről. Ha nem adod meg ezt az engedélyt, akkor a Ruffle-t kézzel kell engedélyezned minden olyan weboldalon, amelyen használni szeretnéd, a bővítmény ikonjára kattintva és az adott weboldalon engedélyezve."
     }
 }
