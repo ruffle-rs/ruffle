@@ -58,16 +58,24 @@ package flash.display {
         public native function get rotation():Number;
         public native function set rotation(value:Number):void;
 
+        [API("662")]
         public native function get rotationX():Number;
+        [API("662")]
         public native function set rotationX(value:Number):void;
 
+        [API("662")]
         public native function get rotationY():Number;
+        [API("662")]
         public native function set rotationY(value:Number):void;
 
+        [API("662")]
         public native function get rotationZ():Number;
+        [API("662")]
         public native function set rotationZ(value:Number):void;
 
+        [API("662")]
         public native function get scaleZ():Number;
+        [API("662")]
         public native function set scaleZ(value:Number):void;
 
         public native function get scale9Grid():Rectangle;
