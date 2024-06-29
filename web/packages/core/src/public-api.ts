@@ -8,7 +8,7 @@ declare global {
         /**
          * The public API for generating a ruffle player.
          * This may be a config holder, which will be converted to a
-         * [[PublicAPI]] via [[PublicAPI.negotiate]], or an actual
+         * [[PublicAPI]] via [[installRuffle]], or an actual
          * [[PublicAPI]] instance itself.
          */
         RufflePlayer?: PublicAPILike | PublicAPI;
@@ -21,7 +21,7 @@ declare global {
  * Unlike [[PublicAPI]], this may come from any source, past or future.
  * It needs to be forwards compatible and convertible into a modern day [[PublicAPI]].
  */
-interface PublicAPILike {
+export interface PublicAPILike {
     config?: DataLoadOptions | URLLoadOptions | object;
     sources?: Record<string, typeof SourceAPI>;
     invoked?: boolean;
@@ -65,7 +65,7 @@ export class PublicAPI implements PublicAPILike {
      * This is used to upgrade from a prior version of the public API, or from
      * a user-defined configuration object placed in the public API slot.
      */
-    protected constructor(prev?: PublicAPILike | null) {
+    public constructor(prev?: PublicAPILike | null) {
         this.sources = prev?.sources || {};
         this.config = prev?.config || {};
         this.invoked = prev?.invoked || false;
@@ -233,55 +233,5 @@ export class PublicAPI implements PublicAPILike {
      */
     superseded(): void {
         this.invoked = true;
-    }
-
-    /**
-     * Join a source into the public API, if it doesn't already exist.
-     *
-     * @param prevRuffle The previous iteration of the Ruffle API.
-     *
-     * The `prevRuffle` param lists the previous object in the RufflePlayer
-     * slot. We perform some checks to see if this is a Ruffle public API or a
-     * conflicting object. If this is conflicting, then a new public API will
-     * be constructed (see the constructor information for what happens to
-     * `prevRuffle`).
-     *
-     * Note that Public API upgrades are deliberately not enabled in this
-     * version of Ruffle, since there is no Public API to upgrade from.
-     * @param sourceName The name of this particular
-     * Ruffle source.
-     *
-     * If both parameters are provided they will be used to define a new Ruffle
-     * source to register with the public API.
-     * @returns The Ruffle Public API.
-     */
-    static negotiate(
-        prevRuffle?: PublicAPILike | null,
-        sourceName?: string,
-    ): PublicAPI {
-        let publicAPI: PublicAPI;
-        if (prevRuffle instanceof PublicAPI) {
-            publicAPI = prevRuffle;
-        } else {
-            publicAPI = new PublicAPI(prevRuffle);
-        }
-
-        if (sourceName !== undefined) {
-            publicAPI.registerSource(sourceName);
-
-            // Install the faux plugin detection immediately.
-            // This is necessary because scripts such as SWFObject check for the
-            // Flash Player immediately when they load.
-            // TODO: Maybe there's a better place for this.
-            const polyfills =
-                "polyfills" in publicAPI.config
-                    ? publicAPI.config.polyfills
-                    : true;
-            if (polyfills !== false) {
-                SourceAPI.pluginPolyfill();
-            }
-        }
-
-        return publicAPI;
     }
 }

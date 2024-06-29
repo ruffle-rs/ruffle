@@ -1,3 +1,3 @@
-import { PublicAPI } from "ruffle-core";
+import { installRuffle } from "ruffle-core";
 
-window.RufflePlayer = PublicAPI.negotiate(window.RufflePlayer, "local");
+window.RufflePlayer = installRuffle(window.RufflePlayer, "local");
