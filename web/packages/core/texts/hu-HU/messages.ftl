@@ -14,6 +14,15 @@ enable-hardware-acceleration = Úgy tűnik, a hardveres gyorsítás nincs enged�
 view-error-details = Hiba részletei
 open-in-new-tab = Megnyitás új lapon
 click-to-unmute = Kattints a némítás feloldásához
+clipboard-message-title = Másolás és beíllesztés a Ruffle-ben
+clipboard-message-description =
+    { $variant ->
+       *[unsupported] A böngésződ nem támogatja a vágólaphoz való teljes hozzáférést,
+        [access-denied] A vágólaphoz való hozzáférés el lett utasítva,
+    } de mindig használhatod ezeket a gyorsbillentyűket helyette:
+clipboard-message-copy = { " " } másoláshoz
+clipboard-message-cut = { " " } kivágáshoz
+clipboard-message-paste = { " " } beillesztéshez
 error-file-protocol =
     Úgy tűnik, a Ruffle-t a "file:" protokollon futtatod.
     Ez nem működik, mivel így a böngészők biztonsági okokból számos funkció működését letiltják.
