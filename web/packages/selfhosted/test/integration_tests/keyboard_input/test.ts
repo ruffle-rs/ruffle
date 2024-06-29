@@ -11,6 +11,8 @@ describe("Key up and down events work", () => {
     it("'a' key is recognised", async () => {
         const player = await browser.$("<ruffle-player>");
         await player.click();
+        // Extra safety click in case there's a modal
+        await player.click();
 
         await browser.keys("a");
         const actualOutput = await getTraceOutput(browser, player);
