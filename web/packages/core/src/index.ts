@@ -29,7 +29,7 @@ import { SourceAPI } from "./source-api";
  * Ruffle source. Common convention is "local" for websites that bundle their own Ruffle,
  * "extension" for browser extensions, and something else for other use cases.
  */
-export function installRuffle(sourceName?: string): void {
+export function installRuffle(sourceName: string): void {
     let publicAPI: PublicAPI;
     if (window.RufflePlayer instanceof PublicAPI) {
         publicAPI = window.RufflePlayer;
@@ -38,17 +38,15 @@ export function installRuffle(sourceName?: string): void {
         window.RufflePlayer = publicAPI;
     }
 
-    if (sourceName !== undefined) {
-        publicAPI.registerSource(sourceName);
+    publicAPI.registerSource(sourceName);
 
-        // Install the faux plugin detection immediately.
-        // This is necessary because scripts such as SWFObject check for the
-        // Flash Player immediately when they load.
-        // TODO: Maybe there's a better place for this.
-        const polyfills =
-            "polyfills" in publicAPI.config ? publicAPI.config.polyfills : true;
-        if (polyfills !== false) {
-            SourceAPI.pluginPolyfill();
-        }
+    // Install the faux plugin detection immediately.
+    // This is necessary because scripts such as SWFObject check for the
+    // Flash Player immediately when they load.
+    // TODO: Maybe there's a better place for this.
+    const polyfills =
+        "polyfills" in publicAPI.config ? publicAPI.config.polyfills : true;
+    if (polyfills !== false) {
+        SourceAPI.pluginPolyfill();
     }
 }
