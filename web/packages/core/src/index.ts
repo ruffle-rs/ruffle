@@ -28,6 +28,8 @@ import { SourceAPI } from "./source-api";
  * @param sourceName The name of this particular
  * Ruffle source. Common convention is "local" for websites that bundle their own Ruffle,
  * "extension" for browser extensions, and something else for other use cases.
+ * Names are unique, and last-installed will replace earlier installations with the same name,
+ * regardless of what those installations are or which version they represent.
  */
 export function installRuffle(sourceName: string): void {
     let publicAPI: PublicAPI;
@@ -38,7 +40,7 @@ export function installRuffle(sourceName: string): void {
         window.RufflePlayer = publicAPI;
     }
 
-    publicAPI.registerSource(sourceName);
+    publicAPI.sources[sourceName] = SourceAPI;
 
     // Install the faux plugin detection immediately.
     // This is necessary because scripts such as SWFObject check for the
