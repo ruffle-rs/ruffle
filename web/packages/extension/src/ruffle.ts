@@ -4,13 +4,18 @@ import { Message } from "./messages";
 function handleMessage(message: Message) {
     switch (message.type) {
         case "load": {
-            const api = window.RufflePlayer ?? {};
-            api.config = {
+            if (window.RufflePlayer === undefined) {
+                window.RufflePlayer = {};
+            }
+            if (window.RufflePlayer.config === undefined) {
+                window.RufflePlayer.config = {};
+            }
+            window.RufflePlayer.config = {
                 ...message.config,
-                ...api.config,
+                ...window.RufflePlayer.config,
                 openInNewTab,
             };
-            window.RufflePlayer = installRuffle(api, "extension");
+            installRuffle("extension");
             return {};
         }
         case "ping":
