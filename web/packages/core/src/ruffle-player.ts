@@ -681,7 +681,6 @@ export class RufflePlayer extends HTMLElement {
         }
 
         const [builder, zipWriterClass] = await createRuffleBuilder(
-            this.loadedConfig || {},
             this.onRuffleDownloadProgress.bind(this),
         ).catch((e) => {
             console.error(`Serious error loading Ruffle: ${e}`);

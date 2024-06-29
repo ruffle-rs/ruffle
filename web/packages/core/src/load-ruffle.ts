@@ -11,12 +11,7 @@ import {
 } from "wasm-feature-detect";
 import type { RuffleInstanceBuilder, ZipWriter } from "../dist/ruffle_web";
 import { setPolyfillsOnLoad } from "./js-polyfills";
-import { publicPath } from "./public-path";
-import { BaseLoadOptions } from "./load-options";
-
-declare global {
-    let __webpack_public_path__: string;
-}
+import { internalSourceApi } from "./source-api";
 
 type ProgressCallback = (bytesLoaded: number, bytesTotal: number) => void;
 
@@ -27,13 +22,11 @@ type ProgressCallback = (bytesLoaded: number, bytesTotal: number) => void;
  * You should not use it directly; this module will memoize the resource
  * download.
  *
- * @param config The `window.RufflePlayer.config` object.
  * @param progressCallback The callback that will be run with Ruffle's download progress.
  * @returns A ruffle-builder constructor that may be used to create new RuffleInstanceBuilder
  * instances.
  */
 async function fetchRuffle(
-    config: BaseLoadOptions,
     progressCallback?: ProgressCallback,
 ): Promise<[typeof RuffleInstanceBuilder, typeof ZipWriter]> {
     // Apply some pure JavaScript polyfills to prevent conflicts with external
@@ -57,11 +50,9 @@ async function fetchRuffle(
         );
     }
 
-    try {
-        __webpack_public_path__ = publicPath(config);
-    } catch (_) {
-        // Must not be using webpack... ignore this option, it's not applicable
-    }
+    // Easy "on first load": just set it to something else after the call.
+    internalSourceApi.options.onFirstLoad?.();
+    internalSourceApi.options.onFirstLoad = () => {};
 
     // Note: The argument passed to import() has to be a simple string literal,
     // otherwise some bundler will get confused and won't include the module?
@@ -129,16 +120,14 @@ let nativeConstructors: Promise<
  *
  * This function returns a promise which yields a new `RuffleInstanceBuilder` asynchronously.
  *
- * @param config The `window.RufflePlayer.config` object.
  * @param progressCallback The callback that will be run with Ruffle's download progress.
  * @returns A ruffle instance builder.
  */
 export async function createRuffleBuilder(
-    config: BaseLoadOptions,
     progressCallback?: ProgressCallback,
 ): Promise<[RuffleInstanceBuilder, () => ZipWriter]> {
     if (nativeConstructors === null) {
-        nativeConstructors = fetchRuffle(config, progressCallback);
+        nativeConstructors = fetchRuffle(progressCallback);
     }
 
     const constructors = await nativeConstructors;

@@ -7,7 +7,13 @@ import { internalSourceApi } from "./source-api";
  * This is mostly to provide a way to configure environmental settings, like using
  * `onFirstLoad` to potentially configure webpack prior to loading wasm files.
  */
-export interface InstallationOptions {}
+export interface InstallationOptions {
+    /**
+     * A callback to be run before the very first time Ruffle is loaded.
+     * This may be used to configure a bundler prior to asset loading.
+     */
+    onFirstLoad?: () => void;
+}
 
 /**
  * Install this version of Ruffle into the current page.
