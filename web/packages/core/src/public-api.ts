@@ -23,7 +23,7 @@ declare global {
  */
 export interface PublicAPILike {
     config?: DataLoadOptions | URLLoadOptions | object;
-    sources?: Record<string, typeof SourceAPI>;
+    sources?: Record<string, SourceAPI>;
     invoked?: boolean;
     newestName?: string | null;
 
@@ -46,7 +46,7 @@ export class PublicAPI implements PublicAPILike {
      * The configuration object used when Ruffle is instantiated.
      */
     config: DataLoadOptions | URLLoadOptions | object;
-    sources: Record<string, typeof SourceAPI>;
+    sources: Record<string, SourceAPI>;
     invoked: boolean;
     newestName: string | null;
 
@@ -151,7 +151,7 @@ export class PublicAPI implements PublicAPILike {
      *
      * @returns An instance of the Source API.
      */
-    newest(): typeof SourceAPI | null {
+    newest(): SourceAPI | null {
         const name = this.newestSourceName();
         return name !== null ? this.sources[name]! : null;
     }
@@ -165,7 +165,7 @@ export class PublicAPI implements PublicAPILike {
      * @returns An instance of the Source API, if one or more
      * sources satisfied the requirement.
      */
-    satisfying(requirementString: string): typeof SourceAPI | null {
+    satisfying(requirementString: string): SourceAPI | null {
         const requirement =
             VersionRange.fromRequirementString(requirementString);
         let valid = null;
@@ -189,7 +189,7 @@ export class PublicAPI implements PublicAPILike {
      *
      * @returns An instance of the Source API
      */
-    localCompatible(): typeof SourceAPI | null {
+    localCompatible(): SourceAPI | null {
         if (this.sources["local"] !== undefined) {
             return this.satisfying("^" + this.sources["local"].version);
         } else {
@@ -203,7 +203,7 @@ export class PublicAPI implements PublicAPILike {
      *
      * @returns An instance of the Source API
      */
-    local(): typeof SourceAPI | null {
+    local(): SourceAPI | null {
         if (this.sources["local"] !== undefined) {
             return this.satisfying("=" + this.sources["local"].version);
         } else {
