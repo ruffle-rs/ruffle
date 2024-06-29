@@ -367,6 +367,7 @@ export function applyStaticStyles(styleElement: HTMLStyleElement) {
         }`,
 
         `#local-saves {
+            color: inherit;
             border-collapse: collapse;
             overflow-y: auto;
             display: block;
