@@ -2,6 +2,7 @@ import { pluginPolyfill, polyfill } from "./polyfills";
 import { registerElement } from "./register-element";
 import { RufflePlayer } from "./ruffle-player";
 import { buildInfo } from "./build-info";
+import { InstallationOptions } from "./install";
 
 /**
  * Represents this particular version of Ruffle.
@@ -11,7 +12,40 @@ import { buildInfo } from "./build-info";
  * negotiator (see [[PublicAPI]]) what this particular version of Ruffle is and
  * how to control it.
  */
-export const SourceAPI = {
+export interface SourceAPI {
+    /**
+     * The version of this particular API, as a string in a semver compatible format.
+     */
+    version: string;
+
+    /**
+     * Start up the polyfills.
+     *
+     * Do not run polyfills for more than one Ruffle source at a time.
+     */
+    polyfill(): void;
+
+    /**
+     * Polyfill the plugin detection.
+     *
+     * This needs to run before any plugin detection script does.
+     */
+    pluginPolyfill(): void;
+
+    /**
+     * Create a Ruffle player element using this particular version of Ruffle.
+     *
+     * @returns The player element. This is a DOM element that may be inserted
+     * into the current page as you wish.
+     */
+    createPlayer(): RufflePlayer;
+}
+
+/**
+ * The actual source API that describes this installation.
+ * This isn't part of the public API and may contain extra details.
+ */
+export const internalSourceApi = {
     /**
      * The version of this particular API, as a string in a semver compatible format.
      */
@@ -46,4 +80,9 @@ export const SourceAPI = {
         const name = registerElement("ruffle-player", RufflePlayer);
         return <RufflePlayer>document.createElement(name);
     },
+
+    /**
+     * Options specified by the user of this library.
+     */
+    options: {} as InstallationOptions,
 };
