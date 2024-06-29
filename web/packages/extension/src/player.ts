@@ -1,5 +1,5 @@
 import * as utils from "./utils";
-import { PublicAPI } from "ruffle-core";
+import { installRuffle } from "ruffle-core";
 import type {
     Letterbox,
     RufflePlayer,
@@ -17,7 +17,7 @@ declare global {
     }
 }
 
-const api = PublicAPI.negotiate(window.RufflePlayer!, "local");
+const api = installRuffle(window.RufflePlayer!, "local");
 window.RufflePlayer = api;
 const ruffle = api.newest()!;
 let player: RufflePlayer;

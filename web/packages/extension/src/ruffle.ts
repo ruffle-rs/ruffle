@@ -1,4 +1,4 @@
-import { PublicAPI } from "ruffle-core";
+import { installRuffle } from "ruffle-core";
 import { Message } from "./messages";
 
 function handleMessage(message: Message) {
@@ -10,7 +10,7 @@ function handleMessage(message: Message) {
                 ...api.config,
                 openInNewTab,
             };
-            window.RufflePlayer = PublicAPI.negotiate(api, "extension");
+            window.RufflePlayer = installRuffle(api, "extension");
             return {};
         }
         case "ping":
