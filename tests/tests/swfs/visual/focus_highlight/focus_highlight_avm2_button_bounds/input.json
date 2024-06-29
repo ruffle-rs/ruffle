@@ -1,0 +1,4 @@
+[
+  { "type": "KeyDown", "key_code": 9 },
+  { "type": "Wait" }
+]
