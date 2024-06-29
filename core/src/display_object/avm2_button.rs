@@ -824,6 +824,14 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
     fn tab_enabled_default(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
         true
     }
+
+    fn highlight_bounds(self) -> Rectangle<Twips> {
+        let hit_area = self.0.hit_area.get();
+        let hit_bounds = hit_area
+            .map(|hit| hit.bounds())
+            .unwrap_or(Rectangle::INVALID);
+        self.local_to_global_matrix() * hit_bounds
+    }
 }
 
 impl<'gc> Avm2ButtonData<'gc> {
