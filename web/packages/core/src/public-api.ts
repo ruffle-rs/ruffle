@@ -33,7 +33,7 @@ export interface PublicAPILike {
 /**
  * Represents the Ruffle public API.
  *
- * The public API exists primarily to allow multiple installs of Ruffle on a
+ * The public API exists primarily to allow multiple installations of Ruffle on a
  * page (e.g. an extension install and a local one) to cooperate. In an ideal
  * situation, all Ruffle sources on the page install themselves into a single
  * public API, and then the public API picks the newest version by default.
@@ -96,15 +96,6 @@ export class PublicAPI implements PublicAPILike {
      */
     get version(): string {
         return "0.1.0";
-    }
-
-    /**
-     * Register a given source with the Ruffle Public API.
-     *
-     * @param name The name of the source.
-     */
-    registerSource(name: string): void {
-        this.sources[name] = SourceAPI;
     }
 
     /**
