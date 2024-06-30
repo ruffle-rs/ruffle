@@ -50,7 +50,7 @@ async function submit(
     );
 
     const lastVersion = versionsResponse.data.results[0];
-    switch (lastVersion.status) {
+    switch (lastVersion.file.status) {
         case "public":
             console.log("Looks like we're good to go!");
             break;
