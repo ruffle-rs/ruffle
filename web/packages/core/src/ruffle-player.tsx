@@ -17,7 +17,7 @@ import { buildInfo } from "./build-info";
 import { text, textAsParagraphs } from "./i18n";
 import { isExtension } from "./current-script";
 import { configureBuilder } from "./internal/builder";
-import { createErrorFooter, PanicAction } from "./internal/ui/panic";
+import { PanicAction, showPanicScreen } from "./internal/ui/panic";
 
 const RUFFLE_ORIGIN = "https://ruffle.rs";
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
@@ -2093,12 +2093,12 @@ export class RufflePlayer extends HTMLElement {
         }
 
         // Clears out any existing content (ie play button or canvas) and replaces it with the error screen
-        let errorBody, errorFooter;
+        let errorBody, errorFooter: PanicAction[];
         switch (errorIndex) {
             case PanicError.FileProtocol:
                 // General error: Running on the `file:` protocol
                 errorBody = textAsParagraphs("error-file-protocol");
-                errorFooter = createErrorFooter([
+                errorFooter = [
                     {
                         type: "open_link",
                         url: RUFFLE_ORIGIN + "/demo",
@@ -2109,105 +2109,105 @@ export class RufflePlayer extends HTMLElement {
                         url: RUFFLE_ORIGIN + "/downloads#desktop-app",
                         label: text("ruffle-desktop"),
                     },
-                ]);
+                ];
                 break;
             case PanicError.JavascriptConfiguration:
                 // General error: Incorrect JavaScript configuration
                 errorBody = textAsParagraphs("error-javascript-config");
-                errorFooter = createErrorFooter([
+                errorFooter = [
                     {
                         type: "open_link",
                         url: "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#javascript-api",
                         label: text("ruffle-wiki"),
                     },
                     { type: "show_details" },
-                ]);
+                ];
                 break;
             case PanicError.WasmNotFound:
                 // Self hosted: Cannot load `.wasm` file - file not found
                 errorBody = textAsParagraphs("error-wasm-not-found");
-                errorFooter = createErrorFooter([
+                errorFooter = [
                     {
                         type: "open_link",
                         url: "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configuration-options",
                         label: text("ruffle-wiki"),
                     },
                     { type: "show_details" },
-                ]);
+                ];
                 break;
             case PanicError.WasmMimeType:
                 // Self hosted: Cannot load `.wasm` file - incorrect MIME type
                 errorBody = textAsParagraphs("error-wasm-mime-type");
-                errorFooter = createErrorFooter([
+                errorFooter = [
                     {
                         type: "open_link",
                         url: "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-webassembly-mime-type",
                         label: text("ruffle-wiki"),
                     },
                     { type: "show_details" },
-                ]);
+                ];
                 break;
             case PanicError.InvalidSwf:
                 errorBody = textAsParagraphs("error-invalid-swf");
-                errorFooter = createErrorFooter([{ type: "show_details" }]);
+                errorFooter = [{ type: "show_details" }];
                 break;
             case PanicError.SwfFetchError:
                 errorBody = textAsParagraphs("error-swf-fetch");
-                errorFooter = createErrorFooter([{ type: "show_details" }]);
+                errorFooter = [{ type: "show_details" }];
                 break;
             case PanicError.SwfCors:
                 // Self hosted: Cannot load SWF file - CORS issues
                 errorBody = textAsParagraphs("error-swf-cors");
-                errorFooter = createErrorFooter([
+                errorFooter = [
                     {
                         type: "open_link",
                         url: "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header",
                         label: text("ruffle-wiki"),
                     },
                     { type: "show_details" },
-                ]);
+                ];
                 break;
             case PanicError.WasmCors:
                 // Self hosted: Cannot load `.wasm` file - CORS issues
                 errorBody = textAsParagraphs("error-wasm-cors");
-                errorFooter = createErrorFooter([
+                errorFooter = [
                     {
                         type: "open_link",
                         url: "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header",
                         label: text("ruffle-wiki"),
                     },
                     { type: "show_details" },
-                ]);
+                ];
                 break;
             case PanicError.InvalidWasm:
                 // Self hosted: Cannot load `.wasm` file - incorrect configuration or missing files
                 errorBody = textAsParagraphs("error-wasm-invalid");
-                errorFooter = createErrorFooter([
+                errorFooter = [
                     {
                         type: "open_link",
                         url: "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#addressing-a-compileerror",
                         label: text("ruffle-wiki"),
                     },
                     { type: "show_details" },
-                ]);
+                ];
                 break;
             case PanicError.WasmDownload:
                 // Usually a transient network error or botched deployment
                 errorBody = textAsParagraphs("error-wasm-download");
-                errorFooter = createErrorFooter([{ type: "show_details" }]);
+                errorFooter = [{ type: "show_details" }];
                 break;
             case PanicError.WasmDisabledMicrosoftEdge:
                 // Self hosted: User has disabled WebAssembly in Microsoft Edge through the
                 // "Enhance your Security on the web" setting.
                 errorBody = textAsParagraphs("error-wasm-disabled-on-edge");
-                errorFooter = createErrorFooter([
+                errorFooter = [
                     {
                         type: "open_link",
                         url: "https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users#edge-webassembly-error",
                         label: text("more-info"),
                     },
                     { type: "show_details" },
-                ]);
+                ];
                 break;
             case PanicError.JavascriptConflict:
                 // Self hosted: Cannot load `.wasm` file - a native object / function is overridden
@@ -2219,22 +2219,19 @@ export class RufflePlayer extends HTMLElement {
                         }),
                     );
                 }
-                errorFooter = createErrorFooter([
-                    actionLink,
-                    { type: "show_details" },
-                ]);
+                errorFooter = [actionLink, { type: "show_details" }];
                 break;
             case PanicError.CSPConflict:
                 // General error: Cannot load `.wasm` file - a native object / function is overridden
                 errorBody = textAsParagraphs("error-csp-conflict");
-                errorFooter = createErrorFooter([
+                errorFooter = [
                     {
                         type: "open_link",
                         url: "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-wasm-csp",
                         label: text("ruffle-wiki"),
                     },
                     { type: "show_details" },
-                ]);
+                ];
                 break;
             default:
                 // Unknown error
@@ -2242,45 +2239,10 @@ export class RufflePlayer extends HTMLElement {
                     buildDate: buildInfo.buildDate,
                     outdated: String(isBuildOutdated),
                 });
-                errorFooter = createErrorFooter([
-                    actionLink,
-                    { type: "show_details" },
-                ]);
+                errorFooter = [actionLink, { type: "show_details" }];
                 break;
         }
-        const panicDiv = document.createElement("div");
-        panicDiv.id = "panic";
-        const panicTitle = document.createElement("div");
-        panicTitle.id = "panic-title";
-        panicTitle.textContent = text("panic-title");
-        panicDiv.appendChild(panicTitle);
-        const panicBody = document.createElement("div");
-        panicBody.id = "panic-body";
-        panicBody.appendChild(errorBody);
-        panicDiv.appendChild(panicBody);
-        const panicFooter = document.createElement("div");
-        panicFooter.id = "panic-footer";
-        panicFooter.appendChild(errorFooter);
-        panicDiv.appendChild(panicFooter);
-        this.container.textContent = "";
-        this.container.appendChild(panicDiv);
-        const viewDetails = this.container.querySelector(
-            "#panic-view-details",
-        ) as HTMLLinkElement;
-        if (viewDetails) {
-            viewDetails.onclick = () => {
-                const panicBody = this.container.querySelector(
-                    "#panic-body",
-                ) as HTMLDivElement;
-                panicBody.classList.add("details");
-
-                const panicText = document.createElement("textarea");
-                panicText.readOnly = true;
-                panicText.value = errorText;
-                panicBody.replaceChildren(panicText);
-                return false;
-            };
-        }
+        showPanicScreen(this.container, errorBody, errorFooter, errorText);
 
         // Do this last, just in case it causes any cascading issues.
         this.destroy();
