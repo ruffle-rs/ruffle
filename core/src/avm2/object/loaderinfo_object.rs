@@ -247,6 +247,13 @@ impl<'gc> LoaderInfoObject<'gc> {
         self.0.read().init_event_fired
     }
 
+    pub fn reset_init_and_complete_events(&self, mc: &Mutation<'gc>) {
+        let mut write = self.0.write(mc);
+
+        write.init_event_fired = false;
+        write.complete_event_fired = false;
+    }
+
     pub fn fire_init_and_complete_events(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
@@ -359,10 +366,26 @@ impl<'gc> LoaderInfoObject<'gc> {
     }
 
     pub fn unload(&self, activation: &mut Activation<'_, 'gc>) {
+        // Reset properties
         let empty_swf = Arc::new(SwfMovie::empty(activation.context.swf.version()));
         let loader_stream = LoaderStream::NotYetLoaded(empty_swf, None, false);
         self.set_loader_stream(loader_stream, activation.context.gc_context);
         self.set_errored(false, activation.context.gc_context);
+        self.reset_init_and_complete_events(activation.context.gc_context);
+
+        let loader = self
+            .0
+            .read()
+            .loader
+            .expect("LoaderInfo must have been created by Loader");
+
+        // Remove the Loader's content element, and ignore the resulting
+        // error if the loader hadn't loaded it.
+        let _ = crate::avm2::globals::flash::display::display_object_container::remove_child_at(
+            activation,
+            loader,
+            &[0.into()],
+        );
     }
 }
 
