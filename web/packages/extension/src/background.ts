@@ -244,12 +244,9 @@ function onMessage(
 }
 
 (async () => {
-    const { ruffleEnable, swfTakeover } = await utils.getOptions();
+    const { ruffleEnable } = await utils.getOptions();
     if (ruffleEnable) {
         await enable();
-    }
-    if (!swfTakeover) {
-        await disableSWFTakeover();
     }
 })();
 
