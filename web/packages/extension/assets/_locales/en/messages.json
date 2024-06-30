@@ -12,7 +12,7 @@
         "message": "Autoplay Flash content (click to unmute)"
     },
     "settings_swf_takeover": {
-        "message": "Redirect SWF links to SWF Player"
+        "message": "Play SWF files in browser instead of downloading"
     },
     "settings_log_level": {
         "message": "Log level"
