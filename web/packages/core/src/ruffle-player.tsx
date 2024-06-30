@@ -1680,16 +1680,19 @@ export class RufflePlayer extends HTMLElement {
         // Populate context menu items.
         for (const item of this.contextMenuItems()) {
             if (item === null) {
-                const menuSeparator = document.createElement("li");
-                menuSeparator.className = "menu-separator";
-                const hr = document.createElement("hr");
-                menuSeparator.appendChild(hr);
-                this.contextMenuElement.appendChild(menuSeparator);
+                this.contextMenuElement.appendChild(
+                    <li class="menu-separator">
+                        <hr />
+                    </li>,
+                );
             } else {
                 const { text, onClick, enabled } = item;
-                const menuItem = document.createElement("li");
-                menuItem.className = "menu-item";
-                menuItem.textContent = text;
+
+                const menuItem = (
+                    <li class={{ "menu-item": true, disabled: !enabled }}>
+                        {text}
+                    </li>
+                ) as HTMLElement;
                 this.contextMenuElement.appendChild(menuItem);
 
                 if (enabled !== false) {
@@ -1707,8 +1710,6 @@ export class RufflePlayer extends HTMLElement {
                             this.hideContextMenu();
                         },
                     );
-                } else {
-                    menuItem.classList.add("disabled");
                 }
             }
         }

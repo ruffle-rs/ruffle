@@ -7,6 +7,9 @@
         "target": "es2017",
         "rootDir": "src",
         "outDir": "dist",
+        "jsx": "react-jsx",
+        "jsxImportSource": "tsx-dom",
+        "types": ["node", "tsx-dom"]
     },
     "include": ["src/**/*"],
 }
