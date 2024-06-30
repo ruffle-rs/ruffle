@@ -10,7 +10,6 @@ update-ruffle = Ruffleを更新
 ruffle-demo = Webデモ
 ruffle-desktop = デスクトップアプリケーション
 ruffle-wiki = Ruffle Wikiを表示
-enable-hardware-acceleration = ハードウェアアクセラレーションが有効になっていないようです。Ruffleが動作しないか、動作が遅くなる可能性があります。 ハードウェアアクセラレーションを有効にする方法については、こちらのリンクを参照してください。
 view-error-details = エラーの詳細を表示
 open-in-new-tab = 新しいタブで開く
 click-to-unmute = クリックでミュートを解除

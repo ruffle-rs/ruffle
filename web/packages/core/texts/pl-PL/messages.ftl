@@ -9,7 +9,6 @@ report-bug = Zgłoś błąd
 update-ruffle = Zaktualizuj Ruffle
 ruffle-desktop = Aplikacja na komputer
 ruffle-wiki = Zobacz Wiki Ruffle
-enable-hardware-acceleration = Wygląda na to, że akceleracja sprzętowa nie jest włączona. Chociaż Ruffle może działać, może być nieproporcjonalnie wolna. Możesz dowiedzieć się, jak włączyć akcelerację sprzętową, podążając za tym linkiem.
 view-error-details = Zobacz szczegóły błędu
 open-in-new-tab = Otwórz w nowej karcie
 click-to-unmute = Kliknij aby wyłączyć wyciszenie

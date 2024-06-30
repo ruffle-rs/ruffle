@@ -97,5 +97,14 @@
     },
     "onboarding_page": {
         "message": "引導頁面"
+    },
+    "permissions_grant": {
+        "message": "允許Ruffle在所有網站上所有數據"
+    },
+    "permissions_not_granted": {
+        "message": "如果你像要在每個網站執行Ruffle時 你需要點擊Ruffle圖示"
+    },
+    "grant_single_site_permission": {
+        "message": "永久在此網站使用"
     }
 }
