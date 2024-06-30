@@ -29,8 +29,8 @@ use crate::prelude::*;
 use crate::string::{utils as string_utils, AvmString, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::{AvmObject, Instantiator};
-use chrono::DateTime;
 use chrono::Utc;
+use chrono::{DateTime, TimeDelta};
 use core::fmt;
 use either::Either;
 use gc_arena::{Collect, Gc, GcCell, Mutation};
@@ -174,6 +174,10 @@ pub struct EditTextData<'gc> {
     /// Restrict what characters the user may input.
     #[collect(require_static)]
     restrict: EditTextRestrict,
+
+    /// Information related to the last click event inside this text field.
+    #[collect(require_static)]
+    last_click: Option<ClickEventData>,
 }
 
 impl<'gc> EditTextData<'gc> {
@@ -195,6 +199,11 @@ impl<'gc> EditTextData<'gc> {
 impl<'gc> EditText<'gc> {
     // This seems to be OS-independent
     const INPUT_NEWLINE: char = '\r';
+
+    /// Maximum duration between two clicks for them to be considered as a multi-click.
+    ///
+    /// Derived experimentally to be 250 ms.
+    const MULTI_CLICK_MAX_DURATION: TimeDelta = TimeDelta::milliseconds(250);
 
     /// Creates a new `EditText` from an SWF `DefineEditText` tag.
     pub fn from_swf_tag(
@@ -305,6 +314,7 @@ impl<'gc> EditText<'gc> {
                 mouse_wheel_enabled: true,
                 is_tlf: false,
                 restrict: EditTextRestrict::allow_all(),
+                last_click: None,
             },
         ));
 
@@ -1224,6 +1234,24 @@ impl<'gc> EditText<'gc> {
         }
     }
 
+    /// Calculate and return the [`TextSelection`] at the given position
+    /// using the given selection mode.
+    fn calculate_selection_at(self, position: usize, mode: TextSelectionMode) -> TextSelection {
+        match mode {
+            TextSelectionMode::Character => TextSelection::for_position(position),
+            TextSelectionMode::Word => {
+                let from = self.find_prev_word_boundary(position, true);
+                let to = self.find_next_word_boundary(position, true);
+                TextSelection::for_range(from, to)
+            }
+            TextSelectionMode::Line => {
+                let from = self.find_prev_line_boundary(position);
+                let to = self.find_next_line_boundary(position);
+                TextSelection::for_range(from, to)
+            }
+        }
+    }
+
     pub fn reset_selection_blinking(self, gc_context: &Mutation<'gc>) {
         if let Some(selection) = self.0.write(gc_context).selection.as_mut() {
             selection.reset_blinking();
@@ -1609,10 +1637,10 @@ impl<'gc> EditText<'gc> {
             }
             TextControlCode::SelectRightWord
             | TextControlCode::MoveRightWord
-            | TextControlCode::DeleteWord => self.find_next_word_boundary(current_pos),
+            | TextControlCode::DeleteWord => self.find_next_word_boundary(current_pos, false),
             TextControlCode::SelectLeftWord
             | TextControlCode::MoveLeftWord
-            | TextControlCode::BackspaceWord => self.find_prev_word_boundary(current_pos),
+            | TextControlCode::BackspaceWord => self.find_prev_word_boundary(current_pos, false),
             TextControlCode::SelectRightLine | TextControlCode::MoveRightLine => {
                 self.find_next_line_boundary(current_pos)
             }
@@ -1627,12 +1655,17 @@ impl<'gc> EditText<'gc> {
         }
     }
 
-    /// Find the nearest word boundary before `pos`,
+    /// Find the nearest word boundary before (or exceptionally at) `pos`,
     /// which is applicable for selection.
     ///
+    /// When `stop_on_space` is true, `pos` will be returned if there's space before it.
+    ///
     /// This algorithm is based on [UAX #29](https://unicode.org/reports/tr29/).
-    fn find_prev_word_boundary(self, pos: usize) -> usize {
+    fn find_prev_word_boundary(self, pos: usize, stop_on_space: bool) -> usize {
         let head = &self.text()[..pos];
+        if stop_on_space && head.ends_with(ruffle_wstr::utils::swf_is_whitespace) {
+            return pos;
+        }
         let to_utf8 = WStrToUtf8::new(head);
         WordBoundIndices::new(&to_utf8.to_utf8_lossy())
             .rev()
@@ -1642,12 +1675,17 @@ impl<'gc> EditText<'gc> {
             .unwrap_or(0)
     }
 
-    /// Find the nearest word boundary after `pos`,
+    /// Find the nearest word boundary after (or exceptionally at) `pos`,
     /// which is applicable for selection.
     ///
+    /// When `stop_on_space` is true, `pos` will be returned if there's space after it.
+    ///
     /// This algorithm is based on [UAX #29](https://unicode.org/reports/tr29/).
-    fn find_next_word_boundary(self, pos: usize) -> usize {
+    fn find_next_word_boundary(self, pos: usize, stop_on_space: bool) -> usize {
         let tail = &self.text()[pos..];
+        if stop_on_space && tail.starts_with(ruffle_wstr::utils::swf_is_whitespace) {
+            return pos;
+        }
         let to_utf8 = WStrToUtf8::new(tail);
         WordBoundIndices::new(&to_utf8.to_utf8_lossy())
             .skip_while(|(_, span)| span.trim().is_empty())
@@ -2001,6 +2039,61 @@ impl<'gc> EditText<'gc> {
                     .contains(Position::from((position.x, position.y)))
         })
     }
+
+    fn handle_click(
+        self,
+        time: DateTime<Utc>,
+        position: usize,
+        context: &mut UpdateContext<'_, 'gc>,
+    ) {
+        if !self.is_selectable() {
+            return;
+        }
+
+        let click_index = self
+            .0
+            .read()
+            .last_click
+            .as_ref()
+            .map(|click| click.next_click_index(time, position))
+            .unwrap_or_default();
+
+        let this_click = ClickEventData {
+            time,
+            position,
+            click_index,
+        };
+        let selection_mode = this_click.selection_mode();
+        self.0.write(context.gc()).last_click = Some(this_click);
+
+        // Update selection
+        let selection = self.calculate_selection_at(position, selection_mode);
+        self.set_selection(Some(selection), context.gc());
+    }
+
+    fn handle_drag(self, position: usize, context: &mut UpdateContext<'_, 'gc>) {
+        if !self.is_selectable() {
+            return;
+        }
+
+        let Some((last_position, selection_mode)) = self
+            .0
+            .read()
+            .last_click
+            .as_ref()
+            .map(|last_click| (last_click.position, last_click.selection_mode()))
+        else {
+            // No last click, so no drag
+            return;
+        };
+
+        // We have to calculate selections at the first and the current position,
+        // because the user may be selecting words or lines.
+        let first_selection = self.calculate_selection_at(last_position, selection_mode);
+        let current_selection = self.calculate_selection_at(position, selection_mode);
+        let new_selection = TextSelection::span_across(first_selection, current_selection);
+        self.set_selection(Some(new_selection), context.gc());
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
@@ -2333,7 +2426,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
             let mut link_to_open = None;
 
             if let Some(position) = self.screen_position_to_index(*context.mouse_position) {
-                self.set_selection(Some(TextSelection::for_position(position)), context.gc());
+                self.handle_click(Utc::now(), position, context);
 
                 if let Some((span_index, _)) =
                     self.0.read().text_spans.resolve_position_as_span(position)
@@ -2369,11 +2462,8 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         if let ClipEvent::MouseMove = event {
             // If a mouse has moved and this EditTest is pressed, we need to update the selection.
             if InteractiveObject::option_ptr_eq(context.mouse_data.pressed, self.as_interactive()) {
-                if let Some(mut selection) = self.selection() {
-                    if let Some(position) = self.screen_position_to_index(*context.mouse_position) {
-                        selection.to = position;
-                        self.set_selection(Some(selection), context.gc());
-                    }
+                if let Some(position) = self.screen_position_to_index(*context.mouse_position) {
+                    self.handle_drag(position, context);
                 }
             }
         }
@@ -2505,6 +2595,72 @@ struct EditTextStatic {
     initial_text: Option<WString>,
 }
 
+#[derive(Clone, Debug)]
+struct ClickEventData {
+    /// The time of the click.
+    time: DateTime<Utc>,
+
+    /// The position in text resolved from click coordinates.
+    position: usize,
+
+    /// The index of this click in a multi-click which is composed of
+    /// multiple clicks performed in a quick succession.
+    ///
+    /// For instance the value of 0 indicates it's a single click,
+    /// the number of 1 indicates it's a double click, etc.
+    click_index: usize,
+}
+
+impl ClickEventData {
+    /// Given the click time and position, check if it's a multi-click
+    /// assuming this struct contains information about the last click.
+    fn is_multi_click(&self, time: DateTime<Utc>, position: usize) -> bool {
+        self.position == position && (self.time - time).abs() < EditText::MULTI_CLICK_MAX_DURATION
+    }
+
+    /// Calculate the next click index given its position and time.
+    fn next_click_index(&self, time: DateTime<Utc>, position: usize) -> usize {
+        if self.is_multi_click(time, position) {
+            self.click_index + 1
+        } else {
+            0
+        }
+    }
+
+    /// Selection mode that results from this click index.
+    fn selection_mode(&self) -> TextSelectionMode {
+        TextSelectionMode::from_click_index(self.click_index)
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+enum TextSelectionMode {
+    /// Specifies that text should be selected at char boundaries.
+    ///
+    /// Used when e.g. clicking or clicking and dragging.
+    Character,
+
+    /// Specifies that text should be selected at word boundaries.
+    ///
+    /// Used when e.g. double-clicking or double-clicking and dragging.
+    Word,
+
+    /// Specifies that text should be selected at line boundaries.
+    ///
+    /// Used when e.g. triple-clicking or triple-clicking and dragging.
+    Line,
+}
+
+impl TextSelectionMode {
+    fn from_click_index(click_index: usize) -> Self {
+        match click_index {
+            0 => Self::Character,
+            1 => Self::Word,
+            _ => Self::Line,
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug)]
 pub struct TextSelection {
     from: usize,
@@ -2538,6 +2694,21 @@ impl TextSelection {
             from,
             to,
             blink_epoch: Utc::now(),
+        }
+    }
+
+    /// Create a new selection spanning across the given selections.
+    pub fn span_across(from: Self, to: Self) -> Self {
+        let from_start = from.start();
+        let from_end = from.end();
+        let to_start = to.start();
+        let to_end = to.end();
+        if from_start < to_start && from_end < to_end {
+            Self::for_range(from_start, to_end)
+        } else if to_start < from_start && to_end < from_end {
+            Self::for_range(from_end, to_start)
+        } else {
+            Self::for_range(from_start.min(to_start), from_end.max(to_end))
         }
     }
 
