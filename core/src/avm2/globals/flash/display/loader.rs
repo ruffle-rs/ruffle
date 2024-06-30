@@ -77,6 +77,17 @@ pub fn load<'gc>(
 
     let loader_info_object = loader_info.as_loader_info_object().unwrap();
 
+    if loader_info_object.init_event_fired() {
+        // FIXME: When calling load/loadBytes, then calling load/loadBytes again
+        // before the `init` event is fired, the first load is cancelled.
+        avm2_stub_method!(
+            activation,
+            "flash.display.Loader",
+            "load",
+            "reusing a Loader"
+        );
+    }
+
     // Unload the loader, in case something was already loaded.
     loader_info_object.unload(activation);
 
@@ -228,6 +239,17 @@ pub fn load_bytes<'gc>(
         .unwrap();
 
     let loader_info_object = loader_info.as_loader_info_object().unwrap();
+
+    if loader_info_object.init_event_fired() {
+        // FIXME: When calling load/loadBytes, then calling load/loadBytes again
+        // before the `init` event is fired, the first load is cancelled.
+        avm2_stub_method!(
+            activation,
+            "flash.display.Loader",
+            "loadBytes",
+            "reusing a Loader"
+        );
+    }
 
     // Unload the loader, in case something was already loaded.
     loader_info_object.unload(activation);
