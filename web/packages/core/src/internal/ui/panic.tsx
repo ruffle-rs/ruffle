@@ -1,5 +1,7 @@
 import { text } from "../../i18n";
 import { createRef } from "tsx-dom";
+import { buildInfo } from "../../build-info";
+import { RUFFLE_ORIGIN } from "../constants";
 
 export interface PanicLink {
     type: "open_link";
@@ -41,6 +43,70 @@ function createPanicAction({
             </li>
         );
     }
+}
+
+export function isBuildOutdated(): boolean {
+    const buildDate = new Date(buildInfo.buildDate);
+    const monthsPrior = new Date();
+    monthsPrior.setMonth(monthsPrior.getMonth() - 6); // 6 months prior
+    return monthsPrior > buildDate;
+}
+
+export type ErrorArray = Array<string | null> & {
+    stackIndex: number;
+    avmStackIndex: number;
+};
+
+export function createReportAction({
+    swfUrl,
+    errorText,
+    errorArray,
+}: {
+    swfUrl: URL | undefined | null;
+    errorArray: ErrorArray;
+    errorText: string;
+}): PanicAction {
+    if (isBuildOutdated()) {
+        return {
+            type: "open_link",
+            url: RUFFLE_ORIGIN + "/downloads#desktop-app",
+            label: text("update-ruffle"),
+        };
+    }
+
+    let url;
+    if (document.location.protocol.includes("extension") && swfUrl) {
+        url = swfUrl.href;
+    } else {
+        url = document.location.href;
+    }
+
+    // Remove query params for the issue title.
+    url = url.split(/[?#]/, 1)[0]!;
+
+    const issueTitle = `Error on ${url}`;
+    let issueLink = `https://github.com/ruffle-rs/ruffle/issues/new?title=${encodeURIComponent(
+        issueTitle,
+    )}&template=error_report.md&labels=error-report&body=`;
+    let issueBody = encodeURIComponent(errorText);
+    if (
+        errorArray.stackIndex > -1 &&
+        String(issueLink + issueBody).length > 8195
+    ) {
+        // Strip the stack error from the array when the produced URL is way too long.
+        // This should prevent "414 Request-URI Too Large" errors on GitHub.
+        errorArray[errorArray.stackIndex] = null;
+        if (errorArray.avmStackIndex > -1) {
+            errorArray[errorArray.avmStackIndex] = null;
+        }
+        issueBody = encodeURIComponent(errorArray.join(""));
+    }
+    issueLink += issueBody;
+    return {
+        type: "open_link",
+        url: issueLink,
+        label: text("report-bug"),
+    };
 }
 
 export function showPanicScreen(
