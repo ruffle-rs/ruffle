@@ -2471,6 +2471,8 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
                     // TODO: This fires on mouse DOWN but it should be mouse UP...
                     // but only if it went down in the same span.
                     // Needs more advanced focus handling than we have at time of writing this comment.
+                    // TODO This also needs to fire only if the user clicked on the link,
+                    //   currently it fires when the cursor position resolves to one in the link.
                     self.open_url(context, &url, &target);
                 }
             }
