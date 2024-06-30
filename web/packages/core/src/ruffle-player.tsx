@@ -17,9 +17,14 @@ import { buildInfo } from "./build-info";
 import { text, textAsParagraphs } from "./i18n";
 import { isExtension } from "./current-script";
 import { configureBuilder } from "./internal/builder";
-import { PanicAction, showPanicScreen } from "./internal/ui/panic";
+import {
+    createReportAction,
+    isBuildOutdated,
+    PanicAction,
+    showPanicScreen,
+} from "./internal/ui/panic";
+import { RUFFLE_ORIGIN } from "./internal/constants";
 
-const RUFFLE_ORIGIN = "https://ruffle.rs";
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
 
 let isAudioContextUnmuted = false;
@@ -2039,59 +2044,6 @@ export class RufflePlayer extends HTMLElement {
 
         const errorText = errorArray.join("");
 
-        const buildDate = new Date(buildInfo.buildDate);
-        const monthsPrior = new Date();
-        monthsPrior.setMonth(monthsPrior.getMonth() - 6); // 6 months prior
-        const isBuildOutdated = monthsPrior > buildDate;
-
-        // Create a link to GitHub with all of the error data, if the build is not outdated.
-        // Otherwise, create a link to the downloads section on the Ruffle website.
-        let actionLink: PanicAction;
-        if (!isBuildOutdated) {
-            let url;
-            if (
-                document.location.protocol.includes("extension") &&
-                this.swfUrl
-            ) {
-                url = this.swfUrl.href;
-            } else {
-                url = document.location.href;
-            }
-
-            // Remove query params for the issue title.
-            url = url.split(/[?#]/, 1)[0]!;
-
-            const issueTitle = `Error on ${url}`;
-            let issueLink = `https://github.com/ruffle-rs/ruffle/issues/new?title=${encodeURIComponent(
-                issueTitle,
-            )}&template=error_report.md&labels=error-report&body=`;
-            let issueBody = encodeURIComponent(errorText);
-            if (
-                errorArray.stackIndex > -1 &&
-                String(issueLink + issueBody).length > 8195
-            ) {
-                // Strip the stack error from the array when the produced URL is way too long.
-                // This should prevent "414 Request-URI Too Large" errors on GitHub.
-                errorArray[errorArray.stackIndex] = null;
-                if (errorArray.avmStackIndex > -1) {
-                    errorArray[errorArray.avmStackIndex] = null;
-                }
-                issueBody = encodeURIComponent(errorArray.join(""));
-            }
-            issueLink += issueBody;
-            actionLink = {
-                type: "open_link",
-                url: issueLink,
-                label: text("report-bug"),
-            };
-        } else {
-            actionLink = {
-                type: "open_link",
-                url: RUFFLE_ORIGIN + "/downloads#desktop-app",
-                label: text("update-ruffle"),
-            };
-        }
-
         // Clears out any existing content (ie play button or canvas) and replaces it with the error screen
         let errorBody, errorFooter: PanicAction[];
         switch (errorIndex) {
@@ -2212,14 +2164,21 @@ export class RufflePlayer extends HTMLElement {
             case PanicError.JavascriptConflict:
                 // Self hosted: Cannot load `.wasm` file - a native object / function is overridden
                 errorBody = textAsParagraphs("error-javascript-conflict");
-                if (isBuildOutdated) {
+                if (isBuildOutdated()) {
                     errorBody.appendChild(
                         textAsParagraphs("error-javascript-conflict-outdated", {
                             buildDate: buildInfo.buildDate,
                         }),
                     );
                 }
-                errorFooter = [actionLink, { type: "show_details" }];
+                errorFooter = [
+                    createReportAction({
+                        errorText,
+                        errorArray,
+                        swfUrl: this.swfUrl,
+                    }),
+                    { type: "show_details" },
+                ];
                 break;
             case PanicError.CSPConflict:
                 // General error: Cannot load `.wasm` file - a native object / function is overridden
@@ -2239,7 +2198,14 @@ export class RufflePlayer extends HTMLElement {
                     buildDate: buildInfo.buildDate,
                     outdated: String(isBuildOutdated),
                 });
-                errorFooter = [actionLink, { type: "show_details" }];
+                errorFooter = [
+                    createReportAction({
+                        errorText,
+                        errorArray,
+                        swfUrl: this.swfUrl,
+                    }),
+                    { type: "show_details" },
+                ];
                 break;
         }
         showPanicScreen(this.container, errorBody, errorFooter, errorText);
