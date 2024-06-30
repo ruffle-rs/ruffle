@@ -17,34 +17,12 @@ import { buildInfo } from "./build-info";
 import { text, textAsParagraphs } from "./i18n";
 import { isExtension } from "./current-script";
 import { configureBuilder } from "./internal/builder";
-import {
-    createReportAction,
-    isBuildOutdated,
-    PanicAction,
-    showPanicScreen,
-} from "./internal/ui/panic";
+import { PanicError, showPanicScreen } from "./internal/ui/panic";
 import { RUFFLE_ORIGIN } from "./internal/constants";
 
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
 
 let isAudioContextUnmuted = false;
-
-enum PanicError {
-    Unknown,
-    CSPConflict,
-    FileProtocol,
-    InvalidWasm,
-    JavascriptConfiguration,
-    JavascriptConflict,
-    WasmCors,
-    WasmDownload,
-    WasmMimeType,
-    WasmNotFound,
-    WasmDisabledMicrosoftEdge,
-    InvalidSwf,
-    SwfFetchError,
-    SwfCors,
-}
 
 // Safari still requires prefixed fullscreen APIs, see:
 // https://developer.mozilla.org/en-US/docs/Web/API/Element/requestFullScreen
@@ -2042,173 +2020,8 @@ export class RufflePlayer extends HTMLElement {
 
         errorArray.push(this.getPanicData());
 
-        const errorText = errorArray.join("");
-
         // Clears out any existing content (ie play button or canvas) and replaces it with the error screen
-        let errorBody, errorFooter: PanicAction[];
-        switch (errorIndex) {
-            case PanicError.FileProtocol:
-                // General error: Running on the `file:` protocol
-                errorBody = textAsParagraphs("error-file-protocol");
-                errorFooter = [
-                    {
-                        type: "open_link",
-                        url: RUFFLE_ORIGIN + "/demo",
-                        label: text("ruffle-demo"),
-                    },
-                    {
-                        type: "open_link",
-                        url: RUFFLE_ORIGIN + "/downloads#desktop-app",
-                        label: text("ruffle-desktop"),
-                    },
-                ];
-                break;
-            case PanicError.JavascriptConfiguration:
-                // General error: Incorrect JavaScript configuration
-                errorBody = textAsParagraphs("error-javascript-config");
-                errorFooter = [
-                    {
-                        type: "open_link",
-                        url: "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#javascript-api",
-                        label: text("ruffle-wiki"),
-                    },
-                    { type: "show_details" },
-                ];
-                break;
-            case PanicError.WasmNotFound:
-                // Self hosted: Cannot load `.wasm` file - file not found
-                errorBody = textAsParagraphs("error-wasm-not-found");
-                errorFooter = [
-                    {
-                        type: "open_link",
-                        url: "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configuration-options",
-                        label: text("ruffle-wiki"),
-                    },
-                    { type: "show_details" },
-                ];
-                break;
-            case PanicError.WasmMimeType:
-                // Self hosted: Cannot load `.wasm` file - incorrect MIME type
-                errorBody = textAsParagraphs("error-wasm-mime-type");
-                errorFooter = [
-                    {
-                        type: "open_link",
-                        url: "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-webassembly-mime-type",
-                        label: text("ruffle-wiki"),
-                    },
-                    { type: "show_details" },
-                ];
-                break;
-            case PanicError.InvalidSwf:
-                errorBody = textAsParagraphs("error-invalid-swf");
-                errorFooter = [{ type: "show_details" }];
-                break;
-            case PanicError.SwfFetchError:
-                errorBody = textAsParagraphs("error-swf-fetch");
-                errorFooter = [{ type: "show_details" }];
-                break;
-            case PanicError.SwfCors:
-                // Self hosted: Cannot load SWF file - CORS issues
-                errorBody = textAsParagraphs("error-swf-cors");
-                errorFooter = [
-                    {
-                        type: "open_link",
-                        url: "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header",
-                        label: text("ruffle-wiki"),
-                    },
-                    { type: "show_details" },
-                ];
-                break;
-            case PanicError.WasmCors:
-                // Self hosted: Cannot load `.wasm` file - CORS issues
-                errorBody = textAsParagraphs("error-wasm-cors");
-                errorFooter = [
-                    {
-                        type: "open_link",
-                        url: "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-cors-header",
-                        label: text("ruffle-wiki"),
-                    },
-                    { type: "show_details" },
-                ];
-                break;
-            case PanicError.InvalidWasm:
-                // Self hosted: Cannot load `.wasm` file - incorrect configuration or missing files
-                errorBody = textAsParagraphs("error-wasm-invalid");
-                errorFooter = [
-                    {
-                        type: "open_link",
-                        url: "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#addressing-a-compileerror",
-                        label: text("ruffle-wiki"),
-                    },
-                    { type: "show_details" },
-                ];
-                break;
-            case PanicError.WasmDownload:
-                // Usually a transient network error or botched deployment
-                errorBody = textAsParagraphs("error-wasm-download");
-                errorFooter = [{ type: "show_details" }];
-                break;
-            case PanicError.WasmDisabledMicrosoftEdge:
-                // Self hosted: User has disabled WebAssembly in Microsoft Edge through the
-                // "Enhance your Security on the web" setting.
-                errorBody = textAsParagraphs("error-wasm-disabled-on-edge");
-                errorFooter = [
-                    {
-                        type: "open_link",
-                        url: "https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users#edge-webassembly-error",
-                        label: text("more-info"),
-                    },
-                    { type: "show_details" },
-                ];
-                break;
-            case PanicError.JavascriptConflict:
-                // Self hosted: Cannot load `.wasm` file - a native object / function is overridden
-                errorBody = textAsParagraphs("error-javascript-conflict");
-                if (isBuildOutdated()) {
-                    errorBody.appendChild(
-                        textAsParagraphs("error-javascript-conflict-outdated", {
-                            buildDate: buildInfo.buildDate,
-                        }),
-                    );
-                }
-                errorFooter = [
-                    createReportAction({
-                        errorText,
-                        errorArray,
-                        swfUrl: this.swfUrl,
-                    }),
-                    { type: "show_details" },
-                ];
-                break;
-            case PanicError.CSPConflict:
-                // General error: Cannot load `.wasm` file - a native object / function is overridden
-                errorBody = textAsParagraphs("error-csp-conflict");
-                errorFooter = [
-                    {
-                        type: "open_link",
-                        url: "https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#configure-wasm-csp",
-                        label: text("ruffle-wiki"),
-                    },
-                    { type: "show_details" },
-                ];
-                break;
-            default:
-                // Unknown error
-                errorBody = textAsParagraphs("error-unknown", {
-                    buildDate: buildInfo.buildDate,
-                    outdated: String(isBuildOutdated),
-                });
-                errorFooter = [
-                    createReportAction({
-                        errorText,
-                        errorArray,
-                        swfUrl: this.swfUrl,
-                    }),
-                    { type: "show_details" },
-                ];
-                break;
-        }
-        showPanicScreen(this.container, errorBody, errorFooter, errorText);
+        showPanicScreen(this.container, errorIndex, errorArray, this.swfUrl);
 
         // Do this last, just in case it causes any cascading issues.
         this.destroy();
