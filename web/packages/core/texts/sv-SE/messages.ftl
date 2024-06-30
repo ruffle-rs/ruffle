@@ -10,7 +10,6 @@ update-ruffle = Uppdatera Ruffle
 ruffle-demo = Webbdemo
 ruffle-desktop = Skrivbordsprogram
 ruffle-wiki = Se Ruffle-wiki
-enable-hardware-acceleration = Det verkar som att hårdvaruacceleration inte är på. Ruffle kan fortfarande fungera men kan vara orimligt långsam. Du kan ta reda på hur man sätter på hårdvaruacceleration genom att följa denna länk.
 view-error-details = Visa Felinformation
 open-in-new-tab = Öppna i en ny flik
 click-to-unmute = Klicka för ljud

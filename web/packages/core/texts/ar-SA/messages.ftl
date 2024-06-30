@@ -10,7 +10,6 @@ update-ruffle = تحديث رفل
 ruffle-demo = ويب التجريبي
 ruffle-desktop = برنامج سطح المكتب
 ruffle-wiki = عرض ويكي Ruffle
-enable-hardware-acceleration = يبدو أن تسارع الأجهزة غير مفعل. بينما قد يعمل Ruffle، قد يكون بطيئاً بشكل غير معقول. يمكنك معرفة كيفية تمكين تسارع الأجهزة من خلال متابعة هذا الرابط.
 view-error-details = عرض تفاصيل الخطأ
 open-in-new-tab = فتح في علامة تبويب جديدة
 click-to-unmute = انقر لإلغاء الكتم

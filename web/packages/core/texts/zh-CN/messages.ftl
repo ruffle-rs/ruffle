@@ -10,7 +10,6 @@ update-ruffle = 更新 Ruffle
 ruffle-demo = 网页演示
 ruffle-desktop = 桌面应用程序
 ruffle-wiki = 查看 Ruffle Wiki
-enable-hardware-acceleration = 看起来硬件加速未启用。虽然 Ruffle 可能运行，但可能会非常慢。您可以通过此链接了解启用硬件加速的方法。
 view-error-details = 查看错误详情
 open-in-new-tab = 在新标签页中打开
 click-to-unmute = 点击取消静音

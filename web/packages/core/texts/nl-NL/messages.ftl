@@ -10,7 +10,6 @@ update-ruffle = Ruffle updaten
 ruffle-demo = Web Demo
 ruffle-desktop = Desktopapplicatie
 ruffle-wiki = Bekijk de Ruffle Wiki
-enable-hardware-acceleration = Het lijkt erop dat hardwareversnelling niet beschikbaar is. Ruffle zal werken, maar gaat waarschijnlijk erg traag zijn. Je kan lezen hoe hardwareversnelling in te schakelen is door deze link te volgen.
 view-error-details = Foutdetails tonen
 open-in-new-tab = Openen in een nieuw tabblad
 click-to-unmute = Klik om te ontdempen

@@ -10,7 +10,6 @@ update-ruffle = Actualitza Ruffle
 ruffle-demo = Demostració web
 ruffle-desktop = Aplicació d'escriptori
 ruffle-wiki = Obre la wiki de Ruffle
-enable-hardware-acceleration = Sembla que l'acceleració per maquinari no està activada. Tot i que Ruffle podria funcionar, és probable que ho faci molt lentament. Pots trobar informació sobre com activar l'acceleració per maquinari al següent enllaç.
 view-error-details = Mostra detalls de l'error
 open-in-new-tab = Obre en una pestanya nova
 click-to-unmute = Feu clic per activar el so

@@ -10,7 +10,6 @@ update-ruffle = Mettre à jour Ruffle
 ruffle-demo = Démo en ligne
 ruffle-desktop = Application de bureau
 ruffle-wiki = Wiki de Ruffle
-enable-hardware-acceleration = Il semblerait que l'accélération matérielle ne soit pas activée. Cela n'empêche généralement pas Ruffle de fonctionner, mais il peut être beaucoup plus lent. Vous pouvez trouver comment activer l'accélération matérielle en suivant ce lien.
 view-error-details = Détails de l'erreur
 open-in-new-tab = Ouvrir dans un nouvel onglet
 click-to-unmute = Cliquez pour activer le son
