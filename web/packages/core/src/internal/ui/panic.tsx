@@ -2,23 +2,7 @@ import { text, textAsParagraphs } from "../../i18n";
 import { createRef } from "tsx-dom";
 import { buildInfo } from "../../build-info";
 import { RUFFLE_ORIGIN } from "../constants";
-
-export enum PanicError {
-    Unknown,
-    CSPConflict,
-    FileProtocol,
-    InvalidWasm,
-    JavascriptConfiguration,
-    JavascriptConflict,
-    WasmCors,
-    WasmDownload,
-    WasmMimeType,
-    WasmNotFound,
-    WasmDisabledMicrosoftEdge,
-    InvalidSwf,
-    SwfFetchError,
-    SwfCors,
-}
+import { PanicError } from "../errors";
 
 interface PanicLink {
     type: "open_link";
