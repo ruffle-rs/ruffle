@@ -25,6 +25,12 @@ use super::Avm2;
 #[collect(no_drop)]
 pub struct Domain<'gc>(GcCell<'gc, DomainData<'gc>>);
 
+impl std::fmt::Debug for Domain<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Domain({:p})", self.0.as_ptr())
+    }
+}
+
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
 pub struct DomainWeak<'gc>(GcWeakCell<'gc, DomainData<'gc>>);

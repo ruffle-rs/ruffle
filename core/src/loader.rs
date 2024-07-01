@@ -654,7 +654,7 @@ pub enum LoaderStatus {
     Failed,
 }
 
-#[derive(Collect, Clone, Copy)]
+#[derive(Collect, Clone, Copy, Debug)]
 #[collect(no_drop)]
 pub enum MovieLoaderVMData<'gc> {
     Avm1 {
@@ -672,7 +672,7 @@ pub enum MovieLoaderVMData<'gc> {
 }
 
 /// A struct that holds garbage-collected pointers for asynchronous code.
-#[derive(Collect)]
+#[derive(Collect, Debug)]
 #[collect(no_drop)]
 pub enum Loader<'gc> {
     /// Loader that is loading the root movie of a player.
@@ -936,7 +936,7 @@ impl<'gc> Loader<'gc> {
         parameters: Vec<(String, String)>,
         on_metadata: Box<dyn FnOnce(&swf::HeaderExt)>,
     ) -> OwnedFuture<(), Error> {
-        let _handle = match self {
+        let handle = match self {
             Loader::RootMovie { self_handle, .. } => {
                 self_handle.expect("Loader not self-introduced")
             }
@@ -993,6 +993,7 @@ impl<'gc> Loader<'gc> {
             movie.append_parameters(parameters);
             player.lock().unwrap().mutate_with_update_context(|uc| {
                 uc.set_root_movie(movie);
+                uc.load_manager.remove_loader(handle);
             });
             Ok(())
         })
@@ -1277,6 +1278,8 @@ impl<'gc> Loader<'gc> {
                     }
                 }
 
+                activation.context.load_manager.remove_loader(handle);
+
                 Ok(())
             })
         })
@@ -1376,6 +1379,8 @@ impl<'gc> Loader<'gc> {
                         );
                     }
                 }
+
+                activation.context.load_manager.remove_loader(handle);
 
                 Ok(())
             })
@@ -1647,6 +1652,8 @@ impl<'gc> Loader<'gc> {
                     }
                 }
 
+                uc.load_manager.remove_loader(handle);
+
                 Ok(())
             })
         })
@@ -1710,6 +1717,8 @@ impl<'gc> Loader<'gc> {
                 if is_streaming {
                     crate::avm1::start_sound(&mut activation, sound_object.into(), &[])?;
                 }
+
+                activation.context.load_manager.remove_loader(handle);
 
                 Ok(())
             })
@@ -1816,6 +1825,8 @@ impl<'gc> Loader<'gc> {
                     }
                 }
 
+                uc.load_manager.remove_loader(handle);
+
                 Ok(())
             })
         })
@@ -1883,6 +1894,10 @@ impl<'gc> Loader<'gc> {
                         }
                     }
 
+                    player.lock().unwrap().update(|uc| {
+                        uc.load_manager.remove_loader(handle);
+                    });
+
                     Ok(())
                 }
                 Err(response) => player.lock().unwrap().update(|uc| {
@@ -1894,6 +1909,7 @@ impl<'gc> Loader<'gc> {
                     };
 
                     stream.report_error(response.error);
+                    uc.load_manager.remove_loader(handle);
                     Ok(())
                 }),
             }
@@ -2495,6 +2511,12 @@ impl<'gc> Loader<'gc> {
                         &["onLoadComplete".into(), target_clip.object(), status.into()],
                     );
                 }
+
+                if let Loader::Movie { loader_status, .. } =
+                    uc.load_manager.get_loader_mut(handle).unwrap()
+                {
+                    *loader_status = LoaderStatus::Succeeded;
+                };
             }
             // This is fired after we process the movie's first frame,
             // in `MovieClip.on_exit_frame`
@@ -2511,14 +2533,10 @@ impl<'gc> Loader<'gc> {
                         loader_info_obj.fire_init_and_complete_events(uc, status, redirected);
                     }
                 }
+                // We only remove this in the AVM2 case - in AVM1, this is handled by 'movie_clip_on_load'
+                uc.load_manager.remove_loader(handle);
             }
         }
-
-        if let Loader::Movie { loader_status, .. } = uc.load_manager.get_loader_mut(handle).unwrap()
-        {
-            *loader_status = LoaderStatus::Succeeded;
-        };
-
         Ok(())
     }
 
@@ -2569,6 +2587,11 @@ impl<'gc> Loader<'gc> {
                         ],
                     );
                 }
+                if let Loader::Movie { loader_status, .. } =
+                    uc.load_manager.get_loader_mut(handle).unwrap()
+                {
+                    *loader_status = LoaderStatus::Failed;
+                };
             }
             MovieLoaderVMData::Avm2 { loader_info, .. } => {
                 let mut activation = Avm2Activation::from_nothing(uc.reborrow());
@@ -2608,13 +2631,10 @@ impl<'gc> Loader<'gc> {
                     .map_err(|e| Error::Avm2Error(e.to_string()))?;
 
                 Avm2::dispatch_event(uc, io_error_evt, loader_info);
+                // We only remove this in the AVM2 case - in AVM1, this is handled by 'movie_clip_on_load'
+                uc.load_manager.remove_loader(handle);
             }
         }
-
-        if let Loader::Movie { loader_status, .. } = uc.load_manager.get_loader_mut(handle).unwrap()
-        {
-            *loader_status = LoaderStatus::Failed;
-        };
 
         Ok(())
     }
@@ -2796,6 +2816,8 @@ impl<'gc> Loader<'gc> {
                                 tracing::warn!("Error on file dialog: {:?}", err);
                             }
                         }
+
+                        activation.context.load_manager.remove_loader(handle);
                         Ok(())
                     }
                     Some(&Loader::FileDialogAvm2 { target_object, .. }) => {
@@ -2833,6 +2855,8 @@ impl<'gc> Loader<'gc> {
                                 tracing::warn!("Error on file dialog: {:?}", err);
                             }
                         }
+
+                        uc.load_manager.remove_loader(handle);
 
                         Ok(())
                     }
@@ -2945,6 +2969,8 @@ impl<'gc> Loader<'gc> {
                         tracing::warn!("Save dialog had an error {:?}", err);
                     }
                 }
+
+                uc.load_manager.remove_loader(handle);
 
                 Ok(())
             })
@@ -3150,6 +3176,8 @@ impl<'gc> Loader<'gc> {
                     }
                 }
 
+                activation.context.load_manager.remove_loader(handle);
+
                 Ok(())
             })
         })
@@ -3319,6 +3347,8 @@ impl<'gc> Loader<'gc> {
                         }
                     }
                 }
+
+                activation.context.load_manager.remove_loader(handle);
 
                 Ok(())
             })
