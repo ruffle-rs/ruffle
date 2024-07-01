@@ -1928,7 +1928,7 @@ dependencies = [
  "memmap2",
  "slotmap",
  "tinyvec",
- "ttf-parser",
+ "ttf-parser 0.21.1",
 ]
 
 [[package]]
@@ -3721,7 +3721,7 @@ version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6b41438d2fc63c46c74a2203bf5ccd82c41ba04347b2fcf5754f230b167067d5"
 dependencies = [
- "ttf-parser",
+ "ttf-parser 0.21.1",
 ]
 
 [[package]]
@@ -4393,7 +4393,7 @@ dependencies = [
  "symphonia",
  "thiserror",
  "tracing",
- "ttf-parser",
+ "ttf-parser 0.22.0",
  "unic-segment",
  "url",
  "wasm-bindgen-futures",
@@ -5758,6 +5758,12 @@ name = "ttf-parser"
 version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2c591d83f69777866b9126b24c6dd9a18351f177e49d625920d19f989fd31cf8"
+
+[[package]]
+name = "ttf-parser"
+version = "0.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4f871fcfbb47c038b742e3dc72d69fb4269ab7ab7adb80277578aa7beb6545ba"
 
 [[package]]
 name = "type-map"
