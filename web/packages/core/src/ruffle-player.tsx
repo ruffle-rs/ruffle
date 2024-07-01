@@ -17,8 +17,9 @@ import { buildInfo } from "./build-info";
 import { text, textAsParagraphs } from "./i18n";
 import { isExtension } from "./current-script";
 import { configureBuilder } from "./internal/builder";
-import { PanicError, showPanicScreen } from "./internal/ui/panic";
+import { showPanicScreen } from "./internal/ui/panic";
 import { RUFFLE_ORIGIN } from "./internal/constants";
+import { PanicError } from "./internal/errors";
 
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
 
