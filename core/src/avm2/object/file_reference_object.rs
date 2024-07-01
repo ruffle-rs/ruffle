@@ -8,6 +8,7 @@ use gc_arena::{lock::RefLock, Collect, Gc};
 use gc_arena::{GcWeak, Mutation};
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::fmt;
+use std::path::PathBuf;
 
 pub fn file_reference_allocator<'gc>(
     class: ClassObject<'gc>,
@@ -57,10 +58,37 @@ impl<'gc> TObject<'gc> for FileReferenceObject<'gc> {
 }
 
 impl<'gc> FileReferenceObject<'gc> {
+    pub fn new_file(
+        activation: &mut Activation<'_, 'gc>,
+        path: PathBuf,
+    ) -> Result<Self, Error<'gc>> {
+        let base = ScriptObjectData::new(activation.context.avm2.classes().file);
+        let file = FileReferenceObject(Gc::new(
+            activation.context.gc(),
+            FileReferenceObjectData {
+                base: base.into(),
+                reference: RefCell::new(FileReference::FilePath(path)),
+                loaded: Cell::new(false),
+            },
+        ));
+
+        file.install_instance_slots(activation.gc());
+
+        // XXX Is this necessary? Apparently not really.
+        // let arg = AvmString::new_utf8(activation.gc(), &path_str);
+        // class.call_native_init(this.into(), &[arg.into()], activation)?;
+
+        Ok(file)
+    }
+
     pub fn init_from_dialog_result(&self, result: Box<dyn FileDialogResult>) -> FileReference {
         self.0
             .reference
             .replace(FileReference::FileDialogResult(result))
+    }
+
+    pub fn init_from_path_buf(&self, path: PathBuf) -> FileReference {
+        self.0.reference.replace(FileReference::FilePath(path))
     }
 
     pub fn file_reference(&self) -> Ref<'_, FileReference> {
@@ -79,6 +107,7 @@ impl<'gc> FileReferenceObject<'gc> {
 pub enum FileReference {
     None,
     FileDialogResult(Box<dyn FileDialogResult>),
+    FilePath(PathBuf),
 }
 
 #[derive(Collect)]
