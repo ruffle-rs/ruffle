@@ -421,11 +421,6 @@ impl<'gc> ScriptObjectData<'gc> {
         self.instance_class().is_sealed()
     }
 
-    /// Set the class object for this object.
-    pub fn set_instance_class(&mut self, instance_class: Class<'gc>) {
-        self.instance_class = instance_class;
-    }
-
     pub fn set_vtable(&mut self, vtable: VTable<'gc>) {
         self.vtable = Some(vtable);
     }

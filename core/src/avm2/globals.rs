@@ -508,13 +508,16 @@ pub fn load_player_globals<'gc>(
     // Function is more of a "normal" class than the other two, so we can create it normally.
     let fn_classdef = function::create_class(activation, object_i_class, class_i_class);
 
-    // Register the classes in the domain, now
+    // Do the same for the global class
+    let global_classdef = global_scope::create_class(activation, object_i_class, class_i_class);
+
+    // Register the classes in the domain, now (except for the global class)
     domain.export_class(object_i_class.name(), object_i_class, mc);
     domain.export_class(class_i_class.name(), class_i_class, mc);
     domain.export_class(fn_classdef.name(), fn_classdef, mc);
 
     // Initialize the script
-    let globals = ScriptObject::custom_object(mc, object_i_class, None, None);
+    let globals = ScriptObject::custom_object(mc, global_classdef, None, None);
     let script = Script::empty_script(mc, globals, domain);
 
     let gs = ScopeChain::new(domain).chain(mc, &[Scope::new(globals)]);
@@ -565,11 +568,9 @@ pub fn load_player_globals<'gc>(
     fn_class.link_prototype(activation, fn_proto)?;
 
     // Construct the global class.
-    let global_classdef = global_scope::create_class(activation);
     let global_class = ClassObject::from_class(activation, global_classdef, Some(object_class))?;
 
     globals.set_proto(mc, global_class.prototype());
-    globals.set_instance_class(mc, global_classdef);
     globals.set_vtable(mc, global_class.instance_vtable());
 
     activation.context.avm2.toplevel_global_object = Some(globals);

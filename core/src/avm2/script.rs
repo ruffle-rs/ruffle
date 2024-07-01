@@ -255,8 +255,13 @@ impl<'gc> TranslationUnit<'gc> {
         drop(read);
 
         let object_class = activation.avm2().classes().object;
+        let class_classdef = activation.avm2().classes().class.inner_class_definition();
 
-        let global_classdef = global_scope::create_class(activation);
+        let global_classdef = global_scope::create_class(
+            activation,
+            object_class.inner_class_definition(),
+            class_classdef,
+        );
 
         let global_class =
             ClassObject::from_class(activation, global_classdef, Some(object_class))?;
