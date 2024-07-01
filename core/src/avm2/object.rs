@@ -1107,11 +1107,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self.instance_class().name().to_qualified_name(mc)
     }
 
-    fn set_instance_class(&self, mc: &Mutation<'gc>, instance_class: Class<'gc>) {
-        let mut base = self.base_mut(mc);
-        base.set_instance_class(instance_class);
-    }
-
     // Sets a different vtable for object, without changing instance_of.
     fn set_vtable(&self, mc: &Mutation<'gc>, vtable: VTable<'gc>) {
         let mut base = self.base_mut(mc);
