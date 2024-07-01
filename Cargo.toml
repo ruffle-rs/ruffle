@@ -51,11 +51,11 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 naga = { version = "0.20.0", features = ["wgsl-out"] }
 wgpu = "0.20.1"
 egui = { git = "https://github.com/emilk/egui.git", rev = "413843dd7ca7c177aaac233cd24b547d2b904d19" }
-clap = { version = "4.5.7", features = ["derive"] }
+clap = { version = "4.5.8", features = ["derive"] }
 anyhow = "1.0"
 slotmap = "1.0.7"
 async-channel = "2.3.1"
-bitflags = "2.5.0"
+bitflags = "2.6.0"
 bytemuck = "1.16.1"
 chrono = { version = "0.4.38", default-features = false }
 enum-map = "2.7.3"
