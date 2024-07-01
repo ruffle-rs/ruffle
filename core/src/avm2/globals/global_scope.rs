@@ -31,14 +31,18 @@ pub fn class_init<'gc>(
 }
 
 /// Construct `global`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
+pub fn create_class<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    object_classdef: Class<'gc>,
+    class_classdef: Class<'gc>,
+) -> Class<'gc> {
     let mc = activation.context.gc_context;
     let class = Class::new(
         QName::new(activation.avm2().public_namespace_base_version, "global"),
-        Some(activation.avm2().classes().object.inner_class_definition()),
+        Some(object_classdef),
         Method::from_builtin(instance_init, "<global instance initializer>", mc),
         Method::from_builtin(class_init, "<global class initializer>", mc),
-        activation.avm2().classes().class.inner_class_definition(),
+        class_classdef,
         mc,
     );
 
