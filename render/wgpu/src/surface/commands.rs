@@ -9,13 +9,16 @@ use crate::surface::target::CommandTarget;
 use crate::surface::Surface;
 use crate::{as_texture, Descriptors, MaskState, Pipelines, Transforms};
 use ruffle_render::backend::ShapeHandle;
-use ruffle_render::bitmap::BitmapHandle;
-use ruffle_render::commands::{Command, RenderBlendMode};
+use ruffle_render::bitmap::{BitmapHandle, PixelSnapping};
+use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
+use ruffle_render::lines::{emulate_line, emulate_line_rect};
 use ruffle_render::matrix::Matrix;
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
-use swf::{BlendMode, ColorTransform, Fixed8};
+use std::mem;
+use swf::{BlendMode, Color, ColorTransform, Twips};
+use wgpu::Backend;
 
 use super::target::PoolOrArcTexture;
 
@@ -92,6 +95,12 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 transform_buffer,
             } => self.render_shape(shape, *transform_buffer),
             DrawCommand::DrawRect { transform_buffer } => self.draw_rect(*transform_buffer),
+            DrawCommand::DrawLine { transform_buffer } => {
+                self.draw_lines::<false>(*transform_buffer)
+            }
+            DrawCommand::DrawLineRect { transform_buffer } => {
+                self.draw_lines::<true>(*transform_buffer)
+            }
             DrawCommand::PushMask => self.push_mask(),
             DrawCommand::ActivateMask => self.activate_mask(),
             DrawCommand::DeactivateMask => self.deactivate_mask(),
@@ -106,6 +115,16 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         } else {
             self.render_pass
                 .set_pipeline(self.pipelines.color.stencilless_pipeline());
+        }
+    }
+
+    pub fn prep_lines(&mut self) {
+        if self.needs_stencil {
+            self.render_pass
+                .set_pipeline(self.pipelines.lines.pipeline_for(self.mask_state));
+        } else {
+            self.render_pass
+                .set_pipeline(self.pipelines.lines.stencilless_pipeline());
         }
     }
 
@@ -301,6 +320,32 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         }
     }
 
+    pub fn draw_lines<const RECT: bool>(&mut self, transform_buffer: wgpu::DynamicOffset) {
+        if cfg!(feature = "render_debug_labels") {
+            self.render_pass.push_debug_group("draw_lines");
+        }
+        self.prep_lines();
+
+        self.render_pass.set_bind_group(
+            1,
+            &self.dynamic_transforms.bind_group,
+            &[transform_buffer],
+        );
+
+        self.draw(
+            self.descriptors.quad.vertices_pos_color.slice(..),
+            if RECT {
+                self.descriptors.quad.indices_line_rect.slice(..)
+            } else {
+                self.descriptors.quad.indices_line.slice(..)
+            },
+            if RECT { 5 } else { 2 },
+        );
+        if cfg!(feature = "render_debug_labels") {
+            self.render_pass.pop_debug_group();
+        }
+    }
+
     pub fn push_mask(&mut self) {
         debug_assert!(
             self.mask_state == MaskState::NoMask || self.mask_state == MaskState::DrawMaskedContent
@@ -375,6 +420,12 @@ pub enum DrawCommand {
     DrawRect {
         transform_buffer: wgpu::DynamicOffset,
     },
+    DrawLine {
+        transform_buffer: wgpu::DynamicOffset,
+    },
+    DrawLineRect {
+        transform_buffer: wgpu::DynamicOffset,
+    },
     PushMask,
     ActivateMask,
     DeactivateMask,
@@ -392,7 +443,7 @@ pub enum LayerRef<'a> {
 /// Every complex blend will be its own item, but every other draw will be chunked together
 #[allow(clippy::too_many_arguments)]
 pub fn chunk_blends<'a>(
-    commands: Vec<Command>,
+    commands: CommandList,
     descriptors: &'a Descriptors,
     staging_belt: &'a mut wgpu::util::StagingBelt,
     dynamic_transforms: &'a DynamicTransforms,
@@ -404,21 +455,114 @@ pub fn chunk_blends<'a>(
     nearest_layer: LayerRef,
     texture_pool: &mut TexturePool,
 ) -> Vec<Chunk> {
-    let mut result = vec![];
-    let mut current = vec![];
-    let mut needs_stencil = false;
-    let mut num_masks = 0;
-    let mut transforms = BufferBuilder::new_for_uniform(&descriptors.limits);
+    WgpuCommandHandler::new(
+        descriptors,
+        staging_belt,
+        dynamic_transforms,
+        draw_encoder,
+        meshes,
+        quality,
+        width,
+        height,
+        nearest_layer,
+        texture_pool,
+    )
+    .chunk_blends(commands)
+}
 
-    transforms.set_buffer_limit(dynamic_transforms.buffer.size());
+struct WgpuCommandHandler<'a> {
+    descriptors: &'a Descriptors,
+    quality: StageQuality,
+    width: u32,
+    height: u32,
+    nearest_layer: LayerRef<'a>,
+    meshes: &'a Vec<Mesh>,
+    staging_belt: &'a mut wgpu::util::StagingBelt,
+    dynamic_transforms: &'a DynamicTransforms,
+    draw_encoder: &'a mut wgpu::CommandEncoder,
+    texture_pool: &'a mut TexturePool,
+    emulate_lines: bool,
+
+    result: Vec<Chunk>,
+    current: Vec<DrawCommand>,
+    transforms: BufferBuilder,
+    needs_stencil: bool,
+    num_masks: i32,
+}
+
+impl<'a> WgpuCommandHandler<'a> {
+    #[allow(clippy::too_many_arguments)]
+    fn new(
+        descriptors: &'a Descriptors,
+        staging_belt: &'a mut wgpu::util::StagingBelt,
+        dynamic_transforms: &'a DynamicTransforms,
+        draw_encoder: &'a mut wgpu::CommandEncoder,
+        meshes: &'a Vec<Mesh>,
+        quality: StageQuality,
+        width: u32,
+        height: u32,
+        nearest_layer: LayerRef<'a>,
+        texture_pool: &'a mut TexturePool,
+    ) -> Self {
+        let transforms = Self::new_transforms(descriptors, dynamic_transforms);
+
+        // DirectX does support drawing lines, but it's very inconsistent.
+        // With MSAA, lines have 1.4px thickness, which makes them too thick.
+        // Without MSAA, lines have 1px thickness, but their placement is sometimes off.
+        let emulate_lines = descriptors.backend == Backend::Dx12;
+
+        Self {
+            descriptors,
+            quality,
+            width,
+            height,
+            nearest_layer,
+            meshes,
+            staging_belt,
+            dynamic_transforms,
+            draw_encoder,
+            texture_pool,
+            emulate_lines,
+
+            result: vec![],
+            current: vec![],
+            transforms,
+            needs_stencil: false,
+            num_masks: 0,
+        }
+    }
+
+    fn new_transforms(
+        descriptors: &'a Descriptors,
+        dynamic_transforms: &'a DynamicTransforms,
+    ) -> BufferBuilder {
+        let mut transforms = BufferBuilder::new_for_uniform(&descriptors.limits);
+        transforms.set_buffer_limit(dynamic_transforms.buffer.size());
+        transforms
+    }
+
+    /// Replaces every blend with a RenderBitmap, with the subcommands rendered out to a temporary texture
+    /// Every complex blend will be its own item, but every other draw will be chunked together
+    fn chunk_blends(&mut self, commands: CommandList) -> Vec<Chunk> {
+        commands.execute(self);
+
+        let current = mem::take(&mut self.current);
+        let mut result = mem::take(&mut self.result);
+        let needs_stencil = mem::take(&mut self.needs_stencil);
+        let transforms = mem::replace(
+            &mut self.transforms,
+            Self::new_transforms(self.descriptors, self.dynamic_transforms),
+        );
+
+        if !current.is_empty() {
+            result.push(Chunk::Draw(current, needs_stencil, transforms));
+        }
+
+        result
+    }
 
     fn add_to_current(
-        result: &mut Vec<Chunk>,
-        current: &mut Vec<DrawCommand>,
-        transforms: &mut BufferBuilder,
-        dynamic_transforms: &DynamicTransforms,
-        needs_stencil: bool,
-        descriptors: &Descriptors,
+        &mut self,
         matrix: Matrix,
         color_transform: ColorTransform,
         command_builder: impl FnOnce(wgpu::DynamicOffset) -> DrawCommand,
@@ -438,254 +582,250 @@ pub fn chunk_blends<'a>(
             mult_color: color_transform.mult_rgba_normalized(),
             add_color: color_transform.add_rgba_normalized(),
         };
-        if let Ok(transform_range) = transforms.add(&[transform]) {
-            current.push(command_builder(
+        if let Ok(transform_range) = self.transforms.add(&[transform]) {
+            self.current.push(command_builder(
                 transform_range.start as wgpu::DynamicOffset,
             ));
         } else {
-            result.push(Chunk::Draw(
-                std::mem::take(current),
-                needs_stencil,
-                std::mem::replace(
-                    transforms,
-                    BufferBuilder::new_for_uniform(&descriptors.limits),
+            self.result.push(Chunk::Draw(
+                mem::take(&mut self.current),
+                self.needs_stencil,
+                mem::replace(
+                    &mut self.transforms,
+                    BufferBuilder::new_for_uniform(&self.descriptors.limits),
                 ),
             ));
-            transforms.set_buffer_limit(dynamic_transforms.buffer.size());
-            let transform_range = transforms
+            self.transforms
+                .set_buffer_limit(self.dynamic_transforms.buffer.size());
+            let transform_range = self
+                .transforms
                 .add(&[transform])
                 .expect("Buffer must be able to fit a new thing, it was just emptied");
-            current.push(command_builder(
+            self.current.push(command_builder(
                 transform_range.start as wgpu::DynamicOffset,
             ));
         }
     }
+}
 
-    for command in commands {
-        match command {
-            Command::Blend(commands, blend_mode) => {
-                let mut surface = Surface::new(
-                    descriptors,
-                    quality,
-                    width,
-                    height,
-                    wgpu::TextureFormat::Rgba8Unorm,
-                );
-                let target_layer = if let RenderBlendMode::Builtin(BlendMode::Layer) = &blend_mode {
-                    LayerRef::Current
-                } else {
-                    nearest_layer
+impl<'a> CommandHandler for WgpuCommandHandler<'a> {
+    fn blend(&mut self, commands: CommandList, blend_mode: RenderBlendMode) {
+        let mut surface = Surface::new(
+            self.descriptors,
+            self.quality,
+            self.width,
+            self.height,
+            wgpu::TextureFormat::Rgba8Unorm,
+        );
+        let target_layer = if let RenderBlendMode::Builtin(BlendMode::Layer) = &blend_mode {
+            LayerRef::Current
+        } else {
+            self.nearest_layer
+        };
+        let blend_type = BlendType::from(blend_mode);
+        let clear_color = blend_type.default_color();
+        let target = surface.draw_commands(
+            RenderTargetMode::FreshWithColor(clear_color),
+            self.descriptors,
+            self.meshes,
+            commands,
+            self.staging_belt,
+            self.dynamic_transforms,
+            self.draw_encoder,
+            target_layer,
+            self.texture_pool,
+        );
+        target.ensure_cleared(self.draw_encoder);
+
+        match blend_type {
+            BlendType::Trivial(blend_mode) => {
+                let transform = Transform {
+                    matrix: Matrix::scale(target.width() as f32, target.height() as f32),
+                    color_transform: Default::default(),
                 };
-                let blend_type = BlendType::from(blend_mode);
-                let clear_color = blend_type.default_color();
-                let target = surface.draw_commands(
-                    RenderTargetMode::FreshWithColor(clear_color),
-                    descriptors,
-                    meshes,
-                    commands,
-                    staging_belt,
-                    dynamic_transforms,
-                    draw_encoder,
-                    target_layer,
-                    texture_pool,
-                );
-                target.ensure_cleared(draw_encoder);
-
-                match blend_type {
-                    BlendType::Trivial(blend_mode) => {
-                        let transform = Transform {
-                            matrix: Matrix::scale(target.width() as f32, target.height() as f32),
-                            color_transform: Default::default(),
-                        };
-                        let texture = target.take_color_texture();
-                        let bind_group =
-                            descriptors
-                                .device
-                                .create_bind_group(&wgpu::BindGroupDescriptor {
-                                    layout: &descriptors.bind_layouts.bitmap,
-                                    entries: &[
-                                        wgpu::BindGroupEntry {
-                                            binding: 0,
-                                            resource: descriptors
-                                                .quad
-                                                .texture_transforms
-                                                .as_entire_binding(),
-                                        },
-                                        wgpu::BindGroupEntry {
-                                            binding: 1,
-                                            resource: wgpu::BindingResource::TextureView(
-                                                texture.view(),
-                                            ),
-                                        },
-                                        wgpu::BindGroupEntry {
-                                            binding: 2,
-                                            resource: wgpu::BindingResource::Sampler(
-                                                descriptors
-                                                    .bitmap_samplers
-                                                    .get_sampler(false, false),
-                                            ),
-                                        },
-                                    ],
-                                    label: None,
-                                });
-                        add_to_current(
-                            &mut result,
-                            &mut current,
-                            &mut transforms,
-                            dynamic_transforms,
-                            needs_stencil,
-                            descriptors,
-                            transform.matrix,
-                            transform.color_transform,
-                            |transform_buffer| DrawCommand::RenderTexture {
-                                _texture: texture,
-                                binds: bind_group,
-                                transform_buffer,
-                                blend_mode,
-                            },
-                        );
-                    }
-                    blend_type => {
-                        if !current.is_empty() {
-                            result.push(Chunk::Draw(
-                                std::mem::take(&mut current),
-                                needs_stencil,
-                                std::mem::replace(
-                                    &mut transforms,
-                                    BufferBuilder::new_for_uniform(&descriptors.limits),
-                                ),
-                            ));
-                        }
-                        transforms.set_buffer_limit(dynamic_transforms.buffer.size());
-                        let chunk_blend_mode = match blend_type {
-                            BlendType::Complex(complex) => ChunkBlendMode::Complex(complex),
-                            BlendType::Shader(shader) => ChunkBlendMode::Shader(shader),
-                            _ => unreachable!(),
-                        };
-                        result.push(Chunk::Blend(
-                            target.take_color_texture(),
-                            chunk_blend_mode,
-                            num_masks > 0,
-                        ));
-                        needs_stencil = num_masks > 0;
-                    }
-                }
-            }
-            Command::RenderBitmap {
-                bitmap,
-                transform,
-                smoothing,
-                pixel_snapping,
-            } => {
-                let mut matrix = transform.matrix;
-                {
-                    let texture = as_texture(&bitmap);
-                    pixel_snapping.apply(&mut matrix);
-                    matrix *= Matrix::scale(
-                        texture.texture.width() as f32,
-                        texture.texture.height() as f32,
-                    );
-                }
-                add_to_current(
-                    &mut result,
-                    &mut current,
-                    &mut transforms,
-                    dynamic_transforms,
-                    needs_stencil,
-                    descriptors,
-                    matrix,
+                let texture = target.take_color_texture();
+                let bind_group =
+                    self.descriptors
+                        .device
+                        .create_bind_group(&wgpu::BindGroupDescriptor {
+                            layout: &self.descriptors.bind_layouts.bitmap,
+                            entries: &[
+                                wgpu::BindGroupEntry {
+                                    binding: 0,
+                                    resource: self
+                                        .descriptors
+                                        .quad
+                                        .texture_transforms
+                                        .as_entire_binding(),
+                                },
+                                wgpu::BindGroupEntry {
+                                    binding: 1,
+                                    resource: wgpu::BindingResource::TextureView(texture.view()),
+                                },
+                                wgpu::BindGroupEntry {
+                                    binding: 2,
+                                    resource: wgpu::BindingResource::Sampler(
+                                        self.descriptors.bitmap_samplers.get_sampler(false, false),
+                                    ),
+                                },
+                            ],
+                            label: None,
+                        });
+                self.add_to_current(
+                    transform.matrix,
                     transform.color_transform,
-                    |transform_buffer| DrawCommand::RenderBitmap {
-                        bitmap,
+                    |transform_buffer| DrawCommand::RenderTexture {
+                        _texture: texture,
+                        binds: bind_group,
                         transform_buffer,
-                        smoothing,
-                        blend_mode: TrivialBlend::Normal,
-                        render_stage3d: false,
+                        blend_mode,
                     },
                 );
             }
-            Command::RenderStage3D { bitmap, transform } => {
-                let mut matrix = transform.matrix;
-                {
-                    let texture = as_texture(&bitmap);
-                    matrix *= Matrix::scale(
-                        texture.texture.width() as f32,
-                        texture.texture.height() as f32,
-                    );
+            blend_type => {
+                if !self.current.is_empty() {
+                    self.result.push(Chunk::Draw(
+                        mem::take(&mut self.current),
+                        self.needs_stencil,
+                        mem::replace(
+                            &mut self.transforms,
+                            BufferBuilder::new_for_uniform(&self.descriptors.limits),
+                        ),
+                    ));
                 }
-                add_to_current(
-                    &mut result,
-                    &mut current,
-                    &mut transforms,
-                    dynamic_transforms,
-                    needs_stencil,
-                    descriptors,
-                    matrix,
-                    transform.color_transform,
-                    |transform_buffer| DrawCommand::RenderBitmap {
-                        bitmap,
-                        transform_buffer,
-                        smoothing: false,
-                        blend_mode: TrivialBlend::Normal,
-                        render_stage3d: true,
-                    },
-                );
-            }
-            Command::RenderShape { shape, transform } => add_to_current(
-                &mut result,
-                &mut current,
-                &mut transforms,
-                dynamic_transforms,
-                needs_stencil,
-                descriptors,
-                transform.matrix,
-                transform.color_transform,
-                |transform_buffer| DrawCommand::RenderShape {
-                    shape,
-                    transform_buffer,
-                },
-            ),
-            Command::DrawRect { color, matrix } => add_to_current(
-                &mut result,
-                &mut current,
-                &mut transforms,
-                dynamic_transforms,
-                needs_stencil,
-                descriptors,
-                matrix,
-                ColorTransform {
-                    r_multiply: Fixed8::from_f32(f32::from(color.r) / 255.0),
-                    g_multiply: Fixed8::from_f32(f32::from(color.g) / 255.0),
-                    b_multiply: Fixed8::from_f32(f32::from(color.b) / 255.0),
-                    a_multiply: Fixed8::from_f32(f32::from(color.a) / 255.0),
-                    ..Default::default()
-                },
-                |transform_buffer| DrawCommand::DrawRect { transform_buffer },
-            ),
-            Command::PushMask => {
-                needs_stencil = true;
-                num_masks += 1;
-                current.push(DrawCommand::PushMask);
-            }
-            Command::ActivateMask => {
-                needs_stencil = true;
-                current.push(DrawCommand::ActivateMask);
-            }
-            Command::DeactivateMask => {
-                needs_stencil = true;
-                current.push(DrawCommand::DeactivateMask);
-            }
-            Command::PopMask => {
-                needs_stencil = true;
-                num_masks -= 1;
-                current.push(DrawCommand::PopMask);
+                self.transforms
+                    .set_buffer_limit(self.dynamic_transforms.buffer.size());
+                let chunk_blend_mode = match blend_type {
+                    BlendType::Complex(complex) => ChunkBlendMode::Complex(complex),
+                    BlendType::Shader(shader) => ChunkBlendMode::Shader(shader),
+                    _ => unreachable!(),
+                };
+                self.result.push(Chunk::Blend(
+                    target.take_color_texture(),
+                    chunk_blend_mode,
+                    self.num_masks > 0,
+                ));
+                self.needs_stencil = self.num_masks > 0;
             }
         }
     }
 
-    if !current.is_empty() {
-        result.push(Chunk::Draw(current, needs_stencil, transforms));
+    fn render_bitmap(
+        &mut self,
+        bitmap: BitmapHandle,
+        transform: Transform,
+        smoothing: bool,
+        pixel_snapping: PixelSnapping,
+    ) {
+        let mut matrix = transform.matrix;
+        {
+            let texture = as_texture(&bitmap);
+            pixel_snapping.apply(&mut matrix);
+            matrix *= Matrix::scale(
+                texture.texture.width() as f32,
+                texture.texture.height() as f32,
+            );
+        }
+        self.add_to_current(matrix, transform.color_transform, |transform_buffer| {
+            DrawCommand::RenderBitmap {
+                bitmap,
+                transform_buffer,
+                smoothing,
+                blend_mode: TrivialBlend::Normal,
+                render_stage3d: false,
+            }
+        });
+    }
+    fn render_stage3d(&mut self, bitmap: BitmapHandle, transform: Transform) {
+        let mut matrix = transform.matrix;
+        {
+            let texture = as_texture(&bitmap);
+            matrix *= Matrix::scale(
+                texture.texture.width() as f32,
+                texture.texture.height() as f32,
+            );
+        }
+        self.add_to_current(matrix, transform.color_transform, |transform_buffer| {
+            DrawCommand::RenderBitmap {
+                bitmap,
+                transform_buffer,
+                smoothing: false,
+                blend_mode: TrivialBlend::Normal,
+                render_stage3d: true,
+            }
+        });
     }
 
-    result
+    fn render_shape(&mut self, shape: ShapeHandle, transform: Transform) {
+        self.add_to_current(
+            transform.matrix,
+            transform.color_transform,
+            |transform_buffer| DrawCommand::RenderShape {
+                shape,
+                transform_buffer,
+            },
+        );
+    }
+
+    fn draw_rect(&mut self, color: Color, matrix: Matrix) {
+        self.add_to_current(
+            matrix,
+            ColorTransform::multiply_from(color),
+            |transform_buffer| DrawCommand::DrawRect { transform_buffer },
+        );
+    }
+
+    fn draw_line(&mut self, color: Color, mut matrix: Matrix) {
+        if self.emulate_lines {
+            let mut cl = CommandList::new();
+            emulate_line(&mut cl, color, matrix);
+            cl.execute(self);
+        } else {
+            matrix.tx += Twips::HALF;
+            matrix.ty += Twips::HALF;
+            self.add_to_current(
+                matrix,
+                ColorTransform::multiply_from(color),
+                |transform_buffer| DrawCommand::DrawLine { transform_buffer },
+            );
+        }
+    }
+
+    fn draw_line_rect(&mut self, color: Color, mut matrix: Matrix) {
+        if self.emulate_lines {
+            let mut cl = CommandList::new();
+            emulate_line_rect(&mut cl, color, matrix);
+            cl.execute(self);
+        } else {
+            matrix.tx += Twips::HALF;
+            matrix.ty += Twips::HALF;
+            self.add_to_current(
+                matrix,
+                ColorTransform::multiply_from(color),
+                |transform_buffer| DrawCommand::DrawLineRect { transform_buffer },
+            );
+        }
+    }
+
+    fn push_mask(&mut self) {
+        self.needs_stencil = true;
+        self.num_masks += 1;
+        self.current.push(DrawCommand::PushMask);
+    }
+
+    fn activate_mask(&mut self) {
+        self.needs_stencil = true;
+        self.current.push(DrawCommand::ActivateMask);
+    }
+
+    fn deactivate_mask(&mut self) {
+        self.needs_stencil = true;
+        self.current.push(DrawCommand::DeactivateMask);
+    }
+
+    fn pop_mask(&mut self) {
+        self.needs_stencil = true;
+        self.num_masks -= 1;
+        self.current.push(DrawCommand::PopMask);
+    }
 }

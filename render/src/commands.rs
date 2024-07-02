@@ -16,6 +16,8 @@ pub trait CommandHandler {
     fn render_stage3d(&mut self, bitmap: BitmapHandle, transform: Transform);
     fn render_shape(&mut self, shape: ShapeHandle, transform: Transform);
     fn draw_rect(&mut self, color: Color, matrix: Matrix);
+    fn draw_line(&mut self, color: Color, matrix: Matrix);
+    fn draw_line_rect(&mut self, color: Color, matrix: Matrix);
     fn push_mask(&mut self);
     fn activate_mask(&mut self);
     fn deactivate_mask(&mut self);
@@ -63,6 +65,8 @@ impl CommandList {
                     handler.render_stage3d(bitmap, transform)
                 }
                 Command::DrawRect { color, matrix } => handler.draw_rect(color, matrix),
+                Command::DrawLine { color, matrix } => handler.draw_line(color, matrix),
+                Command::DrawLineRect { color, matrix } => handler.draw_line_rect(color, matrix),
                 Command::PushMask => handler.push_mask(),
                 Command::ActivateMask => handler.activate_mask(),
                 Command::DeactivateMask => handler.deactivate_mask(),
@@ -116,6 +120,20 @@ impl CommandHandler for CommandList {
     fn draw_rect(&mut self, color: Color, matrix: Matrix) {
         if self.maskers_in_progress <= 1 {
             self.commands.push(Command::DrawRect { color, matrix });
+        }
+    }
+
+    #[inline]
+    fn draw_line(&mut self, color: Color, matrix: Matrix) {
+        if self.maskers_in_progress <= 1 {
+            self.commands.push(Command::DrawLine { color, matrix });
+        }
+    }
+
+    #[inline]
+    fn draw_line_rect(&mut self, color: Color, matrix: Matrix) {
+        if self.maskers_in_progress <= 1 {
+            self.commands.push(Command::DrawLineRect { color, matrix });
         }
     }
 
@@ -176,6 +194,14 @@ pub enum Command {
         transform: Transform,
     },
     DrawRect {
+        color: Color,
+        matrix: Matrix,
+    },
+    DrawLine {
+        color: Color,
+        matrix: Matrix,
+    },
+    DrawLineRect {
         color: Color,
         matrix: Matrix,
     },

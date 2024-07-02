@@ -343,6 +343,65 @@ impl<'gc> LoadManager<'gc> {
         loader.movie_loader(player, request, loader_url)
     }
 
+    pub fn load_asset_movie(
+        player: Weak<Mutex<Player>>,
+        request: Request,
+        importer_movie: Arc<SwfMovie>,
+    ) -> OwnedFuture<(), Error> {
+        let player = player
+            .upgrade()
+            .expect("Could not upgrade weak reference to player");
+
+        Box::pin(async move {
+            let fetch = player.lock().unwrap().navigator().fetch(request);
+
+            match Loader::wait_for_full_response(fetch).await {
+                Ok((body, url, _status, _redirected)) => {
+                    let content_type = ContentType::sniff(&body);
+                    tracing::info!("Loading imported movie: {:?}", url);
+                    match content_type {
+                        ContentType::Swf => {
+                            let movie = SwfMovie::from_data(&body, url.clone(), Some(url.clone()))
+                                .expect("Could not load movie");
+
+                            let movie = Arc::new(movie);
+
+                            player.lock().unwrap().mutate_with_update_context(|uc| {
+                                let clip = MovieClip::new_import_assets(uc, movie, importer_movie);
+
+                                clip.set_cur_preload_frame(uc.gc_context, 0);
+                                let mut execution_limit = ExecutionLimit::none();
+
+                                tracing::debug!("Preloading swf to run exports {:?}", url);
+
+                                // Create library for exports before preloading
+                                uc.library.library_for_movie_mut(clip.movie());
+                                let res = clip.preload(uc, &mut execution_limit);
+                                tracing::debug!(
+                                    "Preloaded swf to run exports result {:?} {}",
+                                    url,
+                                    res
+                                );
+                            });
+                            Ok(())
+                        }
+                        _ => {
+                            tracing::warn!(
+                                "Unsupported content type for ImportAssets: {:?}",
+                                content_type
+                            );
+                            Ok(())
+                        }
+                    }
+                }
+                Err(e) => Err(Error::FetchError(format!(
+                    "Could not fetch: {:?} because {:?}",
+                    e.url, e.error
+                ))),
+            }
+        })
+    }
+
     /// Kick off a movie clip load.
     ///
     /// Returns the loader's async process, which you will need to spawn.

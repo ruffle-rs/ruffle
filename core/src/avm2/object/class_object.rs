@@ -782,7 +782,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
 
     fn call(
         self,
-        receiver: Value<'gc>,
+        _receiver: Value<'gc>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -791,7 +791,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             exec(
                 call_handler,
                 scope,
-                receiver.coerce_to_object(activation)?,
+                self.into(),
                 Some(self),
                 arguments,
                 activation,

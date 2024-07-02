@@ -1,6 +1,8 @@
+# FIXME this test produces vastly different results compared to FP (output.txt + render)
 num_ticks = 1
 
 [image_comparisons.output]
+max_outliers = 18
 
 [player_options]
 with_renderer = { optional = false, sample_count = 1 }

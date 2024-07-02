@@ -9,6 +9,7 @@ use crate::avm2::{
     QName as Avm2QName, StageObject as Avm2StageObject, TObject as Avm2TObject, Value as Avm2Value,
 };
 use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
+use crate::backend::navigator::Request;
 use crate::backend::ui::MouseCursor;
 use crate::frame_lifecycle::run_inner_goto_frame;
 use bitflags::bitflags;
@@ -18,7 +19,6 @@ use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::binary_data::BinaryData;
 use crate::character::{Character, CompressedBitmap};
 use crate::context::{ActionType, RenderContext, UpdateContext};
-use crate::context_stub;
 use crate::display_object::container::{dispatch_removed_event, ChildContainer};
 use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
@@ -31,8 +31,8 @@ use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::font::{Font, FontType};
 use crate::limits::ExecutionLimit;
-use crate::loader::Loader;
 use crate::loader::{self, ContentType};
+use crate::loader::{LoadManager, Loader};
 use crate::prelude::*;
 use crate::streams::NetStream;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
@@ -47,7 +47,7 @@ use std::cmp::max;
 use std::collections::HashMap;
 use std::sync::Arc;
 use swf::extensions::ReadSwfExt;
-use swf::{ClipEventFlag, DefineBitsLossless, FrameLabelData, TagCode};
+use swf::{ClipEventFlag, DefineBitsLossless, FrameLabelData, TagCode, UTF_8};
 
 use super::interactive::Avm2MousePick;
 use super::BitmapClass;
@@ -188,6 +188,9 @@ pub struct MovieClipData<'gc> {
 
     /// Attached audio (AVM1)
     attached_audio: Option<NetStream<'gc>>,
+
+    // If this movie was loaded from ImportAssets(2), this will be the parent movie.
+    importer_movie: Option<Arc<SwfMovie>>,
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -223,6 +226,7 @@ impl<'gc> MovieClip<'gc> {
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
                 attached_audio: None,
+                importer_movie: None,
             },
         ))
     }
@@ -264,6 +268,7 @@ impl<'gc> MovieClip<'gc> {
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
                 attached_audio: None,
+                importer_movie: None,
             },
         ));
         clip.set_avm2_class(gc_context, Some(class));
@@ -308,12 +313,66 @@ impl<'gc> MovieClip<'gc> {
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
                 attached_audio: None,
+                importer_movie: None,
             },
         ))
     }
 
     pub fn downgrade(self) -> MovieClipWeak<'gc> {
         MovieClipWeak(GcCell::downgrade(self.0))
+    }
+
+    pub fn new_import_assets(
+        context: &mut UpdateContext<'_, 'gc>,
+        movie: Arc<SwfMovie>,
+        parent: Arc<SwfMovie>,
+    ) -> Self {
+        let num_frames = movie.num_frames();
+
+        let loader_info = None;
+
+        let mc = MovieClip(GcCell::new(
+            context.gc_context,
+            MovieClipData {
+                base: Default::default(),
+                static_data: Gc::new(
+                    context.gc_context,
+                    MovieClipStatic::with_data(
+                        0,
+                        movie.clone().into(),
+                        num_frames,
+                        loader_info,
+                        context.gc_context,
+                    ),
+                ),
+                tag_stream_pos: 0,
+                current_frame: 0,
+                audio_stream: None,
+                container: ChildContainer::new(movie.clone()),
+                object: None,
+                clip_event_handlers: Vec::new(),
+                clip_event_flags: ClipEventFlag::empty(),
+                frame_scripts: Vec::new(),
+                flags: MovieClipFlags::PLAYING,
+                drawing: Drawing::new(),
+                avm2_enabled: true,
+                avm2_use_hand_cursor: true,
+                button_mode: false,
+                last_queued_script_frame: None,
+                queued_script_frame: None,
+                queued_goto_frame: None,
+                drop_target: None,
+                hit_area: None,
+
+                #[cfg(feature = "timeline_debug")]
+                tag_frame_boundaries: Default::default(),
+                queued_tags: HashMap::new(),
+                attached_audio: None,
+                importer_movie: Some(parent.clone()),
+            },
+        ));
+
+        mc
     }
 
     /// Construct a movie clip that represents the root movie
@@ -375,6 +434,7 @@ impl<'gc> MovieClip<'gc> {
                 tag_frame_boundaries: Default::default(),
                 queued_tags: HashMap::new(),
                 attached_audio: None,
+                importer_movie: None,
             },
         ));
 
@@ -696,14 +756,16 @@ impl<'gc> MovieClip<'gc> {
                     .0
                     .write(context.gc_context)
                     .define_binary_data(context, reader),
-                TagCode::ImportAssets => self
-                    .0
-                    .write(context.gc_context)
-                    .import_assets(context, reader),
-                TagCode::ImportAssets2 => self
-                    .0
-                    .write(context.gc_context)
-                    .import_assets_2(context, reader),
+                TagCode::ImportAssets => {
+                    self.0
+                        .write(context.gc_context)
+                        .import_assets(context, reader, chunk_limit)
+                }
+                TagCode::ImportAssets2 => {
+                    self.0
+                        .write(context.gc_context)
+                        .import_assets_2(context, reader, chunk_limit)
+                }
                 TagCode::DoAbc | TagCode::DoAbc2 => self.preload_bytecode_tag(
                     tag_code,
                     reader,
@@ -735,6 +797,10 @@ impl<'gc> MovieClip<'gc> {
             Ok(true)
         };
         let is_finished = end_tag_found || result.is_err() || !result.unwrap_or_default();
+
+        self.0
+            .write(context.gc_context)
+            .import_exports_of_importer(context);
 
         // These variables will be persisted to be picked back up in the next
         // chunk.
@@ -4028,23 +4094,103 @@ impl<'gc, 'a> MovieClipData<'gc> {
     }
 
     #[inline]
+    fn get_exported_from_importer(
+        &self,
+        context: &mut UpdateContext<'_, 'gc>,
+        importer_movie: Arc<SwfMovie>,
+    ) -> HashMap<AvmString<'gc>, (CharacterId, Character<'gc>)> {
+        let mut map: HashMap<AvmString<'gc>, (CharacterId, Character<'gc>)> = HashMap::new();
+        let library = context.library.library_for_movie_mut(importer_movie);
+
+        library.export_characters().iter().for_each(|(name, id)| {
+            let character = library.character_by_id(*id).unwrap();
+            map.insert(name, (*id, character.clone()));
+        });
+        map
+    }
+
+    #[inline]
+    fn import_exports_of_importer(&mut self, context: &mut UpdateContext<'_, 'gc>) {
+        if let Some(importer_movie) = self.importer_movie.as_ref() {
+            let exported_from_importer =
+                { self.get_exported_from_importer(context, importer_movie.clone()) };
+
+            let self_library = context.library.library_for_movie_mut(self.movie().clone());
+
+            exported_from_importer
+                .iter()
+                .for_each(|(name, (id, character))| {
+                    let id = *id;
+                    if self_library.character_by_id(id).is_none() {
+                        self_library.register_character(id, character.clone());
+                        self_library.register_export(id, *name);
+                    }
+                });
+        }
+    }
+
+    #[inline]
     fn import_assets(
         &mut self,
         context: &mut UpdateContext<'_, 'gc>,
-        _reader: &mut SwfStream<'a>,
+        reader: &mut SwfStream<'a>,
+        chunk_limit: &mut ExecutionLimit,
     ) -> Result<(), Error> {
-        context_stub!(context, "ImportAssets tag");
-
-        Ok(())
+        let import_assets = reader.read_import_assets()?;
+        self.import_assets_load(
+            context,
+            reader,
+            import_assets.0,
+            import_assets.1,
+            chunk_limit,
+        )
     }
 
     #[inline]
     fn import_assets_2(
         &mut self,
         context: &mut UpdateContext<'_, 'gc>,
-        _reader: &mut SwfStream<'a>,
+        reader: &mut SwfStream<'a>,
+        chunk_limit: &mut ExecutionLimit,
     ) -> Result<(), Error> {
-        context_stub!(context, "ImportAssets2 tag");
+        let import_assets = reader.read_import_assets_2()?;
+        self.import_assets_load(
+            context,
+            reader,
+            import_assets.0,
+            import_assets.1,
+            chunk_limit,
+        )
+    }
+
+    #[inline]
+    fn import_assets_load(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc>,
+        reader: &mut SwfStream<'a>,
+        url: &swf::SwfStr,
+        exported_assets: Vec<swf::ExportedAsset>,
+        _chunk_limit: &mut ExecutionLimit,
+    ) -> Result<(), Error> {
+        let library = context.library.library_for_movie_mut(self.movie());
+
+        let asset_url = url.to_string_lossy(UTF_8);
+
+        let request = Request::get(asset_url);
+
+        for asset in exported_assets {
+            let name = asset.name.decode(reader.encoding());
+            let name = AvmString::new(context.gc_context, name);
+            let id = asset.id;
+            tracing::debug!("Importing asset: {} (ID: {})", name, id);
+
+            library.register_import(name, id);
+        }
+
+        let player = context.player.clone();
+        let fut = LoadManager::load_asset_movie(player, request, self.movie());
+
+        context.navigator.spawn_future(fut);
 
         Ok(())
     }
@@ -4064,6 +4210,57 @@ impl<'gc, 'a> MovieClipData<'gc> {
     }
 
     #[inline]
+    fn get_registered_character_by_id(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc>,
+        id: CharacterId,
+    ) -> Option<Character<'gc>> {
+        let library_for_movie = context.library.library_for_movie(self.movie());
+
+        if let Some(library) = library_for_movie {
+            if let Some(character) = library.character_by_id(id) {
+                return Some(character.clone());
+            }
+        }
+        None
+    }
+
+    fn register_export(
+        &mut self,
+        context: &mut UpdateContext<'_, 'gc>,
+        id: CharacterId,
+        name: &AvmString<'gc>,
+        movie: Arc<SwfMovie>,
+    ) {
+        let library = context.library.library_for_movie_mut(movie);
+        library.register_export(id, *name);
+
+        // TODO: do other types of Character need to know their exported name?
+        if let Some(character) = library.character_by_id(id) {
+            if let Character::MovieClip(movie_clip) = character {
+                *movie_clip
+                    .0
+                    .read()
+                    .static_data
+                    .exported_name
+                    .write(context.gc_context) = Some(*name);
+            } else {
+                tracing::warn!(
+                    "Registering export for non-movie clip: {} (ID: {})",
+                    name,
+                    id
+                );
+            }
+        } else {
+            tracing::warn!(
+                "Can't register export {}: Character ID {} doesn't exist",
+                name,
+                id,
+            );
+        }
+    }
+
+    #[inline]
     fn export_assets(
         &mut self,
         context: &mut UpdateContext<'_, 'gc>,
@@ -4073,24 +4270,32 @@ impl<'gc, 'a> MovieClipData<'gc> {
         for export in exports {
             let name = export.name.decode(reader.encoding());
             let name = AvmString::new(context.gc_context, name);
-            let library = context.library.library_for_movie_mut(self.movie());
-            library.register_export(export.id, name);
 
-            // TODO: do other types of Character need to know their exported name?
-            if let Some(character) = library.character_by_id(export.id) {
-                if let Character::MovieClip(movie_clip) = character {
-                    *movie_clip
-                        .0
-                        .read()
-                        .static_data
-                        .exported_name
-                        .write(context.gc_context) = Some(name);
+            if let Some(character) = self.get_registered_character_by_id(context, export.id) {
+                self.register_export(context, export.id, &name, self.movie());
+                tracing::debug!("register_export asset: {} (ID: {})", name, export.id);
+
+                if self.importer_movie.is_some() {
+                    let parent = self.importer_movie.as_ref().unwrap().clone();
+                    let parent_library = context.library.library_for_movie_mut(parent.clone());
+
+                    if let Some(id) = parent_library.character_id_by_import_name(name) {
+                        parent_library.register_character(id, character);
+
+                        self.register_export(context, id, &name, parent);
+                        tracing::debug!(
+                            "Registering parent asset: {} (Parent ID: {})(ID: {})",
+                            name,
+                            id,
+                            export.id
+                        );
+                    }
                 }
             } else {
-                tracing::warn!(
-                    "Can't register export {}: Character ID {} doesn't exist",
+                tracing::error!(
+                    "Export asset: {} (ID: {}) not found in library",
                     name,
-                    export.id,
+                    export.id
                 );
             }
         }

@@ -6,6 +6,7 @@ pub mod bitmap;
 pub mod blend;
 pub mod error;
 pub mod filters;
+pub mod lines;
 pub mod matrix;
 pub mod pixel_bender;
 // The `renderdoc` crate doesn't compile on apple platforms

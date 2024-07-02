@@ -64,12 +64,6 @@ pub fn load<'gc>(
     let url_request = args.get_object(activation, 0, "request")?;
     let context = args.try_get_object(activation, 1);
 
-    // This is a dummy MovieClip, which will get overwritten in `Loader`
-    let content = MovieClip::new(
-        Arc::new(SwfMovie::empty(activation.context.swf.version())),
-        activation.context.gc_context,
-    );
-
     let loader_info = this
         .get_property(
             &Multiname::new(
@@ -80,6 +74,28 @@ pub fn load<'gc>(
         )?
         .as_object()
         .unwrap();
+
+    let loader_info_object = loader_info.as_loader_info_object().unwrap();
+
+    if loader_info_object.init_event_fired() {
+        // FIXME: When calling load/loadBytes, then calling load/loadBytes again
+        // before the `init` event is fired, the first load is cancelled.
+        avm2_stub_method!(
+            activation,
+            "flash.display.Loader",
+            "load",
+            "reusing a Loader"
+        );
+    }
+
+    // Unload the loader, in case something was already loaded.
+    loader_info_object.unload(activation);
+
+    // This is a dummy MovieClip, which will get overwritten in `Loader`
+    let content = MovieClip::new(
+        Arc::new(SwfMovie::empty(activation.context.swf.version())),
+        activation.context.gc_context,
+    );
 
     // Update the LoaderStream - we still have a fake SwfMovie, but we now have the real target clip.
     loader_info
@@ -211,12 +227,6 @@ pub fn load_bytes<'gc>(
     let bytes = arg0.as_bytearray().unwrap().bytes().to_vec();
     let context = args.try_get_object(activation, 1);
 
-    // This is a dummy MovieClip, which will get overwritten in `Loader`
-    let content = MovieClip::new(
-        Arc::new(SwfMovie::empty(activation.context.swf.version())),
-        activation.context.gc_context,
-    );
-
     let loader_info = this
         .get_property(
             &Multiname::new(
@@ -227,6 +237,28 @@ pub fn load_bytes<'gc>(
         )?
         .as_object()
         .unwrap();
+
+    let loader_info_object = loader_info.as_loader_info_object().unwrap();
+
+    if loader_info_object.init_event_fired() {
+        // FIXME: When calling load/loadBytes, then calling load/loadBytes again
+        // before the `init` event is fired, the first load is cancelled.
+        avm2_stub_method!(
+            activation,
+            "flash.display.Loader",
+            "loadBytes",
+            "reusing a Loader"
+        );
+    }
+
+    // Unload the loader, in case something was already loaded.
+    loader_info_object.unload(activation);
+
+    // This is a dummy MovieClip, which will get overwritten in `Loader`
+    let content = MovieClip::new(
+        Arc::new(SwfMovie::empty(activation.context.swf.version())),
+        activation.context.gc_context,
+    );
 
     let default_domain = activation
         .caller_domain()
@@ -255,13 +287,8 @@ pub fn unload<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // TODO: Broadcast an "unload" event on the LoaderInfo and reset LoaderInfo properties
+    // TODO: Broadcast an "unload" event on the LoaderInfo
     avm2_stub_method!(activation, "flash.display.Loader", "unload");
-    let _ = crate::avm2::globals::flash::display::display_object_container::remove_child_at(
-        activation,
-        this,
-        &[0.into()],
-    );
 
     let loader_info = this
         .get_property(

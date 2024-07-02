@@ -18,7 +18,6 @@ use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
-use crate::drawing::Drawing;
 use crate::events::{ClipEvent, ClipEventResult, TextControlCode};
 use crate::font::{round_down_to_pixel, FontType, Glyph, TextRenderSettings};
 use crate::html;
@@ -35,7 +34,7 @@ use core::fmt;
 use either::Either;
 use gc_arena::{Collect, Gc, GcCell, Mutation};
 use ruffle_render::commands::CommandHandler;
-use ruffle_render::shape_utils::DrawCommand;
+use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
 use ruffle_wstr::WStrToUtf8;
 use std::cmp::Ordering;
@@ -104,10 +103,6 @@ pub struct EditTextData<'gc> {
     /// The color of the border.
     #[collect(require_static)]
     border_color: Color,
-
-    /// The current border drawing.
-    #[collect(require_static)]
-    drawing: Drawing,
 
     /// Whether the width of the field should change in response to text
     /// changes, and in what direction the added or removed width should
@@ -288,7 +283,6 @@ impl<'gc> EditText<'gc> {
                 flags,
                 background_color: Color::WHITE,
                 border_color: Color::BLACK,
-                drawing: Drawing::new(),
                 object: None,
                 layout,
                 bounds: swf_tag.bounds().clone(),
@@ -310,8 +304,6 @@ impl<'gc> EditText<'gc> {
 
         if swf_tag.is_auto_size() {
             et.relayout(context);
-        } else {
-            et.redraw_border(context.gc_context);
         }
 
         et
@@ -538,7 +530,7 @@ impl<'gc> EditText<'gc> {
             .write(gc_context)
             .flags
             .set(EditTextFlag::HAS_BACKGROUND, has_background);
-        self.redraw_border(gc_context);
+        self.invalidate_cached_bitmap(gc_context);
     }
 
     pub fn background_color(self) -> Color {
@@ -547,7 +539,7 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_background_color(self, gc_context: &Mutation<'gc>, background_color: Color) {
         self.0.write(gc_context).background_color = background_color;
-        self.redraw_border(gc_context);
+        self.invalidate_cached_bitmap(gc_context);
     }
 
     pub fn has_border(self) -> bool {
@@ -559,7 +551,7 @@ impl<'gc> EditText<'gc> {
             .write(gc_context)
             .flags
             .set(EditTextFlag::BORDER, has_border);
-        self.redraw_border(gc_context);
+        self.invalidate_cached_bitmap(gc_context);
     }
 
     pub fn border_color(self) -> Color {
@@ -568,7 +560,7 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_border_color(self, gc_context: &Mutation<'gc>, border_color: Color) {
         self.0.write(gc_context).border_color = border_color;
-        self.redraw_border(gc_context);
+        self.invalidate_cached_bitmap(gc_context);
     }
 
     pub fn is_device_font(self) -> bool {
@@ -709,48 +701,6 @@ impl<'gc> EditText<'gc> {
     /// The `text_transform` constitutes the base transform that all text is
     /// written into.
 
-    /// Redraw the border of this `EditText`.
-    fn redraw_border(self, gc_context: &Mutation<'gc>) {
-        let mut write = self.0.write(gc_context);
-
-        write.drawing.clear();
-
-        if write
-            .flags
-            .intersects(EditTextFlag::BORDER | EditTextFlag::HAS_BACKGROUND)
-        {
-            let line_style = write.flags.contains(EditTextFlag::BORDER).then_some(
-                swf::LineStyle::new()
-                    .with_width(Twips::new(1))
-                    .with_color(write.border_color),
-            );
-            write.drawing.set_line_style(line_style);
-
-            let fill_style = write
-                .flags
-                .contains(EditTextFlag::HAS_BACKGROUND)
-                .then_some(swf::FillStyle::Color(write.background_color));
-            write.drawing.set_fill_style(fill_style);
-
-            let width = write.bounds.width();
-            let height = write.bounds.height();
-            write.drawing.draw_command(DrawCommand::MoveTo(Point::ZERO));
-            write
-                .drawing
-                .draw_command(DrawCommand::LineTo(Point::new(Twips::ZERO, height)));
-            write
-                .drawing
-                .draw_command(DrawCommand::LineTo(Point::new(width, height)));
-            write
-                .drawing
-                .draw_command(DrawCommand::LineTo(Point::new(width, Twips::ZERO)));
-            write.drawing.draw_command(DrawCommand::LineTo(Point::ZERO));
-        }
-
-        drop(write);
-        self.invalidate_cached_bitmap(gc_context);
-    }
-
     /// Internal padding between the bounds of the EditText and the text.
     /// Applies to each side.
     const INTERNAL_PADDING: f64 = 2.0;
@@ -834,7 +784,6 @@ impl<'gc> EditText<'gc> {
             edit_text.bounds.set_height(height);
         }
         drop(edit_text);
-        self.redraw_border(context.gc_context);
         self.invalidate_cached_bitmap(context.gc_context);
     }
 
@@ -1046,7 +995,6 @@ impl<'gc> EditText<'gc> {
             * Matrix::create_box(
                 width.to_pixels() as f32,
                 height.to_pixels() as f32,
-                0.0,
                 x,
                 Twips::ZERO,
             );
@@ -1065,7 +1013,6 @@ impl<'gc> EditText<'gc> {
             * Matrix::create_box(
                 cursor_width.to_pixels() as f32,
                 height.to_pixels() as f32,
-                0.0,
                 x - cursor_width,
                 Twips::ZERO,
             );
@@ -2103,7 +2050,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         let offset = edit_text.bounds.x_min;
         edit_text.base.base.set_x(x - offset);
         drop(edit_text);
-        self.redraw_border(gc_context);
+        self.invalidate_cached_bitmap(gc_context);
     }
 
     fn y(&self) -> Twips {
@@ -2117,7 +2064,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         let offset = edit_text.bounds.y_min;
         edit_text.base.base.set_y(y - offset);
         drop(edit_text);
-        self.redraw_border(gc_context);
+        self.invalidate_cached_bitmap(gc_context);
     }
 
     fn width(&self) -> f64 {
@@ -2152,7 +2099,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
     fn set_matrix(&self, gc_context: &Mutation<'gc>, matrix: Matrix) {
         self.0.write(gc_context).base.base.set_matrix(matrix);
-        self.redraw_border(gc_context);
+        self.invalidate_cached_bitmap(gc_context);
     }
 
     fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
@@ -2161,19 +2108,54 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             return;
         }
 
+        fn is_transform_positive_scale_only(context: &mut RenderContext) -> bool {
+            let Matrix { a, b, c, d, .. } = context.transform_stack.transform().matrix;
+            b == 0.0 && c == 0.0 && a > 0.0 && d > 0.0
+        }
+
+        // EditText is not rendered if device font is used
+        // and if it's rotated, sheared, or reflected.
+        if self.is_device_font() && !is_transform_positive_scale_only(context) {
+            return;
+        }
+
         let edit_text = self.0.read();
+
+        if edit_text
+            .flags
+            .intersects(EditTextFlag::BORDER | EditTextFlag::HAS_BACKGROUND)
+        {
+            let background_color = Some(edit_text.background_color)
+                .filter(|_| edit_text.flags.contains(EditTextFlag::HAS_BACKGROUND));
+            let border_color = Some(edit_text.border_color)
+                .filter(|_| edit_text.flags.contains(EditTextFlag::BORDER));
+
+            if self.is_device_font() {
+                self.draw_device_text_box(
+                    context,
+                    edit_text.bounds.clone(),
+                    background_color,
+                    border_color,
+                );
+            } else {
+                self.draw_text_box(
+                    context,
+                    edit_text.bounds.clone(),
+                    background_color,
+                    border_color,
+                );
+            }
+        }
+
         context.transform_stack.push(&Transform {
             matrix: Matrix::translate(edit_text.bounds.x_min, edit_text.bounds.y_min),
             ..Default::default()
         });
 
-        edit_text.drawing.render(context);
-
         context.commands.push_mask();
         let mask = Matrix::create_box(
             edit_text.bounds.width().to_pixels() as f32,
             edit_text.bounds.height().to_pixels() as f32,
-            0.0,
             Twips::ZERO,
             Twips::ZERO,
         );
@@ -2274,6 +2256,136 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         }
 
         self.set_avm1_removed(context.gc_context, true);
+    }
+}
+
+impl<'gc> EditText<'gc> {
+    /// Draw the box (border + background) for EditText with device fonts.
+    ///
+    /// Notes on FP's behavior:
+    ///  * the box is never drawn when there's any rotation, shear, or reflection,
+    ///  * the box is always aliased and lines lie on whole pixels regardless of quality,
+    ///  * line width of the border is always 1px regardless of zoom and transform,
+    ///  * the bottom-right corner of the border is missing.
+    ///
+    /// Notes on the current implementation:
+    ///  * the border is drawn using four separately drawn lines,
+    ///  * the lines are always snapped to whole pixels (which is easy as
+    ///    the possible transforms are highly limited),
+    ///  * the current implementation should be pixel-perfect (compared to FP).
+    pub fn draw_device_text_box(
+        &self,
+        context: &mut RenderContext<'_, 'gc>,
+        bounds: Rectangle<Twips>,
+        background_color: Option<Color>,
+        border_color: Option<Color>,
+    ) {
+        let transform = context.transform_stack.transform();
+        let bounds = transform.matrix * bounds;
+
+        let width_twips = bounds.width().round_to_pixel_ties_even();
+        let height_twips = bounds.height().round_to_pixel_ties_even();
+        let bounds = Rectangle {
+            x_min: bounds.x_min.round_to_pixel_ties_even(),
+            x_max: bounds.x_min.round_to_pixel_ties_even() + width_twips,
+            y_min: bounds.y_min.round_to_pixel_ties_even(),
+            y_max: bounds.y_min.round_to_pixel_ties_even() + height_twips,
+        };
+
+        let width = width_twips.to_pixels() as f32;
+        let height = height_twips.to_pixels() as f32;
+        if let Some(background_color) = background_color {
+            let background_color = &transform.color_transform * background_color;
+            context.commands.draw_rect(
+                background_color,
+                Matrix::create_box(width, height, bounds.x_min, bounds.y_min),
+            );
+        }
+
+        if let Some(border_color) = border_color {
+            let border_color = &transform.color_transform * border_color;
+            // Top
+            context.commands.draw_line(
+                border_color,
+                Matrix::create_box(width, 1.0, bounds.x_min - Twips::HALF, bounds.y_min),
+            );
+            // Bottom
+            context.commands.draw_line(
+                border_color,
+                Matrix::create_box(width, 1.0, bounds.x_min - Twips::HALF, bounds.y_max),
+            );
+            // Left
+            context.commands.draw_line(
+                border_color,
+                Matrix::create_box_with_rotation(
+                    1.0,
+                    height,
+                    std::f32::consts::FRAC_PI_2,
+                    bounds.x_min,
+                    bounds.y_min - Twips::HALF,
+                ),
+            );
+            // Right
+            context.commands.draw_line(
+                border_color,
+                Matrix::create_box_with_rotation(
+                    1.0,
+                    height,
+                    std::f32::consts::FRAC_PI_2,
+                    bounds.x_max,
+                    bounds.y_min - Twips::HALF,
+                ),
+            );
+        }
+    }
+
+    /// Draw the box (border + background) for EditText with embedded fonts.
+    ///
+    /// Notes on FP's behavior:
+    ///  * the box is always drawn (in contrast to device fonts) and may be transformed,
+    ///  * the box is anti aliased according to the quality, but
+    ///    is snapped to whole pixels in order not to look blurry,
+    ///  * however, on some qualities (e.g. medium) the border is sometimes drawn between pixels,
+    ///  * similarly for small box sizes, the border will be sometimes drawn between pixels,
+    ///  * line width of the border is always 1px regardless of zoom and transform,
+    ///  * the bottom-right corner of the border is NOT missing (usually), :)
+    ///  * however, sometimes the bottom-right corner will
+    ///    stick out a bit down (gee, can you even draw a rectangle Adobe?),
+    ///  * pixel snapping for width sometimes depends on x,
+    ///    but pixel snapping for height never depends on y (for high quality).
+    ///
+    /// Notes on the current implementation:
+    ///  * the box is rendered using a line rect,
+    ///    which is snapped to pixels using [`EditTextPixelSnapping`],
+    ///  * the pixel-perfect position is really hard to achieve, currently it's best-effort only.
+    pub fn draw_text_box(
+        &self,
+        context: &mut RenderContext<'_, 'gc>,
+        bounds: Rectangle<Twips>,
+        background_color: Option<Color>,
+        border_color: Option<Color>,
+    ) {
+        let quality = context.stage.quality();
+        let pixel_snapping = &EditTextPixelSnapping::new(quality);
+
+        let transform = context.transform_stack.transform();
+
+        let width = bounds.width().to_pixels() as f32;
+        let height = bounds.height().to_pixels() as f32;
+
+        let mut text_box =
+            transform.matrix * Matrix::create_box(width, height, bounds.x_min, bounds.y_min);
+        pixel_snapping.apply(&mut text_box);
+
+        if let Some(background_color) = background_color {
+            let background_color = &transform.color_transform * background_color;
+            context.commands.draw_rect(background_color, text_box);
+        }
+
+        if let Some(border_color) = border_color {
+            let border_color = &transform.color_transform * border_color;
+            context.commands.draw_line_rect(border_color, text_box);
+        }
     }
 }
 
@@ -2804,5 +2916,48 @@ impl EditTextRestrict {
             }
         }
         filtered
+    }
+}
+
+#[derive(Debug, Clone)]
+struct EditTextPixelSnapping {
+    quality: StageQuality,
+}
+
+impl EditTextPixelSnapping {
+    pub fn new(quality: StageQuality) -> Self {
+        Self { quality }
+    }
+
+    pub fn apply(&self, matrix: &mut Matrix) {
+        match self.quality {
+            StageQuality::Low => {
+                // We are snapping x and y in order to match the expected positions.
+                // However, we do not need to snap scale, because
+                // at low quality antialiasing is disabled anyway,
+                // and the aliased border is pretty close to the expected position.
+                matrix.tx = matrix.tx.round_to_pixel_ties_even();
+                matrix.ty = matrix.ty.round_to_pixel_ties_even();
+            }
+            _ => {
+                // For higher qualities, we need to snap x, y, and scales not only to match
+                // FP's positioning, but also for the border not to look blurry.
+                // The snapping here is fine-tuned for high quality (the default).
+                // It is not perfect (FP's logic is very complicated), but it's
+                // accurate for whole-pixel positions and relatively close for subpixel positions.
+                matrix.tx = (matrix.tx + Twips::new(2)).trunc_to_pixel();
+                matrix.ty = (matrix.ty + Twips::new(2)).trunc_to_pixel();
+                let x_snap = matrix.c.abs() < 0.001 || matrix.d.abs() < 0.001;
+                let y_snap = matrix.a.abs() < 0.001 || matrix.b.abs() < 0.001;
+                if x_snap {
+                    matrix.a = (matrix.a - 0.35).round_ties_even();
+                    matrix.b = (matrix.b - 0.35).round_ties_even();
+                }
+                if y_snap {
+                    matrix.c = (matrix.c - 0.35).round_ties_even();
+                    matrix.d = (matrix.d - 0.35).round_ties_even();
+                }
+            }
+        }
     }
 }
