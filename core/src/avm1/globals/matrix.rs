@@ -9,7 +9,7 @@ use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::context::GcContext;
 use crate::string::AvmString;
 
-use ruffle_render::matrix::Matrix;
+use ruffle_render::matrix::{Matrix, Rotation};
 use swf::Twips;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -80,7 +80,7 @@ pub fn gradient_object_to_matrix<'gc>(
         Ok(Matrix::create_gradient_box(
             width as f32,
             height as f32,
-            rotation as f32,
+            Rotation::from_radians(rotation as f32),
             Twips::from_pixels(tx),
             Twips::from_pixels(ty),
         ))
@@ -340,10 +340,10 @@ fn create_box<'gc>(
         0.0
     };
 
-    let matrix = Matrix::create_box(
+    let matrix = Matrix::create_box_with_rotation(
         scale_x as f32,
         scale_y as f32,
-        rotation as f32,
+        Rotation::from_radians(rotation as f32),
         Twips::from_pixels(translate_x),
         Twips::from_pixels(translate_y),
     );
@@ -384,7 +384,7 @@ fn create_gradient_box<'gc>(
     let matrix = Matrix::create_gradient_box(
         width as f32,
         height as f32,
-        rotation as f32,
+        Rotation::from_radians(rotation as f32),
         Twips::from_pixels(translate_x),
         Twips::from_pixels(translate_y),
     );

@@ -1,0 +1,14 @@
+[
+  { "type": "KeyDown", "key_code": 49 },
+  { "type": "Wait" },
+  { "type": "KeyDown", "key_code": 50 },
+  { "type": "Wait" },
+  { "type": "KeyDown", "key_code": 51 },
+  { "type": "Wait" },
+  { "type": "KeyDown", "key_code": 52 },
+  { "type": "Wait" },
+  { "type": "KeyDown", "key_code": 53 },
+  { "type": "Wait" },
+  { "type": "KeyDown", "key_code": 54 },
+  { "type": "Wait" }
+]

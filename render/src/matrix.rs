@@ -94,42 +94,43 @@ impl Matrix {
         }
     }
 
-    pub fn create_box(
+    pub fn create_box(scale_x: f32, scale_y: f32, translate_x: Twips, translate_y: Twips) -> Self {
+        Self {
+            a: scale_x,
+            c: 0.0,
+            tx: translate_x,
+            b: 0.0,
+            d: scale_y,
+            ty: translate_y,
+        }
+    }
+
+    pub fn create_box_with_rotation(
         scale_x: f32,
         scale_y: f32,
-        rotation: f32,
+        rotation: Rotation,
         translate_x: Twips,
         translate_y: Twips,
     ) -> Self {
-        if rotation != 0.0 {
-            Self {
-                a: rotation.cos() * scale_x,
-                c: -rotation.sin() * scale_x,
-                tx: translate_x,
-                b: rotation.sin() * scale_y,
-                d: rotation.cos() * scale_y,
-                ty: translate_y,
-            }
-        } else {
-            Self {
-                a: scale_x,
-                c: 0.0,
-                tx: translate_x,
-                b: 0.0,
-                d: scale_y,
-                ty: translate_y,
-            }
+        let Rotation { sin, cos } = rotation;
+        Self {
+            a: cos * scale_x,
+            c: -sin * scale_x,
+            tx: translate_x,
+            b: sin * scale_y,
+            d: cos * scale_y,
+            ty: translate_y,
         }
     }
 
     pub fn create_gradient_box(
         width: f32,
         height: f32,
-        rotation: f32,
+        rotation: Rotation,
         translate_x: Twips,
         translate_y: Twips,
     ) -> Self {
-        Self::create_box(
+        Self::create_box_with_rotation(
             width / 1638.4,
             height / 1638.4,
             rotation,
@@ -282,6 +283,36 @@ impl From<Matrix> for swf::Matrix {
             tx: matrix.tx,
             ty: matrix.ty,
         }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct Rotation {
+    sin: f32,
+    cos: f32,
+}
+
+impl Rotation {
+    /// No rotation.
+    pub const ZERO: Self = Self { sin: 0.0, cos: 1.0 };
+
+    /// Quarter turn rotation.
+    /// Equivalent to 90 degrees or `PI/2` radians.
+    pub const QUARTER_TURN: Self = Self { sin: 1.0, cos: 0.0 };
+
+    #[inline]
+    pub fn from_radians(value: f32) -> Self {
+        Self {
+            sin: value.sin(),
+            cos: value.cos(),
+        }
+    }
+}
+
+impl From<f32> for Rotation {
+    #[inline]
+    fn from(value: f32) -> Self {
+        Rotation::from_radians(value)
     }
 }
 
