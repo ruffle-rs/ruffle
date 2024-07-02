@@ -470,30 +470,18 @@ impl<'a> Reader<'a> {
                 Tag::EnableTelemetry { password_hash }
             }
             TagCode::ImportAssets => {
-                let url = tag_reader.read_str()?;
-                let num_imports = tag_reader.read_u16()?;
-                let mut imports = Vec::with_capacity(num_imports as usize);
-                for _ in 0..num_imports {
-                    imports.push(ExportedAsset {
-                        id: tag_reader.read_u16()?,
-                        name: tag_reader.read_str()?,
-                    });
+                let import_assets = tag_reader.read_import_assets()?;
+                Tag::ImportAssets {
+                    url: import_assets.0,
+                    imports: import_assets.1,
                 }
-                Tag::ImportAssets { url, imports }
             }
             TagCode::ImportAssets2 => {
-                let url = tag_reader.read_str()?;
-                tag_reader.read_u8()?; // Reserved; must be 1
-                tag_reader.read_u8()?; // Reserved; must be 0
-                let num_imports = tag_reader.read_u16()?;
-                let mut imports = Vec::with_capacity(num_imports as usize);
-                for _ in 0..num_imports {
-                    imports.push(ExportedAsset {
-                        id: tag_reader.read_u16()?,
-                        name: tag_reader.read_str()?,
-                    });
+                let import_assets = tag_reader.read_import_assets_2()?;
+                Tag::ImportAssets {
+                    url: import_assets.0,
+                    imports: import_assets.1,
                 }
-                Tag::ImportAssets { url, imports }
             }
 
             TagCode::JpegTables => {
@@ -1853,6 +1841,37 @@ impl<'a> Reader<'a> {
             });
         }
         Ok(exports)
+    }
+
+    pub fn read_import_assets(&mut self) -> Result<(&'a SwfStr, ExportAssets<'a>)> {
+        let url = self.read_str()?;
+        let num_imports = self.read_u16()?;
+        let mut imports = Vec::with_capacity(num_imports as usize);
+        for _ in 0..num_imports {
+            imports.push(ExportedAsset {
+                id: self.read_u16()?,
+                name: self.read_str()?,
+            });
+        }
+
+        Ok((url, imports))
+    }
+
+    pub fn read_import_assets_2(&mut self) -> Result<(&'a SwfStr, ExportAssets<'a>)> {
+        let url = self.read_str()?;
+        self.read_u8()?; // Reserved; must be 1
+        self.read_u8()?; // Reserved; must be 0
+        let num_imports = self.read_u16()?;
+        let mut imports = Vec::with_capacity(num_imports as usize);
+
+        for _ in 0..num_imports {
+            imports.push(ExportedAsset {
+                id: self.read_u16()?,
+                name: self.read_str()?,
+            });
+        }
+
+        Ok((url, imports))
     }
 
     pub fn read_place_object(&mut self) -> Result<PlaceObject<'a>> {

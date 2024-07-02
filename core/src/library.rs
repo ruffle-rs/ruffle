@@ -126,6 +126,7 @@ pub struct MovieLibrary<'gc> {
     swf: Arc<SwfMovie>,
     characters: HashMap<CharacterId, Character<'gc>>,
     export_characters: Avm1PropertyMap<'gc, CharacterId>,
+    imported_assets: HashMap<AvmString<'gc>, CharacterId>,
     jpeg_tables: Option<Vec<u8>>,
     fonts: FontMap<'gc>,
     avm2_domain: Option<Avm2Domain<'gc>>,
@@ -136,6 +137,7 @@ impl<'gc> MovieLibrary<'gc> {
         Self {
             swf,
             characters: HashMap::new(),
+            imported_assets: HashMap::new(),
             export_characters: Avm1PropertyMap::new(),
             jpeg_tables: None,
             fonts: Default::default(),
@@ -188,6 +190,14 @@ impl<'gc> MovieLibrary<'gc> {
             return Some((*id, self.characters.get(id).unwrap()));
         }
         None
+    }
+
+    pub fn character_id_by_import_name(&self, name: AvmString<'gc>) -> Option<CharacterId> {
+        self.imported_assets.get(&name).copied()
+    }
+
+    pub fn register_import(&mut self, name: AvmString<'gc>, id: CharacterId) {
+        self.imported_assets.insert(name, id);
     }
 
     /// Instantiates the library item with the given character ID into a display object.
