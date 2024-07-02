@@ -229,12 +229,17 @@ pub fn recursive_serialize<'gc>(
         }
     }
 
+    // FIXME: Flash only seems to use this enumeration for dynamic classes.
     let mut last_index = obj.get_next_enumerant(0, activation)?;
     while let Some(index) = last_index {
+        if index == 0 {
+            break;
+        }
+
         let name = obj
             .get_enumerant_name(index, activation)?
             .coerce_to_string(activation)?;
-        let value = obj.get_public_property(name, activation)?;
+        let value = obj.get_enumerant_value(index, activation)?;
 
         let name = name.to_utf8_lossy().to_string();
         if let Some(elem) =
