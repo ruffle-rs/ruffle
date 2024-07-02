@@ -4,7 +4,6 @@ use crate::avm2::object::TObject;
 use crate::avm2::{Activation, AvmString, Class, Multiname, Value};
 use std::borrow::Cow;
 use std::fmt::Debug;
-use std::mem::size_of;
 
 use super::function::display_function;
 use super::method::Method;
@@ -19,7 +18,54 @@ pub enum Error<'gc> {
     /// An internal VM error. This cannot be caught by ActionScript code -
     /// it will either be logged by Ruffle, or cause the player to
     /// stop executing.
-    RustError(Box<dyn std::error::Error>),
+    RustError(RustError),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub struct RustError {
+    #[source]
+    source: Box<dyn std::error::Error>,
+    #[cfg(feature = "error_backtrace")]
+    backtrace: Option<std::backtrace::Backtrace>,
+}
+
+impl std::fmt::Display for RustError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.source)?;
+        #[cfg(feature = "error_backtrace")]
+        if let Some(backtrace) = &self.backtrace {
+            write!(f, "\n{}", backtrace)?;
+        }
+        Ok(())
+    }
+}
+
+impl RustError {
+    pub fn new(source: Box<dyn std::error::Error>) -> Self {
+        RustError {
+            source,
+            #[cfg(feature = "error_backtrace")]
+            backtrace: Some(std::backtrace::Backtrace::capture()),
+        }
+    }
+}
+
+impl From<Box<dyn std::error::Error>> for RustError {
+    fn from(source: Box<dyn std::error::Error>) -> Self {
+        RustError::new(source)
+    }
+}
+
+impl From<&str> for RustError {
+    fn from(source: &str) -> Self {
+        RustError::new(source.into())
+    }
+}
+
+impl From<String> for RustError {
+    fn from(source: String) -> Self {
+        RustError::new(source.into())
+    }
 }
 
 impl<'gc> Debug for Error<'gc> {
@@ -36,17 +82,17 @@ impl<'gc> Debug for Error<'gc> {
 
         match self {
             Error::AvmError(error) => write!(f, "AvmError({:?})", error),
-            Error::RustError(error) => write!(f, "RustError({:?})", error),
+            Error::RustError(error) => write!(f, "RustError({})", error),
         }
     }
 }
 
 // This type is used very frequently, so make sure it doesn't unexpectedly grow.
-#[cfg(target_family = "wasm")]
-const _: () = assert!(size_of::<Result<Value<'_>, Error<'_>>>() == 24);
+#[cfg(all(target_family = "wasm", not(feature = "error_backtrace")))]
+const _: () = assert!(std::mem::size_of::<Result<Value<'_>, Error<'_>>>() == 24);
 
-#[cfg(target_pointer_width = "64")]
-const _: () = assert!(size_of::<Result<Value<'_>, Error<'_>>>() == 32);
+#[cfg(all(target_pointer_width = "64", not(feature = "error_backtrace")))]
+const _: () = assert!(std::mem::size_of::<Result<Value<'_>, Error<'_>>>() == 32);
 
 #[inline(never)]
 #[cold]
@@ -855,7 +901,7 @@ impl<'gc, 'a> From<&'a str> for Error<'gc> {
 
 impl<'gc, 'a> From<Cow<'a, str>> for Error<'gc> {
     fn from(val: Cow<'a, str>) -> Error<'gc> {
-        Error::RustError(val.into())
+        Error::RustError((*val).into())
     }
 }
 
@@ -867,6 +913,6 @@ impl<'gc> From<String> for Error<'gc> {
 
 impl<'gc> From<ruffle_render::error::Error> for Error<'gc> {
     fn from(val: ruffle_render::error::Error) -> Error<'gc> {
-        Error::RustError(val.into())
+        Error::RustError(RustError::new(val.into()))
     }
 }
