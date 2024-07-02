@@ -53,7 +53,7 @@
     "permissions": [
         "storage",
         "scripting",
-        "declarativeNetRequest",
+        "declarativeNetRequestWithHostAccess",
     ],
     "web_accessible_resources": [{
         "resources": ["*"],
