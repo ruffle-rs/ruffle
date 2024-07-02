@@ -15,6 +15,7 @@ package flash.display {
     [Ruffle(NativeInstanceInit)]
     public class Stage extends DisplayObjectContainer {
         private var _colorCorrection:String = ColorCorrection.DEFAULT;
+        private var _mouseLock:Boolean = false;
 
         public function Stage() {
             throw new Error("You cannot construct new instances of the Stage.")
@@ -266,6 +267,16 @@ package flash.display {
         public function get colorCorrectionSupport():String {
             stub_getter("flash.display.Stage", "colorCorrectionSupport");
             return ColorCorrectionSupport.UNSUPPORTED;
+        }
+
+        public function get mouseLock():Boolean {
+            stub_getter("flash.display.Stage", "mouseLock");
+            return this._mouseLock;
+        }
+
+        public function set mouseLock(value:Boolean):void {
+            stub_setter("flash.display.Stage", "mouseLock");
+            this._mouseLock = value;
         }
     }
 }
