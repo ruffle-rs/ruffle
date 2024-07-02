@@ -98,12 +98,15 @@ function unload() {
     }
 }
 
-function load(options: string | DataLoadOptions | URLLoadOptions) {
+function load(
+    options: string | DataLoadOptions | URLLoadOptions,
+    urlResolveHook: ((url: string) => Promise<string>) | null = null,
+) {
     unload();
     player = ruffle.createPlayer();
     player.id = "player";
     playerContainer.append(player);
-    player.load(options, false);
+    player.load(options, false, urlResolveHook);
     player.addEventListener("loadedmetadata", () => {
         if (player.metadata) {
             for (const [key, value] of Object.entries(player.metadata)) {
@@ -235,22 +238,108 @@ window.addEventListener("load", () => {
 });
 
 async function loadSwf(swfUrl: string) {
-    try {
-        const pathname = new URL(swfUrl).pathname;
-        document.title = pathname.substring(pathname.lastIndexOf("/") + 1);
-    } catch (_) {
-        // Ignore URL parsing errors.
-    }
+    document.title = swfUrl
+        .split("/")
+        .filter((item) => item !== "")
+        .slice(-1)[0]!;
+
+    const resolveUrlHook = async (swfUrl: string) => {
+        const url = await resolveSwfUrl(swfUrl);
+        if (url !== null) {
+            return url.toString();
+        } else {
+            return swfUrl;
+        }
+    };
 
     const options = await utils.getExplicitOptions();
     localFileName.textContent = document.title;
     localFileInput.value = "";
-    load({
-        ...options,
-        url: swfUrl,
-        base: swfUrl.substring(0, swfUrl.lastIndexOf("/") + 1),
-        ...baseExtensionConfig,
-    });
+    load(
+        {
+            ...options,
+            url: swfUrl,
+            base: swfUrl.substring(0, swfUrl.lastIndexOf("/") + 1),
+            ...baseExtensionConfig,
+        },
+        resolveUrlHook,
+    );
+}
+
+/**
+ * Resolves a given string to a URL if possible.
+ * If the protocol is missing and the string is otherwise a valid web URL, https:// is inserted if the
+ * server supports https, otherwise http.
+ * If the protocol is missing and the string is otherwise a valid file URL, file:/// is inserted.
+ * If the string can't be resolved to a URL, null is returned.
+ * @param enteredUrl The string that should be resolved to a URL.
+ * @return The resolved URL object.
+ */
+async function resolveSwfUrl(enteredUrl: string): Promise<URL | null> {
+    // TODO: Use canParse in the future when it doesn't break browser compatibility
+    // If the URL is (very likely) a file URL with missing file protocol, we return it as file URL
+    // Must be the first test as the URL constructor accepts C:\… as URL with protocol C
+    if (enteredUrl.match(/^[A-Za-z]:\\|^[/~\\]/)) {
+        try {
+            return new URL("file:///" + enteredUrl);
+        } catch (error) {
+            return null;
+        }
+    }
+
+    try {
+        return new URL(enteredUrl);
+    } catch (error) {
+        // The protocol is missing
+
+        // If the URL doesn't contain a dot, it can't be a valid web URL
+        // The URL constructor doesn't check this if a protocol exists
+        if (!enteredUrl.includes(".")) {
+            return null;
+        }
+
+        try {
+            // Only use http if it works but https doesn't
+            if (
+                (await serverAvailable("https://" + enteredUrl, 600)) ||
+                !(await serverAvailable("http://" + enteredUrl, 300))
+            ) {
+                return new URL("https://" + enteredUrl);
+            } else {
+                return new URL("http://" + enteredUrl);
+            }
+        } catch (error) {
+            return null;
+        }
+    }
+}
+
+/**
+ * Tests and returns whether a server exists under a given URL.
+ * @param url The URL that should be tested.
+ * @param timeout The maximum number of milliseconds that should be waited for a response.
+ * @return Whether a server exists under the given URL.
+ */
+async function serverAvailable(
+    url: string | URL,
+    timeout: number,
+): Promise<boolean> {
+    // Polyfill for older browsers
+    AbortSignal.timeout ??= function timeout(milliseconds) {
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(), milliseconds);
+        return controller.signal;
+    };
+
+    try {
+        await fetch(url, {
+            signal: AbortSignal.timeout(timeout),
+            mode: "no-cors",
+        });
+        return true;
+    } catch (error) {
+        return false;
+    }
 }
 
 async function loadSwfFromHash() {

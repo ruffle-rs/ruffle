@@ -38,6 +38,9 @@ enum PanicError {
     InvalidSwf,
     SwfFetchError,
     SwfCors,
+    LocalRootURL,
+    UnknownRootProtocol,
+    NoValidURL,
 }
 
 // Safari still requires prefixed fullscreen APIs, see:
@@ -951,10 +954,13 @@ export class RufflePlayer extends HTMLElement {
      *
      * The options will be defaulted by the [[config]] field, which itself
      * is defaulted by a global `window.RufflePlayer.config`.
+     * @param urlResolveHook An optional function resolving the URL. This is used by the
+     * extension player to support URLs without an explicit protocol.
      */
     async load(
         options: string | URLLoadOptions | DataLoadOptions,
         isPolyfillElement: boolean = false,
+        urlResolveHook: ((url: string) => Promise<string>) | null = null,
     ): Promise<void> {
         options = this.checkOptions(options);
 
@@ -999,6 +1005,9 @@ export class RufflePlayer extends HTMLElement {
             await this.ensureFreshInstance();
 
             if ("url" in options) {
+                if (urlResolveHook !== null) {
+                    options.url = await urlResolveHook(options.url);
+                }
                 console.log(`Loading SWF file ${options.url}`);
                 this.swfUrl = new URL(options.url, document.baseURI);
 
@@ -2077,21 +2086,16 @@ export class RufflePlayer extends HTMLElement {
         // Create a link to GitHub with all of the error data, if the build is not outdated.
         // Otherwise, create a link to the downloads section on the Ruffle website.
         let actionLink: PanicLinkInfo;
+        let url;
+        if (document.location.protocol.includes("extension") && this.swfUrl) {
+            url = this.swfUrl;
+        } else {
+            url = document.location;
+        }
         if (!isBuildOutdated) {
-            let url;
-            if (
-                document.location.protocol.includes("extension") &&
-                this.swfUrl
-            ) {
-                url = this.swfUrl.href;
-            } else {
-                url = document.location.href;
-            }
-
             // Remove query params for the issue title.
-            url = url.split(/[?#]/, 1)[0]!;
-
-            const issueTitle = `Error on ${url}`;
+            const mainUrlPart = url.href.split(/[?#]/, 1)[0]!;
+            const issueTitle = `Error on ${mainUrlPart}`;
             let issueLink = `https://github.com/ruffle-rs/ruffle/issues/new?title=${encodeURIComponent(
                 issueTitle,
             )}&template=error_report.md&labels=error-report&body=`;
@@ -2172,7 +2176,9 @@ export class RufflePlayer extends HTMLElement {
                 errorFooter = this.createErrorFooter([new PanicLinkInfo()]);
                 break;
             case PanicError.SwfFetchError:
-                errorBody = textAsParagraphs("error-swf-fetch");
+                errorBody = textAsParagraphs("error-swf-fetch-v2", {
+                    https: url.protocol.includes("https").toString(),
+                });
                 errorFooter = this.createErrorFooter([new PanicLinkInfo()]);
                 break;
             case PanicError.SwfCors:
@@ -2251,6 +2257,25 @@ export class RufflePlayer extends HTMLElement {
                     new PanicLinkInfo(),
                 ]);
                 break;
+            case PanicError.LocalRootURL:
+                errorBody = textAsParagraphs("error-local-root-url");
+                errorFooter = this.createErrorFooter([new PanicLinkInfo()]);
+                break;
+            case PanicError.UnknownRootProtocol:
+                errorBody = textAsParagraphs("error-unknown-root-protocol", {
+                    protocol: url.protocol,
+                });
+                errorFooter = this.createErrorFooter([new PanicLinkInfo()]);
+                break;
+            case PanicError.NoValidURL: {
+                const urlExtensionPart =
+                    document.baseURI.split("player.html")[0]!;
+                errorBody = textAsParagraphs("error-no-valid-url", {
+                    url: url.href.replace(urlExtensionPart, ""),
+                });
+                errorFooter = this.createErrorFooter([new PanicLinkInfo()]);
+                break;
+            }
             default:
                 // Unknown error
                 errorBody = textAsParagraphs("error-unknown", {
@@ -2336,8 +2361,18 @@ export class RufflePlayer extends HTMLElement {
             this.container.prepend(div);
         } else {
             const error = new Error("Failed to fetch: " + this.swfUrl);
-            if (this.swfUrl && !this.swfUrl.protocol.includes("http")) {
-                error.ruffleIndexError = PanicError.FileProtocol;
+            const urlExtensionProtocol = isExtension
+                ? document.baseURI.split(":")[0] + ":"
+                : "";
+            if (this.swfUrl && this.swfUrl.protocol === "file:") {
+                error.ruffleIndexError = PanicError.LocalRootURL;
+            } else if (
+                this.swfUrl &&
+                this.swfUrl.protocol === urlExtensionProtocol
+            ) {
+                error.ruffleIndexError = PanicError.NoValidURL;
+            } else if (this.swfUrl && !this.swfUrl.protocol.includes("http")) {
+                error.ruffleIndexError = PanicError.UnknownRootProtocol;
             } else if (invalidSwf) {
                 error.ruffleIndexError = PanicError.InvalidSwf;
             } else if (
