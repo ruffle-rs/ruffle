@@ -5,6 +5,7 @@ export interface Options extends BaseLoadOptions {
     ruffleEnable: boolean;
     ignoreOptout: boolean;
     autostart: boolean;
+    swfTakeover: boolean;
 }
 
 interface OptionElement<T> {

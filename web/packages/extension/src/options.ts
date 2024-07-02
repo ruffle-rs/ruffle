@@ -2,7 +2,15 @@ import * as utils from "./utils";
 import { bindOptions, resetOptions } from "./common";
 import { buildInfo } from "ruffle-core";
 
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
+    const data = await utils.storage.sync.get({
+        responseHeadersUnsupported: false,
+    });
+    if (data["responseHeadersUnsupported"]) {
+        document
+            .getElementById("swf_takeover")!
+            .parentElement!.classList.add("hidden");
+    }
     document.title = utils.i18n.getMessage("settings_page");
     {
         const vt = document.getElementById("version-text")!;
