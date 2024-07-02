@@ -1,9 +1,10 @@
 //! Object representation for events
 
 use crate::avm2::activation::Activation;
+use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::events::Event;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ByteArrayObject, ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::context::UpdateContext;
@@ -169,6 +170,36 @@ impl<'gc> EventObject<'gc> {
                     cancelable.into(),
                     // text
                     text.into(),
+                ],
+            )
+            .unwrap() // we don't expect to break here
+    }
+
+    pub fn sample_data_event<S>(
+        activation: &mut Activation<'_, 'gc>,
+        event_type: S,
+        position: u32,
+    ) -> Object<'gc>
+    where
+        S: Into<AvmString<'gc>>,
+    {
+        let event_type: AvmString<'gc> = event_type.into();
+
+        let storage = ByteArrayStorage::new();
+        let data = ByteArrayObject::from_storage(activation, storage).unwrap();
+
+        let sample_data_event_cls = activation.avm2().classes().sampledataevent;
+        sample_data_event_cls
+            .construct(
+                activation,
+                &[
+                    event_type.into(),
+                    //bubbles
+                    false.into(),
+                    //cancelable
+                    false.into(),
+                    position.into(),
+                    data.into(),
                 ],
             )
             .unwrap() // we don't expect to break here

@@ -31,9 +31,7 @@ pub fn sound_allocator<'gc>(
         activation.context.gc_context,
         SoundObjectData {
             base,
-            sound_data: SoundData::NotLoaded {
-                queued_plays: Vec::new(),
-            },
+            sound_data: SoundData::Empty,
             id3: None,
         },
     ))
@@ -72,13 +70,15 @@ pub struct SoundObjectData<'gc> {
 #[derive(Collect)]
 #[collect(no_drop)]
 pub enum SoundData<'gc> {
-    NotLoaded {
+    Empty,
+    Loading {
         queued_plays: Vec<QueuedPlay<'gc>>,
     },
     Loaded {
         #[collect(require_static)]
         sound: SoundHandle,
     },
+    Generated,
 }
 
 #[derive(Clone, Collect)]
@@ -96,8 +96,8 @@ impl<'gc> SoundObject<'gc> {
     pub fn sound_handle(self) -> Option<SoundHandle> {
         let this = self.0.read();
         match this.sound_data {
-            SoundData::NotLoaded { .. } => None,
             SoundData::Loaded { sound } => Some(sound),
+            _ => None,
         }
     }
 
@@ -109,12 +109,35 @@ impl<'gc> SoundObject<'gc> {
     ) -> Result<bool, Error<'gc>> {
         let mut this = self.0.write(activation.context.gc_context);
         match &mut this.sound_data {
-            SoundData::NotLoaded { queued_plays } => {
+            SoundData::Empty { .. } => {
+                // We don't know the length yet, so return the `SoundChannel`
+                this.sound_data = SoundData::Generated;
+                Ok(true)
+            }
+            SoundData::Loading { queued_plays } => {
                 queued_plays.push(queued);
                 // We don't know the length yet, so return the `SoundChannel`
                 Ok(true)
             }
             SoundData::Loaded { sound } => play_queued(queued, *sound, activation),
+            SoundData::Generated { .. } => {
+                // We don't know the length yet, so return the `SoundChannel`
+                Ok(true)
+            }
+        }
+    }
+
+    pub fn load_called(self, context: &mut UpdateContext<'_, 'gc>) {
+        let mut this = self.0.write(context.gc_context);
+        match &mut this.sound_data {
+            SoundData::Empty => {
+                this.sound_data = SoundData::Loading {
+                    queued_plays: Vec::new(),
+                };
+            }
+            _ => {
+                panic!("Tried to load sound into non-empty sound");
+            }
         }
     }
 
@@ -126,7 +149,10 @@ impl<'gc> SoundObject<'gc> {
         let mut this = self.0.write(context.gc_context);
         let mut activation = Activation::from_nothing(context.reborrow());
         match &mut this.sound_data {
-            SoundData::NotLoaded { queued_plays } => {
+            SoundData::Empty => {
+                this.sound_data = SoundData::Loaded { sound };
+            }
+            SoundData::Loading { queued_plays } => {
                 for queued in std::mem::take(queued_plays) {
                     play_queued(queued, sound, &mut activation)?;
                 }
@@ -134,6 +160,9 @@ impl<'gc> SoundObject<'gc> {
             }
             SoundData::Loaded { sound: old_sound } => {
                 panic!("Tried to replace sound {old_sound:?} with {sound:?}")
+            }
+            SoundData::Generated { .. } => {
+                panic!("Tried to replace generated sound with {sound:?}")
             }
         }
         Ok(())
