@@ -691,7 +691,7 @@ impl<'gc> NetStream<'gc> {
                         FlvSoundFormat::Nellymoser => AudioCompression::Nellymoser,
                         FlvSoundFormat::G711ALawPCM => return Err(NetstreamError::UnknownCodec),
                         FlvSoundFormat::G711MuLawPCM => return Err(NetstreamError::UnknownCodec),
-                        FlvSoundFormat::Aac => return Err(NetstreamError::UnknownCodec),
+                        FlvSoundFormat::Aac => AudioCompression::Aac,
                         FlvSoundFormat::Speex => AudioCompression::Speex,
                         FlvSoundFormat::MP38kHz => AudioCompression::Mp3,
                         FlvSoundFormat::DeviceSpecific => return Err(NetstreamError::UnknownCodec),
