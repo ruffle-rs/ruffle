@@ -12,6 +12,7 @@ pub struct Shaders {
     /// avoid changing initially-in-range rgb values (regadless of whether
     /// dividing by the alpha value would produce an out-of-range value).
     pub bitmap_shader: wgpu::ShaderModule,
+    pub bitmap_uv_shader: wgpu::ShaderModule,
     pub gradient_shader: wgpu::ShaderModule,
     pub copy_srgb_shader: wgpu::ShaderModule,
     pub copy_shader: wgpu::ShaderModule,
@@ -30,6 +31,11 @@ impl Shaders {
             device,
             "bitmap.wgsl",
             include_str!("../shaders/bitmap.wgsl"),
+        );
+        let bitmap_uv_shader = make_shader(
+            device,
+            "bitmap_uvt.wgsl",
+            include_str!("../shaders/bitmap_uvt.wgsl"),
         );
         let copy_srgb_shader = make_shader(
             device,
@@ -83,6 +89,7 @@ impl Shaders {
         Self {
             color_shader,
             bitmap_shader,
+            bitmap_uv_shader,
             gradient_shader,
             copy_srgb_shader,
             copy_shader,

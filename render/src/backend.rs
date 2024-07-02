@@ -68,6 +68,10 @@ pub trait RenderBackend: Downcast {
         false
     }
 
+    fn is_shape_uvt_supported(&self) -> bool {
+        false
+    }
+
     fn submit_frame(
         &mut self,
         clear: swf::Color,

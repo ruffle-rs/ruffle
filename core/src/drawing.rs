@@ -48,6 +48,14 @@ impl Drawing {
         }
     }
 
+    pub fn current_fill(&self) -> Option<&DrawingFill> {
+        self.current_fill.as_ref()
+    }
+
+    pub fn current_fill_mut(&mut self) -> Option<&mut DrawingFill> {
+        self.current_fill.as_mut()
+    }
+
     pub fn from_swf_shape(shape: &swf::Shape) -> Self {
         let mut this = Self {
             render_handle: RefCell::new(None),
@@ -88,7 +96,9 @@ impl Drawing {
                     style,
                     commands,
                     winding_rule,
+                    uvt_data,
                 } => {
+                    assert_eq!(uvt_data, None, "SWF shape should not have uvt data");
                     this.set_winding_rule(winding_rule);
                     this.set_fill_style(Some(style.clone()));
 
@@ -146,6 +156,7 @@ impl Drawing {
             self.current_fill = Some(DrawingFill {
                 style,
                 commands: vec![DrawCommand::MoveTo(self.cursor)],
+                uvt_data: None,
             });
         }
         self.fill_start = self.cursor;
@@ -163,6 +174,28 @@ impl Drawing {
         self.dirty.set(true);
         self.cursor = Point::ZERO;
         self.fill_start = Point::ZERO;
+    }
+
+    /// Helper method to apply the fills/bounds from the temporary
+    /// drawing we use with `Graphics.drawTriangles()`.
+    /// This avoids disturbing any in-progress lines/fills in the
+    /// current drawing, which can be continued after the 'drawTriangles'
+    /// call
+    pub fn apply_temp_triangle_drawing(&mut self, other: Drawing, uvt_data: Option<Vec<f32>>) {
+        assert_eq!(
+            other.paths.len(),
+            0,
+            "Called extend_fill_and_path with existing paths"
+        );
+        if let Some(mut fill) = other.current_fill {
+            if let Some(uvt_data) = uvt_data {
+                fill.set_uvt_data(uvt_data);
+            }
+            self.paths.push(DrawingPath::Fill(fill));
+        }
+
+        self.shape_bounds = other.shape_bounds.union(&self.shape_bounds);
+        self.edge_bounds = other.edge_bounds.union(&self.edge_bounds);
     }
 
     pub fn set_line_style(&mut self, style: Option<LineStyle>) {
@@ -251,6 +284,7 @@ impl Drawing {
                             style: &fill.style,
                             commands: fill.commands.to_owned(),
                             winding_rule: FillRule::EvenOdd,
+                            uvt_data: fill.uvt_data.clone(),
                         });
                     }
                     DrawingPath::Line(line) => {
@@ -268,6 +302,7 @@ impl Drawing {
                     style: &fill.style,
                     commands: fill.commands.to_owned(),
                     winding_rule: FillRule::EvenOdd,
+                    uvt_data: fill.uvt_data.clone(),
                 })
             }
 
@@ -430,9 +465,24 @@ impl BitmapSource for Drawing {
 }
 
 #[derive(Debug, Clone)]
-struct DrawingFill {
+pub struct DrawingFill {
     style: FillStyle,
     commands: Vec<DrawCommand>,
+    uvt_data: Option<Vec<f32>>,
+}
+
+impl DrawingFill {
+    pub fn style(&self) -> &FillStyle {
+        &self.style
+    }
+
+    pub fn commands(&self) -> &[DrawCommand] {
+        &self.commands
+    }
+
+    pub fn set_uvt_data(&mut self, data: Vec<f32>) {
+        self.uvt_data = Some(data);
+    }
 }
 
 #[derive(Debug, Clone)]

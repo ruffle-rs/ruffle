@@ -45,20 +45,27 @@ impl ShapeTessellator {
         self.lyon_mesh = VertexBuffers::new();
 
         for path in shape.paths {
-            let (fill_style, lyon_path, next_is_stroke) = match &path {
+            let (fill_style, lyon_path, next_is_stroke, has_uvt) = match &path {
                 DrawPath::Fill {
                     style,
                     commands,
                     winding_rule: _,
-                } => (*style, ruffle_path_to_lyon_path(commands, true), false),
+                    uvt_data,
+                } => (
+                    *style,
+                    ruffle_path_to_lyon_path(commands, true, uvt_data.clone()),
+                    false,
+                    uvt_data.is_some(),
+                ),
                 DrawPath::Stroke {
                     style,
                     commands,
                     is_closed,
                 } => (
                     style.fill_style(),
-                    ruffle_path_to_lyon_path(commands, *is_closed),
+                    ruffle_path_to_lyon_path(commands, *is_closed, None),
                     true,
+                    false,
                 ),
             };
 
@@ -115,16 +122,19 @@ impl ShapeTessellator {
                 } => {
                     if let Some(bitmap) = bitmap_source.bitmap_size(*id) {
                         (
-                            DrawType::Bitmap(Bitmap {
-                                matrix: swf_bitmap_to_gl_matrix(
-                                    (*matrix).into(),
-                                    bitmap.width.into(),
-                                    bitmap.height.into(),
-                                ),
-                                bitmap_id: *id,
-                                is_smoothed: *is_smoothed,
-                                is_repeating: *is_repeating,
-                            }),
+                            DrawType::Bitmap {
+                                bitmap: Bitmap {
+                                    matrix: swf_bitmap_to_gl_matrix(
+                                        (*matrix).into(),
+                                        bitmap.width.into(),
+                                        bitmap.height.into(),
+                                    ),
+                                    bitmap_id: *id,
+                                    is_smoothed: *is_smoothed,
+                                    is_repeating: *is_repeating,
+                                },
+                                has_uvt,
+                            },
                             swf::Color::WHITE,
                             true,
                         )
@@ -263,7 +273,10 @@ pub enum DrawType {
         matrix: [[f32; 3]; 3],
         gradient: usize,
     },
-    Bitmap(Bitmap),
+    Bitmap {
+        bitmap: Bitmap,
+        has_uvt: bool,
+    },
 }
 
 impl DrawType {
@@ -290,6 +303,7 @@ pub struct Vertex {
     pub x: f32,
     pub y: f32,
     pub color: swf::Color,
+    pub attrs: Vec<f32>,
 }
 
 #[derive(Clone, Debug)]
@@ -354,13 +368,44 @@ fn swf_bitmap_to_gl_matrix(
     [[a, d, 0.0], [b, e, 0.0], [c, f, 1.0]]
 }
 
-fn ruffle_path_to_lyon_path(commands: &[DrawCommand], is_closed: bool) -> Path {
+fn ruffle_path_to_lyon_path(
+    commands: &[DrawCommand],
+    is_closed: bool,
+    uvt_data: Option<Vec<f32>>,
+) -> Path {
     fn point(point: swf::Point<swf::Twips>) -> lyon::math::Point {
         lyon::math::Point::new(point.x.to_pixels() as f32, point.y.to_pixels() as f32)
     }
 
-    let mut builder = Path::builder();
+    let mut padded_uv = None;
+
+    if let Some(uvt_data) = &uvt_data {
+        let mut padded = Vec::with_capacity(uvt_data.len());
+        for triangle_chunk in uvt_data.chunks_exact(3 * 3) {
+            padded.extend_from_slice(triangle_chunk);
+            // Duplicate the last point to account for MoveTo/LineTo
+            padded.push(triangle_chunk[0]);
+            padded.push(triangle_chunk[1]);
+            padded.push(triangle_chunk[2]);
+        }
+
+        padded_uv = Some(padded);
+    }
+
+    let num_attributes = if padded_uv.is_some() { 3 } else { 0 };
+
+    let mut builder = Path::builder_with_attributes(num_attributes);
     let mut cursor = Some(swf::Point::ZERO);
+    let mut uvt_cursor = 0;
+    let mut get_attrs = || {
+        if let Some(padded_uvt) = &padded_uv {
+            let attrs = &padded_uvt[uvt_cursor..uvt_cursor + 3];
+            uvt_cursor += 3;
+            attrs
+        } else {
+            &[]
+        }
+    };
     for command in commands {
         match command {
             DrawCommand::MoveTo(move_to) => {
@@ -371,15 +416,15 @@ fn ruffle_path_to_lyon_path(commands: &[DrawCommand], is_closed: bool) -> Path {
             }
             DrawCommand::LineTo(line_to) => {
                 if let Some(cursor) = cursor.take() {
-                    builder.begin(point(cursor));
+                    builder.begin(point(cursor), get_attrs());
                 }
-                builder.line_to(point(*line_to));
+                builder.line_to(point(*line_to), get_attrs());
             }
             DrawCommand::QuadraticCurveTo { control, anchor } => {
                 if let Some(cursor) = cursor.take() {
-                    builder.begin(point(cursor));
+                    builder.begin(point(cursor), &[]);
                 }
-                builder.quadratic_bezier_to(point(*control), point(*anchor));
+                builder.quadratic_bezier_to(point(*control), point(*anchor), &[]);
             }
             DrawCommand::CubicCurveTo {
                 control_a,
@@ -387,16 +432,16 @@ fn ruffle_path_to_lyon_path(commands: &[DrawCommand], is_closed: bool) -> Path {
                 anchor,
             } => {
                 if let Some(cursor) = cursor.take() {
-                    builder.begin(point(cursor));
+                    builder.begin(point(cursor), &[]);
                 }
-                builder.cubic_bezier_to(point(*control_a), point(*control_b), point(*anchor));
+                builder.cubic_bezier_to(point(*control_a), point(*control_b), point(*anchor), &[]);
             }
         }
     }
 
     if cursor.is_none() {
         if is_closed {
-            builder.close();
+            builder.end(true);
         } else {
             builder.end(false);
         }
@@ -425,11 +470,12 @@ struct RuffleVertexCtor {
 }
 
 impl FillVertexConstructor<Vertex> for RuffleVertexCtor {
-    fn new_vertex(&mut self, vertex: FillVertex) -> Vertex {
+    fn new_vertex(&mut self, mut vertex: FillVertex) -> Vertex {
         Vertex {
             x: vertex.position().x,
             y: vertex.position().y,
             color: self.color,
+            attrs: vertex.interpolated_attributes().to_vec(),
         }
     }
 }
@@ -440,6 +486,7 @@ impl StrokeVertexConstructor<Vertex> for RuffleVertexCtor {
             x: vertex.position().x,
             y: vertex.position().y,
             color: self.color,
+            attrs: Vec::new(),
         }
     }
 }

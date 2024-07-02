@@ -100,6 +100,23 @@ impl From<TessVertex> for PosVertex {
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
+struct PosUVTVertex {
+    position: [f32; 2],
+    uvt: [f32; 3],
+}
+
+impl From<TessVertex> for PosUVTVertex {
+    fn from(vertex: TessVertex) -> Self {
+        assert_eq!(vertex.attrs.len(), 3, "Expected 3 attributes");
+        Self {
+            position: [vertex.x, vertex.y],
+            uvt: [vertex.attrs[0], vertex.attrs[1], vertex.attrs[2]],
+        }
+    }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Pod, Zeroable)]
 struct PosColorVertex {
     position: [f32; 2],
     color: [f32; 4],
