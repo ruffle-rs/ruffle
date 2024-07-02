@@ -1,0 +1,38 @@
+Dumping loader info before anything
+    content: null
+    contentLoaderInfo: [object LoaderInfo]
+    contentLoaderInfo.actionScriptVersion: (inaccessible)
+    contentLoaderInfo.bytesLoaded: 0
+    contentLoaderInfo.bytesTotal: 0
+
+Dumping loader info after load called
+    content: null
+    contentLoaderInfo: [object LoaderInfo]
+    contentLoaderInfo.actionScriptVersion: (inaccessible)
+    contentLoaderInfo.bytesLoaded: 0
+    contentLoaderInfo.bytesTotal: 0
+
+Hello from loaded SWF!
+Dumping loader info on complete
+    content: [object MovieClip]
+    contentLoaderInfo: [object LoaderInfo]
+    contentLoaderInfo.actionScriptVersion: 3
+    contentLoaderInfo.bytesLoaded: 248
+    contentLoaderInfo.bytesTotal: 248
+
+Dumping loader info after second load called
+    content: null
+    contentLoaderInfo: [object LoaderInfo]
+    contentLoaderInfo.actionScriptVersion: (inaccessible)
+    contentLoaderInfo.bytesLoaded: 0
+    contentLoaderInfo.bytesTotal: 0
+
+Hello from loaded SWF!
+Dumping loader info on complete
+    content: [object MovieClip]
+    contentLoaderInfo: [object LoaderInfo]
+    contentLoaderInfo.actionScriptVersion: 3
+    contentLoaderInfo.bytesLoaded: 248
+    contentLoaderInfo.bytesTotal: 248
+
+returning because done === true
