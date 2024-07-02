@@ -62,7 +62,7 @@ async-channel = { workspace = true }
 jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "db88651220688d2883a90d5477048071507b0493", optional = true }
 image = { workspace = true, features = ["tiff"] }
 enum-map = { workspace = true }
-ttf-parser = "0.21"
+ttf-parser = "0.23"
 num-bigint = "0.4"
 unic-segment = "0.9.0"
 id3 = "1.14.0"
