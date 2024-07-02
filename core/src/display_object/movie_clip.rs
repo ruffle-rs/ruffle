@@ -31,8 +31,8 @@ use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::font::{Font, FontType};
 use crate::limits::ExecutionLimit;
+use crate::loader::Loader;
 use crate::loader::{self, ContentType};
-use crate::loader::{LoadManager, Loader};
 use crate::prelude::*;
 use crate::streams::NetStream;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
@@ -191,6 +191,10 @@ pub struct MovieClipData<'gc> {
 
     // If this movie was loaded from ImportAssets(2), this will be the parent movie.
     importer_movie: Option<Arc<SwfMovie>>,
+
+    /// If this movie is currently executing an ImportAssets/2.
+    /// If true, this movie should **not** execute, and should be considered as still loading.
+    awaiting_import: bool,
 }
 
 impl<'gc> MovieClip<'gc> {
@@ -227,6 +231,7 @@ impl<'gc> MovieClip<'gc> {
                 queued_tags: HashMap::new(),
                 attached_audio: None,
                 importer_movie: None,
+                awaiting_import: false,
             },
         ))
     }
@@ -269,6 +274,7 @@ impl<'gc> MovieClip<'gc> {
                 queued_tags: HashMap::new(),
                 attached_audio: None,
                 importer_movie: None,
+                awaiting_import: false,
             },
         ));
         clip.set_avm2_class(gc_context, Some(class));
@@ -314,6 +320,7 @@ impl<'gc> MovieClip<'gc> {
                 queued_tags: HashMap::new(),
                 attached_audio: None,
                 importer_movie: None,
+                awaiting_import: false,
             },
         ))
     }
@@ -369,6 +376,7 @@ impl<'gc> MovieClip<'gc> {
                 queued_tags: HashMap::new(),
                 attached_audio: None,
                 importer_movie: Some(parent.clone()),
+                awaiting_import: false,
             },
         ));
 
@@ -435,6 +443,7 @@ impl<'gc> MovieClip<'gc> {
                 queued_tags: HashMap::new(),
                 attached_audio: None,
                 importer_movie: None,
+                awaiting_import: false,
             },
         ));
 
@@ -522,6 +531,11 @@ impl<'gc> MovieClip<'gc> {
     ) -> bool {
         {
             let read = self.0.read();
+            if read.awaiting_import {
+                // No matter how much of this movie we have loaded, we must not continue preloading
+                // until the import is finished.
+                return false;
+            }
             if read.static_data.preload_progress.read().next_preload_chunk
                 >= read.static_data.swf.len() as u64
             {
@@ -757,14 +771,12 @@ impl<'gc> MovieClip<'gc> {
                     .write(context.gc_context)
                     .define_binary_data(context, reader),
                 TagCode::ImportAssets => {
-                    self.0
-                        .write(context.gc_context)
-                        .import_assets(context, reader, chunk_limit)
+                    self.import_assets(context, reader, chunk_limit)?;
+                    return Ok(ControlFlow::Exit);
                 }
                 TagCode::ImportAssets2 => {
-                    self.0
-                        .write(context.gc_context)
-                        .import_assets_2(context, reader, chunk_limit)
+                    self.import_assets_2(context, reader, chunk_limit)?;
+                    return Ok(ControlFlow::Exit);
                 }
                 TagCode::DoAbc | TagCode::DoAbc2 => self.preload_bytecode_tag(
                     tag_code,
@@ -796,7 +808,8 @@ impl<'gc> MovieClip<'gc> {
         } else {
             Ok(true)
         };
-        let is_finished = end_tag_found || result.is_err() || !result.unwrap_or_default();
+        let is_finished = !self.0.read().awaiting_import
+            && (end_tag_found || result.is_err() || !result.unwrap_or_default());
 
         self.0
             .write(context.gc_context)
@@ -1258,6 +1271,10 @@ impl<'gc> MovieClip<'gc> {
             .get(frame as usize)
             .map(|v| v.is_some())
             .unwrap_or_default()
+    }
+
+    pub fn finish_importing(self, gc_context: &Mutation<'gc>) {
+        self.0.write(gc_context).awaiting_import = false;
     }
 
     /// This sets the current preload frame of this MovieClipto a given number (resulting
@@ -4130,72 +4147,6 @@ impl<'gc, 'a> MovieClipData<'gc> {
     }
 
     #[inline]
-    fn import_assets(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc>,
-        reader: &mut SwfStream<'a>,
-        chunk_limit: &mut ExecutionLimit,
-    ) -> Result<(), Error> {
-        let import_assets = reader.read_import_assets()?;
-        self.import_assets_load(
-            context,
-            reader,
-            import_assets.0,
-            import_assets.1,
-            chunk_limit,
-        )
-    }
-
-    #[inline]
-    fn import_assets_2(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc>,
-        reader: &mut SwfStream<'a>,
-        chunk_limit: &mut ExecutionLimit,
-    ) -> Result<(), Error> {
-        let import_assets = reader.read_import_assets_2()?;
-        self.import_assets_load(
-            context,
-            reader,
-            import_assets.0,
-            import_assets.1,
-            chunk_limit,
-        )
-    }
-
-    #[inline]
-    fn import_assets_load(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc>,
-        reader: &mut SwfStream<'a>,
-        url: &swf::SwfStr,
-        exported_assets: Vec<swf::ExportedAsset>,
-        _chunk_limit: &mut ExecutionLimit,
-    ) -> Result<(), Error> {
-        let library = context.library.library_for_movie_mut(self.movie());
-
-        let asset_url = url.to_string_lossy(UTF_8);
-
-        let request = Request::get(asset_url);
-
-        for asset in exported_assets {
-            let name = asset.name.decode(reader.encoding());
-            let name = AvmString::new(context.gc_context, name);
-            let id = asset.id;
-            tracing::debug!("Importing asset: {} (ID: {})", name, id);
-
-            library.register_import(name, id);
-        }
-
-        let player = context.player.clone();
-        let fut = LoadManager::load_asset_movie(player, request, self.movie());
-
-        context.navigator.spawn_future(fut);
-
-        Ok(())
-    }
-
-    #[inline]
     fn script_limits(
         &mut self,
         reader: &mut SwfStream<'a>,
@@ -4469,6 +4420,73 @@ impl<'gc, 'a> MovieClip<'gc> {
             // from `run_eager_script_and_symbol`
             symbolclass_names.push((name, id));
         }
+        Ok(())
+    }
+
+    #[inline]
+    fn import_assets(
+        self,
+        context: &mut UpdateContext<'_, 'gc>,
+        reader: &mut SwfStream<'a>,
+        chunk_limit: &mut ExecutionLimit,
+    ) -> Result<(), Error> {
+        let import_assets = reader.read_import_assets()?;
+        self.import_assets_load(
+            context,
+            reader,
+            import_assets.0,
+            import_assets.1,
+            chunk_limit,
+        )
+    }
+
+    #[inline]
+    fn import_assets_2(
+        self,
+        context: &mut UpdateContext<'_, 'gc>,
+        reader: &mut SwfStream<'a>,
+        chunk_limit: &mut ExecutionLimit,
+    ) -> Result<(), Error> {
+        let import_assets = reader.read_import_assets_2()?;
+        self.import_assets_load(
+            context,
+            reader,
+            import_assets.0,
+            import_assets.1,
+            chunk_limit,
+        )
+    }
+
+    #[inline]
+    fn import_assets_load(
+        self,
+        context: &mut UpdateContext<'_, 'gc>,
+        reader: &mut SwfStream<'a>,
+        url: &swf::SwfStr,
+        exported_assets: Vec<swf::ExportedAsset>,
+        _chunk_limit: &mut ExecutionLimit,
+    ) -> Result<(), Error> {
+        let library = context.library.library_for_movie_mut(self.movie());
+
+        let asset_url = url.to_string_lossy(UTF_8);
+
+        let request = Request::get(asset_url);
+
+        for asset in exported_assets {
+            let name = asset.name.decode(reader.encoding());
+            let name = AvmString::new(context.gc_context, name);
+            let id = asset.id;
+            tracing::debug!("Importing asset: {} (ID: {})", name, id);
+
+            library.register_import(name, id);
+        }
+
+        let player = context.player.clone();
+        self.0.write(context.gc_context).awaiting_import = true;
+        let fut = context.load_manager.load_asset_movie(player, request, self);
+
+        context.navigator.spawn_future(fut);
+
         Ok(())
     }
 

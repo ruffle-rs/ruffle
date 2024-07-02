@@ -158,6 +158,9 @@ pub enum Error {
     #[error("Non-movie loader spawned as movie loader")]
     NotMovieLoader,
 
+    #[error("Non-import loader spawned as import loader")]
+    NotImportLoader,
+
     #[error("Non-form loader spawned as form loader")]
     NotFormLoader,
 
@@ -267,6 +270,7 @@ impl<'gc> LoadManager<'gc> {
         match self.get_loader_mut(handle).unwrap() {
             Loader::RootMovie { self_handle, .. }
             | Loader::Movie { self_handle, .. }
+            | Loader::ImportAssets { self_handle, .. }
             | Loader::Form { self_handle, .. }
             | Loader::LoadVars { self_handle, .. }
             | Loader::LoadURLLoader { self_handle, .. }
@@ -344,62 +348,18 @@ impl<'gc> LoadManager<'gc> {
     }
 
     pub fn load_asset_movie(
+        &mut self,
         player: Weak<Mutex<Player>>,
         request: Request,
-        importer_movie: Arc<SwfMovie>,
+        importer: MovieClip<'gc>,
     ) -> OwnedFuture<(), Error> {
-        let player = player
-            .upgrade()
-            .expect("Could not upgrade weak reference to player");
-
-        Box::pin(async move {
-            let fetch = player.lock().unwrap().navigator().fetch(request);
-
-            match Loader::wait_for_full_response(fetch).await {
-                Ok((body, url, _status, _redirected)) => {
-                    let content_type = ContentType::sniff(&body);
-                    tracing::info!("Loading imported movie: {:?}", url);
-                    match content_type {
-                        ContentType::Swf => {
-                            let movie = SwfMovie::from_data(&body, url.clone(), Some(url.clone()))
-                                .expect("Could not load movie");
-
-                            let movie = Arc::new(movie);
-
-                            player.lock().unwrap().mutate_with_update_context(|uc| {
-                                let clip = MovieClip::new_import_assets(uc, movie, importer_movie);
-
-                                clip.set_cur_preload_frame(uc.gc_context, 0);
-                                let mut execution_limit = ExecutionLimit::none();
-
-                                tracing::debug!("Preloading swf to run exports {:?}", url);
-
-                                // Create library for exports before preloading
-                                uc.library.library_for_movie_mut(clip.movie());
-                                let res = clip.preload(uc, &mut execution_limit);
-                                tracing::debug!(
-                                    "Preloaded swf to run exports result {:?} {}",
-                                    url,
-                                    res
-                                );
-                            });
-                            Ok(())
-                        }
-                        _ => {
-                            tracing::warn!(
-                                "Unsupported content type for ImportAssets: {:?}",
-                                content_type
-                            );
-                            Ok(())
-                        }
-                    }
-                }
-                Err(e) => Err(Error::FetchError(format!(
-                    "Could not fetch: {:?} because {:?}",
-                    e.url, e.error
-                ))),
-            }
-        })
+        let loader = Loader::ImportAssets {
+            self_handle: None,
+            importer,
+        };
+        let handle = self.add_loader(loader);
+        let loader = self.get_loader_mut(handle).unwrap();
+        loader.import_loader(player, request)
     }
 
     /// Kick off a movie clip load.
@@ -773,6 +733,16 @@ pub enum Loader<'gc> {
 
         /// Whether or not this was loaded as a result of a `Loader.loadBytes` call
         from_bytes: bool,
+    },
+
+    /// Loader that is loading another movie for importing its assets
+    ImportAssets {
+        /// The handle to refer to this loader instance.
+        #[collect(require_static)]
+        self_handle: Option<LoaderHandle>,
+
+        /// The importer that requested the assets
+        importer: MovieClip<'gc>,
     },
 
     /// Loader that is loading form data into an AVM1 object scope.
@@ -1214,6 +1184,81 @@ impl<'gc> Loader<'gc> {
             }
 
             Ok(())
+        })
+    }
+
+    /// Construct a future for the given ImportAssets loader.
+    fn import_loader(
+        &mut self,
+        player: Weak<Mutex<Player>>,
+        request: Request,
+    ) -> OwnedFuture<(), Error> {
+        let handle = match self {
+            Loader::ImportAssets { self_handle, .. } => {
+                self_handle.expect("Loader not self-introduced")
+            }
+            _ => return Box::pin(async { Err(Error::NotImportLoader) }),
+        };
+
+        let player = player
+            .upgrade()
+            .expect("Could not upgrade weak reference to player");
+
+        Box::pin(async move {
+            let fetch = player.lock().unwrap().navigator().fetch(request);
+
+            match Loader::wait_for_full_response(fetch).await {
+                Ok((body, url, _status, _redirected)) => {
+                    let content_type = ContentType::sniff(&body);
+                    tracing::info!("Loading imported movie: {:?}", url);
+                    match content_type {
+                        ContentType::Swf => {
+                            let movie = SwfMovie::from_data(&body, url.clone(), Some(url.clone()))
+                                .expect("Could not load movie");
+
+                            let movie = Arc::new(movie);
+
+                            player.lock().unwrap().mutate_with_update_context(|uc| {
+                                let importer = match uc.load_manager.get_loader(handle) {
+                                    Some(Loader::ImportAssets { importer, .. }) => *importer,
+                                    None => return,
+                                    _ => unreachable!(),
+                                };
+                                let clip =
+                                    MovieClip::new_import_assets(uc, movie, importer.movie());
+
+                                clip.set_cur_preload_frame(uc.gc_context, 0);
+                                let mut execution_limit = ExecutionLimit::none();
+
+                                tracing::debug!("Preloading swf to run exports {:?}", url);
+
+                                // Create library for exports before preloading
+                                uc.library.library_for_movie_mut(clip.movie());
+                                let res = clip.preload(uc, &mut execution_limit);
+                                tracing::debug!(
+                                    "Preloaded swf to run exports result {:?} {}",
+                                    url,
+                                    res
+                                );
+
+                                importer.finish_importing(uc.gc_context);
+                            });
+                            Ok(())
+                        }
+                        _ => {
+                            tracing::warn!(
+                                "Unsupported content type for ImportAssets: {:?}",
+                                content_type
+                            );
+                            Ok(())
+                        }
+                    }
+                }
+                Err(e) => Err(Error::FetchError(format!(
+                    "Could not fetch: {:?} because {:?}",
+                    e.url, e.error
+                ))),
+            }
         })
     }
 

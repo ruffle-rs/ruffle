@@ -1,0 +1,2 @@
+# Actual importing is part of preloading; that's not included in this count
+num_ticks = 1
