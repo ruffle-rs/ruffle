@@ -148,7 +148,7 @@ export class RuffleEmbed extends RufflePlayer {
      */
     static fromNativeEmbedElement(elem: Element): RuffleEmbed {
         const externalName = registerElement("ruffle-embed", RuffleEmbed);
-        const ruffleObj = <RuffleEmbed>document.createElement(externalName);
+        const ruffleObj = document.createElement(externalName) as RuffleEmbed;
         ruffleObj.copyElement(elem);
 
         return ruffleObj;
