@@ -1,0 +1,6 @@
+Hello from test.swf
+Guy_with_hat loaded!
+Circle loaded!
+Square loaded!
+Left eye loaded!
+Right eye loaded!

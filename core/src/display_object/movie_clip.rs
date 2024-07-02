@@ -459,6 +459,12 @@ impl<'gc> MovieClip<'gc> {
         let shared = Gc::as_ref(self.0.shared.get());
         let (swf, progress) = (&shared.swf, &shared.preload_progress);
 
+        if progress.awaiting_import.get() {
+            // No matter how much of this movie we have loaded, we must not continue preloading
+            // until the import is finished.
+            return false;
+        }
+
         if progress.next_preload_chunk.get() >= swf.len() as u64 {
             return true;
         }
@@ -531,8 +537,14 @@ impl<'gc> MovieClip<'gc> {
                 TagCode::SoundStreamHead2 => shared.sound_stream_head(reader, 2),
                 TagCode::VideoFrame => shared.preload_video_frame(context, reader),
                 TagCode::DefineBinaryData => shared.define_binary_data(context, reader),
-                TagCode::ImportAssets => self.import_assets(context, reader, chunk_limit, 1),
-                TagCode::ImportAssets2 => self.import_assets(context, reader, chunk_limit, 2),
+                TagCode::ImportAssets => {
+                    self.import_assets(context, reader, chunk_limit, 1)?;
+                    return Ok(ControlFlow::Exit);
+                }
+                TagCode::ImportAssets2 => {
+                    self.import_assets(context, reader, chunk_limit, 2)?;
+                    return Ok(ControlFlow::Exit);
+                }
                 TagCode::DoAbc | TagCode::DoAbc2 => shared.preload_bytecode_tag(tag_code, reader),
                 TagCode::SymbolClass => shared.preload_symbol_class(reader),
                 TagCode::End => {
@@ -555,7 +567,8 @@ impl<'gc> MovieClip<'gc> {
         } else {
             Ok(true)
         };
-        let is_finished = end_tag_found || result.is_err() || !result.unwrap_or_default();
+        let is_finished = !progress.awaiting_import.get()
+            && (end_tag_found || result.is_err() || !result.unwrap_or_default());
 
         shared.import_exports_of_importer(context);
 
@@ -574,6 +587,15 @@ impl<'gc> MovieClip<'gc> {
         }
 
         is_finished
+    }
+
+    pub fn finish_importing(self) {
+        self.0
+            .shared
+            .get()
+            .preload_progress
+            .awaiting_import
+            .set(false);
     }
 
     #[inline]
@@ -725,7 +747,12 @@ impl<'gc> MovieClip<'gc> {
         }
 
         let fut = LoadManager::load_asset_movie(context, request, self);
-
+        self.0
+            .shared
+            .get()
+            .preload_progress
+            .awaiting_import
+            .set(true);
         context.navigator.spawn_future(fut);
 
         Ok(())
@@ -4442,6 +4469,10 @@ struct PreloadProgress {
 
     /// The symbol we are currently asynchronously preloading.
     cur_preload_symbol: Cell<Option<CharacterId>>,
+
+    /// If this movie is currently executing an ImportAssets/2.
+    /// If true, this movie should **not** execute, and should be considered as still loading.
+    awaiting_import: Cell<bool>,
 }
 
 impl Default for PreloadProgress {
@@ -4452,6 +4483,7 @@ impl Default for PreloadProgress {
             #[cfg(feature = "timeline_debug")]
             start_pos: Cell::new(0),
             cur_preload_symbol: Cell::new(None),
+            awaiting_import: Cell::new(false),
         }
     }
 }

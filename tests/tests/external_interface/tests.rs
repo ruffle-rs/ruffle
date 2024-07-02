@@ -31,6 +31,10 @@ pub fn external_interface_avm1(
 
     loop {
         runner.tick();
+        if !runner.is_preloaded() {
+            continue;
+        }
+
         match runner.test()? {
             TestStatus::Continue => {}
             TestStatus::Sleep(duration) => sleep(duration),
@@ -99,6 +103,10 @@ pub fn external_interface_avm2(
 
     loop {
         runner.tick();
+        if !runner.is_preloaded() {
+            continue;
+        }
+
         match runner.test()? {
             TestStatus::Continue => {}
             TestStatus::Sleep(duration) => sleep(duration),

@@ -47,6 +47,7 @@ pub struct TestRunner {
     images: HashMap<String, ImageComparison>,
     remaining_iterations: u32,
     current_iteration: u32,
+    preloaded: bool,
 }
 
 impl TestRunner {
@@ -137,6 +138,7 @@ impl TestRunner {
             remaining_iterations,
             current_iteration: 0,
             options: test.options.clone(),
+            preloaded: false,
         })
     }
 
@@ -154,12 +156,16 @@ impl TestRunner {
 
     /// Tick this test forward, running any actionscript and progressing the timeline by one.
     pub fn tick(&mut self) {
-        while !self
+        if !self
             .player
             .lock()
             .unwrap()
             .preload(&mut ExecutionLimit::exhausted())
-        {}
+        {
+            self.executor.run();
+            return;
+        }
+        self.preloaded = true;
 
         if self.options.num_ticks.is_some() {
             self.player.lock().unwrap().tick(self.frame_time);
@@ -173,8 +179,15 @@ impl TestRunner {
         self.executor.run();
     }
 
+    pub fn is_preloaded(&self) -> bool {
+        self.preloaded
+    }
+
     /// After a tick, run any custom fdcommands that were queued up and perform any scheduled tests.
     pub fn test(&mut self) -> Result<TestStatus> {
+        if !self.preloaded {
+            return Ok(TestStatus::Continue);
+        }
         for command in self.fs_commands.try_iter() {
             match command {
                 FsCommand::Quit => {
