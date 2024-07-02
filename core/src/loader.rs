@@ -410,6 +410,7 @@ impl<'gc> LoadManager<'gc> {
                                     url,
                                     res
                                 );
+                                importer_movie.finish_importing();
                             });
                             Ok(())
                         }
