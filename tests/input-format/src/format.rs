@@ -80,10 +80,16 @@ pub enum AutomatedEvent {
     },
 
     /// Press a key
-    KeyDown { key_code: u8 },
+    KeyDown {
+        key_code: u8,
+        key_char: Option<char>,
+    },
 
     /// Release a key
-    KeyUp { key_code: u8 },
+    KeyUp {
+        key_code: u8,
+        key_char: Option<char>,
+    },
 
     /// Input a character code
     TextInput { codepoint: char },
