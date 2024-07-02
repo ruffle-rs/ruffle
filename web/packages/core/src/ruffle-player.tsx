@@ -19,7 +19,12 @@ import { isExtension } from "./current-script";
 import { configureBuilder } from "./internal/builder";
 import { showPanicScreen } from "./internal/ui/panic";
 import { RUFFLE_ORIGIN } from "./internal/constants";
-import { PanicError } from "./internal/errors";
+import {
+    InvalidOptionsError,
+    InvalidSwfError,
+    LoadRuffleWasmError,
+    LoadSwfError,
+} from "./internal/errors";
 
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
 
@@ -668,41 +673,9 @@ export class RufflePlayer extends HTMLElement {
             this.onRuffleDownloadProgress.bind(this),
         ).catch((e) => {
             console.error(`Serious error loading Ruffle: ${e}`);
-
-            // Serious duck typing. In error conditions, let's not make assumptions.
-            if (window.location.protocol === "file:") {
-                e.ruffleIndexError = PanicError.FileProtocol;
-            } else {
-                e.ruffleIndexError = PanicError.WasmNotFound;
-                const message = String(e.message).toLowerCase();
-                if (message.includes("mime")) {
-                    e.ruffleIndexError = PanicError.WasmMimeType;
-                } else if (
-                    message.includes("networkerror") ||
-                    message.includes("failed to fetch")
-                ) {
-                    e.ruffleIndexError = PanicError.WasmCors;
-                } else if (message.includes("disallowed by embedder")) {
-                    e.ruffleIndexError = PanicError.CSPConflict;
-                } else if (e.name === "CompileError") {
-                    e.ruffleIndexError = PanicError.InvalidWasm;
-                } else if (
-                    message.includes("could not download wasm module") &&
-                    e.name === "TypeError"
-                ) {
-                    e.ruffleIndexError = PanicError.WasmDownload;
-                } else if (e.name === "TypeError") {
-                    e.ruffleIndexError = PanicError.JavascriptConflict;
-                } else if (
-                    navigator.userAgent.includes("Edg") &&
-                    message.includes("webassembly is not defined")
-                ) {
-                    // Microsoft Edge detection.
-                    e.ruffleIndexError = PanicError.WasmDisabledMicrosoftEdge;
-                }
-            }
-            this.panic(e);
-            throw e;
+            const error = new LoadRuffleWasmError(e);
+            this.panic(error);
+            throw error;
         });
         this.newZipWriter = zipWriterClass;
         configureBuilder(builder, this.loadedConfig || {});
@@ -878,8 +851,7 @@ export class RufflePlayer extends HTMLElement {
             message: string,
         ) => asserts condition = (condition, message) => {
             if (!condition) {
-                const error = new TypeError(message);
-                error.ruffleIndexError = PanicError.JavascriptConfiguration;
+                const error = new InvalidOptionsError(message);
                 this.panic(error);
                 throw error;
             }
@@ -1981,8 +1953,6 @@ export class RufflePlayer extends HTMLElement {
             return;
         }
 
-        const errorIndex = error?.ruffleIndexError ?? PanicError.Unknown;
-
         const errorArray: Array<string | null> & {
             stackIndex: number;
             avmStackIndex: number;
@@ -2019,7 +1989,7 @@ export class RufflePlayer extends HTMLElement {
         errorArray.push(this.getPanicData());
 
         // Clears out any existing content (ie play button or canvas) and replaces it with the error screen
-        showPanicScreen(this.container, errorIndex, errorArray, this.swfUrl);
+        showPanicScreen(this.container, error, errorArray, this.swfUrl);
 
         // Do this last, just in case it causes any cascading issues.
         this.destroy();
@@ -2059,21 +2029,9 @@ export class RufflePlayer extends HTMLElement {
             div.appendChild(innerDiv);
             this.container.prepend(div);
         } else {
-            const error = new Error("Failed to fetch: " + this.swfUrl);
-            if (this.swfUrl && !this.swfUrl.protocol.includes("http")) {
-                error.ruffleIndexError = PanicError.FileProtocol;
-            } else if (invalidSwf) {
-                error.ruffleIndexError = PanicError.InvalidSwf;
-            } else if (
-                window.location.origin === this.swfUrl?.origin ||
-                // The extension's internal player page is not restricted by CORS
-                window.location.protocol.includes("extension")
-            ) {
-                error.ruffleIndexError = PanicError.SwfFetchError;
-            } else {
-                // This is a selfhosted build of Ruffle that tried to make a cross-origin request
-                error.ruffleIndexError = PanicError.SwfCors;
-            }
+            const error = invalidSwf
+                ? new InvalidSwfError(this.swfUrl)
+                : new LoadSwfError(this.swfUrl);
             this.panic(error);
         }
     }

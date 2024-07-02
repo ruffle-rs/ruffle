@@ -2,7 +2,7 @@ import { text, textAsParagraphs } from "../../i18n";
 import { createRef } from "tsx-dom";
 import { buildInfo } from "../../build-info";
 import { RUFFLE_ORIGIN } from "../constants";
-import { PanicError } from "../errors";
+import { getRuffleIndexError, PanicError } from "../errors";
 
 interface PanicLink {
     type: "open_link";
@@ -284,13 +284,13 @@ function createReportAction({
 
 export function showPanicScreen(
     container: HTMLElement,
-    errorIndex: number,
+    error: Error | null,
     errorArray: ErrorArray,
     swfUrl: URL | undefined,
 ) {
     const errorText = errorArray.join("");
     let { body, actions } = createPanicError(
-        errorIndex,
+        getRuffleIndexError(error),
         errorText,
         errorArray,
         swfUrl,
