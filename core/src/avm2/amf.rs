@@ -339,12 +339,27 @@ pub fn deserialize_value<'gc>(
             let obj = target_class.construct(activation, &[])?;
 
             for entry in elements {
+                let name = entry.name();
                 let value = deserialize_value(activation, entry.value())?;
-                obj.set_public_property(
-                    AvmString::new_utf8(activation.context.gc_context, entry.name()),
+                // Flash player logs the error and continues deserializing the rest of the object,
+                // even when calling a customer setter
+                if let Err(e) = obj.set_public_property(
+                    AvmString::new_utf8(activation.context.gc_context, name),
                     value,
                     activation,
-                )?;
+                ) {
+                    tracing::warn!(
+                        "Ignoring error deserializing AMF property for field {name:?}: {e:?}"
+                    );
+                    if let Error::AvmError(e) = e {
+                        if let Some(e) = e.as_object().and_then(|o| o.as_error_object()) {
+                            // Flash player *traces* the error (without a stacktrace)
+                            activation.context.avm_trace(
+                                &e.display().expect("Failed to display error").to_string(),
+                            );
+                        }
+                    }
+                }
             }
             obj.into()
         }
