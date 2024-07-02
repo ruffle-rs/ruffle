@@ -63,12 +63,11 @@ pub struct DispatchObjectData<'gc> {
 
 impl<'gc> DispatchObject<'gc> {
     /// Construct an empty dispatch list.
-    pub fn empty_list(mc: &Mutation<'gc>) -> Object<'gc> {
-        // TODO: we might want this to be a proper Object instance, just in case
-        let base = ScriptObjectData::custom_new(None, None);
+    pub fn empty_list(activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
+        let base = ScriptObjectData::new(activation.avm2().classes().object);
 
         DispatchObject(GcCell::new(
-            mc,
+            activation.context.gc_context,
             DispatchObjectData {
                 base,
                 dispatch: DispatchList::new(),

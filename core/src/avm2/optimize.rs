@@ -68,7 +68,7 @@ impl<'gc> OptValue<'gc> {
     pub fn of_type(class: Class<'gc>) -> Self {
         Self {
             class: Some(class),
-            vtable: Some(class.instance_vtable()),
+            vtable: Some(class.vtable()),
             ..Self::any()
         }
     }
@@ -99,7 +99,7 @@ impl<'gc> OptValue<'gc> {
             || self.class == Some(classes.uint.inner_class_definition())
             || self.class == Some(classes.number.inner_class_definition())
             || self.class == Some(classes.boolean.inner_class_definition())
-            || self.class == Some(classes.void.inner_class_definition())
+            || self.class == Some(classes.void_def)
     }
 
     pub fn merged_with(self, other: OptValue<'gc>) -> OptValue<'gc> {
@@ -243,7 +243,6 @@ pub fn optimize<'gc>(
         pub uint: Class<'gc>,
         pub number: Class<'gc>,
         pub boolean: Class<'gc>,
-        pub class: Class<'gc>,
         pub string: Class<'gc>,
         pub array: Class<'gc>,
         pub function: Class<'gc>,
@@ -256,7 +255,6 @@ pub fn optimize<'gc>(
         uint: activation.avm2().classes().uint.inner_class_definition(),
         number: activation.avm2().classes().number.inner_class_definition(),
         boolean: activation.avm2().classes().boolean.inner_class_definition(),
-        class: activation.avm2().classes().class.inner_class_definition(),
         string: activation.avm2().classes().string.inner_class_definition(),
         array: activation.avm2().classes().array.inner_class_definition(),
         function: activation
@@ -264,7 +262,7 @@ pub fn optimize<'gc>(
             .classes()
             .function
             .inner_class_definition(),
-        void: activation.avm2().classes().void.inner_class_definition(),
+        void: activation.avm2().classes().void_def,
         namespace: activation
             .avm2()
             .classes()
@@ -280,33 +278,30 @@ pub fn optimize<'gc>(
     // but this works since it's guaranteed to be set in `Activation::from_method`.
     let this_value = activation.local_register(0);
 
-    let (this_class, this_vtable) = if let Some(this_class) = activation.subclass_object() {
+    let this_class = if let Some(this_class) = activation.subclass_object() {
         if this_value.is_of_type(activation, this_class.inner_class_definition()) {
-            (
-                Some(this_class),
-                Some(this_class.inner_class_definition().instance_vtable()),
-            )
-        } else if this_value
-            .as_object()
-            .and_then(|o| o.as_class_object())
-            .map(|c| c.inner_class_definition() == this_class.inner_class_definition())
-            .unwrap_or(false)
-        {
-            // Static method
-            (
-                Some(activation.avm2().classes().class),
-                Some(this_class.class_vtable()),
-            )
+            Some(this_class.inner_class_definition())
+        } else if let Some(this_object) = this_value.as_object() {
+            if this_object
+                .as_class_object()
+                .map(|c| c.inner_class_definition() == this_class.inner_class_definition())
+                .unwrap_or(false)
+            {
+                // Static method
+                Some(this_object.instance_class())
+            } else {
+                None
+            }
         } else {
-            (None, None)
+            None
         }
     } else {
-        (None, None)
+        None
     };
 
     let this_value = OptValue {
-        class: this_class.map(|c| c.inner_class_definition()),
-        vtable: this_vtable,
+        class: this_class,
+        vtable: this_class.map(|cls| cls.vtable()),
         contains_valid_integer: false,
         contains_valid_unsigned: false,
         null_state: NullState::NotNull,
@@ -691,9 +686,11 @@ pub fn optimize<'gc>(
             Op::NewFunction { .. } => {
                 stack.push_class_not_null(types.function);
             }
-            Op::NewClass { .. } => {
+            Op::NewClass { class } => {
+                let c_class = class.c_class().expect("NewClass holds an i_class");
+
                 stack.pop();
-                stack.push_class_not_null(types.class);
+                stack.push_class_not_null(c_class);
             }
             Op::NewCatch { .. } => {
                 // Avoid handling for now
@@ -861,7 +858,7 @@ pub fn optimize<'gc>(
                 if !multiname.has_lazy_component() && has_simple_scoping {
                     let outer_scope = activation.outer();
                     if !outer_scope.is_empty() {
-                        if let Some(this_vtable) = this_vtable {
+                        if let Some(this_vtable) = this_class.map(|cls| cls.vtable()) {
                             if this_vtable.has_trait(&multiname) {
                                 *op = Op::GetScopeObject { index: 0 };
 
@@ -880,11 +877,7 @@ pub fn optimize<'gc>(
                                 *op = Op::GetOuterScope { index };
 
                                 stack_push_done = true;
-                                if let Some(class) = class {
-                                    stack.push_class(class);
-                                } else {
-                                    stack.push_any();
-                                }
+                                stack.push_class(class);
                             } else {
                                 // If `get_entry_for_multiname` returned `Some(None)`, there was
                                 // a `with` scope in the outer ScopeChain- abort optimization.
@@ -1306,11 +1299,7 @@ pub fn optimize<'gc>(
                     let global_scope = outer_scope.get_unchecked(0);
 
                     stack_push_done = true;
-                    if let Some(class) = global_scope.values().instance_class() {
-                        stack.push_class(class);
-                    } else {
-                        stack.push_any();
-                    }
+                    stack.push_class(global_scope.values().instance_class());
                 }
 
                 if !stack_push_done {
@@ -1324,26 +1313,24 @@ pub fn optimize<'gc>(
                 if !outer_scope.is_empty() {
                     let global_scope = outer_scope.get_unchecked(0);
 
-                    if let Some(class) = global_scope.values().instance_class() {
-                        let mut value_class =
-                            class.instance_vtable().slot_classes()[*slot_id as usize];
-                        let resolved_value_class = value_class.get_class(activation);
-                        if let Ok(class) = resolved_value_class {
-                            stack_push_done = true;
+                    let class = global_scope.values().instance_class();
+                    let mut value_class = class.vtable().slot_classes()[*slot_id as usize];
+                    let resolved_value_class = value_class.get_class(activation);
+                    if let Ok(class) = resolved_value_class {
+                        stack_push_done = true;
 
-                            if let Some(class) = class {
-                                stack.push_class(class);
-                            } else {
-                                stack.push_any();
-                            }
+                        if let Some(class) = class {
+                            stack.push_class(class);
+                        } else {
+                            stack.push_any();
                         }
-
-                        class.instance_vtable().set_slot_class(
-                            activation.context.gc_context,
-                            *slot_id as usize,
-                            value_class,
-                        );
                     }
+
+                    class.vtable().set_slot_class(
+                        activation.context.gc_context,
+                        *slot_id as usize,
+                        value_class,
+                    );
                 }
 
                 if !stack_push_done {

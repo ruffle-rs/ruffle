@@ -1013,7 +1013,7 @@ impl<'gc> Value<'gc> {
         }
 
         if matches!(self, Value::Undefined) || matches!(self, Value::Null) {
-            if class == activation.avm2().classes().void.inner_class_definition() {
+            if class == activation.avm2().classes().void_def {
                 return Ok(Value::Undefined);
             }
             return Ok(Value::Null);
@@ -1024,7 +1024,7 @@ impl<'gc> Value<'gc> {
         }
 
         if let Ok(object) = self.coerce_to_object(activation) {
-            if object.is_of_type(class, &mut activation.context) {
+            if object.is_of_type(class) {
                 return Ok(*self);
             }
         }
@@ -1110,13 +1110,13 @@ impl<'gc> Value<'gc> {
         }
 
         if let Value::Undefined = self {
-            if type_object == activation.avm2().classes().void.inner_class_definition() {
+            if type_object == activation.avm2().classes().void_def {
                 return true;
             }
         }
 
         if let Ok(o) = self.coerce_to_object(activation) {
-            o.is_of_type(type_object, &mut activation.context)
+            o.is_of_type(type_object)
         } else {
             false
         }

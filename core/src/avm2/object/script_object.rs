@@ -53,9 +53,8 @@ pub struct ScriptObjectData<'gc> {
     /// Implicit prototype of this script object.
     proto: Option<Object<'gc>>,
 
-    /// The class object that this is an instance of.
-    /// If `none`, this is not an ES4 object at all.
-    instance_of: Option<ClassObject<'gc>>,
+    /// The `Class` that this is an instance of.
+    instance_class: Class<'gc>,
 
     /// The table used for non-dynamic property lookups.
     vtable: Option<VTable<'gc>>,
@@ -105,23 +104,33 @@ impl<'gc> ScriptObject<'gc> {
     /// is technically also equivalent and faster, but not recommended outside lower-level Core code)
     pub fn custom_object(
         mc: &Mutation<'gc>,
-        class: Option<ClassObject<'gc>>,
+        class: Class<'gc>,
+        class_obj: Option<ClassObject<'gc>>,
         proto: Option<Object<'gc>>,
     ) -> Object<'gc> {
-        ScriptObject(GcCell::new(mc, ScriptObjectData::custom_new(proto, class))).into()
+        ScriptObject(GcCell::new(
+            mc,
+            ScriptObjectData::custom_new(class, proto, class_obj),
+        ))
+        .into()
     }
 
     /// A special case for `newcatch` implementation. Basically a variable (q)name
     /// which maps to slot 1.
-    pub fn catch_scope(mc: &Mutation<'gc>, qname: &QName<'gc>) -> Object<'gc> {
+    pub fn catch_scope(activation: &mut Activation<'_, 'gc>, qname: &QName<'gc>) -> Object<'gc> {
         // TODO: use a proper ClassObject here; purposefully crafted bytecode
         // can observe (the lack of) it.
-        let mut base = ScriptObjectData::custom_new(None, None);
-        let vt = VTable::newcatch(mc, qname);
+        let mut base = ScriptObjectData::custom_new(
+            activation.avm2().classes().object.inner_class_definition(),
+            None,
+            None,
+        );
+
+        let vt = VTable::newcatch(activation.context.gc_context, qname);
         base.set_vtable(vt);
         base.install_instance_slots();
 
-        ScriptObject(GcCell::new(mc, base)).into()
+        ScriptObject(GcCell::new(activation.context.gc_context, base)).into()
     }
 }
 
@@ -129,7 +138,11 @@ impl<'gc> ScriptObjectData<'gc> {
     /// Create new object data of a given class.
     /// This is a low-level function used to implement things like object allocators.
     pub fn new(instance_of: ClassObject<'gc>) -> Self {
-        Self::custom_new(Some(instance_of.prototype()), Some(instance_of))
+        Self::custom_new(
+            instance_of.inner_class_definition(),
+            Some(instance_of.prototype()),
+            Some(instance_of),
+        )
     }
 
     /// Create new custom object data of a given possibly-none class and prototype.
@@ -137,13 +150,17 @@ impl<'gc> ScriptObjectData<'gc> {
     /// This should *not* be used, unless you really need
     /// to do something weird or lazily initialize the object.
     /// You shouldn't let scripts observe this weirdness.
-    pub fn custom_new(proto: Option<Object<'gc>>, instance_of: Option<ClassObject<'gc>>) -> Self {
+    pub fn custom_new(
+        instance_class: Class<'gc>,
+        proto: Option<Object<'gc>>,
+        instance_of: Option<ClassObject<'gc>>,
+    ) -> Self {
         ScriptObjectData {
             values: Default::default(),
             slots: Vec::new(),
             bound_methods: Vec::new(),
             proto,
-            instance_of,
+            instance_class,
             vtable: instance_of.map(|cls| cls.instance_vtable()),
         }
     }
@@ -390,13 +407,9 @@ impl<'gc> ScriptObjectData<'gc> {
         *self.bound_methods.get_mut(disp_id as usize).unwrap() = Some(function);
     }
 
-    /// Get the class object for this object, if it has one.
-    pub fn instance_of(&self) -> Option<ClassObject<'gc>> {
-        self.instance_of
-    }
-
-    pub fn instance_class(&self) -> Option<Class<'gc>> {
-        self.instance_of.map(|cls| cls.inner_class_definition())
+    /// Get the `Class` for this object.
+    pub fn instance_class(&self) -> Class<'gc> {
+        self.instance_class
     }
 
     /// Get the vtable for this object, if it has one.
@@ -405,15 +418,7 @@ impl<'gc> ScriptObjectData<'gc> {
     }
 
     pub fn is_sealed(&self) -> bool {
-        self.instance_class()
-            .map(|cls| cls.is_sealed())
-            .unwrap_or(false)
-    }
-
-    /// Set the class object for this object.
-    pub fn set_instance_of(&mut self, instance_of: ClassObject<'gc>, vtable: VTable<'gc>) {
-        self.instance_of = Some(instance_of);
-        self.vtable = Some(vtable);
+        self.instance_class().is_sealed()
     }
 
     pub fn set_vtable(&mut self, vtable: VTable<'gc>) {
@@ -421,12 +426,7 @@ impl<'gc> ScriptObjectData<'gc> {
     }
 
     pub fn debug_class_name(&self) -> Box<dyn std::fmt::Debug + 'gc> {
-        let class_name = self.instance_class().map(|cls| cls.debug_name());
-
-        match class_name {
-            Some(class_name) => Box::new(class_name),
-            None => Box::new("<None>"),
-        }
+        Box::new(self.instance_class().debug_name())
     }
 }
 

@@ -200,10 +200,7 @@ pub fn get_qualified_class_name<'gc>(
 
     let class = match obj.as_class_object() {
         Some(class) => class.inner_class_definition(),
-        None => match obj.instance_class() {
-            Some(cls) => cls,
-            None => return Ok(Value::Null),
-        },
+        None => obj.instance_class(),
     };
 
     Ok(class
@@ -225,10 +222,7 @@ pub fn get_qualified_superclass_name<'gc>(
 
     let class = match obj.as_class_object() {
         Some(class) => class.inner_class_definition(),
-        None => match obj.instance_class() {
-            Some(cls) => cls,
-            None => return Ok(Value::Null),
-        },
+        None => obj.instance_class(),
     };
 
     if let Some(super_class) = class.super_class() {
