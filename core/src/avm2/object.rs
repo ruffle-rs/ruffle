@@ -1396,7 +1396,7 @@ impl<'gc> Object<'gc> {
             Self::SoundChannelObject(o) => WeakObject::SoundChannelObject(SoundChannelObjectWeak(GcCell::downgrade(o.0))),
             Self::BitmapDataObject(o) => WeakObject::BitmapDataObject(BitmapDataObjectWeak(GcCell::downgrade(o.0))),
             Self::DateObject(o) => WeakObject::DateObject(DateObjectWeak(Gc::downgrade(o.0))),
-            Self::DictionaryObject(o) => WeakObject::DictionaryObject(DictionaryObjectWeak(GcCell::downgrade(o.0))),
+            Self::DictionaryObject(o) => WeakObject::DictionaryObject(DictionaryObjectWeak(Gc::downgrade(o.0))),
             Self::QNameObject(o) => WeakObject::QNameObject(QNameObjectWeak(GcCell::downgrade(o.0))),
             Self::TextFormatObject(o) => WeakObject::TextFormatObject(TextFormatObjectWeak(Gc::downgrade(o.0))),
             Self::ProxyObject(o) => WeakObject::ProxyObject(ProxyObjectWeak(Gc::downgrade(o.0))),
