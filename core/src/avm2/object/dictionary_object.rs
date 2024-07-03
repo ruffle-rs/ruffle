@@ -8,7 +8,8 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::AvmString;
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
+use gc_arena::barrier::unlock;
+use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates Dictionary objects.
@@ -16,9 +17,9 @@ pub fn dictionary_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class);
+    let base = ScriptObjectData::new(class).into();
 
-    Ok(DictionaryObject(GcCell::new(
+    Ok(DictionaryObject(Gc::new(
         activation.context.gc_context,
         DictionaryObjectData { base },
     ))
@@ -32,16 +33,16 @@ pub fn dictionary_allocator<'gc>(
 /// keys are objects instead of strings.
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct DictionaryObject<'gc>(pub GcCell<'gc, DictionaryObjectData<'gc>>);
+pub struct DictionaryObject<'gc>(pub Gc<'gc, DictionaryObjectData<'gc>>);
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
-pub struct DictionaryObjectWeak<'gc>(pub GcWeakCell<'gc, DictionaryObjectData<'gc>>);
+pub struct DictionaryObjectWeak<'gc>(pub GcWeak<'gc, DictionaryObjectData<'gc>>);
 
 impl fmt::Debug for DictionaryObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("DictionaryObject")
-            .field("ptr", &self.0.as_ptr())
+            .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
 }
@@ -50,15 +51,15 @@ impl fmt::Debug for DictionaryObject<'_> {
 #[collect(no_drop)]
 pub struct DictionaryObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: RefLock<ScriptObjectData<'gc>>,
 }
 
 impl<'gc> DictionaryObject<'gc> {
     /// Retrieve a value in the dictionary's object space.
     pub fn get_property_by_object(self, name: Object<'gc>) -> Value<'gc> {
         self.0
-            .read()
             .base
+            .borrow()
             .values
             .as_hashmap()
             .get(&DynamicKey::Object(name))
@@ -69,26 +70,22 @@ impl<'gc> DictionaryObject<'gc> {
 
     /// Set a value in the dictionary's object space.
     pub fn set_property_by_object(self, name: Object<'gc>, value: Value<'gc>, mc: &Mutation<'gc>) {
-        self.0
-            .write(mc)
-            .base
-            .values
-            .insert(DynamicKey::Object(name), value);
+        let mut write = unlock!(Gc::write(mc, self.0), DictionaryObjectData, base).borrow_mut();
+
+        write.values.insert(DynamicKey::Object(name), value);
     }
 
     /// Delete a value from the dictionary's object space.
     pub fn delete_property_by_object(self, name: Object<'gc>, mc: &Mutation<'gc>) {
-        self.0
-            .write(mc)
-            .base
-            .values
-            .remove(&DynamicKey::Object(name));
+        let mut write = unlock!(Gc::write(mc, self.0), DictionaryObjectData, base).borrow_mut();
+
+        write.values.remove(&DynamicKey::Object(name));
     }
 
     pub fn has_property_by_object(self, name: Object<'gc>) -> bool {
         self.0
-            .read()
             .base
+            .borrow()
             .values
             .as_hashmap()
             .get(&DynamicKey::Object(name))
@@ -98,15 +95,15 @@ impl<'gc> DictionaryObject<'gc> {
 
 impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
     fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        Ref::map(self.0.read(), |read| &read.base)
+        self.0.base.borrow()
     }
 
     fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        RefMut::map(self.0.write(mc), |write| &mut write.base)
+        unlock!(Gc::write(mc, self.0), DictionaryObjectData, base).borrow_mut()
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.as_ptr() as *const ObjectPtr
+        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
     fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
@@ -130,12 +127,12 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
     fn get_enumerant_value(
         self,
         index: u32,
-        activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(*self
             .0
-            .write(activation.context.gc_context)
             .base
+            .borrow()
             .values
             .value_at(index as usize)
             .unwrap_or(&Value::Undefined))
