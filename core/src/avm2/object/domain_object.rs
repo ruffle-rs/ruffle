@@ -7,7 +7,11 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
+use gc_arena::barrier::unlock;
+use gc_arena::{
+    lock::{Lock, RefLock},
+    Collect, Gc, GcWeak, Mutation,
+};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates AppDomain objects.
@@ -16,27 +20,30 @@ pub fn application_domain_allocator<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let domain = activation.domain();
-    let base = ScriptObjectData::new(class);
+    let base = ScriptObjectData::new(class).into();
 
-    Ok(DomainObject(GcCell::new(
+    Ok(DomainObject(Gc::new(
         activation.context.gc_context,
-        DomainObjectData { base, domain },
+        DomainObjectData {
+            base,
+            domain: Lock::new(domain),
+        },
     ))
     .into())
 }
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct DomainObject<'gc>(pub GcCell<'gc, DomainObjectData<'gc>>);
+pub struct DomainObject<'gc>(pub Gc<'gc, DomainObjectData<'gc>>);
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
-pub struct DomainObjectWeak<'gc>(pub GcWeakCell<'gc, DomainObjectData<'gc>>);
+pub struct DomainObjectWeak<'gc>(pub GcWeak<'gc, DomainObjectData<'gc>>);
 
 impl fmt::Debug for DomainObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("DomainObject")
-            .field("ptr", &self.0.as_ptr())
+            .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
 }
@@ -45,10 +52,10 @@ impl fmt::Debug for DomainObject<'_> {
 #[collect(no_drop)]
 pub struct DomainObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: RefLock<ScriptObjectData<'gc>>,
 
     /// The domain this object holds
-    domain: Domain<'gc>,
+    domain: Lock<Domain<'gc>>,
 }
 
 impl<'gc> DomainObject<'gc> {
@@ -61,10 +68,13 @@ impl<'gc> DomainObject<'gc> {
         domain: Domain<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().application_domain;
-        let base = ScriptObjectData::new(class);
-        let this: Object<'gc> = DomainObject(GcCell::new(
+        let base = ScriptObjectData::new(class).into();
+        let this: Object<'gc> = DomainObject(Gc::new(
             activation.context.gc_context,
-            DomainObjectData { base, domain },
+            DomainObjectData {
+                base,
+                domain: Lock::new(domain),
+            },
         ))
         .into();
         this.install_instance_slots(activation.context.gc_context);
@@ -81,23 +91,23 @@ impl<'gc> DomainObject<'gc> {
 
 impl<'gc> TObject<'gc> for DomainObject<'gc> {
     fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        Ref::map(self.0.read(), |read| &read.base)
+        self.0.base.borrow()
     }
 
     fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        RefMut::map(self.0.write(mc), |write| &mut write.base)
+        unlock!(Gc::write(mc, self.0), DomainObjectData, base).borrow_mut()
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.as_ptr() as *const ObjectPtr
+        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
     fn as_application_domain(&self) -> Option<Domain<'gc>> {
-        Some(self.0.read().domain)
+        Some(self.0.domain.get())
     }
 
     fn init_application_domain(&self, mc: &Mutation<'gc>, domain: Domain<'gc>) {
-        self.0.write(mc).domain = domain;
+        unlock!(Gc::write(mc, self.0), DomainObjectData, domain).set(domain);
     }
 
     fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
