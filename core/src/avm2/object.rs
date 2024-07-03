@@ -1407,7 +1407,7 @@ impl<'gc> Object<'gc> {
             Self::VertexBuffer3DObject(o) => WeakObject::VertexBuffer3DObject(VertexBuffer3DObjectWeak(Gc::downgrade(o.0))),
             Self::TextureObject(o) => WeakObject::TextureObject(TextureObjectWeak(Gc::downgrade(o.0))),
             Self::Program3DObject(o) => WeakObject::Program3DObject(Program3DObjectWeak(Gc::downgrade(o.0))),
-            Self::NetStreamObject(o) => WeakObject::NetStreamObject(NetStreamObjectWeak(GcCell::downgrade(o.0))),
+            Self::NetStreamObject(o) => WeakObject::NetStreamObject(NetStreamObjectWeak(Gc::downgrade(o.0))),
             Self::NetConnectionObject(o) => WeakObject::NetConnectionObject(NetConnectionObjectWeak(Gc::downgrade(o.0))),
             Self::ResponderObject(o) => WeakObject::ResponderObject(ResponderObjectWeak(GcCell::downgrade(o.0))),
             Self::ShaderDataObject(o) => WeakObject::ShaderDataObject(ShaderDataObjectWeak(Gc::downgrade(o.0))),
