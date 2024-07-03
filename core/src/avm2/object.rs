@@ -1409,7 +1409,7 @@ impl<'gc> Object<'gc> {
             Self::Program3DObject(o) => WeakObject::Program3DObject(Program3DObjectWeak(Gc::downgrade(o.0))),
             Self::NetStreamObject(o) => WeakObject::NetStreamObject(NetStreamObjectWeak(Gc::downgrade(o.0))),
             Self::NetConnectionObject(o) => WeakObject::NetConnectionObject(NetConnectionObjectWeak(Gc::downgrade(o.0))),
-            Self::ResponderObject(o) => WeakObject::ResponderObject(ResponderObjectWeak(GcCell::downgrade(o.0))),
+            Self::ResponderObject(o) => WeakObject::ResponderObject(ResponderObjectWeak(Gc::downgrade(o.0))),
             Self::ShaderDataObject(o) => WeakObject::ShaderDataObject(ShaderDataObjectWeak(Gc::downgrade(o.0))),
             Self::SocketObject(o) => WeakObject::SocketObject(SocketObjectWeak(Gc::downgrade(o.0))),
             Self::FileReferenceObject(o) => WeakObject::FileReferenceObject(FileReferenceObjectWeak(Gc::downgrade(o.0))),
