@@ -9,21 +9,22 @@ use crate::local_connection::{LocalConnectionHandle, LocalConnections};
 use crate::string::AvmString;
 use core::fmt;
 use flash_lso::types::Value as AmfValue;
-use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
-use std::cell::{Ref, RefMut};
+use gc_arena::barrier::unlock;
+use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use std::cell::{Ref, RefCell, RefMut};
 
 /// A class instance allocator that allocates LocalConnection objects.
 pub fn local_connection_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class);
+    let base = ScriptObjectData::new(class).into();
 
-    Ok(LocalConnectionObject(GcCell::new(
+    Ok(LocalConnectionObject(Gc::new(
         activation.context.gc_context,
         LocalConnectionObjectData {
             base,
-            connection_handle: None,
+            connection_handle: RefCell::new(None),
         },
     ))
     .into())
@@ -31,16 +32,16 @@ pub fn local_connection_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct LocalConnectionObject<'gc>(pub GcCell<'gc, LocalConnectionObjectData<'gc>>);
+pub struct LocalConnectionObject<'gc>(pub Gc<'gc, LocalConnectionObjectData<'gc>>);
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
-pub struct LocalConnectionObjectWeak<'gc>(pub GcWeakCell<'gc, LocalConnectionObjectData<'gc>>);
+pub struct LocalConnectionObjectWeak<'gc>(pub GcWeak<'gc, LocalConnectionObjectData<'gc>>);
 
 impl fmt::Debug for LocalConnectionObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("LocalConnectionObject")
-            .field("ptr", &self.0.as_ptr())
+            .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
 }
@@ -49,15 +50,14 @@ impl fmt::Debug for LocalConnectionObject<'_> {
 #[collect(no_drop)]
 pub struct LocalConnectionObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: RefLock<ScriptObjectData<'gc>>,
 
-    #[collect(require_static)]
-    connection_handle: Option<LocalConnectionHandle>,
+    connection_handle: RefCell<Option<LocalConnectionHandle>>,
 }
 
 impl<'gc> LocalConnectionObject<'gc> {
     pub fn is_connected(&self) -> bool {
-        self.0.read().connection_handle.is_some()
+        self.0.connection_handle.borrow().is_some()
     }
 
     pub fn connect(&self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) -> bool {
@@ -71,19 +71,14 @@ impl<'gc> LocalConnectionObject<'gc> {
             &name,
         );
         let result = connection_handle.is_some();
-        self.0
-            .write(activation.context.gc_context)
-            .connection_handle = connection_handle;
+
+        *self.0.connection_handle.borrow_mut() = connection_handle;
+
         result
     }
 
     pub fn disconnect(&self, activation: &mut Activation<'_, 'gc>) {
-        if let Some(conn_handle) = self
-            .0
-            .write(activation.context.gc_context)
-            .connection_handle
-            .take()
-        {
+        if let Some(conn_handle) = self.0.connection_handle.borrow_mut().take() {
             activation.context.local_connections.close(conn_handle);
         }
     }
@@ -150,15 +145,15 @@ impl<'gc> LocalConnectionObject<'gc> {
 
 impl<'gc> TObject<'gc> for LocalConnectionObject<'gc> {
     fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        Ref::map(self.0.read(), |read| &read.base)
+        self.0.base.borrow()
     }
 
     fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        RefMut::map(self.0.write(mc), |write| &mut write.base)
+        unlock!(Gc::write(mc, self.0), LocalConnectionObjectData, base).borrow_mut()
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.as_ptr() as *const ObjectPtr
+        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
     fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
