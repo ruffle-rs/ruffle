@@ -1399,7 +1399,7 @@ impl<'gc> Object<'gc> {
             Self::DictionaryObject(o) => WeakObject::DictionaryObject(DictionaryObjectWeak(GcCell::downgrade(o.0))),
             Self::QNameObject(o) => WeakObject::QNameObject(QNameObjectWeak(GcCell::downgrade(o.0))),
             Self::TextFormatObject(o) => WeakObject::TextFormatObject(TextFormatObjectWeak(Gc::downgrade(o.0))),
-            Self::ProxyObject(o) => WeakObject::ProxyObject(ProxyObjectWeak(GcCell::downgrade(o.0))),
+            Self::ProxyObject(o) => WeakObject::ProxyObject(ProxyObjectWeak(Gc::downgrade(o.0))),
             Self::ErrorObject(o) => WeakObject::ErrorObject(ErrorObjectWeak(GcCell::downgrade(o.0))),
             Self::Stage3DObject(o) => WeakObject::Stage3DObject(Stage3DObjectWeak(Gc::downgrade(o.0))),
             Self::Context3DObject(o) => WeakObject::Context3DObject(Context3DObjectWeak(Gc::downgrade(o.0))),
