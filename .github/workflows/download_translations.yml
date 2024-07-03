@@ -33,4 +33,6 @@ jobs:
           commit_message: 'chore: Update translations from Crowdin'
         env:
           CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Use a custom token rather than the automatic GITHUB_TOKEN, as the automatic one doesn't allow created PRs to trigger workflows
+          # By using our own token (and thus own user), workflows will run, and the PR will be able to be merged.
+          GITHUB_TOKEN: ${{ secrets.RUFFLE_BUILD_TOKEN }}
