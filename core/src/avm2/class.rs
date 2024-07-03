@@ -310,7 +310,7 @@ impl<'gc> Class<'gc> {
                 traits: Vec::new(),
                 vtable: VTable::empty(mc),
                 call_handler: None,
-                traits_loaded: true,
+                traits_loaded: false,
                 is_system: true,
                 linked_class: ClassLink::Unlinked,
                 applications: FnvHashMap::default(),
