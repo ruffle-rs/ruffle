@@ -13,7 +13,6 @@ use crate::string::{AvmAtom, AvmString, WStr};
 use gc_arena::{Collect, Mutation};
 use num_bigint::BigInt;
 use num_traits::{ToPrimitive, Zero};
-use std::cell::Ref;
 use std::mem::size_of;
 use swf::avm2::types::{DefaultValue as AbcDefaultValue, Index};
 
@@ -542,7 +541,7 @@ pub fn abc_default_value<'gc>(
 }
 
 impl<'gc> Value<'gc> {
-    pub fn as_namespace(&self) -> Result<Ref<Namespace<'gc>>, Error<'gc>> {
+    pub fn as_namespace(&self) -> Result<Namespace<'gc>, Error<'gc>> {
         match self {
             Value::Object(ns) => ns
                 .as_namespace()
