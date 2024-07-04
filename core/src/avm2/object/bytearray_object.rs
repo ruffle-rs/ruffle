@@ -243,7 +243,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         Some(self.0.storage.borrow())
     }
 
-    fn as_bytearray_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<ByteArrayStorage>> {
+    fn as_bytearray_mut(&self) -> Option<RefMut<ByteArrayStorage>> {
         Some(self.0.storage.borrow_mut())
     }
 

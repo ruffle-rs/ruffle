@@ -266,7 +266,7 @@ pub fn read_bytes<'gc>(
             .map_err(|e| e.to_avm(activation))?;
 
         let mut ba_write = bytearray
-            .as_bytearray_mut(activation.gc())
+            .as_bytearray_mut()
             .expect("Parameter must be a bytearray!");
 
         ba_write

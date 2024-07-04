@@ -2852,7 +2852,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let dm = self.domain_memory();
         let mut dm = dm
-            .as_bytearray_mut(self.context.gc_context)
+            .as_bytearray_mut()
             .expect("Bytearray storage should exist");
 
         let Ok(address) = usize::try_from(address) else {
@@ -2875,7 +2875,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let dm = self.domain_memory();
         let mut dm = dm
-            .as_bytearray_mut(self.context.gc_context)
+            .as_bytearray_mut()
             .expect("Bytearray storage should exist");
 
         let Ok(address) = usize::try_from(address) else {
@@ -2897,7 +2897,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let dm = self.domain_memory();
         let mut dm = dm
-            .as_bytearray_mut(self.context.gc_context)
+            .as_bytearray_mut()
             .expect("Bytearray storage should exist");
 
         let Ok(address) = usize::try_from(address) else {
@@ -2919,7 +2919,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let dm = self.domain_memory();
         let mut dm = dm
-            .as_bytearray_mut(self.context.gc_context)
+            .as_bytearray_mut()
             .expect("Bytearray storage should exist");
 
         let Ok(address) = usize::try_from(address) else {
@@ -2941,7 +2941,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let dm = self.domain_memory();
         let mut dm = dm
-            .as_bytearray_mut(self.context.gc_context)
+            .as_bytearray_mut()
             .expect("Bytearray storage should exist");
 
         let Ok(address) = usize::try_from(address) else {

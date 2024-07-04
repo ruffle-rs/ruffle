@@ -105,9 +105,7 @@ pub fn compute_spectrum<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let arg0 = args[0].as_object().unwrap();
-    let mut bytearray = arg0
-        .as_bytearray_mut(activation.context.gc_context)
-        .unwrap();
+    let mut bytearray = arg0.as_bytearray_mut().unwrap();
     let mut hist = activation.context.audio.get_sample_history();
 
     let fft = args.len() > 1 && args[1].coerce_to_boolean();
