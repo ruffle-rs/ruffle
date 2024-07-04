@@ -1388,7 +1388,7 @@ impl<'gc> Object<'gc> {
             Self::XmlObject(o) => WeakObject::XmlObject(XmlObjectWeak(GcCell::downgrade(o.0))),
             Self::XmlListObject(o) => WeakObject::XmlListObject(XmlListObjectWeak(GcCell::downgrade(o.0))),
             Self::RegExpObject(o) => WeakObject::RegExpObject(RegExpObjectWeak(GcCell::downgrade(o.0))),
-            Self::ByteArrayObject(o) => WeakObject::ByteArrayObject(ByteArrayObjectWeak(GcCell::downgrade(o.0))),
+            Self::ByteArrayObject(o) => WeakObject::ByteArrayObject(ByteArrayObjectWeak(Gc::downgrade(o.0))),
             Self::LoaderInfoObject(o) => WeakObject::LoaderInfoObject(LoaderInfoObjectWeak(GcCell::downgrade(o.0))),
             Self::ClassObject(o) => WeakObject::ClassObject(ClassObjectWeak(GcCell::downgrade(o.0))),
             Self::VectorObject(o) => WeakObject::VectorObject(VectorObjectWeak(GcCell::downgrade(o.0))),

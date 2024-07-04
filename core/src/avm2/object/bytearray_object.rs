@@ -7,8 +7,9 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::character::Character;
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
-use std::cell::{Ref, RefMut};
+use gc_arena::barrier::unlock;
+use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use std::cell::{Ref, RefCell, RefMut};
 
 /// A class instance allocator that allocates ByteArray objects.
 pub fn byte_array_allocator<'gc>(
@@ -38,27 +39,30 @@ pub fn byte_array_allocator<'gc>(
         unreachable!("A ByteArray subclass should have ByteArray in superclass chain")
     });
 
-    let base = ScriptObjectData::new(class);
+    let base = ScriptObjectData::new(class).into();
 
-    Ok(ByteArrayObject(GcCell::new(
+    Ok(ByteArrayObject(Gc::new(
         activation.context.gc_context,
-        ByteArrayObjectData { base, storage },
+        ByteArrayObjectData {
+            base,
+            storage: RefCell::new(storage),
+        },
     ))
     .into())
 }
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct ByteArrayObject<'gc>(pub GcCell<'gc, ByteArrayObjectData<'gc>>);
+pub struct ByteArrayObject<'gc>(pub Gc<'gc, ByteArrayObjectData<'gc>>);
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
-pub struct ByteArrayObjectWeak<'gc>(pub GcWeakCell<'gc, ByteArrayObjectData<'gc>>);
+pub struct ByteArrayObjectWeak<'gc>(pub GcWeak<'gc, ByteArrayObjectData<'gc>>);
 
 impl fmt::Debug for ByteArrayObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ByteArrayObject")
-            .field("ptr", &self.0.as_ptr())
+            .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
 }
@@ -67,9 +71,9 @@ impl fmt::Debug for ByteArrayObject<'_> {
 #[collect(no_drop)]
 pub struct ByteArrayObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: RefLock<ScriptObjectData<'gc>>,
 
-    storage: ByteArrayStorage,
+    storage: RefCell<ByteArrayStorage>,
 }
 
 impl<'gc> ByteArrayObject<'gc> {
@@ -78,13 +82,13 @@ impl<'gc> ByteArrayObject<'gc> {
         bytes: ByteArrayStorage,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().bytearray;
-        let base = ScriptObjectData::new(class);
+        let base = ScriptObjectData::new(class).into();
 
-        let instance: Object<'gc> = ByteArrayObject(GcCell::new(
+        let instance: Object<'gc> = ByteArrayObject(Gc::new(
             activation.context.gc_context,
             ByteArrayObjectData {
                 base,
-                storage: bytes,
+                storage: RefCell::new(bytes),
             },
         ))
         .into();
@@ -96,21 +100,21 @@ impl<'gc> ByteArrayObject<'gc> {
     }
 
     pub fn storage(&self) -> Ref<ByteArrayStorage> {
-        Ref::map(self.0.read(), |d| &d.storage)
+        self.0.storage.borrow()
     }
 }
 
 impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        Ref::map(self.0.read(), |read| &read.base)
+        self.0.base.borrow()
     }
 
     fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        RefMut::map(self.0.write(mc), |write| &mut write.base)
+        unlock!(Gc::write(mc, self.0), ByteArrayObjectData, base).borrow_mut()
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.as_ptr() as *const ObjectPtr
+        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
     fn get_property_local(
@@ -118,8 +122,6 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         name: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let read = self.0.read();
-
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
@@ -128,15 +130,15 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
             }
         }
 
-        read.base.get_property_local(name, activation)
+        self.0.base.borrow().get_property_local(name, activation)
     }
 
     fn get_index_property(self, index: usize) -> Option<Value<'gc>> {
-        let read = self.0.read();
-
         // ByteArrays never forward to base even for out-of-bounds access.
         Some(
-            read.storage
+            self.0
+                .storage
+                .borrow()
                 .get(index)
                 .map_or(Value::Undefined, |val| Value::Integer(val as i32)),
         )
@@ -148,13 +150,12 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mut write = self.0.write(activation.context.gc_context);
-
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
-                    write
+                    self.0
                         .storage
+                        .borrow_mut()
                         .set(index, value.coerce_to_u32(activation)? as u8);
 
                     return Ok(());
@@ -162,7 +163,13 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
             }
         }
 
-        write.base.set_property_local(name, value, activation)
+        unlock!(
+            Gc::write(activation.context.gc_context, self.0),
+            ByteArrayObjectData,
+            base
+        )
+        .borrow_mut()
+        .set_property_local(name, value, activation)
     }
 
     fn init_property_local(
@@ -171,13 +178,12 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mut write = self.0.write(activation.context.gc_context);
-
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
-                    write
+                    self.0
                         .storage
+                        .borrow_mut()
                         .set(index, value.coerce_to_u32(activation)? as u8);
 
                     return Ok(());
@@ -185,7 +191,13 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
             }
         }
 
-        write.base.init_property_local(name, value, activation)
+        unlock!(
+            Gc::write(activation.context.gc_context, self.0),
+            ByteArrayObjectData,
+            base
+        )
+        .borrow_mut()
+        .init_property_local(name, value, activation)
     }
 
     fn delete_property_local(
@@ -196,32 +208,31 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
-                    self.0
-                        .write(activation.context.gc_context)
-                        .storage
-                        .delete(index);
+                    self.0.storage.borrow_mut().delete(index);
                     return Ok(true);
                 }
             }
         }
 
-        Ok(self
-            .0
-            .write(activation.context.gc_context)
-            .base
-            .delete_property_local(name))
+        Ok(unlock!(
+            Gc::write(activation.context.gc_context, self.0),
+            ByteArrayObjectData,
+            base
+        )
+        .borrow_mut()
+        .delete_property_local(name))
     }
 
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
                 if let Ok(index) = name.parse::<usize>() {
-                    return self.0.read().storage.get(index).is_some();
+                    return self.0.storage.borrow().get(index).is_some();
                 }
             }
         }
 
-        self.0.read().base.has_own_property(name)
+        self.0.base.borrow().has_own_property(name)
     }
 
     fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
@@ -229,11 +240,11 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
     }
 
     fn as_bytearray(&self) -> Option<Ref<ByteArrayStorage>> {
-        Some(Ref::map(self.0.read(), |d| &d.storage))
+        Some(self.0.storage.borrow())
     }
 
-    fn as_bytearray_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<ByteArrayStorage>> {
-        Some(RefMut::map(self.0.write(mc), |d| &mut d.storage))
+    fn as_bytearray_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<ByteArrayStorage>> {
+        Some(self.0.storage.borrow_mut())
     }
 
     fn as_bytearray_object(&self) -> Option<ByteArrayObject<'gc>> {
