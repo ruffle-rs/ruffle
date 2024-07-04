@@ -7,7 +7,11 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
+use gc_arena::barrier::unlock;
+use gc_arena::{
+    lock::{Lock, RefLock},
+    Collect, Gc, GcWeak, Mutation,
+};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates BitmapData objects.
@@ -15,16 +19,18 @@ pub fn bitmap_data_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class);
+    let base = ScriptObjectData::new(class).into();
 
-    Ok(BitmapDataObject(GcCell::new(
+    Ok(BitmapDataObject(Gc::new(
         activation.context.gc_context,
         BitmapDataObjectData {
             base,
             // This always starts out as a dummy (invalid) BitmapDataWrapper, so
             // that custom subclasses see a disposed BitmapData before they call super().
             // The real BitmapDataWrapper is set by BitmapData.init()
-            bitmap_data: Some(BitmapDataWrapper::dummy(activation.context.gc_context)),
+            bitmap_data: Lock::new(Some(BitmapDataWrapper::dummy(
+                activation.context.gc_context,
+            ))),
         },
     ))
     .into())
@@ -32,16 +38,16 @@ pub fn bitmap_data_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct BitmapDataObject<'gc>(pub GcCell<'gc, BitmapDataObjectData<'gc>>);
+pub struct BitmapDataObject<'gc>(pub Gc<'gc, BitmapDataObjectData<'gc>>);
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
-pub struct BitmapDataObjectWeak<'gc>(pub GcWeakCell<'gc, BitmapDataObjectData<'gc>>);
+pub struct BitmapDataObjectWeak<'gc>(pub GcWeak<'gc, BitmapDataObjectData<'gc>>);
 
 impl fmt::Debug for BitmapDataObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("BitmapDataObject")
-            .field("ptr", &self.0.as_ptr())
+            .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
 }
@@ -50,9 +56,9 @@ impl fmt::Debug for BitmapDataObject<'_> {
 #[collect(no_drop)]
 pub struct BitmapDataObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: RefLock<ScriptObjectData<'gc>>,
 
-    bitmap_data: Option<BitmapDataWrapper<'gc>>,
+    bitmap_data: Lock<Option<BitmapDataWrapper<'gc>>>,
 }
 
 impl<'gc> BitmapDataObject<'gc> {
@@ -70,11 +76,11 @@ impl<'gc> BitmapDataObject<'gc> {
         bitmap_data: BitmapDataWrapper<'gc>,
         class: ClassObject<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        let instance: Object<'gc> = Self(GcCell::new(
+        let instance: Object<'gc> = Self(Gc::new(
             activation.context.gc_context,
             BitmapDataObjectData {
-                base: ScriptObjectData::new(class),
-                bitmap_data: Some(bitmap_data),
+                base: ScriptObjectData::new(class).into(),
+                bitmap_data: Lock::new(Some(bitmap_data)),
             },
         ))
         .into();
@@ -97,15 +103,15 @@ impl<'gc> BitmapDataObject<'gc> {
 
 impl<'gc> TObject<'gc> for BitmapDataObject<'gc> {
     fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        Ref::map(self.0.read(), |read| &read.base)
+        self.0.base.borrow()
     }
 
     fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        RefMut::map(self.0.write(mc), |write| &mut write.base)
+        unlock!(Gc::write(mc, self.0), BitmapDataObjectData, base).borrow_mut()
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.as_ptr() as *const ObjectPtr
+        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
     fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
@@ -113,12 +119,12 @@ impl<'gc> TObject<'gc> for BitmapDataObject<'gc> {
     }
 
     fn as_bitmap_data(&self) -> Option<BitmapDataWrapper<'gc>> {
-        self.0.read().bitmap_data
+        self.0.bitmap_data.get()
     }
 
     /// Initialize the bitmap data in this object, if it's capable of
     /// supporting said data
     fn init_bitmap_data(&self, mc: &Mutation<'gc>, new_bitmap: BitmapDataWrapper<'gc>) {
-        self.0.write(mc).bitmap_data = Some(new_bitmap)
+        unlock!(Gc::write(mc, self.0), BitmapDataObjectData, bitmap_data).set(Some(new_bitmap));
     }
 }
