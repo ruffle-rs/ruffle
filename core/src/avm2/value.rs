@@ -1138,7 +1138,7 @@ impl<'gc> Value<'gc> {
             // TODO - this should apply to (Array/Vector).indexOf, and possibility more places as well
             if let Some(xml1) = self.as_object().and_then(|obj| obj.as_xml_object()) {
                 if let Some(xml2) = other.as_object().and_then(|obj| obj.as_xml_object()) {
-                    return E4XNode::ptr_eq(*xml1.node(), *xml2.node());
+                    return E4XNode::ptr_eq(xml1.node(), xml2.node());
                 }
             }
             false

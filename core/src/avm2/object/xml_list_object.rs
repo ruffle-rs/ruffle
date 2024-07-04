@@ -11,7 +11,6 @@ use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use ruffle_wstr::WString;
 use std::cell::{Ref, RefMut};
 use std::fmt::{self, Debug};
-use std::ops::Deref;
 
 use super::{ClassObject, XmlObject};
 
@@ -103,7 +102,7 @@ impl<'gc> XmlListObject<'gc> {
     }
 
     pub fn node_child(&self, index: usize) -> Option<E4XNode<'gc>> {
-        self.0.read().children.get(index).map(|x| *x.node())
+        self.0.read().children.get(index).map(|x| x.node())
     }
 
     pub fn children(&self) -> Ref<'_, Vec<E4XOrXml<'gc>>> {
@@ -159,7 +158,7 @@ impl<'gc> XmlListObject<'gc> {
         let mut write = self.0.write(activation.gc());
 
         if write.target_dirty && !write.children.is_empty() {
-            let last_node = *write
+            let last_node = write
                 .children
                 .last()
                 .expect("At least one child exists")
@@ -167,7 +166,7 @@ impl<'gc> XmlListObject<'gc> {
 
             if let Some(parent) = last_node.parent() {
                 if let Some(XmlOrXmlListObject::Xml(target_obj)) = write.target_object {
-                    if !E4XNode::ptr_eq(*target_obj.node(), parent) {
+                    if !E4XNode::ptr_eq(target_obj.node(), parent) {
                         write.target_object = Some(XmlObject::new(parent, activation).into());
                     }
                 }
@@ -365,29 +364,10 @@ impl<'gc> E4XOrXml<'gc> {
         }
     }
 
-    pub fn node(&self) -> E4XWrapper<'_, 'gc> {
+    pub fn node(&self) -> E4XNode<'gc> {
         match self {
-            E4XOrXml::E4X(node) => E4XWrapper::E4X(*node),
-            E4XOrXml::Xml(xml) => E4XWrapper::XmlRef(xml.node()),
-        }
-    }
-}
-
-// Allows using `E4XOrXml` as an `E4XNode` via deref coercions, while
-// storing the needed `Ref` wrappers
-#[derive(Debug)]
-pub enum E4XWrapper<'a, 'gc> {
-    E4X(E4XNode<'gc>),
-    XmlRef(Ref<'a, E4XNode<'gc>>),
-}
-
-impl<'a, 'gc> Deref for E4XWrapper<'a, 'gc> {
-    type Target = E4XNode<'gc>;
-
-    fn deref(&self) -> &Self::Target {
-        match self {
-            E4XWrapper::E4X(node) => node,
-            E4XWrapper::XmlRef(node) => node,
+            E4XOrXml::E4X(node) => *node,
+            E4XOrXml::Xml(xml) => xml.node(),
         }
     }
 }
@@ -662,7 +642,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                     // 2.c. If i is greater than or equal to x.[[Length]]
                     if index >= self.length() {
                         let r = match r {
-                            Some(XmlOrXmlListObject::Xml(x)) => Some(*x.node()),
+                            Some(XmlOrXmlListObject::Xml(x)) => Some(x.node()),
                             // 2.c.i. If Type(r) is XMLList
                             Some(XmlOrXmlListObject::XmlList(x)) => {
                                 // 2.c.i.1. If r.[[Length]] is not equal to 1, return
@@ -671,7 +651,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                                 }
 
                                 // 2.c.i.2. Else let r = r[0]
-                                Some(*x.children()[0].node())
+                                Some(x.children()[0].node())
                             }
                             None => None,
                         };
@@ -755,7 +735,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                                         while j < children.len() - 1
                                             && !E4XNode::ptr_eq(
                                                 children[j],
-                                                *self.children()[index - 1].node(),
+                                                self.children()[index - 1].node(),
                                             )
                                         {
                                             // 2.c.viii.1.a.ii.1. Let j = j + 1
@@ -844,7 +824,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
 
                     // NOTE: Get x[i] for future operations. Also we need to drop ref to the children as we need to borrow as mutable later.
                     let children = self.children();
-                    let child = *children[index].node();
+                    let child = children[index].node();
                     drop(children);
 
                     // 2.e. If x[i].[[Class]] == "attribute"

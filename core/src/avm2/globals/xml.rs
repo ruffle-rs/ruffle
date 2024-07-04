@@ -841,11 +841,11 @@ pub fn insert_child_after<'gc>(
     // 3. Else if Type(child1) is XML
     if let Some(child1) = child1.as_object().and_then(|x| {
         if let Some(xml) = x.as_xml_object() {
-            return Some(*xml.node());
+            return Some(xml.node());
         // NOTE: Non-standard avmplus behavior, single element XMLLists are treated as XML objects.
         } else if let Some(list) = x.as_xml_list_object() {
             if list.length() == 1 {
-                return Some(*list.children()[0].node());
+                return Some(list.children()[0].node());
             }
         }
 
@@ -897,11 +897,11 @@ pub fn insert_child_before<'gc>(
     // 3. Else if Type(child1) is XML
     if let Some(child1) = child1.as_object().and_then(|x| {
         if let Some(xml) = x.as_xml_object() {
-            return Some(*xml.node());
+            return Some(xml.node());
         // NOTE: Non-standard avmplus behavior, single element XMLLists are treated as XML objects.
         } else if let Some(list) = x.as_xml_list_object() {
             if list.length() == 1 {
-                return Some(*list.children()[0].node());
+                return Some(list.children()[0].node());
             }
         }
 
