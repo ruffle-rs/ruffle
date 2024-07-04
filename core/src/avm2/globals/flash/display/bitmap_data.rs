@@ -335,9 +335,7 @@ pub fn copy_pixels_to_byte_array<'gc>(
         bitmap_data.check_valid(activation)?;
         let rectangle = args.get_object(activation, 0, "rect")?;
         let storage = args.get_object(activation, 1, "data")?;
-        let mut storage = storage
-            .as_bytearray_mut(activation.context.gc_context)
-            .unwrap();
+        let mut storage = storage.as_bytearray_mut().unwrap();
         let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
         operations::get_pixels_as_byte_array(
             activation,
@@ -480,7 +478,7 @@ pub fn set_pixels<'gc>(
         let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
 
         let mut ba_write = bytearray
-            .as_bytearray_mut(activation.context.gc_context)
+            .as_bytearray_mut()
             .ok_or("ArgumentError: Parameter must be a bytearray")?;
 
         operations::set_pixels_from_byte_array(

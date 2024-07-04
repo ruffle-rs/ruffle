@@ -208,7 +208,7 @@ pub fn extract<'gc>(
         .unwrap_or(&Value::Number(0.0))
         .coerce_to_number(activation)?;
 
-    if let Some(mut bytearray) = bytearray.as_bytearray_mut(activation.context.gc_context) {
+    if let Some(mut bytearray) = bytearray.as_bytearray_mut() {
         bytearray
             .write_bytes(vec![0u8; length.ceil() as usize].as_slice())
             .map_err(|e| e.to_avm(activation))?;

@@ -434,7 +434,7 @@ pub fn get_bytes<'gc>(
         );
     }
 
-    let mut ba_write = ba.as_bytearray_mut(activation.context.gc_context).unwrap();
+    let mut ba_write = ba.as_bytearray_mut().unwrap();
 
     // First, write a fake header corresponding to an
     // uncompressed SWF
