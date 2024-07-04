@@ -12,7 +12,11 @@ use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname};
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
+use gc_arena::barrier::unlock;
+use gc_arena::{
+    lock::{Lock, RefLock},
+    Collect, Gc, GcWeak, Mutation,
+};
 use ruffle_wstr::WString;
 use std::cell::{Ref, RefMut};
 
@@ -24,13 +28,13 @@ pub fn xml_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class);
+    let base = ScriptObjectData::new(class).into();
 
-    Ok(XmlObject(GcCell::new(
+    Ok(XmlObject(Gc::new(
         activation.context.gc_context,
         XmlObjectData {
             base,
-            node: E4XNode::dummy(activation.context.gc_context),
+            node: Lock::new(E4XNode::dummy(activation.context.gc_context)),
         },
     ))
     .into())
@@ -38,16 +42,16 @@ pub fn xml_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct XmlObject<'gc>(pub GcCell<'gc, XmlObjectData<'gc>>);
+pub struct XmlObject<'gc>(pub Gc<'gc, XmlObjectData<'gc>>);
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
-pub struct XmlObjectWeak<'gc>(pub GcWeakCell<'gc, XmlObjectData<'gc>>);
+pub struct XmlObjectWeak<'gc>(pub GcWeak<'gc, XmlObjectData<'gc>>);
 
 impl fmt::Debug for XmlObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("XmlObject")
-            .field("ptr", &self.0.as_ptr())
+            .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
 }
@@ -56,18 +60,18 @@ impl fmt::Debug for XmlObject<'_> {
 #[collect(no_drop)]
 pub struct XmlObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: RefLock<ScriptObjectData<'gc>>,
 
-    node: E4XNode<'gc>,
+    node: Lock<E4XNode<'gc>>,
 }
 
 impl<'gc> XmlObject<'gc> {
     pub fn new(node: E4XNode<'gc>, activation: &mut Activation<'_, 'gc>) -> Self {
-        XmlObject(GcCell::new(
+        XmlObject(Gc::new(
             activation.context.gc_context,
             XmlObjectData {
-                base: ScriptObjectData::new(activation.context.avm2.classes().xml),
-                node,
+                base: ScriptObjectData::new(activation.context.avm2.classes().xml).into(),
+                node: Lock::new(node),
             },
         ))
     }
@@ -151,11 +155,11 @@ impl<'gc> XmlObject<'gc> {
     }
 
     pub fn set_node(&self, mc: &Mutation<'gc>, node: E4XNode<'gc>) {
-        self.0.write(mc).node = node;
+        unlock!(Gc::write(mc, self.0), XmlObjectData, node).set(node);
     }
 
     pub fn local_name(&self) -> Option<AvmString<'gc>> {
-        self.0.read().node.local_name()
+        self.0.node.get().local_name()
     }
 
     pub fn namespace_object(
@@ -166,7 +170,7 @@ impl<'gc> XmlObject<'gc> {
         // 13.3.5.4 [[GetNamespace]] ( [ InScopeNamespaces ] )
         // 1. If q.uri is null, throw a TypeError exception
         // NOTE: As stated in the spec, this not really possible
-        match self.0.read().node.namespace() {
+        match self.0.node.get().namespace() {
             None => E4XNamespace::default_namespace(),
             Some(ns) => {
                 // 2. If InScopeNamespaces was not specified, let InScopeNamespaces = { }
@@ -188,11 +192,11 @@ impl<'gc> XmlObject<'gc> {
     }
 
     pub fn matches_name(&self, multiname: &Multiname<'gc>) -> bool {
-        self.0.read().node.matches_name(multiname)
+        self.0.node.get().matches_name(multiname)
     }
 
-    pub fn node(&self) -> Ref<'_, E4XNode<'gc>> {
-        Ref::map(self.0.read(), |data| &data.node)
+    pub fn node(&self) -> E4XNode<'gc> {
+        self.0.node.get()
     }
 
     pub fn deep_copy(&self, activation: &mut Activation<'_, 'gc>) -> XmlObject<'gc> {
@@ -266,15 +270,15 @@ impl<'gc> XmlObject<'gc> {
 
 impl<'gc> TObject<'gc> for XmlObject<'gc> {
     fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        Ref::map(self.0.read(), |read| &read.base)
+        self.0.base.borrow()
     }
 
     fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        RefMut::map(self.0.write(mc), |write| &mut write.base)
+        unlock!(Gc::write(mc, self.0), XmlObjectData, base).borrow_mut()
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.as_ptr() as *const ObjectPtr
+        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
     fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
@@ -291,7 +295,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         multiname: &Multiname<'gc>,
     ) -> Option<XmlListObject<'gc>> {
         let mut descendants = Vec::new();
-        self.0.read().node.descendants(multiname, &mut descendants);
+        self.0.node.get().descendants(multiname, &mut descendants);
 
         let list = XmlListObject::new_with_children(activation, descendants, None, None);
         // NOTE: avmplus does not set a target property/object here, but if there was at least one child
@@ -309,7 +313,6 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // FIXME - implement everything from E4X spec (XMLObject::getMultinameProperty in avmplus)
-        let read = self.0.read();
 
         if !name.has_explicit_namespace() {
             if let Some(local_name) = name.local_name() {
@@ -330,7 +333,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             children,
             attributes,
             ..
-        } = &*read.node.kind()
+        } = &*self.0.node.get().kind()
         {
             let search_children = if name.is_attribute() {
                 attributes
@@ -412,7 +415,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             return true;
         }
 
-        self.0.read().base.has_own_dynamic_property(name)
+        self.0.base.borrow().has_own_dynamic_property(name)
     }
 
     fn has_property_via_in(
@@ -526,10 +529,10 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             let Some(local_name) = name.local_name() else {
                 return Err(format!("Cannot set attribute {:?} without a local name", name).into());
             };
-            let new_attr = E4XNode::attribute(mc, local_name, value, Some(*self.node()));
+            let new_attr = E4XNode::attribute(mc, local_name, value, Some(self.node()));
 
-            let write = self.0.write(mc);
-            let mut kind = write.node.kind_mut(mc);
+            let node = self.0.node.get();
+            let mut kind = node.kind_mut(mc);
             let E4XNodeKind::Element { attributes, .. } = &mut *kind else {
                 return Ok(());
             };
@@ -581,7 +584,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
                     activation.gc(),
                     name.explicit_namespace().map(E4XNamespace::new_uri),
                     name.local_name().unwrap(),
-                    Some(*self_node),
+                    Some(self_node),
                 );
                 // 12.b.v. Call the [[Replace]] method of x with arguments ToString(i) and y
                 self_node.replace(index, XmlObject::new(node, activation).into(), activation)?;
@@ -667,8 +670,8 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         }
 
         let mc = activation.context.gc_context;
-        let write = self.0.write(mc);
-        let mut kind = write.node.kind_mut(mc);
+        let node = self.0.node.get();
+        let mut kind = node.kind_mut(mc);
         let E4XNodeKind::Element {
             children,
             attributes,
