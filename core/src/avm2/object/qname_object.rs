@@ -9,7 +9,8 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
+use gc_arena::barrier::unlock;
+use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates QName objects.
@@ -17,13 +18,13 @@ pub fn q_name_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class);
+    let base = ScriptObjectData::new(class).into();
 
-    Ok(QNameObject(GcCell::new(
+    Ok(QNameObject(Gc::new(
         activation.context.gc_context,
         QNameObjectData {
             base,
-            name: Multiname::any(activation.context.gc_context),
+            name: RefLock::new(Multiname::any(activation.context.gc_context)),
         },
     ))
     .into())
@@ -32,16 +33,16 @@ pub fn q_name_allocator<'gc>(
 /// An Object which represents a boxed QName.
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
-pub struct QNameObject<'gc>(pub GcCell<'gc, QNameObjectData<'gc>>);
+pub struct QNameObject<'gc>(pub Gc<'gc, QNameObjectData<'gc>>);
 
 #[derive(Collect, Clone, Copy, Debug)]
 #[collect(no_drop)]
-pub struct QNameObjectWeak<'gc>(pub GcWeakCell<'gc, QNameObjectData<'gc>>);
+pub struct QNameObjectWeak<'gc>(pub GcWeak<'gc, QNameObjectData<'gc>>);
 
 impl fmt::Debug for QNameObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("QNameObject")
-            .field("ptr", &self.0.as_ptr())
+            .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
 }
@@ -50,10 +51,10 @@ impl fmt::Debug for QNameObject<'_> {
 #[collect(no_drop)]
 pub struct QNameObjectData<'gc> {
     /// All normal script data.
-    base: ScriptObjectData<'gc>,
+    base: RefLock<ScriptObjectData<'gc>>,
 
     /// The Multiname this object is associated with.
-    name: Multiname<'gc>,
+    name: RefLock<Multiname<'gc>>,
 }
 
 impl<'gc> QNameObject<'gc> {
@@ -63,11 +64,14 @@ impl<'gc> QNameObject<'gc> {
         name: Multiname<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().qname;
-        let base = ScriptObjectData::new(class);
+        let base = ScriptObjectData::new(class).into();
 
-        let this: Object<'gc> = QNameObject(GcCell::new(
+        let this: Object<'gc> = QNameObject(Gc::new(
             activation.context.gc_context,
-            QNameObjectData { base, name },
+            QNameObjectData {
+                base,
+                name: RefLock::new(name),
+            },
         ))
         .into();
         this.install_instance_slots(activation.context.gc_context);
@@ -76,21 +80,19 @@ impl<'gc> QNameObject<'gc> {
     }
 
     pub fn name(&self) -> Ref<Multiname<'gc>> {
-        let read = self.0.read();
-
-        Ref::map(read, |r| &r.name)
+        self.0.name.borrow()
     }
 
     pub fn set_namespace(&self, mc: &Mutation<'gc>, namespace: Namespace<'gc>) {
-        let mut write = self.0.write(mc);
+        let mut write_name = unlock!(Gc::write(mc, self.0), QNameObjectData, name).borrow_mut();
 
-        write.name.set_single_namespace(namespace);
+        write_name.set_single_namespace(namespace);
     }
 
     pub fn set_local_name(&self, mc: &Mutation<'gc>, local: AvmString<'gc>) {
-        let mut write = self.0.write(mc);
+        let mut write_name = unlock!(Gc::write(mc, self.0), QNameObjectData, name).borrow_mut();
 
-        write.name.set_local_name(local);
+        write_name.set_local_name(local);
     }
 
     pub fn local_name(&self) -> AvmString<'gc> {
@@ -100,22 +102,21 @@ impl<'gc> QNameObject<'gc> {
     }
 
     pub fn set_is_qname(&self, mc: &Mutation<'gc>, is_qname: bool) {
-        let mut write = self.0.write(mc);
+        let mut write_name = unlock!(Gc::write(mc, self.0), QNameObjectData, name).borrow_mut();
 
-        write.name.set_is_qname(is_qname);
+        write_name.set_is_qname(is_qname);
     }
 
     pub fn uri(&self) -> Option<AvmString<'gc>> {
-        let read = self.0.read();
+        let name = self.0.name.borrow();
 
-        if read.name.is_any_namespace() {
+        if name.is_any_namespace() {
             None
-        } else if read.name.namespace_set().len() > 1 {
+        } else if name.namespace_set().len() > 1 {
             Some("".into())
         } else {
             Some(
-                read.name
-                    .namespace_set()
+                name.namespace_set()
                     .first()
                     .expect("Malformed multiname")
                     .as_uri(),
@@ -124,21 +125,23 @@ impl<'gc> QNameObject<'gc> {
     }
 
     pub fn init_name(self, mc: &Mutation<'gc>, name: Multiname<'gc>) {
-        self.0.write(mc).name = name;
+        let mut write_name = unlock!(Gc::write(mc, self.0), QNameObjectData, name).borrow_mut();
+
+        *write_name = name;
     }
 }
 
 impl<'gc> TObject<'gc> for QNameObject<'gc> {
     fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        Ref::map(self.0.read(), |read| &read.base)
+        self.0.base.borrow()
     }
 
     fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        RefMut::map(self.0.write(mc), |write| &mut write.base)
+        unlock!(Gc::write(mc, self.0), QNameObjectData, base).borrow_mut()
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.as_ptr() as *const ObjectPtr
+        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
     fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
