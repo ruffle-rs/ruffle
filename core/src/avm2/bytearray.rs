@@ -83,8 +83,7 @@ pub enum ObjectEncoding {
     Amf3 = 3,
 }
 
-#[derive(Clone, Collect, Debug)]
-#[collect(no_drop)]
+#[derive(Clone, Debug)]
 pub struct ByteArrayStorage {
     /// Underlying ByteArray
     bytes: Vec<u8>,
