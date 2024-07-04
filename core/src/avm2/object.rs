@@ -1391,7 +1391,7 @@ impl<'gc> Object<'gc> {
             Self::ByteArrayObject(o) => WeakObject::ByteArrayObject(ByteArrayObjectWeak(Gc::downgrade(o.0))),
             Self::LoaderInfoObject(o) => WeakObject::LoaderInfoObject(LoaderInfoObjectWeak(GcCell::downgrade(o.0))),
             Self::ClassObject(o) => WeakObject::ClassObject(ClassObjectWeak(GcCell::downgrade(o.0))),
-            Self::VectorObject(o) => WeakObject::VectorObject(VectorObjectWeak(GcCell::downgrade(o.0))),
+            Self::VectorObject(o) => WeakObject::VectorObject(VectorObjectWeak(Gc::downgrade(o.0))),
             Self::SoundObject(o) => WeakObject::SoundObject(SoundObjectWeak(GcCell::downgrade(o.0))),
             Self::SoundChannelObject(o) => WeakObject::SoundChannelObject(SoundChannelObjectWeak(GcCell::downgrade(o.0))),
             Self::BitmapDataObject(o) => WeakObject::BitmapDataObject(BitmapDataObjectWeak(Gc::downgrade(o.0))),
