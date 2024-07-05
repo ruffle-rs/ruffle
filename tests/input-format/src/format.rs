@@ -65,6 +65,7 @@ pub enum AutomatedEvent {
     MouseDown {
         pos: MousePosition,
         btn: MouseButton,
+        index: Option<usize>,
     },
 
     /// Release a mouse button.
