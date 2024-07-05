@@ -251,7 +251,14 @@ impl App {
                                 _ => RuffleMouseButton::Unknown,
                             };
                             let event = match state {
-                                ElementState::Pressed => PlayerEvent::MouseDown { x, y, button },
+                                // TODO We should get information about click index from the OS,
+                                //   but winit does not support that yet.
+                                ElementState::Pressed => PlayerEvent::MouseDown {
+                                    x,
+                                    y,
+                                    button,
+                                    index: None,
+                                },
                                 ElementState::Released => PlayerEvent::MouseUp { x, y, button },
                             };
                             if state == ElementState::Released && button == RuffleMouseButton::Right

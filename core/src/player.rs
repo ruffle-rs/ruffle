@@ -1168,6 +1168,7 @@ impl Player {
             x,
             y,
             button: MouseButton::Left,
+            ..
         }
         | PlayerEvent::MouseUp {
             x,

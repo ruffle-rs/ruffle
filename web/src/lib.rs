@@ -575,6 +575,8 @@ impl RuffleHandle {
                                 2 => MouseButton::Right,
                                 _ => MouseButton::Unknown,
                             },
+                            // TODO The index should be provided by the browser, not calculated.
+                            index: None,
                         };
                         let _ = instance.with_core_mut(|core| {
                             core.handle_event(event);
