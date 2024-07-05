@@ -215,6 +215,7 @@ impl TestRunner {
                         InputMouseButton::Middle => RuffleMouseButton::Middle,
                         InputMouseButton::Right => RuffleMouseButton::Right,
                     },
+                    index: Some(0),
                 },
                 AutomatedEvent::MouseMove { pos } => PlayerEvent::MouseMove { x: pos.0, y: pos.1 },
                 AutomatedEvent::MouseUp { pos, btn } => PlayerEvent::MouseUp {

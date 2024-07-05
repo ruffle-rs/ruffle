@@ -24,6 +24,7 @@ pub enum PlayerEvent {
         x: f64,
         y: f64,
         button: MouseButton,
+        index: Option<usize>,
     },
     MouseLeave,
     MouseWheel {
