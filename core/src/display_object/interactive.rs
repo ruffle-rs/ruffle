@@ -281,7 +281,7 @@ pub trait TInteractiveObject<'gc>:
         let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
         match event {
-            ClipEvent::Press => {
+            ClipEvent::Press { .. } => {
                 let avm2_event = Avm2EventObject::mouse_event(
                     &mut activation,
                     "mouseDown",

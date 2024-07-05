@@ -176,7 +176,13 @@ pub enum ClipEvent<'gc> {
     /// This is a targeted equivalent to `MouseDown` and is available in both
     /// AVM1 and AVM2. The target of this event is determined by the position
     /// of the mouse cursor.
-    Press,
+    Press {
+        /// The index of this click in a click sequence performed in a quick succession.
+        ///
+        /// For instance the value of 0 indicates it's a single click,
+        /// the number of 1 indicates it's a double click, etc.
+        index: usize,
+    },
 
     /// Mouse moved out of a display object.
     ///
@@ -267,7 +273,7 @@ impl<'gc> ClipEvent<'gc> {
             ClipEvent::MouseDown => Some(ClipEventFlag::MOUSE_DOWN),
             ClipEvent::MouseMove => Some(ClipEventFlag::MOUSE_MOVE),
             ClipEvent::MouseUp => Some(ClipEventFlag::MOUSE_UP),
-            ClipEvent::Press => Some(ClipEventFlag::PRESS),
+            ClipEvent::Press { .. } => Some(ClipEventFlag::PRESS),
             ClipEvent::RollOut { .. } => Some(ClipEventFlag::ROLL_OUT),
             ClipEvent::RollOver { .. } => Some(ClipEventFlag::ROLL_OVER),
             ClipEvent::Release => Some(ClipEventFlag::RELEASE),
@@ -326,7 +332,7 @@ impl<'gc> ClipEvent<'gc> {
             ClipEvent::MouseDown => Some("onMouseDown"),
             ClipEvent::MouseMove => Some("onMouseMove"),
             ClipEvent::MouseUp => Some("onMouseUp"),
-            ClipEvent::Press => Some("onPress"),
+            ClipEvent::Press { .. } => Some("onPress"),
             ClipEvent::RollOut { .. } => Some("onRollOut"),
             ClipEvent::RollOver { .. } => Some("onRollOver"),
             ClipEvent::Release => Some("onRelease"),

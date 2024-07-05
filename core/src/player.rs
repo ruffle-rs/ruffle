@@ -1153,7 +1153,7 @@ impl Player {
                     ) {
                         // The button/clip is pressed and then immediately released.
                         // We do not have to wait for KeyUp.
-                        focus.handle_clip_event(context, ClipEvent::Press);
+                        focus.handle_clip_event(context, ClipEvent::Press { index: 0 });
                         focus.handle_clip_event(context, ClipEvent::Release);
                     }
                 }
@@ -1478,10 +1478,10 @@ impl Player {
                 if context.input.is_mouse_down() {
                     // Pressed on a hovered object.
                     if let Some(over_object) = context.mouse_data.hovered {
-                        events.push((over_object, ClipEvent::Press));
+                        events.push((over_object, ClipEvent::Press { index: 0 }));
                         context.mouse_data.pressed = context.mouse_data.hovered;
                     } else {
-                        events.push((context.stage.into(), ClipEvent::Press));
+                        events.push((context.stage.into(), ClipEvent::Press { index: 0 }));
                     }
                 } else {
                     if let Some(over_object) = context.mouse_data.hovered {
@@ -1548,7 +1548,7 @@ impl Player {
                         if display_object.movie().is_action_script_3() {
                             object.event_dispatch_to_avm2(context, event);
                         }
-                        if event == ClipEvent::Press {
+                        if matches!(event, ClipEvent::Press { .. }) {
                             Self::update_focus_on_mouse_press(context, display_object);
                         }
                     }

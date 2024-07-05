@@ -2410,7 +2410,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         event: ClipEvent,
     ) -> ClipEventResult {
         match event {
-            ClipEvent::Press | ClipEvent::MouseWheel { .. } | ClipEvent::MouseMove => {
+            ClipEvent::Press { .. } | ClipEvent::MouseWheel { .. } | ClipEvent::MouseMove => {
                 ClipEventResult::Handled
             }
             _ => ClipEventResult::NotHandled,
@@ -2437,7 +2437,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
             return ClipEventResult::Handled;
         }
 
-        if let ClipEvent::Press = event {
+        if let ClipEvent::Press { .. } = event {
             if self.is_editable() || self.is_selectable() {
                 let tracker = context.focus_tracker;
                 tracker.set(Some(self.into()), context);
