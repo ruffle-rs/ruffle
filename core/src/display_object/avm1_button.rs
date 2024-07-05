@@ -476,7 +476,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
                 Some(ButtonActionCondition::OUT_DOWN_TO_OVER_DOWN),
                 None,
             ),
-            ClipEvent::Press => (
+            ClipEvent::Press { .. } => (
                 ButtonState::Down,
                 Some(ButtonActionCondition::OVER_UP_TO_OVER_DOWN),
                 static_data.over_to_down_sound.as_ref(),
