@@ -34,6 +34,13 @@ async function enable() {
                 runAt: "document_start",
                 world: "MAIN",
             },
+            {
+                id: "4399",
+                matches: ["https://www.4399.com/flash/*"],
+                js: ["dist/siteContentScript4399.js"],
+                world: "MAIN",
+                runAt: "document_start",
+            },
         ]);
     }
 }
@@ -47,7 +54,7 @@ async function disable() {
     }
     if (await contentScriptRegistered()) {
         await utils.scripting.unregisterContentScripts({
-            ids: ["plugin-polyfill"],
+            ids: ["plugin-polyfill", "4399"],
         });
     }
 }
