@@ -1378,7 +1378,7 @@ impl<'gc> Object<'gc> {
         match self {
             Self::ScriptObject(o) => WeakObject::ScriptObject(ScriptObjectWeak(GcCell::downgrade(o.0))),
             Self::FunctionObject(o) => WeakObject::FunctionObject(FunctionObjectWeak(GcCell::downgrade(o.0))),
-            Self::PrimitiveObject(o) => WeakObject::PrimitiveObject(PrimitiveObjectWeak(GcCell::downgrade(o.0))),
+            Self::PrimitiveObject(o) => WeakObject::PrimitiveObject(PrimitiveObjectWeak(Gc::downgrade(o.0))),
             Self::NamespaceObject(o) => WeakObject::NamespaceObject(NamespaceObjectWeak(Gc::downgrade(o.0))),
             Self::ArrayObject(o) => WeakObject::ArrayObject(ArrayObjectWeak(Gc::downgrade(o.0))),
             Self::StageObject(o) => WeakObject::StageObject(StageObjectWeak(Gc::downgrade(o.0))),
