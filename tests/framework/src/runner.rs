@@ -207,7 +207,7 @@ impl TestRunner {
             }
 
             self.player.lock().unwrap().handle_event(match evt {
-                AutomatedEvent::MouseDown { pos, btn } => PlayerEvent::MouseDown {
+                AutomatedEvent::MouseDown { pos, btn, index } => PlayerEvent::MouseDown {
                     x: pos.0,
                     y: pos.1,
                     button: match btn {
@@ -215,7 +215,9 @@ impl TestRunner {
                         InputMouseButton::Middle => RuffleMouseButton::Middle,
                         InputMouseButton::Right => RuffleMouseButton::Right,
                     },
-                    index: Some(0),
+                    // None here means that the core will compute index automatically,
+                    // however we do not want that in tests.
+                    index: Some(index.unwrap_or_default()),
                 },
                 AutomatedEvent::MouseMove { pos } => PlayerEvent::MouseMove { x: pos.0, y: pos.1 },
                 AutomatedEvent::MouseUp { pos, btn } => PlayerEvent::MouseUp {
