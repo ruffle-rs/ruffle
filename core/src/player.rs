@@ -1477,12 +1477,13 @@ impl Player {
             // Handle presses and releases.
             if is_mouse_button_changed {
                 if context.input.is_mouse_down() {
+                    let index = context.input.last_click_index();
                     // Pressed on a hovered object.
                     if let Some(over_object) = context.mouse_data.hovered {
-                        events.push((over_object, ClipEvent::Press { index: 0 }));
+                        events.push((over_object, ClipEvent::Press { index }));
                         context.mouse_data.pressed = context.mouse_data.hovered;
                     } else {
-                        events.push((context.stage.into(), ClipEvent::Press { index: 0 }));
+                        events.push((context.stage.into(), ClipEvent::Press { index }));
                     }
                 } else {
                     if let Some(over_object) = context.mouse_data.hovered {

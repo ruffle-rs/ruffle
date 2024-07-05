@@ -1,7 +1,7 @@
 use crate::backend::navigator::OwnedFuture;
 use crate::events::{KeyCode, PlayerEvent, TextControlCode};
 pub use crate::loader::Error as DialogLoaderError;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, TimeDelta, Utc};
 use downcast_rs::Downcast;
 use fluent_templates::loader::langid;
 pub use fluent_templates::LanguageIdentifier;
@@ -140,7 +140,7 @@ pub enum MouseCursor {
     /// Equivalent to AS3 `MouseCursor.ARROW`.
     Arrow,
 
-    /// The hand icon incdicating a button or link.
+    /// The hand icon indicating a button or link.
     /// Equivalent to AS3 `MouseCursor.BUTTON`.
     Hand,
 
@@ -153,12 +153,28 @@ pub enum MouseCursor {
     Grab,
 }
 
+struct ClickEventData {
+    x: f64,
+    y: f64,
+    time: DateTime<Utc>,
+    index: usize,
+}
+
+impl ClickEventData {
+    fn distance_squared_to(&self, x: f64, y: f64) -> f64 {
+        let dx = x - self.x;
+        let dy = y - self.y;
+        dx * dx + dy * dy
+    }
+}
+
 pub struct InputManager {
     keys_down: HashSet<KeyCode>,
     keys_toggled: HashSet<KeyCode>,
     last_key: KeyCode,
     last_char: Option<char>,
     last_text_control: Option<TextControlCode>,
+    last_click: Option<ClickEventData>,
 }
 
 impl InputManager {
@@ -169,6 +185,7 @@ impl InputManager {
             last_key: KeyCode::Unknown,
             last_char: None,
             last_text_control: None,
+            last_click: None,
         }
     }
 
@@ -212,13 +229,38 @@ impl InputManager {
             PlayerEvent::TextControl { code } => {
                 self.last_text_control = Some(code);
             }
-            PlayerEvent::MouseDown { button, .. } => {
+            PlayerEvent::MouseDown {
+                x,
+                y,
+                button,
+                index,
+            } => {
                 self.toggle_key(button.into());
-                self.add_key(button.into())
+                self.add_key(button.into());
+                self.update_last_click(x, y, index);
             }
             PlayerEvent::MouseUp { button, .. } => self.remove_key(button.into()),
             _ => {}
         }
+    }
+
+    fn update_last_click(&mut self, x: f64, y: f64, index: Option<usize>) {
+        let time = Utc::now();
+        let index = index.unwrap_or_else(|| {
+            let Some(last_click) = self.last_click.as_ref() else {
+                return 0;
+            };
+
+            // TODO Make this configurable as "double click delay" and "double click distance"
+            if (time - last_click.time).abs() < TimeDelta::milliseconds(500)
+                && last_click.distance_squared_to(x, y) < 4.0
+            {
+                last_click.index + 1
+            } else {
+                0
+            }
+        });
+        self.last_click = Some(ClickEventData { x, y, time, index });
     }
 
     pub fn is_key_down(&self, key: KeyCode) -> bool {
@@ -239,6 +281,13 @@ impl InputManager {
 
     pub fn last_text_control(&self) -> Option<TextControlCode> {
         self.last_text_control
+    }
+
+    pub fn last_click_index(&self) -> usize {
+        self.last_click
+            .as_ref()
+            .map(|lc| lc.index)
+            .unwrap_or_default()
     }
 
     pub fn is_mouse_down(&self) -> bool {
