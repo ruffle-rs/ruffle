@@ -1636,7 +1636,7 @@ export class RufflePlayer extends HTMLElement {
                 const { text, onClick, enabled } = item;
 
                 const menuItem = (
-                    <li class={{ "menu-item": true, disabled: !enabled }}>
+                    <li class={{ "menu-item": true, disabled: enabled === false }}>
                         {text}
                     </li>
                 ) as HTMLElement;
