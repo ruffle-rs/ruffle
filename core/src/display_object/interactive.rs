@@ -281,30 +281,35 @@ pub trait TInteractiveObject<'gc>:
         let mut activation = Avm2Activation::from_nothing(context.reborrow());
 
         match event {
-            ClipEvent::Press { .. } => {
-                let avm2_event = Avm2EventObject::mouse_event(
+            ClipEvent::Press { .. } | ClipEvent::RightPress | ClipEvent::MiddlePress => {
+                let button = match event {
+                    ClipEvent::Press { .. } => MouseButton::Left,
+                    ClipEvent::RightPress => MouseButton::Right,
+                    ClipEvent::MiddlePress => MouseButton::Middle,
+                    _ => unreachable!(),
+                };
+                let avm2_event = Avm2EventObject::mouse_event_down(
                     &mut activation,
-                    "mouseDown",
                     self.as_displayobject(),
-                    None,
-                    0,
-                    true,
-                    MouseButton::Left,
+                    button,
                 );
 
                 Avm2::dispatch_event(&mut activation.context, avm2_event, target);
 
                 ClipEventResult::Handled
             }
-            ClipEvent::MouseUpInside => {
-                let avm2_event = Avm2EventObject::mouse_event(
+            ClipEvent::MouseUpInside
+            | ClipEvent::RightMouseUpInside
+            | ClipEvent::MiddleMouseUpInside => {
+                let avm2_event = Avm2EventObject::mouse_event_up(
                     &mut activation,
-                    "mouseUp",
                     self.as_displayobject(),
-                    None,
-                    0,
-                    true,
-                    MouseButton::Left,
+                    match event {
+                        ClipEvent::MouseUpInside => MouseButton::Left,
+                        ClipEvent::RightMouseUpInside => MouseButton::Right,
+                        ClipEvent::MiddleMouseUpInside => MouseButton::Middle,
+                        _ => unreachable!(),
+                    },
                 );
 
                 Avm2::dispatch_event(&mut activation.context, avm2_event, target);
@@ -340,13 +345,9 @@ pub trait TInteractiveObject<'gc>:
 
                     self.raw_interactive_mut(context.gc_context).last_click = None;
                 } else {
-                    let avm2_event = Avm2EventObject::mouse_event(
+                    let avm2_event = Avm2EventObject::mouse_event_click(
                         &mut activation,
-                        "click",
                         self.as_displayobject(),
-                        None,
-                        0,
-                        true,
                         MouseButton::Left,
                     );
 
@@ -354,6 +355,21 @@ pub trait TInteractiveObject<'gc>:
 
                     self.raw_interactive_mut(context.gc_context).last_click = Some(this_click);
                 }
+
+                ClipEventResult::Handled
+            }
+            ClipEvent::RightRelease | ClipEvent::MiddleRelease => {
+                let avm2_event = Avm2EventObject::mouse_event_click(
+                    &mut activation,
+                    self.as_displayobject(),
+                    match event {
+                        ClipEvent::RightRelease => MouseButton::Right,
+                        ClipEvent::MiddleRelease => MouseButton::Middle,
+                        _ => unreachable!(),
+                    },
+                );
+
+                Avm2::dispatch_event(&mut activation.context, avm2_event, target);
 
                 ClipEventResult::Handled
             }
