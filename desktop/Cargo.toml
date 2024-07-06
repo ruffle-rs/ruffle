@@ -14,10 +14,10 @@ workspace = true
 clap = { workspace = true }
 cpal = "0.15.3"
 egui = { workspace = true }
-egui_extras = { version = "0.28.0", features = ["image"] }
-egui-wgpu = { version = "0.28.0", features = ["winit"] }
+egui_extras = { version = "0.28.1", features = ["image"] }
+egui-wgpu = { version = "0.28.1", features = ["winit"] }
 image = { workspace = true, features = ["png"] }
-egui-winit = "0.28.0"
+egui-winit = "0.28.1"
 fontdb = "0.20"
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymoser", "default_compatibility_rules", "egui"] }
 ruffle_render = { path = "../render", features = ["clap"] }
@@ -28,7 +28,7 @@ ruffle_frontend_utils = { path = "../frontend-utils" }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing-appender = "0.2.3"
-winit = "0.29.15"
+winit = "0.30.3"
 webbrowser = "1.0.1"
 url = { workspace = true }
 dirs = "5.0"
