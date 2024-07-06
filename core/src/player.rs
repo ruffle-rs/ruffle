@@ -1941,6 +1941,10 @@ impl Player {
         &self.navigator
     }
 
+    pub fn navigator_mut(&mut self) -> &mut Navigator {
+        &mut self.navigator
+    }
+
     // The frame rate of the current movie in FPS.
     pub fn frame_rate(&self) -> f64 {
         self.frame_rate

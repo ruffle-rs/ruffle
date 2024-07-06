@@ -4,7 +4,7 @@ use async_channel::{Receiver, Sender};
 use futures_util::future::Either;
 use futures_util::{future, SinkExt, StreamExt};
 use gloo_net::websocket::{futures::WebSocket, Message};
-use js_sys::{Array, Uint8Array};
+use js_sys::{Array, Promise, Uint8Array};
 use ruffle_core::backend::navigator::{
     async_return, create_fetch_error, create_specific_fetch_error, get_encoding, ErrorResponse,
     NavigationMethod, NavigatorBackend, OpenURLMode, OwnedFuture, Request, SuccessResponse,
@@ -14,10 +14,11 @@ use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
 use ruffle_core::swf::Encoding;
+use ruffle_core::Player;
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 use tracing_subscriber::layer::Layered;
 use tracing_subscriber::Registry;
@@ -40,6 +41,7 @@ pub struct WebNavigatorBackend {
     open_url_mode: OpenURLMode,
     socket_proxies: Vec<SocketProxy>,
     credential_allow_list: Vec<String>,
+    player: Weak<Mutex<Player>>,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -96,7 +98,13 @@ impl WebNavigatorBackend {
             open_url_mode,
             socket_proxies,
             credential_allow_list,
+            player: Weak::new(),
         }
+    }
+
+    /// We need to set the player after construction because the player is created after the navigator.
+    pub fn set_player(&mut self, player: Weak<Mutex<Player>>) {
+        self.player = player;
     }
 }
 
@@ -356,8 +364,34 @@ impl NavigatorBackend for WebNavigatorBackend {
 
     fn spawn_future(&mut self, future: OwnedFuture<(), Error>) {
         let subscriber = self.log_subscriber.clone();
+        let player = self.player.clone();
+
         spawn_local(async move {
-            let _subscriber = tracing::subscriber::set_default(subscriber);
+            let _subscriber = tracing::subscriber::set_default(subscriber.clone());
+            if player
+                .upgrade()
+                .expect("Called spawn_future after player was dropped")
+                .try_lock()
+                .is_err()
+            {
+                // The player is locked - this can occur due to 'wasm-bindgen-futures' using
+                // 'queueMicroTask', which may result in one of our future's getting polled
+                // while we're still inside of our 'requestAnimationFrame' callback (e.g.
+                // when we call into javascript).
+                //
+                // When this happens, we 'reschedule' this future by waiting fot a 'setTimeout'
+                // callback to be resolved. This will cause our future to get woken up from
+                // inside the 'setTimeout' JavaScript task (which is a new top-level call stack),
+                // outside of the 'requestAnimationFrame' callback, which will allow us to lock
+                // the Player.
+                let promise = Promise::new(&mut |resolve, _reject| {
+                    web_sys::window()
+                        .expect("window")
+                        .set_timeout_with_callback(&resolve)
+                        .expect("Failed to call setTimeout with dummy promise");
+                });
+                let _ = JsFuture::from(promise).await;
+            }
             if let Err(e) = future.await {
                 tracing::error!("Asynchronous error occurred: {}", e);
             }

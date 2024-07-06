@@ -134,7 +134,9 @@ impl<F: FutureSpawner, I: NavigatorInterface> ExternalNavigatorBackend<F, I> {
     }
 }
 
-impl<F: FutureSpawner, I: NavigatorInterface> NavigatorBackend for ExternalNavigatorBackend<F, I> {
+impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
+    for ExternalNavigatorBackend<F, I>
+{
     fn navigate_to_url(
         &self,
         url: &str,
