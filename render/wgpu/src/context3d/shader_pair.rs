@@ -8,7 +8,7 @@ use std::{
 };
 use wgpu::SamplerBindingType;
 
-use super::{current_pipeline::BoundTextureData, MAX_VERTEX_ATTRIBUTES};
+use super::MAX_VERTEX_ATTRIBUTES;
 
 use crate::descriptors::Descriptors;
 
@@ -110,12 +110,11 @@ impl ShaderPairAgal {
                     },
                 ];
 
-                for (i, bound_texture) in data.bound_textures.iter().enumerate() {
-                    if let Some(bound_texture) = bound_texture {
-                        let dimension = if bound_texture.cube {
-                            wgpu::TextureViewDimension::Cube
-                        } else {
-                            wgpu::TextureViewDimension::D2
+                for (i, texture_info) in data.texture_infos.iter().enumerate() {
+                    if let Some(texture_info) = texture_info {
+                        let dimension = match texture_info {
+                            ShaderTextureInfo::D2 => wgpu::TextureViewDimension::D2,
+                            ShaderTextureInfo::Cube => wgpu::TextureViewDimension::Cube,
                         };
                         layout_entries.push(wgpu::BindGroupLayoutEntry {
                             binding: naga_agal::TEXTURE_START_BIND_INDEX + i as u32,
@@ -155,9 +154,15 @@ impl ShaderPairAgal {
     }
 }
 
+#[derive(Hash, PartialEq, Eq, Clone, Copy)]
+pub enum ShaderTextureInfo {
+    D2,
+    Cube,
+}
+
 #[derive(Hash, Eq, PartialEq, Clone)]
 pub struct ShaderCompileData {
     pub sampler_configs: [SamplerConfig; 8],
     pub vertex_attributes: [Option<VertexAttributeFormat>; MAX_VERTEX_ATTRIBUTES],
-    pub bound_textures: [Option<BoundTextureData>; 8],
+    pub texture_infos: [Option<ShaderTextureInfo>; 8],
 }
