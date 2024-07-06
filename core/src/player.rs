@@ -1135,6 +1135,22 @@ impl Player {
                     let delta = Value::from(delta.lines());
                     (None, Some(("Mouse", "onMouseWheel", vec![delta])))
                 }
+                PlayerEvent::MouseUp {
+                    button: MouseButton::Right,
+                    ..
+                } => (Some(ClipEvent::RightMouseUp), None),
+                PlayerEvent::MouseDown {
+                    button: MouseButton::Right,
+                    ..
+                } => (Some(ClipEvent::RightMouseDown), None),
+                PlayerEvent::MouseUp {
+                    button: MouseButton::Middle,
+                    ..
+                } => (Some(ClipEvent::MiddleMouseUp), None),
+                PlayerEvent::MouseDown {
+                    button: MouseButton::Middle,
+                    ..
+                } => (Some(ClipEvent::MiddleMouseDown), None),
                 _ => (None, None),
             };
 
@@ -1216,17 +1232,8 @@ impl Player {
 
         // Update mouse state.
         if let PlayerEvent::MouseMove { x, y }
-        | PlayerEvent::MouseDown {
-            x,
-            y,
-            button: MouseButton::Left,
-            ..
-        }
-        | PlayerEvent::MouseUp {
-            x,
-            y,
-            button: MouseButton::Left,
-        } = event
+        | PlayerEvent::MouseDown { x, y, .. }
+        | PlayerEvent::MouseUp { x, y, .. } = event
         {
             let inverse_view_matrix =
                 self.mutate_with_update_context(|context| context.stage.inverse_view_matrix());
@@ -1532,28 +1539,47 @@ impl Player {
                 context.mouse_data.hovered = new_over_object;
             }
             // Handle presses and releases.
-            if changed_mouse_buttons.contains(&MouseButton::Left) {
-                if context.input.is_mouse_down(MouseButton::Left) {
-                    let index = context.input.last_click_index();
+            for button in [MouseButton::Left, MouseButton::Middle, MouseButton::Right] {
+                if !changed_mouse_buttons.contains(&button) {
+                    continue;
+                }
+
+                if context.input.is_mouse_down(button) {
+                    let event = match button {
+                        MouseButton::Left => ClipEvent::Press {
+                            index: context.input.last_click_index(),
+                        },
+                        MouseButton::Right => ClipEvent::RightPress,
+                        MouseButton::Middle => ClipEvent::MiddlePress,
+                        _ => unreachable!(),
+                    };
                     // Pressed on a hovered object.
                     if let Some(over_object) = context.mouse_data.hovered {
-                        events.push((over_object, ClipEvent::Press { index }));
-                        context.mouse_data.pressed = context.mouse_data.hovered;
+                        events.push((over_object, event));
+                        context
+                            .mouse_data
+                            .set_pressed(button, context.mouse_data.hovered);
                     } else {
-                        events.push((context.stage.into(), ClipEvent::Press { index }));
+                        events.push((context.stage.into(), event));
                     }
                 } else {
+                    let event = match button {
+                        MouseButton::Left => ClipEvent::MouseUpInside,
+                        MouseButton::Right => ClipEvent::RightMouseUpInside,
+                        MouseButton::Middle => ClipEvent::MiddleMouseUpInside,
+                        _ => unreachable!(),
+                    };
                     if let Some(over_object) = context.mouse_data.hovered {
-                        events.push((over_object, ClipEvent::MouseUpInside));
+                        events.push((over_object, event));
                     } else {
-                        events.push((context.stage.into(), ClipEvent::MouseUpInside));
+                        events.push((context.stage.into(), event));
                     }
 
                     let mut released_inside = InteractiveObject::option_ptr_eq(
-                        context.mouse_data.pressed,
+                        context.mouse_data.pressed(button),
                         context.mouse_data.hovered,
                     );
-                    if let Some(down) = context.mouse_data.pressed {
+                    if let Some(down) = context.mouse_data.pressed(button) {
                         if let Some(over) = context.mouse_data.hovered {
                             if !released_inside {
                                 released_inside = Self::check_display_object_equality(
@@ -1564,34 +1590,51 @@ impl Player {
                         }
                     }
                     if released_inside {
+                        let event = match button {
+                            MouseButton::Left => ClipEvent::Release,
+                            MouseButton::Right => ClipEvent::RightRelease,
+                            MouseButton::Middle => ClipEvent::MiddleRelease,
+                            _ => unreachable!(),
+                        };
                         // Released inside the clicked object.
-                        if let Some(down_object) = context.mouse_data.pressed {
-                            new_cursor = down_object.mouse_cursor(context);
-                            events.push((down_object, ClipEvent::Release));
+                        if let Some(down_object) = context.mouse_data.pressed(button) {
+                            if button == MouseButton::Left {
+                                new_cursor = down_object.mouse_cursor(context);
+                            }
+                            events.push((down_object, event));
                         } else {
-                            events.push((context.stage.into(), ClipEvent::Release));
+                            events.push((context.stage.into(), event));
                         }
                     } else {
+                        let event = match button {
+                            MouseButton::Left => ClipEvent::ReleaseOutside,
+                            MouseButton::Right => ClipEvent::RightReleaseOutside,
+                            MouseButton::Middle => ClipEvent::MiddleReleaseOutside,
+                            _ => unreachable!(),
+                        };
                         // Released outside the clicked object.
-                        if let Some(down_object) = context.mouse_data.pressed {
-                            events.push((down_object, ClipEvent::ReleaseOutside));
+                        if let Some(down_object) = context.mouse_data.pressed(button) {
+                            events.push((down_object, event));
                         } else {
-                            events.push((context.stage.into(), ClipEvent::ReleaseOutside));
+                            events.push((context.stage.into(), event));
                         }
-                        // The new object is rolled over immediately.
-                        if let Some(over_object) = context.mouse_data.hovered {
-                            new_cursor = over_object.mouse_cursor(context);
-                            events.push((
-                                over_object,
-                                ClipEvent::RollOver {
-                                    from: cur_over_object,
-                                },
-                            ));
-                        } else {
-                            new_cursor = MouseCursor::Arrow;
+
+                        if button == MouseButton::Left {
+                            // The new object is rolled over immediately.
+                            if let Some(over_object) = context.mouse_data.hovered {
+                                new_cursor = over_object.mouse_cursor(context);
+                                events.push((
+                                    over_object,
+                                    ClipEvent::RollOver {
+                                        from: cur_over_object,
+                                    },
+                                ));
+                            } else {
+                                new_cursor = MouseCursor::Arrow;
+                            }
                         }
                     }
-                    context.mouse_data.pressed = None;
+                    context.mouse_data.set_pressed(button, None);
                 }
             }
 
