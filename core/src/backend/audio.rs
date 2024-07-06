@@ -504,7 +504,16 @@ impl<'gc> AudioManager<'gc> {
     ) {
         self.sounds.retain(move |sound| {
             if let Some(other) = sound.display_object {
-                if DisplayObject::ptr_eq(other, display_object) {
+                // [NA] This may or may not be correct, Flash is very inconsistent here
+                // If you make 50 movies with the same path and attach sounds to one of them,
+                // they all stop when you stop one of the movies.
+                // However, it also stops (some of?) them when they've changed their name too...
+
+                // Path can be expensive, so do the cheap checks first
+                if DisplayObject::ptr_eq(other, display_object)
+                    || (other.name() == display_object.name()
+                        && other.path() == display_object.path())
+                {
                     audio.stop_sound(sound.instance);
                     return false;
                 }
