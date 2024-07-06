@@ -8,7 +8,7 @@ use crate::avm2::{
     Avm2, ClassObject as Avm2ClassObject, Error as Avm2Error, Object as Avm2Object,
     QName as Avm2QName, StageObject as Avm2StageObject, TObject as Avm2TObject, Value as Avm2Value,
 };
-use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
+use crate::backend::audio::{AudioManager, SoundHandle, SoundInstanceHandle};
 use crate::backend::navigator::Request;
 use crate::backend::ui::MouseCursor;
 use crate::frame_lifecycle::run_inner_goto_frame;
@@ -4782,40 +4782,12 @@ impl<'gc, 'a> MovieClip<'gc> {
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
         let start_sound = reader.read_start_sound_1()?;
-        if let Some(handle) = context
-            .library
-            .library_for_movie_mut(self.movie())
-            .get_sound(start_sound.id)
-        {
-            use swf::SoundEvent;
-            // The sound event type is controlled by the "Sync" setting in the Flash IDE.
-            match start_sound.sound_info.event {
-                // "Event" sounds always play, independent of the timeline.
-                SoundEvent::Event => {
-                    let _ = context.start_sound(
-                        handle,
-                        &start_sound.sound_info,
-                        Some(self.into()),
-                        None,
-                    );
-                }
-
-                // "Start" sounds only play if an instance of the same sound is not already playing.
-                SoundEvent::Start => {
-                    if !context.is_sound_playing_with_handle(handle) {
-                        let _ = context.start_sound(
-                            handle,
-                            &start_sound.sound_info,
-                            Some(self.into()),
-                            None,
-                        );
-                    }
-                }
-
-                // "Stop" stops any active instances of a given sound.
-                SoundEvent::Stop => context.stop_sounds_with_handle(handle),
-            }
-        }
+        AudioManager::perform_sound_event(
+            self.into(),
+            context,
+            start_sound.id,
+            &start_sound.sound_info,
+        );
         Ok(())
     }
 

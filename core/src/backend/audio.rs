@@ -32,6 +32,7 @@ mod decoders {
     }
 }
 
+use crate::swf::{CharacterId, SoundInfo};
 use thiserror::Error;
 use web_time::Duration;
 
@@ -721,6 +722,38 @@ impl<'gc> AudioManager<'gc> {
                 audio.set_sound_transform(sound.instance, transform);
             }
             self.transforms_dirty = false;
+        }
+    }
+
+    pub fn perform_sound_event(
+        display_object: DisplayObject<'gc>,
+        context: &mut UpdateContext<'_, 'gc>,
+        character_id: CharacterId,
+        sound_info: &SoundInfo,
+    ) {
+        if let Some(handle) = context
+            .library
+            .library_for_movie_mut(display_object.movie())
+            .get_sound(character_id)
+        {
+            use swf::SoundEvent;
+            // The sound event type is controlled by the "Sync" setting in the Flash IDE.
+            match sound_info.event {
+                // "Event" sounds always play, independent of the timeline.
+                SoundEvent::Event => {
+                    let _ = context.start_sound(handle, sound_info, Some(display_object), None);
+                }
+
+                // "Start" sounds only play if an instance of the same sound is not already playing.
+                SoundEvent::Start => {
+                    if !context.is_sound_playing_with_handle(handle) {
+                        let _ = context.start_sound(handle, sound_info, Some(display_object), None);
+                    }
+                }
+
+                // "Stop" stops any active instances of a given sound.
+                SoundEvent::Stop => context.stop_sounds_with_handle(handle),
+            }
         }
     }
 }
