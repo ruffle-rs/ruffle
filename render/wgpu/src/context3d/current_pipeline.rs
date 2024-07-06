@@ -12,12 +12,11 @@ use wgpu::{Buffer, DepthStencilState, StencilFaceState};
 use wgpu::{ColorTargetState, RenderPipelineDescriptor, TextureFormat, VertexState};
 
 use std::cell::Cell;
-use std::hash::{Hash, Hasher};
 use std::num::NonZeroU64;
 use std::rc::Rc;
 
 use crate::bitmaps::WgpuSamplerConfig;
-use crate::context3d::shader_pair::ShaderCompileData;
+use crate::context3d::shader_pair::{ShaderCompileData, ShaderTextureInfo};
 use crate::context3d::VertexBufferWrapper;
 use crate::descriptors::Descriptors;
 
@@ -92,32 +91,6 @@ pub struct BoundTextureData {
     pub view: Rc<TextureView>,
     pub cube: bool,
 }
-
-impl Hash for BoundTextureData {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        // We can't hash 'view', but we can hash the pointer of the 'Rc<dyn Texture>',
-        // which is unique to the TextureView
-        let BoundTextureData { id, cube, view: _ } = self;
-        (Rc::as_ptr(id) as *const ()).hash(state);
-        cube.hash(state);
-    }
-}
-
-impl PartialEq for BoundTextureData {
-    fn eq(&self, other: &Self) -> bool {
-        let BoundTextureData { id, cube, view: _ } = self;
-        let BoundTextureData {
-            id: other_id,
-            cube: other_cube,
-            view: _,
-        } = other;
-        std::ptr::eq(
-            Rc::as_ptr(id) as *const (),
-            Rc::as_ptr(other_id) as *const (),
-        ) && cube == other_cube
-    }
-}
-impl Eq for BoundTextureData {}
 
 impl CurrentPipeline {
     pub fn new(descriptors: &Descriptors) -> Self {
@@ -345,12 +318,23 @@ impl CurrentPipeline {
             })
         });
 
+        let mut texture_infos = [None; 8];
+        for (i, bound_texture) in self.bound_textures.iter().enumerate() {
+            if let Some(bound_texture) = bound_texture {
+                if bound_texture.cube {
+                    texture_infos[i] = Some(ShaderTextureInfo::Cube);
+                } else {
+                    texture_infos[i] = Some(ShaderTextureInfo::D2);
+                }
+            }
+        }
+
         let compiled_shaders = self.shaders.as_ref().expect("Missing shaders!").compile(
             descriptors,
             ShaderCompileData {
                 vertex_attributes: agal_attributes,
                 sampler_configs: self.sampler_configs,
-                bound_textures: self.bound_textures.clone(),
+                texture_infos,
             },
         );
 
