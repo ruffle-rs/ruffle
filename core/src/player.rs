@@ -57,7 +57,7 @@ use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::TransformStack;
 use ruffle_video::backend::VideoBackend;
 use std::cell::RefCell;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::ops::DerefMut;
 use std::rc::{Rc, Weak as RcWeak};
 use std::str::FromStr;
@@ -117,6 +117,28 @@ pub struct MouseData<'gc> {
 
     /// If the mouse is down, the object that the mouse is currently pressing.
     pub pressed: Option<InteractiveObject<'gc>>,
+    pub right_pressed: Option<InteractiveObject<'gc>>,
+    pub middle_pressed: Option<InteractiveObject<'gc>>,
+}
+
+impl<'gc> MouseData<'gc> {
+    pub fn pressed(&self, button: MouseButton) -> Option<InteractiveObject<'gc>> {
+        match button {
+            MouseButton::Unknown => None,
+            MouseButton::Left => self.pressed,
+            MouseButton::Right => self.right_pressed,
+            MouseButton::Middle => self.middle_pressed,
+        }
+    }
+
+    pub fn set_pressed(&mut self, button: MouseButton, value: Option<InteractiveObject<'gc>>) {
+        match button {
+            MouseButton::Unknown => {}
+            MouseButton::Left => self.pressed = value,
+            MouseButton::Right => self.right_pressed = value,
+            MouseButton::Middle => self.middle_pressed = value,
+        }
+    }
 }
 
 #[derive(Collect)]
@@ -924,10 +946,14 @@ impl Player {
             _ => event,
         };
 
-        let prev_is_mouse_down = self.input.is_mouse_down(MouseButton::Left);
+        let prev_mouse_buttons = self.input.get_mouse_down_buttons();
         self.input.handle_event(&event);
-        let is_mouse_button_changed =
-            self.input.is_mouse_down(MouseButton::Left) != prev_is_mouse_down;
+        let changed_mouse_buttons = self
+            .input
+            .get_mouse_down_buttons()
+            .symmetric_difference(&prev_mouse_buttons)
+            .cloned()
+            .collect();
 
         if cfg!(feature = "avm_debug") {
             match event {
@@ -1215,7 +1241,7 @@ impl Player {
             let is_mouse_moved = prev_mouse_position != self.mouse_position;
 
             // This fires button rollover/press events, which should run after the above mouseMove events.
-            if self.update_mouse_state(is_mouse_button_changed, is_mouse_moved) {
+            if self.update_mouse_state(&changed_mouse_buttons, is_mouse_moved) {
                 self.needs_render = true;
             }
         }
@@ -1237,7 +1263,7 @@ impl Player {
         }
 
         if let PlayerEvent::MouseLeave = event {
-            if self.update_mouse_state(is_mouse_button_changed, true) {
+            if self.update_mouse_state(&changed_mouse_buttons, true) {
                 self.needs_render = true;
             }
         }
@@ -1335,7 +1361,11 @@ impl Player {
     }
 
     /// Updates the hover state of buttons.
-    fn update_mouse_state(&mut self, is_mouse_button_changed: bool, is_mouse_moved: bool) -> bool {
+    fn update_mouse_state(
+        &mut self,
+        changed_mouse_buttons: &HashSet<MouseButton>,
+        is_mouse_moved: bool,
+    ) -> bool {
         let mut new_cursor = self.mouse_cursor;
         let mut mouse_cursor_needs_check = self.mouse_cursor_needs_check;
         let mouse_in_stage = self.mouse_in_stage();
@@ -1345,8 +1375,9 @@ impl Player {
         let needs_render = self.mutate_with_update_context(|context| {
             // Objects may be hovered using Tab,
             // skip mouse hover when it's not necessary.
-            let mut skip_mouse_hover =
-                !is_mouse_moved && !is_mouse_button_changed && context.mouse_data.hovered.is_some();
+            let mut skip_mouse_hover = !is_mouse_moved
+                && changed_mouse_buttons.is_empty()
+                && context.mouse_data.hovered.is_some();
 
             let new_over_object = if mouse_in_stage {
                 run_mouse_pick(context, true)
@@ -1420,7 +1451,7 @@ impl Player {
                     context.mouse_data.hovered.is_none() && context.mouse_data.pressed.is_none();
                 if !object_removed {
                     mouse_cursor_needs_check = false;
-                    if is_mouse_button_changed {
+                    if changed_mouse_buttons.contains(&MouseButton::Left) {
                         // The object is pressed/released and may be removed immediately, we need to check
                         // in the next frame if it still exists. If it doesn't, we'll update the cursor.
                         mouse_cursor_needs_check = true;
@@ -1429,7 +1460,7 @@ impl Player {
                     mouse_cursor_needs_check = false;
                     new_cursor = MouseCursor::Arrow;
                 } else if !context.input.is_mouse_down(MouseButton::Left)
-                    && (is_mouse_moved || is_mouse_button_changed)
+                    && (is_mouse_moved || changed_mouse_buttons.contains(&MouseButton::Left))
                 {
                     // In every other case, the cursor remains until the user interacts with the mouse again.
                     new_cursor = MouseCursor::Arrow;
@@ -1501,7 +1532,7 @@ impl Player {
                 context.mouse_data.hovered = new_over_object;
             }
             // Handle presses and releases.
-            if is_mouse_button_changed {
+            if changed_mouse_buttons.contains(&MouseButton::Left) {
                 if context.input.is_mouse_down(MouseButton::Left) {
                     let index = context.input.last_click_index();
                     // Pressed on a hovered object.
@@ -2112,7 +2143,7 @@ impl Player {
         self.mutate_with_update_context(|context| {
             Self::update_drag(context);
         });
-        self.update_mouse_state(false, false);
+        self.update_mouse_state(&HashSet::new(), false);
 
         // GC
         self.gc_arena.borrow_mut().collect_debt();
@@ -2582,6 +2613,8 @@ impl PlayerBuilder {
                     mouse_data: MouseData {
                         hovered: None,
                         pressed: None,
+                        right_pressed: None,
+                        middle_pressed: None,
                     },
                     avm1_shared_objects: HashMap::new(),
                     avm2_shared_objects: HashMap::new(),

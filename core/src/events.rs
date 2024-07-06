@@ -523,7 +523,7 @@ impl KeyCode {
 }
 
 /// Subset of `KeyCode` that contains only mouse buttons.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum MouseButton {
     Unknown = KeyCode::Unknown as isize,
     Left = KeyCode::MouseLeft as isize,
