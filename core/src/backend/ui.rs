@@ -1,5 +1,5 @@
 use crate::backend::navigator::OwnedFuture;
-use crate::events::{KeyCode, PlayerEvent, TextControlCode};
+use crate::events::{KeyCode, MouseButton, PlayerEvent, TextControlCode};
 pub use crate::loader::Error as DialogLoaderError;
 use chrono::{DateTime, TimeDelta, Utc};
 use downcast_rs::Downcast;
@@ -290,8 +290,8 @@ impl InputManager {
             .unwrap_or_default()
     }
 
-    pub fn is_mouse_down(&self) -> bool {
-        self.is_key_down(KeyCode::MouseLeft)
+    pub fn is_mouse_down(&self, button: MouseButton) -> bool {
+        self.is_key_down(button.into())
     }
 }
 

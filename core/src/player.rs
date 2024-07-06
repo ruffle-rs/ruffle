@@ -924,9 +924,10 @@ impl Player {
             _ => event,
         };
 
-        let prev_is_mouse_down = self.input.is_mouse_down();
+        let prev_is_mouse_down = self.input.is_mouse_down(MouseButton::Left);
         self.input.handle_event(&event);
-        let is_mouse_button_changed = self.input.is_mouse_down() != prev_is_mouse_down;
+        let is_mouse_button_changed =
+            self.input.is_mouse_down(MouseButton::Left) != prev_is_mouse_down;
 
         if cfg!(feature = "avm_debug") {
             match event {
@@ -1427,7 +1428,7 @@ impl Player {
                 } else if mouse_cursor_needs_check {
                     mouse_cursor_needs_check = false;
                     new_cursor = MouseCursor::Arrow;
-                } else if !context.input.is_mouse_down()
+                } else if !context.input.is_mouse_down(MouseButton::Left)
                     && (is_mouse_moved || is_mouse_button_changed)
                 {
                     // In every other case, the cursor remains until the user interacts with the mouse again.
@@ -1444,7 +1445,7 @@ impl Player {
             {
                 // If the mouse button is down, the object the user clicked on grabs the focus
                 // and fires "drag" events. Other objects are ignored.
-                if context.input.is_mouse_down() {
+                if context.input.is_mouse_down(MouseButton::Left) {
                     context.mouse_data.hovered = new_over_object;
                     if let Some(down_object) = context.mouse_data.pressed {
                         if InteractiveObject::option_ptr_eq(
@@ -1501,7 +1502,7 @@ impl Player {
             }
             // Handle presses and releases.
             if is_mouse_button_changed {
-                if context.input.is_mouse_down() {
+                if context.input.is_mouse_down(MouseButton::Left) {
                     let index = context.input.last_click_index();
                     // Pressed on a hovered object.
                     if let Some(over_object) = context.mouse_data.hovered {
