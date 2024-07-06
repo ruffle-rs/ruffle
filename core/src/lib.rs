@@ -1,5 +1,6 @@
 // This lint is helpful, but right now we have too many instances of it.
 // TODO: Remove this once all instances are fixed.
+// test
 #![allow(clippy::needless_pass_by_ref_mut)]
 // This lint is good in theory, but in AVMs we often need to do `let x = args.get(0); let y = args.get(1);` etc.
 // It'd make those much less readable and consistent.
