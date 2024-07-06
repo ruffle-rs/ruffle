@@ -18,7 +18,7 @@ use crate::display_object::stage::Stage;
 use crate::display_object::{
     DisplayObject, DisplayObjectBase, TDisplayObject, TDisplayObjectContainer,
 };
-use crate::events::{ClipEvent, ClipEventResult};
+use crate::events::{ClipEvent, ClipEventResult, MouseButton};
 use bitflags::bitflags;
 use gc_arena::{Collect, Mutation};
 use ruffle_macros::enum_trait_object;
@@ -289,6 +289,7 @@ pub trait TInteractiveObject<'gc>:
                     None,
                     0,
                     true,
+                    MouseButton::Left,
                 );
 
                 Avm2::dispatch_event(&mut activation.context, avm2_event, target);
@@ -303,6 +304,7 @@ pub trait TInteractiveObject<'gc>:
                     None,
                     0,
                     true,
+                    MouseButton::Left,
                 );
 
                 Avm2::dispatch_event(&mut activation.context, avm2_event, target);
@@ -331,6 +333,7 @@ pub trait TInteractiveObject<'gc>:
                         None,
                         0,
                         true,
+                        MouseButton::Left,
                     );
 
                     Avm2::dispatch_event(&mut activation.context, avm2_event, target);
@@ -344,6 +347,7 @@ pub trait TInteractiveObject<'gc>:
                         None,
                         0,
                         true,
+                        MouseButton::Left,
                     );
 
                     Avm2::dispatch_event(&mut activation.context, avm2_event, target);
@@ -361,6 +365,7 @@ pub trait TInteractiveObject<'gc>:
                     None,
                     0,
                     true,
+                    MouseButton::Left,
                 );
 
                 Avm2::dispatch_event(&mut activation.context, avm2_event, target);
@@ -377,6 +382,7 @@ pub trait TInteractiveObject<'gc>:
                     to,
                     0,
                     true,
+                    MouseButton::Left,
                 );
 
                 Avm2::dispatch_event(&mut activation.context, avm2_event, target);
@@ -393,8 +399,15 @@ pub trait TInteractiveObject<'gc>:
                         break;
                     }
 
-                    let avm2_event =
-                        Avm2EventObject::mouse_event(&mut activation, "rollOut", tgt, to, 0, false);
+                    let avm2_event = Avm2EventObject::mouse_event(
+                        &mut activation,
+                        "rollOut",
+                        tgt,
+                        to,
+                        0,
+                        false,
+                        MouseButton::Left,
+                    );
 
                     if let Avm2Value::Object(avm2_target) = tgt.object2() {
                         Avm2::dispatch_event(&mut activation.context, avm2_event, avm2_target);
@@ -427,6 +440,7 @@ pub trait TInteractiveObject<'gc>:
                         from,
                         0,
                         false,
+                        MouseButton::Left,
                     );
 
                     if let Avm2Value::Object(avm2_target) = tgt.object2() {
@@ -443,6 +457,7 @@ pub trait TInteractiveObject<'gc>:
                     from,
                     0,
                     true,
+                    MouseButton::Left,
                 );
 
                 Avm2::dispatch_event(&mut activation.context, avm2_event, target);
@@ -457,6 +472,7 @@ pub trait TInteractiveObject<'gc>:
                     None,
                     delta.lines() as i32,
                     true,
+                    MouseButton::Left,
                 );
 
                 Avm2::dispatch_event(&mut activation.context, avm2_event, target);
@@ -471,6 +487,7 @@ pub trait TInteractiveObject<'gc>:
                     None,
                     0,
                     true,
+                    MouseButton::Left,
                 );
 
                 Avm2::dispatch_event(&mut activation.context, avm2_event, target);

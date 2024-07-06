@@ -9,7 +9,7 @@ use crate::avm2::Error;
 use crate::context::UpdateContext;
 use crate::display_object::TDisplayObject;
 use crate::display_object::{DisplayObject, InteractiveObject, TInteractiveObject};
-use crate::events::KeyCode;
+use crate::events::{KeyCode, MouseButton};
 use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use std::cell::{Ref, RefMut};
@@ -100,6 +100,7 @@ impl<'gc> EventObject<'gc> {
         related_object: Option<InteractiveObject<'gc>>,
         delta: i32,
         bubbles: bool,
+        button: MouseButton,
     ) -> Object<'gc>
     where
         S: Into<AvmString<'gc>>,
@@ -137,7 +138,7 @@ impl<'gc> EventObject<'gc> {
                     // shiftKey
                     activation.context.input.is_key_down(KeyCode::Shift).into(),
                     // buttonDown
-                    activation.context.input.is_mouse_down().into(),
+                    activation.context.input.is_key_down(button.into()).into(),
                     // delta
                     delta.into(),
                 ],
