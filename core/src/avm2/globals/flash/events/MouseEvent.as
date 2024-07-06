@@ -2,7 +2,6 @@
 package flash.events
 {
     import flash.display.InteractiveObject;
-    import __ruffle__.stub_method;
 
     public class MouseEvent extends Event
     {
@@ -17,12 +16,19 @@ package flash.events
         public static const MOUSE_WHEEL:String = "mouseWheel";
         public static const ROLL_OUT:String = "rollOut";
         public static const ROLL_OVER:String = "rollOver";
+        [API("678")]
         public static const MIDDLE_CLICK:String = "middleClick";
+        [API("678")]
         public static const MIDDLE_MOUSE_DOWN:String = "middleMouseDown";
+        [API("678")]
         public static const MIDDLE_MOUSE_UP:String = "middleMouseUp";
+        [API("678")]
         public static const RIGHT_CLICK:String = "rightClick";
+        [API("678")]
         public static const RIGHT_MOUSE_DOWN:String = "rightMouseDown";
+        [API("678")]
         public static const RIGHT_MOUSE_UP:String = "rightMouseUp";
+        [API("678")]
         public static const CONTEXT_MENU:String = "contextMenu";
 
         public var relatedObject: InteractiveObject;
