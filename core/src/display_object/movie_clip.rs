@@ -55,7 +55,7 @@ use super::BitmapClass;
 type FrameNumber = u16;
 
 /// Indication of what frame `run_frame` should jump to next.
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Debug)]
 enum NextFrame {
     /// Construct and run the next frame in the clip.
     Next,
@@ -815,9 +815,9 @@ impl<'gc> MovieClip<'gc> {
                 (reader.get_ref().as_ptr() as u64).saturating_sub(data.data().as_ptr() as u64)
             };
             write.cur_preload_frame = if is_finished {
-                // Flag the movie as fully preloaded when we hit the end of the
-                // tag stream.
-                static_data.total_frames + 1
+                // Use `cur_frame` instead of `static_data.total_frames`, since the header
+                // might declare fewer frames than we actually have
+                cur_frame + 1
             } else {
                 cur_frame
             };
@@ -1276,8 +1276,16 @@ impl<'gc> MovieClip<'gc> {
         self.0.write(gc_context).current_frame = current_frame;
     }
 
-    pub fn frames_loaded(self) -> i32 {
+    // Gets the actual number of frames loaded (ignoring the SWF header)
+    pub fn real_frames_loaded(self) -> i32 {
         self.0.read().frames_loaded()
+    }
+
+    // Gets the number of frames loaded, clamping it to the number of frames
+    // declared in the SWF header. This is the value we report to AVM code
+    // to match Flash Player's behavior
+    pub fn frames_loaded_for_avm(self) -> i32 {
+        self.real_frames_loaded().min(self.total_frames() as i32)
     }
 
     pub fn total_bytes(self) -> i32 {
@@ -1470,12 +1478,25 @@ impl<'gc> MovieClip<'gc> {
 
     /// Determine what the clip's next frame should be.
     fn determine_next_frame(self) -> NextFrame {
-        if self.current_frame() < self.total_frames() {
+        let mc = self.0.read();
+        let mut reader = mc.static_data.swf.read_from(mc.tag_stream_pos);
+
+        // We ignore the frame count from the header, and instead continue
+        // until we reach the end of the stream or a `TagCode::End`.
+        // Flash Player ignores the frame count, and just executes the full
+        // tag stream before returning to the first frame.
+        if !reader.as_slice().is_empty()
+            && reader.read_tag_code().expect("Failed to read tag") != TagCode::End as u16
+        {
             NextFrame::Next
-        } else if self.total_frames() > 1 {
-            NextFrame::First
-        } else {
+        // The `current_frame` can be larger than `total_frames` if the SWF header
+        // declared fewer frames than we actually have. We only stop the swf if there
+        // was *really* at most a single frame (we declared at most 1 frame, and reached the end
+        // of the stream after executing 0 or 1 frames)
+        } else if self.total_frames() <= 1 && self.current_frame() <= 1 {
             NextFrame::Same
+        } else {
+            NextFrame::First
         }
     }
 
@@ -1507,7 +1528,7 @@ impl<'gc> MovieClip<'gc> {
 
         let mc = self.0.read();
         let tag_stream_start = mc.static_data.swf.as_ref().as_ptr() as u64;
-        let data = mc.static_data.swf.clone();
+        let data: SwfSlice = mc.static_data.swf.clone();
         let mut reader = data.read_from(mc.tag_stream_pos);
         drop(mc);
 
@@ -1815,7 +1836,8 @@ impl<'gc> MovieClip<'gc> {
         let mut index = 0;
 
         // Sanity; let's make sure we don't seek way too far.
-        let clamped_frame = frame.min(max(mc.frames_loaded(), 0) as FrameNumber);
+        // FIXME - properly handle seeking to a frame greater than the SWF header frame count
+        let clamped_frame = frame.min(max(self.frames_loaded_for_avm(), 0) as FrameNumber);
         drop(mc);
 
         let mut removed_frame_scripts: Vec<DisplayObject<'gc>> = vec![];
@@ -2592,7 +2614,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         // AVM1 code expects to execute in line with timeline instructions, so
         // it's exempted from frame construction.
         if self.movie().is_action_script_3()
-            && (self.frames_loaded() >= 1 || self.total_frames() == 0)
+            && (self.real_frames_loaded() >= 1 || self.total_frames() == 0)
         {
             let is_load_frame = !self.0.read().initialized();
             let needs_construction = if matches!(self.object2(), Avm2Value::Null) {
@@ -3395,10 +3417,7 @@ impl<'gc> MovieClipData<'gc> {
     }
 
     fn play(&mut self) {
-        // Can only play clips with multiple frames.
-        if self.total_frames() > 1 {
-            self.set_playing(true);
-        }
+        self.set_playing(true);
     }
 
     fn stop(&mut self, context: &mut UpdateContext<'gc>) {
