@@ -960,15 +960,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cookie-factory"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9885fa71e26b8ab7855e2ec7cae6e9b380edff76cd052e07c683a0319d51b3a2"
-dependencies = [
- "futures",
-]
-
-[[package]]
 name = "cookie_store"
 version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1786,9 +1777,8 @@ dependencies = [
 [[package]]
 name = "flash-lso"
 version = "0.6.0"
-source = "git+https://github.com/ruffle-rs/rust-flash-lso?rev=2f770555ea49c6db49c57c1dd46c7cc686e8dacc#2f770555ea49c6db49c57c1dd46c7cc686e8dacc"
+source = "git+https://github.com/ruffle-rs/rust-flash-lso?rev=f9e3de59a86df1c954fecba6b4b752df61cad73a#f9e3de59a86df1c954fecba6b4b752df61cad73a"
 dependencies = [
- "cookie-factory",
  "enumset",
  "nom",
  "thiserror",
