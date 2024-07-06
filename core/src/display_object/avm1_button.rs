@@ -1,4 +1,6 @@
+use super::interactive::Avm2MousePick;
 use crate::avm1::{Activation, ActivationIdentifier, Object, StageObject, TObject, Value};
+use crate::backend::audio::AudioManager;
 use crate::backend::ui::MouseCursor;
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::container::{
@@ -21,8 +23,6 @@ use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use swf::ButtonActionCondition;
-
-use super::interactive::Avm2MousePick;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
@@ -520,7 +520,9 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
             if let Some(condition) = condition {
                 self.0.run_actions(context, condition);
             }
-            self.0.play_sound(context, sound);
+            if let Some((id, sound_info)) = sound {
+                AudioManager::perform_sound_event(self.into(), context, *id, sound_info);
+            }
 
             // Queue ActionScript-defined event handlers after the SWF defined ones.
             // (e.g., clip.onRelease = foo).
@@ -617,18 +619,6 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
 }
 
 impl<'gc> Avm1ButtonData<'gc> {
-    fn play_sound(&self, context: &mut UpdateContext<'_, 'gc>, sound: Option<&swf::ButtonSound>) {
-        if let Some((id, sound_info)) = sound {
-            if let Some(sound_handle) = context
-                .library
-                .library_for_movie_mut(self.movie())
-                .get_sound(*id)
-            {
-                let _ = context.start_sound(sound_handle, sound_info, None, None);
-            }
-        }
-    }
-
     fn run_actions(
         &self,
         context: &mut UpdateContext<'_, 'gc>,
