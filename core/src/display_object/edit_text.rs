@@ -2335,6 +2335,10 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
                 .retain(|&text_field| !DisplayObject::ptr_eq(text_field.into(), (*self).into()));
         }
 
+        context
+            .audio_manager
+            .stop_sounds_with_display_object(context.audio, (*self).into());
+
         self.set_avm1_removed(context.gc_context, true);
     }
 }
