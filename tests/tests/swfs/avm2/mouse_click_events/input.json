@@ -1,0 +1,41 @@
+[
+    { "type": "MouseMove", "pos": [10,10] },
+    { "type": "MouseDown", "pos": [10,10], "btn": "Left", "assert_handled": { "value": true, "message": "should be handled (1)" } },
+    { "type": "MouseUp", "pos": [10,10], "btn": "Left" },
+    { "type": "MouseDown", "pos": [10,10], "btn": "Middle", "assert_handled": { "value": true, "message": "should be handled (2)" } },
+    { "type": "MouseUp", "pos": [10,10], "btn": "Middle" },
+    { "type": "MouseDown", "pos": [10,10], "btn": "Right", "assert_handled": { "value": true, "message": "should be handled (3)" } },
+    { "type": "MouseUp", "pos": [10,10], "btn": "Right" },
+
+    { "type": "MouseMove", "pos": [30,10] },
+    { "type": "MouseDown", "pos": [30,10], "btn": "Left", "assert_handled": { "value": true, "message": "should be handled (4)" } },
+    { "type": "MouseUp", "pos": [30,10], "btn": "Left" },
+    { "type": "MouseDown", "pos": [30,10], "btn": "Middle", "assert_handled": { "value": true, "message": "should be handled (5)" } },
+    { "type": "MouseUp", "pos": [30,10], "btn": "Middle" },
+    { "type": "MouseDown", "pos": [30,10], "btn": "Right", "assert_handled": { "value": true, "message": "should be handled (6)" } },
+    { "type": "MouseUp", "pos": [30,10], "btn": "Right" },
+
+    { "type": "MouseMove", "pos": [50,10] },
+    { "type": "MouseDown", "pos": [50,10], "btn": "Left", "assert_handled": { "value": true, "message": "should be handled (7)" } },
+    { "type": "MouseUp", "pos": [50,10], "btn": "Left" },
+    { "type": "MouseDown", "pos": [50,10], "btn": "Middle", "assert_handled": { "value": true, "message": "should be handled (8)" } },
+    { "type": "MouseUp", "pos": [50,10], "btn": "Middle" },
+    { "type": "MouseDown", "pos": [50,10], "btn": "Right", "assert_handled": { "value": true, "message": "should be handled (9)" } },
+    { "type": "MouseUp", "pos": [50,10], "btn": "Right" },
+
+    { "type": "MouseMove", "pos": [70,10] },
+    { "type": "MouseDown", "pos": [70,10], "btn": "Left", "assert_handled": { "value": true, "message": "should be handled (10)" } },
+    { "type": "MouseUp", "pos": [70,10], "btn": "Left" },
+    { "type": "MouseDown", "pos": [70,10], "btn": "Middle", "assert_handled": { "value": true, "message": "should be handled (11)" } },
+    { "type": "MouseUp", "pos": [70,10], "btn": "Middle" },
+    { "type": "MouseDown", "pos": [70,10], "btn": "Right", "assert_handled": { "value": true, "message": "should be handled (12)" } },
+    { "type": "MouseUp", "pos": [70,10], "btn": "Right" },
+
+    { "type": "MouseMove", "pos": [90,10] },
+    { "type": "MouseDown", "pos": [90,10], "btn": "Left", "assert_handled": { "value": false, "message": "should not be handled, context menu should appear (1)" } },
+    { "type": "MouseUp", "pos": [90,10], "btn": "Left" },
+    { "type": "MouseDown", "pos": [90,10], "btn": "Middle", "assert_handled": { "value": false, "message": "should not be handled, context menu should appear (2)" } },
+    { "type": "MouseUp", "pos": [90,10], "btn": "Middle" },
+    { "type": "MouseDown", "pos": [90,10], "btn": "Right", "assert_handled": { "value": false, "message": "should not be handled, context menu should appear (3)" } },
+    { "type": "MouseUp", "pos": [90,10], "btn": "Right" }
+]
