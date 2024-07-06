@@ -609,7 +609,16 @@ impl RuffleInstanceBuilder {
             .with_page_url(window.location().href().ok())
             .build();
 
-        if let Ok(mut core) = core.try_lock() {
+        let player_weak = Arc::downgrade(&core);
+
+        {
+            let mut core = core
+                .lock()
+                .expect("Failed to lock player after construction");
+            core.navigator_mut()
+                .downcast_mut::<WebNavigatorBackend>()
+                .expect("Expected WebNavigatorBackend")
+                .set_player(player_weak);
             // Set config parameters.
             core.set_volume(self.volume);
             core.set_background_color(self.background_color);

@@ -122,7 +122,7 @@ pub struct UpdateContext<'a, 'gc> {
     pub audio_manager: &'a mut AudioManager<'gc>,
 
     /// The navigator backend, used by the AVM to make HTTP requests and visit webpages.
-    pub navigator: &'a mut (dyn NavigatorBackend + 'a),
+    pub navigator: &'a mut dyn NavigatorBackend,
 
     /// The renderer, used by the display objects to draw themselves.
     pub renderer: &'a mut dyn RenderBackend,

@@ -4,6 +4,7 @@ use crate::loader::Error;
 use crate::socket::{ConnectionState, SocketAction, SocketHandle};
 use crate::string::WStr;
 use async_channel::{Receiver, Sender};
+use downcast_rs::Downcast;
 use encoding_rs::Encoding;
 use indexmap::IndexMap;
 use std::borrow::Cow;
@@ -244,7 +245,7 @@ pub struct ErrorResponse {
 pub type OwnedFuture<T, E> = Pin<Box<dyn Future<Output = Result<T, E>> + 'static>>;
 
 /// A backend interacting with a browser environment.
-pub trait NavigatorBackend {
+pub trait NavigatorBackend: Downcast {
     /// Cause a browser navigation to a given URL.
     ///
     /// The URL given may be any URL scheme a browser can support. This may not
@@ -319,6 +320,7 @@ pub trait NavigatorBackend {
         sender: Sender<SocketAction>,
     );
 }
+impl_downcast!(NavigatorBackend);
 
 #[cfg(not(target_family = "wasm"))]
 pub struct NullExecutor(futures::executor::LocalPool);
