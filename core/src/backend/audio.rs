@@ -433,6 +433,8 @@ impl<'gc> AudioManager<'gc> {
         context.audio_manager.update_sound_transforms(context.audio);
     }
 
+    /// Starts a sound and optionally associates it with a Display Object.
+    /// Sounds associated with DOs are an AVM1/Timeline concept and should not be called from AVM2 scripts.
     pub fn start_sound(
         &mut self,
         audio: &mut dyn AudioBackend,
@@ -498,6 +500,8 @@ impl<'gc> AudioManager<'gc> {
         });
     }
 
+    /// Stops any sound associated with the given Display Object.
+    /// Sounds associated with DOs are an AVM1/Timeline concept and should not be called from AVM2 scripts.
     pub fn stop_sounds_with_display_object(
         &mut self,
         audio: &mut dyn AudioBackend,
