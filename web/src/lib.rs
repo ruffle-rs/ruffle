@@ -183,6 +183,9 @@ extern "C" {
 
     #[wasm_bindgen(method, js_name = "displayClipboardModal")]
     fn display_clipboard_modal(this: &JavascriptPlayer, access_denied: bool);
+
+    #[wasm_bindgen(method, js_name = "suppressContextMenu")]
+    fn suppress_context_menu(this: &JavascriptPlayer);
 }
 
 #[derive(Debug, Clone)]
@@ -556,11 +559,13 @@ impl RuffleHandle {
             ));
 
             // Create mouse down handler.
+            let js_player_callback = js_player.clone();
             instance.mouse_down_callback = Some(JsCallback::register(
                 &player.canvas,
                 "pointerdown",
                 false,
                 move |js_event: PointerEvent| {
+                    let js_player_callback = js_player_callback.clone();
                     let _ = ruffle.with_instance(move |instance| {
                         if let Some(target) = js_event.current_target() {
                             let _ = target
@@ -580,9 +585,21 @@ impl RuffleHandle {
                             // TODO The index should be provided by the browser, not calculated.
                             index: None,
                         };
-                        let _ = instance.with_core_mut(|core| {
-                            core.handle_event(event);
-                        });
+                        let handled = instance
+                            .with_core_mut(|core| core.handle_event(event))
+                            .unwrap_or_default();
+
+                        if handled
+                            && matches!(
+                                event,
+                                PlayerEvent::MouseDown {
+                                    button: MouseButton::Right,
+                                    ..
+                                }
+                            )
+                        {
+                            js_player_callback.suppress_context_menu();
+                        }
 
                         js_event.prevent_default();
                     });
