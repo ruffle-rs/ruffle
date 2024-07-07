@@ -25,8 +25,6 @@
         "@fluent/langneg": "^0.7.0",
         "@tsconfig/strictest": "^2.0.5",
         "@types/mocha": "^10.0.7",
-        "eslint": "^8.57.0",
-        "eslint-plugin-jsdoc": "^48.5.2",
         "mocha": "^10.6.0",
         "replace-in-file": "^8.1.0",
         "typedoc": "^0.26.3",
