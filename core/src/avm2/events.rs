@@ -46,22 +46,22 @@ pub enum PropagationMode {
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct Event<'gc> {
-    /// Whether or not the event "bubbles" - fires on it's parents after it
+    /// Whether the event "bubbles" - fires on its parents after it
     /// fires on the child.
     bubbles: bool,
 
-    /// Whether or not the event has a default response that an event handler
+    /// Whether the event has a default response that an event handler
     /// can request to not occur.
     cancelable: bool,
 
-    /// Whether or not the event's default response has been cancelled.
+    /// Whether the event's default response has been cancelled.
     cancelled: bool,
 
-    /// Whether or not event propagation has stopped.
+    /// Whether event propagation has stopped.
     #[collect(require_static)]
     propagation: PropagationMode,
 
-    /// The object currently having it's event handlers invoked.
+    /// The object currently having its event handlers invoked.
     current_target: Option<Object<'gc>>,
 
     /// The current event phase.
@@ -519,7 +519,6 @@ pub fn dispatch_event<'gc>(
         }
     }
 
-    let was_not_cancelled = !event.as_event().unwrap().is_cancelled();
-
-    Ok(was_not_cancelled)
+    let handled = event.as_event().unwrap().dispatched;
+    Ok(handled)
 }
