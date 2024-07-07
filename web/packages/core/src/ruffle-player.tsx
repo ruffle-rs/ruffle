@@ -145,6 +145,10 @@ export class RufflePlayer extends HTMLElement {
     // Set to true when a contextmenu event is seen.
     private contextMenuSupported = false;
 
+    // When set to `true`, the next context menu event will
+    // not show the context menu.
+    private _suppressContextMenu = false;
+
     // The effective config loaded upon `.load()`.
     private loadedConfig?: URLLoadOptions | DataLoadOptions;
 
@@ -1572,8 +1576,13 @@ export class RufflePlayer extends HTMLElement {
             event.pointerType !== "mouse" &&
             this.pointerMoveMaxDistance < maxAllowedDistance
         ) {
+            // TODO Implement handling right clicks for mobile.
             this.showContextMenu(event);
         }
+    }
+
+    protected suppressContextMenu(): void {
+        this._suppressContextMenu = true;
     }
 
     private showContextMenu(event: MouseEvent | PointerEvent): void {
@@ -1583,10 +1592,18 @@ export class RufflePlayer extends HTMLElement {
 
         event.preventDefault();
 
+        if (this._suppressContextMenu) {
+            this._suppressContextMenu = false;
+            return;
+        }
+
         if (this.shadow.querySelectorAll(".modal:not(.hidden)").length !== 0) {
             return;
         }
 
+        // TODO Currently when opening context menu,
+        //   mouse up event is fired on mouse up,
+        //   but should be on context menu close.
         if (event.type === "contextmenu") {
             this.contextMenuSupported = true;
             document.documentElement.addEventListener(
