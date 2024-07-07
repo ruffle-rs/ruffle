@@ -141,6 +141,11 @@ impl<T: Coordinate> Rectangle<T> {
         }
         self
     }
+
+    #[must_use]
+    pub fn is_point(&self) -> bool {
+        self.x_min == self.x_max && self.y_min == self.y_max
+    }
 }
 
 impl<T: Coordinate> Default for Rectangle<T> {

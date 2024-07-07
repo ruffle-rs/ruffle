@@ -241,6 +241,28 @@ impl<'gc> FocusTracker<'gc> {
             return Highlight::ActiveHidden;
         }
 
+        // KJ: Flash Player has a fairly complicated, implementation-dependent behavior
+        // related to degenerate bounds and bounds that change after being highlighted.
+        // It seems that the highlight is hidden when there's nothing to be rendered:
+        //   1. For a clip with untouched graphics, the highlight is hidden.
+        //   2. For a clip with moveTo(0,0) lineTo(0,0), the highlight is not hidden.
+        // Sometimes highlight is not updated after highlight bounds change,
+        // but this behavior is rare and inconsistent, it even differs depending on
+        // when the update happens.
+        //
+        // However, the most common case of depending on the behavior above is when
+        // the SWF creates a movie clip, focuses it, and then adds some content to it.
+        // In that case FP will not render the highlight (even if in theory it should).
+        // The following condition covers this case, but:
+        //   1. In some rare cases, it will hide the highlight when it shouldn't
+        //      (e.g. non-empty graphics degenerated into a point).
+        //   2. It does not take into account that sometimes FP does not update highlight bounds.
+        // However, I've never seen these cases in real SWFs, only during testing.
+        let bounds = focus.highlight_bounds();
+        if !bounds.is_valid() || bounds.is_point() {
+            return Highlight::ActiveHidden;
+        }
+
         Highlight::ActiveVisible
     }
 
