@@ -24,9 +24,7 @@ use gc_arena::{Collect, Mutation};
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
-use std::time::Duration;
 use swf::{Point, Rectangle, Twips};
-use web_time::Instant;
 
 /// Find the lowest common ancestor between the display objects in `from` and
 /// `to`.
@@ -90,13 +88,6 @@ pub struct InteractiveObjectBase<'gc> {
     flags: InteractiveObjectFlags,
     context_menu: Avm2Value<'gc>,
 
-    /// The time of the last click registered on this object.
-    ///
-    /// This should be cleared to `None` when the mouse leaves the current
-    /// display object.
-    #[collect(require_static)]
-    last_click: Option<Instant>,
-
     #[collect(require_static)]
     tab_enabled: Option<bool>,
 
@@ -113,7 +104,6 @@ impl<'gc> Default for InteractiveObjectBase<'gc> {
             base: Default::default(),
             flags: InteractiveObjectFlags::MOUSE_ENABLED,
             context_menu: Avm2Value::Null,
-            last_click: None,
             tab_enabled: None,
             tab_index: None,
             focus_rect: None,
@@ -328,22 +318,14 @@ pub trait TInteractiveObject<'gc>:
 
                 Avm2::dispatch_event(&mut activation.context, avm2_event, target).into()
             }
-            ClipEvent::Release { .. } => {
-                let read = self.raw_interactive();
-                let last_click = read.last_click;
-                let this_click = Instant::now();
-
-                let is_double_click = read
+            ClipEvent::Release { index } => {
+                let is_double_click = index % 2 != 0;
+                let double_click_enabled = self
+                    .raw_interactive()
                     .flags
-                    .contains(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED)
-                    && last_click
-                        .map(|lc| this_click - lc < Duration::from_secs(1))
-                        .unwrap_or(false);
+                    .contains(InteractiveObjectFlags::DOUBLE_CLICK_ENABLED);
 
-                drop(read);
-
-                let handled;
-                if is_double_click {
+                if is_double_click && double_click_enabled {
                     let avm2_event = Avm2EventObject::mouse_event(
                         &mut activation,
                         "doubleClick",
@@ -354,9 +336,7 @@ pub trait TInteractiveObject<'gc>:
                         MouseButton::Left,
                     );
 
-                    handled = Avm2::dispatch_event(&mut activation.context, avm2_event, target);
-
-                    self.raw_interactive_mut(context.gc_context).last_click = None;
+                    Avm2::dispatch_event(&mut activation.context, avm2_event, target).into()
                 } else {
                     let avm2_event = Avm2EventObject::mouse_event_click(
                         &mut activation,
@@ -364,12 +344,8 @@ pub trait TInteractiveObject<'gc>:
                         MouseButton::Left,
                     );
 
-                    handled = Avm2::dispatch_event(&mut activation.context, avm2_event, target);
-
-                    self.raw_interactive_mut(context.gc_context).last_click = Some(this_click);
+                    Avm2::dispatch_event(&mut activation.context, avm2_event, target).into()
                 }
-
-                handled.into()
             }
             ClipEvent::RightRelease | ClipEvent::MiddleRelease => {
                 let avm2_event = Avm2EventObject::mouse_event_click(
@@ -395,11 +371,7 @@ pub trait TInteractiveObject<'gc>:
                     MouseButton::Left,
                 );
 
-                let handled = Avm2::dispatch_event(&mut activation.context, avm2_event, target);
-
-                self.raw_interactive_mut(context.gc_context).last_click = None;
-
-                handled.into()
+                Avm2::dispatch_event(&mut activation.context, avm2_event, target).into()
             }
             ClipEvent::RollOut { to } | ClipEvent::DragOut { to } => {
                 let avm2_event = Avm2EventObject::mouse_event(
@@ -444,8 +416,6 @@ pub trait TInteractiveObject<'gc>:
 
                     rollout_target = tgt.parent();
                 }
-
-                self.raw_interactive_mut(context.gc_context).last_click = None;
 
                 handled.into()
             }
