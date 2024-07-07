@@ -67,16 +67,6 @@ export class RuffleObject extends RufflePlayer {
     private params: Record<string, string> = {};
 
     /**
-     * Constructs a new Ruffle flash player for insertion onto the page.
-     *
-     * This specific class tries to polyfill existing `<object>` tags,
-     * and should not be used. Prefer [[RufflePlayer]] instead.
-     */
-    constructor() {
-        super();
-    }
-
-    /**
      * @ignore
      * @internal
      */

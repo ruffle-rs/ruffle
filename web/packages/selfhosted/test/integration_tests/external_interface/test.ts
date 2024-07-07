@@ -40,7 +40,7 @@ declare global {
             returnAValue: <T>(value: T) => T;
 
             // Should return an exception...
-            throwAnException: void;
+            throwAnException: () => void;
 
             // Calls `ExternalInterface.marshallExceptions = value`
             setMarshallExceptions: (value: boolean) => void;

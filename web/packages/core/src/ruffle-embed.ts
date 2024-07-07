@@ -18,16 +18,6 @@ import { isSwf } from "./swf-utils";
  */
 export class RuffleEmbed extends RufflePlayer {
     /**
-     * Constructs a new Ruffle flash player for insertion onto the page.
-     *
-     * This specific class tries to polyfill existing `<embed>` tags,
-     * and should not be used. Prefer [[RufflePlayer]] instead.
-     */
-    constructor() {
-        super();
-    }
-
-    /**
      * @ignore
      * @internal
      */
