@@ -1023,6 +1023,7 @@ impl<'gc> Class<'gc> {
             ),
         );
     }
+
     #[inline(never)]
     pub fn define_constant_function_instance_trait(
         self,
@@ -1039,6 +1040,7 @@ impl<'gc> Class<'gc> {
             ),
         );
     }
+
     #[inline(never)]
     pub fn define_constant_number_class_traits(
         self,
@@ -1057,6 +1059,7 @@ impl<'gc> Class<'gc> {
             );
         }
     }
+
     #[inline(never)]
     pub fn define_constant_uint_class_traits(
         self,
@@ -1075,6 +1078,7 @@ impl<'gc> Class<'gc> {
             );
         }
     }
+
     #[inline(never)]
     pub fn define_constant_int_class_traits(
         self,
@@ -1093,38 +1097,7 @@ impl<'gc> Class<'gc> {
             );
         }
     }
-    #[inline(never)]
-    pub fn define_builtin_class_properties(
-        self,
-        mc: &Mutation<'gc>,
-        namespace: Namespace<'gc>,
-        items: &[(
-            &'static str,
-            Option<NativeMethodImpl>,
-            Option<NativeMethodImpl>,
-        )],
-    ) {
-        for &(name, getter, setter) in items {
-            if let Some(getter) = getter {
-                self.define_class_trait(
-                    mc,
-                    Trait::from_getter(
-                        QName::new(namespace, name),
-                        Method::from_builtin(getter, name, mc),
-                    ),
-                );
-            }
-            if let Some(setter) = setter {
-                self.define_class_trait(
-                    mc,
-                    Trait::from_setter(
-                        QName::new(namespace, name),
-                        Method::from_builtin(setter, name, mc),
-                    ),
-                );
-            }
-        }
-    }
+
     #[inline(never)]
     pub fn define_builtin_instance_methods(
         self,
@@ -1183,6 +1156,7 @@ impl<'gc> Class<'gc> {
             );
         }
     }
+
     #[inline(never)]
     pub fn define_builtin_instance_properties(
         self,
@@ -1215,24 +1189,7 @@ impl<'gc> Class<'gc> {
             }
         }
     }
-    #[inline(never)]
-    pub fn define_slot_number_instance_traits(
-        self,
-        namespace: Namespace<'gc>,
-        items: &[(&'static str, Option<f64>)],
-        activation: &mut Activation<'_, 'gc>,
-    ) {
-        for &(name, value) in items {
-            self.define_instance_trait(
-                activation.context.gc_context,
-                Trait::from_slot(
-                    QName::new(namespace, name),
-                    Multiname::new(activation.avm2().public_namespace_base_version, "Number"),
-                    value.map(|v| v.into()),
-                ),
-            );
-        }
-    }
+
     #[inline(never)]
     pub fn define_constant_int_instance_traits(
         self,
