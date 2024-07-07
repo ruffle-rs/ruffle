@@ -8,7 +8,6 @@ use crate::context::GcContext;
 use crate::display_object::{
     AutoSizeMode, EditText, TDisplayObject, TInteractiveObject, TextSelection,
 };
-use crate::font::round_down_to_pixel;
 use crate::html::TextFormat;
 use crate::string::{AvmString, WStr};
 use gc_arena::Gc;
@@ -490,7 +489,7 @@ pub fn text_width<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let metrics = this.measure_text(&mut activation.context);
-    Ok(round_down_to_pixel(metrics.0).to_pixels().into())
+    Ok(metrics.0.trunc_to_pixel().to_pixels().into())
 }
 
 pub fn text_height<'gc>(
@@ -498,7 +497,7 @@ pub fn text_height<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let metrics = this.measure_text(&mut activation.context);
-    Ok(round_down_to_pixel(metrics.1).to_pixels().into())
+    Ok(metrics.1.trunc_to_pixel().to_pixels().into())
 }
 
 pub fn mouse_wheel_enabled<'gc>(

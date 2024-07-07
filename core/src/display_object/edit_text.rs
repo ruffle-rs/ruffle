@@ -19,7 +19,7 @@ use crate::display_object::interactive::{
 };
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
 use crate::events::{ClipEvent, ClipEventResult, TextControlCode};
-use crate::font::{round_down_to_pixel, FontType, Glyph, TextRenderSettings};
+use crate::font::{FontType, Glyph, TextRenderSettings};
 use crate::html;
 use crate::html::{
     FormatSpans, Layout, LayoutBox, LayoutContent, LayoutMetrics, Position, TextFormat,
@@ -809,11 +809,10 @@ impl<'gc> EditText<'gc> {
             return 0.0;
         }
 
-        let base = round_down_to_pixel(
-            edit_text.layout.exterior_bounds().width() - edit_text.bounds.width(),
-        )
-        .to_pixels()
-        .max(0.0);
+        let base = (edit_text.layout.exterior_bounds().width() - edit_text.bounds.width())
+            .trunc_to_pixel()
+            .to_pixels()
+            .max(0.0);
 
         // input text boxes get extra space at the end
         if !edit_text.flags.contains(EditTextFlag::READ_ONLY) {
