@@ -146,6 +146,69 @@ impl<'gc> EventObject<'gc> {
             .unwrap() // we don't expect to break here
     }
 
+    pub fn mouse_event_down(
+        activation: &mut Activation<'_, 'gc>,
+        target: DisplayObject<'gc>,
+        button: MouseButton,
+    ) -> Object<'gc> {
+        Self::mouse_event(
+            activation,
+            match button {
+                MouseButton::Left => "mouseDown",
+                MouseButton::Right => "rightMouseDown",
+                MouseButton::Middle => "middleMouseDown",
+                MouseButton::Unknown => unreachable!(),
+            },
+            target,
+            None,
+            0,
+            true,
+            button,
+        )
+    }
+
+    pub fn mouse_event_up(
+        activation: &mut Activation<'_, 'gc>,
+        target: DisplayObject<'gc>,
+        button: MouseButton,
+    ) -> Object<'gc> {
+        Self::mouse_event(
+            activation,
+            match button {
+                MouseButton::Left => "mouseUp",
+                MouseButton::Right => "rightMouseUp",
+                MouseButton::Middle => "middleMouseUp",
+                MouseButton::Unknown => unreachable!(),
+            },
+            target,
+            None,
+            0,
+            true,
+            button,
+        )
+    }
+
+    pub fn mouse_event_click(
+        activation: &mut Activation<'_, 'gc>,
+        target: DisplayObject<'gc>,
+        button: MouseButton,
+    ) -> Object<'gc> {
+        Self::mouse_event(
+            activation,
+            match button {
+                MouseButton::Left => "click",
+                MouseButton::Right => "rightClick",
+                MouseButton::Middle => "middleClick",
+                MouseButton::Unknown => unreachable!(),
+            },
+            target,
+            None,
+            0,
+            true,
+            button,
+        )
+    }
+
     pub fn text_event<S>(
         activation: &mut Activation<'_, 'gc>,
         event_type: S,
