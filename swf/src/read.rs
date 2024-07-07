@@ -179,14 +179,7 @@ fn make_zlib_reader<'a, R: Read + 'a>(input: R) -> Result<Box<dyn Read + 'a>> {
     Ok(Box::new(ZlibDecoder::new(input)))
 }
 
-#[cfg(all(feature = "libflate", not(feature = "flate2")))]
-fn make_zlib_reader<'a, R: Read + 'a>(input: R) -> Result<Box<dyn Read + 'a>> {
-    use libflate::zlib::Decoder;
-    let decoder = Decoder::new(input)?;
-    Ok(Box::new(decoder))
-}
-
-#[cfg(not(any(feature = "flate2", feature = "libflate")))]
+#[cfg(not(feature = "flate2"))]
 fn make_zlib_reader<'a, R: Read + 'a>(_input: R) -> Result<Box<dyn Read + 'a>> {
     Err(Error::unsupported(
         "Support for Zlib compressed SWFs is not enabled.",

@@ -91,16 +91,7 @@ fn write_zlib_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
     Ok(())
 }
 
-#[cfg(all(feature = "libflate", not(feature = "flate2")))]
-fn write_zlib_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
-    use libflate::zlib::Encoder;
-    let mut encoder = Encoder::new(&mut output)?;
-    encoder.write_all(&swf_body)?;
-    encoder.finish().into_result()?;
-    Ok(())
-}
-
-#[cfg(not(any(feature = "flate2", feature = "libflate")))]
+#[cfg(not(feature = "flate2"))]
 fn write_zlib_swf<W: Write>(_output: W, _swf_body: &[u8]) -> Result<()> {
     Err(Error::unsupported(
         "Support for Zlib compressed SWFs is not enabled.",
