@@ -401,8 +401,6 @@ Ruffle depends on third-party libraries with compatible licenses.
 | [lazy_static](https://github.com/rust-lang-nursery/lazy-static.rs) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2010 The Rust Project Developers  | 
 | [lazycell](https://github.com/indiv0/lazycell) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) Alex Crichton <alex@alexcrichton.com>, Nikita Pekin <contact@nikitapek.in> | 
 | [libc](https://github.com/rust-lang/libc) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2014-2020 The Rust Project Developers  | 
-| [libflate](https://github.com/sile/libflate) | [MIT](#MIT) | Copyright (c) 2016 Takeru Ohta <phjgt308@gmail.com>  | 
-| [libflate_lz77](https://github.com/sile/libflate) | [MIT](#MIT) | Copyright (c) 2016 Takeru Ohta <phjgt308@gmail.com>  | 
 | [libloading](https://github.com/nagisa/rust_libloading/) | [ISC](#ISC) | Copyright © 2015, Simonas Kazlauskas  | 
 | [libnghttp2-sys](https://github.com/alexcrichton/nghttp2-rs) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2014 Alex Crichton  | 
 | [libz-sys](https://github.com/rust-lang/libz-sys) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2014 Alex Crichton Copyright (c) 2020 Josh Triplett  | 
