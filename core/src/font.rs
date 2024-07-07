@@ -36,23 +36,8 @@ pub enum DefaultFont {
     JapaneseMincho,
 }
 
-/// Certain Flash routines measure text by rounding down to the nearest whole pixel.
-pub fn round_down_to_pixel(t: Twips) -> Twips {
-    Twips::from_pixels(t.to_pixels().floor())
-}
-
-pub fn round_to_pixel(t: Twips) -> Twips {
+fn round_to_pixel(t: Twips) -> Twips {
     Twips::from_pixels(t.to_pixels().round())
-}
-
-pub fn round_to_pixel_half_even(t: Twips) -> Twips {
-    let mod2 = t.to_pixels() % 2.0;
-    let mod2 = if mod2 < 0.0 { mod2 + 2.0 } else { mod2 };
-    if mod2 <= 0.5 || (mod2 >= 1.0 && mod2 < 1.5) {
-        Twips::from_pixels(t.to_pixels().floor())
-    } else {
-        Twips::from_pixels(t.to_pixels().ceil())
-    }
 }
 
 /// Parameters necessary to evaluate a font.
@@ -65,7 +50,7 @@ pub struct EvalParameters {
     /// after normal or kerned glyph advances are applied.
     letter_spacing: Twips,
 
-    /// Whether or not to allow use of font-provided kerning metrics.
+    /// Whether to allow use of font-provided kerning metrics.
     ///
     /// Fonts can optionally add or remove additional spacing between specific
     /// pairs of letters, separate from the ordinary width between glyphs. This
@@ -611,7 +596,7 @@ impl<'gc> Font<'gc> {
                     let unspaced_advance =
                         round_to_pixel(Twips::new((advance.get() as f32 * scale) as i32));
                     let spaced_advance =
-                        unspaced_advance + round_to_pixel_half_even(params.letter_spacing);
+                        unspaced_advance + params.letter_spacing.round_to_pixel_ties_even();
                     if spaced_advance > Twips::ZERO {
                         spaced_advance
                     } else {
@@ -647,8 +632,8 @@ impl<'gc> Font<'gc> {
                 let ty = transform.matrix.ty;
 
                 if round {
-                    width = width.max(round_down_to_pixel(tx + advance));
-                    height = height.max(round_down_to_pixel(ty));
+                    width = width.max((tx + advance).trunc_to_pixel());
+                    height = height.max(ty.trunc_to_pixel());
                 } else {
                     width = width.max(tx + advance);
                     height = height.max(ty);
