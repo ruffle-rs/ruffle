@@ -870,7 +870,7 @@ impl Player {
 
     /// Handle an event sent into the player from the external windowing system
     /// or an HTML element.
-    pub fn handle_event(&mut self, event: PlayerEvent) {
+    pub fn handle_event(&mut self, event: PlayerEvent) -> bool {
         match event {
             PlayerEvent::FocusGained | PlayerEvent::FocusLost => self.handle_focus_event(event),
             PlayerEvent::KeyDown { .. }
@@ -887,13 +887,15 @@ impl Player {
         }
     }
 
-    fn handle_focus_event(&mut self, event: PlayerEvent) {
+    fn handle_focus_event(&mut self, event: PlayerEvent) -> bool {
         if let PlayerEvent::FocusLost = event {
             self.mutate_with_update_context(|context| {
                 let focus_tracker = context.focus_tracker;
                 focus_tracker.reset_focus(context);
             });
         }
+
+        true
     }
 
     /// Input event handling is a complicated affair, involving several different
@@ -918,7 +920,8 @@ impl Player {
     /// 7. The AVM1 action queue is drained.
     /// 8. Mouse state is updated. This triggers button rollovers, which are a
     ///    second wave of event processing.
-    fn handle_input_event(&mut self, event: PlayerEvent) {
+    fn handle_input_event(&mut self, event: PlayerEvent) -> bool {
+        let mut player_event_handled = false;
         // Optionally transform gamepad button events into key events.
         let event = match event {
             PlayerEvent::GamepadButtonDown { button } => {
@@ -929,7 +932,7 @@ impl Player {
                     }
                 } else {
                     // Just ignore this event.
-                    return;
+                    return false;
                 }
             }
             PlayerEvent::GamepadButtonUp { button } => {
@@ -940,7 +943,7 @@ impl Player {
                     }
                 } else {
                     // Just ignore this event.
-                    return;
+                    return false;
                 }
             }
             _ => event,
@@ -1156,7 +1159,10 @@ impl Player {
 
             // Fire clip event on all clips.
             if let Some(clip_event) = clip_event {
-                context.stage.handle_clip_event(context, clip_event);
+                if context.stage.handle_clip_event(context, clip_event) == ClipEventResult::Handled
+                {
+                    player_event_handled = true;
+                }
             }
 
             // Fire event listener on appropriate object
@@ -1182,6 +1188,10 @@ impl Player {
             } else {
                 false
             };
+
+            if key_press_handled {
+                player_event_handled = true;
+            }
 
             // KeyPress events take precedence over text input.
             if !key_press_handled {
@@ -1248,7 +1258,11 @@ impl Player {
             let is_mouse_moved = prev_mouse_position != self.mouse_position;
 
             // This fires button rollover/press events, which should run after the above mouseMove events.
-            if self.update_mouse_state(&changed_mouse_buttons, is_mouse_moved) {
+            if self.update_mouse_state(
+                &changed_mouse_buttons,
+                is_mouse_moved,
+                &mut player_event_handled,
+            ) {
                 self.needs_render = true;
             }
         }
@@ -1270,7 +1284,7 @@ impl Player {
         }
 
         if let PlayerEvent::MouseLeave = event {
-            if self.update_mouse_state(&changed_mouse_buttons, true) {
+            if self.update_mouse_state(&changed_mouse_buttons, true, &mut player_event_handled) {
                 self.needs_render = true;
             }
         }
@@ -1280,6 +1294,8 @@ impl Player {
                 context.focus_tracker.reset_highlight();
             });
         }
+
+        player_event_handled
     }
 
     fn should_reset_highlight(&self, event: PlayerEvent) -> bool {
@@ -1372,6 +1388,7 @@ impl Player {
         &mut self,
         changed_mouse_buttons: &HashSet<MouseButton>,
         is_mouse_moved: bool,
+        player_event_handled: &mut bool,
     ) -> bool {
         let mut new_cursor = self.mouse_cursor;
         let mut mouse_cursor_needs_check = self.mouse_cursor_needs_check;
@@ -1646,9 +1663,12 @@ impl Player {
                 for (object, event) in events {
                     let display_object = object.as_displayobject();
                     if !display_object.avm1_removed() {
-                        object.handle_clip_event(context, event);
-                        if display_object.movie().is_action_script_3() {
-                            object.event_dispatch_to_avm2(context, event);
+                        if object.handle_clip_event(context, event) == ClipEventResult::Handled {
+                            *player_event_handled = true;
+                        }
+                        if object.event_dispatch_to_avm2(context, event) == ClipEventResult::Handled
+                        {
+                            *player_event_handled = true;
                         }
                         if matches!(event, ClipEvent::Press { .. }) {
                             Self::update_focus_on_mouse_press(context, display_object);
@@ -2186,7 +2206,7 @@ impl Player {
         self.mutate_with_update_context(|context| {
             Self::update_drag(context);
         });
-        self.update_mouse_state(&HashSet::new(), false);
+        self.update_mouse_state(&HashSet::new(), false, &mut false);
 
         // GC
         self.gc_arena.borrow_mut().collect_debt();
