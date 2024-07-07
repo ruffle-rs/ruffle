@@ -54,5 +54,8 @@
         "lint": "npm run checkTypes --workspaces --if-present && eslint . && stylelint **.css",
         "format": "eslint . --fix && stylelint --fix **.css",
         "version-seal": "cross-env ENABLE_VERSION_SEAL=true tsx packages/core/tools/set_version.ts"
+    },
+    "overrides": {
+        "ws": "^7.0.0"
     }
 }
