@@ -66,6 +66,7 @@ pub enum AutomatedEvent {
         pos: MousePosition,
         btn: MouseButton,
         index: Option<usize>,
+        assert_handled: Option<EventHandledAssertion>,
     },
 
     /// Release a mouse button.
@@ -100,4 +101,10 @@ pub enum AutomatedEvent {
 
     /// Inform the player that the focus has been lost (i.e. the user focused another window).
     FocusLost,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct EventHandledAssertion {
+    pub value: bool,
+    pub message: String,
 }
