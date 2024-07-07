@@ -434,11 +434,13 @@ impl<'gc> Avm2<'gc> {
     /// any resulting error (after logging).
     ///
     /// Attempts to dispatch a non-event object will panic.
+    ///
+    /// Returns `true` if the event has been handled.
     pub fn dispatch_event(
         context: &mut UpdateContext<'_, 'gc>,
         event: Object<'gc>,
         target: Object<'gc>,
-    ) {
+    ) -> bool {
         Self::dispatch_event_internal(context, event, target, false)
     }
 
@@ -452,7 +454,7 @@ impl<'gc> Avm2<'gc> {
         context: &mut UpdateContext<'_, 'gc>,
         event: Object<'gc>,
         target: Object<'gc>,
-    ) {
+    ) -> bool {
         Self::dispatch_event_internal(context, event, target, true)
     }
 
@@ -461,21 +463,24 @@ impl<'gc> Avm2<'gc> {
         event: Object<'gc>,
         target: Object<'gc>,
         simulate_dispatch: bool,
-    ) {
+    ) -> bool {
         let event_name = event
             .as_event()
             .map(|e| e.event_type())
             .unwrap_or_else(|| panic!("cannot dispatch non-event object: {:?}", event));
 
         let mut activation = Activation::from_nothing(context.reborrow());
-        if let Err(err) = events::dispatch_event(&mut activation, target, event, simulate_dispatch)
-        {
-            tracing::error!(
-                "Encountered AVM2 error when dispatching `{}` event: {:?}",
-                event_name,
-                err,
-            );
-            // TODO: push the error onto `loaderInfo.uncaughtErrorEvents`
+        match events::dispatch_event(&mut activation, target, event, simulate_dispatch) {
+            Err(err) => {
+                tracing::error!(
+                    "Encountered AVM2 error when dispatching `{}` event: {:?}",
+                    event_name,
+                    err,
+                );
+                // TODO: push the error onto `loaderInfo.uncaughtErrorEvents`
+                false
+            }
+            Ok(handled) => handled,
         }
     }
 
