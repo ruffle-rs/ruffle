@@ -293,7 +293,9 @@ include "flash/net/URLRequestMethod.as"
 include "flash/net/URLStream.as"
 include "flash/net/URLVariables.as"
 include "flash/net/XMLSocket.as"
+
 include "flash/net/drm/AuthenticationMethod.as"
+include "flash/net/drm/LoadVoucherSetting.as"
 
 include "flash/printing/PrintJob.as"
 include "flash/printing/PrintJobOptions.as"
