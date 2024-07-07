@@ -275,7 +275,17 @@ impl App {
                                 // Show context menu.
                                 if let Some(mut player) = self.player.get() {
                                     let context_menu = player.prepare_context_menu();
-                                    self.gui.borrow_mut().show_context_menu(context_menu);
+
+                                    // MouseUp event will be ignored when the context menu is shown,
+                                    // but it has to be dispatched when the menu closes.
+                                    let close_event = PlayerEvent::MouseUp {
+                                        x,
+                                        y,
+                                        button: RuffleMouseButton::Right,
+                                    };
+                                    self.gui
+                                        .borrow_mut()
+                                        .show_context_menu(context_menu, close_event);
                                 }
                             }
                             check_redraw = true;
