@@ -753,7 +753,9 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
             ClipEvent::DragOut { .. } => (ButtonState::Over, None),
             ClipEvent::DragOver { .. } => (ButtonState::Down, None),
             ClipEvent::Press { .. } => (ButtonState::Down, static_data.over_to_down_sound.as_ref()),
-            ClipEvent::Release => (ButtonState::Over, static_data.down_to_over_sound.as_ref()),
+            ClipEvent::Release { .. } => {
+                (ButtonState::Over, static_data.down_to_over_sound.as_ref())
+            }
             ClipEvent::ReleaseOutside => (ButtonState::Up, static_data.over_to_up_sound.as_ref()),
             ClipEvent::MouseUpInside => (ButtonState::Up, static_data.over_to_up_sound.as_ref()),
             ClipEvent::RollOut { .. } => (ButtonState::Up, static_data.over_to_up_sound.as_ref()),

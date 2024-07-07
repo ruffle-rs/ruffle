@@ -328,7 +328,7 @@ pub trait TInteractiveObject<'gc>:
 
                 Avm2::dispatch_event(&mut activation.context, avm2_event, target).into()
             }
-            ClipEvent::Release => {
+            ClipEvent::Release { .. } => {
                 let read = self.raw_interactive();
                 let last_click = read.last_click;
                 let this_click = Instant::now();

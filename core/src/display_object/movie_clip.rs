@@ -3001,7 +3001,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
     ) -> ClipEventResult {
         let frame_name = match event {
             ClipEvent::RollOut { .. } | ClipEvent::ReleaseOutside => Some(WStr::from_units(b"_up")),
-            ClipEvent::RollOver { .. } | ClipEvent::Release | ClipEvent::DragOut { .. } => {
+            ClipEvent::RollOver { .. } | ClipEvent::Release { .. } | ClipEvent::DragOut { .. } => {
                 Some(WStr::from_units(b"_over"))
             }
             ClipEvent::Press { .. } | ClipEvent::DragOver { .. } => {

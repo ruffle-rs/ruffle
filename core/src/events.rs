@@ -267,7 +267,10 @@ pub enum ClipEvent<'gc> {
     /// This is a targeted equivalent to `MouseUp` and is available in both
     /// AVM1 and AVM2. The target of this event is the last target of the
     /// `Press` event.
-    Release,
+    Release {
+        /// The index of this click, same as the index of the last [`ClipEvent::Press`] event.
+        index: usize,
+    },
 
     /// Right mouse button was released inside a previously-pressed display object.
     ///
@@ -350,7 +353,7 @@ impl<'gc> ClipEvent<'gc> {
             ClipEvent::Press { .. } => Some(ClipEventFlag::PRESS),
             ClipEvent::RollOut { .. } => Some(ClipEventFlag::ROLL_OUT),
             ClipEvent::RollOver { .. } => Some(ClipEventFlag::ROLL_OVER),
-            ClipEvent::Release => Some(ClipEventFlag::RELEASE),
+            ClipEvent::Release { .. } => Some(ClipEventFlag::RELEASE),
             ClipEvent::ReleaseOutside => Some(ClipEventFlag::RELEASE_OUTSIDE),
             ClipEvent::Unload => Some(ClipEventFlag::UNLOAD),
             _ => None,
@@ -407,7 +410,7 @@ impl<'gc> ClipEvent<'gc> {
             ClipEvent::Press { .. } => Some("onPress"),
             ClipEvent::RollOut { .. } => Some("onRollOut"),
             ClipEvent::RollOver { .. } => Some("onRollOver"),
-            ClipEvent::Release => Some("onRelease"),
+            ClipEvent::Release { .. } => Some("onRelease"),
             ClipEvent::ReleaseOutside => Some("onReleaseOutside"),
             ClipEvent::Unload => Some("onUnload"),
             _ => None,
