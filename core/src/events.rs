@@ -94,6 +94,16 @@ pub enum ClipEventResult {
     Handled,
 }
 
+impl From<bool> for ClipEventResult {
+    fn from(value: bool) -> Self {
+        if value {
+            Self::Handled
+        } else {
+            Self::NotHandled
+        }
+    }
+}
+
 /// An event type that can be handled by a movie clip instance.
 ///
 /// Clip events come in three flavors: broadcast, anycast and targeted. An
