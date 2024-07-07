@@ -197,17 +197,16 @@ impl TestRunner {
         }
 
         self.injector.next(|evt, _btns_down| {
+            let mut player = self.player.lock().unwrap();
             if let AutomatedEvent::SetClipboardText { text } = evt {
-                self.player
-                    .lock()
-                    .unwrap()
-                    .ui_mut()
-                    .set_clipboard_content(text.to_owned());
+                player.ui_mut().set_clipboard_content(text.to_owned());
                 return;
             }
 
-            self.player.lock().unwrap().handle_event(match evt {
-                AutomatedEvent::MouseDown { pos, btn, index } => PlayerEvent::MouseDown {
+            let handled = player.handle_event(match evt {
+                AutomatedEvent::MouseDown {
+                    pos, btn, index, ..
+                } => PlayerEvent::MouseDown {
                     x: pos.0,
                     y: pos.1,
                     button: match btn {
@@ -294,6 +293,25 @@ impl TestRunner {
                 AutomatedEvent::FocusLost => PlayerEvent::FocusLost,
                 AutomatedEvent::Wait | AutomatedEvent::SetClipboardText { .. } => unreachable!(),
             });
+
+            #[allow(clippy::single_match)]
+            match evt {
+                AutomatedEvent::MouseDown {
+                    assert_handled: Some(assert_handled),
+                    ..
+                } => {
+                    if handled != assert_handled.value {
+                        panic!(
+                            "Event handled status assertion failed: \n\
+                            \x20   expected to be handled: {}\n\
+                            \x20   was handled: {}\n\
+                            \x20   message: {}",
+                            assert_handled.value, handled, assert_handled.message
+                        );
+                    }
+                }
+                _ => {}
+            }
         });
         // Rendering has side-effects (such as processing 'DisplayObject.scrollRect' updates)
         self.player.lock().unwrap().render();
