@@ -370,11 +370,12 @@ pub fn parent_of(target: Object<'_>) -> Option<Object<'_>> {
 /// `EventObject`, or this function will panic. You must have already set the
 /// event's phase to match what targets you are dispatching to, or you will
 /// call the wrong handlers.
-pub fn dispatch_event_to_target<'gc>(
+fn dispatch_event_to_target<'gc>(
     activation: &mut Activation<'_, 'gc>,
     dispatcher: Object<'gc>,
     target: Object<'gc>,
     event: Object<'gc>,
+    simulate_dispatch: bool,
 ) -> Result<(), Error<'gc>> {
     avm_debug!(
         activation.context.avm2,
@@ -413,6 +414,10 @@ pub fn dispatch_event_to_target<'gc>(
 
     drop(evtmut);
 
+    if simulate_dispatch {
+        return Ok(());
+    }
+
     for handler in handlers.iter() {
         if event
             .as_event()
@@ -441,6 +446,7 @@ pub fn dispatch_event<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     event: Object<'gc>,
+    simulate_dispatch: bool,
 ) -> Result<bool, Error<'gc>> {
     let target = this
         .get_property(
@@ -486,7 +492,7 @@ pub fn dispatch_event<'gc>(
             break;
         }
 
-        dispatch_event_to_target(activation, *ancestor, *ancestor, event)?;
+        dispatch_event_to_target(activation, *ancestor, *ancestor, event, simulate_dispatch)?;
     }
 
     event
@@ -495,7 +501,7 @@ pub fn dispatch_event<'gc>(
         .set_phase(EventPhase::AtTarget);
 
     if !event.as_event().unwrap().is_propagation_stopped() {
-        dispatch_event_to_target(activation, this, target, event)?;
+        dispatch_event_to_target(activation, this, target, event, simulate_dispatch)?;
     }
 
     event
@@ -509,7 +515,7 @@ pub fn dispatch_event<'gc>(
                 break;
             }
 
-            dispatch_event_to_target(activation, *ancestor, *ancestor, event)?;
+            dispatch_event_to_target(activation, *ancestor, *ancestor, event, simulate_dispatch)?;
         }
     }
 
