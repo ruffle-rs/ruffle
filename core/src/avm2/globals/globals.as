@@ -293,6 +293,8 @@ include "flash/net/URLVariables.as"
 include "flash/net/XMLSocket.as"
 include "flash/net/drm/AuthenticationMethod.as"
 
+include "flash/filesystem/File.as"
+
 include "flash/printing/PrintJob.as"
 include "flash/printing/PrintJobOptions.as"
 include "flash/printing/PrintJobOrientation.as"

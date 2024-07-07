@@ -41,7 +41,8 @@ pub fn get_data<'gc>(
             ByteArrayObject::from_storage(activation, storage)?
         }
         // Contrary to other getters `data` will return null instead of throwing.
-        _ => return Ok(Value::Null),
+        FileReference::FileDialogResult(_) | FileReference::None => return Ok(Value::Null),
+        FileReference::FilePath(_) => unimplemented!(),
     };
 
     Ok(bytearray.into())
@@ -81,6 +82,7 @@ pub fn get_name<'gc>(
             let name = dialog_result.file_name().unwrap_or_default();
             AvmString::new_utf8(activation.context.gc_context, name).into()
         }
+        FileReference::FilePath(_) => unimplemented!(),
     };
 
     Ok(name)
@@ -96,6 +98,7 @@ pub fn get_size<'gc>(
     let size = match *this.file_reference() {
         FileReference::None => return Err(make_error_2037(activation)),
         FileReference::FileDialogResult(ref dialog_result) => dialog_result.size().unwrap_or(0),
+        FileReference::FilePath(_) => unimplemented!(),
     };
 
     Ok(Value::Number(size as f64))
@@ -198,10 +201,10 @@ pub fn load<'gc>(
 
     // Somewhat unexpectedly, we don't need to load anything here, because
     // that already happened during browse() or save().
-
     let size = match *this.file_reference() {
         FileReference::None => return Err(make_error_2037(activation)),
         FileReference::FileDialogResult(ref dialog_result) => dialog_result.size().unwrap_or(0),
+        FileReference::FilePath(_) => panic!(),
     };
 
     let open_evt = EventObject::bare_default_event(&mut activation.context, "open");
