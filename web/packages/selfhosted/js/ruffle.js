@@ -22,7 +22,8 @@ try {
 
         currentScriptURL = new URL(".", src);
     }
-} catch (e) {
+    // eslint-disable-next-line no-unused-vars
+} catch (_e) {
     console.warn("Unable to get currentScript URL");
 }
 

@@ -3,6 +3,6 @@ try {
         value: () => {},
         writable: false,
     });
-} catch (e) {
+} catch (_e) {
     // Ignore.
 }

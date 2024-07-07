@@ -10,7 +10,7 @@ function insertRules(sheet: CSSStyleSheet, rules: Array<string>) {
     for (const rule of rules) {
         try {
             sheet.insertRule(rule);
-        } catch (err) {
+        } catch (_err) {
             // Ignore unsupported rules
         }
     }

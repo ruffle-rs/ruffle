@@ -21,6 +21,6 @@ try {
         currentScriptURL = new URL(".", src);
         isExtension = currentScriptURL.protocol.includes("extension");
     }
-} catch (e) {
+} catch (_e) {
     console.warn("Unable to get currentScript URL");
 }
