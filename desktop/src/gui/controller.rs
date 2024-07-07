@@ -7,7 +7,7 @@ use crate::preferences::GlobalPreferences;
 use anyhow::anyhow;
 use egui::{Context, ViewportId};
 use fontdb::{Database, Family, Query, Source};
-use ruffle_core::Player;
+use ruffle_core::{Player, PlayerEvent};
 use ruffle_render_wgpu::backend::{request_adapter_and_device, WgpuRenderBackend};
 use ruffle_render_wgpu::descriptors::Descriptors;
 use ruffle_render_wgpu::utils::{format_list, get_backend_names};
@@ -368,8 +368,12 @@ impl GuiController {
         surface_texture.present();
     }
 
-    pub fn show_context_menu(&mut self, menu: Vec<ruffle_core::ContextMenuItem>) {
-        self.gui.show_context_menu(menu);
+    pub fn show_context_menu(
+        &mut self,
+        menu: Vec<ruffle_core::ContextMenuItem>,
+        close_event: PlayerEvent,
+    ) {
+        self.gui.show_context_menu(menu, close_event);
     }
 
     pub fn is_context_menu_visible(&self) -> bool {
