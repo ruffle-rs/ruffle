@@ -262,6 +262,10 @@ pub trait TInteractiveObject<'gc>:
         context: &mut UpdateContext<'_, 'gc>,
         event: ClipEvent<'gc>,
     ) -> ClipEventResult {
+        if !self.as_displayobject().movie().is_action_script_3() {
+            return ClipEventResult::NotHandled;
+        }
+
         // Flash appears to not fire events *at all* for a targeted EditText
         // that was originally created by the timeline. Normally, one of the ancestors
         // of the TextField would get targeted, but instead, the event isn't fired
