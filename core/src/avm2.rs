@@ -431,7 +431,7 @@ impl<'gc> Avm2<'gc> {
     /// Dispatch an event on an object.
     ///
     /// This will become its own self-contained activation and swallow
-    /// any resulting resulting error (after logging).
+    /// any resulting error (after logging).
     ///
     /// Attempts to dispatch a non-event object will panic.
     pub fn dispatch_event(
@@ -439,13 +439,37 @@ impl<'gc> Avm2<'gc> {
         event: Object<'gc>,
         target: Object<'gc>,
     ) {
+        Self::dispatch_event_internal(context, event, target, false)
+    }
+
+    /// Simulate dispatching an event.
+    ///
+    /// This method is similar to [`Self::dispatch_event`],
+    /// but it does not execute event handlers.
+    ///
+    /// Returns `true` when the event would have been handled if not simulated.
+    pub fn simulate_event_dispatch(
+        context: &mut UpdateContext<'_, 'gc>,
+        event: Object<'gc>,
+        target: Object<'gc>,
+    ) {
+        Self::dispatch_event_internal(context, event, target, true)
+    }
+
+    fn dispatch_event_internal(
+        context: &mut UpdateContext<'_, 'gc>,
+        event: Object<'gc>,
+        target: Object<'gc>,
+        simulate_dispatch: bool,
+    ) {
         let event_name = event
             .as_event()
             .map(|e| e.event_type())
             .unwrap_or_else(|| panic!("cannot dispatch non-event object: {:?}", event));
 
         let mut activation = Activation::from_nothing(context.reborrow());
-        if let Err(err) = events::dispatch_event(&mut activation, target, event) {
+        if let Err(err) = events::dispatch_event(&mut activation, target, event, simulate_dispatch)
+        {
             tracing::error!(
                 "Encountered AVM2 error when dispatching `{}` event: {:?}",
                 event_name,
@@ -537,7 +561,8 @@ impl<'gc> Avm2<'gc> {
                 let mut activation = Activation::from_nothing(context.reborrow());
 
                 if object.is_of_type(on_type.inner_class_definition()) {
-                    if let Err(err) = events::dispatch_event(&mut activation, object, event) {
+                    if let Err(err) = events::dispatch_event(&mut activation, object, event, false)
+                    {
                         tracing::error!(
                             "Encountered AVM2 error when broadcasting `{}` event: {:?}",
                             event_name,

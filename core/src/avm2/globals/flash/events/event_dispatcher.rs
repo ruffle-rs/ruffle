@@ -139,7 +139,7 @@ pub fn dispatch_event<'gc>(
         return Err("Dispatched Events must be subclasses of Event.".into());
     }
 
-    Ok(dispatch_event_internal(activation, this, event)?.into())
+    Ok(dispatch_event_internal(activation, this, event, false)?.into())
 }
 
 /// Implements `EventDispatcher.toString`.
