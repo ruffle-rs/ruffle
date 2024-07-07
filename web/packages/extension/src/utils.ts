@@ -85,6 +85,7 @@ export async function getExplicitOptions(): Promise<Options> {
         // @ts-expect-error: Element implicitly has an any type
         if (key in options && defaultOptions[key] === options[key]) {
             // @ts-expect-error: Element implicitly has an any type
+            // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
             delete options[key];
         }
     }
