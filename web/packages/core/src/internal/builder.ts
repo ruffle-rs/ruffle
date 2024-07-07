@@ -144,7 +144,6 @@ export function parseColor(color: string): number | undefined {
  * @param value The duration to parse
  * @returns A valid number of seconds
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function parseDuration(value: Duration): SecsDuration {
     if (typeof value === "number") {
         return value;

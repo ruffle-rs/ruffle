@@ -51,7 +51,15 @@ export default tseslint.config(
             ],
             "@typescript-eslint/no-unused-vars": [
                 "error",
-                { argsIgnorePattern: "^_" },
+                {
+                    args: "all",
+                    argsIgnorePattern: "^_",
+                    caughtErrors: "all",
+                    caughtErrorsIgnorePattern: "^_",
+                    destructuredArrayIgnorePattern: "^_",
+                    varsIgnorePattern: "^_",
+                    ignoreRestSiblings: true,
+                },
             ],
             // Disallow const enums, as they can't be used by consumers.
             // See https://www.typescriptlang.org/docs/handbook/enums.html#const-enum-pitfalls
