@@ -435,12 +435,14 @@ impl PlayerController {
         }
     }
 
-    pub fn handle_event(&self, event: PlayerEvent) {
+    pub fn handle_event(&self, event: PlayerEvent) -> bool {
         if let Some(mut player) = self.get() {
             if player.is_playing() {
-                player.handle_event(event);
+                return player.handle_event(event);
             }
         }
+
+        false
     }
 
     pub fn poll(&self) {

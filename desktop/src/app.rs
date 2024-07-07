@@ -267,16 +267,17 @@ impl App {
                                 },
                                 ElementState::Released => PlayerEvent::MouseUp { x, y, button },
                             };
-                            if state == ElementState::Released && button == RuffleMouseButton::Right
+                            let handled = self.player.handle_event(event);
+                            if !handled
+                                && state == ElementState::Pressed
+                                && button == RuffleMouseButton::Right
                             {
                                 // Show context menu.
-                                // TODO: Should be squelched if player consumes the right click event.
                                 if let Some(mut player) = self.player.get() {
                                     let context_menu = player.prepare_context_menu();
                                     self.gui.borrow_mut().show_context_menu(context_menu);
                                 }
                             }
-                            self.player.handle_event(event);
                             check_redraw = true;
                         }
                         WindowEvent::MouseWheel { delta, .. } => {
