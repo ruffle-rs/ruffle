@@ -979,6 +979,15 @@ impl<'gc> E4XNode<'gc> {
                 Event::Eof => break,
             }
         }
+
+        // Throw an error for unclosed tags.
+        if let Some(current_tag) = open_tags.last() {
+            return Err(make_error_1085(
+                activation,
+                &current_tag.local_name().unwrap().to_utf8_lossy(),
+            ));
+        }
+
         Ok(top_level)
     }
 
