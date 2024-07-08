@@ -290,6 +290,8 @@ impl TestRunner {
                         InputTextControlCode::Delete => RuffleTextControlCode::Delete,
                     },
                 },
+                AutomatedEvent::FocusGained => PlayerEvent::FocusGained,
+                AutomatedEvent::FocusLost => PlayerEvent::FocusLost,
                 AutomatedEvent::Wait | AutomatedEvent::SetClipboardText { .. } => unreachable!(),
             });
         });

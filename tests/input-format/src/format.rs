@@ -94,4 +94,10 @@ pub enum AutomatedEvent {
 
     /// Populate clipboard with the given text
     SetClipboardText { text: String },
+
+    /// Inform the player that the focus has been gained (i.e. the window has been focused).
+    FocusGained,
+
+    /// Inform the player that the focus has been lost (i.e. the user focused another window).
+    FocusLost,
 }
