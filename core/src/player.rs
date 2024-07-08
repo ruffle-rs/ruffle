@@ -848,8 +848,33 @@ impl Player {
 
     /// Handle an event sent into the player from the external windowing system
     /// or an HTML element.
-    ///
-    /// Event handling is a complicated affair, involving several different
+    pub fn handle_event(&mut self, event: PlayerEvent) {
+        match event {
+            PlayerEvent::FocusGained | PlayerEvent::FocusLost => self.handle_focus_event(event),
+            PlayerEvent::KeyDown { .. }
+            | PlayerEvent::KeyUp { .. }
+            | PlayerEvent::MouseMove { .. }
+            | PlayerEvent::MouseUp { .. }
+            | PlayerEvent::MouseDown { .. }
+            | PlayerEvent::MouseLeave
+            | PlayerEvent::MouseWheel { .. }
+            | PlayerEvent::GamepadButtonDown { .. }
+            | PlayerEvent::GamepadButtonUp { .. }
+            | PlayerEvent::TextInput { .. }
+            | PlayerEvent::TextControl { .. } => self.handle_input_event(event),
+        }
+    }
+
+    fn handle_focus_event(&mut self, event: PlayerEvent) {
+        if let PlayerEvent::FocusLost = event {
+            self.mutate_with_update_context(|context| {
+                let focus_tracker = context.focus_tracker;
+                focus_tracker.reset_focus(context);
+            });
+        }
+    }
+
+    /// Input event handling is a complicated affair, involving several different
     /// concerns that need to resolve with specific priority.
     ///
     /// 0. Transform gamepad button events into key events.
@@ -871,7 +896,7 @@ impl Player {
     /// 7. The AVM1 action queue is drained.
     /// 8. Mouse state is updated. This triggers button rollovers, which are a
     ///    second wave of event processing.
-    pub fn handle_event(&mut self, event: PlayerEvent) {
+    fn handle_input_event(&mut self, event: PlayerEvent) {
         // Optionally transform gamepad button events into key events.
         let event = match event {
             PlayerEvent::GamepadButtonDown { button } => {
