@@ -15,7 +15,7 @@
     "scripts": {
         "build": "webpack",
         "serve": "webpack-dev-server",
-        "test": "wdio run wdio.conf.ts",
+        "test": "wdio run wdio.conf.ts --chrome --headless",
         "checkTypes": "tsc --noemit"
     },
     "dependencies": {
