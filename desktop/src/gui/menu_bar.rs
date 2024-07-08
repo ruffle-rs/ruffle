@@ -44,14 +44,14 @@ impl MenuBar {
         egui::TopBottomPanel::top("menu_bar").show(egui_ctx, |ui| {
             // TODO(mike): Make some MenuItem struct with shortcut info to handle this more cleanly.
             if ui.ctx().input_mut(|input| {
-                input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND, Key::O))
-            }) {
-                self.open_file(ui);
-            }
-            if ui.ctx().input_mut(|input| {
                 input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND | Modifiers::SHIFT, Key::O))
             }) {
                 dialogs.open_file_advanced();
+            }
+            if ui.ctx().input_mut(|input| {
+                input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND, Key::O))
+            }) {
+                self.open_file(ui);
             }
             if ui.ctx().input_mut(|input| {
                 input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND, Key::Q))
