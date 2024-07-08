@@ -933,10 +933,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::CoerceA => Ok(FrameControl::Continue),
                 Op::CoerceB => self.op_coerce_b(),
                 Op::CoerceD => self.op_coerce_d(),
+                Op::CoerceDSwapPop => self.op_coerce_d_swap_pop(),
                 Op::CoerceI => self.op_coerce_i(),
+                Op::CoerceISwapPop => self.op_coerce_i_swap_pop(),
                 Op::CoerceO => self.op_coerce_o(),
                 Op::CoerceS => self.op_coerce_s(),
                 Op::CoerceU => self.op_coerce_u(),
+                Op::CoerceUSwapPop => self.op_coerce_u_swap_pop(),
                 Op::ConvertO => self.op_convert_o(),
                 Op::ConvertS => self.op_convert_s(),
                 Op::Add => self.op_add(),
@@ -1017,6 +1020,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     self.op_lookup_switch(lookup_switch.default_offset, &lookup_switch.case_offsets)
                 }
                 Op::Coerce { class } => self.op_coerce(*class),
+                Op::CoerceSwapPop { class } => self.op_coerce_swap_pop(*class),
                 Op::CheckFilter => self.op_check_filter(),
                 Op::Si8 => self.op_si8(),
                 Op::Si16 => self.op_si16(),
@@ -1921,8 +1925,26 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
+    fn op_coerce_d_swap_pop(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let value = self.pop_stack().coerce_to_number(self)?;
+        let _ = self.pop_stack();
+
+        self.push_raw(value);
+
+        Ok(FrameControl::Continue)
+    }
+
     fn op_coerce_i(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack().coerce_to_i32(self)?;
+
+        self.push_raw(value);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_coerce_i_swap_pop(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let value = self.pop_stack().coerce_to_i32(self)?;
+        let _ = self.pop_stack();
 
         self.push_raw(value);
 
@@ -1957,6 +1979,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_coerce_u(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack().coerce_to_u32(self)?;
+
+        self.push_raw(value);
+
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_coerce_u_swap_pop(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let value = self.pop_stack().coerce_to_u32(self)?;
+        let _ = self.pop_stack();
 
         self.push_raw(value);
 
@@ -2786,6 +2817,16 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Implements `Op::Coerce`
     fn op_coerce(&mut self, class: Class<'gc>) -> Result<FrameControl<'gc>, Error<'gc>> {
         let val = self.pop_stack();
+        let x = val.coerce_to_type(self, class)?;
+
+        self.push_stack(x);
+        Ok(FrameControl::Continue)
+    }
+
+    fn op_coerce_swap_pop(&mut self, class: Class<'gc>) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let val = self.pop_stack();
+        let _ = self.pop_stack();
+
         let x = val.coerce_to_type(self, class)?;
 
         self.push_stack(x);

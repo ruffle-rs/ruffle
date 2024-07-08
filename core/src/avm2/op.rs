@@ -69,13 +69,19 @@ pub enum Op<'gc> {
     Coerce {
         class: Class<'gc>,
     },
+    CoerceSwapPop {
+        class: Class<'gc>,
+    },
     CoerceA,
     CoerceB,
     CoerceD,
+    CoerceDSwapPop,
     CoerceI,
+    CoerceISwapPop,
     CoerceO,
     CoerceS,
     CoerceU,
+    CoerceUSwapPop,
     Construct {
         num_args: u32,
     },

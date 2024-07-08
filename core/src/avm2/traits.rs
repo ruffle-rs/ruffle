@@ -107,9 +107,7 @@ pub enum TraitKind<'gc> {
 }
 
 impl<'gc> Trait<'gc> {
-    pub fn from_class(class: Class<'gc>) -> Self {
-        let name = class.name();
-
+    pub fn from_class(name: QName<'gc>, class: Class<'gc>) -> Self {
         Trait {
             name,
             attributes: TraitAttributes::empty(),

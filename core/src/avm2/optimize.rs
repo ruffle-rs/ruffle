@@ -743,9 +743,26 @@ pub fn optimize<'gc>(
                 stack.push_any();
             }
             Op::AsTypeLate => {
+                let type_c_class = stack.pop_or_any();
                 stack.pop();
-                stack.pop();
-                stack.push_any();
+
+                let mut new_value = OptValue::any();
+
+                if let Some(class) = type_c_class.class.and_then(|c| c.i_class()) {
+                    let class_is_primitive = class == types.int
+                        || class == types.uint
+                        || class == types.number
+                        || class == types.boolean
+                        || class == types.void;
+
+                    if !class_is_primitive {
+                        // If the type on the stack was a c_class with a non-primitive
+                        // i_class, we can use the type
+                        new_value = OptValue::of_type(class);
+                    }
+                }
+
+                stack.push(new_value);
             }
             Op::AsType { class } => {
                 let stack_value = stack.pop_or_any();
@@ -1195,6 +1212,8 @@ pub fn optimize<'gc>(
                 multiname,
                 num_args,
             } => {
+                let mut stack_push_done = false;
+
                 // Arguments
                 stack.popn(*num_args);
 
@@ -1213,6 +1232,46 @@ pub fn optimize<'gc>(
                                     push_return_value: true,
                                 };
                             }
+                            Some(Property::Slot { slot_id })
+                            | Some(Property::ConstSlot { slot_id }) => {
+                                if stack_value.not_null(activation) {
+                                    if *num_args == 1 {
+                                        let mut value_class =
+                                            vtable.slot_classes()[slot_id as usize];
+                                        let resolved_value_class =
+                                            value_class.get_class(activation);
+
+                                        if let Ok(Some(slot_class)) = resolved_value_class {
+                                            if let Some(called_class) = slot_class.i_class() {
+                                                // Calling a c_class will perform a simple coercion to the class
+                                                if called_class.call_handler().is_none() {
+                                                    *op = Op::CoerceSwapPop {
+                                                        class: called_class,
+                                                    };
+
+                                                    stack_push_done = true;
+                                                    stack.push_class(called_class);
+                                                } else if called_class == types.int {
+                                                    *op = Op::CoerceISwapPop;
+
+                                                    stack_push_done = true;
+                                                    stack.push_class(types.int);
+                                                } else if called_class == types.uint {
+                                                    *op = Op::CoerceUSwapPop;
+
+                                                    stack_push_done = true;
+                                                    stack.push_class(types.uint);
+                                                } else if called_class == types.number {
+                                                    *op = Op::CoerceDSwapPop;
+
+                                                    stack_push_done = true;
+                                                    stack.push_class(types.number);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                             _ => {}
                         }
                     }
@@ -1220,7 +1279,9 @@ pub fn optimize<'gc>(
                 // `stack_pop_multiname` handled lazy
 
                 // Avoid checking return value for now
-                stack.push_any();
+                if !stack_push_done {
+                    stack.push_any();
+                }
             }
             Op::CallPropVoid {
                 multiname,
