@@ -289,6 +289,20 @@ pub fn make_error_1065<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1085<'gc>(activation: &mut Activation<'_, 'gc>, tag: &str) -> Error<'gc> {
+    let err = type_error(
+        activation,
+        &format!("Error #1085: The element type \"{tag}\" must be terminated by the matching end-tag \"</{tag}>\"."),
+        1085,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1086<'gc>(activation: &mut Activation<'_, 'gc>, method_name: &str) -> Error<'gc> {
     let err = type_error(
         activation,
