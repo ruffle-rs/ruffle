@@ -1012,15 +1012,11 @@ impl<'gc> Class<'gc> {
         self,
         activation: &mut Activation<'_, 'gc>,
         name: QName<'gc>,
-        value: Value<'gc>,
+        class_object: ClassObject<'gc>,
     ) {
         self.define_instance_trait(
             activation.context.gc_context,
-            Trait::from_const(
-                name,
-                Multiname::new(activation.avm2().public_namespace_base_version, "Class"),
-                Some(value),
-            ),
+            Trait::from_class(name, class_object.inner_class_definition()),
         );
     }
 

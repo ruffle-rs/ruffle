@@ -365,11 +365,9 @@ fn dynamic_class<'gc>(
         class_object.into(),
         class_class,
     );
-    script.global_class().define_constant_class_instance_trait(
-        activation,
-        name,
-        class_object.into(),
-    );
+    script
+        .global_class()
+        .define_constant_class_instance_trait(activation, name, class_object);
     domain.export_definition(name, script, activation.context.gc_context)
 }
 
@@ -407,7 +405,7 @@ fn class<'gc>(
     script.global_class().define_constant_class_instance_trait(
         activation,
         class_name,
-        class_object.into(),
+        class_object,
     );
     domain.export_definition(class_name, script, mc);
     domain.export_class(class_name, class_def, mc);
@@ -442,11 +440,9 @@ fn vector_class<'gc>(
         vector_cls.into(),
         activation.avm2().classes().class,
     );
-    script.global_class().define_constant_class_instance_trait(
-        activation,
-        legacy_name,
-        vector_cls.into(),
-    );
+    script
+        .global_class()
+        .define_constant_class_instance_trait(activation, legacy_name, vector_cls);
     domain.export_definition(legacy_name, script, mc);
     Ok(vector_cls)
 }
