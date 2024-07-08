@@ -12,8 +12,10 @@ use std::collections::VecDeque;
 use std::fmt::Write;
 use std::sync::Arc;
 
-const ANY_NEWLINE: &[u8] = &[b'\n', b'\r'];
+const WHITESPACE: &[u16] = &[b' ' as u16, b'\t' as u16, b'\n' as u16, b'\r' as u16];
+const ANY_NEWLINE: &[u16] = &[b'\n' as u16, b'\r' as u16];
 const HTML_NEWLINE: u16 = b'\r' as u16;
+const HTML_SPACE: u16 = b' ' as u16;
 
 /// Replace HTML entities with their equivalent characters.
 ///
@@ -626,6 +628,7 @@ impl FormatSpans {
         html: &WStr,
         default_format: TextFormat,
         is_multiline: bool,
+        condense_white: bool,
         swf_version: u8,
     ) -> Self {
         // For SWF version 6, the multiline property exists and may be changed,
@@ -883,7 +886,11 @@ impl FormatSpans {
                         // is any non-whitespace character.
                         break 'text;
                     }
-                    let e = e.replace(ANY_NEWLINE, WStr::from_units(&[HTML_NEWLINE]));
+                    let e = if condense_white {
+                        Self::condense_white_in_text(e)
+                    } else {
+                        e.replace(ANY_NEWLINE, WStr::from_units(&[HTML_NEWLINE]))
+                    };
                     text.push_str(&e);
                     spans.push(TextSpan::with_length_and_format(e.len(), &format));
                 }
@@ -964,8 +971,28 @@ impl FormatSpans {
             spans,
             default_format,
         };
+        if condense_white && swf_version >= 8 {
+            ret.condense_white_swf8();
+        }
         ret.normalize();
         ret
+    }
+
+    fn condense_white_in_text(string: WString) -> WString {
+        let mut result = WString::with_capacity(string.len(), string.is_wide());
+        let mut last_white = false;
+        for ch in string.iter() {
+            if WHITESPACE.contains(&ch) {
+                if !last_white {
+                    result.push(HTML_SPACE);
+                    last_white = true;
+                }
+            } else {
+                result.push(ch);
+                last_white = false;
+            }
+        }
+        result
     }
 
     pub fn default_format(&self) -> &TextFormat {
@@ -1096,6 +1123,39 @@ impl FormatSpans {
         );
 
         (start_pos, end_pos)
+    }
+
+    /// SWF8+ condenses whitespace not only in text, but across HTML elements too.
+    /// This method assumes that whitespace in text has already been condensed.
+    fn condense_white_swf8(&mut self) {
+        let mut removal_start = Some(0);
+        let mut to_remove = Vec::new();
+        for (i, ch) in self.text().iter().enumerate() {
+            let is_newline = ch == HTML_NEWLINE;
+            let is_space = ch == HTML_SPACE;
+
+            // We have to preserve newlines here, as newlines inputted in text
+            // are already condensed into space.
+            if is_newline || !is_space {
+                if let Some(space_start) = removal_start {
+                    to_remove.push((space_start, i));
+                }
+                removal_start = None;
+            }
+
+            // However, HTML newlines are also considered as space here.
+            if (is_newline || is_space) && removal_start.is_none() {
+                removal_start = Some(i + 1);
+            }
+        }
+        if let Some(space_start) = removal_start {
+            to_remove.push((space_start, self.text().len()));
+        }
+        for &(from, to) in to_remove.iter().rev() {
+            if from != to {
+                self.replace_text(from, to, WStr::empty(), None);
+            }
+        }
     }
 
     /// Adjust the format spans in several ways to ensure that other function
