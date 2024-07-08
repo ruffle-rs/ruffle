@@ -29,7 +29,7 @@ bitflags = { workspace = true }
 smallvec = { version = "1.13.2", features = ["union"] }
 num-traits = { workspace = true }
 num-derive = { workspace = true }
-quick-xml = "0.35.0"
+quick-xml = "0.36.0"
 downcast-rs = "1.2.1"
 url = { workspace = true }
 weak-table = "0.3.2"

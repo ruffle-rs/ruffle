@@ -3973,9 +3973,9 @@ dependencies = [
 
 [[package]]
 name = "quick-xml"
-version = "0.35.0"
+version = "0.36.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86e446ed58cef1bbfe847bc2fda0e2e4ea9f0e57b90c507d4781292590d72a4e"
+checksum = "4091e032efecb09d7b1f711f487b85ab925632a842627e3200fb088382cde32c"
 dependencies = [
  "memchr",
 ]
@@ -4370,7 +4370,7 @@ dependencies = [
  "num-traits",
  "percent-encoding",
  "png",
- "quick-xml 0.35.0",
+ "quick-xml 0.36.0",
  "rand",
  "realfft",
  "regress",
