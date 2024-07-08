@@ -13,7 +13,7 @@ use std::fmt::Write;
 use std::sync::Arc;
 
 const ANY_NEWLINE: &[u8] = &[b'\n', b'\r'];
-const HTML_NEWLINE: u8 = b'\n';
+const HTML_NEWLINE: u16 = b'\r' as u16;
 
 /// Replace HTML entities with their equivalent characters.
 ///
@@ -701,7 +701,7 @@ impl FormatSpans {
                     match tag_name {
                         b"br" => {
                             if is_multiline {
-                                text.push_byte(HTML_NEWLINE);
+                                text.push(HTML_NEWLINE);
                                 spans.push(TextSpan::with_length_and_format(1, &format));
                             }
 
@@ -711,7 +711,7 @@ impl FormatSpans {
                         b"sbr" => {
                             // TODO: <sbr> tags do not add a newline, but rather only break
                             // the format span.
-                            text.push_byte(HTML_NEWLINE);
+                            text.push(HTML_NEWLINE);
                             spans.push(TextSpan::with_length_and_format(1, &format));
 
                             // Skip push to `format_stack`.
@@ -822,12 +822,12 @@ impl FormatSpans {
                             format.underline = Some(true);
                         }
                         b"li" => {
-                            let is_last_nl = text.chars().last() == Some(Ok(HTML_NEWLINE as char));
+                            let is_last_nl = text.iter().last() == Some(HTML_NEWLINE);
                             if is_multiline && !is_last_nl && text.len() > 0 {
                                 // If the last paragraph was not closed and
                                 // there was some text since then,
                                 // we need to close it here.
-                                text.push_byte(HTML_NEWLINE);
+                                text.push(HTML_NEWLINE);
                                 spans.push(TextSpan::with_length_and_format(
                                     1,
                                     format_stack.last().unwrap(),
@@ -883,6 +883,7 @@ impl FormatSpans {
                         // is any non-whitespace character.
                         break 'text;
                     }
+                    let e = e.replace(ANY_NEWLINE, WStr::from_units(&[HTML_NEWLINE]));
                     text.push_str(&e);
                     spans.push(TextSpan::with_length_and_format(e.len(), &format));
                 }
@@ -907,7 +908,7 @@ impl FormatSpans {
                             continue;
                         }
                         b"li" if is_multiline => {
-                            text.push_byte(HTML_NEWLINE);
+                            text.push(HTML_NEWLINE);
                             spans.push(TextSpan::with_length_and_format(
                                 1,
                                 format_stack.last().unwrap(),
@@ -920,7 +921,7 @@ impl FormatSpans {
                             }
                             p_open = false;
 
-                            text.push_byte(HTML_NEWLINE);
+                            text.push(HTML_NEWLINE);
                             let mut span =
                                 TextSpan::with_length_and_format(1, format_stack.last().unwrap());
                             // </p> has some weird behaviors related to the format of its children (b,i,u,a),
