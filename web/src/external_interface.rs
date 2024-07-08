@@ -93,9 +93,13 @@ pub fn js_to_external_value(js: &JsValue) -> ExternalValue {
             .map(|v| js_to_external_value(&v))
             .collect();
         ExternalValue::List(values)
-    } else if let Some(object) = js.dyn_ref::<Object>() {
+    } else if js.is_null() {
+        ExternalValue::Null
+    } else if js.is_undefined() {
+        ExternalValue::Undefined
+    } else {
         let mut values = BTreeMap::new();
-        for entry in Object::entries(object).values() {
+        for entry in Object::entries(&Object::from(js.to_owned())).values() {
             if let Ok(entry) = entry.and_then(|v| v.dyn_into::<Array>()) {
                 if let Some(key) = entry.get(0).as_string() {
                     values.insert(key, js_to_external_value(&entry.get(1)));
@@ -103,10 +107,6 @@ pub fn js_to_external_value(js: &JsValue) -> ExternalValue {
             }
         }
         ExternalValue::Object(values)
-    } else if js.is_null() {
-        ExternalValue::Null
-    } else {
-        ExternalValue::Undefined
     }
 }
 

@@ -37,6 +37,7 @@
         "typescript": "^5.5.3",
         "typescript-eslint": "^8.0.0-alpha.41",
         "wdio-chromedriver-service": "^8.1.1",
+        "wdio-geckodriver-service": "^5.0.2",
         "webdriverio": "^8.33.1",
         "webpack": "^5.92.1",
         "webpack-cli": "^5.1.4"
@@ -51,6 +52,7 @@
         "build:repro": "cross-env ENABLE_WASM_EXTENSIONS=true ENABLE_VERSION_SEAL=true npm run build",
         "demo": "npm run preview --workspace ruffle-demo",
         "test": "npm test --workspaces --if-present",
+        "wdio": "npm run wdio --workspaces --if-present --",
         "docs": "npm run docs --workspaces --if-present",
         "lint": "npm run checkTypes --workspaces --if-present && eslint . && stylelint **.css",
         "format": "eslint . --fix && stylelint --fix **.css",

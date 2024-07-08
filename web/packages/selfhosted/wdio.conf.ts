@@ -5,6 +5,7 @@ const services: Services.ServiceEntry[] = [];
 
 const headless = process.argv.includes("--headless");
 const chrome = process.argv.includes("--chrome");
+const firefox = process.argv.includes("--firefox");
 
 if (chrome) {
     const args = ["--disable-gpu"];
@@ -19,6 +20,21 @@ if (chrome) {
         },
     });
     services.push("chromedriver");
+}
+
+if (firefox) {
+    const args = [];
+    if (headless) {
+        args.push("-headless");
+    }
+    capabilities.push({
+        "wdio:maxInstances": 1,
+        browserName: "firefox",
+        "moz:firefoxOptions": {
+            args,
+        },
+    });
+    services.push("geckodriver");
 }
 
 services.push([
