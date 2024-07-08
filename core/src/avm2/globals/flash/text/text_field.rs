@@ -246,20 +246,33 @@ pub fn set_border_color<'gc>(
 }
 
 pub fn get_condense_white<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.text.TextField", "condenseWhite");
-    Ok(Value::Bool(false))
+    if let Some(this) = this
+        .as_display_object()
+        .and_then(|this| this.as_edit_text())
+    {
+        return Ok(this.condense_white().into());
+    }
+
+    Ok(Value::Undefined)
 }
 
 pub fn set_condense_white<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.text.TextField", "condenseWhite");
+    if let Some(this) = this
+        .as_display_object()
+        .and_then(|this| this.as_edit_text())
+    {
+        let value = args.get_bool(0);
+        this.set_condense_white(&mut activation.context, value);
+    }
+
     Ok(Value::Undefined)
 }
 
