@@ -5,7 +5,7 @@ use std::{
 
 use gc_arena::{Collect, GcCell, Mutation};
 use quick_xml::{
-    errors::SyntaxError as XmlSyntaxError,
+    errors::{IllFormedError, SyntaxError as XmlSyntaxError},
     events::{attributes::AttrError as XmlAttrError, BytesStart, Event},
     name::ResolveResult,
     Error as XmlError, NsReader,
@@ -14,7 +14,7 @@ use quick_xml::{
 use crate::{avm2::TObject, xml::custom_unescape};
 
 use super::{
-    error::{make_error_1010, make_error_1118, type_error},
+    error::{make_error_1010, make_error_1085, make_error_1118, type_error},
     object::{E4XOrXml, FunctionObject, NamespaceObject},
     string::AvmString,
     Activation, Error, Multiname, Value,
@@ -850,9 +850,24 @@ impl<'gc> E4XNode<'gc> {
         }
 
         loop {
-            let event = parser
-                .read_event()
-                .map_err(|e| make_xml_error(activation, e))?;
+            let event = match parser.read_event() {
+                Ok(event) => event,
+                Err(XmlError::IllFormed(IllFormedError::MismatchedEndTag { expected, found })) => {
+                    // We must accept </a/>, </a />, and </a b="c">
+                    // TODO: Reject </a bc>, </a//>, <a //> etc.
+                    if let Some(rest) = found.strip_prefix(&expected) {
+                        if rest.starts_with([' ', '\t', '/']) {
+                            let node = open_tags.pop().unwrap();
+                            if open_tags.is_empty() {
+                                top_level.push(node);
+                            }
+                            continue;
+                        }
+                    }
+                    return Err(make_error_1085(activation, &expected));
+                }
+                Err(err) => return Err(make_xml_error(activation, err)),
+            };
 
             match &event {
                 Event::Start(bs) => {
