@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 import url from "url";
 import json5 from "json5";
 import CopyPlugin from "copy-webpack-plugin";
