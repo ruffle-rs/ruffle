@@ -87,6 +87,10 @@ impl<'gc> FocusTracker<'gc> {
         self.set_internal(new, context, false);
     }
 
+    pub fn reset_focus(&self, context: &mut UpdateContext<'_, 'gc>) {
+        self.set_internal(None, context, true);
+    }
+
     fn set_internal(
         &self,
         new: Option<InteractiveObject<'gc>>,

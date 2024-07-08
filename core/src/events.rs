@@ -42,6 +42,8 @@ pub enum PlayerEvent {
     TextControl {
         code: TextControlCode,
     },
+    FocusGained,
+    FocusLost,
 }
 
 /// The distance scrolled by the mouse wheel.
