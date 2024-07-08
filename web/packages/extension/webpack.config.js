@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 import fs from "fs";
 import url from "url";
 import json5 from "json5";

@@ -85,33 +85,16 @@ export default tseslint.config(
         },
     },
     {
-        files: ["packages/core/tools/**"],
+        files: ["packages/extension/tools/**"],
         languageOptions: {
             globals: globals.node,
             ecmaVersion: 2022, // Needed for top-level-await.
         },
     },
     {
-        files: ["packages/**/webpack.config.js"],
+        files: ["packages/**/webpack.config.js", "packages/**/wdio.config.ts"],
         languageOptions: {
             globals: globals.node,
-        },
-    },
-    {
-        files: ["packages/core/test/**"],
-        languageOptions: {
-            globals: globals.mocha,
-        },
-    },
-    {
-        files: ["packages/selfhosted/test/**"],
-        languageOptions: {
-            globals: {
-                ...globals.mocha,
-                ...globals.node,
-                ...globals.mocha,
-                browser: "readonly",
-            },
         },
     },
     {
