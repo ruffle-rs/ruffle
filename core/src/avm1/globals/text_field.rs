@@ -73,6 +73,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "hscroll" => property(tf_getter!(hscroll), tf_setter!(set_hscroll));
     "html" => property(tf_getter!(html), tf_setter!(set_html));
     "htmlText" => property(tf_getter!(html_text), tf_setter!(set_html_text));
+    "condenseWhite" => property(tf_getter!(condense_white), tf_setter!(set_condense_white));
     "length" => property(tf_getter!(length));
     "maxhscroll" => property(tf_getter!(maxhscroll));
     "maxscroll" => property(tf_getter!(maxscroll));
@@ -945,5 +946,22 @@ pub fn set_tab_index<'gc>(
         };
         this.set_tab_index(&mut activation.context, value);
     }
+    Ok(())
+}
+
+pub fn condense_white<'gc>(
+    this: EditText<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(this.condense_white().into())
+}
+
+pub fn set_condense_white<'gc>(
+    this: EditText<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    let condense_white = value.as_bool(activation.swf_version());
+    this.set_condense_white(&mut activation.context, condense_white);
     Ok(())
 }
