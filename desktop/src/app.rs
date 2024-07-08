@@ -235,6 +235,12 @@ impl App {
                                 );
                             }
                         }
+                        WindowEvent::Focused(true) => {
+                            self.player.handle_event(PlayerEvent::FocusGained);
+                        }
+                        WindowEvent::Focused(false) => {
+                            self.player.handle_event(PlayerEvent::FocusLost);
+                        }
                         WindowEvent::MouseInput { button, state, .. } => {
                             if self.gui.borrow_mut().is_context_menu_visible() {
                                 return;
