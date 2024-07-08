@@ -40,3 +40,5 @@ debug-menu-open-movie-list = Show Known Movies
 debug-menu-open-domain-list = Show Domains
 debug-menu-search-display-objects = Search Display Objects...
 
+view-menu = View
+view-menu-fullscreen = Full Screen

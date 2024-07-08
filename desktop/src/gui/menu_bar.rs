@@ -4,8 +4,10 @@ use crate::gui::{text, DebugMessage};
 use crate::player::LaunchOptions;
 use crate::preferences::GlobalPreferences;
 use egui::{menu, Button, Key, KeyboardShortcut, Modifiers, Widget};
-use ruffle_core::Player;
+use ruffle_core::config::Letterbox;
+use ruffle_core::{Player, StageScaleMode};
 use ruffle_frontend_utils::recents::Recent;
+use ruffle_render::quality::StageQuality;
 use unic_langid::LanguageIdentifier;
 use url::Url;
 use winit::event_loop::EventLoopProxy;
@@ -68,6 +70,7 @@ impl MenuBar {
 
             menu::bar(ui, |ui| {
                 self.file_menu(locale, ui, dialogs, player.is_some());
+                self.view_menu(locale, ui, &mut player);
 
                 menu::menu_button(ui, text(locale, "controls-menu"), |ui| {
                     ui.add_enabled_ui(player.is_some(), |ui| {
@@ -272,6 +275,124 @@ impl MenuBar {
             {
                 self.request_exit(ui);
             }
+        });
+    }
+
+    fn view_menu(
+        &mut self,
+        locale: &LanguageIdentifier,
+        ui: &mut egui::Ui,
+        player: &mut Option<&mut Player>,
+    ) {
+        menu::menu_button(ui, text(locale, "view-menu"), |ui| {
+            ui.add_enabled_ui(player.is_some(), |ui| {
+                ui.menu_button(text(locale, "scale-mode"), |ui| {
+                    let items = vec![
+                        (
+                            "scale-mode-noscale",
+                            "scale-mode-noscale-tooltip",
+                            StageScaleMode::NoScale,
+                        ),
+                        (
+                            "scale-mode-showall",
+                            "scale-mode-showall-tooltip",
+                            StageScaleMode::ShowAll,
+                        ),
+                        (
+                            "scale-mode-exactfit",
+                            "scale-mode-exactfit-tooltip",
+                            StageScaleMode::ExactFit,
+                        ),
+                        (
+                            "scale-mode-noborder",
+                            "scale-mode-noborder-tooltip",
+                            StageScaleMode::NoBorder,
+                        ),
+                    ];
+                    let current_scale_mode = player.as_mut().map(|player| player.scale_mode());
+                    for (id, tooltip_id, scale_mode) in items {
+                        let response = if Some(scale_mode) == current_scale_mode {
+                            ui.checkbox(&mut true, text(locale, id))
+                        } else {
+                            ui.button(text(locale, id))
+                        }
+                        .on_hover_text_at_pointer(text(locale, tooltip_id));
+                        if response.clicked() {
+                            ui.close_menu();
+                            if let Some(player) = player {
+                                player.set_scale_mode(scale_mode);
+                            }
+                        }
+                    }
+                    ui.separator();
+
+                    let original_forced_scale_mode = player
+                        .as_mut()
+                        .map(|player| player.forced_scale_mode())
+                        .unwrap_or_default();
+                    let mut forced_scale_mode = original_forced_scale_mode;
+                    ui.checkbox(&mut forced_scale_mode, text(locale, "scale-mode-force"))
+                        .on_hover_text_at_pointer(text(locale, "scale-mode-force-tooltip"));
+                    if forced_scale_mode != original_forced_scale_mode {
+                        if let Some(player) = player {
+                            player.set_forced_scale_mode(forced_scale_mode);
+                        }
+                    }
+                });
+
+                let original_letterbox = if let Some(player) = player {
+                    player.letterbox() == Letterbox::On
+                } else {
+                    false
+                };
+                let mut letterbox = original_letterbox;
+                ui.checkbox(&mut letterbox, text(locale, "letterbox"));
+                if letterbox != original_letterbox {
+                    if let Some(player) = player {
+                        player.set_letterbox(if letterbox {
+                            Letterbox::On
+                        } else {
+                            Letterbox::Off
+                        });
+                    }
+                }
+                ui.separator();
+
+                if ui.button(text(locale, "view-menu-fullscreen")).clicked() {
+                    ui.close_menu();
+                    if let Some(player) = player {
+                        player.set_fullscreen(true);
+                    }
+                }
+                ui.separator();
+
+                ui.menu_button(text(locale, "quality"), |ui| {
+                    let items = vec![
+                        ("quality-low", StageQuality::Low),
+                        ("quality-medium", StageQuality::Medium),
+                        ("quality-high", StageQuality::High),
+                        ("quality-best", StageQuality::Best),
+                        ("quality-high8x8", StageQuality::High8x8),
+                        ("quality-high8x8linear", StageQuality::High8x8Linear),
+                        ("quality-high16x16", StageQuality::High16x16),
+                        ("quality-high16x16linear", StageQuality::High16x16Linear),
+                    ];
+                    let current_quality = player.as_mut().map(|player| player.quality());
+                    for (id, quality) in items {
+                        let clicked = if Some(quality) == current_quality {
+                            ui.checkbox(&mut true, text(locale, id)).clicked()
+                        } else {
+                            ui.button(text(locale, id)).clicked()
+                        };
+                        if clicked {
+                            ui.close_menu();
+                            if let Some(player) = player {
+                                player.set_quality(quality);
+                            }
+                        }
+                    }
+                });
+            });
         });
     }
 

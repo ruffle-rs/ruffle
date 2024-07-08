@@ -854,6 +854,10 @@ impl Player {
         })
     }
 
+    pub fn quality(&mut self) -> StageQuality {
+        self.mutate_with_update_context(|context| context.stage.quality())
+    }
+
     pub fn set_quality(&mut self, quality: StageQuality) {
         self.mutate_with_update_context(|context| {
             context.stage.set_quality(context, quality);
@@ -866,6 +870,26 @@ impl Player {
             if let Ok(window_mode) = WindowMode::from_str(window_mode) {
                 stage.set_window_mode(context, window_mode);
             }
+        })
+    }
+
+    pub fn scale_mode(&mut self) -> StageScaleMode {
+        self.mutate_with_update_context(|context| context.stage.scale_mode())
+    }
+
+    pub fn set_scale_mode(&mut self, scale_mode: StageScaleMode) {
+        self.mutate_with_update_context(|context| {
+            context.stage.set_scale_mode(context, scale_mode, false);
+        })
+    }
+
+    pub fn forced_scale_mode(&mut self) -> bool {
+        self.mutate_with_update_context(|context| context.stage.forced_scale_mode())
+    }
+
+    pub fn set_forced_scale_mode(&mut self, force: bool) {
+        self.mutate_with_update_context(|context| {
+            context.stage.set_forced_scale_mode(context, force);
         })
     }
 
