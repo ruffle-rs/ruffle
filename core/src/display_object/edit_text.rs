@@ -210,6 +210,7 @@ impl<'gc> EditText<'gc> {
                 &text,
                 default_format,
                 swf_tag.is_multiline(),
+                false,
                 swf_movie.version(),
             )
         } else {
@@ -394,6 +395,7 @@ impl<'gc> EditText<'gc> {
                 text,
                 default_format,
                 write.flags.contains(EditTextFlag::MULTILINE),
+                write.flags.contains(EditTextFlag::CONDENSE_WHITE),
                 write.static_data.swf.version(),
             );
             drop(write);
@@ -566,6 +568,17 @@ impl<'gc> EditText<'gc> {
     pub fn set_border_color(self, gc_context: &Mutation<'gc>, border_color: Color) {
         self.0.write(gc_context).border_color = border_color;
         self.invalidate_cached_bitmap(gc_context);
+    }
+
+    pub fn condense_white(self) -> bool {
+        self.0.read().flags.contains(EditTextFlag::CONDENSE_WHITE)
+    }
+
+    pub fn set_condense_white(self, context: &mut UpdateContext<'_, 'gc>, condense_white: bool) {
+        self.0
+            .write(context.gc())
+            .flags
+            .set(EditTextFlag::CONDENSE_WHITE, condense_white);
     }
 
     pub fn is_device_font(self) -> bool {
@@ -2673,6 +2686,7 @@ bitflags::bitflags! {
         const FIRING_VARIABLE_BINDING = 1 << 0;
         const HAS_BACKGROUND = 1 << 1;
         const DRAW_LAYOUT_BOXES = 1 << 2;
+        const CONDENSE_WHITE = 1 << 13;
 
         // The following bits need to match `swf::EditTextFlag`.
         const READ_ONLY = 1 << 3;
