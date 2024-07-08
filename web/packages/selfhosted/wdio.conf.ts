@@ -6,6 +6,7 @@ const services: Services.ServiceEntry[] = [];
 const headless = process.argv.includes("--headless");
 const chrome = process.argv.includes("--chrome");
 const firefox = process.argv.includes("--firefox");
+const edge = process.argv.includes("--edge");
 
 if (chrome) {
     const args = ["--disable-gpu"];
@@ -20,6 +21,21 @@ if (chrome) {
         },
     });
     services.push("chromedriver");
+}
+
+if (edge) {
+    const args = ["--disable-gpu"];
+    if (headless) {
+        args.push("--headless");
+    }
+    capabilities.push({
+        "wdio:maxInstances": 1,
+        browserName: "MicrosoftEdge",
+        "ms:edgeOptions": {
+            args,
+        },
+    });
+    services.push("edgedriver");
 }
 
 if (firefox) {

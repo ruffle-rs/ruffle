@@ -68,6 +68,12 @@ export async function throwIfError(browser: WebdriverIO.Browser) {
 export async function injectRuffle(browser: WebdriverIO.Browser) {
     await setupErrorHandler(browser);
     await browser.execute(() => {
+        // Don't use autoplay by default, as we want to control loading in the tests
+        window.RufflePlayer ??= {};
+        window.RufflePlayer.config = {
+            autoplay: "off",
+            ...(window.RufflePlayer.config || {}),
+        };
         const script = document.createElement("script");
         script.type = "text/javascript";
         script.src = "/dist/ruffle.js";
