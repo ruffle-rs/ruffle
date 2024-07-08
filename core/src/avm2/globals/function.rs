@@ -234,7 +234,7 @@ pub fn create_class<'gc>(
     );
 
     let function_c_class = Class::custom_new(
-        QName::new(activation.avm2().public_namespace_base_version, "Function"),
+        QName::new(activation.avm2().public_namespace_base_version, "Function$"),
         Some(class_i_class),
         Method::from_builtin(class_init, "<Function class initializer>", gc_context),
         gc_context,
