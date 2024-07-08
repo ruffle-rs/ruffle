@@ -574,6 +574,8 @@ impl RuffleInstanceBuilder {
 
         let (renderer, canvas) = self.create_renderer().await?;
 
+        canvas.set_tab_index(-1);
+
         let mut builder = PlayerBuilder::new()
             .with_boxed_renderer(renderer)
             .with_boxed_audio(self.create_audio_backend(log_subscriber.clone()))
