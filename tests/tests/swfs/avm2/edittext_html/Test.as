@@ -365,7 +365,7 @@ public class Test extends Sprite {
     }
 
     private function escape(string: String): String {
-        return string.replace(/\n/g, "\\n").replace(/\r/g, "\\n").replace(/Times New Roman/g, "Times");
+        return string.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/Times New Roman/g, "Times");
     }
 }
 }
