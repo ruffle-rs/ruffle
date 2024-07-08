@@ -126,6 +126,7 @@ These are additive - you can specify multiple at the same time. You must have th
 
 - `--chrome` for Chrome
 - `--firefox` for Firefox
+- `--edge` for Edge
 
 ### Other Options
 Pass `--headless` to hide the browser windows. This is useful and recommended in almost every case, but if you want to debug why a test fails then it's very useful to not pass this.
