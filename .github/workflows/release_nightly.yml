@@ -451,6 +451,19 @@ jobs:
           client-id: ${{ secrets.EDGE_CLIENT_ID }}
           api-key: ${{ secrets.EDGE_API_KEY }}
 
+      - name: Publish Firefox extension
+        if: env.FIREFOX_EXTENSION_ID != ''
+        id: publish-firefox-extension
+        continue-on-error: true
+        env:
+          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
+          MOZILLA_API_KEY: ${{ secrets.MOZILLA_API_KEY }}
+          MOZILLA_API_SECRET: ${{ secrets.MOZILLA_API_SECRET }}
+          SOURCE_TAG: ${{ needs.create-nightly-release.outputs.tag_name }}
+        working-directory: web/packages/extension
+        shell: bash -l {0}
+        run: npm run sign-firefox
+
   build-web-demo-and-selfhosted:
     name: Build web demo and selfhosted package with docs
     needs: create-nightly-release
