@@ -31,14 +31,14 @@ jobs:
       - name: Install wasm-bindgen
         run: cargo install wasm-bindgen-cli --version 0.2.92
 
-      - name: Setup conda
-        uses: conda-incubator/setup-miniconda@v3
+      # Keep the version number in sync in all workflows,
+      # and in the extension builder Dockerfile!
+      - name: Install wasm-opt
+        uses: sigoden/install-binary@v1
         with:
-          activate-environment: binaryen
-
-      - name: Install binaryen
-        shell: bash -l {0}
-        run: conda install -c conda-forge binaryen
+          repo: WebAssembly/binaryen
+          tag: version_118
+          name: wasm-opt
 
       - name: Install fclones
         run: cargo install fclones
