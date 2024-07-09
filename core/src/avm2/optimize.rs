@@ -1316,6 +1316,9 @@ pub fn optimize<'gc>(
 
                 // Receiver
                 stack.pop();
+
+                // Avoid checking return value for now
+                stack.push_any();
             }
             Op::SetSuper { multiname } => {
                 stack.pop();
