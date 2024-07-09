@@ -30,11 +30,11 @@ describe("Flash inside iframe with injected ruffle", () => {
         });
 
         // Then reload
-        await browser.switchToParentFrame();
+        await browser.switchToFrame(null);
         await browser.$("#reload-link").click();
 
         // And finally, check
-        await browser.switchToParentFrame();
+        await browser.switchToFrame(null);
         await browser.switchToFrame(await browser.$("#test-frame"));
         await browser.$("<ruffle-object />").waitForExist();
 
