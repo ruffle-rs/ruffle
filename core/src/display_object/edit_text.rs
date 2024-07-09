@@ -902,10 +902,11 @@ impl<'gc> EditText<'gc> {
 
         let caret = if let LayoutContent::Text { start, end, .. } = &lbox.content() {
             if let Some(visible_selection) = visible_selection {
+                let text_len = edit_text.text_spans.text().len();
                 if visible_selection.is_caret()
                     && !edit_text.flags.contains(EditTextFlag::READ_ONLY)
                     && visible_selection.start() >= *start
-                    && visible_selection.end() <= *end
+                    && (visible_selection.end() < *end || *end == text_len)
                     && !visible_selection.blinks_now()
                 {
                     Some(visible_selection.start() - start)
