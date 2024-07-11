@@ -59,13 +59,16 @@ async function disable() {
     }
 }
 
-function onAdded(permissions: chrome.permissions.Permissions) {
+async function onAdded(permissions: chrome.permissions.Permissions) {
     if (
         permissions.origins &&
         permissions.origins.length >= 1 &&
         permissions.origins[0] !== "<all_urls>"
     ) {
-        utils.tabs.reload();
+        const { permissionsSwitch } = await utils.getOptions();
+        utils.storage.sync.set({
+            ["permissionsSwitch"]: !permissionsSwitch,
+        });
     }
 }
 
