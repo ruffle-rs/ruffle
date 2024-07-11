@@ -221,6 +221,18 @@ impl<'gc> FocusTracker<'gc> {
         }
     }
 
+    pub fn navigate(&self, context: &mut UpdateContext<'_, 'gc>, direction: NavigationDirection) {
+        let Some(focus) = self.get() else {
+            return;
+        };
+
+        let tab_order = TabOrder::fill(context);
+        let ordering = NavigationOrdering::new(focus, direction);
+        if let Some(next) = tab_order.first(ordering) {
+            self.set_internal(Some(next), context, true);
+        }
+    }
+
     pub fn update_highlight(&self, context: &mut UpdateContext<'_, 'gc>) {
         self.0.highlight.replace(self.calculate_highlight(context));
     }
@@ -418,5 +430,138 @@ impl TabOrdering for AutomaticTabOrdering {
         // This of course causes some objects to be skipped, even if far from one another,
         // but that's unfortunately how FP behaves.
         true
+    }
+}
+
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub enum NavigationDirection {
+    Up,
+    Right,
+    Down,
+    Left,
+}
+
+impl NavigationDirection {
+    pub fn from_key_code(key_code: KeyCode) -> Option<Self> {
+        Some(match key_code {
+            KeyCode::Up => Self::Up,
+            KeyCode::Right => Self::Right,
+            KeyCode::Down => Self::Down,
+            KeyCode::Left => Self::Left,
+            _ => return None,
+        })
+    }
+}
+
+/// Ordering used for keyboard navigation.
+struct NavigationOrdering {
+    /// Bounds of the object we are navigating from.
+    origin_bounds: Rectangle<Twips>,
+
+    /// The direction which we are navigating towards.
+    direction: NavigationDirection,
+}
+
+/// When ordering objects for navigation, they are divided into two main categories:
+///  1. objects directly behind the origin (taking into account the direction),
+///  2. other objects.
+///
+/// Objects from category 1 always take precedence over objects from category 2.
+///
+/// Objects from category 1 are ordered according to their horizontal/vertical
+/// distance to the origin, and when two objects have the same distance,
+/// the default ordering based on the hierarchy is used.
+///
+/// Objects from category 2 are ordered according to their 2D distance to the origin.
+/// The distance is calculated between the closest corners of highlight bounds, and when
+/// two objects have the same distance, the default ordering based on the hierarchy is used.
+///
+/// In case of navigating down, there's an additional category (between 1 and 2)
+/// which contains objects directly to the right/left of the origin.
+/// In that category, objects are ordered according to their x-axis distance towards origin.
+///
+/// Note: the following implementation is still a little off. Its general idea is sound,
+/// but there are situations where the exact ordering in category 2 is inaccurate.
+/// It seems that FP's behavior in that case depends on things other than highlight bounds,
+/// (e.g. past iteration order), however this inaccuracy is not very important as keyboard
+/// navigation is performed by the user, and they may always navigate in some other way.
+impl NavigationOrdering {
+    fn new(origin: InteractiveObject, direction: NavigationDirection) -> Self {
+        Self {
+            origin_bounds: origin.highlight_bounds(),
+            direction,
+        }
+    }
+}
+
+impl TabOrdering for NavigationOrdering {
+    fn key(&self, other: InteractiveObject) -> Option<impl Ord + Copy> {
+        let origin = &self.origin_bounds;
+        let other = &other.highlight_bounds();
+
+        /// Calculate x- or y-axis distance between two rectangles.
+        fn calculate_distance(a: &Rectangle<Twips>, b: &Rectangle<Twips>, vertical: bool) -> i64 {
+            if vertical {
+                (a.y_max - b.y_min).max(b.y_max - a.y_min).get() as i64
+            } else {
+                (a.x_max - b.x_min).max(b.x_max - a.x_min).get() as i64
+            }
+        }
+
+        // Note that these variants are very similar, but they do have differences!
+        match self.direction {
+            NavigationDirection::Down => {
+                if other.y_max <= origin.y_max {
+                    return None;
+                }
+                let is_behind = other.x_max >= origin.x_min && other.x_min <= origin.x_max;
+                if is_behind {
+                    return Some((0, (other.y_min - origin.y_min).get() as i64));
+                }
+                if other.y_min <= origin.y_max {
+                    // Down is the only direction where this rule applies:
+                    // if an object is to the right or to the left of origin,
+                    // it has precedence here over objects which are not,
+                    // but not objects behind the origin.
+                    return Some((1, calculate_distance(origin, other, false)));
+                }
+            }
+            NavigationDirection::Up => {
+                if other.y_max >= origin.y_max {
+                    return None;
+                }
+                let is_behind = other.x_max >= origin.x_min && other.x_min <= origin.x_max;
+                if is_behind {
+                    return Some((0, (origin.y_max - other.y_max).get() as i64));
+                }
+            }
+            NavigationDirection::Right => {
+                if other.x_max <= origin.x_max {
+                    return None;
+                }
+                let is_behind = other.y_max >= origin.y_min && other.y_min <= origin.y_max;
+                if is_behind {
+                    return Some((0, (other.x_min - origin.x_min).get() as i64));
+                }
+            }
+            NavigationDirection::Left => {
+                if other.x_min >= origin.x_min {
+                    return None;
+                }
+                let is_behind = other.y_max >= origin.y_min && other.y_min <= origin.y_max;
+                if is_behind {
+                    return Some((0, (origin.x_max - other.x_max).get() as i64));
+                }
+            }
+        }
+
+        let distance_x = calculate_distance(origin, other, false);
+        let distance_y = calculate_distance(origin, other, true);
+
+        Some((2, distance_x * distance_x + distance_y * distance_y))
+    }
+
+    fn ignore_duplicates(&self) -> bool {
+        false
     }
 }
