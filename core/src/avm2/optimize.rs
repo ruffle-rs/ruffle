@@ -1161,16 +1161,40 @@ pub fn optimize<'gc>(
                 multiname,
                 num_args,
             } => {
+                let mut stack_push_done = false;
+
                 // Arguments
                 stack.popn(*num_args);
 
                 stack.pop_for_multiname(*multiname);
 
                 // Then receiver.
-                stack.pop();
+                let stack_value = stack.pop_or_any();
 
-                // Avoid checking return value for now
-                stack.push_any();
+                if !multiname.has_lazy_component() {
+                    if let Some(vtable) = stack_value.vtable() {
+                        match vtable.get_trait(multiname) {
+                            Some(Property::Slot { slot_id })
+                            | Some(Property::ConstSlot { slot_id }) => {
+                                let mut value_class = vtable.slot_classes()[slot_id as usize];
+                                let resolved_value_class = value_class.get_class(activation);
+
+                                if let Ok(Some(slot_class)) = resolved_value_class {
+                                    if let Some(instance_class) = slot_class.i_class() {
+                                        // ConstructProp on a c_class will construct its i_class
+                                        stack_push_done = true;
+                                        stack.push_class(instance_class);
+                                    }
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+
+                if !stack_push_done {
+                    stack.push_any();
+                }
             }
             Op::Call { num_args } => {
                 // Arguments
