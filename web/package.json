@@ -11,6 +11,7 @@
     "devDependencies": {
         "@eslint/js": "^9.6.0",
         "@types/eslint__js": "^8.42.3",
+        "@wdio/browserstack-service": "^8.39.1",
         "@wdio/cli": "^8.39.1",
         "@wdio/local-runner": "^8.39.1",
         "@wdio/mocha-framework": "^8.39.0",

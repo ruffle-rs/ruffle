@@ -1,2 +1,5 @@
 # TypeScript incremental compilation information.
 /tsconfig.tsbuildinfo
+# Browserstack run logs
+local.log
+

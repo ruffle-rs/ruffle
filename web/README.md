@@ -116,17 +116,24 @@ There are two parts of tests to this project:
 - Regular node tests, ran through `npm run test`. You must have built everything first as above. These have no special requirements.
 - Browser based tests, ran through `npm run wdio` with extra arguments as below. These take longer to run and require some setup.
 
-## Browser based tests
+## Browser Based Tests
 There are full integration tests that require a browser to run. We don't make any assumptions about your environment, and so you must specify it yourself.
 
 To run these tests, first build the project as above, then use `npm run wdio -- --arg1 --arg2` etc.
 
-### Browsers
+### Local Browsers
 These are additive - you can specify multiple at the same time. You must have the given browsers installed locally though, or it will fail.
 
 - `--chrome` for Chrome
 - `--firefox` for Firefox
 - `--edge` for Edge
+
+### BrowserStack (Mobile Browsers)
+To run tests on mobile devices on BrowserStack, pass the `--browserstack` argument.
+We also have our "minimum supported desktop browsers" available too, by additionally passing `--oldVersions`.
+
+You will need a BrowserStack account (Maintainers may contact @Dinnerbone on Discord for an invite to the Ruffle team),
+and set the appropriate values to `BROWSERSTACK_USERNAME` and `BROWSERSTACK_ACCESS_KEY` environment variables.
 
 ### Other Options
 Pass `--headless` to hide the browser windows. This is useful and recommended in almost every case, but if you want to debug why a test fails then it's very useful to not pass this.
