@@ -32,6 +32,10 @@ const reloadSwf = document.getElementById("reload-swf")!;
 const infoContainer = document.getElementById("info-container")!;
 const webFormSubmit = document.getElementById("web-form-submit")!;
 const webURL = document.getElementById("web-url")! as HTMLInputElement;
+const modal = document.getElementById("modal")! as HTMLDialogElement;
+const close = document.getElementById("close")! as HTMLButtonElement;
+const grant = document.getElementById("grant")! as HTMLButtonElement;
+let origin: string | undefined;
 
 // This is the base config always used by the extension player.
 // It has the highest priority and its options cannot be overwritten.
@@ -98,11 +102,37 @@ function unload() {
     }
 }
 
-function load(options: string | DataLoadOptions | URLLoadOptions) {
+async function load(options: string | DataLoadOptions | URLLoadOptions) {
     unload();
     player = ruffle.createPlayer();
     player.id = "player";
     playerContainer.append(player);
+    const url =
+        typeof options === "string"
+            ? options
+            : "url" in options
+              ? options["url"]
+              : undefined;
+    try {
+        origin = url ? new URL(url).origin + "/" : url;
+    } catch {
+        // Ignore
+    }
+    const hostPermissionsForSpecifiedTab =
+        await utils.hasHostPermissionForSpecifiedTab(origin);
+    if (origin && !hostPermissionsForSpecifiedTab) {
+        grant.textContent = "Grant permissions on " + origin;
+        const result = await showModal();
+        if (result === "") {
+            const swfPlayerPermissions = utils.i18n.getMessage(
+                "swf_player_permissions",
+            );
+            alert(swfPlayerPermissions);
+            origin = undefined;
+            history.pushState("", document.title, window.location.pathname);
+            return;
+        }
+    }
     player.load(options, false);
     player.addEventListener("loadedmetadata", () => {
         if (player.metadata) {
@@ -221,6 +251,41 @@ reloadSwf.addEventListener("click", () => {
         }
     }
 });
+function showModal() {
+    return new Promise((resolve, _reject) => {
+        modal.showModal();
+
+        grant.addEventListener(
+            "click",
+            async () => {
+                if (origin) {
+                    const permissionsGranted = await utils.permissions.request({
+                        origins: [origin],
+                    });
+                    modal.close();
+                    if (!permissionsGranted) {
+                        resolve("");
+                    } else {
+                        resolve(origin);
+                    }
+                } else {
+                    modal.close();
+                    resolve("");
+                }
+            },
+            { once: true },
+        );
+
+        close.addEventListener(
+            "click",
+            () => {
+                modal.close();
+                resolve("");
+            },
+            { once: true },
+        );
+    });
+}
 
 window.addEventListener("load", () => {
     if (
