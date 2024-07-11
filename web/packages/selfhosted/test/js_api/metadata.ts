@@ -15,6 +15,10 @@ describe("RufflePlayer.metadata", () => {
             (player) => (player as unknown as RufflePlayer).metadata,
             player,
         );
+        // [NA] Work around a chrome 87 bug where it's (somehow) adding extra data to this object
+        if (metadata && "capabilities" in metadata) {
+            delete metadata.capabilities;
+        }
         expect(metadata).to.eql({
             width: 550,
             height: 400,

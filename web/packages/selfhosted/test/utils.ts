@@ -26,12 +26,14 @@ export async function isRufflePlayerLoaded(
     browser: WebdriverIO.Browser,
     player: WebdriverIO.Element,
 ) {
-    return await browser.execute(
-        (player) =>
-            // https://github.com/webdriverio/webdriverio/issues/6486
-            // TODO: How can we import ReadyState enum?
-            (player as unknown as RufflePlayer).readyState === 2,
-        player,
+    return (
+        (await browser.execute(
+            (player) =>
+                // https://github.com/webdriverio/webdriverio/issues/6486
+                // TODO: How can we import ReadyState enum?
+                (player as unknown as RufflePlayer).readyState,
+            player,
+        )) === 2
     );
 }
 
@@ -152,6 +154,7 @@ export async function waitForPlayerToLoad(
         async () => await isRufflePlayerLoaded(browser, player),
         {
             timeoutMsg: "Expected Ruffle to load",
+            timeout: 60000,
         },
     );
     await throwIfError(browser);
