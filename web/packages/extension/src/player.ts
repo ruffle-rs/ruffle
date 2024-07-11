@@ -33,7 +33,7 @@ const infoContainer = document.getElementById("info-container")!;
 const webFormSubmit = document.getElementById("web-form-submit")!;
 const webURL = document.getElementById("web-url")! as HTMLInputElement;
 const modal = document.getElementById("modal")! as HTMLDialogElement;
-const close = document.getElementById("close")! as HTMLButtonElement;
+const closeModal = document.getElementById("close")! as HTMLButtonElement;
 const grant = document.getElementById("grant")! as HTMLButtonElement;
 
 // This is the base config always used by the extension player.
@@ -252,7 +252,7 @@ reloadSwf.addEventListener("click", () => {
 function showModal(origin: string) {
     return new Promise((resolve, _reject) => {
         grant.textContent = "Grant permissions on " + origin;
-        function grantButtonClicked() {
+        function grantClicked() {
             modal.close();
             utils.permissions
                 .request({
@@ -269,18 +269,18 @@ function showModal(origin: string) {
                     resolve("");
                 })
                 .finally(() => {
-                    close.removeEventListener("click", closeButtonClicked);
+                    closeModal.removeEventListener("click", closeClicked);
                 });
         }
 
-        function closeButtonClicked() {
+        function closeClicked() {
             modal.close();
             resolve("");
-            grant.removeEventListener("click", grantButtonClicked);
+            grant.removeEventListener("click", grantClicked);
         }
 
-        grant.addEventListener("click", grantButtonClicked, { once: true });
-        close.addEventListener("click", closeButtonClicked, { once: true });
+        grant.addEventListener("click", grantClicked, { once: true });
+        closeModal.addEventListener("click", closeClicked, { once: true });
         modal.showModal();
     });
 }
