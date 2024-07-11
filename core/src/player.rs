@@ -33,6 +33,7 @@ use crate::events::GamepadButton;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, MouseButton, PlayerEvent};
 use crate::external::{ExternalInterface, ExternalInterfaceProvider, NullFsCommandProvider};
 use crate::external::{FsCommandProvider, Value as ExternalValue};
+use crate::focus_tracker::NavigationDirection;
 use crate::frame_lifecycle::{run_all_phases_avm2, FramePhase};
 use crate::library::Library;
 use crate::limits::ExecutionLimit;
@@ -1233,6 +1234,13 @@ impl Player {
                         // We do not have to wait for KeyUp.
                         focus.handle_clip_event(context, ClipEvent::Press { index: 0 });
                         focus.handle_clip_event(context, ClipEvent::Release);
+                    }
+
+                    if let PlayerEvent::KeyDown { key_code, .. } = event {
+                        if let Some(direction) = NavigationDirection::from_key_code(key_code) {
+                            let tracker = context.focus_tracker;
+                            tracker.navigate(context, direction);
+                        }
                     }
                 }
             }
