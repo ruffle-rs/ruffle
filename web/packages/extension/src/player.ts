@@ -35,7 +35,6 @@ const webURL = document.getElementById("web-url")! as HTMLInputElement;
 const modal = document.getElementById("modal")! as HTMLDialogElement;
 const close = document.getElementById("close")! as HTMLButtonElement;
 const grant = document.getElementById("grant")! as HTMLButtonElement;
-let origin: string | undefined;
 
 // This is the base config always used by the extension player.
 // It has the highest priority and its options cannot be overwritten.
@@ -113,6 +112,7 @@ async function load(options: string | DataLoadOptions | URLLoadOptions) {
             : "url" in options
               ? options["url"]
               : undefined;
+    let origin;
     try {
         origin = url ? new URL(url).origin + "/" : url;
     } catch {
@@ -121,14 +121,12 @@ async function load(options: string | DataLoadOptions | URLLoadOptions) {
     const hostPermissionsForSpecifiedTab =
         await utils.hasHostPermissionForSpecifiedTab(origin);
     if (origin && !hostPermissionsForSpecifiedTab) {
-        grant.textContent = "Grant permissions on " + origin;
-        const result = await showModal();
+        const result = await showModal(origin);
         if (result === "") {
             const swfPlayerPermissions = utils.i18n.getMessage(
                 "swf_player_permissions",
             );
             alert(swfPlayerPermissions);
-            origin = undefined;
             history.pushState("", document.title, window.location.pathname);
             return;
         }
@@ -251,39 +249,39 @@ reloadSwf.addEventListener("click", () => {
         }
     }
 });
-function showModal() {
+function showModal(origin: string) {
     return new Promise((resolve, _reject) => {
-        modal.showModal();
-
-        grant.addEventListener(
-            "click",
-            async () => {
-                if (origin) {
-                    const permissionsGranted = await utils.permissions.request({
-                        origins: [origin],
-                    });
-                    modal.close();
-                    if (!permissionsGranted) {
-                        resolve("");
-                    } else {
+        grant.textContent = "Grant permissions on " + origin;
+        function grantButtonClicked() {
+            modal.close();
+            utils.permissions
+                .request({
+                    origins: [origin],
+                })
+                .then((permissionsGranted) => {
+                    if (permissionsGranted) {
                         resolve(origin);
+                    } else {
+                        resolve("");
                     }
-                } else {
-                    modal.close();
+                })
+                .catch(() => {
                     resolve("");
-                }
-            },
-            { once: true },
-        );
+                })
+                .finally(() => {
+                    close.removeEventListener("click", closeButtonClicked);
+                });
+        }
 
-        close.addEventListener(
-            "click",
-            () => {
-                modal.close();
-                resolve("");
-            },
-            { once: true },
-        );
+        function closeButtonClicked() {
+            modal.close();
+            resolve("");
+            grant.removeEventListener("click", grantButtonClicked);
+        }
+
+        grant.addEventListener("click", grantButtonClicked, { once: true });
+        close.addEventListener("click", closeButtonClicked, { once: true });
+        modal.showModal();
     });
 }
 
