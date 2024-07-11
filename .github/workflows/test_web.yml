@@ -5,6 +5,7 @@ on:
     branches: [master]
   pull_request:
     branches: [master]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -87,11 +88,15 @@ jobs:
         working-directory: web
         run: npm run lint
 
-      - name: Run tests
-        # MIKE: Don't run web tests on Windows because it's flaky for unknown reasons. :-(
-        if: runner.os == 'Linux'
+      - name: Run node-based tests
         working-directory: web
         run: npm test
+
+      - name: Run browser-based tests
+        # Don't run browser tests on Windows because it's flaky for unknown reasons. :-(
+        if: runner.os == 'Linux'
+        working-directory: web
+        run: npm run wdio -- --headless --chrome --firefox --edge
 
   check-required:
     needs: changes
