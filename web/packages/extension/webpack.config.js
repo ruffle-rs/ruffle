@@ -125,6 +125,7 @@ export default function (/** @type {Record<string, any>} */ env, _argv) {
         optimization: {
             minimize: false,
         },
+        devtool: mode === "development" ? "source-map" : false,
         plugins: [
             new CopyPlugin({
                 patterns: [
