@@ -99,20 +99,26 @@ export const hasAllUrlsPermission = async () => {
     return allPermissions.origins?.includes("<all_urls>") ?? false;
 };
 
-export async function hasHostPermissionForActiveTab() {
-    const [activeTab] = await tabs.query({
-        active: true,
-        currentWindow: true,
-    });
-
+export async function hasHostPermissionForSpecifiedTab(
+    origin: string | undefined,
+) {
     try {
-        return activeTab?.url
+        return origin
             ? await permissions.contains({
-                  origins: [activeTab.url],
+                  origins: [origin],
               })
             : await hasAllUrlsPermission();
     } catch {
         // catch error that occurs for special urls like about:
         return false;
     }
+}
+
+export async function hasHostPermissionForActiveTab() {
+    const [activeTab] = await tabs.query({
+        active: true,
+        currentWindow: true,
+    });
+
+    return await hasHostPermissionForSpecifiedTab(activeTab?.url);
 }
