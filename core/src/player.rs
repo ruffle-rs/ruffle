@@ -1681,12 +1681,12 @@ impl Player {
                         if object.handle_clip_event(context, event) == ClipEventResult::Handled {
                             *player_event_handled = true;
                         }
+                        if matches!(event, ClipEvent::Press { .. }) {
+                            Self::update_focus_on_mouse_press(context, display_object);
+                        }
                         if object.event_dispatch_to_avm2(context, event) == ClipEventResult::Handled
                         {
                             *player_event_handled = true;
-                        }
-                        if matches!(event, ClipEvent::Press { .. }) {
-                            Self::update_focus_on_mouse_press(context, display_object);
                         }
                     }
                     if !refresh && event.is_button_event() {
