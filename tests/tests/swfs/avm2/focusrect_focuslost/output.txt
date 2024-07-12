@@ -1,0 +1,9 @@
+Tab pressed
+  null, null: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=9]
+  clip, clip: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0]
+  null, clip: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0]
+Tab pressed
+  clip, clip: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=9]
+  null, clip: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=9]
+  clip, clip: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0]
+  null, clip: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0]
