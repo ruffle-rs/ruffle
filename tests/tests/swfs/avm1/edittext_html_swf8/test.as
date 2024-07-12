@@ -1,5 +1,3 @@
-// Newlines are OS-dependent, we do not
-// want to deal with this in this test.
 function escapeNewlines(text) {
     return text
         .split("\r").join("\\r")
