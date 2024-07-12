@@ -856,7 +856,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         mc: &Mutation<'gc>,
         name: QName<'gc>,
         value: Value<'gc>,
-        class: ClassObject<'gc>,
+        class: Class<'gc>,
     ) {
         let new_slot_id = self
             .vtable()

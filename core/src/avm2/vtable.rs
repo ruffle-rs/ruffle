@@ -541,7 +541,7 @@ impl<'gc> VTable<'gc> {
         mc: &Mutation<'gc>,
         name: QName<'gc>,
         value: Value<'gc>,
-        class: ClassObject<'gc>,
+        class: Class<'gc>,
     ) -> u32 {
         let mut write = self.0.write(mc);
 
@@ -550,9 +550,7 @@ impl<'gc> VTable<'gc> {
         write
             .resolved_traits
             .insert(name, Property::new_const_slot(new_slot_id));
-        write
-            .slot_classes
-            .push(PropertyClass::Class(class.inner_class_definition()));
+        write.slot_classes.push(PropertyClass::Class(class));
 
         new_slot_id
     }

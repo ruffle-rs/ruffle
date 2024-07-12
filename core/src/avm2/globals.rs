@@ -337,7 +337,11 @@ fn define_fn_on_global<'gc>(
         activation.context.gc_context,
         qname,
         func,
-        activation.avm2().classes().function,
+        activation
+            .avm2()
+            .classes()
+            .function
+            .inner_class_definition(),
     );
     script
         .global_class()
@@ -352,8 +356,6 @@ fn dynamic_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
     class_object: ClassObject<'gc>,
     script: Script<'gc>,
-    // The `ClassObject` of the `Class` class
-    class_class: ClassObject<'gc>,
 ) {
     let (_, global, mut domain) = script.init();
     let class = class_object.inner_class_definition();
@@ -363,7 +365,7 @@ fn dynamic_class<'gc>(
         activation.context.gc_context,
         name,
         class_object.into(),
-        class_class,
+        class_object.instance_class(),
     );
     script
         .global_class()
@@ -400,7 +402,7 @@ fn class<'gc>(
         mc,
         class_name,
         class_object.into(),
-        activation.avm2().classes().class,
+        class_object.instance_class(),
     );
     script.global_class().define_constant_class_instance_trait(
         activation,
@@ -438,7 +440,7 @@ fn vector_class<'gc>(
         mc,
         legacy_name,
         vector_cls.into(),
-        activation.avm2().classes().class,
+        vector_cls.instance_class(),
     );
     script
         .global_class()
@@ -576,9 +578,9 @@ pub fn load_player_globals<'gc>(
 
     // From this point, `globals` is safe to be modified
 
-    dynamic_class(activation, object_class, script, class_class);
-    dynamic_class(activation, fn_class, script, class_class);
-    dynamic_class(activation, class_class, script, class_class);
+    dynamic_class(activation, object_class, script);
+    dynamic_class(activation, fn_class, script);
+    dynamic_class(activation, class_class, script);
 
     // After this point, it is safe to initialize any other classes.
     // Make sure to initialize superclasses *before* their subclasses!
