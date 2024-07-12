@@ -1,0 +1,20 @@
+[
+    { "type": "MouseMove", "pos": [1, 101] },
+    { "type": "MouseDown", "pos": [1, 101], "btn": "Left" },
+    { "type": "MouseUp", "pos": [1, 101], "btn": "Left" },
+    { "type": "MouseMove", "pos": [1, 101] },
+    { "type": "MouseDown", "pos": [1, 101], "btn": "Left" },
+    { "type": "MouseUp", "pos": [1, 101], "btn": "Left" },
+    { "type": "KeyDown", "key_code": 27 },
+    { "type": "KeyUp", "key_code": 27 },
+    { "type": "MouseMove", "pos": [1, 101] },
+    { "type": "MouseDown", "pos": [1, 101], "btn": "Left" },
+    { "type": "MouseUp", "pos": [1, 101], "btn": "Left" },
+    { "type": "MouseMove", "pos": [1, 101] },
+    { "type": "MouseDown", "pos": [1, 101], "btn": "Left" },
+    { "type": "MouseUp", "pos": [1, 101], "btn": "Left" },
+    { "type": "KeyDown", "key_code": 27 },
+    { "type": "KeyUp", "key_code": 27 },
+    { "type": "MouseMove", "pos": [1, 1] },
+    { "type": "Wait" }
+]
