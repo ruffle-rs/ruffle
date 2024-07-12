@@ -1,0 +1,3 @@
+# tests a probable (no access to original repro) cause of
+# https://github.com/ruffle-rs/ruffle/issues/14747
+num_frames = 1

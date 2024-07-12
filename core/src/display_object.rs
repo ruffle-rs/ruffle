@@ -1666,7 +1666,8 @@ pub trait TDisplayObject<'gc>:
         remove_old_link: bool,
     ) {
         if remove_old_link {
-            if let Some(old_masker) = self.base().masker() {
+            let old_masker = self.base().masker();
+            if let Some(old_masker) = old_masker {
                 old_masker.set_maskee(gc_context, None, false);
             }
             if let Some(parent) = self.parent() {
@@ -1686,7 +1687,8 @@ pub trait TDisplayObject<'gc>:
         remove_old_link: bool,
     ) {
         if remove_old_link {
-            if let Some(old_maskee) = self.base().maskee() {
+            let old_maskee = self.base().maskee();
+            if let Some(old_maskee) = old_maskee {
                 old_maskee.set_masker(gc_context, None, false);
             }
             self.invalidate_cached_bitmap(gc_context);
