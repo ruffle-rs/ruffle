@@ -397,6 +397,8 @@ include "flash/text/engine/TypographicCase.as"
 include "flash/text/ime/CompositionAttributeRange.as"
 include "flash/text/ime/IIMEClient.as"
 
+include "flash/trace/Trace.as"
+
 include "flash/ui/ContextMenu.as"
 include "flash/ui/ContextMenuBuiltInItems.as"
 include "flash/ui/ContextMenuClipboardItems.as"
