@@ -852,7 +852,16 @@ impl<'gc> Value<'gc> {
                     AvmString::new_utf8(activation.context.gc_context, n.to_string())
                 }
             }
-            Value::Integer(i) => AvmString::new_utf8(activation.context.gc_context, i.to_string()),
+            Value::Integer(i) => {
+                if *i >= 0 && *i < 10 {
+                    activation
+                        .context
+                        .interner
+                        .get_char(activation.context.gc_context, '0' as u16 + *i as u16)
+                } else {
+                    AvmString::new_utf8(activation.context.gc_context, i.to_string())
+                }
+            }
             Value::String(s) => *s,
             Value::Object(_) => self
                 .coerce_to_primitive(Some(Hint::String), activation)?
