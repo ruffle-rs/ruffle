@@ -1969,6 +1969,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let coerced = match value {
             Value::Undefined | Value::Null => Value::Null,
+            Value::String(_) => value,
             _ => value.coerce_to_string(self)?.into(),
         };
 
