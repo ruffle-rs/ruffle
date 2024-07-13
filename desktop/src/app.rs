@@ -291,6 +291,10 @@ impl App {
                             check_redraw = true;
                         }
                         WindowEvent::MouseWheel { delta, .. } => {
+                            if self.gui.borrow_mut().is_context_menu_visible() {
+                                return;
+                            }
+
                             use ruffle_core::events::MouseWheelDelta;
                             use winit::event::MouseScrollDelta;
                             let delta = match delta {
@@ -322,6 +326,10 @@ impl App {
                             modifiers = new_modifiers;
                         }
                         WindowEvent::KeyboardInput { event, .. } => {
+                            if self.gui.borrow_mut().is_context_menu_visible() {
+                                return;
+                            }
+
                             // Handle fullscreen keyboard shortcuts: Alt+Return, Escape.
                             match event {
                                 KeyEvent {
