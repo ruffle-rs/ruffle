@@ -92,9 +92,6 @@ pub enum TraitKind<'gc> {
     /// objects.
     Class { slot_id: u32, class: Class<'gc> },
 
-    /// A free function (not an instance method) that can be called.
-    Function { slot_id: u32, function: Method<'gc> },
-
     /// A data field on an object that is always a particular value, and cannot
     /// be overridden.
     Const {
@@ -138,18 +135,6 @@ impl<'gc> Trait<'gc> {
             name,
             attributes: TraitAttributes::empty(),
             kind: TraitKind::Setter { disp_id: 0, method },
-            metadata: None,
-        }
-    }
-
-    pub fn from_function(name: QName<'gc>, function: Method<'gc>) -> Self {
-        Trait {
-            name,
-            attributes: TraitAttributes::empty(),
-            kind: TraitKind::Function {
-                slot_id: 0,
-                function,
-            },
             metadata: None,
         }
     }
@@ -254,15 +239,7 @@ impl<'gc> Trait<'gc> {
                 },
                 metadata: Metadata::from_abc_index(activation, unit, &abc_trait.metadata)?,
             },
-            AbcTraitKind::Function { slot_id, function } => Trait {
-                name,
-                attributes: trait_attribs_from_abc_traits(abc_trait),
-                kind: TraitKind::Function {
-                    slot_id: *slot_id,
-                    function: unit.load_method(*function, true, activation)?,
-                },
-                metadata: Metadata::from_abc_index(activation, unit, &abc_trait.metadata)?,
-            },
+            AbcTraitKind::Function { .. } => panic!("TraitKind::Function shouldn't appear"),
             AbcTraitKind::Const {
                 slot_id,
                 type_name,
@@ -324,7 +301,6 @@ impl<'gc> Trait<'gc> {
             TraitKind::Getter { .. } => None,
             TraitKind::Setter { .. } => None,
             TraitKind::Class { slot_id, .. } => Some(slot_id),
-            TraitKind::Function { slot_id, .. } => Some(slot_id),
             TraitKind::Const { slot_id, .. } => Some(slot_id),
         }
     }
@@ -337,7 +313,6 @@ impl<'gc> Trait<'gc> {
             TraitKind::Getter { .. } => {}
             TraitKind::Setter { .. } => {}
             TraitKind::Class { slot_id, .. } => *slot_id = id,
-            TraitKind::Function { slot_id, .. } => *slot_id = id,
             TraitKind::Const { slot_id, .. } => *slot_id = id,
         }
     }
@@ -350,7 +325,6 @@ impl<'gc> Trait<'gc> {
             TraitKind::Getter { disp_id, .. } => Some(disp_id),
             TraitKind::Setter { disp_id, .. } => Some(disp_id),
             TraitKind::Class { .. } => None,
-            TraitKind::Function { .. } => None,
             TraitKind::Const { .. } => None,
         }
     }
@@ -363,7 +337,6 @@ impl<'gc> Trait<'gc> {
             TraitKind::Getter { disp_id, .. } => *disp_id = id,
             TraitKind::Setter { disp_id, .. } => *disp_id = id,
             TraitKind::Class { .. } => {}
-            TraitKind::Function { .. } => {}
             TraitKind::Const { .. } => {}
         }
     }
@@ -374,7 +347,6 @@ impl<'gc> Trait<'gc> {
             TraitKind::Method { method, .. } => Some(*method),
             TraitKind::Getter { method, .. } => Some(*method),
             TraitKind::Setter { method, .. } => Some(*method),
-            TraitKind::Function { function, .. } => Some(*function),
             _ => None,
         }
     }
