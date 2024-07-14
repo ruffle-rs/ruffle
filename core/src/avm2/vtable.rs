@@ -485,7 +485,6 @@ impl<'gc> VTable<'gc> {
 
                     slot_classes[new_slot_id as usize] = new_class;
                 }
-                TraitKind::Function { .. } => panic!("TraitKind::Function shouldn't appear"),
             }
         }
     }
