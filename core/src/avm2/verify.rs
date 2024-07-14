@@ -428,6 +428,19 @@ pub fn verify_method<'gc>(
                         })?;
                 }
 
+                AbcOp::GetSlot { index }
+                | AbcOp::SetSlot { index }
+                | AbcOp::GetGlobalSlot { index }
+                | AbcOp::SetGlobalSlot { index } => {
+                    if index == 0 {
+                        return Err(Error::AvmError(verify_error(
+                            activation,
+                            "Error #1026: Slot 0 exceeds slotCount",
+                            1026,
+                        )?));
+                    }
+                }
+
                 _ => {}
             }
         }
