@@ -29,6 +29,9 @@ include "flash/accessibility/AccessibilityProperties.as"
 include "flash/accessibility/ISearchableText.as"
 include "flash/accessibility/ISimpleTextSelection.as"
 
+include "flash/concurrent/Condition.as"
+include "flash/concurrent/Mutex.as"
+
 include "flash/crypto.as"
 
 include "flash/utils/IDataInput.as"
@@ -37,16 +40,15 @@ include "flash/utils/IExternalizable.as"
 include "flash/utils/ByteArray.as"
 include "flash/utils/Dictionary.as"
 
+include "flash/events/IEventDispatcher.as"
+include "flash/events/EventDispatcher.as"
+
 include "flash/desktop/ClipboardFormats.as"
 include "flash/desktop/ClipboardTransferMode.as"
 include "flash/desktop/Clipboard.as"
 include "flash/desktop/IFilePromise.as"
-
-include "flash/events/IEventDispatcher.as"
-include "flash/events/EventDispatcher.as"
-
-include "flash/concurrent/Condition.as"
-include "flash/concurrent/Mutex.as"
+include "flash/desktop/NativeProcess.as"
+include "flash/desktop/NativeProcessStartupInfo.as"
 
 include "flash/display/IBitmapDrawable.as"
 include "flash/display/DisplayObject.as"
@@ -300,6 +302,8 @@ include "flash/net/URLRequestMethod.as"
 include "flash/net/URLStream.as"
 include "flash/net/URLVariables.as"
 include "flash/net/XMLSocket.as"
+
+include "flash/filesystem/File.as" // File extends FileReference
 
 include "flash/net/drm/AuthenticationMethod.as"
 include "flash/net/drm/LoadVoucherSetting.as"
