@@ -28,12 +28,15 @@ include "flash/accessibility/AccessibilityImplementation.as"
 include "flash/accessibility/AccessibilityProperties.as"
 include "flash/accessibility/ISearchableText.as"
 include "flash/accessibility/ISimpleTextSelection.as"
+
 include "flash/crypto.as"
+
 include "flash/utils/IDataInput.as"
 include "flash/utils/IDataOutput.as"
 include "flash/utils/IExternalizable.as"
 include "flash/utils/ByteArray.as"
 include "flash/utils/Dictionary.as"
+
 include "flash/desktop/ClipboardFormats.as"
 include "flash/desktop/ClipboardTransferMode.as"
 include "flash/desktop/Clipboard.as"
@@ -109,6 +112,9 @@ include "flash/display/StageQuality.as"
 include "flash/display/StageScaleMode.as"
 include "flash/display/SWFVersion.as"
 include "flash/display/TriangleCulling.as"
+
+include "flash/display/MovieClip.as"
+
 include "flash/display3D/Context3D.as"
 include "flash/display3D/Context3DBlendFactor.as"
 include "flash/display3D/Context3DBufferUsage.as"
@@ -132,7 +138,13 @@ include "flash/display3D/textures/Texture.as"
 include "flash/display3D/textures/RectangleTexture.as"
 include "flash/display3D/VertexBuffer3D.as"
 
-include "flash/display/MovieClip.as"
+include "flash/errors/IOError.as" // IOError is a superclass of EOFError
+include "flash/errors/EOFError.as"
+include "flash/errors/IllegalOperationError.as"
+include "flash/errors/InvalidSWFError.as"
+include "flash/errors/MemoryError.as"
+include "flash/errors/ScriptTimeoutError.as"
+include "flash/errors/StackOverflowError.as"
 
 // Event needs to come before its subclasses
 include "flash/events/Event.as"
@@ -187,13 +199,7 @@ include "flash/events/UncaughtErrorEvents.as"
 include "flash/events/VideoEvent.as"
 include "flash/events/VideoTextureEvent.as"
 
-include "flash/errors/IOError.as" // IOError is a superclass of EOFError
-include "flash/errors/EOFError.as"
-include "flash/errors/IllegalOperationError.as"
-include "flash/errors/InvalidSWFError.as"
-include "flash/errors/MemoryError.as"
-include "flash/errors/ScriptTimeoutError.as"
-include "flash/errors/StackOverflowError.as"
+include "flash/external/ExternalInterface.as"
 
 include "flash/filters/BitmapFilter.as"
 include "flash/filters/BitmapFilterQuality.as"
@@ -220,6 +226,7 @@ include "flash/geom/Rectangle.as"
 include "flash/geom/Transform.as"
 include "flash/geom/Utils3D.as"
 include "flash/geom/Vector3D.as"
+
 include "flash/globalization/CollatorMode.as"
 include "flash/globalization/CurrencyParseResult.as"
 include "flash/globalization/CurrencyFormatter.as"
@@ -258,8 +265,6 @@ include "flash/media/Video.as"
 include "flash/media/VideoCodec.as"
 include "flash/media/VideoStatus.as"
 include "flash/media/VideoStreamSettings.as"
-
-include "flash/external/ExternalInterface.as"
 
 include "flash/net.as"
 include "flash/net/DatagramSocket.as"
