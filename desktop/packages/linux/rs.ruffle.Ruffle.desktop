@@ -2,9 +2,9 @@
 Type=Application
 Name=Ruffle
 GenericName=Flash Player
-Comment=Flash Player emulator
+Comment=Play Flash games & movies
 Icon=rs.ruffle.Ruffle
 Exec=ruffle %u
 MimeType=application/x-shockwave-flash;application/vnd.adobe.flash.movie
-Categories=Game;Utility;AudioVideo
-Keywords=flash;swf
+Categories=Game;Utility;Graphics;AudioVideo;Player;Viewer
+Keywords=flash;swf;player;emulator;rust
