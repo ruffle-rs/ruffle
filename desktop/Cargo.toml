@@ -55,7 +55,7 @@ winapi = "0.3.9"
 
 [build-dependencies]
 embed-resource = "2"
-vergen = { version = "8.3.1", features = ["build", "git", "gitcl", "cargo"] }
+vergen = { version = "8.3.2", features = ["build", "git", "gitcl", "cargo"] }
 
 [features]
 default = ["software_video", "external_video"]
