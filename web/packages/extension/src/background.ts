@@ -65,9 +65,8 @@ async function onAdded(permissions: chrome.permissions.Permissions) {
         permissions.origins.length >= 1 &&
         permissions.origins[0] !== "<all_urls>"
     ) {
-        const { permissionsSwitch } = await utils.getOptions();
-        utils.storage.sync.set({
-            ["permissionsSwitch"]: !permissionsSwitch,
+        await utils.storage.sync.set({
+            ["showReloadButton"]: true,
         });
     }
 }

@@ -142,8 +142,9 @@ function optionsChanged() {
         return;
     }
 
-    const isDifferent = !deepEqual(savedOptions, tabOptions);
-    reloadButton.disabled = !isDifferent;
+    const showReloadButton = tabOptions.showReloadButton;
+    const notDifferent = deepEqual(savedOptions, tabOptions);
+    reloadButton.disabled = notDifferent && !showReloadButton;
 }
 
 async function displayTabStatus() {
