@@ -12,7 +12,7 @@ function transformManifest(content, env) {
     const manifest = json5.parse(content.toString());
 
     let packageVersion = process.env["npm_package_version"];
-    let versionChannel = process.env["CFG_RELEASE_CHANNEL"] || "nightly";
+    let versionChannel = process.env["CFG_RELEASE_CHANNEL"] || "none";
     let buildDate = new Date().toISOString().substring(0, 10);
     let buildId = process.env["BUILD_ID"];
     let firefoxExtensionId =
