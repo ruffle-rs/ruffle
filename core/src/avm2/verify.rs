@@ -100,6 +100,8 @@ pub fn verify_method<'gc>(
     let resolved_param_config = resolve_param_config(activation, method.signature())?;
     let resolved_return_type = resolve_return_type(activation, &method.return_type)?;
 
+    let mut seen_exception_indices = HashSet::new();
+
     let mut worklist = vec![0];
 
     let mut byte_info = vec![ByteInfo::NotYetReached; body.code.len()];
@@ -131,16 +133,21 @@ pub fn verify_method<'gc>(
                 Err(_) => unreachable!(),
             };
 
-            for exception in body.exceptions.iter() {
+            for (exception_index, exception) in body.exceptions.iter().enumerate() {
                 // If this op is in the to..from and it can throw an error,
                 // add the exception's target to the worklist.
                 if exception.from_offset as i32 <= previous_position
                     && previous_position < exception.to_offset as i32
                     && op_can_throw_error(&op)
-                    && !seen_targets.contains(&(exception.target_offset as i32))
                 {
-                    worklist.push(exception.target_offset);
-                    seen_targets.insert(exception.target_offset as i32);
+                    if !seen_targets.contains(&(exception.target_offset as i32)) {
+                        worklist.push(exception.target_offset);
+                        seen_targets.insert(exception.target_offset as i32);
+                    }
+
+                    // Keep track of all the valid exceptions, and only verify
+                    // them- this is more lenient than avmplus, but still safe.
+                    seen_exception_indices.insert(exception_index);
                 }
             }
 
@@ -404,7 +411,11 @@ pub fn verify_method<'gc>(
 
     // Handle exceptions
     let mut new_exceptions = Vec::new();
-    for exception in body.exceptions.iter() {
+    for (exception_index, exception) in body.exceptions.iter().enumerate() {
+        if !seen_exception_indices.contains(&exception_index) {
+            continue;
+        }
+
         // NOTE: This is actually wrong, we should be using the byte offsets in
         // `Activation::handle_err`, not the opcode offsets. avmplus allows for from/to
         // (but not targets) that aren't on a opcode, and some obfuscated SWFs have them.
