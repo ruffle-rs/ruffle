@@ -8,7 +8,7 @@ function transformPackage(content) {
 
     const packageVersion = process.env.npm_package_version;
 
-    const versionChannel = process.env.CFG_RELEASE_CHANNEL || "nightly";
+    const versionChannel = process.env.CFG_RELEASE_CHANNEL || "local";
 
     const buildDate = new Date()
         .toISOString()
