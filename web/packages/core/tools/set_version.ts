@@ -5,7 +5,7 @@ import path from "path";
 
 let buildDate = new Date().toISOString();
 let versionNumber = process.env["npm_package_version"] ?? "";
-let versionChannel = process.env["CFG_RELEASE_CHANNEL"] || "nightly";
+let versionChannel = process.env["CFG_RELEASE_CHANNEL"] || "none";
 const firefoxExtensionId =
     process.env["FIREFOX_EXTENSION_ID"] || "ruffle@ruffle.rs";
 
