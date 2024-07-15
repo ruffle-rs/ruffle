@@ -1,0 +1,53 @@
+  null, null: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=9], focus: null
+  sprite1, sprite1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: [object Sprite] (sprite1)
+  null, sprite1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: [object Sprite] (sprite1)
+  sprite1, sprite1: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=9], focus: [object Sprite] (sprite1)
+  null, sprite1: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=9], focus: [object Sprite] (sprite1)
+  sprite1, sprite1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite2)
+  null, sprite1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite2)
+  sprite2, sprite2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite2)
+  null, sprite2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite2)
+Pressed right
+Pressed down
+  sprite2, sprite2: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=40], focus: [object Sprite] (sprite2)
+  null, sprite2: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=40], focus: [object Sprite] (sprite2)
+  sprite2, sprite2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite4)
+  null, sprite2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite4)
+  sprite4, sprite4: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite4)
+  null, sprite4: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite4)
+Pressed down
+Pressed left
+  sprite4, sprite4: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=37], focus: [object Sprite] (sprite4)
+  null, sprite4: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=37], focus: [object Sprite] (sprite4)
+Pressed left
+  sprite4, sprite4: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=37], focus: [object Sprite] (sprite4)
+  null, sprite4: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=37], focus: [object Sprite] (sprite4)
+Pressed up
+  sprite4, sprite4: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=38], focus: [object Sprite] (sprite4)
+  null, sprite4: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=38], focus: [object Sprite] (sprite4)
+  sprite4, sprite4: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite2)
+  null, sprite4: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite2)
+  sprite2, sprite2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite2)
+  null, sprite2: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite2)
+Pressed left
+  sprite2, sprite2: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=37], focus: [object Sprite] (sprite2)
+  null, sprite2: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=37], focus: [object Sprite] (sprite2)
+  sprite2, sprite2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite1)
+  null, sprite2: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite1)
+  sprite1, sprite1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite1)
+  null, sprite1: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite1)
+Pressed down
+  sprite1, sprite1: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=40], focus: [object Sprite] (sprite1)
+  null, sprite1: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=40], focus: [object Sprite] (sprite1)
+  sprite1, sprite1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite3)
+  null, sprite1: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite3)
+  sprite3, sprite3: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite3)
+  null, sprite3: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=0], focus: [object Sprite] (sprite3)
+Pressed down
+Pressed right
+  sprite3, sprite3: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=39], focus: [object Sprite] (sprite3)
+  null, sprite3: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=39], focus: [object Sprite] (sprite3)
+Pressed down
+Escape pressed
+  sprite3, sprite3: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0], focus: null
+  null, sprite3: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0], focus: null
