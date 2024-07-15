@@ -1277,16 +1277,21 @@ impl Player {
 
         if let PlayerEvent::MouseWheel { delta } = event {
             self.mutate_with_update_context(|context| {
-                if let Some(over_object) = context.mouse_data.hovered {
+                let target = if let Some(over_object) = context.mouse_data.hovered {
                     if over_object.as_displayobject().movie().is_action_script_3()
                         || !over_object.as_displayobject().avm1_removed()
                     {
-                        over_object.handle_clip_event(context, ClipEvent::MouseWheel { delta });
+                        Some(over_object)
+                    } else {
+                        None
                     }
                 } else {
-                    context
-                        .stage
-                        .handle_clip_event(context, ClipEvent::MouseWheel { delta });
+                    context.stage.as_interactive()
+                };
+                if let Some(target) = target {
+                    let event = ClipEvent::MouseWheel { delta };
+                    target.event_dispatch_to_avm2(context, event);
+                    target.handle_clip_event(context, event);
                 }
             });
         }
