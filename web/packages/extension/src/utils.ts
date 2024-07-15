@@ -6,7 +6,7 @@ const DEFAULT_OPTIONS: Required<Options> = {
     ruffleEnable: true,
     ignoreOptout: false,
     autostart: false,
-    permissionsSwitch: false,
+    showReloadButton: false,
 };
 
 export let i18n: typeof browser.i18n | typeof chrome.i18n;

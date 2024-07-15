@@ -5,7 +5,7 @@ export interface Options extends BaseLoadOptions {
     ruffleEnable: boolean;
     ignoreOptout: boolean;
     autostart: boolean;
-    permissionsSwitch: boolean;
+    showReloadButton: boolean;
 }
 
 interface OptionElement<T> {

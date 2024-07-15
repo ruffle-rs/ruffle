@@ -119,6 +119,9 @@ function isXMLDocument(): boolean {
 }
 
 (async () => {
+    await utils.storage.sync.set({
+        ["showReloadButton"]: false,
+    });
     const options = await utils.getOptions();
     const explicitOptions = await utils.getExplicitOptions();
 
