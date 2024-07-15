@@ -1,23 +1,37 @@
-name: Release Nightly
+name: Release
 
 on:
   # Run nightly
   schedule:
     - cron: "0 0 * * *"
 
-  # Allow for manual dispatch on GitHub
+  # Allow manual dispatch on GitHub
   workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        description: Choose release mode
+        options:
+          - nightly
+          - minor
+          - patch
+          - major
+env:
+  RELEASE_SCRIPT: ./.github/scripts/release.py
 
 jobs:
   create-release:
     name: Create Release
     runs-on: ubuntu-24.04
     outputs:
-      is_active: ${{ steps.activity.outputs.is_active }}
+      enabled: ${{ steps.configure.outputs.enabled }}
+      revision: ${{ steps.commit.outputs.revision }}
       date: ${{ steps.current_time_underscores.outputs.formattedTime }}
       upload_url: ${{ steps.create_release.outputs.upload_url }}
-      package_prefix: ruffle-nightly-${{ steps.current_time_underscores.outputs.formattedTime }}
-      tag_name: nightly-${{ steps.current_time_dashes.outputs.formattedTime }}
+      package_prefix: ${{ steps.create_release.outputs.package_prefix }}
+      tag_name: ${{ steps.create_release.outputs.tag_name }}
+      release_channel: ${{ steps.configure.outputs.release_channel }}
+      version4: ${{ steps.version.outputs.version4 }}
 
     # Only run the scheduled workflows on the main repo.
     if: github.repository == 'ruffle-rs/ruffle' || github.event_name == 'repository_dispatch' || github.event_name == 'workflow_dispatch'
@@ -25,45 +39,89 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check for repo activity
-        id: activity
+      - name: Install cargo-edit
+        uses: baptiste0928/cargo-install@v3
+        with:
+          crate: cargo-edit
+          version: '^0.12'
+
+      - name: Install cargo-get
+        uses: baptiste0928/cargo-install@v3
+        with:
+          crate: cargo-get
+          version: '^1.0'
+
+      - name: Configure release
+        id: configure
         run: |
-          # Skip activity check when manually triggered.
-          if [ "${{ github.event_name }}" == "repository_dispatch" ] || [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            is_active=true
-          elif [ "$(git rev-list --after="24 hours" ${{ github.sha }})" ]; then
-            is_active=true
+          enabled=true
+          if [[ "${{ github.event.inputs.mode }}" == "nightly" ]]; then
+            release_channel=nightly
+          elif [[ -n "${{ github.event.inputs.mode }}" ]]; then
+            release_channel=stable
+          elif [[ "${{ github.event.schedule }}" == '0 0 * * *' && "$(git rev-list --after="24 hours" ${{ github.sha }})" ]]; then
+            release_channel=nightly
           else
-            is_active=false
+            enabled=false
+            release_channel=
           fi
-          echo "is_active=$is_active" >> $GITHUB_OUTPUT
+          echo "enabled=$enabled" | tee -a $GITHUB_OUTPUT
+          echo "release_channel=$release_channel" | tee -a $GITHUB_OUTPUT
 
-      - name: Get current time with dashes
-        uses: josStorer/get-current-time@v2.1.2
-        id: current_time_dashes
-        with:
-          format: YYYY-MM-DD
+      - name: Bump version
+        if: steps.configure.outputs.enabled == 'true'
+        id: version
+        run: |
+          $RELEASE_SCRIPT bump "${{ github.event.inputs.mode }}"
 
-      - name: Get current time with underscores
-        uses: josStorer/get-current-time@v2.1.2
-        id: current_time_underscores
+          # Ensure newlines at the end of file
+          shopt -s globstar
+          sed -i -e '$a\' **/package.json
+
+      - name: Create release commit
+        if: steps.configure.outputs.enabled == 'true'
+        id: commit
+        run: |
+          if [[ ${{ steps.configure.outputs.release_channel }} == 'stable' ]]; then
+            git config user.name "RuffleBuild"
+            git config user.email "ruffle@ruffle.rs"
+            $RELEASE_SCRIPT commit "${{ github.event.inputs.mode }}"
+          else
+            # For nightly we do not want to commit those changes,
+            # save them and then apply when building
+            git diff > /tmp/nightly-release.patch
+          fi
+          revision=$(git rev-parse HEAD)
+          echo "revision=$revision" | tee -a $GITHUB_OUTPUT
+
+      - name: Upload nightly release patch
+        uses: actions/upload-artifact@v4
+        if: steps.configure.outputs.release_channel == 'nightly'
         with:
-          format: YYYY_MM_DD
+          name: nightly-release-patch
+          path: /tmp/nightly-release.patch
+
+      - name: Push release commit
+        if: steps.configure.outputs.release_channel == 'stable'
+        uses: ad-m/github-push-action@v0.8.0
+        with:
+          repository: ${{ github.repository }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
+          force: false
 
       - name: Create release
-        if: steps.activity.outputs.is_active == 'true'
+        if: steps.configure.outputs.enabled == 'true'
         id: create_release
-        run: |
-          tag_name="nightly-${{ steps.current_time_dashes.outputs.formattedTime }}"
-          release_name="Nightly ${{ steps.current_time_dashes.outputs.formattedTime }}"
-          gh release create "$tag_name" --title "$release_name" --generate-notes --prerelease
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $RELEASE_SCRIPT release "${{ steps.configure.outputs.release_channel }}"
 
   build:
     name: Build ${{ matrix.build_name }}
     needs: create-release
-    if: needs.create-release.outputs.is_active == 'true'
+    if: needs.create-release.outputs.enabled == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -106,6 +164,19 @@ jobs:
     steps:
       - name: Clone Ruffle repo
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.create-release.outputs.revision }}
+
+      - name: Download nightly release patch
+        uses: actions/download-artifact@v4
+        if: needs.create-release.outputs.release_channel == 'nightly'
+        with:
+          name: nightly-release-patch
+          path: /tmp
+
+      - name: Apply nightly release patch
+        if: needs.create-release.outputs.release_channel == 'nightly'
+        run: git apply --verbose /tmp/nightly-release.patch
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -120,6 +191,7 @@ jobs:
           sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev libgtk-3-dev libudev-dev
 
       - name: Install WiX
+        if: runner.os == 'Windows'
         run: |
           dotnet tool install --global wix --version 5.0.2
           wix extension add -g WixToolset.UI.wixext/5.0.2
@@ -131,6 +203,7 @@ jobs:
         env:
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MACOSX_DEPLOYMENT_TARGET }}
+          CFG_RELEASE_CHANNEL: ${{ needs.create-release.outputs.release_channel }}
 
       - name: Package common
         run: |
@@ -139,13 +212,13 @@ jobs:
           cp LICENSE.md package/LICENSE.md
 
       - name: Package MSI
-        run: |
-          cd desktop/packages/windows/wix
-          wix build ruffle.wxs -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext -arch ${{ matrix.MSI_ARCH }} -o ../../../../package/setup.msi -pdbtype none
-        env:
-          RUFFLE_VERSION: "0.1.0"
-          CARGO_BUILD_DIR: ../../../../target/${{ matrix.target }}/release
         if: runner.os == 'Windows'
+        working-directory: desktop/packages/windows/wix
+        env:
+          RUFFLE_VERSION: ${{ needs.create-release.outputs.version4 }}
+          CARGO_BUILD_DIR: ../../../../target/${{ matrix.target }}/release
+        run: |
+          wix build ruffle.wxs -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext -arch ${{ matrix.MSI_ARCH }} -o ../../../../package/setup.msi -pdbtype none
 
       - name: Package Windows
         if: runner.os == 'Windows'
@@ -292,7 +365,7 @@ jobs:
   build-stub-report:
     name: Build AVM2 stub repository
     needs: create-release
-    if: needs.create-release.outputs.is_active == 'true'
+    if: needs.create-release.outputs.enabled == 'true'
     runs-on: ubuntu-24.04
     steps:
       - name: Clone Ruffle repo
@@ -317,7 +390,7 @@ jobs:
   build-browser-extensions:
     name: Build browser extensions
     needs: create-release
-    if: needs.create-release.outputs.is_active == 'true'
+    if: needs.create-release.outputs.enabled == 'true'
     runs-on: ubuntu-24.04
     permissions:
       actions: read
@@ -330,6 +403,19 @@ jobs:
     steps:
       - name: Clone Ruffle repo
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.create-release.outputs.revision }}
+
+      - name: Download nightly release patch
+        uses: actions/download-artifact@master
+        if: needs.create-release.outputs.release_channel == 'nightly'
+        with:
+          name: nightly-release-patch
+          path: /tmp
+
+      - name: Apply nightly release patch
+        if: needs.create-release.outputs.release_channel == 'nightly'
+        run: git apply --verbose /tmp/nightly-release.patch
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -368,17 +454,19 @@ jobs:
         shell: bash -l {0}
         working-directory: web
         env:
-          BUILD_ID: ${{ github.run_number }}
+          VERSION4: ${{ needs.create-release.outputs.version4 }}
           ENABLE_VERSION_SEAL: "true"
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
+          CFG_RELEASE_CHANNEL: ${{ needs.create-release.outputs.release_channel }}
         run: npm run version-seal
 
       - name: Build web
         env:
-          BUILD_ID: ${{ github.run_number }}
+          VERSION4: ${{ needs.create-release.outputs.version4 }}
           CARGO_FEATURES: jpegxr
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
           WASM_SOURCE: cargo_and_store
+          CFG_RELEASE_CHANNEL: ${{ needs.create-release.outputs.release_channel }}
         working-directory: web
         shell: bash -l {0}
         run: npm run build:repro
@@ -425,7 +513,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish Chrome extension
-        if: env.CHROME_EXTENSION_ID != ''
+        if: env.CHROME_EXTENSION_ID != '' && needs.create-release.outputs.release_channel == 'nightly'
         id: publish-chrome-extension
         continue-on-error: true
         env:
@@ -439,7 +527,7 @@ jobs:
           file-path: ./web/packages/extension/dist/ruffle_extension.zip
 
       - name: Publish Edge extension
-        if: env.EDGE_PRODUCT_ID != ''
+        if: env.EDGE_PRODUCT_ID != '' && needs.create-release.outputs.release_channel == 'nightly'
         id: publish-edge-extension
         continue-on-error: true
         env:
@@ -581,6 +669,7 @@ jobs:
           force: true
 
       - name: Clone web demo
+        if: needs.create-release.outputs.release_channel == 'nightly'
         uses: actions/checkout@v4
         with:
           repository: ruffle-rs/demo
@@ -590,6 +679,7 @@ jobs:
           persist-credentials: false # Needed to allow commit via RUFFLE_BUILD_TOKEN below
 
       - name: Update web demo
+        if: needs.create-release.outputs.release_channel == 'nightly'
         run: |
           # Delete the old build.
           rm -fr *
@@ -608,7 +698,7 @@ jobs:
         working-directory: demo
 
       - name: Push web demo
-        if: github.repository == 'ruffle-rs/ruffle'
+        if: github.repository == 'ruffle-rs/ruffle' && needs.create-release.outputs.release_channel == 'nightly'
         uses: ad-m/github-push-action@master
         with:
           repository: ruffle-rs/demo
