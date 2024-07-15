@@ -1392,7 +1392,7 @@ impl<'gc> MovieClip<'gc> {
         let frame = frame.unwrap();
 
         if scene <= frame {
-            let mut end = self.total_frames();
+            let mut end = self.total_frames() + 1;
             for Scene {
                 start: new_scene_start,
                 ..
