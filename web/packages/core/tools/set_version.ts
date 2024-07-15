@@ -20,7 +20,7 @@ try {
 let versionName =
     versionChannel === "nightly"
         ? `nightly ${buildDate.substr(0, 10)}`
-        : process.env["npm_package_version"] ?? "";
+        : versionNumber;
 
 interface VersionInformation {
     version_number: string;
