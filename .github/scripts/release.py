@@ -3,12 +3,39 @@ import os
 import subprocess
 import sys
 from datetime import datetime
+import xml.etree.ElementTree as xml
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 REPO_DIR = os.path.realpath(os.path.join(SCRIPT_DIR, '../../'))
 
 
 # ===== Utilities ==========================================
+
+def add_release_to_metainfo(path):
+    version = cargo_get_version()
+    url = f'https://github.com/ruffle-rs/ruffle/releases/tag/v{version}'
+
+    xml_release = xml.Element('release')
+    xml_release.set('version', version)
+    xml_release.set('date', get_current_date())
+    xml_url = xml.Element('url')
+    xml_url.text = url
+    xml_release.append(xml_url)
+
+    xml_doc = xml.parse(path)
+    xml_releases = xml_doc.getroot().find('releases')
+    xml_releases.insert(0, xml_release)
+
+    xml.indent(xml_doc, space="    ")
+    xml_doc.write(path, encoding='utf-8', xml_declaration=True)
+    with open(path, 'a') as fd:
+        fd.write('\n')
+
+
+def get_current_date():
+    now = datetime.now()
+    return now.strftime('%Y-%m-%d')
+
 
 def get_current_time_version():
     now = datetime.now()
@@ -71,6 +98,7 @@ def bump(mode):
     else:
         cargo_set_version(['--bump', mode])
         version4 = cargo_get_version()
+        add_release_to_metainfo(f'{REPO_DIR}/desktop/packages/linux/rs.ruffle.Ruffle.metainfo.xml')
 
     version = cargo_get_version()
 
