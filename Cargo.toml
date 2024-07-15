@@ -51,7 +51,7 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 naga = { version = "0.20.0", features = ["wgsl-out"] }
 wgpu = "0.20.1"
 egui = "0.28.1"
-clap = { version = "4.5.8", features = ["derive"] }
+clap = { version = "4.5.9", features = ["derive"] }
 anyhow = "1.0"
 slotmap = "1.0.7"
 async-channel = "2.3.1"
