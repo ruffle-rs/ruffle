@@ -24,5 +24,4 @@ anyhow = { workspace = true }
 [features]
 avm_debug = ["ruffle_core/avm_debug"]
 render_debug_labels = ["ruffle_render_wgpu/render_debug_labels"]
-render_trace = ["ruffle_render_wgpu/render_trace"]
 lzma = ["ruffle_core/lzma"]

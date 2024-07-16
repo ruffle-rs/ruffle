@@ -103,11 +103,6 @@ pub struct Opt {
     #[clap(long, action)]
     pub force_scale: bool,
 
-    /// Location to store a wgpu trace output
-    #[clap(long)]
-    #[cfg(feature = "render_trace")]
-    trace_path: Option<std::path::PathBuf>,
-
     /// Location to store save data for games.
     ///
     /// This option has no effect if `storage` is not `disk`.
@@ -271,17 +266,6 @@ fn parse_gamepad_button(mapping: &str) -> Result<(GamepadButton, KeyCode), Error
 }
 
 impl Opt {
-    #[cfg(feature = "render_trace")]
-    pub fn trace_path(&self) -> Option<&Path> {
-        if let Some(path) = &self.trace_path {
-            let _ = std::fs::create_dir_all(path);
-            Some(path)
-        } else {
-            None
-        }
-    }
-
-    #[cfg(not(feature = "render_trace"))]
     pub fn trace_path(&self) -> Option<&Path> {
         None
     }

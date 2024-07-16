@@ -74,7 +74,6 @@ tracy = ["tracing-tracy", "ruffle_render_wgpu/profile-with-tracy"]
 
 # wgpu features
 render_debug_labels = ["ruffle_render_wgpu/render_debug_labels"]
-render_trace = ["ruffle_render_wgpu/render_trace"]
 
 # sandboxing
 sandbox = []
