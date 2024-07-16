@@ -6,7 +6,7 @@ import {
     getPolyfillOptions,
 } from "./ruffle-player";
 import { FLASH_ACTIVEX_CLASSID } from "./flash-identifiers";
-import { registerElement } from "./register-element";
+import { registerElement } from "./internal/register-element";
 import { RuffleEmbed } from "./ruffle-embed";
 import { isSwf } from "./swf-utils";
 

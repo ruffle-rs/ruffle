@@ -1,5 +1,5 @@
 import { pluginPolyfill, polyfill } from "./polyfills";
-import { registerElement } from "./register-element";
+import { registerElement } from "./internal/register-element";
 import { RufflePlayer } from "./ruffle-player";
 import { buildInfo } from "./build-info";
 import { InstallationOptions } from "./install";

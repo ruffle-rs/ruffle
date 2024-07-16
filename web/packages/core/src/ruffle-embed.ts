@@ -5,7 +5,7 @@ import {
     RufflePlayer,
     workaroundYoutubeMixedContent,
 } from "./ruffle-player";
-import { registerElement } from "./register-element";
+import { registerElement } from "./internal/register-element";
 import { isSwf } from "./swf-utils";
 
 /**
