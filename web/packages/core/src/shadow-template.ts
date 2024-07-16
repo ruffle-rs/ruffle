@@ -1,4 +1,4 @@
-import { text } from "./i18n";
+import { text } from "./internal/i18n";
 
 /**
  * Insert all rules from array in the style sheet.

@@ -1,4 +1,4 @@
-import { text, textAsParagraphs } from "../../i18n";
+import { text, textAsParagraphs } from "../i18n";
 import { createRef } from "tsx-dom";
 import { buildInfo } from "../../build-info";
 import { RUFFLE_ORIGIN } from "../constants";

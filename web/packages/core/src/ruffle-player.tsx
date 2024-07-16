@@ -1,7 +1,7 @@
 import type { RuffleHandle, ZipWriter } from "../dist/ruffle_web";
 import { createRuffleBuilder } from "./load-ruffle";
 import { applyStaticStyles, ruffleShadowTemplate } from "./shadow-template";
-import { lookupElement } from "./register-element";
+import { lookupElement } from "./internal/register-element";
 import { DEFAULT_CONFIG } from "./config";
 import type { DataLoadOptions, URLLoadOptions } from "./load-options";
 import {
@@ -14,7 +14,7 @@ import {
 import type { MovieMetadata } from "./movie-metadata";
 import { swfFileName } from "./swf-utils";
 import { buildInfo } from "./build-info";
-import { text, textAsParagraphs } from "./i18n";
+import { text, textAsParagraphs } from "./internal/i18n";
 import { isExtension } from "./current-script";
 import { configureBuilder } from "./internal/builder";
 import { showPanicScreen } from "./internal/ui/panic";
