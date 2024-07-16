@@ -2,19 +2,19 @@
 //evtd.addEventListener('test', nocancel_event, false, 0);
 //evtd.dispatchEvent('test');
 //(nocancel_event handler)
-true
+dispatchEvent, nocancel: true
 //evtd.addEventListener('test', cancel_event, false, 0);
 //evtd.dispatchEvent('test');
 //(nocancel_event handler)
 //(cancel_event handler)
-true
+dispatchEvent, cancel: false
 //evtd.removeEventListener('test', cancel_event);
 //evtd.addEventListener('test', stop_event, false, 5);
 //evtd.dispatchEvent('test');
 //(stop_event handler)
 //(nocancel_event handler)
-true
+dispatchEvent, stop: true
 //evtd.addEventListener('test', stop_immediate_event, false, 10);
 //evtd.dispatchEvent('test');
 //(stop_immediate_event handler)
-true
+dispatchEvent, stop immediate: true
