@@ -76,16 +76,8 @@ mod renderer {
         }
     }
 
-    pub fn is_supported(requirements: &RenderOptions) -> bool {
-        if let Some(descriptors) = descriptors() {
-            let adapter_info = descriptors.adapter.get_info();
-            let is_warp =
-                cfg!(windows) && adapter_info.vendor == 5140 && adapter_info.device == 140;
-
-            !requirements.exclude_warp || !is_warp
-        } else {
-            false
-        }
+    pub fn is_supported(_requirements: &RenderOptions) -> bool {
+        descriptors().is_some()
     }
 
     static WGPU: OnceLock<Option<Arc<Descriptors>>> = OnceLock::new();
