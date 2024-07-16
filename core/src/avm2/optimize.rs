@@ -342,6 +342,10 @@ impl<'gc> ScopeStack<'gc> {
         Ok(())
     }
 
+    fn at(&self, index: usize) -> OptValue<'gc> {
+        self.0[index].0
+    }
+
     fn fill_with_any_up_to_len(
         &mut self,
         activation: &mut Activation<'_, 'gc>,
@@ -357,6 +361,10 @@ impl<'gc> ScopeStack<'gc> {
 
     fn len(&self) -> usize {
         self.0.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 
     fn max_height(&self) -> usize {
@@ -1110,13 +1118,30 @@ pub fn optimize<'gc>(
                 Op::PopScope => {
                     scope_stack.pop(activation)?;
                 }
-                Op::GetScopeObject { .. } => {
-                    // Avoid handling for now
-                    stack.push_any(activation)?;
+                Op::GetScopeObject { index } => {
+                    let index = *index as usize;
+
+                    if index >= scope_stack.len() {
+                        return Err(Error::AvmError(verify_error(
+                            activation,
+                            "Error #1019: Getscopeobject  is out of bounds.",
+                            1019,
+                        )?));
+                    }
+
+                    if has_simple_scoping && index == 0 {
+                        stack.push(activation, this_value)?;
+                    } else {
+                        stack.push(activation, scope_stack.at(index))?;
+                    }
                 }
-                Op::GetOuterScope { .. } => {
-                    // Avoid handling for now
-                    stack.push_any(activation)?;
+                Op::GetOuterScope { index } => {
+                    let class = activation
+                        .outer()
+                        .get_unchecked(*index as usize)
+                        .values()
+                        .instance_class();
+                    stack.push_class(activation, class)?;
                 }
                 Op::Pop => {
                     stack.pop(activation)?;
@@ -1658,24 +1683,37 @@ pub fn optimize<'gc>(
                     stack.pop(activation)?;
                 }
                 Op::GetGlobalScope => {
-                    let mut stack_push_done = false;
-
                     let outer_scope = activation.outer();
                     if !outer_scope.is_empty() {
                         let global_scope = outer_scope.get_unchecked(0);
 
-                        stack_push_done = true;
                         stack.push_class(activation, global_scope.values().instance_class())?;
-                    }
+                    } else if has_simple_scoping {
+                        stack.push(activation, this_value)?;
+                    } else {
+                        if scope_stack.is_empty() {
+                            return Err(Error::AvmError(verify_error(
+                                activation,
+                                "Error #1019: Getscopeobject  is out of bounds.",
+                                1019,
+                            )?));
+                        }
 
-                    if !stack_push_done {
                         stack.push_any(activation)?;
                     }
                 }
                 Op::GetGlobalSlot { index: slot_id } => {
+                    let outer_scope = activation.outer();
+                    if outer_scope.is_empty() && scope_stack.is_empty() {
+                        return Err(Error::AvmError(verify_error(
+                            activation,
+                            "Error #1019: Getscopeobject  is out of bounds.",
+                            1019,
+                        )?));
+                    }
+
                     let mut stack_push_done = false;
 
-                    let outer_scope = activation.outer();
                     if !outer_scope.is_empty() {
                         let global_scope = outer_scope.get_unchecked(0);
 
@@ -1704,6 +1742,15 @@ pub fn optimize<'gc>(
                     }
                 }
                 Op::SetGlobalSlot { .. } => {
+                    let outer_scope = activation.outer();
+                    if outer_scope.is_empty() && scope_stack.is_empty() {
+                        return Err(Error::AvmError(verify_error(
+                            activation,
+                            "Error #1019: Getscopeobject  is out of bounds.",
+                            1019,
+                        )?));
+                    }
+
                     // Avoid handling for now
                     stack.pop(activation)?;
                 }
