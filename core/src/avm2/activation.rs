@@ -135,12 +135,6 @@ pub struct Activation<'a, 'gc: 'a> {
     /// The index where the scope frame starts.
     scope_depth: usize,
 
-    /// Maximum size for the stack frame.
-    max_stack_size: usize,
-
-    /// Maximum size for the scope frame.
-    max_scope_size: usize,
-
     pub context: &'a mut UpdateContext<'gc>,
 }
 
@@ -180,8 +174,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             activation_class: None,
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
-            max_stack_size: 0,
-            max_scope_size: 0,
             context,
         }
     }
@@ -210,8 +202,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             activation_class: None,
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
-            max_stack_size: 0,
-            max_scope_size: 0,
             context,
         }
     }
@@ -224,17 +214,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<Self, Error<'gc>> {
         let (method, global_object, domain) = script.init();
 
-        let (num_locals, max_stack, max_scope) = match method {
-            Method::Native { .. } => (0, 0, 0),
+        let num_locals = match method {
+            Method::Native { .. } => 0,
             Method::Bytecode(bytecode) => {
                 let body = bytecode
                     .body()
                     .ok_or("Cannot execute non-native method (for script) without body")?;
-                (
-                    body.num_locals,
-                    body.max_stack,
-                    body.max_scope_depth - body.init_scope_depth,
-                )
+
+                body.num_locals
             }
         };
         let mut local_registers = RegisterSet::new(num_locals + 1);
@@ -276,8 +263,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             activation_class,
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
-            max_stack_size: max_stack as usize,
-            max_scope_size: max_scope as usize,
             context,
         };
 
@@ -450,8 +435,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.activation_class = activation_class;
         self.stack_depth = self.context.avm2.stack.len();
         self.scope_depth = self.context.avm2.scope_stack.len();
-        self.max_stack_size = body.max_stack as usize;
-        self.max_scope_size = (body.max_scope_depth - body.init_scope_depth) as usize;
 
         // Everything is now setup for the verifier to run
         if method.verified_info.borrow().is_none() {
@@ -556,8 +539,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             activation_class: None,
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
-            max_stack_size: 0,
-            max_scope_size: 0,
             context,
         }
     }
@@ -649,60 +630,53 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Pushes a value onto the operand stack.
     #[inline]
     pub fn push_stack(&mut self, value: impl Into<Value<'gc>>) {
-        let stack_depth = self.stack_depth;
-        let max_stack_size = self.max_stack_size;
-        self.avm2().push(value.into(), stack_depth, max_stack_size)
+        self.avm2().push(value.into());
     }
 
     /// Pushes a value onto the operand stack, without running some checks.
     #[inline]
     pub fn push_raw(&mut self, value: impl Into<Value<'gc>>) {
-        self.avm2().push_raw(value)
+        self.avm2().push_raw(value.into());
     }
 
     /// Pops a value off the operand stack.
     #[inline]
     #[must_use]
     pub fn pop_stack(&mut self) -> Value<'gc> {
-        let stack_depth = self.stack_depth;
-        self.avm2().pop(stack_depth)
+        self.avm2().pop()
     }
 
     /// Pops multiple values off the operand stack.
     #[inline]
     #[must_use]
     pub fn pop_stack_args(&mut self, arg_count: u32) -> Vec<Value<'gc>> {
-        let stack_depth = self.stack_depth;
-        self.avm2().pop_args(arg_count, stack_depth)
+        self.avm2().pop_args(arg_count)
     }
 
     /// Pushes a scope onto the scope stack.
     #[inline]
     pub fn push_scope(&mut self, scope: Scope<'gc>) {
-        let scope_depth = self.scope_depth;
-        let max_scope_size = self.max_scope_size;
-        self.avm2().push_scope(scope, scope_depth, max_scope_size)
+        self.avm2().push_scope(scope);
     }
 
     /// Pops a scope off of the scope stack.
     #[inline]
     pub fn pop_scope(&mut self) {
-        let scope_depth = self.scope_depth;
-        self.avm2().pop_scope(scope_depth);
+        self.avm2().pop_scope();
     }
 
     /// Clears the operand stack used by this activation.
     #[inline]
     pub fn clear_stack(&mut self) {
         let stack_depth = self.stack_depth;
-        self.avm2().stack.truncate(stack_depth)
+        self.avm2().truncate_stack(stack_depth);
     }
 
     /// Clears the scope stack used by this activation.
     #[inline]
     pub fn clear_scope(&mut self) {
         let scope_depth = self.scope_depth;
-        self.avm2().scope_stack.truncate(scope_depth)
+        self.avm2().scope_stack.truncate(scope_depth);
     }
 
     /// Get the superclass of the class that defined the currently-executing
@@ -1123,14 +1097,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_dup(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        self.push_stack(
-            self.context
-                .avm2
-                .stack
-                .last()
-                .cloned()
-                .unwrap_or(Value::Undefined),
-        );
+        let value = self.avm2().peek(0);
+        self.push_stack(value);
 
         Ok(FrameControl::Continue)
     }
