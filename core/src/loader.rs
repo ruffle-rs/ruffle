@@ -1656,6 +1656,12 @@ impl<'gc> Loader<'gc> {
                         Avm2::dispatch_event(uc, complete_evt, target);
                     }
                     Err(response) => {
+                        tracing::error!(
+                            "Error during URLLoader load of {:?}: {:?}",
+                            response.url,
+                            response.error
+                        );
+
                         // Testing with Flash shoes that the 'data' property is cleared
                         // when an error occurs
 
