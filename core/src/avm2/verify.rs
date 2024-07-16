@@ -133,21 +133,22 @@ pub fn verify_method<'gc>(
                 Err(_) => unreachable!(),
             };
 
-            for (exception_index, exception) in body.exceptions.iter().enumerate() {
-                // If this op is in the to..from and it can throw an error,
-                // add the exception's target to the worklist.
-                if exception.from_offset as i32 <= previous_position
-                    && previous_position < exception.to_offset as i32
-                    && op_can_throw_error(&op)
-                {
-                    if !seen_targets.contains(&(exception.target_offset as i32)) {
-                        worklist.push(exception.target_offset);
-                        seen_targets.insert(exception.target_offset as i32);
-                    }
+            if op_can_throw_error(&op) {
+                for (exception_index, exception) in body.exceptions.iter().enumerate() {
+                    // If this op is in the to..from and it can throw an error,
+                    // add the exception's target to the worklist.
+                    if exception.from_offset as i32 <= previous_position
+                        && previous_position < exception.to_offset as i32
+                    {
+                        if !seen_targets.contains(&(exception.target_offset as i32)) {
+                            worklist.push(exception.target_offset);
+                            seen_targets.insert(exception.target_offset as i32);
+                        }
 
-                    // Keep track of all the valid exceptions, and only verify
-                    // them- this is more lenient than avmplus, but still safe.
-                    seen_exception_indices.insert(exception_index);
+                        // Keep track of all the valid exceptions, and only verify
+                        // them- this is more lenient than avmplus, but still safe.
+                        seen_exception_indices.insert(exception_index);
+                    }
                 }
             }
 
@@ -652,8 +653,9 @@ pub fn verify_method<'gc>(
             &mut verified_code,
             &resolved_param_config,
             resolved_return_type,
+            &new_exceptions,
             potential_jump_targets,
-        );
+        )?;
     }
 
     Ok(VerifiedMethodInfo {
