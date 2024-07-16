@@ -2920,6 +2920,12 @@ impl PlayerBuilder {
         }
 
         player_lock.mutate_with_update_context(|context| {
+            if !self.avm2_optimizer_enabled {
+                tracing::warn!(
+                    "AVM2 optimizer disabled, some bytecode verification will be missing"
+                );
+            }
+
             context
                 .avm2
                 .set_optimizer_enabled(self.avm2_optimizer_enabled);
