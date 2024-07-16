@@ -94,6 +94,8 @@ use num_traits::FromPrimitive;
 
 const BROADCAST_WHITELIST: [&str; 4] = ["enterFrame", "exitFrame", "frameConstructed", "render"];
 
+const PREALLOCATED_STACK_SIZE: usize = 4000;
+
 /// The state of an AVM2 interpreter.
 #[derive(Collect)]
 #[collect(no_drop)]
@@ -107,6 +109,7 @@ pub struct Avm2<'gc> {
 
     /// Values currently present on the operand stack.
     stack: Vec<Value<'gc>>,
+    stack_i: usize,
 
     /// Scopes currently present of the scope stack.
     scope_stack: Vec<Scope<'gc>>,
@@ -214,7 +217,8 @@ impl<'gc> Avm2<'gc> {
         Self {
             player_version,
             player_runtime,
-            stack: Vec::new(),
+            stack: vec![Value::Undefined; PREALLOCATED_STACK_SIZE],
+            stack_i: 0,
             scope_stack: Vec::new(),
             call_stack: GcCell::new(context.gc_context, CallStack::new()),
             playerglobals_domain,
@@ -667,18 +671,9 @@ impl<'gc> Avm2<'gc> {
         self.call_stack
     }
 
-    #[cold]
-    fn stack_overflow(&self) {
-        tracing::warn!("Avm2::push: Stack overflow");
-    }
-
     /// Push a value onto the operand stack.
     #[inline(always)]
-    fn push(&mut self, value: impl Into<Value<'gc>>, depth: usize, max: usize) {
-        if self.stack.len() - depth > max {
-            self.stack_overflow();
-            return;
-        }
+    fn push(&mut self, value: impl Into<Value<'gc>>) {
         let mut value = value.into();
         if let Value::Object(o) = value {
             // this is hot, so let's avoid a non-inlined call here
@@ -689,87 +684,59 @@ impl<'gc> Avm2<'gc> {
             }
         }
 
-        avm_debug!(self, "Stack push {}: {value:?}", self.stack.len());
-        self.stack.push(value);
+        avm_debug!(self, "Stack push {}: {value:?}", self.stack_i + 1);
+        self.stack[self.stack_i] = value;
+        self.stack_i += 1;
     }
 
     /// Push a value onto the operand stack.
-    /// This is like `push`, but does not handle `PrimitiveObject`
-    /// and does not check for stack overflows.
+    /// This is like `push`, but does not handle `PrimitiveObject`.
     #[inline(always)]
     fn push_raw(&mut self, value: impl Into<Value<'gc>>) {
         let value = value.into();
-        avm_debug!(self, "Stack push {}: {value:?}", self.stack.len());
-        self.stack.push(value);
+        avm_debug!(self, "Stack push {}: {value:?}", self.stack_i + 1);
+        self.stack[self.stack_i] = value;
+        self.stack_i += 1;
     }
 
     /// Retrieve the top-most value on the operand stack.
-    #[allow(clippy::let_and_return)]
     #[inline(always)]
-    fn pop(&mut self, depth: usize) -> Value<'gc> {
-        #[cold]
-        fn stack_underflow() {
-            tracing::warn!("Avm2::pop: Stack underflow");
-        }
+    fn pop(&mut self) -> Value<'gc> {
+        self.stack_i -= 1;
+        let value = self.stack[self.stack_i];
 
-        let value = if self.stack.len() <= depth {
-            stack_underflow();
-            Value::Undefined
-        } else {
-            self.stack.pop().unwrap_or(Value::Undefined)
-        };
-
-        avm_debug!(self, "Stack pop {}: {value:?}", self.stack.len());
+        avm_debug!(self, "Stack pop {}: {value:?}", self.stack_i);
 
         value
     }
 
     /// Peek the n-th value from the end of the operand stack.
-    #[allow(clippy::let_and_return)]
     #[inline(always)]
     fn peek(&mut self, index: usize) -> Value<'gc> {
-        #[cold]
-        fn stack_underflow() {
-            tracing::warn!("Avm2::peek: Stack underflow");
-        }
+        let value = self.stack[self.stack_i - index - 1];
 
-        let value = self
-            .stack
-            .get(self.stack.len() - index - 1)
-            .copied()
-            .unwrap_or_else(|| {
-                stack_underflow();
-                Value::Undefined
-            });
-
-        avm_debug!(self, "Stack peek {}: {value:?}", self.stack.len());
+        avm_debug!(self, "Stack peek {}: {value:?}", self.stack_i);
 
         value
     }
 
-    fn pop_args(&mut self, arg_count: u32, depth: usize) -> Vec<Value<'gc>> {
+    fn pop_args(&mut self, arg_count: u32) -> Vec<Value<'gc>> {
         let mut args = vec![Value::Undefined; arg_count as usize];
         for arg in args.iter_mut().rev() {
-            *arg = self.pop(depth);
+            *arg = self.pop();
         }
         args
     }
 
-    fn push_scope(&mut self, scope: Scope<'gc>, depth: usize, max: usize) {
-        if self.scope_stack.len() - depth > max {
-            tracing::warn!("Avm2::push_scope: Scope stack overflow");
-            return;
-        }
+    fn set_stack_i(&mut self, stack_i: usize) {
+        self.stack_i = stack_i;
+    }
 
+    fn push_scope(&mut self, scope: Scope<'gc>) {
         self.scope_stack.push(scope);
     }
 
-    fn pop_scope(&mut self, depth: usize) {
-        if self.scope_stack.len() <= depth {
-            tracing::warn!("Avm2::pop_scope: Scope stack underflow");
-            return;
-        }
-
+    fn pop_scope(&mut self) {
         self.scope_stack.pop();
     }
 
