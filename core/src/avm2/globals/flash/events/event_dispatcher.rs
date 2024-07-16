@@ -139,7 +139,9 @@ pub fn dispatch_event<'gc>(
         return Err("Dispatched Events must be subclasses of Event.".into());
     }
 
-    Ok(dispatch_event_internal(activation, this, event, false)?.into())
+    dispatch_event_internal(activation, this, event, false)?;
+    let not_canceled = !event.as_event().unwrap().is_cancelled();
+    Ok(not_canceled.into())
 }
 
 /// Implements `EventDispatcher.toString`.
