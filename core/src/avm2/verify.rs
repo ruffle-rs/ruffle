@@ -630,8 +630,9 @@ pub fn verify_method<'gc>(
             &mut verified_code,
             &resolved_param_config,
             resolved_return_type,
+            &new_exceptions,
             potential_jump_targets,
-        );
+        )?;
     }
 
     Ok(VerifiedMethodInfo {

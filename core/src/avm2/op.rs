@@ -346,5 +346,61 @@ pub enum Op<'gc> {
     URShift,
 }
 
+impl<'gc> Op<'gc> {
+    pub fn is_block_terminating(&self) -> bool {
+        matches!(
+            self,
+            Op::Jump { .. }
+                | Op::LookupSwitch { .. }
+                | Op::ReturnValue
+                | Op::ReturnValueNoCoerce
+                | Op::ReturnVoid
+                | Op::Throw
+        )
+    }
+
+    pub fn can_throw_error(&self) -> bool {
+        !matches!(
+            self,
+            Op::Bkpt
+                | Op::BkptLine { .. }
+                | Op::Timestamp
+                | Op::PushByte { .. }
+                | Op::PushDouble { .. }
+                | Op::PushFalse
+                | Op::PushInt { .. }
+                | Op::PushNamespace { .. }
+                | Op::PushNaN
+                | Op::PushNull
+                | Op::PushShort { .. }
+                | Op::PushString { .. }
+                | Op::PushTrue
+                | Op::PushUint { .. }
+                | Op::PushUndefined
+                | Op::Dup
+                | Op::Swap
+                | Op::Pop
+                | Op::TypeOf
+                | Op::GetGlobalScope
+                | Op::GetScopeObject { .. }
+                | Op::GetOuterScope { .. }
+                | Op::GetGlobalSlot { .. }
+                | Op::GetLocal { .. }
+                | Op::SetLocal { .. }
+                | Op::Kill { .. }
+                | Op::Jump { .. }
+                | Op::IfTrue { .. }
+                | Op::IfFalse { .. }
+                | Op::IfStrictEq { .. }
+                | Op::IfStrictNe { .. }
+                | Op::LookupSwitch { .. }
+                | Op::Nop
+                | Op::Not
+                | Op::PopScope
+                | Op::ReturnVoid
+        )
+    }
+}
+
 #[cfg(target_pointer_width = "64")]
 const _: () = assert!(std::mem::size_of::<Op>() == 16);
