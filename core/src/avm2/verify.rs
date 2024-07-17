@@ -412,9 +412,80 @@ pub fn verify_method<'gc>(
     // Handle exceptions
     let mut new_exceptions = Vec::new();
     for (exception_index, exception) in body.exceptions.iter().enumerate() {
+        // Resolve the variable name and target class.
+
+        let target_class = if exception.type_name.0 == 0 {
+            None
+        } else {
+            let pooled_type_name = method
+                .translation_unit()
+                .pool_maybe_uninitialized_multiname(exception.type_name, &mut activation.context)?;
+
+            if pooled_type_name.has_lazy_component() {
+                // This matches FP's error message
+                return Err(make_error_1014(activation, "[]".into()));
+            }
+
+            let resolved_type = activation
+                .domain()
+                .get_class(&mut activation.context, &pooled_type_name)
+                .ok_or_else(|| {
+                    make_error_1014(
+                        activation,
+                        pooled_type_name.to_qualified_name(activation.context.gc_context),
+                    )
+                })?;
+
+            Some(resolved_type)
+        };
+
+        let variable_name = if exception.variable_name.0 == 0 {
+            None
+        } else {
+            let pooled_variable_name = method
+                .translation_unit()
+                .pool_maybe_uninitialized_multiname(
+                    exception.variable_name,
+                    &mut activation.context,
+                )?;
+
+            // FIXME: avmplus also seems to check the namespace(s)?
+            if pooled_variable_name.has_lazy_component()
+                || pooled_variable_name.is_attribute()
+                || pooled_variable_name.is_any_name()
+            {
+                // This matches FP's error message
+                return Err(make_error_1107(activation));
+            }
+
+            let namespaces = pooled_variable_name.namespace_set();
+
+            if namespaces.is_empty() {
+                // NOTE: avmplus segfaults here
+                panic!("Should have at least one namespace for QName in exception variable name");
+            }
+
+            let name = pooled_variable_name.local_name().expect("Just checked");
+
+            // avmplus uses the first namespace, regardless of how many namespaces there are.
+            Some(QName::new(namespaces[0], name))
+        };
+
         if !seen_exception_indices.contains(&exception_index) {
+            // We need to push an exception because otherwise `newcatch` ops can try to
+            // read it, but we can give it dummy from/to/target offsets because no code
+            // can actually trigger it (and we might not even have valid offsets anyway).
+            new_exceptions.push(Exception {
+                from_offset: 0,
+                to_offset: 0,
+                target_offset: 0,
+                variable_name,
+                target_class,
+            });
             continue;
         }
+
+        // Now resolve the offsets.
 
         // NOTE: This is actually wrong, we should be using the byte offsets in
         // `Activation::handle_err`, not the opcode offsets. avmplus allows for from/to
@@ -488,63 +559,6 @@ pub fn verify_method<'gc>(
         if new_target_offset as usize >= new_code.len() {
             return Err(make_error_1054(activation));
         }
-
-        let target_class = if exception.type_name.0 == 0 {
-            None
-        } else {
-            let pooled_type_name = method
-                .translation_unit()
-                .pool_maybe_uninitialized_multiname(exception.type_name, &mut activation.context)?;
-
-            if pooled_type_name.has_lazy_component() {
-                // This matches FP's error message
-                return Err(make_error_1014(activation, "[]".into()));
-            }
-
-            let resolved_type = activation
-                .domain()
-                .get_class(&mut activation.context, &pooled_type_name)
-                .ok_or_else(|| {
-                    make_error_1014(
-                        activation,
-                        pooled_type_name.to_qualified_name(activation.context.gc_context),
-                    )
-                })?;
-
-            Some(resolved_type)
-        };
-
-        let variable_name = if exception.variable_name.0 == 0 {
-            None
-        } else {
-            let pooled_variable_name = method
-                .translation_unit()
-                .pool_maybe_uninitialized_multiname(
-                    exception.variable_name,
-                    &mut activation.context,
-                )?;
-
-            // FIXME: avmplus also seems to check the namespace(s)?
-            if pooled_variable_name.has_lazy_component()
-                || pooled_variable_name.is_attribute()
-                || pooled_variable_name.is_any_name()
-            {
-                // This matches FP's error message
-                return Err(make_error_1107(activation));
-            }
-
-            let namespaces = pooled_variable_name.namespace_set();
-
-            if namespaces.is_empty() {
-                // NOTE: avmplus segfaults here
-                panic!("Should have at least one namespace for QName in exception variable name");
-            }
-
-            let name = pooled_variable_name.local_name().expect("Just checked");
-
-            // avmplus uses the first namespace, regardless of how many namespaces there are.
-            Some(QName::new(namespaces[0], name))
-        };
 
         new_exceptions.push(Exception {
             from_offset: new_from_offset,
