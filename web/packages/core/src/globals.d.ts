@@ -14,6 +14,7 @@ module "tsx-dom-types" {
 }
 interface SVGSVGElement {
     xmlns?: string;
+    "xmlns:xlink"?: string;
     scale?: string | number;
 }
 interface SVGPathElement {
