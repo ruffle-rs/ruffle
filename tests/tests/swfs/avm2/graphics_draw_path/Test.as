@@ -438,6 +438,45 @@ public class Test extends MovieClip {
                 10, 10
             ]));
         });
+
+        trace("Unknown winding rule")
+        logError(function ():void {
+            draw(Vector.<int>([
+                GraphicsPathCommand.MOVE_TO,
+                GraphicsPathCommand.LINE_TO,
+                GraphicsPathCommand.LINE_TO
+            ]), Vector.<Number>([
+                0, 0,
+                0, 10,
+                10, 0
+            ]), "unknown");
+        });
+
+        trace("Uppercase winding rule")
+        logError(function ():void {
+            draw(Vector.<int>([
+                GraphicsPathCommand.MOVE_TO,
+                GraphicsPathCommand.LINE_TO,
+                GraphicsPathCommand.LINE_TO
+            ]), Vector.<Number>([
+                0, 0,
+                0, 10,
+                10, 0
+            ]), "EVENODD");
+        });
+
+        trace("Lowercase winding rule")
+        logError(function ():void {
+            draw(Vector.<int>([
+                GraphicsPathCommand.MOVE_TO,
+                GraphicsPathCommand.LINE_TO,
+                GraphicsPathCommand.LINE_TO
+            ]), Vector.<Number>([
+                0, 0,
+                0, 10,
+                10, 0
+            ]), "evenodd");
+        });
     }
 }
 

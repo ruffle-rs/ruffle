@@ -15,7 +15,7 @@ use crate::avm2_stub_method;
 use crate::display_object::TDisplayObject;
 use crate::drawing::Drawing;
 use crate::string::{AvmString, WStr};
-use ruffle_render::shape_utils::{DrawCommand, GradientType};
+use ruffle_render::shape_utils::{DrawCommand, FillRule, GradientType};
 use std::f64::consts::FRAC_1_SQRT_2;
 use swf::{
     Color, FillStyle, Fixed16, Fixed8, Gradient, GradientInterpolation, GradientRecord,
@@ -870,15 +870,15 @@ pub fn draw_path<'gc>(
     let mut drawing = this.as_drawing(activation.context.gc_context).unwrap();
     let commands = args.get_object(activation, 0, "commands")?;
     let data = args.get_object(activation, 1, "data")?;
-    // FIXME - implement winding, and fill  behavior described in the Flash docs
-    // (which is different from just running each command sequentially on `Graphics`)
-    let _winding = args.get_string(activation, 2)?;
+    let winding = args.get_string(activation, 2)?;
 
+    // FIXME - implement fill behavior described in the Flash docs
+    // (which is different from just running each command sequentially on `Graphics`)
     avm2_stub_method!(
         activation,
         "flash.display.Graphics",
         "drawPath",
-        "winding and fill behavior"
+        "fill behavior"
     );
 
     let commands = commands
@@ -886,7 +886,7 @@ pub fn draw_path<'gc>(
         .expect("commands is not a Vector");
     let data = data.as_vector_storage().expect("data is not a Vector");
 
-    process_commands(activation, &mut drawing, &commands, &data)?;
+    process_commands(activation, &mut drawing, &commands, &data, winding)?;
 
     Ok(Value::Undefined)
 }
@@ -1247,6 +1247,7 @@ fn process_commands<'gc>(
     drawing: &mut Drawing,
     commands: &VectorStorage<'gc>,
     data: &VectorStorage<'gc>,
+    winding: AvmString,
 ) -> Result<(), Error<'gc>> {
     // Flash special cases this, and doesn't throw an error,
     // even if data has odd number of coordinates.
@@ -1259,6 +1260,16 @@ fn process_commands<'gc>(
     if data.length() % 2 != 0 {
         return Err(make_error_2004(activation, Error2004Type::ArgumentError));
     }
+
+    let rule = if winding == WStr::from_units(b"nonZero") {
+        FillRule::NonZero
+    } else if winding == WStr::from_units(b"evenOdd") {
+        FillRule::EvenOdd
+    } else {
+        return Err(make_error_2008(activation, "winding"));
+    };
+
+    drawing.set_fill_rule(Some(rule));
 
     fn process_command<'gc>(
         activation: &mut Activation<'_, 'gc>,
@@ -1331,6 +1342,9 @@ fn process_commands<'gc>(
         }
     }
 
+    // Reset winding rule after drawing commands
+    drawing.set_fill_rule(None);
+
     Ok(())
 }
 
@@ -1382,8 +1396,7 @@ fn handle_igraphics_data<'gc>(
             .get_public_property("data", activation)?
             .coerce_to_object(activation)?;
 
-        //TODO implement winding
-        let _winding = obj
+        let winding = obj
             .get_public_property("winding", activation)?
             .coerce_to_string(activation)?;
 
@@ -1394,6 +1407,7 @@ fn handle_igraphics_data<'gc>(
                 .as_vector_storage()
                 .expect("commands is not a Vector"),
             &data.as_vector_storage().expect("data is not a Vector"),
+            winding,
         )?;
     } else if class
         == activation
