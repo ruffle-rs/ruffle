@@ -1973,10 +1973,7 @@ export class RufflePlayer extends HTMLElement {
         ) {
             // Firefox: Don't display the panic screen if the user leaves the page while something is still loading
             return;
-        } else if (
-            error instanceof Error &&
-            error.message === "Failed to load Ruffle WASM"
-        ) {
+        } else if (error instanceof LoadRuffleWasmError) {
             const openInNewTab = this.loadedConfig?.openInNewTab;
             const swfUrl = this.loadedConfig && "url" in this.loadedConfig ? new URL(this.loadedConfig.url, document.baseURI) : undefined;
             if (openInNewTab && swfUrl) {
