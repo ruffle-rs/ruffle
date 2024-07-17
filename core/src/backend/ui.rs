@@ -91,8 +91,9 @@ pub trait UiBackend: Downcast {
     // Unused, but kept in case we need it later.
     fn message(&self, message: &str);
 
-    // Only used on web.
     fn open_virtual_keyboard(&self);
+
+    fn close_virtual_keyboard(&self);
 
     fn language(&self) -> LanguageIdentifier;
 
@@ -359,6 +360,8 @@ impl UiBackend for NullUiBackend {
     }
 
     fn open_virtual_keyboard(&self) {}
+
+    fn close_virtual_keyboard(&self) {}
 
     fn language(&self) -> LanguageIdentifier {
         US_ENGLISH.clone()

@@ -197,12 +197,18 @@ impl<'gc> FocusTracker<'gc> {
         if let Some(text_field) = self.get_as_edit_text() {
             if text_field.is_editable() {
                 if !text_field.movie().is_action_script_3() {
+                    // TODO This logic is inaccurate and addresses
+                    //   only setting the focus programmatically.
                     let length = text_field.text_length();
                     text_field
                         .set_selection(Some(TextSelection::for_range(0, length)), context.gc());
                 }
                 context.ui.open_virtual_keyboard();
+            } else {
+                context.ui.close_virtual_keyboard();
             }
+        } else {
+            context.ui.close_virtual_keyboard();
         }
     }
 
