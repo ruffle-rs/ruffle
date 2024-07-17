@@ -192,7 +192,6 @@ impl FontFace {
             return self.glyphs[glyph_id.0 as usize]
                 .get_or_init(|| {
                     let mut drawing = Drawing::new();
-                    drawing.set_winding_rule(FillRule::NonZero); // TTF uses NonZero
                     drawing.set_fill_style(Some(FillStyle::Color(Color::WHITE)));
                     if face
                         .outline_glyph(glyph_id, &mut GlyphToDrawing(&mut drawing))
