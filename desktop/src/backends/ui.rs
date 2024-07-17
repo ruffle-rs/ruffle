@@ -310,6 +310,8 @@ impl UiBackend for DesktopUiBackend {
     // Unused on desktop
     fn open_virtual_keyboard(&self) {}
 
+    fn close_virtual_keyboard(&self) {}
+
     fn language(&self) -> LanguageIdentifier {
         self.preferences.language().clone()
     }
