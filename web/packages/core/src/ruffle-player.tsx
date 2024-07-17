@@ -755,12 +755,6 @@ export class RufflePlayer extends HTMLElement {
         }
 
         this.unmuteAudioContext();
-        // On Android, the virtual keyboard needs to be dismissed as otherwise it re-focuses when clicking elsewhere
-        if (navigator.userAgent.toLowerCase().includes("android")) {
-            this.container.addEventListener("click", () =>
-                this.virtualKeyboard.blur(),
-            );
-        }
 
         // Treat invalid values as `AutoPlay.Auto`.
         if (
@@ -1388,6 +1382,7 @@ export class RufflePlayer extends HTMLElement {
             console.error("SWF download failed");
         }
     }
+
     private virtualKeyboardInput() {
         const input = this.virtualKeyboard;
         const string = input.value;
@@ -1403,17 +1398,42 @@ export class RufflePlayer extends HTMLElement {
         }
         input.value = "";
     }
+
     protected openVirtualKeyboard(): void {
-        // On Android, the Rust code that opens the virtual keyboard triggers
-        // before the TypeScript code that closes it, so delay opening it
-        if (navigator.userAgent.toLowerCase().includes("android")) {
-            setTimeout(() => {
-                this.virtualKeyboard.focus({ preventScroll: true });
-            }, 100);
+        // Virtual keyboard is opened/closed synchronously from core,
+        // and opening/closing it is basically dispatching
+        // focus events (which may also be dispatched to the player).
+        // In order not to deadlock here (or rather throw an error),
+        // these actions should be performed asynchronously.
+        // However, some browsers (i.e. Safari) require user interaction
+        // in order to open the virtual keyboard.
+        // That is why we are checking whether Ruffle already has focus:
+        //  1. if it does, no focus events will be dispatched to
+        //     the player when we focus the virtual keyboard, and
+        //  2. if it doesn't, the action shouldn't be a result of user
+        //     interaction and focusing synchronously wouldn't work anyway.
+        if (this.instance?.has_focus()) {
+            this.virtualKeyboard.focus({preventScroll: true});
         } else {
-            this.virtualKeyboard.focus({ preventScroll: true });
+            setTimeout(() => {
+                this.virtualKeyboard.focus({preventScroll: true});
+            }, 0);
         }
     }
+
+    protected closeVirtualKeyboard(): void {
+        // Note that closing the keyboard is a little tricky, as we cannot
+        // just remove the focus here, as the player should still be focused.
+        // We want to switch the focus to the container instead, but the user may also
+        // click away from the player, and in that case we do not want to re-focus it.
+        // We also have to take into account that the keyboard may be
+        // closed even if the player doesn't have focus at all.
+        // That's why we have to "transfer" the focus from the keyboard to the container.
+        if (this.isVirtualKeyboardFocused()) {
+            this.container.focus({ preventScroll: true });
+        }
+    }
+
     protected isVirtualKeyboardFocused(): boolean {
         return this.shadow.activeElement === this.virtualKeyboard;
     }
