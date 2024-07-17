@@ -1973,6 +1973,18 @@ export class RufflePlayer extends HTMLElement {
         ) {
             // Firefox: Don't display the panic screen if the user leaves the page while something is still loading
             return;
+        } else if (
+            error instanceof Error &&
+            (error.name === "CompileError" ||
+                error.message.includes("CompileError"))
+        ) {
+            const openInNewTab = this.loadedConfig?.openInNewTab;
+            const swfUrl = this.loadedConfig && "url" in this.loadedConfig ? new URL(this.loadedConfig.url, document.baseURI) : undefined;
+            if (openInNewTab && swfUrl) {
+                // If it is possible to open the SWF in a new tab offer that option if the WASM failed to load
+                this.addOpenInNewTabMessage(openInNewTab, swfUrl);
+                return;
+            }
         }
 
         const errorArray: Array<string | null> & {
@@ -2017,6 +2029,35 @@ export class RufflePlayer extends HTMLElement {
         this.destroy();
     }
 
+    private addOpenInNewTabMessage(openInNewTab: (swf: URL) => void, swfUrl: URL) {
+        const url = new URL(swfUrl);
+        if (this.loadedConfig?.parameters) {
+            const parameters = sanitizeParameters(
+                this.loadedConfig?.parameters,
+            );
+            Object.entries(parameters).forEach(([key, value]) => {
+                url.searchParams.set(key, value);
+            });
+        }
+        this.hideSplashScreen();
+
+        const div = document.createElement("div");
+        div.id = "message-overlay";
+        const innerDiv = document.createElement("div");
+        innerDiv.className = "message";
+        innerDiv.appendChild(textAsParagraphs("message-cant-embed"));
+
+        const buttonDiv = document.createElement("div");
+        const link = document.createElement("a");
+        link.innerText = text("open-in-new-tab");
+        link.onclick = () => openInNewTab(url);
+        buttonDiv.appendChild(link);
+
+        innerDiv.appendChild(buttonDiv);
+        div.appendChild(innerDiv);
+        this.container.prepend(div);
+    }
+
     protected displayRootMovieDownloadFailedMessage(invalidSwf: boolean): void {
         const openInNewTab = this.loadedConfig?.openInNewTab;
         if (
@@ -2024,32 +2065,7 @@ export class RufflePlayer extends HTMLElement {
             this.swfUrl &&
             window.location.origin !== this.swfUrl.origin
         ) {
-            const url = new URL(this.swfUrl);
-            if (this.loadedConfig?.parameters) {
-                const parameters = sanitizeParameters(
-                    this.loadedConfig?.parameters,
-                );
-                Object.entries(parameters).forEach(([key, value]) => {
-                    url.searchParams.set(key, value);
-                });
-            }
-            this.hideSplashScreen();
-
-            const div = document.createElement("div");
-            div.id = "message-overlay";
-            const innerDiv = document.createElement("div");
-            innerDiv.className = "message";
-            innerDiv.appendChild(textAsParagraphs("message-cant-embed"));
-
-            const buttonDiv = document.createElement("div");
-            const link = document.createElement("a");
-            link.innerText = text("open-in-new-tab");
-            link.onclick = () => openInNewTab(url);
-            buttonDiv.appendChild(link);
-
-            innerDiv.appendChild(buttonDiv);
-            div.appendChild(innerDiv);
-            this.container.prepend(div);
+            this.addOpenInNewTabMessage(openInNewTab, this.swfUrl);
         } else {
             const error = invalidSwf
                 ? new InvalidSwfError(this.swfUrl)
