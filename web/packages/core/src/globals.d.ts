@@ -3,7 +3,7 @@ interface Error {
 }
 interface SVGSVGElement {
     xmlns?: string;
-    "xmlns:xlink"?: string;
+	scale?: string | number;
 }
 interface SVGPathElement {
     fill?: string;
@@ -17,10 +17,7 @@ interface SVGTextElement {
 interface SVGCircleElement {
     fill?: string;
 }
-interface SVGUseElement {
-    "xlink:href"?: string;
-}
 interface HTMLInputElement {
-    autoCapitalize?: string;
-    autoComplete?: string;
+    autocapitalize?: string;
+    autocorrect?: string;
 }

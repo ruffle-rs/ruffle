@@ -1,6 +1,6 @@
 import type { RuffleHandle, ZipWriter } from "../dist/ruffle_web";
 import { createRuffleBuilder } from "./load-ruffle";
-import { applyStaticStyles, ruffleShadowTemplate } from "./shadow-template";
+import { ruffleShadowTemplate } from "./shadow-template";
 import { lookupElement } from "./internal/register-element";
 import { DEFAULT_CONFIG } from "./config";
 import type { DataLoadOptions, URLLoadOptions } from "./load-options";
@@ -119,7 +119,6 @@ class Point {
 export class RufflePlayer extends HTMLElement {
     private readonly shadow: ShadowRoot;
     private readonly dynamicStyles: HTMLStyleElement;
-    private readonly staticStyles: HTMLStyleElement;
     private readonly container: HTMLElement;
     private readonly playButton: HTMLElement;
     private readonly unmuteOverlay: HTMLElement;
@@ -230,9 +229,6 @@ export class RufflePlayer extends HTMLElement {
 
         this.dynamicStyles = this.shadow.getElementById(
             "dynamic-styles",
-        ) as HTMLStyleElement;
-        this.staticStyles = this.shadow.getElementById(
-            "static-styles",
         ) as HTMLStyleElement;
         this.container = this.shadow.getElementById("container")!;
         this.playButton = this.shadow.getElementById("play-button")!;
@@ -529,7 +525,6 @@ export class RufflePlayer extends HTMLElement {
      */
     connectedCallback(): void {
         this.updateStyles();
-        applyStaticStyles(this.staticStyles);
     }
 
     /**
