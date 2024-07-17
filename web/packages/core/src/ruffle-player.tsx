@@ -1975,8 +1975,7 @@ export class RufflePlayer extends HTMLElement {
             return;
         } else if (
             error instanceof Error &&
-            (error.name === "CompileError" ||
-                error.message.includes("CompileError"))
+            error.message === "Failed to load Ruffle WASM"
         ) {
             const openInNewTab = this.loadedConfig?.openInNewTab;
             const swfUrl = this.loadedConfig && "url" in this.loadedConfig ? new URL(this.loadedConfig.url, document.baseURI) : undefined;
