@@ -192,7 +192,11 @@ impl FontFace {
             return self.glyphs[glyph_id.0 as usize]
                 .get_or_init(|| {
                     let mut drawing = Drawing::new();
-                    drawing.set_fill_style(Some(FillStyle::Color(Color::WHITE)));
+                    // TTF uses NonZero
+                    drawing.new_fill(
+                        Some(FillStyle::Color(Color::WHITE)),
+                        Some(FillRule::NonZero),
+                    );
                     if face
                         .outline_glyph(glyph_id, &mut GlyphToDrawing(&mut drawing))
                         .is_some()
