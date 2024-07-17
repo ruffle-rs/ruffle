@@ -493,7 +493,7 @@ const shortcutModifier = navigator.userAgent.includes("Mac OS X")
     ? "Command"
     : "Ctrl";
 export const ruffleShadowTemplate = (
-    <template>
+    <>
         <style>
             { css }
         </style>
@@ -605,5 +605,5 @@ export const ruffleShadowTemplate = (
         <div id="context-menu-overlay" class="hidden">
             <ul id="context-menu"></ul>
         </div>
-    </template>
-) as HTMLTemplateElement;
+    </>
+);
