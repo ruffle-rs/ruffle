@@ -21,7 +21,7 @@ pub struct Drawing {
     pending_lines: Vec<DrawingLine>,
     cursor: Point<Twips>,
     fill_start: Point<Twips>,
-    winding_rule: FillRule,
+    default_winding_rule: FillRule,
 }
 
 impl Default for Drawing {
@@ -44,7 +44,7 @@ impl Drawing {
             pending_lines: Vec::new(),
             cursor: Point::ZERO,
             fill_start: Point::ZERO,
-            winding_rule: FillRule::EvenOdd,
+            default_winding_rule: FillRule::EvenOdd,
         }
     }
 
@@ -61,7 +61,7 @@ impl Drawing {
             pending_lines: Vec::new(),
             cursor: Point::ZERO,
             fill_start: Point::ZERO,
-            winding_rule: if shape.flags.contains(swf::ShapeFlag::NON_ZERO_WINDING_RULE) {
+            default_winding_rule: if shape.flags.contains(swf::ShapeFlag::NON_ZERO_WINDING_RULE) {
                 FillRule::NonZero
             } else {
                 FillRule::EvenOdd
@@ -89,8 +89,7 @@ impl Drawing {
                     commands,
                     winding_rule,
                 } => {
-                    this.set_winding_rule(winding_rule);
-                    this.set_fill_style(Some(style.clone()));
+                    this.new_fill(Some(style.clone()), Some(winding_rule));
 
                     for command in commands {
                         this.draw_command(command);
@@ -117,15 +116,23 @@ impl Drawing {
             pending_lines: other.pending_lines.clone(),
             cursor: other.cursor,
             fill_start: other.fill_start,
-            winding_rule: other.winding_rule,
+            default_winding_rule: other.default_winding_rule,
         }
     }
 
-    pub fn set_winding_rule(&mut self, rule: FillRule) {
-        self.winding_rule = rule;
+    /// Set fill style and reset fill rule to default.
+    pub fn set_fill_style(&mut self, style: Option<FillStyle>) {
+        self.new_fill(style, Some(self.default_winding_rule));
     }
 
-    pub fn set_fill_style(&mut self, style: Option<FillStyle>) {
+    /// Set fill rule and keep the same fill style.
+    pub fn set_fill_rule(&mut self, rule: Option<FillRule>) {
+        let style = self.current_fill.as_ref().map(|fill| fill.style.clone());
+        self.new_fill(style, rule);
+    }
+
+    /// Set fill style and rule.
+    pub fn new_fill(&mut self, style: Option<FillStyle>, rule: Option<FillRule>) {
         self.close_path();
         if let Some(existing) = self.current_fill.take() {
             self.paths.push(DrawingPath::Fill(existing));
@@ -145,6 +152,7 @@ impl Drawing {
         if let Some(style) = style {
             self.current_fill = Some(DrawingFill {
                 style,
+                rule: rule.unwrap_or(self.default_winding_rule),
                 commands: vec![DrawCommand::MoveTo(self.cursor)],
             });
         }
@@ -250,7 +258,7 @@ impl Drawing {
                         paths.push(DrawPath::Fill {
                             style: &fill.style,
                             commands: fill.commands.to_owned(),
-                            winding_rule: FillRule::EvenOdd,
+                            winding_rule: fill.rule,
                         });
                     }
                     DrawingPath::Line(line) => {
@@ -267,7 +275,7 @@ impl Drawing {
                 paths.push(DrawPath::Fill {
                     style: &fill.style,
                     commands: fill.commands.to_owned(),
-                    winding_rule: FillRule::EvenOdd,
+                    winding_rule: fill.rule,
                 })
             }
 
@@ -432,6 +440,7 @@ impl BitmapSource for Drawing {
 #[derive(Debug, Clone)]
 struct DrawingFill {
     style: FillStyle,
+    rule: FillRule,
     commands: Vec<DrawCommand>,
 }
 
