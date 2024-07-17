@@ -3,7 +3,7 @@ interface Error {
 }
 interface SVGSVGElement {
     xmlns?: string;
-	scale?: string | number;
+    scale?: string | number;
 }
 interface SVGPathElement {
     fill?: string;
