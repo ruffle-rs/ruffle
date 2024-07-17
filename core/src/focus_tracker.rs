@@ -107,6 +107,8 @@ impl<'gc> FocusTracker<'gc> {
         // Mouse focus change events are not dispatched when the object is the same,
         // contrary to key focus change events.
         if InteractiveObject::option_ptr_eq(old, new) {
+            // Re-open the keyboard when the user clicked an already focused text field.
+            self.update_virtual_keyboard(context);
             return;
         }
 
@@ -195,14 +197,20 @@ impl<'gc> FocusTracker<'gc> {
 
         // This applies even if the focused element hasn't changed.
         if let Some(text_field) = self.get_as_edit_text() {
+            if text_field.is_editable() && !text_field.movie().is_action_script_3() {
+                // TODO This logic is inaccurate and addresses
+                //   only setting the focus programmatically.
+                let length = text_field.text_length();
+                text_field.set_selection(Some(TextSelection::for_range(0, length)), context.gc());
+            }
+        }
+
+        self.update_virtual_keyboard(context);
+    }
+
+    fn update_virtual_keyboard(&self, context: &mut UpdateContext<'_, 'gc>) {
+        if let Some(text_field) = self.get_as_edit_text() {
             if text_field.is_editable() {
-                if !text_field.movie().is_action_script_3() {
-                    // TODO This logic is inaccurate and addresses
-                    //   only setting the focus programmatically.
-                    let length = text_field.text_length();
-                    text_field
-                        .set_selection(Some(TextSelection::for_range(0, length)), context.gc());
-                }
                 context.ui.open_virtual_keyboard();
             } else {
                 context.ui.close_virtual_keyboard();

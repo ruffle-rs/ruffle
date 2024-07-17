@@ -175,6 +175,9 @@ extern "C" {
     #[wasm_bindgen(method, js_name = "openVirtualKeyboard")]
     fn open_virtual_keyboard(this: &JavascriptPlayer);
 
+    #[wasm_bindgen(method, js_name = "closeVirtualKeyboard")]
+    fn close_virtual_keyboard(this: &JavascriptPlayer);
+
     #[wasm_bindgen(method, js_name = "isVirtualKeyboardFocused")]
     fn is_virtual_keyboard_focused(this: &JavascriptPlayer) -> bool;
 
@@ -287,6 +290,11 @@ impl RuffleHandle {
 
     pub fn is_playing(&self) -> bool {
         self.with_core(|core| core.is_playing()).unwrap_or_default()
+    }
+
+    pub fn has_focus(&self) -> bool {
+        self.with_instance(|instance| instance.has_focus)
+            .unwrap_or_default()
     }
 
     pub fn volume(&self) -> f32 {
