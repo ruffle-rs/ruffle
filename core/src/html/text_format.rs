@@ -12,7 +12,6 @@ use std::collections::VecDeque;
 use std::fmt::Write;
 use std::sync::Arc;
 
-const WHITESPACE: &[u16] = &[b' ' as u16, b'\t' as u16, b'\n' as u16, b'\r' as u16];
 const ANY_NEWLINE: &[u16] = &[b'\n' as u16, b'\r' as u16];
 const HTML_NEWLINE: u16 = b'\r' as u16;
 const HTML_SPACE: u16 = b' ' as u16;
@@ -982,7 +981,7 @@ impl FormatSpans {
         let mut result = WString::with_capacity(string.len(), string.is_wide());
         let mut last_white = false;
         for ch in string.iter() {
-            if WHITESPACE.contains(&ch) {
+            if ruffle_wstr::utils::swf_is_whitespace(ch) {
                 if !last_white {
                     result.push(HTML_SPACE);
                     last_white = true;
