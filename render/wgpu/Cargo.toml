@@ -33,7 +33,7 @@ workspace = true
 
 # wasm
 [target.'cfg(target_family = "wasm")'.dependencies.web-sys]
-version = "0.3.70"
+workspace = true
 features = ["HtmlCanvasElement"]
 
 [features]
