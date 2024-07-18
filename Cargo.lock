@@ -4439,6 +4439,7 @@ version = "0.1.0"
 dependencies = [
  "bzip2",
  "hex",
+ "js-sys",
  "libloading",
  "reqwest",
  "ruffle_render",
@@ -4450,6 +4451,10 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.12",
  "tracing",
+ "tracing-subscriber",
+ "tracing-wasm",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
