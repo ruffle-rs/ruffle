@@ -36,8 +36,8 @@ use url::Url;
 use wasm_bindgen::convert::FromWasmAbi;
 use wasm_bindgen::prelude::*;
 use web_sys::{
-    AddEventListenerOptions, ClipboardEvent, Element, Event, EventTarget, HtmlCanvasElement,
-    HtmlElement, KeyboardEvent, PointerEvent, WheelEvent, Window,
+    AddEventListenerOptions, ClipboardEvent, Element, Event, EventTarget, FocusEvent,
+    HtmlCanvasElement, HtmlElement, KeyboardEvent, Node, PointerEvent, WheelEvent, Window,
 };
 
 static RUFFLE_GLOBAL_PANIC: Once = Once::new();
@@ -125,14 +125,15 @@ struct RuffleInstance {
     mouse_enter_callback: Option<JsCallback<PointerEvent>>,
     mouse_leave_callback: Option<JsCallback<PointerEvent>>,
     mouse_down_callback: Option<JsCallback<PointerEvent>>,
-    player_mouse_down_callback: Option<JsCallback<PointerEvent>>,
-    window_mouse_down_callback: Option<JsCallback<PointerEvent>>,
     mouse_up_callback: Option<JsCallback<PointerEvent>>,
     mouse_wheel_callback: Option<JsCallback<WheelEvent>>,
     key_down_callback: Option<JsCallback<KeyboardEvent>>,
     key_up_callback: Option<JsCallback<KeyboardEvent>>,
     paste_callback: Option<JsCallback<ClipboardEvent>>,
     unload_callback: Option<JsCallback<Event>>,
+    focusin_callback: Option<JsCallback<FocusEvent>>,
+    focusout_callback: Option<JsCallback<FocusEvent>>,
+    focus_on_press_callback: Option<JsCallback<PointerEvent>>,
     has_focus: bool,
     trace_observer: Rc<RefCell<JsValue>>,
     log_subscriber: Arc<Layered<WASMLayer, Registry>>,
@@ -476,14 +477,15 @@ impl RuffleHandle {
             mouse_enter_callback: None,
             mouse_leave_callback: None,
             mouse_down_callback: None,
-            player_mouse_down_callback: None,
-            window_mouse_down_callback: None,
             mouse_up_callback: None,
             mouse_wheel_callback: None,
             key_down_callback: None,
             key_up_callback: None,
             paste_callback: None,
             unload_callback: None,
+            focusin_callback: None,
+            focusout_callback: None,
+            focus_on_press_callback: None,
             timestamp: None,
             has_focus: false,
             trace_observer: player.trace_observer,
@@ -499,6 +501,8 @@ impl RuffleHandle {
 
         // Register the instance and create the animation frame closure.
         let mut ruffle = Self::add_instance(instance)?;
+
+        Self::set_up_focus_management(ruffle, parent)?;
 
         // Create the animation frame closure.
         ruffle.with_instance_mut(|instance| {
@@ -600,35 +604,6 @@ impl RuffleHandle {
                         }
 
                         js_event.prevent_default();
-                    });
-                },
-            ));
-
-            // Create player mouse down handler.
-            instance.player_mouse_down_callback = Some(JsCallback::register(
-                &js_player,
-                "pointerdown",
-                false,
-                move |_js_event| {
-                    let _ = ruffle.with_instance_mut(|instance| {
-                        instance.has_focus = true;
-                        // Ensure the parent window gets focus. This is necessary for events
-                        // to be received when the player is inside a frame.
-                        instance.window.focus().warn_on_error();
-                    });
-                },
-            ));
-
-            // Create window mouse down handler.
-            instance.window_mouse_down_callback = Some(JsCallback::register(
-                &window,
-                "pointerdown",
-                true,
-                move |_js_event| {
-                    let _ = ruffle.with_instance_mut(|instance| {
-                        // If we actually clicked on the player, this will be reset to true
-                        // after the event bubbles down to the player.
-                        instance.has_focus = false;
                     });
                 },
             ));
@@ -790,6 +765,84 @@ impl RuffleHandle {
         ruffle.tick(0.0);
 
         Ok(ruffle)
+    }
+
+    fn set_up_focus_management(
+        ruffle: RuffleHandle,
+        focus_target: HtmlElement,
+    ) -> Result<(), RuffleInstanceError> {
+        focus_target.set_tab_index(-1);
+        ruffle.with_instance_mut(|instance| {
+            let focus_target_clone = focus_target.clone();
+            instance.focusin_callback = Some(JsCallback::register(
+                &focus_target,
+                "focusin",
+                false,
+                move |js_event: FocusEvent| {
+                    if let Some(related_target) = js_event.related_target() {
+                        let related_target = related_target.dyn_ref::<Node>();
+                        if focus_target_clone.contains(related_target) {
+                            // Focus is changed within parent, we can ignore it.
+                            return;
+                        }
+                    }
+
+                    let _ = ruffle.with_instance_mut(|instance| {
+                        if !instance.has_focus {
+                            instance.has_focus = true;
+                            let _ = instance.with_core_mut(|core| {
+                                core.handle_event(PlayerEvent::FocusGained);
+                            });
+                        }
+                    });
+                },
+            ));
+
+            let focus_target_clone = focus_target.clone();
+            instance.focusout_callback = Some(JsCallback::register(
+                &focus_target,
+                "focusout",
+                false,
+                move |js_event: FocusEvent| {
+                    if let Some(related_target) = js_event.related_target() {
+                        let related_target = related_target.dyn_ref::<Node>();
+                        if focus_target_clone.contains(related_target) {
+                            // Focus is changed within parent, we can ignore it.
+                            return;
+                        }
+                    }
+
+                    let _ = ruffle.with_instance_mut(|instance| {
+                        if instance.has_focus {
+                            let _ = instance.with_core_mut(|core| {
+                                core.handle_event(PlayerEvent::FocusLost);
+                            });
+                            instance.has_focus = false;
+                        }
+                    });
+                },
+            ));
+
+            let focus_target_clone = focus_target.clone();
+            instance.focus_on_press_callback = Some(JsCallback::register(
+                &focus_target,
+                "pointerdown",
+                // We want to set the focus as early as we can.
+                true,
+                move |_js_event| {
+                    let has_focus = ruffle
+                        .with_instance(|instance| instance.has_focus)
+                        .unwrap_or_default();
+                    if has_focus {
+                        // We already have focus, no need to reset it.
+                        return;
+                    }
+
+                    focus_target_clone.focus().warn_on_error();
+                },
+            ));
+        })?;
+        Ok(())
     }
 
     /// Registers a new Ruffle instance and returns the handle to the instance.
