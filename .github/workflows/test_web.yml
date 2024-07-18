@@ -35,7 +35,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node_version: ["20", "22"]
+        node_version: ["20", "22.4"]
         os: [ubuntu-22.04, windows-latest]
 
     steps:
