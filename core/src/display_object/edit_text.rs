@@ -1965,6 +1965,30 @@ impl<'gc> EditText<'gc> {
         Some(index)
     }
 
+    pub fn paragraph_length_at(self, mut index: usize) -> Option<usize> {
+        let start_index = self.paragraph_start_index_at(index)?;
+        let text = self.text();
+        let length = text.len();
+
+        // When the index is equal to the text length,
+        // FP simulates a character at that point and returns
+        // the length of the last paragraph plus one.
+        if index == length {
+            return Some(1 + length - start_index);
+        }
+
+        while index < length && !string_utils::swf_is_newline(text.at(index)) {
+            index += 1;
+        }
+
+        // The trailing newline also counts to the length
+        if index < length && string_utils::swf_is_newline(text.at(index)) {
+            index += 1;
+        }
+
+        Some(index - start_index)
+    }
+
     fn execute_avm1_asfunction(
         self,
         context: &mut UpdateContext<'_, 'gc>,

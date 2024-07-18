@@ -164,10 +164,7 @@ package flash.text {
 
         public native function getLineIndexOfChar(charIndex:int):int;
 
-        public function getParagraphLength(charIndex:int):int {
-            stub_method("flash.text.TextField", "getParagraphLength");
-            return 0;
-        }
+        public native function getParagraphLength(charIndex:int):int;
 
         public static function isFontCompatible(fontName:String, fontStyle:String):Boolean {
             stub_method("flash.text.TextField", "isFontCompatible");
