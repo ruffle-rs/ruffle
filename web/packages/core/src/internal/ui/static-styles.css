@@ -45,6 +45,7 @@
 
 #container {
     overflow: hidden;
+    outline: none;
 
     canvas {
         width: 100%;
