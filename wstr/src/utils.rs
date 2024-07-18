@@ -42,11 +42,18 @@ pub fn next_char_boundary(slice: &super::WStr, pos: usize) -> usize {
     }
 }
 
-/// Returns `true` if the given utf16 code unit is an whitespace
+/// Returns `true` if the given utf16 code unit is a whitespace
 /// according to the Flash Player.
 #[inline]
 pub fn swf_is_whitespace(c: u16) -> bool {
     matches!(u8::try_from(c), Ok(b' ' | b'\t' | b'\n' | b'\r'))
+}
+
+/// Returns `true` if the given utf16 code unit is a newline
+/// according to the Flash Player.
+#[inline]
+pub fn swf_is_newline(c: u16) -> bool {
+    matches!(u8::try_from(c), Ok(b'\n' | b'\r'))
 }
 
 /// Finds the longest prefix of `slice` that is entirely ASCII,

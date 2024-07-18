@@ -6,13 +6,13 @@ use crate::string::{Integer, SwfStrExt as _, Units, WStr, WString};
 use crate::tag_utils::SwfMovie;
 use gc_arena::Collect;
 use quick_xml::{escape::escape, events::Event, Reader};
+use ruffle_wstr::utils::swf_is_newline;
 use std::borrow::Cow;
 use std::cmp::{min, Ordering};
 use std::collections::VecDeque;
 use std::fmt::Write;
 use std::sync::Arc;
 
-const ANY_NEWLINE: &[u16] = &[b'\n' as u16, b'\r' as u16];
 const HTML_NEWLINE: u16 = b'\r' as u16;
 const HTML_SPACE: u16 = b' ' as u16;
 
@@ -888,7 +888,7 @@ impl FormatSpans {
                     let e = if condense_white {
                         Self::condense_white_in_text(e)
                     } else {
-                        e.replace(ANY_NEWLINE, WStr::from_units(&[HTML_NEWLINE]))
+                        e.replace(swf_is_newline, WStr::from_units(&[HTML_NEWLINE]))
                     };
                     text.push_str(&e);
                     spans.push(TextSpan::with_length_and_format(e.len(), &format));
@@ -1678,14 +1678,14 @@ impl<'a> FormatState<'a> {
     }
 
     fn push_text(&mut self, text: &WStr) {
-        let (text, ends_with_nl) = if text.ends_with(ANY_NEWLINE) {
+        let (text, ends_with_nl) = if text.ends_with(swf_is_newline) {
             (&text[0..text.len() - 1], true)
         } else {
             (text, false)
         };
 
         let mut first = true;
-        for text in text.split(ANY_NEWLINE) {
+        for text in text.split(swf_is_newline) {
             if !first {
                 self.close_all_tags();
                 // Ensure that tags are open after closing them.
