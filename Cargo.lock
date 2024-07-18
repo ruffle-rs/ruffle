@@ -4600,6 +4600,7 @@ version = "0.1.0"
 dependencies = [
  "bzip2",
  "hex",
+ "js-sys",
  "libloading 0.8.5",
  "md-5",
  "reqwest",
@@ -4609,6 +4610,8 @@ dependencies = [
  "slotmap",
  "swf",
  "tracing",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]

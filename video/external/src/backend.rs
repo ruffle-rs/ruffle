@@ -51,8 +51,13 @@ impl ExternalVideoBackend {
                 openh264,
             )));
         }
+        #[cfg(feature = "webcodecs")]
+        {
+            tracing::info!("Using WebCodecs");
+            return Ok(Box::new(crate::decoder::webcodecs::H264Decoder::new()));
+        }
         #[allow(unreachable_code)]
-        Err(Error::DecoderError("No OpenH264".into()))
+        Err(Error::DecoderError("No H264 decoder available".into()))
     }
 
     pub fn new(openh264_lib_filepath: Option<PathBuf>) -> Self {
