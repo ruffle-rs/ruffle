@@ -581,6 +581,20 @@ impl<'gc> EditText<'gc> {
             .set(EditTextFlag::CONDENSE_WHITE, condense_white);
     }
 
+    pub fn always_show_selection(self) -> bool {
+        self.0
+            .read()
+            .flags
+            .contains(EditTextFlag::ALWAYS_SHOW_SELECTION)
+    }
+
+    pub fn set_always_show_selection(self, context: &mut UpdateContext<'_, 'gc>, value: bool) {
+        self.0
+            .write(context.gc())
+            .flags
+            .set(EditTextFlag::ALWAYS_SHOW_SELECTION, value);
+    }
+
     pub fn is_device_font(self) -> bool {
         !self.0.read().flags.contains(EditTextFlag::USE_OUTLINES)
     }
@@ -907,8 +921,12 @@ impl<'gc> EditText<'gc> {
             ..Default::default()
         });
 
-        let visible_selection = if self.has_focus() {
+        let focused = self.has_focus();
+        let visible_selection = if focused {
             edit_text.selection
+        } else if self.always_show_selection() {
+            // Caret is not shown even if alwaysShowSelection is true
+            edit_text.selection.filter(|sel| !sel.is_caret())
         } else {
             None
         };
@@ -959,8 +977,8 @@ impl<'gc> EditText<'gc> {
                     if let Some(glyph_shape_handle) = glyph.shape_handle(context.renderer) {
                         // If it's highlighted, override the color.
                         if matches!(visible_selection, Some(visible_selection) if visible_selection.contains(start + pos)) {
-                            // Draw black selection rect
-                            self.render_selection(context, x, advance, caret_height);
+                            // Draw selection rect
+                            self.render_selection(context, x, advance, caret_height, focused);
 
                             // Set text color to white
                             context.transform_stack.push(&Transform {
@@ -1008,7 +1026,9 @@ impl<'gc> EditText<'gc> {
         x: Twips,
         width: Twips,
         height: Twips,
+        focused: bool,
     ) {
+        let color = if focused { Color::BLACK } else { Color::GRAY };
         let selection_box = context.transform_stack.transform().matrix
             * Matrix::create_box(
                 width.to_pixels() as f32,
@@ -1016,7 +1036,7 @@ impl<'gc> EditText<'gc> {
                 x,
                 Twips::ZERO,
             );
-        context.commands.draw_rect(Color::BLACK, selection_box);
+        context.commands.draw_rect(color, selection_box);
     }
 
     fn render_caret(
@@ -2687,6 +2707,7 @@ bitflags::bitflags! {
         const HAS_BACKGROUND = 1 << 1;
         const DRAW_LAYOUT_BOXES = 1 << 2;
         const CONDENSE_WHITE = 1 << 13;
+        const ALWAYS_SHOW_SELECTION = 1 << 14;
 
         // The following bits need to match `swf::EditTextFlag`.
         const READ_ONLY = 1 << 3;

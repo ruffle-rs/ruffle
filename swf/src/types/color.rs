@@ -19,6 +19,7 @@ pub struct Color {
 impl Color {
     pub const TRANSPARENT: Self = Self::from_rgb(0, 0);
     pub const BLACK: Self = Self::from_rgb(0, 255);
+    pub const GRAY: Self = Self::from_rgb(0x555555, 255);
     pub const WHITE: Self = Self::from_rgb(0xFFFFFF, 255);
     pub const RED: Self = Self::from_rgb(0xFF0000, 255);
     pub const GREEN: Self = Self::from_rgb(0x00FF00, 255);
