@@ -153,10 +153,7 @@ package flash.text {
             return new Rectangle(0, 0, 1, 1);
         }
 
-        public function getFirstCharInParagraph(charIndex:int):int {
-            stub_method("flash.text.TextField", "getFirstCharInParagraph");
-            return 0;
-        }
+        public native function getFirstCharInParagraph(charIndex:int):int;
 
         public function getImageReference(id:String):DisplayObject {
             stub_method("flash.text.TextField", "getImageReference");

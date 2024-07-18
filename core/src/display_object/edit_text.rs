@@ -1950,6 +1950,21 @@ impl<'gc> EditText<'gc> {
         self.0.read().layout.find_line_index_by_position(index)
     }
 
+    pub fn paragraph_start_index_at(self, mut index: usize) -> Option<usize> {
+        let text = self.text();
+
+        // Note that the index may equal the text length
+        if index > text.len() {
+            return None;
+        }
+
+        while index > 0 && !string_utils::swf_is_newline(text.at(index - 1)) {
+            index -= 1;
+        }
+
+        Some(index)
+    }
+
     fn execute_avm1_asfunction(
         self,
         context: &mut UpdateContext<'_, 'gc>,

@@ -1602,3 +1602,27 @@ pub fn get_line_index_at_point<'gc>(
         Ok(Value::Number(-1f64))
     }
 }
+
+pub fn get_first_char_in_paragraph<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let Some(this) = this
+        .as_display_object()
+        .and_then(|this| this.as_edit_text())
+    else {
+        return Ok(Value::Undefined);
+    };
+
+    let char_index = args.get_i32(activation, 0)?;
+    if char_index < 0 {
+        return Ok((-1).into());
+    }
+
+    Ok(this
+        .paragraph_start_index_at(char_index as usize)
+        .map(|i| i as i32)
+        .unwrap_or(-1)
+        .into())
+}
