@@ -180,7 +180,7 @@ async fn main() -> Result<(), Error> {
 
     subscriber.init();
 
-    let result = App::new(preferences).and_then(|app| app.run());
+    let result = App::new(preferences).await.and_then(|app| app.run());
 
     #[cfg(windows)]
     if let Err(error) = &result {

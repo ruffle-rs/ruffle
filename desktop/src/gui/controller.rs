@@ -43,7 +43,7 @@ pub struct GuiController {
 }
 
 impl GuiController {
-    pub fn new(
+    pub async fn new(
         window: Rc<Window>,
         event_loop: &EventLoop<RuffleEvent>,
         preferences: GlobalPreferences,
