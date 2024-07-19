@@ -6,7 +6,10 @@
     "private": true,
     "type": "module",
     "workspaces": [
-        "./packages/*"
+        "./packages/core",
+        "./packages/demo",
+        "./packages/extension",
+        "./packages/selfhosted"
     ],
     "devDependencies": {
         "@eslint/js": "^9.29.0",
