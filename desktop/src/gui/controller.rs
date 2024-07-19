@@ -7,10 +7,12 @@ use crate::preferences::GlobalPreferences;
 use anyhow::anyhow;
 use egui::{Context, ViewportId};
 use fontdb::{Database, Family, Query, Source};
+use futures::StreamExt;
 use ruffle_core::{Player, PlayerEvent};
 use ruffle_render_wgpu::backend::{request_adapter_and_device, WgpuRenderBackend};
 use ruffle_render_wgpu::descriptors::Descriptors;
 use ruffle_render_wgpu::utils::{format_list, get_backend_names};
+use std::error::Error;
 use std::rc::Rc;
 use std::sync::{Arc, MutexGuard};
 use std::time::{Duration, Instant};
@@ -19,7 +21,7 @@ use url::Url;
 use wgpu::SurfaceError;
 use winit::dpi::PhysicalSize;
 use winit::event::WindowEvent;
-use winit::event_loop::EventLoop;
+use winit::event_loop::{EventLoop, EventLoopProxy};
 use winit::keyboard::{Key, NamedKey};
 use winit::window::{Theme, Window};
 
@@ -90,9 +92,14 @@ impl GuiController {
                 view_formats: Default::default(),
             },
         );
+        let event_loop = event_loop.create_proxy();
         let descriptors = Descriptors::new(instance, adapter, device, queue);
         let egui_ctx = Context::default();
-        if let Some(Theme::Light) = window.theme() {
+
+        let theme = start_theme_watcher(event_loop.clone())
+            .await
+            .or_else(|| window.theme());
+        if let Some(Theme::Light) = theme {
             egui_ctx.set_visuals(egui::Visuals::light());
         }
 
@@ -108,7 +115,6 @@ impl GuiController {
             window.scale_factor(),
         ));
         let egui_renderer = egui_wgpu::Renderer::new(&descriptors.device, surface_format, None, 1);
-        let event_loop = event_loop.create_proxy();
         let descriptors = Arc::new(descriptors);
         let gui = RuffleGui::new(
             event_loop,
@@ -509,4 +515,54 @@ fn load_system_fonts(
         .push(name);
 
     Ok(fd)
+}
+
+#[cfg(target_os = "linux")]
+async fn start_theme_watcher(event_loop: EventLoopProxy<RuffleEvent>) -> Option<Theme> {
+    start_dbus_theme_watcher_linux(event_loop)
+        .await
+        .inspect_err(|err| {
+            tracing::warn!("Error registering theme watcher: {}", err);
+        })
+        .ok()
+}
+
+#[cfg(not(target_os = "linux"))]
+async fn start_theme_watcher(_event_loop: EventLoopProxy<RuffleEvent>) -> Option<Theme> {
+    None
+}
+
+#[cfg(target_os = "linux")]
+async fn start_dbus_theme_watcher_linux(
+    event_loop: EventLoopProxy<RuffleEvent>,
+) -> Result<Theme, Box<dyn Error>> {
+    use crate::dbus::{ColorScheme, FreedesktopSettings};
+
+    fn to_theme(color_scheme: ColorScheme) -> Theme {
+        match color_scheme {
+            ColorScheme::Default => Theme::Light,
+            ColorScheme::PreferLight => Theme::Light,
+            ColorScheme::PreferDark => Theme::Dark,
+        }
+    }
+
+    let connection = zbus::Connection::session().await?;
+    let settings = FreedesktopSettings::new(&connection).await?;
+    let scheme = settings.color_scheme().await?;
+
+    let mut stream = Box::pin(settings.watch_color_scheme().await?);
+    tokio::spawn(Box::pin(async move {
+        while let Some(scheme) = stream.next().await {
+            match scheme {
+                Ok(scheme) => {
+                    let _ = event_loop.send_event(RuffleEvent::ThemeChanged(to_theme(scheme)));
+                }
+                Err(err) => {
+                    tracing::warn!("Error while watching for color scheme changes: {}", err);
+                }
+            }
+        }
+    }));
+
+    Ok(to_theme(scheme))
 }
