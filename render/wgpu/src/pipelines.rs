@@ -296,6 +296,7 @@ fn create_pipeline_descriptor<'a>(
             alpha_to_coverage_enabled: false,
         },
         multiview: None,
+        cache: None,
     }
 }
 

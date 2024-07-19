@@ -108,7 +108,8 @@ impl GuiController {
             size.height,
             window.scale_factor(),
         ));
-        let egui_renderer = egui_wgpu::Renderer::new(&descriptors.device, surface_format, None, 1);
+        let egui_renderer =
+            egui_wgpu::Renderer::new(&descriptors.device, surface_format, None, 1, true);
         let descriptors = Arc::new(descriptors);
         let gui = RuffleGui::new(
             event_loop,
