@@ -36,7 +36,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(preferences: GlobalPreferences) -> Result<Self, Error> {
+    pub async fn new(preferences: GlobalPreferences) -> Result<Self, Error> {
         let movie_url = preferences.cli.movie_url.clone();
         let icon_bytes = include_bytes!("../assets/favicon-32.rgba");
         let icon =
@@ -70,7 +70,8 @@ impl App {
             &font_database,
             movie_url.clone(),
             no_gui,
-        )?;
+        )
+        .await?;
 
         let mut player = PlayerController::new(
             event_loop.create_proxy(),
