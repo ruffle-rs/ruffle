@@ -7,6 +7,7 @@
 
     display: inline-block;
     position: relative;
+
     /* Default width/height; this will get overridden by user styles/attributes. */
     width: 550px;
     height: 400px;
@@ -14,11 +15,11 @@
     letter-spacing: 0.4px;
     touch-action: none;
     user-select: none;
-    -webkit-user-select: none;
     -webkit-tap-highlight-color: transparent;
 }
 
 /* Ruffle's width/height CSS interferes with Safari's fullscreen CSS. */
+
 /* Ensure that Safari's fullscreen mode actually fills the screen. */
 :host(:-webkit-full-screen) {
     display: block;
@@ -39,10 +40,7 @@
 #splash-screen,
 #message-overlay {
     position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    inset: 0;
 }
 
 #container {
@@ -153,7 +151,8 @@
     column-gap: 1em;
 }
 
-#message-overlay a, #message-overlay button {
+#message-overlay a,
+#message-overlay button {
     cursor: pointer;
     background: var(--ruffle-blue);
     color: var(--ruffle-orange);
@@ -166,7 +165,8 @@
     margin: 2% 0;
 }
 
-#message-overlay a:hover, #message-overlay button:hover {
+#message-overlay a:hover,
+#message-overlay button:hover {
     background: #ffffff4c;
 }
 
@@ -185,7 +185,8 @@
     background: #ffffff4c;
 }
 
-#context-menu-overlay, .modal {
+#context-menu-overlay,
+.modal {
     width: 100%;
     height: 100%;
     z-index: 1;
@@ -196,7 +197,7 @@
     color: rgb(var(--modal-foreground-rgb));
     background-color: var(--modal-background);
     border: 1px solid gray;
-    box-shadow: 0px 5px 10px -5px black;
+    box-shadow: 0 5px 10px -5px black;
     position: absolute;
     font-size: 14px;
     text-align: left;
@@ -229,7 +230,10 @@
 #splash-screen {
     display: flex;
     flex-direction: column;
-    background: var(--splash-screen-background, var(--preloader-background, var(--ruffle-blue)));
+    background: var(
+        --splash-screen-background,
+        var(--preloader-background, var(--ruffle-blue))
+    );
     align-items: center;
     justify-content: center;
 }
@@ -243,7 +247,7 @@
 }
 
 .loadbar-inner {
-    width: 0px;
+    width: 0;
     max-width: 100%;
     height: 100%;
     background: var(--ruffle-orange);
@@ -298,7 +302,7 @@
     width: fit-content;
     padding: 8px 12px;
     border-radius: 12px;
-    box-shadow: 0 2px 6px 0px #0008;
+    box-shadow: 0 2px 6px 0 #0008;
 }
 
 #modal-area {
@@ -480,4 +484,3 @@ label[for="mute-checkbox"] {
         --modal-foreground-filter: invert(90%);
     }
 }
-
