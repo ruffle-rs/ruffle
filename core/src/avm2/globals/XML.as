@@ -300,6 +300,18 @@ package {
             self.AS3::setLocalName(name);
         }
 
+        XML.settings = function() {
+            return XML.AS3::settings();
+        }
+
+        XML.setSettings = function(v:* = undefined) {
+            XML.AS3::setSettings(v)
+        }
+
+        XML.defaultSettings = function() {
+            return XML.AS3::defaultSettings();
+        }
+
         public static const length:int = 1;
     }
 }
