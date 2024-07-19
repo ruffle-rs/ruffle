@@ -538,6 +538,10 @@ impl App {
                     return;
                 }
 
+                winit::event::Event::UserEvent(RuffleEvent::ThemeChanged(theme)) => {
+                    self.gui.borrow().set_theme(theme);
+                }
+
                 _ => (),
             }
 

@@ -138,6 +138,14 @@ impl GuiController {
         })
     }
 
+    pub fn set_theme(&self, theme: Theme) {
+        self.egui_winit.egui_ctx().set_visuals(match theme {
+            Theme::Light => egui::Visuals::light(),
+            Theme::Dark => egui::Visuals::dark(),
+        });
+        self.window.request_redraw();
+    }
+
     pub fn descriptors(&self) -> &Arc<Descriptors> {
         &self.descriptors
     }
@@ -178,11 +186,7 @@ impl GuiController {
         }
 
         if let WindowEvent::ThemeChanged(theme) = &event {
-            let visuals = match theme {
-                Theme::Dark => egui::Visuals::dark(),
-                Theme::Light => egui::Visuals::light(),
-            };
-            self.egui_winit.egui_ctx().set_visuals(visuals);
+            self.set_theme(*theme);
         }
 
         if matches!(
