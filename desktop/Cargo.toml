@@ -49,6 +49,10 @@ tokio = { workspace = true, features = ["rt-multi-thread", "macros"]}
 # Deliberately held back to match tracy client used by profiling crate
 tracing-tracy = { version = "=0.10.4", optional = true }
 rand = "0.8.5"
+thiserror.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+zbus = "4.4.0"
 
 [target.'cfg(windows)'.dependencies]
 winapi = "0.3.9"
