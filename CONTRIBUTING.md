@@ -73,6 +73,17 @@ This will also enable printing `trace()` statements.
 
 Additionally, if you build Ruffle with `--features avm_debug` then you will activate a few more built-in debugging utilities inside Ruffle, listed below.
 
+### Logging caught exceptions
+
+Some SWFs may catch and suppress exceptions, which can hide the fact that the SWF is trying to use an unimplemented definition. To log call caught exceptions:
+
+1. Add `avm_caught=info` to your `RUST_LOG` environment variable (e.g. `RUST_LOG=warn,avm_caught=debug`)
+2. Build ruffle with `--features avm_debug`
+
+Caught exceptions will be logged as "Caught exception: <exception object>"
+Note that some SWFs throw and catch exceptions as part of their normal control flow, so a caught exception
+does not necessarily indicate a bug in Ruffle.
+
 ### Warnings and Errors
 
 All AVM errors and warnings will print their stack trace so that you can view where they are in relation to the

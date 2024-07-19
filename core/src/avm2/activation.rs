@@ -808,6 +808,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 }
 
                 if matches {
+                    #[cfg(feature = "avm_debug")]
+                    tracing::info!(target: "avm_caught", "Caught exception: {:?}", Error::AvmError(error));
+
                     self.clear_stack();
                     self.push_stack(error);
 
