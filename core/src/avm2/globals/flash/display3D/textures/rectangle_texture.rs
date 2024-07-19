@@ -27,9 +27,10 @@ pub fn upload_from_bitmap_data<'gc>(
     if let Some(texture) = this.as_texture() {
         if let Some(source) = args[0].coerce_to_object(activation)?.as_bitmap_data() {
             texture.context3d().copy_bitmapdata_to_texture(
-                source.sync(activation.context.renderer),
+                source,
                 texture.handle(),
                 0,
+                &mut activation.context,
             );
         } else {
             panic!("Invalid source: {:?}", args[0]);

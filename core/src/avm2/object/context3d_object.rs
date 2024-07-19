@@ -6,11 +6,11 @@ use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2_stub_method;
-use crate::bitmap::bitmap_data::BitmapData;
-use crate::context::RenderContext;
+use crate::bitmap::bitmap_data::BitmapDataWrapper;
+use crate::context::{RenderContext, UpdateContext};
 use gc_arena::barrier::unlock;
 use gc_arena::lock::RefLock;
-use gc_arena::{Collect, Gc, GcCell, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_render::backend::{
     BufferUsage, Context3D, Context3DBlendFactor, Context3DCommand, Context3DCompareMode,
     Context3DTextureFormat, Context3DTriangleFace, Context3DVertexBufferFormat, ProgramType,
@@ -347,12 +347,11 @@ impl<'gc> Context3DObject<'gc> {
     }
     pub(crate) fn copy_bitmapdata_to_texture(
         &self,
-        source: GcCell<'gc, BitmapData<'gc>>,
+        source: BitmapDataWrapper<'gc>,
         dest: Rc<dyn Texture>,
         layer: u32,
+        context: &mut UpdateContext<'_, 'gc>,
     ) {
-        let source = source.read();
-
         // Note - Flash appears to allow a source that's larger than the destination.
         // Let's leave in this assertion to see if there any real SWFS relying on this
         // behavior.
@@ -369,11 +368,11 @@ impl<'gc> Context3DObject<'gc> {
             dest.height()
         );
 
+        let handle = source.bitmap_handle(context.gc_context, context.renderer);
+
         self.with_context_3d(|ctx| {
             ctx.process_command(Context3DCommand::CopyBitmapToTexture {
-                source: source.pixels_rgba(),
-                source_width: source.width(),
-                source_height: source.height(),
+                source: handle,
                 dest,
                 layer,
             })
@@ -388,7 +387,7 @@ impl<'gc> Context3DObject<'gc> {
         layer: u32,
     ) {
         self.with_context_3d(|ctx| {
-            ctx.process_command(Context3DCommand::CopyBitmapToTexture {
+            ctx.process_command(Context3DCommand::CopyBytesToTexture {
                 source,
                 source_width: dest.width(),
                 source_height: dest.height(),

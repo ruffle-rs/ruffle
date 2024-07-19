@@ -63,9 +63,10 @@ pub fn do_copy<'gc>(
         }
     };
     texture.context3d().copy_bitmapdata_to_texture(
-        bitmap_data.sync(activation.context.renderer),
+        bitmap_data,
         texture.handle(),
         side,
+        &mut activation.context,
     );
     Ok(())
 }
@@ -121,9 +122,10 @@ pub fn upload_from_bitmap_data<'gc>(
             let mip_level = args[1].coerce_to_u32(activation)?;
             if mip_level == 0 {
                 texture.context3d().copy_bitmapdata_to_texture(
-                    source.sync(activation.context.renderer),
+                    source,
                     texture.handle(),
                     0,
+                    &mut activation.context,
                 );
             } else {
                 avm2_stub_method!(
