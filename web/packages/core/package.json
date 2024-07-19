@@ -25,12 +25,16 @@
         "@fluent/langneg": "^0.7.0",
         "@tsconfig/strictest": "^2.0.5",
         "@types/mocha": "^10.0.7",
+        "autoprefixer": "^10.4.19",
+        "cssnano": "^7.0.4",
+        "cssnano-preset-advanced": "^7.0.4",
         "mocha": "^10.6.0",
+        "postcss": "^8.4.39",
         "replace-in-file": "^8.1.0",
-        "typedoc": "^0.26.4",
-        "typescript": "^5.5.3",
         "tsx": "^4.16.2",
-        "tsx-dom": "^3.0.1"
+        "tsx-dom": "^3.0.1",
+        "typedoc": "^0.26.4",
+        "typescript": "^5.5.3"
     },
     "sideEffects": false
 }
