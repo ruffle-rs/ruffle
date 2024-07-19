@@ -16,15 +16,15 @@
     touch-action: none;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
-}
 
-/* Ruffle's width/height CSS interferes with Safari's fullscreen CSS. */
+    /* Ruffle's width/height CSS interferes with Safari's fullscreen CSS. */
 
-/* Ensure that Safari's fullscreen mode actually fills the screen. */
-:host(:-webkit-full-screen) {
-    display: block;
-    width: 100% !important;
-    height: 100% !important;
+    /* Ensure that Safari's fullscreen mode actually fills the screen. */
+    & (:-webkit-full-screen) {
+        display: block;
+        width: 100% !important;
+        height: 100% !important;
+    }
 }
 
 .hidden {
@@ -45,11 +45,11 @@
 
 #container {
     overflow: hidden;
-}
 
-#container canvas {
-    width: 100%;
-    height: 100%;
+    canvas {
+        width: 100%;
+        height: 100%;
+    }
 }
 
 #play-button,
@@ -90,11 +90,11 @@
     display: flex;
     flex-flow: column;
     justify-content: space-around;
-}
 
-#panic a {
-    color: var(--ruffle-blue);
-    font-weight: bold;
+    a {
+        color: var(--ruffle-blue);
+        font-weight: bold;
+    }
 }
 
 #panic-title {
@@ -102,15 +102,17 @@
     font-weight: bold;
 }
 
-#panic-body.details {
-    flex: 0.9;
-    margin: 0 10px;
-}
+#panic-body {
+    & .details {
+        flex: 0.9;
+        margin: 0 10px;
+    }
 
-#panic-body textarea {
-    width: 100%;
-    height: 100%;
-    resize: none;
+    textarea {
+        width: 100%;
+        height: 100%;
+        resize: none;
+    }
 }
 
 #panic ul {
@@ -130,44 +132,44 @@
     align-items: center;
     justify-content: center;
     overflow: auto;
-}
 
-#message-overlay .message {
-    text-align: center;
-    max-height: 100%;
-    max-width: 100%;
-    padding: 5%;
-    font-size: 20px;
-}
+    .message {
+        text-align: center;
+        max-height: 100%;
+        max-width: 100%;
+        padding: 5%;
+        font-size: 20px;
+    }
 
-#message-overlay p {
-    margin: 0.5em 0;
-}
+    p {
+        margin: 0.5em 0;
+    }
 
-#message-overlay .message div {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    column-gap: 1em;
-}
+    .message div {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        column-gap: 1em;
+    }
 
-#message-overlay a,
-#message-overlay button {
-    cursor: pointer;
-    background: var(--ruffle-blue);
-    color: var(--ruffle-orange);
-    border: 2px solid var(--ruffle-orange);
-    font-weight: bold;
-    font-size: 1.25em;
-    border-radius: 0.6em;
-    padding: 10px;
-    text-decoration: none;
-    margin: 2% 0;
-}
+    a,
+    button {
+        cursor: pointer;
+        background: var(--ruffle-blue);
+        color: var(--ruffle-orange);
+        border: 2px solid var(--ruffle-orange);
+        font-weight: bold;
+        font-size: 1.25em;
+        border-radius: 0.6em;
+        padding: 10px;
+        text-decoration: none;
+        margin: 2% 0;
+    }
 
-#message-overlay a:hover,
-#message-overlay button:hover {
-    background: #ffffff4c;
+    a:hover,
+    button:hover {
+        background: #ffffff4c;
+    }
 }
 
 #continue-btn {
@@ -179,10 +181,10 @@
     font-size: 20px;
     border-radius: 20px;
     padding: 10px;
-}
 
-#continue-btn:hover {
-    background: #ffffff4c;
+    &:hover {
+        background: #ffffff4c;
+    }
 }
 
 #context-menu-overlay,
@@ -205,26 +207,26 @@
     white-space: nowrap;
     padding: 3px 0;
     margin: 0;
-}
 
-#context-menu .menu-item {
-    padding: 5px 10px;
-    color: rgb(var(--modal-foreground-rgb));
-}
+    .menu-item {
+        padding: 5px 10px;
+        color: rgb(var(--modal-foreground-rgb));
+    }
 
-#context-menu .menu-item.disabled {
-    cursor: default;
-    color: rgba(var(--modal-foreground-rgb), 0.5);
-}
+    .menu-item.disabled {
+        cursor: default;
+        color: rgba(var(--modal-foreground-rgb), 0.5);
+    }
 
-#context-menu .menu-item:not(.disabled):hover {
-    background-color: rgba(var(--modal-foreground-rgb), 0.15);
-}
+    .menu-item:not(.disabled):hover {
+        background-color: rgba(var(--modal-foreground-rgb), 0.15);
+    }
 
-#context-menu .menu-separator hr {
-    border: none;
-    border-bottom: 1px solid rgba(var(--modal-foreground-rgb), 0.2);
-    margin: 3px;
+    .menu-separator hr {
+        border: none;
+        border-bottom: 1px solid rgba(var(--modal-foreground-rgb), 0.2);
+        margin: 3px;
+    }
 }
 
 #splash-screen {
@@ -347,16 +349,16 @@
     display: block;
     height: calc(100% - 45px);
     min-height: 30px;
-}
 
-#local-saves td {
-    border-bottom: 2px solid rgba(var(--modal-foreground-rgb), 0.15);
-    height: 30px;
-}
+    td {
+        border-bottom: 2px solid rgba(var(--modal-foreground-rgb), 0.15);
+        height: 30px;
+    }
 
-#local-saves td:nth-child(1) {
-    width: 100%;
-    word-break: break-all;
+    td:nth-child(1) {
+        width: 100%;
+        word-break: break-all;
+    }
 }
 
 .save-option {
