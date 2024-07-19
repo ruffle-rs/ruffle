@@ -10,6 +10,7 @@ mod app;
 mod backends;
 mod cli;
 mod custom_event;
+mod dbus;
 mod gui;
 mod log;
 mod player;
