@@ -130,6 +130,7 @@ impl Descriptors {
                                 alpha_to_coverage_enabled: false,
                             },
                             multiview: None,
+                            cache: None,
                         }),
                 )
             })
@@ -199,6 +200,7 @@ impl Descriptors {
                                 alpha_to_coverage_enabled: false,
                             },
                             multiview: None,
+                            cache: None,
                         }),
                 )
             })

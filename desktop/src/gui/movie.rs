@@ -120,6 +120,7 @@ impl MovieViewRenderer {
                 compilation_options: Default::default(),
             }),
             multiview: None,
+            cache: None,
         });
         let vertices = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,

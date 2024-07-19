@@ -122,6 +122,7 @@ impl ColorMatrixFilter {
                         compilation_options: Default::default(),
                     }),
                     multiview: None,
+                    cache: None,
                 })
         })
     }

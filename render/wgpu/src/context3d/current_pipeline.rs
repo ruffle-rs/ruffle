@@ -521,6 +521,7 @@ impl CurrentPipeline {
                     alpha_to_coverage_enabled: false,
                 },
                 multiview: Default::default(),
+                cache: None,
             });
         Some((compiled, bind_group))
     }

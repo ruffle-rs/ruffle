@@ -1134,7 +1134,6 @@ async fn request_device(
 
     let try_features = [
         wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,
-        wgpu::Features::SHADER_UNUSED_VERTEX_OUTPUT,
         wgpu::Features::TEXTURE_COMPRESSION_BC,
         wgpu::Features::FLOAT32_FILTERABLE,
     ];
@@ -1151,6 +1150,7 @@ async fn request_device(
                 label: None,
                 required_features: features,
                 required_limits: limits,
+                memory_hints: Default::default(),
             },
             trace_path,
         )
