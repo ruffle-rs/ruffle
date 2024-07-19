@@ -1,6 +1,6 @@
 [package]
 name = "ruffle_gc_arena"
-version = "0.0.0"
+version.workspace = true
 description = "Temporary, internal gc-arena facade for Ruffle"
 authors.workspace = true
 edition.workspace = true
