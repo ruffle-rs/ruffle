@@ -1,7 +1,8 @@
 use crate::backend::WgpuRenderBackend;
 use crate::target::RenderTarget;
 use crate::{
-    as_texture, Descriptors, GradientUniforms, PosColorVertex, PosVertex, TextureTransforms,
+    as_texture, Descriptors, GradientUniforms, PosColorVertex, PosUVTVertex, PosVertex,
+    TextureTransforms,
 };
 use std::ops::Range;
 use wgpu::util::DeviceExt;
@@ -86,6 +87,11 @@ impl PendingDraw {
             vertex_buffer
                 .add(&vertices)
                 .expect("Mesh vertex buffer was too large!")
+        } else if matches!(draw.draw_type, TessDrawType::Bitmap { has_uvt: true, .. }) {
+            let vertices: Vec<_> = draw.vertices.into_iter().map(PosUVTVertex::from).collect();
+            vertex_buffer
+                .add(&vertices)
+                .expect("Mesh vertex buffer was too large!")
         } else {
             let vertices: Vec<_> = draw.vertices.into_iter().map(PosVertex::from).collect();
             vertex_buffer
@@ -103,9 +109,15 @@ impl PendingDraw {
             TessDrawType::Gradient { matrix, gradient } => {
                 PendingDrawType::gradient(gradient, matrix, shape_id, draw_id, uniform_buffer)
             }
-            TessDrawType::Bitmap(bitmap) => {
-                PendingDrawType::bitmap(bitmap, shape_id, draw_id, source, backend, uniform_buffer)?
-            }
+            TessDrawType::Bitmap { bitmap, has_uvt } => PendingDrawType::bitmap(
+                bitmap,
+                shape_id,
+                draw_id,
+                source,
+                backend,
+                uniform_buffer,
+                has_uvt,
+            )?,
         };
         Some(PendingDraw {
             draw_type,
@@ -132,6 +144,7 @@ pub enum PendingDrawType {
         is_repeating: bool,
         is_smoothed: bool,
         bind_group_label: Option<String>,
+        has_uvt: bool,
     },
 }
 
@@ -178,6 +191,7 @@ impl PendingDrawType {
         source: &dyn BitmapSource,
         backend: &mut dyn RenderBackend,
         uniform_buffers: &mut BufferBuilder,
+        has_uvt: bool,
     ) -> Option<Self> {
         let handle = source.bitmap_handle(bitmap.bitmap_id, backend)?;
         let texture = as_texture(&handle);
@@ -192,6 +206,7 @@ impl PendingDrawType {
             is_repeating: bitmap.is_repeating,
             is_smoothed: bitmap.is_smoothed,
             bind_group_label,
+            has_uvt,
         })
     }
 
@@ -255,6 +270,7 @@ impl PendingDrawType {
                 is_repeating,
                 is_smoothed,
                 bind_group_label,
+                has_uvt,
             } => {
                 let binds = BitmapBinds::new(
                     &descriptors.device,
@@ -268,7 +284,7 @@ impl PendingDrawType {
                     bind_group_label,
                 );
 
-                DrawType::Bitmap { binds }
+                DrawType::Bitmap { binds, has_uvt }
             }
         }
     }
@@ -279,7 +295,7 @@ impl PendingDrawType {
 pub enum DrawType {
     Color,
     Gradient { bind_group: wgpu::BindGroup },
-    Bitmap { binds: BitmapBinds },
+    Bitmap { binds: BitmapBinds, has_uvt: bool },
 }
 
 #[derive(Debug)]

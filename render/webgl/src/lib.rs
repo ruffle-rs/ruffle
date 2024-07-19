@@ -601,7 +601,7 @@ impl WebGlRenderBackend {
             let program = match draw.draw_type {
                 TessDrawType::Color => &self.color_program,
                 TessDrawType::Gradient { .. } => &self.gradient_program,
-                TessDrawType::Bitmap(_) => &self.bitmap_program,
+                TessDrawType::Bitmap { .. } => &self.bitmap_program,
             };
 
             // Unfortunately it doesn't seem to be possible to ensure that vertex attributes will be in
@@ -668,7 +668,8 @@ impl WebGlRenderBackend {
                     num_indices,
                     num_mask_indices,
                 },
-                TessDrawType::Bitmap(bitmap) => Draw {
+                // FIXME - implement UVT support
+                TessDrawType::Bitmap { bitmap, has_uvt: _ } => Draw {
                     draw_type: DrawType::Bitmap(BitmapDraw {
                         matrix: bitmap.matrix,
                         handle: bitmap_source.bitmap_handle(bitmap.bitmap_id, self),

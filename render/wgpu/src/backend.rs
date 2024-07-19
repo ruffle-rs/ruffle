@@ -779,6 +779,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         true
     }
 
+    fn is_shape_uvt_supported(&self) -> bool {
+        true
+    }
+
     fn apply_filter(
         &mut self,
         source: BitmapHandle,

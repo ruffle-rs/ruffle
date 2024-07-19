@@ -1,7 +1,7 @@
 use crate::blend::{ComplexBlend, TrivialBlend};
 use crate::layouts::BindLayouts;
 use crate::shaders::Shaders;
-use crate::{MaskState, PosColorVertex, PosVertex};
+use crate::{MaskState, PosColorVertex, PosUVTVertex, PosVertex};
 use enum_map::{enum_map, Enum, EnumMap};
 use std::collections::HashMap;
 use wgpu::{vertex_attr_array, BlendState, PrimitiveTopology};
@@ -12,6 +12,16 @@ pub const VERTEX_BUFFERS_DESCRIPTION_POS: [wgpu::VertexBufferLayout; 1] =
         step_mode: wgpu::VertexStepMode::Vertex,
         attributes: &vertex_attr_array![
             0 => Float32x2,
+        ],
+    }];
+
+pub const VERTEX_BUFFERS_DESCRIPTION_POS_UVT: [wgpu::VertexBufferLayout; 1] =
+    [wgpu::VertexBufferLayout {
+        array_stride: std::mem::size_of::<PosUVTVertex>() as u64,
+        step_mode: wgpu::VertexStepMode::Vertex,
+        attributes: &vertex_attr_array![
+            0 => Float32x2,
+            1 => Float32x3,
         ],
     }];
 
@@ -45,6 +55,7 @@ pub struct Pipelines {
     /// or use it in any way.
     pub bitmap_opaque_dummy_stencil: wgpu::RenderPipeline,
     pub bitmap: EnumMap<TrivialBlend, ShapePipeline>,
+    pub bitmap_uvt: EnumMap<TrivialBlend, ShapePipeline>,
     pub gradients: ShapePipeline,
     pub complex_blends: EnumMap<ComplexBlend, ShapePipeline>,
 }
@@ -183,6 +194,26 @@ impl Pipelines {
             .try_into()
             .unwrap();
 
+        let bitmap_uvt_pipelines: [ShapePipeline; TrivialBlend::LENGTH] = (0..TrivialBlend::LENGTH)
+            .map(|blend| {
+                let blend = TrivialBlend::from_usize(blend);
+                let name = format!("Bitmap UV ({blend:?})");
+                create_shape_pipeline(
+                    &name,
+                    device,
+                    format,
+                    &shaders.bitmap_uv_shader,
+                    msaa_sample_count,
+                    &VERTEX_BUFFERS_DESCRIPTION_POS_UVT,
+                    &bitmap_blend_bindings,
+                    blend.blend_state(),
+                    &[],
+                )
+            })
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
+
         let bitmap_opaque_pipeline_layout_label =
             create_debug_label!("Opaque bitmap pipeline layout");
         let bitmap_opaque_pipeline_layout =
@@ -241,6 +272,7 @@ impl Pipelines {
             color: color_pipelines,
             lines: lines_pipelines,
             bitmap: EnumMap::from_array(bitmap_pipelines),
+            bitmap_uvt: EnumMap::from_array(bitmap_uvt_pipelines),
             bitmap_opaque,
             bitmap_opaque_dummy_stencil: bitmap_opaque_dummy_depth,
             gradients: gradient_pipeline,
