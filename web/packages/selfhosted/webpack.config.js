@@ -2,25 +2,22 @@ import url from "url";
 import json5 from "json5";
 import CopyPlugin from "copy-webpack-plugin";
 import TerserPlugin from "terser-webpack-plugin";
+import fs from "fs";
 
 function transformPackage(content) {
     const pkg = json5.parse(content);
 
-    const packageVersion = process.env.npm_package_version;
+    if (pkg["webpack-copy-properties"]) {
+        const copyProperties = pkg["webpack-copy-properties"];
+        delete pkg["webpack-copy-properties"];
 
-    const versionChannel = process.env.CFG_RELEASE_CHANNEL || "nightly";
-
-    const buildDate = new Date()
-        .toISOString()
-        .substring(0, 10)
-        .replace(/-/g, ".");
-
-    // The npm registry requires the version to monotonically increase,
-    // so append the build date onto the end of the package version.
-    pkg.version =
-        versionChannel !== "stable"
-            ? `${packageVersion}-${versionChannel}.${buildDate}`
-            : packageVersion;
+        const otherPkg = json5.parse(
+            fs.readFileSync(copyProperties.from, { encoding: "utf8" }),
+        );
+        for (const property of copyProperties.properties) {
+            pkg[property] = otherPkg[property];
+        }
+    }
 
     return JSON.stringify(pkg);
 }
