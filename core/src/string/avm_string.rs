@@ -9,9 +9,7 @@ use crate::string::{AvmAtom, AvmStringRepr};
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
 enum Source<'gc> {
-    // TODO: Rename this to `Managed`, to avoid
-    // ambiguity with dependent/owned/owner terms.
-    Owned(Gc<'gc, AvmStringRepr<'gc>>),
+    Managed(Gc<'gc, AvmStringRepr<'gc>>),
     Static(&'static WStr),
 }
 
@@ -25,7 +23,7 @@ impl<'gc> AvmString<'gc> {
     /// Turns a string to a fully owned (non-dependent) managed string.
     pub(super) fn to_fully_owned(self, gc_context: &Mutation<'gc>) -> Gc<'gc, AvmStringRepr<'gc>> {
         match self.source {
-            Source::Owned(s) => {
+            Source::Managed(s) => {
                 if s.is_dependent() {
                     let repr = AvmStringRepr::from_raw(WString::from(self.as_wstr()), false);
                     Gc::new(gc_context, repr)
@@ -42,7 +40,7 @@ impl<'gc> AvmString<'gc> {
 
     pub fn as_managed(self) -> Option<Gc<'gc, AvmStringRepr<'gc>>> {
         match self.source {
-            Source::Owned(s) => Some(s),
+            Source::Managed(s) => Some(s),
             Source::Static(_) => None,
         }
     }
@@ -54,7 +52,7 @@ impl<'gc> AvmString<'gc> {
         };
         let repr = AvmStringRepr::from_raw(buf, false);
         Self {
-            source: Source::Owned(Gc::new(gc_context, repr)),
+            source: Source::Managed(Gc::new(gc_context, repr)),
         }
     }
 
@@ -66,7 +64,7 @@ impl<'gc> AvmString<'gc> {
     pub fn new<S: Into<WString>>(gc_context: &Mutation<'gc>, string: S) -> Self {
         let repr = AvmStringRepr::from_raw(string.into(), false);
         Self {
-            source: Source::Owned(Gc::new(gc_context, repr)),
+            source: Source::Managed(Gc::new(gc_context, repr)),
         }
     }
 
@@ -79,27 +77,27 @@ impl<'gc> AvmString<'gc> {
         // TODO?: if string is static, just make a new static AvmString
         let repr = AvmStringRepr::new_dependent(string, start, end);
         Self {
-            source: Source::Owned(Gc::new(gc_context, repr)),
+            source: Source::Managed(Gc::new(gc_context, repr)),
         }
     }
 
     pub fn owner(&self) -> Option<AvmString<'gc>> {
         match &self.source {
-            Source::Owned(s) => s.owner(),
+            Source::Managed(s) => s.owner(),
             Source::Static(_) => None,
         }
     }
 
     pub fn as_wstr(&self) -> &WStr {
         match &self.source {
-            Source::Owned(s) => s,
+            Source::Managed(s) => s,
             Source::Static(s) => s,
         }
     }
 
     pub fn as_interned(&self) -> Option<AvmAtom<'gc>> {
         match self.source {
-            Source::Owned(s) if s.is_interned() => Some(AvmAtom(s)),
+            Source::Managed(s) if s.is_interned() => Some(AvmAtom(s)),
             _ => None,
         }
     }
@@ -116,7 +114,7 @@ impl<'gc> AvmString<'gc> {
         } else {
             if let Some(repr) = AvmStringRepr::try_append_inline(left, &right) {
                 return Self {
-                    source: Source::Owned(Gc::new(gc_context, repr)),
+                    source: Source::Managed(Gc::new(gc_context, repr)),
                 };
             }
 
@@ -151,7 +149,7 @@ impl<'gc> From<AvmAtom<'gc>> for AvmString<'gc> {
     #[inline]
     fn from(atom: AvmAtom<'gc>) -> Self {
         Self {
-            source: Source::Owned(atom.0),
+            source: Source::Managed(atom.0),
         }
     }
 }
@@ -160,7 +158,7 @@ impl<'gc> From<Gc<'gc, AvmStringRepr<'gc>>> for AvmString<'gc> {
     #[inline]
     fn from(repr: Gc<'gc, AvmStringRepr<'gc>>) -> Self {
         Self {
-            source: Source::Owned(repr),
+            source: Source::Managed(repr),
         }
     }
 }
@@ -203,7 +201,7 @@ impl<'gc> Deref for AvmString<'gc> {
 // Manual equality implementation with fast paths for owned strings.
 impl<'gc> PartialEq for AvmString<'gc> {
     fn eq(&self, other: &Self) -> bool {
-        if let (Source::Owned(left), Source::Owned(right)) = (self.source, other.source) {
+        if let (Source::Managed(left), Source::Managed(right)) = (self.source, other.source) {
             // Fast accept for identical strings.
             if Gc::ptr_eq(left, right) {
                 return true;
