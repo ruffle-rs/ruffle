@@ -31,7 +31,7 @@ export function MainContainer() {
                     </svg>
                 </div>
             </div>
-            <input id="virtual-keyboard" type="text" autocomplete="off" autocorrect="off" autocapitalize="none" />
+            <input aria-hidden="true" id="virtual-keyboard" type="text" autocomplete="off" autocorrect="off" autocapitalize="none" />
         </div>
     );
 }
