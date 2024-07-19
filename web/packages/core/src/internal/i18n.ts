@@ -10,7 +10,7 @@ interface LocaleBundle {
     [locale: string]: FileBundle;
 }
 
-// This is automatically populated by `tools/bundle_texts.js` via a postbuild script
+// This is automatically populated by `tools/bundle_texts.ts` via a postbuild script
 const BUNDLED_TEXTS: LocaleBundle = {
     /* %BUNDLED_TEXTS% */
 };

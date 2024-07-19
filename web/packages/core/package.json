@@ -12,7 +12,7 @@
     "scripts": {
         "prebuild": "tsx tools/build_wasm.ts",
         "build": "tsc --build --force",
-        "postbuild": "tsx tools/set_version.ts && tsx tools/bundle_texts.ts",
+        "postbuild": "tsx tools/set_version.ts && tsx tools/bundle_texts.ts && tsx tools/bundle_css.ts",
         "docs": "typedoc",
         "test": "mocha",
         "checkTypes": "tsc --noemit && tsc --noemit -p tools"
