@@ -1,6 +1,6 @@
 import type { RuffleHandle, ZipWriter } from "../dist/ruffle_web";
 import { createRuffleBuilder } from "./load-ruffle";
-import { ruffleShadowTemplate } from "./shadow-template";
+import { ruffleShadowTemplate } from "./internal/ui/shadow-template";
 import { lookupElement } from "./internal/register-element";
 import { DEFAULT_CONFIG } from "./config";
 import type { DataLoadOptions, URLLoadOptions } from "./load-options";
@@ -1970,7 +1970,10 @@ export class RufflePlayer extends HTMLElement {
             return;
         } else if (error instanceof LoadRuffleWasmError) {
             const openInNewTab = this.loadedConfig?.openInNewTab;
-            const swfUrl = this.loadedConfig && "url" in this.loadedConfig ? new URL(this.loadedConfig.url, document.baseURI) : undefined;
+            const swfUrl =
+                this.loadedConfig && "url" in this.loadedConfig
+                    ? new URL(this.loadedConfig.url, document.baseURI)
+                    : undefined;
             if (openInNewTab && swfUrl) {
                 // If it is possible to open the SWF in a new tab offer that option if the WASM failed to load
                 this.addOpenInNewTabMessage(openInNewTab, swfUrl);
@@ -2020,7 +2023,10 @@ export class RufflePlayer extends HTMLElement {
         this.destroy();
     }
 
-    private addOpenInNewTabMessage(openInNewTab: (swf: URL) => void, swfUrl: URL) {
+    private addOpenInNewTabMessage(
+        openInNewTab: (swf: URL) => void,
+        swfUrl: URL,
+    ) {
         const url = new URL(swfUrl);
         if (this.loadedConfig?.parameters) {
             const parameters = sanitizeParameters(

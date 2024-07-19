@@ -1,13 +1,13 @@
-import { StaticStyles } from "./internal/ui/static-styles";
-import { DynamicStyles } from "./internal/ui/dynamic-styles";
-import { MainContainer } from "./internal/ui/container";
-import { SplashScreen } from "./internal/ui/splash-screen";
-import { SaveManager } from "./internal/ui/save-manager";
-import { VolumeControls } from "./internal/ui/volume-controls";
-import { UnsupportedVideo } from "./internal/ui/unsupported-video";
-import { HardwareAcceleration } from "./internal/ui/hardware-acceleration";
-import { ClipboardPermission } from "./internal/ui/clipboard-permission";
-import { ContextMenuOverlay } from "./internal/ui/context-menu-overlay";
+import { StaticStyles } from "./static-styles";
+import { DynamicStyles } from "./dynamic-styles";
+import { MainContainer } from "./container";
+import { SplashScreen } from "./splash-screen";
+import { SaveManager } from "./save-manager";
+import { VolumeControls } from "./volume-controls";
+import { UnsupportedVideo } from "./unsupported-video";
+import { HardwareAcceleration } from "./hardware-acceleration";
+import { ClipboardPermission } from "./clipboard-permission";
+import { ContextMenuOverlay } from "./context-menu-overlay";
 
 /*
  *
