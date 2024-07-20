@@ -679,7 +679,17 @@ mod tests {
 
     #[macro_rules_attribute::apply(async_test)]
     async fn test_socket_fail() {
-        let addr = SocketAddr::from_str("[100::]:42").expect("black hole address");
+        // We want to use here an address that will cause the connection to fail instantly.
+        // On Windows and macOS we use an IPv6 black hole address,
+        // as connections to 127.0.0.42:226 do not fail instantly.
+        // On Linux we try to use a loopback address with an unused port,
+        // because some hosts try connecting to the black hole address.
+        let addr = if cfg!(target_os = "linux") {
+            SocketAddr::from_str("127.0.0.42:226")
+        } else {
+            SocketAddr::from_str("[100::]:42")
+        }
+        .expect("test address");
         let (_client_write, client_read) = connect_test_socket(addr, TIMEOUT, true);
 
         assert_next_socket_actions!(
