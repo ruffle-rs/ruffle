@@ -677,7 +677,7 @@ fn is_dependent<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(prim) = this.as_primitive() {
         if let Value::String(s) = *prim {
-            return Ok(s.owner().is_some().into());
+            return Ok(s.is_dependent().into());
         }
     }
     panic!();

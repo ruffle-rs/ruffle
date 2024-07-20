@@ -157,7 +157,7 @@ impl<'gc> AvmStringInterner<'gc> {
                 }
             }
         }
-        AvmString::new_dependent(mc, s, start_index, end_index)
+        AvmString::substring(mc, s, start_index, end_index)
     }
 }
 
