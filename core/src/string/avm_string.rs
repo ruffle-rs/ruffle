@@ -68,23 +68,24 @@ impl<'gc> AvmString<'gc> {
         }
     }
 
-    pub fn new_dependent(
-        gc_context: &Mutation<'gc>,
-        string: AvmString<'gc>,
-        start: usize,
-        end: usize,
-    ) -> Self {
-        // TODO?: if string is static, just make a new static AvmString
-        let repr = AvmStringRepr::new_dependent(string, start, end);
-        Self {
-            source: Source::Managed(Gc::new(gc_context, repr)),
+    pub fn substring(mc: &Mutation<'gc>, string: AvmString<'gc>, start: usize, end: usize) -> Self {
+        match string.source {
+            Source::Managed(repr) => {
+                let repr = AvmStringRepr::new_dependent(repr, start, end);
+                Self {
+                    source: Source::Managed(Gc::new(mc, repr)),
+                }
+            }
+            Source::Static(s) => Self {
+                source: Source::Static(&s[start..end]),
+            },
         }
     }
 
-    pub fn owner(&self) -> Option<AvmString<'gc>> {
+    pub fn is_dependent(&self) -> bool {
         match &self.source {
-            Source::Managed(s) => s.owner(),
-            Source::Static(_) => None,
+            Source::Managed(s) => s.is_dependent(),
+            Source::Static(_) => false,
         }
     }
 
@@ -103,7 +104,7 @@ impl<'gc> AvmString<'gc> {
     }
 
     pub fn concat(
-        gc_context: &Mutation<'gc>,
+        mc: &Mutation<'gc>,
         left: AvmString<'gc>,
         right: AvmString<'gc>,
     ) -> AvmString<'gc> {
@@ -111,13 +112,14 @@ impl<'gc> AvmString<'gc> {
             right
         } else if right.is_empty() {
             left
-        } else {
-            if let Some(repr) = AvmStringRepr::try_append_inline(left, &right) {
-                return Self {
-                    source: Source::Managed(Gc::new(gc_context, repr)),
-                };
+        } else if let Some(repr) = left
+            .as_managed()
+            .and_then(|l| AvmStringRepr::try_append_inline(l, &right))
+        {
+            Self {
+                source: Source::Managed(Gc::new(mc, repr)),
             }
-
+        } else {
             // When doing a non-in-place append,
             // Overallocate a bit so that further appends can be in-place.
             // (Note that this means that all first-time appends will happen here and
@@ -135,7 +137,7 @@ impl<'gc> AvmString<'gc> {
             let mut out = WString::with_capacity(new_capacity, left.is_wide() || right.is_wide());
             out.push_str(&left);
             out.push_str(&right);
-            Self::new(gc_context, out)
+            Self::new(mc, out)
         }
     }
 
