@@ -1,4 +1,5 @@
 package flash.display {
+    import __ruffle__.stub_method;
     import __ruffle__.stub_getter;
     import __ruffle__.stub_setter;
     import flash.accessibility.AccessibilityProperties;
@@ -277,6 +278,11 @@ package flash.display {
         public function set mouseLock(value:Boolean):void {
             stub_setter("flash.display.Stage", "mouseLock");
             this._mouseLock = value;
+        }
+
+        [API("668")]
+        public function setAspectRatio(newAspectRatio:String):void {
+            stub_method("flash.display.Stage", "setAspectRatio");
         }
     }
 }
