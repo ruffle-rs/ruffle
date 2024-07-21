@@ -1,56 +1,36 @@
-interface Error {
-    avmStack?: string;
-}
-// Just updating this module seems to disable type checking for tsx-dom
-// See https://github.com/Lusito/tsx-dom/issues/22#issuecomment-2236710966
-// Because of that, all the other changes are unneeded, but they're what I think
-// should be used if this worked properly
-module "tsx-dom-types" {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+import "tsx-dom-types";
+
+declare module "tsx-dom-types" {
     interface HTMLAttributes {
+        // Removable after a release with https://github.com/Lusito/tsx-dom/pull/24
         autocapitalize?: string;
+        // Type definition will not be updated in tsx-dom unless https://github.com/whatwg/html/pull/5841 is merged
         autocorrect?: string;
     }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // Removable after a release with https://github.com/Lusito/tsx-dom/pull/23
     interface SVGAttributes {
         d?: string;
     }
 }
-interface SVGSVGElement {
-    xmlns?: string;
-    scale?: string | number;
-}
-interface SVGPathElement {
-    xmlns?: string;
-    fill?: string;
-    stroke?: string;
-    d?: string;
-}
-interface SVGTextElement {
-    xmlns?: string;
-    fill?: string;
-    stroke?: string;
-}
-interface SVGCircleElement {
-    xmlns?: string;
-    fill?: string;
-}
-interface SVGDefsElement {
-    xmlns?: string;
-}
-interface SVGGElement {
-    xmlns?: string;
-}
-interface SVGLinearGradientElement {
-    xmlns?: string;
-}
-interface SVGStopElement {
-    xmlns?: string;
-}
-interface SVGUseElement {
-    xmlns?: string;
-}
-interface HTMLInputElement {
-    autocapitalize?: string;
-    autocorrect?: string;
+
+declare global {
+    interface Error {
+        avmStack?: string;
+    }
+    // Per https://github.com/Lusito/tsx-dom/issues/22, attributes solely defined on SVGAttributes need type updates
+    interface SVGElement {
+        // Only SVGSVGElement would need to use xmlns if tsx-dom would use createElementNS without that
+        xmlns?: string;
+        fill?: string;
+        stroke?: string;
+    }
+    interface SVGPathElement {
+        d?: string;
+    }
+    interface HTMLInputElement {
+        // Removable after a release with https://github.com/Lusito/tsx-dom/pull/24
+        autocapitalize?: string;
+        // Type definition will not be updated in tsx-dom unless https://github.com/whatwg/html/pull/5841 is merged
+        autocorrect?: string;
+    }
 }
