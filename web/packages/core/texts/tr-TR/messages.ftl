@@ -10,9 +10,20 @@ update-ruffle = Ruffle'ı Güncelle
 ruffle-demo = Ağ Demosu
 ruffle-desktop = Masaüstü Uygulaması
 ruffle-wiki = Ruffle Wiki'yi Görüntüle
+enable-hardware-acceleration = Görünüşe göre donanım hızlandırma etkin değil. Ruffle çalışabilir ancak fazlasıyla yavaş olabilir. Donanım hızlandırmayı nasıl etkinleştirebiliceğiniz hakkında bu linkten bilgi edinebilirsiniz:
+enable-hardware-acceleration-link = SSS - Chrome Donanım Hızlandırma
 view-error-details = Hata Ayrıntılarını Görüntüle
 open-in-new-tab = Yeni sekmede aç
 click-to-unmute = Sesi açmak için tıklayın
+clipboard-message-title = Ruffle'da kopyalama ve yapıştırma
+clipboard-message-description =
+    { $variant ->
+    *[unsupported] Tarayıcınız tam panoya erişimi desteklemiyor,
+    [access-denied] Pano erişimi reddedildi,
+    } ancak pano yerine her zaman bu kısayolları kullanabilirsiniz:
+clipboard-message-copy = { " " } kopyalamak için
+clipboard-message-cut = { " " } kesmek için
+clipboard-message-paste = { " " } yapıştırmak için
 error-file-protocol =
     Görünüşe göre Ruffle'ı "dosya:" protokolünde çalıştırıyorsunuz.
     Tarayıcılar güvenlik nedenleriyle birçok özelliğin çalışmasını engellediğinden bu işe yaramaz.
