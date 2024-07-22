@@ -3,11 +3,8 @@ package flash.display {
     import __ruffle__.stub_getter;
     import __ruffle__.stub_setter;
     import flash.accessibility.AccessibilityProperties;
-    import flash.display.ColorCorrection;
-    import flash.display.ColorCorrectionSupport;
     import flash.errors.IllegalOperationError;
     import flash.events.Event;
-    import flash.filters.BitmapFilter;
     import flash.geom.Rectangle;
     import flash.geom.Transform;
     import flash.text.TextSnapshot;
