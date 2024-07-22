@@ -81,6 +81,10 @@
     opacity: 1;
 }
 
+#unmute-overlay-svg {
+    scale: 0.8;
+}
+
 /* Includes inverted colors from play button! */
 #panic {
     font-size: 20px;
