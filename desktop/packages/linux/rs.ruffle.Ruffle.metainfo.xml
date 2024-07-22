@@ -55,14 +55,17 @@
     <url type="contribute">https://github.com/ruffle-rs/ruffle/blob/master/CONTRIBUTING.md</url>
     <screenshots>
         <!-- TODO Update URLs to point to a commit -->
-        <screenshot type="default">
-            <image>https://raw.githubusercontent.com/ruffle-rs/ruffle/master/desktop/packages/linux/launcher.png</image>
+        <screenshot environment="gnome:dark" type="default">
+            <image>https://raw.githubusercontent.com/ruffle-rs/ruffle/master/desktop/packages/linux/screenshots/dark-launcher.png</image>
         </screenshot>
-        <screenshot>
-            <image>https://raw.githubusercontent.com/ruffle-rs/ruffle/master/desktop/packages/linux/btd.png</image>
+        <screenshot environment="gnome:dark">
+            <image>https://raw.githubusercontent.com/ruffle-rs/ruffle/master/desktop/packages/linux/screenshots/dark-bloonstd.png</image>
         </screenshot>
-        <screenshot>
-            <image>https://raw.githubusercontent.com/ruffle-rs/ruffle/master/desktop/packages/linux/ltf.png</image>
+        <screenshot environment="gnome:dark">
+            <image>https://raw.githubusercontent.com/ruffle-rs/ruffle/master/desktop/packages/linux/screenshots/dark-learntofly.png</image>
+        </screenshot>
+        <screenshot environment="gnome">
+            <image>https://raw.githubusercontent.com/ruffle-rs/ruffle/master/desktop/packages/linux/screenshots/light-launcher.png</image>
         </screenshot>
     </screenshots>
     <provides>
