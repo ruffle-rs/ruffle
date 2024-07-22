@@ -16,7 +16,7 @@ tracing = { workspace = true }
 ruffle_video_software = { path = "../software" }
 
 # Needed for OpenH264:
-libloading = "0.8.4"
+libloading = "0.8.5"
 md-5 = "0.10.6"
 reqwest = { version = "0.12.5", default-features = false, features = ["blocking"] }
 hex = "0.4.3"
