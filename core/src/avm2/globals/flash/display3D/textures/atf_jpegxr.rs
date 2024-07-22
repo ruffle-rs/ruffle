@@ -233,7 +233,7 @@ fn jpegxr_to_tiff<R: Read + Seek>(
         .expect("Failed to convert to bitmap");
 
     let image_reader =
-        image::io::Reader::with_format(Cursor::new(bmp_buffer), image::ImageFormat::Tiff);
+        image::ImageReader::with_format(Cursor::new(bmp_buffer), image::ImageFormat::Tiff);
     (
         image_reader.decode().expect("Failed to decode Bitmap"),
         pixel_format,
