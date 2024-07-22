@@ -278,6 +278,46 @@ package flash.display {
         }
 
         [API("668")]
+        public static function get supportsOrientationChange():Boolean {
+            stub_getter("flash.display.Stage", "supportsOrientationChange");
+            return false;
+        }
+
+        [API("671")]
+        public function get supportedOrientations():Vector.<String> {
+            stub_getter("flash.display.Stage", "supportedOrientations");
+            return new Vector.<String>();
+        }
+
+        [API("668")]
+        public function get autoOrients():Boolean {
+            stub_getter("flash.display.Stage", "autoOrients");
+            return false;
+        }
+
+        [API("668")]
+        public function set autoOrients(value:Boolean):void {
+            stub_setter("flash.display.Stage", "autoOrients");
+        }
+
+        [API("668")]
+        public function get orientation():String {
+            stub_getter("flash.display.Stage", "orientation");
+            return StageOrientation.UNKNOWN;
+        }
+
+        [API("668")]
+        public function get deviceOrientation():String {
+            stub_getter("flash.display.Stage", "deviceOrientation");
+            return StageOrientation.UNKNOWN;
+        }
+
+        [API("668")]
+        public function setOrientation(newOrientation:String):void {
+            stub_method("flash.display.Stage", "setOrientation");
+        }
+
+        [API("668")]
         public function setAspectRatio(newAspectRatio:String):void {
             stub_method("flash.display.Stage", "setAspectRatio");
         }
