@@ -2855,7 +2855,7 @@ impl PlayerBuilder {
             let stage = context.stage;
             stage.set_align(context, self.align);
             stage.set_forced_align(context, self.forced_align);
-            stage.set_scale_mode(context, self.scale_mode);
+            stage.set_scale_mode(context, self.scale_mode, false);
             stage.set_forced_scale_mode(context, self.forced_scale_mode);
             stage.set_allow_fullscreen(context, self.allow_fullscreen);
             stage.post_instantiation(context, None, Instantiator::Movie, false);
