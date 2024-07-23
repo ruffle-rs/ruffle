@@ -1017,13 +1017,12 @@ impl<'gc> Loader<'gc> {
                 error.error
             })?;
             let url = response.url().into_owned();
-            let body = response.body().await.map_err(|error| {
+            let body = response.body().await.inspect_err(|_error| {
                 player
                     .lock()
                     .unwrap()
                     .ui()
                     .display_root_movie_download_failed_message(true);
-                error
             })?;
 
             // The spoofed root movie URL takes precedence over the actual URL.
@@ -1040,13 +1039,12 @@ impl<'gc> Loader<'gc> {
                 .unwrap_or(swf_url);
 
             let mut movie =
-                SwfMovie::from_data(&body, spoofed_or_swf_url, None).map_err(|error| {
+                SwfMovie::from_data(&body, spoofed_or_swf_url, None).inspect_err(|_error| {
                     player
                         .lock()
                         .unwrap()
                         .ui()
                         .display_root_movie_download_failed_message(true);
-                    error
                 })?;
             on_metadata(movie.header());
             movie.append_parameters(parameters);
