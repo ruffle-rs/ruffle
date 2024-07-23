@@ -1,6 +1,5 @@
 use crate::decoder::VideoDecoder;
 use bzip2::read::BzDecoder;
-use md5::{Digest, Md5};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, PixelRegion};
 use ruffle_video::backend::VideoBackend;
@@ -8,6 +7,7 @@ use ruffle_video::error::Error;
 use ruffle_video::frame::{EncodedFrame, FrameDependency};
 use ruffle_video::VideoStreamHandle;
 use ruffle_video_software::backend::SoftwareVideoBackend;
+use sha2::{Digest, Sha256};
 use slotmap::SlotMap;
 use std::fs::File;
 use std::io::copy;
@@ -44,35 +44,35 @@ impl ExternalVideoBackend {
         match (std::env::consts::OS, std::env::consts::ARCH) {
             ("linux", "x86") => Ok((
                 "libopenh264-2.4.1-linux32.7.so",
-                "dd0743066117d63e1b2abc56a86506e5",
+                "b7cf0e407f99056d90cbf62787a34820a7595b2129b165319d50766e00a66704",
             )),
             ("linux", "x86_64") => Ok((
                 "libopenh264-2.4.1-linux64.7.so",
-                "19c561386a9564f8510fcb7586b9d402",
+                "1392d21466bc638e68151b716d5b2086d54cd812afd43253f1adb5b6e0185f51",
             )),
             ("linux", "arm") => Ok((
                 "libopenh264-2.4.1-linux-arm.7.so",
-                "2274a1bbd13f32b7afe22092e44fa2b5",
+                "fd1dfb27d30bb72e903c9d2b4c650104a4369d2e7ffe8a4a533e8db2e7e9b19e",
             )),
             ("linux", "aarch64") => Ok((
                 "libopenh264-2.4.1-linux-arm64.7.so",
-                "2aa205f08077aa2d049032e0b56c5b84",
+                "e8ea7e42855ceb4a90e7bd0b3abeba0c58b5f97166e8b0a30eefd58e099557a4",
             )),
             ("macos", "x86_64") => Ok((
                 "libopenh264-2.4.1-mac-x64.dylib",
-                "9fefa1e0279a49b8a4e9cf6fc148bc0c",
+                "cc0ba518a63791c37571f3c851f0aa03a4fbda5410acc214ecd4f24f8d1c478e",
             )),
             ("macos", "aarch64") => Ok((
                 "libopenh264-2.4.1-mac-arm64.dylib",
-                "41f59bb5696ffeadbfba3a8a95ec39b7",
+                "213ff93831cfa3dd6d7ad0c3a3403a6ceedf4ac1341e1278b5b869d42fefb496",
             )),
             ("windows", "x86") => Ok((
                 "openh264-2.4.1-win32.dll",
-                "a9360e6dd1e24320c3d65a0c65bf14a4",
+                "83270149640469c994a62cc32a6d8c0413cd7b802b7f1f2f532159f5bdc1cedd",
             )),
             ("windows", "x86_64") => Ok((
                 "openh264-2.4.1-win64.dll",
-                "c85406e6b73812ec3fb9da5f898c6a9e",
+                "081b0c081480d177cbfddfbc90b1613640e702f875897b30d8de195cde73dd34",
             )),
             (os, arch) => Err(format!("Unsupported OS/ARCH: {} {}", os, arch).into()),
         }
@@ -83,7 +83,7 @@ impl ExternalVideoBackend {
         const URL_BASE: &str = "http://ciscobinary.openh264.org/";
         const URL_SUFFIX: &str = ".bz2";
 
-        let (filename, md5sum) = Self::get_openh264_data()?;
+        let (filename, sha256sum) = Self::get_openh264_data()?;
 
         let current_exe = std::env::current_exe()?;
         let directory = current_exe
@@ -101,20 +101,20 @@ impl ExternalVideoBackend {
             copy(&mut bzip2_reader, &mut tempfile)?;
             // Let's assume that if this fails, it's because another process has already put it there
             // and loaded it, therefore it can't be overwritten (on Windows at least), but in the end,
-            // all's fine - the MD5 hash will still be checked before attempting to load the library.
+            // all's fine - the hash will still be checked before attempting to load the library.
             let _ = tempfile.persist(&filepath);
         }
 
         // Regardless of whether the library was already there, or we just downloaded it, let's check the MD5 hash.
-        let mut md5 = Md5::new();
-        copy(&mut File::open(filepath.clone())?, &mut md5)?;
-        let md5digest = md5.finalize();
-        let result: [u8; 16] = md5digest.into();
+        let mut sha256 = Sha256::new();
+        copy(&mut File::open(filepath.clone())?, &mut sha256)?;
+        let sha256digest = sha256.finalize();
+        let result: [u8; 32] = sha256digest.into();
 
-        if result[..] != hex::decode(md5sum)?[..] {
+        if result[..] != hex::decode(sha256sum)?[..] {
             let size = filepath.metadata().map(|f| f.len()).unwrap_or_default();
             return Err(format!(
-                "MD5 checksum mismatch for {filename}; expected {md5sum}, found {md5digest:x} (with a size of {size} bytes)",
+                "SHA256 checksum mismatch for {filename}; expected {sha256sum}, found {sha256digest:x} (with a size of {size} bytes)",
             )
             .into());
         }
