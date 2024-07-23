@@ -170,21 +170,28 @@ impl OpenDialog {
                 EnumDropdownField::new(
                     StageScaleMode::default(),
                     vec![
-                        StageScaleMode::ExactFit,
-                        StageScaleMode::NoBorder,
                         StageScaleMode::NoScale,
                         StageScaleMode::ShowAll,
+                        StageScaleMode::ExactFit,
+                        StageScaleMode::NoBorder,
                     ],
                     Box::new(|value, locale| match value {
-                        StageScaleMode::ExactFit => text(locale, "scale-mode-exactfit"),
-                        StageScaleMode::NoBorder => text(locale, "scale-mode-noborder"),
                         StageScaleMode::NoScale => text(locale, "scale-mode-noscale"),
                         StageScaleMode::ShowAll => text(locale, "scale-mode-showall"),
+                        StageScaleMode::ExactFit => text(locale, "scale-mode-exactfit"),
+                        StageScaleMode::NoBorder => text(locale, "scale-mode-noborder"),
                     }),
-                ),
+                )
+                .with_tooltips(Box::new(|value, locale| match value {
+                    StageScaleMode::NoScale => Some(text(locale, "scale-mode-noscale-tooltip")),
+                    StageScaleMode::ShowAll => Some(text(locale, "scale-mode-showall-tooltip")),
+                    StageScaleMode::ExactFit => Some(text(locale, "scale-mode-exactfit-tooltip")),
+                    StageScaleMode::NoBorder => Some(text(locale, "scale-mode-noborder-tooltip")),
+                })),
                 Box::new(|locale| text(locale, "scale-mode-force")),
                 false,
-            ),
+            )
+            .with_checkbox_tooltip(Box::new(|locale| text(locale, "scale-mode-force-tooltip"))),
         );
         let load_behavior = OptionalField::new(
             defaults.player.load_behavior,
@@ -720,12 +727,14 @@ impl<T: emath::Numeric> InnerField for NumberField<T> {
 }
 
 type ValueToTextFn<T> = dyn Fn(T, &LanguageIdentifier) -> Cow<'static, str>;
-type CheckboxLabelFn = dyn Fn(&LanguageIdentifier) -> Cow<'static, str>;
+type ValueToOptTextFn<T> = dyn Fn(T, &LanguageIdentifier) -> Option<Cow<'static, str>>;
+type LabelFn = dyn Fn(&LanguageIdentifier) -> Cow<'static, str>;
 
 struct EnumDropdownField<T: Copy> {
     id: egui::Id,
     default: T,
     value_to_name: Box<ValueToTextFn<T>>,
+    value_to_tooltip: Box<ValueToOptTextFn<T>>,
     possible_values: Vec<T>,
 }
 
@@ -736,7 +745,13 @@ impl<T: Copy> EnumDropdownField<T> {
             default,
             value_to_name,
             possible_values,
+            value_to_tooltip: Box::new(|_, _| None),
         }
+    }
+
+    pub fn with_tooltips(mut self, value_to_tooltip: Box<ValueToOptTextFn<T>>) -> Self {
+        self.value_to_tooltip = value_to_tooltip;
+        self
     }
 }
 
@@ -753,11 +768,15 @@ impl<T: Copy + PartialEq> InnerField for EnumDropdownField<T> {
             .selected_text((self.value_to_name)(*value, locale))
             .show_ui(ui, |ui| {
                 for possible_value in &self.possible_values {
-                    ui.selectable_value(
+                    let response = ui.selectable_value(
                         value,
                         *possible_value,
                         (self.value_to_name)(*possible_value, locale),
                     );
+
+                    if let Some(tooltip) = (self.value_to_tooltip)(*possible_value, locale) {
+                        response.on_hover_text_at_pointer(tooltip);
+                    }
                 }
             });
     }
@@ -807,17 +826,24 @@ impl InnerField for BooleanDropdownField {
 
 struct FieldWithCheckbox<T: InnerField> {
     field: T,
-    checkbox_label: Box<CheckboxLabelFn>,
+    checkbox_label: Box<LabelFn>,
     checkbox_default: bool,
+    tooltip_label: Option<Box<LabelFn>>,
 }
 
 impl<T: InnerField> FieldWithCheckbox<T> {
-    pub fn new(field: T, checkbox_label: Box<CheckboxLabelFn>, checkbox_default: bool) -> Self {
+    pub fn new(field: T, checkbox_label: Box<LabelFn>, checkbox_default: bool) -> Self {
         Self {
             field,
             checkbox_label,
             checkbox_default,
+            tooltip_label: None,
         }
+    }
+
+    pub fn with_checkbox_tooltip(mut self, tooltip_label: Box<LabelFn>) -> Self {
+        self.tooltip_label = Some(tooltip_label);
+        self
     }
 }
 
@@ -831,7 +857,10 @@ impl<T: InnerField> InnerField for FieldWithCheckbox<T> {
 
     fn ui(&self, ui: &mut Ui, value: &mut Self::Value, error: bool, locale: &LanguageIdentifier) {
         self.field.ui(ui, &mut value.0, error, locale);
-        ui.checkbox(&mut value.1, (self.checkbox_label)(locale));
+        let response = ui.checkbox(&mut value.1, (self.checkbox_label)(locale));
+        if let Some(ref tooltip_label) = self.tooltip_label {
+            response.on_hover_text_at_pointer(tooltip_label(locale));
+        }
     }
 
     fn value_to_result(&self, value: &Self::Value) -> Result<Self::Result, ()> {
