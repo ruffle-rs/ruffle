@@ -58,10 +58,10 @@ align-bottom-right = Bottom-Right
 align-force = Force
 
 scale-mode = Scale Mode
-scale-mode-exactfit = Exact Fit
-scale-mode-noborder = No Border
-scale-mode-noscale = No Scale
-scale-mode-showall = Show All
+scale-mode-noscale = Unscaled (100%)
+scale-mode-showall = Zoom to Fit
+scale-mode-exactfit = Stretch to Fit
+scale-mode-noborder = Crop to Fit
 scale-mode-force = Force
 
 player-version = Player Version
