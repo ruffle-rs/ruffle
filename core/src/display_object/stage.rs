@@ -314,11 +314,18 @@ impl<'gc> Stage<'gc> {
     }
 
     /// Set the stage scale mode.
-    pub fn set_scale_mode(self, context: &mut UpdateContext<'_, 'gc>, scale_mode: StageScaleMode) {
-        if !self.forced_scale_mode() {
-            self.0.write(context.gc_context).scale_mode = scale_mode;
-            self.build_matrices(context);
+    pub fn set_scale_mode(
+        self,
+        context: &mut UpdateContext<'_, 'gc>,
+        scale_mode: StageScaleMode,
+        respect_forced: bool,
+    ) {
+        if respect_forced && self.forced_scale_mode() {
+            return;
         }
+
+        self.0.write(context.gc_context).scale_mode = scale_mode;
+        self.build_matrices(context);
     }
 
     /// Get whether movies are prevented from changing the stage scale mode.

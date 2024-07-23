@@ -113,7 +113,7 @@ fn set_scale_mode<'gc>(
     activation
         .context
         .stage
-        .set_scale_mode(&mut activation.context, scale_mode);
+        .set_scale_mode(&mut activation.context, scale_mode, true);
     Ok(Value::Undefined)
 }
 
