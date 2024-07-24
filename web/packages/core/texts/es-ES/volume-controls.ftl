@@ -1,2 +1,2 @@
 volume-controls-mute = Silenciar
-volume-controls-unmute = Desmutear
+volume-controls-unmute = Desenmudecer
