@@ -1,5 +1,7 @@
 package flash.text {
-    public dynamic class StyleSheet {
+    import flash.events.EventDispatcher;
+
+    public dynamic class StyleSheet extends EventDispatcher {
         // Shallow copies of the original style objects. Not used by Ruffle itself, just for getStyle()
         private var _styles: Object = {};
 
