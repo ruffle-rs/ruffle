@@ -1,5 +1,6 @@
 import type { Options } from "./common";
 import { DEFAULT_CONFIG as CORE_DEFAULT_CONFIG } from "ruffle-core";
+import { SUPPORTED_PROTOCOLS } from "ruffle-core/dist/internal/constants";
 
 const DEFAULT_OPTIONS: Required<Options> = {
     ...CORE_DEFAULT_CONFIG,
@@ -106,6 +107,19 @@ export async function getExplicitOptions(): Promise<Options> {
 }
 
 /**
+ * Returns whether the given URL is a URL that Ruffle can open.
+ * @param url The given URL to be tested whether it can be opened.
+ * @return Whether the given URL is a URL that Ruffle can open.
+ */
+export function supportedURL(url: URL | undefined): boolean {
+    if (url) {
+        return SUPPORTED_PROTOCOLS.includes(url.protocol);
+    } else {
+        return false;
+    }
+}
+
+/**
  * Resolves a given string to a URL if possible.
  * If the protocol is missing and the string is otherwise a valid web URL, https:// is inserted if the
  * server supports https, otherwise http.
@@ -192,14 +206,10 @@ export async function hasHostPermissionForSpecifiedTab(
     origin: string | undefined,
 ) {
     try {
-        return origin
-            ? await permissions.contains({
-                  origins: [origin],
-              })
-            : await hasAllUrlsPermission();
+        return await permissions.contains({ origins: [origin!] });
     } catch {
-        // catch error that occurs for special urls like about:
-        return false;
+        // If the URL is invalid, don't ask for permission
+        return true;
     }
 }
 

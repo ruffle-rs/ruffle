@@ -1,13 +1,14 @@
 import { text, textAsParagraphs } from "../i18n";
 import { createRef } from "tsx-dom";
 import { buildInfo } from "../../build-info";
-import { RUFFLE_ORIGIN } from "../constants";
+import { RUFFLE_ORIGIN, SUPPORTED_PROTOCOLS } from "../constants";
 import {
     InvalidOptionsError,
     InvalidSwfError,
     LoadRuffleWasmError,
     LoadSwfError,
 } from "../errors";
+import { isExtension } from "../../current-script";
 
 interface PanicLink {
     type: "open_link";
@@ -154,14 +155,29 @@ function createPanicError(error: Error | null): {
     actions: PanicAction[];
 } {
     if (error instanceof LoadSwfError) {
-        if (error.swfUrl && !error.swfUrl.protocol.includes("http")) {
-            // Loading a swf on the `file:` protocol
+        const urlExtensionProtocol = isExtension ? document.baseURI.split(":")[0] + ":" : "";
+        if (error.swfUrl && error.swfUrl.protocol === urlExtensionProtocol) {
+            // The user entered an invalid URL
+            const urlExtensionPart = document.baseURI.split("player.html")[0]!;
             return {
-                body: textAsParagraphs("error-file-protocol"),
-                actions: [
-                    CommonActions.OpenDemo,
-                    CommonActions.DownloadDesktop,
-                ],
+                body: textAsParagraphs("error-no-valid-url", {
+                    url: error.swfUrl.href.replace(urlExtensionPart, ""),
+                }),
+                actions: [CommonActions.ShowDetails],
+            };
+        } else if (error.swfUrl && error.swfUrl.protocol === "file:") {
+            // The user entered a local file URL
+            return {
+                body: textAsParagraphs("error-local-root-url"),
+                actions: [CommonActions.ShowDetails],
+            };
+        } else if (error.swfUrl && !SUPPORTED_PROTOCOLS.includes(error.swfUrl.protocol)) {
+            // The user entered a URL with an unsupported protocol
+            return {
+                body: textAsParagraphs("error-unsupported-root-protocol", {
+                    protocol: error.swfUrl.protocol,
+                }),
+                actions: [CommonActions.ShowDetails],
             };
         }
 
@@ -171,7 +187,9 @@ function createPanicError(error: Error | null): {
             window.location.protocol.includes("extension")
         ) {
             return {
-                body: textAsParagraphs("error-swf-fetch"),
+                body: textAsParagraphs("error-swf-fetch", {
+                    https: error.swfUrl?.protocol?.includes("https")?.toString() ?? "true",
+                }),
                 actions: [CommonActions.ShowDetails],
             };
         }

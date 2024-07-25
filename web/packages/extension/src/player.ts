@@ -107,22 +107,27 @@ async function load(options: string | DataLoadOptions | URLLoadOptions) {
     player = ruffle.createPlayer();
     player.id = "player";
     playerContainer.append(player);
-    const url =
+    const urlString =
         typeof options === "string"
             ? options
             : "url" in options
               ? options["url"]
               : undefined;
+    let url;
     let origin;
     try {
-        origin = url ? new URL(url).origin + "/" : url;
+        url = new URL(urlString!);
+        origin = url.origin + "/";
     } catch {
         // Ignore
     }
-    const hostPermissionsForSpecifiedTab =
-        await utils.hasHostPermissionForSpecifiedTab(origin);
-    if (origin && !hostPermissionsForSpecifiedTab) {
-        const result = await showModal(origin);
+
+    const supportedURL = utils.supportedURL(url);
+    if (
+        supportedURL &&
+        !(await utils.hasHostPermissionForSpecifiedTab(origin!))
+    ) {
+        const result = await showModal(origin!);
         if (result === "") {
             const swfPlayerPermissions = utils.i18n.getMessage(
                 "swf_player_permissions",

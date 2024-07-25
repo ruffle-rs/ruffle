@@ -42,10 +42,13 @@ error-wasm-mime-type =
     If you are the server administrator, please consult the Ruffle wiki for help.
 error-invalid-swf =
     Ruffle cannot parse the requested file.
-    The most likely reason is that the requested file is not a valid SWF.
+    The most likely reason is that the requested file is not a valid SWF file.
 error-swf-fetch =
     Ruffle failed to load the Flash SWF file.
-    The most likely reason is that the file no longer exists, so there is nothing for Ruffle to load.
+    The most likely reason is that the file no longer exists, so there is nothing for Ruffle to load.{$https ->
+        *[true] {"\U00000A"}If the website doesn't support HTTPS, include http:// explicitly.
+        [false] {""}
+    }
     Try contacting the website administrator for help.
 error-swf-cors =
     Ruffle failed to load the Flash SWF file.
@@ -77,6 +80,15 @@ error-csp-conflict =
     Ruffle has encountered a major issue whilst trying to initialize.
     This web server's Content Security Policy does not allow the required ".wasm" component to run.
     If you are the server administrator, please consult the Ruffle wiki for help.
+error-local-root-url =
+    Ruffle can't load a local file URL.
+    To load a local file in the extension player, use the Select File button.
+error-unsupported-root-protocol =
+    Ruffle doesn't support loading a URL with the protocol {$protocol} in the extension player.
+    Please enter a valid web URL (with the protocol https: or http:) or use the Select File button.
+error-no-valid-url =
+    "{$url}" is not a valid URL and can't be resolved.
+    Please enter a valid web URL or use the Select File button.
 error-unknown =
     Ruffle has encountered a major issue whilst trying to display this Flash content.
     {$outdated ->
