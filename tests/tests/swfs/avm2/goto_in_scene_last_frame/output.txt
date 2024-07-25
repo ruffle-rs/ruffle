@@ -1,0 +1,2 @@
+Called script initializer on frame 2
+gotoAndStop worked
