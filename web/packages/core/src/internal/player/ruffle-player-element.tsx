@@ -159,6 +159,14 @@ export class RufflePlayerElement extends HTMLElement implements Player {
     set config(value: URLLoadOptions | DataLoadOptions | object) {
         this.#inner.config = value;
     }
+
+    hideSplashScreen(): void {
+        this.#inner.hideSplashScreen()
+    }
+
+    showSplashScreen(): void {
+        this.#inner.showSplashScreen()
+    }
 }
 
 /**

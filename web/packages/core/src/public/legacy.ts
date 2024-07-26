@@ -157,4 +157,14 @@ export interface LegacyRuffleAPI {
      * Fetches the loaded SWF and downloads it.
      */
     downloadSwf(): Promise<void>;
+
+    /**
+     * Shows the splash screen.
+     */
+    showSplashScreen(): void;
+
+    /**
+     * Hides the splash screen.
+     */
+    hideSplashScreen(): void;
 }

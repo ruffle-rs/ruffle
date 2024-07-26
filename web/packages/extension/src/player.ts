@@ -107,6 +107,7 @@ async function load(options: string | DataLoadOptions | URLLoadOptions) {
     player = ruffle.createPlayer();
     player.id = "player";
     playerContainer.append(player);
+    player.showSplashScreen();
     const urlString =
         typeof options === "string"
             ? options
@@ -129,10 +130,17 @@ async function load(options: string | DataLoadOptions | URLLoadOptions) {
     ) {
         const result = await showModal(origin!);
         if (result === "") {
+            player.hideSplashScreen();
+
+            // Hide the splash screen before displaying the alert
             const swfPlayerPermissions = utils.i18n.getMessage(
                 "swf_player_permissions",
             );
-            alert(swfPlayerPermissions);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    alert(swfPlayerPermissions);
+                });
+            });
             history.pushState("", document.title, window.location.pathname);
             return;
         }
@@ -307,9 +315,12 @@ async function loadSwf(swfUrl: string) {
     const url = await utils.resolveSwfUrl(swfUrl);
     if (url !== null) {
         swfUrl = url.toString();
-        const pathname = url.pathname;
-        document.title = pathname.substring(pathname.lastIndexOf("/") + 1);
     }
+
+    document.title = swfUrl
+        .split("/")
+        .filter((item) => item !== "")
+        .slice(-1)[0]!;
 
     const options = await utils.getExplicitOptions();
     localFileName.textContent = document.title;

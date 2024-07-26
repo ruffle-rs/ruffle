@@ -1994,12 +1994,12 @@ export class InnerPlayer {
         }
     }
 
-    private hideSplashScreen(): void {
+    hideSplashScreen(): void {
         this.splashScreen.classList.add("hidden");
         this.container.classList.remove("hidden");
     }
 
-    private showSplashScreen(): void {
+    showSplashScreen(): void {
         this.splashScreen.classList.remove("hidden");
         this.container.classList.add("hidden");
     }

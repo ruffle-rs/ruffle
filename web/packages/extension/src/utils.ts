@@ -156,8 +156,8 @@ export async function resolveSwfUrl(enteredUrl: string): Promise<URL | null> {
             // Only use http if https doesn't work and http works
             // (Otherwise, error logs for offline websites would always contain http)
             if (
-                (await serverAvailable("https://" + enteredUrl, 200)) ||
-                !(await serverAvailable("http://" + enteredUrl, 100))
+                (await serverAvailable("https://" + enteredUrl, 600)) ||
+                !(await serverAvailable("http://" + enteredUrl, 300))
             ) {
                 return new URL("https://" + enteredUrl);
             } else {
