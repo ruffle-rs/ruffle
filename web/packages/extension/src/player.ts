@@ -317,14 +317,15 @@ async function loadSwf(swfUrl: string) {
         swfUrl = url.toString();
     }
 
+    webURL.value = swfUrl;
     document.title = swfUrl
         .split("/")
         .filter((item) => item !== "")
         .slice(-1)[0]!;
-
-    const options = await utils.getExplicitOptions();
     localFileName.textContent = document.title;
     localFileInput.value = "";
+
+    const options = await utils.getExplicitOptions();
     load({
         ...options,
         url: swfUrl,
