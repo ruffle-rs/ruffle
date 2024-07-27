@@ -1,5 +1,7 @@
 use crate::avm2::property::Property;
-use crate::avm2::{Activation, ClassObject, Error, Namespace, Object, TObject, Value};
+use crate::avm2::{
+    Activation, ArrayStorage, ClassObject, Error, Namespace, Object, TObject, Value,
+};
 use crate::context::UpdateContext;
 use crate::debug_ui::display_object::open_display_object_button;
 use crate::debug_ui::handle::{AVM2ObjectHandle, DisplayObjectHandle};
@@ -17,6 +19,7 @@ enum Panel {
     Information,
     #[default]
     Properties,
+    Elements,
     Class,
 }
 
@@ -53,6 +56,9 @@ impl Avm2ObjectWindow {
                 ui.horizontal(|ui| {
                     ui.selectable_value(&mut self.open_panel, Panel::Information, "Information");
                     ui.selectable_value(&mut self.open_panel, Panel::Properties, "Properties");
+                    if object.as_array_storage().is_some() {
+                        ui.selectable_value(&mut self.open_panel, Panel::Elements, "Elements");
+                    }
                     if object.as_class_object().is_some() {
                         ui.selectable_value(&mut self.open_panel, Panel::Class, "Class Info");
                     }
@@ -65,6 +71,11 @@ impl Avm2ObjectWindow {
                     }
                     Panel::Properties => {
                         self.show_properties(object, messages, &mut activation, ui)
+                    }
+                    Panel::Elements => {
+                        if let Some(array) = object.as_array_storage() {
+                            self.show_elements(array, messages, &mut activation.context, ui)
+                        }
                     }
                     Panel::Class => {
                         if let Some(class) = object.as_class_object() {
@@ -168,6 +179,47 @@ impl Avm2ObjectWindow {
                     }
 
                     ui.end_row();
+                }
+            });
+    }
+
+    fn show_elements<'gc>(
+        &mut self,
+        array: std::cell::Ref<ArrayStorage<'gc>>,
+        messages: &mut Vec<Message>,
+        context: &mut UpdateContext<'_, 'gc>,
+        ui: &mut Ui,
+    ) {
+        TableBuilder::new(ui)
+            .striped(true)
+            .resizable(true)
+            .column(Column::initial(40.0))
+            .column(Column::remainder())
+            .auto_shrink([true, true])
+            .cell_layout(Layout::left_to_right(Align::Center))
+            .header(20.0, |mut header| {
+                header.col(|ui| {
+                    ui.strong("Index");
+                });
+                header.col(|ui| {
+                    ui.strong("Value");
+                });
+            })
+            .body(|mut body| {
+                for (index, value) in array.iter().enumerate() {
+                    body.row(18.0, |mut row| {
+                        row.col(|ui| {
+                            ui.label(index.to_string());
+                        });
+                        row.col(|ui| {
+                            if let Some(value) = value {
+                                show_avm2_value(ui, context, value, messages);
+                            } else {
+                                // Array hole.
+                                ui.weak("(Empty)");
+                            }
+                        });
+                    });
                 }
             });
     }
