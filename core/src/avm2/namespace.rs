@@ -325,4 +325,10 @@ impl<'gc> Namespace<'gc> {
             _ => false,
         }
     }
+    pub fn matches_api_version(&self, match_version: ApiVersion) -> bool {
+        match &*self.0 {
+            NamespaceData::Namespace(_, namespace_version) => namespace_version <= &match_version,
+            _ => true,
+        }
+    }
 }

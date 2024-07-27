@@ -291,6 +291,10 @@ fn describe_internal_body<'gc>(
             continue;
         }
 
+        if !ns.matches_api_version(activation.avm2().root_api_version) {
+            continue;
+        }
+
         if flags.contains(DescribeTypeFlags::HIDE_NSURI_METHODS)
             && skip_ns
                 .iter()
