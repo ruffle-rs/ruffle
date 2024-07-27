@@ -260,6 +260,13 @@ export class InnerPlayer {
             "context-menu-overlay",
         )!;
         this.contextMenuElement = this.shadow.getElementById("context-menu")!;
+        const preserveMenu = (event: MouseEvent) => {
+            event.preventDefault();
+            event.stopPropagation();
+        };
+        this.contextMenuElement.addEventListener("contextmenu", preserveMenu);
+        this.contextMenuElement.addEventListener("click", preserveMenu);
+
         document.documentElement.addEventListener(
             "pointerdown",
             this.checkIfTouch.bind(this),
@@ -1572,20 +1579,26 @@ export class InnerPlayer {
                 this.contextMenuElement.appendChild(menuItem);
 
                 if (enabled !== false) {
-                    menuItem.addEventListener(
-                        this.contextMenuSupported ? "click" : "pointerup",
-                        async (event: MouseEvent) => {
-                            // Prevent the menu from being destroyed.
-                            // It's required when we're dealing with async callbacks,
-                            // as the async callback may still use the menu in the future.
-                            event.stopPropagation();
+                    const itemAction = async (event: MouseEvent) => {
+                        // Prevent right-clicks from displaying the browser context menu.
+                        event.preventDefault();
 
-                            await onClick(event);
+                        // Prevent the menu from being destroyed.
+                        // It's required when we're dealing with async callbacks,
+                        // as the async callback may still use the menu in the future.
+                        event.stopPropagation();
 
-                            // Then we have to close the context menu manually after the callback finishes.
-                            this.hideContextMenu();
-                        },
-                    );
+                        await onClick(event);
+
+                        // Then we have to close the context menu manually after the callback finishes.
+                        this.hideContextMenu();
+                    }
+                    if (this.contextMenuSupported) {
+                        menuItem.addEventListener("click", itemAction);
+                        menuItem.addEventListener("contextmenu", itemAction);
+                    } else {
+                        menuItem.addEventListener("pointerup", itemAction);
+                    }
                 }
             }
         }
