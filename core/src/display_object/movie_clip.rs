@@ -4559,50 +4559,53 @@ impl<'gc, 'a> MovieClip<'gc> {
                             .library
                             .library_for_movie_mut(movie.clone());
 
-                        if id == 0 {
-                            //TODO: This assumes only the root movie has `SymbolClass` tags.
-                            self.set_avm2_class(activation.context.gc_context, Some(class_object));
-                        } else {
-                            match library.character_by_id(id) {
-                                Some(Character::MovieClip(mc)) => mc.set_avm2_class(
-                                    activation.context.gc_context,
-                                    Some(class_object),
-                                ),
-                                Some(Character::Avm2Button(btn)) => {
-                                    btn.set_avm2_class(activation.context.gc_context, class_object)
-                                }
-                                Some(Character::BinaryData(_)) => {}
-                                Some(Character::Font(_)) => {}
-                                Some(Character::Sound(_)) => {}
-                                Some(Character::Bitmap { .. }) => {
-                                    if let Some(bitmap_class) = BitmapClass::from_class_object(
-                                        class_object,
-                                        &mut activation.context,
-                                    ) {
-                                        // We need to re-fetch the library and character to satisfy the borrow checker
-                                        let library = activation
-                                            .context
-                                            .library
-                                            .library_for_movie_mut(movie.clone());
+                        match library.character_by_id(id) {
+                            Some(Character::MovieClip(mc)) => {
+                                mc.set_avm2_class(activation.context.gc_context, Some(class_object))
+                            }
+                            Some(Character::Avm2Button(btn)) => {
+                                btn.set_avm2_class(activation.context.gc_context, class_object)
+                            }
+                            Some(Character::BinaryData(_)) => {}
+                            Some(Character::Font(_)) => {}
+                            Some(Character::Sound(_)) => {}
+                            Some(Character::Bitmap { .. }) => {
+                                if let Some(bitmap_class) = BitmapClass::from_class_object(
+                                    class_object,
+                                    &mut activation.context,
+                                ) {
+                                    // We need to re-fetch the library and character to satisfy the borrow checker
+                                    let library = activation
+                                        .context
+                                        .library
+                                        .library_for_movie_mut(movie.clone());
 
-                                        let Some(Character::Bitmap {
-                                            avm2_bitmapdata_class,
-                                            ..
-                                        }) = library.character_by_id(id)
-                                        else {
-                                            unreachable!();
-                                        };
-                                        *avm2_bitmapdata_class
-                                            .write(activation.context.gc_context) = bitmap_class;
-                                    } else {
-                                        tracing::error!("Associated class {:?} for symbol {} must extend flash.display.Bitmap or BitmapData, does neither", class_object.inner_class_definition().name(), self.id());
-                                    }
+                                    let Some(Character::Bitmap {
+                                        avm2_bitmapdata_class,
+                                        ..
+                                    }) = library.character_by_id(id)
+                                    else {
+                                        unreachable!();
+                                    };
+                                    *avm2_bitmapdata_class.write(activation.context.gc_context) =
+                                        bitmap_class;
+                                } else {
+                                    tracing::error!("Associated class {:?} for symbol {} must extend flash.display.Bitmap or BitmapData, does neither", class_object.inner_class_definition().name(), self.id());
                                 }
-                                _ => {
-                                    tracing::warn!(
-                                    "Symbol class {name:?} cannot be assigned to invalid character id {id}",
+                            }
+                            None => {
+                                // Most SWFs use id 0 here, but some obfuscated SWFs can use other invalid IDs.
+                                if self.0.read().static_data.avm2_class.read().is_none() {
+                                    self.set_avm2_class(
+                                        activation.context.gc_context,
+                                        Some(class_object),
+                                    );
+                                }
+                            }
+                            _ => {
+                                tracing::warn!(
+                                    "Symbol class {name:?} cannot be assigned to character id {id}",
                                 );
-                                }
                             }
                         }
                     }
