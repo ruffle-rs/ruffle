@@ -460,6 +460,15 @@ fn describe_internal_body<'gc>(
                     unreachable!();
                 };
 
+                // Don't include virtual properties that also exist in any interface
+                if defining_class
+                    .all_interfaces()
+                    .iter()
+                    .any(|interface| interface.vtable().has_trait(&Multiname::new(ns, prop_name)))
+                {
+                    continue;
+                }
+
                 let uri = if ns.as_uri().is_empty() {
                     None
                 } else {
