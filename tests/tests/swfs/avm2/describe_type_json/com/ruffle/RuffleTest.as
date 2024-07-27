@@ -23,5 +23,8 @@
 
 		public function myMethod(first:String, second:ByteArray) {
 		}
+
+		public function interfaceMethod() {
+		}
 	}
 }

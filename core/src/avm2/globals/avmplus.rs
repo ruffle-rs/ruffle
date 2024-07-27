@@ -6,7 +6,7 @@ use crate::avm2::object::{ArrayObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::property::Property;
 
-use crate::avm2::{Activation, Error, Namespace, Object, Value};
+use crate::avm2::{Activation, Error, Multiname, Namespace, Object, Value};
 use crate::avm2_stub_method;
 
 // Implements `avmplus.describeTypeJSON`
@@ -355,6 +355,17 @@ fn describe_internal_body<'gc>(
                 let method = vtable
                     .get_full_method(*disp_id)
                     .unwrap_or_else(|| panic!("Missing method for id {disp_id:?}"));
+
+                // Don't include methods that also exist in any interface
+                if method
+                    .class
+                    .all_interfaces()
+                    .iter()
+                    .any(|interface| interface.vtable().has_trait(&Multiname::new(ns, prop_name)))
+                {
+                    continue;
+                }
+
                 let return_type_name = method
                     .method
                     .return_type()
