@@ -8,6 +8,7 @@ use egui::{Grid, Id, TextEdit, Ui, Window};
 #[derive(Debug, Default)]
 pub struct Avm1ObjectWindow {
     hovered_debug_rect: Option<DisplayObjectHandle>,
+    key_filter_string: String,
 }
 
 impl Avm1ObjectWindow {
@@ -36,18 +37,34 @@ impl Avm1ObjectWindow {
                     .show(ui, |ui| {
                         let mut keys = object.get_keys(&mut activation, true);
                         keys.sort();
+                        ui.add(
+                            egui::TextEdit::singleline(&mut self.key_filter_string)
+                                .hint_text("🔍 Filter"),
+                        );
+                        ui.end_row();
+                        keys.retain(|key| {
+                            self.key_filter_string.is_empty()
+                                || key
+                                    .to_string()
+                                    .to_ascii_lowercase()
+                                    .contains(&self.key_filter_string.to_ascii_lowercase())
+                        });
 
                         for key in keys {
                             let value = object.get(key, &mut activation);
 
                             ui.label(key.to_string());
-                            show_avm1_value(
+                            if let Some(new) = show_avm1_value(
                                 ui,
                                 &mut activation,
                                 value,
                                 messages,
                                 &mut self.hovered_debug_rect,
-                            );
+                            ) {
+                                if let Err(e) = object.set(key, new, &mut activation) {
+                                    tracing::error!("Failed to set key {key}: {e}");
+                                }
+                            }
                             ui.end_row();
                         }
                     });
@@ -74,7 +91,7 @@ pub fn show_avm1_value<'gc>(
     value: Result<Value<'gc>, Error<'gc>>,
     messages: &mut Vec<Message>,
     hover: &mut Option<DisplayObjectHandle>,
-) {
+) -> Option<Value<'gc>> {
     match value {
         Ok(Value::Undefined) => {
             ui.label("Undefined");
@@ -82,11 +99,15 @@ pub fn show_avm1_value<'gc>(
         Ok(Value::Null) => {
             ui.label("Null");
         }
-        Ok(Value::Bool(value)) => {
-            ui.label(value.to_string());
+        Ok(Value::Bool(mut value)) => {
+            if ui.checkbox(&mut value, "").clicked() {
+                return Some(Value::Bool(value));
+            }
         }
-        Ok(Value::Number(value)) => {
-            ui.label(value.to_string());
+        Ok(Value::Number(mut value)) => {
+            if ui.add(egui::DragValue::new(&mut value)).changed() {
+                return Some(Value::Number(value));
+            }
         }
         Ok(Value::String(value)) => {
             TextEdit::singleline(&mut value.to_string()).show(ui);
@@ -115,4 +136,5 @@ pub fn show_avm1_value<'gc>(
             ui.colored_label(ui.style().visuals.error_fg_color, e.to_string());
         }
     }
+    None
 }
