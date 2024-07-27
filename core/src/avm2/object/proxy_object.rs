@@ -3,6 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, QNameObject, TObject};
+use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
@@ -140,6 +141,21 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
                     .local_name()
                     .map(Value::from)
                     .unwrap_or_else(|| "*".into())],
+                activation,
+            )?
+            .coerce_to_boolean())
+    }
+
+    fn has_own_property_string(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<bool, Error<'gc>> {
+        let name = name.into();
+        Ok(self
+            .call_property(
+                &Multiname::new(activation.avm2().proxy_namespace, "hasProperty"),
+                &[name.into()],
                 activation,
             )?
             .coerce_to_boolean())
