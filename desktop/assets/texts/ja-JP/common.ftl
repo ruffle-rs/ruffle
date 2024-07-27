@@ -4,3 +4,5 @@ browse = 参照
 save = 保存
 cancel = キャンセル
 remove = 削除
+enable = 有効
+disable = 無効
