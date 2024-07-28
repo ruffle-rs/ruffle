@@ -95,7 +95,7 @@ package flash.text.engine {
             return 0.0;
         }
 
-        public function hasTabs():Boolean {
+        public function get hasTabs():Boolean {
             stub_getter("flash.text.engine.TextLine", "hasTabs");
             return false;
         }
