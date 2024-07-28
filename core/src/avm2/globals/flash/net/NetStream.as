@@ -57,6 +57,7 @@ package flash.net {
             stub_method("flash.net.NetStream", "play2");
         }
 
+        [API("663")]
         public function preloadEmbeddedData(param:NetStreamPlayOptions) {
             stub_method("flash.net.NetStream", "preloadEmbeddedData");
         }
@@ -89,6 +90,7 @@ package flash.net {
             stub_method("flash.net.NetStream", "send");
         }
 
+        [API("661")]
         public function setDRMAuthenticationCredentials(userName:String, password:String, type:String) {
             stub_method("flash.net.NetStream", "setDRMAuthenticationCredentials");
         }
