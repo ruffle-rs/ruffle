@@ -47,6 +47,7 @@ package flash.net
 
         public native function load():void;
 
+        [API("681")]
         public function requestPermission():void {
             stub_method("flash.net.FileReference", "requestPermission");
         }
@@ -57,6 +58,7 @@ package flash.net
             stub_method("flash.net.FileReference", "upload");
         }
 
+        [API("681")]
         public function uploadUnencoded(request:URLRequest):void {
             stub_method("flash.net.FileReference", "uploadUnencoded");
         }
