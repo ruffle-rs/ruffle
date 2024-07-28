@@ -79,6 +79,7 @@ package flash.events {
 
 		public static const VIDEO_FRAME:String = "videoFrame";
 
+		[API("681")]
 		public static const SUSPEND:String = "suspend";
 
 		public static const CHANNEL_MESSAGE:String = "channelMessage";
