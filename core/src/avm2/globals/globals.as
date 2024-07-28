@@ -36,6 +36,8 @@ include "flash/crypto.as"
 
 include "flash/utils/IDataInput.as"
 include "flash/utils/IDataOutput.as"
+include "flash/utils/IDataInput2.as"
+include "flash/utils/IDataOutput2.as"
 include "flash/utils/IExternalizable.as"
 include "flash/utils/ByteArray.as"
 include "flash/utils/Dictionary.as"
