@@ -7,6 +7,7 @@ use crate::avm2::{Activation, Error, Object, Value};
 use crate::backend::navigator::NavigationMethod;
 use indexmap::IndexMap;
 
+pub mod datagram_socket;
 pub mod file_reference;
 pub mod local_connection;
 pub mod net_connection;

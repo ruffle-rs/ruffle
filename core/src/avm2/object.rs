@@ -33,6 +33,7 @@ mod bitmapdata_object;
 mod bytearray_object;
 mod class_object;
 mod context3d_object;
+mod datagram_socket_object;
 mod date_object;
 mod dictionary_object;
 mod dispatch_object;
@@ -77,6 +78,9 @@ pub use crate::avm2::object::bytearray_object::{
 };
 pub use crate::avm2::object::class_object::{ClassObject, ClassObjectWeak};
 pub use crate::avm2::object::context3d_object::{Context3DObject, Context3DObjectWeak};
+pub use crate::avm2::object::datagram_socket_object::{
+    datagram_socket_allocator, DatagramSocketObject, DatagramSocketObjectWeak,
+};
 pub use crate::avm2::object::date_object::{date_allocator, DateObject, DateObjectWeak};
 pub use crate::avm2::object::dictionary_object::{
     dictionary_allocator, DictionaryObject, DictionaryObjectWeak,
@@ -199,6 +203,7 @@ use crate::font::Font;
         FileReferenceObject(FileReferenceObject<'gc>),
         FontObject(FontObject<'gc>),
         LocalConnectionObject(LocalConnectionObject<'gc>),
+        DatagramSocketObject(DatagramSocketObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -1364,6 +1369,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn as_file_reference(&self) -> Option<FileReferenceObject<'gc>> {
         None
     }
+
+    fn as_datagram_socket(&self) -> Option<DatagramSocketObject<'gc>> {
+        None
+    }
 }
 
 pub enum ObjectPtr {}
@@ -1415,6 +1424,7 @@ impl<'gc> Object<'gc> {
             Self::FileReferenceObject(o) => WeakObject::FileReferenceObject(FileReferenceObjectWeak(Gc::downgrade(o.0))),
             Self::FontObject(o) => WeakObject::FontObject(FontObjectWeak(GcCell::downgrade(o.0))),
             Self::LocalConnectionObject(o) => WeakObject::LocalConnectionObject(LocalConnectionObjectWeak(GcCell::downgrade(o.0))),
+            Self::DatagramSocketObject(o) => WeakObject::DatagramSocketObject(DatagramSocketObjectWeak(Gc::downgrade(o.0))),
         }
     }
 }
@@ -1476,6 +1486,7 @@ pub enum WeakObject<'gc> {
     FileReferenceObject(FileReferenceObjectWeak<'gc>),
     FontObject(FontObjectWeak<'gc>),
     LocalConnectionObject(LocalConnectionObjectWeak<'gc>),
+    DatagramSocketObject(DatagramSocketObjectWeak<'gc>),
 }
 
 impl<'gc> WeakObject<'gc> {
@@ -1520,6 +1531,7 @@ impl<'gc> WeakObject<'gc> {
             Self::FileReferenceObject(o) => FileReferenceObject(o.0.upgrade(mc)?).into(),
             Self::FontObject(o) => FontObject(o.0.upgrade(mc)?).into(),
             Self::LocalConnectionObject(o) => LocalConnectionObject(o.0.upgrade(mc)?).into(),
+            Self::DatagramSocketObject(o) => DatagramSocketObject(o.0.upgrade(mc)?).into(),
         })
     }
 }
