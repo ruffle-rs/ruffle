@@ -7,12 +7,16 @@ package flash.events
     
     public class HTTPStatusEvent extends Event
     {
+        [API("661")]
         public static const HTTP_RESPONSE_STATUS:String = "httpResponseStatus"; // Unlike the httpStatus event, the httpResponseStatus event is delivered before any response data.
         public static const HTTP_STATUS:String = "httpStatus"; // The HTTPStatusEvent.HTTP_STATUS constant defines the value of the type property of a httpStatus event object.
 
         private var _status: int; // The HTTP status code returned by the server.
         public var redirected: Boolean; // Indicates whether the request was redirected.
+
+        [API("661")]
         public var responseHeaders: Array; // The response headers that the response returned, as an array of URLRequestHeader objects.
+        [API("661")]
         public var responseURL: String; // The URL that the response was returned from.
 
         public function HTTPStatusEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, status:int = 0, redirected:Boolean = false)
