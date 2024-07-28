@@ -75,10 +75,6 @@ package flash.display {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
-        public function set loaderInfo(value:LoaderInfo):void {
-            throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
-        }
-
         override public function set mask(value:DisplayObject):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
