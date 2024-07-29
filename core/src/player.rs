@@ -298,6 +298,7 @@ pub struct Player {
     /// In Adobe AIR mode, additional classes are available
     #[allow(unused)]
     player_runtime: PlayerRuntime,
+    air_argv: Vec<String>,
 
     swf: Arc<SwfMovie>,
 
@@ -2138,6 +2139,7 @@ impl Player {
 
             let mut update_context = UpdateContext {
                 player_version: self.player_version,
+                air_argv: &self.air_argv,
                 swf: &mut self.swf,
                 library,
                 rng: &mut self.rng,
@@ -2411,6 +2413,7 @@ pub struct PlayerBuilder {
     gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
     player_version: Option<u8>,
     player_runtime: PlayerRuntime,
+    air_argv: Vec<String>,
     quality: StageQuality,
     sandbox_type: SandboxType,
     page_url: Option<String>,
@@ -2463,6 +2466,7 @@ impl PlayerBuilder {
             gamepad_button_mapping: HashMap::new(),
             player_version: None,
             player_runtime: PlayerRuntime::default(),
+            air_argv: vec![],
             quality: StageQuality::High,
             sandbox_type: SandboxType::LocalTrusted,
             page_url: None,
@@ -2635,6 +2639,12 @@ impl PlayerBuilder {
     /// Configures the player runtime (default is `PlayerRuntime::FlashPlayer`)
     pub fn with_player_runtime(mut self, runtime: PlayerRuntime) -> Self {
         self.player_runtime = runtime;
+        self
+    }
+
+    /// Configures the AIR arguments variable.
+    pub fn with_air_argv(mut self, air_argv: Vec<String>) -> Self {
+        self.air_argv = air_argv;
         self
     }
 
@@ -2820,6 +2830,7 @@ impl PlayerBuilder {
                 instance_counter: 0,
                 player_version,
                 player_runtime: self.player_runtime,
+                air_argv: self.air_argv,
                 is_playing: self.autoplay,
                 needs_render: true,
                 self_reference: self_ref.clone(),

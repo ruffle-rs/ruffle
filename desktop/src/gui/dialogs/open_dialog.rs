@@ -336,6 +336,10 @@ impl OpenDialog {
                     self.movie_parameters(locale, ui);
                 });
 
+                ui.collapsing(text(locale, "air-argv"), |ui| {
+                    self.air_argv(locale, ui);
+                });
+
                 ui.horizontal(|ui| {
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         if ui
@@ -565,6 +569,49 @@ impl OpenDialog {
                 self.options.player.parameters.retain_mut(|(key, value)| {
                     let mut keep = true;
                     ui.text_edit_singleline(key);
+                    ui.horizontal(|ui| {
+                        ui.text_edit_singleline(value);
+                        if ui
+                            .button("x")
+                            .on_hover_text(text(locale, "open-dialog-remove-parameter"))
+                            .clicked()
+                        {
+                            keep = false;
+                        }
+                    });
+                    ui.end_row();
+                    keep
+                });
+            });
+    }
+
+    fn air_argv(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
+        ui.horizontal(|ui| {
+            if ui
+                .button(text(locale, "open-dialog-add-parameter"))
+                .clicked()
+            {
+                self.options.player.air_argv.push(Default::default());
+            }
+
+            if ui
+                .add_enabled(
+                    !self.options.player.air_argv.is_empty(),
+                    Button::new(text(locale, "open-dialog-remove-parameters")),
+                )
+                .clicked()
+            {
+                self.options.player.air_argv.clear();
+            }
+        });
+
+        Grid::new("open-file-params")
+            .num_columns(1)
+            .spacing([0.0, 4.0])
+            .striped(true)
+            .show(ui, |ui| {
+                self.options.player.air_argv.retain_mut(|value| {
+                    let mut keep = true;
                     ui.horizontal(|ui| {
                         ui.text_edit_singleline(value);
                         if ui

@@ -109,6 +109,8 @@ pub struct UpdateContext<'a, 'gc> {
     /// variables.
     pub player_version: u8,
 
+    pub air_argv: &'a Vec<String>,
+
     /// Requests that the player re-renders after this execution (e.g. due to `updateAfterEvent`).
     pub needs_render: &'a mut bool,
 
@@ -489,6 +491,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
             stub_tracker: self.stub_tracker,
             library: self.library,
             player_version: self.player_version,
+            air_argv: self.air_argv,
             needs_render: self.needs_render,
             swf: self.swf,
             audio: self.audio,
