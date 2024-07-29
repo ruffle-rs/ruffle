@@ -6,6 +6,7 @@ use futures::StreamExt;
 use std::error::Error;
 use std::str::FromStr;
 use std::sync::{Arc, Weak};
+use tokio::sync::broadcast::error::RecvError;
 use tokio::sync::{Mutex, MutexGuard};
 use winit::window::{Theme, Window};
 
@@ -40,11 +41,28 @@ impl ThemeController {
 
         #[cfg(target_os = "linux")]
         this.start_dbus_theme_watcher_linux().await;
+        this.start_theme_preference_watcher(&preferences);
 
         this.set_theme_preference(preferences.theme_preference())
             .await;
 
         this
+    }
+
+    fn start_theme_preference_watcher(&self, preferences: &GlobalPreferences) {
+        let mut theme_preference_watcher = preferences.theme_preference_watcher();
+        let this = self.clone();
+        tokio::spawn(Box::pin(async move {
+            loop {
+                match theme_preference_watcher.recv().await {
+                    Ok(new_theme_preference) => {
+                        this.set_theme_preference(new_theme_preference).await;
+                    }
+                    Err(RecvError::Lagged(_)) => continue,
+                    Err(RecvError::Closed) => break,
+                }
+            }
+        }));
     }
 
     #[cfg(target_os = "linux")]
