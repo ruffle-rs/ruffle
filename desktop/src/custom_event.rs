@@ -1,7 +1,6 @@
 //! Custom event type for desktop ruffle
 
 use crate::player::LaunchOptions;
-use winit::window::Theme;
 
 /// User-defined events.
 pub enum RuffleEvent {
@@ -25,7 +24,4 @@ pub enum RuffleEvent {
 
     /// The user selected an item in the right-click context menu.
     ContextMenuItemClicked(usize),
-
-    /// System theme has changed.
-    ThemeChanged(Theme),
 }
