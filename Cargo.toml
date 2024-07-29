@@ -51,7 +51,7 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 naga = { version = "0.20.0", features = ["wgsl-out"] }
 wgpu = "0.20.1"
 egui = "0.28.1"
-clap = { version = "4.5.9", features = ["derive"] }
+clap = { version = "4.5.11", features = ["derive"] }
 anyhow = "1.0"
 slotmap = "1.0.7"
 async-channel = "2.3.1"
@@ -71,7 +71,7 @@ thiserror = "1.0"
 url = "2.5.2"
 wasm-bindgen = "=0.2.92"
 walkdir = "2.5.0"
-tokio = { version = "1.38.1" }
+tokio = { version = "1.39.2" }
 
 [workspace.lints.rust]
 # Clippy nightly often adds new/buggy lints that we want to ignore.
