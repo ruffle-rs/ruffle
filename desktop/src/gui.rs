@@ -9,6 +9,7 @@ mod widgets;
 pub use controller::GuiController;
 pub use movie::MovieView;
 use std::borrow::Cow;
+pub use theme::ThemePreference;
 use url::Url;
 
 use crate::custom_event::RuffleEvent;
