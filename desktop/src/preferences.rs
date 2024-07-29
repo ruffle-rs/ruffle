@@ -4,6 +4,7 @@ mod write;
 pub mod storage;
 
 use crate::cli::Opt;
+use crate::gui::ThemePreference;
 use crate::log::FilenamePattern;
 use crate::preferences::read::read_preferences;
 use crate::preferences::write::PreferencesWriter;
@@ -187,6 +188,13 @@ impl GlobalPreferences {
             .recent_limit
     }
 
+    pub fn theme_preference(&self) -> ThemePreference {
+        self.preferences
+            .lock()
+            .expect("Non-poisoned preferences")
+            .theme_preference
+    }
+
     pub fn recents<R>(&self, fun: impl FnOnce(&Recents) -> R) -> R {
         fun(&self.recents.lock().expect("Recents is not reentrant"))
     }
@@ -240,6 +248,7 @@ pub struct SavedGlobalPreferences {
     pub recent_limit: usize,
     pub log: LogPreferences,
     pub storage: StoragePreferences,
+    pub theme_preference: ThemePreference,
 }
 
 impl Default for SavedGlobalPreferences {
@@ -259,6 +268,7 @@ impl Default for SavedGlobalPreferences {
             recent_limit: 10,
             log: Default::default(),
             storage: Default::default(),
+            theme_preference: Default::default(),
         }
     }
 }

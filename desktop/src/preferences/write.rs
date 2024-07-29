@@ -1,3 +1,4 @@
+use crate::gui::ThemePreference;
 use crate::log::FilenamePattern;
 use crate::preferences::storage::StorageBackend;
 use crate::preferences::SavedGlobalPreferences;
@@ -85,6 +86,17 @@ impl<'a> PreferencesWriter<'a> {
             toml_document["recent_limit"] = value(limit as i64);
             values.recent_limit = limit;
         })
+    }
+
+    pub fn set_theme_preference(&mut self, theme_preference: ThemePreference) {
+        self.0.edit(|values, toml_document| {
+            if let Some(theme_preference) = theme_preference.as_str() {
+                toml_document["theme"] = value(theme_preference);
+            } else {
+                toml_document.remove("theme");
+            }
+            values.theme_preference = theme_preference;
+        });
     }
 }
 
@@ -238,6 +250,20 @@ mod tests {
             "recent_limit = 5",
             |writer| writer.set_recent_limit(15),
             "recent_limit = 15\n",
+        );
+    }
+
+    #[test]
+    fn set_theme() {
+        test(
+            "theme = 6\n",
+            |writer| writer.set_theme_preference(ThemePreference::Dark),
+            "theme = \"dark\"\n",
+        );
+        test(
+            "theme = \"dark\"",
+            |writer| writer.set_theme_preference(ThemePreference::System),
+            "",
         );
     }
 }

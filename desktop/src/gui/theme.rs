@@ -22,7 +22,11 @@ struct ThemeControllerData {
 pub struct ThemeController(Arc<Mutex<ThemeControllerData>>);
 
 impl ThemeController {
-    pub async fn new(window: Arc<Window>, egui_ctx: Context) -> Self {
+    pub async fn new(
+        window: Arc<Window>,
+        preferences: GlobalPreferences,
+        egui_ctx: Context,
+    ) -> Self {
         let this = Self(Arc::new(Mutex::new(ThemeControllerData {
             window: Arc::downgrade(&window),
             egui_ctx,
@@ -37,9 +41,8 @@ impl ThemeController {
         #[cfg(target_os = "linux")]
         this.start_dbus_theme_watcher_linux().await;
 
-        if let Ok(theme) = this.get_system_theme().await {
-            this.set_theme(theme);
-        }
+        this.set_theme_preference(preferences.theme_preference())
+            .await;
 
         this
     }

@@ -59,6 +59,10 @@ pub fn read_preferences(input: &str) -> ParseDetails<SavedGlobalPreferences> {
         result.recent_limit = value as usize;
     }
 
+    if let Some(value) = document.parse_from_str(&mut cx, "theme") {
+        result.theme_preference = value;
+    }
+
     document.get_table_like(&mut cx, "log", |cx, log| {
         if let Some(value) = log.parse_from_str(cx, "filename_pattern") {
             result.log.filename_pattern = value;
@@ -80,6 +84,7 @@ pub fn read_preferences(input: &str) -> ParseDetails<SavedGlobalPreferences> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::gui::ThemePreference;
     use crate::log::FilenamePattern;
     use crate::preferences::{storage::StorageBackend, LogPreferences, StoragePreferences};
     use fluent_templates::loader::langid;
@@ -524,5 +529,61 @@ mod tests {
             result.values()
         );
         assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
+    }
+
+    #[test]
+    fn theme() {
+        let result = read_preferences("theme = \"light\"");
+        assert_eq!(
+            &SavedGlobalPreferences {
+                theme_preference: ThemePreference::Light,
+                ..Default::default()
+            },
+            result.values()
+        );
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
+
+        let result = read_preferences("theme = \"dark\"");
+        assert_eq!(
+            &SavedGlobalPreferences {
+                theme_preference: ThemePreference::Dark,
+                ..Default::default()
+            },
+            result.values()
+        );
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
+
+        let result = read_preferences("theme = \"default\"");
+        assert_eq!(
+            &SavedGlobalPreferences {
+                theme_preference: ThemePreference::System,
+                ..Default::default()
+            },
+            result.values()
+        );
+        assert_eq!(
+            vec![ParseWarning::UnsupportedValue {
+                value: "default".to_string(),
+                path: "theme".to_string(),
+            }],
+            result.warnings
+        );
+
+        let result = read_preferences("theme = 9");
+        assert_eq!(
+            &SavedGlobalPreferences {
+                theme_preference: ThemePreference::System,
+                ..Default::default()
+            },
+            result.values()
+        );
+        assert_eq!(
+            vec![ParseWarning::UnexpectedType {
+                expected: "string",
+                actual: "integer",
+                path: "theme".to_string(),
+            }],
+            result.warnings
+        );
     }
 }
