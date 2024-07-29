@@ -13,7 +13,6 @@ use ruffle_render_wgpu::backend::{request_adapter_and_device, WgpuRenderBackend}
 use ruffle_render_wgpu::descriptors::Descriptors;
 use ruffle_render_wgpu::utils::{format_list, get_backend_names};
 use std::error::Error;
-use std::rc::Rc;
 use std::sync::{Arc, MutexGuard};
 use std::time::{Duration, Instant};
 use unic_langid::LanguageIdentifier;
@@ -31,7 +30,7 @@ pub struct GuiController {
     egui_winit: egui_winit::State,
     egui_renderer: egui_wgpu::Renderer,
     gui: RuffleGui,
-    window: Rc<Window>,
+    window: Arc<Window>,
     last_update: Instant,
     repaint_after: Duration,
     surface: wgpu::Surface<'static>,
@@ -46,7 +45,7 @@ pub struct GuiController {
 
 impl GuiController {
     pub async fn new(
-        window: Rc<Window>,
+        window: Arc<Window>,
         event_loop: &EventLoop<RuffleEvent>,
         preferences: GlobalPreferences,
         font_database: &Database,

@@ -123,7 +123,7 @@ impl ActivePlayer {
         opt: &LaunchOptions,
         event_loop: EventLoopProxy<RuffleEvent>,
         movie_url: &Url,
-        window: Rc<Window>,
+        window: Arc<Window>,
         descriptors: Arc<Descriptors>,
         movie_view: MovieView,
         font_database: Rc<fontdb::Database>,
@@ -381,7 +381,7 @@ impl ActivePlayer {
 pub struct PlayerController {
     player: Option<ActivePlayer>,
     event_loop: EventLoopProxy<RuffleEvent>,
-    window: Rc<Window>,
+    window: Arc<Window>,
     descriptors: Arc<Descriptors>,
     font_database: Rc<fontdb::Database>,
     preferences: GlobalPreferences,
@@ -390,7 +390,7 @@ pub struct PlayerController {
 impl PlayerController {
     pub fn new(
         event_loop: EventLoopProxy<RuffleEvent>,
-        window: Rc<Window>,
+        window: Arc<Window>,
         descriptors: Arc<Descriptors>,
         font_database: fontdb::Database,
         preferences: GlobalPreferences,
