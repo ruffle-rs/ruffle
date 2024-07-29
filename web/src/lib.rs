@@ -139,9 +139,8 @@ struct RuffleInstance {
     log_subscriber: Arc<Layered<WASMLayer, Registry>>,
 }
 
-#[wasm_bindgen(raw_module = "./ruffle-player")]
+#[wasm_bindgen(raw_module = "./internal/player/inner")]
 extern "C" {
-    #[wasm_bindgen(extends = EventTarget)]
     #[derive(Clone)]
     pub type JavascriptPlayer;
 
