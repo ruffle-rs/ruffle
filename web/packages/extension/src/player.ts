@@ -2,7 +2,7 @@ import * as utils from "./utils";
 import { installRuffle, PublicAPI } from "ruffle-core";
 import type {
     Letterbox,
-    RufflePlayer,
+    Player,
     DataLoadOptions,
     URLLoadOptions,
 } from "ruffle-core";
@@ -19,7 +19,7 @@ declare global {
 
 installRuffle("local");
 const ruffle = (window.RufflePlayer as PublicAPI).newest()!;
-let player: RufflePlayer;
+let player: Player;
 
 const playerContainer = document.getElementById("player-container")!;
 const overlay = document.getElementById("overlay")!;
@@ -131,7 +131,7 @@ async function load(options: string | DataLoadOptions | URLLoadOptions) {
             return;
         }
     }
-    player.load(options, false);
+    await player.load(options);
     player.addEventListener("loadedmetadata", () => {
         if (player.metadata) {
             for (const [key, value] of Object.entries(player.metadata)) {
