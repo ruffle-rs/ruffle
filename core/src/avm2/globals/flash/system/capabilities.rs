@@ -3,6 +3,25 @@
 use crate::avm2::{Activation, AvmString, Error, Object, Value};
 use crate::player::PlayerRuntime;
 
+/// Implements `flash.system.Capabilities.os`
+pub fn get_os<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(AvmString::new_utf8(
+        activation.context.gc_context,
+        if cfg!(windows) {
+            "Windows 10"
+        } else if cfg!(target_os = "macos") {
+            "Mac OS 10.5.2"
+        } else {
+            "Linux 5.10.49"
+        },
+    )
+    .into())
+}
+
 /// Implements `flash.system.Capabilities.version`
 pub fn get_version<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -10,9 +29,16 @@ pub fn get_version<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // TODO: Report the correct OS instead of always reporting Windows
+    let os = if cfg!(windows) {
+        "WIN"
+    } else if cfg!(target_os = "macos") {
+        "MAC"
+    } else {
+        "LNX"
+    };
     Ok(AvmString::new_utf8(
         activation.context.gc_context,
-        format!("WIN {},0,0,0", activation.avm2().player_version),
+        format!("{} {},0,0,0", os, activation.avm2().player_version),
     )
     .into())
 }

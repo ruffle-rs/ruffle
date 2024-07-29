@@ -1,10 +1,7 @@
 package flash.system {
     import __ruffle__.stub_getter;
     public final class Capabilities {
-        public static function get os(): String {
-            stub_getter("flash.system.Capabilities", "os");
-            return "Windows 8"
-        }
+        public native static function get os(): String;
     
         public native static function get playerType(): String;
         
