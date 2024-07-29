@@ -49,66 +49,6 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /**
-     * Polyfill of height getter for HTMLEmbedElement and HTMLObjectElement
-     *
-     * @ignore
-     * @internal
-     */
-    get height(): string {
-        return this.getAttribute("height") || "";
-    }
-
-    /**
-     * Polyfill of height setter for HTMLEmbedElement and HTMLObjectElement
-     *
-     * @ignore
-     * @internal
-     */
-    set height(height: string) {
-        this.setAttribute("height", height);
-    }
-
-    /**
-     * Polyfill of width getter for HTMLEmbedElement and HTMLObjectElement
-     *
-     * @ignore
-     * @internal
-     */
-    get width(): string {
-        return this.getAttribute("width") || "";
-    }
-
-    /**
-     * Polyfill of width setter for HTMLEmbedElement and HTMLObjectElement
-     *
-     * @ignore
-     * @internal
-     */
-    set width(widthVal: string) {
-        this.setAttribute("width", widthVal);
-    }
-
-    /**
-     * Polyfill of type getter for HTMLEmbedElement and HTMLObjectElement
-     *
-     * @ignore
-     * @internal
-     */
-    get type(): string {
-        return this.getAttribute("type") || "";
-    }
-
-    /**
-     * Polyfill of type setter for HTMLEmbedElement and HTMLObjectElement
-     *
-     * @ignore
-     * @internal
-     */
-    set type(typeVal: string) {
-        this.setAttribute("type", typeVal);
-    }
-
-    /**
      * @ignore
      * @internal
      */
@@ -280,41 +220,6 @@ export class RufflePlayer extends HTMLElement {
     }
 
     /**
-     * Copies attributes and children from another element to this player element.
-     * Used by the polyfill elements, RuffleObject and RuffleEmbed.
-     *
-     * @param element The element to copy all attributes from.
-     */
-    protected copyElement(element: Element): void {
-        if (element) {
-            for (const attribute of element.attributes) {
-                if (attribute.specified) {
-                    // Issue 468: Chrome "Click to Active Flash" box stomps on title attribute
-                    if (
-                        attribute.name === "title" &&
-                        attribute.value === "Adobe Flash Player"
-                    ) {
-                        continue;
-                    }
-
-                    try {
-                        this.setAttribute(attribute.name, attribute.value);
-                    } catch (err) {
-                        // The embed may have invalid attributes, so handle these gracefully.
-                        console.warn(
-                            `Unable to set attribute ${attribute.name} on Ruffle instance`,
-                        );
-                    }
-                }
-            }
-
-            for (const node of Array.from(element.children)) {
-                this.appendChild(node);
-            }
-        }
-    }
-
-    /**
      * Sets a trace observer on this flash player.
      *
      * The observer will be called, as a function, for each message that the playing movie will "trace" (output).
@@ -345,5 +250,41 @@ export class RufflePlayer extends HTMLElement {
 
     set config(value: URLLoadOptions | DataLoadOptions | object) {
         this.#inner.config = value;
+    }
+}
+
+/**
+ * Copies attributes and children from another element to a target element.
+ * Used by the polyfill elements, RuffleObject and RuffleEmbed.
+ *
+ * @param element The element to copy all attributes from.
+ * @param destination The element to copy all attributes to.
+ */
+export function copyElement(element: Element, destination: Element): void {
+    if (element) {
+        for (const attribute of element.attributes) {
+            if (attribute.specified) {
+                // Issue 468: Chrome "Click to Active Flash" box stomps on title attribute
+                if (
+                    attribute.name === "title" &&
+                    attribute.value === "Adobe Flash Player"
+                ) {
+                    continue;
+                }
+
+                try {
+                    destination.setAttribute(attribute.name, attribute.value);
+                } catch (err) {
+                    // The embed may have invalid attributes, so handle these gracefully.
+                    console.warn(
+                        `Unable to set attribute ${attribute.name} on Ruffle instance`,
+                    );
+                }
+            }
+        }
+
+        for (const node of Array.from(element.children)) {
+            destination.appendChild(node);
+        }
     }
 }
