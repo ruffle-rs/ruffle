@@ -298,9 +298,7 @@ impl<'gc> Domain<'gc> {
         let res = self.get_defined_value(activation, name);
 
         if let Some(type_name) = type_name {
-            let type_qname =
-                QName::from_qualified_name(type_name, api_version, &mut activation.context);
-            let type_class = self.get_defined_value(activation, type_qname)?;
+            let type_class = self.get_defined_value_handling_vector(activation, type_name)?;
             if let Ok(res) = res {
                 let class = res.as_object().ok_or_else(|| {
                     Error::RustError(format!("Vector type {:?} was not an object", res).into())
