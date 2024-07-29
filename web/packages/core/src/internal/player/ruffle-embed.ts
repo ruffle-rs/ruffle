@@ -4,9 +4,9 @@ import {
     isFallbackElement,
     isYoutubeFlashSource,
     workaroundYoutubeMixedContent,
-} from "./internal/player/inner";
-import { registerElement } from "./internal/register-element";
-import { isSwf } from "./swf-utils";
+} from "./inner";
+import { registerElement } from "../register-element";
+import { isSwf } from "../../swf-utils";
 
 /**
  * A polyfill html element.

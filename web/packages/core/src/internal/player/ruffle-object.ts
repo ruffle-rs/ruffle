@@ -4,11 +4,11 @@ import {
     isFallbackElement,
     isYoutubeFlashSource,
     workaroundYoutubeMixedContent,
-} from "./internal/player/inner";
-import { FLASH_ACTIVEX_CLASSID } from "./flash-identifiers";
-import { registerElement } from "./internal/register-element";
+} from "./inner";
+import { FLASH_ACTIVEX_CLASSID } from "../../flash-identifiers";
+import { registerElement } from "../register-element";
 import { RuffleEmbed } from "./ruffle-embed";
-import { isSwf } from "./swf-utils";
+import { isSwf } from "../../swf-utils";
 
 /**
  * Find and return the first value in obj with the given key.
