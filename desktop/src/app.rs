@@ -12,6 +12,7 @@ use ruffle_core::{PlayerEvent, StageDisplayState};
 use ruffle_render::backend::ViewportDimensions;
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 use url::Url;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
@@ -22,7 +23,7 @@ use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
 
 pub struct App {
     preferences: GlobalPreferences,
-    window: Rc<Window>,
+    window: Arc<Window>,
     event_loop: Option<EventLoop<RuffleEvent>>,
     gui: Rc<RefCell<GuiController>>,
     player: PlayerController,
@@ -58,7 +59,7 @@ impl App {
             .with_min_inner_size(min_window_size)
             .with_max_inner_size(max_window_size)
             .build(&event_loop)?;
-        let window = Rc::new(window);
+        let window = Arc::new(window);
 
         let mut font_database = fontdb::Database::default();
         font_database.load_system_fonts();

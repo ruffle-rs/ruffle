@@ -12,6 +12,7 @@ use ruffle_core::backend::ui::{
     FullscreenError, LanguageIdentifier, MouseCursor, UiBackend,
 };
 use std::rc::Rc;
+use std::sync::Arc;
 use tracing::error;
 use url::Url;
 use winit::raw_window_handle::HasDisplayHandle;
@@ -112,7 +113,7 @@ impl FileDialogResult for DesktopFileDialogResult {
 }
 
 pub struct DesktopUiBackend {
-    window: Rc<Window>,
+    window: Arc<Window>,
     cursor_visible: bool,
     clipboard: Clipboard,
     preferences: GlobalPreferences,
@@ -125,7 +126,7 @@ pub struct DesktopUiBackend {
 
 impl DesktopUiBackend {
     pub fn new(
-        window: Rc<Window>,
+        window: Arc<Window>,
         open_url_mode: OpenURLMode,
         font_database: Rc<fontdb::Database>,
         preferences: GlobalPreferences,

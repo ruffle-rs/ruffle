@@ -1,13 +1,13 @@
 use crate::custom_event::RuffleEvent;
 
 use ruffle_core::external::FsCommandProvider;
-use std::rc::Rc;
+use std::sync::Arc;
 use winit::event_loop::EventLoopProxy;
 use winit::window::{Fullscreen, Window};
 
 pub struct DesktopFSCommandProvider {
     pub event_loop: EventLoopProxy<RuffleEvent>,
-    pub window: Rc<Window>,
+    pub window: Arc<Window>,
 }
 
 impl FsCommandProvider for DesktopFSCommandProvider {
