@@ -3,6 +3,7 @@ import { registerElement } from "./internal/register-element";
 import { RufflePlayer } from "./ruffle-player";
 import { buildInfo } from "./build-info";
 import { InstallationOptions } from "./install";
+import { Player } from "./public/player";
 
 /**
  * Represents this particular version of Ruffle.
@@ -38,7 +39,7 @@ export interface SourceAPI {
      * @returns The player element. This is a DOM element that may be inserted
      * into the current page as you wish.
      */
-    createPlayer(): RufflePlayer;
+    createPlayer(): Player;
 }
 
 /**
@@ -76,7 +77,7 @@ export const internalSourceApi = {
      * @returns The player element. This is a DOM element that may be inserted
      * into the current page as you wish.
      */
-    createPlayer(): RufflePlayer {
+    createPlayer(): Player {
         const name = registerElement("ruffle-player", RufflePlayer);
         return document.createElement(name) as RufflePlayer;
     },

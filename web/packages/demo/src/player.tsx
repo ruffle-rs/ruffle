@@ -1,7 +1,7 @@
 import React, { ReactNode, DragEvent } from "react";
 import {
     PublicAPI,
-    RufflePlayer,
+    Player as RufflePlayer,
     MovieMetadata,
     BaseLoadOptions,
 } from "ruffle-core";
@@ -82,7 +82,7 @@ export class Player extends React.Component<PlayerAttributes> {
         if (!this.isLoading) {
             this.isLoading = true;
             this.player
-                ?.load({ url, ...this.props.baseConfig, ...options }, false)
+                ?.load({ url, ...this.props.baseConfig, ...options })
                 .finally(() => {
                     this.isLoading = false;
                 });
@@ -95,10 +95,10 @@ export class Player extends React.Component<PlayerAttributes> {
             new Response(file)
                 .arrayBuffer()
                 .then((data) => {
-                    return this.player?.load(
-                        { data, ...this.props.baseConfig },
-                        false,
-                    );
+                    return this.player?.load({
+                        data,
+                        ...this.props.baseConfig,
+                    });
                 })
                 .finally(() => {
                     this.isLoading = false;
