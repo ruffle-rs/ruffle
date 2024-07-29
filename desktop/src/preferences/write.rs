@@ -1,17 +1,24 @@
 use crate::gui::ThemePreference;
 use crate::log::FilenamePattern;
 use crate::preferences::storage::StorageBackend;
-use crate::preferences::SavedGlobalPreferences;
+use crate::preferences::{GlobalPreferencesWatchers, SavedGlobalPreferences};
 use ruffle_frontend_utils::parse::DocumentHolder;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use toml_edit::value;
 use unic_langid::LanguageIdentifier;
 
-pub struct PreferencesWriter<'a>(&'a mut DocumentHolder<SavedGlobalPreferences>);
+pub struct PreferencesWriter<'a>(
+    &'a mut DocumentHolder<SavedGlobalPreferences>,
+    Option<&'a GlobalPreferencesWatchers>,
+);
 
 impl<'a> PreferencesWriter<'a> {
     pub(super) fn new(preferences: &'a mut DocumentHolder<SavedGlobalPreferences>) -> Self {
-        Self(preferences)
+        Self(preferences, None)
+    }
+
+    pub(super) fn set_watchers(&mut self, watchers: &'a GlobalPreferencesWatchers) {
+        self.1 = Some(watchers);
     }
 
     pub fn set_graphics_backend(&mut self, backend: GraphicsBackend) {
@@ -97,6 +104,9 @@ impl<'a> PreferencesWriter<'a> {
             }
             values.theme_preference = theme_preference;
         });
+        if let Some(watcher) = self.1.map(|w| &w.theme_preference_watcher) {
+            let _ = watcher.send(theme_preference);
+        }
     }
 }
 

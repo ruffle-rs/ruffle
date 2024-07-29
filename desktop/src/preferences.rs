@@ -16,6 +16,8 @@ use ruffle_frontend_utils::recents::{read_recents, Recents, RecentsWriter};
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::sync::{Arc, Mutex};
 use sys_locale::get_locale;
+use tokio::sync::broadcast;
+use tokio::sync::broadcast::{Receiver, Sender};
 use unic_langid::LanguageIdentifier;
 
 /// The preferences that relate to the application itself.
@@ -43,6 +45,8 @@ pub struct GlobalPreferences {
     bookmarks: Arc<Mutex<DocumentHolder<Bookmarks>>>,
 
     recents: Arc<Mutex<DocumentHolder<Recents>>>,
+
+    watchers: GlobalPreferencesWatchers,
 }
 
 impl GlobalPreferences {
@@ -93,6 +97,7 @@ impl GlobalPreferences {
             preferences: Arc::new(Mutex::new(preferences)),
             bookmarks: Arc::new(Mutex::new(bookmarks)),
             recents: Arc::new(Mutex::new(recents)),
+            watchers: Default::default(),
         })
     }
 
@@ -195,6 +200,10 @@ impl GlobalPreferences {
             .theme_preference
     }
 
+    pub fn theme_preference_watcher(&self) -> Receiver<ThemePreference> {
+        self.watchers.theme_preference_watcher.subscribe()
+    }
+
     pub fn recents<R>(&self, fun: impl FnOnce(&Recents) -> R) -> R {
         fun(&self.recents.lock().expect("Recents is not reentrant"))
     }
@@ -206,6 +215,7 @@ impl GlobalPreferences {
             .expect("Preferences is not reentrant");
 
         let mut writer = PreferencesWriter::new(&mut preferences);
+        writer.set_watchers(&self.watchers);
         fun(&mut writer);
 
         let serialized = preferences.serialize();
@@ -257,6 +267,7 @@ impl Default for SavedGlobalPreferences {
         let locale = preferred_locale
             .and_then(|l| l.parse().ok())
             .unwrap_or_else(|| US_ENGLISH.clone());
+
         Self {
             graphics_backend: Default::default(),
             graphics_power_preference: Default::default(),
@@ -281,4 +292,17 @@ pub struct LogPreferences {
 #[derive(PartialEq, Debug, Default)]
 pub struct StoragePreferences {
     pub backend: storage::StorageBackend,
+}
+
+#[derive(Clone)]
+pub struct GlobalPreferencesWatchers {
+    theme_preference_watcher: Arc<Sender<ThemePreference>>,
+}
+
+impl Default for GlobalPreferencesWatchers {
+    fn default() -> Self {
+        Self {
+            theme_preference_watcher: Arc::new(broadcast::channel(1).0),
+        }
+    }
 }
