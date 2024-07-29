@@ -95,7 +95,8 @@ impl GuiController {
         let descriptors = Descriptors::new(instance, adapter, device, queue);
         let egui_ctx = Context::default();
 
-        let theme_controller = ThemeController::new(window.clone(), egui_ctx.clone()).await;
+        let theme_controller =
+            ThemeController::new(window.clone(), preferences.clone(), egui_ctx.clone()).await;
         let mut egui_winit =
             egui_winit::State::new(egui_ctx, ViewportId::ROOT, window.as_ref(), None, None);
         egui_winit.set_max_texture_side(descriptors.limits.max_texture_dimension_2d as usize);
