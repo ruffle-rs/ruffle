@@ -31,7 +31,15 @@ export class RufflePlayer extends HTMLElement implements Player {
 
     constructor() {
         super();
-        this.#inner = new InnerPlayer(this, () => this.debugPlayerInfo());
+        this.#inner = new InnerPlayer(
+            this,
+            () => this.debugPlayerInfo(),
+            (name) => {
+                (this as any)[name] = (...args: unknown[]) => {
+                    return this.#inner.callExternalInterface(name, args);
+                };
+            },
+        );
     }
 
     connectedCallback(): void {

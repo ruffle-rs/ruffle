@@ -183,11 +183,17 @@ export class InnerPlayer {
     private pointerMoveMaxDistance = 0;
 
     private volumeSettings: VolumeControls;
-    private debugPlayerInfo: () => string;
+    private readonly debugPlayerInfo: () => string;
+    protected readonly onCallbackAvailable: (name: string) => void;
 
-    public constructor(element: HTMLElement, debugPlayerInfo: () => string) {
+    public constructor(
+        element: HTMLElement,
+        debugPlayerInfo: () => string,
+        onCallbackAvailable: (name: string) => void,
+    ) {
         this.element = element;
         this.debugPlayerInfo = debugPlayerInfo;
+        this.onCallbackAvailable = onCallbackAvailable;
 
         this.shadow = this.element.attachShadow({ mode: "open" });
         this.shadow.appendChild(ruffleShadowTemplate.content.cloneNode(true));
@@ -1735,23 +1741,8 @@ export class InnerPlayer {
         return null;
     }
 
-    /**
-     * When a movie presents a new callback through `ExternalInterface.addCallback`,
-     * we are informed so that we can expose the method on any relevant DOM element.
-     *
-     * This should only be called by Ruffle itself and not by users.
-     *
-     * @param name The name of the callback that is now available.
-     *
-     * @internal
-     * @ignore
-     */
-    protected onCallbackAvailable(name: string): void {
-        const instance = this.instance;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (this as any)[name] = (...args: unknown[]) => {
-            return instance?.call_exposed_callback(name, args);
-        };
+    public callExternalInterface(name: string, args: any[]) {
+        return this.instance?.call_exposed_callback(name, args);
     }
 
     protected getObjectId(): string | null {
