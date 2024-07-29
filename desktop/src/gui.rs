@@ -3,6 +3,7 @@ mod controller;
 mod dialogs;
 mod menu_bar;
 mod movie;
+mod theme;
 mod widgets;
 
 pub use controller::GuiController;
