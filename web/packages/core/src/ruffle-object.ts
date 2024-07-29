@@ -1,10 +1,10 @@
+import { RufflePlayer } from "./ruffle-player";
 import {
+    getPolyfillOptions,
     isFallbackElement,
     isYoutubeFlashSource,
     workaroundYoutubeMixedContent,
-    RufflePlayer,
-    getPolyfillOptions,
-} from "./ruffle-player";
+} from "./internal/player/inner";
 import { FLASH_ACTIVEX_CLASSID } from "./flash-identifiers";
 import { registerElement } from "./internal/register-element";
 import { RuffleEmbed } from "./ruffle-embed";
