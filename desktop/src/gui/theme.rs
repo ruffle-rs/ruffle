@@ -1,8 +1,10 @@
 #[cfg(target_os = "linux")]
 use crate::dbus::{ColorScheme, FreedesktopSettings};
+use crate::preferences::GlobalPreferences;
 use egui::Context;
 use futures::StreamExt;
 use std::error::Error;
+use std::str::FromStr;
 use std::sync::{Arc, Weak};
 use tokio::sync::{Mutex, MutexGuard};
 use winit::window::{Theme, Window};
@@ -10,6 +12,7 @@ use winit::window::{Theme, Window};
 struct ThemeControllerData {
     window: Weak<Window>,
     egui_ctx: Context,
+    theme_preference: ThemePreference,
 
     #[cfg(target_os = "linux")]
     zbus_connection: Option<zbus::Connection>,
@@ -23,6 +26,7 @@ impl ThemeController {
         let this = Self(Arc::new(Mutex::new(ThemeControllerData {
             window: Arc::downgrade(&window),
             egui_ctx,
+            theme_preference: Default::default(), // Will be set later
             #[cfg(target_os = "linux")]
             zbus_connection: zbus::Connection::session()
                 .await
@@ -82,6 +86,31 @@ impl ThemeController {
 
     pub fn set_theme(&self, theme: Theme) {
         let data = self.data();
+        if data.theme_preference != ThemePreference::System {
+            // Cannot change theme when there's a preference.
+            return;
+        }
+        self.set_theme_internal(data, theme);
+    }
+
+    async fn set_theme_preference(&self, theme_preference: ThemePreference) {
+        let theme = match theme_preference {
+            ThemePreference::System => {
+                if let Ok(theme) = self
+                    .get_system_theme()
+                    .await
+                    .inspect_err(|err| tracing::warn!("Unable to read system theme: {err}"))
+                {
+                    theme
+                } else {
+                    return;
+                }
+            }
+            ThemePreference::Light => Theme::Light,
+            ThemePreference::Dark => Theme::Dark,
+        };
+        let mut data = self.data();
+        data.theme_preference = theme_preference;
         self.set_theme_internal(data, theme);
     }
 
@@ -126,5 +155,35 @@ fn scheme_to_theme(color_scheme: ColorScheme) -> Theme {
         ColorScheme::Default => Theme::Light,
         ColorScheme::PreferLight => Theme::Light,
         ColorScheme::PreferDark => Theme::Dark,
+    }
+}
+
+#[derive(Default, Clone, Copy, PartialEq, Eq, Debug)]
+pub enum ThemePreference {
+    #[default]
+    System,
+    Light,
+    Dark,
+}
+
+impl ThemePreference {
+    pub fn as_str(&self) -> Option<&'static str> {
+        match self {
+            ThemePreference::System => None,
+            ThemePreference::Light => Some("light"),
+            ThemePreference::Dark => Some("dark"),
+        }
+    }
+}
+
+impl FromStr for ThemePreference {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "light" => Ok(ThemePreference::Light),
+            "dark" => Ok(ThemePreference::Dark),
+            _ => Err(()),
+        }
     }
 }
