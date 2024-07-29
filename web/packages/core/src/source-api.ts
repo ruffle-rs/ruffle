@@ -1,6 +1,6 @@
 import { pluginPolyfill, polyfill } from "./polyfills";
 import { registerElement } from "./internal/register-element";
-import { RufflePlayer } from "./ruffle-player";
+import { RufflePlayer } from "./internal/player/ruffle-player";
 import { buildInfo } from "./build-info";
 import { InstallationOptions } from "./install";
 import { Player } from "./public/player";

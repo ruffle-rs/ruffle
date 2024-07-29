@@ -1,5 +1,5 @@
-import { RuffleObject } from "./ruffle-object";
-import { RuffleEmbed } from "./ruffle-embed";
+import { RuffleObject } from "./internal/player/ruffle-object";
+import { RuffleEmbed } from "./internal/player/ruffle-embed";
 import { installPlugin, FLASH_PLUGIN } from "./plugin-polyfill";
 import { publicPath } from "./public-path";
 import type { DataLoadOptions, URLLoadOptions } from "./load-options";
