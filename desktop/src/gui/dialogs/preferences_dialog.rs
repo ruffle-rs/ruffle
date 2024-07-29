@@ -1,4 +1,4 @@
-use crate::gui::{available_languages, optional_text, text};
+use crate::gui::{available_languages, optional_text, text, ThemePreference};
 use crate::log::FilenamePattern;
 use crate::preferences::{storage::StorageBackend, GlobalPreferences};
 use cpal::traits::{DeviceTrait, HostTrait};
@@ -39,6 +39,9 @@ pub struct PreferencesDialog {
     storage_backend: StorageBackend,
     storage_backend_readonly: bool,
     storage_backend_changed: bool,
+
+    theme_preference: ThemePreference,
+    theme_preference_changed: bool,
 }
 
 impl PreferencesDialog {
@@ -86,6 +89,9 @@ impl PreferencesDialog {
             storage_backend_readonly: preferences.cli.storage.is_some(),
             storage_backend_changed: false,
 
+            theme_preference: preferences.theme_preference(),
+            theme_preference_changed: false,
+
             preferences,
         }
     }
@@ -109,6 +115,8 @@ impl PreferencesDialog {
                             self.show_graphics_preferences(locale, &locked_text, ui);
 
                             self.show_language_preferences(locale, ui);
+
+                            self.show_theme_preferences(locale, ui);
 
                             self.show_audio_preferences(locale, ui);
 
@@ -249,6 +257,34 @@ impl PreferencesDialog {
             });
         if self.language != previous {
             self.language_changed = true;
+        }
+        ui.end_row();
+    }
+
+    fn show_theme_preferences(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
+        ui.label(text(locale, "theme"));
+        let previous = self.theme_preference;
+        ComboBox::from_id_source("theme")
+            .selected_text(theme_preference_name(locale, self.theme_preference))
+            .show_ui(ui, |ui| {
+                ui.selectable_value(
+                    &mut self.theme_preference,
+                    ThemePreference::System,
+                    theme_preference_name(locale, ThemePreference::System),
+                );
+                ui.selectable_value(
+                    &mut self.theme_preference,
+                    ThemePreference::Light,
+                    theme_preference_name(locale, ThemePreference::Light),
+                );
+                ui.selectable_value(
+                    &mut self.theme_preference,
+                    ThemePreference::Dark,
+                    theme_preference_name(locale, ThemePreference::Dark),
+                );
+            });
+        if self.theme_preference != previous {
+            self.theme_preference_changed = true;
         }
         ui.end_row();
     }
@@ -420,6 +456,9 @@ impl PreferencesDialog {
             if self.recent_limit_changed {
                 preferences.set_recent_limit(self.recent_limit);
             }
+            if self.theme_preference_changed {
+                preferences.set_theme_preference(self.theme_preference);
+            }
         }) {
             // [NA] TODO: Better error handling... everywhere in desktop, really
             tracing::error!("Could not save preferences: {e}");
@@ -448,6 +487,17 @@ fn language_name(language: &LanguageIdentifier) -> String {
     optional_text(language, "language-name")
         .map(|s| s.to_string())
         .unwrap_or_else(|| language.to_string())
+}
+
+fn theme_preference_name(
+    locale: &LanguageIdentifier,
+    theme_preference: ThemePreference,
+) -> Cow<str> {
+    match theme_preference {
+        ThemePreference::System => text(locale, "theme-system"),
+        ThemePreference::Light => text(locale, "theme-light"),
+        ThemePreference::Dark => text(locale, "theme-dark"),
+    }
 }
 
 fn filename_pattern_name(locale: &LanguageIdentifier, pattern: FilenamePattern) -> Cow<str> {

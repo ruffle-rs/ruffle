@@ -28,3 +28,8 @@ storage-backend-memory = Memory
 
 recent-limit = Recent Limit
 recent-clear = Clear
+
+theme = Theme
+theme-system = System Default
+theme-light = Light
+theme-dark = Dark
