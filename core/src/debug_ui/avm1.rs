@@ -168,22 +168,27 @@ fn num_edit_ui(
             ui.add(egui::TextEdit::singleline(edit_buf).desired_width(96.0));
             match edit_buf.parse::<f64>() {
                 Ok(num) => {
-                    if ui.button("set").clicked() {
+                    if ui.input(|inp| inp.key_pressed(egui::Key::Enter))
+                        || ui.button("✔").on_hover_text("Set").clicked()
+                    {
                         new_val = Some(num);
                         *edited_key = None;
                     }
                 }
                 Err(e) => {
-                    ui.add_enabled(false, egui::Button::new("set"))
+                    ui.add_enabled(false, egui::Button::new("✔"))
                         .on_disabled_hover_text(e.to_string());
                 }
+            }
+            if ui.button("🗙").on_hover_text("Cancel").clicked() {
+                *edited_key = None;
             }
         });
     } else {
         ui.horizontal(|ui| {
             let num_str = num.to_string();
             ui.label(&num_str);
-            if ui.button("edit").clicked() {
+            if ui.button("✏").on_hover_text("Edit").clicked() {
                 *edited_key = Some(key.to_utf8_lossy().into_owned());
                 *edit_buf = num_str;
             }
