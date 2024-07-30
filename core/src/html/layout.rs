@@ -55,6 +55,9 @@ pub struct LayoutContext<'a, 'gc> {
 
     /// The position to put text into.
     ///
+    /// We are laying out boxes so that the cursor is at their baseline.
+    /// That way, they will be aligned properly when fixing up the line.
+    ///
     /// This cursor does not take indents, left margins, or alignment into
     /// account. Its X coordinate is always relative to the start of the
     /// current line, not the left edge of the text field being laid out.
@@ -68,6 +71,9 @@ pub struct LayoutContext<'a, 'gc> {
 
     /// The highest font size observed within the current line.
     max_font_size: Twips,
+
+    /// The highest ascent observed within the current line.
+    max_ascent: Twips,
 
     /// The growing list of layout lines to return when layout has finished.
     lines: Vec<LayoutLine<'gc>>,
@@ -120,6 +126,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             font: None,
             text,
             max_font_size: Default::default(),
+            max_ascent: Default::default(),
             lines: Vec::new(),
             current_line_index: 0,
             boxes: Vec::new(),
@@ -322,19 +329,16 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         }
 
         box_count = 0;
-        for linebox in self.boxes.iter_mut() {
-            // TODO: This attempts to keep text of multiple font sizes vertically
-            // aligned correctly. It does not consider the baseline of the font,
-            // which is information we don't have yet.
-            let font_size_adjustment = self.max_font_size - linebox.bounds.height();
+        for layout_box in self.boxes.iter_mut() {
+            let baseline_adjustment = self.max_ascent;
 
-            if linebox.is_text_box() {
-                linebox.bounds += Position::from((
+            if layout_box.is_text_box() {
+                layout_box.bounds += Position::from((
                     left_adjustment + align_adjustment + (interim_adjustment * box_count),
-                    font_size_adjustment,
+                    baseline_adjustment,
                 ));
-            } else if linebox.is_bullet() {
-                linebox.bounds += Position::from((Default::default(), font_size_adjustment));
+            } else if layout_box.is_bullet() {
+                layout_box.bounds += Position::from((Twips::ZERO, baseline_adjustment));
             }
 
             box_count += 1;
@@ -477,11 +481,15 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
     /// Enter a new span.
     fn newspan(&mut self, first_span: &TextSpan) {
+        let font_size = Twips::from_pixels(first_span.font.size);
+        let ascent = self.font.unwrap().get_baseline_for_height(font_size);
         if self.is_start_of_line() {
             self.current_line_span = first_span.clone();
-            self.max_font_size = Twips::from_pixels(first_span.font.size);
+            self.max_font_size = font_size;
+            self.max_ascent = ascent;
         } else {
-            self.max_font_size = max(self.max_font_size, Twips::from_pixels(first_span.font.size));
+            self.max_font_size = self.max_font_size.max(font_size);
+            self.max_ascent = self.max_ascent.max(ascent);
         }
     }
 
@@ -612,14 +620,15 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     fn append_text_fragment(&mut self, text: &'a WStr, start: usize, end: usize, span: &TextSpan) {
         if let Some(font) = self.font {
             let params = EvalParameters::from_span(span);
+            let ascent = font.get_baseline_for_height(params.height());
             let text_size = Size::from(font.measure(text, params, false));
-            let text_bounds = BoxBounds::from_position_and_size(self.cursor, text_size);
-            let mut new_text = LayoutBox::from_text(start, end, font, span);
+            let box_origin = self.cursor - (Twips::ZERO, ascent).into();
 
-            new_text.bounds = text_bounds;
+            let mut new_box = LayoutBox::from_text(start, end, font, span);
+            new_box.bounds = BoxBounds::from_position_and_size(box_origin, text_size);
 
-            self.cursor += Position::from((text_size.width(), Twips::default()));
-            self.append_box(new_text);
+            self.cursor += (text_size.width(), Twips::ZERO).into();
+            self.append_box(new_box);
         }
     }
 
@@ -643,13 +652,14 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             );
 
             let params = EvalParameters::from_span(span);
+            let ascent = bullet_font.get_baseline_for_height(params.height());
             let bullet = WStr::from_units(&[0x2022u16]);
             let text_size = Size::from(bullet_font.measure(bullet, params, false));
-            let text_bounds = BoxBounds::from_position_and_size(bullet_cursor, text_size);
+            let box_origin = bullet_cursor - (Twips::ZERO, ascent).into();
+
             let pos = self.last_box_end_position();
             let mut new_bullet = LayoutBox::from_bullet(pos, bullet_font, span);
-
-            new_bullet.bounds = text_bounds;
+            new_bullet.bounds = BoxBounds::from_position_and_size(box_origin, text_size);
 
             self.append_box(new_bullet);
         }
