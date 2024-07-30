@@ -12,6 +12,8 @@ pub struct Avm1ObjectWindow {
     key_filter_string: String,
     edited_key: Option<String>,
     value_edit_buf: String,
+    /// True if the active text edit should be focused (after clicking 'edit', etc.)
+    focus_text_edit: bool,
 }
 
 impl Avm1ObjectWindow {
@@ -139,7 +141,12 @@ impl Avm1ObjectWindow {
             .is_some_and(|edit_key| *edit_key == key.to_utf8_lossy())
         {
             ui.horizontal(|ui| {
-                ui.add(egui::TextEdit::singleline(&mut self.value_edit_buf).desired_width(96.0));
+                let re = ui
+                    .add(egui::TextEdit::singleline(&mut self.value_edit_buf).desired_width(96.0));
+                if self.focus_text_edit {
+                    re.request_focus();
+                    self.focus_text_edit = false;
+                }
                 match self.value_edit_buf.parse::<f64>() {
                     Ok(num) => {
                         if ui.input(|inp| inp.key_pressed(egui::Key::Enter))
@@ -165,6 +172,7 @@ impl Avm1ObjectWindow {
                 if ui.button("✏").on_hover_text("Edit").clicked() {
                     self.edited_key = Some(key.to_utf8_lossy().into_owned());
                     self.value_edit_buf = num_str;
+                    self.focus_text_edit = true;
                 }
             });
         }
