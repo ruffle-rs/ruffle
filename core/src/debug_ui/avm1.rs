@@ -57,16 +57,9 @@ impl Avm1ObjectWindow {
                             let value = object.get(key, &mut activation);
 
                             ui.label(key.to_string());
-                            if let Some(new) = show_avm1_value(
-                                ui,
-                                &mut activation,
-                                &mut self.edited_key,
-                                &mut self.value_edit_buf,
-                                &key,
-                                value,
-                                messages,
-                                &mut self.hovered_debug_rect,
-                            ) {
+                            if let Some(new) =
+                                self.show_avm1_value(ui, &mut activation, &key, value, messages)
+                            {
                                 if let Err(e) = object.set(key, new, &mut activation) {
                                     tracing::error!("Failed to set key {key}: {e}");
                                 }
@@ -76,6 +69,74 @@ impl Avm1ObjectWindow {
                     });
             });
         keep_open
+    }
+    /// Shows an egui widget to inspect and (for certain value types) edit an AVM1 value.
+    ///
+    /// Optionally returns the updated value, if the user edited it.
+    pub fn show_avm1_value<'gc>(
+        &mut self,
+        ui: &mut Ui,
+        activation: &mut Activation<'_, 'gc>,
+        key: &AvmString,
+        value: Result<Value<'gc>, Error<'gc>>,
+        messages: &mut Vec<Message>,
+    ) -> Option<Value<'gc>> {
+        match value {
+            Ok(Value::Undefined) => {
+                ui.label("Undefined");
+            }
+            Ok(Value::Null) => {
+                ui.label("Null");
+            }
+            Ok(Value::Bool(mut value)) => {
+                if ui.checkbox(&mut value, "").clicked() {
+                    return Some(Value::Bool(value));
+                }
+            }
+            Ok(Value::Number(value)) => {
+                return num_edit_ui(
+                    ui,
+                    &mut self.edited_key,
+                    &mut self.value_edit_buf,
+                    key,
+                    value,
+                )
+                .map(Value::Number);
+            }
+            Ok(Value::String(value)) => {
+                TextEdit::singleline(&mut value.to_string()).show(ui);
+            }
+            Ok(Value::Object(value)) => {
+                if value.as_executable().is_some() {
+                    ui.label("Function");
+                } else if ui.button(object_name(value)).clicked() {
+                    messages.push(Message::TrackAVM1Object(AVM1ObjectHandle::new(
+                        &mut activation.context,
+                        value,
+                    )));
+                }
+            }
+            Ok(Value::MovieClip(value)) => {
+                if let Some((_, _, object)) = value.resolve_reference(activation) {
+                    open_display_object_button(
+                        ui,
+                        &mut activation.context,
+                        messages,
+                        object,
+                        &mut self.hovered_debug_rect,
+                    );
+                } else {
+                    ui.colored_label(
+                        ui.style().visuals.error_fg_color,
+                        format!("Unknown movieclip {}", value.path()),
+                    );
+                }
+            }
+            Err(e) => {
+                ui.colored_label(ui.style().visuals.error_fg_color, e.to_string());
+            }
+        }
+        None
     }
 }
 
@@ -129,62 +190,4 @@ fn num_edit_ui(
         });
     }
     new_val
-}
-
-/// Shows an egui widget to inspect and (for certain value types) edit an AVM1 value.
-///
-/// Optionally returns the updated value, if the user edited it.
-pub fn show_avm1_value<'gc>(
-    ui: &mut Ui,
-    activation: &mut Activation<'_, 'gc>,
-    edited_key: &mut Option<String>,
-    value_edit_buf: &mut String,
-    key: &AvmString,
-    value: Result<Value<'gc>, Error<'gc>>,
-    messages: &mut Vec<Message>,
-    hover: &mut Option<DisplayObjectHandle>,
-) -> Option<Value<'gc>> {
-    match value {
-        Ok(Value::Undefined) => {
-            ui.label("Undefined");
-        }
-        Ok(Value::Null) => {
-            ui.label("Null");
-        }
-        Ok(Value::Bool(mut value)) => {
-            if ui.checkbox(&mut value, "").clicked() {
-                return Some(Value::Bool(value));
-            }
-        }
-        Ok(Value::Number(value)) => {
-            return num_edit_ui(ui, edited_key, value_edit_buf, key, value).map(Value::Number);
-        }
-        Ok(Value::String(value)) => {
-            TextEdit::singleline(&mut value.to_string()).show(ui);
-        }
-        Ok(Value::Object(value)) => {
-            if value.as_executable().is_some() {
-                ui.label("Function");
-            } else if ui.button(object_name(value)).clicked() {
-                messages.push(Message::TrackAVM1Object(AVM1ObjectHandle::new(
-                    activation.context,
-                    value,
-                )));
-            }
-        }
-        Ok(Value::MovieClip(value)) => {
-            if let Some((_, _, object)) = value.resolve_reference(activation) {
-                open_display_object_button(ui, activation.context, messages, object, hover);
-            } else {
-                ui.colored_label(
-                    ui.style().visuals.error_fg_color,
-                    format!("Unknown movieclip {}", value.path()),
-                );
-            }
-        }
-        Err(e) => {
-            ui.colored_label(ui.style().visuals.error_fg_color, e.to_string());
-        }
-    }
-    None
 }
