@@ -108,7 +108,7 @@
 }
 
 #panic-body {
-    & .details {
+    &.details {
         flex: 0.9;
         margin: 0 10px;
     }
