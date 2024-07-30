@@ -5,15 +5,13 @@ use crate::debug_ui::handle::{AVM1ObjectHandle, DisplayObjectHandle};
 use crate::debug_ui::Message;
 use crate::string::AvmString;
 use egui::{Grid, Id, TextEdit, Ui, Window};
-use std::collections::HashMap;
-
-type ValueEditBuffers = HashMap<usize, String>;
 
 #[derive(Debug, Default)]
 pub struct Avm1ObjectWindow {
     hovered_debug_rect: Option<DisplayObjectHandle>,
     key_filter_string: String,
-    value_edit_buffers: ValueEditBuffers,
+    edited_key: Option<String>,
+    value_edit_buf: String,
 }
 
 impl Avm1ObjectWindow {
@@ -62,7 +60,8 @@ impl Avm1ObjectWindow {
                             if let Some(new) = show_avm1_value(
                                 ui,
                                 &mut activation,
-                                &mut self.value_edit_buffers,
+                                &mut self.edited_key,
+                                &mut self.value_edit_buf,
                                 &key,
                                 value,
                                 messages,
@@ -94,42 +93,40 @@ fn object_name(object: Object) -> String {
 
 fn num_edit_ui(
     ui: &mut Ui,
-    value_edit_buffers: &mut ValueEditBuffers,
+    edited_key: &mut Option<String>,
+    edit_buf: &mut String,
     key: &AvmString,
     num: f64,
 ) -> Option<f64> {
     let mut new_val = None;
-    let ptr = key.as_wstr() as *const _ as *const () as usize;
-    match value_edit_buffers.get_mut(&ptr) {
-        Some(buf) => {
-            let mut remove = false;
-            ui.horizontal(|ui| {
-                ui.add(egui::TextEdit::singleline(buf).desired_width(96.0));
-                match buf.parse::<f64>() {
-                    Ok(num) => {
-                        if ui.button("set").clicked() {
-                            new_val = Some(num);
-                            remove = true;
-                        }
-                    }
-                    Err(e) => {
-                        ui.add_enabled(false, egui::Button::new("set"))
-                            .on_disabled_hover_text(e.to_string());
+    if edited_key
+        .as_ref()
+        .is_some_and(|edit_key| *edit_key == key.to_utf8_lossy())
+    {
+        ui.horizontal(|ui| {
+            ui.add(egui::TextEdit::singleline(edit_buf).desired_width(96.0));
+            match edit_buf.parse::<f64>() {
+                Ok(num) => {
+                    if ui.button("set").clicked() {
+                        new_val = Some(num);
+                        *edited_key = None;
                     }
                 }
-            });
-            if remove {
-                value_edit_buffers.remove(&ptr);
+                Err(e) => {
+                    ui.add_enabled(false, egui::Button::new("set"))
+                        .on_disabled_hover_text(e.to_string());
+                }
             }
-        }
-        None => {
-            ui.horizontal(|ui| {
-                ui.label(num.to_string());
-                if ui.button("edit").clicked() {
-                    value_edit_buffers.insert(ptr, num.to_string());
-                }
-            });
-        }
+        });
+    } else {
+        ui.horizontal(|ui| {
+            let num_str = num.to_string();
+            ui.label(&num_str);
+            if ui.button("edit").clicked() {
+                *edited_key = Some(key.to_utf8_lossy().into_owned());
+                *edit_buf = num_str;
+            }
+        });
     }
     new_val
 }
@@ -140,7 +137,8 @@ fn num_edit_ui(
 pub fn show_avm1_value<'gc>(
     ui: &mut Ui,
     activation: &mut Activation<'_, 'gc>,
-    value_edit_buffers: &mut ValueEditBuffers,
+    edited_key: &mut Option<String>,
+    value_edit_buf: &mut String,
     key: &AvmString,
     value: Result<Value<'gc>, Error<'gc>>,
     messages: &mut Vec<Message>,
@@ -159,8 +157,7 @@ pub fn show_avm1_value<'gc>(
             }
         }
         Ok(Value::Number(value)) => {
-            return num_edit_ui(ui, value_edit_buffers, key, value)
-                .map(|float| Value::Number(float));
+            return num_edit_ui(ui, edited_key, value_edit_buf, key, value).map(Value::Number);
         }
         Ok(Value::String(value)) => {
             TextEdit::singleline(&mut value.to_string()).show(ui);
