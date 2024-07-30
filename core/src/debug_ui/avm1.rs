@@ -94,14 +94,7 @@ impl Avm1ObjectWindow {
                 }
             }
             Ok(Value::Number(value)) => {
-                return num_edit_ui(
-                    ui,
-                    &mut self.edited_key,
-                    &mut self.value_edit_buf,
-                    key,
-                    value,
-                )
-                .map(Value::Number);
+                return self.num_edit_ui(ui, key, value).map(Value::Number);
             }
             Ok(Value::String(value)) => {
                 TextEdit::singleline(&mut value.to_string()).show(ui);
@@ -138,6 +131,45 @@ impl Avm1ObjectWindow {
         }
         None
     }
+    fn num_edit_ui(&mut self, ui: &mut Ui, key: &AvmString, num: f64) -> Option<f64> {
+        let mut new_val = None;
+        if self
+            .edited_key
+            .as_ref()
+            .is_some_and(|edit_key| *edit_key == key.to_utf8_lossy())
+        {
+            ui.horizontal(|ui| {
+                ui.add(egui::TextEdit::singleline(&mut self.value_edit_buf).desired_width(96.0));
+                match self.value_edit_buf.parse::<f64>() {
+                    Ok(num) => {
+                        if ui.input(|inp| inp.key_pressed(egui::Key::Enter))
+                            || ui.button("✔").on_hover_text("Set").clicked()
+                        {
+                            new_val = Some(num);
+                            self.edited_key = None;
+                        }
+                    }
+                    Err(e) => {
+                        ui.add_enabled(false, egui::Button::new("✔"))
+                            .on_disabled_hover_text(e.to_string());
+                    }
+                }
+                if ui.button("🗙").on_hover_text("Cancel").clicked() {
+                    self.edited_key = None;
+                }
+            });
+        } else {
+            ui.horizontal(|ui| {
+                let num_str = num.to_string();
+                ui.label(&num_str);
+                if ui.button("✏").on_hover_text("Edit").clicked() {
+                    self.edited_key = Some(key.to_utf8_lossy().into_owned());
+                    self.value_edit_buf = num_str;
+                }
+            });
+        }
+        new_val
+    }
 }
 
 fn object_name(object: Object) -> String {
@@ -150,49 +182,4 @@ fn object_name(object: Object) -> String {
     } else {
         format!("Object {:p}", object.as_ptr())
     }
-}
-
-fn num_edit_ui(
-    ui: &mut Ui,
-    edited_key: &mut Option<String>,
-    edit_buf: &mut String,
-    key: &AvmString,
-    num: f64,
-) -> Option<f64> {
-    let mut new_val = None;
-    if edited_key
-        .as_ref()
-        .is_some_and(|edit_key| *edit_key == key.to_utf8_lossy())
-    {
-        ui.horizontal(|ui| {
-            ui.add(egui::TextEdit::singleline(edit_buf).desired_width(96.0));
-            match edit_buf.parse::<f64>() {
-                Ok(num) => {
-                    if ui.input(|inp| inp.key_pressed(egui::Key::Enter))
-                        || ui.button("✔").on_hover_text("Set").clicked()
-                    {
-                        new_val = Some(num);
-                        *edited_key = None;
-                    }
-                }
-                Err(e) => {
-                    ui.add_enabled(false, egui::Button::new("✔"))
-                        .on_disabled_hover_text(e.to_string());
-                }
-            }
-            if ui.button("🗙").on_hover_text("Cancel").clicked() {
-                *edited_key = None;
-            }
-        });
-    } else {
-        ui.horizontal(|ui| {
-            let num_str = num.to_string();
-            ui.label(&num_str);
-            if ui.button("✏").on_hover_text("Edit").clicked() {
-                *edited_key = Some(key.to_utf8_lossy().into_owned());
-                *edit_buf = num_str;
-            }
-        });
-    }
-    new_val
 }
