@@ -2208,9 +2208,9 @@ impl<'gc> MovieClip<'gc> {
                     "Got \"{:?}\" when constructing AVM2 side of movie clip of type {}",
                     e,
                     class_object
-                        .try_inner_class_definition()
-                        .map(|c| c.name().to_qualified_name(context.gc_context))
-                        .unwrap_or_else(|_| "[BorrowError!]".into())
+                        .inner_class_definition()
+                        .name()
+                        .to_qualified_name(context.gc_context)
                 );
             }
         }
