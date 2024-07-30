@@ -2702,7 +2702,10 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         }
 
         context.commands.push_mask();
-        let mask = Matrix::create_box_from_rectangle(&self.0.bounds.get());
+
+        let mask_bounds = self.0.bounds.get().grow_x(-Self::GUTTER);
+        let mask = Matrix::create_box_from_rectangle(&mask_bounds);
+
         context.commands.draw_rect(
             Color::WHITE,
             context.transform_stack.transform().matrix * mask,
