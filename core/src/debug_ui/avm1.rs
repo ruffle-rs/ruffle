@@ -85,6 +85,9 @@ fn object_name(object: Object) -> String {
     }
 }
 
+/// Shows an egui widget to inspect and (for certain value types) edit an AVM1 value.
+///
+/// Optionally returns the updated value, if the user edited it.
 pub fn show_avm1_value<'gc>(
     ui: &mut Ui,
     activation: &mut Activation<'_, 'gc>,
