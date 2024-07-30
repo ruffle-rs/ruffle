@@ -22,7 +22,7 @@ use crate::events::{ClipEvent, ClipEventResult, TextControlCode};
 use crate::font::{FontType, Glyph, TextRenderSettings};
 use crate::html;
 use crate::html::{
-    FormatSpans, Layout, LayoutBox, LayoutContent, LayoutMetrics, Position, TextFormat,
+    FormatSpans, Layout, LayoutBox, LayoutContent, LayoutLine, LayoutMetrics, Position, TextFormat,
 };
 use crate::prelude::*;
 use crate::string::{utils as string_utils, AvmString, SwfStrExt as _, WStr, WString};
@@ -37,7 +37,6 @@ use ruffle_render::commands::CommandHandler;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
 use ruffle_wstr::WStrToUtf8;
-use std::cmp::Ordering;
 use std::collections::VecDeque;
 use std::{cell::Ref, cell::RefMut, sync::Arc};
 use swf::ColorTransform;
@@ -1287,39 +1286,32 @@ impl<'gc> EditText<'gc> {
         position.x += Twips::from_pixels(Self::INTERNAL_PADDING) + Twips::from_pixels(text.hscroll);
         position.y += Twips::from_pixels(Self::INTERNAL_PADDING) + text.vertical_scroll_offset();
 
-        // First determine which *row* of text is the closest match to the Y position...
-        let mut closest_row_extent_y = None;
-        for layout_box in text.layout.boxes_iter() {
-            if layout_box.is_text_box() {
-                if let Some(closest_extent_y) = closest_row_extent_y {
-                    if layout_box.bounds().extent_y() > closest_extent_y
-                        && position.y >= layout_box.bounds().offset_y()
-                    {
-                        closest_row_extent_y = Some(layout_box.bounds().extent_y());
-                    }
-                } else {
-                    closest_row_extent_y = Some(layout_box.bounds().extent_y());
+        // TODO We can use binary search for both y and x here
+
+        // First determine which line of text is the closest match to the Y position...
+        let mut closest_line: Option<&LayoutLine> = None;
+        for line in text.layout.lines().iter() {
+            if let Some(closest_extent_y) = closest_line.map(|l| l.bounds().extent_y()) {
+                if line.bounds().extent_y() > closest_extent_y
+                    && position.y >= line.bounds().offset_y()
+                {
+                    closest_line = Some(line);
                 }
+            } else {
+                closest_line = Some(line);
             }
         }
 
-        // ...then find the box within that row that is the closest match to the X position.
+        // ...then find the box within that line that is the closest match to the X position.
         let mut closest_layout_box: Option<&LayoutBox<'gc>> = None;
-        if let Some(closest_extent_y) = closest_row_extent_y {
-            for layout_box in text.layout.boxes_iter() {
+        if let Some(line) = closest_line {
+            for layout_box in line.boxes_iter() {
                 if layout_box.is_text_box() {
-                    match layout_box.bounds().extent_y().cmp(&closest_extent_y) {
-                        Ordering::Less => {}
-                        Ordering::Equal => {
-                            if position.x >= layout_box.bounds().offset_x()
-                                || closest_layout_box.is_none()
-                            {
-                                closest_layout_box = Some(layout_box);
-                            } else {
-                                break;
-                            }
-                        }
-                        Ordering::Greater => break,
+                    if position.x >= layout_box.bounds().offset_x() || closest_layout_box.is_none()
+                    {
+                        closest_layout_box = Some(layout_box);
+                    } else {
+                        break;
                     }
                 }
             }
