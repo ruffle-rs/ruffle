@@ -10,7 +10,7 @@ use crate::avm2::vtable::VTable;
 use crate::avm2::Multiname;
 use crate::avm2::{Error, QName};
 use crate::string::AvmString;
-use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
+use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 
@@ -19,19 +19,19 @@ pub fn scriptobject_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class);
+    let base = ScriptObjectData::new(class).into();
 
-    Ok(ScriptObject(GcCell::new(activation.context.gc_context, base)).into())
+    Ok(ScriptObject(Gc::new(activation.context.gc_context, base)).into())
 }
 
 /// Default implementation of `avm2::Object`.
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct ScriptObject<'gc>(pub GcCell<'gc, ScriptObjectData<'gc>>);
+pub struct ScriptObject<'gc>(pub Gc<'gc, RefLock<ScriptObjectData<'gc>>>);
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
-pub struct ScriptObjectWeak<'gc>(pub GcWeakCell<'gc, ScriptObjectData<'gc>>);
+pub struct ScriptObjectWeak<'gc>(pub GcWeak<'gc, RefLock<ScriptObjectData<'gc>>>);
 
 /// Base data common to all `TObject` implementations.
 ///
@@ -62,15 +62,15 @@ pub struct ScriptObjectData<'gc> {
 
 impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.read()
+        self.0.borrow()
     }
 
     fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        self.0.write(mc)
+        self.0.borrow_mut(mc)
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.as_ptr() as *const ObjectPtr
+        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
     fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
@@ -108,9 +108,9 @@ impl<'gc> ScriptObject<'gc> {
         class_obj: Option<ClassObject<'gc>>,
         proto: Option<Object<'gc>>,
     ) -> Object<'gc> {
-        ScriptObject(GcCell::new(
+        ScriptObject(Gc::new(
             mc,
-            ScriptObjectData::custom_new(class, proto, class_obj),
+            RefLock::new(ScriptObjectData::custom_new(class, proto, class_obj)),
         ))
         .into()
     }
@@ -130,7 +130,7 @@ impl<'gc> ScriptObject<'gc> {
         base.set_vtable(vt);
         base.install_instance_slots();
 
-        ScriptObject(GcCell::new(activation.context.gc_context, base)).into()
+        ScriptObject(Gc::new(activation.context.gc_context, RefLock::new(base))).into()
     }
 }
 
@@ -434,7 +434,7 @@ impl<'gc> Debug for ScriptObject<'gc> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         let mut f = f.debug_struct("ScriptObject");
 
-        match self.0.try_read() {
+        match self.0.try_borrow() {
             Ok(obj) => f.field("name", &obj.debug_class_name()),
             Err(err) => f.field("name", &err),
         };
