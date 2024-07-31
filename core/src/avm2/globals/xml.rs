@@ -725,7 +725,7 @@ pub fn text<'gc>(
 
     if list.length() > 0 {
         // NOTE: Since avmplus uses appendNode to build the list here, we need to set target dirty flag.
-        list.set_dirty_flag(activation.gc());
+        list.set_dirty_flag();
     }
 
     // 3. Return list
@@ -782,7 +782,7 @@ pub fn comments<'gc>(
 
     if list.length() > 0 {
         // NOTE: Since avmplus uses appendNode to build the list here, we need to set target dirty flag.
-        list.set_dirty_flag(activation.gc());
+        list.set_dirty_flag();
     }
 
     // 3. Return list
@@ -815,7 +815,7 @@ pub fn processing_instructions<'gc>(
 
     if list.length() > 0 {
         // NOTE: Since avmplus uses appendNode to build the list here, we need to set target dirty flag.
-        list.set_dirty_flag(activation.gc());
+        list.set_dirty_flag();
     }
 
     // 5. Return list
