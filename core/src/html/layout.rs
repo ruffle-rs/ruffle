@@ -418,6 +418,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         self.is_first_line = true;
         self.has_line_break = true;
+        self.max_font_size = Twips::from_pixels(self.current_line_span.font.size);
     }
 
     /// Adjust the text layout cursor down to the next line.
@@ -446,6 +447,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         self.is_first_line = false;
         self.has_line_break = true;
+        self.max_font_size = Twips::from_pixels(self.current_line_span.font.size);
     }
 
     /// Adjust the text layout cursor in response to a tab.
