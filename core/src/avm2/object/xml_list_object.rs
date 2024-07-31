@@ -121,11 +121,11 @@ impl<'gc> XmlListObject<'gc> {
         *unlock!(Gc::write(mc, self.0), XmlListObjectData, children).borrow_mut() = children;
     }
 
-    pub fn target_object(&self) -> Option<XmlOrXmlListObject<'gc>> {
+    fn target_object(&self) -> Option<XmlOrXmlListObject<'gc>> {
         self.0.target_object.get()
     }
 
-    pub fn target_property(&self) -> Option<Multiname<'gc>> {
+    fn target_property(&self) -> Option<Multiname<'gc>> {
         self.0.target_property.borrow().clone()
     }
 
