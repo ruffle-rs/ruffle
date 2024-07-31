@@ -1383,7 +1383,7 @@ impl<'gc> Object<'gc> {
             Self::ArrayObject(o) => WeakObject::ArrayObject(ArrayObjectWeak(Gc::downgrade(o.0))),
             Self::StageObject(o) => WeakObject::StageObject(StageObjectWeak(Gc::downgrade(o.0))),
             Self::DomainObject(o) => WeakObject::DomainObject(DomainObjectWeak(Gc::downgrade(o.0))),
-            Self::EventObject(o) => WeakObject::EventObject(EventObjectWeak(GcCell::downgrade(o.0))),
+            Self::EventObject(o) => WeakObject::EventObject(EventObjectWeak(Gc::downgrade(o.0))),
             Self::DispatchObject(o) => WeakObject::DispatchObject(DispatchObjectWeak(Gc::downgrade(o.0))),
             Self::XmlObject(o) => WeakObject::XmlObject(XmlObjectWeak(Gc::downgrade(o.0))),
             Self::XmlListObject(o) => WeakObject::XmlListObject(XmlListObjectWeak(GcCell::downgrade(o.0))),
