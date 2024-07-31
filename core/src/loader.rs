@@ -2090,7 +2090,7 @@ impl<'gc> Loader<'gc> {
             loader_info
                 .as_loader_info_object()
                 .unwrap()
-                .set_content_type(sniffed_type, activation.context.gc_context);
+                .set_content_type(sniffed_type);
             let fake_movie = Arc::new(SwfMovie::fake_with_compressed_len(
                 activation.context.swf.version(),
                 data.len(),
@@ -2316,7 +2316,7 @@ impl<'gc> Loader<'gc> {
                         ));
 
                         let loader_info = loader_info.as_loader_info_object().unwrap();
-                        loader_info.set_errored(true, activation.context.gc_context);
+                        loader_info.set_errored(true);
 
                         loader_info.set_loader_stream(
                             LoaderStream::NotYetLoaded(fake_movie, None, false),

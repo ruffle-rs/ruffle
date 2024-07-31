@@ -238,7 +238,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         }
     }
 
-    pub fn set_errored(&self, val: bool, _mc: &Mutation<'gc>) {
+    pub fn set_errored(&self, val: bool) {
         self.0.errored.set(val);
     }
 
@@ -250,7 +250,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         self.0.init_event_fired.get()
     }
 
-    pub fn reset_init_and_complete_events(&self, _mc: &Mutation<'gc>) {
+    pub fn reset_init_and_complete_events(&self) {
         self.0.init_event_fired.set(false);
         self.0.complete_event_fired.set(false);
     }
@@ -325,7 +325,7 @@ impl<'gc> LoaderInfoObject<'gc> {
     /// Makes the 'content' visible to ActionScript.
     /// This is used by certain special loaders (the stage and root movie),
     /// which expose the loaded content before the 'init' event is fired.
-    pub fn set_expose_content(&self, _mc: &Mutation<'gc>) {
+    pub fn set_expose_content(&self) {
         self.0.expose_content.set(true);
     }
 
@@ -333,7 +333,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         *unlock!(Gc::write(mc, self.0), LoaderInfoObjectData, loaded_stream).borrow_mut() = stream;
     }
 
-    pub fn set_content_type(&self, content_type: ContentType, _mc: &Mutation<'gc>) {
+    pub fn set_content_type(&self, content_type: ContentType) {
         self.0.content_type.set(content_type);
     }
 
@@ -370,8 +370,8 @@ impl<'gc> LoaderInfoObject<'gc> {
         let empty_swf = Arc::new(SwfMovie::empty(activation.context.swf.version()));
         let loader_stream = LoaderStream::NotYetLoaded(empty_swf, None, false);
         self.set_loader_stream(loader_stream, activation.context.gc_context);
-        self.set_errored(false, activation.context.gc_context);
-        self.reset_init_and_complete_events(activation.context.gc_context);
+        self.set_errored(false);
+        self.reset_init_and_complete_events();
 
         let loader = self
             .0

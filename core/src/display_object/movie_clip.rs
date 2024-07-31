@@ -390,8 +390,8 @@ impl<'gc> MovieClip<'gc> {
                 LoaderInfoObject::not_yet_loaded(activation, movie.clone(), None, None, false)
                     .expect("Failed to construct LoaderInfoObject");
             let loader_info_obj = loader_info.as_loader_info_object().unwrap();
-            loader_info_obj.set_expose_content(activation.context.gc_context);
-            loader_info_obj.set_content_type(ContentType::Swf, activation.context.gc_context);
+            loader_info_obj.set_expose_content();
+            loader_info_obj.set_content_type(ContentType::Swf);
             Some(loader_info)
         } else {
             None
