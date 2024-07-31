@@ -25,8 +25,8 @@ pub struct StageObjectData<'gc> {
     /// The base data common to all AVM2 objects.
     base: RefLock<ScriptObjectData<'gc>>,
 
-    /// The associated display object, if one exists.
-    display_object: Option<DisplayObject<'gc>>,
+    /// The associated display object.
+    display_object: DisplayObject<'gc>,
 }
 
 impl<'gc> StageObject<'gc> {
@@ -49,7 +49,7 @@ impl<'gc> StageObject<'gc> {
             activation.context.gc_context,
             StageObjectData {
                 base: ScriptObjectData::new(class).into(),
-                display_object: Some(display_object),
+                display_object,
             },
         ));
         instance.install_instance_slots(activation.context.gc_context);
@@ -99,7 +99,7 @@ impl<'gc> StageObject<'gc> {
             activation.context.gc_context,
             StageObjectData {
                 base: ScriptObjectData::new(class).into(),
-                display_object: Some(display_object),
+                display_object,
             },
         ));
         this.install_instance_slots(activation.context.gc_context);
@@ -124,7 +124,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     }
 
     fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
-        self.0.display_object
+        Some(self.0.display_object)
     }
 
     fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
