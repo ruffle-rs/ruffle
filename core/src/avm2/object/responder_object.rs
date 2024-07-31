@@ -76,8 +76,9 @@ impl<'gc> ResponderObject<'gc> {
         result: Option<FunctionObject<'gc>>,
         status: Option<FunctionObject<'gc>>,
     ) {
-        unlock!(Gc::write(mc, self.0), ResponderObjectData, result).set(result);
-        unlock!(Gc::write(mc, self.0), ResponderObjectData, status).set(status);
+        let write = Gc::write(mc, self.0);
+        unlock!(write, ResponderObjectData, result).set(result);
+        unlock!(write, ResponderObjectData, status).set(status);
     }
 
     pub fn send_callback(

@@ -27,10 +27,7 @@ pub fn error_allocator<'gc>(
 
     Ok(ErrorObject(Gc::new(
         activation.context.gc_context,
-        ErrorObjectData {
-            base,
-            call_stack: RefLock::new(call_stack),
-        },
+        ErrorObjectData { base, call_stack },
     ))
     .into())
 }
@@ -58,7 +55,7 @@ pub struct ErrorObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
 
-    call_stack: RefLock<CallStack<'gc>>,
+    call_stack: CallStack<'gc>,
 }
 
 impl<'gc> ErrorObject<'gc> {
@@ -107,8 +104,8 @@ impl<'gc> ErrorObject<'gc> {
         Ok(output)
     }
 
-    pub fn call_stack(&self) -> Ref<CallStack<'gc>> {
-        self.0.call_stack.borrow()
+    pub fn call_stack(&self) -> &CallStack<'gc> {
+        &self.0.call_stack
     }
 
     fn debug_class_name(&self) -> Box<dyn Debug + 'gc> {

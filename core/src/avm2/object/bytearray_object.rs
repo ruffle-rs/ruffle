@@ -164,7 +164,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         }
 
         unlock!(
-            Gc::write(activation.context.gc_context, self.0),
+            Gc::write(activation.gc(), self.0),
             ByteArrayObjectData,
             base
         )
@@ -192,7 +192,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         }
 
         unlock!(
-            Gc::write(activation.context.gc_context, self.0),
+            Gc::write(activation.gc(), self.0),
             ByteArrayObjectData,
             base
         )
@@ -215,7 +215,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         }
 
         Ok(unlock!(
-            Gc::write(activation.context.gc_context, self.0),
+            Gc::write(activation.gc(), self.0),
             ByteArrayObjectData,
             base
         )
