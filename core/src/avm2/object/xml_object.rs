@@ -94,7 +94,7 @@ impl<'gc> XmlObject<'gc> {
 
                     if list.length() > 0 {
                         // NOTE: Since avmplus uses appendNode here, when the node exists, that implicitly sets the target_dirty flag.
-                        list.set_dirty_flag(activation.gc());
+                        list.set_dirty_flag();
                     }
 
                     return list;
@@ -144,7 +144,7 @@ impl<'gc> XmlObject<'gc> {
 
         if list.length() > 0 {
             // NOTE: Since avmplus uses appendNode to build the list here, we need to set target dirty flag.
-            list.set_dirty_flag(activation.gc());
+            list.set_dirty_flag();
         }
 
         list
@@ -301,7 +301,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         // NOTE: avmplus does not set a target property/object here, but if there was at least one child
         //       then the target_dirty flag would be set, since avmplus used appendNode which always sets it.
         if list.length() > 0 {
-            list.set_dirty_flag(activation.gc());
+            list.set_dirty_flag();
         }
 
         Some(list)
@@ -365,7 +365,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         );
 
         if list.length() > 0 {
-            list.set_dirty_flag(activation.gc());
+            list.set_dirty_flag();
         }
 
         Ok(list.into())
