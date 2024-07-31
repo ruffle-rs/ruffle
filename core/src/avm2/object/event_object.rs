@@ -11,7 +11,8 @@ use crate::display_object::TDisplayObject;
 use crate::display_object::{DisplayObject, InteractiveObject, TInteractiveObject};
 use crate::events::{KeyCode, MouseButton};
 use crate::string::AvmString;
-use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
+use gc_arena::barrier::unlock;
+use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 
@@ -20,13 +21,13 @@ pub fn event_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class);
+    let base = ScriptObjectData::new(class).into();
 
-    Ok(EventObject(GcCell::new(
+    Ok(EventObject(Gc::new(
         activation.context.gc_context,
         EventObjectData {
             base,
-            event: Event::new(""),
+            event: RefLock::new(Event::new("")),
         },
     ))
     .into())
@@ -34,20 +35,20 @@ pub fn event_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct EventObject<'gc>(pub GcCell<'gc, EventObjectData<'gc>>);
+pub struct EventObject<'gc>(pub Gc<'gc, EventObjectData<'gc>>);
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
-pub struct EventObjectWeak<'gc>(pub GcWeakCell<'gc, EventObjectData<'gc>>);
+pub struct EventObjectWeak<'gc>(pub GcWeak<'gc, EventObjectData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct EventObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: RefLock<ScriptObjectData<'gc>>,
 
     /// The event this object holds.
-    event: Event<'gc>,
+    event: RefLock<Event<'gc>>,
 }
 
 impl<'gc> EventObject<'gc> {
@@ -75,15 +76,18 @@ impl<'gc> EventObject<'gc> {
         S: Into<AvmString<'gc>>,
     {
         let class = context.avm2.classes().event;
-        let base = ScriptObjectData::new(class);
+        let base = ScriptObjectData::new(class).into();
 
         let mut event = Event::new(event_type);
         event.set_bubbles(bubbles);
         event.set_cancelable(cancelable);
 
-        let event_object = EventObject(GcCell::new(
+        let event_object = EventObject(Gc::new(
             context.gc_context,
-            EventObjectData { base, event },
+            EventObjectData {
+                base,
+                event: RefLock::new(event),
+            },
         ));
 
         // not needed, as base Event has no instance slots.
@@ -343,15 +347,15 @@ impl<'gc> EventObject<'gc> {
 
 impl<'gc> TObject<'gc> for EventObject<'gc> {
     fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        Ref::map(self.0.read(), |read| &read.base)
+        self.0.base.borrow()
     }
 
     fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        RefMut::map(self.0.write(mc), |write| &mut write.base)
+        unlock!(Gc::write(mc, self.0), EventObjectData, base).borrow_mut()
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.as_ptr() as *const ObjectPtr
+        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
     fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
@@ -359,29 +363,20 @@ impl<'gc> TObject<'gc> for EventObject<'gc> {
     }
 
     fn as_event(&self) -> Option<Ref<Event<'gc>>> {
-        Some(Ref::map(self.0.read(), |d| &d.event))
+        Some(self.0.event.borrow())
     }
 
     fn as_event_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<Event<'gc>>> {
-        Some(RefMut::map(self.0.write(mc), |d| &mut d.event))
+        Some(unlock!(Gc::write(mc, self.0), EventObjectData, event).borrow_mut())
     }
 }
 
 impl<'gc> Debug for EventObject<'gc> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self.0.try_read() {
-            Ok(obj) => f
-                .debug_struct("EventObject")
-                .field("type", &obj.event.event_type())
-                .field("class", &obj.base.debug_class_name())
-                .field("ptr", &self.0.as_ptr())
-                .finish(),
-            Err(err) => f
-                .debug_struct("EventObject")
-                .field("type", &err)
-                .field("class", &err)
-                .field("ptr", &self.0.as_ptr())
-                .finish(),
-        }
+        f.debug_struct("EventObject")
+            .field("type", &self.0.event.borrow().event_type())
+            .field("class", &self.0.base.borrow().debug_class_name())
+            .field("ptr", &Gc::as_ptr(self.0))
+            .finish()
     }
 }
