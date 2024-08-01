@@ -5,12 +5,13 @@ use crate::debug_ui::handle::{AVM1ObjectHandle, DisplayObjectHandle};
 use crate::debug_ui::Message;
 use crate::string::AvmString;
 use egui::{Grid, Id, TextBuffer, TextEdit, Ui, Window};
+use ruffle_wstr::WString;
 
 #[derive(Debug, Default)]
 pub struct Avm1ObjectWindow {
     hovered_debug_rect: Option<DisplayObjectHandle>,
     key_filter_string: String,
-    edited_key: Option<String>,
+    edited_key: Option<WString>,
     value_edit_buf: String,
     /// True if the active text edit should be focused (after clicking 'edit', etc.)
     focus_text_edit: bool,
@@ -140,7 +141,7 @@ impl Avm1ObjectWindow {
         if self
             .edited_key
             .as_ref()
-            .is_some_and(|edit_key| *edit_key == key.to_utf8_lossy())
+            .is_some_and(|edit_key| *edit_key == key.as_wstr())
         {
             ui.horizontal(|ui| {
                 let re = ui
@@ -172,7 +173,7 @@ impl Avm1ObjectWindow {
                 let num_str = num.to_string();
                 ui.label(&num_str);
                 if ui.edit_button().clicked() {
-                    self.edited_key = Some(key.to_utf8_lossy().into_owned());
+                    self.edited_key = Some(key.as_wstr().to_owned());
                     self.value_edit_buf = num_str;
                     self.focus_text_edit = true;
                 }
@@ -191,7 +192,7 @@ impl Avm1ObjectWindow {
             if self
                 .edited_key
                 .as_ref()
-                .is_some_and(|edit_key| *edit_key == key.to_utf8_lossy())
+                .is_some_and(|edit_key| *edit_key == key.as_wstr())
             {
                 let re = ui.add(TextEdit::singleline(&mut self.value_edit_buf).desired_width(96.0));
                 if self.focus_text_edit {
@@ -209,7 +210,7 @@ impl Avm1ObjectWindow {
                 ui.label(string.to_utf8_lossy());
                 if ui.edit_button().clicked() {
                     self.value_edit_buf = string.to_string();
-                    self.edited_key = Some(key.to_string());
+                    self.edited_key = Some(key.as_wstr().to_owned());
                     self.focus_text_edit = true;
                 }
             }
