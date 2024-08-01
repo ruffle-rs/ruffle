@@ -82,13 +82,15 @@ pub struct DateObjectData<'gc> {
     date_time: Cell<Option<DateTime<Utc>>>,
 }
 
-impl<'gc> TObject<'gc> for DateObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+const _: () = assert!(std::mem::offset_of!(DateObjectData, base) == 0);
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), DateObjectData, base).borrow_mut()
+impl<'gc> TObject<'gc> for DateObject<'gc> {
+    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
+
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

@@ -52,6 +52,8 @@ pub struct EventObjectData<'gc> {
     event: RefLock<Event<'gc>>,
 }
 
+const _: () = assert!(std::mem::offset_of!(EventObjectData, base) == 0);
+
 impl<'gc> EventObject<'gc> {
     /// Create a bare Event instance while skipping the usual `construct()` pipeline.
     /// It's just slightly faster and doesn't require an Activation.
@@ -347,12 +349,12 @@ impl<'gc> EventObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for EventObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), EventObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

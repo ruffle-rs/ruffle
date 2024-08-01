@@ -76,6 +76,8 @@ pub struct ClassObjectData<'gc> {
     instance_vtable: VTable<'gc>,
 }
 
+const _: () = assert!(std::mem::offset_of!(ClassObjectData, base) == 0);
+
 impl<'gc> ClassObject<'gc> {
     /// Allocate the prototype for this class.
     ///
@@ -719,12 +721,12 @@ impl<'gc> ClassObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for ClassObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), ClassObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

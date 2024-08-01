@@ -61,12 +61,8 @@ pub struct ScriptObjectData<'gc> {
 }
 
 impl<'gc> TObject<'gc> for ScriptObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.borrow()
-    }
-
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        self.0.borrow_mut(mc)
+    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+        self.0
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

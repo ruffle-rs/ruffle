@@ -79,13 +79,15 @@ pub struct VertexBuffer3DObjectData<'gc> {
     data32_per_vertex: u8,
 }
 
-impl<'gc> TObject<'gc> for VertexBuffer3DObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+const _: () = assert!(std::mem::offset_of!(VertexBuffer3DObjectData, base) == 0);
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), VertexBuffer3DObjectData, base).borrow_mut()
+impl<'gc> TObject<'gc> for VertexBuffer3DObject<'gc> {
+    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
+
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

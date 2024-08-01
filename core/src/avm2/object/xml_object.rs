@@ -66,6 +66,8 @@ pub struct XmlObjectData<'gc> {
     node: Lock<E4XNode<'gc>>,
 }
 
+const _: () = assert!(std::mem::offset_of!(XmlObjectData, base) == 0);
+
 impl<'gc> XmlObject<'gc> {
     pub fn new(node: E4XNode<'gc>, activation: &mut Activation<'_, 'gc>) -> Self {
         XmlObject(Gc::new(
@@ -270,12 +272,12 @@ impl<'gc> XmlObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for XmlObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), XmlObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

@@ -58,6 +58,8 @@ pub struct QNameObjectData<'gc> {
     name: RefLock<Multiname<'gc>>,
 }
 
+const _: () = assert!(std::mem::offset_of!(QNameObjectData, base) == 0);
+
 impl<'gc> QNameObject<'gc> {
     /// Box a Multiname into an object.
     pub fn from_name(
@@ -133,12 +135,12 @@ impl<'gc> QNameObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for QNameObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), QNameObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

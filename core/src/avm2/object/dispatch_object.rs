@@ -63,6 +63,8 @@ pub struct DispatchObjectData<'gc> {
     dispatch: RefLock<DispatchList<'gc>>,
 }
 
+const _: () = assert!(std::mem::offset_of!(DispatchObjectData, base) == 0);
+
 impl<'gc> DispatchObject<'gc> {
     /// Construct an empty dispatch list.
     pub fn empty_list(activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
@@ -80,12 +82,12 @@ impl<'gc> DispatchObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for DispatchObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), DispatchObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
