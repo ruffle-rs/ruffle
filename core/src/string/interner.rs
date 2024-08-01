@@ -3,7 +3,7 @@ use std::borrow::{Borrow, Cow};
 use std::cell::Cell;
 use std::hash::{BuildHasher, Hash, Hasher};
 use std::marker::PhantomData;
-use std::ops::DerefMut;
+use std::ops::{Deref, DerefMut};
 
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use hashbrown::HashSet;
@@ -53,36 +53,39 @@ pub struct AvmStringInterner<'gc> {
     interned: WeakSet<'gc, AvmStringRepr<'gc>>,
 
     empty: Gc<'gc, AvmStringRepr<'gc>>,
-    chars: [Gc<'gc, AvmStringRepr<'gc>>; 128],
+    chars: [Gc<'gc, AvmStringRepr<'gc>>; INTERNED_CHAR_LEN],
 }
+
+const INTERNED_CHAR_LEN: usize = 128;
+static INTERNED_CHARS: [u8; INTERNED_CHAR_LEN] = {
+    let mut chs = [0; INTERNED_CHAR_LEN];
+    let mut i = 0;
+    while i < chs.len() {
+        chs[i] = i as u8;
+        i += 1;
+    }
+    chs
+};
 
 impl<'gc> AvmStringInterner<'gc> {
     pub fn new(mc: &Mutation<'gc>) -> Self {
         let mut interned = WeakSet::default();
 
-        let mut intern_from_static = |s: &[u8]| {
-            let ch = Self::alloc(mc, Cow::Borrowed(WStr::from_units(s)));
-            interned.insert_fresh_no_hash(mc, ch)
+        // We can't use `Self::intern_static` because we don't have a Self yet.
+        let mut intern_from_static = |s: &'static [u8]| {
+            let wstr = WStr::from_units(s);
+            let repr = AvmStringRepr::from_raw_static(wstr, true);
+            interned.insert_fresh_no_hash(mc, Gc::new(mc, repr))
         };
 
-        let empty = intern_from_static(b"");
-
-        let mut chars = [empty; 128];
-        for (i, elem) in chars.iter_mut().enumerate() {
-            *elem = intern_from_static(&[i as u8]);
-        }
-
         Self {
+            empty: intern_from_static(b""),
+            chars: std::array::from_fn(|i| {
+                let c = &INTERNED_CHARS[i];
+                intern_from_static(std::slice::from_ref(c))
+            }),
             interned,
-            empty,
-            chars,
         }
-    }
-
-    fn alloc(mc: &Mutation<'gc>, s: Cow<'_, WStr>) -> Gc<'gc, AvmStringRepr<'gc>> {
-        // note: the string is already marked as interned
-        let repr = AvmStringRepr::from_raw(s.into_owned(), true);
-        Gc::new(mc, repr)
     }
 
     #[must_use]
@@ -91,40 +94,56 @@ impl<'gc> AvmStringInterner<'gc> {
         S: Into<Cow<'a, WStr>>,
     {
         let s = s.into();
-        let atom = match self.interned.entry(mc, s.as_ref()) {
-            (Some(atom), _) => atom,
-            (None, h) => self.interned.insert_fresh(mc, h, Self::alloc(mc, s)),
-        };
-
-        AvmAtom(atom)
+        self.intern_inner(mc, s, |s| {
+            let repr = AvmStringRepr::from_raw(s.into_owned(), true);
+            Gc::new(mc, repr)
+        })
     }
 
     #[must_use]
-    pub fn get(&self, mc: &Mutation<'gc>, s: &WStr) -> Option<AvmAtom<'gc>> {
-        self.interned.get(mc, s).map(AvmAtom)
+    pub fn intern_static(&mut self, mc: &Mutation<'gc>, s: &'static WStr) -> AvmAtom<'gc> {
+        self.intern_inner(mc, s, |s| {
+            let repr = AvmStringRepr::from_raw_static(s, true);
+            Gc::new(mc, repr)
+        })
     }
 
     #[must_use]
     pub fn intern(&mut self, mc: &Mutation<'gc>, s: AvmString<'gc>) -> AvmAtom<'gc> {
         if let Some(atom) = s.as_interned() {
-            return atom;
-        }
-
-        let atom = match self.interned.entry(mc, s.as_wstr()) {
-            (Some(atom), _) => atom,
-            (None, h) => {
+            atom
+        } else {
+            self.intern_inner(mc, s, |s| {
                 let repr = s.to_fully_owned(mc);
                 repr.mark_interned();
-                self.interned.insert_fresh(mc, h, repr)
-            }
-        };
+                repr
+            })
+        }
+    }
 
-        AvmAtom(atom)
+    // The string returned by `f` should be interned, and equivalent to `s`.
+    fn intern_inner<S, F>(&mut self, mc: &Mutation<'gc>, s: S, f: F) -> AvmAtom<'gc>
+    where
+        S: Deref<Target = WStr>,
+        F: FnOnce(S) -> Gc<'gc, AvmStringRepr<'gc>>,
+    {
+        match self.interned.entry(mc, s.deref()) {
+            (Some(atom), _) => AvmAtom(atom),
+            (None, h) => {
+                let atom = self.interned.insert_fresh(mc, h, f(s));
+                AvmAtom(atom)
+            }
+        }
     }
 
     #[must_use]
     pub fn empty(&self) -> AvmString<'gc> {
         self.empty.into()
+    }
+
+    #[must_use]
+    pub fn get(&self, mc: &Mutation<'gc>, s: &WStr) -> Option<AvmAtom<'gc>> {
+        self.interned.get(mc, s).map(AvmAtom)
     }
 
     #[must_use]
