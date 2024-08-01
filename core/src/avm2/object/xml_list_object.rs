@@ -363,6 +363,8 @@ pub struct XmlListObjectData<'gc> {
     target_dirty: Cell<bool>,
 }
 
+const _: () = assert!(std::mem::offset_of!(XmlListObjectData, base) == 0);
+
 /// Holds either an `E4XNode` or an `XmlObject`. This can be converted
 /// in-place to an `XmlObject` via `get_or_create_xml`.
 /// This deliberately does not implement `Copy`, since `get_or_create_xml`
@@ -468,12 +470,12 @@ impl<'gc> From<XmlObject<'gc>> for XmlOrXmlListObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for XmlListObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), XmlListObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

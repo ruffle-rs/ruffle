@@ -40,12 +40,12 @@ pub struct ResponderObject<'gc>(pub Gc<'gc, ResponderObjectData<'gc>>);
 pub struct ResponderObjectWeak<'gc>(pub GcWeak<'gc, ResponderObjectData<'gc>>);
 
 impl<'gc> TObject<'gc> for ResponderObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), ResponderObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
@@ -115,6 +115,8 @@ pub struct ResponderObjectData<'gc> {
     /// Method to call with status info (likely errors)
     status: Lock<Option<FunctionObject<'gc>>>,
 }
+
+const _: () = assert!(std::mem::offset_of!(ResponderObjectData, base) == 0);
 
 impl fmt::Debug for ResponderObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

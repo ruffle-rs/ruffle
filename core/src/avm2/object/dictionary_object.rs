@@ -55,6 +55,8 @@ pub struct DictionaryObjectData<'gc> {
     base: RefLock<ScriptObjectData<'gc>>,
 }
 
+const _: () = assert!(std::mem::offset_of!(DictionaryObjectData, base) == 0);
+
 impl<'gc> DictionaryObject<'gc> {
     /// Retrieve a value in the dictionary's object space.
     pub fn get_property_by_object(self, name: Object<'gc>) -> Value<'gc> {
@@ -95,12 +97,12 @@ impl<'gc> DictionaryObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), DictionaryObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

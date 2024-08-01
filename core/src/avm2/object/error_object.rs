@@ -59,6 +59,8 @@ pub struct ErrorObjectData<'gc> {
     call_stack: CallStack<'gc>,
 }
 
+const _: () = assert!(std::mem::offset_of!(ErrorObjectData, base) == 0);
+
 impl<'gc> ErrorObject<'gc> {
     pub fn display(&self) -> Result<WString, Error<'gc>> {
         // FIXME - we should have a safer way of accessing properties without
@@ -119,12 +121,12 @@ impl<'gc> ErrorObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for ErrorObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), ErrorObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

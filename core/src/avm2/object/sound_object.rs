@@ -74,6 +74,8 @@ pub struct SoundObjectData<'gc> {
     id3: Lock<Option<Object<'gc>>>,
 }
 
+const _: () = assert!(std::mem::offset_of!(SoundObjectData, base) == 0);
+
 #[derive(Collect)]
 #[collect(no_drop)]
 pub enum SoundData<'gc> {
@@ -277,12 +279,12 @@ fn play_queued<'gc>(
 }
 
 impl<'gc> TObject<'gc> for SoundObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), SoundObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

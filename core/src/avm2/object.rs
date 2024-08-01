@@ -22,7 +22,7 @@ use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
 use crate::streams::NetStream;
 use crate::string::AvmString;
-use gc_arena::{Collect, Gc, Mutation};
+use gc_arena::{lock::RefLock, Collect, Gc, Mutation};
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
@@ -204,8 +204,19 @@ use crate::font::Font;
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
     /// Get the base of this object.
     /// Any trait method implementations that were not overridden will forward the call to this instead.
-    fn base(&self) -> Ref<ScriptObjectData<'gc>>;
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>>;
+    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>>;
+
+    #[inline(always)]
+    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
+        let gc_base = self.gc_base();
+        gc_base.borrow()
+    }
+
+    #[inline(always)]
+    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
+        let gc_base = self.gc_base();
+        gc_base.borrow_mut(mc)
+    }
 
     /// Retrieve a local property of the object. The Multiname should always be public.
     ///
@@ -540,40 +551,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         )
     }
 
-    /// Retrieve a slot by its index.
-    fn get_slot(self, id: u32) -> Result<Value<'gc>, Error<'gc>> {
-        let base = self.base();
-
-        base.get_slot(id)
-    }
-
-    /// Set a slot by its index.
-    fn set_slot(
-        self,
-        id: u32,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
-        let value = self
-            .vtable()
-            .unwrap()
-            .coerce_trait_value(id, value, activation)?;
-        let mut base = self.base_mut(activation.gc());
-
-        base.set_slot(id, value, activation.gc())
-    }
-
-    fn set_slot_no_coerce(
-        self,
-        id: u32,
-        value: Value<'gc>,
-        mc: &Mutation<'gc>,
-    ) -> Result<(), Error<'gc>> {
-        let mut base = self.base_mut(mc);
-
-        base.set_slot(id, value, mc)
-    }
-
     /// Call a method by its index.
     ///
     /// This directly corresponds with the AVM2 operation `callmethod`.
@@ -671,12 +648,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             activation.avm2().find_public_namespace(),
             name,
         )))
-    }
-
-    /// Returns true if an object has one or more traits of a given name.
-    fn has_trait(self, name: &Multiname<'gc>) -> bool {
-        let base = self.base();
-        base.has_trait(name)
     }
 
     /// Delete a property by QName, after multiname resolution and all other
@@ -1069,18 +1040,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         Ok(false)
     }
 
-    /// Determine if this object is an instance of a given type.
-    ///
-    /// This uses the ES4 definition of instance, which walks the class object
-    /// chain and accounts for interfaces. For the ES3 definition of instance,
-    /// use `is_instance_of`, which uses the prototype chain.
-    ///
-    /// The given object should be the class object for the given type we are
-    /// checking against this object.
-    fn is_of_type(&self, test_class: Class<'gc>) -> bool {
-        self.instance_class().has_class_in_chain(test_class)
-    }
-
     /// Get a raw pointer value for this object.
     fn as_ptr(&self) -> *const ObjectPtr;
 
@@ -1369,6 +1328,58 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 pub enum ObjectPtr {}
 
 impl<'gc> Object<'gc> {
+    /// Retrieve a slot by its index.
+    pub fn get_slot(self, id: u32) -> Result<Value<'gc>, Error<'gc>> {
+        let base = self.base();
+
+        base.get_slot(id)
+    }
+
+    /// Set a slot by its index.
+    pub fn set_slot(
+        self,
+        id: u32,
+        value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<(), Error<'gc>> {
+        let value = self
+            .vtable()
+            .unwrap()
+            .coerce_trait_value(id, value, activation)?;
+        let mut base = self.base_mut(activation.gc());
+
+        base.set_slot(id, value, activation.gc())
+    }
+
+    pub fn set_slot_no_coerce(
+        self,
+        id: u32,
+        value: Value<'gc>,
+        mc: &Mutation<'gc>,
+    ) -> Result<(), Error<'gc>> {
+        let mut base = self.base_mut(mc);
+
+        base.set_slot(id, value, mc)
+    }
+
+    /// Returns true if an object has one or more traits of a given name.
+    pub fn has_trait(self, name: &Multiname<'gc>) -> bool {
+        let base = self.base();
+        base.has_trait(name)
+    }
+
+    /// Determine if this object is an instance of a given type.
+    ///
+    /// This uses the ES4 definition of instance, which walks the class object
+    /// chain and accounts for interfaces. For the ES3 definition of instance,
+    /// use `is_instance_of`, which uses the prototype chain.
+    ///
+    /// The given object should be the class object for the given type we are
+    /// checking against this object.
+    pub fn is_of_type(&self, test_class: Class<'gc>) -> bool {
+        self.instance_class().has_class_in_chain(test_class)
+    }
+
     pub fn ptr_eq<T: TObject<'gc>>(a: T, b: T) -> bool {
         a.as_ptr() == b.as_ptr()
     }

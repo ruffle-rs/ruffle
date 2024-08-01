@@ -62,6 +62,8 @@ pub struct VectorObjectData<'gc> {
     vector: RefLock<VectorStorage<'gc>>,
 }
 
+const _: () = assert!(std::mem::offset_of!(VectorObjectData, base) == 0);
+
 impl<'gc> VectorObject<'gc> {
     /// Wrap an existing vector in an object.
     pub fn from_vector(
@@ -89,12 +91,12 @@ impl<'gc> VectorObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for VectorObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), VectorObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

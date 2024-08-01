@@ -122,6 +122,8 @@ pub struct LoaderInfoObjectData<'gc> {
     errored: Cell<bool>,
 }
 
+const _: () = assert!(std::mem::offset_of!(LoaderInfoObjectData, base) == 0);
+
 impl<'gc> LoaderInfoObject<'gc> {
     /// Box a movie into a loader info object.
     pub fn from_movie(
@@ -390,12 +392,12 @@ impl<'gc> LoaderInfoObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for LoaderInfoObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), LoaderInfoObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
