@@ -50,6 +50,7 @@ impl fmt::Debug for DomainObject<'_> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct DomainObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,

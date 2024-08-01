@@ -41,6 +41,7 @@ pub struct NetStreamObjectWeak<'gc>(pub GcWeak<'gc, NetStreamObjectData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct NetStreamObjectData<'gc> {
     base: RefLock<ScriptObjectData<'gc>>,
     ns: NetStream<'gc>,

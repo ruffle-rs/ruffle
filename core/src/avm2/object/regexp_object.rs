@@ -47,6 +47,7 @@ impl fmt::Debug for RegExpObject<'_> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct RegExpObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,

@@ -48,6 +48,7 @@ impl fmt::Debug for LocalConnectionObject<'_> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct LocalConnectionObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,

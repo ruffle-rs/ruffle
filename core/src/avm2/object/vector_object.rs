@@ -53,6 +53,7 @@ impl fmt::Debug for VectorObject<'_> {
 
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct VectorObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,

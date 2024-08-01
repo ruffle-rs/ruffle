@@ -345,6 +345,7 @@ impl<'gc> XmlListObject<'gc> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct XmlListObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,

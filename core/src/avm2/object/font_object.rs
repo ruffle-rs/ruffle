@@ -88,6 +88,7 @@ impl<'gc> TObject<'gc> for FontObject<'gc> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct FontObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,

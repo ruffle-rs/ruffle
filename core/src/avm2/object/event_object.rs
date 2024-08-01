@@ -43,6 +43,7 @@ pub struct EventObjectWeak<'gc>(pub GcWeak<'gc, EventObjectData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct EventObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,

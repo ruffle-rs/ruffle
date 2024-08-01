@@ -51,6 +51,7 @@ impl fmt::Debug for ErrorObject<'_> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct ErrorObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,

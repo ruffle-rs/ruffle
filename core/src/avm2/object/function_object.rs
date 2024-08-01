@@ -80,6 +80,7 @@ impl fmt::Debug for FunctionObject<'_> {
 
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct FunctionObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,

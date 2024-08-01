@@ -54,6 +54,7 @@ impl fmt::Debug for BitmapDataObject<'_> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct BitmapDataObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,

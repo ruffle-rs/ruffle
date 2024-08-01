@@ -48,6 +48,7 @@ impl fmt::Debug for PrimitiveObject<'_> {
 
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct PrimitiveObjectData<'gc> {
     /// All normal script data.
     base: RefLock<ScriptObjectData<'gc>>,

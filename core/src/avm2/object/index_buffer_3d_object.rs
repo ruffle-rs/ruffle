@@ -65,6 +65,7 @@ impl<'gc> IndexBuffer3DObject<'gc> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct IndexBuffer3DObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
