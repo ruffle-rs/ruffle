@@ -85,6 +85,9 @@ fn load_test(params: TestLoaderParams) -> Trial {
     let kind = test.kind();
 
     let mut trial = Trial::test(test.name.to_string(), move || {
+        #[cfg(feature = "times")]
+        let start = std::time::Instant::now();
+
         let test = AssertUnwindSafe(test);
         let unwind_result = catch_unwind(|| {
             let mut runner = test.create_test_runner(&NativeEnvironment)?;
@@ -100,6 +103,30 @@ fn load_test(params: TestLoaderParams) -> Trial {
 
             Result::<_>::Ok(())
         });
+
+        #[cfg(feature = "times")]
+        {
+            use std::io::Write;
+            let time = std::time::Instant::now() - start;
+            let mut file = std::fs::OpenOptions::new()
+                .append(true)
+                .create(true)
+                .open(format!(
+                    "times-{}-{:?}.log",
+                    std::process::id(),
+                    std::thread::current().id()
+                ))
+                .unwrap();
+
+            let time = time.as_secs_f64();
+            let kind = test
+                .kind()
+                .map(TestKind::name)
+                .map(|k| Cow::Owned(format!("[{k}] ")))
+                .unwrap_or(Cow::Borrowed(""));
+            let _ = writeln!(file, "{time:.4} {kind}{}", test.name);
+        }
+
         if test.options.known_failure {
             match unwind_result {
                 Ok(Ok(())) => Err(

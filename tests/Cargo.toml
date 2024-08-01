@@ -21,6 +21,8 @@ imgtests = [
 ]
 jpegxr = ["ruffle_test_framework/jpegxr"]
 lzma = ["ruffle_test_framework/lzma"]
+# Log how long each test took
+times = []
 
 [dependencies]
 ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
