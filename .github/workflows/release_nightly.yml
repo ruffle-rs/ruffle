@@ -309,6 +309,9 @@ jobs:
     needs: create-nightly-release
     if: needs.create-nightly-release.outputs.is_active == 'true'
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      id-token: write
     strategy:
       matrix:
         demo: [false, true]
@@ -393,7 +396,7 @@ jobs:
       - name: Publish npm package
         if: ${{ !matrix.demo }}
         # npm scoped packages are private by default, explicitly make public
-        run: npm publish --access public
+        run: npm publish --access public --provenance
         continue-on-error: true
         working-directory: web/packages/selfhosted/dist
         env:
