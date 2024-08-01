@@ -4,7 +4,7 @@ use std::ops::Deref;
 use gc_arena::{Collect, Gc};
 use ruffle_wstr::{panic_on_invalid_length, ptr as wptr, wstr_impl_traits, WStr, WString};
 
-/// Internal representation of `AvmAtom`s and (owned) `AvmString`.
+/// Internal representation of `AvmAtom`s and (owned) `AvmString`s.
 ///
 /// Using this type directly is dangerous, as it can be used to violate
 /// the interning invariants.
@@ -19,17 +19,17 @@ pub struct AvmStringRepr<'gc> {
     meta: wptr::WStrMetadata,
 
     // We abuse WStrMetadata to store capacity and is_interned bit.
-    // If a string is Dependent, the capacity should always be 0.
+    // If a string is Static or Dependent, the capacity should always be 0.
     capacity: Cell<wptr::WStrMetadata>,
 
-    // If a string is Dependent, this should always be 0.
+    // If a string is Static or Dependent, this should always be 0.
     // If a string is Owned, this indicates used chars, including dependents.
     // Example: assume a string a="abc" has 10 bytes of capacity (chars_used=3).
     // Then, with a+"d", we produce a dependent string and owner's chars_used becomes 4.
     // len <= chars_used <= capacity.
     chars_used: Cell<u32>,
 
-    // If Some, the string is dependent. The owner is assumed to be non-dynamic.
+    // If Some, the string is Dependent. The owner is assumed to be non-dynamic.
     owner: Option<Gc<'gc, Self>>,
 }
 
@@ -46,33 +46,31 @@ impl<'gc> AvmStringRepr<'gc> {
         }
     }
 
-    pub fn new_dependent(s: Gc<'gc, Self>, start: usize, end: usize) -> Self {
-        let wstr = &s[start..end];
-        let wstr_ptr = wstr as *const WStr;
+    pub fn from_raw_static(s: &'static WStr, interned: bool) -> Self {
+        // SAFETY: 'wstr' is a static WStr and doesn't require an owner to stay valid
+        unsafe { Self::new_dependent_raw(None, s, interned) }
+    }
 
-        Self {
-            owner: Some(s.owner().unwrap_or(s)),
-            ptr: wstr_ptr as *mut WStr as *mut (),
-            meta: unsafe { wptr::WStrMetadata::of(wstr_ptr) },
-            chars_used: Cell::new(0),
-            // Dependent strings are never interned
-            capacity: Cell::new(wptr::WStrMetadata::new32(0, false)),
-        }
+    pub fn new_dependent(s: Gc<'gc, Self>, start: usize, end: usize) -> Self {
+        let wstr = &s.as_ref()[start..end];
+        let owner = Some(s.owner().unwrap_or(s));
+        // Dependent strings are never interned
+        let interned = false;
+        // SAFETY: 'wstr' is a WStr pointing into 'owner'
+        unsafe { Self::new_dependent_raw(owner, wstr, interned) }
     }
 
     unsafe fn new_dependent_raw(
-        owner: Gc<'gc, Self>,
-        ptr: *const u8,
-        length: u32,
-        is_wide: bool,
+        owner: Option<Gc<'gc, Self>>,
+        wstr: &'gc WStr,
+        interned: bool,
     ) -> Self {
         Self {
-            owner: Some(owner),
-            ptr: ptr as *mut (),
-            meta: wptr::WStrMetadata::new32(length, is_wide),
+            owner,
+            ptr: wstr as *const WStr as *mut (),
+            meta: wptr::WStrMetadata::of(wstr),
             chars_used: Cell::new(0),
-            // Dependent strings are never interned
-            capacity: Cell::new(wptr::WStrMetadata::new32(0, false)),
+            capacity: Cell::new(wptr::WStrMetadata::new32(0, interned)),
         }
     }
 
@@ -139,8 +137,12 @@ impl<'gc> AvmStringRepr<'gc> {
                     panic_on_invalid_length(new_len);
                 }
 
-                let ret =
-                    Self::new_dependent_raw(left_origin, left_ptr, new_len as u32, left.is_wide());
+                let new_wstr = wptr::from_raw_parts(
+                    left_ptr as *const (),
+                    wptr::WStrMetadata::new(new_len, left.is_wide()),
+                );
+                // Dependent strings are never interned.
+                let ret = Self::new_dependent_raw(Some(left_origin), &*new_wstr, false);
                 return Some(ret);
             }
         }
@@ -168,7 +170,7 @@ impl<'gc> AvmStringRepr<'gc> {
         self.capacity.get().is_wide()
     }
 
-    pub fn mark_interned(&self) {
+    pub(crate) fn mark_interned(&self) {
         if self.is_dependent() {
             panic!("bug: we interned a dependent string");
         }
@@ -180,12 +182,15 @@ impl<'gc> AvmStringRepr<'gc> {
 
 impl<'gc> Drop for AvmStringRepr<'gc> {
     fn drop(&mut self) {
-        if self.owner.is_none() {
+        let cap = self.capacity.get().len32();
+        if cap > 0 {
             // SAFETY: we drop the `WString` we logically own.
-            unsafe {
-                let cap = self.capacity.get().len32();
-                let _ = WString::from_raw_parts(self.ptr, self.meta, cap);
-            }
+            debug_assert!(self.owner.is_none());
+            let _ = unsafe { WString::from_raw_parts(self.ptr, self.meta, cap) };
+        } else {
+            // Nothing to do, this is a Static or a Dependant string.
+            // It could also have been an empty owned WString, but
+            // these don't need to be dropped either.
         }
     }
 }

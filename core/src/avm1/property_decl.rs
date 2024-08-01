@@ -1,5 +1,7 @@
 //! Declarative macro for defining AVM1 properties.
 
+use std::borrow::Cow;
+
 use crate::avm1::function::{Executable, FunctionObject, NativeFunction};
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
@@ -67,8 +69,10 @@ impl Declaration {
     ) -> Value<'gc> {
         let mc = context.gc_context;
 
-        let name = ruffle_wstr::from_utf8(self.name);
-        let name = context.interner.intern_wstr(mc, name);
+        let name = match ruffle_wstr::from_utf8(self.name) {
+            Cow::Borrowed(name) => context.interner.intern_static(mc, name),
+            Cow::Owned(name) => context.interner.intern_wstr(mc, name),
+        };
 
         let value = match self.kind {
             DeclKind::Property { getter, setter } => {
