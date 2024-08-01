@@ -57,6 +57,7 @@ impl<'gc> ShaderDataObject<'gc> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct ShaderDataObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,

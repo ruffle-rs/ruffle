@@ -58,6 +58,7 @@ impl fmt::Debug for XmlObject<'_> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct XmlObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,

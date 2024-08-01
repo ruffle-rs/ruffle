@@ -90,6 +90,7 @@ impl fmt::Debug for LoaderInfoObject<'_> {
 
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct LoaderInfoObjectData<'gc> {
     /// All normal script data.
     base: RefLock<ScriptObjectData<'gc>>,

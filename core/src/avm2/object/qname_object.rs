@@ -49,6 +49,7 @@ impl fmt::Debug for QNameObject<'_> {
 
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct QNameObjectData<'gc> {
     /// All normal script data.
     base: RefLock<ScriptObjectData<'gc>>,

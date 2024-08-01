@@ -49,6 +49,7 @@ impl fmt::Debug for ArrayObject<'_> {
 
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct ArrayObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,

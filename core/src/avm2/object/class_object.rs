@@ -38,6 +38,7 @@ pub struct ClassObjectWeak<'gc>(pub GcWeak<'gc, ClassObjectData<'gc>>);
 
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct ClassObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,

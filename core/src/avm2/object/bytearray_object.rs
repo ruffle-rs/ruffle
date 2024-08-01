@@ -69,6 +69,7 @@ impl fmt::Debug for ByteArrayObject<'_> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct ByteArrayObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,

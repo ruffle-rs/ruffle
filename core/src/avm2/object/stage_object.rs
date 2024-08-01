@@ -21,6 +21,7 @@ pub struct StageObjectWeak<'gc>(pub GcWeak<'gc, StageObjectData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct StageObjectData<'gc> {
     /// The base data common to all AVM2 objects.
     base: RefLock<ScriptObjectData<'gc>>,

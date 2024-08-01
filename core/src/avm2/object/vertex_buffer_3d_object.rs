@@ -63,6 +63,7 @@ impl<'gc> VertexBuffer3DObject<'gc> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct VertexBuffer3DObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,

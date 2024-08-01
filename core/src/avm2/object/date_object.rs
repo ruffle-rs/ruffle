@@ -74,6 +74,7 @@ impl<'gc> DateObject<'gc> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct DateObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,

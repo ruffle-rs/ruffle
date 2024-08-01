@@ -104,6 +104,7 @@ impl<'gc> ResponderObject<'gc> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct ResponderObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,

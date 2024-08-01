@@ -52,6 +52,7 @@ impl fmt::Debug for SoundChannelObject<'_> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct SoundChannelObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
