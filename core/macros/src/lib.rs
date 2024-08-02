@@ -3,8 +3,8 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
-    parse_macro_input, parse_quote, FnArg, ImplItem, ImplItemFn, ItemEnum, ItemTrait, Pat,
-    TraitItem, Visibility,
+    parse_macro_input, parse_quote, FnArg, ImplItem, ImplItemFn, ItemEnum, ItemTrait, Meta, Pat,
+    TraitItem, TraitItemFn, Visibility,
 };
 
 /// `enum_trait_object` will define an enum whose variants each implement a trait.
@@ -63,9 +63,26 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
     let trait_methods: Vec<_> = input_trait
         .items
         .iter()
-        .map(|item| match item {
+        .filter_map(|item| match item {
             TraitItem::Fn(method) => {
                 let method_name = &method.sig.ident;
+
+                let is_no_dynamic = method.attrs.iter().any(|attr| match &attr.meta {
+                    Meta::Path(path) => {
+                        if let Some(ident) = path.get_ident() {
+                            ident == "no_dynamic"
+                        } else {
+                            false
+                        }
+                    }
+                    _ => false,
+                });
+
+                if is_no_dynamic {
+                    // Don't create this method as a dynamic-dispatch method
+                    return None;
+                }
+
                 let params: Vec<_> = method
                     .sig
                     .inputs
@@ -91,19 +108,20 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
                         }
                     })
                     .collect();
+
                 let method_block = quote!({
                     match self {
                         #(#match_arms)*
                     }
                 });
 
-                ImplItem::Fn(ImplItemFn {
+                Some(ImplItem::Fn(ImplItemFn {
                     attrs: method.attrs.clone(),
                     vis: Visibility::Inherited,
                     defaultness: None,
                     sig: method.sig.clone(),
                     block: parse_quote!(#method_block),
-                })
+                }))
             }
             _ => panic!("Unsupported trait item: {item:?}"),
         })
@@ -144,6 +162,17 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
         }
 
         #(#from_impls)*
+    );
+
+    out.into()
+}
+
+#[proc_macro_attribute]
+pub fn no_dynamic(_args: TokenStream, item: TokenStream) -> TokenStream {
+    let input_fn = parse_macro_input!(item as TraitItemFn);
+
+    let out = quote!(
+        #input_fn
     );
 
     out.into()
