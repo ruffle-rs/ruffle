@@ -99,14 +99,14 @@ pub fn show_avm1_value<'gc>(
                 ui.label("Function");
             } else if ui.button(object_name(value)).clicked() {
                 messages.push(Message::TrackAVM1Object(AVM1ObjectHandle::new(
-                    &mut activation.context,
+                    activation.context,
                     value,
                 )));
             }
         }
         Ok(Value::MovieClip(value)) => {
             if let Some((_, _, object)) = value.resolve_reference(activation) {
-                open_display_object_button(ui, &mut activation.context, messages, object, hover);
+                open_display_object_button(ui, activation.context, messages, object, hover);
             } else {
                 ui.colored_label(
                     ui.style().visuals.error_fg_color,

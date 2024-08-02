@@ -314,7 +314,7 @@ pub fn verify_method<'gc>(
                 AbcOp::FindDef { index } => {
                     let multiname = method
                         .translation_unit()
-                        .pool_maybe_uninitialized_multiname(index, &mut activation.context)?;
+                        .pool_maybe_uninitialized_multiname(index, activation.context)?;
 
                     if multiname.has_lazy_component() {
                         return Err(Error::AvmError(verify_error(
@@ -328,7 +328,7 @@ pub fn verify_method<'gc>(
                 AbcOp::GetLex { index } => {
                     let multiname = method
                         .translation_unit()
-                        .pool_maybe_uninitialized_multiname(index, &mut activation.context)?;
+                        .pool_maybe_uninitialized_multiname(index, activation.context)?;
 
                     if multiname.has_lazy_component() {
                         return Err(Error::AvmError(verify_error(
@@ -370,7 +370,7 @@ pub fn verify_method<'gc>(
                 | AbcOp::Coerce { index: name_index } => {
                     let multiname = method
                         .translation_unit()
-                        .pool_maybe_uninitialized_multiname(name_index, &mut activation.context)?;
+                        .pool_maybe_uninitialized_multiname(name_index, activation.context)?;
 
                     if multiname.has_lazy_component() {
                         // This matches FP's error message
@@ -379,7 +379,7 @@ pub fn verify_method<'gc>(
 
                     activation
                         .domain()
-                        .get_class(&mut activation.context, &multiname)
+                        .get_class(activation.context, &multiname)
                         .ok_or_else(|| {
                             make_error_1014(
                                 activation,
@@ -419,7 +419,7 @@ pub fn verify_method<'gc>(
         } else {
             let pooled_type_name = method
                 .translation_unit()
-                .pool_maybe_uninitialized_multiname(exception.type_name, &mut activation.context)?;
+                .pool_maybe_uninitialized_multiname(exception.type_name, activation.context)?;
 
             if pooled_type_name.has_lazy_component() {
                 // This matches FP's error message
@@ -428,7 +428,7 @@ pub fn verify_method<'gc>(
 
             let resolved_type = activation
                 .domain()
-                .get_class(&mut activation.context, &pooled_type_name)
+                .get_class(activation.context, &pooled_type_name)
                 .ok_or_else(|| {
                     make_error_1014(
                         activation,
@@ -444,10 +444,7 @@ pub fn verify_method<'gc>(
         } else {
             let pooled_variable_name = method
                 .translation_unit()
-                .pool_maybe_uninitialized_multiname(
-                    exception.variable_name,
-                    &mut activation.context,
-                )?;
+                .pool_maybe_uninitialized_multiname(exception.variable_name, activation.context)?;
 
             // FIXME: avmplus also seems to check the namespace(s)?
             if pooled_variable_name.has_lazy_component()
@@ -683,7 +680,7 @@ pub fn resolve_param_config<'gc>(
         } else {
             let lookedup_class = activation
                 .domain()
-                .get_class(&mut activation.context, &param.param_type_name)
+                .get_class(activation.context, &param.param_type_name)
                 .ok_or_else(|| {
                     make_error_1014(
                         activation,
@@ -721,7 +718,7 @@ fn resolve_return_type<'gc>(
     Ok(Some(
         activation
             .domain()
-            .get_class(&mut activation.context, return_type)
+            .get_class(activation.context, return_type)
             .ok_or_else(|| {
                 make_error_1014(
                     activation,
@@ -838,7 +835,7 @@ fn pool_multiname<'gc>(
         return Err(make_error_1032(activation, 0));
     }
 
-    translation_unit.pool_maybe_uninitialized_multiname(index, &mut activation.context)
+    translation_unit.pool_maybe_uninitialized_multiname(index, activation.context)
 }
 
 fn pool_string<'gc>(
@@ -1111,7 +1108,7 @@ fn resolve_op<'gc>(
 
             let class = activation
                 .domain()
-                .get_class(&mut activation.context, &multiname)
+                .get_class(activation.context, &multiname)
                 .unwrap();
             // Verifier guarantees that class exists
 
@@ -1124,7 +1121,7 @@ fn resolve_op<'gc>(
 
             let class = activation
                 .domain()
-                .get_class(&mut activation.context, &multiname)
+                .get_class(activation.context, &multiname)
                 .unwrap();
             // Verifier guarantees that class exists
 
@@ -1171,7 +1168,7 @@ fn resolve_op<'gc>(
 
             let class = activation
                 .domain()
-                .get_class(&mut activation.context, &multiname)
+                .get_class(activation.context, &multiname)
                 .unwrap();
             // Verifier guarantees that class exists
 

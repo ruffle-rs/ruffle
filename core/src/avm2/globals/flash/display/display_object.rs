@@ -44,12 +44,12 @@ pub fn initialize_for_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let obj: StageObject = StageObject::for_display_object(activation, dobj, class)?;
     dobj.set_placed_by_script(activation.context.gc_context, true);
-    dobj.set_object2(&mut activation.context, obj.into());
+    dobj.set_object2(activation.context, obj.into());
 
     // [NA] Should these run for everything?
-    dobj.post_instantiation(&mut activation.context, None, Instantiator::Avm2, false);
-    dobj.enter_frame(&mut activation.context);
-    dobj.construct_frame(&mut activation.context);
+    dobj.post_instantiation(activation.context, None, Instantiator::Avm2, false);
+    dobj.enter_frame(activation.context);
+    dobj.construct_frame(activation.context);
 
     // Movie clips created from ActionScript skip the next enterFrame,
     // and consequently are observed to have their currentFrame lag one
@@ -57,7 +57,7 @@ pub fn initialize_for_allocator<'gc>(
     // both placed in the same frame to begin with).
     dobj.base_mut(activation.context.gc_context)
         .set_skip_next_enter_frame(true);
-    dobj.on_construction_complete(&mut activation.context);
+    dobj.on_construction_complete(activation.context);
 
     Ok(obj.into())
 }
@@ -77,7 +77,7 @@ pub fn native_instance_init<'gc>(
 
         if let Some(container) = dobj.as_container() {
             for child in container.iter_render_list() {
-                child.construct_frame(&mut activation.context);
+                child.construct_frame(activation.context);
             }
         }
 
@@ -138,7 +138,7 @@ pub fn set_height<'gc>(
     if let Some(dobj) = this.as_display_object() {
         let new_height = args.get_f64(activation, 0)?;
         if new_height >= 0.0 {
-            dobj.set_height(&mut activation.context, new_height);
+            dobj.set_height(activation.context, new_height);
         }
     }
 
@@ -232,7 +232,7 @@ pub fn set_width<'gc>(
     if let Some(dobj) = this.as_display_object() {
         let new_width = args.get_f64(activation, 0)?;
         if new_width >= 0.0 {
-            dobj.set_width(&mut activation.context, new_width);
+            dobj.set_width(activation.context, new_width);
         }
     }
 
@@ -587,7 +587,7 @@ pub fn get_stage<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.as_display_object() {
         return Ok(dobj
-            .avm2_stage(&activation.context)
+            .avm2_stage(activation.context)
             .map(|stage| stage.object2())
             .unwrap_or(Value::Null));
     }
@@ -617,7 +617,7 @@ pub fn set_visible<'gc>(
     if let Some(dobj) = this.as_display_object() {
         let new_visible = args.get_bool(0);
 
-        dobj.set_visible(&mut activation.context, new_visible);
+        dobj.set_visible(activation.context, new_visible);
     }
 
     Ok(Value::Undefined)
@@ -658,7 +658,7 @@ pub fn get_mouse_x<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.as_display_object() {
-        let local_mouse = dobj.local_mouse_position(&activation.context);
+        let local_mouse = dobj.local_mouse_position(activation.context);
         return Ok(local_mouse.x.to_pixels().into());
     }
 
@@ -672,7 +672,7 @@ pub fn get_mouse_y<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.as_display_object() {
-        let local_mouse = dobj.local_mouse_position(&activation.context);
+        let local_mouse = dobj.local_mouse_position(activation.context);
         return Ok(local_mouse.y.to_pixels().into());
     }
 
@@ -697,16 +697,12 @@ pub fn hit_test_point<'gc>(
             .map_or(local, |root| root.local_to_global(local));
 
         if shape_flag {
-            if !dobj.is_on_stage(&activation.context) {
+            if !dobj.is_on_stage(activation.context) {
                 return Ok(false.into());
             }
 
             return Ok(dobj
-                .hit_test_shape(
-                    &mut activation.context,
-                    global,
-                    HitTestOptions::AVM_HIT_TEST,
-                )
+                .hit_test_shape(activation.context, global, HitTestOptions::AVM_HIT_TEST)
                 .into());
         } else {
             return Ok(dobj.hit_test_bounds(global).into());

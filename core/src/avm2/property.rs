@@ -75,7 +75,7 @@ impl<'gc> PropertyClass<'gc> {
                     // so use that domain if we don't have a translation unit.
                     let domain =
                         unit.map_or(activation.avm2().playerglobals_domain, |u| u.domain());
-                    if let Some(class) = domain.get_class(&mut activation.context, name) {
+                    if let Some(class) = domain.get_class(activation.context, name) {
                         *self = PropertyClass::Class(class);
                         (Some(class), true)
                     } else {
@@ -112,7 +112,7 @@ impl<'gc> PropertyClass<'gc> {
                 } else {
                     let domain =
                         unit.map_or(activation.avm2().playerglobals_domain, |u| u.domain());
-                    if let Some(class) = domain.get_class(&mut activation.context, name) {
+                    if let Some(class) = domain.get_class(activation.context, name) {
                         *self = PropertyClass::Class(class);
                         Ok(Some(class))
                     } else {

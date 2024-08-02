@@ -64,7 +64,7 @@ pub fn set_align<'gc>(
     activation
         .context
         .stage
-        .set_align(&mut activation.context, align);
+        .set_align(activation.context, align);
     Ok(Value::Undefined)
 }
 
@@ -168,7 +168,7 @@ pub fn set_display_state<'gc>(
         activation
             .context
             .stage
-            .set_display_state(&mut activation.context, display_state);
+            .set_display_state(activation.context, display_state);
     } else {
         return Err(make_error_2008(activation, "displayState"));
     }
@@ -199,10 +199,10 @@ pub fn set_focus<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let focus = activation.context.focus_tracker;
     match args.try_get_object(activation, 0) {
-        None => focus.set(None, &mut activation.context),
+        None => focus.set(None, activation.context),
         Some(obj) => {
             if let Some(dobj) = obj.as_display_object().and_then(|o| o.as_interactive()) {
-                focus.set(Some(dobj), &mut activation.context);
+                focus.set(Some(dobj), activation.context);
             } else {
                 return Err("Cannot set focus to non-DisplayObject".into());
             }
@@ -252,7 +252,7 @@ pub fn set_show_default_context_menu<'gc>(
     activation
         .context
         .stage
-        .set_show_menu(&mut activation.context, show_default_context_menu);
+        .set_show_menu(activation.context, show_default_context_menu);
     Ok(Value::Undefined)
 }
 
@@ -279,7 +279,7 @@ pub fn set_scale_mode<'gc>(
         activation
             .context
             .stage
-            .set_scale_mode(&mut activation.context, scale_mode, true);
+            .set_scale_mode(activation.context, scale_mode, true);
     } else {
         return Err(make_error_2008(activation, "scaleMode"));
     }
@@ -404,7 +404,7 @@ pub fn set_quality<'gc>(
         activation
             .context
             .stage
-            .set_quality(&mut activation.context, quality);
+            .set_quality(activation.context, quality);
     }
     Ok(Value::Undefined)
 }
@@ -497,7 +497,7 @@ pub fn set_tab_children<'gc>(
                 // Stage's tabChildren setter just propagates the value to the AVM2 root.
                 // It does not affect the value of tabChildren of the stage, which is always true.
                 let value = args.get_bool(0);
-                root.set_tab_children(&mut activation.context, value);
+                root.set_tab_children(activation.context, value);
             }
         }
     }

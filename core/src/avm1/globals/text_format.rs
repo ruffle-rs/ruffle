@@ -483,7 +483,7 @@ fn get_text_extent<'gc>(
         .transpose()?;
 
     let temp_edittext = EditText::new(
-        &mut activation.context,
+        activation.context,
         movie,
         0.0,
         0.0,
@@ -491,10 +491,10 @@ fn get_text_extent<'gc>(
         0.0,
     );
 
-    temp_edittext.set_autosize(AutoSizeMode::Left, &mut activation.context);
-    temp_edittext.set_word_wrap(width.is_some(), &mut activation.context);
-    temp_edittext.set_new_text_format(text_format.clone(), &mut activation.context);
-    temp_edittext.set_text(&text, &mut activation.context);
+    temp_edittext.set_autosize(AutoSizeMode::Left, activation.context);
+    temp_edittext.set_word_wrap(width.is_some(), activation.context);
+    temp_edittext.set_new_text_format(text_format.clone(), activation.context);
+    temp_edittext.set_text(&text, activation.context);
 
     let result = ScriptObject::new(activation.gc(), None);
     let metrics = temp_edittext

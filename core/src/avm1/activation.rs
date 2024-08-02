@@ -670,7 +670,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let source_clip = self.resolve_target_display_object(start_clip, source, true)?;
 
         if let Some(movie_clip) = source_clip.and_then(|o| o.as_movie_clip()) {
-            globals::movie_clip::clone_sprite(movie_clip, &mut self.context, target, depth, None);
+            globals::movie_clip::clone_sprite(movie_clip, self.context, target, depth, None);
         } else {
             avm_warn!(self, "CloneSprite: Source is not a movie clip");
         }
@@ -752,7 +752,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     if let Ok(frame) = frame.parse().map(f64_to_wrapping_u32) {
                         // First try to parse as a frame number.
                         call_frame = Some((clip, frame));
-                    } else if let Some(frame) = clip.frame_label_to_number(frame, &self.context) {
+                    } else if let Some(frame) = clip.frame_label_to_number(frame, self.context) {
                         // Otherwise, it's a frame label.
                         call_frame = Some((clip, frame.into()));
                     }
@@ -762,7 +762,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         if let Some((clip, frame)) = call_frame {
             if frame <= u16::MAX.into() {
-                for action in clip.actions_on_frame(&mut self.context, frame as u16) {
+                for action in clip.actions_on_frame(self.context, frame as u16) {
                     let _ = self.run_child_frame_for_action("[Frame Call]", clip.into(), action)?;
                 }
             }
@@ -1020,7 +1020,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // We might not have had an opportunity to call `update_drag`
         // if AS did `startDrag(mc); stopDrag();` in one go,
         // so let's do it here.
-        crate::player::Player::update_drag(&mut self.context);
+        crate::player::Player::update_drag(self.context);
 
         *self.context.drag_object = None;
         Ok(FrameControl::Continue)
@@ -1211,7 +1211,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         let level = self.get_level(level_id);
                         // Blank URL on movie loads = unload!
                         if let Some(mc) = level.and_then(|o| o.as_movie_clip()) {
-                            mc.avm1_unload_movie(&mut self.context);
+                            mc.avm1_unload_movie(self.context);
                         }
                     } else {
                         let level = self.get_or_create_level(level_id);
@@ -1336,7 +1336,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             if url.is_empty() {
                 // Blank URL on movie loads = unload!
                 if let Some(mc) = clip_target.and_then(|o| o.as_movie_clip()) {
-                    mc.avm1_unload_movie(&mut self.context);
+                    mc.avm1_unload_movie(self.context);
                 }
             } else {
                 if clip_target.is_none() && level_target > -1 {
@@ -1371,7 +1371,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 if url.is_empty() {
                     // Blank URL on movie loads = unload!
                     if let Some(mc) = clip_target.as_movie_clip() {
-                        mc.avm1_unload_movie(&mut self.context);
+                        mc.avm1_unload_movie(self.context);
                     }
                 } else {
                     let future = self.context.load_manager.load_movie_into_clip(
@@ -1404,7 +1404,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 // The frame on the stack is 0-based, not 1-based.
-                clip.goto_frame(&mut self.context, action.frame + 1, true);
+                clip.goto_frame(self.context, action.frame + 1, true);
             } else {
                 avm_error!(self, "GotoFrame failed: Target is not a MovieClip");
             }
@@ -1436,8 +1436,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
                 let label = action.label.decode(self.encoding());
-                if let Some(frame) = clip.frame_label_to_number(&label, &self.context) {
-                    clip.goto_frame(&mut self.context, frame, true);
+                if let Some(frame) = clip.frame_label_to_number(&label, self.context) {
+                    clip.goto_frame(self.context, frame, true);
                 } else {
                     avm_warn!(self, "GoToLabel: Frame label '{:?}' not found", label);
                 }
@@ -1693,7 +1693,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn action_next_frame(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
-                clip.next_frame(&mut self.context);
+                clip.next_frame(self.context);
             } else {
                 avm_warn!(self, "NextFrame: Target is not a MovieClip");
             }
@@ -1790,7 +1790,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn action_play(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
-                clip.play(&mut self.context)
+                clip.play(self.context)
             } else {
                 avm_warn!(self, "Play: Target is not a MovieClip");
             }
@@ -1803,7 +1803,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn action_prev_frame(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
-                clip.prev_frame(&mut self.context);
+                clip.prev_frame(self.context);
             } else {
                 avm_warn!(self, "PrevFrame: Target is not a MovieClip");
             }
@@ -2075,7 +2075,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn action_stop(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         if let Some(clip) = self.target_clip() {
             if let Some(clip) = clip.as_movie_clip() {
-                clip.stop(&mut self.context);
+                clip.stop(self.context);
             } else {
                 avm_warn!(self, "Stop: Target is not a MovieClip");
             }
@@ -2216,9 +2216,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             _ if use_bitmap_downsamping => StageQuality::Best,
             _ => StageQuality::High,
         };
-        self.context
-            .stage
-            .set_quality(&mut self.context, new_quality);
+        self.context.stage.set_quality(self.context, new_quality);
         self.context
             .stage
             .set_use_bitmap_downsampling(self.context.gc_context, use_bitmap_downsamping);
@@ -2914,10 +2912,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 MovieClip::new(self.base_clip().movie(), self.context.gc_context).into();
 
             level.set_depth(self.context.gc_context, level_id);
-            level.set_default_root_name(&mut self.context);
+            level.set_default_root_name(self.context);
             self.get_root_parent_container()
-                .and_then(|c| c.replace_at_depth(&mut self.context, level, level_id));
-            level.post_instantiation(&mut self.context, None, Instantiator::Movie, false);
+                .and_then(|c| c.replace_at_depth(self.context, level, level_id));
+            level.post_instantiation(self.context, None, Instantiator::Movie, false);
 
             level
         }

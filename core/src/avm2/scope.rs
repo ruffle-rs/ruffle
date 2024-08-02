@@ -198,7 +198,7 @@ impl<'gc> ScopeChain<'gc> {
         if let Some((qname, script)) = self.domain.get_defining_script(multiname)? {
             return Ok(Some((
                 Some(qname.namespace()),
-                script.globals(&mut activation.context)?,
+                script.globals(activation.context)?,
             )));
         }
         Ok(None)

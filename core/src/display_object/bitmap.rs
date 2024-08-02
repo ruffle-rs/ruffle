@@ -362,7 +362,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
                 .expect("can't throw from post_instantiation -_-");
 
                 self.set_bitmap_data(
-                    &mut activation.context,
+                    activation.context,
                     bitmap_data_obj.as_bitmap_data().unwrap(),
                 );
             }

@@ -21,7 +21,7 @@ pub fn get_text_width<'gc>(
     let display_object = this.as_display_object().unwrap();
     let edit_text = display_object.as_edit_text().unwrap();
 
-    let measured_text = edit_text.measure_text(&mut activation.context);
+    let measured_text = edit_text.measure_text(activation.context);
     Ok(measured_text.0.to_pixels().into())
 }
 
@@ -33,6 +33,6 @@ pub fn get_text_height<'gc>(
     let display_object = this.as_display_object().unwrap();
     let edit_text = display_object.as_edit_text().unwrap();
 
-    let measured_text = edit_text.measure_text(&mut activation.context);
+    let measured_text = edit_text.measure_text(activation.context);
     Ok(measured_text.1.to_pixels().into())
 }

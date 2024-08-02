@@ -37,7 +37,7 @@ pub fn init<'gc>(
                 .character_by_id(symbol)
             {
                 let sound = *sound;
-                sound_object.set_sound(&mut activation.context, sound)?;
+                sound_object.set_sound(activation.context, sound)?;
             } else {
                 tracing::warn!("Attempted to construct subclass of Sound, {}, which is associated with non-Sound character {}", class_def.name().local_name(), symbol);
             }
@@ -296,7 +296,7 @@ pub fn load_compressed_data_from_byte_array<'gc>(
         )
         .map_err(|e| Error::AvmError(AvmString::new_utf8(activation.gc(), e.to_string()).into()))?;
 
-    Avm2::dispatch_event(&mut activation.context, progress_evt, this);
+    Avm2::dispatch_event(activation.context, progress_evt, this);
 
     this.as_sound_object()
         .unwrap()
@@ -304,7 +304,7 @@ pub fn load_compressed_data_from_byte_array<'gc>(
 
     this.as_sound_object()
         .unwrap()
-        .set_sound(&mut activation.context, handle)?;
+        .set_sound(activation.context, handle)?;
 
     Ok(Value::Undefined)
 }
