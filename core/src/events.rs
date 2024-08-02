@@ -505,6 +505,7 @@ pub enum KeyCode {
     Key7 = 55,
     Key8 = 56,
     Key9 = 57,
+    At = 64,
     A = 65,
     B = 66,
     C = 67,
