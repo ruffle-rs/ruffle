@@ -2200,6 +2200,7 @@ impl Player {
             ) = gc_root.update_context_params();
 
             let mut update_context = UpdateContext {
+                _unused: std::marker::PhantomData,
                 player_version: this.player_version,
                 swf: &mut this.swf,
                 library,
