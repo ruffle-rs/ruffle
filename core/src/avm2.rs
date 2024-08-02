@@ -15,7 +15,8 @@ use crate::tag_utils::SwfMovie;
 use crate::PlayerRuntime;
 
 use fnv::FnvHashMap;
-use gc_arena::{Collect, GcCell, Mutation};
+use gc_arena::lock::GcRefLock;
+use gc_arena::{Collect, Mutation};
 use std::sync::Arc;
 use swf::avm2::read::Reader;
 use swf::DoAbc2Flag;
@@ -112,7 +113,7 @@ pub struct Avm2<'gc> {
     scope_stack: Vec<Scope<'gc>>,
 
     /// The current call stack of the player.
-    call_stack: GcCell<'gc, CallStack<'gc>>,
+    call_stack: GcRefLock<'gc, CallStack<'gc>>,
 
     /// This domain is used exclusively for classes from playerglobals
     playerglobals_domain: Domain<'gc>,
@@ -216,7 +217,7 @@ impl<'gc> Avm2<'gc> {
             player_runtime,
             stack: Vec::new(),
             scope_stack: Vec::new(),
-            call_stack: GcCell::new(context.gc_context, CallStack::new()),
+            call_stack: GcRefLock::new(context.gc_context, CallStack::new().into()),
             playerglobals_domain,
             stage_domain,
             system_classes: None,
@@ -650,20 +651,20 @@ impl<'gc> Avm2<'gc> {
         method: Method<'gc>,
         superclass: Option<ClassObject<'gc>>,
     ) {
-        self.call_stack.write(mc).push(method, superclass)
+        self.call_stack.borrow_mut(mc).push(method, superclass)
     }
 
     /// Pushes script initializer (global init) on the call stack
     pub fn push_global_init(&self, mc: &Mutation<'gc>, script: Script<'gc>) {
-        self.call_stack.write(mc).push_global_init(script)
+        self.call_stack.borrow_mut(mc).push_global_init(script)
     }
 
     /// Pops an executable off the call stack
     pub fn pop_call(&self, mc: &Mutation<'gc>) -> Option<CallNode<'gc>> {
-        self.call_stack.write(mc).pop()
+        self.call_stack.borrow_mut(mc).pop()
     }
 
-    pub fn call_stack(&self) -> GcCell<'gc, CallStack<'gc>> {
+    pub fn call_stack(&self) -> GcRefLock<'gc, CallStack<'gc>> {
         self.call_stack
     }
 
