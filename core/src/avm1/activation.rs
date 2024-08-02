@@ -221,7 +221,7 @@ pub struct Activation<'a, 'gc: 'a> {
     /// Whether the base clip was removed when we started this frame.
     base_clip_unloaded: bool,
 
-    pub context: UpdateContext<'a, 'gc>,
+    pub context: &'a mut UpdateContext<'a, 'gc>,
 
     /// An identifier to refer to this activation by, when debugging.
     /// This is often the name of a function (if known), or some static name to indicate where
@@ -245,7 +245,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     #[allow(clippy::too_many_arguments)]
     pub fn from_action(
-        context: UpdateContext<'a, 'gc>,
+        context: &'a mut UpdateContext<'a, 'gc>,
         id: ActivationIdentifier<'a>,
         swf_version: u8,
         scope: Gc<'gc, Scope<'gc>>,
@@ -301,7 +301,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Note: using the returned `Activation` directly to execute arbitrary bytecode and/or
     /// to define new local variables is a logic error, and will corrupt the global scope.
     pub fn from_nothing(
-        context: UpdateContext<'a, 'gc>,
+        context: &'a mut UpdateContext<'a, 'gc>,
         id: ActivationIdentifier<'a>,
         base_clip: DisplayObject<'gc>,
     ) -> Self {
@@ -324,7 +324,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Construct an empty stack frame with no code running on the root movie in
     /// layer 0.
-    pub fn from_stub(context: UpdateContext<'a, 'gc>, id: ActivationIdentifier<'a>) -> Self {
+    pub fn from_stub(
+        context: &'a mut UpdateContext<'a, 'gc>,
+        id: ActivationIdentifier<'a>,
+    ) -> Self {
         // [NA]: we have 3 options here:
         // 1 - Don't execute anything (return None and handle that at the caller)
         // 2 - Execute something with a temporary orphaned movie
@@ -342,7 +345,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Construct an empty stack frame with no code running on the root move in
     /// layer 0.
     pub fn try_from_stub(
-        context: UpdateContext<'a, 'gc>,
+        context: &'a mut UpdateContext<'a, 'gc>,
         id: ActivationIdentifier<'a>,
     ) -> Option<Self> {
         if let Some(level0) = context.stage.root_clip() {
