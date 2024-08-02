@@ -5,7 +5,8 @@ use crate::debug_ui::handle::{AVM1ObjectHandle, DisplayObjectHandle};
 use crate::debug_ui::Message;
 use crate::string::AvmString;
 use egui::{Grid, Id, TextBuffer, TextEdit, Ui, Window};
-use ruffle_wstr::WString;
+use gc_arena::Mutation;
+use ruffle_wstr::{WStr, WString};
 
 #[derive(Debug, Default)]
 pub struct Avm1ObjectWindow {
@@ -85,50 +86,54 @@ impl Avm1ObjectWindow {
         messages: &mut Vec<Message>,
     ) -> Option<Value<'gc>> {
         match value {
-            Ok(Value::Undefined) => {
-                ui.label("Undefined");
-            }
-            Ok(Value::Null) => {
-                ui.label("Null");
-            }
-            Ok(Value::Bool(mut value)) => {
-                if ui.checkbox(&mut value, "").clicked() {
-                    return Some(Value::Bool(value));
-                }
-            }
-            Ok(Value::Number(value)) => {
-                return self.num_edit_ui(ui, key, value).map(Value::Number);
-            }
-            Ok(Value::String(value)) => {
-                return self
-                    .string_edit_ui(ui, key, value)
-                    .map(|string| Value::String(AvmString::new_utf8(activation.gc(), string)));
-            }
-            Ok(Value::Object(value)) => {
-                if value.as_executable().is_some() {
-                    ui.label("Function");
-                } else if ui.button(object_name(value)).clicked() {
-                    messages.push(Message::TrackAVM1Object(AVM1ObjectHandle::new(
-                        &mut activation.context,
-                        value,
-                    )));
-                }
-            }
-            Ok(Value::MovieClip(value)) => {
-                if let Some((_, _, object)) = value.resolve_reference(activation) {
-                    open_display_object_button(
-                        ui,
-                        &mut activation.context,
-                        messages,
-                        object,
-                        &mut self.hovered_debug_rect,
-                    );
-                } else {
-                    ui.colored_label(
-                        ui.style().visuals.error_fg_color,
-                        format!("Unknown movieclip {}", value.path()),
-                    );
-                }
+            Ok(value) => {
+                match value {
+                    Value::Undefined | Value::Null => {}
+                    Value::Bool(mut value) => {
+                        if ui.checkbox(&mut value, "").clicked() {
+                            return Some(Value::Bool(value));
+                        }
+                    }
+                    Value::Number(value) => {
+                        if let Some(new) = self.num_edit_ui(ui, key, value).map(Value::Number) {
+                            return Some(new);
+                        }
+                    }
+                    Value::String(value) => {
+                        if let Some(new) = self.string_edit_ui(ui, key, value).map(|string| {
+                            Value::String(AvmString::new_utf8(activation.gc(), string))
+                        }) {
+                            return Some(new);
+                        };
+                    }
+                    Value::Object(value) => {
+                        if value.as_executable().is_some() {
+                            ui.label("Function");
+                        } else if ui.button(object_name(value)).clicked() {
+                            messages.push(Message::TrackAVM1Object(AVM1ObjectHandle::new(
+                                &mut activation.context,
+                                value,
+                            )));
+                        }
+                    }
+                    Value::MovieClip(value) => {
+                        if let Some((_, _, object)) = value.resolve_reference(activation) {
+                            open_display_object_button(
+                                ui,
+                                &mut activation.context,
+                                messages,
+                                object,
+                                &mut self.hovered_debug_rect,
+                            );
+                        } else {
+                            ui.colored_label(
+                                ui.style().visuals.error_fg_color,
+                                format!("Unknown movieclip {}", value.path()),
+                            );
+                        }
+                    }
+                };
+                return show_value_type_combo_box(ui, key.as_wstr(), &value, activation.gc());
             }
             Err(e) => {
                 ui.colored_label(ui.style().visuals.error_fg_color, e.to_string());
@@ -216,6 +221,74 @@ impl Avm1ObjectWindow {
             }
         });
         new_val
+    }
+}
+
+/// Dropdown menu indicating the type of the value, as well as letting the
+/// user set a new type.
+fn show_value_type_combo_box<'gc>(
+    ui: &mut Ui,
+    key: &WStr,
+    value: &Value<'gc>,
+    mutation: &Mutation<'gc>,
+) -> Option<Value<'gc>> {
+    let mut new = None;
+    egui::ComboBox::new(egui::Id::new("value_combo").with(key), "Type")
+        .selected_text(value_label(value))
+        .show_ui(ui, |ui| {
+            if ui
+                .selectable_label(matches!(value, Value::Undefined), "Undefined")
+                .clicked()
+            {
+                new = Some(Value::Undefined);
+            }
+            if ui
+                .selectable_label(matches!(value, Value::Null), "Null")
+                .clicked()
+            {
+                new = Some(Value::Null);
+            }
+            if ui
+                .selectable_label(matches!(value, Value::Bool(_)), "Bool")
+                .clicked()
+            {
+                new = Some(Value::Bool(false));
+            }
+            if ui
+                .selectable_label(matches!(value, Value::Number(_)), "Number")
+                .clicked()
+            {
+                new = Some(Value::Number(0.0));
+            }
+            if ui
+                .selectable_label(matches!(value, Value::String(_)), "String")
+                .clicked()
+            {
+                new = Some(Value::String(AvmString::new(mutation, WString::new())));
+            }
+            // There is no sensible way to create default values for these types,
+            // so just disable the selectable labels to prevent setting to these types.
+            ui.add_enabled(
+                false,
+                egui::SelectableLabel::new(matches!(value, Value::Object(_)), "Object"),
+            );
+            ui.add_enabled(
+                false,
+                egui::SelectableLabel::new(matches!(value, Value::MovieClip(_)), "MovieClip"),
+            );
+        });
+    new
+}
+
+fn value_label(value: &Value) -> &'static str {
+    match value {
+        Value::Undefined => "Undefined",
+        Value::Null => "Null",
+        Value::Bool(_) => "Bool",
+        Value::Number(_) => "Number",
+        Value::String(_) => "String",
+        Value::Object(_) => "Object",
+        Value::MovieClip(_) => "MovieClip",
     }
 }
 
