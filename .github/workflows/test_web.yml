@@ -14,7 +14,7 @@ concurrency:
 jobs:
   changes:
     name: Paths filter
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       should_run: ${{ steps.filter.outputs.src }}
     steps:
@@ -36,7 +36,7 @@ jobs:
       fail-fast: false
       matrix:
         node_version: ["20", "22"]
-        os: [ubuntu-22.04, windows-latest]
+        os: [ubuntu-24.04, windows-latest]
 
     steps:
       - uses: actions/checkout@v4
@@ -107,7 +107,7 @@ jobs:
     strategy:
       matrix:
         node_version: ["20", "22"]
-        os: [ubuntu-22.04, windows-latest]
+        os: [ubuntu-24.04, windows-latest]
 
     steps:
       - name: No-op
