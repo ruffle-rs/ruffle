@@ -130,10 +130,7 @@ pub fn set_password<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    this.set_password(
-        value.as_bool(activation.swf_version()),
-        &mut activation.context,
-    );
+    this.set_password(value.as_bool(activation.swf_version()), activation.context);
     Ok(())
 }
 
@@ -166,7 +163,7 @@ fn set_new_text_format<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let [Value::Object(text_format), ..] = args {
         if let NativeObject::TextFormat(text_format) = text_format.native() {
-            text_field.set_new_text_format(text_format.borrow().clone(), &mut activation.context);
+            text_field.set_new_text_format(text_format.borrow().clone(), activation.context);
         }
     }
 
@@ -230,7 +227,7 @@ fn set_text_format<'gc>(
                 begin_index,
                 end_index,
                 text_format.borrow().clone(),
-                &mut activation.context,
+                activation.context,
             );
         }
     }
@@ -258,7 +255,7 @@ fn replace_sel<'gc>(
         selection.start(),
         selection.end(),
         &text,
-        &mut activation.context,
+        activation.context,
     );
     text_field.set_selection(
         Some(TextSelection::for_position(selection.start() + text.len())),
@@ -291,7 +288,7 @@ fn replace_text<'gc>(
         .unwrap_or(Value::Undefined)
         .coerce_to_string(activation)?;
 
-    text_field.replace_text(from as usize, to as usize, &text, &mut activation.context);
+    text_field.replace_text(from as usize, to as usize, &text, activation.context);
 
     Ok(Value::Undefined)
 }
@@ -317,10 +314,7 @@ pub fn set_text<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    this.set_text(
-        &value.coerce_to_string(activation)?,
-        &mut activation.context,
-    );
+    this.set_text(&value.coerce_to_string(activation)?, activation.context);
     this.propagate_text_binding(activation);
 
     Ok(())
@@ -339,7 +333,7 @@ pub fn set_html<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let value = value.as_bool(activation.swf_version());
-    this.set_is_html(&mut activation.context, value);
+    this.set_is_html(activation.context, value);
     Ok(())
 }
 
@@ -367,9 +361,9 @@ pub fn set_text_color<'gc>(
         0,
         this.text_length(),
         text_format.clone(),
-        &mut activation.context,
+        activation.context,
     );
-    this.set_new_text_format(text_format, &mut activation.context);
+    this.set_new_text_format(text_format, activation.context);
     Ok(())
 }
 
@@ -386,7 +380,7 @@ pub fn set_html_text<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let text = value.coerce_to_string(activation)?;
-    this.set_html_text(&text, &mut activation.context);
+    this.set_html_text(&text, activation.context);
     // Changing the htmlText does NOT update variable bindings (does not call EditText::propagate_text_binding).
     Ok(())
 }
@@ -474,7 +468,7 @@ pub fn set_embed_fonts<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let embed_fonts = value.as_bool(activation.swf_version());
-    this.set_is_device_font(&mut activation.context, !embed_fonts);
+    this.set_is_device_font(activation.context, !embed_fonts);
     Ok(())
 }
 
@@ -489,7 +483,7 @@ pub fn text_width<'gc>(
     this: EditText<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let metrics = this.measure_text(&mut activation.context);
+    let metrics = this.measure_text(activation.context);
     Ok(metrics.0.trunc_to_pixel().to_pixels().into())
 }
 
@@ -497,7 +491,7 @@ pub fn text_height<'gc>(
     this: EditText<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let metrics = this.measure_text(&mut activation.context);
+    let metrics = this.measure_text(activation.context);
     Ok(metrics.1.trunc_to_pixel().to_pixels().into())
 }
 
@@ -514,7 +508,7 @@ pub fn set_mouse_wheel_enabled<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let is_enabled = value.as_bool(activation.swf_version());
-    this.set_mouse_wheel_enabled(is_enabled, &mut activation.context);
+    this.set_mouse_wheel_enabled(is_enabled, activation.context);
     Ok(())
 }
 
@@ -531,7 +525,7 @@ pub fn set_multiline<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let is_multiline = value.as_bool(activation.swf_version());
-    this.set_multiline(is_multiline, &mut activation.context);
+    this.set_multiline(is_multiline, activation.context);
     Ok(())
 }
 
@@ -548,7 +542,7 @@ pub fn set_selectable<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let set_selectable = value.as_bool(activation.swf_version());
-    this.set_selectable(set_selectable, &mut activation.context);
+    this.set_selectable(set_selectable, activation.context);
     Ok(())
 }
 
@@ -590,7 +584,7 @@ pub fn set_word_wrap<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let is_word_wrap = value.as_bool(activation.swf_version());
-    this.set_word_wrap(is_word_wrap, &mut activation.context);
+    this.set_word_wrap(is_word_wrap, activation.context);
     Ok(())
 }
 
@@ -618,7 +612,7 @@ pub fn set_auto_size<'gc>(
         Value::Bool(true) => AutoSizeMode::Left,
         _ => AutoSizeMode::None,
     };
-    this.set_autosize(mode, &mut activation.context);
+    this.set_autosize(mode, activation.context);
 
     Ok(())
 }
@@ -642,9 +636,9 @@ pub fn set_type<'gc>(
     let value = value.coerce_to_string(activation)?;
 
     if value.eq_ignore_case(WStr::from_units(b"input")) {
-        this.set_editable(true, &mut activation.context);
+        this.set_editable(true, activation.context);
     } else if value.eq_ignore_case(WStr::from_units(b"dynamic")) {
-        this.set_editable(false, &mut activation.context)
+        this.set_editable(false, activation.context)
     } else {
         tracing::warn!("Invalid TextField.type: {}", value);
     }
@@ -667,7 +661,7 @@ pub fn set_hscroll<'gc>(
     // SWF v8 and earlier has the simple clamping behaviour below. SWF v9+ is much more complicated. See #4634.
     let hscroll_pixels = value.coerce_to_i32(activation)? as f64;
     let clamped = hscroll_pixels.clamp(0.0, this.maxhscroll());
-    this.set_hscroll(clamped, &mut activation.context);
+    this.set_hscroll(clamped, activation.context);
     Ok(())
 }
 
@@ -691,7 +685,7 @@ pub fn set_scroll<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let input = value.coerce_to_f64(activation)?;
-    this.set_scroll(input, &mut activation.context);
+    this.set_scroll(input, activation.context);
     Ok(())
 }
 
@@ -708,7 +702,7 @@ pub fn set_max_chars<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let input = value.coerce_to_i32(activation)?;
-    this.set_max_chars(input, &mut activation.context);
+    this.set_max_chars(input, activation.context);
     Ok(())
 }
 
@@ -873,9 +867,7 @@ fn set_filters<'gc>(
     if let Value::Object(value) = value {
         for index in value.get_keys(activation, false).into_iter().rev() {
             let filter_object = value.get(index, activation)?.coerce_to_object(activation);
-            if let Some(filter) =
-                bitmap_filter::avm1_to_filter(filter_object, &mut activation.context)
-            {
+            if let Some(filter) = bitmap_filter::avm1_to_filter(filter_object, activation.context) {
                 filters.push(filter);
             }
         }
@@ -901,16 +893,16 @@ fn set_restrict<'gc>(
 ) -> Result<(), Error<'gc>> {
     match value {
         Value::Undefined | Value::Null => {
-            this.set_restrict(None, &mut activation.context);
+            this.set_restrict(None, activation.context);
         }
         _ => {
             let text = value.coerce_to_string(activation)?;
             if text.is_empty() {
                 // According to docs, an empty string means that you cannot enter any character,
                 // but according to reality, an empty string is equivalent to null in AVM1.
-                this.set_restrict(None, &mut activation.context);
+                this.set_restrict(None, activation.context);
             } else {
-                this.set_restrict(Some(&text), &mut activation.context);
+                this.set_restrict(Some(&text), activation.context);
             }
         }
     };
@@ -944,7 +936,7 @@ pub fn set_tab_index<'gc>(
                 Some(u32_value as i32)
             }
         };
-        this.set_tab_index(&mut activation.context, value);
+        this.set_tab_index(activation.context, value);
     }
     Ok(())
 }
@@ -962,6 +954,6 @@ pub fn set_condense_white<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let condense_white = value.as_bool(activation.swf_version());
-    this.set_condense_white(&mut activation.context, condense_white);
+    this.set_condense_white(activation.context, condense_white);
     Ok(())
 }

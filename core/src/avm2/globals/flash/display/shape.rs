@@ -18,7 +18,7 @@ pub fn shape_allocator<'gc>(
     let orig_class = class;
     while let Some(class) = class_def {
         if class == shape_cls {
-            let display_object = Graphic::empty(&mut activation.context).into();
+            let display_object = Graphic::empty(activation.context).into();
             return initialize_for_allocator(activation, display_object, orig_class);
         }
 

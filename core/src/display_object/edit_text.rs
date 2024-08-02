@@ -720,7 +720,7 @@ impl<'gc> EditText<'gc> {
             .initial_text
             .clone()
             .unwrap_or_default();
-        self.set_text(&text, &mut activation.context);
+        self.set_text(&text, activation.context);
 
         self.0.write(activation.context.gc_context).variable = variable;
         self.try_bind_text_field_variable(activation, true);
@@ -1102,7 +1102,7 @@ impl<'gc> EditText<'gc> {
                                 let value = object.get(property, activation).unwrap();
                                 self.set_html_text(
                                     &value.coerce_to_string(activation).unwrap_or_default(),
-                                    &mut activation.context,
+                                    activation.context,
                                 );
                             } else {
                                 // Otherwise, we initialize the property with the text field's text, if it's non-empty.
@@ -1730,7 +1730,7 @@ impl<'gc> EditText<'gc> {
                 true,
                 true,
             );
-            Avm2::dispatch_event(&mut activation.context, text_evt, target);
+            Avm2::dispatch_event(activation.context, text_evt, target);
 
             if text_evt.as_event().unwrap().is_cancelled() {
                 return;
@@ -1789,12 +1789,12 @@ impl<'gc> EditText<'gc> {
             );
         } else if let Avm2Value::Object(object) = self.object2() {
             let change_evt = Avm2EventObject::bare_event(
-                &mut activation.context,
+                activation.context,
                 "change",
                 true,  /* bubbles */
                 false, /* cancelable */
             );
-            Avm2::dispatch_event(&mut activation.context, change_evt, object);
+            Avm2::dispatch_event(activation.context, change_evt, object);
         }
     }
 
@@ -2023,7 +2023,7 @@ impl<'gc> EditText<'gc> {
                 let text = AvmString::new(activation.context.gc_context, address);
                 let event = Avm2EventObject::text_event(&mut activation, "link", text, true, false);
 
-                Avm2::dispatch_event(&mut activation.context, event, object);
+                Avm2::dispatch_event(activation.context, event, object);
             }
         } else {
             context

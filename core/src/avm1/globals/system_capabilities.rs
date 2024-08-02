@@ -227,7 +227,7 @@ pub fn get_server_string<'gc>(
     let server_string = activation
         .context
         .system
-        .get_server_string(&activation.context);
+        .get_server_string(activation.context);
     Ok(AvmString::new_utf8(activation.context.gc_context, server_string).into())
 }
 

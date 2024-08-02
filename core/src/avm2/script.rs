@@ -230,11 +230,11 @@ impl<'gc> TranslationUnit<'gc> {
 
         class.load_traits(activation, self, class_index)?;
 
-        class.init_vtable(&mut activation.context)?;
+        class.init_vtable(activation.context)?;
         class
             .c_class()
             .expect("Class::from_abc_index returns an i_class")
-            .init_vtable(&mut activation.context)?;
+            .init_vtable(activation.context)?;
 
         Ok(class)
     }
@@ -584,7 +584,7 @@ impl<'gc> Script<'gc> {
 
         self.global_class()
             .mark_traits_loaded(activation.context.gc_context);
-        self.global_class().init_vtable(&mut activation.context)?;
+        self.global_class().init_vtable(activation.context)?;
 
         Ok(())
     }

@@ -562,7 +562,7 @@ fn draw<'gc>(
             // if we're actually going to draw something.
             let quality = activation.context.stage.quality();
             match operations::draw(
-                &mut activation.context,
+                activation.context,
                 bitmap_data,
                 source,
                 Transform {
@@ -640,11 +640,11 @@ fn apply_filter<'gc>(
                 .get(3)
                 .unwrap_or(&Value::Undefined)
                 .coerce_to_object(activation);
-            let filter = bitmap_filter::avm1_to_filter(filter_object, &mut activation.context);
+            let filter = bitmap_filter::avm1_to_filter(filter_object, activation.context);
 
             if let Some(filter) = filter {
                 operations::apply_filter(
-                    &mut activation.context,
+                    activation.context,
                     bitmap_data,
                     source,
                     (src_min_x, src_min_y),
@@ -1028,7 +1028,7 @@ fn copy_pixels<'gc>(
                                 as i32;
 
                             operations::copy_pixels_with_alpha_source(
-                                &mut activation.context,
+                                activation.context,
                                 bitmap_data,
                                 src_bitmap,
                                 (src_min_x, src_min_y, src_width, src_height),
@@ -1040,7 +1040,7 @@ fn copy_pixels<'gc>(
                         }
                     } else {
                         operations::copy_pixels(
-                            &mut activation.context,
+                            activation.context,
                             bitmap_data,
                             src_bitmap,
                             (src_min_x, src_min_y, src_width, src_height),

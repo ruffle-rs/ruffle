@@ -70,7 +70,7 @@ pub fn make_context_menu_state<'gc>(
         }
     }
 
-    result.build_builtin_items(builtin_items, &mut activation.context);
+    result.build_builtin_items(builtin_items, activation.context);
 
     if let Some(menu) = menu {
         if let Ok(Value::Object(custom_items)) = menu.get_public_property("customItems", activation)

@@ -270,7 +270,7 @@ fn call<'gc>(
         if let Some(responder) = args.get(1) {
             let responder = responder.coerce_to_object(activation);
             NetConnections::send_avm1(
-                &mut activation.context,
+                activation.context,
                 handle,
                 command.to_string(),
                 AMFValue::StrictArray(arguments),
@@ -278,7 +278,7 @@ fn call<'gc>(
             );
         } else {
             NetConnections::send_without_response(
-                &mut activation.context,
+                activation.context,
                 handle,
                 command.to_string(),
                 AMFValue::StrictArray(arguments),
@@ -296,7 +296,7 @@ fn close<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(net_connection) = NetConnection::cast(this.into()) {
         if let Some(previous_handle) = net_connection.set_handle(None) {
-            NetConnections::close(&mut activation.context, previous_handle, true);
+            NetConnections::close(activation.context, previous_handle, true);
         }
     }
     Ok(Value::Undefined)
@@ -311,7 +311,7 @@ fn connect<'gc>(
         args.get(0),
         None | Some(Value::Undefined) | Some(Value::Null)
     ) {
-        NetConnections::connect_to_local(&mut activation.context, this);
+        NetConnections::connect_to_local(activation.context, this);
         return Ok(Value::Undefined);
     }
 
@@ -320,7 +320,7 @@ fn connect<'gc>(
         || url.starts_with(WStr::from_units(b"https://"))
     {
         // HTTP(S) is for Flash Remoting, which is just POST requests to the URL.
-        NetConnections::connect_to_flash_remoting(&mut activation.context, this, url.to_string());
+        NetConnections::connect_to_flash_remoting(activation.context, this, url.to_string());
     } else {
         avm1_stub!(
             activation,

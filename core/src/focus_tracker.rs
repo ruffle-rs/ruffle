@@ -242,7 +242,7 @@ impl<'gc> FocusTracker<'gc> {
         let key_code = key_code.map(|k| k as u8).unwrap_or_default();
         let event =
             EventObject::focus_event(&mut activation, event_type, true, related_object, key_code);
-        Avm2::dispatch_event(&mut activation.context, event, target);
+        Avm2::dispatch_event(activation.context, event, target);
 
         let canceled = event.as_event().unwrap().is_cancelled();
         canceled

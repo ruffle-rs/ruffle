@@ -41,7 +41,7 @@ pub fn play<'gc>(
             .map(|v| v.coerce_to_string(activation))
             .transpose()?;
 
-        ns.play(&mut activation.context, name);
+        ns.play(activation.context, name);
     }
 
     Ok(Value::Undefined)
@@ -53,7 +53,7 @@ pub fn pause<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(ns) = this.as_netstream() {
-        ns.pause(&mut activation.context, true);
+        ns.pause(activation.context, true);
     }
 
     Ok(Value::Undefined)
@@ -65,7 +65,7 @@ pub fn resume<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(ns) = this.as_netstream() {
-        ns.resume(&mut activation.context);
+        ns.resume(activation.context);
     }
 
     Ok(Value::Undefined)
@@ -77,7 +77,7 @@ pub fn toggle_pause<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(ns) = this.as_netstream() {
-        ns.toggle_paused(&mut activation.context);
+        ns.toggle_paused(activation.context);
     }
 
     Ok(Value::Undefined)
@@ -120,7 +120,7 @@ pub fn seek<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(ns) = this.as_netstream() {
         let offset = args.get_f64(activation, 0)?;
-        ns.seek(&mut activation.context, offset * 1000.0, true);
+        ns.seek(activation.context, offset * 1000.0, true);
     }
 
     Ok(Value::Undefined)

@@ -142,7 +142,7 @@ pub fn connect<'gc>(
 
         let UpdateContext {
             sockets, navigator, ..
-        } = &mut activation.context;
+        } = activation.context;
 
         sockets.connect_avm1(*navigator, this, host.to_utf8_lossy().into_owned(), port);
 

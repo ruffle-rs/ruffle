@@ -265,7 +265,7 @@ pub fn load_bytes<'gc>(
         .expect("Missing caller domain in Loader.loadBytes");
 
     if let Err(e) = LoadManager::load_movie_into_clip_bytes(
-        &mut activation.context,
+        activation.context,
         content.into(),
         bytes,
         MovieLoaderVMData::Avm2 {

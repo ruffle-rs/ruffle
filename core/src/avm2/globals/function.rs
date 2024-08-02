@@ -281,12 +281,12 @@ pub fn create_class<'gc>(
 
     function_i_class.mark_traits_loaded(activation.context.gc_context);
     function_i_class
-        .init_vtable(&mut activation.context)
+        .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");
 
     function_c_class.mark_traits_loaded(activation.context.gc_context);
     function_c_class
-        .init_vtable(&mut activation.context)
+        .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");
 
     function_i_class

@@ -2055,7 +2055,7 @@ impl<'gc> MovieClip<'gc> {
                     self.0.write(activation.context.gc_context).object = Some(object.into());
 
                     if run_frame {
-                        self.run_frame_avm1(&mut activation.context);
+                        self.run_frame_avm1(activation.context);
                     }
 
                     if let Some(init_object) = init_object {
@@ -4570,10 +4570,9 @@ impl<'gc, 'a> MovieClip<'gc> {
                             Some(Character::Font(_)) => {}
                             Some(Character::Sound(_)) => {}
                             Some(Character::Bitmap { .. }) => {
-                                if let Some(bitmap_class) = BitmapClass::from_class_object(
-                                    class_object,
-                                    &mut activation.context,
-                                ) {
+                                if let Some(bitmap_class) =
+                                    BitmapClass::from_class_object(class_object, activation.context)
+                                {
                                     // We need to re-fetch the library and character to satisfy the borrow checker
                                     let library = activation
                                         .context

@@ -100,7 +100,7 @@ impl<'gc> LocalConnectionObject<'gc> {
                 status.into(),
             ],
         ) {
-            Avm2::dispatch_event(&mut activation.context, event, (*self).into());
+            Avm2::dispatch_event(activation.context, event, (*self).into());
         }
     }
 
@@ -136,7 +136,7 @@ impl<'gc> LocalConnectionObject<'gc> {
                                 error,
                             ],
                         ) {
-                            Avm2::dispatch_event(&mut activation.context, event, (*self).into());
+                            Avm2::dispatch_event(activation.context, event, (*self).into());
                         }
                     }
                     _ => {

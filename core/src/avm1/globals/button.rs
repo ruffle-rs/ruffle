@@ -115,9 +115,7 @@ fn set_filters<'gc>(
     if let Value::Object(value) = value {
         for index in value.get_keys(activation, false).into_iter().rev() {
             let filter_object = value.get(index, activation)?.coerce_to_object(activation);
-            if let Some(filter) =
-                bitmap_filter::avm1_to_filter(filter_object, &mut activation.context)
-            {
+            if let Some(filter) = bitmap_filter::avm1_to_filter(filter_object, activation.context) {
                 filters.push(filter);
             }
         }
@@ -203,7 +201,7 @@ fn set_tab_index<'gc>(
             }
             _ => Some(i32::MIN),
         };
-        this.set_tab_index(&mut activation.context, value);
+        this.set_tab_index(activation.context, value);
     }
     Ok(())
 }

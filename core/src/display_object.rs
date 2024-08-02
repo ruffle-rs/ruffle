@@ -2514,11 +2514,11 @@ pub trait TDisplayObject<'gc>:
             );
             if let Ok(value) = object.get(name, &mut activation) {
                 match value {
-                    Avm1Value::Undefined => default(&mut activation.context),
+                    Avm1Value::Undefined => default(activation.context),
                     _ => value.as_bool(activation.swf_version()),
                 }
             } else {
-                default(&mut activation.context)
+                default(activation.context)
             }
         } else {
             false

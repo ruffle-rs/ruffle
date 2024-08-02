@@ -286,7 +286,7 @@ pub trait TInteractiveObject<'gc>:
                     button,
                 );
 
-                let handled = Avm2::dispatch_event(&mut activation.context, avm2_event, target);
+                let handled = Avm2::dispatch_event(activation.context, avm2_event, target);
                 if handled {
                     ClipEventResult::Handled
                 } else {
@@ -296,8 +296,7 @@ pub trait TInteractiveObject<'gc>:
                         self.as_displayobject(),
                         button,
                     );
-                    Avm2::simulate_event_dispatch(&mut activation.context, avm2_event, target)
-                        .into()
+                    Avm2::simulate_event_dispatch(activation.context, avm2_event, target).into()
                 }
             }
             ClipEvent::MouseUpInside
@@ -314,7 +313,7 @@ pub trait TInteractiveObject<'gc>:
                     },
                 );
 
-                Avm2::dispatch_event(&mut activation.context, avm2_event, target).into()
+                Avm2::dispatch_event(activation.context, avm2_event, target).into()
             }
             ClipEvent::Release { index } => {
                 let is_double_click = index % 2 != 0;
@@ -334,7 +333,7 @@ pub trait TInteractiveObject<'gc>:
                         MouseButton::Left,
                     );
 
-                    Avm2::dispatch_event(&mut activation.context, avm2_event, target).into()
+                    Avm2::dispatch_event(activation.context, avm2_event, target).into()
                 } else {
                     let avm2_event = Avm2EventObject::mouse_event_click(
                         &mut activation,
@@ -342,7 +341,7 @@ pub trait TInteractiveObject<'gc>:
                         MouseButton::Left,
                     );
 
-                    Avm2::dispatch_event(&mut activation.context, avm2_event, target).into()
+                    Avm2::dispatch_event(activation.context, avm2_event, target).into()
                 }
             }
             ClipEvent::RightRelease | ClipEvent::MiddleRelease => {
@@ -356,7 +355,7 @@ pub trait TInteractiveObject<'gc>:
                     },
                 );
 
-                Avm2::dispatch_event(&mut activation.context, avm2_event, target).into()
+                Avm2::dispatch_event(activation.context, avm2_event, target).into()
             }
             ClipEvent::ReleaseOutside => {
                 let avm2_event = Avm2EventObject::mouse_event(
@@ -369,7 +368,7 @@ pub trait TInteractiveObject<'gc>:
                     MouseButton::Left,
                 );
 
-                Avm2::dispatch_event(&mut activation.context, avm2_event, target).into()
+                Avm2::dispatch_event(activation.context, avm2_event, target).into()
             }
             ClipEvent::RollOut { to } | ClipEvent::DragOut { to } => {
                 let avm2_event = Avm2EventObject::mouse_event(
@@ -382,7 +381,7 @@ pub trait TInteractiveObject<'gc>:
                     MouseButton::Left,
                 );
 
-                let mut handled = Avm2::dispatch_event(&mut activation.context, avm2_event, target);
+                let mut handled = Avm2::dispatch_event(activation.context, avm2_event, target);
 
                 let lca = lowest_common_ancestor(
                     self.as_displayobject(),
@@ -407,9 +406,8 @@ pub trait TInteractiveObject<'gc>:
                     );
 
                     if let Avm2Value::Object(avm2_target) = tgt.object2() {
-                        handled =
-                            Avm2::dispatch_event(&mut activation.context, avm2_event, avm2_target)
-                                || handled;
+                        handled = Avm2::dispatch_event(activation.context, avm2_event, avm2_target)
+                            || handled;
                     }
 
                     rollout_target = tgt.parent();
@@ -442,9 +440,8 @@ pub trait TInteractiveObject<'gc>:
                     );
 
                     if let Avm2Value::Object(avm2_target) = tgt.object2() {
-                        handled =
-                            Avm2::dispatch_event(&mut activation.context, avm2_event, avm2_target)
-                                || handled;
+                        handled = Avm2::dispatch_event(activation.context, avm2_event, avm2_target)
+                            || handled;
                     }
 
                     rollover_target = tgt.parent();
@@ -460,8 +457,7 @@ pub trait TInteractiveObject<'gc>:
                     MouseButton::Left,
                 );
 
-                handled =
-                    Avm2::dispatch_event(&mut activation.context, avm2_event, target) || handled;
+                handled = Avm2::dispatch_event(activation.context, avm2_event, target) || handled;
 
                 handled.into()
             }
@@ -476,7 +472,7 @@ pub trait TInteractiveObject<'gc>:
                     MouseButton::Left,
                 );
 
-                Avm2::dispatch_event(&mut activation.context, avm2_event, target).into()
+                Avm2::dispatch_event(activation.context, avm2_event, target).into()
             }
             ClipEvent::MouseMoveInside => {
                 let avm2_event = Avm2EventObject::mouse_event(
@@ -489,7 +485,7 @@ pub trait TInteractiveObject<'gc>:
                     MouseButton::Left,
                 );
 
-                Avm2::dispatch_event(&mut activation.context, avm2_event, target).into()
+                Avm2::dispatch_event(activation.context, avm2_event, target).into()
             }
             _ => ClipEventResult::NotHandled,
         }
@@ -605,7 +601,7 @@ pub trait TInteractiveObject<'gc>:
             let mut activation = Avm2Activation::from_nothing(context.reborrow());
             let event_name = if focused { "focusIn" } else { "focusOut" };
             let event = EventObject::focus_event(&mut activation, event_name, false, other, 0);
-            Avm2::dispatch_event(&mut activation.context, event, object);
+            Avm2::dispatch_event(activation.context, event, object);
         }
     }
 

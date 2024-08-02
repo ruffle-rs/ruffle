@@ -115,7 +115,7 @@ pub fn set_sound_transform<'gc>(
         let as3_st = args.get_object(activation, 0, "value")?;
         let dobj_st = SoundTransform::from_avm2_object(activation, as3_st)?;
 
-        dobj.set_sound_transform(&mut activation.context, dobj_st);
+        dobj.set_sound_transform(activation.context, dobj_st);
     }
 
     Ok(Value::Undefined)
@@ -143,7 +143,7 @@ pub fn set_button_mode<'gc>(
     if let Some(mc) = this.as_display_object().and_then(|o| o.as_movie_clip()) {
         let forced_button_mode = args.get_bool(0);
 
-        mc.set_forced_button_mode(&mut activation.context, forced_button_mode);
+        mc.set_forced_button_mode(activation.context, forced_button_mode);
     }
 
     Ok(Value::Undefined)
@@ -220,7 +220,7 @@ pub fn stop_drag<'gc>(
     // We might not have had an opportunity to call `update_drag`
     // if AS did `startDrag(mc); stopDrag();` in one go,
     // so let's do it here.
-    crate::player::Player::update_drag(&mut activation.context);
+    crate::player::Player::update_drag(activation.context);
 
     *activation.context.drag_object = None;
     Ok(Value::Undefined)
@@ -252,7 +252,7 @@ pub fn set_use_hand_cursor<'gc>(
         .as_display_object()
         .and_then(|this| this.as_movie_clip())
     {
-        mc.set_avm2_use_hand_cursor(&mut activation.context, args.get_bool(0));
+        mc.set_avm2_use_hand_cursor(activation.context, args.get_bool(0));
     }
 
     Ok(Value::Undefined)
@@ -288,7 +288,7 @@ pub fn set_hit_area<'gc>(
         let object = args
             .try_get_object(activation, 0)
             .and_then(|hit_area| hit_area.as_display_object());
-        mc.set_hit_area(&mut activation.context, object);
+        mc.set_hit_area(activation.context, object);
     }
 
     Ok(Value::Undefined)
