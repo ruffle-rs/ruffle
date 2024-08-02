@@ -92,11 +92,16 @@ jobs:
         working-directory: web
         run: npm test
 
+      - name: Set EDGEDRIVER_VERSION environment variable
+        if: runner.os == 'Linux'
+        run: |
+          echo "EDGEDRIVER_VERSION=$( $EDGEWEBDRIVER/msedgedriver --version | cut -f4 -d ' ' )" >> $GITHUB_ENV
+
       - name: Run browser-based tests
         # Don't run browser tests on Windows because it's flaky for unknown reasons. :-(
         if: runner.os == 'Linux'
         working-directory: web
-        run: npm run wdio -- --headless --chrome --firefox
+        run: npm run wdio -- --headless --chrome --firefox --edge
 
   check-required:
     needs: changes
