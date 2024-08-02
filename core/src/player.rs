@@ -51,7 +51,7 @@ use crate::timer::Timers;
 use crate::vminterface::Instantiator;
 use crate::DefaultFont;
 use gc_arena::lock::GcRefLock;
-use gc_arena::{Collect, DynamicRootSet, Rootable};
+use gc_arena::{Collect, DynamicRootSet, Mutation, Rootable};
 use rand::{rngs::SmallRng, SeedableRng};
 use ruffle_render::backend::{null::NullRenderer, RenderBackend, ViewportDimensions};
 use ruffle_render::commands::CommandList;
@@ -60,7 +60,7 @@ use ruffle_render::transform::TransformStack;
 use ruffle_video::backend::VideoBackend;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::ops::DerefMut;
+use std::ops::{Deref, DerefMut};
 use std::rc::{Rc, Weak as RcWeak};
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, Weak};
@@ -384,6 +384,57 @@ pub struct Player {
 }
 
 impl Player {
+    // This method will panic if called inside an `enter_arena_mut` call.
+    fn enter_arena<F, T>(&self, f: F) -> T
+    where
+        F: for<'gc> FnOnce(&'gc Mutation<'gc>, &'gc GcRootData<'gc>, &'gc Self) -> T,
+    {
+        let borrow = self.gc_arena.try_borrow().ok();
+        let result = borrow.and_then(|arena| {
+            arena.mutate(|mc, root| {
+                let root = root.data.try_borrow().ok()?;
+
+                // SAFETY: The 'gc lifetime is generative, and can be soundly conflated with
+                // the lifetime of shorter borrows, as `&'gc T`s aren't `Collect` and cannot
+                // outlive the closure.
+                Some(unsafe {
+                    let root = &*(root.deref() as *const _);
+                    let this = &*(self as *const _);
+                    f(mc, root, this)
+                })
+            })
+        });
+        result.expect("arena already mutably borrowed")
+    }
+
+    // This method will panic if called inside another `enter_arena_mut` call.
+    fn enter_arena_mut<F, T>(&mut self, f: F) -> T
+    where
+        F: for<'gc> FnOnce(&'gc Mutation<'gc>, &'gc mut GcRootData<'gc>, &'gc mut Self) -> T,
+    {
+        // To allow passing a `&mut Self` to the user-provided function, we avoid borrowing directly from self.
+        let arena = Rc::clone(&self.gc_arena);
+
+        // Do not borrow the arena mutably, to keep it accessible while inside a panic handler.
+        let borrow = arena.try_borrow().ok();
+
+        let result = borrow.and_then(|arena| {
+            arena.mutate(|mc, root| {
+                let mut root = root.data.try_borrow_mut(mc).ok()?;
+
+                // SAFETY: The 'gc lifetime is generative, and can be soundly conflated with
+                // the lifetime of shorter borrows, as `&'gc T`s aren't `Collect` and cannot
+                // outlive the closure.
+                Some(unsafe {
+                    let root = &mut *(root.deref_mut() as *mut _);
+                    let this = &mut *(self as *mut _);
+                    f(mc, root, this)
+                })
+            })
+        });
+        result.expect("arena already borrowed")
+    }
+
     /// Fetch the root movie.
     ///
     /// This should not be called if a root movie fetch has already been kicked
@@ -626,9 +677,8 @@ impl Player {
     }
 
     pub fn clear_custom_menu_items(&mut self) {
-        self.gc_arena.borrow().mutate(|gc_context, gc_root| {
-            let mut root_data = gc_root.data.borrow_mut(gc_context);
-            root_data.current_context_menu = None;
+        self.enter_arena_mut(|_, gc_root, _| {
+            gc_root.current_context_menu = None;
         });
     }
 
@@ -1913,10 +1963,8 @@ impl Player {
 
     #[instrument(level = "debug", skip_all)]
     pub fn render(&mut self) {
-        let invalidated = self
-            .gc_arena
-            .borrow()
-            .mutate(|_, gc_root| gc_root.data.borrow().stage.invalidated());
+        let invalidated = self.enter_arena(|_, gc_root, _| gc_root.stage.invalidated());
+
         if invalidated {
             self.update(|context| {
                 let stage = context.stage;
@@ -1926,18 +1974,17 @@ impl Player {
 
         let mut background_color = Color::WHITE;
 
-        let (cache_draws, commands) = self.gc_arena.borrow().mutate(|gc_context, gc_root| {
-            let root_data = gc_root.data.borrow();
-            let stage = root_data.stage;
+        let (cache_draws, commands) = self.enter_arena_mut(|gc_context, gc_root, this| {
+            let stage = gc_root.stage;
 
             let mut cache_draws = vec![];
             let mut render_context = RenderContext {
-                renderer: self.renderer.deref_mut(),
+                renderer: this.renderer.deref_mut(),
                 commands: CommandList::new(),
                 cache_draws: &mut cache_draws,
                 gc_context,
-                library: &root_data.library,
-                transform_stack: &mut self.transform_stack,
+                library: &gc_root.library,
+                transform_stack: &mut this.transform_stack,
                 is_offscreen: false,
                 use_bitmap_cache: true,
                 stage,
@@ -1947,10 +1994,9 @@ impl Player {
 
             #[cfg(feature = "egui")]
             {
-                let debug_ui = self.debug_ui.clone();
-                debug_ui
+                this.debug_ui
                     .borrow_mut()
-                    .draw_debug_rects(&mut render_context, root_data.dynamic_root);
+                    .draw_debug_rects(&mut render_context, gc_root.dynamic_root);
             }
 
             background_color =
@@ -2126,9 +2172,7 @@ impl Player {
     where
         F: for<'a, 'gc> FnOnce(&mut UpdateContext<'a, 'gc>) -> R,
     {
-        self.gc_arena.borrow().mutate(|gc_context, gc_root| {
-            let mut root_data = gc_root.data.borrow_mut(gc_context);
-
+        self.enter_arena_mut(|gc_context, gc_root, this| {
             #[allow(unused_variables)]
             let (
                 stage,
@@ -2153,54 +2197,54 @@ impl Player {
                 post_frame_callbacks,
                 mouse_data,
                 dynamic_root,
-            ) = root_data.update_context_params();
+            ) = gc_root.update_context_params();
 
             let mut update_context = UpdateContext {
-                player_version: self.player_version,
-                swf: &mut self.swf,
+                player_version: this.player_version,
+                swf: &mut this.swf,
                 library,
-                rng: &mut self.rng,
-                renderer: self.renderer.deref_mut(),
-                audio: self.audio.deref_mut(),
-                navigator: self.navigator.deref_mut(),
-                ui: self.ui.deref_mut(),
+                rng: &mut this.rng,
+                renderer: this.renderer.deref_mut(),
+                audio: this.audio.deref_mut(),
+                navigator: this.navigator.deref_mut(),
+                ui: this.ui.deref_mut(),
                 action_queue,
                 gc_context,
                 interner,
                 stage,
                 mouse_data,
-                input: &self.input,
-                mouse_position: &self.mouse_position,
+                input: &this.input,
+                mouse_position: &this.mouse_position,
                 drag_object,
-                player: self.self_reference.clone(),
+                player: this.self_reference.clone(),
                 load_manager,
-                system: &mut self.system,
-                page_url: &mut self.page_url,
-                instance_counter: &mut self.instance_counter,
-                storage: self.storage.deref_mut(),
-                log: self.log.deref_mut(),
-                video: self.video.deref_mut(),
+                system: &mut this.system,
+                page_url: &mut this.page_url,
+                instance_counter: &mut this.instance_counter,
+                storage: this.storage.deref_mut(),
+                log: this.log.deref_mut(),
+                video: this.video.deref_mut(),
                 avm1_shared_objects,
                 avm2_shared_objects,
                 unbound_text_fields,
                 timers,
                 current_context_menu,
-                needs_render: &mut self.needs_render,
+                needs_render: &mut this.needs_render,
                 avm1,
                 avm2,
                 external_interface,
-                start_time: self.start_time,
+                start_time: this.start_time,
                 update_start: Instant::now(),
-                max_execution_duration: self.max_execution_duration,
+                max_execution_duration: this.max_execution_duration,
                 focus_tracker: stage.focus_tracker(),
                 times_get_time_called: 0,
-                time_offset: &mut self.time_offset,
+                time_offset: &mut this.time_offset,
                 audio_manager,
-                frame_rate: &mut self.frame_rate,
-                forced_frame_rate: self.forced_frame_rate,
-                actions_since_timeout_check: &mut self.actions_since_timeout_check,
-                frame_phase: &mut self.frame_phase,
-                stub_tracker: &mut self.stub_tracker,
+                frame_rate: &mut this.frame_rate,
+                forced_frame_rate: this.forced_frame_rate,
+                actions_since_timeout_check: &mut this.actions_since_timeout_check,
+                frame_phase: &mut this.frame_phase,
+                stub_tracker: &mut this.stub_tracker,
                 stream_manager,
                 sockets,
                 net_connections,
@@ -2221,7 +2265,7 @@ impl Player {
                     .set_frame_rate(*update_context.frame_rate);
             }
 
-            self.current_frame = update_context
+            this.current_frame = update_context
                 .stage
                 .root_clip()
                 .and_then(|root| root.as_movie_clip())
@@ -2705,7 +2749,7 @@ impl PlayerBuilder {
     }
 
     fn create_gc_root<'gc>(
-        gc_context: &'gc gc_arena::Mutation<'gc>,
+        gc_context: &'gc Mutation<'gc>,
         player_version: u8,
         player_runtime: PlayerRuntime,
         fullscreen: bool,
