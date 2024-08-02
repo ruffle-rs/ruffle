@@ -23,7 +23,7 @@ use crate::html::TextFormat;
 use crate::streams::NetStream;
 use crate::string::AvmString;
 use gc_arena::{lock::RefLock, Collect, Gc, Mutation};
-use ruffle_macros::enum_trait_object;
+use ruffle_macros::{enum_trait_object, no_dynamic};
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
@@ -153,6 +153,17 @@ pub use crate::avm2::object::xml_list_object::{
 pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject, XmlObjectWeak};
 use crate::font::Font;
 
+fn borrow_data<'gc>(gc: Gc<'gc, RefLock<ScriptObjectData<'gc>>>) -> Ref<ScriptObjectData<'gc>> {
+    gc.borrow()
+}
+
+fn borrow_data_mut<'gc>(
+    mc: &Mutation<'gc>,
+    gc: Gc<'gc, RefLock<ScriptObjectData<'gc>>>,
+) -> RefMut<'gc, ScriptObjectData<'gc>> {
+    gc.borrow_mut(mc)
+}
+
 /// Represents an object that can be directly interacted with by the AVM2
 /// runtime.
 #[enum_trait_object(
@@ -207,15 +218,17 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>>;
 
     #[inline(always)]
+    #[no_dynamic]
     fn base(&self) -> Ref<ScriptObjectData<'gc>> {
         let gc_base = self.gc_base();
-        gc_base.borrow()
+        borrow_data(gc_base)
     }
 
     #[inline(always)]
+    #[no_dynamic]
     fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
         let gc_base = self.gc_base();
-        gc_base.borrow_mut(mc)
+        borrow_data_mut(mc, gc_base)
     }
 
     /// Retrieve a local property of the object. The Multiname should always be public.
@@ -240,6 +253,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// exception that it does not special-case object lookups on dictionary
     /// structured objects.
     #[allow(unused_mut)] //Not unused.
+    #[no_dynamic]
     fn get_property(
         mut self,
         multiname: &Multiname<'gc>,
@@ -288,6 +302,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Same as get_property, but constructs a public Multiname for you.
+    #[no_dynamic]
     fn get_public_property(
         self,
         name: impl Into<AvmString<'gc>>,
@@ -341,6 +356,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This corresponds directly with the AVM2 operation `setproperty`, with
     /// the exception that it does not special-case object lookups on
     /// dictionary structured objects.
+    #[no_dynamic]
     fn set_property(
         &self,
         multiname: &Multiname<'gc>,
@@ -390,6 +406,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Same as set_property, but constructs a public Multiname for you.
+    #[no_dynamic]
     fn set_public_property(
         &self,
         name: impl Into<AvmString<'gc>>,
@@ -426,6 +443,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This method should not be overridden.
     ///
     /// This corresponds directly with the AVM2 operation `initproperty`.
+    #[no_dynamic]
     fn init_property(
         &self,
         multiname: &Multiname<'gc>,
@@ -497,6 +515,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ///
     /// This corresponds directly to the `callproperty` operation in AVM2.
     #[allow(unused_mut)]
+    #[no_dynamic]
     fn call_property(
         mut self,
         multiname: &Multiname<'gc>,
@@ -538,6 +557,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Same as call_property, but constructs a public Multiname for you.
+    #[no_dynamic]
     fn call_public_property(
         self,
         name: impl Into<AvmString<'gc>>,
@@ -551,9 +571,47 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         )
     }
 
+    /// Retrieve a slot by its index.
+    #[no_dynamic]
+    fn get_slot(self, id: u32) -> Result<Value<'gc>, Error<'gc>> {
+        let base = self.base();
+
+        base.get_slot(id)
+    }
+
+    /// Set a slot by its index.
+    #[no_dynamic]
+    fn set_slot(
+        self,
+        id: u32,
+        value: Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<(), Error<'gc>> {
+        let value = self
+            .vtable()
+            .unwrap()
+            .coerce_trait_value(id, value, activation)?;
+        let mut base = self.base_mut(activation.gc());
+
+        base.set_slot(id, value, activation.gc())
+    }
+
+    #[no_dynamic]
+    fn set_slot_no_coerce(
+        self,
+        id: u32,
+        value: Value<'gc>,
+        mc: &Mutation<'gc>,
+    ) -> Result<(), Error<'gc>> {
+        let mut base = self.base_mut(mc);
+
+        base.set_slot(id, value, mc)
+    }
+
     /// Call a method by its index.
     ///
     /// This directly corresponds with the AVM2 operation `callmethod`.
+    #[no_dynamic]
     fn call_method(
         self,
         id: u32,
@@ -650,6 +708,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         )))
     }
 
+    /// Returns true if an object has one or more traits of a given name.
+    #[no_dynamic]
+    fn has_trait(self, name: &Multiname<'gc>) -> bool {
+        let base = self.base();
+        base.has_trait(name)
+    }
+
     /// Delete a property by QName, after multiname resolution and all other
     /// considerations have been taken.
     ///
@@ -668,6 +733,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Delete a named property from the object.
     ///
     /// Returns false if the property cannot be deleted.
+    #[no_dynamic]
     fn delete_property(
         &self,
         activation: &mut Activation<'_, 'gc>,
@@ -703,6 +769,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Same as delete_property, but constructs a public Multiname for you.
+    #[no_dynamic]
     fn delete_public_property(
         &self,
         activation: &mut Activation<'_, 'gc>,
@@ -717,6 +784,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// The proto is another object used to resolve methods across a class of
     /// multiple objects. It should also be accessible as `__proto__` from
     /// `get`.
+    #[no_dynamic]
     fn proto(&self) -> Option<Object<'gc>> {
         let base = self.base();
 
@@ -728,6 +796,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This method primarily exists so that the global scope that player
     /// globals loads into can be created before its superclasses are. It
     /// should be used sparingly, if at all.
+    #[no_dynamic]
     fn set_proto(self, mc: &Mutation<'gc>, proto: Object<'gc>) {
         let mut base = self.base_mut(mc);
 
@@ -809,6 +878,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Install a bound method on an object.
+    #[no_dynamic]
     fn install_bound_method(
         &self,
         mc: &Mutation<'gc>,
@@ -822,6 +892,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Install a const trait on the global object.
     /// This should only ever be called on the `global` object, during initialization.
+    #[no_dynamic]
     fn install_const_late(
         &self,
         mc: &Mutation<'gc>,
@@ -837,6 +908,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             .install_const_slot_late(new_slot_id, value);
     }
 
+    #[no_dynamic]
     fn install_instance_slots(&self, mc: &Mutation<'gc>) {
         self.base_mut(mc).install_instance_slots();
     }
@@ -878,6 +950,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Construct a property of this object by Multiname lookup.
     ///
     /// This corresponds directly to the AVM2 operation `constructprop`.
+    #[no_dynamic]
     fn construct_prop(
         self,
         multiname: &Multiname<'gc>,
@@ -978,6 +1051,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// The given object should be the class object for the given type we are
     /// checking against this object. Its prototype will be extracted and
     /// searched in the prototype chain of this object.
+    #[no_dynamic]
     fn is_instance_of(
         &self,
         activation: &mut Activation<'_, 'gc>,
@@ -998,6 +1072,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This includes normal fields, const fields, and getter methods
     /// This is used for JSON serialization.
     // FIXME - the order doesn't currently match Flash Player
+    #[no_dynamic]
     fn public_vtable_properties(
         &self,
         activation: &mut Activation<'_, 'gc>,
@@ -1025,6 +1100,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ///
     /// The given object `type_proto` should be the prototype we are checking
     /// against this object.
+    #[no_dynamic]
     fn has_prototype_in_chain(&self, type_proto: Object<'gc>) -> Result<bool, Error<'gc>> {
         let mut my_proto = self.proto();
 
@@ -1040,33 +1116,51 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         Ok(false)
     }
 
+    /// Determine if this object is an instance of a given type.
+    ///
+    /// This uses the ES4 definition of instance, which walks the class object
+    /// chain and accounts for interfaces. For the ES3 definition of instance,
+    /// use `is_instance_of`, which uses the prototype chain.
+    ///
+    /// The given object should be the class object for the given type we are
+    /// checking against this object.
+    #[no_dynamic]
+    fn is_of_type(&self, test_class: Class<'gc>) -> bool {
+        self.instance_class().has_class_in_chain(test_class)
+    }
+
     /// Get a raw pointer value for this object.
     fn as_ptr(&self) -> *const ObjectPtr;
 
     /// Get this object's vtable, if it has one.
     /// Every object with class should have a vtable
+    #[no_dynamic]
     fn vtable(&self) -> Option<VTable<'gc>> {
         let base = self.base();
         base.vtable()
     }
 
+    #[no_dynamic]
     fn get_bound_method(&self, id: u32) -> Option<FunctionObject<'gc>> {
         let base = self.base();
         base.get_bound_method(id)
     }
 
     /// Get this object's class's `Class`, if it has one.
+    #[no_dynamic]
     fn instance_class(&self) -> Class<'gc> {
         let base = self.base();
         base.instance_class()
     }
 
     /// Get this object's class's name, formatted for debug output.
+    #[no_dynamic]
     fn instance_of_class_name(&self, mc: &Mutation<'gc>) -> AvmString<'gc> {
         self.instance_class().name().to_qualified_name(mc)
     }
 
     // Sets a different vtable for object, without changing instance_of.
+    #[no_dynamic]
     fn set_vtable(&self, mc: &Mutation<'gc>, vtable: VTable<'gc>) {
         let mut base = self.base_mut(mc);
         base.set_vtable(vtable);
@@ -1328,58 +1422,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 pub enum ObjectPtr {}
 
 impl<'gc> Object<'gc> {
-    /// Retrieve a slot by its index.
-    pub fn get_slot(self, id: u32) -> Result<Value<'gc>, Error<'gc>> {
-        let base = self.base();
-
-        base.get_slot(id)
-    }
-
-    /// Set a slot by its index.
-    pub fn set_slot(
-        self,
-        id: u32,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
-        let value = self
-            .vtable()
-            .unwrap()
-            .coerce_trait_value(id, value, activation)?;
-        let mut base = self.base_mut(activation.gc());
-
-        base.set_slot(id, value, activation.gc())
-    }
-
-    pub fn set_slot_no_coerce(
-        self,
-        id: u32,
-        value: Value<'gc>,
-        mc: &Mutation<'gc>,
-    ) -> Result<(), Error<'gc>> {
-        let mut base = self.base_mut(mc);
-
-        base.set_slot(id, value, mc)
-    }
-
-    /// Returns true if an object has one or more traits of a given name.
-    pub fn has_trait(self, name: &Multiname<'gc>) -> bool {
-        let base = self.base();
-        base.has_trait(name)
-    }
-
-    /// Determine if this object is an instance of a given type.
-    ///
-    /// This uses the ES4 definition of instance, which walks the class object
-    /// chain and accounts for interfaces. For the ES3 definition of instance,
-    /// use `is_instance_of`, which uses the prototype chain.
-    ///
-    /// The given object should be the class object for the given type we are
-    /// checking against this object.
-    pub fn is_of_type(&self, test_class: Class<'gc>) -> bool {
-        self.instance_class().has_class_in_chain(test_class)
-    }
-
     pub fn ptr_eq<T: TObject<'gc>>(a: T, b: T) -> bool {
         a.as_ptr() == b.as_ptr()
     }
