@@ -736,7 +736,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<Namespace<'gc>, Error<'gc>> {
         method
             .translation_unit()
-            .pool_namespace(index, &mut self.context)
+            .pool_namespace(index, self.context)
     }
 
     /// Retrieve a method entry from the current ABC file's method table.
@@ -1666,7 +1666,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         avm_debug!(self.avm2(), "Resolving {:?}", *multiname);
         let (_, script) = self.domain().find_defining_script(self, &multiname)?;
-        let obj = script.globals(&mut self.context)?;
+        let obj = script.globals(self.context)?;
         self.push_stack(obj);
         Ok(FrameControl::Continue)
     }
@@ -1708,7 +1708,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self,
         script: Script<'gc>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let globals = script.globals(&mut self.context)?;
+        let globals = script.globals(self.context)?;
 
         self.push_stack(globals);
 

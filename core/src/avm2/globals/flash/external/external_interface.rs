@@ -22,7 +22,7 @@ pub fn call<'gc>(
             external_args.push(ExternalValue::from_avm2(arg.to_owned()));
         }
         Ok(method
-            .call(&mut activation.context, &external_args)
+            .call(activation.context, &external_args)
             .into_avm2(activation))
     } else {
         Ok(Value::Null)

@@ -25,7 +25,7 @@ pub fn add_frame_script<'gc>(
             let frame_id = frame_id.coerce_to_u32(activation)? as u16 + 1;
             let callable = callable.as_callable(activation, None, None, false).ok();
 
-            mc.register_frame_script(frame_id, callable, &mut activation.context);
+            mc.register_frame_script(frame_id, callable, activation.context);
         }
     } else {
         tracing::error!("Attempted to add frame scripts to non-MovieClip this!");
@@ -217,7 +217,7 @@ pub fn set_enabled<'gc>(
     {
         let enabled = args.get_bool(0);
 
-        mc.set_avm2_enabled(&mut activation.context, enabled);
+        mc.set_avm2_enabled(activation.context, enabled);
     }
 
     Ok(Value::Undefined)
@@ -382,7 +382,7 @@ pub fn goto_frame<'gc>(
                     //If the user specified a scene, we need to validate that
                     //the requested frame exists within that scene.
                     let scene = args[1].coerce_to_string(activation)?;
-                    if !mc.frame_exists_within_scene(&frame_or_label, &scene, &activation.context) {
+                    if !mc.frame_exists_within_scene(&frame_or_label, &scene, activation.context) {
                         return Err(Error::AvmError(argument_error(
                             activation,
                             &format!("Error #2109: Frame label {frame_or_label} not found in scene {scene}."),
@@ -391,7 +391,7 @@ pub fn goto_frame<'gc>(
                     }
                 }
 
-                let frame = mc.frame_label_to_number(&frame_or_label, &activation.context);
+                let frame = mc.frame_label_to_number(&frame_or_label, activation.context);
 
                 if activation.caller_movie_or_root().version() >= 11 {
                     frame.ok_or(
@@ -409,7 +409,7 @@ pub fn goto_frame<'gc>(
         }
     };
 
-    mc.goto_frame(&mut activation.context, frame.max(1) as u16, stop);
+    mc.goto_frame(activation.context, frame.max(1) as u16, stop);
 
     Ok(())
 }
@@ -424,7 +424,7 @@ pub fn stop<'gc>(
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        mc.stop(&mut activation.context);
+        mc.stop(activation.context);
     }
 
     Ok(Value::Undefined)
@@ -441,7 +441,7 @@ pub fn play<'gc>(
         .and_then(|dobj| dobj.as_movie_clip())
     {
         mc.set_programmatically_played(activation.context.gc_context);
-        mc.play(&mut activation.context);
+        mc.play(activation.context);
     }
 
     Ok(Value::Undefined)
@@ -457,7 +457,7 @@ pub fn prev_frame<'gc>(
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        mc.prev_frame(&mut activation.context);
+        mc.prev_frame(activation.context);
     }
 
     Ok(Value::Undefined)
@@ -473,7 +473,7 @@ pub fn next_frame<'gc>(
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
     {
-        mc.next_frame(&mut activation.context);
+        mc.next_frame(activation.context);
     }
 
     Ok(Value::Undefined)
@@ -495,7 +495,7 @@ pub fn prev_scene<'gc>(
             length: _,
         }) = mc.previous_scene()
         {
-            mc.goto_frame(&mut activation.context, start, false);
+            mc.goto_frame(activation.context, start, false);
         }
     }
 
@@ -518,7 +518,7 @@ pub fn next_scene<'gc>(
             length: _,
         }) = mc.next_scene()
         {
-            mc.goto_frame(&mut activation.context, start, false);
+            mc.goto_frame(activation.context, start, false);
         }
     }
 

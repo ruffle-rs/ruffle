@@ -74,7 +74,7 @@ impl Avm2ObjectWindow {
                     }
                     Panel::Elements => {
                         if let Some(array) = object.as_array_storage() {
-                            self.show_elements(array, messages, &mut activation.context, ui)
+                            self.show_elements(array, messages, activation.context, ui)
                         }
                     }
                     Panel::Class => {
@@ -100,7 +100,7 @@ impl Avm2ObjectWindow {
             .show(ui, |ui| {
                 if let Some(class) = object.instance_class().class_object() {
                     ui.label("Instance Of");
-                    show_avm2_value(ui, &mut activation.context, class.into(), messages);
+                    show_avm2_value(ui, activation.context, class.into(), messages);
                     ui.end_row();
                 }
 
@@ -108,7 +108,7 @@ impl Avm2ObjectWindow {
                     ui.label("Display Object");
                     open_display_object_button(
                         ui,
-                        &mut activation.context,
+                        activation.context,
                         messages,
                         object,
                         &mut self.hovered_debug_rect,
@@ -257,7 +257,7 @@ impl Avm2ObjectWindow {
                 ui.vertical(|ui| {
                     let mut superclass = Some(class);
                     while let Some(class) = superclass {
-                        show_avm2_value(ui, &mut activation.context, class.into(), messages);
+                        show_avm2_value(ui, activation.context, class.into(), messages);
                         superclass = class.superclass_object();
                     }
                 });
@@ -455,7 +455,7 @@ impl ValueResultWidget {
         value: Result<Value<'gc>, Error<'gc>>,
     ) -> Self {
         match value {
-            Ok(value) => Self::Value(ValueWidget::new(&mut activation.context, value)),
+            Ok(value) => Self::Value(ValueWidget::new(activation.context, value)),
             Err(error) => Self::Error(format!("{error:?})")),
         }
     }

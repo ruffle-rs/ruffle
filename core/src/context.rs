@@ -445,7 +445,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
         );
 
         let stage = activation.context.stage;
-        stage.build_matrices(&mut activation.context);
+        stage.build_matrices(activation.context);
 
         drop(activation);
 

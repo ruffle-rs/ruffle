@@ -233,8 +233,8 @@ impl<'gc> SoundObject<'gc> {
         }
         self.set_id3(activation.context.gc_context, Some(id3));
         if tag.is_ok() {
-            let id3_evt = EventObject::bare_default_event(&mut activation.context, "id3");
-            Avm2::dispatch_event(&mut activation.context, id3_evt, self.into());
+            let id3_evt = EventObject::bare_default_event(activation.context, "id3");
+            Avm2::dispatch_event(activation.context, id3_evt, self.into());
         }
     }
 }

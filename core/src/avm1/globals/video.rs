@@ -47,7 +47,7 @@ pub fn attach_video<'gc>(
         .coerce_to_object(activation);
 
     if let NativeObject::NetStream(ns) = source.native() {
-        video.attach_netstream(&mut activation.context, ns);
+        video.attach_netstream(activation.context, ns);
     } else {
         tracing::warn!("Cannot use object of type {:?} as video source", source);
     }

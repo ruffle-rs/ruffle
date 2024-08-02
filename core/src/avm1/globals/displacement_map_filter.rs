@@ -388,7 +388,7 @@ fn method<'gc>(
 
     Ok(match index {
         GET_MAP_BITMAP => this
-            .map_bitmap(&mut activation.context)
+            .map_bitmap(activation.context)
             .map_or(Value::Undefined, Value::from),
         SET_MAP_BITMAP => {
             this.set_map_bitmap(activation, args.get(0))?;

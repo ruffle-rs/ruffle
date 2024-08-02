@@ -619,11 +619,7 @@ impl Player {
                 let menu_object = if let Ok(Value::Object(menu)) = obj.get("menu", &mut activation)
                 {
                     if let Ok(Value::Object(on_select)) = menu.get("onSelect", &mut activation) {
-                        Self::run_context_menu_custom_callback(
-                            menu,
-                            on_select,
-                            &mut activation.context,
-                        );
+                        Self::run_context_menu_custom_callback(menu, on_select, activation.context);
                     }
                     Some(menu)
                 } else {
@@ -658,7 +654,7 @@ impl Player {
                         )
                         .expect("Context menu event should be constructed!");
 
-                    Avm2::dispatch_event(&mut activation.context, menu_evt, menu_object);
+                    Avm2::dispatch_event(activation.context, menu_evt, menu_object);
                 }
 
                 crate::avm2::make_context_menu_state(menu_object, display_obj, &mut activation)
@@ -1198,7 +1194,7 @@ impl Player {
                         .coerce_to_object(&mut activation)
                         .expect("DisplayObject is not an object!");
 
-                    Avm2::dispatch_event(&mut activation.context, keyboard_event, target);
+                    Avm2::dispatch_event(activation.context, keyboard_event, target);
                 }
             }
 

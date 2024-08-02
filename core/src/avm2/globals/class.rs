@@ -67,7 +67,7 @@ pub fn create_i_class<'gc>(
 
     class_i_class.mark_traits_loaded(activation.context.gc_context);
     class_i_class
-        .init_vtable(&mut activation.context)
+        .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");
 
     class_i_class
@@ -98,7 +98,7 @@ pub fn create_c_class<'gc>(
 
     class_c_class.mark_traits_loaded(activation.context.gc_context);
     class_c_class
-        .init_vtable(&mut activation.context)
+        .init_vtable(activation.context)
         .expect("Native class's vtable should initialize");
 
     class_c_class

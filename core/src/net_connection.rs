@@ -150,7 +150,7 @@ impl<'gc> NetConnections<'gc> {
                         ("level", "status"),
                     ],
                 );
-                Avm2::dispatch_event(&mut activation.context, event, object.into());
+                Avm2::dispatch_event(activation.context, event, object.into());
             }
             NetConnectionObject::Avm1(object) => {
                 if let Err(e) = Avm1NetConnectionObject::on_status_event(
@@ -207,7 +207,7 @@ impl<'gc> NetConnections<'gc> {
                         ("level", "status"),
                     ],
                 );
-                Avm2::dispatch_event(&mut activation.context, event, object.into());
+                Avm2::dispatch_event(activation.context, event, object.into());
 
                 if is_explicit
                     && matches!(connection.protocol, NetConnectionProtocol::FlashRemoting(_))
@@ -223,7 +223,7 @@ impl<'gc> NetConnections<'gc> {
                             ("level", "status"),
                         ],
                     );
-                    Avm2::dispatch_event(&mut activation.context, event, object.into());
+                    Avm2::dispatch_event(activation.context, event, object.into());
                 }
             }
             NetConnectionObject::Avm1(object) => {
@@ -562,11 +562,7 @@ impl FlashRemoting {
                                             ("description", "HTTP: Failed".into()),
                                         ],
                                     );
-                                    Avm2::dispatch_event(
-                                        &mut activation.context,
-                                        event,
-                                        object.into(),
-                                    );
+                                    Avm2::dispatch_event(activation.context, event, object.into());
                                 }
                                 NetConnectionObject::Avm1(object) => {
                                     if let Err(e) =

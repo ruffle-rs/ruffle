@@ -676,7 +676,7 @@ pub fn load_player_globals<'gc>(
     define_fn_on_global(activation, "", "parseInt", script);
 
     global_classdef.mark_traits_loaded(mc);
-    global_classdef.init_vtable(&mut activation.context)?;
+    global_classdef.init_vtable(activation.context)?;
 
     Ok(())
 }
@@ -715,7 +715,7 @@ fn load_playerglobal<'gc>(
                 .read_do_abc_2()
                 .expect("playerglobal.swf should be valid");
             Avm2::do_abc(
-                &mut activation.context,
+                activation.context,
                 do_abc.data,
                 None,
                 do_abc.flags,

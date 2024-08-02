@@ -534,7 +534,7 @@ pub fn abc_default_value<'gc>(
         | AbcDefaultValue::Explicit(ns)
         | AbcDefaultValue::StaticProtected(ns)
         | AbcDefaultValue::Private(ns) => {
-            let ns = translation_unit.pool_namespace(*ns, &mut activation.context)?;
+            let ns = translation_unit.pool_namespace(*ns, activation.context)?;
             NamespaceObject::from_namespace(activation, ns).map(Into::into)
         }
     }

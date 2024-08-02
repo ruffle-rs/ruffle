@@ -473,7 +473,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
                 if !self.placed_by_script() {
                     // This is run before we actually call the constructor - the un-constructed object
                     // is exposed to ActionScript via `parent.<childName>`.
-                    self.set_on_parent_field(&mut activation.context);
+                    self.set_on_parent_field(activation.context);
                 }
             }
 
