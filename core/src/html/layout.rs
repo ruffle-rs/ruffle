@@ -283,6 +283,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             box_count += 1;
         }
 
+        if self.boxes.is_empty() {
+            self.append_text(WStr::empty(), end, end, span);
+        }
+
         let mut line_bounds = line_bounds.unwrap_or_default();
 
         let left_adjustment =
@@ -336,10 +340,6 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             box_count += 1;
         }
 
-        if self.boxes.is_empty() {
-            self.append_text(WStr::empty(), end, end, span);
-        }
-
         self.append_underlines();
 
         line_bounds += Position::from((left_adjustment + align_adjustment, Twips::ZERO));
@@ -364,6 +364,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         let start = first_box.start();
         let bounds = boxes
             .iter()
+            .filter(|b| b.is_text_box())
             .fold(first_box.bounds, |bounds, b| bounds + b.bounds);
 
         // Update last line's end position to take into account the delimiter.
@@ -417,6 +418,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         self.is_first_line = true;
         self.has_line_break = true;
+        self.max_font_size = Twips::from_pixels(self.current_line_span.font.size);
     }
 
     /// Adjust the text layout cursor down to the next line.
@@ -445,6 +447,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         self.is_first_line = false;
         self.has_line_break = true;
+        self.max_font_size = Twips::from_pixels(self.current_line_span.font.size);
     }
 
     /// Adjust the text layout cursor in response to a tab.
@@ -859,6 +862,8 @@ impl<'gc> LayoutLine<'gc> {
 #[collect(no_drop)]
 pub struct LayoutBox<'gc> {
     /// The rectangle corresponding to the outer boundaries of the content box.
+    ///
+    /// TODO Currently, only text boxes have meaningful bounds.
     #[collect(require_static)]
     bounds: BoxBounds<Twips>,
 

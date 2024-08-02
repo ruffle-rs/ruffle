@@ -517,7 +517,7 @@ impl<'gc> E4XNode<'gc> {
 
         // 4. If Type(V) is XML and (V is x or an ancestor of x) throw an Error exception
         if let Some(xml) = value.as_object().and_then(|x| x.as_xml_object()) {
-            if self.ancestors().any(|x| E4XNode::ptr_eq(x, *xml.node())) {
+            if self.ancestors().any(|x| E4XNode::ptr_eq(x, xml.node())) {
                 return Err(make_error_1118(activation));
             }
         }
@@ -534,7 +534,7 @@ impl<'gc> E4XNode<'gc> {
                 // 10.a.i. V[j].[[Parent]] = x
                 child.set_parent(Some(*self), activation.gc());
                 // 10.a.ii. x[i + j] = V[j]
-                children.insert(index + child_index, *child);
+                children.insert(index + child_index, child);
             }
         // 11. Else
         } else {
@@ -569,8 +569,7 @@ impl<'gc> E4XNode<'gc> {
             .filter(|x| !x.node().is_attribute())
         {
             // 5.a. If V.[[Class]] is “element” and (V is x or an ancestor of x) throw an Error exception
-            if xml.node().is_element() && self.ancestors().any(|x| E4XNode::ptr_eq(x, *xml.node()))
-            {
+            if xml.node().is_element() && self.ancestors().any(|x| E4XNode::ptr_eq(x, xml.node())) {
                 return Err(make_error_1118(activation));
             }
 
@@ -589,9 +588,9 @@ impl<'gc> E4XNode<'gc> {
 
             // 5.d. Let x[P] = V
             if index >= children.len() {
-                children.push(*xml.node());
+                children.push(xml.node());
             } else {
-                children[index] = *xml.node();
+                children[index] = xml.node();
             }
         // 6. Else if Type(V) is XMLList
         } else if value

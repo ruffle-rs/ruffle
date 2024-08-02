@@ -259,7 +259,7 @@ pub fn start<'gc>(
             );
         }
         PixelBenderOutput::Bytes(pixels) => {
-            if let Some(mut bytearray) = target.as_bytearray_mut(activation.context.gc_context) {
+            if let Some(mut bytearray) = target.as_bytearray_mut() {
                 bytearray.write_at(&pixels, 0).unwrap();
             } else if let Some(mut vector) =
                 target.as_vector_storage_mut(activation.context.gc_context)

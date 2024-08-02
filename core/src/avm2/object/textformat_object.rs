@@ -48,6 +48,7 @@ impl fmt::Debug for TextFormatObject<'_> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct TextFormatObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,

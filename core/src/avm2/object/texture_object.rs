@@ -62,6 +62,7 @@ impl<'gc> TextureObject<'gc> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct TextureObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,

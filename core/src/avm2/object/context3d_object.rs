@@ -482,6 +482,7 @@ impl<'gc> Context3DObject<'gc> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct Context3DData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,

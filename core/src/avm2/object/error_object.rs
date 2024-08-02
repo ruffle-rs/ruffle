@@ -8,7 +8,8 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::WString;
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
+use gc_arena::barrier::unlock;
+use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use tracing::{enabled, Level};
@@ -18,42 +19,42 @@ pub fn error_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class);
+    let base = ScriptObjectData::new(class).into();
 
-    Ok(ErrorObject(GcCell::new(
+    let call_stack = (enabled!(Level::INFO) || cfg!(feature = "avm_debug"))
+        .then(|| activation.avm2().call_stack().read().clone())
+        .unwrap_or_default();
+
+    Ok(ErrorObject(Gc::new(
         activation.context.gc_context,
-        ErrorObjectData {
-            base,
-            call_stack: (enabled!(Level::INFO) || cfg!(feature = "avm_debug"))
-                .then(|| activation.avm2().call_stack().read().clone())
-                .unwrap_or_default(),
-        },
+        ErrorObjectData { base, call_stack },
     ))
     .into())
 }
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct ErrorObject<'gc>(pub GcCell<'gc, ErrorObjectData<'gc>>);
+pub struct ErrorObject<'gc>(pub Gc<'gc, ErrorObjectData<'gc>>);
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
-pub struct ErrorObjectWeak<'gc>(pub GcWeakCell<'gc, ErrorObjectData<'gc>>);
+pub struct ErrorObjectWeak<'gc>(pub GcWeak<'gc, ErrorObjectData<'gc>>);
 
 impl fmt::Debug for ErrorObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ErrorObject")
             .field("class", &self.debug_class_name())
-            .field("ptr", &self.0.as_ptr())
+            .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
 }
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct ErrorObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: RefLock<ScriptObjectData<'gc>>,
 
     call_stack: CallStack<'gc>,
 }
@@ -104,29 +105,30 @@ impl<'gc> ErrorObject<'gc> {
         Ok(output)
     }
 
-    pub fn call_stack(&self) -> Ref<CallStack<'gc>> {
-        Ref::map(self.0.read(), |r| &r.call_stack)
+    pub fn call_stack(&self) -> &CallStack<'gc> {
+        &self.0.call_stack
     }
 
     fn debug_class_name(&self) -> Box<dyn Debug + 'gc> {
         self.0
-            .try_read()
-            .map(|obj| obj.base.instance_class().debug_name())
+            .base
+            .try_borrow()
+            .map(|base| base.instance_class().debug_name())
             .unwrap_or_else(|err| Box::new(err))
     }
 }
 
 impl<'gc> TObject<'gc> for ErrorObject<'gc> {
     fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        Ref::map(self.0.read(), |read| &read.base)
+        self.0.base.borrow()
     }
 
     fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        RefMut::map(self.0.write(mc), |write| &mut write.base)
+        unlock!(Gc::write(mc, self.0), ErrorObjectData, base).borrow_mut()
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.as_ptr() as *const ObjectPtr
+        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
     fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {

@@ -397,7 +397,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
         stage_loader_info
             .as_loader_info_object()
             .unwrap()
-            .set_expose_content(activation.context.gc_context);
+            .set_expose_content();
         activation
             .context
             .stage

@@ -63,6 +63,7 @@ impl<'gc> Stage3DObject<'gc> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct Stage3DObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,

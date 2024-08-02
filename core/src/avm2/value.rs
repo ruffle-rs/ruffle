@@ -13,7 +13,6 @@ use crate::string::{AvmAtom, AvmString, WStr};
 use gc_arena::{Collect, Mutation};
 use num_bigint::BigInt;
 use num_traits::{ToPrimitive, Zero};
-use std::cell::Ref;
 use std::mem::size_of;
 use swf::avm2::types::{DefaultValue as AbcDefaultValue, Index};
 
@@ -542,7 +541,7 @@ pub fn abc_default_value<'gc>(
 }
 
 impl<'gc> Value<'gc> {
-    pub fn as_namespace(&self) -> Result<Ref<Namespace<'gc>>, Error<'gc>> {
+    pub fn as_namespace(&self) -> Result<Namespace<'gc>, Error<'gc>> {
         match self {
             Value::Object(ns) => ns
                 .as_namespace()
@@ -1139,7 +1138,7 @@ impl<'gc> Value<'gc> {
             // TODO - this should apply to (Array/Vector).indexOf, and possibility more places as well
             if let Some(xml1) = self.as_object().and_then(|obj| obj.as_xml_object()) {
                 if let Some(xml2) = other.as_object().and_then(|obj| obj.as_xml_object()) {
-                    return E4XNode::ptr_eq(*xml1.node(), *xml2.node());
+                    return E4XNode::ptr_eq(xml1.node(), xml2.node());
                 }
             }
             false

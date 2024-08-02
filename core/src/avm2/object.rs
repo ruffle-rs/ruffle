@@ -22,7 +22,7 @@ use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
 use crate::streams::NetStream;
 use crate::string::AvmString;
-use gc_arena::{Collect, Gc, GcCell, Mutation};
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
@@ -1128,7 +1128,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Unwrap this object's `Namespace`, if the object is a boxed namespace.
-    fn as_namespace(&self) -> Option<Ref<Namespace<'gc>>> {
+    fn as_namespace(&self) -> Option<Namespace<'gc>> {
         None
     }
 
@@ -1159,7 +1159,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
-    fn as_bytearray_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<ByteArrayStorage>> {
+    fn as_bytearray_mut(&self) -> Option<RefMut<ByteArrayStorage>> {
         None
     }
 
@@ -1376,45 +1376,45 @@ impl<'gc> Object<'gc> {
     #[rustfmt::skip]
     pub fn downgrade(&self) -> WeakObject<'gc> {
         match self {
-            Self::ScriptObject(o) => WeakObject::ScriptObject(ScriptObjectWeak(GcCell::downgrade(o.0))),
-            Self::FunctionObject(o) => WeakObject::FunctionObject(FunctionObjectWeak(GcCell::downgrade(o.0))),
-            Self::PrimitiveObject(o) => WeakObject::PrimitiveObject(PrimitiveObjectWeak(GcCell::downgrade(o.0))),
-            Self::NamespaceObject(o) => WeakObject::NamespaceObject(NamespaceObjectWeak(GcCell::downgrade(o.0))),
-            Self::ArrayObject(o) => WeakObject::ArrayObject(ArrayObjectWeak(GcCell::downgrade(o.0))),
-            Self::StageObject(o) => WeakObject::StageObject(StageObjectWeak(GcCell::downgrade(o.0))),
-            Self::DomainObject(o) => WeakObject::DomainObject(DomainObjectWeak(GcCell::downgrade(o.0))),
-            Self::EventObject(o) => WeakObject::EventObject(EventObjectWeak(GcCell::downgrade(o.0))),
-            Self::DispatchObject(o) => WeakObject::DispatchObject(DispatchObjectWeak(GcCell::downgrade(o.0))),
-            Self::XmlObject(o) => WeakObject::XmlObject(XmlObjectWeak(GcCell::downgrade(o.0))),
-            Self::XmlListObject(o) => WeakObject::XmlListObject(XmlListObjectWeak(GcCell::downgrade(o.0))),
-            Self::RegExpObject(o) => WeakObject::RegExpObject(RegExpObjectWeak(GcCell::downgrade(o.0))),
-            Self::ByteArrayObject(o) => WeakObject::ByteArrayObject(ByteArrayObjectWeak(GcCell::downgrade(o.0))),
-            Self::LoaderInfoObject(o) => WeakObject::LoaderInfoObject(LoaderInfoObjectWeak(GcCell::downgrade(o.0))),
-            Self::ClassObject(o) => WeakObject::ClassObject(ClassObjectWeak(GcCell::downgrade(o.0))),
-            Self::VectorObject(o) => WeakObject::VectorObject(VectorObjectWeak(GcCell::downgrade(o.0))),
-            Self::SoundObject(o) => WeakObject::SoundObject(SoundObjectWeak(GcCell::downgrade(o.0))),
-            Self::SoundChannelObject(o) => WeakObject::SoundChannelObject(SoundChannelObjectWeak(GcCell::downgrade(o.0))),
-            Self::BitmapDataObject(o) => WeakObject::BitmapDataObject(BitmapDataObjectWeak(GcCell::downgrade(o.0))),
+            Self::ScriptObject(o) => WeakObject::ScriptObject(ScriptObjectWeak(Gc::downgrade(o.0))),
+            Self::FunctionObject(o) => WeakObject::FunctionObject(FunctionObjectWeak(Gc::downgrade(o.0))),
+            Self::PrimitiveObject(o) => WeakObject::PrimitiveObject(PrimitiveObjectWeak(Gc::downgrade(o.0))),
+            Self::NamespaceObject(o) => WeakObject::NamespaceObject(NamespaceObjectWeak(Gc::downgrade(o.0))),
+            Self::ArrayObject(o) => WeakObject::ArrayObject(ArrayObjectWeak(Gc::downgrade(o.0))),
+            Self::StageObject(o) => WeakObject::StageObject(StageObjectWeak(Gc::downgrade(o.0))),
+            Self::DomainObject(o) => WeakObject::DomainObject(DomainObjectWeak(Gc::downgrade(o.0))),
+            Self::EventObject(o) => WeakObject::EventObject(EventObjectWeak(Gc::downgrade(o.0))),
+            Self::DispatchObject(o) => WeakObject::DispatchObject(DispatchObjectWeak(Gc::downgrade(o.0))),
+            Self::XmlObject(o) => WeakObject::XmlObject(XmlObjectWeak(Gc::downgrade(o.0))),
+            Self::XmlListObject(o) => WeakObject::XmlListObject(XmlListObjectWeak(Gc::downgrade(o.0))),
+            Self::RegExpObject(o) => WeakObject::RegExpObject(RegExpObjectWeak(Gc::downgrade(o.0))),
+            Self::ByteArrayObject(o) => WeakObject::ByteArrayObject(ByteArrayObjectWeak(Gc::downgrade(o.0))),
+            Self::LoaderInfoObject(o) => WeakObject::LoaderInfoObject(LoaderInfoObjectWeak(Gc::downgrade(o.0))),
+            Self::ClassObject(o) => WeakObject::ClassObject(ClassObjectWeak(Gc::downgrade(o.0))),
+            Self::VectorObject(o) => WeakObject::VectorObject(VectorObjectWeak(Gc::downgrade(o.0))),
+            Self::SoundObject(o) => WeakObject::SoundObject(SoundObjectWeak(Gc::downgrade(o.0))),
+            Self::SoundChannelObject(o) => WeakObject::SoundChannelObject(SoundChannelObjectWeak(Gc::downgrade(o.0))),
+            Self::BitmapDataObject(o) => WeakObject::BitmapDataObject(BitmapDataObjectWeak(Gc::downgrade(o.0))),
             Self::DateObject(o) => WeakObject::DateObject(DateObjectWeak(Gc::downgrade(o.0))),
-            Self::DictionaryObject(o) => WeakObject::DictionaryObject(DictionaryObjectWeak(GcCell::downgrade(o.0))),
-            Self::QNameObject(o) => WeakObject::QNameObject(QNameObjectWeak(GcCell::downgrade(o.0))),
+            Self::DictionaryObject(o) => WeakObject::DictionaryObject(DictionaryObjectWeak(Gc::downgrade(o.0))),
+            Self::QNameObject(o) => WeakObject::QNameObject(QNameObjectWeak(Gc::downgrade(o.0))),
             Self::TextFormatObject(o) => WeakObject::TextFormatObject(TextFormatObjectWeak(Gc::downgrade(o.0))),
-            Self::ProxyObject(o) => WeakObject::ProxyObject(ProxyObjectWeak(GcCell::downgrade(o.0))),
-            Self::ErrorObject(o) => WeakObject::ErrorObject(ErrorObjectWeak(GcCell::downgrade(o.0))),
+            Self::ProxyObject(o) => WeakObject::ProxyObject(ProxyObjectWeak(Gc::downgrade(o.0))),
+            Self::ErrorObject(o) => WeakObject::ErrorObject(ErrorObjectWeak(Gc::downgrade(o.0))),
             Self::Stage3DObject(o) => WeakObject::Stage3DObject(Stage3DObjectWeak(Gc::downgrade(o.0))),
             Self::Context3DObject(o) => WeakObject::Context3DObject(Context3DObjectWeak(Gc::downgrade(o.0))),
             Self::IndexBuffer3DObject(o) => WeakObject::IndexBuffer3DObject(IndexBuffer3DObjectWeak(Gc::downgrade(o.0))),
             Self::VertexBuffer3DObject(o) => WeakObject::VertexBuffer3DObject(VertexBuffer3DObjectWeak(Gc::downgrade(o.0))),
             Self::TextureObject(o) => WeakObject::TextureObject(TextureObjectWeak(Gc::downgrade(o.0))),
             Self::Program3DObject(o) => WeakObject::Program3DObject(Program3DObjectWeak(Gc::downgrade(o.0))),
-            Self::NetStreamObject(o) => WeakObject::NetStreamObject(NetStreamObjectWeak(GcCell::downgrade(o.0))),
+            Self::NetStreamObject(o) => WeakObject::NetStreamObject(NetStreamObjectWeak(Gc::downgrade(o.0))),
             Self::NetConnectionObject(o) => WeakObject::NetConnectionObject(NetConnectionObjectWeak(Gc::downgrade(o.0))),
-            Self::ResponderObject(o) => WeakObject::ResponderObject(ResponderObjectWeak(GcCell::downgrade(o.0))),
+            Self::ResponderObject(o) => WeakObject::ResponderObject(ResponderObjectWeak(Gc::downgrade(o.0))),
             Self::ShaderDataObject(o) => WeakObject::ShaderDataObject(ShaderDataObjectWeak(Gc::downgrade(o.0))),
             Self::SocketObject(o) => WeakObject::SocketObject(SocketObjectWeak(Gc::downgrade(o.0))),
             Self::FileReferenceObject(o) => WeakObject::FileReferenceObject(FileReferenceObjectWeak(Gc::downgrade(o.0))),
-            Self::FontObject(o) => WeakObject::FontObject(FontObjectWeak(GcCell::downgrade(o.0))),
-            Self::LocalConnectionObject(o) => WeakObject::LocalConnectionObject(LocalConnectionObjectWeak(GcCell::downgrade(o.0))),
+            Self::FontObject(o) => WeakObject::FontObject(FontObjectWeak(Gc::downgrade(o.0))),
+            Self::LocalConnectionObject(o) => WeakObject::LocalConnectionObject(LocalConnectionObjectWeak(Gc::downgrade(o.0))),
         }
     }
 }

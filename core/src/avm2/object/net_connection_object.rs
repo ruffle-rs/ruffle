@@ -40,6 +40,7 @@ pub struct NetConnectionObjectWeak<'gc>(pub GcWeak<'gc, NetConnectionObjectData<
 
 #[derive(Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct NetConnectionObjectData<'gc> {
     base: RefLock<ScriptObjectData<'gc>>,
     #[collect(require_static)]

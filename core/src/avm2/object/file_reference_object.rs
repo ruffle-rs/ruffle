@@ -83,6 +83,7 @@ pub enum FileReference {
 
 #[derive(Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct FileReferenceObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,

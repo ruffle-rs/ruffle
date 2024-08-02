@@ -199,6 +199,7 @@ impl_read!(read_float 4; f32, read_double 8; f64, read_int 4; i32, read_unsigned
 
 #[derive(Collect)]
 #[collect(no_drop)]
+#[repr(C)]
 pub struct SocketObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,

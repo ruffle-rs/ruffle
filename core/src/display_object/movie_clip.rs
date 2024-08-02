@@ -390,8 +390,8 @@ impl<'gc> MovieClip<'gc> {
                 LoaderInfoObject::not_yet_loaded(activation, movie.clone(), None, None, false)
                     .expect("Failed to construct LoaderInfoObject");
             let loader_info_obj = loader_info.as_loader_info_object().unwrap();
-            loader_info_obj.set_expose_content(activation.context.gc_context);
-            loader_info_obj.set_content_type(ContentType::Swf, activation.context.gc_context);
+            loader_info_obj.set_expose_content();
+            loader_info_obj.set_content_type(ContentType::Swf);
             Some(loader_info)
         } else {
             None
@@ -2208,9 +2208,9 @@ impl<'gc> MovieClip<'gc> {
                     "Got \"{:?}\" when constructing AVM2 side of movie clip of type {}",
                     e,
                     class_object
-                        .try_inner_class_definition()
-                        .map(|c| c.name().to_qualified_name(context.gc_context))
-                        .unwrap_or_else(|_| "[BorrowError!]".into())
+                        .inner_class_definition()
+                        .name()
+                        .to_qualified_name(context.gc_context)
                 );
             }
         }

@@ -397,7 +397,7 @@ impl<'gc> Domain<'gc> {
 
         let domain_memory = bytearray_class.construct(activation, &[])?;
         domain_memory
-            .as_bytearray_mut(activation.context.gc_context)
+            .as_bytearray_mut()
             .unwrap()
             .set_length(MIN_DOMAIN_MEMORY_LENGTH);
 
