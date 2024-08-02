@@ -50,7 +50,8 @@ use crate::tag_utils::SwfMovie;
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
 use crate::DefaultFont;
-use gc_arena::{Collect, DynamicRootSet, GcCell, Rootable};
+use gc_arena::lock::GcRefLock;
+use gc_arena::{Collect, DynamicRootSet, Rootable};
 use rand::{rngs::SmallRng, SeedableRng};
 use ruffle_render::backend::{null::NullRenderer, RenderBackend, ViewportDimensions};
 use ruffle_render::commands::CommandList;
@@ -77,14 +78,8 @@ pub const FALLBACK_DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-
 #[derive(Collect)]
 #[collect(no_drop)]
 struct GcRoot<'gc> {
-    callstack: GcCell<'gc, GcCallstack<'gc>>,
-    data: GcCell<'gc, GcRootData<'gc>>,
-}
-
-#[derive(Collect, Default)]
-#[collect(no_drop)]
-struct GcCallstack<'gc> {
-    avm2: Option<GcCell<'gc, CallStack<'gc>>>,
+    avm2_callstack: GcRefLock<'gc, CallStack<'gc>>,
+    data: GcRefLock<'gc, GcRootData<'gc>>,
 }
 
 #[derive(Clone)]
@@ -97,12 +92,9 @@ impl StaticCallstack {
         if let Some(arena) = self.arena.upgrade() {
             if let Ok(arena) = arena.try_borrow() {
                 arena.mutate(|_, root| {
-                    let callstack = root.callstack.read();
-                    if let Some(callstack) = callstack.avm2 {
-                        let stack = callstack.read();
-                        if !stack.is_empty() {
-                            f(&stack)
-                        }
+                    let callstack = root.avm2_callstack.borrow();
+                    if !callstack.is_empty() {
+                        f(&callstack);
                     }
                 })
             }
@@ -635,7 +627,7 @@ impl Player {
 
     pub fn clear_custom_menu_items(&mut self) {
         self.gc_arena.borrow().mutate(|gc_context, gc_root| {
-            let mut root_data = gc_root.data.write(gc_context);
+            let mut root_data = gc_root.data.borrow_mut(gc_context);
             root_data.current_context_menu = None;
         });
     }
@@ -1924,7 +1916,7 @@ impl Player {
         let invalidated = self
             .gc_arena
             .borrow()
-            .mutate(|_, gc_root| gc_root.data.read().stage.invalidated());
+            .mutate(|_, gc_root| gc_root.data.borrow().stage.invalidated());
         if invalidated {
             self.update(|context| {
                 let stage = context.stage;
@@ -1935,7 +1927,7 @@ impl Player {
         let mut background_color = Color::WHITE;
 
         let (cache_draws, commands) = self.gc_arena.borrow().mutate(|gc_context, gc_root| {
-            let root_data = gc_root.data.read();
+            let root_data = gc_root.data.borrow();
             let stage = root_data.stage;
 
             let mut cache_draws = vec![];
@@ -2135,7 +2127,7 @@ impl Player {
         F: for<'a, 'gc> FnOnce(&mut UpdateContext<'a, 'gc>) -> R,
     {
         self.gc_arena.borrow().mutate(|gc_context, gc_root| {
-            let mut root_data = gc_root.data.write(gc_context);
+            let mut root_data = gc_root.data.borrow_mut(gc_context);
 
             #[allow(unused_variables)]
             let (
@@ -2726,45 +2718,43 @@ impl PlayerBuilder {
             gc_context,
             interner: &mut interner,
         };
-        let dynamic_root = DynamicRootSet::new(gc_context);
+
+        let data = GcRootData {
+            audio_manager: AudioManager::new(),
+            action_queue: ActionQueue::new(),
+            avm1: Avm1::new(&mut init, player_version),
+            avm2: Avm2::new(&mut init, player_version, player_runtime),
+            interner,
+            current_context_menu: None,
+            drag_object: None,
+            external_interface: ExternalInterface::new(
+                external_interface_providers,
+                fs_command_provider,
+            ),
+            library: Library::empty(),
+            load_manager: LoadManager::new(),
+            mouse_data: MouseData {
+                hovered: None,
+                pressed: None,
+                right_pressed: None,
+                middle_pressed: None,
+            },
+            avm1_shared_objects: HashMap::new(),
+            avm2_shared_objects: HashMap::new(),
+            stage: Stage::empty(gc_context, fullscreen, fake_movie),
+            timers: Timers::new(),
+            unbound_text_fields: Vec::new(),
+            stream_manager: StreamManager::new(),
+            sockets: Sockets::empty(),
+            net_connections: NetConnections::default(),
+            local_connections: LocalConnections::empty(),
+            dynamic_root: DynamicRootSet::new(gc_context),
+            post_frame_callbacks: Vec::new(),
+        };
 
         GcRoot {
-            callstack: GcCell::new(gc_context, GcCallstack::default()),
-            data: GcCell::new(
-                gc_context,
-                GcRootData {
-                    audio_manager: AudioManager::new(),
-                    action_queue: ActionQueue::new(),
-                    avm1: Avm1::new(&mut init, player_version),
-                    avm2: Avm2::new(&mut init, player_version, player_runtime),
-                    interner,
-                    current_context_menu: None,
-                    drag_object: None,
-                    external_interface: ExternalInterface::new(
-                        external_interface_providers,
-                        fs_command_provider,
-                    ),
-                    library: Library::empty(),
-                    load_manager: LoadManager::new(),
-                    mouse_data: MouseData {
-                        hovered: None,
-                        pressed: None,
-                        right_pressed: None,
-                        middle_pressed: None,
-                    },
-                    avm1_shared_objects: HashMap::new(),
-                    avm2_shared_objects: HashMap::new(),
-                    stage: Stage::empty(gc_context, fullscreen, fake_movie),
-                    timers: Timers::new(),
-                    unbound_text_fields: Vec::new(),
-                    stream_manager: StreamManager::new(),
-                    sockets: Sockets::empty(),
-                    net_connections: NetConnections::default(),
-                    local_connections: LocalConnections::empty(),
-                    dynamic_root,
-                    post_frame_callbacks: Vec::new(),
-                },
-            ),
+            avm2_callstack: data.avm2.call_stack(),
+            data: GcRefLock::new(gc_context, data.into()),
         }
     }
 
@@ -2914,10 +2904,6 @@ impl PlayerBuilder {
             if let Some(stub_path) = self.stub_report_output {
                 crate::avm2::specification::capture_specification(context, &stub_path);
             }
-        });
-        player_lock.gc_arena.borrow().mutate(|context, root| {
-            let call_stack = root.data.read().avm2.call_stack();
-            root.callstack.write(context).avm2 = Some(call_stack);
         });
         player_lock.audio.set_frame_rate(frame_rate);
         player_lock.set_letterbox(self.letterbox);
