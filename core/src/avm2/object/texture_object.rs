@@ -62,7 +62,7 @@ impl<'gc> TextureObject<'gc> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct TextureObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
@@ -77,6 +77,9 @@ pub struct TextureObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(TextureObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<TextureObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl<'gc> TObject<'gc> for TextureObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {

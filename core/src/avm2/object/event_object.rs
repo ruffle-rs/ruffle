@@ -43,7 +43,7 @@ pub struct EventObjectWeak<'gc>(pub GcWeak<'gc, EventObjectData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct EventObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
@@ -53,6 +53,9 @@ pub struct EventObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(EventObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<EventObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl<'gc> EventObject<'gc> {
     /// Create a bare Event instance while skipping the usual `construct()` pipeline.

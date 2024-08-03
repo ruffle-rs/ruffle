@@ -83,7 +83,7 @@ pub enum FileReference {
 
 #[derive(Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct FileReferenceObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
@@ -94,6 +94,10 @@ pub struct FileReferenceObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(FileReferenceObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<FileReferenceObjectData>()
+        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl fmt::Debug for FileReferenceObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -63,7 +63,7 @@ impl<'gc> VertexBuffer3DObject<'gc> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct VertexBuffer3DObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
@@ -80,6 +80,10 @@ pub struct VertexBuffer3DObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(VertexBuffer3DObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<VertexBuffer3DObjectData>()
+        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl<'gc> TObject<'gc> for VertexBuffer3DObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {

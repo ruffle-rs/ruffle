@@ -90,7 +90,7 @@ impl fmt::Debug for LoaderInfoObject<'_> {
 
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct LoaderInfoObjectData<'gc> {
     /// All normal script data.
     base: RefLock<ScriptObjectData<'gc>>,
@@ -123,6 +123,10 @@ pub struct LoaderInfoObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(LoaderInfoObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<LoaderInfoObjectData>()
+        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl<'gc> LoaderInfoObject<'gc> {
     /// Box a movie into a loader info object.

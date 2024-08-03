@@ -48,7 +48,7 @@ impl fmt::Debug for PrimitiveObject<'_> {
 
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct PrimitiveObjectData<'gc> {
     /// All normal script data.
     base: RefLock<ScriptObjectData<'gc>>,
@@ -58,6 +58,10 @@ pub struct PrimitiveObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(PrimitiveObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<PrimitiveObjectData>()
+        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl<'gc> PrimitiveObject<'gc> {
     /// Box a primitive into an object.

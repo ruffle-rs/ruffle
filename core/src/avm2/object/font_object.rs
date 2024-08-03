@@ -88,7 +88,7 @@ impl<'gc> TObject<'gc> for FontObject<'gc> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct FontObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
@@ -97,6 +97,9 @@ pub struct FontObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(FontObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<FontObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl fmt::Debug for FontObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -49,7 +49,7 @@ impl fmt::Debug for QNameObject<'_> {
 
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct QNameObjectData<'gc> {
     /// All normal script data.
     base: RefLock<ScriptObjectData<'gc>>,
@@ -59,6 +59,9 @@ pub struct QNameObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(QNameObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<QNameObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl<'gc> QNameObject<'gc> {
     /// Box a Multiname into an object.

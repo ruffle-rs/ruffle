@@ -51,7 +51,7 @@ impl fmt::Debug for ErrorObject<'_> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct ErrorObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
@@ -60,6 +60,9 @@ pub struct ErrorObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(ErrorObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<ErrorObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl<'gc> ErrorObject<'gc> {
     pub fn display(&self) -> Result<WString, Error<'gc>> {

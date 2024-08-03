@@ -40,7 +40,7 @@ pub struct NetConnectionObjectWeak<'gc>(pub GcWeak<'gc, NetConnectionObjectData<
 
 #[derive(Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct NetConnectionObjectData<'gc> {
     base: RefLock<ScriptObjectData<'gc>>,
 
@@ -48,6 +48,10 @@ pub struct NetConnectionObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(NetConnectionObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<NetConnectionObjectData>()
+        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl<'gc> TObject<'gc> for NetConnectionObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {

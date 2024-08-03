@@ -80,7 +80,7 @@ impl fmt::Debug for FunctionObject<'_> {
 
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct FunctionObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
@@ -93,6 +93,9 @@ pub struct FunctionObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(FunctionObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<FunctionObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl<'gc> FunctionObject<'gc> {
     /// Construct a function from an ABC method and the current closure scope.

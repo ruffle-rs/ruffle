@@ -50,7 +50,7 @@ impl fmt::Debug for DomainObject<'_> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct DomainObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
@@ -60,6 +60,9 @@ pub struct DomainObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(DomainObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<DomainObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl<'gc> DomainObject<'gc> {
     /// Create a new object for a given domain.

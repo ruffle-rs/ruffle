@@ -57,7 +57,7 @@ impl fmt::Debug for NamespaceObject<'_> {
 
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct NamespaceObjectData<'gc> {
     /// All normal script data.
     base: RefLock<ScriptObjectData<'gc>>,
@@ -70,6 +70,10 @@ pub struct NamespaceObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(NamespaceObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<NamespaceObjectData>()
+        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl<'gc> NamespaceObject<'gc> {
     /// Box a namespace into an object.

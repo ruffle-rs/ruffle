@@ -52,7 +52,7 @@ impl fmt::Debug for SoundChannelObject<'_> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct SoundChannelObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
@@ -65,6 +65,10 @@ pub struct SoundChannelObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(SoundChannelObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<SoundChannelObjectData>()
+        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 pub enum SoundChannelData {
     NotLoaded {
