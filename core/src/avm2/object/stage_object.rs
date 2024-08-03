@@ -21,7 +21,7 @@ pub struct StageObjectWeak<'gc>(pub GcWeak<'gc, StageObjectData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct StageObjectData<'gc> {
     /// The base data common to all AVM2 objects.
     base: RefLock<ScriptObjectData<'gc>>,
@@ -31,6 +31,9 @@ pub struct StageObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(StageObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<StageObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl<'gc> StageObject<'gc> {
     /// Allocate the AVM2 side of a display object intended to be of a given

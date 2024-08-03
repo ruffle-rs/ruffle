@@ -44,13 +44,16 @@ impl fmt::Debug for ProxyObject<'_> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct ProxyObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
 }
 
 const _: () = assert!(std::mem::offset_of!(ProxyObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<ProxyObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl<'gc> TObject<'gc> for ProxyObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {

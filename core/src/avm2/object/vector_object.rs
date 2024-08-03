@@ -53,7 +53,7 @@ impl fmt::Debug for VectorObject<'_> {
 
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct VectorObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
@@ -63,6 +63,9 @@ pub struct VectorObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(VectorObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<VectorObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl<'gc> VectorObject<'gc> {
     /// Wrap an existing vector in an object.

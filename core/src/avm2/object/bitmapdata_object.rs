@@ -54,7 +54,7 @@ impl fmt::Debug for BitmapDataObject<'_> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct BitmapDataObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
@@ -63,6 +63,10 @@ pub struct BitmapDataObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(BitmapDataObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<BitmapDataObjectData>()
+        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl<'gc> BitmapDataObject<'gc> {
     // Constructs a BitmapData object from a BitmapDataWrapper.

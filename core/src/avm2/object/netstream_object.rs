@@ -41,13 +41,17 @@ pub struct NetStreamObjectWeak<'gc>(pub GcWeak<'gc, NetStreamObjectData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct NetStreamObjectData<'gc> {
     base: RefLock<ScriptObjectData<'gc>>,
     ns: NetStream<'gc>,
 }
 
 const _: () = assert!(std::mem::offset_of!(NetStreamObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<NetStreamObjectData>()
+        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl<'gc> TObject<'gc> for NetStreamObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {

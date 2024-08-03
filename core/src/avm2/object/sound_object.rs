@@ -62,7 +62,7 @@ impl fmt::Debug for SoundObject<'_> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct SoundObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
@@ -75,6 +75,9 @@ pub struct SoundObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(SoundObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<SoundObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 #[derive(Collect)]
 #[collect(no_drop)]

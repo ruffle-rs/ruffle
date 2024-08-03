@@ -40,6 +40,7 @@ pub struct ScriptObjectWeak<'gc>(pub GcWeak<'gc, RefLock<ScriptObjectData<'gc>>>
 /// struct.
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
+#[repr(align(8))]
 pub struct ScriptObjectData<'gc> {
     /// Values stored on this object.
     pub values: DynamicMap<DynamicKey<'gc>, Value<'gc>>,

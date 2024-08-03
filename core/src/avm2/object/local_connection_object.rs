@@ -48,7 +48,7 @@ impl fmt::Debug for LocalConnectionObject<'_> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct LocalConnectionObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
@@ -57,6 +57,10 @@ pub struct LocalConnectionObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(LocalConnectionObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<LocalConnectionObjectData>()
+        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl<'gc> LocalConnectionObject<'gc> {
     pub fn is_connected(&self) -> bool {

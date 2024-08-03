@@ -48,7 +48,7 @@ impl fmt::Debug for TextFormatObject<'_> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct TextFormatObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
@@ -57,6 +57,10 @@ pub struct TextFormatObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(TextFormatObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<TextFormatObjectData>()
+        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl<'gc> TextFormatObject<'gc> {
     pub fn from_text_format(

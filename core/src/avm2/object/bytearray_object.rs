@@ -69,7 +69,7 @@ impl fmt::Debug for ByteArrayObject<'_> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct ByteArrayObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
@@ -78,6 +78,10 @@ pub struct ByteArrayObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(ByteArrayObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<ByteArrayObjectData>()
+        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl<'gc> ByteArrayObject<'gc> {
     pub fn from_storage(

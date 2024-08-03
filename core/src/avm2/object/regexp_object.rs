@@ -47,7 +47,7 @@ impl fmt::Debug for RegExpObject<'_> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct RegExpObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
@@ -56,6 +56,9 @@ pub struct RegExpObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(RegExpObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<RegExpObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl<'gc> RegExpObject<'gc> {
     pub fn from_regexp(

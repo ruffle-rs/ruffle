@@ -57,7 +57,7 @@ impl<'gc> ShaderDataObject<'gc> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct ShaderDataObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
@@ -66,6 +66,10 @@ pub struct ShaderDataObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(ShaderDataObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<ShaderDataObjectData>()
+        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl<'gc> TObject<'gc> for ShaderDataObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {

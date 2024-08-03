@@ -38,7 +38,7 @@ pub struct ClassObjectWeak<'gc>(pub GcWeak<'gc, ClassObjectData<'gc>>);
 
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct ClassObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
@@ -77,6 +77,9 @@ pub struct ClassObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(ClassObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<ClassObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl<'gc> ClassObject<'gc> {
     /// Allocate the prototype for this class.

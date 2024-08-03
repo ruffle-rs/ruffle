@@ -49,7 +49,7 @@ impl fmt::Debug for ArrayObject<'_> {
 
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct ArrayObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
@@ -59,6 +59,9 @@ pub struct ArrayObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(ArrayObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<ArrayObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl<'gc> ArrayObject<'gc> {
     /// Construct an empty array.

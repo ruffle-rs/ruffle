@@ -104,7 +104,7 @@ impl<'gc> ResponderObject<'gc> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct ResponderObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
@@ -117,6 +117,10 @@ pub struct ResponderObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(ResponderObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<ResponderObjectData>()
+        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 impl fmt::Debug for ResponderObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

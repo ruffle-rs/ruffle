@@ -345,7 +345,7 @@ impl<'gc> XmlListObject<'gc> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct XmlListObjectData<'gc> {
     /// Base script object
     base: RefLock<ScriptObjectData<'gc>>,
@@ -364,6 +364,9 @@ pub struct XmlListObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(XmlListObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<XmlListObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
+);
 
 /// Holds either an `E4XNode` or an `XmlObject`. This can be converted
 /// in-place to an `XmlObject` via `get_or_create_xml`.
