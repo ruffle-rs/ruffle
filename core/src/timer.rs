@@ -30,7 +30,7 @@ pub struct Timers<'gc> {
 
 impl<'gc> Timers<'gc> {
     /// Ticks all timers and runs necessary callbacks.
-    pub fn update_timers(context: &mut UpdateContext<'_, 'gc>, dt: f64) -> Option<f64> {
+    pub fn update_timers(context: &mut UpdateContext<'gc>, dt: f64) -> Option<f64> {
         context.timers.cur_time = context
             .timers
             .cur_time
@@ -71,7 +71,7 @@ impl<'gc> Timers<'gc> {
                 TimerCallback::Avm1Function { func, params } => {
                     if let Some(level0) = level0 {
                         let mut avm1_activation = Activation::from_nothing(
-                            context.reborrow(),
+                            context,
                             ActivationIdentifier::root("[Timer Callback]"),
                             level0,
                         );
@@ -116,7 +116,7 @@ impl<'gc> Timers<'gc> {
                     if !removed {
                         if let Some(level0) = level0 {
                             let mut avm1_activation = Activation::from_nothing(
-                                context.reborrow(),
+                                context,
                                 ActivationIdentifier::root("[Timer Callback]"),
                                 level0,
                             );
@@ -141,8 +141,7 @@ impl<'gc> Timers<'gc> {
                 }
                 TimerCallback::Avm2Callback { closure, params } => {
                     let domain = context.avm2.stage_domain();
-                    let mut avm2_activation =
-                        Avm2Activation::from_domain(context.reborrow(), domain);
+                    let mut avm2_activation = Avm2Activation::from_domain(context, domain);
                     match closure.call(Avm2Value::Null, &params, &mut avm2_activation) {
                         Ok(v) => v.coerce_to_boolean(),
                         Err(e) => {

@@ -47,7 +47,7 @@ impl<'gc> NetConnection<'gc> {
     }
 
     pub fn on_status_event(
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         this: Object<'gc>,
         code: &'static str,
     ) -> Result<(), Error<'gc>> {
@@ -56,7 +56,7 @@ impl<'gc> NetConnection<'gc> {
             return Ok(());
         };
         let mut activation = Activation::from_nothing(
-            context.reborrow(),
+            context,
             ActivationIdentifier::root("[NetConnection connect]"),
             root_clip,
         );
@@ -77,7 +77,7 @@ impl<'gc> NetConnection<'gc> {
 
     // [NA] I have no idea why this is a thing. It's similar in AVM2 too.
     pub fn on_empty_status_event(
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         this: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
         let Some(root_clip) = context.stage.root_clip() else {
@@ -85,7 +85,7 @@ impl<'gc> NetConnection<'gc> {
             return Ok(());
         };
         let mut activation = Activation::from_nothing(
-            context.reborrow(),
+            context,
             ActivationIdentifier::root("[NetConnection connect]"),
             root_clip,
         );
@@ -99,7 +99,7 @@ impl<'gc> NetConnection<'gc> {
     }
 
     pub fn send_callback(
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         responder: Object<'gc>,
         callback: ResponderCallback,
         message: &flash_lso::types::Value,
@@ -109,7 +109,7 @@ impl<'gc> NetConnection<'gc> {
             return Ok(());
         };
         let mut activation = Activation::from_nothing(
-            context.reborrow(),
+            context,
             ActivationIdentifier::root("[NetConnection response]"),
             root_clip,
         );

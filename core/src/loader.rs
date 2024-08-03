@@ -406,7 +406,7 @@ impl<'gc> LoadManager<'gc> {
     ///
     /// Returns the loader's async process, which you will need to spawn.
     pub fn load_movie_into_clip_bytes(
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         target_clip: DisplayObject<'gc>,
         bytes: Vec<u8>,
         vm_data: MovieLoaderVMData<'gc>,
@@ -578,7 +578,7 @@ impl<'gc> LoadManager<'gc> {
     /// Process tags on all loaders in the Parsing phase.
     ///
     /// Returns true if *all* loaders finished preloading.
-    pub fn preload_tick(context: &mut UpdateContext<'_, 'gc>, limit: &mut ExecutionLimit) -> bool {
+    pub fn preload_tick(context: &mut UpdateContext<'gc>, limit: &mut ExecutionLimit) -> bool {
         let mut did_finish = true;
         let handles: Vec<_> = context.load_manager.0.iter().map(|(h, _)| h).collect();
 
@@ -920,7 +920,7 @@ impl<'gc> Loader<'gc> {
     /// Returns any AVM errors encountered while sending events to user code.
     fn preload_tick(
         handle: LoaderHandle,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         limit: &mut ExecutionLimit,
         status: u16,
         redirected: bool,
@@ -1106,7 +1106,7 @@ impl<'gc> Loader<'gc> {
                         let clip_value = mc.object();
                         if let Value::Object(clip_object) = clip_value {
                             let mut activation = Activation::from_nothing(
-                                uc.reborrow(),
+                                uc,
                                 ActivationIdentifier::root("unknown"),
                                 clip,
                             );
@@ -1136,7 +1136,7 @@ impl<'gc> Loader<'gc> {
                             let root_val = root.object();
                             if let Value::Object(root_object) = root_val {
                                 let mut activation = Activation::from_nothing(
-                                    uc.reborrow(),
+                                    uc,
                                     ActivationIdentifier::root("unknown"),
                                     root,
                                 );
@@ -1157,7 +1157,7 @@ impl<'gc> Loader<'gc> {
                                 let val = root.object();
                                 if let Value::Object(clip_object) = val {
                                     let mut activation = Activation::from_nothing(
-                                        uc.reborrow(),
+                                        uc,
                                         ActivationIdentifier::root("unknown"),
                                         root,
                                     );
@@ -1217,7 +1217,7 @@ impl<'gc> Loader<'gc> {
 
     pub fn movie_loader_bytes(
         handle: LoaderHandle,
-        uc: &mut UpdateContext<'_, 'gc>,
+        uc: &mut UpdateContext<'gc>,
         bytes: Vec<u8>,
     ) -> Result<(), Error> {
         let clip = match uc.load_manager.get_loader(handle) {
@@ -1286,10 +1286,8 @@ impl<'gc> Loader<'gc> {
                     _ => return Err(Error::NotFormLoader),
                 };
 
-                let mut activation = Activation::from_stub(
-                    uc.reborrow(),
-                    ActivationIdentifier::root("[Form Loader]"),
-                );
+                let mut activation =
+                    Activation::from_stub(uc, ActivationIdentifier::root("[Form Loader]"));
 
                 let utf8_string;
                 let utf8_body = if activation.context.system.use_codepage {
@@ -1370,7 +1368,7 @@ impl<'gc> Loader<'gc> {
                 };
 
                 let mut activation =
-                    Activation::from_stub(uc.reborrow(), ActivationIdentifier::root("[Loader]"));
+                    Activation::from_stub(uc, ActivationIdentifier::root("[Loader]"));
 
                 match response {
                     Ok((body, _, status, _)) => {
@@ -1470,7 +1468,7 @@ impl<'gc> Loader<'gc> {
                 };
 
                 let mut activation =
-                    Activation::from_stub(uc.reborrow(), ActivationIdentifier::root("[Loader]"));
+                    Activation::from_stub(uc, ActivationIdentifier::root("[Loader]"));
 
                 match response {
                     Ok((body, _, _, _)) => {
@@ -1540,7 +1538,7 @@ impl<'gc> Loader<'gc> {
                     _ => unreachable!(),
                 };
 
-                let mut activation = Avm2Activation::from_nothing(uc.reborrow());
+                let mut activation = Avm2Activation::from_nothing(uc);
 
                 fn set_data<'a, 'gc: 'a>(
                     body: Vec<u8>,
@@ -1759,7 +1757,7 @@ impl<'gc> Loader<'gc> {
                     .is_ok();
 
                 let mut activation =
-                    Activation::from_stub(uc.reborrow(), ActivationIdentifier::root("[Loader]"));
+                    Activation::from_stub(uc, ActivationIdentifier::root("[Loader]"));
                 let _ = sound_object.call_method(
                     "onLoad".into(),
                     &[success.into()],
@@ -1820,7 +1818,7 @@ impl<'gc> Loader<'gc> {
                         let total_len = body.len();
 
                         // FIXME - the "open" event should be fired earlier, and not fired in case of ioerror.
-                        let mut activation = Avm2Activation::from_nothing(uc.reborrow());
+                        let mut activation = Avm2Activation::from_nothing(uc);
                         let open_evt =
                             Avm2EventObject::bare_default_event(activation.context, "open");
                         Avm2::dispatch_event(activation.context, open_evt, sound_object);
@@ -1856,7 +1854,7 @@ impl<'gc> Loader<'gc> {
                     }
                     Err(_err) => {
                         // FIXME: Match the exact error message generated by Flash.
-                        let mut activation = Avm2Activation::from_nothing(uc.reborrow());
+                        let mut activation = Avm2Activation::from_nothing(uc);
                         let io_error_evt_cls = activation.avm2().classes().ioerrorevent;
                         let io_error_evt = io_error_evt_cls
                             .construct(
@@ -1960,10 +1958,7 @@ impl<'gc> Loader<'gc> {
     }
 
     /// Report a movie loader start event to script code.
-    fn movie_loader_start(
-        handle: LoaderHandle,
-        uc: &mut UpdateContext<'_, 'gc>,
-    ) -> Result<(), Error> {
+    fn movie_loader_start(handle: LoaderHandle, uc: &mut UpdateContext<'gc>) -> Result<(), Error> {
         let me = uc.load_manager.get_loader_mut(handle);
         if me.is_none() {
             return Err(Error::Cancelled);
@@ -1993,7 +1988,7 @@ impl<'gc> Loader<'gc> {
                 }
             }
             MovieLoaderVMData::Avm2 { loader_info, .. } => {
-                let activation = Avm2Activation::from_nothing(uc.reborrow());
+                let activation = Avm2Activation::from_nothing(uc);
 
                 let open_evt = Avm2EventObject::bare_default_event(activation.context, "open");
                 Avm2::dispatch_event(uc, open_evt, loader_info);
@@ -2006,7 +2001,7 @@ impl<'gc> Loader<'gc> {
     /// Load data into a movie loader.
     fn movie_loader_data(
         handle: LoaderHandle,
-        uc: &mut UpdateContext<'_, 'gc>,
+        uc: &mut UpdateContext<'gc>,
         data: &[u8],
         url: String,
         status: u16,
@@ -2034,7 +2029,7 @@ impl<'gc> Loader<'gc> {
             _ => unreachable!(),
         };
 
-        let mut activation = Avm2Activation::from_nothing(uc.reborrow());
+        let mut activation = Avm2Activation::from_nothing(uc);
 
         let domain = if let MovieLoaderVMData::Avm2 {
             context,
@@ -2347,7 +2342,7 @@ impl<'gc> Loader<'gc> {
     /// The current and total length are always reported as compressed lengths.
     fn movie_loader_progress(
         handle: LoaderHandle,
-        uc: &mut UpdateContext<'_, 'gc>,
+        uc: &mut UpdateContext<'gc>,
         cur_len: usize,
         total_len: usize,
     ) -> Result<(), Error> {
@@ -2385,7 +2380,7 @@ impl<'gc> Loader<'gc> {
                 }
             }
             MovieLoaderVMData::Avm2 { loader_info, .. } => {
-                let mut activation = Avm2Activation::from_nothing(uc.reborrow());
+                let mut activation = Avm2Activation::from_nothing(uc);
 
                 let progress_evt = activation
                     .avm2()
@@ -2413,7 +2408,7 @@ impl<'gc> Loader<'gc> {
     /// Report a movie loader completion to script code.
     fn movie_loader_complete(
         handle: LoaderHandle,
-        uc: &mut UpdateContext<'_, 'gc>,
+        uc: &mut UpdateContext<'gc>,
         dobj: Option<DisplayObject<'gc>>,
         status: u16,
         redirected: bool,
@@ -2463,11 +2458,8 @@ impl<'gc> Loader<'gc> {
 
                 let flashvars = movie.clone().unwrap().parameters().to_owned();
                 if !flashvars.is_empty() {
-                    let mut activation = Activation::from_nothing(
-                        uc.reborrow(),
-                        ActivationIdentifier::root("[Loader]"),
-                        dobj,
-                    );
+                    let mut activation =
+                        Activation::from_nothing(uc, ActivationIdentifier::root("[Loader]"), dobj);
                     let object = dobj.object().coerce_to_object(&mut activation);
                     for (key, value) in flashvars.iter() {
                         object.define_value(
@@ -2487,7 +2479,7 @@ impl<'gc> Loader<'gc> {
                 .library_for_movie(movie.clone().unwrap())
                 .unwrap()
                 .avm2_domain();
-            let mut activation = Avm2Activation::from_domain(uc.reborrow(), domain);
+            let mut activation = Avm2Activation::from_domain(uc, domain);
             let mut loader = loader_info
                 .get_public_property("loader", &mut activation)
                 .map_err(|e| Error::Avm2Error(e.to_string()))?
@@ -2582,7 +2574,7 @@ impl<'gc> Loader<'gc> {
     /// context and one of it's loaders.
     fn movie_loader_error(
         handle: LoaderHandle,
-        uc: &mut UpdateContext<'_, 'gc>,
+        uc: &mut UpdateContext<'gc>,
         msg: AvmString<'gc>,
         status: u16,
         redirected: bool,
@@ -2625,7 +2617,7 @@ impl<'gc> Loader<'gc> {
                 }
             }
             MovieLoaderVMData::Avm2 { loader_info, .. } => {
-                let mut activation = Avm2Activation::from_nothing(uc.reborrow());
+                let mut activation = Avm2Activation::from_nothing(uc);
 
                 let http_status_evt = activation
                     .avm2()
@@ -2679,7 +2671,7 @@ impl<'gc> Loader<'gc> {
     /// has been successfully loaded yet.
     fn load_initial_loading_swf(
         mc: &mut MovieClip<'gc>,
-        uc: &mut UpdateContext<'_, 'gc>,
+        uc: &mut UpdateContext<'gc>,
         request_url: &str,
         resolved_url: Result<Url, ParseError>,
     ) {
@@ -2722,11 +2714,7 @@ impl<'gc> Loader<'gc> {
     /// supported content.
     ///
     /// swf_url is always the final URL obtained after any redirects.
-    fn load_error_swf(
-        mc: &mut MovieClip<'gc>,
-        uc: &mut UpdateContext<'_, 'gc>,
-        mut swf_url: String,
-    ) {
+    fn load_error_swf(mc: &mut MovieClip<'gc>, uc: &mut UpdateContext<'gc>, mut swf_url: String) {
         // If a local URL is fetched using the flash plugin, the _url property
         // won't be changed => It keeps being the parent SWF URL.
         if cfg!(target_family = "wasm") {
@@ -2817,10 +2805,8 @@ impl<'gc> Loader<'gc> {
                             _ => panic!("NativeObject must be FileReference"),
                         };
 
-                        let mut activation = Activation::from_stub(
-                            uc.reborrow(),
-                            ActivationIdentifier::root("[File Dialog]"),
-                        );
+                        let mut activation =
+                            Activation::from_stub(uc, ActivationIdentifier::root("[File Dialog]"));
 
                         match dialog_result {
                             Ok(dialog_result) => {
@@ -2858,8 +2844,7 @@ impl<'gc> Loader<'gc> {
                                 if !dialog_result.is_cancelled() {
                                     target_object.init_from_dialog_result(dialog_result);
 
-                                    let activation =
-                                        Avm2Activation::from_nothing(uc.reborrow());
+                                    let activation = Avm2Activation::from_nothing(uc);
                                     let select_event = Avm2EventObject::bare_default_event(
                                         activation.context,
                                         "select",
@@ -2870,8 +2855,7 @@ impl<'gc> Loader<'gc> {
                                         target_object.into(),
                                     );
                                 } else {
-                                    let activation =
-                                        Avm2Activation::from_nothing(uc.reborrow());
+                                    let activation = Avm2Activation::from_nothing(uc);
                                     let cancel_event = Avm2EventObject::bare_default_event(
                                         activation.context,
                                         "cancel",
@@ -2936,7 +2920,7 @@ impl<'gc> Loader<'gc> {
                             dialog_result.write_and_refresh(&data);
                             target_object.init_from_dialog_result(dialog_result);
 
-                            let mut activation = Avm2Activation::from_nothing(uc.reborrow());
+                            let mut activation = Avm2Activation::from_nothing(uc);
 
                             let select_event =
                                 Avm2EventObject::bare_default_event(activation.context, "select");
@@ -2977,11 +2961,9 @@ impl<'gc> Loader<'gc> {
                                 target_object.into(),
                             );
                         } else {
-                            let activation = Avm2Activation::from_nothing(uc.reborrow());
-                            let cancel_event = Avm2EventObject::bare_default_event(
-                                activation.context,
-                                "cancel",
-                            );
+                            let activation = Avm2Activation::from_nothing(uc);
+                            let cancel_event =
+                                Avm2EventObject::bare_default_event(activation.context, "cancel");
                             Avm2::dispatch_event(
                                 activation.context,
                                 cancel_event,
@@ -3045,10 +3027,8 @@ impl<'gc> Loader<'gc> {
                     _ => panic!("NativeObject must be FileReference"),
                 };
 
-                let mut activation = Activation::from_stub(
-                    uc.reborrow(),
-                    ActivationIdentifier::root("[File Dialog]"),
-                );
+                let mut activation =
+                    Activation::from_stub(uc, ActivationIdentifier::root("[File Dialog]"));
                 use crate::avm1::globals::as_broadcaster;
 
                 match dialog_result {
@@ -3279,10 +3259,8 @@ impl<'gc> Loader<'gc> {
                     _ => return Err(Error::NotFileUploadLoader),
                 };
 
-                let mut activation = Activation::from_stub(
-                    uc.reborrow(),
-                    ActivationIdentifier::root("[File Dialog]"),
-                );
+                let mut activation =
+                    Activation::from_stub(uc, ActivationIdentifier::root("[File Dialog]"));
 
                 use crate::avm1::globals::as_broadcaster;
                 as_broadcaster::broadcast_internal(

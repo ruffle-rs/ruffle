@@ -103,7 +103,7 @@ impl<'gc> SoundChannelObject<'gc> {
     }
 
     /// Return the position of the playing sound in seconds.
-    pub fn position(self, context: &mut UpdateContext<'_, 'gc>) -> f64 {
+    pub fn position(self, context: &mut UpdateContext<'gc>) -> f64 {
         // The position is cached on read. This means that if the position isn't read until after
         // the sound has played, the position will be 0 (#9952).
         let sound_channel_data = self.0.sound_channel_data.borrow();

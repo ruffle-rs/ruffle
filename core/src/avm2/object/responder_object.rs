@@ -79,7 +79,7 @@ impl<'gc> ResponderObject<'gc> {
 
     pub fn send_callback(
         &self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         callback: ResponderCallback,
         message: &AMFValue,
     ) -> Result<(), Error<'gc>> {
@@ -89,7 +89,7 @@ impl<'gc> ResponderObject<'gc> {
         };
 
         if let Some(function) = function {
-            let mut activation = Activation::from_nothing(context.reborrow());
+            let mut activation = Activation::from_nothing(context);
             let value = crate::avm2::amf::deserialize_value(&mut activation, message)?;
             function.call((*self).into(), &[value], &mut activation)?;
         }

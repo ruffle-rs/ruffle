@@ -15,7 +15,7 @@ pub struct DisplayObjectHandle {
 
 impl DisplayObjectHandle {
     pub fn new<'gc>(
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: impl Into<DisplayObject<'gc>>,
     ) -> Self {
         let object = object.into();
@@ -64,10 +64,7 @@ pub struct AVM1ObjectHandle {
 }
 
 impl AVM1ObjectHandle {
-    pub fn new<'gc>(
-        context: &mut UpdateContext<'_, 'gc>,
-        object: crate::avm1::Object<'gc>,
-    ) -> Self {
+    pub fn new<'gc>(context: &mut UpdateContext<'gc>, object: crate::avm1::Object<'gc>) -> Self {
         Self {
             root: context.dynamic_root.stash(context.gc_context, object),
             ptr: object.as_ptr(),
@@ -107,10 +104,7 @@ pub struct AVM2ObjectHandle {
 }
 
 impl AVM2ObjectHandle {
-    pub fn new<'gc>(
-        context: &mut UpdateContext<'_, 'gc>,
-        object: crate::avm2::Object<'gc>,
-    ) -> Self {
+    pub fn new<'gc>(context: &mut UpdateContext<'gc>, object: crate::avm2::Object<'gc>) -> Self {
         Self {
             root: context.dynamic_root.stash(context.gc_context, object),
             ptr: object.as_ptr(),
@@ -152,10 +146,7 @@ pub struct DomainHandle {
 }
 
 impl DomainHandle {
-    pub fn new<'gc>(
-        context: &mut UpdateContext<'_, 'gc>,
-        domain: crate::avm2::Domain<'gc>,
-    ) -> Self {
+    pub fn new<'gc>(context: &mut UpdateContext<'gc>, domain: crate::avm2::Domain<'gc>) -> Self {
         Self {
             root: context.dynamic_root.stash(context.gc_context, domain),
             ptr: domain.as_ptr(),

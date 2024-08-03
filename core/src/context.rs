@@ -84,9 +84,7 @@ impl<'a, 'gc> GcContext<'a, 'gc> {
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.
 /// `Player` creates this when it begins a tick and passes it through the call stack to
 /// children and the VM.
-pub struct UpdateContext<'unused, 'gc> {
-    pub _unused: std::marker::PhantomData<&'unused ()>,
-
+pub struct UpdateContext<'gc> {
     /// The queue of actions that will be run after the display list updates.
     /// Display objects and actions can push actions onto the queue.
     pub action_queue: &'gc mut ActionQueue<'gc>,
@@ -256,7 +254,7 @@ pub struct UpdateContext<'unused, 'gc> {
 }
 
 /// Convenience methods for controlling audio.
-impl<'a, 'gc> UpdateContext<'a, 'gc> {
+impl<'gc> UpdateContext<'gc> {
     pub fn global_sound_transform(&self) -> &SoundTransform {
         self.audio_manager.global_sound_transform()
     }
@@ -377,7 +375,7 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
         self.stage.set_movie(self.gc_context, self.swf.clone());
 
         let stage_domain = self.avm2.stage_domain();
-        let mut activation = Avm2Activation::from_domain(self.reborrow(), stage_domain);
+        let mut activation = Avm2Activation::from_domain(self, stage_domain);
 
         activation
             .context
@@ -428,10 +426,8 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
         self.stage.replace_at_depth(self, root, 0);
 
         // Set the version parameter on the root.
-        let mut activation = Activation::from_stub(
-            self.reborrow(),
-            ActivationIdentifier::root("[Version Setter]"),
-        );
+        let mut activation =
+            Activation::from_stub(self, ActivationIdentifier::root("[Version Setter]"));
         let object = root.object().coerce_to_object(&mut activation);
         let version_string = activation
             .context
@@ -464,28 +460,12 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
     }
 }
 
-impl<'a, 'gc> UpdateContext<'a, 'gc> {
+impl<'a, 'gc> UpdateContext<'gc> {
     /// Convenience method to retrieve the current GC context. Note that explicitly writing
     /// `self.gc_context` can be sometimes necessary to satisfy the borrow checker.
     #[inline(always)]
     pub fn gc(&self) -> &'gc Mutation<'gc> {
         self.gc_context
-    }
-
-    /// Transform a borrowed update context into an owned update context with
-    /// a shorter internal lifetime.
-    ///
-    /// This is particularly useful for structures that may wish to hold an
-    /// update context without adding further lifetimes for its borrowing.
-    /// Please note that you will not be able to use the original update
-    /// context until this reborrowed copy has fallen out of scope.
-    #[inline]
-    pub fn reborrow<'b>(&'b mut self) -> &'b mut UpdateContext<'b, 'gc>
-    where
-        'a: 'b,
-    {
-        // SAFETY: the first lifetime parameter is unused
-        unsafe { std::mem::transmute(self) }
     }
 
     #[inline]

@@ -263,7 +263,7 @@ impl<'gc> LoaderInfoObject<'gc> {
 
     pub fn fire_init_and_complete_events(
         &self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         status: u16,
         redirected: bool,
     ) {
@@ -291,7 +291,7 @@ impl<'gc> LoaderInfoObject<'gc> {
             };
 
             if should_complete {
-                let mut activation = Activation::from_nothing(context.reborrow());
+                let mut activation = Activation::from_nothing(context);
                 if from_url {
                     let http_status_evt = activation
                         .avm2()
