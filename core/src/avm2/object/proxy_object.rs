@@ -8,14 +8,14 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use core::fmt;
-use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 
 /// A class instance allocator that allocates Proxy objects.
 pub fn proxy_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(ProxyObject(Gc::new(
         activation.context.gc_context,
@@ -45,7 +45,7 @@ impl fmt::Debug for ProxyObject<'_> {
 #[repr(C, align(8))]
 pub struct ProxyObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 }
 
 const _: () = assert!(std::mem::offset_of!(ProxyObjectData, base) == 0);
@@ -54,7 +54,7 @@ const _: () = assert!(
 );
 
 impl<'gc> TObject<'gc> for ProxyObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible

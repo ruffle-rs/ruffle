@@ -8,17 +8,14 @@ use crate::avm2::Error;
 use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{
-    lock::{Lock, RefLock},
-    Collect, Gc, GcWeak, Mutation,
-};
+use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
 
 /// A class instance allocator that allocates BitmapData objects.
 pub fn bitmap_data_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(BitmapDataObject(Gc::new(
         activation.context.gc_context,
@@ -56,7 +53,7 @@ impl fmt::Debug for BitmapDataObject<'_> {
 #[repr(C, align(8))]
 pub struct BitmapDataObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     bitmap_data: Lock<Option<BitmapDataWrapper<'gc>>>,
 }
@@ -108,7 +105,7 @@ impl<'gc> BitmapDataObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for BitmapDataObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible

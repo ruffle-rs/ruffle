@@ -6,7 +6,6 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use core::fmt;
-use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
 use std::cell::Cell;
@@ -19,7 +18,7 @@ pub fn shader_data_allocator<'gc>(
     Ok(ShaderDataObject(Gc::new(
         activation.gc(),
         ShaderDataObjectData {
-            base: RefLock::new(ScriptObjectData::new(class)),
+            base: ScriptObjectData::new(class),
             shader: Cell::new(None),
         },
     ))
@@ -59,7 +58,7 @@ impl<'gc> ShaderDataObject<'gc> {
 #[repr(C, align(8))]
 pub struct ShaderDataObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     shader: Cell<Option<PixelBenderShaderHandle>>,
 }
@@ -71,7 +70,7 @@ const _: () = assert!(
 );
 
 impl<'gc> TObject<'gc> for ShaderDataObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible

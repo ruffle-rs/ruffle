@@ -22,7 +22,7 @@ use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
 use crate::streams::NetStream;
 use crate::string::AvmString;
-use gc_arena::{lock::RefLock, Collect, Gc, Mutation};
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
@@ -123,7 +123,7 @@ pub use crate::avm2::object::responder_object::{
     responder_allocator, ResponderObject, ResponderObjectWeak,
 };
 pub use crate::avm2::object::script_object::{
-    scriptobject_allocator, ScriptObject, ScriptObjectData, ScriptObjectWeak,
+    scriptobject_allocator, ScriptObject, ScriptObjectData, ScriptObjectWeak, ScriptObjectWrapper,
 };
 pub use crate::avm2::object::shader_data_object::{
     shader_data_allocator, ShaderDataObject, ShaderDataObjectWeak,
@@ -152,17 +152,6 @@ pub use crate::avm2::object::xml_list_object::{
 };
 pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject, XmlObjectWeak};
 use crate::font::Font;
-
-fn borrow_data<'gc>(gc: Gc<'gc, RefLock<ScriptObjectData<'gc>>>) -> Ref<ScriptObjectData<'gc>> {
-    gc.borrow()
-}
-
-fn borrow_data_mut<'gc>(
-    mc: &Mutation<'gc>,
-    gc: Gc<'gc, RefLock<ScriptObjectData<'gc>>>,
-) -> RefMut<'gc, ScriptObjectData<'gc>> {
-    gc.borrow_mut(mc)
-}
 
 /// Represents an object that can be directly interacted with by the AVM2
 /// runtime.
@@ -215,20 +204,13 @@ fn borrow_data_mut<'gc>(
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
     /// Get the base of this object.
     /// Any trait method implementations that were not overridden will forward the call to this instead.
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>>;
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>>;
 
     #[inline(always)]
     #[no_dynamic]
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
+    fn base(&self) -> ScriptObjectWrapper<'gc> {
         let gc_base = self.gc_base();
-        borrow_data(gc_base)
-    }
-
-    #[inline(always)]
-    #[no_dynamic]
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        let gc_base = self.gc_base();
-        borrow_data_mut(mc, gc_base)
+        ScriptObjectWrapper(gc_base)
     }
 
     /// Retrieve a local property of the object. The Multiname should always be public.
@@ -331,7 +313,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mut base = self.base_mut(activation.context.gc_context);
+        let base = self.base();
         base.set_property_local(name, value, activation)
     }
 
@@ -369,11 +351,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     .vtable()
                     .unwrap()
                     .coerce_trait_value(slot_id, value, activation)?;
-                self.base_mut(activation.context.gc_context).set_slot(
-                    slot_id,
-                    value,
-                    activation.context.gc_context,
-                )
+                self.base()
+                    .set_slot(slot_id, value, activation.context.gc_context)
             }
             Some(Property::Method { .. }) => {
                 // Similar to the get_property special case for XML/XMLList.
@@ -434,7 +413,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mut base = self.base_mut(activation.context.gc_context);
+        let base = self.base();
         base.init_property_local(name, value, activation)
     }
 
@@ -456,11 +435,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     .vtable()
                     .unwrap()
                     .coerce_trait_value(slot_id, value, activation)?;
-                self.base_mut(activation.context.gc_context).set_slot(
-                    slot_id,
-                    value,
-                    activation.context.gc_context,
-                )
+                self.base()
+                    .set_slot(slot_id, value, activation.context.gc_context)
             }
             Some(Property::Method { .. }) => {
                 return Err(error::make_reference_error(
@@ -591,7 +567,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             .vtable()
             .unwrap()
             .coerce_trait_value(id, value, activation)?;
-        let mut base = self.base_mut(activation.gc());
+        let base = self.base();
 
         base.set_slot(id, value, activation.gc())
     }
@@ -603,7 +579,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         mc: &Mutation<'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mut base = self.base_mut(mc);
+        let base = self.base();
 
         base.set_slot(id, value, mc)
     }
@@ -725,9 +701,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc>,
         name: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
-        let mut base = self.base_mut(activation.context.gc_context);
+        let base = self.base();
 
-        Ok(base.delete_property_local(name))
+        Ok(base.delete_property_local(activation.gc(), name))
     }
 
     /// Delete a named property from the object.
@@ -798,9 +774,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// should be used sparingly, if at all.
     #[no_dynamic]
     fn set_proto(self, mc: &Mutation<'gc>, proto: Object<'gc>) {
-        let mut base = self.base_mut(mc);
+        let base = self.base();
 
-        base.set_proto(proto)
+        base.set_proto(mc, proto)
     }
 
     /// Get the next enumerant index in enumerant space.
@@ -872,9 +848,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: AvmString<'gc>,
         is_enumerable: bool,
     ) {
-        let mut base = self.base_mut(mc);
+        let base = self.base();
 
-        base.set_local_property_is_enumerable(name, is_enumerable)
+        base.set_local_property_is_enumerable(mc, name, is_enumerable)
     }
 
     /// Install a bound method on an object.
@@ -885,9 +861,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         disp_id: u32,
         function: FunctionObject<'gc>,
     ) {
-        let mut base = self.base_mut(mc);
+        let base = self.base();
 
-        base.install_bound_method(disp_id, function)
+        base.install_bound_method(mc, disp_id, function)
     }
 
     /// Install a const trait on the global object.
@@ -904,13 +880,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             .vtable()
             .unwrap()
             .install_const_trait_late(mc, name, value, class);
-        self.base_mut(mc)
-            .install_const_slot_late(new_slot_id, value);
+
+        self.base().install_const_slot_late(mc, new_slot_id, value);
     }
 
     #[no_dynamic]
     fn install_instance_slots(&self, mc: &Mutation<'gc>) {
-        self.base_mut(mc).install_instance_slots();
+        self.base().install_instance_slots(mc);
     }
 
     /// Call the object.
@@ -1162,8 +1138,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     // Sets a different vtable for object, without changing instance_of.
     #[no_dynamic]
     fn set_vtable(&self, mc: &Mutation<'gc>, vtable: VTable<'gc>) {
-        let mut base = self.base_mut(mc);
-        base.set_vtable(vtable);
+        let base = self.base();
+        base.set_vtable(mc, vtable);
     }
 
     /// Try to corece this object into a `ClassObject`.

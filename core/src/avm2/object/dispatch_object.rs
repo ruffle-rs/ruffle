@@ -57,7 +57,7 @@ impl fmt::Debug for DispatchObject<'_> {
 #[repr(C, align(8))]
 pub struct DispatchObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// The dispatch list this object holds.
     dispatch: RefLock<DispatchList<'gc>>,
@@ -71,7 +71,7 @@ const _: () = assert!(
 impl<'gc> DispatchObject<'gc> {
     /// Construct an empty dispatch list.
     pub fn empty_list(activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
-        let base = ScriptObjectData::new(activation.avm2().classes().object).into();
+        let base = ScriptObjectData::new(activation.avm2().classes().object);
 
         DispatchObject(Gc::new(
             activation.context.gc_context,
@@ -85,7 +85,7 @@ impl<'gc> DispatchObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for DispatchObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible

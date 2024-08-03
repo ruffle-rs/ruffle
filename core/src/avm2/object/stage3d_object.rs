@@ -7,7 +7,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::lock::{Lock, RefLock};
+use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use std::cell::Cell;
 
@@ -19,7 +19,7 @@ pub fn stage_3d_allocator<'gc>(
     Ok(Stage3DObject(Gc::new(
         activation.gc(),
         Stage3DObjectData {
-            base: RefLock::new(ScriptObjectData::new(class)),
+            base: ScriptObjectData::new(class),
             context3d: Lock::new(None),
             visible: Cell::new(true),
         },
@@ -66,7 +66,7 @@ impl<'gc> Stage3DObject<'gc> {
 #[repr(C, align(8))]
 pub struct Stage3DObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// The context3D object associated with this Stage3D object,
     /// if it's been created with `requestContext3D`
@@ -80,7 +80,7 @@ const _: () = assert!(
 );
 
 impl<'gc> TObject<'gc> for Stage3DObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible

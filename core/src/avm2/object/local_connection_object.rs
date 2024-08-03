@@ -9,7 +9,7 @@ use crate::local_connection::{LocalConnectionHandle, LocalConnections};
 use crate::string::AvmString;
 use core::fmt;
 use flash_lso::types::Value as AmfValue;
-use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use std::cell::RefCell;
 
 /// A class instance allocator that allocates LocalConnection objects.
@@ -17,7 +17,7 @@ pub fn local_connection_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(LocalConnectionObject(Gc::new(
         activation.context.gc_context,
@@ -50,7 +50,7 @@ impl fmt::Debug for LocalConnectionObject<'_> {
 #[repr(C, align(8))]
 pub struct LocalConnectionObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     connection_handle: RefCell<Option<LocalConnectionHandle>>,
 }
@@ -150,7 +150,7 @@ impl<'gc> LocalConnectionObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for LocalConnectionObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible

@@ -5,7 +5,6 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_render::backend::ShaderModule;
 use std::cell::RefCell;
@@ -32,7 +31,7 @@ impl<'gc> Program3DObject<'gc> {
         let this: Object<'gc> = Program3DObject(Gc::new(
             activation.gc(),
             Program3DObjectData {
-                base: RefLock::new(base),
+                base,
                 context3d,
                 shader_module_handle: RefCell::new(None),
             },
@@ -59,7 +58,7 @@ impl<'gc> Program3DObject<'gc> {
 #[repr(C, align(8))]
 pub struct Program3DObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     context3d: Context3DObject<'gc>,
 
@@ -73,7 +72,7 @@ const _: () = assert!(
 );
 
 impl<'gc> TObject<'gc> for Program3DObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible

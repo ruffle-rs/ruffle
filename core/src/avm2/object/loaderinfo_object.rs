@@ -93,7 +93,7 @@ impl fmt::Debug for LoaderInfoObject<'_> {
 #[repr(C, align(8))]
 pub struct LoaderInfoObjectData<'gc> {
     /// All normal script data.
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// The loaded stream that this gets its info from.
     loaded_stream: RefLock<LoaderStream<'gc>>,
@@ -137,7 +137,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         loader: Option<Object<'gc>>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().loaderinfo;
-        let base = ScriptObjectData::new(class).into();
+        let base = ScriptObjectData::new(class);
         let loaded_stream = LoaderStream::Swf(movie, root);
 
         let this: Object<'gc> = LoaderInfoObject(Gc::new(
@@ -186,7 +186,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         is_stage: bool,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().loaderinfo;
-        let base = ScriptObjectData::new(class).into();
+        let base = ScriptObjectData::new(class);
 
         let this: Object<'gc> = LoaderInfoObject(Gc::new(
             activation.context.gc_context,
@@ -396,7 +396,7 @@ impl<'gc> LoaderInfoObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for LoaderInfoObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible

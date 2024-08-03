@@ -6,7 +6,7 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::DisplayObject;
-use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use std::fmt::Debug;
 
 #[derive(Clone, Collect, Copy)]
@@ -22,7 +22,7 @@ pub struct StageObjectWeak<'gc>(pub GcWeak<'gc, StageObjectData<'gc>>);
 #[repr(C, align(8))]
 pub struct StageObjectData<'gc> {
     /// The base data common to all AVM2 objects.
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// The associated display object.
     display_object: DisplayObject<'gc>,
@@ -52,7 +52,7 @@ impl<'gc> StageObject<'gc> {
         let instance = Self(Gc::new(
             activation.context.gc_context,
             StageObjectData {
-                base: ScriptObjectData::new(class).into(),
+                base: ScriptObjectData::new(class),
                 display_object,
             },
         ));
@@ -102,7 +102,7 @@ impl<'gc> StageObject<'gc> {
         let this = Self(Gc::new(
             activation.context.gc_context,
             StageObjectData {
-                base: ScriptObjectData::new(class).into(),
+                base: ScriptObjectData::new(class),
                 display_object,
             },
         ));
@@ -115,7 +115,7 @@ impl<'gc> StageObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for StageObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible
@@ -138,10 +138,8 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
 
 impl<'gc> Debug for StageObject<'gc> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        let base = self.0.base.borrow();
-
         f.debug_struct("StageObject")
-            .field("name", &base.debug_class_name())
+            .field("name", &self.base().debug_class_name())
             // .field("display_object", &self.0.display_object) TODO(moulins)
             .field("ptr", &Gc::as_ptr(self.0))
             .finish()

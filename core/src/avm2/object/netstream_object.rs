@@ -6,14 +6,14 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::streams::NetStream;
-use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use std::fmt::Debug;
 
 pub fn netstream_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     let ns = NetStream::new(activation.context.gc_context, None);
     let this: Object<'gc> = NetStreamObject(Gc::new(
@@ -41,7 +41,7 @@ pub struct NetStreamObjectWeak<'gc>(pub GcWeak<'gc, NetStreamObjectData<'gc>>);
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct NetStreamObjectData<'gc> {
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
     ns: NetStream<'gc>,
 }
 
@@ -52,7 +52,7 @@ const _: () = assert!(
 );
 
 impl<'gc> TObject<'gc> for NetStreamObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible

@@ -17,7 +17,7 @@ pub fn primitive_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(PrimitiveObject(Gc::new(
         activation.context.gc_context,
@@ -51,7 +51,7 @@ impl fmt::Debug for PrimitiveObject<'_> {
 #[repr(C, align(8))]
 pub struct PrimitiveObjectData<'gc> {
     /// All normal script data.
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// The primitive value this object represents.
     primitive: RefLock<Value<'gc>>,
@@ -93,7 +93,7 @@ impl<'gc> PrimitiveObject<'gc> {
             _ => unreachable!(),
         };
 
-        let base = ScriptObjectData::new(class).into();
+        let base = ScriptObjectData::new(class);
         let this: Object<'gc> = PrimitiveObject(Gc::new(
             activation.context.gc_context,
             PrimitiveObjectData {
@@ -114,7 +114,7 @@ impl<'gc> PrimitiveObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for PrimitiveObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible

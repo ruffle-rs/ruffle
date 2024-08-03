@@ -6,7 +6,6 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::net_connection::NetConnectionHandle;
-use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use std::cell::Cell;
 use std::fmt;
@@ -16,7 +15,7 @@ pub fn net_connection_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
     let this: Object<'gc> = NetConnectionObject(Gc::new(
         activation.context.gc_context,
         NetConnectionObjectData {
@@ -41,7 +40,7 @@ pub struct NetConnectionObjectWeak<'gc>(pub GcWeak<'gc, NetConnectionObjectData<
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct NetConnectionObjectData<'gc> {
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     handle: Cell<Option<NetConnectionHandle>>,
 }
@@ -53,7 +52,7 @@ const _: () = assert!(
 );
 
 impl<'gc> TObject<'gc> for NetConnectionObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible

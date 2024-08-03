@@ -13,10 +13,7 @@ use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname};
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{
-    lock::{Lock, RefLock},
-    Collect, Gc, GcWeak, Mutation,
-};
+use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
 use ruffle_wstr::WString;
 
 use super::xml_list_object::{E4XOrXml, XmlOrXmlListObject};
@@ -27,7 +24,7 @@ pub fn xml_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(XmlObject(Gc::new(
         activation.context.gc_context,
@@ -60,7 +57,7 @@ impl fmt::Debug for XmlObject<'_> {
 #[repr(C, align(8))]
 pub struct XmlObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     node: Lock<E4XNode<'gc>>,
 }
@@ -274,7 +271,7 @@ impl<'gc> XmlObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for XmlObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible
@@ -420,7 +417,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             return true;
         }
 
-        self.0.base.borrow().has_own_dynamic_property(name)
+        self.base().has_own_dynamic_property(name)
     }
 
     fn has_property_via_in(

@@ -7,7 +7,6 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::html::{TextDisplay, TextFormat};
 use core::fmt;
-use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use std::cell::{Ref, RefCell, RefMut};
 
@@ -19,7 +18,7 @@ pub fn textformat_allocator<'gc>(
     Ok(TextFormatObject(Gc::new(
         activation.gc(),
         TextFormatObjectData {
-            base: RefLock::new(ScriptObjectData::new(class)),
+            base: ScriptObjectData::new(class),
             text_format: RefCell::new(TextFormat {
                 display: Some(TextDisplay::Block),
                 ..Default::default()
@@ -50,7 +49,7 @@ impl fmt::Debug for TextFormatObject<'_> {
 #[repr(C, align(8))]
 pub struct TextFormatObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     text_format: RefCell<TextFormat>,
 }
@@ -71,7 +70,7 @@ impl<'gc> TextFormatObject<'gc> {
         let this: Object<'gc> = Self(Gc::new(
             activation.gc(),
             TextFormatObjectData {
-                base: RefLock::new(ScriptObjectData::new(class)),
+                base: ScriptObjectData::new(class),
                 text_format: RefCell::new(text_format),
             },
         ))
@@ -83,7 +82,7 @@ impl<'gc> TextFormatObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for TextFormatObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible

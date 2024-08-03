@@ -27,7 +27,7 @@ pub fn function_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     let dummy = Gc::new(
         activation.context.gc_context,
@@ -83,7 +83,7 @@ impl fmt::Debug for FunctionObject<'_> {
 #[repr(C, align(8))]
 pub struct FunctionObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// Executable code
     exec: RefLock<BoundMethod<'gc>>,
@@ -136,7 +136,7 @@ impl<'gc> FunctionObject<'gc> {
         FunctionObject(Gc::new(
             activation.context.gc_context,
             FunctionObjectData {
-                base: ScriptObjectData::new(fn_class).into(),
+                base: ScriptObjectData::new(fn_class),
                 exec: RefLock::new(exec),
                 prototype: Lock::new(None),
             },
@@ -157,7 +157,7 @@ impl<'gc> FunctionObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for FunctionObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible
