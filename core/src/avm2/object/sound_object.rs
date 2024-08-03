@@ -28,7 +28,7 @@ pub fn sound_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(SoundObject(Gc::new(
         activation.context.gc_context,
@@ -64,7 +64,7 @@ impl fmt::Debug for SoundObject<'_> {
 #[repr(C, align(8))]
 pub struct SoundObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// The sound this object holds.
     sound_data: RefLock<SoundData<'gc>>,
@@ -281,7 +281,7 @@ fn play_queued<'gc>(
 }
 
 impl<'gc> TObject<'gc> for SoundObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible

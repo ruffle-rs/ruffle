@@ -6,10 +6,7 @@ use crate::context::UpdateContext;
 use crate::net_connection::ResponderCallback;
 use flash_lso::types::Value as AMFValue;
 use gc_arena::barrier::unlock;
-use gc_arena::{
-    lock::{Lock, RefLock},
-    Collect, Gc, GcWeak, Mutation,
-};
+use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
 use std::fmt;
 
 /// A class instance allocator that allocates Responder objects.
@@ -17,7 +14,7 @@ pub fn responder_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(ResponderObject(Gc::new(
         activation.context.gc(),
@@ -39,7 +36,7 @@ pub struct ResponderObject<'gc>(pub Gc<'gc, ResponderObjectData<'gc>>);
 pub struct ResponderObjectWeak<'gc>(pub GcWeak<'gc, ResponderObjectData<'gc>>);
 
 impl<'gc> TObject<'gc> for ResponderObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible
@@ -106,7 +103,7 @@ impl<'gc> ResponderObject<'gc> {
 #[repr(C, align(8))]
 pub struct ResponderObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// Method to call with any result
     result: Lock<Option<FunctionObject<'gc>>>,

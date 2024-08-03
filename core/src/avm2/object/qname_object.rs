@@ -18,7 +18,7 @@ pub fn q_name_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(QNameObject(Gc::new(
         activation.context.gc_context,
@@ -52,7 +52,7 @@ impl fmt::Debug for QNameObject<'_> {
 #[repr(C, align(8))]
 pub struct QNameObjectData<'gc> {
     /// All normal script data.
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// The Multiname this object is associated with.
     name: RefLock<Multiname<'gc>>,
@@ -70,7 +70,7 @@ impl<'gc> QNameObject<'gc> {
         name: Multiname<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().qname;
-        let base = ScriptObjectData::new(class).into();
+        let base = ScriptObjectData::new(class);
 
         let this: Object<'gc> = QNameObject(Gc::new(
             activation.context.gc_context,
@@ -138,7 +138,7 @@ impl<'gc> QNameObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for QNameObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible

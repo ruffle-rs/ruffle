@@ -5,7 +5,6 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_render::backend::VertexBuffer;
 use std::rc::Rc;
@@ -32,7 +31,7 @@ impl<'gc> VertexBuffer3DObject<'gc> {
         let this: Object<'gc> = VertexBuffer3DObject(Gc::new(
             activation.gc(),
             VertexBuffer3DObjectData {
-                base: RefLock::new(ScriptObjectData::new(class)),
+                base: ScriptObjectData::new(class),
                 context3d,
                 handle,
                 data32_per_vertex,
@@ -64,7 +63,7 @@ impl<'gc> VertexBuffer3DObject<'gc> {
 #[repr(C, align(8))]
 pub struct VertexBuffer3DObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     context3d: Context3DObject<'gc>,
 
@@ -84,7 +83,7 @@ const _: () = assert!(
 );
 
 impl<'gc> TObject<'gc> for VertexBuffer3DObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible

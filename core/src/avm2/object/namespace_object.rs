@@ -9,17 +9,14 @@ use crate::avm2::Namespace;
 use crate::string::AvmString;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{
-    lock::{Lock, RefLock},
-    Collect, Gc, GcWeak, Mutation,
-};
+use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
 
 /// A class instance allocator that allocates namespace objects.
 pub fn namespace_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     let namespace = activation.context.avm2.public_namespace_base_version;
     Ok(NamespaceObject(Gc::new(
@@ -59,7 +56,7 @@ impl fmt::Debug for NamespaceObject<'_> {
 #[repr(C, align(8))]
 pub struct NamespaceObjectData<'gc> {
     /// All normal script data.
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// The namespace name this object is associated with.
     namespace: Lock<Namespace<'gc>>,
@@ -81,7 +78,7 @@ impl<'gc> NamespaceObject<'gc> {
         namespace: Namespace<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().namespace;
-        let base = ScriptObjectData::new(class).into();
+        let base = ScriptObjectData::new(class);
 
         let this: Object<'gc> = NamespaceObject(Gc::new(
             activation.context.gc_context,
@@ -121,7 +118,7 @@ impl<'gc> NamespaceObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible

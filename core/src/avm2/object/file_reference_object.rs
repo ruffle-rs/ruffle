@@ -3,7 +3,7 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{Activation, Error};
 use crate::backend::ui::FileDialogResult;
-use gc_arena::{lock::RefLock, Collect, Gc};
+use gc_arena::{Collect, Gc};
 use gc_arena::{GcWeak, Mutation};
 use std::cell::{Cell, Ref, RefCell};
 use std::fmt;
@@ -12,7 +12,7 @@ pub fn file_reference_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(FileReferenceObject(Gc::new(
         activation.context.gc(),
@@ -34,7 +34,7 @@ pub struct FileReferenceObject<'gc>(pub Gc<'gc, FileReferenceObjectData<'gc>>);
 pub struct FileReferenceObjectWeak<'gc>(pub GcWeak<'gc, FileReferenceObjectData<'gc>>);
 
 impl<'gc> TObject<'gc> for FileReferenceObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible
@@ -85,7 +85,7 @@ pub enum FileReference {
 #[repr(C, align(8))]
 pub struct FileReferenceObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     reference: RefCell<FileReference>,
 

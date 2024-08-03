@@ -8,7 +8,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::WString;
 use core::fmt;
-use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use std::fmt::Debug;
 use tracing::{enabled, Level};
 
@@ -17,7 +17,7 @@ pub fn error_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     let call_stack = (enabled!(Level::INFO) || cfg!(feature = "avm_debug"))
         .then(|| activation.avm2().call_stack().read().clone())
@@ -52,7 +52,7 @@ impl fmt::Debug for ErrorObject<'_> {
 #[repr(C, align(8))]
 pub struct ErrorObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     call_stack: CallStack<'gc>,
 }
@@ -113,16 +113,12 @@ impl<'gc> ErrorObject<'gc> {
     }
 
     fn debug_class_name(&self) -> Box<dyn Debug + 'gc> {
-        self.0
-            .base
-            .try_borrow()
-            .map(|base| base.instance_class().debug_name())
-            .unwrap_or_else(|err| Box::new(err))
+        self.base().instance_class().debug_name()
     }
 }
 
 impl<'gc> TObject<'gc> for ErrorObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible

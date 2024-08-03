@@ -17,7 +17,7 @@ pub fn vector_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     let param_type = class
         .inner_class_definition()
@@ -56,7 +56,7 @@ impl fmt::Debug for VectorObject<'_> {
 #[repr(C, align(8))]
 pub struct VectorObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// Vector-structured properties
     vector: RefLock<VectorStorage<'gc>>,
@@ -81,7 +81,7 @@ impl<'gc> VectorObject<'gc> {
         let object: Object<'gc> = VectorObject(Gc::new(
             activation.context.gc_context,
             VectorObjectData {
-                base: ScriptObjectData::new(applied_class).into(),
+                base: ScriptObjectData::new(applied_class),
                 vector: RefLock::new(vector),
             },
         ))
@@ -94,7 +94,7 @@ impl<'gc> VectorObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for VectorObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible
@@ -119,7 +119,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
             }
         }
 
-        self.0.base.borrow().get_property_local(name, activation)
+        self.base().get_property_local(name, activation)
     }
 
     fn get_index_property(self, index: usize) -> Option<Value<'gc>> {
@@ -153,9 +153,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
             }
         }
 
-        unlock!(Gc::write(mc, self.0), VectorObjectData, base)
-            .borrow_mut()
-            .set_property_local(name, value, activation)
+        self.base().set_property_local(name, value, activation)
     }
 
     fn init_property_local(
@@ -185,9 +183,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
             }
         }
 
-        unlock!(Gc::write(mc, self.0), VectorObjectData, base)
-            .borrow_mut()
-            .init_property_local(name, value, activation)
+        self.base().init_property_local(name, value, activation)
     }
 
     fn delete_property_local(
@@ -204,9 +200,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
             return Ok(true);
         }
 
-        Ok(unlock!(Gc::write(mc, self.0), VectorObjectData, base)
-            .borrow_mut()
-            .delete_property_local(name))
+        Ok(self.base().delete_property_local(mc, name))
     }
 
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {
@@ -218,7 +212,7 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
             }
         }
 
-        self.0.base.borrow().has_own_property(name)
+        self.base().has_own_property(name)
     }
 
     fn get_next_enumerant(

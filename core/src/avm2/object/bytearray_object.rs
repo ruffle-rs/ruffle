@@ -7,8 +7,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::character::Character;
 use core::fmt;
-use gc_arena::barrier::unlock;
-use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use std::cell::{Ref, RefCell, RefMut};
 
 /// A class instance allocator that allocates ByteArray objects.
@@ -39,7 +38,7 @@ pub fn byte_array_allocator<'gc>(
         unreachable!("A ByteArray subclass should have ByteArray in superclass chain")
     });
 
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(ByteArrayObject(Gc::new(
         activation.context.gc_context,
@@ -72,7 +71,7 @@ impl fmt::Debug for ByteArrayObject<'_> {
 #[repr(C, align(8))]
 pub struct ByteArrayObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     storage: RefCell<ByteArrayStorage>,
 }
@@ -89,7 +88,7 @@ impl<'gc> ByteArrayObject<'gc> {
         bytes: ByteArrayStorage,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().bytearray;
-        let base = ScriptObjectData::new(class).into();
+        let base = ScriptObjectData::new(class);
 
         let instance: Object<'gc> = ByteArrayObject(Gc::new(
             activation.context.gc_context,
@@ -112,7 +111,7 @@ impl<'gc> ByteArrayObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible
@@ -137,7 +136,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
             }
         }
 
-        self.0.base.borrow().get_property_local(name, activation)
+        self.base().get_property_local(name, activation)
     }
 
     fn get_index_property(self, index: usize) -> Option<Value<'gc>> {
@@ -170,13 +169,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
             }
         }
 
-        unlock!(
-            Gc::write(activation.gc(), self.0),
-            ByteArrayObjectData,
-            base
-        )
-        .borrow_mut()
-        .set_property_local(name, value, activation)
+        self.base().set_property_local(name, value, activation)
     }
 
     fn init_property_local(
@@ -198,13 +191,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
             }
         }
 
-        unlock!(
-            Gc::write(activation.gc(), self.0),
-            ByteArrayObjectData,
-            base
-        )
-        .borrow_mut()
-        .init_property_local(name, value, activation)
+        self.base().init_property_local(name, value, activation)
     }
 
     fn delete_property_local(
@@ -221,13 +208,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
             }
         }
 
-        Ok(unlock!(
-            Gc::write(activation.gc(), self.0),
-            ByteArrayObjectData,
-            base
-        )
-        .borrow_mut()
-        .delete_property_local(name))
+        Ok(self.base().delete_property_local(activation.gc(), name))
     }
 
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {
@@ -239,7 +220,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
             }
         }
 
-        self.0.base.borrow().has_own_property(name)
+        self.base().has_own_property(name)
     }
 
     fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {

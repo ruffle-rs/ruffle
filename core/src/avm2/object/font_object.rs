@@ -4,7 +4,7 @@ use crate::avm2::value::Value;
 use crate::avm2::{Activation, ClassObject, Error};
 use crate::character::Character;
 use crate::font::Font;
-use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use std::fmt;
 
 /// A class instance allocator that allocates Font objects.
@@ -12,7 +12,7 @@ pub fn font_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     let font = if let Some((movie, id)) = activation
         .context
@@ -63,7 +63,7 @@ impl<'gc> FontObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for FontObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible
@@ -89,7 +89,7 @@ impl<'gc> TObject<'gc> for FontObject<'gc> {
 #[repr(C, align(8))]
 pub struct FontObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     font: Option<Font<'gc>>,
 }

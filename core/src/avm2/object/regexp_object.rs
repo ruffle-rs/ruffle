@@ -17,7 +17,7 @@ pub fn reg_exp_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(RegExpObject(Gc::new(
         activation.context.gc_context,
@@ -50,7 +50,7 @@ impl fmt::Debug for RegExpObject<'_> {
 #[repr(C, align(8))]
 pub struct RegExpObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     regexp: RefLock<RegExp<'gc>>,
 }
@@ -66,7 +66,7 @@ impl<'gc> RegExpObject<'gc> {
         regexp: RegExp<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().regexp;
-        let base = ScriptObjectData::new(class).into();
+        let base = ScriptObjectData::new(class);
 
         let this: Object<'gc> = RegExpObject(Gc::new(
             activation.context.gc_context,
@@ -85,7 +85,7 @@ impl<'gc> RegExpObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for RegExpObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible

@@ -21,7 +21,7 @@ pub fn event_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(EventObject(Gc::new(
         activation.context.gc_context,
@@ -46,7 +46,7 @@ pub struct EventObjectWeak<'gc>(pub GcWeak<'gc, EventObjectData<'gc>>);
 #[repr(C, align(8))]
 pub struct EventObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// The event this object holds.
     event: RefLock<Event<'gc>>,
@@ -352,7 +352,7 @@ impl<'gc> EventObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for EventObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible
@@ -381,7 +381,7 @@ impl<'gc> Debug for EventObject<'gc> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("EventObject")
             .field("type", &self.0.event.borrow().event_type())
-            .field("class", &self.0.base.borrow().debug_class_name())
+            .field("class", &self.base().debug_class_name())
             .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }

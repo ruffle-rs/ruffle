@@ -5,7 +5,6 @@ use crate::avm2::value::{Hint, Value};
 use crate::avm2::Error;
 use chrono::{DateTime, Utc};
 use core::fmt;
-use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use std::cell::Cell;
 
@@ -17,7 +16,7 @@ pub fn date_allocator<'gc>(
     Ok(DateObject(Gc::new(
         activation.gc(),
         DateObjectData {
-            base: RefLock::new(ScriptObjectData::new(class)),
+            base: ScriptObjectData::new(class),
             date_time: Cell::new(None),
         },
     ))
@@ -45,7 +44,7 @@ impl<'gc> DateObject<'gc> {
         date_time: DateTime<Utc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().date;
-        let base = RefLock::new(ScriptObjectData::new(class));
+        let base = ScriptObjectData::new(class);
 
         let instance: Object<'gc> = DateObject(Gc::new(
             activation.context.gc_context,
@@ -76,7 +75,7 @@ impl<'gc> DateObject<'gc> {
 #[repr(C, align(8))]
 pub struct DateObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     date_time: Cell<Option<DateTime<Utc>>>,
 }
@@ -87,7 +86,7 @@ const _: () = assert!(
 );
 
 impl<'gc> TObject<'gc> for DateObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible

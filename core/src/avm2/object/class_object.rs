@@ -40,7 +40,7 @@ pub struct ClassObjectWeak<'gc>(pub GcWeak<'gc, ClassObjectData<'gc>>);
 #[repr(C, align(8))]
 pub struct ClassObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// The class associated with this class object.
     class: Class<'gc>,
@@ -174,7 +174,7 @@ impl<'gc> ClassObject<'gc> {
         let class_object = ClassObject(Gc::new(
             activation.context.gc_context,
             ClassObjectData {
-                base: RefLock::new(ScriptObjectData::custom_new(c_class, None, None)),
+                base: ScriptObjectData::custom_new(c_class, None, None),
                 class,
                 prototype: Lock::new(None),
                 class_scope: scope,
@@ -257,8 +257,7 @@ impl<'gc> ClassObject<'gc> {
         );
 
         self.set_vtable(activation.context.gc_context, class_vtable);
-        self.base_mut(activation.context.gc_context)
-            .install_instance_slots();
+        self.base().install_instance_slots(activation.gc());
 
         self.run_class_initializer(activation)?;
 
@@ -317,9 +316,7 @@ impl<'gc> ClassObject<'gc> {
     /// `Class` and `Object`. All other types should pull `Class`'s prototype
     /// and type object from the `Avm2` instance.
     pub fn link_type(self, gc_context: &Mutation<'gc>, proto: Object<'gc>) {
-        unlock!(Gc::write(gc_context, self.0), ClassObjectData, base)
-            .borrow_mut()
-            .set_proto(proto);
+        self.base().set_proto(gc_context, proto);
     }
 
     /// Run the class's initializer method.
@@ -723,7 +720,7 @@ impl<'gc> ClassObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for ClassObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible

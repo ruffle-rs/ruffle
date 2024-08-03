@@ -8,15 +8,14 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::AvmString;
 use core::fmt;
-use gc_arena::barrier::unlock;
-use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 
 /// A class instance allocator that allocates Dictionary objects.
 pub fn dictionary_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(DictionaryObject(Gc::new(
         activation.context.gc_context,
@@ -51,7 +50,7 @@ impl fmt::Debug for DictionaryObject<'_> {
 #[repr(C, align(8))]
 pub struct DictionaryObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 }
 
 const _: () = assert!(std::mem::offset_of!(DictionaryObjectData, base) == 0);
@@ -63,10 +62,8 @@ const _: () = assert!(
 impl<'gc> DictionaryObject<'gc> {
     /// Retrieve a value in the dictionary's object space.
     pub fn get_property_by_object(self, name: Object<'gc>) -> Value<'gc> {
-        self.0
-            .base
-            .borrow()
-            .values
+        self.base()
+            .values()
             .as_hashmap()
             .get(&DynamicKey::Object(name))
             .cloned()
@@ -76,23 +73,19 @@ impl<'gc> DictionaryObject<'gc> {
 
     /// Set a value in the dictionary's object space.
     pub fn set_property_by_object(self, name: Object<'gc>, value: Value<'gc>, mc: &Mutation<'gc>) {
-        let mut write = unlock!(Gc::write(mc, self.0), DictionaryObjectData, base).borrow_mut();
-
-        write.values.insert(DynamicKey::Object(name), value);
+        self.base()
+            .values_mut(mc)
+            .insert(DynamicKey::Object(name), value);
     }
 
     /// Delete a value from the dictionary's object space.
     pub fn delete_property_by_object(self, name: Object<'gc>, mc: &Mutation<'gc>) {
-        let mut write = unlock!(Gc::write(mc, self.0), DictionaryObjectData, base).borrow_mut();
-
-        write.values.remove(&DynamicKey::Object(name));
+        self.base().values_mut(mc).remove(&DynamicKey::Object(name));
     }
 
     pub fn has_property_by_object(self, name: Object<'gc>) -> bool {
-        self.0
-            .base
-            .borrow()
-            .values
+        self.base()
+            .values()
             .as_hashmap()
             .get(&DynamicKey::Object(name))
             .is_some()
@@ -100,7 +93,7 @@ impl<'gc> DictionaryObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible
@@ -136,10 +129,8 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
         _activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(*self
-            .0
-            .base
-            .borrow()
-            .values
+            .base()
+            .values()
             .value_at(index as usize)
             .unwrap_or(&Value::Undefined))
     }

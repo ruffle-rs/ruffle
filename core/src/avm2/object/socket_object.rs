@@ -4,7 +4,7 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{Activation, Error};
 use crate::socket::SocketHandle;
-use gc_arena::{lock::RefLock, Collect, Gc};
+use gc_arena::{Collect, Gc};
 use gc_arena::{GcWeak, Mutation};
 use std::cell::{Cell, RefCell, RefMut};
 use std::fmt;
@@ -14,7 +14,7 @@ pub fn socket_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(SocketObject(Gc::new(
         activation.context.gc(),
@@ -41,7 +41,7 @@ pub struct SocketObject<'gc>(pub Gc<'gc, SocketObjectData<'gc>>);
 pub struct SocketObjectWeak<'gc>(pub GcWeak<'gc, SocketObjectData<'gc>>);
 
 impl<'gc> TObject<'gc> for SocketObject<'gc> {
-    fn gc_base(&self) -> Gc<'gc, RefLock<ScriptObjectData<'gc>>> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         // SAFETY: Object data is repr(C), and a compile-time assert ensures
         // that the ScriptObjectData stays at offset 0 of the struct- so the
         // layouts are compatible
@@ -201,8 +201,8 @@ impl_read!(read_float 4; f32, read_double 8; f64, read_int 4; i32, read_unsigned
 #[repr(C, align(8))]
 pub struct SocketObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
-    #[collect(require_static)]
+    base: ScriptObjectData<'gc>,
+
     handle: Cell<Option<SocketHandle>>,
 
     endian: Cell<Endian>,
