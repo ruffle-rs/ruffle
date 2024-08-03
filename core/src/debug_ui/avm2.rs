@@ -41,13 +41,13 @@ impl Avm2ObjectWindow {
     pub fn show<'gc>(
         &mut self,
         egui_ctx: &egui::Context,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: Object<'gc>,
         messages: &mut Vec<Message>,
     ) -> bool {
         let mut keep_open = true;
         let domain = context.avm2.stage_domain();
-        let mut activation = Activation::from_domain(context.reborrow(), domain);
+        let mut activation = Activation::from_domain(context, domain);
         Window::new(object_name(activation.context.gc_context, object))
             .id(Id::new(object.as_ptr()))
             .open(&mut keep_open)
@@ -187,7 +187,7 @@ impl Avm2ObjectWindow {
         &mut self,
         array: std::cell::Ref<ArrayStorage<'gc>>,
         messages: &mut Vec<Message>,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         ui: &mut Ui,
     ) {
         TableBuilder::new(ui)
@@ -410,7 +410,7 @@ enum ValueWidget {
 }
 
 impl ValueWidget {
-    fn new<'gc>(context: &mut UpdateContext<'_, 'gc>, value: Value<'gc>) -> Self {
+    fn new<'gc>(context: &mut UpdateContext<'gc>, value: Value<'gc>) -> Self {
         match value {
             Value::Undefined => ValueWidget::Other(Cow::Borrowed("Undefined")),
             Value::Null => ValueWidget::Other(Cow::Borrowed("Null")),
@@ -474,7 +474,7 @@ impl ValueResultWidget {
 
 pub fn show_avm2_value<'gc>(
     ui: &mut Ui,
-    context: &mut UpdateContext<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
     value: Value<'gc>,
     messages: &mut Vec<Message>,
 ) {

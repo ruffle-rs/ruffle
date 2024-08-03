@@ -133,7 +133,7 @@ impl<'gc> SoundObject<'gc> {
 
     pub fn set_sound(
         self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         sound: SoundHandle,
     ) -> Result<(), Error<'gc>> {
         let mut sound_data = unlock!(
@@ -142,7 +142,7 @@ impl<'gc> SoundObject<'gc> {
             sound_data
         )
         .borrow_mut();
-        let mut activation = Activation::from_nothing(context.reborrow());
+        let mut activation = Activation::from_nothing(context);
         match &mut *sound_data {
             SoundData::NotLoaded { queued_plays } => {
                 for queued in std::mem::take(queued_plays) {

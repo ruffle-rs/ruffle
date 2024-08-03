@@ -214,7 +214,7 @@ impl<'gc> Domain<'gc> {
 
     pub fn get_class(
         self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         multiname: &Multiname<'gc>,
     ) -> Option<Class<'gc>> {
         let class = self.get_class_inner(multiname);

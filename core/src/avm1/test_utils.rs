@@ -15,7 +15,6 @@ where
         .build();
     let mut player = player.lock().unwrap();
     player.mutate_with_update_context(|context| {
-        let context = context.reborrow();
         let root = context
             .stage
             .root_clip()

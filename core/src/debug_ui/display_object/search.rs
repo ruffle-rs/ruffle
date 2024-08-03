@@ -123,7 +123,7 @@ impl DisplayObjectSearchWindow {
 
     fn create_result_tree<'gc>(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         cursor: Point<Twips>,
         object: DisplayObject<'gc>,
         add_to: &mut Vec<DisplayObjectTree>,

@@ -466,7 +466,7 @@ pub fn capture_specification(context: &mut UpdateContext, output: &Path) {
     let mut definitions = FnvHashMap::<String, Definition>::default();
 
     let defs = context.avm2.playerglobals_domain.defs().clone();
-    let mut activation = Activation::from_nothing(context.reborrow());
+    let mut activation = Activation::from_nothing(context);
     for (name, namespace, _) in defs.iter() {
         let value = activation
             .context

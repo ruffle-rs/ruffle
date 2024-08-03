@@ -18,17 +18,14 @@ impl Avm1ObjectWindow {
     pub fn show<'gc>(
         &mut self,
         egui_ctx: &egui::Context,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: Object<'gc>,
         messages: &mut Vec<Message>,
     ) -> bool {
         let mut keep_open = true;
         let base_clip = context.stage.into();
-        let mut activation = Activation::from_nothing(
-            context.reborrow(),
-            ActivationIdentifier::root("Debug"),
-            base_clip,
-        );
+        let mut activation =
+            Activation::from_nothing(context, ActivationIdentifier::root("Debug"), base_clip);
         Window::new(object_name(object))
             .id(Id::new(object.as_ptr()))
             .open(&mut keep_open)

@@ -26,12 +26,10 @@ pub struct JavascriptInterface {
 struct JavascriptMethod(String);
 
 impl ExternalInterfaceMethod for JavascriptMethod {
-    fn call(&self, context: &mut UpdateContext<'_, '_>, args: &[ExternalValue]) -> ExternalValue {
+    fn call(&self, context: &mut UpdateContext<'_>, args: &[ExternalValue]) -> ExternalValue {
         let old_context = CURRENT_CONTEXT.with(|v| {
             v.replace(Some(unsafe {
-                std::mem::transmute::<&mut UpdateContext, &mut UpdateContext<'static, 'static>>(
-                    context,
-                )
+                std::mem::transmute::<&mut UpdateContext, &mut UpdateContext<'static>>(context)
             } as *mut UpdateContext))
         });
         let args = args

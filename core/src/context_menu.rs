@@ -52,7 +52,7 @@ impl<'gc> ContextMenuState<'gc> {
     pub fn build_builtin_items(
         &mut self,
         item_flags: BuiltInItemFlags,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
     ) {
         let stage = context.stage;
         let language = &context.ui.language();
@@ -146,7 +146,7 @@ impl<'gc> ContextMenuState<'gc> {
         }
     }
 
-    fn build_text_items(&mut self, text: EditText<'gc>, context: &mut UpdateContext<'_, 'gc>) {
+    fn build_text_items(&mut self, text: EditText<'gc>, context: &mut UpdateContext<'gc>) {
         let language = &context.ui.language();
         self.push(
             ContextMenuItem {

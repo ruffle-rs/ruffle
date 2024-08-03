@@ -67,7 +67,7 @@ impl<'gc> LocalConnection<'gc> {
     }
 
     pub fn send_status(
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         this: Object<'gc>,
         status: &'static str,
     ) -> Result<(), Error<'gc>> {
@@ -76,7 +76,7 @@ impl<'gc> LocalConnection<'gc> {
             return Ok(());
         };
         let mut activation = Activation::from_nothing(
-            context.reborrow(),
+            context,
             ActivationIdentifier::root("[LocalConnection onStatus]"),
             root_clip,
         );
@@ -95,7 +95,7 @@ impl<'gc> LocalConnection<'gc> {
     }
 
     pub fn run_method(
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         this: Object<'gc>,
         method_name: AvmString<'gc>,
         amf_arguments: Vec<AmfValue>,
@@ -105,7 +105,7 @@ impl<'gc> LocalConnection<'gc> {
             return Ok(());
         };
         let mut activation = Activation::from_nothing(
-            context.reborrow(),
+            context,
             ActivationIdentifier::root("[LocalConnection call]"),
             root_clip,
         );

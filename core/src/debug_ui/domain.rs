@@ -42,7 +42,7 @@ impl DomainListWindow {
     pub fn show_domain<'gc>(
         &mut self,
         ui: &mut Ui,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         domain: Domain<'gc>,
         messages: &mut Vec<Message>,
         search: &str,
@@ -87,7 +87,7 @@ impl DomainListWindow {
 
 pub fn open_domain_button<'gc>(
     ui: &mut Ui,
-    context: &mut UpdateContext<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
     messages: &mut Vec<Message>,
     domain: Domain<'gc>,
 ) {
