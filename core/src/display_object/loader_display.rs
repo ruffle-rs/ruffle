@@ -215,6 +215,9 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
             return Avm2MousePick::Miss;
         }
 
+        let mut options = HitTestOptions::SKIP_INVISIBLE;
+        options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
+
         // We have at most one child
         if let Some(child) = self.iter_render_list().next() {
             if let Some(int) = child.as_interactive() {
@@ -239,6 +242,12 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
                     } else {
                         return Avm2MousePick::Miss;
                     }
+                }
+            } else if child.hit_test_shape(context, point, options) {
+                if self.mouse_enabled() {
+                    return Avm2MousePick::Hit((*self).into());
+                } else {
+                    return Avm2MousePick::PropagateToParent;
                 }
             }
         }
