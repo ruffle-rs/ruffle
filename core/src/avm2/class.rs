@@ -328,7 +328,7 @@ impl<'gc> Class<'gc> {
     /// This is used to parameterize a generic type. The returned class will no
     /// longer be generic.
     pub fn with_type_param(
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         this: Class<'gc>,
         param: Option<Class<'gc>>,
     ) -> Class<'gc> {
@@ -730,7 +730,7 @@ impl<'gc> Class<'gc> {
         Ok(())
     }
 
-    pub fn init_vtable(self, context: &mut UpdateContext<'_, 'gc>) -> Result<(), Error<'gc>> {
+    pub fn init_vtable(self, context: &mut UpdateContext<'gc>) -> Result<(), Error<'gc>> {
         let read = self.0.read();
 
         if !read.traits_loaded {
@@ -754,7 +754,7 @@ impl<'gc> Class<'gc> {
         Ok(())
     }
 
-    pub fn link_interfaces(self, context: &mut UpdateContext<'_, 'gc>) -> Result<(), Error<'gc>> {
+    pub fn link_interfaces(self, context: &mut UpdateContext<'gc>) -> Result<(), Error<'gc>> {
         let mut interfaces = Vec::with_capacity(self.direct_interfaces().len());
 
         let mut dedup = HashSet::new();

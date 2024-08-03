@@ -169,7 +169,7 @@ impl<'gc> ConvolutionFilter<'gc> {
         Ok(())
     }
 
-    fn matrix(&self, context: &mut UpdateContext<'_, 'gc>) -> ArrayObject<'gc> {
+    fn matrix(&self, context: &mut UpdateContext<'gc>) -> ArrayObject<'gc> {
         ArrayObject::new(
             context.gc_context,
             context.avm1.prototypes().array,

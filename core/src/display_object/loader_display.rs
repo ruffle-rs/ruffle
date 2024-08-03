@@ -99,7 +99,7 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(&self, context: &mut UpdateContext<'_, 'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
         self.0.write(context.gc_context).avm2_object = Some(to);
     }
 
@@ -111,7 +111,7 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         Some(self.into())
     }
 
-    fn enter_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
+    fn enter_frame(&self, context: &mut UpdateContext<'gc>) {
         let skip_frame = self.base().should_skip_next_enter_frame();
         for child in self.iter_render_list() {
             // See MovieClip::enter_frame for an explanation of this.
@@ -126,7 +126,7 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
             .set_skip_next_enter_frame(false);
     }
 
-    fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
+    fn construct_frame(&self, context: &mut UpdateContext<'gc>) {
         for child in self.iter_render_list() {
             child.construct_frame(context);
         }
@@ -136,7 +136,7 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         self.0.read().movie.clone()
     }
 
-    fn on_parent_removed(&self, context: &mut UpdateContext<'_, 'gc>) {
+    fn on_parent_removed(&self, context: &mut UpdateContext<'gc>) {
         if self.movie().is_action_script_3() {
             context.avm2.add_orphan_obj((*self).into())
         }
@@ -158,7 +158,7 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
 
     fn filter_clip_event(
         self,
-        _context: &mut UpdateContext<'_, 'gc>,
+        _context: &mut UpdateContext<'gc>,
         _event: ClipEvent,
     ) -> ClipEventResult {
         if !self.visible() {
@@ -169,7 +169,7 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
     }
     fn event_dispatch(
         self,
-        _context: &mut UpdateContext<'_, 'gc>,
+        _context: &mut UpdateContext<'gc>,
         _event: ClipEvent<'gc>,
     ) -> ClipEventResult {
         ClipEventResult::NotHandled
@@ -177,7 +177,7 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
 
     fn mouse_pick_avm1(
         &self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         point: Point<Twips>,
         require_button_mode: bool,
     ) -> Option<InteractiveObject<'gc>> {
@@ -206,7 +206,7 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
 
     fn mouse_pick_avm2(
         &self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         point: Point<Twips>,
         require_button_mode: bool,
     ) -> Avm2MousePick<'gc> {

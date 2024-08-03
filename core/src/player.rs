@@ -202,7 +202,7 @@ struct GcRootData<'gc> {
 pub struct PostFrameCallback<'gc> {
     #[collect(require_static)]
     #[allow(clippy::type_complexity)]
-    pub callback: Box<dyn for<'b> FnOnce(&mut UpdateContext<'_, 'b>, DisplayObject<'b>) + 'static>,
+    pub callback: Box<dyn for<'b> FnOnce(&mut UpdateContext<'b>, DisplayObject<'b>) + 'static>,
     pub data: DisplayObject<'gc>,
 }
 
@@ -612,10 +612,8 @@ impl Player {
             let display_obj = Player::get_context_menu_display_object(context);
 
             let menu = if let Some(Value::Object(obj)) = display_obj.map(|obj| obj.object()) {
-                let mut activation = Activation::from_stub(
-                    context.reborrow(),
-                    ActivationIdentifier::root("[ContextMenu]"),
-                );
+                let mut activation =
+                    Activation::from_stub(context, ActivationIdentifier::root("[ContextMenu]"));
                 let menu_object = if let Ok(Value::Object(menu)) = obj.get("menu", &mut activation)
                 {
                     if let Ok(Value::Object(on_select)) = menu.get("onSelect", &mut activation) {
@@ -628,7 +626,7 @@ impl Player {
 
                 crate::avm1::make_context_menu_state(menu_object, display_obj, &mut activation)
             } else if let Some(Avm2Value::Object(hit_obj)) = display_obj.map(|obj| obj.object2()) {
-                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                let mut activation = Avm2Activation::from_nothing(context);
 
                 let menu_object = display_obj
                     .expect("Root is confirmed to exist here")
@@ -693,7 +691,7 @@ impl Player {
                     ContextMenuCallback::Avm2 { item } => {
                         if let Some(display_obj) = menu.get_display_object() {
                             let menu_item = *item;
-                            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                            let mut activation = Avm2Activation::from_nothing(context);
 
                             let menu_obj = display_obj
                                 .as_interactive()
@@ -744,12 +742,12 @@ impl Player {
     fn run_context_menu_custom_callback<'gc>(
         item: Object<'gc>,
         callback: Object<'gc>,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
     ) {
         if let Some(menu_state) = context.current_context_menu {
             if let Some(display_object) = menu_state.get_display_object() {
                 let mut activation = Activation::from_nothing(
-                    context.reborrow(),
+                    context,
                     ActivationIdentifier::root("[Context Menu Callback]"),
                     display_object,
                 );
@@ -768,7 +766,7 @@ impl Player {
 
     ///Returns the first display object that the mouse is hovering over that has a custom context menu. Returns root if none is found.
     fn get_context_menu_display_object<'gc>(
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
     ) -> Option<DisplayObject<'gc>> {
         let mut display_object = run_mouse_pick(context, false).map(|obj| obj.as_displayobject());
         loop {
@@ -780,7 +778,7 @@ impl Player {
                 ) {
                     if let Some(Value::Object(obj)) = Some(disp_obj).map(|obj| obj.object()) {
                         let mut activation = Activation::from_stub(
-                            context.reborrow(),
+                            context,
                             ActivationIdentifier::root("[ContextMenu]"),
                         );
 
@@ -808,7 +806,7 @@ impl Player {
         });
     }
 
-    fn toggle_play_root_movie(context: &mut UpdateContext<'_, '_>) {
+    fn toggle_play_root_movie(context: &mut UpdateContext<'_>) {
         if let Some(mc) = context
             .stage
             .root_clip()
@@ -821,7 +819,7 @@ impl Player {
             }
         }
     }
-    fn rewind_root_movie(context: &mut UpdateContext<'_, '_>) {
+    fn rewind_root_movie(context: &mut UpdateContext<'_>) {
         if let Some(mc) = context
             .stage
             .root_clip()
@@ -830,7 +828,7 @@ impl Player {
             mc.goto_frame(context, 1, true)
         }
     }
-    fn forward_root_movie(context: &mut UpdateContext<'_, '_>) {
+    fn forward_root_movie(context: &mut UpdateContext<'_>) {
         if let Some(mc) = context
             .stage
             .root_clip()
@@ -839,7 +837,7 @@ impl Player {
             mc.next_frame(context);
         }
     }
-    fn back_root_movie(context: &mut UpdateContext<'_, '_>) {
+    fn back_root_movie(context: &mut UpdateContext<'_>) {
         if let Some(mc) = context
             .stage
             .root_clip()
@@ -1060,7 +1058,7 @@ impl Player {
                         let mut dumper = VariableDumper::new("  ");
 
                         let mut activation = Activation::from_stub(
-                            context.reborrow(),
+                            context,
                             ActivationIdentifier::root("[Variable Dumper]"),
                         );
 
@@ -1149,7 +1147,7 @@ impl Player {
                 let alt_key = context.input.is_key_down(KeyCode::Alt);
                 let shift_key = context.input.is_key_down(KeyCode::Shift);
 
-                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                let mut activation = Avm2Activation::from_nothing(context);
 
                 let event_name = match event {
                     PlayerEvent::KeyDown { .. } => "keyDown",
@@ -1432,7 +1430,7 @@ impl Player {
     }
 
     /// Update dragged object, if any.
-    pub fn update_drag(context: &mut UpdateContext<'_, '_>) {
+    pub fn update_drag(context: &mut UpdateContext<'_>) {
         let mouse_position = *context.mouse_position;
         if let Some(drag_object) = context.drag_object {
             let display_object = drag_object.display_object;
@@ -1807,7 +1805,7 @@ impl Player {
     }
 
     fn update_focus_on_mouse_press<'gc>(
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         pressed_object: DisplayObject<'gc>,
     ) {
         let tracker = context.focus_tracker;
@@ -1885,7 +1883,7 @@ impl Player {
                 did_finish = root.preload(context, limit);
 
                 if let Some(loader_info) = root.loader_info().filter(|_| !was_root_movie_loaded) {
-                    let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                    let mut activation = Avm2Activation::from_nothing(context);
 
                     let progress_evt = activation.avm2().classes().progressevent.construct(
                         &mut activation,
@@ -2067,7 +2065,7 @@ impl Player {
         &mut self.ui
     }
 
-    pub fn run_actions(context: &mut UpdateContext<'_, '_>) {
+    pub fn run_actions(context: &mut UpdateContext<'_>) {
         // Note that actions can queue further actions, so a while loop is necessary here.
         while let Some(action) = context.action_queue.pop_action() {
             // We don't run frame actions if the clip was removed (or scheduled to be removed) after it queued the action.
@@ -2089,7 +2087,7 @@ impl Player {
                     events,
                 } => {
                     let mut activation = Activation::from_nothing(
-                        context.reborrow(),
+                        context,
                         ActivationIdentifier::root("[Construct]"),
                         action.clip,
                     );
@@ -2166,7 +2164,7 @@ impl Player {
     /// This takes cares of populating the `UpdateContext` struct, avoiding borrow issues.
     pub fn mutate_with_update_context<F, R>(&mut self, f: F) -> R
     where
-        F: for<'a, 'gc> FnOnce(&mut UpdateContext<'a, 'gc>) -> R,
+        F: for<'a, 'gc> FnOnce(&mut UpdateContext<'gc>) -> R,
     {
         self.enter_arena_mut(|gc_context, gc_root, this| {
             #[allow(unused_variables)]
@@ -2196,7 +2194,6 @@ impl Player {
             ) = gc_root.update_context_params();
 
             let mut update_context = UpdateContext {
-                _unused: std::marker::PhantomData,
                 player_version: this.player_version,
                 swf: &mut this.swf,
                 library,
@@ -2298,7 +2295,7 @@ impl Player {
     /// hover state up to date, and running garbage collection.
     pub fn update<F, R>(&mut self, func: F) -> R
     where
-        F: for<'a, 'gc> FnOnce(&mut UpdateContext<'a, 'gc>) -> R,
+        F: for<'a, 'gc> FnOnce(&mut UpdateContext<'gc>) -> R,
     {
         let rval = self.mutate_with_update_context(|context| {
             let rval = func(context);
@@ -2323,7 +2320,7 @@ impl Player {
     pub fn flush_shared_objects(&mut self) {
         self.update(|context| {
             if let Some(mut avm1_activation) =
-                Activation::try_from_stub(context.reborrow(), ActivationIdentifier::root("[Flush]"))
+                Activation::try_from_stub(context, ActivationIdentifier::root("[Flush]"))
             {
                 for so in avm1_activation.context.avm1_shared_objects.clone().values() {
                     if let Err(e) =
@@ -2334,7 +2331,7 @@ impl Player {
                 }
             }
 
-            let mut avm2_activation = Avm2Activation::from_nothing(context.reborrow());
+            let mut avm2_activation = Avm2Activation::from_nothing(context);
             for so in avm2_activation.context.avm2_shared_objects.clone().values() {
                 if let Err(e) = crate::avm2::globals::flash::net::shared_object::flush(
                     &mut avm2_activation,
@@ -2994,7 +2991,7 @@ pub struct DragObject<'gc> {
 }
 
 fn run_mouse_pick<'gc>(
-    context: &mut UpdateContext<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
     require_button_mode: bool,
 ) -> Option<InteractiveObject<'gc>> {
     context.stage.iter_render_list().rev().find_map(|level| {

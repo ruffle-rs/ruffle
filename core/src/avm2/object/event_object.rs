@@ -61,7 +61,7 @@ impl<'gc> EventObject<'gc> {
     /// It's just slightly faster and doesn't require an Activation.
     /// This is equivalent to
     /// classes.event.construct(activation, &[event_type, false, false])
-    pub fn bare_default_event<S>(context: &mut UpdateContext<'_, 'gc>, event_type: S) -> Object<'gc>
+    pub fn bare_default_event<S>(context: &mut UpdateContext<'gc>, event_type: S) -> Object<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
@@ -72,7 +72,7 @@ impl<'gc> EventObject<'gc> {
     /// It's just slightly faster and doesn't require an Activation.
     /// Note that if you need an Event subclass, you need to construct it via .construct().
     pub fn bare_event<S>(
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         event_type: S,
         bubbles: bool,
         cancelable: bool,

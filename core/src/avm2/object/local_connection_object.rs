@@ -88,8 +88,8 @@ impl<'gc> LocalConnectionObject<'gc> {
         }
     }
 
-    pub fn send_status(&self, context: &mut UpdateContext<'_, 'gc>, status: &'static str) {
-        let mut activation = Activation::from_nothing(context.reborrow());
+    pub fn send_status(&self, context: &mut UpdateContext<'gc>, status: &'static str) {
+        let mut activation = Activation::from_nothing(context);
         if let Ok(event) = activation.avm2().classes().statusevent.construct(
             &mut activation,
             &[
@@ -106,12 +106,12 @@ impl<'gc> LocalConnectionObject<'gc> {
 
     pub fn run_method(
         &self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         domain: Domain<'gc>,
         method_name: AvmString<'gc>,
         amf_arguments: Vec<AmfValue>,
     ) {
-        let mut activation = Activation::from_domain(context.reborrow(), domain);
+        let mut activation = Activation::from_domain(context, domain);
         let mut arguments = Vec::with_capacity(amf_arguments.len());
 
         for argument in amf_arguments {

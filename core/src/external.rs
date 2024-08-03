@@ -266,7 +266,7 @@ pub enum Callback<'gc> {
 impl<'gc> Callback<'gc> {
     pub fn call(
         &self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         name: &str,
         args: impl IntoIterator<Item = Value>,
     ) -> Value {
@@ -274,7 +274,7 @@ impl<'gc> Callback<'gc> {
             Callback::Avm1 { this, method } => {
                 if let Some(base_clip) = context.stage.root_clip() {
                     let mut activation = Avm1Activation::from_nothing(
-                        context.reborrow(),
+                        context,
                         Avm1ActivationIdentifier::root("[ExternalInterface]"),
                         base_clip,
                     );
@@ -299,7 +299,7 @@ impl<'gc> Callback<'gc> {
                     .library_for_movie(context.swf.clone())
                     .unwrap()
                     .avm2_domain();
-                let mut activation = Avm2Activation::from_domain(context.reborrow(), domain);
+                let mut activation = Avm2Activation::from_domain(context, domain);
                 let args: Vec<Avm2Value> = args
                     .into_iter()
                     .map(|v| v.into_avm2(&mut activation))
@@ -340,14 +340,14 @@ pub trait ExternalInterfaceProvider {
 }
 
 pub trait ExternalInterfaceMethod {
-    fn call(&self, context: &mut UpdateContext<'_, '_>, args: &[Value]) -> Value;
+    fn call(&self, context: &mut UpdateContext<'_>, args: &[Value]) -> Value;
 }
 
 impl<F> ExternalInterfaceMethod for F
 where
-    F: Fn(&mut UpdateContext<'_, '_>, &[Value]) -> Value,
+    F: Fn(&mut UpdateContext<'_>, &[Value]) -> Value,
 {
-    fn call(&self, context: &mut UpdateContext<'_, '_>, args: &[Value]) -> Value {
+    fn call(&self, context: &mut UpdateContext<'_>, args: &[Value]) -> Value {
         self(context, args)
     }
 }

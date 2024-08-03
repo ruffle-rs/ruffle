@@ -221,7 +221,7 @@ pub struct Activation<'a, 'gc: 'a> {
     /// Whether the base clip was removed when we started this frame.
     base_clip_unloaded: bool,
 
-    pub context: &'a mut UpdateContext<'a, 'gc>,
+    pub context: &'a mut UpdateContext<'gc>,
 
     /// An identifier to refer to this activation by, when debugging.
     /// This is often the name of a function (if known), or some static name to indicate where
@@ -245,7 +245,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     #[allow(clippy::too_many_arguments)]
     pub fn from_action(
-        context: &'a mut UpdateContext<'a, 'gc>,
+        context: &'a mut UpdateContext<'gc>,
         id: ActivationIdentifier<'a>,
         swf_version: u8,
         scope: Gc<'gc, Scope<'gc>>,
@@ -280,7 +280,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         avm_debug!(self.context.avm1, "START {id}");
         Activation {
             id,
-            context: self.context.reborrow(),
+            context: self.context,
             swf_version: self.swf_version,
             scope,
             constant_pool: self.constant_pool,
@@ -301,7 +301,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Note: using the returned `Activation` directly to execute arbitrary bytecode and/or
     /// to define new local variables is a logic error, and will corrupt the global scope.
     pub fn from_nothing(
-        context: &'a mut UpdateContext<'a, 'gc>,
+        context: &'a mut UpdateContext<'gc>,
         id: ActivationIdentifier<'a>,
         base_clip: DisplayObject<'gc>,
     ) -> Self {
@@ -324,10 +324,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Construct an empty stack frame with no code running on the root movie in
     /// layer 0.
-    pub fn from_stub(
-        context: &'a mut UpdateContext<'a, 'gc>,
-        id: ActivationIdentifier<'a>,
-    ) -> Self {
+    pub fn from_stub(context: &'a mut UpdateContext<'gc>, id: ActivationIdentifier<'a>) -> Self {
         // [NA]: we have 3 options here:
         // 1 - Don't execute anything (return None and handle that at the caller)
         // 2 - Execute something with a temporary orphaned movie
@@ -345,7 +342,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Construct an empty stack frame with no code running on the root move in
     /// layer 0.
     pub fn try_from_stub(
-        context: &'a mut UpdateContext<'a, 'gc>,
+        context: &'a mut UpdateContext<'gc>,
         id: ActivationIdentifier<'a>,
     ) -> Option<Self> {
         if let Some(level0) = context.stage.root_clip() {
@@ -362,11 +359,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         active_clip: DisplayObject<'gc>,
         code: SwfSlice,
     ) -> Result<ReturnType<'gc>, Error<'gc>> {
-        let mut parent_activation = Activation::from_nothing(
-            self.context.reborrow(),
-            self.id.child("[Actions Parent]"),
-            active_clip,
-        );
+        let mut parent_activation =
+            Activation::from_nothing(self.context, self.id.child("[Actions Parent]"), active_clip);
         let clip_obj = active_clip
             .object()
             .coerce_to_object(&mut parent_activation);
@@ -381,7 +375,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let constant_pool = parent_activation.context.avm1.constant_pool();
         let child_name = parent_activation.id.child(name);
         let mut child_activation = Activation::from_action(
-            parent_activation.context.reborrow(),
+            parent_activation.context,
             child_name,
             active_clip.swf_version(),
             child_scope,
@@ -418,7 +412,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         );
         let constant_pool = self.context.avm1.constant_pool();
         let mut activation = Activation::from_action(
-            self.context.reborrow(),
+            self.context,
             self.id.child(name),
             swf_version,
             child_scope,
@@ -2267,7 +2261,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if let Some((catch_vars, actions)) = &action.catch_body {
             if let Err(Error::ThrownValue(value)) = &result {
                 let mut activation = Activation::from_action(
-                    self.context.reborrow(),
+                    self.context,
                     self.id.child("[Catch]"),
                     self.swf_version,
                     self.scope,

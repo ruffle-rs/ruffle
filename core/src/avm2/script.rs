@@ -349,7 +349,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn pool_namespace(
         self,
         ns_index: Index<AbcNamespace>,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
     ) -> Result<Namespace<'gc>, Error<'gc>> {
         let read = self.0.read();
         if let Some(Some(namespace)) = read.namespaces.get(ns_index.0 as usize) {
@@ -369,7 +369,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn pool_maybe_uninitialized_multiname(
         self,
         multiname_index: Index<AbcMultiname>,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
         let mc = context.gc_context;
         let read = self.0.read();
@@ -393,7 +393,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn pool_multiname_static(
         self,
         multiname_index: Index<AbcMultiname>,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
         let multiname = self.pool_maybe_uninitialized_multiname(multiname_index, context)?;
         if multiname.has_lazy_component() {
@@ -410,7 +410,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn pool_multiname_static_any(
         self,
         multiname_index: Index<AbcMultiname>,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
         if multiname_index.0 == 0 {
             let mc = context.gc_context;
@@ -626,7 +626,7 @@ impl<'gc> Script<'gc> {
     ///
     /// If the script has not yet been initialized, this will initialize it on
     /// the same stack.
-    pub fn globals(self, context: &mut UpdateContext<'_, 'gc>) -> Result<Object<'gc>, Error<'gc>> {
+    pub fn globals(self, context: &mut UpdateContext<'gc>) -> Result<Object<'gc>, Error<'gc>> {
         let mut write = self.0.write(context.gc_context);
 
         if !write.initialized {

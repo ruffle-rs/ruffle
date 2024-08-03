@@ -184,7 +184,7 @@ impl<'gc> Video<'gc> {
     /// Convert this Video into a NetStream sourced video.
     ///
     /// Existing video state related to the old video stream will be dropped.
-    pub fn attach_netstream(self, context: &mut UpdateContext<'_, 'gc>, stream: NetStream<'gc>) {
+    pub fn attach_netstream(self, context: &mut UpdateContext<'gc>, stream: NetStream<'gc>) {
         let mut video = self.0.write(context.gc_context);
 
         video.source = GcCell::new(context.gc_context, VideoSource::NetStream { stream });
@@ -196,7 +196,7 @@ impl<'gc> Video<'gc> {
     ///
     /// This function yields an error if this video player is not playing an
     /// embedded SWF video.
-    pub fn preload_swf_frame(&mut self, tag: VideoFrame, context: &mut UpdateContext<'_, 'gc>) {
+    pub fn preload_swf_frame(&mut self, tag: VideoFrame, context: &mut UpdateContext<'gc>) {
         let movie = self.0.read().movie.clone();
 
         match (*self
@@ -230,7 +230,7 @@ impl<'gc> Video<'gc> {
     ///
     /// `seek` is only called when processing `PlaceObject` tags involving this
     /// Video. It is a no-op for Videos that are connected to a `NetStream`.
-    pub fn seek(self, context: &mut UpdateContext<'_, 'gc>, mut frame_id: u32) {
+    pub fn seek(self, context: &mut UpdateContext<'gc>, mut frame_id: u32) {
         let read = self.0.read();
         if let VideoStream::Uninstantiated(_) = &read.stream {
             drop(read);
@@ -301,7 +301,7 @@ impl<'gc> Video<'gc> {
     /// This function makes no attempt to ensure that the proposed seek is
     /// valid, hence the fact that it's not `pub`. To do a seek that accounts
     /// for keyframes, see `Video.seek`.
-    fn seek_internal(self, context: &mut UpdateContext<'_, 'gc>, frame_id: u32) {
+    fn seek_internal(self, context: &mut UpdateContext<'gc>, frame_id: u32) {
         let read = self.0.read();
         let source = read.source;
         let stream = if let VideoStream::Instantiated(stream) = &read.stream {
@@ -371,7 +371,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
 
     fn post_instantiation(
         &self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
         run_frame: bool,
@@ -470,10 +470,10 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         }
     }
 
-    fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
+    fn construct_frame(&self, context: &mut UpdateContext<'gc>) {
         if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
             let video_constr = context.avm2.classes().video;
-            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let mut activation = Avm2Activation::from_nothing(context);
             let size = self.0.read().size;
             match Avm2StageObject::for_display_object_childless_with_args(
                 &mut activation,
@@ -573,7 +573,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         context.transform_stack.pop();
     }
 
-    fn set_object2(&self, context: &mut UpdateContext<'_, 'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
         self.0.write(context.gc_context).object = Some(to.into());
     }
 

@@ -87,7 +87,7 @@ impl<'gc> StageObject<'gc> {
 
     /// Clears all text field bindings from this stage object, and places the textfields on the unbound list.
     /// This is called when the object is removed from the stage.
-    pub fn unregister_text_field_bindings(self, context: &mut UpdateContext<'_, 'gc>) {
+    pub fn unregister_text_field_bindings(self, context: &mut UpdateContext<'gc>) {
         for binding in self
             .0
             .write(context.gc_context)

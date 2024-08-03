@@ -971,7 +971,7 @@ fn duplicate_movie_clip<'gc>(
 
 pub fn clone_sprite<'gc>(
     movie_clip: MovieClip<'gc>,
-    context: &mut UpdateContext<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
     target: AvmString<'gc>,
     depth: Depth,
     init_object: Option<Object<'gc>>,

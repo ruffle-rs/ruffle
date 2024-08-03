@@ -417,7 +417,7 @@ impl<'gc> Executable<'gc> {
 
         let max_recursion_depth = activation.context.avm1.max_recursion_depth();
         let mut frame = Activation::from_action(
-            activation.context.reborrow(),
+            activation.context,
             activation.id.function(name, reason, max_recursion_depth)?,
             swf_version,
             child_scope,

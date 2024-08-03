@@ -69,7 +69,7 @@ pub enum FramePhase {
 /// still be lurking bugs, but the current code matches Flash's
 /// output exactly for two complex test cases (see `avm2/orphan_movie*`)
 #[instrument(level = "debug", skip_all)]
-pub fn run_all_phases_avm2(context: &mut UpdateContext<'_, '_>) {
+pub fn run_all_phases_avm2(context: &mut UpdateContext<'_>) {
     let stage = context.stage;
 
     if !stage.movie().is_action_script_3() {
@@ -120,7 +120,7 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_, '_>) {
 /// cause frame construction to get run for the *current frame* of other objects on the timeline
 /// (even if the goto was called from an enterFrame event handler).
 pub fn run_inner_goto_frame<'gc>(
-    context: &mut UpdateContext<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
     removed_frame_scripts: &[DisplayObject<'gc>],
     initial_clip: MovieClip<'gc>,
 ) {
@@ -189,7 +189,7 @@ pub fn run_inner_goto_frame<'gc>(
 ///
 /// This is a no-op on AVM1, which has it's own catch-up logic.
 pub fn catchup_display_object_to_frame<'gc>(
-    context: &mut UpdateContext<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
     dobj: DisplayObject<'gc>,
 ) {
     if !dobj.movie().is_action_script_3() {

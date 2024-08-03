@@ -128,7 +128,7 @@ impl<'gc> Avm1<'gc> {
         active_clip: DisplayObject<'gc>,
         name: S,
         code: SwfSlice,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
     ) {
         if context.avm1.halted {
             // We've been told to ignore all future execution.
@@ -136,7 +136,7 @@ impl<'gc> Avm1<'gc> {
         }
 
         let mut parent_activation = Activation::from_nothing(
-            context.reborrow(),
+            context,
             ActivationIdentifier::root("[Actions Parent]"),
             active_clip,
         );
@@ -155,7 +155,7 @@ impl<'gc> Avm1<'gc> {
         let constant_pool = parent_activation.context.avm1.constant_pool;
         let child_name = parent_activation.id.child(name);
         let mut child_activation = Activation::from_action(
-            parent_activation.context.reborrow(),
+            parent_activation.context,
             child_name,
             active_clip.swf_version(),
             child_scope,
@@ -174,7 +174,7 @@ impl<'gc> Avm1<'gc> {
     /// This creates a new frame stack.
     pub fn run_with_stack_frame_for_display_object<'a, F, R>(
         active_clip: DisplayObject<'gc>,
-        action_context: &mut UpdateContext<'_, 'gc>,
+        action_context: &mut UpdateContext<'gc>,
         function: F,
     ) -> R
     where
@@ -194,7 +194,7 @@ impl<'gc> Avm1<'gc> {
         );
         let constant_pool = action_context.avm1.constant_pool;
         let mut activation = Activation::from_action(
-            action_context.reborrow(),
+            action_context,
             ActivationIdentifier::root("[Display Object]"),
             active_clip.swf_version(),
             child_scope,
@@ -212,7 +212,7 @@ impl<'gc> Avm1<'gc> {
     pub fn run_stack_frame_for_init_action(
         active_clip: DisplayObject<'gc>,
         code: SwfSlice,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
     ) {
         if context.avm1.halted {
             // We've been told to ignore all future execution.
@@ -220,7 +220,7 @@ impl<'gc> Avm1<'gc> {
         }
 
         let mut parent_activation = Activation::from_nothing(
-            context.reborrow(),
+            context,
             ActivationIdentifier::root("[Init Parent]"),
             active_clip,
         );
@@ -240,7 +240,7 @@ impl<'gc> Avm1<'gc> {
         let constant_pool = parent_activation.context.avm1.constant_pool;
         let child_name = parent_activation.id.child("[Init]");
         let mut child_activation = Activation::from_action(
-            parent_activation.context.reborrow(),
+            parent_activation.context,
             child_name,
             active_clip.swf_version(),
             child_scope,
@@ -258,10 +258,10 @@ impl<'gc> Avm1<'gc> {
     /// method, such as an event handler.
     ///
     /// This creates a new frame stack.
-    pub fn run_stack_frame_for_method<'a, 'b>(
+    pub fn run_stack_frame_for_method(
         active_clip: DisplayObject<'gc>,
         obj: Object<'gc>,
-        context: &'a mut UpdateContext<'b, 'gc>,
+        context: &mut UpdateContext<'gc>,
         name: AvmString<'gc>,
         args: &[Value<'gc>],
     ) {
@@ -271,7 +271,7 @@ impl<'gc> Avm1<'gc> {
         }
 
         let mut activation = Activation::from_nothing(
-            context.reborrow(),
+            context,
             ActivationIdentifier::root(name.to_string()),
             active_clip,
         );
@@ -281,13 +281,13 @@ impl<'gc> Avm1<'gc> {
 
     pub fn notify_system_listeners(
         active_clip: DisplayObject<'gc>,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         broadcaster_name: AvmString<'gc>,
         method: AvmString<'gc>,
         args: &[Value<'gc>],
     ) {
         let mut activation = Activation::from_nothing(
-            context.reborrow(),
+            context,
             ActivationIdentifier::root("[System Listeners]"),
             active_clip,
         );
@@ -434,7 +434,7 @@ impl<'gc> Avm1<'gc> {
 
     /// Remove all display objects pending removal
     /// See [`find_display_objects_pending_removal`] for details
-    fn remove_pending(context: &mut UpdateContext<'_, 'gc>) {
+    fn remove_pending(context: &mut UpdateContext<'gc>) {
         // Storage for objects to remove
         // Have to do this in two passes to avoid borrow-mut while already borrowed
         let mut out = Vec::new();
@@ -461,7 +461,7 @@ impl<'gc> Avm1<'gc> {
 
     // Run a single frame.
     #[instrument(level = "debug", skip_all)]
-    pub fn run_frame(context: &mut UpdateContext<'_, 'gc>) {
+    pub fn run_frame(context: &mut UpdateContext<'gc>) {
         // Remove pending objects
         Self::remove_pending(context);
 
