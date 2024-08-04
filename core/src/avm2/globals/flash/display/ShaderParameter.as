@@ -12,11 +12,19 @@ package flash.display {
             return this._type;
         }
         public function get value():Array {
-            return this._value.concat();
+            if (this._value) {
+                return this._value.concat();
+            }
+            return null;
         }
         public function set value(value:Array):void {
             // FIXME - perform validation
-            this._value = value.concat();
+            if (value) {
+                this._value = value.concat();
+            } else {
+                this._value = null;
+            }
+
         }
     }
 }

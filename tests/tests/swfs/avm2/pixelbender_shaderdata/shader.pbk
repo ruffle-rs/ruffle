@@ -5,7 +5,7 @@
          namespace: "Adobe::Example";
          vendor: "Adobe examples";
          version: 1;
-         description: "A shader that does nothing, but does it well.";
+         description: "My new shader that does nothing, but does it well.";
      >
      {
 
@@ -30,12 +30,26 @@
              defaultValue: 25.0;
          >;
          
+        parameter float noDefault
+         <
+             description: "Float Param with no default";
+             minValue: 3.1;
+             maxValue: 4.2;
+         >;
+         
+        parameter float noDefault2
+         <
+             description: "Float2 Param with no default";
+             minValue: 3.1;
+             maxValue: 4.2;
+         >;
+         
          input image4 otherSrc;
      
          void evaluatePixel()
          {
-             float2 one = (radius / radius) * (size / size);
-             float4 two = sampleLinear(otherSrc, float2(1.0, 2.0));
+             float2 one = (radius / radius) * (size / size) + noDefault2;
+             float4 two = sampleLinear(otherSrc, float2(1.0, noDefault));
              dst = sampleNearest(src, outCoord()) + float4(100.0, 0.0, 100.0, 1.0);
          }
      }
