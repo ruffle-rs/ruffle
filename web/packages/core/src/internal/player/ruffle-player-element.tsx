@@ -8,7 +8,7 @@ import { Player } from "../../public/player";
  *
  * This element will represent the rendered and intractable flash movie.
  */
-export class RufflePlayer extends HTMLElement implements Player {
+export class RufflePlayerElement extends HTMLElement implements Player {
     #inner: InnerPlayer;
 
     get onFSCommand(): ((command: string, args: string) => boolean) | null {
