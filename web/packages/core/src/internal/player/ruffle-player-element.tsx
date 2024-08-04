@@ -42,6 +42,10 @@ export class RufflePlayerElement extends HTMLElement implements Player {
         );
     }
 
+    get loadedConfig(): URLLoadOptions | DataLoadOptions | null {
+        return this.#inner.loadedConfig ?? null;
+    }
+
     connectedCallback(): void {
         this.#inner.updateStyles();
     }

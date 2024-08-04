@@ -26,6 +26,12 @@ export interface LegacyRuffleAPI {
     config: URLLoadOptions | DataLoadOptions | object;
 
     /**
+     * The effective config loaded with the last call to `load()`.
+     * If no such call has been made, this will be `null`.
+     */
+    readonly loadedConfig: URLLoadOptions | DataLoadOptions | null;
+
+    /**
      * Indicates the readiness of the playing movie.
      *
      * @returns The `ReadyState` of the player.

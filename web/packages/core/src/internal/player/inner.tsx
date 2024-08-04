@@ -165,7 +165,7 @@ export class InnerPlayer {
     private _suppressContextMenu = false;
 
     // The effective config loaded upon `.load()`.
-    private loadedConfig?: URLLoadOptions | DataLoadOptions;
+    public loadedConfig?: URLLoadOptions | DataLoadOptions;
 
     private swfUrl?: URL;
     private instance: RuffleHandle | null;
