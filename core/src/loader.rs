@@ -2185,7 +2185,7 @@ impl<'gc> Loader<'gc> {
                     Loader::preload_tick(
                         handle,
                         uc,
-                        &mut ExecutionLimit::with_max_ops_and_time(10000, Duration::from_millis(1)),
+                        &mut ExecutionLimit::with_max_ops(10000),
                         status,
                         redirected,
                     )?;

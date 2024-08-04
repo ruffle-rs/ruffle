@@ -1857,16 +1857,9 @@ impl Player {
 
     #[instrument(level = "debug", skip_all)]
     pub fn run_frame(&mut self) {
-        let frame_time = Duration::from_nanos((750_000_000.0 / self.frame_rate) as u64);
         let (mut execution_limit, may_execute_while_streaming) = match self.load_behavior {
-            LoadBehavior::Streaming => (
-                ExecutionLimit::with_max_ops_and_time(10000, frame_time),
-                true,
-            ),
-            LoadBehavior::Delayed => (
-                ExecutionLimit::with_max_ops_and_time(10000, frame_time),
-                false,
-            ),
+            LoadBehavior::Streaming => (ExecutionLimit::with_max_ops(10000), true),
+            LoadBehavior::Delayed => (ExecutionLimit::with_max_ops(10000), false),
             LoadBehavior::Blocking => (ExecutionLimit::none(), false),
         };
         let preload_finished = self.preload(&mut execution_limit);
