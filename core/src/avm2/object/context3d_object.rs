@@ -8,7 +8,6 @@ use crate::avm2::Error;
 use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::context::RenderContext;
-use gc_arena::barrier::unlock;
 use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, GcCell, GcWeak, Mutation};
 use ruffle_render::backend::{
@@ -17,7 +16,7 @@ use ruffle_render::backend::{
     Texture,
 };
 use ruffle_render::commands::CommandHandler;
-use std::cell::{Cell, Ref, RefMut};
+use std::cell::Cell;
 use std::rc::Rc;
 use swf::{Rectangle, Twips};
 

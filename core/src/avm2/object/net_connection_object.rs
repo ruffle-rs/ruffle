@@ -6,10 +6,9 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::net_connection::NetConnectionHandle;
-use gc_arena::barrier::unlock;
 use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
-use std::cell::{Cell, Ref, RefMut};
+use std::cell::Cell;
 use std::fmt;
 use std::fmt::Debug;
 

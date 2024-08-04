@@ -18,7 +18,6 @@ use gc_arena::{
     Collect, Gc, GcWeak, Mutation,
 };
 use ruffle_wstr::WString;
-use std::cell::{Ref, RefMut};
 
 use super::xml_list_object::{E4XOrXml, XmlOrXmlListObject};
 use super::PrimitiveObject;

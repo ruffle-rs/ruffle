@@ -18,7 +18,7 @@ use gc_arena::{
     lock::{Lock, RefLock},
     Collect, Gc, GcWeak, Mutation,
 };
-use std::cell::{Cell, Ref, RefMut};
+use std::cell::{Cell, Ref};
 use std::sync::Arc;
 
 /// ActionScript cannot construct a LoaderInfo. Note that LoaderInfo isn't a final class.

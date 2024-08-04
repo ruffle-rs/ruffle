@@ -9,7 +9,7 @@ use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
-use std::cell::{Cell, Ref, RefMut};
+use std::cell::Cell;
 
 /// A class instance allocator that allocates Stage3D objects.
 pub fn stage_3d_allocator<'gc>(

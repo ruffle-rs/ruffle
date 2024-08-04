@@ -4,9 +4,7 @@ use crate::avm2::value::Value;
 use crate::avm2::{Activation, ClassObject, Error};
 use crate::character::Character;
 use crate::font::Font;
-use gc_arena::barrier::unlock;
 use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
-use std::cell::{Ref, RefMut};
 use std::fmt;
 
 /// A class instance allocator that allocates Font objects.

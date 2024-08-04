@@ -6,11 +6,10 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use core::fmt;
-use gc_arena::barrier::unlock;
 use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
-use std::cell::{Cell, Ref, RefMut};
+use std::cell::Cell;
 
 /// A class instance allocator that allocates ShaderData objects.
 pub fn shader_data_allocator<'gc>(

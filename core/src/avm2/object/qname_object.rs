@@ -11,7 +11,7 @@ use crate::avm2::Namespace;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
-use std::cell::{Ref, RefMut};
+use std::cell::Ref;
 
 /// A class instance allocator that allocates QName objects.
 pub fn q_name_allocator<'gc>(

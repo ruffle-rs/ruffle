@@ -12,7 +12,6 @@ use gc_arena::{
     lock::{Lock, RefLock},
     Collect, Gc, GcWeak, Mutation,
 };
-use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates BitmapData objects.
 pub fn bitmap_data_allocator<'gc>(
