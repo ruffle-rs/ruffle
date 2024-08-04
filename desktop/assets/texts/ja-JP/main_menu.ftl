@@ -36,3 +36,5 @@ debug-menu-open-movie = 映像情報
 debug-menu-open-movie-list = 既存の映像情報
 debug-menu-open-domain-list = ドメインを表示
 debug-menu-search-display-objects = 表示オブジェクトを検索...
+view-menu = 表示
+view-menu-fullscreen = フルスクリーン

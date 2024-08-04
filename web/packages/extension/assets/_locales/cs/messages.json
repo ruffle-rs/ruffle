@@ -109,5 +109,8 @@
     },
     "permissions_explanation": {
         "message": "Rozšíření Ruffle funguje nejlépe s možností přístupu k údajům na všech webových stránkách. To mu umožňuje spustit se při prvním načtení jakékoli webové stránky a zároveň přesvědčit webové stránky, které zjišťují přítomnost Flash přehrávače, aby spustily obsah Flash. Poskytuje také možnost načíst soubory SWF do interní stránky přehrávače z jiných umístění na webu. Pokud toto povolení neudělíte, budete muset Ruffle povolit manuálně na každé webové stránce, na které jej chcete používat, a to kliknutím na ikonu rozšíření a jeho povolením pro danou webovou stránku."
+    },
+    "swf_player_permissions": {
+        "message": "Chcete-li z této URL adresy načíst soubory typu SWF, musíte jí udělit oprávnění."
     }
 }

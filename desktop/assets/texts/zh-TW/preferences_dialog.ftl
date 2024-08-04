@@ -19,3 +19,7 @@ storage-backend-disk = 硬碟
 storage-backend-memory = 記憶體
 recent-limit = 最近上限
 recent-clear = 清除
+theme = 主題
+theme-system = 系統預設
+theme-light = 明亮
+theme-dark = 黑暗

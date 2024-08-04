@@ -36,3 +36,5 @@ debug-menu-open-movie = عرض الفيلم
 debug-menu-open-movie-list = عرض الأفلام المعروفة
 debug-menu-open-domain-list = إظهار النطاقات
 debug-menu-search-display-objects = البحث عن عناصر العرض...
+view-menu = عرض
+view-menu-fullscreen = ملء الشاشة

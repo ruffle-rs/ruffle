@@ -19,3 +19,7 @@ storage-backend-disk = القرص
 storage-backend-memory = الذاكرة
 recent-limit = حد الملفات الحديثة
 recent-clear = مسح
+theme = السمة
+theme-system = الإعدادات الإفتراضية
+theme-light = فاتح
+theme-dark = داكن

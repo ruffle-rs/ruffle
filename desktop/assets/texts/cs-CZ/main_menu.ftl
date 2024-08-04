@@ -36,3 +36,5 @@ debug-menu-open-movie = Zobrazit film
 debug-menu-open-movie-list = Zobrazit známé filmy
 debug-menu-open-domain-list = Zobrazit domény
 debug-menu-search-display-objects = Prohledat zobrazení objektů...
+view-menu = Zobrazení
+view-menu-fullscreen = Celá obrazovka
