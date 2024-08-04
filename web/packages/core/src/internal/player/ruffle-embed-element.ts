@@ -1,4 +1,4 @@
-import { copyElement, RufflePlayer } from "./ruffle-player";
+import { copyElement, RufflePlayerElement } from "./ruffle-player-element";
 import {
     getPolyfillOptions,
     isFallbackElement,
@@ -16,7 +16,7 @@ import { isSwf } from "../../swf-utils";
  *
  * @internal
  */
-export class RuffleEmbed extends RufflePlayer {
+export class RuffleEmbedElement extends RufflePlayerElement {
     /**
      * @ignore
      * @internal
@@ -136,9 +136,14 @@ export class RuffleEmbed extends RufflePlayer {
      * @param elem Element to replace.
      * @returns Created RuffleEmbed.
      */
-    static fromNativeEmbedElement(elem: Element): RuffleEmbed {
-        const externalName = registerElement("ruffle-embed", RuffleEmbed);
-        const ruffleObj = document.createElement(externalName) as RuffleEmbed;
+    static fromNativeEmbedElement(elem: Element): RuffleEmbedElement {
+        const externalName = registerElement(
+            "ruffle-embed",
+            RuffleEmbedElement,
+        );
+        const ruffleObj = document.createElement(
+            externalName,
+        ) as RuffleEmbedElement;
         copyElement(elem, ruffleObj);
 
         return ruffleObj;

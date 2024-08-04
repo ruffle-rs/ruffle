@@ -1,6 +1,6 @@
 import { pluginPolyfill, polyfill } from "./polyfills";
 import { registerElement } from "./internal/register-element";
-import { RufflePlayer } from "./internal/player/ruffle-player";
+import { RufflePlayerElement } from "./internal/player/ruffle-player-element";
 import { buildInfo } from "./build-info";
 import { InstallationOptions } from "./install";
 import { Player } from "./public/player";
@@ -78,8 +78,8 @@ export const internalSourceApi = {
      * into the current page as you wish.
      */
     createPlayer(): Player {
-        const name = registerElement("ruffle-player", RufflePlayer);
-        return document.createElement(name) as RufflePlayer;
+        const name = registerElement("ruffle-player", RufflePlayerElement);
+        return document.createElement(name) as RufflePlayerElement;
     },
 
     /**

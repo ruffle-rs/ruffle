@@ -1,5 +1,5 @@
-import { RuffleObject } from "./internal/player/ruffle-object";
-import { RuffleEmbed } from "./internal/player/ruffle-embed";
+import { RuffleObjectElement } from "./internal/player/ruffle-object-element";
+import { RuffleEmbedElement } from "./internal/player/ruffle-embed-element";
 import { installPlugin, FLASH_PLUGIN } from "./plugin-polyfill";
 import { publicPath } from "./public-path";
 import type { DataLoadOptions, URLLoadOptions } from "./load-options";
@@ -48,14 +48,16 @@ function polyfillFlashInstances(): void {
 
         // Replace <object> first, because <object> often wraps <embed>.
         for (const elem of Array.from(objects)) {
-            if (RuffleObject.isInterdictable(elem)) {
-                const ruffleObject = RuffleObject.fromNativeObjectElement(elem);
+            if (RuffleObjectElement.isInterdictable(elem)) {
+                const ruffleObject =
+                    RuffleObjectElement.fromNativeObjectElement(elem);
                 elem.replaceWith(ruffleObject);
             }
         }
         for (const elem of Array.from(embeds)) {
-            if (RuffleEmbed.isInterdictable(elem)) {
-                const ruffleEmbed = RuffleEmbed.fromNativeEmbedElement(elem);
+            if (RuffleEmbedElement.isInterdictable(elem)) {
+                const ruffleEmbed =
+                    RuffleEmbedElement.fromNativeEmbedElement(elem);
                 elem.replaceWith(ruffleEmbed);
             }
         }
