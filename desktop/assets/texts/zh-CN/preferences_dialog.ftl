@@ -19,3 +19,7 @@ storage-backend-disk = 磁盘
 storage-backend-memory = 内存
 recent-limit = 最近播放数量上限
 recent-clear = 清空
+theme = 主题
+theme-system = 系统默认
+theme-light = 浅色
+theme-dark = 深色

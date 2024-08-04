@@ -19,3 +19,7 @@ storage-backend-disk = Disk
 storage-backend-memory = Paměť
 recent-limit = Limit pro nedávné položky
 recent-clear = Vymazat
+theme = Téma
+theme-system = Výchozí systému
+theme-light = Světlá
+theme-dark = Tmavá

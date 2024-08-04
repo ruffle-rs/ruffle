@@ -36,3 +36,5 @@ debug-menu-open-movie = 查看影片
 debug-menu-open-movie-list = 显示已知影片
 debug-menu-open-domain-list = 显示域
 debug-menu-search-display-objects = 搜索显示对象...
+view-menu = 查看
+view-menu-fullscreen = 全屏

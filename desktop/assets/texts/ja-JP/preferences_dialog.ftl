@@ -19,3 +19,7 @@ storage-backend-disk = ディスク
 storage-backend-memory = メモリ
 recent-limit = 履歴の保存上限
 recent-clear = クリア
+theme = テーマ
+theme-system = システムのデフォルト
+theme-light = ライト
+theme-dark = ダーク
