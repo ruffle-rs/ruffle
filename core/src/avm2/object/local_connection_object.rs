@@ -9,9 +9,8 @@ use crate::local_connection::{LocalConnectionHandle, LocalConnections};
 use crate::string::AvmString;
 use core::fmt;
 use flash_lso::types::Value as AmfValue;
-use gc_arena::barrier::unlock;
 use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
-use std::cell::{Ref, RefCell, RefMut};
+use std::cell::RefCell;
 
 /// A class instance allocator that allocates LocalConnection objects.
 pub fn local_connection_allocator<'gc>(

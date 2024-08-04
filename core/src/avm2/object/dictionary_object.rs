@@ -10,7 +10,6 @@ use crate::string::AvmString;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
-use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates Dictionary objects.
 pub fn dictionary_allocator<'gc>(

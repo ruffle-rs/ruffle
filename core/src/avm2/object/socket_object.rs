@@ -4,10 +4,9 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{Activation, Error};
 use crate::socket::SocketHandle;
-use gc_arena::barrier::unlock;
 use gc_arena::{lock::RefLock, Collect, Gc};
 use gc_arena::{GcWeak, Mutation};
-use std::cell::{Cell, Ref, RefCell, RefMut};
+use std::cell::{Cell, RefCell, RefMut};
 use std::fmt;
 
 /// A class instance allocator that allocates ShaderData objects.

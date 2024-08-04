@@ -12,7 +12,6 @@ use gc_arena::{
     lock::{Lock, RefLock},
     Collect, Gc, GcWeak, Mutation,
 };
-use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates AppDomain objects.
 pub fn application_domain_allocator<'gc>(

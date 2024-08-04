@@ -3,10 +3,9 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{Activation, Error};
 use crate::backend::ui::FileDialogResult;
-use gc_arena::barrier::unlock;
 use gc_arena::{lock::RefLock, Collect, Gc};
 use gc_arena::{GcWeak, Mutation};
-use std::cell::{Cell, Ref, RefCell, RefMut};
+use std::cell::{Cell, Ref, RefCell};
 use std::fmt;
 
 pub fn file_reference_allocator<'gc>(

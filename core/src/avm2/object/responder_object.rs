@@ -10,7 +10,6 @@ use gc_arena::{
     lock::{Lock, RefLock},
     Collect, Gc, GcWeak, Mutation,
 };
-use std::cell::{Ref, RefMut};
 use std::fmt;
 
 /// A class instance allocator that allocates Responder objects.

@@ -11,7 +11,6 @@ use crate::avm2::Multiname;
 use crate::avm2::{Error, QName};
 use crate::string::AvmString;
 use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
-use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 
 /// A class instance allocator that allocates `ScriptObject`s.

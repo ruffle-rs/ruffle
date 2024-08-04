@@ -18,7 +18,6 @@ use gc_arena::{
     Collect, Gc, GcWeak, Mutation,
 };
 use id3::{Tag, TagLike};
-use std::cell::{Ref, RefMut};
 use std::io::Cursor;
 use swf::SoundInfo;
 

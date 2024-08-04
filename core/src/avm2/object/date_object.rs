@@ -5,10 +5,9 @@ use crate::avm2::value::{Hint, Value};
 use crate::avm2::Error;
 use chrono::{DateTime, Utc};
 use core::fmt;
-use gc_arena::barrier::unlock;
 use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
-use std::cell::{Cell, Ref, RefMut};
+use std::cell::Cell;
 
 /// A class instance allocator that allocates Date objects.
 pub fn date_allocator<'gc>(

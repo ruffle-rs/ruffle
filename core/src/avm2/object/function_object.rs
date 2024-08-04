@@ -14,7 +14,7 @@ use gc_arena::{
     lock::{Lock, RefLock},
     Collect, Gc, GcCell, GcWeak, Mutation,
 };
-use std::cell::{Ref, RefMut};
+use std::cell::Ref;
 
 /// A class instance allocator that allocates Function objects.
 /// This is only used when ActionScript manually calls 'new Function()',

@@ -13,7 +13,6 @@ use gc_arena::{
     lock::{Lock, RefLock},
     Collect, Gc, GcWeak, Mutation,
 };
-use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates namespace objects.
 pub fn namespace_allocator<'gc>(

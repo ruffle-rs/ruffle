@@ -5,11 +5,10 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::barrier::unlock;
 use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_render::backend::ShaderModule;
-use std::cell::{Ref, RefCell, RefMut};
+use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::Context3DObject;
