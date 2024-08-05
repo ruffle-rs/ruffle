@@ -841,7 +841,8 @@ export class InnerPlayer {
     }
 
     /**
-     * Reloads the player, as if you called {@link RufflePlayer.load} with the same config as the last time it was called.
+     * Reloads the player, as if you called {@link RufflePlayer.load} with a similar config as the last time it was called,
+     * but possibly changed if `window.RufflePlayer.config` or `window.RufflePlayer.extensionConfig` has since changed.
      *
      * If this player has never been loaded, this method will return an error.
      */
