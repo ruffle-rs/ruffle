@@ -63,6 +63,7 @@ flate2 = "1.0.30"
 futures = "0.3.30"
 image = { version = "0.25.2", default-features = false }
 js-sys = "0.3.69"
+web-sys = "0.3.69"
 log = "0.4"
 num-derive = "0.4.2"
 num-traits = "0.2.19"
