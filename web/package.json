@@ -23,18 +23,18 @@
         "cross-env": "^7.0.3",
         "eslint": "^9.8.0",
         "eslint-config-prettier": "^9.1.0",
-        "eslint-plugin-jsdoc": "^48.9.2",
+        "eslint-plugin-jsdoc": "^48.11.0",
         "eslint-plugin-prettier": "^5.2.1",
         "eslint-plugin-react-hooks": "^5.1.0-rc.0",
         "eslint-plugin-react-refresh": "^0.4.9",
-        "globals": "^15.8.0",
+        "globals": "^15.9.0",
         "mocha": "^10.7.0",
         "prettier": "^3.3.3",
-        "stylelint": "^16.8.0",
+        "stylelint": "^16.8.1",
         "stylelint-config-standard": "^36.0.1",
         "stylelint-prettier": "^5.0.2",
         "ts-loader": "^9.5.1",
-        "tsx": "^4.16.2",
+        "tsx": "^4.16.5",
         "typescript": "^5.5.4",
         "typescript-eslint": "^8.0.0-alpha.58",
         "wdio-chromedriver-service": "^8.1.1",
@@ -45,7 +45,7 @@
         "webpack-cli": "^5.1.4"
     },
     "optionalDependencies": {
-        "chromedriver": "^127.0.0"
+        "chromedriver": "^127.0.1"
     },
     "scripts": {
         "build": "npm run build --workspace=ruffle-core && npm run build --workspace=ruffle-demo --workspace=ruffle-extension --workspace=ruffle-selfhosted",
