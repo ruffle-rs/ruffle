@@ -9,15 +9,16 @@ use swf::{Rectangle, Twips};
 
 use wgpu::util::StagingBelt;
 use wgpu::{
-    BindGroup, BufferDescriptor, BufferUsages, TextureDescriptor, TextureDimension, TextureFormat,
-    TextureUsages, TextureView, COPY_BUFFER_ALIGNMENT, COPY_BYTES_PER_ROW_ALIGNMENT,
+    BindGroup, BufferDescriptor, BufferUsages, ImageCopyTexture, TextureDescriptor,
+    TextureDimension, TextureFormat, TextureUsages, TextureView, COPY_BUFFER_ALIGNMENT,
+    COPY_BYTES_PER_ROW_ALIGNMENT,
 };
 use wgpu::{CommandEncoder, Extent3d, RenderPass};
 
 use crate::context3d::current_pipeline::{BoundTextureData, AGAL_FLOATS_PER_REGISTER};
 use crate::descriptors::Descriptors;
 use crate::utils::supported_sample_count;
-use crate::Texture;
+use crate::{as_texture, Texture};
 
 use std::num::NonZeroU64;
 use std::rc::Rc;
@@ -1004,6 +1005,63 @@ impl Context3D for WgpuContext3D {
                 self.current_pipeline.set_culling(face);
             }
             Context3DCommand::CopyBitmapToTexture {
+                source,
+                dest,
+                layer,
+            } => {
+                let dest = dest.as_any().downcast_ref::<TextureWrapper>().unwrap();
+                let dest = &dest.texture;
+
+                if dest.format() != wgpu::TextureFormat::Rgba8Unorm {
+                    unimplemented!("Trying to copy to texture format {:?}", dest.format());
+                }
+
+                let source_texture = as_texture(&source);
+
+                self.buffer_command_encoder.copy_texture_to_texture(
+                    ImageCopyTexture {
+                        texture: &source_texture.texture,
+                        mip_level: 0,
+                        origin: wgpu::Origin3d::ZERO,
+                        aspect: wgpu::TextureAspect::All,
+                    },
+                    ImageCopyTexture {
+                        texture: dest,
+                        mip_level: 0,
+                        origin: wgpu::Origin3d {
+                            x: 0,
+                            y: 0,
+                            z: layer,
+                        },
+                        aspect: wgpu::TextureAspect::All,
+                    },
+                    Extent3d {
+                        width: source_texture.texture.width(),
+                        height: source_texture.texture.height(),
+                        depth_or_array_layers: 1,
+                    },
+                );
+
+                // Immediately flush the texture copy command (and any other pending commands). In the future, we could consider
+                // making BitmapData track if any Stage3D textures depend on the gpu buffer state,
+                // and delaying the flush until just before we perform a CPU -> GPU sync.
+                //
+                // This does not change the order of our Stage3D gpu commands since we always flush
+                // our buffer command encoder before executing drawTriangles.
+                self.buffer_staging_belt.finish();
+                let new_encoder = self.descriptors.device.create_command_encoder(
+                    &wgpu::CommandEncoderDescriptor {
+                        label: create_debug_label!("Buffer command encoder").as_deref(),
+                    },
+                );
+                let finished_buffer_command_encoder =
+                    std::mem::replace(&mut self.buffer_command_encoder, new_encoder);
+                self.descriptors
+                    .queue
+                    .submit([finished_buffer_command_encoder.finish()]);
+                self.buffer_staging_belt.recall();
+            }
+            Context3DCommand::CopyBytesToTexture {
                 mut source,
                 source_width,
                 source_height,
@@ -1012,11 +1070,6 @@ impl Context3D for WgpuContext3D {
             } => {
                 let dest = dest.as_any().downcast_ref::<TextureWrapper>().unwrap();
 
-                // Unfortunately, we need to copy from the CPU data, rather than using the GPU texture.
-                // The GPU side of a BitmapData can be updated at any time from non-Stage3D code.
-                // If we were to use `self.buffer_command_encoder.copy_texture_to_texture`, the
-                // BitmapData's gpu texture might be modified before we actually submit
-                // `buffer_command_encoder` to the device.
                 let dest_format = dest.texture.format();
                 let mut bytes_per_row = dest_format.block_copy_size(None).unwrap()
                     * (source_width / dest_format.block_dimensions().0);
