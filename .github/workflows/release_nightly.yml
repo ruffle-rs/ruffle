@@ -327,8 +327,7 @@ jobs:
       - name: Install node packages
         working-directory: web
         shell: bash -l {0}
-        run: |
-          npm ci
+        run: npm ci
 
       - name: Seal version data
         shell: bash -l {0}
@@ -451,6 +450,19 @@ jobs:
           client-id: ${{ secrets.EDGE_CLIENT_ID }}
           client-secret: ${{ secrets.EDGE_CLIENT_SECRET }}
           access-token-url: ${{ secrets.EDGE_ACCESS_TOKEN_URL }}
+
+      - name: Publish Firefox extension
+        if: env.FIREFOX_EXTENSION_ID != '' && !matrix.demo
+        id: publish-firefox-extension
+        continue-on-error: true
+        env:
+          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
+          MOZILLA_API_KEY: ${{ secrets.MOZILLA_API_KEY }}
+          MOZILLA_API_SECRET: ${{ secrets.MOZILLA_API_SECRET }}
+          SOURCE_TAG: ${{ needs.create-nightly-release.outputs.tag_name }}
+        working-directory: web/packages/extension
+        shell: bash -l {0}
+        run: npm run sign-firefox
 
       - name: Clone web demo
         if: matrix.demo
