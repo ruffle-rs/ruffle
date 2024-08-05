@@ -1,6 +1,11 @@
+use chrono::Datelike;
 use std::env;
 use std::error::Error;
 use vergen::EmitBuilder;
+use winresource::{VersionInfo, WindowsResource};
+
+const DEBUG_FILE_FLAG: u64 = 0x01;
+const ENGLISH_LANG_ID: u16 = 0x0009;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Emit version info, and "rerun-if-changed" for relevant files, including build.rs
@@ -12,10 +17,36 @@ fn main() -> Result<(), Box<dyn Error>> {
         .git_commit_date()
         .emit()?;
 
-    // Embed resource file w/ icon on windows
-    // To allow for cross-compilation, this must not be behind cfg(windows)!
-    println!("cargo:rerun-if-changed=packaging/Windows/ruffle_desktop.rc");
-    embed_resource::compile("packaging/Windows/ruffle_desktop.rc", embed_resource::NONE);
+    // Embed metadata file for Windows
+    // To allow for cross-compilation, we need to use env::var as cgf!(target_os == "windows")
+    // doesn't work in build.rs files
+    if env::var("CARGO_CFG_TARGET_OS").unwrap() == "windows" {
+        let current_year = chrono::Local::now().year();
+        let mut resource = WindowsResource::new();
+        // The version number is set automatically
+        // TODO Update languages when https://github.com/BenjaminRi/winresource/issues/20
+        // has been resolved
+        resource
+            .set("ProductName", "Ruffle")
+            .set("FileDescription", "Ruffle")
+            .set("InternalName", "ruffle_desktop")
+            .set("OriginalFilename", "ruffle_desktop.exe")
+            .set(
+                "LegalCopyright",
+                &format!("Created by the Ruffle Team ({current_year})"),
+            )
+            .set("CompanyName", "The Ruffle Team")
+            .set_icon("packaging/Windows/favicon.ico")
+            .set_language(ENGLISH_LANG_ID);
+
+        if cfg!(debug_assertions) {
+            resource.set_version_info(VersionInfo::FILEFLAGS, DEBUG_FILE_FLAG);
+        }
+
+        resource
+            .compile()
+            .expect("The resource file must be compiled.");
+    }
 
     println!("cargo:rerun-if-env-changed=CFG_RELEASE_CHANNEL");
     let channel = channel();

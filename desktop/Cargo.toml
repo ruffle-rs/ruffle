@@ -58,7 +58,8 @@ zbus = "4.4.0"
 winapi = "0.3.9"
 
 [build-dependencies]
-embed-resource = "2"
+chrono = "0.4.38"
+winresource = "0.1.17"
 vergen = { version = "8.3.2", features = ["build", "git", "gitcl", "cargo"] }
 
 [features]
