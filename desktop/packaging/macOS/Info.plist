@@ -2,29 +2,64 @@
 <!DOCTYPE plist PUBLIC "-//Apple/DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleDevelopmentRegion</key>
-    <string>en</string>
-    <key>CFBundleDisplayName</key>
-    <string>Ruffle</string>
-    <key>CFBundleExecutable</key>
-    <string>ruffle</string>
-    <key>CFBundleIconFile</key>
-    <string>RuffleMacIcon</string>
-    <key>CFBundleIconName</key>
-    <string>RuffleMacIcon</string>
-    <key>CFBundleIdentifier</key>
-    <string>rs.ruffle.ruffle</string>
-    <key>CFBundleInfoDictionaryVersion</key>
-    <string>6.0</string>
-    <key>CFBundleName</key>
-    <string>Ruffle</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleSupportedPlatforms</key>
-    <array>
-        <string>MacOSX</string>
-    </array>
-    <key>NSAccentColorName</key>
-    <string>RuffleOrange</string>
+	<key>CFBundleIdentifier</key>
+	<string>rs.ruffle.ruffle</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleExecutable</key>
+	<string>ruffle</string>
+
+	<key>CFBundleName</key>
+	<string>Ruffle</string>
+	<key>CFBundleDisplayName</key>
+	<string>Ruffle</string>
+
+	<key>CFBundleVersion</key>
+	<string>{Version}</string>
+	<key>CFBundleShortVersionString</key>
+	<string>{Version}</string>
+
+	<key>CFBundleIconFile</key>
+	<string>RuffleMacIcon</string>
+	<key>CFBundleIconName</key>
+	<string>RuffleMacIcon</string>
+	<key>NSAccentColorName</key>
+	<string>RuffleOrange</string>
+
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>ar</string>
+		<string>ca</string>
+		<string>cs</string>
+		<string>de</string>
+		<string>es</string>
+		<string>fr</string>
+		<string>he</string>
+		<string>hu</string>
+		<string>id</string>
+		<string>it</string>
+		<string>ja</string>
+		<string>ko</string>
+		<string>nl</string>
+		<string>pl</string>
+		<string>pt</string>
+		<string>pt_BR</string>
+		<string>ro</string>
+		<string>ru</string>
+		<string>sk</string>
+		<string>sv</string>
+		<string>tr</string>
+		<string>uk</string>
+		<string>zh_CN</string>
+		<string>zh_TW</string>
+	</array>
+	<key>LSMinimumSystemVersion</key>
+	<string>{MinimumMacOSVersion}</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Created by the Ruffle Team ({CurrentYear})</string>
 </dict>
 </plist>
