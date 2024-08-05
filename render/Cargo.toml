@@ -31,7 +31,7 @@ num-traits = { workspace = true }
 num-derive = { workspace = true }
 byteorder = "1.5"
 wgpu = { workspace = true, optional = true }
-indexmap = "2.2.6"
+indexmap = "2.3.0"
 
 # This crate has a `compile_error!` on apple platforms
 [target.'cfg(not(target_vendor = "apple"))'.dependencies.renderdoc]

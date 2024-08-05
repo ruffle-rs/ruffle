@@ -23,9 +23,9 @@ image = { workspace = true }
 naga-agal = { path = "../naga-agal" }
 naga-pixelbender = { path = "../naga-pixelbender" }
 profiling = { version = "1.0", default-features = false, optional = true }
-lru = "0.12.3"
+lru = "0.12.4"
 naga = { workspace = true }
-indexmap = "2.2.6"
+indexmap = "2.3.0"
 
 # desktop
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
