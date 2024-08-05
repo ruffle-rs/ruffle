@@ -4,7 +4,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
     parse_macro_input, parse_quote, FnArg, ImplItem, ImplItemFn, ItemEnum, ItemTrait, Meta, Pat,
-    TraitItem, TraitItemFn, Visibility,
+    TraitItem, Visibility,
 };
 
 /// `enum_trait_object` will define an enum whose variants each implement a trait.
@@ -35,7 +35,7 @@ use syn::{
 #[proc_macro_attribute]
 pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
     // Parse the input.
-    let input_trait = parse_macro_input!(item as ItemTrait);
+    let mut input_trait = parse_macro_input!(item as ItemTrait);
     let trait_name = &input_trait.ident;
     let trait_generics = &input_trait.generics;
     let enum_input = parse_macro_input!(args as ItemEnum);
@@ -62,21 +62,38 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
     // to the underlying type.
     let trait_methods: Vec<_> = input_trait
         .items
-        .iter()
+        .iter_mut()
         .filter_map(|item| match item {
-            TraitItem::Fn(method) => {
+            TraitItem::Fn(ref mut method) => {
                 let method_name = &method.sig.ident;
 
-                let is_no_dynamic = method.attrs.iter().any(|attr| match &attr.meta {
-                    Meta::Path(path) => {
-                        if let Some(ident) = path.get_ident() {
-                            ident == "no_dynamic"
-                        } else {
-                            false
+                let mut is_no_dynamic = false;
+
+                let new_attrs = method
+                    .attrs
+                    .iter()
+                    .filter(|attr| match &attr.meta {
+                        Meta::Path(path) => {
+                            if let Some(ident) = path.get_ident() {
+                                if ident == "no_dynamic" {
+                                    is_no_dynamic = true;
+
+                                    // Remove the #[no_dynamic] attribute from the
+                                    // list of method attributes.
+                                    false
+                                } else {
+                                    true
+                                }
+                            } else {
+                                true
+                            }
                         }
-                    }
-                    _ => false,
-                });
+                        _ => true,
+                    })
+                    .map(|o| o.clone())
+                    .collect::<Vec<_>>();
+
+                method.attrs = new_attrs;
 
                 if is_no_dynamic {
                     // Don't create this method as a dynamic-dispatch method
@@ -162,17 +179,6 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
         }
 
         #(#from_impls)*
-    );
-
-    out.into()
-}
-
-#[proc_macro_attribute]
-pub fn no_dynamic(_args: TokenStream, item: TokenStream) -> TokenStream {
-    let input_fn = parse_macro_input!(item as TraitItemFn);
-
-    let out = quote!(
-        #input_fn
     );
 
     out.into()
