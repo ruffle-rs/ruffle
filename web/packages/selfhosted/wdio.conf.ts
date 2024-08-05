@@ -28,7 +28,6 @@ if (chrome) {
             args,
         },
     });
-    services.push("chromedriver");
 }
 
 if (edge) {
@@ -43,7 +42,6 @@ if (edge) {
             args,
         },
     });
-    services.push("edgedriver");
 }
 
 if (firefox) {
@@ -58,7 +56,6 @@ if (firefox) {
             args,
         },
     });
-    services.push("geckodriver");
 }
 
 if (browserstack) {
