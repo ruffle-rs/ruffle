@@ -14,8 +14,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Embed resource file w/ icon on windows
     // To allow for cross-compilation, this must not be behind cfg(windows)!
-    println!("cargo:rerun-if-changed=assets/ruffle_desktop.rc");
-    embed_resource::compile("assets/ruffle_desktop.rc", embed_resource::NONE);
+    println!("cargo:rerun-if-changed=packaging/Windows/ruffle_desktop.rc");
+    embed_resource::compile("packaging/Windows/ruffle_desktop.rc", embed_resource::NONE);
 
     println!("cargo:rerun-if-env-changed=CFG_RELEASE_CHANNEL");
     let channel = channel();

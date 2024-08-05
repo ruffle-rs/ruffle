@@ -48,4 +48,4 @@ FILESUBTYPE VFT2_UNKNOWN
 }
 
 #define IDI_ICON 0x101
-IDI_ICON ICON "assets/favicon.ico"
+IDI_ICON ICON "packaging/Windows/favicon.ico"
