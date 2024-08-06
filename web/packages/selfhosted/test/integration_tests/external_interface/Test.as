@@ -49,6 +49,13 @@
 					log("setMarshallExceptions called with " + repr(value));
 					ExternalInterface.marshallExceptions = value;
 				});
+				ExternalInterface.addCallback("addAnotherCallback", function(name: String, returnValue: *) {
+					log("addAnotherCallback called for " + repr(name) + " to return " + repr(returnValue));
+					ExternalInterface.addCallback(name, function() {
+					log(name + " called");
+						return returnValue;
+					});
+				});
 			} catch (e) {
 				log("Error adding callbacks: " + e);
 			}
