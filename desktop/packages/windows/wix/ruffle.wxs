@@ -110,7 +110,7 @@ http://wixtoolset.org/schemas/v4/wxs/util https://raw.githubusercontent.com/wixt
                 </Extension>
             </ProgId>
             <ProgId Id='Ruffle.ruf' Description='Ruffle Bundle' Icon="DesktopEXE" IconIndex="1">
-                <Extension Id='ruf' ContentType='application/x-ruffle-bundle'>
+                <Extension Id='ruf' ContentType='application/x.ruffle-bundle+zip'>
                     <Verb Id='open' Command='Open' TargetFile='DesktopEXE' Argument='"%1"'/>
                 </Extension>
             </ProgId>
@@ -144,7 +144,7 @@ http://wixtoolset.org/schemas/v4/wxs/util https://raw.githubusercontent.com/wixt
         <Feature
                 Id='Binaries'
                 Title='Application'
-                Description='Installs the Ruffle desktop player'
+                Description='Installs the Ruffle desktop application'
                 Level='1'
                 ConfigurableDirectory='INSTALLFOLDER'
                 AllowAdvertise='no'
