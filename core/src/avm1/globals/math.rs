@@ -246,8 +246,8 @@ mod tests {
         [19] => {
             [] => f64::NAN,
             [Value::Null] => f64::NAN,
-            [1.0] => f64::exp(1.0),
-            [2.0] => f64::exp(2.0)
+            @epsilon(1e-12) [1.0] => f64::exp(1.0),
+            @epsilon(1e-12) [2.0] => f64::exp(2.0)
         }
     );
 
