@@ -236,12 +236,9 @@ impl ByteArrayStorage {
                 let mut encoder = DeflateEncoder::new(&*self.bytes, Compression::fast());
                 encoder.read_to_end(&mut buffer).err().map(|e| e.into())
             }
-            #[cfg(feature = "lzma")]
             CompressionAlgorithm::Lzma => lzma_rs::lzma_compress(&mut &*self.bytes, &mut buffer)
                 .err()
                 .map(|e| e.into()),
-            #[cfg(not(feature = "lzma"))]
-            CompressionAlgorithm::Lzma => Some("Ruffle was not compiled with LZMA support".into()),
         };
         if let Some(error) = error {
             // On error, just return an empty buffer.
@@ -263,12 +260,9 @@ impl ByteArrayStorage {
                 let mut decoder = DeflateDecoder::new(&*self.bytes);
                 decoder.read_to_end(&mut buffer).err().map(|e| e.into())
             }
-            #[cfg(feature = "lzma")]
             CompressionAlgorithm::Lzma => lzma_rs::lzma_decompress(&mut &*self.bytes, &mut buffer)
                 .err()
                 .map(|e| e.into()),
-            #[cfg(not(feature = "lzma"))]
-            CompressionAlgorithm::Lzma => Some("Ruffle was not compiled with LZMA support".into()),
         };
         if let Some(error) = error {
             tracing::warn!("ByteArray.decompress: {}", error);

@@ -84,7 +84,7 @@ jobs:
         if: runner.os != 'macOS'
         # TODO: Disallow retries in general once we can allow only after SIGABRT.
         # See: https://github.com/nextest-rs/nextest/issues/1172
-        run: cargo nextest run --cargo-profile ci --workspace --locked --no-fail-fast --retries 2 -j 4 --features imgtests,lzma,jpegxr
+        run: cargo nextest run --cargo-profile ci --workspace --locked --no-fail-fast --retries 2 -j 4 --features imgtests,jpegxr
         env:
           # This is to counteract the disabling by rust-cache.
           # See: https://github.com/Swatinem/rust-cache/issues/43
@@ -99,7 +99,7 @@ jobs:
 
       - name: Run tests without image tests
         if: runner.os == 'macOS'
-        run: cargo nextest run --cargo-profile ci --workspace --locked --no-fail-fast -j 4 --features lzma,jpegxr
+        run: cargo nextest run --cargo-profile ci --workspace --locked --no-fail-fast -j 4 --features jpegxr
         env:
           XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
 

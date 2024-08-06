@@ -67,7 +67,6 @@ jpegxr = ["ruffle_core/jpegxr"]
 
 # core features
 avm_debug = ["ruffle_core/avm_debug"]
-lzma = ["ruffle_core/lzma"]
 software_video = ["ruffle_video_software"]
 external_video = ["ruffle_video_external"]
 tracy = ["tracing-tracy", "ruffle_render_wgpu/profile-with-tracy"]

@@ -32,4 +32,3 @@ percent-encoding = "2.3.1"
 
 [features]
 jpegxr = ["ruffle_core/jpegxr"]
-lzma = ["ruffle_core/lzma"]

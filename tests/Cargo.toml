@@ -20,7 +20,6 @@ imgtests = [
     "ruffle_test_framework/ruffle_video_external",
 ]
 jpegxr = ["ruffle_test_framework/jpegxr"]
-lzma = ["ruffle_test_framework/lzma"]
 
 [dependencies]
 ruffle_render_wgpu = { path = "../render/wgpu", optional = true }

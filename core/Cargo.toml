@@ -44,7 +44,7 @@ serde_json = { version = "1.0", features = ["preserve_order"] }
 nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser", rev = "754b1184037aa9952a907107284fb73897e26adc", optional = true }
 regress = "0.10"
 flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "f9e3de59a86df1c954fecba6b4b752df61cad73a" }
-lzma-rs = {version = "0.3.0", optional = true }
+lzma-rs = {version = "0.3.0" }
 dasp = { version = "0.11.0", features = ["interpolate", "interpolate-linear", "signal"], optional = true }
 symphonia = { version = "0.5.4", default-features = false, features = ["mp3"], optional = true }
 enumset = "1.1.5"
@@ -77,7 +77,6 @@ version = "0.4.42"
 
 [features]
 default = []
-lzma = ["lzma-rs", "swf/lzma"]
 avm_debug = []
 deterministic = []
 timeline_debug = []
@@ -87,7 +86,7 @@ audio = ["dasp"]
 known_stubs = ["linkme", "serde"]
 default_compatibility_rules = []
 egui = ["dep:egui", "dep:egui_extras", "png"]
-jpegxr = ["dep:jpegxr", "lzma"]
+jpegxr = ["dep:jpegxr"]
 default_font = []
 test_only_as3 = []
 serde = ["serde/derive"]
