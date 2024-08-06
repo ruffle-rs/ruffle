@@ -69,31 +69,20 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
 
                 let mut is_no_dynamic = false;
 
-                let new_attrs = method
-                    .attrs
-                    .iter()
-                    .filter(|attr| match &attr.meta {
-                        Meta::Path(path) => {
-                            if let Some(ident) = path.get_ident() {
-                                if ident == "no_dynamic" {
-                                    is_no_dynamic = true;
+                method.attrs.retain(|attr| match &attr.meta {
+                    Meta::Path(path) => {
+                        if path.is_ident("no_dynamic") {
+                            is_no_dynamic = true;
 
-                                    // Remove the #[no_dynamic] attribute from the
-                                    // list of method attributes.
-                                    false
-                                } else {
-                                    true
-                                }
-                            } else {
-                                true
-                            }
+                            // Remove the #[no_dynamic] attribute from the
+                            // list of method attributes.
+                            false
+                        } else {
+                            true
                         }
-                        _ => true,
-                    })
-                    .map(|o| o.clone())
-                    .collect::<Vec<_>>();
-
-                method.attrs = new_attrs;
+                    }
+                    _ => true,
+                });
 
                 if is_no_dynamic {
                     // Don't create this method as a dynamic-dispatch method
