@@ -25,7 +25,7 @@ Patch dialog sequence:
         <UI Id="WixUI_InstallDir_NoLicense_$(WIXUIARCH)">
             <Publish Dialog="BrowseDlg" Control="OK" Event="DoAction" Value="WixUIValidatePath_$(WIXUIARCH)" Order="3"
                      Condition="NOT WIXUI_DONTVALIDATEPATH"/>
-            <Publish Dialog="InstallDirDlg" Control="Next" Event="DoAction" Value="WixUIValidatePath_$(WIXUIARCH)"
+            <Publish Dialog="RuffleInstallDirDlg" Control="Next" Event="DoAction" Value="WixUIValidatePath_$(WIXUIARCH)"
                      Order="2" Condition="NOT WIXUI_DONTVALIDATEPATH"/>
         </UI>
 
@@ -56,21 +56,24 @@ Patch dialog sequence:
 
             <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999"/>
 
-            <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="InstallDirDlg"
+            <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="RuffleInstallDirDlg"
                      Condition="NOT Installed"/>
             <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg"
                      Condition="Installed AND PATCH"/>
 
-            <Publish Dialog="InstallDirDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg"/>
-            <Publish Dialog="InstallDirDlg" Control="Next" Event="SetTargetPath" Value="[WIXUI_INSTALLDIR]" Order="1"/>
-            <Publish Dialog="InstallDirDlg" Control="Next" Event="SpawnDialog" Value="InvalidDirDlg" Order="3"
-                     Condition="NOT WIXUI_DONTVALIDATEPATH AND WIXUI_INSTALLDIR_VALID&lt;&gt;&quot;1&quot;"/>
-            <Publish Dialog="InstallDirDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Order="4"
-                     Condition="WIXUI_DONTVALIDATEPATH OR WIXUI_INSTALLDIR_VALID=&quot;1&quot;"/>
-            <Publish Dialog="InstallDirDlg" Control="ChangeFolder" Property="_BrowseProperty" Value="[WIXUI_INSTALLDIR]"
+            <Publish Dialog="RuffleInstallDirDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg"/>
+            <Publish Dialog="RuffleInstallDirDlg" Control="Next" Event="SetTargetPath" Value="[WIXUI_INSTALLDIR]"
                      Order="1"/>
-            <Publish Dialog="InstallDirDlg" Control="ChangeFolder" Event="SpawnDialog" Value="BrowseDlg" Order="2"/>
-            <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="InstallDirDlg" Order="1"
+            <Publish Dialog="RuffleInstallDirDlg" Control="Next" Event="SpawnDialog" Value="InvalidDirDlg" Order="3"
+                     Condition="NOT WIXUI_DONTVALIDATEPATH AND WIXUI_INSTALLDIR_VALID&lt;&gt;&quot;1&quot;"/>
+            <Publish Dialog="RuffleInstallDirDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Order="4"
+                     Condition="WIXUI_DONTVALIDATEPATH OR WIXUI_INSTALLDIR_VALID=&quot;1&quot;"/>
+            <Publish Dialog="RuffleInstallDirDlg" Control="ChangeFolder" Property="_BrowseProperty"
+                     Value="[WIXUI_INSTALLDIR]"
+                     Order="1"/>
+            <Publish Dialog="RuffleInstallDirDlg" Control="ChangeFolder" Event="SpawnDialog" Value="BrowseDlg"
+                     Order="2"/>
+            <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="RuffleInstallDirDlg" Order="1"
                      Condition="NOT Installed"/>
             <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="2"
                      Condition="Installed AND NOT PATCH"/>
@@ -87,5 +90,39 @@ Patch dialog sequence:
         </UI>
 
         <UIRef Id="WixUI_Common"/>
+    </Fragment>
+
+    <Fragment>
+        <UI>
+            <Dialog Id="RuffleInstallDirDlg" Width="370" Height="270" Title="!(loc.InstallDirDlg_Title)">
+                <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes"
+                         Text="!(loc.WixUINext)"/>
+                <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.WixUIBack)"/>
+                <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes"
+                         Text="!(loc.WixUICancel)">
+                    <Publish Event="SpawnDialog" Value="CancelDlg"/>
+                </Control>
+
+                <Control Id="Description" Type="Text" X="25" Y="23" Width="280" Height="15" Transparent="yes"
+                         NoPrefix="yes" Text="!(loc.InstallDirDlgDescription)"/>
+                <Control Id="Title" Type="Text" X="15" Y="6" Width="200" Height="15" Transparent="yes" NoPrefix="yes"
+                         Text="!(loc.InstallDirDlgTitle)"/>
+                <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no"
+                         Text="!(loc.InstallDirDlgBannerBitmap)"/>
+                <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0"/>
+                <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0"/>
+
+                <Control Id="FolderLabel" Type="Text" X="20" Y="60" Width="290" Height="30" NoPrefix="yes"
+                         Text="!(loc.InstallDirDlgFolderLabel)"/>
+                <Control Id="Folder" Type="PathEdit" X="20" Y="100" Width="320" Height="18" Property="WIXUI_INSTALLDIR"
+                         Indirect="yes"/>
+                <Control Id="ChangeFolder" Type="PushButton" X="20" Y="120" Width="56" Height="17"
+                         Text="!(loc.InstallDirDlgChange)"/>
+
+                <Control Id="DesktopShortcutCheckBox" Type="CheckBox" X="20" Y="160" Width="290" Height="17"
+                         Property="INSTALLDESKTOPSHORTCUT" CheckBoxValue="1"
+                         Text="Create a shortcut for this program on the desktop."/>
+            </Dialog>
+        </UI>
     </Fragment>
 </Include>

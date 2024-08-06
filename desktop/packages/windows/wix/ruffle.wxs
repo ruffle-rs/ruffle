@@ -13,7 +13,7 @@
      http://wixtoolset.org/schemas/v4/wxs/ui https://raw.githubusercontent.com/wixtoolset/web/master/src/xsd4/ui.xsd
 http://wixtoolset.org/schemas/v4/wxs/util https://raw.githubusercontent.com/wixtoolset/web/master/src/xsd4/util.xsd">
     <?include dialog.wxi?>
-    
+
     <!-- Set this to something else to be able to install the msi as a *different* package (e.g. for local testing) -->
     <?define UpgradeCode = "C6A4BA50-FA08-4B87-9B55-D81A1C730D25"?>
 
@@ -40,6 +40,8 @@ http://wixtoolset.org/schemas/v4/wxs/util https://raw.githubusercontent.com/wixt
 
         <Media Id='1' Cabinet='media1.cab' EmbedCab='yes' DiskPrompt='CD-ROM #1'/>
         <Property Id='DiskPrompt' Value='Ruffle Installation'/>
+
+        <Property Id="INSTALLDESKTOPSHORTCUT" Secure="yes" Value="1"/>
 
         <StandardDirectory Id="ProgramFiles6432Folder">
             <Directory Id='INSTALLFOLDER' Name='ruffle'>
@@ -76,9 +78,15 @@ http://wixtoolset.org/schemas/v4/wxs/util https://raw.githubusercontent.com/wixt
                                 KeyPath='yes'>
                             <Shortcut Name="Ruffle" Directory="ProgramMenuFolder" Advertise="yes"
                                       WorkingDirectory="INSTALLFOLDER" Icon="Icon.ico"/>
-                            <Shortcut Name="Ruffle" Directory="DesktopFolder" Advertise="yes"
-                                      WorkingDirectory="INSTALLFOLDER" Icon="Icon.ico"/>
                         </File>
+                    </Component>
+                    <Component Id='DesktopShortcut' Guid='*' Condition="INSTALLDESKTOPSHORTCUT">
+                        <!-- A useless registry key is needed to work as a keypath -->
+                        <CreateFolder/>
+                        <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]"
+                                       Value="1" Type="integer" KeyPath="yes"/>
+                        <Shortcut Name="Ruffle" Directory="DesktopFolder" Target="[#DesktopEXE]"
+                                  WorkingDirectory="INSTALLFOLDER" Icon="Icon.ico"/>
                     </Component>
                 </Directory>
             </Directory>
@@ -146,6 +154,7 @@ http://wixtoolset.org/schemas/v4/wxs/util https://raw.githubusercontent.com/wixt
             <ComponentRef Id='binary0'/>
             <ComponentRef Id='Associations'/>
             <ComponentRef Id='ApplicationInfo'/>
+            <ComponentRef Id="DesktopShortcut"/>
 
             <Feature
                     Id='Environment'
