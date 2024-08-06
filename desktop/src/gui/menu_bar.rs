@@ -206,7 +206,7 @@ impl MenuBar {
         player_exists: bool,
     ) {
         ui.menu_button(text(locale, "file-menu"), |ui| {
-            if Button::new(text(locale, "file-menu-open-quick"))
+            if Button::new(text(locale, "file-menu-open-file"))
                 .shortcut_text(ui.ctx().format_shortcut(&Self::SHORTCUT_OPEN))
                 .ui(ui)
                 .clicked()
