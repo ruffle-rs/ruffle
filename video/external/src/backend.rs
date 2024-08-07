@@ -104,10 +104,15 @@ impl ExternalVideoBackend {
         // Regardless of whether the library was already there, or we just downloaded it, let's check the MD5 hash.
         let mut md5 = Md5::new();
         copy(&mut File::open(filepath.clone())?, &mut md5)?;
-        let result: [u8; 16] = md5.finalize().into();
+        let md5digest = md5.finalize();
+        let result: [u8; 16] = md5digest.into();
 
         if result[..] != hex::decode(md5sum)?[..] {
-            return Err(format!("MD5 checksum mismatch for {}", filename).into());
+            let size = filepath.metadata().map(|f| f.len()).unwrap_or_default();
+            return Err(format!(
+                "MD5 checksum mismatch for {filename}; expected {md5sum}, found {md5digest:x} (with a size of {size} bytes)",
+            )
+            .into());
         }
 
         Ok(filepath)
