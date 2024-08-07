@@ -47,8 +47,7 @@ pub struct NetStreamObjectData<'gc> {
 
 const _: () = assert!(std::mem::offset_of!(NetStreamObjectData, base) == 0);
 const _: () = assert!(
-    std::mem::align_of::<NetStreamObjectData>()
-        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+    std::mem::align_of::<NetStreamObjectData>() == std::mem::align_of::<ScriptObjectData>()
 );
 
 impl<'gc> TObject<'gc> for NetStreamObject<'gc> {

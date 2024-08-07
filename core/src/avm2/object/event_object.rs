@@ -53,9 +53,8 @@ pub struct EventObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(EventObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<EventObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
-);
+const _: () =
+    assert!(std::mem::align_of::<EventObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> EventObject<'gc> {
     /// Create a bare Event instance while skipping the usual `construct()` pipeline.
@@ -82,7 +81,7 @@ impl<'gc> EventObject<'gc> {
         S: Into<AvmString<'gc>>,
     {
         let class = context.avm2.classes().event;
-        let base = ScriptObjectData::new(class).into();
+        let base = ScriptObjectData::new(class);
 
         let mut event = Event::new(event_type);
         event.set_bubbles(bubbles);

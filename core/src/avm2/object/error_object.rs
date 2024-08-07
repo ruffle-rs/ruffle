@@ -58,9 +58,8 @@ pub struct ErrorObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(ErrorObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<ErrorObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
-);
+const _: () =
+    assert!(std::mem::align_of::<ErrorObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> ErrorObject<'gc> {
     pub fn display(&self) -> Result<WString, Error<'gc>> {

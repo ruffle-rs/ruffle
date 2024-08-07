@@ -63,9 +63,8 @@ pub struct VectorObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(VectorObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<VectorObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
-);
+const _: () =
+    assert!(std::mem::align_of::<VectorObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> VectorObject<'gc> {
     /// Wrap an existing vector in an object.

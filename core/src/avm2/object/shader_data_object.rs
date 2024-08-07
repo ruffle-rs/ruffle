@@ -65,8 +65,7 @@ pub struct ShaderDataObjectData<'gc> {
 
 const _: () = assert!(std::mem::offset_of!(ShaderDataObjectData, base) == 0);
 const _: () = assert!(
-    std::mem::align_of::<ShaderDataObjectData>()
-        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+    std::mem::align_of::<ShaderDataObjectData>() == std::mem::align_of::<ScriptObjectData>()
 );
 
 impl<'gc> TObject<'gc> for ShaderDataObject<'gc> {

@@ -215,9 +215,8 @@ pub struct SocketObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(SocketObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<SocketObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
-);
+const _: () =
+    assert!(std::mem::align_of::<SocketObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl fmt::Debug for SocketObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

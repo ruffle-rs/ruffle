@@ -364,9 +364,8 @@ pub struct XmlListObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(XmlListObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<XmlListObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
-);
+const _: () =
+    assert!(std::mem::align_of::<XmlListObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 /// Holds either an `E4XNode` or an `XmlObject`. This can be converted
 /// in-place to an `XmlObject` via `get_or_create_xml`.
@@ -1068,7 +1067,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
     fn get_enumerant_name(
         self,
         index: u32,
-        activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let children_len = self.0.children.borrow().len() as u32;
         if children_len >= index {

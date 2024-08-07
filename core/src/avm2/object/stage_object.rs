@@ -29,9 +29,8 @@ pub struct StageObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(StageObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<StageObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
-);
+const _: () =
+    assert!(std::mem::align_of::<StageObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> StageObject<'gc> {
     /// Allocate the AVM2 side of a display object intended to be of a given

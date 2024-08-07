@@ -81,9 +81,8 @@ pub struct DateObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(DateObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<DateObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
-);
+const _: () =
+    assert!(std::mem::align_of::<DateObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> TObject<'gc> for DateObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {

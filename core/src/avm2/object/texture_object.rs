@@ -74,9 +74,8 @@ pub struct TextureObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(TextureObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<TextureObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
-);
+const _: () =
+    assert!(std::mem::align_of::<TextureObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> TObject<'gc> for TextureObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {

@@ -63,16 +63,15 @@ pub struct XmlObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(XmlObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<XmlObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
-);
+const _: () =
+    assert!(std::mem::align_of::<XmlObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> XmlObject<'gc> {
     pub fn new(node: E4XNode<'gc>, activation: &mut Activation<'_, 'gc>) -> Self {
         XmlObject(Gc::new(
             activation.context.gc_context,
             XmlObjectData {
-                base: ScriptObjectData::new(activation.context.avm2.classes().xml).into(),
+                base: ScriptObjectData::new(activation.context.avm2.classes().xml),
                 node: Lock::new(node),
             },
         ))

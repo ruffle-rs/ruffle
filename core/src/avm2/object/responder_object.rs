@@ -114,8 +114,7 @@ pub struct ResponderObjectData<'gc> {
 
 const _: () = assert!(std::mem::offset_of!(ResponderObjectData, base) == 0);
 const _: () = assert!(
-    std::mem::align_of::<ResponderObjectData>()
-        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+    std::mem::align_of::<ResponderObjectData>() == std::mem::align_of::<ScriptObjectData>()
 );
 
 impl fmt::Debug for ResponderObject<'_> {

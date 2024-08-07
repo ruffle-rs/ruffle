@@ -60,8 +60,7 @@ pub struct BitmapDataObjectData<'gc> {
 
 const _: () = assert!(std::mem::offset_of!(BitmapDataObjectData, base) == 0);
 const _: () = assert!(
-    std::mem::align_of::<BitmapDataObjectData>()
-        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+    std::mem::align_of::<BitmapDataObjectData>() == std::mem::align_of::<ScriptObjectData>()
 );
 
 impl<'gc> BitmapDataObject<'gc> {
@@ -82,7 +81,7 @@ impl<'gc> BitmapDataObject<'gc> {
         let instance: Object<'gc> = Self(Gc::new(
             activation.context.gc_context,
             BitmapDataObjectData {
-                base: ScriptObjectData::new(class).into(),
+                base: ScriptObjectData::new(class),
                 bitmap_data: Lock::new(Some(bitmap_data)),
             },
         ))

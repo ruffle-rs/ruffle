@@ -67,8 +67,7 @@ pub struct Program3DObjectData<'gc> {
 
 const _: () = assert!(std::mem::offset_of!(Program3DObjectData, base) == 0);
 const _: () = assert!(
-    std::mem::align_of::<Program3DObjectData>()
-        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+    std::mem::align_of::<Program3DObjectData>() == std::mem::align_of::<ScriptObjectData>()
 );
 
 impl<'gc> TObject<'gc> for Program3DObject<'gc> {

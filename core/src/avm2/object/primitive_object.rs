@@ -59,8 +59,7 @@ pub struct PrimitiveObjectData<'gc> {
 
 const _: () = assert!(std::mem::offset_of!(PrimitiveObjectData, base) == 0);
 const _: () = assert!(
-    std::mem::align_of::<PrimitiveObjectData>()
-        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+    std::mem::align_of::<PrimitiveObjectData>() == std::mem::align_of::<ScriptObjectData>()
 );
 
 impl<'gc> PrimitiveObject<'gc> {

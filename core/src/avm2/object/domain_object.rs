@@ -56,9 +56,8 @@ pub struct DomainObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(DomainObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<DomainObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
-);
+const _: () =
+    assert!(std::mem::align_of::<DomainObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> DomainObject<'gc> {
     /// Create a new object for a given domain.

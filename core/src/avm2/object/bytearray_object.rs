@@ -78,8 +78,7 @@ pub struct ByteArrayObjectData<'gc> {
 
 const _: () = assert!(std::mem::offset_of!(ByteArrayObjectData, base) == 0);
 const _: () = assert!(
-    std::mem::align_of::<ByteArrayObjectData>()
-        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+    std::mem::align_of::<ByteArrayObjectData>() == std::mem::align_of::<ScriptObjectData>()
 );
 
 impl<'gc> ByteArrayObject<'gc> {

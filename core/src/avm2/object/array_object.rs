@@ -59,9 +59,8 @@ pub struct ArrayObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(ArrayObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<ArrayObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
-);
+const _: () =
+    assert!(std::mem::align_of::<ArrayObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> ArrayObject<'gc> {
     /// Construct an empty array.
