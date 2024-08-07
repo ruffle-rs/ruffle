@@ -144,7 +144,7 @@ jobs:
           wix build ruffle.wxs -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext -arch ${{ matrix.MSI_ARCH }} -o ../../../../package/setup.msi -pdbtype none
         env:
           RUFFLE_VERSION: "0.1.0"
-          CARGO_BUILD_DIR: target/${{ matrix.target }}/release
+          CARGO_BUILD_DIR: ../../../../target/${{ matrix.target }}/release
         if: runner.os == 'Windows'
 
       - name: Package Windows
