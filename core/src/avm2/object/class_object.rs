@@ -173,7 +173,10 @@ impl<'gc> ClassObject<'gc> {
         let class_object = ClassObject(Gc::new(
             activation.context.gc_context,
             ClassObjectData {
-                base: ScriptObjectData::custom_new(c_class, None, None),
+                // We pass `custom_new` the temporary vtable of the class object
+                // because we don't have the full vtable created yet. We'll
+                // set it to the true vtable in `into_finished_class`.
+                base: ScriptObjectData::custom_new(c_class, None, c_class.vtable()),
                 class,
                 prototype: Lock::new(None),
                 class_scope: scope,

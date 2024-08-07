@@ -288,10 +288,10 @@ impl Avm2ObjectWindow {
     ) {
         let mut entries = Vec::<(String, Namespace<'gc>, Property)>::new();
         // We can't access things whilst we iterate the vtable, so clone and sort it all here
-        if let Some(vtable) = object.vtable() {
-            for (name, ns, prop) in vtable.resolved_traits().iter() {
-                entries.push((name.to_string(), ns, *prop));
-            }
+        let vtable = object.vtable();
+
+        for (name, ns, prop) in vtable.resolved_traits().iter() {
+            entries.push((name.to_string(), ns, *prop));
         }
         entries.sort_by(|a, b| a.0.cmp(&b.0));
 

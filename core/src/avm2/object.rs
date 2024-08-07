@@ -241,7 +241,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         multiname: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
+        match self.vtable().get_trait(multiname) {
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
                 self.base().get_slot(slot_id)
             }
@@ -260,7 +260,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
                 let bound_method = self
                     .vtable()
-                    .expect("object to have a vtable")
                     .make_bound_method(activation, self.into(), disp_id)
                     .ok_or_else(|| format!("Method not found with id {disp_id}"))?;
 
@@ -345,11 +344,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
+        match self.vtable().get_trait(multiname) {
             Some(Property::Slot { slot_id }) => {
                 let value = self
                     .vtable()
-                    .unwrap()
                     .coerce_trait_value(slot_id, value, activation)?;
                 self.base()
                     .set_slot(slot_id, value, activation.context.gc_context)
@@ -429,11 +427,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
+        match self.vtable().get_trait(multiname) {
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
                 let value = self
                     .vtable()
-                    .unwrap()
                     .coerce_trait_value(slot_id, value, activation)?;
                 self.base()
                     .set_slot(slot_id, value, activation.context.gc_context)
@@ -498,7 +495,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
+        match self.vtable().get_trait(multiname) {
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
                 let obj = self.base().get_slot(slot_id)?.as_callable(
                     activation,
@@ -563,10 +560,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let value = self
-            .vtable()
-            .unwrap()
-            .coerce_trait_value(id, value, activation)?;
+        let value = self.vtable().coerce_trait_value(id, value, activation)?;
         let base = self.base();
 
         base.set_slot(id, value, activation.gc())
@@ -600,7 +594,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
         let full_method = self
             .vtable()
-            .expect("method to have a vtable")
             .get_full_method(id)
             .ok_or_else(|| format!("Cannot call unknown method id {id}"))?;
 
@@ -724,7 +717,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             ));
         }
 
-        match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
+        match self.vtable().get_trait(multiname) {
             None => {
                 if self.instance_class().is_sealed() {
                     Ok(false)
@@ -878,7 +871,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) {
         let new_slot_id = self
             .vtable()
-            .unwrap()
             .install_const_trait_late(mc, name, value, class);
 
         self.base().install_const_slot_late(mc, new_slot_id, value);
@@ -1053,23 +1045,22 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         &self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Vec<(AvmString<'gc>, Value<'gc>)>, Error<'gc>> {
-        if let Some(vtable) = self.vtable() {
-            let mut values = Vec::new();
-            for (name, prop) in vtable.public_properties() {
-                match prop {
-                    Property::Slot { slot_id } | Property::ConstSlot { slot_id } => {
-                        values.push((name, self.base().get_slot(slot_id)?));
-                    }
-                    Property::Virtual { get: Some(get), .. } => {
-                        values.push((name, self.call_method(get, &[], activation)?))
-                    }
-                    _ => {}
+        let vtable = self.vtable();
+
+        let mut values = Vec::new();
+        for (name, prop) in vtable.public_properties() {
+            match prop {
+                Property::Slot { slot_id } | Property::ConstSlot { slot_id } => {
+                    values.push((name, self.base().get_slot(slot_id)?));
                 }
+                Property::Virtual { get: Some(get), .. } => {
+                    values.push((name, self.call_method(get, &[], activation)?))
+                }
+                _ => {}
             }
-            Ok(values)
-        } else {
-            Ok(Vec::new())
         }
+
+        Ok(values)
     }
 
     /// Determine if this object has a given prototype in its prototype chain.
@@ -1111,7 +1102,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Get this object's vtable, if it has one.
     /// Every object with class should have a vtable
     #[no_dynamic]
-    fn vtable(&self) -> Option<VTable<'gc>> {
+    fn vtable(&self) -> VTable<'gc> {
         let base = self.base();
         base.vtable()
     }

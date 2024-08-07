@@ -62,7 +62,7 @@ pub struct ScriptObjectData<'gc> {
     instance_class: Class<'gc>,
 
     /// The table used for non-dynamic property lookups.
-    vtable: Lock<Option<VTable<'gc>>>,
+    vtable: Lock<VTable<'gc>>,
 }
 
 impl<'gc> TObject<'gc> for ScriptObject<'gc> {
@@ -106,12 +106,12 @@ impl<'gc> ScriptObject<'gc> {
     pub fn custom_object(
         mc: &Mutation<'gc>,
         class: Class<'gc>,
-        class_obj: Option<ClassObject<'gc>>,
         proto: Option<Object<'gc>>,
+        vtable: VTable<'gc>,
     ) -> Object<'gc> {
         ScriptObject(Gc::new(
             mc,
-            ScriptObjectData::custom_new(class, proto, class_obj),
+            ScriptObjectData::custom_new(class, proto, vtable),
         ))
         .into()
     }
@@ -121,6 +121,8 @@ impl<'gc> ScriptObject<'gc> {
     pub fn catch_scope(activation: &mut Activation<'_, 'gc>, qname: &QName<'gc>) -> Object<'gc> {
         let mc = activation.context.gc_context;
 
+        let vt = VTable::newcatch(mc, qname);
+
         // TODO: use a proper ClassObject here; purposefully crafted bytecode
         // can observe (the lack of) it.
         let base = ScriptObjectWrapper(Gc::new(
@@ -128,12 +130,10 @@ impl<'gc> ScriptObject<'gc> {
             ScriptObjectData::custom_new(
                 activation.avm2().classes().object.inner_class_definition(),
                 None,
-                None,
+                vt,
             ),
         ));
 
-        let vt = VTable::newcatch(mc, qname);
-        base.set_vtable(mc, vt);
         base.install_instance_slots(mc);
 
         ScriptObject(base.0).into()
@@ -147,7 +147,7 @@ impl<'gc> ScriptObjectData<'gc> {
         Self::custom_new(
             instance_of.inner_class_definition(),
             Some(instance_of.prototype()),
-            Some(instance_of),
+            instance_of.instance_vtable(),
         )
     }
 
@@ -159,7 +159,7 @@ impl<'gc> ScriptObjectData<'gc> {
     pub fn custom_new(
         instance_class: Class<'gc>,
         proto: Option<Object<'gc>>,
-        instance_of: Option<ClassObject<'gc>>,
+        vtable: VTable<'gc>,
     ) -> Self {
         ScriptObjectData {
             values: RefLock::new(Default::default()),
@@ -167,7 +167,7 @@ impl<'gc> ScriptObjectData<'gc> {
             bound_methods: RefLock::new(Vec::new()),
             proto: Lock::new(proto),
             instance_class,
-            vtable: Lock::new(instance_of.map(|cls| cls.instance_vtable())),
+            vtable: Lock::new(vtable),
         }
     }
 }
@@ -342,7 +342,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
 
     pub fn install_instance_slots(&self, mc: &Mutation<'gc>) {
         use std::ops::Deref;
-        let vtable = self.vtable().unwrap();
+        let vtable = self.vtable();
         let default_slots = vtable.default_slots();
         let mut slots = self.slots_mut(mc);
 
@@ -374,16 +374,9 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     }
 
     pub fn has_trait(&self, name: &Multiname<'gc>) -> bool {
-        match self.vtable() {
-            //Class instances have instance traits from any class in the base
-            //class chain.
-            Some(vtable) => vtable.has_trait(name),
-
-            // bare objects do not have traits.
-            // TODO: should we have bare objects at all?
-            // Shouldn't every object have a vtable?
-            None => false,
-        }
+        // Class instances have instance traits from any class in the base
+        // class chain.
+        self.vtable().has_trait(name)
     }
 
     pub fn has_own_dynamic_property(&self, name: &Multiname<'gc>) -> bool {
@@ -464,7 +457,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     }
 
     /// Get the vtable for this object, if it has one.
-    pub fn vtable(&self) -> Option<VTable<'gc>> {
+    pub fn vtable(&self) -> VTable<'gc> {
         self.0.vtable.get()
     }
 
@@ -473,7 +466,13 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     }
 
     pub fn set_vtable(&self, mc: &Mutation<'gc>, vtable: VTable<'gc>) {
-        unlock!(Gc::write(mc, self.0), ScriptObjectData, vtable).set(Some(vtable));
+        // Make sure both vtables have the same number of slots
+        assert_eq!(
+            self.vtable().default_slots().len(),
+            vtable.default_slots().len()
+        );
+
+        unlock!(Gc::write(mc, self.0), ScriptObjectData, vtable).set(vtable);
     }
 
     pub fn debug_class_name(&self) -> Box<dyn std::fmt::Debug + 'gc> {
