@@ -77,7 +77,7 @@ unknown-git = "deny"
 #  github.com organizations to allow git sources for
 github = [
     "ruffle-rs",
-    # TODO: Remove once a release with https://github.com/emilk/egui/pull/4847 in it is out.
+    # TODO: Remove once a release with https://github.com/emilk/egui/pull/4939 in it is out.
     "emilk",
     # TODO: Remove once a release with https://github.com/PolyMeilex/rfd/pull/209 in it is out.
     "PolyMeilex",

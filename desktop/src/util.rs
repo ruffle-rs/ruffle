@@ -1,4 +1,3 @@
-use crate::custom_event::RuffleEvent;
 use anyhow::{anyhow, Error};
 use gilrs::Button;
 use ruffle_core::events::{GamepadButton, KeyCode, TextControlCode};
@@ -6,8 +5,8 @@ use std::path::Path;
 use url::Url;
 use winit::dpi::PhysicalSize;
 use winit::event::{KeyEvent, Modifiers};
-use winit::event_loop::EventLoop;
 use winit::keyboard::{Key, KeyLocation, NamedKey};
+use winit::window::Window;
 
 /// Converts a winit event to a Ruffle `TextControlCode`.
 /// Returns `None` if there is no match.
@@ -205,13 +204,13 @@ pub fn gilrs_button_to_gamepad_button(button: Button) -> Option<GamepadButton> {
     }
 }
 
-pub fn get_screen_size(event_loop: &EventLoop<RuffleEvent>) -> PhysicalSize<u32> {
+pub fn get_screen_size(window: &Window) -> PhysicalSize<u32> {
     let mut min_x = 0;
     let mut min_y = 0;
     let mut max_x = 0;
     let mut max_y = 0;
 
-    for monitor in event_loop.available_monitors() {
+    for monitor in window.available_monitors() {
         let size = monitor.size();
         let position = monitor.position();
         min_x = min_x.min(position.x);

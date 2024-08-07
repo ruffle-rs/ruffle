@@ -171,7 +171,7 @@ impl PreferencesDialog {
                 .on_hover_text(locked_text);
         } else {
             let previous = self.graphics_backend;
-            ComboBox::from_id_source("graphics-backend")
+            ComboBox::from_id_salt("graphics-backend")
                 .selected_text(graphics_backend_name(locale, self.graphics_backend))
                 .show_ui(ui, |ui| {
                     ui.selectable_value(
@@ -220,7 +220,7 @@ impl PreferencesDialog {
                 .on_hover_text(locked_text);
         } else {
             let previous = self.power_preference;
-            ComboBox::from_id_source("graphics-power")
+            ComboBox::from_id_salt("graphics-power")
                 .selected_text(graphics_power_name(locale, self.power_preference))
                 .show_ui(ui, |ui| {
                     ui.selectable_value(
@@ -244,7 +244,7 @@ impl PreferencesDialog {
     fn show_language_preferences(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
         ui.label(text(locale, "language"));
         let previous = self.language.clone();
-        ComboBox::from_id_source("language")
+        ComboBox::from_id_salt("language")
             .selected_text(language_name(&self.language))
             .show_ui(ui, |ui| {
                 for language in available_languages() {
@@ -264,7 +264,7 @@ impl PreferencesDialog {
     fn show_theme_preferences(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
         ui.label(text(locale, "theme"));
         let previous = self.theme_preference;
-        ComboBox::from_id_source("theme")
+        ComboBox::from_id_salt("theme")
             .selected_text(theme_preference_name(locale, self.theme_preference))
             .show_ui(ui, |ui| {
                 ui.selectable_value(
@@ -294,7 +294,7 @@ impl PreferencesDialog {
 
         let previous = self.output_device.clone();
         let default = text(locale, "audio-output-device-default");
-        ComboBox::from_id_source("audio-output-device")
+        ComboBox::from_id_salt("audio-output-device")
             .selected_text(self.output_device.as_deref().unwrap_or(default.as_ref()))
             .show_ui(ui, |ui| {
                 ui.selectable_value(&mut self.output_device, None, default);
@@ -350,7 +350,7 @@ impl PreferencesDialog {
         ui.label(text(locale, "log-filename-pattern"));
 
         let previous = self.log_filename_pattern;
-        ComboBox::from_id_source("log-filename-pattern")
+        ComboBox::from_id_salt("log-filename-pattern")
             .selected_text(filename_pattern_name(locale, self.log_filename_pattern))
             .show_ui(ui, |ui| {
                 ui.selectable_value(
@@ -383,7 +383,7 @@ impl PreferencesDialog {
                 .on_hover_text(locked_text);
         } else {
             let previous = self.storage_backend;
-            ComboBox::from_id_source("storage-backend")
+            ComboBox::from_id_salt("storage-backend")
                 .selected_text(storage_backend_name(locale, self.storage_backend))
                 .show_ui(ui, |ui| {
                     ui.selectable_value(
