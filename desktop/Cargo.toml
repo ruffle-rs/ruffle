@@ -62,7 +62,7 @@ embed-resource = "2"
 vergen = { version = "8.3.2", features = ["build", "git", "gitcl", "cargo"] }
 
 [features]
-default = ["software_video", "external_video"]
+default = ["software_video", "external_video", "lzma"]
 jpegxr = ["ruffle_core/jpegxr"]
 
 # core features
