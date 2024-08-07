@@ -32,7 +32,7 @@ impl BookmarkAddDialog {
     }
 
     fn is_valid(&self) -> bool {
-        self.url.value().is_some() && !self.name.is_empty()
+        self.url.result().is_some() && !self.name.is_empty()
     }
 
     pub fn show(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) -> bool {
@@ -71,7 +71,7 @@ impl BookmarkAddDialog {
                                     name: self.name.clone(),
                                     url: self
                                         .url
-                                        .value()
+                                        .result()
                                         .cloned()
                                         .expect("is_valid() ensured value exists"),
                                 })
@@ -248,10 +248,10 @@ impl BookmarksDialog {
                     }
                     ui.end_row();
 
-                    let previous_url = bookmark.url.value().cloned();
+                    let previous_url = bookmark.url.result().cloned();
 
                     ui.label(text(locale, "bookmarks-dialog-location"));
-                    let current_url = bookmark.url.ui(locale, ui).value();
+                    let current_url = bookmark.url.ui(locale, ui).result();
 
                     // TODO: Change the UrlOrPathField widget to return a response instead, so we can update when we lose the focus, removes the need to clone every redraw.
                     if previous_url.as_ref() != current_url {

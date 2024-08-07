@@ -288,7 +288,7 @@ impl OpenDialog {
         } else {
             self.options.player.frame_rate = None;
         }
-        if let Some(url) = self.path.value() {
+        if let Some(url) = self.path.result() {
             if self
                 .event_loop
                 .send_event(RuffleEvent::OpenURL(
@@ -321,7 +321,7 @@ impl OpenDialog {
                         .striped(true)
                         .show(ui, |ui| {
                             ui.label(text(locale, "open-dialog-path"));
-                            is_valid &= self.path.ui(locale, ui).value().is_some();
+                            is_valid &= self.path.ui(locale, ui).result().is_some();
                             ui.end_row();
                         });
                 });
