@@ -136,6 +136,7 @@ impl App {
 
         // Poll UI events.
         let event_loop = self.event_loop.take().expect("App already running");
+        let event_loop_proxy = event_loop.create_proxy();
         event_loop.run(move |event, elwt| {
             let mut check_redraw = false;
             match event {
@@ -514,13 +515,16 @@ impl App {
                 }
 
                 winit::event::Event::UserEvent(RuffleEvent::BrowseAndOpen(options)) => {
-                    if let Some(url) = pick_file(None, Some(&self.window))
-                        .and_then(|p| Url::from_file_path(p).ok())
-                    {
-                        self.gui
-                            .borrow_mut()
-                            .create_movie(&mut self.player, *options, url);
-                    }
+                    let event_loop = event_loop_proxy.clone();
+                    let window = self.window.clone();
+                    tokio::spawn(async move {
+                        if let Some(url) = pick_file(None, Some(&window))
+                            .await
+                            .and_then(|p| Url::from_file_path(p).ok())
+                        {
+                            let _ = event_loop.send_event(RuffleEvent::OpenURL(url, options));
+                        }
+                    });
                 }
 
                 winit::event::Event::UserEvent(RuffleEvent::OpenURL(url, options)) => {

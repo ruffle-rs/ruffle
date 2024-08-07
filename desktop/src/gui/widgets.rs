@@ -64,10 +64,14 @@ impl PathOrUrlField {
                         path
                     });
 
-                if let Some(path) = pick_file(dir, self.window.upgrade().as_ref()) {
-                    let mut value_lock = Self::lock_value(&self.value);
-                    *value_lock = path.to_string_lossy().to_string();
-                }
+                let value = self.value.clone();
+                let window = self.window.upgrade();
+                tokio::spawn(async move {
+                    if let Some(path) = pick_file(dir, window.as_ref()).await {
+                        let mut value_lock = Self::lock_value(&value);
+                        *value_lock = path.to_string_lossy().to_string();
+                    }
+                });
             }
 
             let mut value_locked = Self::lock_value(&self.value);

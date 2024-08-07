@@ -1,7 +1,7 @@
 use crate::custom_event::RuffleEvent;
 use anyhow::{anyhow, Error};
 use gilrs::Button;
-use rfd::FileDialog;
+use rfd::AsyncFileDialog;
 use ruffle_core::events::{GamepadButton, KeyCode, TextControlCode};
 use std::path::{Path, PathBuf};
 use url::Url;
@@ -245,11 +245,11 @@ pub fn parse_url(path: &Path) -> Result<Url, Error> {
     }
 }
 
-pub fn pick_file<W: HasWindowHandle + HasDisplayHandle>(
+pub async fn pick_file<W: HasWindowHandle + HasDisplayHandle>(
     dir: Option<PathBuf>,
     parent: Option<&W>,
 ) -> Option<PathBuf> {
-    let mut dialog = FileDialog::new()
+    let mut dialog = AsyncFileDialog::new()
         .add_filter("Flash Files", &["swf", "spl", "ruf"])
         .add_filter("All Files", &["*"])
         .set_title("Load a Flash File");
@@ -262,7 +262,7 @@ pub fn pick_file<W: HasWindowHandle + HasDisplayHandle>(
         dialog = dialog.set_parent(parent);
     }
 
-    dialog.pick_file()
+    dialog.pick_file().await.map(|h| h.into())
 }
 
 #[cfg(not(feature = "tracy"))]
