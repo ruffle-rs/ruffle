@@ -97,7 +97,12 @@ jobs:
             DESKTOP_FEATURES: jpegxr
 
     env:
-      PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-${{ matrix.build_name }}.${{ startsWith(matrix.build_name, 'win') && 'zip' || 'tar.gz' }}
+      PACKAGE_FILE: |-
+        ${{ needs.create-nightly-release.outputs.package_prefix }}-${{ matrix.build_name }}.${{
+            startsWith(matrix.build_name, 'macos') && 'dmg' ||
+            startsWith(matrix.build_name, 'linux') && 'tar.gz' ||
+            'zip'
+        }}
       CARGO_BUILD_DIR: target/${{ matrix.target }}/release
 
     runs-on: ${{ matrix.os }}
@@ -123,19 +128,19 @@ jobs:
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MIN_MACOS_VERSION }}
 
-      - name: Package common
+      - name: Package common files
         run: |
           mkdir package
           cp README.md package/README.md
           cp LICENSE.md package/LICENSE.md
 
-      - name: Package Windows
+      - name: Package Windows files
         if: runner.os == 'Windows'
         run: |
           cp ${{ env.CARGO_BUILD_DIR }}/ruffle_desktop.exe package/ruffle.exe
           7z a ${{ env.PACKAGE_FILE }} ./package/*
 
-      - name: Package Linux
+      - name: Package Linux files
         if: runner.os == 'Linux'
         run: |
           cp ${{ env.CARGO_BUILD_DIR }}/ruffle_desktop package/ruffle
@@ -171,7 +176,7 @@ jobs:
     needs: [create-nightly-release, build, build-web]
     runs-on: macos-14
     env:
-      PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-macos-universal.tar.gz
+      PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-macos-universal.dmg
       MIN_MACOS_VERSION: 10.12
     steps:
       - name: Clone Ruffle repo
@@ -214,6 +219,7 @@ jobs:
           mkdir package/Ruffle.app/Contents/Resources
           cp desktop/packaging/macOS/Info.plist package/Ruffle.app/Contents/Info.plist
           mv package/ruffle package/Ruffle.app/Contents/MacOS/ruffle
+          mv package/* package/Ruffle.app/Contents/Resources
 
       - name: Compile asset catalog
         run: |
@@ -259,11 +265,11 @@ jobs:
           xcrun notarytool submit Ruffle.zip --keychain-profile Ruffle --wait
           xcrun stapler staple package/Ruffle.app
 
-      - name: Package macOS
+      # TODO: Sign, notarize and staple the DMG image (instead of the app bundle)
+      - name: Package macOS files
         run: |
-          # We must enter the package/ directory in order to create a flat tarball (i.e. without a directory in it).
-          cd package
-          tar -czvf ../${{ env.PACKAGE_FILE }} *
+          pip install dmgbuild
+          dmgbuild -s desktop/packaging/macOS/settings.py "Ruffle" ${{ env.PACKAGE_FILE }}
 
       - name: Upload package
         run: gh release upload "${{ needs.create-nightly-release.outputs.tag_name }}" "${{ env.PACKAGE_FILE }}"
