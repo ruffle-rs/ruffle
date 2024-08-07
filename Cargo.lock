@@ -4565,6 +4565,7 @@ dependencies = [
  "ruffle_video_software",
  "slotmap",
  "swf",
+ "tempfile",
  "tracing",
 ]
 
