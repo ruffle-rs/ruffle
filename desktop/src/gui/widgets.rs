@@ -2,21 +2,28 @@ use crate::gui::text;
 use crate::util::pick_file;
 use egui::{TextEdit, Ui};
 use std::path::Path;
+use std::sync::Weak;
 use unic_langid::LanguageIdentifier;
 use url::Url;
 
 pub struct PathOrUrlField {
+    window: Weak<winit::window::Window>,
     value: String,
     result: Option<Url>,
     hint: &'static str,
 }
 
 impl PathOrUrlField {
-    pub fn new(default: Option<Url>, hint: &'static str) -> Self {
+    pub fn new(
+        default: Option<Url>,
+        hint: &'static str,
+        window: Weak<winit::window::Window>,
+    ) -> Self {
         if let Some(default) = default {
             if default.scheme() == "file" {
                 if let Ok(path) = default.to_file_path() {
                     return Self {
+                        window,
                         value: path.to_string_lossy().to_string(),
                         result: Some(default),
                         hint,
@@ -25,6 +32,7 @@ impl PathOrUrlField {
             }
 
             return Self {
+                window,
                 value: default.to_string(),
                 result: Some(default),
                 hint,
@@ -32,6 +40,7 @@ impl PathOrUrlField {
         }
 
         Self {
+            window,
             value: "".to_string(),
             result: None,
             hint,
@@ -51,7 +60,7 @@ impl PathOrUrlField {
                         path
                     });
 
-                if let Some(path) = pick_file(true, dir) {
+                if let Some(path) = pick_file(true, dir, self.window.upgrade()) {
                     self.value = path.to_string_lossy().to_string();
                 }
             }

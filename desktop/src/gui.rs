@@ -25,7 +25,7 @@ use rfd::FileDialog;
 use ruffle_core::debug_ui::Message as DebugMessage;
 use ruffle_core::{Player, PlayerEvent};
 use std::collections::HashMap;
-use std::sync::MutexGuard;
+use std::sync::{MutexGuard, Weak};
 use std::{fs, mem};
 use unic_langid::LanguageIdentifier;
 use winit::event_loop::EventLoopProxy;
@@ -93,6 +93,7 @@ pub struct RuffleGui {
 
 impl RuffleGui {
     fn new(
+        window: Weak<winit::window::Window>,
         event_loop: EventLoopProxy<RuffleEvent>,
         default_path: Option<Url>,
         default_launch_options: LaunchOptions,
@@ -106,6 +107,7 @@ impl RuffleGui {
                 preferences.clone(),
                 default_launch_options.clone(),
                 default_path,
+                window.clone(),
                 event_loop.clone(),
             ),
             menu_bar: MenuBar::new(

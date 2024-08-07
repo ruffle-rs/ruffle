@@ -11,12 +11,14 @@ use bookmarks_dialog::{BookmarkAddDialog, BookmarksDialog};
 use open_dialog::OpenDialog;
 use preferences_dialog::PreferencesDialog;
 use ruffle_core::Player;
+use std::sync::Weak;
 use unic_langid::LanguageIdentifier;
 use url::Url;
 use volume_controls::VolumeControls;
 use winit::event_loop::EventLoopProxy;
 
 pub struct Dialogs {
+    window: Weak<winit::window::Window>,
     preferences_dialog: Option<PreferencesDialog>,
     bookmarks_dialog: Option<BookmarksDialog>,
     bookmark_add_dialog: Option<BookmarkAddDialog>,
@@ -37,6 +39,7 @@ impl Dialogs {
         preferences: GlobalPreferences,
         player_options: LaunchOptions,
         default_path: Option<Url>,
+        window: Weak<winit::window::Window>,
         event_loop: EventLoopProxy<RuffleEvent>,
     ) -> Self {
         Self {
@@ -44,7 +47,7 @@ impl Dialogs {
             bookmarks_dialog: None,
             bookmark_add_dialog: None,
 
-            open_dialog: OpenDialog::new(player_options, default_path, event_loop),
+            open_dialog: OpenDialog::new(player_options, default_path, window.clone(), event_loop),
             is_open_dialog_visible: false,
 
             volume_controls: VolumeControls::new(&preferences),
@@ -52,6 +55,7 @@ impl Dialogs {
 
             is_about_visible: false,
 
+            window,
             preferences,
         }
     }
@@ -63,7 +67,7 @@ impl Dialogs {
         event_loop: EventLoopProxy<RuffleEvent>,
     ) {
         self.is_open_dialog_visible = false;
-        self.open_dialog = OpenDialog::new(opt, url, event_loop);
+        self.open_dialog = OpenDialog::new(opt, url, self.window.clone(), event_loop);
     }
 
     pub fn open_file_advanced(&mut self) {
@@ -75,13 +79,17 @@ impl Dialogs {
     }
 
     pub fn open_bookmarks(&mut self) {
-        self.bookmarks_dialog = Some(BookmarksDialog::new(self.preferences.clone()));
+        self.bookmarks_dialog = Some(BookmarksDialog::new(
+            self.preferences.clone(),
+            self.window.clone(),
+        ));
     }
 
     pub fn open_add_bookmark(&mut self, initial_url: Option<url::Url>) {
         self.bookmark_add_dialog = Some(BookmarkAddDialog::new(
             self.preferences.clone(),
             initial_url,
+            self.window.clone(),
         ))
     }
 
