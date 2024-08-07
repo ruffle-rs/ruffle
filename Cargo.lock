@@ -251,9 +251,13 @@ dependencies = [
  "futures-channel",
  "futures-util",
  "rand",
+ "raw-window-handle",
  "serde",
  "serde_repr",
  "url",
+ "wayland-backend",
+ "wayland-client",
+ "wayland-protocols",
  "zbus",
 ]
 
@@ -3501,6 +3505,7 @@ checksum = "0ee638a5da3799329310ad4cfa62fbf045d5f56e3ef5ba4149e7452dcf89d5a8"
 dependencies = [
  "bitflags 2.6.0",
  "block2 0.5.1",
+ "dispatch",
  "libc",
  "objc2 0.5.2",
 ]
@@ -4200,6 +4205,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "rfd"
+version = "0.14.1"
+source = "git+https://github.com/PolyMeilex/rfd.git?rev=42dcc7d61fc5e278b4ed76bb9720ba4d89266f01#42dcc7d61fc5e278b4ed76bb9720ba4d89266f01"
+dependencies = [
+ "ashpd",
+ "block2 0.5.1",
+ "js-sys",
+ "log",
+ "objc2 0.5.2",
+ "objc2-app-kit",
+ "objc2-foundation",
+ "pollster",
+ "raw-window-handle",
+ "urlencoding",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+ "windows-sys 0.48.0",
+]
+
+[[package]]
 name = "ring"
 version = "0.17.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4308,7 +4334,7 @@ dependencies = [
  "image",
  "os_info",
  "rand",
- "rfd",
+ "rfd 0.14.1 (git+https://github.com/PolyMeilex/rfd.git?rev=42dcc7d61fc5e278b4ed76bb9720ba4d89266f01)",
  "ruffle_core",
  "ruffle_frontend_utils",
  "ruffle_render",
@@ -4570,7 +4596,7 @@ dependencies = [
  "getrandom",
  "gloo-net",
  "js-sys",
- "rfd",
+ "rfd 0.14.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "ruffle_core",
  "ruffle_render",
  "ruffle_render_canvas",
