@@ -250,7 +250,7 @@ impl DisplayObjectWindow {
                 ui.label("Focus Rect");
                 let focus_rect = object.focus_rect();
                 let mut new_focus_rect = focus_rect;
-                ComboBox::from_id_source(ui.id().with("focus_rect"))
+                ComboBox::from_id_salt(ui.id().with("focus_rect"))
                     .selected_text(optional_boolean_switch_value(focus_rect))
                     .show_ui(ui, |ui| {
                         for value in [None, Some(true), Some(false)] {
@@ -395,7 +395,7 @@ impl DisplayObjectWindow {
                 ui.label("Autosize");
                 ui.horizontal(|ui| {
                     let mut autosize = object.autosize();
-                    ComboBox::from_id_source(ui.id().with("autosize"))
+                    ComboBox::from_id_salt(ui.id().with("autosize"))
                         .selected_text(format!("{:?}", autosize))
                         .show_ui(ui, |ui| {
                             for value in [
@@ -476,7 +476,7 @@ impl DisplayObjectWindow {
             });
 
         CollapsingHeader::new("Span List")
-            .id_source(ui.id().with("spans"))
+            .id_salt(ui.id().with("spans"))
             .show(ui, |ui| {
                 Grid::new(ui.id().with("spans"))
                     .num_columns(7)
@@ -598,7 +598,7 @@ impl DisplayObjectWindow {
             });
 
         CollapsingHeader::new("Frame List")
-            .id_source(ui.id().with("frames"))
+            .id_salt(ui.id().with("frames"))
             .show(ui, |ui| {
                 Grid::new(ui.id().with("frames"))
                     .num_columns(5)
@@ -715,7 +715,7 @@ impl DisplayObjectWindow {
             "automatic"
         };
         CollapsingHeader::new(format!("Tab Order ({})", tab_order_suffix))
-            .id_source(ui.id().with("tab_order"))
+            .id_salt(ui.id().with("tab_order"))
             .show(ui, |ui| {
                 Grid::new(ui.id().with("tab_order_grid"))
                     .num_columns(3)
@@ -877,7 +877,7 @@ impl DisplayObjectWindow {
                 ui.label("Blend mode");
                 let old_blend = object.blend_mode();
                 let mut new_blend = old_blend;
-                ComboBox::from_id_source(ui.id().with("blendmode"))
+                ComboBox::from_id_salt(ui.id().with("blendmode"))
                     .selected_text(blend_mode_name(old_blend))
                     .show_ui(ui, |ui| {
                         for mode in ALL_BLEND_MODES {
@@ -921,7 +921,7 @@ impl DisplayObjectWindow {
         let filters = object.filters();
         if !filters.is_empty() {
             CollapsingHeader::new(format!("Filters ({})", filters.len()))
-                .id_source(ui.id().with("filters"))
+                .id_salt(ui.id().with("filters"))
                 .show(ui, |ui| {
                     for filter in filters {
                         ui.label(format!("{:?}", filter));

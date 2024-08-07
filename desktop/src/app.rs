@@ -17,9 +17,9 @@ use std::time::{Duration, Instant};
 use url::Url;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
 use winit::event::{ElementState, KeyEvent, Modifiers, WindowEvent};
-use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
+use winit::event_loop::{ControlFlow, EventLoop};
 use winit::keyboard::{Key, NamedKey};
-use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
+use winit::window::{Fullscreen, Icon, Window, WindowAttributes};
 
 pub struct App {
     preferences: GlobalPreferences,
@@ -43,22 +43,26 @@ impl App {
         let icon =
             Icon::from_rgba(icon_bytes.to_vec(), 32, 32).context("Couldn't load app icon")?;
 
-        let event_loop = EventLoopBuilder::with_user_event().build()?;
+        let event_loop = EventLoop::with_user_event().build()?;
 
         let no_gui = preferences.cli.no_gui;
         let min_window_size = (16, if no_gui { 16 } else { MENU_HEIGHT + 16 }).into();
-        let max_window_size = get_screen_size(&event_loop);
         let preferred_width = preferences.cli.width;
         let preferred_height = preferences.cli.height;
         let start_fullscreen = preferences.cli.fullscreen;
 
-        let window = WindowBuilder::new()
+        let window_attributes = WindowAttributes::default()
             .with_visible(false)
             .with_title("Ruffle")
             .with_window_icon(Some(icon))
-            .with_min_inner_size(min_window_size)
-            .with_max_inner_size(max_window_size)
-            .build(&event_loop)?;
+            .with_min_inner_size(min_window_size);
+
+        // TODO: Migrate to ActiveEventLoop::create_window, see:
+        // https://github.com/rust-windowing/winit/releases/tag/v0.30.0
+        #[allow(deprecated)]
+        let window = event_loop.create_window(window_attributes)?;
+        let max_window_size = get_screen_size(&window);
+        window.set_max_inner_size(Some(max_window_size));
         let window = Arc::new(window);
 
         let mut font_database = fontdb::Database::default();
@@ -136,6 +140,9 @@ impl App {
         // Poll UI events.
         let event_loop = self.event_loop.take().expect("App already running");
         let event_loop_proxy = event_loop.create_proxy();
+        // TODO: Migrate to `EventLoop::run_app` and `impl ApplicationHandler<RuffleEvent> for App`,
+        // see: https://github.com/rust-windowing/winit/releases/tag/v0.30.0
+        #[allow(deprecated)]
         event_loop.run(move |event, elwt| {
             let mut check_redraw = false;
             match event {

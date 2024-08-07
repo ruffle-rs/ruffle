@@ -229,7 +229,7 @@ impl MovieWindow {
 
         if !movie.parameters().is_empty() {
             CollapsingHeader::new("Parameters")
-                .id_source(ui.id().with("parameters"))
+                .id_salt(ui.id().with("parameters"))
                 .default_open(false)
                 .show(ui, |ui| {
                     Grid::new(ui.id().with("parameters"))

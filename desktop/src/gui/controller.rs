@@ -99,8 +99,14 @@ impl GuiController {
 
         let theme_controller =
             ThemeController::new(window.clone(), preferences.clone(), egui_ctx.clone()).await;
-        let mut egui_winit =
-            egui_winit::State::new(egui_ctx, ViewportId::ROOT, window.as_ref(), None, None);
+        let mut egui_winit = egui_winit::State::new(
+            egui_ctx,
+            ViewportId::ROOT,
+            window.as_ref(),
+            None,
+            None,
+            None,
+        );
         egui_winit.set_max_texture_side(descriptors.limits.max_texture_dimension_2d as usize);
 
         let movie_view_renderer = Arc::new(MovieViewRenderer::new(
