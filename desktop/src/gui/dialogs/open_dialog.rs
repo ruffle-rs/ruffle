@@ -11,6 +11,7 @@ use ruffle_core::{LoadBehavior, PlayerRuntime, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
 use std::borrow::Cow;
 use std::ops::RangeInclusive;
+use std::sync::Weak;
 use std::time::Duration;
 use unic_langid::LanguageIdentifier;
 use url::Url;
@@ -49,6 +50,7 @@ impl OpenDialog {
     pub fn new(
         defaults: LaunchOptions,
         default_url: Option<Url>,
+        window: Weak<winit::window::Window>,
         event_loop: EventLoopProxy<RuffleEvent>,
     ) -> Self {
         let spoof_url = OptionalField::new(
@@ -71,7 +73,7 @@ impl OpenDialog {
             defaults.proxy.as_ref().map(Url::to_string),
             UrlField::new("socks5://localhost:8080"),
         );
-        let path = PathOrUrlField::new(default_url, "path/to/movie.swf");
+        let path = PathOrUrlField::new(default_url, "path/to/movie.swf", window);
         let script_timeout = OptionalField::new(
             defaults
                 .player

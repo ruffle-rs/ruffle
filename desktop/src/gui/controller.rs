@@ -112,6 +112,7 @@ impl GuiController {
             egui_wgpu::Renderer::new(&descriptors.device, surface_format, None, 1, true);
         let descriptors = Arc::new(descriptors);
         let gui = RuffleGui::new(
+            Arc::downgrade(&window),
             event_loop,
             initial_movie_url.clone(),
             LaunchOptions::from(&preferences),
