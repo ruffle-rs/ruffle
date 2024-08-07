@@ -768,31 +768,23 @@ impl Player {
     fn get_context_menu_display_object<'gc>(
         context: &mut UpdateContext<'gc>,
     ) -> Option<DisplayObject<'gc>> {
-        let mut display_object = run_mouse_pick(context, false).map(|obj| obj.as_displayobject());
-        loop {
-            if let Some(disp_obj) = display_object {
-                if disp_obj.hit_test_shape(
-                    context,
-                    *context.mouse_position,
-                    HitTestOptions::MOUSE_PICK,
-                ) {
-                    if let Some(Value::Object(obj)) = Some(disp_obj).map(|obj| obj.object()) {
-                        let mut activation = Activation::from_stub(
-                            context,
-                            ActivationIdentifier::root("[ContextMenu]"),
-                        );
+        let mut picked_obj =
+            run_mouse_pick(context, false).map(|picked_obj| picked_obj.as_displayobject());
 
-                        if let Ok(Value::Object(_)) = obj.get("menu", &mut activation) {
-                            return Some(disp_obj);
-                        }
-                    }
+        while let Some(display_obj) = picked_obj {
+            if let Value::Object(obj) = display_obj.object() {
+                let mut activation =
+                    Activation::from_stub(context, ActivationIdentifier::root("[ContextMenu]"));
+
+                if let Ok(Value::Object(_)) = obj.get("menu", &mut activation) {
+                    return Some(display_obj);
                 }
-
-                display_object = disp_obj.parent();
-            } else {
-                return context.stage.root_clip();
             }
+
+            picked_obj = display_obj.parent();
         }
+
+        context.stage.root_clip()
     }
 
     pub fn set_fullscreen(&mut self, is_fullscreen: bool) {
