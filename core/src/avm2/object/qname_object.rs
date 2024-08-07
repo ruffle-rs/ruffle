@@ -59,9 +59,8 @@ pub struct QNameObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(QNameObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<QNameObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
-);
+const _: () =
+    assert!(std::mem::align_of::<QNameObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> QNameObject<'gc> {
     /// Box a Multiname into an object.

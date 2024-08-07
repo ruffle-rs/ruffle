@@ -492,9 +492,8 @@ pub struct Context3DData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(Context3DData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<Context3DData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
-);
+const _: () =
+    assert!(std::mem::align_of::<Context3DData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> TObject<'gc> for Context3DObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {

@@ -94,8 +94,7 @@ pub struct FileReferenceObjectData<'gc> {
 
 const _: () = assert!(std::mem::offset_of!(FileReferenceObjectData, base) == 0);
 const _: () = assert!(
-    std::mem::align_of::<FileReferenceObjectData>()
-        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+    std::mem::align_of::<FileReferenceObjectData>() == std::mem::align_of::<ScriptObjectData>()
 );
 
 impl fmt::Debug for FileReferenceObject<'_> {

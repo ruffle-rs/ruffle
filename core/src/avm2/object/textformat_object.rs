@@ -56,8 +56,7 @@ pub struct TextFormatObjectData<'gc> {
 
 const _: () = assert!(std::mem::offset_of!(TextFormatObjectData, base) == 0);
 const _: () = assert!(
-    std::mem::align_of::<TextFormatObjectData>()
-        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+    std::mem::align_of::<TextFormatObjectData>() == std::mem::align_of::<ScriptObjectData>()
 );
 
 impl<'gc> TextFormatObject<'gc> {

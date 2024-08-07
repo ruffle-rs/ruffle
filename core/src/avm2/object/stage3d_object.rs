@@ -75,9 +75,8 @@ pub struct Stage3DObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(Stage3DObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<Stage3DObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
-);
+const _: () =
+    assert!(std::mem::align_of::<Stage3DObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> TObject<'gc> for Stage3DObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {

@@ -23,7 +23,7 @@ pub fn scriptobject_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(ScriptObject(Gc::new(activation.context.gc_context, base)).into())
 }

@@ -93,9 +93,8 @@ pub struct FunctionObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(FunctionObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<FunctionObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
-);
+const _: () =
+    assert!(std::mem::align_of::<FunctionObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> FunctionObject<'gc> {
     /// Construct a function from an ABC method and the current closure scope.

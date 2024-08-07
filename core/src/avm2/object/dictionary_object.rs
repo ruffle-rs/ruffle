@@ -55,8 +55,7 @@ pub struct DictionaryObjectData<'gc> {
 
 const _: () = assert!(std::mem::offset_of!(DictionaryObjectData, base) == 0);
 const _: () = assert!(
-    std::mem::align_of::<DictionaryObjectData>()
-        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+    std::mem::align_of::<DictionaryObjectData>() == std::mem::align_of::<ScriptObjectData>()
 );
 
 impl<'gc> DictionaryObject<'gc> {

@@ -64,9 +64,8 @@ pub struct DispatchObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(DispatchObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<DispatchObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
-);
+const _: () =
+    assert!(std::mem::align_of::<DispatchObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> DispatchObject<'gc> {
     /// Construct an empty dispatch list.

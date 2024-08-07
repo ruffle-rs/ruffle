@@ -47,8 +47,7 @@ pub struct NetConnectionObjectData<'gc> {
 
 const _: () = assert!(std::mem::offset_of!(NetConnectionObjectData, base) == 0);
 const _: () = assert!(
-    std::mem::align_of::<NetConnectionObjectData>()
-        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+    std::mem::align_of::<NetConnectionObjectData>() == std::mem::align_of::<ScriptObjectData>()
 );
 
 impl<'gc> TObject<'gc> for NetConnectionObject<'gc> {

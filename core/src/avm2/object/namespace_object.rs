@@ -67,8 +67,7 @@ pub struct NamespaceObjectData<'gc> {
 
 const _: () = assert!(std::mem::offset_of!(NamespaceObjectData, base) == 0);
 const _: () = assert!(
-    std::mem::align_of::<NamespaceObjectData>()
-        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+    std::mem::align_of::<NamespaceObjectData>() == std::mem::align_of::<ScriptObjectData>()
 );
 
 impl<'gc> NamespaceObject<'gc> {

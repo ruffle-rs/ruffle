@@ -74,9 +74,8 @@ pub struct SoundObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(SoundObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<SoundObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
-);
+const _: () =
+    assert!(std::mem::align_of::<SoundObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 #[derive(Collect)]
 #[collect(no_drop)]

@@ -124,8 +124,7 @@ pub struct LoaderInfoObjectData<'gc> {
 
 const _: () = assert!(std::mem::offset_of!(LoaderInfoObjectData, base) == 0);
 const _: () = assert!(
-    std::mem::align_of::<LoaderInfoObjectData>()
-        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+    std::mem::align_of::<LoaderInfoObjectData>() == std::mem::align_of::<ScriptObjectData>()
 );
 
 impl<'gc> LoaderInfoObject<'gc> {

@@ -56,9 +56,8 @@ pub struct RegExpObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(RegExpObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<RegExpObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
-);
+const _: () =
+    assert!(std::mem::align_of::<RegExpObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> RegExpObject<'gc> {
     pub fn from_regexp(

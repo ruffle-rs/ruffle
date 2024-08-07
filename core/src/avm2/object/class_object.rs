@@ -76,9 +76,8 @@ pub struct ClassObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(ClassObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<ClassObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
-);
+const _: () =
+    assert!(std::mem::align_of::<ClassObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> ClassObject<'gc> {
     /// Allocate the prototype for this class.

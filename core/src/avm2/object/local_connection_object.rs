@@ -57,8 +57,7 @@ pub struct LocalConnectionObjectData<'gc> {
 
 const _: () = assert!(std::mem::offset_of!(LocalConnectionObjectData, base) == 0);
 const _: () = assert!(
-    std::mem::align_of::<LocalConnectionObjectData>()
-        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+    std::mem::align_of::<LocalConnectionObjectData>() == std::mem::align_of::<ScriptObjectData>()
 );
 
 impl<'gc> LocalConnectionObject<'gc> {

@@ -50,7 +50,7 @@ pub struct FontObjectWeak<'gc>(pub GcWeak<'gc, FontObjectData<'gc>>);
 
 impl<'gc> FontObject<'gc> {
     pub fn for_font(mc: &Mutation<'gc>, class: ClassObject<'gc>, font: Font<'gc>) -> Object<'gc> {
-        let base = ScriptObjectData::new(class).into();
+        let base = ScriptObjectData::new(class);
         FontObject(Gc::new(
             mc,
             FontObjectData {
@@ -95,9 +95,8 @@ pub struct FontObjectData<'gc> {
 }
 
 const _: () = assert!(std::mem::offset_of!(FontObjectData, base) == 0);
-const _: () = assert!(
-    std::mem::align_of::<FontObjectData>() == std::mem::align_of::<RefLock<ScriptObjectData>>()
-);
+const _: () =
+    assert!(std::mem::align_of::<FontObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl fmt::Debug for FontObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

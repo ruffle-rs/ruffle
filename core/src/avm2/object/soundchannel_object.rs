@@ -65,8 +65,7 @@ pub struct SoundChannelObjectData<'gc> {
 
 const _: () = assert!(std::mem::offset_of!(SoundChannelObjectData, base) == 0);
 const _: () = assert!(
-    std::mem::align_of::<SoundChannelObjectData>()
-        == std::mem::align_of::<RefLock<ScriptObjectData>>()
+    std::mem::align_of::<SoundChannelObjectData>() == std::mem::align_of::<ScriptObjectData>()
 );
 
 pub enum SoundChannelData {
