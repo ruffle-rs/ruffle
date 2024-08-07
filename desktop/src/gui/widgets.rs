@@ -86,7 +86,7 @@ impl PathOrUrlField {
         self
     }
 
-    pub fn value(&self) -> Option<&Url> {
+    pub fn result(&self) -> Option<&Url> {
         self.result.as_ref()
     }
 }
