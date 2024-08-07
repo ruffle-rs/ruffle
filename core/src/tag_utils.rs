@@ -158,7 +158,8 @@ impl SwfMovie {
         loader_url: Option<String>,
     ) -> Result<Self, Error> {
         let compressed_len = swf_data.len();
-        let swf_buf = swf::read::decompress_swf(swf_data)?;
+        let swf_buf = swf::read::decompress_swf(swf_data)
+            .or_else(|_| swf::read::decompress_projector_bundle(swf_data))?;
         let encoding = swf::SwfStr::encoding_for_version(swf_buf.header.version());
         let mut movie = Self {
             header: swf_buf.header,
