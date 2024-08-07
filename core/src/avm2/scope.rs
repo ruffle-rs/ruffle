@@ -181,10 +181,9 @@ impl<'gc> ScopeChain<'gc> {
                 // NOTE: We are manually searching the vtable's traits so we can figure out which namespace the trait
                 // belongs to.
                 let values = scope.values();
-                if let Some(vtable) = values.vtable() {
-                    if let Some((namespace, _)) = vtable.get_trait_with_ns(multiname) {
-                        return Ok(Some((Some(namespace), values)));
-                    }
+                let vtable = values.vtable();
+                if let Some((namespace, _)) = vtable.get_trait_with_ns(multiname) {
+                    return Ok(Some((Some(namespace), values)));
                 }
 
                 // Wasn't in the objects traits, let's try dynamic properties if this is a with scope.

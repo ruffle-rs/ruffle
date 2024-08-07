@@ -202,29 +202,24 @@ pub fn recursive_serialize<'gc>(
     object_table: &mut ObjectTable<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(static_properties) = static_properties {
-        if let Some(vtable) = obj.vtable() {
-            let mut props = vtable.public_properties();
-            // Flash appears to use vtable iteration order, but we sort ours
-            // to make our test output consistent.
-            props.sort_by_key(|(name, _)| name.to_utf8_lossy().to_string());
-            for (name, prop) in props {
-                if let Property::Virtual { get, set } = prop {
-                    if !(get.is_some() && set.is_some()) {
-                        continue;
-                    }
+        let vtable = obj.vtable();
+        let mut props = vtable.public_properties();
+        // Flash appears to use vtable iteration order, but we sort ours
+        // to make our test output consistent.
+        props.sort_by_key(|(name, _)| name.to_utf8_lossy().to_string());
+        for (name, prop) in props {
+            if let Property::Virtual { get, set } = prop {
+                if !(get.is_some() && set.is_some()) {
+                    continue;
                 }
-                let value = obj.get_public_property(name, activation)?;
-                let name = name.to_utf8_lossy().to_string();
-                if let Some(elem) = get_or_create_element(
-                    activation,
-                    name.clone(),
-                    value,
-                    object_table,
-                    amf_version,
-                ) {
-                    elements.push(elem);
-                    static_properties.push(name);
-                }
+            }
+            let value = obj.get_public_property(name, activation)?;
+            let name = name.to_utf8_lossy().to_string();
+            if let Some(elem) =
+                get_or_create_element(activation, name.clone(), value, object_table, amf_version)
+            {
+                elements.push(elem);
+                static_properties.push(name);
             }
         }
     }
