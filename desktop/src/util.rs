@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use url::Url;
 use winit::dpi::PhysicalSize;
 use winit::event::{KeyEvent, Modifiers};
-use winit::event_loop::EventLoop;
+use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::keyboard::{Key, KeyLocation, NamedKey};
 
 /// Converts a winit event to a Ruffle `TextControlCode`.
@@ -211,16 +211,16 @@ pub fn get_screen_size(event_loop: &EventLoop<RuffleEvent>) -> PhysicalSize<u32>
     let mut min_y = 0;
     let mut max_x = 0;
     let mut max_y = 0;
-
-    for monitor in event_loop.available_monitors() {
-        let size = monitor.size();
-        let position = monitor.position();
-        min_x = min_x.min(position.x);
-        min_y = min_y.min(position.y);
-        max_x = max_x.max(position.x + size.width as i32);
-        max_y = max_y.max(position.y + size.height as i32);
-    }
-
+    /*
+        for monitor in event_loop.available_monitors() {
+            let size = monitor.size();
+            let position = monitor.position();
+            min_x = min_x.min(position.x);
+            min_y = min_y.min(position.y);
+            max_x = max_x.max(position.x + size.width as i32);
+            max_y = max_y.max(position.y + size.height as i32);
+        }
+    */
     let width = max_x - min_x;
     let height = max_y - min_y;
 
