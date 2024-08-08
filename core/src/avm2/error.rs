@@ -9,7 +9,6 @@ use std::mem::size_of;
 use super::function::display_function;
 use super::method::Method;
 use super::ClassObject;
-use super::Object;
 
 /// An error generated while handling AVM2 logic
 pub enum Error<'gc> {
@@ -778,7 +777,7 @@ pub fn make_mismatch_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: Method<'gc>,
     user_arguments: &[Value<'gc>],
-    callee: Option<Object<'gc>>,
+    bound_class: Option<Class<'gc>>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let expected_num_params = method
         .signature()
@@ -787,17 +786,8 @@ pub fn make_mismatch_error<'gc>(
         .count();
 
     let mut function_name = WString::new();
-    let bound_superclass = callee.and_then(|callee| {
-        if let Some(cls) = callee.as_class_object() {
-            Some(cls)
-        } else {
-            callee
-                .as_function_object()
-                .and_then(|f| f.as_executable().and_then(|e| e.bound_superclass()))
-        }
-    });
 
-    display_function(&mut function_name, &method, bound_superclass);
+    display_function(&mut function_name, &method, bound_class);
 
     return Err(Error::AvmError(argument_error(
         activation,

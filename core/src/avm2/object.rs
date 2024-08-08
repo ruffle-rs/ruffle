@@ -600,17 +600,18 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         // Execute immediately if this method doesn't require binding
         if !full_method.method.needs_arguments_object() {
             let ClassBoundMethod {
-                method,
+                class,
+                super_class_obj,
                 scope,
-                class_obj,
-                ..
+                method,
             } = full_method;
 
             return exec(
                 method,
                 scope.expect("Scope should exist here"),
                 self.into(),
-                class_obj,
+                super_class_obj,
+                Some(class),
                 arguments,
                 activation,
                 self.into(), // Callee deliberately invalid.
