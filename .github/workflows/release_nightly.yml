@@ -578,6 +578,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update PKGBUILD
+        working-directory: desktop/packages/linux/aur/ruffle-nightly-bin
         run: >
           sed -i ./PKGBUILD
           -e "s/@VERSION@/${{ steps.current_time_dots.outputs.formattedTime }}/"
@@ -587,7 +588,7 @@ jobs:
         uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
         with:
           pkgname: ruffle-nightly-bin
-          pkgbuild: ./PKGBUILD
+          pkgbuild: desktop/packages/linux/aur/ruffle-nightly-bin/PKGBUILD
           commit_username: RuffleBuild
           commit_email: ruffle@ruffle.rs
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
