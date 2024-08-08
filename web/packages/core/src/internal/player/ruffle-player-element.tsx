@@ -1,6 +1,8 @@
 import type { DataLoadOptions, URLLoadOptions } from "../../public/config";
 import type { MovieMetadata, PlayerElement } from "../../public/player";
 import { InnerPlayer, ReadyState } from "./inner";
+import { APIVersions } from "../../public/player";
+import { PlayerV1Impl } from "./impl_v1";
 
 /**
  * The ruffle player element that should be inserted onto the page.
@@ -52,6 +54,14 @@ export class RufflePlayerElement extends HTMLElement implements PlayerElement {
                 }
             },
         );
+    }
+
+    ruffle<V extends keyof APIVersions = 1>(version?: V): APIVersions[V] {
+        const v = version ?? 1;
+        if (v === 1) {
+            return new PlayerV1Impl(this.#inner) as APIVersions[V];
+        }
+        throw new Error(`Version ${version} not supported.`);
     }
 
     get loadedConfig(): URLLoadOptions | DataLoadOptions | null {
@@ -145,7 +155,7 @@ export class RufflePlayerElement extends HTMLElement implements PlayerElement {
 
     public PercentLoaded(): number {
         // [NA] This is a stub - we need to research how this is actually implemented (is it just base swf loadedBytes?)
-        if (this.readyState === ReadyState.Loaded) {
+        if (this.#inner._readyState === ReadyState.Loaded) {
             return 100;
         } else {
             return 0;
