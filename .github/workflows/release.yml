@@ -1,23 +1,37 @@
-name: Release Nightly
+name: Release
 
 on:
   # Run nightly
   schedule:
     - cron: "0 0 * * *"
 
-  # Allow for manual dispatch on GitHub
+  # Allow manual dispatch on GitHub
   workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        description: Choose release mode
+        options:
+          - nightly
+          - minor
+          - patch
+          - major
+env:
+  RELEASE_SCRIPT: ./.github/scripts/release.py
 
 jobs:
-  create-nightly-release:
-    name: Create Nightly Release
+  create-release:
+    name: Create Release
     runs-on: ubuntu-22.04
     outputs:
-      is_active: ${{ steps.activity.outputs.is_active }}
+      enabled: ${{ steps.configure.outputs.enabled }}
+      revision: ${{ steps.commit.outputs.revision }}
       date: ${{ steps.current_time_underscores.outputs.formattedTime }}
       upload_url: ${{ steps.create_release.outputs.upload_url }}
-      package_prefix: ruffle-nightly-${{ steps.current_time_underscores.outputs.formattedTime }}
-      tag_name: nightly-${{ steps.current_time_dashes.outputs.formattedTime }}
+      package_prefix: ${{ steps.create_release.outputs.package_prefix }}
+      tag_name: ${{ steps.create_release.outputs.tag_name }}
+      release_channel: ${{ steps.configure.outputs.release_channel }}
+      version4: ${{ steps.version.outputs.version4 }}
 
     # Only run the scheduled workflows on the main repo.
     if: github.repository == 'ruffle-rs/ruffle' || github.event_name == 'repository_dispatch' || github.event_name == 'workflow_dispatch'
@@ -25,45 +39,89 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check for repo activity
-        id: activity
+      - name: Install cargo-edit
+        uses: baptiste0928/cargo-install@v3
+        with:
+          crate: cargo-edit
+          version: '^0.12'
+
+      - name: Install cargo-get
+        uses: baptiste0928/cargo-install@v3
+        with:
+          crate: cargo-get
+          version: '^1.0'
+
+      - name: Configure release
+        id: configure
         run: |
-          # Skip activity check when manually triggered.
-          if [ "${{ github.event_name }}" == "repository_dispatch" ] || [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            is_active=true
-          elif [ "$(git rev-list --after="24 hours" ${{ github.sha }})" ]; then
-            is_active=true
+          enabled=true
+          if [[ "${{ github.event.inputs.mode }}" == "nightly" ]]; then
+            release_channel=nightly
+          elif [[ -n "${{ github.event.inputs.mode }}" ]]; then
+            release_channel=stable
+          elif [[ "${{ github.event.schedule }}" == '0 0 * * *' && "$(git rev-list --after="24 hours" ${{ github.sha }})" ]]; then
+            release_channel=nightly
           else
-            is_active=false
+            enabled=false
+            release_channel=
           fi
-          echo "is_active=$is_active" >> $GITHUB_OUTPUT
+          echo "enabled=$enabled" | tee -a $GITHUB_OUTPUT
+          echo "release_channel=$release_channel" | tee -a $GITHUB_OUTPUT
 
-      - name: Get current time with dashes
-        uses: 1466587594/get-current-time@v2.1.2
-        id: current_time_dashes
-        with:
-          format: YYYY-MM-DD
+      - name: Bump version
+        if: steps.configure.outputs.enabled == 'true'
+        id: version
+        run: |
+          $RELEASE_SCRIPT bump "${{ github.event.inputs.mode }}"
 
-      - name: Get current time with underscores
-        uses: 1466587594/get-current-time@v2.1.2
-        id: current_time_underscores
+          # Ensure newlines at the end of file
+          shopt -s globstar
+          sed -i -e '$a\' **/package.json
+
+      - name: Create release commit
+        if: steps.configure.outputs.enabled == 'true'
+        id: commit
+        run: |
+          if [[ ${{ steps.configure.outputs.release_channel }} == 'stable' ]]; then
+            git config user.name "RuffleBuild"
+            git config user.email "ruffle@ruffle.rs"
+            $RELEASE_SCRIPT commit "${{ github.event.inputs.mode }}"
+          else
+            # For nightly we do not want to commit those changes,
+            # save them and then apply when building
+            git diff > /tmp/nightly-release.patch
+          fi
+          revision=$(git rev-parse HEAD)
+          echo "revision=$revision" | tee -a $GITHUB_OUTPUT
+
+      - name: Upload nightly release patch
+        uses: actions/upload-artifact@v4
+        if: steps.configure.outputs.release_channel == 'nightly'
         with:
-          format: YYYY_MM_DD
+          name: nightly-release-patch
+          path: /tmp/nightly-release.patch
+
+      - name: Push release commit
+        if: steps.configure.outputs.release_channel == 'stable'
+        uses: ad-m/github-push-action@v0.8.0
+        with:
+          repository: ${{ github.repository }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
+          force: false
 
       - name: Create release
-        if: steps.activity.outputs.is_active == 'true'
+        if: steps.configure.outputs.enabled == 'true'
         id: create_release
-        run: |
-          tag_name="nightly-${{ steps.current_time_dashes.outputs.formattedTime }}"
-          release_name="Nightly ${{ steps.current_time_dashes.outputs.formattedTime }}"
-          gh release create "$tag_name" --title "$release_name" --generate-notes --prerelease
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $RELEASE_SCRIPT release "${{ steps.configure.outputs.release_channel }}"
 
   build:
     name: Build ${{ matrix.build_name }}
-    needs: create-nightly-release
-    if: needs.create-nightly-release.outputs.is_active == 'true'
+    needs: create-release
+    if: needs.create-release.outputs.enabled == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -99,13 +157,26 @@ jobs:
             MSI_ARCH: x64
 
     env:
-      PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-${{ matrix.build_name }}.${{ startsWith(matrix.build_name, 'win') && 'zip' || 'tar.gz' }}
+      PACKAGE_FILE: ${{ needs.create-release.outputs.package_prefix }}-${{ matrix.build_name }}.${{ startsWith(matrix.build_name, 'win') && 'zip' || 'tar.gz' }}
       CARGO_BUILD_DIR: target/${{ matrix.target }}/release
 
     runs-on: ${{ matrix.os }}
     steps:
       - name: Clone Ruffle repo
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.create-release.outputs.revision }}
+
+      - name: Download nightly release patch
+        uses: actions/download-artifact@v4
+        if: needs.create-release.outputs.release_channel == 'nightly'
+        with:
+          name: nightly-release-patch
+          path: /tmp
+
+      - name: Apply nightly release patch
+        if: needs.create-release.outputs.release_channel == 'nightly'
+        run: git apply --verbose /tmp/nightly-release.patch
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -120,17 +191,18 @@ jobs:
           sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev libgtk-3-dev libudev-dev
 
       - name: Install WiX
+        if: runner.os == 'Windows'
         run: |
           dotnet tool install --global wix
           wix extension add -g WixToolset.UI.wixext
           wix extension add -g WixToolset.Util.wixext
-        if: runner.os == 'Windows'
 
       - name: Cargo build
         run: cargo build --locked --package ruffle_desktop --release ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
         env:
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MACOSX_DEPLOYMENT_TARGET }}
+          CFG_RELEASE_CHANNEL: ${{ needs.create-release.outputs.release_channel }}
 
       - name: Package common
         run: |
@@ -139,13 +211,13 @@ jobs:
           cp LICENSE.md package/LICENSE.md
 
       - name: Package MSI
-        run: |
-          cd desktop/packages/windows/wix
-          wix build ruffle.wxs -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext -arch ${{ matrix.MSI_ARCH }} -o ../../../../package/setup.msi -pdbtype none
-        env:
-          RUFFLE_VERSION: "0.1.0"
-          CARGO_BUILD_DIR: ../../../../target/${{ matrix.target }}/release
         if: runner.os == 'Windows'
+        working-directory: desktop/packages/windows/wix
+        env:
+          RUFFLE_VERSION: ${{ needs.create-release.outputs.version4 }}
+          CARGO_BUILD_DIR: ../../../../target/${{ matrix.target }}/release
+        run: |
+          wix build ruffle.wxs -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext -arch ${{ matrix.MSI_ARCH }} -o ../../../../package/setup.msi -pdbtype none
 
       - name: Package Windows
         if: runner.os == 'Windows'
@@ -163,7 +235,7 @@ jobs:
 
       - name: Upload package
         if: runner.os != 'macOS'
-        run: gh release upload "${{ needs.create-nightly-release.outputs.tag_name }}" "${{ env.PACKAGE_FILE }}"
+        run: gh release upload "${{ needs.create-release.outputs.tag_name }}" "${{ env.PACKAGE_FILE }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -186,10 +258,10 @@ jobs:
 
   build-mac-universal-binary:
     name: Build macOS universal binary
-    needs: [create-nightly-release, build, build-web]
+    needs: [create-release, build, build-web]
     runs-on: macos-14
     env:
-      PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-macos-universal.tar.gz
+      PACKAGE_FILE: ${{ needs.create-release.outputs.package_prefix }}-macos-universal.tar.gz
     steps:
       - name: Clone Ruffle repo
         uses: actions/checkout@v4
@@ -278,14 +350,14 @@ jobs:
           tar -czvf ../${{ env.PACKAGE_FILE }} *
 
       - name: Upload package
-        run: gh release upload "${{ needs.create-nightly-release.outputs.tag_name }}" "${{ env.PACKAGE_FILE }}"
+        run: gh release upload "${{ needs.create-release.outputs.tag_name }}" "${{ env.PACKAGE_FILE }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-stub-report:
     name: Build AVM2 stub repository
-    needs: create-nightly-release
-    if: needs.create-nightly-release.outputs.is_active == 'true'
+    needs: create-release
+    if: needs.create-release.outputs.enabled == 'true'
     runs-on: ubuntu-22.04
     steps:
       - name: Clone Ruffle repo
@@ -300,14 +372,14 @@ jobs:
         run: ./stub-report/generate-report.sh
 
       - name: Upload report
-        run: gh release upload "${{ needs.create-nightly-release.outputs.tag_name }}" avm2_report.json
+        run: gh release upload "${{ needs.create-release.outputs.tag_name }}" avm2_report.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-web:
     name: Build web${{ matrix.demo && ' demo' || '' }}
-    needs: create-nightly-release
-    if: needs.create-nightly-release.outputs.is_active == 'true'
+    needs: create-release
+    if: needs.create-release.outputs.enabled == 'true'
     runs-on: ubuntu-22.04
     strategy:
       matrix:
@@ -315,6 +387,19 @@ jobs:
     steps:
       - name: Clone Ruffle repo
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.create-release.outputs.revision }}
+
+      - name: Download nightly release patch
+        uses: actions/download-artifact@master
+        if: needs.create-release.outputs.release_channel == 'nightly'
+        with:
+          name: nightly-release-patch
+          path: /tmp
+
+      - name: Apply nightly release patch
+        if: needs.create-release.outputs.release_channel == 'nightly'
+        run: git apply --verbose /tmp/nightly-release.patch
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -352,18 +437,20 @@ jobs:
         shell: bash -l {0}
         working-directory: web
         env:
-          BUILD_ID: ${{ github.run_number }}
+          VERSION4: ${{ needs.create-release.outputs.version4 }}
           ENABLE_VERSION_SEAL: "true"
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
+          CFG_RELEASE_CHANNEL: ${{ needs.create-release.outputs.release_channel }}
         run: npm run version-seal
 
       - name: Build web
         env:
-          BUILD_ID: ${{ github.run_number }}
+          VERSION4: ${{ needs.create-release.outputs.version4 }}
           # Build web demo with WebGPU support for testing in Chrome origin trial on ruffle.rs
           CARGO_FEATURES: jpegxr${{ matrix.demo && ',webgpu' || '' }}
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
           WASM_SOURCE: cargo_and_store
+          CFG_RELEASE_CHANNEL: ${{ needs.create-release.outputs.release_channel }}
         working-directory: web
         shell: bash -l {0}
         run: npm run build:repro
@@ -373,7 +460,7 @@ jobs:
         shell: bash -l {0}
         run: |
           zip -r reproducible-source.zip . -x '/web/node_modules/*' '/web/*/node_modules/*' '/web/packages/*/dist/*' '/web/docker/docker_builds/packages/*' '/target/*' '/.git/*' '/tests/tests/swfs/*'
-          cp reproducible-source.zip "${{ needs.create-nightly-release.outputs.package_prefix }}-reproducible-source.zip"
+          cp reproducible-source.zip "${{ needs.create-release.outputs.package_prefix }}-reproducible-source.zip"
 
       - name: Upload reproducible source archive
         if: ${{ !matrix.demo }}
@@ -381,8 +468,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
-          tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
-          package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-reproducible-source.zip"
+          tag_name="${{ needs.create-release.outputs.tag_name }}"
+          package_file="${{ needs.create-release.outputs.package_prefix }}-reproducible-source.zip"
           gh release upload "$tag_name" "$package_file"
 
       - name: Build web docs
@@ -400,14 +487,14 @@ jobs:
 
       - name: Package selfhosted
         if: ${{ !matrix.demo }}
-        run: zip -r "${{ needs.create-nightly-release.outputs.package_prefix }}-web-selfhosted.zip" .
+        run: zip -r "${{ needs.create-release.outputs.package_prefix }}-web-selfhosted.zip" .
         working-directory: web/packages/selfhosted/dist
 
       - name: Upload selfhosted
         if: ${{ !matrix.demo }}
         run: |
-          tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
-          package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-web-selfhosted.zip"
+          tag_name="${{ needs.create-release.outputs.tag_name }}"
+          package_file="${{ needs.create-release.outputs.package_prefix }}-web-selfhosted.zip"
           gh release upload "$tag_name" "$package_file"
         working-directory: web/packages/selfhosted/dist
         env:
@@ -416,8 +503,8 @@ jobs:
       - name: Upload generic extension
         if: ${{ !matrix.demo }}
         run: |
-          tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
-          package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension.zip"
+          tag_name="${{ needs.create-release.outputs.tag_name }}"
+          package_file="${{ needs.create-release.outputs.package_prefix }}-web-extension.zip"
           cp "./web/packages/extension/dist/ruffle_extension.zip" "$package_file"
           gh release upload "$tag_name" "$package_file"
           rm "$package_file"
@@ -434,8 +521,8 @@ jobs:
       - name: Upload Firefox extension (unsigned)
         if: ${{ !matrix.demo }}
         run: |
-          tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
-          package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension-firefox-unsigned.xpi"
+          tag_name="${{ needs.create-release.outputs.tag_name }}"
+          package_file="${{ needs.create-release.outputs.package_prefix }}-web-extension-firefox-unsigned.xpi"
           cp "./web/packages/extension/dist/firefox_unsigned.xpi" "$package_file"
           gh release upload "$tag_name" "$package_file"
           rm "$package_file"
@@ -443,7 +530,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish Chrome extension
-        if: env.CHROME_EXTENSION_ID != '' && !matrix.demo
+        if: env.CHROME_EXTENSION_ID != '' && !matrix.demo && needs.create-release.outputs.release_channel == 'nightly'
         id: publish-chrome-extension
         continue-on-error: true
         env:
@@ -457,7 +544,7 @@ jobs:
           file-path: ./web/packages/extension/dist/ruffle_extension.zip
 
       - name: Publish Edge extension
-        if: env.EDGE_PRODUCT_ID != '' && !matrix.demo
+        if: env.EDGE_PRODUCT_ID != '' && !matrix.demo && needs.create-release.outputs.release_channel == 'nightly'
         id: publish-edge-extension
         continue-on-error: true
         env:
@@ -471,7 +558,7 @@ jobs:
           access-token-url: ${{ secrets.EDGE_ACCESS_TOKEN_URL }}
 
       - name: Clone web demo
-        if: matrix.demo
+        if: matrix.demo && needs.create-release.outputs.release_channel == 'nightly'
         uses: actions/checkout@v4
         with:
           repository: ruffle-rs/demo
@@ -481,7 +568,7 @@ jobs:
           persist-credentials: false # Needed to allow commit via RUFFLE_BUILD_TOKEN below
 
       - name: Update web demo
-        if: matrix.demo
+        if: matrix.demo && needs.create-release.outputs.release_channel == 'nightly'
         run: |
           # Delete the old build.
           rm -fr *
@@ -500,7 +587,7 @@ jobs:
         working-directory: demo
 
       - name: Push web demo
-        if: github.repository == 'ruffle-rs/ruffle' && matrix.demo
+        if: github.repository == 'ruffle-rs/ruffle' && matrix.demo && needs.create-release.outputs.release_channel == 'nightly'
         uses: ad-m/github-push-action@master
         with:
           repository: ruffle-rs/demo
@@ -509,7 +596,7 @@ jobs:
           force: true
 
       - name: Clone JS docs
-        if: ${{ !matrix.demo }}
+        if: ${{ !matrix.demo && needs.create-release.outputs.release_channel == 'nightly' }}
         uses: actions/checkout@v4
         with:
           repository: ruffle-rs/js-docs
@@ -519,7 +606,7 @@ jobs:
           persist-credentials: false # Needed to allow commit via RUFFLE_BUILD_TOKEN below
 
       - name: Update JS docs
-        if: ${{ !matrix.demo }}
+        if: ${{ !matrix.demo && needs.create-release.outputs.release_channel == 'nightly' }}
         run: |
           # Delete the old docs
           rm -rf master/
@@ -535,7 +622,7 @@ jobs:
         working-directory: js-docs
 
       - name: Push JS docs
-        if: github.repository == 'ruffle-rs/ruffle' && !matrix.demo
+        if: github.repository == 'ruffle-rs/ruffle' && !matrix.demo && needs.create-release.outputs.release_channel == 'nightly'
         uses: ad-m/github-push-action@master
         with:
           repository: ruffle-rs/js-docs
@@ -545,26 +632,26 @@ jobs:
 
   publish-aur-package:
     name: Publish AUR package
-    needs: [create-nightly-release, build]
+    needs: [create-release, build]
     runs-on: ubuntu-22.04
-    if: github.repository == 'ruffle-rs/ruffle'
+    if: github.repository == 'ruffle-rs/ruffle' && needs.create-release.outputs.release_channel == 'nightly'
     steps:
       - uses: actions/checkout@v4
 
       - name: Get current time with dashes
-        uses: 1466587594/get-current-time@v2.1.2
+        uses: josStorer/get-current-time@v2.1.2
         id: current_time_dashes
         with:
           format: YYYY-MM-DD
 
       - name: Get current time with dots
-        uses: 1466587594/get-current-time@v2.1.2
+        uses: josStorer/get-current-time@v2.1.2
         id: current_time_dots
         with:
           format: YYYY.MM.DD
 
       - name: Download package
-        run: gh release download "${{ needs.create-nightly-release.outputs.tag_name }}" --pattern "${{ needs.create-nightly-release.outputs.package_prefix }}-linux-x86_64.tar.gz"
+        run: gh release download "${{ needs.create-release.outputs.tag_name }}" --pattern "${{ needs.create-release.outputs.package_prefix }}-linux-x86_64.tar.gz"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -572,7 +659,7 @@ jobs:
         run: >
           sed -i ./PKGBUILD
           -e "s/@VERSION@/${{ steps.current_time_dots.outputs.formattedTime }}/"
-          -e "s/@SHA512SUM@/$(sha512sum ${{ needs.create-nightly-release.outputs.package_prefix }}-linux-x86_64.tar.gz | cut -d' ' -f1)/"
+          -e "s/@SHA512SUM@/$(sha512sum ${{ needs.create-release.outputs.package_prefix }}-linux-x86_64.tar.gz | cut -d' ' -f1)/"
 
       - name: Publish AUR package
         uses: KSXGitHub/github-actions-deploy-aur@v2.7.2

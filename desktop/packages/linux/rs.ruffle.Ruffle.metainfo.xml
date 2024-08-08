@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <component type="desktop-application">
     <id>rs.ruffle.Ruffle</id>
     <metadata_license>CC0-1.0</metadata_license>
@@ -76,7 +76,7 @@
         <control>keyboard</control>
         <control>gamepad</control>
     </supports>
-    <content_rating type="oars-1.1"/>
+    <content_rating type="oars-1.1" />
     <branding>
         <color type="primary" scheme_preference="light">#4a6db8</color>
         <color type="primary" scheme_preference="dark">#2c4270</color>

@@ -1,6 +1,6 @@
 [package]
 name = "ruffle_web_common"
-version = "0.1.0"
+version.workspace = true
 authors = ["Ruffle LLC <ruffle@ruffle.rs>"]
 edition.workspace = true
 license = "MIT OR Apache-2.0"
