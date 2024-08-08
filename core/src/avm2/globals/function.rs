@@ -59,7 +59,8 @@ pub fn class_init<'gc>(
             Method::from_builtin(call, "call", activation.context.gc_context),
             scope,
             None,
-            Some(this_class),
+            None,
+            None,
         )
         .into(),
         activation,
@@ -71,7 +72,8 @@ pub fn class_init<'gc>(
             Method::from_builtin(apply, "apply", activation.context.gc_context),
             scope,
             None,
-            Some(this_class),
+            None,
+            None,
         )
         .into(),
         activation,
@@ -83,7 +85,8 @@ pub fn class_init<'gc>(
             Method::from_builtin(to_string, "toString", activation.context.gc_context),
             scope,
             None,
-            Some(this_class),
+            None,
+            None,
         )
         .into(),
         activation,
@@ -95,7 +98,8 @@ pub fn class_init<'gc>(
             Method::from_builtin(to_string, "toLocaleString", activation.context.gc_context),
             scope,
             None,
-            Some(this_class),
+            None,
+            None,
         )
         .into(),
         activation,

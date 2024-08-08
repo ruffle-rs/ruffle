@@ -1,4 +1,5 @@
 use crate::avm2::activation::Activation;
+use crate::avm2::class::Class;
 use crate::avm2::method::{Method, ParamConfig};
 use crate::avm2::object::{ClassObject, Object};
 use crate::avm2::scope::ScopeChain;
@@ -25,12 +26,14 @@ pub struct BoundMethod<'gc> {
     /// `Some` value indicates a bound executable.
     bound_receiver: Option<Object<'gc>>,
 
-    /// The bound class for this method.
+    /// The superclass of the bound class for this method.
     ///
-    /// The `class` is the class that defined this method. If `None`,
-    /// then there is no defining class and `super` operations should fall
-    /// back to the `receiver`.
-    bound_class: Option<ClassObject<'gc>>,
+    /// The `bound_superclass` is the superclass of the class that defined
+    /// this method. If `None`, then there is no defining class and `super`
+    /// operations should be invalid.
+    bound_superclass: Option<ClassObject<'gc>>,
+
+    bound_class: Option<Class<'gc>>,
 }
 
 impl<'gc> BoundMethod<'gc> {
@@ -39,12 +42,14 @@ impl<'gc> BoundMethod<'gc> {
         scope: ScopeChain<'gc>,
         receiver: Option<Object<'gc>>,
         superclass: Option<ClassObject<'gc>>,
+        class: Option<Class<'gc>>,
     ) -> Self {
         Self {
             method,
             scope,
             bound_receiver: receiver,
-            bound_class: superclass,
+            bound_superclass: superclass,
+            bound_class: class,
         }
     }
 
@@ -70,6 +75,7 @@ impl<'gc> BoundMethod<'gc> {
             self.method,
             self.scope,
             receiver,
+            self.bound_superclass,
             self.bound_class,
             arguments,
             activation,
@@ -77,7 +83,7 @@ impl<'gc> BoundMethod<'gc> {
         )
     }
 
-    pub fn bound_superclass(&self) -> Option<ClassObject<'gc>> {
+    pub fn bound_class(&self) -> Option<Class<'gc>> {
         self.bound_class
     }
 
@@ -87,7 +93,7 @@ impl<'gc> BoundMethod<'gc> {
 
     pub fn debug_full_name(&self) -> WString {
         let mut output = WString::new();
-        display_function(&mut output, &self.as_method(), self.bound_superclass());
+        display_function(&mut output, &self.as_method(), self.bound_class());
         output
     }
 
@@ -135,7 +141,8 @@ pub fn exec<'gc>(
     method: Method<'gc>,
     scope: ScopeChain<'gc>,
     receiver: Object<'gc>,
-    bound_class: Option<ClassObject<'gc>>,
+    bound_superclass: Option<ClassObject<'gc>>,
+    bound_class: Option<Class<'gc>>,
     mut arguments: &[Value<'gc>],
     activation: &mut Activation<'_, 'gc>,
     callee: Object<'gc>,
@@ -146,6 +153,7 @@ pub fn exec<'gc>(
             let caller_movie = activation.caller_movie();
             let mut activation = Activation::from_builtin(
                 activation.context,
+                bound_superclass,
                 bound_class,
                 scope,
                 caller_domain,
@@ -173,7 +181,7 @@ pub fn exec<'gc>(
                 method,
                 arguments,
                 resolved_signature,
-                Some(callee),
+                bound_class,
             )?;
             activation
                 .context
@@ -192,7 +200,15 @@ pub fn exec<'gc>(
             // This used to be a one step called Activation::from_method,
             // but avoiding moving an Activation around helps perf
             let mut activation = Activation::from_nothing(activation.context);
-            activation.init_from_method(bm, scope, receiver, arguments, bound_class, callee)?;
+            activation.init_from_method(
+                bm,
+                scope,
+                receiver,
+                arguments,
+                bound_superclass,
+                bound_class,
+                callee,
+            )?;
             activation
                 .context
                 .avm2
@@ -229,20 +245,12 @@ impl<'gc> fmt::Debug for BoundMethod<'gc> {
 pub fn display_function<'gc>(
     output: &mut WString,
     method: &Method<'gc>,
-    superclass: Option<ClassObject<'gc>>,
+    bound_class: Option<Class<'gc>>,
 ) {
-    let class_defs = superclass.map(|superclass| {
-        let i_class = superclass.inner_class_definition();
-        let name = i_class.name().to_qualified_name_no_mc();
+    if let Some(bound_class) = bound_class {
+        let name = bound_class.name().to_qualified_name_no_mc();
         output.push_str(&name);
-
-        (
-            i_class,
-            i_class
-                .c_class()
-                .expect("inner_class_definition should be an i_class"),
-        )
-    });
+    }
 
     match method {
         Method::Native(method) => {
@@ -252,46 +260,28 @@ pub fn display_function<'gc>(
         Method::Bytecode(method) => {
             // NOTE: The name of a bytecode method refers to the name of the trait that contains the method,
             // rather than the name of the method itself.
-            if let Some((i_class, c_class)) = class_defs {
-                if c_class
+            if let Some(bound_class) = bound_class {
+                if bound_class
                     .instance_init()
                     .into_bytecode()
                     .map(|b| Gc::ptr_eq(b, *method))
                     .unwrap_or(false)
                 {
-                    output.push_utf8("$cinit");
-                } else if !i_class
-                    .instance_init()
-                    .into_bytecode()
-                    .map(|b| Gc::ptr_eq(b, *method))
-                    .unwrap_or(false)
-                {
-                    // TODO: Ideally, the declaring trait of this executable should already be attached here, that way
-                    // we can avoid needing to lookup the trait like this.
+                    if bound_class.c_class().is_none() {
+                        // If the associated class has no c_class, it is a c_class,
+                        // and the instance initializer is the class initializer.
+                        output.push_utf8("cinit");
+                    }
+                    // We purposely do nothing for instance initializers
+                } else {
                     let mut method_trait = None;
 
-                    // First search instance traits for the method
-                    let instance_traits = i_class.traits();
-                    for t in &*instance_traits {
+                    let traits = bound_class.traits();
+                    for t in &*traits {
                         if let Some(b) = t.as_method().and_then(|m| m.into_bytecode().ok()) {
                             if Gc::ptr_eq(b, *method) {
                                 method_trait = Some(t);
                                 break;
-                            }
-                        }
-                    }
-
-                    let class_traits = c_class.traits();
-                    if method_trait.is_none() {
-                        // If we can't find it in instance traits, search class traits instead
-                        for t in class_traits.iter() {
-                            if let Some(b) = t.as_method().and_then(|m| m.into_bytecode().ok()) {
-                                if Gc::ptr_eq(b, *method) {
-                                    // Class traits always start with $
-                                    output.push_char('$');
-                                    method_trait = Some(t);
-                                    break;
-                                }
                             }
                         }
                     }
@@ -317,7 +307,6 @@ pub fn display_function<'gc>(
                     }
                     // TODO: What happens if we can't find the trait?
                 }
-                // We purposely do nothing for instance initializers
             } else if method.is_function && !method.method_name().is_empty() {
                 output.push_utf8("Function/");
                 output.push_utf8(&method.method_name());

@@ -645,13 +645,8 @@ impl<'gc> Avm2<'gc> {
     }
 
     /// Pushes an executable on the call stack
-    pub fn push_call(
-        &self,
-        mc: &Mutation<'gc>,
-        method: Method<'gc>,
-        superclass: Option<ClassObject<'gc>>,
-    ) {
-        self.call_stack.borrow_mut(mc).push(method, superclass)
+    pub fn push_call(&self, mc: &Mutation<'gc>, method: Method<'gc>, class: Option<Class<'gc>>) {
+        self.call_stack.borrow_mut(mc).push(method, class)
     }
 
     /// Pushes script initializer (global init) on the call stack
