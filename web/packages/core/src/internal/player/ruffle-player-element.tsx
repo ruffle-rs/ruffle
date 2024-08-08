@@ -43,6 +43,7 @@ export class RufflePlayerElement extends HTMLElement implements Player {
                                 args,
                             );
                         },
+                        configurable: true,
                     });
                 } catch (error) {
                     console.warn(
