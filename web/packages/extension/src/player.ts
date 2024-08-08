@@ -130,10 +130,11 @@ async function load(
             return;
         }
     }
-    await player.load(options);
+    await player.ruffle().load(options);
     player.addEventListener("loadedmetadata", () => {
-        if (player.metadata) {
-            for (const [key, value] of Object.entries(player.metadata)) {
+        const metadata = player.ruffle().metadata;
+        if (metadata) {
+            for (const [key, value] of Object.entries(metadata)) {
                 const metadataElement = document.getElementById(key);
                 if (metadataElement) {
                     switch (key) {
@@ -244,7 +245,7 @@ reloadSwf.addEventListener("click", () => {
     if (player) {
         const confirmReload = confirm("Reload the current SWF?");
         if (confirmReload) {
-            player.reload();
+            player.ruffle().reload();
         }
     }
 });
