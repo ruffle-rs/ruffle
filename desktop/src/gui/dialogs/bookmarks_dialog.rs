@@ -4,6 +4,7 @@ use crate::preferences::GlobalPreferences;
 use egui::{Align2, Button, Grid, Label, Layout, Sense, Ui, Widget, Window};
 use egui_extras::{Column, TableBuilder};
 use ruffle_frontend_utils::bookmarks::Bookmark;
+use std::sync::Weak;
 use unic_langid::LanguageIdentifier;
 use url::Url;
 
@@ -14,7 +15,11 @@ pub struct BookmarkAddDialog {
 }
 
 impl BookmarkAddDialog {
-    pub fn new(preferences: GlobalPreferences, initial_url: Option<Url>) -> Self {
+    pub fn new(
+        preferences: GlobalPreferences,
+        initial_url: Option<Url>,
+        window: Weak<winit::window::Window>,
+    ) -> Self {
         Self {
             preferences,
             name: initial_url
@@ -22,7 +27,7 @@ impl BookmarkAddDialog {
                 .map(|x| ruffle_frontend_utils::url_to_readable_name(x).into_owned())
                 .unwrap_or_default(),
             // TODO: hint.
-            url: PathOrUrlField::new(initial_url, ""),
+            url: PathOrUrlField::new(initial_url, "", window),
         }
     }
 
@@ -93,13 +98,15 @@ struct SelectedBookmark {
 }
 
 pub struct BookmarksDialog {
+    window: Weak<winit::window::Window>,
     preferences: GlobalPreferences,
     selected_bookmark: Option<SelectedBookmark>,
 }
 
 impl BookmarksDialog {
-    pub fn new(preferences: GlobalPreferences) -> Self {
+    pub fn new(preferences: GlobalPreferences, window: Weak<winit::window::Window>) -> Self {
         Self {
+            window,
             preferences,
             selected_bookmark: None,
         }
@@ -201,7 +208,11 @@ impl BookmarksDialog {
                                     index,
                                     // TODO: set hint
                                     name: bookmark.name.clone(),
-                                    url: PathOrUrlField::new(Some(bookmark.url.clone()), ""),
+                                    url: PathOrUrlField::new(
+                                        Some(bookmark.url.clone()),
+                                        "",
+                                        self.window.clone(),
+                                    ),
                                 });
                             }
                         });

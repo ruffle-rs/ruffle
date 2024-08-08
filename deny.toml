@@ -79,6 +79,8 @@ github = [
     "ruffle-rs",
     # TODO: Remove once a release with https://github.com/emilk/egui/pull/4847 in it is out.
     "emilk",
+    # TODO: Remove once a release with https://github.com/PolyMeilex/rfd/pull/209 in it is out.
+    "PolyMeilex",
 ]
 
 [advisories]
