@@ -1,6 +1,7 @@
 //! Function object impl
 
 use crate::avm2::activation::Activation;
+use crate::avm2::class::Class;
 use crate::avm2::function::BoundMethod;
 use crate::avm2::method::{Method, NativeMethod};
 use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
@@ -48,6 +49,7 @@ pub fn function_allocator<'gc>(
             exec: RefLock::new(BoundMethod::from_method(
                 Method::Native(dummy),
                 activation.create_scopechain(),
+                None,
                 None,
                 None,
             )),
@@ -106,7 +108,7 @@ impl<'gc> FunctionObject<'gc> {
         method: Method<'gc>,
         scope: ScopeChain<'gc>,
     ) -> Result<FunctionObject<'gc>, Error<'gc>> {
-        let this = Self::from_method(activation, method, scope, None, None);
+        let this = Self::from_method(activation, method, scope, None, None, None);
         let es3_proto = activation
             .avm2()
             .classes()
@@ -127,10 +129,17 @@ impl<'gc> FunctionObject<'gc> {
         method: Method<'gc>,
         scope: ScopeChain<'gc>,
         receiver: Option<Object<'gc>>,
-        subclass_object: Option<ClassObject<'gc>>,
+        superclass_object: Option<ClassObject<'gc>>,
+        subclass: Option<Class<'gc>>,
     ) -> FunctionObject<'gc> {
         let fn_class = activation.avm2().classes().function;
-        let exec = BoundMethod::from_method(method, scope, receiver, subclass_object);
+        let exec = BoundMethod::from_method(
+            method,
+            scope,
+            receiver,
+            bound_superclass_object,
+            bound_class,
+        );
 
         FunctionObject(Gc::new(
             activation.context.gc_context,

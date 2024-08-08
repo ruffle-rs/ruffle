@@ -641,7 +641,7 @@ impl<'gc> Script<'gc> {
 
             globals.vtable().init_vtable(
                 globals.instance_class(),
-                self.0.read().global_class_obj,
+                Some(context.avm2.classes().object),
                 &self.traits()?,
                 Some(scope),
                 None,

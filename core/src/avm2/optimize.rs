@@ -360,13 +360,13 @@ pub fn optimize<'gc>(
     // but this works since it's guaranteed to be set in `Activation::from_method`.
     let this_value = activation.local_register(0);
 
-    let this_class = if let Some(this_class) = activation.subclass_object() {
-        if this_value.is_of_type(activation, this_class.inner_class_definition()) {
-            Some(this_class.inner_class_definition())
+    let this_class = if let Some(this_class) = activation.subclass() {
+        if this_value.is_of_type(activation, this_class) {
+            Some(this_class)
         } else if let Some(this_object) = this_value.as_object() {
             if this_object
                 .as_class_object()
-                .map(|c| c.inner_class_definition() == this_class.inner_class_definition())
+                .map(|c| c.inner_class_definition() == this_class)
                 .unwrap_or(false)
             {
                 // Static method
