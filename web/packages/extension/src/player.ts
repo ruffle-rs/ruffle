@@ -124,6 +124,10 @@ async function load(options: string | DataLoadOptions | URLLoadOptions) {
     }
 
     const supportedURL = utils.supportedURL(url);
+    if (!supportedURL && urlString) {
+        player.displayRootMovieUnsupportedUrlMessage(urlString);
+        return;
+    }
     if (
         supportedURL &&
         !(await utils.hasHostPermissionForSpecifiedTab(origin!))

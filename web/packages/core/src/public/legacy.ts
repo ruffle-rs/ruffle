@@ -85,6 +85,14 @@ export interface LegacyRuffleAPI {
     get isPlaying(): boolean;
 
     /**
+     * Displays the panic screen with an error message that the root movie URL is not supported by Ruffle.
+     * If a given URL is unsupported, this should be directly called instead of trying to load the URL, as
+     * it removes the delay before displaying the (same) error message.
+     * @param unsupportedUrl The given URL that is unsupported.
+     */
+    displayRootMovieUnsupportedUrlMessage(unsupportedUrl: string): void;
+
+    /**
      * Returns the master volume of the player.
      *
      * The volume is linear and not adapted for logarithmic hearing.

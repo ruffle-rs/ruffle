@@ -99,6 +99,10 @@ export class RufflePlayerElement extends HTMLElement implements Player {
         return this.#inner.isPlaying;
     }
 
+    displayRootMovieUnsupportedUrlMessage(unsupportedUrl: string): void {
+        this.#inner.displayRootMovieUnsupportedUrlMessage(unsupportedUrl);
+    }
+
     get volume(): number {
         return this.#inner.volume;
     }

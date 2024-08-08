@@ -14,7 +14,7 @@ import { text, textAsParagraphs } from "../i18n";
 import { swfFileName } from "../../swf-utils";
 import { isExtension } from "../../current-script";
 import { buildInfo } from "../../build-info";
-import { RUFFLE_ORIGIN } from "../constants";
+import { RUFFLE_ORIGIN, SUPPORTED_PROTOCOLS } from "../constants";
 import {
     InvalidOptionsError,
     InvalidSwfError,
@@ -836,6 +836,10 @@ export class InnerPlayer {
             if ("url" in options) {
                 console.log(`Loading SWF file ${options.url}`);
                 this.swfUrl = new URL(options.url, document.baseURI);
+                if (!SUPPORTED_PROTOCOLS.includes(this.swfUrl.protocol)) {
+                    this.displayRootMovieUnsupportedUrlMessage(this.swfUrl.toString());
+                    return;
+                }
 
                 this.instance!.stream_from(
                     this.swfUrl.href,
@@ -1915,6 +1919,11 @@ export class InnerPlayer {
         innerDiv.appendChild(buttonDiv);
         div.appendChild(innerDiv);
         this.container.prepend(div);
+    }
+
+    displayRootMovieUnsupportedUrlMessage(unsupportedUrl: string) {
+        this.swfUrl = new URL(unsupportedUrl, document.baseURI);
+        this.displayRootMovieDownloadFailedMessage(false);
     }
 
     protected displayRootMovieDownloadFailedMessage(invalidSwf: boolean): void {
