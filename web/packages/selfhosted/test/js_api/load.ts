@@ -13,7 +13,7 @@ describe("RufflePlayer.load", () => {
         await browser.execute(async (playerElement) => {
             // https://github.com/webdriverio/webdriverio/issues/6486
             const player = playerElement as unknown as Player.PlayerElement;
-            await player.load("/test_assets/example.swf");
+            await player.ruffle().load("/test_assets/example.swf");
         }, player);
         await playAndMonitor(browser, player);
     });

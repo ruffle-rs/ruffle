@@ -34,7 +34,7 @@ export class Player extends React.Component<PlayerAttributes> {
         this.player.id = "player";
         this.player.addEventListener("loadedmetadata", () => {
             if (this.props.onLoadedMetadata) {
-                this.props.onLoadedMetadata(this.player!.metadata!);
+                this.props.onLoadedMetadata(this.player!.ruffle().metadata!);
             }
         });
         this.isLoading = false;
@@ -67,9 +67,12 @@ export class Player extends React.Component<PlayerAttributes> {
     reload() {
         if (!this.isLoading) {
             this.isLoading = true;
-            this.player?.reload().finally(() => {
-                this.isLoading = false;
-            });
+            this.player
+                ?.ruffle()
+                .reload()
+                .finally(() => {
+                    this.isLoading = false;
+                });
         }
     }
 
@@ -77,7 +80,8 @@ export class Player extends React.Component<PlayerAttributes> {
         if (!this.isLoading) {
             this.isLoading = true;
             this.player
-                ?.load({ url, ...this.props.baseConfig, ...options })
+                ?.ruffle()
+                .load({ url, ...this.props.baseConfig, ...options })
                 .finally(() => {
                     this.isLoading = false;
                 });
@@ -90,7 +94,7 @@ export class Player extends React.Component<PlayerAttributes> {
             new Response(file)
                 .arrayBuffer()
                 .then((data) => {
-                    return this.player?.load({
+                    return this.player?.ruffle().load({
                         data,
                         ...this.props.baseConfig,
                     });
