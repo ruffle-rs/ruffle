@@ -125,6 +125,7 @@ async function load(options: string | DataLoadOptions | URLLoadOptions) {
 
     const supportedURL = utils.supportedURL(url);
     if (!supportedURL && urlString) {
+        player.setInExtensionPlayer();
         player.displayRootMovieUnsupportedUrlMessage(urlString);
         return;
     }
@@ -149,7 +150,7 @@ async function load(options: string | DataLoadOptions | URLLoadOptions) {
             return;
         }
     }
-    await player.load(options);
+    await player.loadInExtensionPlayer(options);
     player.addEventListener("loadedmetadata", () => {
         if (player.metadata) {
             for (const [key, value] of Object.entries(player.metadata)) {

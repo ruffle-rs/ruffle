@@ -183,6 +183,11 @@ export class InnerPlayer {
     private pointerMoveMaxDistance = 0;
 
     private volumeSettings: VolumeControls;
+
+    // Whether the last load command originated from the extension player
+    // TODO: Move this variable into the extension code and replace its usages with an API call
+    private inExtensionPlayer = false;
+
     private readonly debugPlayerInfo: () => string;
     protected readonly onCallbackAvailable: (name: string) => void;
 
@@ -786,11 +791,14 @@ export class InnerPlayer {
      *
      * The options will be defaulted by the [[config]] field, which itself
      * is defaulted by a global `window.RufflePlayer.config`.
+     * @param inExtensionPlayer Whether the load command originates from the extension player.
      */
     async load(
         options: string | URLLoadOptions | DataLoadOptions,
         isPolyfillElement: boolean = false,
+        inExtensionPlayer: boolean = false
     ): Promise<void> {
+        this.inExtensionPlayer = inExtensionPlayer;
         options = this.checkOptions(options);
 
         if (!this.element.isConnected || this.isUnusedFallbackObject()) {
@@ -1926,18 +1934,23 @@ export class InnerPlayer {
         this.displayRootMovieDownloadFailedMessage(false);
     }
 
+    setInExtensionPlayer() {
+        this.inExtensionPlayer = true;
+    }
+
     protected displayRootMovieDownloadFailedMessage(invalidSwf: boolean): void {
         const openInNewTab = this.loadedConfig?.openInNewTab;
         if (
             openInNewTab &&
             this.swfUrl &&
-            window.location.origin !== this.swfUrl.origin
+            window.location.origin !== this.swfUrl.origin &&
+            SUPPORTED_PROTOCOLS.includes(this.swfUrl.protocol)
         ) {
             this.addOpenInNewTabMessage(openInNewTab, this.swfUrl);
         } else {
             const error = invalidSwf
                 ? new InvalidSwfError(this.swfUrl)
-                : new LoadSwfError(this.swfUrl);
+                : new LoadSwfError(this.swfUrl, this.inExtensionPlayer);
             this.panic(error);
         }
     }

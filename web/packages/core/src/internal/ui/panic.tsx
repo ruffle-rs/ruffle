@@ -8,7 +8,6 @@ import {
     LoadRuffleWasmError,
     LoadSwfError,
 } from "../errors";
-import { isExtension } from "../../current-script";
 
 interface PanicLink {
     type: "open_link";
@@ -155,9 +154,12 @@ function createPanicError(error: Error | null): {
     actions: PanicAction[];
 } {
     if (error instanceof LoadSwfError) {
-        const urlExtensionProtocol = isExtension ? document.baseURI.split(":")[0] + ":" : "";
+        // TODO: Move the extension player related error messages into the extension code and replace this
+        // with an API call
+        const inExtensionPlayer = error.inExtensionPlayer;
+        const urlExtensionProtocol = inExtensionPlayer ? document.baseURI.split(":")[0] + ":" : "";
         if (error.swfUrl && error.swfUrl.protocol === urlExtensionProtocol) {
-            // The user entered an invalid URL
+            // The user entered an invalid URL in the extension player
             const urlExtensionPart = document.baseURI.split("player.html")[0]!;
             return {
                 body: textAsParagraphs("error-no-valid-url", {
@@ -165,18 +167,24 @@ function createPanicError(error: Error | null): {
                 }),
                 actions: [CommonActions.ShowDetails],
             };
-        } else if (error.swfUrl && error.swfUrl.protocol === "file:") {
-            // The user entered a local file URL
+        } else if (error.swfUrl && inExtensionPlayer && error.swfUrl.protocol === "file:") {
+            // The user entered a local file URL in the extension player
             return {
                 body: textAsParagraphs("error-local-root-url"),
                 actions: [CommonActions.ShowDetails],
             };
-        } else if (error.swfUrl && !SUPPORTED_PROTOCOLS.includes(error.swfUrl.protocol)) {
-            // The user entered a URL with an unsupported protocol
+        } else if (error.swfUrl && inExtensionPlayer && !SUPPORTED_PROTOCOLS.includes(error.swfUrl.protocol)) {
+            // The user entered a URL with an unsupported protocol in the extension player
             return {
                 body: textAsParagraphs("error-unsupported-root-protocol", {
                     protocol: error.swfUrl.protocol,
                 }),
+                actions: [CommonActions.ShowDetails],
+            };
+        } else if (error.swfUrl && !SUPPORTED_PROTOCOLS.includes(error.swfUrl.protocol)) {
+            // The website embedded a URL with an unsupported protocol
+            return {
+                body: textAsParagraphs("error-misconfigured-url"),
                 actions: [CommonActions.ShowDetails],
             };
         }
@@ -186,10 +194,11 @@ function createPanicError(error: Error | null): {
             // The extension's internal player page is not restricted by CORS
             window.location.protocol.includes("extension")
         ) {
+            const tryHttpAdvice = inExtensionPlayer
+                ? error.swfUrl?.protocol?.includes("https")?.toString() ?? "true"
+                : "false";
             return {
-                body: textAsParagraphs("error-swf-fetch", {
-                    https: error.swfUrl?.protocol?.includes("https")?.toString() ?? "true",
-                }),
+                body: textAsParagraphs("error-swf-fetch", {https: tryHttpAdvice}),
                 actions: [CommonActions.ShowDetails],
             };
         }

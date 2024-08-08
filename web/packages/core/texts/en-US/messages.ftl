@@ -89,6 +89,10 @@ error-unsupported-root-protocol =
 error-no-valid-url =
     "{$url}" is not a valid URL and can't be resolved.
     Please enter a valid web URL or use the Select File button.
+error-misconfigured-url =
+    The embedded SWF file is not under a supported URL Ruffle can load.
+    This is most likely due to a website misconfiguration.
+    Try contacting the website administrator for help.
 error-unknown =
     Ruffle has encountered a major issue whilst trying to display this Flash content.
     {$outdated ->

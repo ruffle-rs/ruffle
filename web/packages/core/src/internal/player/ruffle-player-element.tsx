@@ -91,6 +91,10 @@ export class RufflePlayerElement extends HTMLElement implements Player {
         await this.#inner.load(options, isPolyfillElement);
     }
 
+    async loadInExtensionPlayer(options: string | URLLoadOptions | DataLoadOptions) {
+        await this.#inner.load(options, false, true);
+    }
+
     play(): void {
         this.#inner.play();
     }
@@ -101,6 +105,10 @@ export class RufflePlayerElement extends HTMLElement implements Player {
 
     displayRootMovieUnsupportedUrlMessage(unsupportedUrl: string): void {
         this.#inner.displayRootMovieUnsupportedUrlMessage(unsupportedUrl);
+    }
+
+    setInExtensionPlayer(): void {
+        this.#inner.setInExtensionPlayer();
     }
 
     get volume(): number {
