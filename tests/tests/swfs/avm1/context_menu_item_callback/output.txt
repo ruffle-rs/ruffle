@@ -1,0 +1,12 @@
+undefined
+undefined
+[type Function]
+undefined
+[type Function]
+true
+true
+true
+true
+true
+ok
+ok
