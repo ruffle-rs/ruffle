@@ -101,6 +101,10 @@ export async function getExplicitOptions(): Promise<Options> {
             delete options[key];
         }
     }
+    // This value is specific to the internal extension pages, and is always "default"
+    if ("responseHeadersUnsupported" in options) {
+        delete options["responseHeadersUnsupported"];
+    }
 
     return options;
 }
