@@ -1,9 +1,12 @@
 use tracing::Metadata;
 use tracing_subscriber::fmt::format::DefaultFields;
+use tracing_tracy::client::register_demangler;
 use tracing_tracy::Config;
 
 #[derive(Default)]
 pub struct RuffleTracyConfig(DefaultFields);
+
+register_demangler!();
 
 impl Config for RuffleTracyConfig {
     type Formatter = DefaultFields;
