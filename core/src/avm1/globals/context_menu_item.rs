@@ -20,7 +20,10 @@ pub fn constructor<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?;
-    let callback = args.get(1).map(|v| v.coerce_to_object(activation));
+    let callback = args
+        .get(1)
+        .filter(|v| v.type_of() != Value::Undefined.type_of())
+        .map(|v| v.coerce_to_object(activation));
     let separator_before = args
         .get(2)
         .unwrap_or(&false.into())
