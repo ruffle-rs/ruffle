@@ -36,10 +36,9 @@ pub struct E4XNode<'gc>(GcCell<'gc, E4XNodeData<'gc>>);
 #[collect(no_drop)]
 pub struct E4XNodeData<'gc> {
     parent: Option<E4XNode<'gc>>,
-    namespace: Option<E4XNamespace<'gc>>,
     local_name: Option<AvmString<'gc>>,
     kind: E4XNodeKind<'gc>,
-    notification: Option<FunctionObject<'gc>>,
+    extra: Option<Box<E4XNodeExtraData<'gc>>>,
 }
 
 impl<'gc> Debug for E4XNodeData<'gc> {
@@ -50,6 +49,24 @@ impl<'gc> Debug for E4XNodeData<'gc> {
             .field("local_name", &self.local_name)
             .field("kind", &self.kind)
             .finish()
+    }
+}
+
+#[derive(Collect)]
+#[collect(no_drop)]
+pub struct E4XNodeExtraData<'gc> {
+    namespace: Option<E4XNamespace<'gc>>,
+    notification: Option<FunctionObject<'gc>>,
+}
+
+impl<'gc> E4XNodeExtraData<'gc> {
+    pub fn new_opt(ns: Option<E4XNamespace<'gc>>) -> Option<Box<Self>> {
+        ns.map(|ns| {
+            Box::new(E4XNodeExtraData {
+                namespace: Some(ns),
+                notification: None,
+            })
+        })
     }
 }
 
@@ -163,14 +180,13 @@ impl<'gc> E4XNode<'gc> {
             mc,
             E4XNodeData {
                 parent: None,
-                namespace: None,
                 local_name: None,
                 kind: E4XNodeKind::Element {
                     attributes: vec![],
                     children: vec![],
                     namespaces: vec![],
                 },
-                notification: None,
+                extra: None,
             },
         ))
     }
@@ -180,10 +196,9 @@ impl<'gc> E4XNode<'gc> {
             mc,
             E4XNodeData {
                 parent,
-                namespace: None,
                 local_name: None,
                 kind: E4XNodeKind::Text(text),
-                notification: None,
+                extra: None,
             },
         ))
     }
@@ -198,14 +213,13 @@ impl<'gc> E4XNode<'gc> {
             mc,
             E4XNodeData {
                 parent,
-                namespace,
                 local_name: Some(name),
                 kind: E4XNodeKind::Element {
                     attributes: vec![],
                     children: vec![],
                     namespaces: vec![],
                 },
-                notification: None,
+                extra: E4XNodeExtraData::new_opt(namespace),
             },
         ))
     }
@@ -220,10 +234,9 @@ impl<'gc> E4XNode<'gc> {
             mc,
             E4XNodeData {
                 parent,
-                namespace: None,
                 local_name: Some(name),
                 kind: E4XNodeKind::Attribute(value),
-                notification: None,
+                extra: None,
             },
         ))
     }
@@ -334,10 +347,12 @@ impl<'gc> E4XNode<'gc> {
             mc,
             E4XNodeData {
                 parent: None,
-                namespace: this.namespace,
                 local_name: this.local_name,
                 kind,
-                notification: None,
+                extra: this
+                    .extra
+                    .as_ref()
+                    .and_then(|extra| E4XNodeExtraData::new_opt(extra.namespace)),
             },
         ));
 
@@ -833,14 +848,13 @@ impl<'gc> E4XNode<'gc> {
                     activation.context.gc_context,
                     E4XNodeData {
                         parent: None,
-                        namespace: None,
                         local_name: None,
                         kind: if is_text {
                             E4XNodeKind::Text(text)
                         } else {
                             E4XNodeKind::CData(text)
                         },
-                        notification: None,
+                        extra: None,
                     },
                 ));
                 push_childless_node(node, open_tags, top_level, activation)?;
@@ -925,10 +939,9 @@ impl<'gc> E4XNode<'gc> {
                         activation.context.gc_context,
                         E4XNodeData {
                             parent: None,
-                            namespace: None,
                             local_name: None,
                             kind: E4XNodeKind::Comment(text),
-                            notification: None,
+                            extra: None,
                         },
                     ));
 
@@ -964,10 +977,9 @@ impl<'gc> E4XNode<'gc> {
                         activation.context.gc_context,
                         E4XNodeData {
                             parent: None,
-                            namespace: None,
                             local_name: Some(name),
                             kind: E4XNodeKind::ProcessingInstruction(value),
-                            notification: None,
+                            extra: None,
                         },
                     ));
 
@@ -1054,10 +1066,9 @@ impl<'gc> E4XNode<'gc> {
 
             let attribute_data = E4XNodeData {
                 parent: None,
-                namespace,
                 local_name: Some(name),
                 kind: E4XNodeKind::Attribute(value),
-                notification: None,
+                extra: E4XNodeExtraData::new_opt(namespace),
             };
             let attribute = E4XNode(GcCell::new(activation.context.gc_context, attribute_data));
             attribute_nodes.push(attribute);
@@ -1091,14 +1102,13 @@ impl<'gc> E4XNode<'gc> {
 
         let data = E4XNodeData {
             parent: None,
-            namespace,
             local_name: Some(name),
             kind: E4XNodeKind::Element {
                 attributes: attribute_nodes,
                 children: Vec::new(),
                 namespaces,
             },
-            notification: None,
+            extra: E4XNodeExtraData::new_opt(namespace),
         };
 
         let result = E4XNode(GcCell::new(activation.context.gc_context, data));
@@ -1114,11 +1124,21 @@ impl<'gc> E4XNode<'gc> {
     }
 
     pub fn set_namespace(&self, namespace: Option<E4XNamespace<'gc>>, mc: &Mutation<'gc>) {
-        self.0.write(mc).namespace = namespace;
+        let mut this = self.0.write(mc);
+
+        match (&mut this.extra, namespace) {
+            (None, None) => {}
+            (None, Some(_)) => this.extra = E4XNodeExtraData::new_opt(namespace),
+            (Some(extra), _) => extra.namespace = namespace,
+        }
     }
 
     pub fn namespace(&self) -> Option<E4XNamespace<'gc>> {
-        self.0.read().namespace
+        self.0
+            .read()
+            .extra
+            .as_ref()
+            .and_then(|extra| extra.namespace)
     }
 
     pub fn set_local_name(&self, name: AvmString<'gc>, mc: &Mutation<'gc>) {
@@ -1138,11 +1158,26 @@ impl<'gc> E4XNode<'gc> {
     }
 
     pub fn set_notification(&self, notification: Option<FunctionObject<'gc>>, mc: &Mutation<'gc>) {
-        self.0.write(mc).notification = notification;
+        let mut this = self.0.write(mc);
+
+        match (&mut this.extra, notification) {
+            (None, None) => {}
+            (None, Some(_)) => {
+                this.extra = Some(Box::new(E4XNodeExtraData {
+                    namespace: None,
+                    notification,
+                }))
+            }
+            (Some(extra), _) => extra.notification = notification,
+        }
     }
 
     pub fn notification(&self) -> Option<FunctionObject<'gc>> {
-        self.0.read().notification
+        self.0
+            .read()
+            .extra
+            .as_ref()
+            .and_then(|extra| extra.notification)
     }
 
     pub fn in_scope_namespaces(&self) -> Vec<E4XNamespace<'gc>> {
@@ -1218,7 +1253,7 @@ impl<'gc> E4XNode<'gc> {
         match self.namespace() {
             Some(self_ns) if self_ns.prefix == Some(prefix) => {
                 // 2.f.i. Let x.[[Name]].prefix = undefined
-                self.0.write(gc).namespace = Some(E4XNamespace::new_uri(self_ns.uri));
+                self.set_namespace(Some(E4XNamespace::new_uri(self_ns.uri)), gc);
             }
             _ => {}
         }
@@ -1232,7 +1267,7 @@ impl<'gc> E4XNode<'gc> {
                 // 2.g.i. If attr.[[Name]].[[Prefix]] == N.prefix, let attr.[[Name]].prefix = undefined
                 match attr.namespace() {
                     Some(attr_ns) if attr_ns.prefix == Some(prefix) => {
-                        attr.0.write(gc).namespace = Some(E4XNamespace::new_uri(attr_ns.uri));
+                        attr.set_namespace(Some(E4XNamespace::new_uri(attr_ns.uri)), gc);
                     }
                     _ => {}
                 }
