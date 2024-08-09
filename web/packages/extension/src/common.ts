@@ -202,5 +202,12 @@ export async function bindOptions(
 }
 
 export async function resetOptions(): Promise<void> {
-    utils.storage.sync.clear();
+    // This setting is consistent for the browser in use and should not change
+    const data = await utils.storage.sync.get({
+        responseHeadersUnsupported: false,
+    });
+    await utils.storage.sync.clear();
+    if (data["responseHeadersUnsupported"]) {
+        utils.storage.sync.set({ responseHeadersUnsupported: true });
+    }
 }
