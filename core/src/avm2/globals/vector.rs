@@ -58,7 +58,7 @@ pub fn instance_init<'gc>(
 
 fn class_call<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() != 1 {
@@ -72,16 +72,19 @@ fn class_call<'gc>(
         )?));
     }
 
-    let this_class = activation.subclass_object().unwrap();
+    let this_class = this
+        .as_class_object()
+        .expect("Call handler is called with ClassObject as receiver")
+        .inner_class_definition();
+
     let value_type = this_class
-        .inner_class_definition()
         .param()
-        .ok_or("Cannot convert to unparametrized Vector")?; // technically unreachable
+        .expect("Cannot convert to unparametrized Vector"); // technically unreachable
 
     let arg = args.get(0).cloned().unwrap();
     let arg = arg.as_object().ok_or("Cannot convert to Vector")?;
 
-    if arg.instance_class() == this_class.inner_class_definition() {
+    if arg.instance_class() == this_class {
         return Ok(arg.into());
     }
 
@@ -255,10 +258,8 @@ pub fn concat<'gc>(
             .ok_or("Cannot concat Vector with null or undefined")?;
 
         // this is Vector.<int/uint/Number/*>
-        let my_base_vector_class = activation
-            .subclass_object()
-            .expect("Method call without bound class?")
-            .inner_class_definition();
+        let my_base_vector_class = this.instance_class();
+
         if !arg.is_of_type(activation, my_base_vector_class) {
             let base_vector_name = my_base_vector_class
                 .name()

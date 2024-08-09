@@ -1,6 +1,6 @@
+use crate::avm2::class::Class;
 use crate::avm2::function::display_function;
 use crate::avm2::method::Method;
-use crate::avm2::object::ClassObject;
 use crate::string::WString;
 use gc_arena::Collect;
 
@@ -12,7 +12,7 @@ pub enum CallNode<'gc> {
     GlobalInit(Script<'gc>),
     Method {
         method: Method<'gc>,
-        superclass: Option<ClassObject<'gc>>,
+        class: Option<Class<'gc>>,
     },
 }
 
@@ -27,8 +27,8 @@ impl<'gc> CallStack<'gc> {
         Self { stack: Vec::new() }
     }
 
-    pub fn push(&mut self, method: Method<'gc>, superclass: Option<ClassObject<'gc>>) {
-        self.stack.push(CallNode::Method { method, superclass })
+    pub fn push(&mut self, method: Method<'gc>, class: Option<Class<'gc>>) {
+        self.stack.push(CallNode::Method { method, class })
     }
 
     pub fn push_global_init(&mut self, script: Script<'gc>) {
@@ -59,9 +59,7 @@ impl<'gc> CallStack<'gc> {
                     // added by Ruffle
                     output.push_utf8(&format!("global$init() [TU={}]", name));
                 }
-                CallNode::Method { method, superclass } => {
-                    display_function(output, method, *superclass)
-                }
+                CallNode::Method { method, class } => display_function(output, method, *class),
             }
         }
     }

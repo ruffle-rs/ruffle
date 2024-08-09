@@ -55,7 +55,7 @@ impl PartialEq for VTable<'_> {
 #[collect(no_drop)]
 pub struct ClassBoundMethod<'gc> {
     pub class: Class<'gc>,
-    pub class_obj: Option<ClassObject<'gc>>,
+    pub super_class_obj: Option<ClassObject<'gc>>,
     pub scope: Option<ScopeChain<'gc>>,
     pub method: Method<'gc>,
 }
@@ -211,7 +211,7 @@ impl<'gc> VTable<'gc> {
     pub fn init_vtable(
         self,
         defining_class_def: Class<'gc>,
-        defining_class: Option<ClassObject<'gc>>,
+        super_class_obj: Option<ClassObject<'gc>>,
         traits: &[Trait<'gc>],
         scope: Option<ScopeChain<'gc>>,
         superclass_vtable: Option<Self>,
@@ -321,7 +321,7 @@ impl<'gc> VTable<'gc> {
                 TraitKind::Method { method, .. } => {
                     let entry = ClassBoundMethod {
                         class: defining_class_def,
-                        class_obj: defining_class,
+                        super_class_obj,
                         scope,
                         method: *method,
                     };
@@ -350,7 +350,7 @@ impl<'gc> VTable<'gc> {
                 TraitKind::Getter { method, .. } => {
                     let entry = ClassBoundMethod {
                         class: defining_class_def,
-                        class_obj: defining_class,
+                        super_class_obj,
                         scope,
                         method: *method,
                     };
@@ -388,7 +388,7 @@ impl<'gc> VTable<'gc> {
                 TraitKind::Setter { method, .. } => {
                     let entry = ClassBoundMethod {
                         class: defining_class_def,
-                        class_obj: defining_class,
+                        super_class_obj,
                         scope,
                         method: *method,
                     };
@@ -518,10 +518,10 @@ impl<'gc> VTable<'gc> {
         method: ClassBoundMethod<'gc>,
     ) -> FunctionObject<'gc> {
         let ClassBoundMethod {
-            class_obj,
+            class,
+            super_class_obj,
             scope,
             method,
-            ..
         } = method;
 
         FunctionObject::from_method(
@@ -529,7 +529,8 @@ impl<'gc> VTable<'gc> {
             method,
             scope.expect("Scope should exist here"),
             Some(receiver),
-            class_obj,
+            super_class_obj,
+            Some(class),
         )
     }
 

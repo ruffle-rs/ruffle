@@ -20,6 +20,17 @@ pub fn instance_init<'gc>(
     Err("Classes cannot be constructed.".into())
 }
 
+/// Implements `Class`'s native instance initializer.
+///
+/// This exists so that super() calls in class initializers will work.
+fn native_instance_init<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(Value::Undefined)
+}
+
 /// Implement's `Class`'s class initializer.
 pub fn class_init<'gc>(
     _activation: &mut Activation<'_, 'gc>,
@@ -52,6 +63,18 @@ pub fn create_i_class<'gc>(
         Some(object_i_class),
         Method::from_builtin(instance_init, "<Class instance initializer>", gc_context),
         gc_context,
+    );
+    // The documentation and playerglobals are wrong; attempting to extend Class
+    // throws a VerifyError
+    class_i_class.set_attributes(gc_context, ClassAttributes::FINAL);
+
+    class_i_class.set_native_instance_init(
+        gc_context,
+        Method::from_builtin(
+            native_instance_init,
+            "<Class native instance initializer>",
+            gc_context,
+        ),
     );
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
