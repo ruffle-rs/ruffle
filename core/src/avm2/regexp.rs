@@ -159,6 +159,10 @@ impl<'gc> RegExp<'gc> {
         text: &AvmString<'gc>,
         m: &regress::Match,
     ) -> WString {
+        if !replacement.contains(b'$') {
+            // Nothing to do if there's no $ replacement symbols
+            return replacement.as_wstr().to_owned();
+        }
         let mut ret = WString::new();
         let s = replacement.as_wstr();
         let mut chars = s.chars().peekable();
