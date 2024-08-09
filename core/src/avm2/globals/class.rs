@@ -64,6 +64,9 @@ pub fn create_i_class<'gc>(
         Method::from_builtin(instance_init, "<Class instance initializer>", gc_context),
         gc_context,
     );
+    // The documentation and playerglobals are wrong; attempting to extend Class
+    // throws a VerifyError
+    class_i_class.set_attributes(gc_context, ClassAttributes::FINAL);
 
     class_i_class.set_native_instance_init(
         gc_context,
