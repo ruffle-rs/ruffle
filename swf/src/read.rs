@@ -714,6 +714,10 @@ impl<'a> Reader<'a> {
         Ok(tags)
     }
 
+    pub fn read_tag_code(&mut self) -> Result<u16> {
+        Ok(self.read_u16()? >> 6)
+    }
+
     pub fn read_tag_code_and_length(&mut self) -> Result<(u16, usize)> {
         let tag_code_and_length = self.read_u16()?;
         let tag_code = tag_code_and_length >> 6;
