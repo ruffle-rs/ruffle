@@ -11,7 +11,7 @@ import {
 } from "wasm-feature-detect";
 import type { RuffleInstanceBuilder, ZipWriter } from "../dist/ruffle_web";
 import { setPolyfillsOnLoad } from "./js-polyfills";
-import { internalSourceApi } from "./source-api";
+import { onFirstLoad } from "./source-api";
 
 type ProgressCallback = (bytesLoaded: number, bytesTotal: number) => void;
 
@@ -50,9 +50,7 @@ async function fetchRuffle(
         );
     }
 
-    // Easy "on first load": just set it to something else after the call.
-    internalSourceApi.options.onFirstLoad?.();
-    internalSourceApi.options.onFirstLoad = () => {};
+    onFirstLoad();
 
     // Note: The argument passed to import() has to be a simple string literal,
     // otherwise some bundler will get confused and won't include the module?

@@ -6,6 +6,7 @@ import type {
     DataLoadOptions,
     URLLoadOptions,
 } from "ruffle-core";
+import { ExtensionOrigin } from "./extemsion-origin";
 
 declare global {
     interface Navigator {
@@ -17,7 +18,7 @@ declare global {
     }
 }
 
-installRuffle("local");
+installRuffle("local", new ExtensionOrigin());
 const ruffle = (window.RufflePlayer as PublicAPI).newest()!;
 let player: Player;
 
@@ -105,6 +106,7 @@ function unload() {
 async function load(options: string | DataLoadOptions | URLLoadOptions) {
     unload();
     player = ruffle.createPlayer();
+    (player.getOriginAPI() as ExtensionOrigin).setInExtensionPlayer();
     player.id = "player";
     playerContainer.append(player);
     player.showSplashScreen();
@@ -125,7 +127,6 @@ async function load(options: string | DataLoadOptions | URLLoadOptions) {
 
     const supportedURL = utils.supportedURL(url);
     if (!supportedURL && urlString) {
-        player.setInExtensionPlayer();
         player.displayRootMovieUnsupportedUrlMessage(urlString);
         return;
     }
@@ -150,7 +151,7 @@ async function load(options: string | DataLoadOptions | URLLoadOptions) {
             return;
         }
     }
-    await player.loadInExtensionPlayer(options);
+    await player.load(options);
     player.addEventListener("loadedmetadata", () => {
         if (player.metadata) {
             for (const [key, value] of Object.entries(player.metadata)) {

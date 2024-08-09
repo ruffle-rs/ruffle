@@ -8,6 +8,7 @@ import {
     LoadRuffleWasmError,
     LoadSwfError,
 } from "../errors";
+import { OriginAPI } from "../../origin-api";
 
 interface PanicLink {
     type: "open_link";
@@ -23,7 +24,7 @@ interface PanicCreateReport {
     type: "create_report";
 }
 
-type PanicAction = PanicLink | PanicDetails | PanicCreateReport;
+export type PanicAction = PanicLink | PanicDetails | PanicCreateReport;
 
 function createPanicAction({
     action,
@@ -149,68 +150,40 @@ export const CommonActions = {
     },
 };
 
-function createPanicError(error: Error | null): {
+function createPanicError(error: Error | null, originAPI: OriginAPI): {
     body: HTMLDivElement;
     actions: PanicAction[];
 } {
     if (error instanceof LoadSwfError) {
-        // TODO: Move the extension player related error messages into the extension code and replace this
-        // with an API call
-        const inExtensionPlayer = error.inExtensionPlayer;
-        const urlExtensionProtocol = inExtensionPlayer ? document.baseURI.split(":")[0] + ":" : "";
-        if (error.swfUrl && error.swfUrl.protocol === urlExtensionProtocol) {
-            // The user entered an invalid URL in the extension player
-            const urlExtensionPart = document.baseURI.split("player.html")[0]!;
-            return {
-                body: textAsParagraphs("error-no-valid-url", {
-                    url: error.swfUrl.href.replace(urlExtensionPart, ""),
-                }),
-                actions: [CommonActions.ShowDetails],
-            };
-        } else if (error.swfUrl && inExtensionPlayer && error.swfUrl.protocol === "file:") {
-            // The user entered a local file URL in the extension player
-            return {
-                body: textAsParagraphs("error-local-root-url"),
-                actions: [CommonActions.ShowDetails],
-            };
-        } else if (error.swfUrl && inExtensionPlayer && !SUPPORTED_PROTOCOLS.includes(error.swfUrl.protocol)) {
-            // The user entered a URL with an unsupported protocol in the extension player
-            return {
-                body: textAsParagraphs("error-unsupported-root-protocol", {
-                    protocol: error.swfUrl.protocol,
-                }),
-                actions: [CommonActions.ShowDetails],
-            };
+        const originErrorMessage = originAPI.loadSwfErrorMessage(error.swfUrl)
+        if (originErrorMessage !== undefined) {
+            return originErrorMessage;
         } else if (error.swfUrl && !SUPPORTED_PROTOCOLS.includes(error.swfUrl.protocol)) {
             // The website embedded a URL with an unsupported protocol
             return {
                 body: textAsParagraphs("error-misconfigured-url"),
                 actions: [CommonActions.ShowDetails],
             };
-        }
-
-        if (
+        } else if (
             window.location.origin === error.swfUrl?.origin ||
             // The extension's internal player page is not restricted by CORS
             window.location.protocol.includes("extension")
         ) {
-            const tryHttpAdvice = inExtensionPlayer
-                ? error.swfUrl?.protocol?.includes("https")?.toString() ?? "true"
-                : "false";
+            const tryHttpAdvice = originAPI.giveTryHttpAdvice(error.swfUrl);
             return {
                 body: textAsParagraphs("error-swf-fetch", {https: tryHttpAdvice}),
                 actions: [CommonActions.ShowDetails],
             };
+        } else {
+            // This is a selfhosted build of Ruffle that tried to make a cross-origin request
+            return {
+                body: textAsParagraphs("error-swf-cors"),
+                actions: [
+                    CommonActions.openWiki("Using-Ruffle#configure-cors-header"),
+                    CommonActions.ShowDetails,
+                ],
+            };
         }
-
-        // This is a selfhosted build of Ruffle that tried to make a cross-origin request
-        return {
-            body: textAsParagraphs("error-swf-cors"),
-            actions: [
-                CommonActions.openWiki("Using-Ruffle#configure-cors-header"),
-                CommonActions.ShowDetails,
-            ],
-        };
     }
 
     if (error instanceof InvalidSwfError) {
@@ -372,9 +345,10 @@ export function showPanicScreen(
     error: Error | null,
     errorArray: ErrorArray,
     swfUrl: URL | undefined,
+    originAPI: OriginAPI,
 ) {
     const errorText = errorArray.join("");
-    let { body, actions } = createPanicError(error);
+    let { body, actions } = createPanicError(error, originAPI);
 
     const panicBody = createRef<HTMLDivElement>();
     const showDetails = () => {

@@ -1,8 +1,7 @@
 export class LoadSwfError extends Error {
-    constructor(public swfUrl: URL | undefined, public inExtensionPlayer: boolean) {
+    constructor(public swfUrl: URL | undefined) {
         super(`Failed to fetch ${swfUrl}`);
         this.swfUrl = swfUrl;
-        this.inExtensionPlayer = inExtensionPlayer;
     }
 }
 
