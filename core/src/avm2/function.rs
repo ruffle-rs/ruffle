@@ -175,6 +175,16 @@ pub fn exec<'gc>(
                 resolved_signature,
                 Some(callee),
             )?;
+
+            #[cfg(feature = "avm_profile")]
+            let _span = {
+                let mut name = WString::new();
+                display_function(&mut name, &method, bound_class);
+                tracy_client::Client::running()
+                    .expect("tracy_client should be running")
+                    .span_alloc(None, &name.to_utf8_lossy(), file!(), line!(), 0)
+            };
+
             activation
                 .context
                 .avm2
@@ -193,6 +203,16 @@ pub fn exec<'gc>(
             // but avoiding moving an Activation around helps perf
             let mut activation = Activation::from_nothing(activation.context.reborrow());
             activation.init_from_method(bm, scope, receiver, arguments, bound_class, callee)?;
+
+            #[cfg(feature = "avm_profile")]
+            let _span = {
+                let mut name = WString::new();
+                display_function(&mut name, &method, bound_class);
+                tracy_client::Client::running()
+                    .expect("tracy_client should be running")
+                    .span_alloc(None, &name.to_utf8_lossy(), file!(), line!(), 0)
+            };
+
             activation
                 .context
                 .avm2
