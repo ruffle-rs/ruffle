@@ -7,12 +7,8 @@ function handleMessage(message: Message) {
             if (window.RufflePlayer === undefined) {
                 window.RufflePlayer = {};
             }
-            if (window.RufflePlayer.config === undefined) {
-                window.RufflePlayer.config = {};
-            }
-            window.RufflePlayer.config = {
+            window.RufflePlayer.extensionConfig = {
                 ...message.config,
-                ...window.RufflePlayer.config,
                 openInNewTab,
             };
             installRuffle("extension");
