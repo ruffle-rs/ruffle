@@ -206,7 +206,7 @@ impl App {
                                 let viewport_scale_factor = self.window.scale_factor();
                                 player.set_viewport_dimensions(ViewportDimensions {
                                     width: size.width,
-                                    height: size.height - height_offset as u32,
+                                    height: size.height.saturating_sub(height_offset as u32),
                                     scale_factor: viewport_scale_factor,
                                 });
                             }

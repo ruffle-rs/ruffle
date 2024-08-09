@@ -7,11 +7,11 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
+use crate::avm2_stub_getter;
 use crate::display_object::{
     StageDisplayState, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
 };
 use crate::string::{AvmString, WString};
-use crate::{avm2_stub_getter, avm2_stub_setter};
 use swf::Color;
 
 /// Implements `flash.display.Stage`'s native instance constructor.
@@ -440,26 +440,6 @@ pub fn invalidate<'gc>(
     if let Some(stage) = this.as_display_object().and_then(|this| this.as_stage()) {
         stage.set_invalidated(activation.context.gc_context, true);
     }
-    Ok(Value::Undefined)
-}
-
-/// Stage.fullScreenSourceRect's getter
-pub fn get_full_screen_source_rect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.Stage", "fullScreenSourceRect");
-    Ok(Value::Undefined)
-}
-
-/// Stage.fullScreenSourceRect's setter
-pub fn set_full_screen_source_rect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.display.Stage", "fullScreenSourceRect");
     Ok(Value::Undefined)
 }
 
