@@ -11,6 +11,9 @@
     "settings_autostart": {
         "message": "Odtwarzaj zawartość Flash automatycznie (kliknij, aby wyłączyć wyciszenie)"
     },
+    "settings_swf_takeover": {
+        "message": "Odtwarzaj pliki SWF w przeglądarce zamiast je pobierać"
+    },
     "settings_log_level": {
         "message": "Poziom logowania"
     },
@@ -106,6 +109,9 @@
     },
     "grant_single_site_permission": {
         "message": "Włącz na stałe dla tej strony"
+    },
+    "permissions_explanation": {
+        "message": "Rozszerzenie Ruffle działa najlepiej z możliwością dostępu do danych na wszystkich stronach internetowych. Pozwala to na uruchomienie go przy pierwszym załadowaniu dowolnej strony internetowej, dzięki czemu strony, które wykrywają oprogramowanie Flash Player przy ładowaniu, uruchomią zawartość Flash. Daje mu to również możliwość ładowania plików SWF w jego wewnętrznym odtwarzaczu z innych lokalizacji w sieci oraz pozwala mu na automatyczne ładowanie do odtwarzacza linków do plików SWF. Jeśli nie udzielisz tego pozwolenia, będziesz musiał ręcznie włączyć Ruffle na każdej stronie internetowej, na której chcesz go używać, klikając ikonę rozszerzenia i włączając je dla tej witryny."
     },
     "swf_player_permissions": {
         "message": "Musisz udzielić temu adresowi URL pozwolenia na wczytanie z niego plików SWF."

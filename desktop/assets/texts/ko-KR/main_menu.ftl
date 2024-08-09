@@ -36,3 +36,5 @@ debug-menu-open-movie = 무비 보기
 debug-menu-open-movie-list = 알려진 무비 표시
 debug-menu-open-domain-list = 도메인 보기
 debug-menu-search-display-objects = 표시된 객체 검색
+view-menu = 보기
+view-menu-fullscreen = 전체 화면
