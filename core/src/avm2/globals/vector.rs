@@ -58,7 +58,7 @@ pub fn instance_init<'gc>(
 
 fn class_call<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() != 1 {
@@ -72,9 +72,10 @@ fn class_call<'gc>(
         )?));
     }
 
-    let this_class = activation
-        .subclass()
-        .expect("Method call without bound class?");
+    let this_class = this
+        .as_class_object()
+        .expect("Call handler is called with ClassObject as receiver")
+        .inner_class_definition();
 
     let value_type = this_class
         .param()
@@ -257,9 +258,7 @@ pub fn concat<'gc>(
             .ok_or("Cannot concat Vector with null or undefined")?;
 
         // this is Vector.<int/uint/Number/*>
-        let my_base_vector_class = activation
-            .subclass()
-            .expect("Method call without bound class?");
+        let my_base_vector_class = this.instance_class();
 
         if !arg.is_of_type(activation, my_base_vector_class) {
             let base_vector_name = my_base_vector_class
