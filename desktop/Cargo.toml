@@ -47,7 +47,7 @@ gilrs = "0.10"
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"]}
 
 # Deliberately held back to match tracy client used by profiling crate
-tracing-tracy = { version = "=0.10.4", optional = true }
+tracing-tracy = { version = "=0.11.1", optional = true }
 rand = "0.8.5"
 thiserror.workspace = true
 
