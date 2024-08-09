@@ -21,19 +21,19 @@ pub struct AvmString<'gc> {
 
 impl<'gc> AvmString<'gc> {
     /// Turns a string to a fully owned (non-dependent) managed string.
-    pub(super) fn to_fully_owned(self, gc_context: &Mutation<'gc>) -> Gc<'gc, AvmStringRepr<'gc>> {
+    pub(super) fn to_fully_owned(self, mc: &Mutation<'gc>) -> Gc<'gc, AvmStringRepr<'gc>> {
         match self.source {
             Source::Managed(s) => {
                 if s.is_dependent() {
                     let repr = AvmStringRepr::from_raw(WString::from(self.as_wstr()), false);
-                    Gc::new(gc_context, repr)
+                    Gc::new(mc, repr)
                 } else {
                     s
                 }
             }
             Source::Static(s) => {
-                let repr = AvmStringRepr::from_raw(s.into(), false);
-                Gc::new(gc_context, repr)
+                let repr = AvmStringRepr::from_raw_static(s, false);
+                Gc::new(mc, repr)
             }
         }
     }
