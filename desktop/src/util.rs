@@ -1,7 +1,7 @@
 use crate::custom_event::RuffleEvent;
 use anyhow::{anyhow, Error};
 use gilrs::Button;
-use rfd::FileDialog;
+use rfd::AsyncFileDialog;
 use ruffle_core::events::{GamepadButton, KeyCode, TextControlCode};
 use std::path::{Path, PathBuf};
 use url::Url;
@@ -244,8 +244,8 @@ pub fn parse_url(path: &Path) -> Result<Url, Error> {
     }
 }
 
-fn actually_pick_file(dir: Option<PathBuf>) -> Option<PathBuf> {
-    let mut dialog = FileDialog::new()
+pub async fn pick_file(dir: Option<PathBuf>) -> Option<PathBuf> {
+    let mut dialog = AsyncFileDialog::new()
         .add_filter("Flash Files", &["swf", "spl", "ruf"])
         .add_filter("All Files", &["*"])
         .set_title("Load a Flash File");
@@ -254,27 +254,7 @@ fn actually_pick_file(dir: Option<PathBuf>) -> Option<PathBuf> {
         dialog = dialog.set_directory(dir);
     }
 
-    dialog.pick_file()
-}
-
-// [NA] Horrible hacky workaround for https://github.com/rust-windowing/winit/issues/2291
-// We only need the workaround from within UI code, not when executing custom events
-// The workaround causes Ruffle to show as "not responding" on windows, so we don't use it if we don't need to
-#[cfg(windows)]
-pub fn pick_file(in_ui: bool, path: Option<PathBuf>) -> Option<PathBuf> {
-    if in_ui {
-        std::thread::spawn(move || actually_pick_file(path))
-            .join()
-            .ok()
-            .flatten()
-    } else {
-        actually_pick_file(path)
-    }
-}
-
-#[cfg(not(windows))]
-pub fn pick_file(_in_ui: bool, path: Option<PathBuf>) -> Option<PathBuf> {
-    actually_pick_file(path)
+    dialog.pick_file().await.map(|h| h.into())
 }
 
 #[cfg(not(feature = "tracy"))]

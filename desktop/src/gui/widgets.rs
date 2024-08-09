@@ -2,11 +2,12 @@ use crate::gui::text;
 use crate::util::pick_file;
 use egui::{TextEdit, Ui};
 use std::path::Path;
+use std::sync::{Arc, Mutex, MutexGuard};
 use unic_langid::LanguageIdentifier;
 use url::Url;
 
 pub struct PathOrUrlField {
-    value: String,
+    value: Arc<Mutex<String>>,
     result: Option<Url>,
     hint: &'static str,
 }
@@ -17,7 +18,7 @@ impl PathOrUrlField {
             if default.scheme() == "file" {
                 if let Ok(path) = default.to_file_path() {
                     return Self {
-                        value: path.to_string_lossy().to_string(),
+                        value: Arc::new(Mutex::new(path.to_string_lossy().to_string())),
                         result: Some(default),
                         hint,
                     };
@@ -25,17 +26,21 @@ impl PathOrUrlField {
             }
 
             return Self {
-                value: default.to_string(),
+                value: Arc::new(Mutex::new(default.to_string())),
                 result: Some(default),
                 hint,
             };
         }
 
         Self {
-            value: "".to_string(),
+            value: Arc::new(Mutex::new("".to_string())),
             result: None,
             hint,
         }
+    }
+
+    fn lock_value(value: &Arc<Mutex<String>>) -> MutexGuard<'_, String> {
+        value.lock().expect("Non-poisoned value")
     }
 
     pub fn ui(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) -> &mut Self {
@@ -51,13 +56,20 @@ impl PathOrUrlField {
                         path
                     });
 
-                if let Some(path) = pick_file(true, dir) {
-                    self.value = path.to_string_lossy().to_string();
-                }
+                let value = self.value.clone();
+                tokio::spawn(async move {
+                    if let Some(path) = pick_file(dir).await {
+                        let mut value_lock = Self::lock_value(&value);
+                        *value_lock = path.to_string_lossy().to_string();
+                    }
+                });
             }
+
+            let mut value_locked = Self::lock_value(&self.value);
+            let mut value = value_locked.clone();
             ui.add_sized(
                 ui.available_size(),
-                TextEdit::singleline(&mut self.value)
+                TextEdit::singleline(&mut value)
                     .hint_text(self.hint)
                     .text_color_opt(if self.result.is_none() {
                         Some(ui.style().visuals.error_fg_color)
@@ -65,19 +77,21 @@ impl PathOrUrlField {
                         None
                     }),
             );
+            *value_locked = value;
         });
 
-        let path = Path::new(&self.value);
+        let value = Self::lock_value(&self.value).clone();
+        let path = Path::new(&value);
         self.result = if path.is_file() {
             Url::from_file_path(path).ok()
         } else {
-            Url::parse(&self.value).ok()
+            Url::parse(&value).ok()
         };
 
         self
     }
 
-    pub fn value(&self) -> Option<&Url> {
+    pub fn result(&self) -> Option<&Url> {
         self.result.as_ref()
     }
 }
