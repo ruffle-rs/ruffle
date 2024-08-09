@@ -260,15 +260,22 @@ impl<'gc> RegExp<'gc> {
             &regress::Match,
         ) -> Result<WString, Error<'gc>>,
     {
-        let mut ret = WString::new();
         let mut start = 0;
-        while let Some(m) = self.find_utf16_match(*text, start) {
-            ret.push_str(&text[start..m.range.start]);
-            ret.push_str(&f(activation, text, &m)?);
+        let mut m = self.find_utf16_match(*text, start);
 
-            start = m.range.end;
+        if m.is_none() {
+            // Nothing to do; short circuit and just return the original string, to avoid any allocs or functions
+            return Ok(*text);
+        }
 
-            if m.range.is_empty() {
+        let mut ret = WString::new();
+        while let Some(segment) = m {
+            ret.push_str(&text[start..segment.range.start]);
+            ret.push_str(&f(activation, text, &segment)?);
+
+            start = segment.range.end;
+
+            if segment.range.is_empty() {
                 if start == text.len() {
                     break;
                 }
@@ -279,6 +286,7 @@ impl<'gc> RegExp<'gc> {
             if !self.flags().contains(RegExpFlags::GLOBAL) {
                 break;
             }
+            m = self.find_utf16_match(*text, start);
         }
 
         ret.push_str(&text[start..]);
@@ -320,7 +328,7 @@ impl<'gc> RegExp<'gc> {
                 );
                 if storage.length() >= limit {
                     break; // Intentional bug to match Flash.
-                           // Causes adding parts past limit.
+                    // Causes adding parts past limit.
                 }
             }
 
