@@ -1,5 +1,6 @@
 import { PublicAPI } from "./public-api";
-import { internalSourceApi } from "./source-api";
+import { getSourceApiImplementation } from "./source-api";
+import { OriginAPI } from "./origin-api";
 
 /**
  * Options to use with this specific installation of Ruffle.
@@ -27,10 +28,12 @@ export interface InstallationOptions {
  * "extension" for browser extensions, and something else for other use cases.
  * Names are unique, and last-installed will replace earlier installations with the same name,
  * regardless of what those installations are or which version they represent.
+ * @param originAPI The OriginAPI of this Ruffle version.
  * @param options Any options used to configure this specific installation of Ruffle.
  */
 export function installRuffle(
     sourceName: string,
+    originAPI: OriginAPI,
     options: InstallationOptions = {},
 ): void {
     let publicAPI: PublicAPI;
@@ -41,8 +44,11 @@ export function installRuffle(
         window.RufflePlayer = publicAPI;
     }
 
-    publicAPI.sources[sourceName] = internalSourceApi;
-    internalSourceApi.options = options;
+    const sourceApiImplementation = getSourceApiImplementation(
+        originAPI,
+        options,
+    );
+    publicAPI.sources[sourceName] = sourceApiImplementation;
 
     // Install the faux plugin detection immediately.
     // This is necessary because scripts such as SWFObject check for the
@@ -51,6 +57,6 @@ export function installRuffle(
     const polyfills =
         "polyfills" in publicAPI.config ? publicAPI.config.polyfills : true;
     if (polyfills !== false) {
-        internalSourceApi.pluginPolyfill();
+        sourceApiImplementation.pluginPolyfill();
     }
 }

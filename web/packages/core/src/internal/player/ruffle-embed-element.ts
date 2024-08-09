@@ -7,6 +7,7 @@ import {
 } from "./inner";
 import { registerElement } from "../register-element";
 import { isSwf } from "../../swf-utils";
+import { OriginAPI } from "../../origin-api";
 
 /**
  * A polyfill html element.
@@ -134,9 +135,14 @@ export class RuffleEmbedElement extends RufflePlayerElement {
      * Creates a RuffleEmbed that will polyfill and replace the given element.
      *
      * @param elem Element to replace.
+     * @param originAPI The OriginAPI that should be used for the Ruffle version
+     * polyfilling the given Flash element.
      * @returns Created RuffleEmbed.
      */
-    static fromNativeEmbedElement(elem: Element): RuffleEmbedElement {
+    static fromNativeEmbedElement(
+        elem: Element,
+        originAPI: OriginAPI,
+    ): RuffleEmbedElement {
         const externalName = registerElement(
             "ruffle-embed",
             RuffleEmbedElement,
@@ -144,6 +150,7 @@ export class RuffleEmbedElement extends RufflePlayerElement {
         const ruffleObj = document.createElement(
             externalName,
         ) as RuffleEmbedElement;
+        ruffleObj.initialize(originAPI);
         copyElement(elem, ruffleObj);
 
         return ruffleObj;

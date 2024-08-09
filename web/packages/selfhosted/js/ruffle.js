@@ -2,6 +2,7 @@
 /* global __webpack_public_path__:writable */
 
 import { installRuffle } from "ruffle-core";
+import { SelfhostedOrigin } from "./selfhosted-origin.js";
 
 let currentScriptURL = null;
 
@@ -46,7 +47,7 @@ function publicPath(config) {
     return path;
 }
 
-installRuffle("local", {
+installRuffle("local", new SelfhostedOrigin(), {
     onFirstLoad: () => {
         __webpack_public_path__ = publicPath(window.RufflePlayer?.config);
     },

@@ -1,6 +1,7 @@
 import { DataLoadOptions, URLLoadOptions } from "../load-options";
 import { MovieMetadata } from "../movie-metadata";
 import { ReadyState } from "../internal/player/inner";
+import { OriginAPI } from "../origin-api";
 
 /**
  * Legacy interface to the Ruffle API.
@@ -73,15 +74,6 @@ export interface LegacyRuffleAPI {
     load(options: string | URLLoadOptions | DataLoadOptions): Promise<void>;
 
     /**
-     * Like {@link RufflePlayer.load}, but only for the extension player.
-     * This is used to make sure error warnings related to the extension player are only shown
-     * in it.
-     * TODO: Remove this after moving inExtensionPlayer into the extension code
-     * @param options See {@link RufflePlayer.load}.
-     */
-    loadInExtensionPlayer(options: string | URLLoadOptions | DataLoadOptions): void;
-
-    /**
      * Plays or resumes the movie.
      */
     play(): void;
@@ -97,15 +89,17 @@ export interface LegacyRuffleAPI {
      * Displays the panic screen with an error message that the root movie URL is not supported by Ruffle.
      * If a given URL is unsupported, this should be directly called instead of trying to load the URL, as
      * it removes the delay before displaying the (same) error message.
+     *
      * @param unsupportedUrl The given URL that is unsupported.
      */
     displayRootMovieUnsupportedUrlMessage(unsupportedUrl: string): void;
 
     /**
-     * Sets the information whether the last load command originated from the extension player to true.
-     * TODO: Move this into the extension code and replace its usages with an API call
+     * Returns the OriginAPI of this Ruffle player.
+     *
+     * @returns The OriginAPI of this Ruffle player.
      */
-    setInExtensionPlayer(): void;
+    getOriginAPI(): OriginAPI;
 
     /**
      * Returns the master volume of the player.

@@ -4,6 +4,7 @@ import { installPlugin, FLASH_PLUGIN } from "./plugin-polyfill";
 import { publicPath } from "./public-path";
 import type { DataLoadOptions, URLLoadOptions } from "./load-options";
 import { isExtension } from "./current-script";
+import { OriginAPI } from "./origin-api";
 
 const globalConfig: DataLoadOptions | URLLoadOptions | object =
     window.RufflePlayer?.config ?? {};
@@ -38,9 +39,12 @@ function isFlashEnabledBrowser(): boolean {
 }
 
 /**
+ * Polyfills all existing Flash embeddings (Flash object and embed tags).
  *
+ * @param originAPI The OriginAPI that should be used for the Ruffle version
+ * polyfilling the Flash embeddings.
  */
-function polyfillFlashInstances(): void {
+function polyfillFlashInstances(originAPI: OriginAPI): void {
     try {
         // Create live collections to track embed tags.
         objects = objects ?? document.getElementsByTagName("object");
@@ -50,14 +54,19 @@ function polyfillFlashInstances(): void {
         for (const elem of Array.from(objects)) {
             if (RuffleObjectElement.isInterdictable(elem)) {
                 const ruffleObject =
-                    RuffleObjectElement.fromNativeObjectElement(elem);
+                    RuffleObjectElement.fromNativeObjectElement(
+                        elem,
+                        originAPI,
+                    );
                 elem.replaceWith(ruffleObject);
             }
         }
         for (const elem of Array.from(embeds)) {
             if (RuffleEmbedElement.isInterdictable(elem)) {
-                const ruffleEmbed =
-                    RuffleEmbedElement.fromNativeEmbedElement(elem);
+                const ruffleEmbed = RuffleEmbedElement.fromNativeEmbedElement(
+                    elem,
+                    originAPI,
+                );
                 elem.replaceWith(ruffleEmbed);
             }
         }
@@ -188,8 +197,11 @@ async function injectRuffle(
 
 /**
  * Listen for changes to the DOM.
+ *
+ * @param originAPI The OriginAPI that should be used for the Ruffle version
+ * polyfilling the Flash content.
  */
-function initMutationObserver(): void {
+function initMutationObserver(originAPI: OriginAPI): void {
     const observer = new MutationObserver(function (mutationsList) {
         // If any embed or object nodes were added, re-run the polyfill to detect any new instances.
         const embedOrObjectAdded = mutationsList.some((mutation) =>
@@ -202,7 +214,7 @@ function initMutationObserver(): void {
             ),
         );
         if (embedOrObjectAdded) {
-            polyfillFlashInstances();
+            polyfillFlashInstances(originAPI);
             polyfillFrames();
         }
     });
@@ -220,11 +232,14 @@ export function pluginPolyfill(): void {
 
 /**
  * Polyfills legacy Flash content on the page.
+ *
+ * @param originAPI The OriginAPI that should be used for the Ruffle version
+ * polyfilling the Flash content on the page.
  */
-export function polyfill(): void {
+export function polyfill(originAPI: OriginAPI): void {
     if (!isFlashEnabledBrowser()) {
-        polyfillFlashInstances();
+        polyfillFlashInstances(originAPI);
         polyfillFrames();
-        initMutationObserver();
+        initMutationObserver(originAPI);
     }
 }

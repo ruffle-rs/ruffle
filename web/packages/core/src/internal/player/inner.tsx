@@ -26,6 +26,7 @@ import { createRuffleBuilder } from "../../load-ruffle";
 import { lookupElement } from "../register-element";
 import { configureBuilder } from "../builder";
 import { DEFAULT_CONFIG } from "../../config";
+import { OriginAPI } from "../../origin-api";
 
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
 
@@ -184,9 +185,7 @@ export class InnerPlayer {
 
     private volumeSettings: VolumeControls;
 
-    // Whether the last load command originated from the extension player
-    // TODO: Move this variable into the extension code and replace its usages with an API call
-    private inExtensionPlayer = false;
+    private readonly originAPI: OriginAPI;
 
     private readonly debugPlayerInfo: () => string;
     protected readonly onCallbackAvailable: (name: string) => void;
@@ -195,10 +194,12 @@ export class InnerPlayer {
         element: HTMLElement,
         debugPlayerInfo: () => string,
         onCallbackAvailable: (name: string) => void,
+        originAPI: OriginAPI
     ) {
         this.element = element;
         this.debugPlayerInfo = debugPlayerInfo;
         this.onCallbackAvailable = onCallbackAvailable;
+        this.originAPI = originAPI;
 
         this.shadow = this.element.attachShadow({ mode: "open" });
         this.shadow.appendChild(ruffleShadowTemplate.content.cloneNode(true));
@@ -796,9 +797,7 @@ export class InnerPlayer {
     async load(
         options: string | URLLoadOptions | DataLoadOptions,
         isPolyfillElement: boolean = false,
-        inExtensionPlayer: boolean = false
     ): Promise<void> {
-        this.inExtensionPlayer = inExtensionPlayer;
         options = this.checkOptions(options);
 
         if (!this.element.isConnected || this.isUnusedFallbackObject()) {
@@ -890,6 +889,14 @@ export class InnerPlayer {
             return this.instance.is_playing();
         }
         return false;
+    }
+
+    /**
+     * Returns the OriginAPI of this Ruffle player.
+     * @returns The OriginAPI of this Ruffle player.
+     */
+    getOriginAPI(): OriginAPI {
+        return this.originAPI;
     }
 
     /**
@@ -1891,7 +1898,7 @@ export class InnerPlayer {
         errorArray.push(this.getPanicData());
 
         // Clears out any existing content (ie play button or canvas) and replaces it with the error screen
-        showPanicScreen(this.container, error, errorArray, this.swfUrl);
+        showPanicScreen(this.container, error, errorArray, this.swfUrl, this.originAPI);
 
         // Do this last, just in case it causes any cascading issues.
         this.destroy();
@@ -1934,10 +1941,6 @@ export class InnerPlayer {
         this.displayRootMovieDownloadFailedMessage(false);
     }
 
-    setInExtensionPlayer() {
-        this.inExtensionPlayer = true;
-    }
-
     protected displayRootMovieDownloadFailedMessage(invalidSwf: boolean): void {
         const openInNewTab = this.loadedConfig?.openInNewTab;
         if (
@@ -1950,7 +1953,7 @@ export class InnerPlayer {
         } else {
             const error = invalidSwf
                 ? new InvalidSwfError(this.swfUrl)
-                : new LoadSwfError(this.swfUrl, this.inExtensionPlayer);
+                : new LoadSwfError(this.swfUrl);
             this.panic(error);
         }
     }
