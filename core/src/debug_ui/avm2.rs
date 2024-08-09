@@ -41,13 +41,13 @@ impl Avm2ObjectWindow {
     pub fn show<'gc>(
         &mut self,
         egui_ctx: &egui::Context,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: Object<'gc>,
         messages: &mut Vec<Message>,
     ) -> bool {
         let mut keep_open = true;
         let domain = context.avm2.stage_domain();
-        let mut activation = Activation::from_domain(context.reborrow(), domain);
+        let mut activation = Activation::from_domain(context, domain);
         Window::new(object_name(activation.context.gc_context, object))
             .id(Id::new(object.as_ptr()))
             .open(&mut keep_open)
@@ -74,7 +74,7 @@ impl Avm2ObjectWindow {
                     }
                     Panel::Elements => {
                         if let Some(array) = object.as_array_storage() {
-                            self.show_elements(array, messages, &mut activation.context, ui)
+                            self.show_elements(array, messages, activation.context, ui)
                         }
                     }
                     Panel::Class => {
@@ -100,7 +100,7 @@ impl Avm2ObjectWindow {
             .show(ui, |ui| {
                 if let Some(class) = object.instance_class().class_object() {
                     ui.label("Instance Of");
-                    show_avm2_value(ui, &mut activation.context, class.into(), messages);
+                    show_avm2_value(ui, activation.context, class.into(), messages);
                     ui.end_row();
                 }
 
@@ -108,7 +108,7 @@ impl Avm2ObjectWindow {
                     ui.label("Display Object");
                     open_display_object_button(
                         ui,
-                        &mut activation.context,
+                        activation.context,
                         messages,
                         object,
                         &mut self.hovered_debug_rect,
@@ -187,7 +187,7 @@ impl Avm2ObjectWindow {
         &mut self,
         array: std::cell::Ref<ArrayStorage<'gc>>,
         messages: &mut Vec<Message>,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         ui: &mut Ui,
     ) {
         TableBuilder::new(ui)
@@ -257,7 +257,7 @@ impl Avm2ObjectWindow {
                 ui.vertical(|ui| {
                     let mut superclass = Some(class);
                     while let Some(class) = superclass {
-                        show_avm2_value(ui, &mut activation.context, class.into(), messages);
+                        show_avm2_value(ui, activation.context, class.into(), messages);
                         superclass = class.superclass_object();
                     }
                 });
@@ -410,7 +410,7 @@ enum ValueWidget {
 }
 
 impl ValueWidget {
-    fn new<'gc>(context: &mut UpdateContext<'_, 'gc>, value: Value<'gc>) -> Self {
+    fn new<'gc>(context: &mut UpdateContext<'gc>, value: Value<'gc>) -> Self {
         match value {
             Value::Undefined => ValueWidget::Other(Cow::Borrowed("Undefined")),
             Value::Null => ValueWidget::Other(Cow::Borrowed("Null")),
@@ -455,7 +455,7 @@ impl ValueResultWidget {
         value: Result<Value<'gc>, Error<'gc>>,
     ) -> Self {
         match value {
-            Ok(value) => Self::Value(ValueWidget::new(&mut activation.context, value)),
+            Ok(value) => Self::Value(ValueWidget::new(activation.context, value)),
             Err(error) => Self::Error(format!("{error:?})")),
         }
     }
@@ -474,7 +474,7 @@ impl ValueResultWidget {
 
 pub fn show_avm2_value<'gc>(
     ui: &mut Ui,
-    context: &mut UpdateContext<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
     value: Value<'gc>,
     messages: &mut Vec<Message>,
 ) {

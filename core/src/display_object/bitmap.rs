@@ -62,7 +62,7 @@ pub enum BitmapClass<'gc> {
 impl<'gc> BitmapClass<'gc> {
     pub fn from_class_object(
         class: Avm2ClassObject<'gc>,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
     ) -> Option<Self> {
         let class_definition = class.inner_class_definition();
         if class_definition
@@ -243,7 +243,7 @@ impl<'gc> Bitmap<'gc> {
     /// if that has not already been done.
     pub fn set_bitmap_data(
         self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         bitmap_data: BitmapDataWrapper<'gc>,
     ) {
         let weak_self = DisplayObjectWeak::Bitmap(self.downgrade());
@@ -326,13 +326,13 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
 
     fn post_instantiation(
         &self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         _init_object: Option<avm1::Object<'gc>>,
         instantiated_by: Instantiator,
         run_frame: bool,
     ) {
         if self.movie().is_action_script_3() {
-            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let mut activation = Avm2Activation::from_nothing(context);
             if !instantiated_by.is_avm() {
                 let bitmap_cls = self
                     .avm2_bitmap_class()
@@ -362,7 +362,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
                 .expect("can't throw from post_instantiation -_-");
 
                 self.set_bitmap_data(
-                    &mut activation.context,
+                    activation.context,
                     bitmap_data_obj.as_bitmap_data().unwrap(),
                 );
             }
@@ -399,7 +399,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(&self, context: &mut UpdateContext<'_, 'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
         self.0.write(context.gc_context).avm2_object = Some(to);
     }
 

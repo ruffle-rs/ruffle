@@ -120,15 +120,15 @@ pub fn set_focus<'gc>(
     match args.get(0) {
         None => Ok(false.into()),
         Some(Value::Undefined | Value::Null) => {
-            tracker.set(None, &mut activation.context);
+            tracker.set(None, activation.context);
             Ok(true.into())
         }
         Some(focus) => {
             let start_clip = activation.target_clip_or_root();
             let object = activation.resolve_target_display_object(start_clip, *focus, false)?;
             if let Some(object) = object.and_then(|o| o.as_interactive()) {
-                if object.is_focusable(&mut activation.context) {
-                    tracker.set(Some(object), &mut activation.context);
+                if object.is_focusable(activation.context) {
+                    tracker.set(Some(object), activation.context);
                     return Ok(true.into());
                 }
             }

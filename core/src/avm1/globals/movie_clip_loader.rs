@@ -106,9 +106,9 @@ fn unload_clip<'gc>(
             // does Flash also wait a frame to execute avm1_unload? Is avm1_unload_movie
             // the correct call?
             if let Some(mc) = target.as_movie_clip() {
-                mc.avm1_unload_movie(&mut activation.context);
+                mc.avm1_unload_movie(activation.context);
             } else {
-                target.avm1_unload(&mut activation.context);
+                target.avm1_unload(activation.context);
             }
             return Ok(true.into());
         }

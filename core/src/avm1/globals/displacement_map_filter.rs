@@ -140,7 +140,7 @@ impl<'gc> DisplacementMapFilter<'gc> {
         Self(GcCell::new(gc_context, self.0.read().clone()))
     }
 
-    fn map_bitmap(&self, context: &mut UpdateContext<'_, 'gc>) -> Option<Object<'gc>> {
+    fn map_bitmap(&self, context: &mut UpdateContext<'gc>) -> Option<Object<'gc>> {
         if let Some(map_bitmap) = self.0.read().map_bitmap {
             let proto = context.avm1.prototypes().bitmap_data;
             let result = ScriptObject::new(context.gc_context, Some(proto));
@@ -308,7 +308,7 @@ impl<'gc> DisplacementMapFilter<'gc> {
 
     pub fn filter(
         &self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
     ) -> ruffle_render::filters::DisplacementMapFilter {
         let filter = self.0.read();
         ruffle_render::filters::DisplacementMapFilter {
@@ -388,7 +388,7 @@ fn method<'gc>(
 
     Ok(match index {
         GET_MAP_BITMAP => this
-            .map_bitmap(&mut activation.context)
+            .map_bitmap(activation.context)
             .map_or(Value::Undefined, Value::from),
         SET_MAP_BITMAP => {
             this.set_map_bitmap(activation, args.get(0))?;

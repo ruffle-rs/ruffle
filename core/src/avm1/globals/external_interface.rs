@@ -76,7 +76,7 @@ pub fn call<'gc>(
             }
         }
         Ok(method
-            .call(&mut activation.context, &external_args)
+            .call(activation.context, &external_args)
             .into_avm1(activation))
     } else {
         Ok(Value::Null)

@@ -29,7 +29,7 @@ pub fn text_field_allocator<'gc>(
         if class == textfield_cls {
             let movie = activation.caller_movie_or_root();
             let display_object =
-                EditText::new(&mut activation.context, movie, 0.0, 0.0, 100.0, 100.0).into();
+                EditText::new(activation.context, movie, 0.0, 0.0, 100.0, 100.0).into();
             return initialize_for_allocator(activation, display_object, orig_class);
         }
 
@@ -80,7 +80,7 @@ pub fn set_always_show_selection<'gc>(
     };
 
     let value = args.get_bool(0);
-    this.set_always_show_selection(&mut activation.context, value);
+    this.set_always_show_selection(activation.context, value);
 
     Ok(Value::Undefined)
 }
@@ -127,7 +127,7 @@ pub fn set_auto_size<'gc>(
             } else {
                 return Err(make_error_2008(activation, "autoSize"));
             },
-            &mut activation.context,
+            activation.context,
         );
     }
 
@@ -285,7 +285,7 @@ pub fn set_condense_white<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         let value = args.get_bool(0);
-        this.set_condense_white(&mut activation.context, value);
+        this.set_condense_white(activation.context, value);
     }
 
     Ok(Value::Undefined)
@@ -319,7 +319,7 @@ pub fn set_default_text_format<'gc>(
 
         if let Some(new_text_format) = new_text_format {
             if let Some(new_text_format) = new_text_format.as_text_format() {
-                this.set_new_text_format(new_text_format.clone(), &mut activation.context);
+                this.set_new_text_format(new_text_format.clone(), activation.context);
             }
         }
     }
@@ -353,7 +353,7 @@ pub fn set_display_as_password<'gc>(
     {
         let is_password = args.get_bool(0);
 
-        this.set_password(is_password, &mut activation.context);
+        this.set_password(is_password, activation.context);
     }
 
     Ok(Value::Undefined)
@@ -385,7 +385,7 @@ pub fn set_embed_fonts<'gc>(
     {
         let is_embed_fonts = args.get_bool(0);
 
-        this.set_is_device_font(&mut activation.context, !is_embed_fonts);
+        this.set_is_device_font(activation.context, !is_embed_fonts);
     }
 
     Ok(Value::Undefined)
@@ -417,8 +417,8 @@ pub fn set_html_text<'gc>(
     {
         let html_text = args.get_string(activation, 0)?;
 
-        this.set_is_html(&mut activation.context, true);
-        this.set_html_text(&html_text, &mut activation.context);
+        this.set_is_html(activation.context, true);
+        this.set_html_text(&html_text, activation.context);
     }
 
     Ok(Value::Undefined)
@@ -465,7 +465,7 @@ pub fn set_multiline<'gc>(
     {
         let is_multiline = args.get_bool(0);
 
-        this.set_multiline(is_multiline, &mut activation.context);
+        this.set_multiline(is_multiline, activation.context);
     }
 
     Ok(Value::Undefined)
@@ -497,7 +497,7 @@ pub fn set_selectable<'gc>(
     {
         let is_selectable = args.get_bool(0);
 
-        this.set_selectable(is_selectable, &mut activation.context);
+        this.set_selectable(is_selectable, activation.context);
     }
 
     Ok(Value::Undefined)
@@ -529,8 +529,8 @@ pub fn set_text<'gc>(
     {
         let text = args.get_string_non_null(activation, 0, "text")?;
 
-        this.set_is_html(&mut activation.context, false);
-        this.set_text(&text, &mut activation.context);
+        this.set_is_html(activation.context, false);
+        this.set_text(&text, activation.context);
     }
 
     Ok(Value::Undefined)
@@ -578,9 +578,9 @@ pub fn set_text_color<'gc>(
             0,
             this.text_length(),
             desired_format.clone(),
-            &mut activation.context,
+            activation.context,
         );
-        this.set_new_text_format(desired_format, &mut activation.context);
+        this.set_new_text_format(desired_format, activation.context);
     }
 
     Ok(Value::Undefined)
@@ -595,7 +595,7 @@ pub fn get_text_height<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let metrics = this.measure_text(&mut activation.context);
+        let metrics = this.measure_text(activation.context);
         return Ok(metrics.1.to_pixels().into());
     }
 
@@ -611,7 +611,7 @@ pub fn get_text_width<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        let metrics = this.measure_text(&mut activation.context);
+        let metrics = this.measure_text(activation.context);
         return Ok(metrics.0.to_pixels().into());
     }
 
@@ -648,9 +648,9 @@ pub fn set_type<'gc>(
         let is_editable = args.get_string_non_null(activation, 0, "type")?;
 
         if &is_editable == b"input" {
-            this.set_editable(true, &mut activation.context);
+            this.set_editable(true, activation.context);
         } else if &is_editable == b"dynamic" {
-            this.set_editable(false, &mut activation.context);
+            this.set_editable(false, activation.context);
         } else {
             return Err(make_error_2008(activation, "type"));
         }
@@ -685,7 +685,7 @@ pub fn set_word_wrap<'gc>(
     {
         let is_word_wrap = args.get_bool(0);
 
-        this.set_word_wrap(is_word_wrap, &mut activation.context);
+        this.set_word_wrap(is_word_wrap, activation.context);
     }
 
     Ok(Value::Undefined)
@@ -707,7 +707,7 @@ pub fn append_text<'gc>(
             existing_length,
             existing_length,
             &new_text,
-            &mut activation.context,
+            activation.context,
         );
     }
 
@@ -767,7 +767,7 @@ pub fn replace_selected_text<'gc>(
             selection.start(),
             selection.end(),
             &value,
-            &mut activation.context,
+            activation.context,
         );
     }
 
@@ -799,7 +799,7 @@ pub fn replace_text<'gc>(
             begin_index as usize,
             end_index as usize,
             &value,
-            &mut activation.context,
+            activation.context,
         );
     }
 
@@ -936,7 +936,7 @@ pub fn set_text_format<'gc>(
                     begin_index as usize,
                     end_index as usize,
                     tf.clone(),
-                    &mut activation.context,
+                    activation.context,
                 );
             }
         }
@@ -1321,7 +1321,7 @@ pub fn set_scroll_v<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_i32(activation)?;
-        this.set_scroll(input as f64, &mut activation.context);
+        this.set_scroll(input as f64, activation.context);
     }
 
     Ok(Value::Undefined)
@@ -1360,7 +1360,7 @@ pub fn set_scroll_h<'gc>(
             .unwrap_or(Value::Undefined)
             .coerce_to_i32(activation)?;
         let clamped = input.clamp(0, this.maxhscroll() as i32);
-        this.set_hscroll(clamped as f64, &mut activation.context);
+        this.set_hscroll(clamped as f64, activation.context);
     }
 
     Ok(Value::Undefined)
@@ -1395,7 +1395,7 @@ pub fn set_max_chars<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_i32(activation)?;
-        this.set_max_chars(input, &mut activation.context);
+        this.set_max_chars(input, activation.context);
     }
 
     Ok(Value::Undefined)
@@ -1448,7 +1448,7 @@ pub fn set_restrict<'gc>(
     {
         this.set_restrict(
             args.try_get_string(activation, 0)?.as_deref(),
-            &mut activation.context,
+            activation.context,
         );
     }
     Ok(Value::Undefined)

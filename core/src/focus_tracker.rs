@@ -87,12 +87,12 @@ impl<'gc> FocusTracker<'gc> {
     }
 
     /// Set the focus programmatically.
-    pub fn set(&self, new: Option<InteractiveObject<'gc>>, context: &mut UpdateContext<'_, 'gc>) {
+    pub fn set(&self, new: Option<InteractiveObject<'gc>>, context: &mut UpdateContext<'gc>) {
         self.set_internal(new, context, false);
     }
 
     /// Reset the focus programmatically.
-    pub fn reset_focus(&self, context: &mut UpdateContext<'_, 'gc>) {
+    pub fn reset_focus(&self, context: &mut UpdateContext<'gc>) {
         self.set_internal(None, context, true);
     }
 
@@ -100,7 +100,7 @@ impl<'gc> FocusTracker<'gc> {
     pub fn set_by_mouse(
         &self,
         new: Option<InteractiveObject<'gc>>,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
     ) {
         let old = self.0.focus.get();
 
@@ -129,7 +129,7 @@ impl<'gc> FocusTracker<'gc> {
         &self,
         new: Option<InteractiveObject<'gc>>,
         key_code: KeyCode,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
     ) {
         let old = self.0.focus.get();
         if Self::dispatch_focus_change_event(context, "keyFocusChange", old, new, Some(key_code)) {
@@ -142,7 +142,7 @@ impl<'gc> FocusTracker<'gc> {
     fn set_internal(
         &self,
         new: Option<InteractiveObject<'gc>>,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         run_actions: bool,
     ) {
         Self::roll_over(context, new);
@@ -208,7 +208,7 @@ impl<'gc> FocusTracker<'gc> {
         self.update_virtual_keyboard(context);
     }
 
-    fn update_virtual_keyboard(&self, context: &mut UpdateContext<'_, 'gc>) {
+    fn update_virtual_keyboard(&self, context: &mut UpdateContext<'gc>) {
         if let Some(text_field) = self.get_as_edit_text() {
             if text_field.is_editable() {
                 context.ui.open_virtual_keyboard();
@@ -224,7 +224,7 @@ impl<'gc> FocusTracker<'gc> {
     ///
     /// Returns `true` if the focus change operation should be canceled.
     fn dispatch_focus_change_event(
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         event_type: &'static str,
         target: Option<InteractiveObject<'gc>>,
         related_object: Option<InteractiveObject<'gc>>,
@@ -238,17 +238,17 @@ impl<'gc> FocusTracker<'gc> {
             return false;
         };
 
-        let mut activation = Activation::from_nothing(context.reborrow());
+        let mut activation = Activation::from_nothing(context);
         let key_code = key_code.map(|k| k as u8).unwrap_or_default();
         let event =
             EventObject::focus_event(&mut activation, event_type, true, related_object, key_code);
-        Avm2::dispatch_event(&mut activation.context, event, target);
+        Avm2::dispatch_event(activation.context, event, target);
 
         let canceled = event.as_event().unwrap().is_cancelled();
         canceled
     }
 
-    fn roll_over(context: &mut UpdateContext<'_, 'gc>, new: Option<InteractiveObject<'gc>>) {
+    fn roll_over(context: &mut UpdateContext<'gc>, new: Option<InteractiveObject<'gc>>) {
         let old = context.mouse_data.hovered;
 
         // AVM2 does not dispatch roll out/over events here and does not update hovered object.
@@ -268,13 +268,13 @@ impl<'gc> FocusTracker<'gc> {
         }
     }
 
-    pub fn tab_order(&self, context: &mut UpdateContext<'_, 'gc>) -> TabOrder<'gc> {
+    pub fn tab_order(&self, context: &mut UpdateContext<'gc>) -> TabOrder<'gc> {
         let mut tab_order = TabOrder::fill(context);
         tab_order.sort();
         tab_order
     }
 
-    pub fn cycle(&self, context: &mut UpdateContext<'_, 'gc>, reverse: bool) {
+    pub fn cycle(&self, context: &mut UpdateContext<'gc>, reverse: bool) {
         // Ordering the whole array and finding the next object in it
         // is suboptimal, but it's a simple and infrequently performed operation.
         // Additionally, we want to display the whole list in the debug UI anyway,
@@ -305,7 +305,7 @@ impl<'gc> FocusTracker<'gc> {
         }
     }
 
-    pub fn navigate(&self, context: &mut UpdateContext<'_, 'gc>, direction: NavigationDirection) {
+    pub fn navigate(&self, context: &mut UpdateContext<'gc>, direction: NavigationDirection) {
         let Some(focus) = self.get() else {
             return;
         };
@@ -317,11 +317,11 @@ impl<'gc> FocusTracker<'gc> {
         }
     }
 
-    pub fn update_highlight(&self, context: &mut UpdateContext<'_, 'gc>) {
+    pub fn update_highlight(&self, context: &mut UpdateContext<'gc>) {
         self.0.highlight.replace(self.calculate_highlight(context));
     }
 
-    fn calculate_highlight(&self, context: &mut UpdateContext<'_, 'gc>) -> Highlight {
+    fn calculate_highlight(&self, context: &mut UpdateContext<'gc>) -> Highlight {
         let Some(focus) = self.get() else {
             return Highlight::Inactive;
         };
@@ -387,7 +387,7 @@ impl<'gc> TabOrder<'gc> {
         }
     }
 
-    fn fill(context: &mut UpdateContext<'_, 'gc>) -> Self {
+    fn fill(context: &mut UpdateContext<'gc>) -> Self {
         let stage = context.stage;
         let mut tab_order = Self::empty();
         stage.fill_tab_order(&mut tab_order, context);

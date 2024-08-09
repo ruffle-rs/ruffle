@@ -73,7 +73,7 @@ pub fn clone<'gc>(
 
 pub fn avm1_to_filter<'gc>(
     object: Object<'gc>,
-    context: &mut UpdateContext<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
 ) -> Option<Filter> {
     let native = object.native();
     match native {

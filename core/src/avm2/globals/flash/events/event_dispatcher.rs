@@ -51,7 +51,7 @@ pub fn add_event_listener<'gc>(
         .ok_or_else(|| Error::from("Internal properties should have what I put in them"))?
         .add_event_listener(event_type, priority, listener, use_capture);
 
-    Avm2::register_broadcast_listener(&mut activation.context, this, event_type);
+    Avm2::register_broadcast_listener(activation.context, this, event_type);
 
     Ok(Value::Undefined)
 }

@@ -635,7 +635,7 @@ impl<'gc> ClassObject<'gc> {
         // so it must be a simple Vector.<*>-derived class.
 
         let parameterized_class =
-            Class::with_type_param(&mut activation.context, self_class, class_param);
+            Class::with_type_param(activation.context, self_class, class_param);
 
         // NOTE: this isn't fully accurate, but much simpler.
         // FP's Vector is more of special case that literally copies some parent class's properties

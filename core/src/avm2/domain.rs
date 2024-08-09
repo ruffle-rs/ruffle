@@ -214,7 +214,7 @@ impl<'gc> Domain<'gc> {
 
     pub fn get_class(
         self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         multiname: &Multiname<'gc>,
     ) -> Option<Class<'gc>> {
         let class = self.get_class_inner(multiname);
@@ -264,7 +264,7 @@ impl<'gc> Domain<'gc> {
         name: QName<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let (name, script) = self.find_defining_script(activation, &name.into())?;
-        let globals = script.globals(&mut activation.context)?;
+        let globals = script.globals(activation.context)?;
 
         globals.get_property(&name.into(), activation)
     }
@@ -293,7 +293,7 @@ impl<'gc> Domain<'gc> {
         }
         // FIXME - is this the correct api version?
         let api_version = activation.avm2().root_api_version;
-        let name = QName::from_qualified_name(name, api_version, &mut activation.context);
+        let name = QName::from_qualified_name(name, api_version, activation.context);
 
         let res = self.get_defined_value(activation, name);
 

@@ -204,23 +204,23 @@ pub fn load<'gc>(
         FileReference::FileDialogResult(ref dialog_result) => dialog_result.size().unwrap_or(0),
     };
 
-    let open_evt = EventObject::bare_default_event(&mut activation.context, "open");
-    Avm2::dispatch_event(&mut activation.context, open_evt, this.into());
+    let open_evt = EventObject::bare_default_event(activation.context, "open");
+    Avm2::dispatch_event(activation.context, open_evt, this.into());
 
     let progress_evt = EventObject::progress_event(activation, "progress", 0, size, false, false);
-    Avm2::dispatch_event(&mut activation.context, progress_evt, this.into());
+    Avm2::dispatch_event(activation.context, progress_evt, this.into());
 
-    let open_evt2 = EventObject::bare_default_event(&mut activation.context, "open");
-    Avm2::dispatch_event(&mut activation.context, open_evt2, this.into());
+    let open_evt2 = EventObject::bare_default_event(activation.context, "open");
+    Avm2::dispatch_event(activation.context, open_evt2, this.into());
 
     let progress_evt2 =
         EventObject::progress_event(activation, "progress", size, size, false, false);
-    Avm2::dispatch_event(&mut activation.context, progress_evt2, this.into());
+    Avm2::dispatch_event(activation.context, progress_evt2, this.into());
 
     this.set_loaded(true);
 
-    let complete_evt = EventObject::bare_default_event(&mut activation.context, "complete");
-    Avm2::dispatch_event(&mut activation.context, complete_evt, this.into());
+    let complete_evt = EventObject::bare_default_event(activation.context, "complete");
+    Avm2::dispatch_event(activation.context, complete_evt, this.into());
 
     Ok(Value::Undefined)
 }

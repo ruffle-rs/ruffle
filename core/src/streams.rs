@@ -97,7 +97,7 @@ impl<'gc> StreamManager<'gc> {
     /// This can be called at any time to flag that a `NetStream` has work to
     /// do, and called multiple times. The `NetStream` will determine what to
     /// do at tick time.
-    pub fn activate(context: &mut UpdateContext<'_, 'gc>, stream: NetStream<'gc>) {
+    pub fn activate(context: &mut UpdateContext<'gc>, stream: NetStream<'gc>) {
         if !context.stream_manager.active_streams.contains(&stream) {
             context.stream_manager.active_streams.push(stream);
         }
@@ -107,7 +107,7 @@ impl<'gc> StreamManager<'gc> {
     ///
     /// This should only ever be called at tick time if the stream itself has
     /// determined there is no future work for it to do.
-    pub fn deactivate(context: &mut UpdateContext<'_, 'gc>, stream: NetStream<'gc>) {
+    pub fn deactivate(context: &mut UpdateContext<'gc>, stream: NetStream<'gc>) {
         let index = context
             .stream_manager
             .active_streams
@@ -125,7 +125,7 @@ impl<'gc> StreamManager<'gc> {
     /// support video framerates separate from the Stage frame rate.
     ///
     /// This does not borrow `&mut self` as we need the `UpdateContext`, too.
-    pub fn tick(context: &mut UpdateContext<'_, 'gc>, dt: f64) {
+    pub fn tick(context: &mut UpdateContext<'gc>, dt: f64) {
         let streams = context.stream_manager.active_streams.clone();
         for stream in streams {
             stream.tick(context, dt)
@@ -301,7 +301,7 @@ impl<'gc> NetStream<'gc> {
     ///
     /// Externally visible AVM state must not be reinitialized here - i.e. the
     /// AS3 `client` doesn't go away because you played a new video file.
-    pub fn reset_buffer(self, context: &mut UpdateContext<'_, 'gc>) {
+    pub fn reset_buffer(self, context: &mut UpdateContext<'gc>) {
         let mut write = self.0.write(context.gc_context);
 
         if let Some(instance) = write.sound_instance {
@@ -325,7 +325,7 @@ impl<'gc> NetStream<'gc> {
     }
 
     /// Set the total number of bytes expected to be downloaded.
-    pub fn set_expected_length(self, context: &mut UpdateContext<'_, 'gc>, expected: usize) {
+    pub fn set_expected_length(self, context: &mut UpdateContext<'gc>, expected: usize) {
         let mut write = self.0.write(context.gc_context);
         let len = write.buffer.len();
 
@@ -346,7 +346,7 @@ impl<'gc> NetStream<'gc> {
     /// Buffer loading can be done in chunks but must be done in such a way
     /// that all data is appended in the correct order and that data from
     /// separate streams is not mixed together.
-    pub fn load_buffer(self, context: &mut UpdateContext<'_, 'gc>, data: &mut Vec<u8>) {
+    pub fn load_buffer(self, context: &mut UpdateContext<'gc>, data: &mut Vec<u8>) {
         self.0.write(context.gc_context).buffer.append(data);
 
         StreamManager::activate(context, self);
@@ -360,7 +360,7 @@ impl<'gc> NetStream<'gc> {
 
     /// Indicate that the buffer has finished loading and that no further data
     /// is expected to be downloaded to it.
-    pub fn finish_buffer(self, context: &mut UpdateContext<'_, 'gc>) {
+    pub fn finish_buffer(self, context: &mut UpdateContext<'gc>) {
         self.0.write(context.gc_context).expected_length = None;
     }
 
@@ -394,7 +394,7 @@ impl<'gc> NetStream<'gc> {
     /// Queue a seek to be executed on the next frame tick.
     ///
     /// `offset` is in milliseconds.
-    pub fn seek(self, context: &mut UpdateContext<'_, 'gc>, offset: f64, notify: bool) {
+    pub fn seek(self, context: &mut UpdateContext<'gc>, offset: f64, notify: bool) {
         self.0.write(context.gc_context).queued_seek_time = Some(offset);
         StreamManager::activate(context, self);
 
@@ -430,7 +430,7 @@ impl<'gc> NetStream<'gc> {
     ///
     /// This function should be run during stream ticks and *not* called by AVM
     /// code to service seek requests.
-    pub fn execute_seek(self, context: &mut UpdateContext<'_, 'gc>, offset: f64) {
+    pub fn execute_seek(self, context: &mut UpdateContext<'gc>, offset: f64) {
         self.trigger_status_event(
             context,
             vec![("code", "NetStream.Seek.Notify"), ("level", "status")],
@@ -547,7 +547,7 @@ impl<'gc> NetStream<'gc> {
     /// If `name` is specified, this will also trigger streaming download of
     /// the given resource. Otherwise, the stream will play whatever data is
     /// available in the buffer.
-    pub fn play(self, context: &mut UpdateContext<'_, 'gc>, name: Option<AvmString<'gc>>) {
+    pub fn play(self, context: &mut UpdateContext<'gc>, name: Option<AvmString<'gc>>) {
         if let Some(name) = name {
             let request = if let Ok(stream_url) =
                 Url::parse(context.swf.url()).and_then(|url| url.join(name.to_string().as_str()))
@@ -576,7 +576,7 @@ impl<'gc> NetStream<'gc> {
     }
 
     /// Pause stream playback.
-    pub fn pause(self, context: &mut UpdateContext<'_, 'gc>, notify: bool) {
+    pub fn pause(self, context: &mut UpdateContext<'gc>, notify: bool) {
         // NOTE: We do not deactivate the stream here as there may be other
         // work to be done at tick time.
         self.0.write(context.gc_context).playing = false;
@@ -594,13 +594,13 @@ impl<'gc> NetStream<'gc> {
     }
 
     /// Resume stream playback.
-    pub fn resume(self, context: &mut UpdateContext<'_, 'gc>) {
+    pub fn resume(self, context: &mut UpdateContext<'gc>) {
         self.0.write(context.gc_context).playing = true;
         StreamManager::activate(context, self);
     }
 
     /// Resume stream playback if paused, pause otherwise.
-    pub fn toggle_paused(self, context: &mut UpdateContext<'_, 'gc>) {
+    pub fn toggle_paused(self, context: &mut UpdateContext<'gc>) {
         let mut write = self.0.write(context.gc_context);
         write.playing = !write.playing;
 
@@ -610,7 +610,7 @@ impl<'gc> NetStream<'gc> {
     }
 
     /// Indicates that this `NetStream`'s audio was detached from a `MovieClip` (AVM1)
-    pub fn was_detached(self, context: &mut UpdateContext<'_, 'gc>) {
+    pub fn was_detached(self, context: &mut UpdateContext<'gc>) {
         let mut write = self.0.write(context.gc_context);
 
         if let Some(sound_instance) = &write.sound_instance {
@@ -624,7 +624,7 @@ impl<'gc> NetStream<'gc> {
     }
 
     /// Indicates that this `NetStream`'s audio was attached to a `MovieClip` (AVM1)
-    pub fn was_attached(self, context: &mut UpdateContext<'_, 'gc>, clip: MovieClip<'gc>) {
+    pub fn was_attached(self, context: &mut UpdateContext<'gc>, clip: MovieClip<'gc>) {
         let mut write = self.0.write(context.gc_context);
 
         // A `NetStream` cannot be attached to two `MovieClip`s at once.
@@ -731,7 +731,7 @@ impl<'gc> NetStream<'gc> {
 
     /// Determine if the given sound is currently playing.
     fn sound_currently_playing(
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         sound: &Option<SoundInstanceHandle>,
     ) -> bool {
         sound
@@ -750,7 +750,7 @@ impl<'gc> NetStream<'gc> {
     /// audio data has been streamed.
     fn cleanup_sound_stream(
         self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         write: &mut NetStreamData<'gc>,
     ) {
         if !Self::sound_currently_playing(context, &write.sound_instance) {
@@ -767,7 +767,7 @@ impl<'gc> NetStream<'gc> {
     /// avoid audio underruns.
     fn commit_sound_stream(
         self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         write: &mut NetStreamData<'gc>,
     ) -> Result<(), NetstreamError> {
         if !Self::sound_currently_playing(context, &write.sound_instance) {
@@ -800,7 +800,7 @@ impl<'gc> NetStream<'gc> {
     /// indicates that there is either not enough data in the buffer, or the
     /// data is of an unrecognized format. This should be used as a signal to
     /// stop stream processing until new data has been retrieved.
-    pub fn sniff_stream_type(self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+    pub fn sniff_stream_type(self, context: &mut UpdateContext<'gc>) -> bool {
         let mut write = self.0.write(context.gc_context);
         let slice = write.buffer.to_full_slice();
         let buffer = slice.data();
@@ -872,7 +872,7 @@ impl<'gc> NetStream<'gc> {
     /// encountered before.
     fn flv_video_tag(
         self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         write: &mut NetStreamData<'gc>,
         slice: &Slice,
         video_data: FlvVideoData<'_>,
@@ -1055,7 +1055,7 @@ impl<'gc> NetStream<'gc> {
     /// encountered before.
     fn flv_script_tag(
         self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         script_data: FlvScriptData<'_>,
         tag_needs_preloading: bool,
     ) {
@@ -1137,7 +1137,7 @@ impl<'gc> NetStream<'gc> {
     /// Process stream data.
     ///
     /// `dt` is in milliseconds.
-    pub fn tick(self, context: &mut UpdateContext<'_, 'gc>, dt: f64) {
+    pub fn tick(self, context: &mut UpdateContext<'gc>, dt: f64) {
         let seek_offset = self.0.write(context.gc_context).queued_seek_time.take();
         if let Some(offset) = seek_offset {
             self.execute_seek(context, offset);
@@ -1282,7 +1282,7 @@ impl<'gc> NetStream<'gc> {
     /// Trigger a status event on the stream.
     pub fn trigger_status_event(
         self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         values: Vec<(impl Into<AvmString<'gc>>, impl Into<AvmString<'gc>>)>,
     ) {
         let object = self.0.read().avm_object;
@@ -1291,7 +1291,7 @@ impl<'gc> NetStream<'gc> {
                 let root = context.stage.root_clip().expect("root");
                 let object_proto = context.avm1.prototypes().object;
                 let mut activation = Avm1Activation::from_nothing(
-                    context.reborrow(),
+                    context,
                     Avm1ActivationIdentifier::root("[NetStream Status Event]"),
                     root,
                 );
@@ -1318,10 +1318,10 @@ impl<'gc> NetStream<'gc> {
             }
             Some(AvmObject::Avm2(object)) => {
                 let domain = context.avm2.stage_domain();
-                let mut activation = Avm2Activation::from_domain(context.reborrow(), domain);
+                let mut activation = Avm2Activation::from_domain(context, domain);
                 let net_status_event =
                     Avm2EventObject::net_status_event(&mut activation, "netStatus", values);
-                Avm2::dispatch_event(&mut activation.context, net_status_event, object);
+                Avm2::dispatch_event(activation.context, net_status_event, object);
             }
             None => {}
         }
@@ -1330,7 +1330,7 @@ impl<'gc> NetStream<'gc> {
     fn handle_script_data(
         self,
         avm_object: Option<AvmObject<'gc>>,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         variable_name: &[u8],
         variable_data: FlvValue,
     ) -> Result<(), Avm2Error<'gc>> {
@@ -1340,7 +1340,7 @@ impl<'gc> NetStream<'gc> {
 
                 let root = context.stage.root_clip().expect("root");
                 let mut activation = Avm1Activation::from_nothing(
-                    context.reborrow(),
+                    context,
                     Avm1ActivationIdentifier::root(format!("[FLV {}]", avm_string_name)),
                     root,
                 );
@@ -1361,7 +1361,7 @@ impl<'gc> NetStream<'gc> {
                 }
             }
             Some(AvmObject::Avm2(_object)) => {
-                let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                let mut activation = Avm2Activation::from_nothing(context);
                 let client_object = self
                     .client()
                     .expect("Client should be initialized if script data is being accessed");

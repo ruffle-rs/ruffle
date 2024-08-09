@@ -45,7 +45,7 @@ impl<'gc> QName<'gc> {
     pub fn from_abc_multiname(
         translation_unit: TranslationUnit<'gc>,
         multiname_index: Index<AbcMultiname>,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
     ) -> Result<Self, Error<'gc>> {
         if multiname_index.0 == 0 {
             return Err("Attempted to load a trait name of index zero".into());
@@ -100,7 +100,7 @@ impl<'gc> QName<'gc> {
     pub fn from_qualified_name(
         name: AvmString<'gc>,
         api_version: ApiVersion,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
     ) -> Self {
         let parts = name
             .rsplit_once(WStr::from_units(b"::"))

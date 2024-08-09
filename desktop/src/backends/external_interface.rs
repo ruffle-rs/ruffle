@@ -11,7 +11,7 @@ pub struct DesktopExternalInterfaceProvider {
 struct FakeLocationHrefToString(Url);
 
 impl ExternalInterfaceMethod for FakeLocationHrefToString {
-    fn call(&self, _context: &mut UpdateContext<'_, '_>, _args: &[ExternalValue]) -> ExternalValue {
+    fn call(&self, _context: &mut UpdateContext<'_>, _args: &[ExternalValue]) -> ExternalValue {
         ExternalValue::String(self.0.to_string())
     }
 }
@@ -26,7 +26,7 @@ fn is_location_href(code: &str) -> bool {
 struct FakeEval(Option<Url>);
 
 impl ExternalInterfaceMethod for FakeEval {
-    fn call(&self, _context: &mut UpdateContext<'_, '_>, args: &[ExternalValue]) -> ExternalValue {
+    fn call(&self, _context: &mut UpdateContext<'_>, args: &[ExternalValue]) -> ExternalValue {
         if let Some(ref url) = self.0 {
             if let [ExternalValue::String(ref code)] = args {
                 if is_location_href(code) {

@@ -18,17 +18,14 @@ impl Avm1ObjectWindow {
     pub fn show<'gc>(
         &mut self,
         egui_ctx: &egui::Context,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: Object<'gc>,
         messages: &mut Vec<Message>,
     ) -> bool {
         let mut keep_open = true;
         let base_clip = context.stage.into();
-        let mut activation = Activation::from_nothing(
-            context.reborrow(),
-            ActivationIdentifier::root("Debug"),
-            base_clip,
-        );
+        let mut activation =
+            Activation::from_nothing(context, ActivationIdentifier::root("Debug"), base_clip);
         Window::new(object_name(object))
             .id(Id::new(object.as_ptr()))
             .open(&mut keep_open)
@@ -99,14 +96,14 @@ pub fn show_avm1_value<'gc>(
                 ui.label("Function");
             } else if ui.button(object_name(value)).clicked() {
                 messages.push(Message::TrackAVM1Object(AVM1ObjectHandle::new(
-                    &mut activation.context,
+                    activation.context,
                     value,
                 )));
             }
         }
         Ok(Value::MovieClip(value)) => {
             if let Some((_, _, object)) = value.resolve_reference(activation) {
-                open_display_object_button(ui, &mut activation.context, messages, object, hover);
+                open_display_object_button(ui, activation.context, messages, object, hover);
             } else {
                 ui.colored_label(
                     ui.style().visuals.error_fg_color,

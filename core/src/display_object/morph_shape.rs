@@ -89,7 +89,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         Some(*self)
     }
 
-    fn replace_with(&self, context: &mut UpdateContext<'_, 'gc>, id: CharacterId) {
+    fn replace_with(&self, context: &mut UpdateContext<'gc>, id: CharacterId) {
         if let Some(new_morph_shape) = context
             .library
             .library_for_movie_mut(self.movie())
@@ -114,15 +114,15 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(&self, context: &mut UpdateContext<'_, 'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
         self.0.write(context.gc_context).object = Some(to);
     }
 
     /// Construct objects placed on this frame.
-    fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
+    fn construct_frame(&self, context: &mut UpdateContext<'gc>) {
         if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
             let class = context.avm2.classes().morphshape;
-            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let mut activation = Avm2Activation::from_nothing(context);
             match Avm2StageObject::for_display_object_childless(
                 &mut activation,
                 (*self).into(),
@@ -155,7 +155,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
 
     fn hit_test_shape(
         &self,
-        _context: &mut UpdateContext<'_, 'gc>,
+        _context: &mut UpdateContext<'gc>,
         point: Point<Twips>,
         options: HitTestOptions,
     ) -> bool {

@@ -167,7 +167,7 @@ impl<'gc> GradientFilter<'gc> {
         Ok(())
     }
 
-    fn colors(&self, context: &mut UpdateContext<'_, 'gc>) -> ArrayObject<'gc> {
+    fn colors(&self, context: &mut UpdateContext<'gc>) -> ArrayObject<'gc> {
         let read = self.0.read();
         ArrayObject::new(
             context.gc_context,
@@ -205,7 +205,7 @@ impl<'gc> GradientFilter<'gc> {
         Ok(())
     }
 
-    fn alphas(&self, context: &mut UpdateContext<'_, 'gc>) -> ArrayObject<'gc> {
+    fn alphas(&self, context: &mut UpdateContext<'gc>) -> ArrayObject<'gc> {
         let read = self.0.read();
         ArrayObject::new(
             context.gc_context,
@@ -245,7 +245,7 @@ impl<'gc> GradientFilter<'gc> {
         Ok(())
     }
 
-    fn ratios(&self, context: &mut UpdateContext<'_, 'gc>) -> ArrayObject<'gc> {
+    fn ratios(&self, context: &mut UpdateContext<'gc>) -> ArrayObject<'gc> {
         let read = self.0.read();
         ArrayObject::new(
             context.gc_context,
@@ -467,17 +467,17 @@ fn method<'gc>(
             this.set_angle(activation, args.get(0))?;
             Value::Undefined
         }
-        GET_COLORS => this.colors(&mut activation.context).into(),
+        GET_COLORS => this.colors(activation.context).into(),
         SET_COLORS => {
             this.set_colors(activation, args.get(0))?;
             Value::Undefined
         }
-        GET_ALPHAS => this.alphas(&mut activation.context).into(),
+        GET_ALPHAS => this.alphas(activation.context).into(),
         SET_ALPHAS => {
             this.set_alphas(activation, args.get(0))?;
             Value::Undefined
         }
-        GET_RATIOS => this.ratios(&mut activation.context).into(),
+        GET_RATIOS => this.ratios(activation.context).into(),
         SET_RATIOS => {
             this.set_ratios(activation, args.get(0))?;
             Value::Undefined

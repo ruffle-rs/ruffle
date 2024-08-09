@@ -94,7 +94,7 @@ fn play<'gc>(
             .unwrap_or(Value::Undefined)
             .coerce_to_string(activation)?;
 
-        ns.play(&mut activation.context, Some(name));
+        ns.play(activation.context, Some(name));
     }
 
     Ok(Value::Undefined)
@@ -110,11 +110,11 @@ fn pause<'gc>(
         let is_pause = action.as_bool(activation.swf_version());
 
         if matches!(action, Value::Undefined) {
-            ns.toggle_paused(&mut activation.context);
+            ns.toggle_paused(activation.context);
         } else if is_pause {
-            ns.pause(&mut activation.context, true);
+            ns.pause(activation.context, true);
         } else {
-            ns.resume(&mut activation.context);
+            ns.resume(activation.context);
         }
     }
 
@@ -133,7 +133,7 @@ fn seek<'gc>(
             .unwrap_or(Value::Undefined)
             .coerce_to_f64(activation)?;
 
-        ns.seek(&mut activation.context, offset * 1000.0, false);
+        ns.seek(activation.context, offset * 1000.0, false);
     }
 
     Ok(Value::Undefined)
