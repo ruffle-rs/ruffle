@@ -2,6 +2,7 @@ import * as utils from "./utils";
 import type { Options } from "./common";
 import { bindOptions } from "./common";
 import { buildInfo } from "ruffle-core";
+import { SUPPORTED_PROTOCOLS } from "ruffle-core/dist/internal/constants";
 
 let activeTab: chrome.tabs.Tab | browser.tabs.Tab;
 let savedOptions: Options;
@@ -214,7 +215,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     const url = activeTab?.url ? new URL(activeTab.url) : null;
     if (
         url &&
-        ["https:", "http:"].includes(url.protocol) &&
+        SUPPORTED_PROTOCOLS.includes(url.protocol) &&
         !(await utils.hasHostPermissionForActiveTab())
     ) {
         permissionsButton.classList.remove("hidden");

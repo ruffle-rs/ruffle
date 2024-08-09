@@ -6,6 +6,7 @@ import type {
     DataLoadOptions,
     URLLoadOptions,
 } from "ruffle-core";
+import { ExtensionOrigin } from "./extemsion-origin";
 
 declare global {
     interface Navigator {
@@ -17,7 +18,7 @@ declare global {
     }
 }
 
-installRuffle("local");
+installRuffle("local", new ExtensionOrigin());
 const ruffle = (window.RufflePlayer as PublicAPI).newest()!;
 let player: Player;
 
@@ -105,29 +106,47 @@ function unload() {
 async function load(options: string | DataLoadOptions | URLLoadOptions) {
     unload();
     player = ruffle.createPlayer();
+    (player.getOriginAPI() as ExtensionOrigin).setInExtensionPlayer();
     player.id = "player";
     playerContainer.append(player);
-    const url =
+    player.showSplashScreen();
+    const urlString =
         typeof options === "string"
             ? options
             : "url" in options
               ? options["url"]
               : undefined;
+    let url;
     let origin;
     try {
-        origin = url ? new URL(url).origin + "/" : url;
+        url = new URL(urlString!);
+        origin = url.origin + "/";
     } catch {
         // Ignore
     }
-    const hostPermissionsForSpecifiedTab =
-        await utils.hasHostPermissionForSpecifiedTab(origin);
-    if (origin && !hostPermissionsForSpecifiedTab) {
-        const result = await showModal(origin);
+
+    const supportedURL = utils.supportedURL(url);
+    if (!supportedURL && urlString) {
+        player.displayRootMovieUnsupportedUrlMessage(urlString);
+        return;
+    }
+    if (
+        supportedURL &&
+        !(await utils.hasHostPermissionForSpecifiedTab(origin!))
+    ) {
+        const result = await showModal(origin!);
         if (result === "") {
+            player.hideSplashScreen();
+
+            // Hide the splash screen before displaying the alert
             const swfPlayerPermissions = utils.i18n.getMessage(
                 "swf_player_permissions",
             );
-            alert(swfPlayerPermissions);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    alert(swfPlayerPermissions);
+                });
+            });
             history.pushState("", document.title, window.location.pathname);
             return;
         }
@@ -299,16 +318,20 @@ window.addEventListener("load", () => {
 });
 
 async function loadSwf(swfUrl: string) {
-    try {
-        const pathname = new URL(swfUrl).pathname;
-        document.title = pathname.substring(pathname.lastIndexOf("/") + 1);
-    } catch (_) {
-        // Ignore URL parsing errors.
+    const url = await utils.resolveSwfUrl(swfUrl);
+    if (url !== null) {
+        swfUrl = url.toString();
     }
 
-    const options = await utils.getExplicitOptions();
+    webURL.value = swfUrl;
+    document.title = swfUrl
+        .split("/")
+        .filter((item) => item !== "")
+        .slice(-1)[0]!;
     localFileName.textContent = document.title;
     localFileInput.value = "";
+
+    const options = await utils.getExplicitOptions();
     load({
         ...options,
         url: swfUrl,

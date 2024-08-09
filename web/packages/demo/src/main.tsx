@@ -11,8 +11,9 @@ import {
     installRuffle,
     UnmuteOverlay,
 } from "ruffle-core";
+import { DemoOrigin } from "./demo-origin";
 
-installRuffle("local");
+installRuffle("local", new DemoOrigin());
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>

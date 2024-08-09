@@ -1,6 +1,7 @@
 import { DataLoadOptions, URLLoadOptions } from "../load-options";
 import { MovieMetadata } from "../movie-metadata";
 import { ReadyState } from "../internal/player/inner";
+import { OriginAPI } from "../origin-api";
 
 /**
  * Legacy interface to the Ruffle API.
@@ -85,6 +86,22 @@ export interface LegacyRuffleAPI {
     get isPlaying(): boolean;
 
     /**
+     * Displays the panic screen with an error message that the root movie URL is not supported by Ruffle.
+     * If a given URL is unsupported, this should be directly called instead of trying to load the URL, as
+     * it removes the delay before displaying the (same) error message.
+     *
+     * @param unsupportedUrl The given URL that is unsupported.
+     */
+    displayRootMovieUnsupportedUrlMessage(unsupportedUrl: string): void;
+
+    /**
+     * Returns the OriginAPI of this Ruffle player.
+     *
+     * @returns The OriginAPI of this Ruffle player.
+     */
+    getOriginAPI(): OriginAPI;
+
+    /**
      * Returns the master volume of the player.
      *
      * The volume is linear and not adapted for logarithmic hearing.
@@ -157,4 +174,14 @@ export interface LegacyRuffleAPI {
      * Fetches the loaded SWF and downloads it.
      */
     downloadSwf(): Promise<void>;
+
+    /**
+     * Shows the splash screen.
+     */
+    showSplashScreen(): void;
+
+    /**
+     * Hides the splash screen.
+     */
+    hideSplashScreen(): void;
 }

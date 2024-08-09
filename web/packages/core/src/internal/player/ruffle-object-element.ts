@@ -9,6 +9,7 @@ import { FLASH_ACTIVEX_CLASSID } from "../../flash-identifiers";
 import { registerElement } from "../register-element";
 import { RuffleEmbedElement } from "./ruffle-embed-element";
 import { isSwf } from "../../swf-utils";
+import { OriginAPI } from "../../origin-api";
 
 /**
  * Find and return the first value in obj with the given key.
@@ -250,9 +251,14 @@ export class RuffleObjectElement extends RufflePlayerElement {
      * Creates a RuffleObject that will polyfill and replace the given element.
      *
      * @param elem Element to replace.
+     * @param originAPI The OriginAPI that should be used for the Ruffle version
+     * polyfilling the given Flash element.
      * @returns Created RuffleObject.
      */
-    static fromNativeObjectElement(elem: Element): RuffleObjectElement {
+    static fromNativeObjectElement(
+        elem: Element,
+        originAPI: OriginAPI,
+    ): RuffleObjectElement {
         const externalName = registerElement(
             "ruffle-object",
             RuffleObjectElement,
@@ -260,6 +266,7 @@ export class RuffleObjectElement extends RufflePlayerElement {
         const ruffleObj: RuffleObjectElement = document.createElement(
             externalName,
         ) as RuffleObjectElement;
+        ruffleObj.initialize(originAPI);
 
         // Avoid copying embeds-inside-objects to avoid double polyfilling.
         for (const embedElem of Array.from(
