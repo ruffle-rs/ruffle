@@ -1012,7 +1012,14 @@ impl<'gc> E4XNode<'gc> {
             let value = AvmString::new_utf8_bytes(activation.gc(), value_str.as_bytes());
 
             let (ns, local_name) = parser.resolve_attribute(attribute.key);
-            let name = AvmString::new_utf8_bytes(activation.gc(), local_name.into_inner());
+
+            let local_name = ruffle_wstr::from_utf8_bytes(local_name.into_inner());
+            let name = activation
+                .context
+                .interner
+                .intern_wstr(activation.gc(), local_name)
+                .into();
+
             let namespace = match ns {
                 ResolveResult::Bound(ns) if ns.into_inner() == b"http://www.w3.org/2000/xmlns/" => {
                     namespaces.push(E4XNamespace {
@@ -1064,8 +1071,14 @@ impl<'gc> E4XNode<'gc> {
         }
 
         let (ns, local_name) = parser.resolve_element(bs.name());
-        let name =
-            AvmString::new_utf8_bytes(activation.context.gc_context, local_name.into_inner());
+
+        let local_name = ruffle_wstr::from_utf8_bytes(local_name.into_inner());
+        let name = activation
+            .context
+            .interner
+            .intern_wstr(activation.gc(), local_name)
+            .into();
+
         let namespace = match ns {
             ResolveResult::Bound(ns) => {
                 let prefix = bs
