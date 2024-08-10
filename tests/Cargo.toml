@@ -30,6 +30,7 @@ regex = "1.10.6"
 ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug", "avm_debug", "audio", "mp3", "default_font", "test_only_as3"] }
 ruffle_test_framework = { path = "framework" }
 libtest-mimic = "0.7.3"
+rand = "0.8.5"
 walkdir = { workspace = true }
 anyhow = { workspace = true }
 image = { workspace = true, features  = ["png"] }
