@@ -106,7 +106,22 @@ jobs:
       CARGO_BUILD_DIR: target/${{ matrix.target }}/release
 
     runs-on: ${{ matrix.os }}
+    # Use the oldest still-supported LTS version to build the AppImage
+    container: ${{ startsWith(matrix.build_name, 'linux') && 'ubuntu:20.04' || null }}
+
     steps:
+      # Necessary when using an Ubuntu container as it doesn't contain required shell tools
+      # TODO: Replace with AppImageDeploy container
+      - name: Install shell tools (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          apt update
+          DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt -y install tzdata
+          apt install -y git gcc default-jre wget curl sudo
+          git config --global --add safe.directory *
+          curl -sS https://webi.sh/gh | sh
+          ln -s ~/.local/bin/gh /usr/local/bin
+
       - name: Clone Ruffle repo
         uses: actions/checkout@v4
 
@@ -119,7 +134,7 @@ jobs:
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update
+          sudo apt update
           sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev libgtk-3-dev libudev-dev
 
       - name: Cargo build
@@ -140,10 +155,23 @@ jobs:
           cp ${{ env.CARGO_BUILD_DIR }}/ruffle_desktop.exe package/ruffle.exe
           7z a ${{ env.PACKAGE_FILE }} ./package/*
 
+      - name: Create an AppImage (Linux)
+        if: runner.os == 'Linux'
+        run: |          
+          wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          chmod +x linuxdeploy-x86_64.AppImage
+          
+          # TODO Update this after https://github.com/linuxdeploy/linuxdeploy/pull/288 gets merged
+          mkdir -p AppDir/usr/share
+          cp desktop/packaging/Linux/rs.ruffle.Ruffle.metainfo.xml AppDir/rs.ruffle.Ruffle.appdata.xml
+          cp package/* AppDir/usr/share
+          
+          LDAI_OUTPUT="Ruffle.AppImage" ./linuxdeploy-x86_64.AppImage --appimage-extract-and-run -e ${{ env.CARGO_BUILD_DIR }}/ruffle_desktop -d desktop/packaging/Linux/rs.ruffle.Ruffle.desktop -i desktop/assets/icon.svg -i desktop/packaging/Linux/icon.png --appdir AppDir --output appimage
+          cp "Ruffle.AppImage" package
+
       - name: Package Linux files
         if: runner.os == 'Linux'
         run: |
-          cp ${{ env.CARGO_BUILD_DIR }}/ruffle_desktop package/ruffle
           # We must enter the package/ directory in order to create a flat tarball (i.e. without a directory in it).
           cd package
           tar -czvf ../${{ env.PACKAGE_FILE }} *
