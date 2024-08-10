@@ -115,9 +115,9 @@ pub struct Activation<'a, 'gc: 'a> {
     /// the same method again.
     ///
     /// This will not be available outside of method, setter, or getter calls.
-    superclass_object: Option<ClassObject<'gc>>,
+    bound_superclass_object: Option<ClassObject<'gc>>,
 
-    subclass: Option<Class<'gc>>,
+    bound_class: Option<Class<'gc>>,
 
     /// The class of all objects returned from `newactivation`.
     ///
@@ -170,8 +170,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             outer: ScopeChain::new(context.avm2.stage_domain),
             caller_domain: None,
             caller_movie: None,
-            superclass_object: None,
-            subclass: None,
+            bound_superclass_object: None,
+            bound_class: None,
             activation_class: None,
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
@@ -200,8 +200,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             outer: ScopeChain::new(context.avm2.stage_domain),
             caller_domain: Some(domain),
             caller_movie: None,
-            superclass_object: None,
-            subclass: None,
+            bound_superclass_object: None,
+            bound_class: None,
             activation_class: None,
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
@@ -266,8 +266,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             outer: ScopeChain::new(domain),
             caller_domain: Some(domain),
             caller_movie: script.translation_unit().map(|t| t.movie()),
-            superclass_object: Some(context.avm2.classes().object), // The script global class extends Object
-            subclass: Some(script.global_class()),
+            bound_superclass_object: Some(context.avm2.classes().object), // The script global class extends Object
+            bound_class: Some(script.global_class()),
             activation_class,
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
@@ -404,7 +404,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         outer: ScopeChain<'gc>,
         this: Object<'gc>,
         user_arguments: &[Value<'gc>],
-        superclass_object: Option<ClassObject<'gc>>,
+        bound_superclass_object: Option<ClassObject<'gc>>,
         bound_class: Option<Class<'gc>>,
         callee: Object<'gc>,
     ) -> Result<(), Error<'gc>> {
@@ -439,7 +439,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.outer = outer;
         self.caller_domain = Some(outer.domain());
         self.caller_movie = Some(method.owner_movie());
-        self.superclass_object = superclass_object;
+        self.bound_superclass_object = bound_superclass_object;
         self.activation_class = activation_class;
         self.stack_depth = self.context.avm2.stack.len();
         self.scope_depth = self.context.avm2.scope_stack.len();
@@ -529,8 +529,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// properly supercall.
     pub fn from_builtin(
         context: &'a mut UpdateContext<'gc>,
-        superclass_object: Option<ClassObject<'gc>>,
-        subclass: Option<Class<'gc>>,
+        bound_superclass_object: Option<ClassObject<'gc>>,
+        bound_class: Option<Class<'gc>>,
         outer: ScopeChain<'gc>,
         caller_domain: Option<Domain<'gc>>,
         caller_movie: Option<Arc<SwfMovie>>,
@@ -544,8 +544,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             outer,
             caller_domain,
             caller_movie,
-            superclass_object,
-            subclass,
+            bound_superclass_object,
+            bound_class,
             activation_class: None,
             stack_depth: context.avm2.stack.len(),
             scope_depth: context.avm2.scope_stack.len(),
@@ -561,11 +561,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         receiver: Object<'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let superclass_object = self
-            .superclass_object
+        let bound_superclass_object = self
+            .bound_superclass_object
             .expect("Superclass object is required to run super_init");
 
-        superclass_object.call_native_init(receiver.into(), args, self)
+        bound_superclass_object.call_native_init(receiver.into(), args, self)
     }
 
     /// Retrieve a local register.
@@ -710,8 +710,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// does not have a superclass, then this panics. The `name` parameter
     /// allows you to provide the name of a property you were attempting to
     /// access on the object.
-    pub fn superclass_object(&self, name: &Multiname<'gc>) -> ClassObject<'gc> {
-        self.superclass_object.unwrap_or_else(|| {
+    pub fn bound_superclass_object(&self, name: &Multiname<'gc>) -> ClassObject<'gc> {
+        self.bound_superclass_object.unwrap_or_else(|| {
             panic!(
                 "Cannot call supermethod {} without a superclass",
                 name.to_qualified_name(self.context.gc_context),
@@ -720,8 +720,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     /// Get the class that defined the currently-executing method, if it exists.
-    pub fn subclass(&self) -> Option<Class<'gc>> {
-        self.subclass
+    pub fn bound_class(&self) -> Option<Class<'gc>> {
+        self.bound_class
     }
 
     /// Retrieve a namespace from the current constant pool.
@@ -1279,9 +1279,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .pop_stack()
             .coerce_to_object_or_typeerror(self, Some(&multiname))?;
 
-        let superclass_object = self.superclass_object(&multiname);
+        let bound_superclass_object = self.bound_superclass_object(&multiname);
 
-        let value = superclass_object.call_super(&multiname, receiver, &args, self)?;
+        let value = bound_superclass_object.call_super(&multiname, receiver, &args, self)?;
 
         self.push_stack(value);
 
@@ -1299,9 +1299,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .pop_stack()
             .coerce_to_object_or_typeerror(self, Some(&multiname))?;
 
-        let superclass_object = self.superclass_object(&multiname);
+        let bound_superclass_object = self.bound_superclass_object(&multiname);
 
-        superclass_object.call_super(&multiname, receiver, &args, self)?;
+        bound_superclass_object.call_super(&multiname, receiver, &args, self)?;
 
         Ok(FrameControl::Continue)
     }
@@ -1531,9 +1531,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .pop_stack()
             .coerce_to_object_or_typeerror(self, Some(&multiname))?;
 
-        let superclass_object = self.superclass_object(&multiname);
+        let bound_superclass_object = self.bound_superclass_object(&multiname);
 
-        let value = superclass_object.get_super(&multiname, object, self)?;
+        let value = bound_superclass_object.get_super(&multiname, object, self)?;
 
         self.push_stack(value);
 
@@ -1550,9 +1550,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .pop_stack()
             .coerce_to_object_or_typeerror(self, Some(&multiname))?;
 
-        let superclass_object = self.superclass_object(&multiname);
+        let bound_superclass_object = self.bound_superclass_object(&multiname);
 
-        superclass_object.set_super(&multiname, value, object, self)?;
+        bound_superclass_object.set_super(&multiname, value, object, self)?;
 
         Ok(FrameControl::Continue)
     }
