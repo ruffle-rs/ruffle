@@ -129,8 +129,8 @@ impl<'gc> FunctionObject<'gc> {
         method: Method<'gc>,
         scope: ScopeChain<'gc>,
         receiver: Option<Object<'gc>>,
-        superclass_object: Option<ClassObject<'gc>>,
-        subclass: Option<Class<'gc>>,
+        bound_superclass_object: Option<ClassObject<'gc>>,
+        bound_class: Option<Class<'gc>>,
     ) -> FunctionObject<'gc> {
         let fn_class = activation.avm2().classes().function;
         let exec = BoundMethod::from_method(

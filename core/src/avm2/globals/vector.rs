@@ -73,7 +73,7 @@ fn class_call<'gc>(
     }
 
     let this_class = activation
-        .subclass()
+        .bound_class()
         .expect("Method call without bound class?");
 
     let value_type = this_class
@@ -258,7 +258,7 @@ pub fn concat<'gc>(
 
         // this is Vector.<int/uint/Number/*>
         let my_base_vector_class = activation
-            .subclass()
+            .bound_class()
             .expect("Method call without bound class?");
 
         if !arg.is_of_type(activation, my_base_vector_class) {
