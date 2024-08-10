@@ -656,21 +656,14 @@ impl<'gc> Value<'gc> {
         match self {
             Value::Object(Object::PrimitiveObject(o)) => o.value_of(activation.context.gc_context),
             Value::Object(o) if hint == Hint::String => {
-                let mut prim = *self;
                 let object = *o;
 
-                if let Value::Object(_) = object.get_public_property("toString", activation)? {
-                    prim = object.call_public_property("toString", &[], activation)?;
-                }
-
+                let prim = object.call_public_property("toString", &[], activation)?;
                 if prim.is_primitive() {
                     return Ok(prim);
                 }
 
-                if let Value::Object(_) = object.get_public_property("valueOf", activation)? {
-                    prim = object.call_public_property("valueOf", &[], activation)?;
-                }
-
+                let prim = object.call_public_property("valueOf", &[], activation)?;
                 if prim.is_primitive() {
                     return Ok(prim);
                 }
@@ -685,21 +678,14 @@ impl<'gc> Value<'gc> {
                 )?))
             }
             Value::Object(o) if hint == Hint::Number => {
-                let mut prim = *self;
                 let object = *o;
 
-                if let Value::Object(_) = object.get_public_property("valueOf", activation)? {
-                    prim = object.call_public_property("valueOf", &[], activation)?;
-                }
-
+                let prim = object.call_public_property("valueOf", &[], activation)?;
                 if prim.is_primitive() {
                     return Ok(prim);
                 }
 
-                if let Value::Object(_) = object.get_public_property("toString", activation)? {
-                    prim = object.call_public_property("toString", &[], activation)?;
-                }
-
+                let prim = object.call_public_property("toString", &[], activation)?;
                 if prim.is_primitive() {
                     return Ok(prim);
                 }
