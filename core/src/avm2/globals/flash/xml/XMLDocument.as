@@ -1,6 +1,7 @@
 package flash.xml
 {
 
+namespace AS3 = "http://adobe.com/AS3/2006/builtin";
 import flash.xml.XMLNode;
 import flash.xml.XMLNodeType;
 

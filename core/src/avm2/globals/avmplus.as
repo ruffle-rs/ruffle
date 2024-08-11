@@ -1,4 +1,6 @@
 package avmplus {
+    namespace AS3 = "http://adobe.com/AS3/2006/builtin";
+
     public native function getQualifiedClassName(value:*):String;
     internal native function describeTypeJSON(o:*, flags:uint):Object;
 
