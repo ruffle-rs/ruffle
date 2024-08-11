@@ -46,6 +46,7 @@ align-top-right = Sağ Üstte
 align-bottom-right = Sağ Altta
 align-force = Zorla
 scale-mode = Ölçek Modu
+scale-mode-noscale = Ölçeklenmemiş (100%)
 scale-mode-showall = Sığacak şekilde yakınlaştır
 scale-mode-exactfit = Sığdırmak için Uzat
 scale-mode-noborder = Sığdırmak için Kırp
