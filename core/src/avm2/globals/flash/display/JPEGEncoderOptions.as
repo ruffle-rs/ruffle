@@ -1,4 +1,5 @@
 package flash.display {
+    [API("680")]
     public final class JPEGEncoderOptions {
         public var quality: uint;
 
