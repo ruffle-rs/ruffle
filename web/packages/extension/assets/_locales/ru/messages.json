@@ -11,6 +11,9 @@
     "settings_autostart": {
         "message": "Воспроизводить автоматически без отображения заставки"
     },
+    "settings_swf_takeover": {
+        "message": "Проигрывать SWF файлы в браузере вместо их загрузки"
+    },
     "settings_log_level": {
         "message": "Уровень логирования"
     },
