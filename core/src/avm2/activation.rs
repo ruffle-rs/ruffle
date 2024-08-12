@@ -1178,7 +1178,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         // The entire implementation of VTable assumes that
         // call_method is never encountered in user code. (see the long comment there)
-        // This was also the conlusion from analysing avmplus behavior - they
+        // This was also the conclusion from analysing avmplus behavior - they
         // unconditionally VerifyError upon noticing it.
 
         // However, the optimizer can still generate it.

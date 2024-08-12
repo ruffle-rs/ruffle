@@ -379,7 +379,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                 // while we're still inside of our 'requestAnimationFrame' callback (e.g.
                 // when we call into javascript).
                 //
-                // When this happens, we 'reschedule' this future by waiting fot a 'setTimeout'
+                // When this happens, we 'reschedule' this future by waiting for a 'setTimeout'
                 // callback to be resolved. This will cause our future to get woken up from
                 // inside the 'setTimeout' JavaScript task (which is a new top-level call stack),
                 // outside of the 'requestAnimationFrame' callback, which will allow us to lock
