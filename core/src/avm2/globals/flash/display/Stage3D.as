@@ -7,6 +7,7 @@ package flash.display {
     import __ruffle__.stub_method;
 
     [Ruffle(InstanceAllocator)]
+    [API("674")]
     public class Stage3D extends EventDispatcher {
 
         public native function get context3D():Context3D;
@@ -24,6 +25,7 @@ package flash.display {
                 }, 0);
         }
 
+        [API("692")]
         public function requestContext3DMatchingProfiles(profiles:Vector.<String>):void {
             var stage3d = this;
             var profiles = profiles.concat();
