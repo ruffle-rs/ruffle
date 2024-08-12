@@ -82,7 +82,7 @@ impl<'gc> Namespace<'gc> {
     pub fn from_abc_namespace(
         translation_unit: TranslationUnit<'gc>,
         namespace_index: Index<AbcNamespace>,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
     ) -> Result<Self, Error<'gc>> {
         if namespace_index.0 == 0 {
             return Ok(Self::any(context.gc_context));

@@ -11,6 +11,7 @@ use crate::string::WString;
 use crate::string::{AvmString, Units, WStrToUtf8};
 use bitflags::bitflags;
 use gc_arena::Collect;
+use ruffle_wstr::WStr;
 
 #[derive(Collect, Debug)]
 #[collect(no_drop)]
@@ -154,11 +155,15 @@ impl<'gc> RegExp<'gc> {
 
     /// Helper for replace_string. Evaluates the special $-sequences
     /// in `replacement`.
-    fn effective_replacement(
-        replacement: &AvmString<'gc>,
+    fn effective_replacement<'a>(
+        replacement: &'a AvmString<'gc>,
         text: &AvmString<'gc>,
         m: &regress::Match,
-    ) -> WString {
+    ) -> Cow<'a, WStr> {
+        if !replacement.contains(b'$') {
+            // Nothing to do if there's no $ replacement symbols
+            return Cow::Borrowed(replacement.as_wstr());
+        }
         let mut ret = WString::new();
         let s = replacement.as_wstr();
         let mut chars = s.chars().peekable();
@@ -203,7 +208,7 @@ impl<'gc> RegExp<'gc> {
                 _ => ret.push_char('$'),
             }
         }
-        ret
+        Cow::Owned(ret)
     }
 
     /// Implements string.replace(regex, replacement) where the replacement is
@@ -227,11 +232,13 @@ impl<'gc> RegExp<'gc> {
                 .chain(std::iter::once((*txt).into()))
                 .collect::<Vec<_>>();
             let r = f.call(Value::Null, &args, activation)?;
-            return Ok(WString::from(r.coerce_to_string(activation)?.as_wstr()));
+            return Ok(Cow::Owned(WString::from(
+                r.coerce_to_string(activation)?.as_wstr(),
+            )));
         })
     }
 
-    /// Implements string.replace(regex, replacement) where the replacement is
+    /// Implements string.replace(regex, replacement) where the replacement may be
     /// a string with $-sequences.
     pub fn replace_string(
         &mut self,
@@ -247,7 +254,7 @@ impl<'gc> RegExp<'gc> {
     // Helper for replace_string and replace_function.
     //
     // Replaces occurrences of regex with results of f(activation, &text, &match)
-    fn replace_with_fn<F>(
+    fn replace_with_fn<'a, F>(
         &mut self,
         activation: &mut Activation<'_, 'gc>,
         text: &AvmString<'gc>,
@@ -258,17 +265,24 @@ impl<'gc> RegExp<'gc> {
             &mut Activation<'_, 'gc>,
             &AvmString<'gc>,
             &regress::Match,
-        ) -> Result<WString, Error<'gc>>,
+        ) -> Result<Cow<'a, WStr>, Error<'gc>>,
     {
-        let mut ret = WString::new();
         let mut start = 0;
-        while let Some(m) = self.find_utf16_match(*text, start) {
-            ret.push_str(&text[start..m.range.start]);
-            ret.push_str(&f(activation, text, &m)?);
+        let mut m = self.find_utf16_match(*text, start);
 
-            start = m.range.end;
+        if m.is_none() {
+            // Nothing to do; short circuit and just return the original string, to avoid any allocs or functions
+            return Ok(*text);
+        }
 
-            if m.range.is_empty() {
+        let mut ret = WString::new();
+        while let Some(segment) = m {
+            ret.push_str(&text[start..segment.range.start]);
+            ret.push_str(&f(activation, text, &segment)?);
+
+            start = segment.range.end;
+
+            if segment.range.is_empty() {
                 if start == text.len() {
                     break;
                 }
@@ -279,6 +293,7 @@ impl<'gc> RegExp<'gc> {
             if !self.flags().contains(RegExpFlags::GLOBAL) {
                 break;
             }
+            m = self.find_utf16_match(*text, start);
         }
 
         ret.push_str(&text[start..]);

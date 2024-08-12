@@ -18,7 +18,7 @@ use gc_arena::{
     lock::{Lock, RefLock},
     Collect, Gc, GcWeak, Mutation,
 };
-use std::cell::{Cell, Ref, RefMut};
+use std::cell::{Cell, Ref};
 use std::sync::Arc;
 
 /// ActionScript cannot construct a LoaderInfo. Note that LoaderInfo isn't a final class.
@@ -90,10 +90,10 @@ impl fmt::Debug for LoaderInfoObject<'_> {
 
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct LoaderInfoObjectData<'gc> {
     /// All normal script data.
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// The loaded stream that this gets its info from.
     loaded_stream: RefLock<LoaderStream<'gc>>,
@@ -122,6 +122,11 @@ pub struct LoaderInfoObjectData<'gc> {
     errored: Cell<bool>,
 }
 
+const _: () = assert!(std::mem::offset_of!(LoaderInfoObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<LoaderInfoObjectData>() == std::mem::align_of::<ScriptObjectData>()
+);
+
 impl<'gc> LoaderInfoObject<'gc> {
     /// Box a movie into a loader info object.
     pub fn from_movie(
@@ -131,7 +136,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         loader: Option<Object<'gc>>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().loaderinfo;
-        let base = ScriptObjectData::new(class).into();
+        let base = ScriptObjectData::new(class);
         let loaded_stream = LoaderStream::Swf(movie, root);
 
         let this: Object<'gc> = LoaderInfoObject(Gc::new(
@@ -180,7 +185,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         is_stage: bool,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().loaderinfo;
-        let base = ScriptObjectData::new(class).into();
+        let base = ScriptObjectData::new(class);
 
         let this: Object<'gc> = LoaderInfoObject(Gc::new(
             activation.context.gc_context,
@@ -258,7 +263,7 @@ impl<'gc> LoaderInfoObject<'gc> {
 
     pub fn fire_init_and_complete_events(
         &self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         status: u16,
         redirected: bool,
     ) {
@@ -286,7 +291,7 @@ impl<'gc> LoaderInfoObject<'gc> {
             };
 
             if should_complete {
-                let mut activation = Activation::from_nothing(context.reborrow());
+                let mut activation = Activation::from_nothing(context);
                 if from_url {
                     let http_status_evt = activation
                         .avm2()
@@ -390,12 +395,12 @@ impl<'gc> LoaderInfoObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for LoaderInfoObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), LoaderInfoObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

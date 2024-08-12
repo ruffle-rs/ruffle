@@ -89,6 +89,7 @@ impl PixelBenderWgpuShader {
                                 alpha_to_coverage_enabled: false,
                             },
                             multiview: Default::default(),
+                            cache: None,
                         }),
                 )
             })

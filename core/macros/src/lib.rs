@@ -3,7 +3,7 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
-    parse_macro_input, parse_quote, FnArg, ImplItem, ImplItemFn, ItemEnum, ItemTrait, Pat,
+    parse_macro_input, parse_quote, FnArg, ImplItem, ImplItemFn, ItemEnum, ItemTrait, Meta, Pat,
     TraitItem, Visibility,
 };
 
@@ -35,7 +35,7 @@ use syn::{
 #[proc_macro_attribute]
 pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
     // Parse the input.
-    let input_trait = parse_macro_input!(item as ItemTrait);
+    let mut input_trait = parse_macro_input!(item as ItemTrait);
     let trait_name = &input_trait.ident;
     let trait_generics = &input_trait.generics;
     let enum_input = parse_macro_input!(args as ItemEnum);
@@ -62,10 +62,33 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
     // to the underlying type.
     let trait_methods: Vec<_> = input_trait
         .items
-        .iter()
-        .map(|item| match item {
-            TraitItem::Fn(method) => {
+        .iter_mut()
+        .filter_map(|item| match item {
+            TraitItem::Fn(ref mut method) => {
                 let method_name = &method.sig.ident;
+
+                let mut is_no_dynamic = false;
+
+                method.attrs.retain(|attr| match &attr.meta {
+                    Meta::Path(path) => {
+                        if path.is_ident("no_dynamic") {
+                            is_no_dynamic = true;
+
+                            // Remove the #[no_dynamic] attribute from the
+                            // list of method attributes.
+                            false
+                        } else {
+                            true
+                        }
+                    }
+                    _ => true,
+                });
+
+                if is_no_dynamic {
+                    // Don't create this method as a dynamic-dispatch method
+                    return None;
+                }
+
                 let params: Vec<_> = method
                     .sig
                     .inputs
@@ -91,19 +114,20 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
                         }
                     })
                     .collect();
+
                 let method_block = quote!({
                     match self {
                         #(#match_arms)*
                     }
                 });
 
-                ImplItem::Fn(ImplItemFn {
+                Some(ImplItem::Fn(ImplItemFn {
                     attrs: method.attrs.clone(),
                     vis: Visibility::Inherited,
                     defaultness: None,
                     sig: method.sig.clone(),
                     block: parse_quote!(#method_block),
-                })
+                }))
             }
             _ => panic!("Unsupported trait item: {item:?}"),
         })

@@ -1,0 +1,37 @@
+----------- 1234
+call toString
+String
+1234
+call valueOf
+int
+1234
+----------- undefined
+call toString
+String
+undefined
+call valueOf
+int
+0
+----------- [object Object]
+call toString
+call valueOf
+Error 1050
+call valueOf
+call toString
+Error 1050
+--- string null
+----------- null
+call toString
+String
+null
+call valueOf
+int
+0
+--- normal null
+----------- null
+call toString
+call valueOf
+Error 1050
+call valueOf
+call toString
+Error 1050

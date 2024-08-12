@@ -1,0 +1,4 @@
+# TODO: Figure out why this specific test is flaky on CI, fix it, then delete this file.
+[[profile.ci.overrides]]
+filter = "test(avm2/pixelbender_shaderdata)"
+retries = 3

@@ -11,14 +11,14 @@ use crate::avm2::Namespace;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
-use std::cell::{Ref, RefMut};
+use std::cell::Ref;
 
 /// A class instance allocator that allocates QName objects.
 pub fn q_name_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(QNameObject(Gc::new(
         activation.context.gc_context,
@@ -49,14 +49,18 @@ impl fmt::Debug for QNameObject<'_> {
 
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct QNameObjectData<'gc> {
     /// All normal script data.
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// The Multiname this object is associated with.
     name: RefLock<Multiname<'gc>>,
 }
+
+const _: () = assert!(std::mem::offset_of!(QNameObjectData, base) == 0);
+const _: () =
+    assert!(std::mem::align_of::<QNameObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> QNameObject<'gc> {
     /// Box a Multiname into an object.
@@ -65,7 +69,7 @@ impl<'gc> QNameObject<'gc> {
         name: Multiname<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().qname;
-        let base = ScriptObjectData::new(class).into();
+        let base = ScriptObjectData::new(class);
 
         let this: Object<'gc> = QNameObject(Gc::new(
             activation.context.gc_context,
@@ -133,12 +137,12 @@ impl<'gc> QNameObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for QNameObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), QNameObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

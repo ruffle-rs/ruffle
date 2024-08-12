@@ -85,29 +85,38 @@ impl ExternalVideoBackend {
 
         let (filename, md5sum) = Self::get_openh264_data()?;
 
-        let filepath = std::env::current_exe()?
+        let current_exe = std::env::current_exe()?;
+        let directory = current_exe
             .parent()
-            .ok_or("Could not determine Ruffle location.")?
-            .join(filename);
+            .ok_or("Could not determine Ruffle location.")?;
+        let filepath = directory.join(filename);
 
         // If the binary doesn't exist in the expected location, download it.
         if !filepath.is_file() {
             let url = format!("{}{}{}", URL_BASE, filename, URL_SUFFIX);
             let response = reqwest::blocking::get(url)?;
-            let bytes = response.bytes()?;
-            let mut bzip2_reader = BzDecoder::new(bytes.as_ref());
+            let mut bzip2_reader = BzDecoder::new(response);
 
-            let mut file = File::create(filepath.clone())?;
-            copy(&mut bzip2_reader, &mut file)?;
+            let mut tempfile = tempfile::NamedTempFile::with_prefix_in(filename, directory)?;
+            copy(&mut bzip2_reader, &mut tempfile)?;
+            // Let's assume that if this fails, it's because another process has already put it there
+            // and loaded it, therefore it can't be overwritten (on Windows at least), but in the end,
+            // all's fine - the MD5 hash will still be checked before attempting to load the library.
+            let _ = tempfile.persist(&filepath);
         }
 
         // Regardless of whether the library was already there, or we just downloaded it, let's check the MD5 hash.
         let mut md5 = Md5::new();
         copy(&mut File::open(filepath.clone())?, &mut md5)?;
-        let result: [u8; 16] = md5.finalize().into();
+        let md5digest = md5.finalize();
+        let result: [u8; 16] = md5digest.into();
 
         if result[..] != hex::decode(md5sum)?[..] {
-            return Err(format!("MD5 checksum mismatch for {}", filename).into());
+            let size = filepath.metadata().map(|f| f.len()).unwrap_or_default();
+            return Err(format!(
+                "MD5 checksum mismatch for {filename}; expected {md5sum}, found {md5digest:x} (with a size of {size} bytes)",
+            )
+            .into());
         }
 
         Ok(filepath)

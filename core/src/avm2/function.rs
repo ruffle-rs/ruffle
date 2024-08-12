@@ -145,7 +145,7 @@ pub fn exec<'gc>(
             let caller_domain = activation.caller_domain();
             let caller_movie = activation.caller_movie();
             let mut activation = Activation::from_builtin(
-                activation.context.reborrow(),
+                activation.context,
                 bound_class,
                 scope,
                 caller_domain,
@@ -191,7 +191,7 @@ pub fn exec<'gc>(
 
             // This used to be a one step called Activation::from_method,
             // but avoiding moving an Activation around helps perf
-            let mut activation = Activation::from_nothing(activation.context.reborrow());
+            let mut activation = Activation::from_nothing(activation.context);
             activation.init_from_method(bm, scope, receiver, arguments, bound_class, callee)?;
             activation
                 .context

@@ -4,9 +4,7 @@ use crate::avm2::value::Value;
 use crate::avm2::{Activation, ClassObject, Error};
 use crate::character::Character;
 use crate::font::Font;
-use gc_arena::barrier::unlock;
-use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
-use std::cell::{Ref, RefMut};
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use std::fmt;
 
 /// A class instance allocator that allocates Font objects.
@@ -14,7 +12,7 @@ pub fn font_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     let font = if let Some((movie, id)) = activation
         .context
@@ -52,7 +50,7 @@ pub struct FontObjectWeak<'gc>(pub GcWeak<'gc, FontObjectData<'gc>>);
 
 impl<'gc> FontObject<'gc> {
     pub fn for_font(mc: &Mutation<'gc>, class: ClassObject<'gc>, font: Font<'gc>) -> Object<'gc> {
-        let base = ScriptObjectData::new(class).into();
+        let base = ScriptObjectData::new(class);
         FontObject(Gc::new(
             mc,
             FontObjectData {
@@ -65,12 +63,12 @@ impl<'gc> FontObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for FontObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), FontObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
@@ -88,13 +86,17 @@ impl<'gc> TObject<'gc> for FontObject<'gc> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct FontObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     font: Option<Font<'gc>>,
 }
+
+const _: () = assert!(std::mem::offset_of!(FontObjectData, base) == 0);
+const _: () =
+    assert!(std::mem::align_of::<FontObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl fmt::Debug for FontObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

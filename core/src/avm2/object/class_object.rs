@@ -23,7 +23,6 @@ use gc_arena::{
     lock::{Lock, RefLock},
     Collect, Gc, GcWeak, Mutation,
 };
-use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
@@ -38,10 +37,10 @@ pub struct ClassObjectWeak<'gc>(pub GcWeak<'gc, ClassObjectData<'gc>>);
 
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct ClassObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// The class associated with this class object.
     class: Class<'gc>,
@@ -75,6 +74,10 @@ pub struct ClassObjectData<'gc> {
     /// VTable used for instances of this class.
     instance_vtable: VTable<'gc>,
 }
+
+const _: () = assert!(std::mem::offset_of!(ClassObjectData, base) == 0);
+const _: () =
+    assert!(std::mem::align_of::<ClassObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> ClassObject<'gc> {
     /// Allocate the prototype for this class.
@@ -170,7 +173,10 @@ impl<'gc> ClassObject<'gc> {
         let class_object = ClassObject(Gc::new(
             activation.context.gc_context,
             ClassObjectData {
-                base: RefLock::new(ScriptObjectData::custom_new(c_class, None, None)),
+                // We pass `custom_new` the temporary vtable of the class object
+                // because we don't have the full vtable created yet. We'll
+                // set it to the true vtable in `into_finished_class`.
+                base: ScriptObjectData::custom_new(c_class, None, c_class.vtable()),
                 class,
                 prototype: Lock::new(None),
                 class_scope: scope,
@@ -253,8 +259,7 @@ impl<'gc> ClassObject<'gc> {
         );
 
         self.set_vtable(activation.context.gc_context, class_vtable);
-        self.base_mut(activation.context.gc_context)
-            .install_instance_slots();
+        self.base().install_instance_slots(activation.gc());
 
         self.run_class_initializer(activation)?;
 
@@ -313,9 +318,7 @@ impl<'gc> ClassObject<'gc> {
     /// `Class` and `Object`. All other types should pull `Class`'s prototype
     /// and type object from the `Avm2` instance.
     pub fn link_type(self, gc_context: &Mutation<'gc>, proto: Object<'gc>) {
-        unlock!(Gc::write(gc_context, self.0), ClassObjectData, base)
-            .borrow_mut()
-            .set_proto(proto);
+        self.base().set_proto(gc_context, proto);
     }
 
     /// Run the class's initializer method.
@@ -632,7 +635,7 @@ impl<'gc> ClassObject<'gc> {
         // so it must be a simple Vector.<*>-derived class.
 
         let parameterized_class =
-            Class::with_type_param(&mut activation.context, self_class, class_param);
+            Class::with_type_param(activation.context, self_class, class_param);
 
         // NOTE: this isn't fully accurate, but much simpler.
         // FP's Vector is more of special case that literally copies some parent class's properties
@@ -719,12 +722,12 @@ impl<'gc> ClassObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for ClassObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), ClassObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

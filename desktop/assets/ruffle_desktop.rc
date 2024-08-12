@@ -1,4 +1,5 @@
 // winres.h cannot be included, so define manually
+#define VS_VERSION_INFO 1
 #define VS_FF_DEBUG 0x1L
 #define VS_FFI_FILEFLAGSMASK 0x17L
 #define VOS__WINDOWS32 0x4L

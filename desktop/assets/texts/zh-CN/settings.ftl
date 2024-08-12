@@ -56,7 +56,7 @@ scale-mode-showall-tooltip =
     将影片放大以尽可能填满窗口，同时不进行裁剪，保持长宽比。
     
     对应 StageScaleMode.SHOW_ALL
-scale-mode-exactfit = 拉伸
+scale-mode-exactfit = 拉伸以适应
 scale-mode-exactfit-tooltip =
     确保影片填满整个窗口，忽略长宽比。
     

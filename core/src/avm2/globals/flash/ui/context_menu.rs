@@ -3,6 +3,7 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::context_menu;
+use crate::display_object::DisplayObject;
 
 pub fn hide_built_in_items<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -26,9 +27,12 @@ pub fn hide_built_in_items<'gc>(
 
 pub fn make_context_menu_state<'gc>(
     menu: Option<Object<'gc>>,
+    object: Option<DisplayObject<'gc>>,
     activation: &mut Activation<'_, 'gc>,
 ) -> context_menu::ContextMenuState<'gc> {
     let mut result = context_menu::ContextMenuState::new();
+
+    result.set_display_object(object);
 
     macro_rules! check_bool {
         ( $obj:expr, $name:expr, $value:expr ) => {
@@ -66,7 +70,7 @@ pub fn make_context_menu_state<'gc>(
         }
     }
 
-    result.build_builtin_items(builtin_items, &mut activation.context);
+    result.build_builtin_items(builtin_items, activation.context);
 
     if let Some(menu) = menu {
         if let Ok(Value::Object(custom_items)) = menu.get_public_property("customItems", activation)

@@ -18,7 +18,6 @@ use gc_arena::{
     Collect, Gc, GcWeak, Mutation,
 };
 use id3::{Tag, TagLike};
-use std::cell::{Ref, RefMut};
 use std::io::Cursor;
 use swf::SoundInfo;
 
@@ -29,7 +28,7 @@ pub fn sound_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(SoundObject(Gc::new(
         activation.context.gc_context,
@@ -62,10 +61,10 @@ impl fmt::Debug for SoundObject<'_> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct SoundObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// The sound this object holds.
     sound_data: RefLock<SoundData<'gc>>,
@@ -73,6 +72,10 @@ pub struct SoundObjectData<'gc> {
     /// ID3Info Object
     id3: Lock<Option<Object<'gc>>>,
 }
+
+const _: () = assert!(std::mem::offset_of!(SoundObjectData, base) == 0);
+const _: () =
+    assert!(std::mem::align_of::<SoundObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 #[derive(Collect)]
 #[collect(no_drop)]
@@ -130,7 +133,7 @@ impl<'gc> SoundObject<'gc> {
 
     pub fn set_sound(
         self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         sound: SoundHandle,
     ) -> Result<(), Error<'gc>> {
         let mut sound_data = unlock!(
@@ -139,7 +142,7 @@ impl<'gc> SoundObject<'gc> {
             sound_data
         )
         .borrow_mut();
-        let mut activation = Activation::from_nothing(context.reborrow());
+        let mut activation = Activation::from_nothing(context);
         match &mut *sound_data {
             SoundData::NotLoaded { queued_plays } => {
                 for queued in std::mem::take(queued_plays) {
@@ -230,8 +233,8 @@ impl<'gc> SoundObject<'gc> {
         }
         self.set_id3(activation.context.gc_context, Some(id3));
         if tag.is_ok() {
-            let id3_evt = EventObject::bare_default_event(&mut activation.context, "id3");
-            Avm2::dispatch_event(&mut activation.context, id3_evt, self.into());
+            let id3_evt = EventObject::bare_default_event(activation.context, "id3");
+            Avm2::dispatch_event(activation.context, id3_evt, self.into());
         }
     }
 }
@@ -277,12 +280,12 @@ fn play_queued<'gc>(
 }
 
 impl<'gc> TObject<'gc> for SoundObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), SoundObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

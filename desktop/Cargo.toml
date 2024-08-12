@@ -14,10 +14,10 @@ workspace = true
 clap = { workspace = true }
 cpal = "0.15.3"
 egui = { workspace = true }
-egui_extras = { version = "0.28.1", default-features = false, features = ["image"] }
-egui-wgpu = { version = "0.28.1", features = ["winit"] }
+egui_extras = { git = "https://github.com/emilk/egui.git", rev = "37b1e1504db14697c39ce1c3bb5e58f4f2b819bf", default-features = false, features = ["image"] }
+egui-wgpu = { git = "https://github.com/emilk/egui.git", rev = "37b1e1504db14697c39ce1c3bb5e58f4f2b819bf", features = ["winit"] }
 image = { workspace = true, features = ["png"] }
-egui-winit = "0.28.1"
+egui-winit = { git = "https://github.com/emilk/egui.git", rev = "37b1e1504db14697c39ce1c3bb5e58f4f2b819bf" }
 fontdb = "0.20"
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymoser", "default_compatibility_rules", "egui"] }
 ruffle_render = { path = "../render", features = ["clap"] }
@@ -62,7 +62,7 @@ embed-resource = "2"
 vergen = { version = "8.3.2", features = ["build", "git", "gitcl", "cargo"] }
 
 [features]
-default = ["software_video", "external_video"]
+default = ["software_video", "external_video", "lzma"]
 jpegxr = ["ruffle_core/jpegxr"]
 
 # core features
@@ -74,7 +74,6 @@ tracy = ["tracing-tracy", "ruffle_render_wgpu/profile-with-tracy"]
 
 # wgpu features
 render_debug_labels = ["ruffle_render_wgpu/render_debug_labels"]
-render_trace = ["ruffle_render_wgpu/render_trace"]
 
 # sandboxing
 sandbox = []

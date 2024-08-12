@@ -107,9 +107,6 @@
     "grant_single_site_permission": {
         "message": "Bu site için kalıcı olarak aktif et"
     },
-    "permissions_explanation": {
-        "message": "Ruffle uzantısı, tüm web sitelerinde veri erişimine izin verildiğinde en iyi şekilde çalışır. Bu, herhangi bir web sitesi ilk yüklendiğinde çalışmasına ve Flash Player algılama yapan web sitelerini hemen Flash içeriğinin çalışmasına izin vermelerine olanak tanır. Ayrıca, web üzerindeki diğer konumlardan SWF dosyalarını dahili oynatıcı sayfasına yükleyebilme özelliğine sahiptir. Bu izni vermezseniz, Ruffle'ı kullanmak istediğiniz her web sitesinde manuel olarak etkinleştirmeniz gerekecektir; bunun için uzantı simgesine tıklayarak ilgili web sitesi için etkinleştirmeniz gerekir."
-    },
     "swf_player_permissions": {
         "message": "SWF'leri indirmek için bu URL kaynağına izin vermeniz gerekir."
     }

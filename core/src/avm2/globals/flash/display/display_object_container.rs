@@ -116,10 +116,7 @@ fn validate_remove_operation<'gc>(
 }
 
 /// Remove an element from it's parent display list.
-fn remove_child_from_displaylist<'gc>(
-    context: &mut UpdateContext<'_, 'gc>,
-    child: DisplayObject<'gc>,
-) {
+fn remove_child_from_displaylist<'gc>(context: &mut UpdateContext<'gc>, child: DisplayObject<'gc>) {
     if let Some(parent) = child.parent() {
         if let Some(mut ctr) = parent.as_container() {
             child.set_placed_by_script(context.gc_context, true);
@@ -130,7 +127,7 @@ fn remove_child_from_displaylist<'gc>(
 
 /// Add the `child` to `parent`'s display list.
 pub(super) fn add_child_to_displaylist<'gc>(
-    context: &mut UpdateContext<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
     parent: DisplayObject<'gc>,
     child: DisplayObject<'gc>,
     index: usize,
@@ -205,7 +202,7 @@ pub fn add_child<'gc>(
             let target_index = ctr.num_children();
 
             validate_add_operation(activation, parent, child, target_index)?;
-            add_child_to_displaylist(&mut activation.context, parent, child, target_index);
+            add_child_to_displaylist(activation.context, parent, child, target_index);
 
             return Ok(child.object2());
         }
@@ -228,7 +225,7 @@ pub fn add_child_at<'gc>(
         let target_index = args.get_u32(activation, 1)? as usize;
 
         validate_add_operation(activation, parent, child, target_index)?;
-        add_child_to_displaylist(&mut activation.context, parent, child, target_index);
+        add_child_to_displaylist(activation.context, parent, child, target_index);
 
         return Ok(child.object2());
     }
@@ -249,7 +246,7 @@ pub fn remove_child<'gc>(
             .ok_or("ArgumentError: Child not a valid display object")?;
 
         validate_remove_operation(activation, parent, child)?;
-        remove_child_from_displaylist(&mut activation.context, child);
+        remove_child_from_displaylist(activation.context, child);
 
         return Ok(child.object2());
     }
@@ -346,7 +343,7 @@ pub fn remove_child_at<'gc>(
             let child = ctr.child_by_index(target_child as usize).unwrap();
             child.set_placed_by_script(activation.context.gc_context, true);
 
-            ctr.remove_child(&mut activation.context, child);
+            ctr.remove_child(activation.context, child);
 
             return Ok(child.object2());
         }
@@ -406,7 +403,7 @@ pub fn remove_children<'gc>(
             }
 
             ctr.remove_range(
-                &mut activation.context,
+                activation.context,
                 from as usize..min(ctr.num_children(), to as usize + 1),
             );
         }
@@ -434,7 +431,7 @@ pub fn set_child_index<'gc>(
         }
 
         validate_add_operation(activation, parent, child, target_index)?;
-        add_child_to_displaylist(&mut activation.context, parent, child, target_index);
+        add_child_to_displaylist(activation.context, parent, child, target_index);
 
         return Ok(child.object2());
     }
@@ -478,7 +475,7 @@ pub fn swap_children_at<'gc>(
             child0.set_placed_by_script(activation.context.gc_context, true);
             child1.set_placed_by_script(activation.context.gc_context, true);
 
-            ctr.swap_at_index(&mut activation.context, index0 as usize, index1 as usize);
+            ctr.swap_at_index(activation.context, index0 as usize, index1 as usize);
         }
     }
 
@@ -514,7 +511,7 @@ pub fn swap_children<'gc>(
             child0.set_placed_by_script(activation.context.gc_context, true);
             child1.set_placed_by_script(activation.context.gc_context, true);
 
-            ctr.swap_at_index(&mut activation.context, index0, index1);
+            ctr.swap_at_index(activation.context, index0, index1);
         }
     }
 
@@ -529,7 +526,7 @@ pub fn stop_all_movie_clips<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(parent) = this.as_display_object() {
         if let Some(mc) = parent.as_movie_clip() {
-            mc.stop(&mut activation.context);
+            mc.stop(activation.context);
         }
 
         if let Some(ctr) = parent.as_container() {
@@ -578,7 +575,7 @@ pub fn get_objects_under_point<'gc>(
     // FIXME - what are the actual options?
     let options = HitTestOptions::SKIP_MASK;
     while let Some(child) = children.pop() {
-        if child.hit_test_shape(&mut activation.context, point, options) {
+        if child.hit_test_shape(activation.context, point, options) {
             under_point.push(Some(child.object2()));
         }
         if let Some(container) = child.as_container() {
@@ -644,7 +641,7 @@ pub fn get_tab_children<'gc>(
         .as_display_object()
         .and_then(|this| this.as_container())
     {
-        Ok(Value::Bool(obj.is_tab_children(&mut activation.context)))
+        Ok(Value::Bool(obj.is_tab_children(activation.context)))
     } else {
         Ok(Value::Undefined)
     }
@@ -660,7 +657,7 @@ pub fn set_tab_children<'gc>(
         .and_then(|this| this.as_container())
     {
         let value = args.get_bool(0);
-        obj.set_tab_children(&mut activation.context, value);
+        obj.set_tab_children(activation.context, value);
     }
 
     Ok(Value::Undefined)

@@ -9,16 +9,15 @@ use crate::backend::audio::SoundInstanceHandle;
 use crate::context::UpdateContext;
 use crate::display_object::SoundTransform;
 use core::fmt;
-use gc_arena::barrier::unlock;
-use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
-use std::cell::{Cell, Ref, RefCell, RefMut};
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use std::cell::{Cell, RefCell};
 
 /// A class instance allocator that allocates SoundChannel objects.
 pub fn sound_channel_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(SoundChannelObject(Gc::new(
         activation.context.gc_context,
@@ -52,10 +51,10 @@ impl fmt::Debug for SoundChannelObject<'_> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct SoundChannelObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// The sound this object holds.
     sound_channel_data: RefCell<SoundChannelData>,
@@ -63,6 +62,11 @@ pub struct SoundChannelObjectData<'gc> {
     /// Position of the last playing sound in milliseconds.
     position: Cell<f64>,
 }
+
+const _: () = assert!(std::mem::offset_of!(SoundChannelObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<SoundChannelObjectData>() == std::mem::align_of::<ScriptObjectData>()
+);
 
 pub enum SoundChannelData {
     NotLoaded {
@@ -78,7 +82,7 @@ impl<'gc> SoundChannelObject<'gc> {
     /// Convert a bare sound instance into it's object representation.
     pub fn empty(activation: &mut Activation<'_, 'gc>) -> Result<Self, Error<'gc>> {
         let class = activation.avm2().classes().soundchannel;
-        let base = ScriptObjectData::new(class).into();
+        let base = ScriptObjectData::new(class);
 
         let sound_object = SoundChannelObject(Gc::new(
             activation.context.gc_context,
@@ -99,7 +103,7 @@ impl<'gc> SoundChannelObject<'gc> {
     }
 
     /// Return the position of the playing sound in seconds.
-    pub fn position(self, context: &mut UpdateContext<'_, 'gc>) -> f64 {
+    pub fn position(self, context: &mut UpdateContext<'gc>) -> f64 {
         // The position is cached on read. This means that if the position isn't read until after
         // the sound has played, the position will be 0 (#9952).
         let sound_channel_data = self.0.sound_channel_data.borrow();
@@ -202,12 +206,12 @@ impl<'gc> SoundChannelObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for SoundChannelObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), SoundChannelObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

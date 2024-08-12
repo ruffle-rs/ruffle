@@ -35,9 +35,21 @@ export class RufflePlayerElement extends HTMLElement implements Player {
             this,
             () => this.debugPlayerInfo(),
             (name) => {
-                (this as any)[name] = (...args: unknown[]) => {
-                    return this.#inner.callExternalInterface(name, args);
-                };
+                try {
+                    Object.defineProperty(this, name, {
+                        value: (...args: unknown[]) => {
+                            return this.#inner.callExternalInterface(
+                                name,
+                                args,
+                            );
+                        },
+                    });
+                } catch (error) {
+                    console.warn(
+                        `Error setting ExternalInterface legacy callback for ${name}`,
+                        error,
+                    );
+                }
             },
         );
     }

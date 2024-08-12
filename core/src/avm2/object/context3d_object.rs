@@ -8,8 +8,6 @@ use crate::avm2::Error;
 use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::context::RenderContext;
-use gc_arena::barrier::unlock;
-use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, GcCell, GcWeak, Mutation};
 use ruffle_render::backend::{
     BufferUsage, Context3D, Context3DBlendFactor, Context3DCommand, Context3DCompareMode,
@@ -17,7 +15,7 @@ use ruffle_render::backend::{
     Texture,
 };
 use ruffle_render::commands::CommandHandler;
-use std::cell::{Cell, Ref, RefMut};
+use std::cell::Cell;
 use std::rc::Rc;
 use swf::{Rectangle, Twips};
 
@@ -44,7 +42,7 @@ impl<'gc> Context3DObject<'gc> {
         let this: Object<'gc> = Context3DObject(Gc::new(
             activation.gc(),
             Context3DData {
-                base: RefLock::new(ScriptObjectData::new(class)),
+                base: ScriptObjectData::new(class),
                 render_context: Cell::new(Some(context)),
                 stage3d,
             },
@@ -482,10 +480,10 @@ impl<'gc> Context3DObject<'gc> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct Context3DData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     #[collect(require_static)]
     render_context: Cell<Option<Box<dyn Context3D>>>,
@@ -493,13 +491,17 @@ pub struct Context3DData<'gc> {
     stage3d: Stage3DObject<'gc>,
 }
 
-impl<'gc> TObject<'gc> for Context3DObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+const _: () = assert!(std::mem::offset_of!(Context3DData, base) == 0);
+const _: () =
+    assert!(std::mem::align_of::<Context3DData>() == std::mem::align_of::<ScriptObjectData>());
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), Context3DData, base).borrow_mut()
+impl<'gc> TObject<'gc> for Context3DObject<'gc> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
+
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

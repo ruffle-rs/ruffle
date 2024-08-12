@@ -169,7 +169,7 @@ impl<'gc> ConvolutionFilter<'gc> {
         Ok(())
     }
 
-    fn matrix(&self, context: &mut UpdateContext<'_, 'gc>) -> ArrayObject<'gc> {
+    fn matrix(&self, context: &mut UpdateContext<'gc>) -> ArrayObject<'gc> {
         ArrayObject::new(
             context.gc_context,
             context.avm1.prototypes().array,
@@ -368,7 +368,7 @@ fn method<'gc>(
             this.set_matrix_y(activation, args.get(0))?;
             Value::Undefined
         }
-        GET_MATRIX => this.matrix(&mut activation.context).into(),
+        GET_MATRIX => this.matrix(activation.context).into(),
         SET_MATRIX => {
             this.set_matrix(activation, args.get(0))?;
             Value::Undefined

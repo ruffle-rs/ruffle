@@ -1,6 +1,12 @@
 // List is ordered alphabetically, except where superclasses/interfaces
 // need to come before subclasses and implementations.
 
+package {
+    // This names 'self.AS3::SomeMethod()' calls in 'XML.as' use a 'callproperty'
+    // opcode, instead of a weird dynamic lookup of the 'AS3' namespace
+    namespace AS3 = "http://adobe.com/AS3/2006/builtin";
+}
+
 include "__ruffle__/stubs.as"
 
 include "Error.as"

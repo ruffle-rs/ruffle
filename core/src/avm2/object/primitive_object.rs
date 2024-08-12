@@ -17,7 +17,7 @@ pub fn primitive_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(PrimitiveObject(Gc::new(
         activation.context.gc_context,
@@ -48,14 +48,19 @@ impl fmt::Debug for PrimitiveObject<'_> {
 
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct PrimitiveObjectData<'gc> {
     /// All normal script data.
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// The primitive value this object represents.
     primitive: RefLock<Value<'gc>>,
 }
+
+const _: () = assert!(std::mem::offset_of!(PrimitiveObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<PrimitiveObjectData>() == std::mem::align_of::<ScriptObjectData>()
+);
 
 impl<'gc> PrimitiveObject<'gc> {
     /// Box a primitive into an object.
@@ -87,7 +92,7 @@ impl<'gc> PrimitiveObject<'gc> {
             _ => unreachable!(),
         };
 
-        let base = ScriptObjectData::new(class).into();
+        let base = ScriptObjectData::new(class);
         let this: Object<'gc> = PrimitiveObject(Gc::new(
             activation.context.gc_context,
             PrimitiveObjectData {
@@ -108,12 +113,12 @@ impl<'gc> PrimitiveObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for PrimitiveObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), PrimitiveObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

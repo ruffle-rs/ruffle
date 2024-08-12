@@ -29,7 +29,7 @@ use std::sync::Arc;
 /// grandchildren, recursively.
 pub fn dispatch_removed_from_stage_event<'gc>(
     child: DisplayObject<'gc>,
-    context: &mut UpdateContext<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
 ) {
     if let Avm2Value::Object(object) = child.object2() {
         let removed_evt = Avm2EventObject::bare_default_event(context, "removedFromStage");
@@ -45,10 +45,7 @@ pub fn dispatch_removed_from_stage_event<'gc>(
 
 /// Dispatch the `removed` event on a child and log any errors encountered
 /// whilst doing so.
-pub fn dispatch_removed_event<'gc>(
-    child: DisplayObject<'gc>,
-    context: &mut UpdateContext<'_, 'gc>,
-) {
+pub fn dispatch_removed_event<'gc>(child: DisplayObject<'gc>, context: &mut UpdateContext<'gc>) {
     if let Avm2Value::Object(object) = child.object2() {
         let removed_evt = Avm2EventObject::bare_event(context, "removed", true, false);
         Avm2::dispatch_event(context, removed_evt, object);
@@ -62,7 +59,7 @@ pub fn dispatch_removed_event<'gc>(
 /// Dispatch the `addedToStage` event on a child, ignoring it's grandchildren.
 pub fn dispatch_added_to_stage_event_only<'gc>(
     child: DisplayObject<'gc>,
-    context: &mut UpdateContext<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
 ) {
     if let Avm2Value::Object(object) = child.object2() {
         let added_evt = Avm2EventObject::bare_default_event(context, "addedToStage");
@@ -74,7 +71,7 @@ pub fn dispatch_added_to_stage_event_only<'gc>(
 /// recursively.
 pub fn dispatch_added_to_stage_event<'gc>(
     child: DisplayObject<'gc>,
-    context: &mut UpdateContext<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
 ) {
     dispatch_added_to_stage_event_only(child, context);
 
@@ -92,10 +89,7 @@ pub fn dispatch_added_to_stage_event<'gc>(
 
 /// Dispatch an `added` event to one object, and log any errors encountered
 /// whilst doing so.
-pub fn dispatch_added_event_only<'gc>(
-    child: DisplayObject<'gc>,
-    context: &mut UpdateContext<'_, 'gc>,
-) {
+pub fn dispatch_added_event_only<'gc>(child: DisplayObject<'gc>, context: &mut UpdateContext<'gc>) {
     if let Avm2Value::Object(object) = child.object2() {
         let added_evt = Avm2EventObject::bare_event(context, "added", true, false);
         Avm2::dispatch_event(context, added_evt, object);
@@ -112,7 +106,7 @@ pub fn dispatch_added_event<'gc>(
     parent: DisplayObject<'gc>,
     child: DisplayObject<'gc>,
     child_was_on_stage: bool,
-    context: &mut UpdateContext<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
 ) {
     dispatch_added_event_only(child, context);
 
@@ -195,7 +189,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// children it modifies. You must do this yourself.
     fn replace_at_depth(
         self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         child: DisplayObject<'gc>,
         depth: Depth,
     ) -> Option<DisplayObject<'gc>> {
@@ -229,7 +223,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// way as `replace_at_depth`.
     fn swap_at_depth(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         child: DisplayObject<'gc>,
         depth: Depth,
     ) {
@@ -253,7 +247,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// timeline) produce unusual results.
     fn insert_at_index(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         child: DisplayObject<'gc>,
         index: usize,
     ) {
@@ -293,12 +287,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// Swap two children in the render list.
     ///
     /// No changes to the depth or render lists are made by this function.
-    fn swap_at_index(
-        &mut self,
-        context: &mut UpdateContext<'_, 'gc>,
-        index1: usize,
-        index2: usize,
-    ) {
+    fn swap_at_index(&mut self, context: &mut UpdateContext<'gc>, index1: usize, index2: usize) {
         self.raw_container_mut(context.gc_context)
             .swap_at_id(index1, index2);
         let this: DisplayObject<'_> = (*self).into();
@@ -308,7 +297,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// Remove (and unloads) a child display object from this container's render and depth lists.
     ///
     /// Will also handle AVM1 delayed clip removal, when a unload listener is present
-    fn remove_child(&mut self, context: &mut UpdateContext<'_, 'gc>, child: DisplayObject<'gc>) {
+    fn remove_child(&mut self, context: &mut UpdateContext<'gc>, child: DisplayObject<'gc>) {
         let this: DisplayObject<'_> = (*self).into();
 
         // We should always be the parent of this child
@@ -321,7 +310,7 @@ pub trait TDisplayObjectContainer<'gc>:
         if !self.raw_container().movie().is_action_script_3() {
             let should_delay_removal = {
                 let mut activation = Activation::from_nothing(
-                    context.reborrow(),
+                    context,
                     ActivationIdentifier::root("[Unload Handler Check]"),
                     this.avm1_root(),
                 );
@@ -355,11 +344,7 @@ pub trait TDisplayObjectContainer<'gc>:
     }
 
     /// Remove (and unloads) a child display object from this container's render and depth lists.
-    fn remove_child_directly(
-        &self,
-        context: &mut UpdateContext<'_, 'gc>,
-        child: DisplayObject<'gc>,
-    ) {
+    fn remove_child_directly(&self, context: &mut UpdateContext<'gc>, child: DisplayObject<'gc>) {
         dispatch_removed_event(child, context);
         let this: DisplayObjectContainer<'gc> = (*self).into();
         let mut write = self.raw_container_mut(context.gc_context);
@@ -387,7 +372,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// Insert a child directly into this container's depth list.
     fn insert_child_into_depth_list(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         depth: Depth,
         child: DisplayObject<'gc>,
     ) {
@@ -404,7 +389,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// Removes (without unloading) a child display object from this container's depth list.
     fn remove_child_from_depth_list(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         child: DisplayObject<'gc>,
     ) {
         debug_assert!(DisplayObject::ptr_eq(
@@ -421,7 +406,7 @@ pub trait TDisplayObjectContainer<'gc>:
 
     /// Remove a set of children identified by their render list indices from
     /// this container's render and depth lists.
-    fn remove_range<R>(&mut self, context: &mut UpdateContext<'_, 'gc>, range: R)
+    fn remove_range<R>(&mut self, context: &mut UpdateContext<'gc>, range: R)
     where
         R: RangeBounds<usize>,
     {
@@ -481,7 +466,7 @@ pub trait TDisplayObjectContainer<'gc>:
         RenderIter::from_container(self.into())
     }
 
-    fn is_tab_children_avm1(&self, _context: &mut UpdateContext<'_, 'gc>) -> bool {
+    fn is_tab_children_avm1(&self, _context: &mut UpdateContext<'gc>) -> bool {
         true
     }
 
@@ -493,7 +478,7 @@ pub trait TDisplayObjectContainer<'gc>:
     /// _NOTE:_
     /// According to the AS2 documentation, it should affect only automatic tab ordering.
     /// However, that does not seem to be the case, as it also affects custom ordering.
-    fn is_tab_children(&self, context: &mut UpdateContext<'_, 'gc>) -> bool {
+    fn is_tab_children(&self, context: &mut UpdateContext<'gc>) -> bool {
         let this: DisplayObject<'_> = (*self).into();
         if this.movie().is_action_script_3() {
             self.raw_container().tab_children
@@ -502,7 +487,7 @@ pub trait TDisplayObjectContainer<'gc>:
         }
     }
 
-    fn set_tab_children(&self, context: &mut UpdateContext<'_, 'gc>, value: bool) {
+    fn set_tab_children(&self, context: &mut UpdateContext<'gc>, value: bool) {
         let this: DisplayObject<'_> = (*self).into();
         if this.movie().is_action_script_3() {
             self.raw_container_mut(context.gc()).tab_children = value;
@@ -511,7 +496,7 @@ pub trait TDisplayObjectContainer<'gc>:
         }
     }
 
-    fn fill_tab_order(&self, tab_order: &mut TabOrder<'gc>, context: &mut UpdateContext<'_, 'gc>) {
+    fn fill_tab_order(&self, tab_order: &mut TabOrder<'gc>, context: &mut UpdateContext<'gc>) {
         if !self.is_tab_children(context) {
             // AS3 docs say that objects with custom ordering (tabIndex set)
             // are included even when tabChildren is false.
@@ -714,7 +699,7 @@ impl<'gc> ChildContainer<'gc> {
     fn remove_child_from_render_list(
         container: DisplayObjectContainer<'gc>,
         child: DisplayObject<'gc>,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
     ) -> bool {
         let mut this = container.raw_container_mut(context.gc_context);
 
@@ -734,7 +719,7 @@ impl<'gc> ChildContainer<'gc> {
                 );
                 if child.has_explicit_name() {
                     if let Avm2Value::Object(parent_obj) = parent.object2() {
-                        let mut activation = Avm2Activation::from_nothing(context.reborrow());
+                        let mut activation = Avm2Activation::from_nothing(context);
                         let name = Avm2Multiname::new(
                             activation.avm2().find_public_namespace(),
                             child.name(),
@@ -992,7 +977,7 @@ impl<'gc> ChildContainer<'gc> {
     /// `parent` should be the display object that owns this container.
     fn swap_at_depth(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         parent: DisplayObject<'gc>,
         child: DisplayObject<'gc>,
         depth: Depth,
@@ -1094,7 +1079,7 @@ impl<'gc> ChildContainer<'gc> {
     ///
     /// This just moves the children to a negative depth
     /// Will also fire unload events, as they should occur when the removal is queued, not when it actually occurs
-    fn queue_removal(child: DisplayObject<'gc>, context: &mut UpdateContext<'_, 'gc>) {
+    fn queue_removal(child: DisplayObject<'gc>, context: &mut UpdateContext<'gc>) {
         if let Some(c) = child.as_container() {
             for child in c.iter_render_list() {
                 Self::queue_removal(child, context);

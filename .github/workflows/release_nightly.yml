@@ -89,12 +89,14 @@ jobs:
             target: i686-pc-windows-msvc
             RUSTFLAGS: -Ctarget-feature=+crt-static
             DESKTOP_FEATURES: jpegxr
+            MSI_ARCH: x86
 
           - build_name: windows-x86_64
             os: windows-latest
             target: x86_64-pc-windows-msvc
             RUSTFLAGS: -Ctarget-feature=+crt-static
             DESKTOP_FEATURES: jpegxr
+            MSI_ARCH: x64
 
     env:
       PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-${{ matrix.build_name }}.${{ startsWith(matrix.build_name, 'win') && 'zip' || 'tar.gz' }}
@@ -117,6 +119,13 @@ jobs:
           sudo apt-get update
           sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev libgtk-3-dev libudev-dev
 
+      - name: Install WiX
+        run: |
+          dotnet tool install --global wix
+          wix extension add -g WixToolset.UI.wixext
+          wix extension add -g WixToolset.Util.wixext
+        if: runner.os == 'Windows'
+
       - name: Cargo build
         run: cargo build --locked --package ruffle_desktop --release ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
         env:
@@ -128,6 +137,15 @@ jobs:
           mkdir package
           cp README.md package/README.md
           cp LICENSE.md package/LICENSE.md
+
+      - name: Package MSI
+        run: |
+          cd desktop/packages/windows/wix
+          wix build ruffle.wxs -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext -arch ${{ matrix.MSI_ARCH }} -o ../../../../package/setup.msi -pdbtype none
+        env:
+          RUFFLE_VERSION: "0.1.0"
+          CARGO_BUILD_DIR: ../../../../target/${{ matrix.target }}/release
+        if: runner.os == 'Windows'
 
       - name: Package Windows
         if: runner.os == 'Windows'

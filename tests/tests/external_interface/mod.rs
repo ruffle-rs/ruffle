@@ -17,17 +17,17 @@ impl ExternalInterfaceTestProvider {
     }
 }
 
-fn do_trace(context: &mut UpdateContext<'_, '_>, args: &[ExternalValue]) -> ExternalValue {
+fn do_trace(context: &mut UpdateContext<'_>, args: &[ExternalValue]) -> ExternalValue {
     context.avm_trace(&format!("[ExternalInterface] trace: {args:?}"));
     "Traced!".into()
 }
 
-fn do_ping(context: &mut UpdateContext<'_, '_>, _args: &[ExternalValue]) -> ExternalValue {
+fn do_ping(context: &mut UpdateContext<'_>, _args: &[ExternalValue]) -> ExternalValue {
     context.avm_trace("[ExternalInterface] ping");
     "Pong!".into()
 }
 
-fn do_reentry(context: &mut UpdateContext<'_, '_>, _args: &[ExternalValue]) -> ExternalValue {
+fn do_reentry(context: &mut UpdateContext<'_>, _args: &[ExternalValue]) -> ExternalValue {
     context.avm_trace("[ExternalInterface] starting reentry");
     if let Some(callback) = context.external_interface.get_callback("callWith") {
         callback.call(

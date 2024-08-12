@@ -123,7 +123,7 @@ pub use crate::avm2::object::responder_object::{
     responder_allocator, ResponderObject, ResponderObjectWeak,
 };
 pub use crate::avm2::object::script_object::{
-    scriptobject_allocator, ScriptObject, ScriptObjectData, ScriptObjectWeak,
+    scriptobject_allocator, ScriptObject, ScriptObjectData, ScriptObjectWeak, ScriptObjectWrapper,
 };
 pub use crate::avm2::object::shader_data_object::{
     shader_data_allocator, ShaderDataObject, ShaderDataObjectWeak,
@@ -204,8 +204,14 @@ use crate::font::Font;
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
     /// Get the base of this object.
     /// Any trait method implementations that were not overridden will forward the call to this instead.
-    fn base(&self) -> Ref<ScriptObjectData<'gc>>;
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>>;
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>>;
+
+    #[inline(always)]
+    #[no_dynamic]
+    fn base(&self) -> ScriptObjectWrapper<'gc> {
+        let gc_base = self.gc_base();
+        ScriptObjectWrapper(gc_base)
+    }
 
     /// Retrieve a local property of the object. The Multiname should always be public.
     ///
@@ -229,12 +235,13 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// exception that it does not special-case object lookups on dictionary
     /// structured objects.
     #[allow(unused_mut)] //Not unused.
+    #[no_dynamic]
     fn get_property(
         mut self,
         multiname: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
+        match self.vtable().get_trait(multiname) {
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
                 self.base().get_slot(slot_id)
             }
@@ -253,7 +260,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
                 let bound_method = self
                     .vtable()
-                    .expect("object to have a vtable")
                     .make_bound_method(activation, self.into(), disp_id)
                     .ok_or_else(|| format!("Method not found with id {disp_id}"))?;
 
@@ -277,6 +283,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Same as get_property, but constructs a public Multiname for you.
+    #[no_dynamic]
     fn get_public_property(
         self,
         name: impl Into<AvmString<'gc>>,
@@ -305,7 +312,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mut base = self.base_mut(activation.context.gc_context);
+        let base = self.base();
         base.set_property_local(name, value, activation)
     }
 
@@ -330,23 +337,20 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This corresponds directly with the AVM2 operation `setproperty`, with
     /// the exception that it does not special-case object lookups on
     /// dictionary structured objects.
+    #[no_dynamic]
     fn set_property(
         &self,
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
+        match self.vtable().get_trait(multiname) {
             Some(Property::Slot { slot_id }) => {
                 let value = self
                     .vtable()
-                    .unwrap()
                     .coerce_trait_value(slot_id, value, activation)?;
-                self.base_mut(activation.context.gc_context).set_slot(
-                    slot_id,
-                    value,
-                    activation.context.gc_context,
-                )
+                self.base()
+                    .set_slot(slot_id, value, activation.context.gc_context)
             }
             Some(Property::Method { .. }) => {
                 // Similar to the get_property special case for XML/XMLList.
@@ -379,6 +383,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Same as set_property, but constructs a public Multiname for you.
+    #[no_dynamic]
     fn set_public_property(
         &self,
         name: impl Into<AvmString<'gc>>,
@@ -406,7 +411,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mut base = self.base_mut(activation.context.gc_context);
+        let base = self.base();
         base.init_property_local(name, value, activation)
     }
 
@@ -415,23 +420,20 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This method should not be overridden.
     ///
     /// This corresponds directly with the AVM2 operation `initproperty`.
+    #[no_dynamic]
     fn init_property(
         &self,
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
+        match self.vtable().get_trait(multiname) {
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
                 let value = self
                     .vtable()
-                    .unwrap()
                     .coerce_trait_value(slot_id, value, activation)?;
-                self.base_mut(activation.context.gc_context).set_slot(
-                    slot_id,
-                    value,
-                    activation.context.gc_context,
-                )
+                self.base()
+                    .set_slot(slot_id, value, activation.context.gc_context)
             }
             Some(Property::Method { .. }) => {
                 return Err(error::make_reference_error(
@@ -486,13 +488,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ///
     /// This corresponds directly to the `callproperty` operation in AVM2.
     #[allow(unused_mut)]
+    #[no_dynamic]
     fn call_property(
         mut self,
         multiname: &Multiname<'gc>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
+        match self.vtable().get_trait(multiname) {
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
                 let obj = self.base().get_slot(slot_id)?.as_callable(
                     activation,
@@ -527,6 +530,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Same as call_property, but constructs a public Multiname for you.
+    #[no_dynamic]
     fn call_public_property(
         self,
         name: impl Into<AvmString<'gc>>,
@@ -541,6 +545,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Retrieve a slot by its index.
+    #[no_dynamic]
     fn get_slot(self, id: u32) -> Result<Value<'gc>, Error<'gc>> {
         let base = self.base();
 
@@ -548,28 +553,27 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Set a slot by its index.
+    #[no_dynamic]
     fn set_slot(
         self,
         id: u32,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let value = self
-            .vtable()
-            .unwrap()
-            .coerce_trait_value(id, value, activation)?;
-        let mut base = self.base_mut(activation.gc());
+        let value = self.vtable().coerce_trait_value(id, value, activation)?;
+        let base = self.base();
 
         base.set_slot(id, value, activation.gc())
     }
 
+    #[no_dynamic]
     fn set_slot_no_coerce(
         self,
         id: u32,
         value: Value<'gc>,
         mc: &Mutation<'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mut base = self.base_mut(mc);
+        let base = self.base();
 
         base.set_slot(id, value, mc)
     }
@@ -577,6 +581,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Call a method by its index.
     ///
     /// This directly corresponds with the AVM2 operation `callmethod`.
+    #[no_dynamic]
     fn call_method(
         self,
         id: u32,
@@ -589,7 +594,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
         let full_method = self
             .vtable()
-            .expect("method to have a vtable")
             .get_full_method(id)
             .ok_or_else(|| format!("Cannot call unknown method id {id}"))?;
 
@@ -674,6 +678,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Returns true if an object has one or more traits of a given name.
+    #[no_dynamic]
     fn has_trait(self, name: &Multiname<'gc>) -> bool {
         let base = self.base();
         base.has_trait(name)
@@ -689,14 +694,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc>,
         name: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
-        let mut base = self.base_mut(activation.context.gc_context);
+        let base = self.base();
 
-        Ok(base.delete_property_local(name))
+        Ok(base.delete_property_local(activation.gc(), name))
     }
 
     /// Delete a named property from the object.
     ///
     /// Returns false if the property cannot be deleted.
+    #[no_dynamic]
     fn delete_property(
         &self,
         activation: &mut Activation<'_, 'gc>,
@@ -711,7 +717,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             ));
         }
 
-        match self.vtable().and_then(|vtable| vtable.get_trait(multiname)) {
+        match self.vtable().get_trait(multiname) {
             None => {
                 if self.instance_class().is_sealed() {
                     Ok(false)
@@ -732,6 +738,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Same as delete_property, but constructs a public Multiname for you.
+    #[no_dynamic]
     fn delete_public_property(
         &self,
         activation: &mut Activation<'_, 'gc>,
@@ -746,6 +753,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// The proto is another object used to resolve methods across a class of
     /// multiple objects. It should also be accessible as `__proto__` from
     /// `get`.
+    #[no_dynamic]
     fn proto(&self) -> Option<Object<'gc>> {
         let base = self.base();
 
@@ -757,10 +765,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This method primarily exists so that the global scope that player
     /// globals loads into can be created before its superclasses are. It
     /// should be used sparingly, if at all.
+    #[no_dynamic]
     fn set_proto(self, mc: &Mutation<'gc>, proto: Object<'gc>) {
-        let mut base = self.base_mut(mc);
+        let base = self.base();
 
-        base.set_proto(proto)
+        base.set_proto(mc, proto)
     }
 
     /// Get the next enumerant index in enumerant space.
@@ -832,25 +841,27 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         name: AvmString<'gc>,
         is_enumerable: bool,
     ) {
-        let mut base = self.base_mut(mc);
+        let base = self.base();
 
-        base.set_local_property_is_enumerable(name, is_enumerable)
+        base.set_local_property_is_enumerable(mc, name, is_enumerable)
     }
 
     /// Install a bound method on an object.
+    #[no_dynamic]
     fn install_bound_method(
         &self,
         mc: &Mutation<'gc>,
         disp_id: u32,
         function: FunctionObject<'gc>,
     ) {
-        let mut base = self.base_mut(mc);
+        let base = self.base();
 
-        base.install_bound_method(disp_id, function)
+        base.install_bound_method(mc, disp_id, function)
     }
 
     /// Install a const trait on the global object.
     /// This should only ever be called on the `global` object, during initialization.
+    #[no_dynamic]
     fn install_const_late(
         &self,
         mc: &Mutation<'gc>,
@@ -860,14 +871,14 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) {
         let new_slot_id = self
             .vtable()
-            .unwrap()
             .install_const_trait_late(mc, name, value, class);
-        self.base_mut(mc)
-            .install_const_slot_late(new_slot_id, value);
+
+        self.base().install_const_slot_late(mc, new_slot_id, value);
     }
 
+    #[no_dynamic]
     fn install_instance_slots(&self, mc: &Mutation<'gc>) {
-        self.base_mut(mc).install_instance_slots();
+        self.base().install_instance_slots(mc);
     }
 
     /// Call the object.
@@ -907,6 +918,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// Construct a property of this object by Multiname lookup.
     ///
     /// This corresponds directly to the AVM2 operation `constructprop`.
+    #[no_dynamic]
     fn construct_prop(
         self,
         multiname: &Multiname<'gc>,
@@ -1007,6 +1019,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// The given object should be the class object for the given type we are
     /// checking against this object. Its prototype will be extracted and
     /// searched in the prototype chain of this object.
+    #[no_dynamic]
     fn is_instance_of(
         &self,
         activation: &mut Activation<'_, 'gc>,
@@ -1027,33 +1040,34 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This includes normal fields, const fields, and getter methods
     /// This is used for JSON serialization.
     // FIXME - the order doesn't currently match Flash Player
+    #[no_dynamic]
     fn public_vtable_properties(
         &self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Vec<(AvmString<'gc>, Value<'gc>)>, Error<'gc>> {
-        if let Some(vtable) = self.vtable() {
-            let mut values = Vec::new();
-            for (name, prop) in vtable.public_properties() {
-                match prop {
-                    Property::Slot { slot_id } | Property::ConstSlot { slot_id } => {
-                        values.push((name, self.base().get_slot(slot_id)?));
-                    }
-                    Property::Virtual { get: Some(get), .. } => {
-                        values.push((name, self.call_method(get, &[], activation)?))
-                    }
-                    _ => {}
+        let vtable = self.vtable();
+
+        let mut values = Vec::new();
+        for (name, prop) in vtable.public_properties() {
+            match prop {
+                Property::Slot { slot_id } | Property::ConstSlot { slot_id } => {
+                    values.push((name, self.base().get_slot(slot_id)?));
                 }
+                Property::Virtual { get: Some(get), .. } => {
+                    values.push((name, self.call_method(get, &[], activation)?))
+                }
+                _ => {}
             }
-            Ok(values)
-        } else {
-            Ok(Vec::new())
         }
+
+        Ok(values)
     }
 
     /// Determine if this object has a given prototype in its prototype chain.
     ///
     /// The given object `type_proto` should be the prototype we are checking
     /// against this object.
+    #[no_dynamic]
     fn has_prototype_in_chain(&self, type_proto: Object<'gc>) -> Result<bool, Error<'gc>> {
         let mut my_proto = self.proto();
 
@@ -1077,6 +1091,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ///
     /// The given object should be the class object for the given type we are
     /// checking against this object.
+    #[no_dynamic]
     fn is_of_type(&self, test_class: Class<'gc>) -> bool {
         self.instance_class().has_class_in_chain(test_class)
     }
@@ -1086,31 +1101,36 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Get this object's vtable, if it has one.
     /// Every object with class should have a vtable
-    fn vtable(&self) -> Option<VTable<'gc>> {
+    #[no_dynamic]
+    fn vtable(&self) -> VTable<'gc> {
         let base = self.base();
         base.vtable()
     }
 
+    #[no_dynamic]
     fn get_bound_method(&self, id: u32) -> Option<FunctionObject<'gc>> {
         let base = self.base();
         base.get_bound_method(id)
     }
 
     /// Get this object's class's `Class`, if it has one.
+    #[no_dynamic]
     fn instance_class(&self) -> Class<'gc> {
         let base = self.base();
         base.instance_class()
     }
 
     /// Get this object's class's name, formatted for debug output.
+    #[no_dynamic]
     fn instance_of_class_name(&self, mc: &Mutation<'gc>) -> AvmString<'gc> {
         self.instance_class().name().to_qualified_name(mc)
     }
 
     // Sets a different vtable for object, without changing instance_of.
+    #[no_dynamic]
     fn set_vtable(&self, mc: &Mutation<'gc>, vtable: VTable<'gc>) {
-        let mut base = self.base_mut(mc);
-        base.set_vtable(vtable);
+        let base = self.base();
+        base.set_vtable(mc, vtable);
     }
 
     /// Try to corece this object into a `ClassObject`.

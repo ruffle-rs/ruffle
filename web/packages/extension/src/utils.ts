@@ -7,7 +7,12 @@ const DEFAULT_OPTIONS: Required<Options> = {
     ignoreOptout: false,
     autostart: false,
     showReloadButton: false,
+    swfTakeover: true,
 };
+
+// TODO: Once https://crbug.com/798169 is addressed, just use browser.
+// We have to wait until whatever version of Chromium supports that
+// is old enough to be the oldest version we want to support.
 
 export let i18n: typeof browser.i18n | typeof chrome.i18n;
 
@@ -27,6 +32,10 @@ export let tabs: typeof browser.tabs | typeof chrome.tabs;
 export let runtime: typeof browser.runtime | typeof chrome.runtime;
 
 export let permissions: typeof browser.permissions | typeof chrome.permissions;
+
+export let declarativeNetRequest:
+    | typeof browser.declarativeNetRequest
+    | typeof chrome.declarativeNetRequest;
 
 function promisify<T>(
     func: (callback: (result: T) => void) => void,
@@ -50,6 +59,7 @@ if (typeof browser !== "undefined") {
     tabs = browser.tabs;
     runtime = browser.runtime;
     permissions = browser.permissions;
+    declarativeNetRequest = browser.declarativeNetRequest;
 } else if (typeof chrome !== "undefined") {
     i18n = chrome.i18n;
     scripting = chrome.scripting as ScriptingType;
@@ -57,6 +67,7 @@ if (typeof browser !== "undefined") {
     tabs = chrome.tabs;
     runtime = chrome.runtime;
     permissions = chrome.permissions;
+    declarativeNetRequest = chrome.declarativeNetRequest;
 } else {
     throw new Error("Extension API not found.");
 }
@@ -89,6 +100,10 @@ export async function getExplicitOptions(): Promise<Options> {
             // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
             delete options[key];
         }
+    }
+    // This value is specific to the internal extension pages, and is always "default"
+    if ("responseHeadersUnsupported" in options) {
+        delete options["responseHeadersUnsupported"];
     }
 
     return options;

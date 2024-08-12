@@ -19,3 +19,7 @@ storage-backend-disk = 디스크
 storage-backend-memory = 메모리
 recent-limit = 최대 최근 항목 수
 recent-clear = 비우기
+theme = 테마
+theme-system = 시스템 기본
+theme-light = 라이트
+theme-dark = 다크

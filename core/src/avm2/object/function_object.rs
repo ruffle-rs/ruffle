@@ -14,7 +14,7 @@ use gc_arena::{
     lock::{Lock, RefLock},
     Collect, Gc, GcCell, GcWeak, Mutation,
 };
-use std::cell::{Ref, RefMut};
+use std::cell::Ref;
 
 /// A class instance allocator that allocates Function objects.
 /// This is only used when ActionScript manually calls 'new Function()',
@@ -27,7 +27,7 @@ pub fn function_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     let dummy = Gc::new(
         activation.context.gc_context,
@@ -80,10 +80,10 @@ impl fmt::Debug for FunctionObject<'_> {
 
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct FunctionObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// Executable code
     exec: RefLock<BoundMethod<'gc>>,
@@ -91,6 +91,10 @@ pub struct FunctionObjectData<'gc> {
     /// Attached prototype (note: not the same thing as base object's proto)
     prototype: Lock<Option<Object<'gc>>>,
 }
+
+const _: () = assert!(std::mem::offset_of!(FunctionObjectData, base) == 0);
+const _: () =
+    assert!(std::mem::align_of::<FunctionObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> FunctionObject<'gc> {
     /// Construct a function from an ABC method and the current closure scope.
@@ -131,7 +135,7 @@ impl<'gc> FunctionObject<'gc> {
         FunctionObject(Gc::new(
             activation.context.gc_context,
             FunctionObjectData {
-                base: ScriptObjectData::new(fn_class).into(),
+                base: ScriptObjectData::new(fn_class),
                 exec: RefLock::new(exec),
                 prototype: Lock::new(None),
             },
@@ -152,12 +156,12 @@ impl<'gc> FunctionObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for FunctionObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), FunctionObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
@@ -200,19 +204,21 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         arguments: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
+        let object_class = activation.avm2().classes().object;
+
         let prototype = if let Some(proto) = self.prototype() {
             proto
         } else {
-            let proto = activation.avm2().classes().object.prototype();
+            let proto = object_class.prototype();
             self.set_prototype(Some(proto), activation.gc());
             proto
         };
 
         let instance = ScriptObject::custom_object(
             activation.context.gc_context,
-            activation.avm2().classes().object.inner_class_definition(),
-            Some(activation.avm2().classes().object),
+            object_class.inner_class_definition(),
             Some(prototype),
+            object_class.instance_vtable(),
         );
 
         self.call(instance.into(), arguments, activation)?;

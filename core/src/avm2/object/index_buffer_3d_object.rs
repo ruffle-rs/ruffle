@@ -5,11 +5,9 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::barrier::unlock;
-use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_render::backend::IndexBuffer;
-use std::cell::{Cell, Ref, RefCell, RefMut};
+use std::cell::{Cell, RefCell, RefMut};
 
 use super::Context3DObject;
 
@@ -32,7 +30,7 @@ impl<'gc> IndexBuffer3DObject<'gc> {
         let this: Object<'gc> = IndexBuffer3DObject(Gc::new(
             activation.gc(),
             IndexBuffer3DObjectData {
-                base: RefLock::new(ScriptObjectData::new(class)),
+                base: ScriptObjectData::new(class),
                 context3d,
                 handle: RefCell::new(handle),
                 count: Cell::new(0),
@@ -65,10 +63,10 @@ impl<'gc> IndexBuffer3DObject<'gc> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct IndexBuffer3DObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     handle: RefCell<Box<dyn IndexBuffer>>,
 
@@ -77,13 +75,18 @@ pub struct IndexBuffer3DObjectData<'gc> {
     context3d: Context3DObject<'gc>,
 }
 
-impl<'gc> TObject<'gc> for IndexBuffer3DObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+const _: () = assert!(std::mem::offset_of!(IndexBuffer3DObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<IndexBuffer3DObjectData>() == std::mem::align_of::<ScriptObjectData>()
+);
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), IndexBuffer3DObjectData, base).borrow_mut()
+impl<'gc> TObject<'gc> for IndexBuffer3DObject<'gc> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
+
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

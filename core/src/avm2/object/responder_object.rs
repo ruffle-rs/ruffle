@@ -6,11 +6,7 @@ use crate::context::UpdateContext;
 use crate::net_connection::ResponderCallback;
 use flash_lso::types::Value as AMFValue;
 use gc_arena::barrier::unlock;
-use gc_arena::{
-    lock::{Lock, RefLock},
-    Collect, Gc, GcWeak, Mutation,
-};
-use std::cell::{Ref, RefMut};
+use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
 use std::fmt;
 
 /// A class instance allocator that allocates Responder objects.
@@ -18,7 +14,7 @@ pub fn responder_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(ResponderObject(Gc::new(
         activation.context.gc(),
@@ -40,12 +36,12 @@ pub struct ResponderObject<'gc>(pub Gc<'gc, ResponderObjectData<'gc>>);
 pub struct ResponderObjectWeak<'gc>(pub GcWeak<'gc, ResponderObjectData<'gc>>);
 
 impl<'gc> TObject<'gc> for ResponderObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), ResponderObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
@@ -83,7 +79,7 @@ impl<'gc> ResponderObject<'gc> {
 
     pub fn send_callback(
         &self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         callback: ResponderCallback,
         message: &AMFValue,
     ) -> Result<(), Error<'gc>> {
@@ -93,7 +89,7 @@ impl<'gc> ResponderObject<'gc> {
         };
 
         if let Some(function) = function {
-            let mut activation = Activation::from_nothing(context.reborrow());
+            let mut activation = Activation::from_nothing(context);
             let value = crate::avm2::amf::deserialize_value(&mut activation, message)?;
             function.call((*self).into(), &[value], &mut activation)?;
         }
@@ -104,10 +100,10 @@ impl<'gc> ResponderObject<'gc> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct ResponderObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// Method to call with any result
     result: Lock<Option<FunctionObject<'gc>>>,
@@ -115,6 +111,11 @@ pub struct ResponderObjectData<'gc> {
     /// Method to call with status info (likely errors)
     status: Lock<Option<FunctionObject<'gc>>>,
 }
+
+const _: () = assert!(std::mem::offset_of!(ResponderObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<ResponderObjectData>() == std::mem::align_of::<ScriptObjectData>()
+);
 
 impl fmt::Debug for ResponderObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

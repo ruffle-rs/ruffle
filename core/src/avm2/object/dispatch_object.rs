@@ -54,19 +54,23 @@ impl fmt::Debug for DispatchObject<'_> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct DispatchObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// The dispatch list this object holds.
     dispatch: RefLock<DispatchList<'gc>>,
 }
 
+const _: () = assert!(std::mem::offset_of!(DispatchObjectData, base) == 0);
+const _: () =
+    assert!(std::mem::align_of::<DispatchObjectData>() == std::mem::align_of::<ScriptObjectData>());
+
 impl<'gc> DispatchObject<'gc> {
     /// Construct an empty dispatch list.
     pub fn empty_list(activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
-        let base = ScriptObjectData::new(activation.avm2().classes().object).into();
+        let base = ScriptObjectData::new(activation.avm2().classes().object);
 
         DispatchObject(Gc::new(
             activation.context.gc_context,
@@ -80,12 +84,12 @@ impl<'gc> DispatchObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for DispatchObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), DispatchObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

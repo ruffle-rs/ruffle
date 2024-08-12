@@ -44,6 +44,9 @@ declare global {
 
             // Calls `ExternalInterface.marshallExceptions = value`
             setMarshallExceptions: (value: boolean) => void;
+
+            // Calls `ExternalInterface.addCallback(name, function() { return returnValue; })`
+            addAnotherCallback: (name: string, returnValue: unknown) => void;
         }
     }
 
@@ -296,5 +299,25 @@ log called with 1 argument
   call(function(){return aPropertyThatDoesntExist = 'success!'}, ...) = "success!"
 `,
         );
+    });
+
+    it("allows overriding a Ruffle method", async () => {
+        const player = await browser.$("<ruffle-object>");
+        await browser.execute((player) => {
+            player.addAnotherCallback("isPlaying", "isPlaying from EI");
+        }, player);
+
+        let actualOutput = await getTraceOutput(browser, player);
+        expect(actualOutput).to.eql(
+            `addAnotherCallback called for "isPlaying" to return "isPlaying from EI"\n`,
+        );
+
+        const isPlayingResult = await browser.execute((player) => {
+            return (player as unknown as any).isPlaying();
+        }, player);
+        expect(isPlayingResult).to.eql("isPlaying from EI");
+
+        actualOutput = await getTraceOutput(browser, player);
+        expect(actualOutput).to.eql(`isPlaying called\n`);
     });
 });

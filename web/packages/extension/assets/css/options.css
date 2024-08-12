@@ -1,3 +1,7 @@
+.hidden {
+    display: none;
+}
+
 .logo {
     max-width: 224px;
 }

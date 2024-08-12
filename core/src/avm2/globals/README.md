@@ -32,6 +32,20 @@ In addition to potential copyright issues around redistributing Flash's `playerg
 many of its classes rely on specific 'native' methods being provided
 by the Flash VM, which Ruffle does not implement.
 
+## Calling AS3 methods
+
+Under some circumstances, it may be necessarily to call a method with an explicitly-qualified AS3 namespace:
+
+```
+var xml = <accessor />;
+xml.AS3::appendChild(elem);
+```
+
+In order for this to generate efficient bytecode, you must have `namespace AS3 = "http://adobe.com/AS3/2006/builtin";` inside
+your package declaration (see `GroupElement.as` for an example). If you forget to do this, you'll get an error at compile-time:
+
+Found getlex of "AS3" in method body. Make sure you have `namespace AS3 = "http://adobe.com/AS3/2006/builtin";` in your `package` block
+
 ## Native methods
 
 We support defining native methods (instance methods, class methods, and freestanding functions)

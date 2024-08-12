@@ -117,7 +117,7 @@ impl DisplayObjectWindow {
     pub fn show<'gc>(
         &mut self,
         egui_ctx: &egui::Context,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: DisplayObject<'gc>,
         messages: &mut Vec<Message>,
     ) -> bool {
@@ -186,7 +186,7 @@ impl DisplayObjectWindow {
     pub fn show_interactive<'gc>(
         &mut self,
         ui: &mut Ui,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: InteractiveObject<'gc>,
     ) {
         Grid::new(ui.id().with("interactive"))
@@ -296,7 +296,7 @@ impl DisplayObjectWindow {
     pub fn show_edit_text<'gc>(
         &mut self,
         ui: &mut Ui,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: EditText<'gc>,
     ) {
         Grid::new(ui.id().with("edittext"))
@@ -519,7 +519,7 @@ impl DisplayObjectWindow {
     pub fn show_bitmap<'gc>(
         &mut self,
         ui: &mut Ui,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: Bitmap<'gc>,
     ) {
         let bitmap_data = object.bitmap_data(context.renderer);
@@ -542,7 +542,7 @@ impl DisplayObjectWindow {
     pub fn show_movieclip<'gc>(
         &mut self,
         ui: &mut Ui,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: MovieClip<'gc>,
     ) {
         Grid::new(ui.id().with("movieclip"))
@@ -655,7 +655,7 @@ impl DisplayObjectWindow {
     pub fn show_stage<'gc>(
         &mut self,
         ui: &mut Ui,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: Stage<'gc>,
         messages: &mut Vec<Message>,
     ) {
@@ -756,7 +756,7 @@ impl DisplayObjectWindow {
     pub fn show_display<'gc>(
         &mut self,
         ui: &mut Ui,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: DisplayObject<'gc>,
         messages: &mut Vec<Message>,
     ) {
@@ -933,7 +933,7 @@ impl DisplayObjectWindow {
     pub fn show_position<'gc>(
         &mut self,
         ui: &mut Ui,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: DisplayObject<'gc>,
         messages: &mut Vec<Message>,
     ) {
@@ -1042,7 +1042,7 @@ impl DisplayObjectWindow {
     pub fn show_children<'gc>(
         &mut self,
         ui: &mut Ui,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: DisplayObject<'gc>,
         messages: &mut Vec<Message>,
     ) {
@@ -1062,7 +1062,7 @@ impl DisplayObjectWindow {
     pub fn show_display_tree<'gc>(
         &mut self,
         ui: &mut Ui,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: DisplayObject<'gc>,
         messages: &mut Vec<Message>,
         search: &WStr,
@@ -1262,7 +1262,7 @@ fn bounds_label(ui: &mut Ui, bounds: Rectangle<Twips>, hover: &mut Option<Rectan
 
 pub fn open_display_object_button<'gc>(
     ui: &mut Ui,
-    context: &mut UpdateContext<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
     messages: &mut Vec<Message>,
     object: DisplayObject<'gc>,
     hover: &mut Option<DisplayObjectHandle>,

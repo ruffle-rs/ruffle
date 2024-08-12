@@ -8,7 +8,164 @@ async function contentScriptRegistered() {
     return matchingScripts?.length > 0;
 }
 
+// Copied from https://github.com/w3c/webextensions/issues/638#issuecomment-2181124486
+async function isHeaderConditionSupported() {
+    let needCleanup = false;
+    const ruleId = 4;
+    try {
+        // Throws synchronously if not supported.
+        await utils.declarativeNetRequest.updateDynamicRules({
+            addRules: [
+                {
+                    id: ruleId,
+                    condition: { responseHeaders: [{ header: "whatever" }] },
+                    action: {
+                        type:
+                            chrome.declarativeNetRequest.RuleActionType
+                                ?.BLOCK ?? "block",
+                    },
+                },
+            ],
+        });
+        needCleanup = true;
+    } catch {
+        return false; // responseHeaders condition not supported.
+    }
+    // Chrome may recognize the properties but have the implementation behind a flag.
+    // When the implementation is disabled, validation is skipped too.
+    try {
+        await utils.declarativeNetRequest.updateDynamicRules({
+            removeRuleIds: [ruleId],
+            addRules: [
+                {
+                    id: ruleId,
+                    condition: { responseHeaders: [] },
+                    action: {
+                        type:
+                            chrome.declarativeNetRequest.RuleActionType
+                                ?.BLOCK ?? "block",
+                    },
+                },
+            ],
+        });
+        needCleanup = true;
+        return false; // Validation skipped = feature disabled.
+    } catch {
+        return true; // Validation worked = feature enabled.
+    } finally {
+        if (needCleanup) {
+            await utils.declarativeNetRequest.updateDynamicRules({
+                removeRuleIds: [ruleId],
+            });
+        }
+    }
+}
+
+async function enableSWFTakeover() {
+    // Checks if the responseHeaders condition is supported and not behind a disabled flag.
+    if (utils.declarativeNetRequest && (await isHeaderConditionSupported())) {
+        const { ruffleEnable } = await utils.getOptions();
+        if (ruffleEnable) {
+            const playerPage = utils.runtime.getURL("/player.html");
+            const rules = [
+                {
+                    id: 1,
+                    action: {
+                        type:
+                            chrome.declarativeNetRequest.RuleActionType
+                                ?.REDIRECT ?? "redirect",
+                        redirect: { regexSubstitution: playerPage + "#\\0" },
+                    },
+                    condition: {
+                        regexFilter: ".*",
+                        responseHeaders: [
+                            {
+                                header: "content-type",
+                                values: [
+                                    "application/x-shockwave-flash",
+                                    "application/futuresplash",
+                                    "application/x-shockwave-flash2-preview",
+                                    "application/vnd.adobe.flash.movie",
+                                ],
+                            },
+                        ],
+                        resourceTypes: [
+                            chrome.declarativeNetRequest.ResourceType
+                                ?.MAIN_FRAME ?? "main_frame",
+                        ],
+                    },
+                },
+                {
+                    id: 2,
+                    action: {
+                        type:
+                            chrome.declarativeNetRequest.RuleActionType
+                                ?.REDIRECT ?? "redirect",
+                        redirect: { regexSubstitution: playerPage + "#\\0" },
+                    },
+                    condition: {
+                        regexFilter:
+                            "^.*:\\/\\/.*\\/.*\\.s(?:wf|pl)(\\?.*|#.*|)$",
+                        responseHeaders: [
+                            {
+                                header: "content-type",
+                                values: [
+                                    "application/octet-stream",
+                                    "application/binary-stream",
+                                    "",
+                                ],
+                            },
+                        ],
+                        resourceTypes: [
+                            chrome.declarativeNetRequest.ResourceType
+                                ?.MAIN_FRAME ?? "main_frame",
+                        ],
+                    },
+                },
+                {
+                    id: 3,
+                    action: {
+                        type:
+                            chrome.declarativeNetRequest.RuleActionType
+                                ?.REDIRECT ?? "redirect",
+                        redirect: { regexSubstitution: playerPage + "#\\0" },
+                    },
+                    condition: {
+                        regexFilter:
+                            "^.*:\\/\\/.*\\/.*\\.s(?:wf|pl)(\\?.*|#.*|)$",
+                        excludedResponseHeaders: [{ header: "content-type" }],
+                        resourceTypes: [
+                            chrome.declarativeNetRequest.ResourceType
+                                ?.MAIN_FRAME ?? "main_frame",
+                        ],
+                    },
+                },
+            ];
+            await utils.declarativeNetRequest.updateDynamicRules({
+                removeRuleIds: [1, 2, 3],
+                addRules: rules,
+            });
+        }
+    } else {
+        utils.storage.sync.set({ responseHeadersUnsupported: true });
+    }
+}
+
+async function disableSWFTakeover() {
+    if (utils.declarativeNetRequest && (await isHeaderConditionSupported())) {
+        await utils.declarativeNetRequest.updateDynamicRules({
+            removeRuleIds: [1, 2, 3],
+        });
+    } else {
+        utils.storage.sync.set({ responseHeadersUnsupported: true });
+    }
+}
+
 async function enable() {
+    const { swfTakeover } = await utils.getOptions();
+    if (swfTakeover) {
+        await enableSWFTakeover();
+    }
     if (
         !utils.scripting ||
         (utils.scripting.ExecutionWorld && !utils.scripting.ExecutionWorld.MAIN)
@@ -62,6 +219,7 @@ async function disable() {
             ids: ["plugin-polyfill", "4399"],
         });
     }
+    await disableSWFTakeover();
 }
 
 async function onAdded(permissions: chrome.permissions.Permissions) {
@@ -109,6 +267,13 @@ utils.storage.onChanged.addListener(async (changes, namespace) => {
             await enable();
         } else {
             await disable();
+        }
+    }
+    if (namespace === "sync" && "swfTakeover" in changes) {
+        if (changes["swfTakeover"]!.newValue) {
+            await enableSWFTakeover();
+        } else {
+            await disableSWFTakeover();
         }
     }
 });

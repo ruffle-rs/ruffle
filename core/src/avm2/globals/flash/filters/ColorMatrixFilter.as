@@ -1,4 +1,5 @@
 ﻿package flash.filters {
+	namespace AS3 = "http://adobe.com/AS3/2006/builtin";
 	public final class ColorMatrixFilter extends BitmapFilter {
 		private var _matrix: Array;
 

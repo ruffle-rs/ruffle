@@ -51,7 +51,7 @@ pub fn get_position<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(instance) = this.as_sound_channel() {
-        return Ok(instance.position(&mut activation.context).into());
+        return Ok(instance.position(activation.context).into());
     }
     Ok(Value::Undefined)
 }

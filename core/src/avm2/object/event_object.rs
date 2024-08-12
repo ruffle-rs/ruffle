@@ -21,7 +21,7 @@ pub fn event_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(EventObject(Gc::new(
         activation.context.gc_context,
@@ -43,21 +43,25 @@ pub struct EventObjectWeak<'gc>(pub GcWeak<'gc, EventObjectData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct EventObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// The event this object holds.
     event: RefLock<Event<'gc>>,
 }
+
+const _: () = assert!(std::mem::offset_of!(EventObjectData, base) == 0);
+const _: () =
+    assert!(std::mem::align_of::<EventObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> EventObject<'gc> {
     /// Create a bare Event instance while skipping the usual `construct()` pipeline.
     /// It's just slightly faster and doesn't require an Activation.
     /// This is equivalent to
     /// classes.event.construct(activation, &[event_type, false, false])
-    pub fn bare_default_event<S>(context: &mut UpdateContext<'_, 'gc>, event_type: S) -> Object<'gc>
+    pub fn bare_default_event<S>(context: &mut UpdateContext<'gc>, event_type: S) -> Object<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
@@ -68,7 +72,7 @@ impl<'gc> EventObject<'gc> {
     /// It's just slightly faster and doesn't require an Activation.
     /// Note that if you need an Event subclass, you need to construct it via .construct().
     pub fn bare_event<S>(
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         event_type: S,
         bubbles: bool,
         cancelable: bool,
@@ -77,7 +81,7 @@ impl<'gc> EventObject<'gc> {
         S: Into<AvmString<'gc>>,
     {
         let class = context.avm2.classes().event;
-        let base = ScriptObjectData::new(class).into();
+        let base = ScriptObjectData::new(class);
 
         let mut event = Event::new(event_type);
         event.set_bubbles(bubbles);
@@ -110,7 +114,7 @@ impl<'gc> EventObject<'gc> {
     where
         S: Into<AvmString<'gc>>,
     {
-        let local = target.local_mouse_position(&activation.context);
+        let local = target.local_mouse_position(activation.context);
 
         let event_type: AvmString<'gc> = event_type.into();
 
@@ -347,12 +351,12 @@ impl<'gc> EventObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for EventObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), EventObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
@@ -376,7 +380,7 @@ impl<'gc> Debug for EventObject<'gc> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("EventObject")
             .field("type", &self.0.event.borrow().event_type())
-            .field("class", &self.0.base.borrow().debug_class_name())
+            .field("class", &self.base().debug_class_name())
             .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }

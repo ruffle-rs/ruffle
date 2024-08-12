@@ -11,6 +11,9 @@
     "settings_autostart": {
         "message": "Autoplay Flash content (click to unmute)"
     },
+    "settings_swf_takeover": {
+        "message": "Play SWF files in browser instead of downloading"
+    },
     "settings_log_level": {
         "message": "Log level"
     },
@@ -108,7 +111,7 @@
         "message": "Permanently enable for this site"
     },
     "permissions_explanation": {
-        "message": "The Ruffle extension works best with the ability to access data on all websites. This allows it to run when any website first loads, therefore allowing it to convince websites that do Flash Player detection immediately to let the Flash content run. It also gives it the ability to load SWF files into its internal player page from other locations on the web. If you do not grant this permission, you will need to enable Ruffle manually on every website on which you wish to use it by clicking the icon for the extension and enabling it for that website."
+        "message": "The Ruffle extension works best with the ability to access data on all websites. This allows it to run when any website first loads, therefore allowing it to convince websites that do Flash Player detection immediately to let the Flash content run. It also gives it the ability to load SWF files into its internal player page from other locations on the web and allows it to automatically load direct SWF links into that page. If you do not grant this permission, you will need to enable Ruffle manually on every website on which you wish to use it by clicking the icon for the extension and enabling it for that website."
     },
     "swf_player_permissions": {
         "message": "You must grant permission to this URL origin to load SWFs from it."

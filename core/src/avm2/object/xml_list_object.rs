@@ -23,7 +23,7 @@ pub fn xml_list_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(XmlListObject(Gc::new(
         activation.context.gc_context,
@@ -71,7 +71,7 @@ impl<'gc> XmlListObject<'gc> {
         target_object: Option<XmlOrXmlListObject<'gc>>,
         target_property: Option<Multiname<'gc>>,
     ) -> XmlListObject<'gc> {
-        let base = ScriptObjectData::new(activation.context.avm2.classes().xml_list).into();
+        let base = ScriptObjectData::new(activation.context.avm2.classes().xml_list);
         XmlListObject(Gc::new(
             activation.context.gc_context,
             XmlListObjectData {
@@ -345,10 +345,10 @@ impl<'gc> XmlListObject<'gc> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct XmlListObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// The children stored by this list.
     children: RefLock<Vec<E4XOrXml<'gc>>>,
@@ -362,6 +362,10 @@ pub struct XmlListObjectData<'gc> {
 
     target_dirty: Cell<bool>,
 }
+
+const _: () = assert!(std::mem::offset_of!(XmlListObjectData, base) == 0);
+const _: () =
+    assert!(std::mem::align_of::<XmlListObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 /// Holds either an `E4XNode` or an `XmlObject`. This can be converted
 /// in-place to an `XmlObject` via `get_or_create_xml`.
@@ -468,12 +472,12 @@ impl<'gc> From<XmlObject<'gc>> for XmlOrXmlListObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for XmlListObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), XmlListObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
@@ -1063,7 +1067,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
     fn get_enumerant_name(
         self,
         index: u32,
-        activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let children_len = self.0.children.borrow().len() as u32;
         if children_len >= index {
@@ -1073,7 +1077,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                 .unwrap_or(Value::Undefined))
         } else {
             Ok(self
-                .base_mut(activation.context.gc_context)
+                .base()
                 .get_enumerant_name(index - children_len)
                 .unwrap_or(Value::Undefined))
         }

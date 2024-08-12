@@ -13,12 +13,8 @@ use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname};
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{
-    lock::{Lock, RefLock},
-    Collect, Gc, GcWeak, Mutation,
-};
+use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
 use ruffle_wstr::WString;
-use std::cell::{Ref, RefMut};
 
 use super::xml_list_object::{E4XOrXml, XmlOrXmlListObject};
 use super::PrimitiveObject;
@@ -28,7 +24,7 @@ pub fn xml_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(XmlObject(Gc::new(
         activation.context.gc_context,
@@ -58,20 +54,24 @@ impl fmt::Debug for XmlObject<'_> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct XmlObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     node: Lock<E4XNode<'gc>>,
 }
+
+const _: () = assert!(std::mem::offset_of!(XmlObjectData, base) == 0);
+const _: () =
+    assert!(std::mem::align_of::<XmlObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> XmlObject<'gc> {
     pub fn new(node: E4XNode<'gc>, activation: &mut Activation<'_, 'gc>) -> Self {
         XmlObject(Gc::new(
             activation.context.gc_context,
             XmlObjectData {
-                base: ScriptObjectData::new(activation.context.avm2.classes().xml).into(),
+                base: ScriptObjectData::new(activation.context.avm2.classes().xml),
                 node: Lock::new(node),
             },
         ))
@@ -270,12 +270,12 @@ impl<'gc> XmlObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for XmlObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), XmlObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
@@ -416,7 +416,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             return true;
         }
 
-        self.0.base.borrow().has_own_dynamic_property(name)
+        self.base().has_own_dynamic_property(name)
     }
 
     fn has_property_via_in(

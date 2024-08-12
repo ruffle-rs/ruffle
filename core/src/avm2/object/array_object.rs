@@ -18,7 +18,7 @@ pub fn array_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(ArrayObject(Gc::new(
         activation.context.gc_context,
@@ -49,14 +49,18 @@ impl fmt::Debug for ArrayObject<'_> {
 
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct ArrayObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// Array-structured properties
     array: RefLock<ArrayStorage<'gc>>,
 }
+
+const _: () = assert!(std::mem::offset_of!(ArrayObjectData, base) == 0);
+const _: () =
+    assert!(std::mem::align_of::<ArrayObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> ArrayObject<'gc> {
     /// Construct an empty array.
@@ -72,7 +76,7 @@ impl<'gc> ArrayObject<'gc> {
         array: ArrayStorage<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let class = activation.avm2().classes().array;
-        let base = ScriptObjectData::new(class).into();
+        let base = ScriptObjectData::new(class);
 
         let instance: Object<'gc> = ArrayObject(Gc::new(
             activation.context.gc_context,
@@ -91,12 +95,12 @@ impl<'gc> ArrayObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for ArrayObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), ArrayObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
@@ -118,7 +122,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             }
         }
 
-        self.0.base.borrow().get_property_local(name, activation)
+        self.base().get_property_local(name, activation)
     }
 
     fn get_index_property(self, index: usize) -> Option<Value<'gc>> {
@@ -145,9 +149,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             }
         }
 
-        unlock!(Gc::write(mc, self.0), ArrayObjectData, base)
-            .borrow_mut()
-            .set_property_local(name, value, activation)
+        self.base().set_property_local(name, value, activation)
     }
 
     fn init_property_local(
@@ -170,9 +172,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             }
         }
 
-        unlock!(Gc::write(mc, self.0), ArrayObjectData, base)
-            .borrow_mut()
-            .init_property_local(name, value, activation)
+        self.base().init_property_local(name, value, activation)
     }
 
     fn delete_property_local(
@@ -194,9 +194,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             }
         }
 
-        Ok(unlock!(Gc::write(mc, self.0), ArrayObjectData, base)
-            .borrow_mut()
-            .delete_property_local(name))
+        Ok(self.base().delete_property_local(mc, name))
     }
 
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {
@@ -208,7 +206,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             }
         }
 
-        self.0.base.borrow().has_own_property(name)
+        self.base().has_own_property(name)
     }
 
     fn get_next_enumerant(
@@ -232,12 +230,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         // After enumerating all of the 'normal' array entries,
         // we enumerate all of the local properties stored on the
         // ScriptObject.
-        if let Some(index) = self
-            .0
-            .base
-            .borrow()
-            .get_next_enumerant(last_index - array_length)
-        {
+        if let Some(index) = self.base().get_next_enumerant(last_index - array_length) {
             return Ok(Some(index + array_length));
         }
         Ok(None)
@@ -256,9 +249,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
                 .unwrap_or(Value::Undefined))
         } else {
             Ok(self
-                .0
-                .base
-                .borrow()
+                .base()
                 .get_enumerant_name(index - arr_len)
                 .unwrap_or(Value::Undefined))
         }
@@ -268,7 +259,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         name.parse::<u32>()
             .map(|index| index < self.0.array.borrow().length() as u32)
             .unwrap_or(false)
-            || self.0.base.borrow().property_is_enumerable(name)
+            || self.base().property_is_enumerable(name)
     }
 
     fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {

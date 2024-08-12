@@ -328,7 +328,7 @@ impl<'gc> Class<'gc> {
     /// This is used to parameterize a generic type. The returned class will no
     /// longer be generic.
     pub fn with_type_param(
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         this: Class<'gc>,
         param: Option<Class<'gc>>,
     ) -> Class<'gc> {
@@ -438,17 +438,17 @@ impl<'gc> Class<'gc> {
             .ok_or_else(|| "LoadError: Instance index not valid".into());
         let abc_instance = abc_instance?;
 
-        let name = QName::from_abc_multiname(unit, abc_instance.name, &mut activation.context)?;
+        let name = QName::from_abc_multiname(unit, abc_instance.name, activation.context)?;
         let super_class = if abc_instance.super_name.0 == 0 {
             None
         } else {
             let multiname =
-                unit.pool_multiname_static(abc_instance.super_name, &mut activation.context)?;
+                unit.pool_multiname_static(abc_instance.super_name, activation.context)?;
 
             Some(
                 activation
                     .domain()
-                    .get_class(&mut activation.context, &multiname)
+                    .get_class(activation.context, &multiname)
                     .ok_or_else(|| {
                         make_error_1014(
                             activation,
@@ -459,19 +459,19 @@ impl<'gc> Class<'gc> {
         };
 
         let protected_namespace = if let Some(ns) = &abc_instance.protected_namespace {
-            Some(unit.pool_namespace(*ns, &mut activation.context)?)
+            Some(unit.pool_namespace(*ns, activation.context)?)
         } else {
             None
         };
 
         let mut interfaces = Vec::with_capacity(abc_instance.interfaces.len());
         for interface_name in &abc_instance.interfaces {
-            let multiname = unit.pool_multiname_static(*interface_name, &mut activation.context)?;
+            let multiname = unit.pool_multiname_static(*interface_name, activation.context)?;
 
             interfaces.push(
                 activation
                     .domain()
-                    .get_class(&mut activation.context, &multiname)
+                    .get_class(activation.context, &multiname)
                     .ok_or_else(|| {
                         make_error_1014(
                             activation,
@@ -730,7 +730,7 @@ impl<'gc> Class<'gc> {
         Ok(())
     }
 
-    pub fn init_vtable(self, context: &mut UpdateContext<'_, 'gc>) -> Result<(), Error<'gc>> {
+    pub fn init_vtable(self, context: &mut UpdateContext<'gc>) -> Result<(), Error<'gc>> {
         let read = self.0.read();
 
         if !read.traits_loaded {
@@ -754,7 +754,7 @@ impl<'gc> Class<'gc> {
         Ok(())
     }
 
-    pub fn link_interfaces(self, context: &mut UpdateContext<'_, 'gc>) -> Result<(), Error<'gc>> {
+    pub fn link_interfaces(self, context: &mut UpdateContext<'gc>) -> Result<(), Error<'gc>> {
         let mut interfaces = Vec::with_capacity(self.direct_interfaces().len());
 
         let mut dedup = HashSet::new();
@@ -900,8 +900,8 @@ impl<'gc> Class<'gc> {
 
         i_class.set_c_class(activation.context.gc_context, c_class);
 
-        i_class.init_vtable(&mut activation.context)?;
-        c_class.init_vtable(&mut activation.context)?;
+        i_class.init_vtable(activation.context)?;
+        c_class.init_vtable(activation.context)?;
 
         Ok(i_class)
     }

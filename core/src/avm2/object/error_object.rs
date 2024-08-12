@@ -8,9 +8,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::WString;
 use core::fmt;
-use gc_arena::barrier::unlock;
-use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
-use std::cell::{Ref, RefMut};
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use std::fmt::Debug;
 use tracing::{enabled, Level};
 
@@ -19,10 +17,10 @@ pub fn error_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     let call_stack = (enabled!(Level::INFO) || cfg!(feature = "avm_debug"))
-        .then(|| activation.avm2().call_stack().read().clone())
+        .then(|| activation.avm2().call_stack().borrow().clone())
         .unwrap_or_default();
 
     Ok(ErrorObject(Gc::new(
@@ -51,13 +49,17 @@ impl fmt::Debug for ErrorObject<'_> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct ErrorObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     call_stack: CallStack<'gc>,
 }
+
+const _: () = assert!(std::mem::offset_of!(ErrorObjectData, base) == 0);
+const _: () =
+    assert!(std::mem::align_of::<ErrorObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> ErrorObject<'gc> {
     pub fn display(&self) -> Result<WString, Error<'gc>> {
@@ -110,21 +112,17 @@ impl<'gc> ErrorObject<'gc> {
     }
 
     fn debug_class_name(&self) -> Box<dyn Debug + 'gc> {
-        self.0
-            .base
-            .try_borrow()
-            .map(|base| base.instance_class().debug_name())
-            .unwrap_or_else(|err| Box::new(err))
+        self.base().instance_class().debug_name()
     }
 }
 
 impl<'gc> TObject<'gc> for ErrorObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), ErrorObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

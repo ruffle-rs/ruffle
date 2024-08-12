@@ -30,7 +30,7 @@ impl<'gc> From<Avm1Object<'gc>> for LocalConnectionKind<'gc> {
 }
 
 impl<'gc> LocalConnectionKind<'gc> {
-    pub fn send_status(&self, context: &mut UpdateContext<'_, 'gc>, status: &'static str) {
+    pub fn send_status(&self, context: &mut UpdateContext<'gc>, status: &'static str) {
         match self {
             LocalConnectionKind::Avm2(_domain, object) => {
                 object.send_status(context, status);
@@ -45,7 +45,7 @@ impl<'gc> LocalConnectionKind<'gc> {
 
     pub fn run_method(
         &self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         method_name: AvmString<'gc>,
         arguments: Vec<AmfValue>,
     ) {
@@ -85,7 +85,7 @@ pub enum QueuedMessageKind<'gc> {
 }
 
 impl<'gc> QueuedMessageKind<'gc> {
-    pub fn deliver(self, source: LocalConnectionKind<'gc>, context: &mut UpdateContext<'_, 'gc>) {
+    pub fn deliver(self, source: LocalConnectionKind<'gc>, context: &mut UpdateContext<'gc>) {
         match self {
             QueuedMessageKind::Failure => {
                 source.send_status(context, "error");
@@ -207,7 +207,7 @@ impl<'gc> LocalConnections<'gc> {
         self.connections.get(name).cloned()
     }
 
-    pub fn update_connections(context: &mut UpdateContext<'_, 'gc>) {
+    pub fn update_connections(context: &mut UpdateContext<'gc>) {
         if context.local_connections.messages.is_empty() {
             return;
         }

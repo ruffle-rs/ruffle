@@ -7,8 +7,6 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::html::{TextDisplay, TextFormat};
 use core::fmt;
-use gc_arena::barrier::unlock;
-use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use std::cell::{Ref, RefCell, RefMut};
 
@@ -20,7 +18,7 @@ pub fn textformat_allocator<'gc>(
     Ok(TextFormatObject(Gc::new(
         activation.gc(),
         TextFormatObjectData {
-            base: RefLock::new(ScriptObjectData::new(class)),
+            base: ScriptObjectData::new(class),
             text_format: RefCell::new(TextFormat {
                 display: Some(TextDisplay::Block),
                 ..Default::default()
@@ -48,13 +46,18 @@ impl fmt::Debug for TextFormatObject<'_> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct TextFormatObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     text_format: RefCell<TextFormat>,
 }
+
+const _: () = assert!(std::mem::offset_of!(TextFormatObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<TextFormatObjectData>() == std::mem::align_of::<ScriptObjectData>()
+);
 
 impl<'gc> TextFormatObject<'gc> {
     pub fn from_text_format(
@@ -66,7 +69,7 @@ impl<'gc> TextFormatObject<'gc> {
         let this: Object<'gc> = Self(Gc::new(
             activation.gc(),
             TextFormatObjectData {
-                base: RefLock::new(ScriptObjectData::new(class)),
+                base: ScriptObjectData::new(class),
                 text_format: RefCell::new(text_format),
             },
         ))
@@ -78,12 +81,12 @@ impl<'gc> TextFormatObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for TextFormatObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), TextFormatObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

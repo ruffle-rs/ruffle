@@ -8,18 +8,14 @@ use crate::avm2::Error;
 use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{
-    lock::{Lock, RefLock},
-    Collect, Gc, GcWeak, Mutation,
-};
-use std::cell::{Ref, RefMut};
+use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
 
 /// A class instance allocator that allocates BitmapData objects.
 pub fn bitmap_data_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(BitmapDataObject(Gc::new(
         activation.context.gc_context,
@@ -54,13 +50,18 @@ impl fmt::Debug for BitmapDataObject<'_> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
-#[repr(C)]
+#[repr(C, align(8))]
 pub struct BitmapDataObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     bitmap_data: Lock<Option<BitmapDataWrapper<'gc>>>,
 }
+
+const _: () = assert!(std::mem::offset_of!(BitmapDataObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<BitmapDataObjectData>() == std::mem::align_of::<ScriptObjectData>()
+);
 
 impl<'gc> BitmapDataObject<'gc> {
     // Constructs a BitmapData object from a BitmapDataWrapper.
@@ -80,7 +81,7 @@ impl<'gc> BitmapDataObject<'gc> {
         let instance: Object<'gc> = Self(Gc::new(
             activation.context.gc_context,
             BitmapDataObjectData {
-                base: ScriptObjectData::new(class).into(),
+                base: ScriptObjectData::new(class),
                 bitmap_data: Lock::new(Some(bitmap_data)),
             },
         ))
@@ -103,12 +104,12 @@ impl<'gc> BitmapDataObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for BitmapDataObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), BitmapDataObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

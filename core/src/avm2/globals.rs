@@ -514,23 +514,35 @@ pub fn load_player_globals<'gc>(
     domain.export_class(class_i_class.name(), class_i_class, mc);
     domain.export_class(fn_classdef.name(), fn_classdef, mc);
 
+    // Initialize the global object. This gives it a temporary vtable until the
+    // global ClassObject is constructed and we have the true vtable.
+    let globals = ScriptObject::custom_object(mc, global_classdef, None, global_classdef.vtable());
     // Initialize the script
-    let globals = ScriptObject::custom_object(mc, global_classdef, None, None);
     let script = Script::empty_script(mc, globals, domain);
 
     let gs = ScopeChain::new(domain).chain(mc, &[Scope::new(globals)]);
     activation.set_outer(gs);
 
     let object_class = ClassObject::from_class_partial(activation, object_i_class, None)?;
-    let object_proto = ScriptObject::custom_object(mc, object_i_class, Some(object_class), None);
+    let object_proto =
+        ScriptObject::custom_object(mc, object_i_class, None, object_class.instance_vtable());
 
     let class_class =
         ClassObject::from_class_partial(activation, class_i_class, Some(object_class))?;
-    let class_proto =
-        ScriptObject::custom_object(mc, object_i_class, Some(object_class), Some(object_proto));
+    let class_proto = ScriptObject::custom_object(
+        mc,
+        object_i_class,
+        Some(object_proto),
+        object_class.instance_vtable(),
+    );
 
     let fn_class = ClassObject::from_class_partial(activation, fn_classdef, Some(object_class))?;
-    let fn_proto = ScriptObject::custom_object(mc, fn_classdef, Some(fn_class), Some(object_proto));
+    let fn_proto = ScriptObject::custom_object(
+        mc,
+        fn_classdef,
+        Some(object_proto),
+        fn_class.instance_vtable(),
+    );
 
     // Now to weave the Gordian knot...
     object_class.link_prototype(activation, object_proto)?;
@@ -664,7 +676,7 @@ pub fn load_player_globals<'gc>(
     define_fn_on_global(activation, "", "parseInt", script);
 
     global_classdef.mark_traits_loaded(mc);
-    global_classdef.init_vtable(&mut activation.context)?;
+    global_classdef.init_vtable(activation.context)?;
 
     Ok(())
 }
@@ -703,7 +715,7 @@ fn load_playerglobal<'gc>(
                 .read_do_abc_2()
                 .expect("playerglobal.swf should be valid");
             Avm2::do_abc(
-                &mut activation.context,
+                activation.context,
                 do_abc.data,
                 None,
                 do_abc.flags,

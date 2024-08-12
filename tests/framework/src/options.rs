@@ -388,7 +388,6 @@ impl ImageComparison {
 pub struct RenderOptions {
     optional: bool,
     pub sample_count: u32,
-    pub exclude_warp: bool,
 }
 
 impl Default for RenderOptions {
@@ -396,7 +395,6 @@ impl Default for RenderOptions {
         Self {
             optional: false,
             sample_count: 1,
-            exclude_warp: false,
         }
     }
 }
