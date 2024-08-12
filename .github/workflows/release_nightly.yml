@@ -62,7 +62,7 @@ jobs:
 
   build:
     name: Build ${{ matrix.build_name }}
-    needs: create-nightly-release
+    needs: [create-nightly-release, build-web]
     if: needs.create-nightly-release.outputs.is_active == 'true'
     strategy:
       fail-fast: false
@@ -146,41 +146,38 @@ jobs:
       - name: Package common files
         run: |
           mkdir package
-          cp README.md package/README.md
-          cp LICENSE.md package/LICENSE.md
+          mkdir common_package
+          cp README.md common_package/README.md
+          cp LICENSE.md common_package/LICENSE.md
 
       - name: Package Windows files
         if: runner.os == 'Windows'
         run: |
+          cp common_package/* package
           cp ${{ env.CARGO_BUILD_DIR }}/ruffle_desktop.exe package/ruffle.exe
           7z a ${{ env.PACKAGE_FILE }} ./package/*
 
       - name: Create an AppImage (Linux)
         if: runner.os == 'Linux'
-        run: |          
+        run: |
           wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           chmod +x linuxdeploy-x86_64.AppImage
           
           # TODO Update this after https://github.com/linuxdeploy/linuxdeploy/pull/288 gets merged
           mkdir -p AppDir/usr/share
           cp desktop/packaging/Linux/rs.ruffle.Ruffle.metainfo.xml AppDir/rs.ruffle.Ruffle.appdata.xml
-          cp package/* AppDir/usr/share
+          cp common_package/* AppDir/usr/share
           
           LDAI_OUTPUT="Ruffle.AppImage" ./linuxdeploy-x86_64.AppImage --appimage-extract-and-run -e ${{ env.CARGO_BUILD_DIR }}/ruffle_desktop -d desktop/packaging/Linux/rs.ruffle.Ruffle.desktop -i desktop/assets/icon.svg -i desktop/packaging/Linux/icon.png --appdir AppDir --output appimage
-          cp "Ruffle.AppImage" package
+          cp Ruffle.AppImage package/Ruffle.AppImage
 
       - name: Package Linux files
         if: runner.os == 'Linux'
         run: |
+          cp common_package/* package
           # We must enter the package/ directory in order to create a flat tarball (i.e. without a directory in it).
           cd package
           tar -czvf ../${{ env.PACKAGE_FILE }} *
-
-      - name: Upload package
-        if: runner.os != 'macOS'
-        run: gh release upload "${{ needs.create-nightly-release.outputs.tag_name }}" "${{ env.PACKAGE_FILE }}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Safari Web Extension stub binary
         if: runner.os == 'macOS'
@@ -188,6 +185,30 @@ jobs:
         env:
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MIN_MACOS_VERSION }}
+
+      - name: Download Safari extension zip file
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-safari
+
+      - name: Package macOS files
+        if: runner.os == 'macOS'
+        run: source ./.github/reusable/package_macOS_executable.sh
+          "${{ env.CARGO_BUILD_DIR }}/ruffle_desktop" "${{ env.CARGO_BUILD_DIR }}/ruffle_web_safari"
+          "ruffle_extension.zip" "${{ startsWith(matrix.target, 'x86_64') && 'true' || 'false' }}"
+          "${{ matrix.MIN_MACOS_VERSION }}" "${{ env.PACKAGE_FILE }}"
+        env:
+          APPLE_DEVELOPER_KEY: ${{ secrets.APPLE_DEVELOPER_KEY }}
+          APPLE_DEVELOPER_KEY_PASSWORD: ${{ secrets.APPLE_DEVELOPER_KEY_PASSWORD }}
+          APPLE_DEVELOPER_IDENTITY: ${{ secrets.APPLE_DEVELOPER_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM: ${{ secrets.APPLE_TEAM }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+
+      - name: Upload package
+        run: gh release upload "${{ needs.create-nightly-release.outputs.tag_name }}" "${{ env.PACKAGE_FILE }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload macOS build artifact
         if: runner.os == 'macOS'
@@ -197,7 +218,7 @@ jobs:
           path: |
             ${{ env.CARGO_BUILD_DIR }}/ruffle_desktop
             ${{ env.CARGO_BUILD_DIR }}/ruffle_web_safari
-            package
+            common_package
 
   build-mac-universal-binary:
     name: Build macOS universal binary
@@ -227,6 +248,7 @@ jobs:
 
       - name: Make universal desktop binary
         run: |
+          mkdir package
           lipo -create -output package/ruffle target/x86_64-apple-darwin/release/ruffle_desktop target/aarch64-apple-darwin/release/ruffle_desktop
           chmod +x package/ruffle
 
@@ -236,68 +258,17 @@ jobs:
           lipo -create -output package/ruffle_web_safari target/x86_64-apple-darwin/release/ruffle_web_safari target/aarch64-apple-darwin/release/ruffle_web_safari
           chmod +x package/ruffle_web_safari
 
-      - name: Create app bundle
-        run: |
-          VERSION=$(yq eval '.workspace.package.version' Cargo.toml)
-          sed -i "" "s/{Version}/$VERSION/" desktop/packaging/macOS/Info.plist
-          sed -i "" "s/{MinimumMacOSVersion}/${{ env.MIN_MACOS_VERSION }}/" desktop/packaging/macOS/Info.plist
-          sed -i "" "s/{CurrentYear}/$(date +%Y)/" desktop/packaging/macOS/Info.plist
-          mkdir -p package/Ruffle.app/Contents
-          mkdir package/Ruffle.app/Contents/MacOS
-          mkdir package/Ruffle.app/Contents/Resources
-          cp desktop/packaging/macOS/Info.plist package/Ruffle.app/Contents/Info.plist
-          mv package/ruffle package/Ruffle.app/Contents/MacOS/ruffle
-          mv package/* package/Ruffle.app/Contents/Resources
-
-      - name: Compile asset catalog
-        run: |
-          xcrun actool --compile package/Ruffle.app/Contents/Resources desktop/packaging/macOS/Assets.xcassets --minimum-deployment-target ${{ env.MIN_MACOS_VERSION }} --platform macosx --warnings --errors --notices --include-all-app-icons
-
-      - name: Create extension bundle
-        continue-on-error: true
-        run: |
-          mkdir -p package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents
-          mkdir package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/Resources
-          mkdir package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/MacOS
-          cp web/packages/extension/safari/packaging/Info.plist package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/Info.plist
-          mv package/ruffle_web_safari package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/MacOS/ruffle_web_safari
-          cp ruffle_extension.zip package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/Resources
-          cd package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/Resources
-          unzip ruffle_extension.zip
-          rm ruffle_extension.zip
-          cd ../../../../../../..
-
-      - name: Sign bundle
-        continue-on-error: true
+      - name: Package macOS files
+        run: source ./.github/reusable/package_macOS_executable.sh
+          package/ruffle package/ruffle_web_safari ruffle_extension.zip true "${{ env.MIN_MACOS_VERSION }}"
+          "${{ env.PACKAGE_FILE }}"
         env:
           APPLE_DEVELOPER_KEY: ${{ secrets.APPLE_DEVELOPER_KEY }}
           APPLE_DEVELOPER_KEY_PASSWORD: ${{ secrets.APPLE_DEVELOPER_KEY_PASSWORD }}
-        run: |
-          echo $APPLE_DEVELOPER_KEY | base64 --decode > certificate.p12
-          security create-keychain -p correct-horse-battery-staple build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p correct-horse-battery-staple build.keychain
-          security import certificate.p12 -k build.keychain -P $APPLE_DEVELOPER_KEY_PASSWORD -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k correct-horse-battery-staple build.keychain
-          codesign --deep -s ${{ secrets.APPLE_DEVELOPER_IDENTITY }} -f --entitlements desktop/packaging/macOS/Entitlements.plist --options runtime package/Ruffle.app
-          codesign --verify -vvvv package/Ruffle.app
-
-      - name: Notarize bundle
-        continue-on-error: true
-        run: |
-          xcrun notarytool store-credentials "Ruffle" --apple-id ${{ secrets.APPLE_ID }} --team-id ${{ secrets.APPLE_TEAM }} --password ${{ secrets.APPLE_APP_PASSWORD }}
-          cd package
-          zip -r Ruffle.zip Ruffle.app
-          mv Ruffle.zip ..
-          cd ..
-          xcrun notarytool submit Ruffle.zip --keychain-profile Ruffle --wait
-          xcrun stapler staple package/Ruffle.app
-
-      # TODO: Sign, notarize and staple the DMG image (instead of the app bundle)
-      - name: Package macOS files
-        run: |
-          pip install dmgbuild
-          dmgbuild -s desktop/packaging/macOS/settings.py "Ruffle" ${{ env.PACKAGE_FILE }}
+          APPLE_DEVELOPER_IDENTITY: ${{ secrets.APPLE_DEVELOPER_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM: ${{ secrets.APPLE_TEAM }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
 
       - name: Upload package
         run: gh release upload "${{ needs.create-nightly-release.outputs.tag_name }}" "${{ env.PACKAGE_FILE }}"

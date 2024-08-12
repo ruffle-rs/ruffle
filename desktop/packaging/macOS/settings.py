@@ -1,5 +1,5 @@
-format = "UDZO"
-filesystem = "HFS+"
+format = defines.get("format")
+filesystem = defines.get("filesystem")
 files = [("package/Ruffle.app", "Ruffle.app")]
 symlinks = {"Applications": "/Applications"}
 icon_locations = {
