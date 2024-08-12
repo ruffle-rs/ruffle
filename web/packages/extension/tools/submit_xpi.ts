@@ -141,7 +141,7 @@ docker cp $(docker create ruffle-web-docker:latest):/ruffle/web/packages web/doc
 sudo docker build --tag ruffle-web-docker -f web/docker/Dockerfile .\n\
 sudo docker cp $(sudo docker create ruffle-web-docker:latest):/ruffle/web/packages web/docker/docker_builds/packages\n\
 \n\
-These commands are run at the root of the project. The compiled XPI will be in web/docker/docker_builds/packages/extension/dist/firefox_unsigned.xpi. Please take care to use this file (and not the surrounding packages directory) when comparing against the extension submission.\n\
+These commands are run at the root of the project. The compiled XPI will be in web/docker/docker_builds/packages/extension/dist/Firefox_Unsigned.xpi. Please take care to use this file (and not the surrounding packages directory) when comparing against the extension submission.\n\
 \n\
 Note that the wasm files may not match, but we have been informed previously by Mozilla that this is allowed. The JavaScript and all other files should match.
 \n\
@@ -193,8 +193,8 @@ async function main() {
                 process.env["MOZILLA_API_KEY"], // "user:12345678:123"
                 process.env["MOZILLA_API_SECRET"], // 64 hexadecimal characters
                 process.env["FIREFOX_EXTENSION_ID"], // "{UUID}"
-                process.argv[2] ?? "", // "firefox_unsigned.xpi"
-                process.argv[3] ?? "", // "reproducible-source.zip"
+                process.argv[2] ?? "", // "Firefox_Unsigned.xpi"
+                process.argv[3] ?? "", // "Reproducible-Source.zip"
                 process.env["SOURCE_TAG"], // "nightly-YYYY-MM-DD"
             );
         } else {

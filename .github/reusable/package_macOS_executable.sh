@@ -46,7 +46,8 @@ cp common_package/* package/Ruffle.app/Contents/Resources
 
 # Compile the asset catalog
 echo -e "\nCompile the asset catalog"
-xcrun actool --compile package/Ruffle.app/Contents/Resources desktop/packaging/macOS/Assets.xcassets --minimum-deployment-target $MIN_MACOS_VERSION --platform macosx --warnings --errors --notices --include-all-app-icons
+xcrun actool --compile package/Ruffle.app/Contents/Resources desktop/packaging/macOS/Assets.xcassets \
+	--minimum-deployment-target $MIN_MACOS_VERSION --platform macosx --warnings --errors --notices --include-all-app-icons
 
 # Create the extension bundle
 echo -e "\nCreate the extension bundle"
@@ -55,12 +56,8 @@ echo -e "\nCreate the extension bundle"
 	mkdir package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/Resources
 	mkdir package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/MacOS
 	cp web/packages/extension/safari/packaging/Info.plist package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/Info.plist
-	cp $EXTENSION_BINARY_PATH package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/MacOS/ruffle_web_safari
-	cp $EXTENSION_ZIP_PATH package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/Resources/ruffle_extension.zip
-	cd package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/Resources
-	unzip ruffle_extension.zip
-	rm ruffle_extension.zip
-	cd ../../../../../../..
+	cp $EXTENSION_BINARY_PATH package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/MacOS/
+	unzip $EXTENSION_ZIP_PATH -d package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/Resources/
 ) || (
 	echo_warning "Could not create the extension bundle"
 )
@@ -75,7 +72,8 @@ echo -e "\nSign the app bundle"
 	security unlock-keychain -p correct-horse-battery-staple build.keychain
 	security import certificate.p12 -k build.keychain -P $APPLE_DEVELOPER_KEY_PASSWORD -T /usr/bin/codesign
 	security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k correct-horse-battery-staple build.keychain
-	codesign --deep -s $APPLE_DEVELOPER_IDENTITY -f --entitlements desktop/packaging/macOS/Entitlements.plist --options runtime package/Ruffle.app
+	codesign --deep -s $APPLE_DEVELOPER_IDENTITY -f --entitlements desktop/packaging/macOS/Entitlements.plist \
+		--options runtime package/Ruffle.app
 	codesign --verify -vvvv package/Ruffle.app
 ) || (
 	echo_warning "Could not sign the app bundle"

@@ -14,13 +14,14 @@ jobs:
     runs-on: ubuntu-22.04
     outputs:
       is_active: ${{ steps.activity.outputs.is_active }}
-      date: ${{ steps.current_time_underscores.outputs.formattedTime }}
+      date: ${{ steps.current_time_dashes.outputs.formattedTime }}
       upload_url: ${{ steps.create_release.outputs.upload_url }}
-      package_prefix: ruffle-nightly-${{ steps.current_time_underscores.outputs.formattedTime }}
+      package_prefix: Ruffle_Nightly_${{ steps.current_time_dashes.outputs.formattedTime }}
       tag_name: nightly-${{ steps.current_time_dashes.outputs.formattedTime }}
 
     # Only run the scheduled workflows on the main repo.
-    if: github.repository == 'ruffle-rs/ruffle' || github.event_name == 'repository_dispatch' || github.event_name == 'workflow_dispatch'
+    if: github.repository == 'ruffle-rs/ruffle' || github.event_name == 'repository_dispatch' ||
+      github.event_name == 'workflow_dispatch'
 
     steps:
       - uses: actions/checkout@v4
@@ -44,12 +45,6 @@ jobs:
         with:
           format: YYYY-MM-DD
 
-      - name: Get current time with underscores
-        uses: 1466587594/get-current-time@v2.1.2
-        id: current_time_underscores
-        with:
-          format: YYYY_MM_DD
-
       - name: Create release
         if: steps.activity.outputs.is_active == 'true'
         id: create_release
@@ -68,29 +63,29 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - build_name: linux-x86_64
+          - build_name: Linux_x86-64
             os: ubuntu-22.04
 
           # Mac does two Rust builds to make a universal binary
-          - build_name: macos-x86_64
+          - build_name: macOS_x86-64
             os: macos-14
             target: x86_64-apple-darwin
             MIN_MACOS_VERSION: 10.12
             DESKTOP_FEATURES: sandbox,jpegxr
 
-          - build_name: macos-aarch64
+          - build_name: macOS_arm64
             os: macos-14
             target: aarch64-apple-darwin
             MIN_MACOS_VERSION: 11.0
             DESKTOP_FEATURES: sandbox,jpegxr
 
-          - build_name: windows-x86_32
+          - build_name: Windows_x86-32
             os: windows-latest
             target: i686-pc-windows-msvc
             RUSTFLAGS: -Ctarget-feature=+crt-static
             DESKTOP_FEATURES: jpegxr
 
-          - build_name: windows-x86_64
+          - build_name: Windows_x86-64
             os: windows-latest
             target: x86_64-pc-windows-msvc
             RUSTFLAGS: -Ctarget-feature=+crt-static
@@ -98,7 +93,7 @@ jobs:
 
     env:
       PACKAGE_FILE: |-
-        ${{ needs.create-nightly-release.outputs.package_prefix }}-${{ matrix.build_name }}.${{
+        ${{ needs.create-nightly-release.outputs.package_prefix }}_${{ matrix.build_name }}.${{
             startsWith(matrix.build_name, 'macos') && 'dmg' ||
             startsWith(matrix.build_name, 'linux') && 'tar.gz' ||
             'zip'
@@ -138,7 +133,8 @@ jobs:
           sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev libgtk-3-dev libudev-dev
 
       - name: Cargo build
-        run: cargo build --locked --package ruffle_desktop --release ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
+        run: cargo build --locked --package ruffle_desktop --release ${{matrix.DESKTOP_FEATURES && '--features' }}
+          ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
         env:
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MIN_MACOS_VERSION }}
@@ -154,8 +150,8 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           cp common_package/* package
-          cp ${{ env.CARGO_BUILD_DIR }}/ruffle_desktop.exe package/ruffle.exe
-          7z a ${{ env.PACKAGE_FILE }} ./package/*
+          cp "${{ env.CARGO_BUILD_DIR }}/ruffle_desktop.exe" package/ruffle.exe
+          7z a "${{ env.PACKAGE_FILE }}" ./package/*
 
       - name: Create an AppImage (Linux)
         if: runner.os == 'Linux'
@@ -168,7 +164,9 @@ jobs:
           cp desktop/packaging/Linux/rs.ruffle.Ruffle.metainfo.xml AppDir/rs.ruffle.Ruffle.appdata.xml
           cp common_package/* AppDir/usr/share
           
-          LDAI_OUTPUT="Ruffle.AppImage" ./linuxdeploy-x86_64.AppImage --appimage-extract-and-run -e ${{ env.CARGO_BUILD_DIR }}/ruffle_desktop -d desktop/packaging/Linux/rs.ruffle.Ruffle.desktop -i desktop/assets/icon.svg -i desktop/packaging/Linux/icon.png --appdir AppDir --output appimage
+          LDAI_OUTPUT="Ruffle.AppImage" ./linuxdeploy-x86_64.AppImage --appimage-extract-and-run \
+            -e "${{ env.CARGO_BUILD_DIR }}/ruffle_desktop" -d desktop/packaging/Linux/rs.ruffle.Ruffle.desktop \
+            -i desktop/assets/icon.svg -i desktop/packaging/Linux/icon.png --appdir AppDir --output appimage
           cp Ruffle.AppImage package/Ruffle.AppImage
 
       - name: Package Linux files
@@ -177,7 +175,7 @@ jobs:
           cp common_package/* package
           # We must enter the package/ directory in order to create a flat tarball (i.e. without a directory in it).
           cd package
-          tar -czvf ../${{ env.PACKAGE_FILE }} *
+          tar -czvf "../${{ env.PACKAGE_FILE }}" *
 
       - name: Build Safari Web Extension stub binary
         if: runner.os == 'macOS'
@@ -225,23 +223,25 @@ jobs:
     needs: [create-nightly-release, build, build-web]
     runs-on: macos-14
     env:
-      PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-macos-universal.dmg
+      PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}_macOS_Universal.dmg
+      INTEL_BINARY_PATH: target/x86_64-apple-darwin/release
+      ARM_BINARY_PATH: target/aarch64-apple-darwin/release
       MIN_MACOS_VERSION: 10.12
     steps:
       - name: Clone Ruffle repo
         uses: actions/checkout@v4
 
-      - name: Download aarch64 binary
+      - name: Download arm64 binary
         uses: actions/download-artifact@v4
         with:
-          name: macos-aarch64
+          name: macOS_arm64
 
-      - name: Download x86_64 binary
+      - name: Download x86-64 binary
         uses: actions/download-artifact@v4
         with:
-          name: macos-x86_64
+          name: macOS_x86-64
 
-      - name: Download Safari extension
+      - name: Download Safari extension zip file
         uses: actions/download-artifact@v4
         with:
           name: macos-safari
@@ -249,13 +249,15 @@ jobs:
       - name: Make universal desktop binary
         run: |
           mkdir package
-          lipo -create -output package/ruffle target/x86_64-apple-darwin/release/ruffle_desktop target/aarch64-apple-darwin/release/ruffle_desktop
+          lipo -create -output package/ruffle "${{ env.INTEL_BINARY_PATH }}/ruffle_desktop" \
+            "${{ env.ARM_BINARY_PATH }}/ruffle_desktop"
           chmod +x package/ruffle
 
       - name: Make universal Safari stub binary
         continue-on-error: true
         run: |
-          lipo -create -output package/ruffle_web_safari target/x86_64-apple-darwin/release/ruffle_web_safari target/aarch64-apple-darwin/release/ruffle_web_safari
+          lipo -create -output package/ruffle_web_safari "${{ env.INTEL_BINARY_PATH }}/ruffle_web_safari" \
+            "${{ env.ARM_BINARY_PATH }}/ruffle_web_safari"
           chmod +x package/ruffle_web_safari
 
       - name: Package macOS files
@@ -365,8 +367,9 @@ jobs:
         if: ${{ !matrix.demo }}
         shell: bash -l {0}
         run: |
-          zip -r reproducible-source.zip . -x '/web/node_modules/*' '/web/*/node_modules/*' '/web/packages/*/dist/*' '/web/docker/docker_builds/packages/*' '/target/*' '/.git/*' '/tests/tests/swfs/*'
-          cp reproducible-source.zip "${{ needs.create-nightly-release.outputs.package_prefix }}-reproducible-source.zip"
+          zip -r Reproducible-Source.zip . -x '/web/node_modules/*' '/web/*/node_modules/*' '/web/packages/*/dist/*' \
+            '/web/docker/docker_builds/packages/*' '/target/*' '/.git/*' '/tests/tests/swfs/*'
+          cp Reproducible-Source.zip "${{ needs.create-nightly-release.outputs.package_prefix }}_Reproducible-Source.zip"
 
       - name: Upload reproducible source archive
         if: ${{ !matrix.demo }}
@@ -375,7 +378,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
-          package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-reproducible-source.zip"
+          package_file="${{ needs.create-nightly-release.outputs.package_prefix }}_Reproducible-Source.zip"
           gh release upload "$tag_name" "$package_file"
 
       - name: Build web docs
@@ -393,14 +396,14 @@ jobs:
 
       - name: Package selfhosted
         if: ${{ !matrix.demo }}
-        run: zip -r "${{ needs.create-nightly-release.outputs.package_prefix }}-web-selfhosted.zip" .
+        run: zip -r "${{ needs.create-nightly-release.outputs.package_prefix }}_Web-Selfhosted.zip" .
         working-directory: web/packages/selfhosted/dist
 
       - name: Upload selfhosted
         if: ${{ !matrix.demo }}
         run: |
           tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
-          package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-web-selfhosted.zip"
+          package_file="${{ needs.create-nightly-release.outputs.package_prefix }}_Web-Selfhosted.zip"
           gh release upload "$tag_name" "$package_file"
         working-directory: web/packages/selfhosted/dist
         env:
@@ -410,14 +413,14 @@ jobs:
         if: ${{ !matrix.demo }}
         run: |
           tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
-          package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension.zip"
+          package_file="${{ needs.create-nightly-release.outputs.package_prefix }}_Web-Extension.zip"
           cp "./web/packages/extension/dist/ruffle_extension.zip" "$package_file"
           gh release upload "$tag_name" "$package_file"
           rm "$package_file"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload Safari build artifact
+      - name: Upload Safari build artifacts
         if: ${{ !matrix.demo }}
         uses: actions/upload-artifact@v4
         with:
@@ -428,8 +431,8 @@ jobs:
         if: ${{ !matrix.demo }}
         run: |
           tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
-          package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension-firefox-unsigned.xpi"
-          cp "./web/packages/extension/dist/firefox_unsigned.xpi" "$package_file"
+          package_file="${{ needs.create-nightly-release.outputs.package_prefix }}_Web-Extension_Firefox-Unsigned.xpi"
+          cp "./web/packages/extension/dist/Firefox_Unsigned.xpi" "$package_file"
           gh release upload "$tag_name" "$package_file"
           rm "$package_file"
         env:
@@ -544,28 +547,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get current time with dashes
-        uses: 1466587594/get-current-time@v2.1.2
-        id: current_time_dashes
-        with:
-          format: YYYY-MM-DD
-
-      - name: Get current time with dots
-        uses: 1466587594/get-current-time@v2.1.2
-        id: current_time_dots
-        with:
-          format: YYYY.MM.DD
-
       - name: Download package
-        run: gh release download "${{ needs.create-nightly-release.outputs.tag_name }}" --pattern "${{ needs.create-nightly-release.outputs.package_prefix }}-linux-x86_64.tar.gz"
+        run: gh release download "${{ needs.create-nightly-release.outputs.tag_name }}"
+          --pattern "${{ needs.create-nightly-release.outputs.package_prefix }}_Linux_x86-64.tar.gz"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update PKGBUILD
         run: >
           sed -i ./PKGBUILD
-          -e "s/@VERSION@/${{ steps.current_time_dots.outputs.formattedTime }}/"
-          -e "s/@SHA512SUM@/$(sha512sum ${{ needs.create-nightly-release.outputs.package_prefix }}-linux-x86_64.tar.gz | cut -d' ' -f1)/"
+          -e "s/@DASH_TIME@/${{ needs.create-nightly-release.outputs.date }}/"
+          -e "s/@SHA512SUM@/$(sha512sum ${{ needs.create-nightly-release.outputs.package_prefix }}_Linux_x86-64.tar.gz | \
+            cut -d' ' -f1)/"
 
       - name: Publish AUR package
         uses: KSXGitHub/github-actions-deploy-aur@v2.7.2
@@ -575,4 +568,4 @@ jobs:
           commit_username: RuffleBuild
           commit_email: ruffle@ruffle.rs
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-          commit_message: Update to Nightly ${{ steps.current_time_dashes.outputs.formattedTime }}
+          commit_message: Update to Nightly ${{ needs.create-nightly-release.outputs.date }}

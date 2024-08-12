@@ -23,9 +23,9 @@ jobs:
           GH_REPO: ${{ github.repository }}
         # NOTE: The following line relies on the output of the `gh` command (when piped) looking like this:
         # "Nightly 2024-04-20      Pre-release     nightly-2024-04-20      2024-04-20T00:03:23Z"
-        # And sets the following outputs: tag = "nightly-2024-04-20", date = "2024_04_20"
+        # And sets the following outputs: tag = "nightly-2024-04-20", date = "2024-04-20"
         # NOTE: The hyphens in the date are replaced with underscores.
-        run: gh release list -L1 | awk '{ print "tag="$4; gsub(/-/, "_"); print "date="$2; }' >> "$GITHUB_OUTPUT"
+        run: gh release list -L1 | awk '{ print "tag="$4; print "date="$2; }' >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v4
         with:
@@ -44,17 +44,15 @@ jobs:
           RELEASE_DATE: ${{ steps.release_info.outputs.date }}
         run: |
           mkdir release_assets
-          gh release download --pattern "*.xpi" --pattern "*.zip" --dir release_assets $RELEASE_TAG
+          gh release download --pattern "*.xpi" --pattern "*.zip" --dir release_assets $RELEASE_TAG          
 
-          mv release_assets/ruffle-nightly-$RELEASE_DATE-reproducible-source.zip reproducible-source.zip
-
-          cd release_assets
-          unzip ruffle-nightly-$RELEASE_DATE-web-extension-firefox-unsigned.xpi
-          mv manifest.json ../web/packages/extension/assets/manifest.json
-          cd ..
+          mv release_assets/Ruffle_Nightly_$RELEASE_DATE_Reproducible-Source.zip Reproducible-Source.zip
+          unzip release_assets/Ruffle_Nightly_$RELEASE_DATE_Web-Extension_Firefox-Unsigned.xpi -d release_assets
+          mv manifest.json web/packages/extension/assets/manifest.json
 
           mkdir web/packages/extension/dist
-          mv release_assets/ruffle-nightly-$RELEASE_DATE-web-extension-firefox-unsigned.xpi web/packages/extension/dist/firefox_unsigned.xpi
+          mv release_assets/Ruffle_Nightly_$RELEASE_DATE_Web-Extension_Firefox-Unsigned.xpi \
+            web/packages/extension/dist/Firefox_Unsigned.xpi
 
       - name: Publish Firefox extension
         id: sign-firefox
