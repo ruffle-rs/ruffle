@@ -213,9 +213,7 @@ function initMutationObserver(): void {
  * Polyfills the detection of Flash plugins in the browser.
  */
 export function pluginPolyfill(): void {
-    if (!isFlashEnabledBrowser()) {
-        installPlugin(FLASH_PLUGIN);
-    }
+    installPlugin(FLASH_PLUGIN);
 }
 
 /**
