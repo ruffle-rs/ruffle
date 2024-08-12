@@ -189,6 +189,7 @@ async function enable() {
                     "https://*.edgenuity.com/*",
                 ],
                 runAt: "document_start",
+                allFrames: true,
                 world: "MAIN",
             },
             {
