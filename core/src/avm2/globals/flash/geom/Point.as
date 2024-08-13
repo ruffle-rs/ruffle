@@ -28,6 +28,7 @@ package flash.geom {
 			return new Point(this.x, this.y);
 		}
 
+		[API("674")]
 		public function copyFrom(sourcePoint:Point):void {
 			this.x = sourcePoint.x;
 			this.y = sourcePoint.y;
@@ -51,6 +52,7 @@ package flash.geom {
 			this.y += dy;
 		}
 
+		[API("674")]
 		public function setTo(xa:Number, ya:Number):void {
 			this.x = xa;
 			this.y = ya;

@@ -191,6 +191,7 @@ package flash.geom {
             this.height = sourceRect.height;
         }
 
+        [API("674")]
         public function setTo(xa: Number, ya: Number, widtha: Number, heighta: Number): void {
             this.x = xa;
             this.y = ya;

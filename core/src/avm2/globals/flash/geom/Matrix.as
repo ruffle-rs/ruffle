@@ -36,11 +36,13 @@ package flash.geom {
 			this.ty = ty;
 		}
 
+		[API("674")]
 		public function copyColumnFrom(column:uint, vector3D:Vector3D):void {
 			// FP BUG: For some reason these methods are identical
 			this.copyRowFrom(column, vector3D);
 		}
 
+		[API("674")]
 		public function copyColumnTo(column:uint, vector3D:Vector3D):void {
 			if(column == 0) {
 				vector3D.x = this.a;
@@ -59,6 +61,7 @@ package flash.geom {
 			} // otherwise vector is unchanged
 		}
 
+		[API("674")]
 		public function copyFrom(sourceMatrix: Matrix): void {
 			this.a = sourceMatrix.a;
 			this.b = sourceMatrix.b;
@@ -68,6 +71,7 @@ package flash.geom {
 			this.ty = sourceMatrix.ty;
 		}
 
+		[API("674")]
 		public function copyRowFrom(row: uint, vector3D: Vector3D): void {
 			if (row == 0) {
 				this.a = vector3D.x;
@@ -80,6 +84,7 @@ package flash.geom {
 			} // otherwise matrix is unchanged
 		}
 
+		[API("674")]
 		public function copyRowTo(row:uint, vector3D:Vector3D):void {
 			if(row == 0) {
 				vector3D.x = this.a;
@@ -167,6 +172,7 @@ package flash.geom {
 			this.ty *= sy;
 		}
 
+		[API("674")]
 		public function setTo(aa:Number, ba:Number, ca:Number, da:Number, txa:Number, tya:Number):void {
 			this.a = aa;
 			this.b = ba;
