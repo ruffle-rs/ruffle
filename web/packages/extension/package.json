@@ -27,7 +27,7 @@
         "ts-loader": "^9.5.1",
         "typescript": "^5.5.4",
         "webpack-cli": "^5.1.4",
-        "axios": "^1.7.3",
+        "axios": "^1.7.4",
         "form-data": "^4.0.0",
         "jsonwebtoken": "^9.0.2",
         "tsx": "^4.17.0"
