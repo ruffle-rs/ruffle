@@ -66,7 +66,7 @@ pub enum JumpSource {
 
 pub fn verify_method<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    method: &BytecodeMethod<'gc>,
+    method: Gc<'gc, BytecodeMethod<'gc>>,
 ) -> Result<VerifiedMethodInfo<'gc>, Error<'gc>> {
     let body = method
         .body()

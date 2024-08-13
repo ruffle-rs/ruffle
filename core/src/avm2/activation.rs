@@ -274,7 +274,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // Run verifier for bytecode methods
         if let Method::Bytecode(method) = method {
             if method.verified_info.read().is_none() {
-                method.verify(&mut created_activation)?;
+                BytecodeMethod::verify(method, &mut created_activation)?;
             }
         }
 
@@ -442,7 +442,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // Everything is now setup for the verifier to run
         if method.verified_info.read().is_none() {
-            method.verify(self)?;
+            BytecodeMethod::verify(method, self)?;
         }
 
         let verified_info = method.verified_info.read();

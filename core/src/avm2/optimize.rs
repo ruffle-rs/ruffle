@@ -307,7 +307,7 @@ fn has_simple_scope_structure(
 
 pub fn optimize<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    method: &BytecodeMethod<'gc>,
+    method: Gc<'gc, BytecodeMethod<'gc>>,
     code: &mut Vec<Op<'gc>>,
     resolved_parameters: &[ResolvedParamConfig<'gc>],
     return_type: Option<Class<'gc>>,
