@@ -8,6 +8,7 @@ use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::verify::{resolve_param_config, VerifiedMethodInfo};
 use crate::avm2::Error;
 use crate::avm2::Multiname;
+use crate::context::UpdateContext;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
 use gc_arena::barrier::unlock;
@@ -21,6 +22,8 @@ use swf::avm2::types::{
     AbcFile, Index, Method as AbcMethod, MethodBody as AbcMethodBody,
     MethodFlags as AbcMethodFlags, MethodParam as AbcMethodParam,
 };
+
+use super::Domain;
 
 /// Represents a function defined in Ruffle's code.
 ///
@@ -462,6 +465,13 @@ impl<'gc> Method<'gc> {
         match self {
             Method::Native { .. } => false,
             Method::Bytecode(bm) => bm.method().flags.contains(AbcMethodFlags::NEED_ARGUMENTS),
+        }
+    }
+
+    pub fn domain(&self, context: &mut UpdateContext<'gc>) -> Domain<'gc> {
+        match self {
+            Method::Native(_) => context.avm2.playerglobals_domain(),
+            Method::Bytecode(bm) => bm.translation_unit().domain(),
         }
     }
 }

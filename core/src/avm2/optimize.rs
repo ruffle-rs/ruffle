@@ -305,6 +305,25 @@ fn has_simple_scope_structure(
     true
 }
 
+fn try_resolve_method_return_type<'gc>(
+    vtable: &VTable<'gc>,
+    disp_id: u32,
+    activation: &mut Activation<'_, 'gc>,
+) -> Option<Class<'gc>> {
+    if let Some(target_method) = vtable.get_method(disp_id) {
+        let target_return_type = &target_method.return_type();
+        if !target_return_type.has_lazy_component() && !target_return_type.is_any_name() {
+            if let Some(target_ret_class) = target_method
+                .domain(activation.context)
+                .get_class(activation.context, target_return_type)
+            {
+                return Some(target_ret_class);
+            }
+        }
+    }
+    None
+}
+
 pub fn optimize<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: Gc<'gc, BytecodeMethod<'gc>>,
@@ -1078,6 +1097,12 @@ pub fn optimize<'gc>(
                                     index: disp_id,
                                     push_return_value: true,
                                 };
+                                if let Some(ret_type) =
+                                    try_resolve_method_return_type(&vtable, disp_id, activation)
+                                {
+                                    stack_push_done = true;
+                                    stack.push_class(ret_type);
+                                }
                             }
                             _ => {}
                         }
@@ -1299,6 +1324,12 @@ pub fn optimize<'gc>(
                                     index: disp_id,
                                     push_return_value: true,
                                 };
+                                if let Some(ret_type) =
+                                    try_resolve_method_return_type(&vtable, disp_id, activation)
+                                {
+                                    stack_push_done = true;
+                                    stack.push_class(ret_type);
+                                }
                             }
                             Some(Property::Slot { slot_id })
                             | Some(Property::ConstSlot { slot_id }) => {
