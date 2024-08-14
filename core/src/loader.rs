@@ -11,7 +11,7 @@ use crate::avm2::object::{
 };
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, BitmapDataObject, Domain as Avm2Domain,
-    Object as Avm2Object, Value as Avm2Value,
+    Object as Avm2Object,
 };
 use crate::backend::navigator::{ErrorResponse, OwnedFuture, Request, SuccessResponse};
 use crate::backend::ui::DialogResultFuture;
@@ -35,6 +35,7 @@ use encoding_rs::{UTF_8, WINDOWS_1252};
 use gc_arena::{Collect, GcCell};
 use indexmap::IndexMap;
 use ruffle_render::utils::{determine_jpeg_tag_format, JpegTagFormat};
+use ruffle_wstr::WString;
 use slotmap::{new_key_type, SlotMap};
 use std::borrow::Borrow;
 use std::fmt;
@@ -1540,8 +1541,42 @@ impl<'gc> Loader<'gc> {
 
                 let mut activation = Avm2Activation::from_nothing(uc);
 
-                fn set_data<'a, 'gc: 'a>(
+                fn strip_bom<'a, 'gc: 'a>(
+                    activation: &mut Avm2Activation<'a, 'gc>,
                     mut body: Vec<u8>,
+                ) -> AvmString<'gc> {
+                    // UTF-8 BOM
+                    if body.starts_with(&[0xEF, 0xBB, 0xBF]) {
+                        body.drain(..3);
+                    // Little-endian UTF-16 BOM
+                    } else if body.starts_with(&[0xFF, 0xFE]) {
+                        body.drain(..2);
+                        let utf16_bytes: Vec<_> = body
+                            .chunks_exact(2)
+                            .map(|pair| u16::from_le_bytes([pair[0], pair[1]]))
+                            .collect();
+                        return AvmString::new(
+                            activation.context.gc_context,
+                            WString::from_buf(utf16_bytes),
+                        );
+                    // Big-endian UTF-16 BOM
+                    } else if body.starts_with(&[0xFE, 0xFF]) {
+                        body.drain(..2);
+                        let utf16_bytes: Vec<_> = body
+                            .chunks_exact(2)
+                            .map(|pair| u16::from_be_bytes([pair[0], pair[1]]))
+                            .collect();
+                        return AvmString::new(
+                            activation.context.gc_context,
+                            WString::from_buf(utf16_bytes),
+                        );
+                    }
+
+                    AvmString::new_utf8_bytes(activation.context.gc_context, &body)
+                }
+
+                fn set_data<'a, 'gc: 'a>(
+                    body: Vec<u8>,
                     activation: &mut Avm2Activation<'a, 'gc>,
                     target: Avm2Object<'gc>,
                 ) {
@@ -1560,8 +1595,7 @@ impl<'gc> Loader<'gc> {
                         if body.is_empty() {
                             None
                         } else {
-                            let string_value =
-                                AvmString::new_utf8_bytes(activation.context.gc_context, &body);
+                            let string_value = strip_bom(activation, body);
 
                             activation
                                 .avm2()
@@ -1576,15 +1610,7 @@ impl<'gc> Loader<'gc> {
                             tracing::warn!("Invalid URLLoaderDataFormat: {}", data_format);
                         }
 
-                        // strips off an optional UTF8 BOM at the beginning
-                        if body.starts_with(&[0xEF, 0xBB, 0xBF]) {
-                            body.drain(..3);
-                        }
-
-                        let string_value =
-                            AvmString::new_utf8_bytes(activation.context.gc_context, &body);
-
-                        Some(Avm2Value::String(string_value))
+                        Some(strip_bom(activation, body).into())
                     };
 
                     if let Some(data_object) = data_object {
