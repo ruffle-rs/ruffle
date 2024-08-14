@@ -242,7 +242,7 @@ impl BookmarksDialog {
                     ui.label(text(locale, "bookmarks-dialog-location"));
                     let current_url = bookmark.url.ui(locale, ui).value();
 
-                    // TOOD: Change the UrlOrPathField widget to return a response instead, so we can update when we lose the focus, removes the need to clone every redraw.
+                    // TODO: Change the UrlOrPathField widget to return a response instead, so we can update when we lose the focus, removes the need to clone every redraw.
                     if previous_url.as_ref() != current_url {
                         if let Some(url) = current_url {
                             if let Err(e) = self.preferences.write_bookmarks(|writer| {

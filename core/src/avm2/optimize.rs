@@ -10,6 +10,7 @@ use crate::avm2::vtable::VTable;
 
 use gc_arena::Gc;
 use std::collections::HashMap;
+use swf::avm2::types::MethodBody;
 
 #[allow(clippy::enum_variant_names)]
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -223,9 +224,90 @@ impl<'gc> Stack<'gc> {
     }
 }
 
+/// Checks if the method fits the following pattern:
+///
+/// ```
+/// [Debug/DebugFile/DebugLine] zero or more times
+/// GetLocal { index: 0 }
+/// [Debug/DebugFile/DebugLine] zero or more times
+/// PushScope
+/// ...
+/// ```
+///
+/// along with the following conditions:
+/// * No jumps to that initial PushScope opcode, or anything before it
+/// * No additional scope-related opcodes (PushScope, PushWith, PopScope)
+/// * No catch blocks (MethodBody.exceptions is empty)
+///
+/// If all of these conditions are fulfilled, then the optimizer will predict the type of
+/// `FindPropStrict/FindProperty` opcodes.
+fn has_simple_scope_structure(
+    code: &[Op],
+    jump_targets: &HashMap<i32, Vec<JumpSource>>,
+    method_body: &MethodBody,
+) -> bool {
+    if !method_body.exceptions.is_empty() {
+        return false;
+    }
+
+    let mut getlocal0_pos = None;
+    for (i, op) in code.iter().enumerate() {
+        match op {
+            // Ignore any initial debug opcodes
+            Op::Debug { .. } | Op::DebugFile { .. } | Op::DebugLine { .. } => {}
+            // Look for an initial getlocal0
+            Op::GetLocal { index: 0 } => {
+                getlocal0_pos = Some(i);
+                break;
+            }
+            // Anything else doesn't fit the pattern, so give up
+            _ => return false,
+        }
+    }
+    // Give up if we didn't find it
+    let Some(getlocal0_pos) = getlocal0_pos else {
+        return false;
+    };
+
+    let mut pushscope_pos = None;
+    for (i, op) in code.iter().enumerate().skip(getlocal0_pos + 1) {
+        match op {
+            // Ignore any debug opcodes
+            Op::Debug { .. } | Op::DebugFile { .. } | Op::DebugLine { .. } => {}
+            // Look for a pushscope
+            Op::PushScope => {
+                pushscope_pos = Some(i);
+                break;
+            }
+            // Anything else doesn't fit the pattern, so give up
+            _ => return false,
+        }
+    }
+    // Give up if we didn't find it
+    let Some(pushscope_pos) = pushscope_pos else {
+        return false;
+    };
+
+    for i in 0..=pushscope_pos {
+        if jump_targets.contains_key(&(i as i32)) {
+            return false;
+        }
+    }
+
+    for op in &code[pushscope_pos + 1..] {
+        match op {
+            Op::PushScope | Op::PushWith | Op::PopScope => {
+                return false;
+            }
+            _ => {}
+        }
+    }
+    true
+}
+
 pub fn optimize<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    method: &BytecodeMethod<'gc>,
+    method: Gc<'gc, BytecodeMethod<'gc>>,
     code: &mut Vec<Op<'gc>>,
     resolved_parameters: &[ResolvedParamConfig<'gc>],
     return_type: Option<Class<'gc>>,
@@ -348,26 +430,7 @@ pub fn optimize<'gc>(
         }
     }
 
-    let mut has_simple_scoping = false;
-    if !jump_targets.contains_key(&0) && !jump_targets.contains_key(&1) {
-        if matches!(code.get(0), Some(Op::GetLocal { index: 0 }))
-            && matches!(code.get(1), Some(Op::PushScope))
-        {
-            has_simple_scoping = true;
-            for op in code.iter().skip(2) {
-                match op {
-                    Op::PushScope | Op::PushWith | Op::PopScope => {
-                        has_simple_scoping = false;
-                    }
-                    _ => {}
-                }
-            }
-        }
-    }
-
-    if !method_body.exceptions.is_empty() {
-        has_simple_scoping = false;
-    }
+    let has_simple_scoping = has_simple_scope_structure(code, &jump_targets, method_body);
 
     // TODO: Fill out all ops, then add scope stack and stack merging, too
     let mut state_map: HashMap<i32, Locals<'gc>> = HashMap::new();

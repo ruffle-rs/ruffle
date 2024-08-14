@@ -7,7 +7,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Avm2;
 use crate::avm2::Error;
 use crate::avm2::EventObject;
-use crate::backend::audio::SoundHandle;
+use crate::backend::audio::{AudioManager, SoundHandle};
 use crate::context::UpdateContext;
 use crate::display_object::SoundTransform;
 use crate::string::AvmString;
@@ -123,6 +123,12 @@ impl<'gc> SoundObject<'gc> {
         .borrow_mut();
         match &mut *sound_data {
             SoundData::NotLoaded { queued_plays } => {
+                // Avoid to enqueue more unloaded sounds than the maximum allowed to be played
+                if queued_plays.len() >= AudioManager::MAX_SOUNDS {
+                    tracing::warn!("Sound.play: too many unloaded sounds queued");
+                    return Ok(false);
+                }
+
                 queued_plays.push(queued);
                 // We don't know the length yet, so return the `SoundChannel`
                 Ok(true)

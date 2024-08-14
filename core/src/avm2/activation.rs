@@ -274,7 +274,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // Run verifier for bytecode methods
         if let Method::Bytecode(method) = method {
             if method.verified_info.read().is_none() {
-                method.verify(&mut created_activation)?;
+                BytecodeMethod::verify(method, &mut created_activation)?;
             }
         }
 
@@ -442,7 +442,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // Everything is now setup for the verifier to run
         if method.verified_info.read().is_none() {
-            method.verify(self)?;
+            BytecodeMethod::verify(method, self)?;
         }
 
         let verified_info = method.verified_info.read();
@@ -1178,7 +1178,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         // The entire implementation of VTable assumes that
         // call_method is never encountered in user code. (see the long comment there)
-        // This was also the conlusion from analysing avmplus behavior - they
+        // This was also the conclusion from analysing avmplus behavior - they
         // unconditionally VerifyError upon noticing it.
 
         // However, the optimizer can still generate it.

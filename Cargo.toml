@@ -51,7 +51,7 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 naga = { version = "22.1.0", features = ["wgsl-out"] }
 wgpu = "22.1.0"
 egui = { git = "https://github.com/emilk/egui.git", rev = "37b1e1504db14697c39ce1c3bb5e58f4f2b819bf" }
-clap = { version = "4.5.13", features = ["derive"] }
+clap = { version = "4.5.15", features = ["derive"] }
 anyhow = "1.0"
 slotmap = "1.0.7"
 async-channel = "2.3.1"
@@ -66,7 +66,7 @@ js-sys = "0.3.69"
 log = "0.4"
 num-derive = "0.4.2"
 num-traits = "0.2.19"
-serde = "1.0.204"
+serde = "1.0.207"
 thiserror = "1.0"
 url = "2.5.2"
 wasm-bindgen = "=0.2.92"
