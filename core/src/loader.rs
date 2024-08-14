@@ -1541,7 +1541,7 @@ impl<'gc> Loader<'gc> {
                 let mut activation = Avm2Activation::from_nothing(uc);
 
                 fn set_data<'a, 'gc: 'a>(
-                    body: Vec<u8>,
+                    mut body: Vec<u8>,
                     activation: &mut Avm2Activation<'a, 'gc>,
                     target: Avm2Object<'gc>,
                 ) {
@@ -1574,6 +1574,11 @@ impl<'gc> Loader<'gc> {
                     } else {
                         if &data_format != b"text" {
                             tracing::warn!("Invalid URLLoaderDataFormat: {}", data_format);
+                        }
+
+                        // strips off an optional UTF8 BOM at the beginning
+                        if body.starts_with(&[0xEF, 0xBB, 0xBF]) {
+                            body.drain(..3);
                         }
 
                         let string_value =
