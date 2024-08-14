@@ -196,8 +196,8 @@ async function enable() {
                 id: "4399",
                 matches: [
                     "*://www.4399.com/flash/*",
-                    "https://news.4399.com/qiu/",
                     "https://my.4399.com/*",
+                    "https://news.4399.com/qiu/",
                     "http://sjsj.4399.com/",
                 ],
                 js: ["dist/siteContentScript4399.js"],
