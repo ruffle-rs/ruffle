@@ -167,7 +167,7 @@ impl<'a> CssStream<'a> {
     pub(crate) fn parse_properties(&mut self) -> Result<CssProperties<'a>, CssError> {
         let mut result = CssProperties::default();
 
-        loop {
+        'main: loop {
             // [NA] This is a bit awkward:
             // - spaces at the start of a name are skipped
             // - spaces in the middle of a name are errors
@@ -212,28 +212,47 @@ impl<'a> CssStream<'a> {
 
             // Okay, we've got the name sorted, now it's the value!
             self.skip_whitespace_and_comments();
-            let value = self.consume_until_any(&[SEMI_COLON, CLOSE_BLOCK]);
 
-            match self.peek() {
-                Some(SEMI_COLON) => {
-                    self.pos += 1;
-                    result.insert(name, value);
-                    continue;
-                }
-                Some(CLOSE_BLOCK) => {
-                    self.pos += 1;
-                    let mut end_value = value.len();
-                    for (index, ch) in value.iter().enumerate() {
-                        if [NEWLINE, RETURN].contains(&ch) {
-                            end_value = index;
-                            break;
+            let value_start = self.pos;
+            let mut value = self.consume_until_any(&[SEMI_COLON, COLON, CLOSE_BLOCK]);
+            loop {
+                match self.peek() {
+                    Some(COLON) => {
+                        self.pos = value_start;
+                        let possible_value = self.consume_until_any(&[NEWLINE, RETURN]);
+                        match self.peek() {
+                            Some(NEWLINE) | Some(RETURN) => {
+                                self.pos += 1;
+                                result.insert(name, possible_value);
+                                continue 'main;
+                            }
+                            _ => {
+                                self.pos = value_start;
+                                value = self.consume_until_any(&[SEMI_COLON, CLOSE_BLOCK]);
+                                continue;
+                            }
                         }
                     }
-                    result.insert(name, &value[..end_value]);
-                    return Ok(result);
+                    Some(SEMI_COLON) => {
+                        self.pos += 1;
+                        result.insert(name, value);
+                        continue 'main;
+                    }
+                    Some(CLOSE_BLOCK) => {
+                        self.pos += 1;
+                        let mut end_value = value.len();
+                        for (index, ch) in value.iter().enumerate() {
+                            if [NEWLINE, RETURN].contains(&ch) {
+                                end_value = index;
+                                break;
+                            }
+                        }
+                        result.insert(name, &value[..end_value]);
+                        return Ok(result);
+                    }
+                    None => return Err(CssError::PropertyValueMissing),
+                    _ => unreachable!(),
                 }
-                None => return Err(CssError::PropertyValueMissing),
-                _ => unreachable!(),
             }
         }
     }
@@ -288,6 +307,20 @@ mod tests {
             Ok(vec![WStr::from_units(b"name")])
         );
         assert_eq!(stream.pos(), 20)
+    }
+
+    #[test]
+    fn parse_property_without_semicolon() {
+        let mut stream = CssStream::new(WStr::from_units(b"a { key: value \r\nkey2:v }"));
+        let mut result = FnvHashMap::default();
+        result.insert(WStr::from_units(b"a"), {
+            let mut properties = FnvHashMap::default();
+            properties.insert(WStr::from_units(b"key"), WStr::from_units(b"value "));
+            properties.insert(WStr::from_units(b"key2"), WStr::from_units(b"v "));
+            properties
+        });
+        assert_eq!(stream.parse(), Ok(result));
+        assert_eq!(stream.pos(), 25)
     }
 
     #[test]
