@@ -1,4 +1,4 @@
-network-settings = Configurações de Rede
+network-settings = Opções de Rede
 player-settings = Opções do Leitor
 movie-parameters = Parâmetros de Filme
 custom-base-url = URL Base Personalizado
