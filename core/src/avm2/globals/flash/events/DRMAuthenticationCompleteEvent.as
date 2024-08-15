@@ -7,6 +7,7 @@ package flash.events
     
     import flash.utils.ByteArray;
     
+    [API("667")]
     public class DRMAuthenticationCompleteEvent extends Event
     {
         // The string constant to use for the authentication complete event in the type parameter when adding and removing event listeners.

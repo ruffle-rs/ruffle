@@ -6,6 +6,7 @@
 package flash.display3D
 {
 
+    [API("686")]
     public final class Context3DMipFilter
     {
         // Select the two closest MIP levels and linearly blend between them (the highest quality mode, but has some performance cost).

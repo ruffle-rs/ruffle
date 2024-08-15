@@ -6,6 +6,7 @@
 package flash.media
 {
 
+    [API("674")]
     public final class H264Profile
     {
         // Constant for H.264/AVC baseline profile.

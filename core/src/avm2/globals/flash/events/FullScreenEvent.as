@@ -30,6 +30,7 @@ package flash.events {
             return this._fullScreen;
         }
 
+        [API("680")]
         public function get interactive() : Boolean
         {
             return this._interactive;

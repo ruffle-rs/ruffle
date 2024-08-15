@@ -5,6 +5,7 @@
 package flash.events
 {
     
+    [API("676")] // the docs say 674, that's wrong
     public class ThrottleEvent extends Event
     {
         public static const THROTTLE:String = "throttle"; // Defines the value of the type property of a ThrottleEvent event object.
