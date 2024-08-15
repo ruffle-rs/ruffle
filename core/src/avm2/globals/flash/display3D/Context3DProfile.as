@@ -6,6 +6,7 @@
 package flash.display3D
 {
 
+    [API("682")]
     public final class Context3DProfile
     {
         // Use the default feature support profile.
@@ -15,15 +16,19 @@ package flash.display3D
         public static const BASELINE_CONSTRAINED:String = "baselineConstrained";
 
         // Use an extended feature support profile to target newer GPUs which support larger textures This profile increases the maximum 2D Texture and RectangleTexture size to 4096x4096
+        [API("690")]
         public static const BASELINE_EXTENDED:String = "baselineExtended";
 
         // Use an standard profile to target GPUs which support MRT, AGAL2 and float textures.
+        [API("698")]
         public static const STANDARD:String = "standard";
 
         // Use an standard profile to target GPUs which support AGAL2 and float textures.
+        [API("702")]
         public static const STANDARD_CONSTRAINED:String = "standardConstrained";
 
         // Use standard extended profile to target GPUs which support AGAL3 and instanced drawing feature.
+        [API("704")] // the docs say 706, that's wrong
         public static const STANDARD_EXTENDED:String = "standardExtended";
 
     }
