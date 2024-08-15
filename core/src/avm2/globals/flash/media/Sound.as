@@ -22,7 +22,9 @@ package flash.media {
         public native function extract(target:ByteArray, length:Number, startPosition:Number = -1):Number;
         public native function close():void;
         public native function load(stream:URLRequest, context:SoundLoaderContext = null):void;
+        [API("674")]
         public native function loadCompressedDataFromByteArray(bytes:ByteArray, bytesLength:uint):void;
+        [API("674")]
         public native function loadPCMFromByteArray(bytes:ByteArray, samples:uint, format:String = "float", stereo:Boolean = true, sampleRate:Number = 44100.0):void
     }
 }
