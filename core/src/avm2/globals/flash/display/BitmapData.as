@@ -22,6 +22,7 @@ package flash.display {
         public native function get transparent():Boolean;
 
         public native function getPixels(rect:Rectangle):ByteArray;
+        [API("682")]
         public native function copyPixelsToByteArray(rect:Rectangle, data:ByteArray):void;
         public native function getVector(rect:Rectangle):Vector.<uint>;
         public native function getPixel(x:int, y:int):uint;
@@ -45,6 +46,7 @@ package flash.display {
         public native function draw(
             source:IBitmapDrawable, matrix:Matrix = null, colorTransform:ColorTransform = null, blendMode:String = null, clipRect:Rectangle = null, smoothing:Boolean = false
         ):void;
+        [API("680")]
         public native function drawWithQuality(
             source:IBitmapDrawable, matrix:Matrix = null, colorTransform:ColorTransform = null, blendMode:String = null, clipRect:Rectangle = null, smoothing:Boolean = false, quality:String = null
         ):void;
