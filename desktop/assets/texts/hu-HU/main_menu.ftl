@@ -36,3 +36,5 @@ debug-menu-open-movie = Animáció vizsgálata
 debug-menu-open-movie-list = Ismert animációk listája
 debug-menu-open-domain-list = Domainek listája
 debug-menu-search-display-objects = Display objektumok keresése...
+view-menu = Nézet
+view-menu-fullscreen = Teljes képernyő
