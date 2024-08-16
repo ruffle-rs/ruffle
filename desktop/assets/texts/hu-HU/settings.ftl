@@ -46,7 +46,28 @@ align-top-right = Jobbra fel
 align-bottom-right = Jobbra le
 align-force = Kényszerítés
 scale-mode = Méretezés módja
+scale-mode-noscale = Méretezetlen (100%)
+scale-mode-noscale-tooltip =
+    Az eredeti méretében mutatja az animációt, bármiféle nagyítás vagy kicsinyítés nélkül.
+    
+    A StageScaleMode.NO_SCALE-nek felel meg
+scale-mode-showall = Méretre igazítás
+scale-mode-showall-tooltip =
+    Az animációval a lehető legjobban kitölti az ablakot, levágás nélkül, a méretarány megtartásával.
+    
+    A StageScaleMode.SHOW_ALL-nak felel meg
+scale-mode-exactfit = Méretre nyújtás
+scale-mode-exactfit-tooltip =
+    Az animációval kitölti a teljes ablakot, a méretarányra tekintet nélkül.
+    
+    A StageScaleMode.EXACT_FIT-nek felel meg
+scale-mode-noborder = Méretre vágás
+scale-mode-noborder-tooltip =
+    A teljes ablakot kitölti a méretarány megtartása mellett, az animációt szükség szerint levágva.
+    
+    A StageScaleMode.NO_BORDER-nek felel meg
 scale-mode-force = Kényszerítés
+scale-mode-force-tooltip = Megakadályozza hogy az animáció megváltoztassa a méretezési módot, a kiválasztott beállításra zárolva azt.
 player-version = Lejátszó verziója
 player-runtime = Futtatókörnyezet
 player-runtime-flash = Flash Player

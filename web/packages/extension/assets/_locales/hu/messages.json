@@ -11,6 +11,9 @@
     "settings_autostart": {
         "message": "Automatikus lejátszás (hang kattintásra)"
     },
+    "settings_swf_takeover": {
+        "message": "Az SWF fájlokat játssza le a böngészőben letöltés helyett"
+    },
     "settings_log_level": {
         "message": "Naplózási szint"
     },
@@ -106,6 +109,9 @@
     },
     "grant_single_site_permission": {
         "message": "Végleges engedélyezés ezen a webhelyen"
+    },
+    "permissions_explanation": {
+        "message": "A Ruffle bővítmény akkor működik a legjobban, ha az összes weboldal adataihoz hozzá tud férni. Ez lehetővé teszi, hogy bármely weboldalnak már az első betöltésekor fusson, így meggyőzheti a Flash Player meglétét rögtön észelő weboldalakat, hogy futtassák a Flash tartalmat. Ez azt is lehetővé teszi számára, hogy SWF-fájlokat töltsön be a belső lejátszó oldalára más webhelyekről, valamintt hogy a közvetlenül hivatkozott SWF-fájlokat is automatikusan ott játssza le. Ha nem adod meg ezt az engedélyt, akkor a Ruffle-t kézzel kell engedélyezned minden olyan weboldalon, amelyen használni szeretnéd, a bővítmény ikonjára kattintva és az adott weboldalon engedélyezve."
     },
     "swf_player_permissions": {
         "message": "Engedélyt kell adnia ennek az URL-eredetnek, hogy SWF-eket tölthessen be róla."

@@ -19,3 +19,7 @@ storage-backend-disk = Lemez
 storage-backend-memory = Memória
 recent-limit = Legutóbbiak korlátja
 recent-clear = Törlés
+theme = Téma
+theme-system = Rendszer alapértelmezett
+theme-light = Világos
+theme-dark = Sötét
