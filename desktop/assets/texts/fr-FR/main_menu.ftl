@@ -36,3 +36,5 @@ debug-menu-open-movie = Informations du film
 debug-menu-open-movie-list = Liste des films connus
 debug-menu-open-domain-list = Liste des domaines
 debug-menu-search-display-objects = Rechercher des objets d'affichage...
+view-menu = Affichage
+view-menu-fullscreen = Plein écran
