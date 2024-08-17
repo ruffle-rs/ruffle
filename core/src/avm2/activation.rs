@@ -441,6 +441,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.caller_domain = Some(outer.domain());
         self.caller_movie = Some(method.owner_movie());
         self.bound_superclass_object = bound_superclass_object;
+        self.bound_class = bound_class;
         self.activation_class = activation_class;
         self.stack_depth = self.context.avm2.stack.len();
         self.scope_depth = self.context.avm2.scope_stack.len();

@@ -363,17 +363,6 @@ pub fn optimize<'gc>(
     let this_class = if let Some(this_class) = activation.bound_class() {
         if this_value.is_of_type(activation, this_class) {
             Some(this_class)
-        } else if let Some(this_object) = this_value.as_object() {
-            if this_object
-                .as_class_object()
-                .map(|c| c.inner_class_definition() == this_class)
-                .unwrap_or(false)
-            {
-                // Static method
-                Some(this_object.instance_class())
-            } else {
-                None
-            }
         } else {
             None
         }
