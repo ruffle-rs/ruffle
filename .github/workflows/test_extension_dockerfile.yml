@@ -29,7 +29,7 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       - name: Install wasm-bindgen
-        run: cargo install wasm-bindgen-cli --version 0.2.92
+        run: cargo install wasm-bindgen-cli --version 0.2.93
 
       # Keep the version number in sync in all workflows,
       # and in the extension builder Dockerfile!
