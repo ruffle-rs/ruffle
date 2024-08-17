@@ -11,8 +11,11 @@
     "settings_autostart": {
         "message": "Lire automatiquement, sans écran de démarrage (requiert un clic pour activer le son)"
     },
+    "settings_swf_takeover": {
+        "message": "Lire les fichiers SWF dans le navigateur au lieu de les télécharger"
+    },
     "settings_log_level": {
-        "message": "Niveau des logs"
+        "message": "Niveau de journalisation"
     },
     "settings_log_level_error": {
         "message": "Erreur"
@@ -94,5 +97,23 @@
     },
     "settings_saved": {
         "message": "Paramètres sauvegardés"
+    },
+    "onboarding_page": {
+        "message": "Page de démarrage"
+    },
+    "permissions_grant": {
+        "message": "Accorder à Ruffle la permission d'accéder à mes données pour tous les sites web"
+    },
+    "permissions_not_granted": {
+        "message": "Vous devrez cliquer sur l'icône Ruffle pour chaque site sur lequel vous souhaiterez utiliser Ruffle"
+    },
+    "grant_single_site_permission": {
+        "message": "Toujours activer pour ce site"
+    },
+    "permissions_explanation": {
+        "message": "L'extension Ruffle fonctionne mieux quand elle peut avoir accès aux données pour tous les sites web. Cela lui permet en effet de s'exécuter dès que le chargement d'une page commence : le contenu Flash sera ainsi proposé sur les sites vérifiant immédiatement la présence de Flash Player. Cela lui donne également la possibilité de charger des fichiers SWF de n'importe quel site web, directement depuis sa page de lecteur interne. Si vous n'accordez pas cette autorisation, vous devrez activer Ruffle manuellement pour chaque site web sur lequel vous souhaiterez l'utiliser, en cliquant sur l'icône de l'extension et en l'activant pour ce site web."
+    },
+    "swf_player_permissions": {
+        "message": "Vous devez accorder l'autorisation à cette source URL pour charger des fichiers SWF à partir de celle-ci."
     }
 }

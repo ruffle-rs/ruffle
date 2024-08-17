@@ -46,7 +46,28 @@ align-top-right = En haut à droite
 align-bottom-right = En bas à droite
 align-force = Forcer
 scale-mode = Mode de mise à l'échelle
+scale-mode-noscale = Aucun (100%)
+scale-mode-noscale-tooltip =
+    Affiche le film dans ses dimensions d'origine, sans aucun agrandissement.
+    
+    Correspond à StageScaleMode.NO_SCALE
+scale-mode-showall = Avec ajustement
+scale-mode-showall-tooltip =
+    Affiche le film de manière à optimiser l'espace disponible dans la fenêtre, tout en respectant le rapport largeur/hauteur. Aucun recadrage n'a donc lieu.
+    
+    Correspond à StageScaleMode.SHOW_ALL
+scale-mode-exactfit = Avec étirement
+scale-mode-exactfit-tooltip =
+    Affiche le film de manière à remplir l'intégralité de l'espace disponible dans la fenêtre, ignorant le rapport largeur/hauteur.
+    
+    Correspond à StageScaleMode.EXACT_FIT
+scale-mode-noborder = Avec recadrage
+scale-mode-noborder-tooltip =
+    Affiche le film de manière à remplir l'intégralité de l'espace disponible dans la fenêtre, tout en respectant le rapport largeur/hauteur. Un recadrage peut donc avoir lieu.
+    
+    Correspond à StageScaleMode.NO_BORDER
 scale-mode-force = Forcer
+scale-mode-force-tooltip = Empêche le film de changer de mode de mise à l'échelle, en le verrouillant sur le paramètre sélectionné.
 player-version = Version du lecteur
 player-runtime = Type de lecteur
 player-runtime-flash = Flash Player

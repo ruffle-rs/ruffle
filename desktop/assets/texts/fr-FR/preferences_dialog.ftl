@@ -19,3 +19,7 @@ storage-backend-disk = Disque
 storage-backend-memory = Mémoire
 recent-limit = Limite de fichiers récents
 recent-clear = Effacer
+theme = Thème
+theme-system = Valeur système par défaut
+theme-light = Mode clair
+theme-dark = Mode sombre
