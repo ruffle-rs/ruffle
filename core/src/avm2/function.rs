@@ -137,6 +137,7 @@ impl<'gc> BoundMethod<'gc> {
 ///
 /// Passed-in arguments will be conformed to the set of method parameters
 /// declared on the function.
+#[allow(clippy::too_many_arguments)]
 pub fn exec<'gc>(
     method: Method<'gc>,
     scope: ScopeChain<'gc>,
