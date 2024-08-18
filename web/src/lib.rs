@@ -354,11 +354,14 @@ impl RuffleHandle {
 
     async fn run_context_menu_callback_paste(&self, index: usize) {
         let window = web_sys::window().expect("Missing window");
-        let Some(clipboard) = window.navigator().clipboard() else {
+        let navigator = window.navigator();
+        // The Clipboard API is unavailable on e.g. non-secure pages.
+        if !JsValue::from_str("clipboard").js_in(&navigator) {
             tracing::warn!("Clipboard unsupported");
             let _ = self.with_instance(|inst| inst.js_player.display_clipboard_modal(false));
             return;
-        };
+        }
+        let clipboard = window.navigator().clipboard();
 
         let promise = clipboard.read_text();
         tracing::debug!("Requested text from clipboard");
