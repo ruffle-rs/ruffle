@@ -12,7 +12,7 @@ use tracing_subscriber::layer::Layered;
 use tracing_subscriber::Registry;
 use tracing_wasm::WASMLayer;
 use wasm_bindgen::prelude::*;
-use web_sys::AudioContext;
+use web_sys::{AudioContext, AudioScheduledSourceNode};
 
 #[allow(dead_code)]
 pub struct WebAudioBackend {
@@ -230,7 +230,8 @@ impl Buffer {
         audio_node
             .connect_with_audio_node(&self.context.destination())
             .into_js_result()?;
-        audio_node.set_onended(Some(self.on_ended_handler.as_ref().unchecked_ref()));
+        let scheduled: &AudioScheduledSourceNode = &audio_node;
+        scheduled.set_onended(Some(self.on_ended_handler.as_ref().unchecked_ref()));
 
         // Sanity: ensure our player time is not in the past. This can happen due to underruns.
         self.time
@@ -250,7 +251,8 @@ impl Buffer {
 impl Drop for Buffer {
     fn drop(&mut self) {
         if let Some(audio_node) = self.audio_node.take() {
-            audio_node.set_onended(None);
+            let scheduled: &AudioScheduledSourceNode = &audio_node;
+            scheduled.set_onended(None);
         }
     }
 }
