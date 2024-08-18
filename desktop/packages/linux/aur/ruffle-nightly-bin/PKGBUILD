@@ -8,7 +8,7 @@ url="https://ruffle.rs/"
 license=('Apache' 'MIT')
 depends=(zlib libxcb alsa-lib)
 provides=(ruffle)
-conflicts=(ruffle-git)
+conflicts=(ruffle)
 source=("https://github.com/ruffle-rs/ruffle/releases/download/nightly-${pkgver//./-}/ruffle-nightly-${pkgver//./_}-linux-x86_64.tar.gz")
 sha512sums=(@SHA512SUM@)
 
