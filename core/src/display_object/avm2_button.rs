@@ -552,7 +552,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 
                 if let Some(avm2_object) = self.0.object.get() {
                     let mut activation = Avm2Activation::from_nothing(context);
-                    if let Err(e) = class.call_native_init(avm2_object.into(), &[], &mut activation)
+                    if let Err(e) = class.call_super_init(avm2_object.into(), &[], &mut activation)
                     {
                         tracing::error!("Got {} when constructing AVM2 side of button", e);
                     }

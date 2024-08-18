@@ -12,7 +12,7 @@ package flash.text.engine {
     // the TextLine class in Ruffle, despite the methods working fine in FP-
     // however, it's unlikely that SWFs will actually attempt to add children
     // to a TextLine.
-    [Ruffle(NativeInstanceInit)]
+    [Ruffle(SuperInitializer)]
     public final class TextLine extends DisplayObjectContainer {
         internal var _specifiedWidth:Number = 0.0;
         internal var _textBlock:TextBlock = null;

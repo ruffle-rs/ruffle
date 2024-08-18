@@ -5,7 +5,7 @@ package flash.display {
     import flash.geom.Rectangle;
     import flash.ui.ContextMenu;
 
-    [Ruffle(NativeInstanceInit)]
+    [Ruffle(SuperInitializer)]
     public class InteractiveObject extends DisplayObject {
         private var _accessibilityImpl:AccessibilityImplementation = null;
         private var _needsSoftKeyboard:Boolean = false;

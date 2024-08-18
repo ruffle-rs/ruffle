@@ -377,14 +377,14 @@ impl<'gc> ClassObject<'gc> {
     /// The native initializer is called when native code needs to construct an
     /// object, or when supercalling into a parent constructor (as there are
     /// classes that cannot be constructed but can be supercalled).
-    pub fn call_native_init(
+    pub fn call_super_init(
         self,
         receiver: Value<'gc>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let scope = self.0.instance_scope.get();
-        let method = self.native_constructor();
+        let method = self.super_constructor();
         exec(
             method,
             scope,
@@ -675,8 +675,8 @@ impl<'gc> ClassObject<'gc> {
         self.inner_class_definition().instance_init()
     }
 
-    pub fn native_constructor(self) -> Method<'gc> {
-        self.inner_class_definition().native_instance_init()
+    pub fn super_constructor(self) -> Method<'gc> {
+        self.inner_class_definition().super_init()
     }
 
     pub fn call_handler(self) -> Option<Method<'gc>> {

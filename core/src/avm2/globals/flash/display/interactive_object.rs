@@ -9,7 +9,7 @@ use crate::avm2::Error;
 use crate::display_object::{TDisplayObject, TInteractiveObject};
 
 /// Implements `flash.display.InteractiveObject`'s native instance constructor.
-pub fn native_instance_init<'gc>(
+pub fn super_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],

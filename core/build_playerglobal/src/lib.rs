@@ -29,7 +29,7 @@ const RUFFLE_METADATA_NAME: &str = "Ruffle";
 const METADATA_INSTANCE_ALLOCATOR: &str = "InstanceAllocator";
 // Indicates that we should generate a reference to a native initializer
 // method (used as a metadata key with `Ruffle` metadata)
-const METADATA_NATIVE_INSTANCE_INIT: &str = "NativeInstanceInit";
+const METADATA_SUPER_INITIALIZER: &str = "SuperInitializer";
 /// Indicates that we should generate a reference to a class call handler
 /// method (used as a metadata key with `Ruffle` metadata)
 const METADATA_CALL_HANDLER: &str = "CallHandler";
@@ -363,7 +363,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
     let none_tokens = quote! { None };
     let mut rust_paths = vec![none_tokens.clone(); abc.methods.len()];
     let mut rust_instance_allocators = vec![none_tokens.clone(); abc.classes.len()];
-    let mut rust_native_instance_initializers = vec![none_tokens.clone(); abc.classes.len()];
+    let mut rust_super_initializers = vec![none_tokens.clone(); abc.classes.len()];
     let mut rust_call_handlers = vec![none_tokens; abc.classes.len()];
 
     let mut check_trait = |trait_: &Trait, parent: Option<Index<Multiname>>| {
@@ -417,7 +417,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
 
         let instance_allocator_method_name =
             "::".to_string() + &flash_to_rust_path(&class_name) + "_allocator";
-        let native_instance_init_method_name = "::native_instance_init".to_string();
+        let super_init_method_name = "::super_init".to_string();
         let call_handler_method_name = "::call_handler".to_string();
         for metadata_idx in &trait_.metadata {
             let metadata = &abc.metadata[metadata_idx.0 as usize];
@@ -451,15 +451,14 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                             &instance_allocator_method_name,
                         );
                     }
-                    (None, METADATA_NATIVE_INSTANCE_INIT) if !is_versioning => {
-                        rust_native_instance_initializers[class_id as usize] =
-                            rust_method_name_and_path(
-                                &abc,
-                                trait_,
-                                None,
-                                "",
-                                &native_instance_init_method_name,
-                            )
+                    (None, METADATA_SUPER_INITIALIZER) if !is_versioning => {
+                        rust_super_initializers[class_id as usize] = rust_method_name_and_path(
+                            &abc,
+                            trait_,
+                            None,
+                            "",
+                            &super_init_method_name,
+                        )
                     }
                     (None, METADATA_CALL_HANDLER) if !is_versioning => {
                         rust_call_handlers[class_id as usize] = rust_method_name_and_path(
@@ -531,13 +530,13 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
 
         // This is very similar to `NATIVE_METHOD_TABLE`, but we have one entry per
         // class, rather than per method. When an entry is `Some(fn_ptr)`, we use
-        // `fn_ptr` as the native initializer for the corresponding class when we
+        // `fn_ptr` as the super initializer for the corresponding class when we
         // load it into Ruffle.
-        pub const NATIVE_INSTANCE_INIT_TABLE: &[Option<(&'static str, crate::avm2::method::NativeMethodImpl)>] = &[
-            #(#rust_native_instance_initializers,)*
+        pub const NATIVE_SUPER_INITIALIZER_TABLE: &[Option<(&'static str, crate::avm2::method::NativeMethodImpl)>] = &[
+            #(#rust_super_initializers,)*
         ];
 
-        // This is very similar to `NATIVE_INSTANCE_INIT_TABLE`.
+        // This is very similar to `NATIVE_SUPER_INITIALIZER_TABLE`.
         // When an entry is `Some(fn_ptr)`, we use
         // `fn_ptr` as the native call handler for the corresponding class when we
         // load it into Ruffle.

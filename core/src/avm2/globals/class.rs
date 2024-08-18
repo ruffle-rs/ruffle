@@ -23,7 +23,7 @@ pub fn instance_init<'gc>(
 /// Implements `Class`'s native instance initializer.
 ///
 /// This exists so that super() calls in class initializers will work.
-fn native_instance_init<'gc>(
+fn super_init<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -68,10 +68,10 @@ pub fn create_i_class<'gc>(
     // throws a VerifyError
     class_i_class.set_attributes(gc_context, ClassAttributes::FINAL);
 
-    class_i_class.set_native_instance_init(
+    class_i_class.set_super_init(
         gc_context,
         Method::from_builtin(
-            native_instance_init,
+            super_init,
             "<Class native instance initializer>",
             gc_context,
         ),

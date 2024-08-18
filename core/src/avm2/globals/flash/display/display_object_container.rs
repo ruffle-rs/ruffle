@@ -16,7 +16,7 @@ use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContain
 use std::cmp::min;
 
 /// Implements `flash.display.DisplayObjectContainer`'s native instance constructor.
-pub fn native_instance_init<'gc>(
+pub fn super_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
