@@ -269,15 +269,17 @@ impl NavigatorBackend for WebNavigatorBackend {
         };
 
         Box::pin(async move {
-            let mut init = RequestInit::new();
+            let init = RequestInit::new();
 
-            init.method(&request.method().to_string());
-            init.credentials(credentials);
+            init.set_method(&request.method().to_string());
+            init.set_credentials(credentials);
 
             if let Some((data, mime)) = request.body() {
+                let options = BlobPropertyBag::new();
+                options.set_type(mime);
                 let blob = Blob::new_with_buffer_source_sequence_and_options(
                     &Array::from_iter([Uint8Array::from(data.as_slice()).buffer()]),
-                    BlobPropertyBag::new().type_(mime),
+                    &options,
                 )
                 .map_err(|_| ErrorResponse {
                     url: url.to_string(),
@@ -289,7 +291,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                     error: Error::FetchError("Got JS error".to_string()),
                 })?;
 
-                init.body(Some(&blob));
+                init.set_body(&blob);
             }
 
             let web_request = match WebRequest::new_with_str_and_init(url.as_str(), &init) {

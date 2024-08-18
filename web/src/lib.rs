@@ -78,13 +78,14 @@ impl<E: FromWasmAbi + 'static> JsCallback<E> {
         let target = target.as_ref();
         let closure = Closure::new(closure);
 
+        let options = AddEventListenerOptions::new();
+        options.set_passive(false);
+        options.set_capture(is_capture);
         target
             .add_event_listener_with_callback_and_add_event_listener_options(
                 name,
                 closure.as_ref().unchecked_ref(),
-                AddEventListenerOptions::new()
-                    .passive(false)
-                    .capture(is_capture),
+                &options,
             )
             .warn_on_error();
 
