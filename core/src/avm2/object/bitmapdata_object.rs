@@ -95,7 +95,7 @@ impl<'gc> BitmapDataObject<'gc> {
         // when the custom class makes a super() call, the BitmapData constructor will
         // load in the real data from the linked SymbolClass.
         if class != activation.avm2().classes().bitmapdata {
-            class.call_native_init(instance.into(), &[1.into(), 1.into()], activation)?;
+            class.call_super_init(instance.into(), &[1.into(), 1.into()], activation)?;
         }
 
         Ok(instance)

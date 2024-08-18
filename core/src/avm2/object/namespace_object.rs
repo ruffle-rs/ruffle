@@ -93,7 +93,7 @@ impl<'gc> NamespaceObject<'gc> {
         ))
         .into();
 
-        class.call_native_init(this.into(), &[], activation)?;
+        class.call_super_init(this.into(), &[], activation)?;
 
         Ok(this)
     }

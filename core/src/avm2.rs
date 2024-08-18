@@ -160,7 +160,7 @@ pub struct Avm2<'gc> {
     native_instance_allocator_table: &'static [Option<(&'static str, AllocatorFn)>],
 
     #[collect(require_static)]
-    native_instance_init_table: &'static [Option<(&'static str, NativeMethodImpl)>],
+    native_super_initializer_table: &'static [Option<(&'static str, NativeMethodImpl)>],
 
     #[collect(require_static)]
     native_call_handler_table: &'static [Option<(&'static str, NativeMethodImpl)>],
@@ -257,7 +257,7 @@ impl<'gc> Avm2<'gc> {
 
             native_method_table: Default::default(),
             native_instance_allocator_table: Default::default(),
-            native_instance_init_table: Default::default(),
+            native_super_initializer_table: Default::default(),
             native_call_handler_table: Default::default(),
             broadcast_list: Default::default(),
 

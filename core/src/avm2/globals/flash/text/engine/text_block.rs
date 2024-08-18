@@ -80,7 +80,7 @@ pub fn create_text_line<'gc>(
     apply_format(activation, display_object, text.as_wstr(), element_format)?;
 
     let instance = initialize_for_allocator(activation, display_object.into(), class)?;
-    class.call_native_init(instance.into(), &[], activation)?;
+    class.call_super_init(instance.into(), &[], activation)?;
 
     instance.set_property(
         &Multiname::new(activation.avm2().flash_text_engine_internal, "_textBlock"),

@@ -30,7 +30,7 @@ fn instance_init<'gc>(
 }
 
 /// Implements `int`'s native instance initializer.
-fn native_instance_init<'gc>(
+fn super_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -241,13 +241,9 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
 
     class.set_attributes(mc, ClassAttributes::FINAL | ClassAttributes::SEALED);
     class.set_instance_allocator(mc, primitive_allocator);
-    class.set_native_instance_init(
+    class.set_super_init(
         mc,
-        Method::from_builtin(
-            native_instance_init,
-            "<int native instance initializer>",
-            mc,
-        ),
+        Method::from_builtin(super_init, "<int native instance initializer>", mc),
     );
     class.set_call_handler(
         mc,

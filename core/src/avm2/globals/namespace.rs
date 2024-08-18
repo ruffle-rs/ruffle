@@ -101,7 +101,7 @@ fn class_call<'gc>(
 }
 
 /// Implements `Namespace`'s native instance initializer.
-pub fn native_instance_init<'gc>(
+pub fn super_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -182,13 +182,9 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     );
 
     class.set_instance_allocator(mc, namespace_allocator);
-    class.set_native_instance_init(
+    class.set_super_init(
         mc,
-        Method::from_builtin(
-            native_instance_init,
-            "<Namespace native instance initializer>",
-            mc,
-        ),
+        Method::from_builtin(super_init, "<Namespace native instance initializer>", mc),
     );
     class.set_call_handler(
         mc,

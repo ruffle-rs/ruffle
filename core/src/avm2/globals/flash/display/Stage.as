@@ -10,13 +10,13 @@ package flash.display {
     import flash.text.TextSnapshot;
     import flash.ui.ContextMenu;
 
-    [Ruffle(NativeInstanceInit)]
+    [Ruffle(SuperInitializer)]
     public class Stage extends DisplayObjectContainer {
         private var _colorCorrection:String = ColorCorrection.DEFAULT;
         private var _mouseLock:Boolean = false;
 
         public function Stage() {
-            throw new Error("You cannot construct new instances of the Stage.")
+            throw new Error("You cannot construct new instances of the Stage.");
         }
 
         override public function set accessibilityProperties(value:AccessibilityProperties):void {

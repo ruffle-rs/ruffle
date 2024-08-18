@@ -11,7 +11,7 @@ package flash.display {
     import flash.events.EventDispatcher;
 
     [Ruffle(InstanceAllocator)]
-    [Ruffle(NativeInstanceInit)]
+    [Ruffle(SuperInitializer)]
     public class DisplayObject extends EventDispatcher implements IBitmapDrawable {
         private var _accessibilityProperties:AccessibilityProperties;
 

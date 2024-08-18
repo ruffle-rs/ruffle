@@ -9,7 +9,7 @@ package flash.display {
     import flash.display.InteractiveObject;
     import flash.text.TextSnapshot;
 
-    [Ruffle(NativeInstanceInit)]
+    [Ruffle(SuperInitializer)]
     public class DisplayObjectContainer extends InteractiveObject {
 
         public function DisplayObjectContainer() {

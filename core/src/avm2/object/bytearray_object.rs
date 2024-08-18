@@ -98,7 +98,7 @@ impl<'gc> ByteArrayObject<'gc> {
         ))
         .into();
 
-        class.call_native_init(instance.into(), &[], activation)?;
+        class.call_super_init(instance.into(), &[], activation)?;
 
         Ok(instance)
     }
