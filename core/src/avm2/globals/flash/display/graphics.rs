@@ -482,6 +482,8 @@ const UNIT_CIRCLE_POINTS: [(f64, f64); 5] = [
     (FRAC_1_SQRT_2, FRAC_1_SQRT_2),
     (0.4142135623730951, 1.0),
     (0.00000000000000006123233995736766, 1.0),
+    // TODO: should the above be just 0.0, instead of whatever Rust printed out?
+    // Same with 0.414... not being symmetric
 ];
 
 /* [
