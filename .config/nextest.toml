@@ -1,4 +1,5 @@
-# TODO: Figure out why these specific tests are flaky on CI, fix them, then delete this file.
+# This is needed so we don't try to run too many visual tests at the same time,
+# as they tend to crash on GitHub Actions runners - maybe due to not enough memory.
 [[profile.ci.overrides]]
-filter = "test(avm2/pixelbender_shaderdata) or test(avm2/graphics_round_rects)"
-retries = 4
+filter = "test(/^\\[render\\] /)"
+threads-required = 4
