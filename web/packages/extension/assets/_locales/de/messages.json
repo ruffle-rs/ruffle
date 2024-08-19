@@ -39,19 +39,19 @@
         "message": "Erweiterte Einstellungen"
     },
     "settings_reset": {
-        "message": "Einstellungen zurücksetzen"
+        "message": "Reset settings"
     },
     "settings_reset_confirm": {
-        "message": "Bist du sicher, dass du alle DNS-Einträge auf ihre ursprünglichen Werte zurücksetzen möchten?"
+        "message": "Are you sure you want to restore Ruffle settings to their original defaults?"
     },
     "status_init": {
-        "message": "Prüfe den aktuellen Tab…"
+        "message": "Reading current tab…"
     },
     "status_no_tabs": {
-        "message": "Es gibt keinen aktiven Tab."
+        "message": "There is no active tab."
     },
     "status_tabs_error": {
-        "message": "Beim Nachschlagen des aktuellen Tabs ist ein Fehler aufgetreten."
+        "message": "An error occurred when looking up the current tab."
     },
     "status_message_init": {
         "message": "Prüfe Status von Ruffle im aktuellen Tab…"
@@ -94,5 +94,14 @@
     },
     "settings_saved": {
         "message": "Einstellungen wurden gespeichert"
+    },
+    "onboarding_page": {
+        "message": "Onboarding Page"
+    },
+    "permissions_grant": {
+        "message": "Grant Ruffle permission to access my data on all sites"
+    },
+    "permissions_not_granted": {
+        "message": "You will need to click the Ruffle icon on every site on which you want to use Ruffle"
     }
 }
