@@ -19,7 +19,7 @@ ruffle_render = { path = "..", features = ["web"] }
 swf = { path = "../../swf" }
 
 [dependencies.web-sys]
-version = "0.3.69"
+version = "0.3.70"
 features = [
     "CanvasGradient", "CanvasPattern", "CanvasRenderingContext2d", "CanvasWindingRule", "CssStyleDeclaration",
     "Document", "DomMatrix", "Element", "HtmlCanvasElement", "ImageData", "Navigator", "Path2d", "SvgMatrix",

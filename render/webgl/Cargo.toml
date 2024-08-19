@@ -21,7 +21,7 @@ swf = { path = "../../swf" }
 thiserror = { workspace = true }
 
 [dependencies.web-sys]
-version = "0.3.69"
+version = "0.3.70"
 features = [
     "HtmlCanvasElement", "OesVertexArrayObject", "WebGl2RenderingContext", "WebGlBuffer", "WebglDebugRendererInfo",
     "WebGlFramebuffer", "WebGlProgram", "WebGlRenderbuffer", "WebGlRenderingContext", "WebGlShader", "WebGlTexture",

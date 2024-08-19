@@ -46,7 +46,7 @@ ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 ruffle_video_software = { path = "../video/software" }
 url = { workspace = true }
 wasm-bindgen = { workspace = true }
-wasm-bindgen-futures = "0.4.42"
+wasm-bindgen-futures = "0.4.43"
 serde-wasm-bindgen = "0.6.5"
 chrono = { workspace = true, features = ["wasmbind", "clock"] }
 getrandom = { version = "0.2", features = ["js"] }
@@ -66,7 +66,7 @@ path = "../core"
 features = ["audio", "mp3", "nellymoser", "default_compatibility_rules", "default_font", "serde"]
 
 [dependencies.web-sys]
-version = "0.3.69"
+version = "0.3.70"
 features = [
     "AddEventListenerOptions", "AudioBuffer", "AudioBufferSourceNode", "AudioContext",
     "AudioDestinationNode", "AudioNode", "AudioParam", "Blob", "BlobPropertyBag",
