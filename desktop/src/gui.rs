@@ -48,7 +48,10 @@ pub fn text<'a>(locale: &LanguageIdentifier, id: &'a str) -> Cow<'a, str> {
 }
 
 pub fn optional_text(locale: &LanguageIdentifier, id: &str) -> Option<String> {
-    TEXTS.lookup_single_language::<&str>(locale, id, None)
+    TEXTS
+        .lookup_single_language::<&str>(locale, id, None)
+        .inspect_err(|e| tracing::trace!("Error looking up text: {e}"))
+        .ok()
 }
 
 pub fn available_languages() -> Vec<&'static LanguageIdentifier> {

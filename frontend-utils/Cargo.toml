@@ -24,7 +24,7 @@ slotmap = { workspace = true }
 async-io = "2.3.4"
 futures-lite = "2.3.0"
 webbrowser = "1.0.1"
-reqwest = { version = "0.12.5", default-features = false, features = ["rustls-tls", "cookies", "charset", "http2", "macos-system-configuration"] }
+reqwest = { version = "0.12.6", default-features = false, features = ["rustls-tls", "cookies", "charset", "http2", "macos-system-configuration"] }
 tokio = { workspace = true, features = ["net"] }
 
 [dev-dependencies]

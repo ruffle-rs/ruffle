@@ -17,7 +17,7 @@ ruffle_video_software = { path = "../software" }
 
 # Needed for OpenH264:
 libloading = "0.8.5"
-reqwest = { version = "0.12.5", default-features = false, features = ["blocking"] }
+reqwest = { version = "0.12.6", default-features = false, features = ["blocking"] }
 hex = "0.4.3"
 bzip2 = { version = "0.4.4", features = ["static"] }
 tempfile = "3.12.0"
