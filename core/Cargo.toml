@@ -18,7 +18,7 @@ flate2 = { workspace = true }
 fnv = "1.0.7"
 gc-arena = { package = "ruffle_gc_arena", path = "../ruffle_gc_arena" }
 slotmap = { workspace = true }
-indexmap = "2.3.0"
+indexmap = "2.4.0"
 tracing = { workspace = true }
 ruffle_render = { path = "../render", features = ["tessellator"] }
 ruffle_video = { path = "../video" }
@@ -53,7 +53,7 @@ clap = { workspace = true, optional=true }
 realfft = "3.3.0"
 hashbrown = { version = "0.14.5", features = ["raw"] }
 scopeguard = "1.2.0"
-fluent-templates = "0.9.4"
+fluent-templates = "0.10.1"
 egui = { workspace = true, optional = true }
 egui_extras = { git = "https://github.com/emilk/egui.git", rev = "37b1e1504db14697c39ce1c3bb5e58f4f2b819bf", default-features = false, optional = true }
 png = { version = "0.17.13", optional = true }
