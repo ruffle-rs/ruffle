@@ -248,6 +248,7 @@ impl UiBackend for WebUiBackend {
             let editing_text = self.js_player.is_virtual_keyboard_focused();
             textarea.set_value(&content);
             let _ = element.append_child(&textarea);
+            let _ = textarea.focus();
             textarea.select();
 
             match document.exec_command("copy") {
@@ -261,6 +262,10 @@ impl UiBackend for WebUiBackend {
                 Err(e) => tracing::error!("Couldn't set clipboard contents: {:?}", e),
             }
 
+            if let Ok(element) = element.clone().dyn_into::<HtmlElement>() {
+                // Ensure we don't lose our focus.
+                let _ = element.focus();
+            }
             let _ = element.remove_child(&textarea);
             if editing_text {
                 // Return focus to the text area
