@@ -120,7 +120,6 @@ impl App {
         let mut next_frame_time = None;
         let mut minimized = false;
         let mut modifiers = Modifiers::default();
-        let mut fullscreen_down = false;
 
         if self.initial_movie_url.is_none() {
             // No SWF provided on command line; show window with dummy movie immediately.
@@ -333,47 +332,21 @@ impl App {
                                 return;
                             }
 
-                            // Handle fullscreen keyboard shortcuts: Alt+Return, Escape.
-                            match event {
-                                KeyEvent {
-                                    state: ElementState::Pressed,
-                                    logical_key: Key::Named(NamedKey::Enter),
-                                    ..
-                                } if modifiers.state().alt_key() => {
-                                    if !fullscreen_down {
-                                        if let Some(mut player) = self.player.get() {
-                                            player.update(|uc| {
-                                                uc.stage.toggle_display_state(uc);
-                                            });
-                                        }
-                                    }
-                                    fullscreen_down = true;
-                                    return;
-                                }
-                                KeyEvent {
-                                    state: ElementState::Released,
-                                    logical_key: Key::Named(NamedKey::Enter),
-                                    ..
-                                } if fullscreen_down => {
-                                    fullscreen_down = false;
-                                }
-                                KeyEvent {
-                                    state: ElementState::Pressed,
-                                    logical_key: Key::Named(NamedKey::Escape),
-                                    ..
-                                } => {
-                                    if let Some(mut player) = self.player.get() {
-                                        if player.is_playing() {
-                                            player.update(|uc| {
-                                                uc.stage.set_display_state(
-                                                    uc,
-                                                    StageDisplayState::Normal,
-                                                );
-                                            })
-                                        }
+                            // Handle escaping from fullscreen.
+                            if let KeyEvent {
+                                state: ElementState::Pressed,
+                                logical_key: Key::Named(NamedKey::Escape),
+                                ..
+                            } = event
+                            {
+                                if let Some(mut player) = self.player.get() {
+                                    if player.is_playing() {
+                                        player.update(|uc| {
+                                            uc.stage
+                                                .set_display_state(uc, StageDisplayState::Normal);
+                                        })
                                     }
                                 }
-                                _ => (),
                             }
 
                             let key_code = winit_to_ruffle_key_code(&event);

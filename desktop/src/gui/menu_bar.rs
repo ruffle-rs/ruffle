@@ -22,6 +22,13 @@ pub struct MenuBar {
 }
 
 impl MenuBar {
+    const SHORTCUT_FULLSCREEN: KeyboardShortcut = KeyboardShortcut::new(Modifiers::NONE, Key::F11);
+    const SHORTCUT_OPEN: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::O);
+    const SHORTCUT_OPEN_ADVANCED: KeyboardShortcut =
+        KeyboardShortcut::new(Modifiers::COMMAND.plus(Modifiers::SHIFT), Key::O);
+    const SHORTCUT_PAUSE: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::P);
+    const SHORTCUT_QUIT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::Q);
+
     pub fn new(
         event_loop: EventLoopProxy<RuffleEvent>,
         default_launch_options: LaunchOptions,
@@ -46,25 +53,32 @@ impl MenuBar {
         egui::TopBottomPanel::top("menu_bar").show(egui_ctx, |ui| {
             // TODO(mike): Make some MenuItem struct with shortcut info to handle this more cleanly.
             if ui.ctx().input_mut(|input| {
-                input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND | Modifiers::SHIFT, Key::O))
+                input.consume_shortcut(&Self::SHORTCUT_OPEN_ADVANCED)
             }) {
                 dialogs.open_file_advanced();
             }
             if ui.ctx().input_mut(|input| {
-                input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND, Key::O))
+                input.consume_shortcut(&Self::SHORTCUT_OPEN)
             }) {
                 self.open_file(ui);
             }
             if ui.ctx().input_mut(|input| {
-                input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND, Key::Q))
+                input.consume_shortcut(&Self::SHORTCUT_QUIT)
             }) {
                 self.request_exit(ui);
             }
             if ui.ctx().input_mut(|input| {
-                input.consume_shortcut(&KeyboardShortcut::new(Modifiers::COMMAND, Key::P))
+                input.consume_shortcut(&Self::SHORTCUT_PAUSE)
             }) {
                 if let Some(player) = &mut player {
                     player.set_is_playing(!player.is_playing());
+                }
+            }
+            if ui.ctx().input_mut(|input| {
+                input.consume_shortcut(&Self::SHORTCUT_FULLSCREEN)
+            }) {
+                if let Some(player) = &mut player {
+                    player.set_fullscreen(true);
                 }
             }
 
@@ -75,8 +89,7 @@ impl MenuBar {
                 menu::menu_button(ui, text(locale, "controls-menu"), |ui| {
                     ui.add_enabled_ui(player.is_some(), |ui| {
                         let playing = player.as_ref().map(|p| p.is_playing()).unwrap_or_default();
-                        let pause_shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::P);
-                        if Button::new(text(locale, if playing { "controls-menu-suspend" } else { "controls-menu-resume" })).shortcut_text(ui.ctx().format_shortcut(&pause_shortcut)).ui(ui).clicked() {
+                        if Button::new(text(locale, if playing { "controls-menu-suspend" } else { "controls-menu-resume" })).shortcut_text(ui.ctx().format_shortcut(&Self::SHORTCUT_PAUSE)).ui(ui).clicked() {
                             ui.close_menu();
                             if let Some(player) = &mut player {
                                 player.set_is_playing(!player.is_playing());
@@ -179,20 +192,16 @@ impl MenuBar {
         player_exists: bool,
     ) {
         menu::menu_button(ui, text(locale, "file-menu"), |ui| {
-            let mut shortcut;
-
-            shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::O);
             if Button::new(text(locale, "file-menu-open-quick"))
-                .shortcut_text(ui.ctx().format_shortcut(&shortcut))
+                .shortcut_text(ui.ctx().format_shortcut(&Self::SHORTCUT_OPEN))
                 .ui(ui)
                 .clicked()
             {
                 self.open_file(ui);
             }
 
-            shortcut = KeyboardShortcut::new(Modifiers::COMMAND | Modifiers::SHIFT, Key::O);
             if Button::new(text(locale, "file-menu-open-advanced"))
-                .shortcut_text(ui.ctx().format_shortcut(&shortcut))
+                .shortcut_text(ui.ctx().format_shortcut(&Self::SHORTCUT_OPEN_ADVANCED))
                 .ui(ui)
                 .clicked()
             {
@@ -267,9 +276,8 @@ impl MenuBar {
             }
             ui.separator();
 
-            shortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::Q);
             if Button::new(text(locale, "file-menu-exit"))
-                .shortcut_text(ui.ctx().format_shortcut(&shortcut))
+                .shortcut_text(ui.ctx().format_shortcut(&Self::SHORTCUT_QUIT))
                 .ui(ui)
                 .clicked()
             {
@@ -358,7 +366,11 @@ impl MenuBar {
                 }
                 ui.separator();
 
-                if ui.button(text(locale, "view-menu-fullscreen")).clicked() {
+                if Button::new(text(locale, "view-menu-fullscreen"))
+                    .shortcut_text(ui.ctx().format_shortcut(&Self::SHORTCUT_FULLSCREEN))
+                    .ui(ui)
+                    .clicked()
+                {
                     ui.close_menu();
                     if let Some(player) = player {
                         player.set_fullscreen(true);
