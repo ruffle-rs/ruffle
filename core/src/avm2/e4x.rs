@@ -1158,6 +1158,30 @@ impl<'gc> E4XNode<'gc> {
         self.0.read().notification
     }
 
+    // 13.3.5.4 [[GetNamespace]] ( [ InScopeNamespaces ] )
+    pub fn get_namespace(&self, in_scope_ns: &[E4XNamespace<'gc>]) -> E4XNamespace<'gc> {
+        // 1. If q.uri is null, throw a TypeError exception
+        // NOTE: As stated in the spec, this isn't really possible.
+        match self.namespace() {
+            None => E4XNamespace::default_namespace(),
+            Some(ns) => {
+                // 2. If InScopeNamespaces was not specified, let InScopeNamespaces = { }
+                // 3. Find a Namespace ns in InScopeNamespaces, such that ns.uri == q.uri. If more than one such
+                //    Namespace ns exists, the implementation may choose one of the matching Namespaces arbitrarily.
+                // NOTE: Flash just uses whatever namespace URI matches first. They don't do anything with the prefix.
+                if let Some(ns) = in_scope_ns.iter().find(|scope_ns| scope_ns.uri == ns.uri) {
+                    *ns
+                } else {
+                    // 4. If no such namespace ns exists
+                    //      a. Let ns be a new namespace created as if by calling the constructor new Namespace(q.uri)
+                    // NOTE: We could preserve the prefix here, but Flash doesn't bother.
+                    E4XNamespace::new_uri(ns.uri)
+                }
+            }
+        }
+        // 5. Return ns
+    }
+
     pub fn in_scope_namespaces(&self) -> Vec<E4XNamespace<'gc>> {
         let mut result: Vec<E4XNamespace<'gc>> = Vec::new();
 

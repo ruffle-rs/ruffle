@@ -168,28 +168,9 @@ impl<'gc> XmlObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         in_scope_ns: &[E4XNamespace<'gc>],
     ) -> Result<NamespaceObject<'gc>, Error<'gc>> {
-        // 13.3.5.4 [[GetNamespace]] ( [ InScopeNamespaces ] )
-        // 1. If q.uri is null, throw a TypeError exception
-        // NOTE: As stated in the spec, this not really possible
-        match self.0.node.get().namespace() {
-            None => E4XNamespace::default_namespace(),
-            Some(ns) => {
-                // 2. If InScopeNamespaces was not specified, let InScopeNamespaces = { }
-                // 3. Find a Namespace ns in InScopeNamespaces, such that ns.uri == q.uri. If more than one such
-                //    Namespace ns exists, the implementation may choose one of the matching Namespaces arbitrarily.
-                // NOTE: Flash just uses whatever namespace URI matches first. They don't do anything with the prefix.
-                if let Some(ns) = in_scope_ns.iter().find(|scope_ns| scope_ns.uri == ns.uri) {
-                    *ns
-                } else {
-                    // 4. If no such namespace ns exists
-                    //      a. Let ns be a new namespace created as if by calling the constructor new Namespace(q.uri)
-                    // NOTE: We could preserve the prefix here, but Flash doesn't bother.
-                    E4XNamespace::new_uri(ns.uri)
-                }
-            }
-        }
-        // 5. Return ns
-        .as_namespace_object(activation)
+        self.node()
+            .get_namespace(in_scope_ns)
+            .as_namespace_object(activation)
     }
 
     pub fn matches_name(&self, multiname: &Multiname<'gc>) -> bool {
