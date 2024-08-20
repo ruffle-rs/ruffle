@@ -4,14 +4,12 @@ use gilrs::Button;
 use rfd::FileDialog;
 use ruffle_core::events::{GamepadButton, KeyCode, TextControlCode};
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use url::Url;
 use wgpu::rwh::{HasDisplayHandle, HasWindowHandle};
 use winit::dpi::PhysicalSize;
 use winit::event::{KeyEvent, Modifiers};
 use winit::event_loop::EventLoop;
 use winit::keyboard::{Key, KeyLocation, NamedKey};
-use winit::window::Window;
 
 /// Converts a winit event to a Ruffle `TextControlCode`.
 /// Returns `None` if there is no match.
@@ -247,7 +245,7 @@ pub fn parse_url(path: &Path) -> Result<Url, Error> {
     }
 }
 
-fn actually_pick_file<W: HasWindowHandle + HasDisplayHandle>(
+pub fn pick_file<W: HasWindowHandle + HasDisplayHandle>(
     dir: Option<PathBuf>,
     parent: Option<&W>,
 ) -> Option<PathBuf> {
@@ -265,34 +263,6 @@ fn actually_pick_file<W: HasWindowHandle + HasDisplayHandle>(
     }
 
     dialog.pick_file()
-}
-
-// [NA] Horrible hacky workaround for https://github.com/rust-windowing/winit/issues/2291
-// We only need the workaround from within UI code, not when executing custom events
-// The workaround causes Ruffle to show as "not responding" on windows, so we don't use it if we don't need to
-#[cfg(windows)]
-pub fn pick_file(
-    in_ui: bool,
-    path: Option<PathBuf>,
-    parent: Option<Arc<Window>>,
-) -> Option<PathBuf> {
-    if in_ui {
-        std::thread::spawn(move || actually_pick_file(path, parent.as_ref()))
-            .join()
-            .ok()
-            .flatten()
-    } else {
-        actually_pick_file(path, parent.as_ref())
-    }
-}
-
-#[cfg(not(windows))]
-pub fn pick_file(
-    _in_ui: bool,
-    path: Option<PathBuf>,
-    parent: Option<Arc<Window>>,
-) -> Option<PathBuf> {
-    actually_pick_file(path, parent.as_ref())
 }
 
 #[cfg(not(feature = "tracy"))]
