@@ -36,3 +36,5 @@ debug-menu-open-movie = Filmi Göster
 debug-menu-open-movie-list = Bilinen Filmleri Göster
 debug-menu-open-domain-list = Domainleri Görüntüle
 debug-menu-search-display-objects = Görüntü Objelerini Ara...
+view-menu = Görüntüle
+view-menu-fullscreen = Tam ekran
