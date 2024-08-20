@@ -43,6 +43,34 @@ impl MenuBar {
         }
     }
 
+    pub fn consume_shortcuts(
+        &mut self,
+        egui_ctx: &egui::Context,
+        dialogs: &mut Dialogs,
+        mut player: Option<&mut Player>,
+    ) {
+        // TODO(mike): Make some MenuItem struct with shortcut info to handle this more cleanly.
+        if egui_ctx.input_mut(|input| input.consume_shortcut(&Self::SHORTCUT_OPEN_ADVANCED)) {
+            dialogs.open_file_advanced();
+        }
+        if egui_ctx.input_mut(|input| input.consume_shortcut(&Self::SHORTCUT_OPEN)) {
+            self.open_file();
+        }
+        if egui_ctx.input_mut(|input| input.consume_shortcut(&Self::SHORTCUT_QUIT)) {
+            self.request_exit();
+        }
+        if egui_ctx.input_mut(|input| input.consume_shortcut(&Self::SHORTCUT_PAUSE)) {
+            if let Some(player) = &mut player {
+                player.set_is_playing(!player.is_playing());
+            }
+        }
+        if egui_ctx.input_mut(|input| input.consume_shortcut(&Self::SHORTCUT_FULLSCREEN)) {
+            if let Some(player) = &mut player {
+                player.set_fullscreen(true);
+            }
+        }
+    }
+
     pub fn show(
         &mut self,
         locale: &LanguageIdentifier,
@@ -51,37 +79,6 @@ impl MenuBar {
         mut player: Option<&mut Player>,
     ) {
         egui::TopBottomPanel::top("menu_bar").show(egui_ctx, |ui| {
-            // TODO(mike): Make some MenuItem struct with shortcut info to handle this more cleanly.
-            if ui.ctx().input_mut(|input| {
-                input.consume_shortcut(&Self::SHORTCUT_OPEN_ADVANCED)
-            }) {
-                dialogs.open_file_advanced();
-            }
-            if ui.ctx().input_mut(|input| {
-                input.consume_shortcut(&Self::SHORTCUT_OPEN)
-            }) {
-                self.open_file(ui);
-            }
-            if ui.ctx().input_mut(|input| {
-                input.consume_shortcut(&Self::SHORTCUT_QUIT)
-            }) {
-                self.request_exit(ui);
-            }
-            if ui.ctx().input_mut(|input| {
-                input.consume_shortcut(&Self::SHORTCUT_PAUSE)
-            }) {
-                if let Some(player) = &mut player {
-                    player.set_is_playing(!player.is_playing());
-                }
-            }
-            if ui.ctx().input_mut(|input| {
-                input.consume_shortcut(&Self::SHORTCUT_FULLSCREEN)
-            }) {
-                if let Some(player) = &mut player {
-                    player.set_fullscreen(true);
-                }
-            }
-
             menu::bar(ui, |ui| {
                 self.file_menu(locale, ui, dialogs, player.is_some());
                 self.view_menu(locale, ui, &mut player);
@@ -197,7 +194,8 @@ impl MenuBar {
                 .ui(ui)
                 .clicked()
             {
-                self.open_file(ui);
+                ui.close_menu();
+                self.open_file();
             }
 
             if Button::new(text(locale, "file-menu-open-advanced"))
@@ -281,7 +279,8 @@ impl MenuBar {
                 .ui(ui)
                 .clicked()
             {
-                self.request_exit(ui);
+                ui.close_menu();
+                self.request_exit();
             }
         });
     }
@@ -408,9 +407,7 @@ impl MenuBar {
         });
     }
 
-    fn open_file(&mut self, ui: &mut egui::Ui) {
-        ui.close_menu();
-
+    fn open_file(&mut self) {
         let _ = self
             .event_loop
             .send_event(RuffleEvent::BrowseAndOpen(Box::new(
@@ -434,9 +431,8 @@ impl MenuBar {
         ui.close_menu();
     }
 
-    fn request_exit(&mut self, ui: &mut egui::Ui) {
+    fn request_exit(&mut self) {
         let _ = self.event_loop.send_event(RuffleEvent::ExitRequested);
-        ui.close_menu();
     }
 
     fn launch_website(&mut self, ui: &mut egui::Ui, url: &str) {
