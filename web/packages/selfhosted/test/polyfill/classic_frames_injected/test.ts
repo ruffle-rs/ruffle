@@ -15,7 +15,9 @@ describe("Flash inside frame with injected ruffle", () => {
         await browser.switchToFrame(await browser.$("#test-frame"));
         await browser.$("<ruffle-object />").waitForExist();
 
-        const actual = await browser.$("#test-container").getHTML(false);
+        const actual = await browser
+            .$("#test-container")
+            .getHTML({ includeSelectorTag: false, pierceShadowRoot: false });
         const expected = fs.readFileSync(
             `${import.meta.dirname}/expected.html`,
             "utf8",
@@ -39,7 +41,9 @@ describe("Flash inside frame with injected ruffle", () => {
         await browser.switchToFrame(await browser.$("#test-frame"));
         await browser.$("<ruffle-object />").waitForExist();
 
-        const actual = await browser.$("#test-container").getHTML(false);
+        const actual = await browser
+            .$("#test-container")
+            .getHTML({ includeSelectorTag: false, pierceShadowRoot: false });
         const expected = fs.readFileSync(
             `${import.meta.dirname}/expected.html`,
             "utf8",

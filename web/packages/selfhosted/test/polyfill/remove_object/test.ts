@@ -12,7 +12,9 @@ describe("Remove object", () => {
 
     it("polyfills with ruffle", async () => {
         await injectRuffleAndWait(browser);
-        const actual = await browser.$("#test-container").getHTML(false);
+        const actual = await browser
+            .$("#test-container")
+            .getHTML({ includeSelectorTag: false, pierceShadowRoot: false });
         const expected = fs.readFileSync(
             `${import.meta.dirname}/expected.html`,
             "utf8",
@@ -25,7 +27,9 @@ describe("Remove object", () => {
             const obj = document.getElementById("foo");
             obj?.remove();
         });
-        const actual = await browser.$("#test-container").getHTML(false);
+        const actual = await browser
+            .$("#test-container")
+            .getHTML({ includeSelectorTag: false, pierceShadowRoot: false });
         const expected = "";
         expect(actual).html.to.equal(expected);
     });

@@ -1,4 +1,4 @@
-import type { Options, Services } from "@wdio/types";
+import type { Services } from "@wdio/types";
 import { BrowserStackCapabilities } from "@wdio/types/build/Capabilities";
 
 const capabilities: WebdriverIO.Capabilities[] = [];
@@ -209,8 +209,7 @@ declare global {
     }
 }
 
-// @ts-expect-error TS2375 Undefined is the same as not specified here
-export const config: Options.Testrunner = {
+export const config = {
     user,
     key,
     runner: "local",
