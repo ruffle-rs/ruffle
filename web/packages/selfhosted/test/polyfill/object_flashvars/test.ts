@@ -23,7 +23,7 @@ describe("Object tag", () => {
     it("Plays a movie with flashvars", async () => {
         await playAndMonitor(
             browser,
-            await browser.$("#test-container").$("<ruffle-embed />"),
+            await browser.$("#test-container").$("ruffle-embed"),
             `// _level0.a
 1
 

@@ -8,7 +8,7 @@ describe("Exposed RufflePlayer methods/properties", () => {
     loadJsAPI();
 
     it("exposed API has not changed", async () => {
-        const player = await browser.$("<ruffle-player>");
+        const player = await browser.$("ruffle-player");
         const keys = await browser.execute(async (playerElement) => {
             // https://github.com/webdriverio/webdriverio/issues/6486
             const player = playerElement as unknown;

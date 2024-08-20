@@ -9,7 +9,7 @@ describe("RufflePlayer.metadata", () => {
     loadJsAPI("/test_assets/example.swf");
 
     it("has metadata after load", async () => {
-        const player = await browser.$("<ruffle-player>");
+        const player = await browser.$("ruffle-player");
         const metadata = await browser.execute(
             // https://github.com/webdriverio/webdriverio/issues/6486
             (player) => (player as unknown as Player).metadata,

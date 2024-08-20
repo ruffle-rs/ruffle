@@ -12,7 +12,7 @@ describe("Embed with case-insensitive MIME type", () => {
 
     it("Polyfills", async () => {
         await injectRuffleAndWait(browser);
-        await browser.$("<ruffle-embed />").waitForExist();
+        await browser.$("ruffle-embed").waitForExist();
 
         const actual = await browser.$("#test-container").getHTML(false);
         const expected = fs.readFileSync(
@@ -25,7 +25,7 @@ describe("Embed with case-insensitive MIME type", () => {
     it("Plays a movie", async () => {
         await playAndMonitor(
             browser,
-            await browser.$("#test-container").$("<ruffle-embed />"),
+            await browser.$("#test-container").$("ruffle-embed"),
         );
     });
 });

@@ -12,7 +12,7 @@ describe("Flash inside frame with provided ruffle", () => {
 
     it("polyfills inside a frame", async () => {
         await browser.switchToFrame(await browser.$("#test-frame"));
-        await browser.$("<ruffle-object />").waitForExist();
+        await browser.$("ruffle-object").waitForExist();
 
         const actual = await browser.$("#test-container").getHTML(false);
         const expected = fs.readFileSync(
@@ -36,7 +36,7 @@ describe("Flash inside frame with provided ruffle", () => {
         // And finally, check
         await browser.switchToFrame(null);
         await browser.switchToFrame(await browser.$("#test-frame"));
-        await browser.$("<ruffle-object />").waitForExist();
+        await browser.$("ruffle-object").waitForExist();
 
         const actual = await browser.$("#test-container").getHTML(false);
         const expected = fs.readFileSync(

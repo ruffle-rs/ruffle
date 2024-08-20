@@ -12,7 +12,7 @@ describe("iframe onload", () => {
 
     it("runs the iframe onload event", async () => {
         await injectRuffleAndWait(browser);
-        await browser.$("<div />").waitForExist();
+        await browser.$("div").waitForExist();
 
         const actual = await browser.$("#container").getHTML(false);
         const expected = fs.readFileSync(

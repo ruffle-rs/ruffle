@@ -12,7 +12,7 @@ describe("SWF extension, file with GET parameter", () => {
 
     it("Polyfills", async () => {
         await injectRuffleAndWait(browser);
-        await browser.$("<ruffle-object />").waitForExist();
+        await browser.$("ruffle-object").waitForExist();
 
         const actual = await browser.$("#test-container").getHTML(false);
         const expected = fs.readFileSync(
@@ -25,7 +25,7 @@ describe("SWF extension, file with GET parameter", () => {
     it("Plays a movie", async () => {
         await playAndMonitor(
             browser,
-            await browser.$("#test-container").$("<ruffle-object />"),
+            await browser.$("#test-container").$("ruffle-object"),
         );
     });
 });
