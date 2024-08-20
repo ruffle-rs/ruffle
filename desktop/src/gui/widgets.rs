@@ -64,7 +64,7 @@ impl PathOrUrlField {
                         path
                     });
 
-                if let Some(path) = pick_file(true, dir, self.window.upgrade()) {
+                if let Some(path) = pick_file(dir, self.window.upgrade().as_ref()) {
                     let mut value_lock = Self::lock_value(&self.value);
                     *value_lock = path.to_string_lossy().to_string();
                 }

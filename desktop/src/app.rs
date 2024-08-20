@@ -514,7 +514,7 @@ impl App {
                 }
 
                 winit::event::Event::UserEvent(RuffleEvent::BrowseAndOpen(options)) => {
-                    if let Some(url) = pick_file(false, None, Some(self.window.clone()))
+                    if let Some(url) = pick_file(None, Some(&self.window))
                         .and_then(|p| Url::from_file_path(p).ok())
                     {
                         self.gui
