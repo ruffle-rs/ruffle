@@ -1,10 +1,13 @@
 use crate::custom_event::RuffleEvent;
 use egui::{
-    vec2, Align, Area, Button, Checkbox, Color32, Frame, Id, Key, Layout, Modifiers, Order, Pos2,
-    Stroke, Style, Widget,
+    vec2, Align, Area, Button, Checkbox, Color32, Frame, Id, Key, KeyboardShortcut, Layout,
+    Modifiers, Order, Pos2, Stroke, Style, Widget,
 };
 use ruffle_core::{ContextMenuItem, PlayerEvent};
+use unic_langid::LanguageIdentifier;
 use winit::event_loop::EventLoopProxy;
+
+use super::text;
 
 pub struct ContextMenu {
     items: Vec<ContextMenuItem>,
@@ -27,8 +30,10 @@ impl ContextMenu {
 
     pub fn show(
         &mut self,
+        locale: &LanguageIdentifier,
         egui_ctx: &egui::Context,
         event_loop: &EventLoopProxy<RuffleEvent>,
+        fullscreen: bool,
     ) -> bool {
         let mut item_clicked = false;
         self.position = self.position.or(egui_ctx.pointer_latest_pos());
@@ -58,6 +63,22 @@ impl ContextMenu {
                             if clicked {
                                 let _ =
                                     event_loop.send_event(RuffleEvent::ContextMenuItemClicked(i));
+                                item_clicked = true;
+                            }
+                        }
+
+                        if fullscreen {
+                            ui.separator();
+                            if Button::new(text(locale, "context-menu-exit-fullscreen"))
+                                .shortcut_text(ui.ctx().format_shortcut(&KeyboardShortcut::new(
+                                    Modifiers::NONE,
+                                    Key::Escape,
+                                )))
+                                .wrap_mode(egui::TextWrapMode::Extend)
+                                .ui(ui)
+                                .clicked()
+                            {
+                                let _ = event_loop.send_event(RuffleEvent::ExitFullScreen);
                                 item_clicked = true;
                             }
                         }
