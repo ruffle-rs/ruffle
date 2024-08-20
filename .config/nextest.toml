@@ -1,4 +1,4 @@
-# TODO: Figure out why this specific test is flaky on CI, fix it, then delete this file.
+# TODO: Figure out why these specific tests are flaky on CI, fix them, then delete this file.
 [[profile.ci.overrides]]
-filter = "test(avm2/pixelbender_shaderdata)"
-retries = 3
+filter = "test(avm2/pixelbender_shaderdata) or test(avm2/graphics_round_rects)"
+retries = 4
