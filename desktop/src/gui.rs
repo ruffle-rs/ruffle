@@ -131,6 +131,8 @@ impl RuffleGui {
     ) {
         let locale = self.preferences.language();
 
+        self.menu_bar
+            .consume_shortcuts(egui_ctx, &mut self.dialogs, player.as_deref_mut());
         if show_menu {
             self.menu_bar
                 .show(&locale, egui_ctx, &mut self.dialogs, player.as_deref_mut());
