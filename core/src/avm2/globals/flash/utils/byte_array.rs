@@ -184,14 +184,13 @@ pub fn read_utf<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn strip_bom<'gc>(activation: &mut Activation<'_, 'gc>, mut body: Vec<u8>) -> AvmString<'gc> {
+pub fn strip_bom<'gc>(activation: &mut Activation<'_, 'gc>, mut bytes: &[u8]) -> AvmString<'gc> {
     // UTF-8 BOM
-    if body.starts_with(&[0xEF, 0xBB, 0xBF]) {
-        body.drain(..3);
+    if let Some(without_bom) = bytes.strip_prefix(&[0xEF, 0xBB, 0xBF]) {
+        bytes = without_bom;
     // Little-endian UTF-16 BOM
-    } else if body.starts_with(&[0xFF, 0xFE]) {
-        body.drain(..2);
-        let utf16_bytes: Vec<_> = body
+    } else if let Some(without_bom) = bytes.strip_prefix(&[0xFF, 0xFE]) {
+        let utf16_bytes: Vec<_> = without_bom
             .chunks_exact(2)
             .map(|pair| u16::from_le_bytes([pair[0], pair[1]]))
             .collect();
@@ -200,9 +199,8 @@ pub fn strip_bom<'gc>(activation: &mut Activation<'_, 'gc>, mut body: Vec<u8>) -
             WString::from_buf(utf16_bytes),
         );
     // Big-endian UTF-16 BOM
-    } else if body.starts_with(&[0xFE, 0xFF]) {
-        body.drain(..2);
-        let utf16_bytes: Vec<_> = body
+    } else if let Some(without_bom) = bytes.strip_prefix(&[0xFE, 0xFF]) {
+        let utf16_bytes: Vec<_> = without_bom
             .chunks_exact(2)
             .map(|pair| u16::from_be_bytes([pair[0], pair[1]]))
             .collect();
@@ -212,7 +210,7 @@ pub fn strip_bom<'gc>(activation: &mut Activation<'_, 'gc>, mut body: Vec<u8>) -
         );
     }
 
-    AvmString::new_utf8_bytes(activation.context.gc_context, &body)
+    AvmString::new_utf8_bytes(activation.context.gc_context, bytes)
 }
 
 pub fn to_string<'gc>(
@@ -221,7 +219,7 @@ pub fn to_string<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bytearray) = this.as_bytearray() {
-        return Ok(strip_bom(activation, bytearray.bytes().into()).into());
+        return Ok(strip_bom(activation, bytearray.bytes()).into());
     }
 
     Ok(Value::Undefined)

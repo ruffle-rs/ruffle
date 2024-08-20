@@ -1561,7 +1561,7 @@ impl<'gc> Loader<'gc> {
                         if body.is_empty() {
                             None
                         } else {
-                            let string_value = strip_bom(activation, body);
+                            let string_value = strip_bom(activation, &body);
 
                             activation
                                 .avm2()
@@ -1576,7 +1576,7 @@ impl<'gc> Loader<'gc> {
                             tracing::warn!("Invalid URLLoaderDataFormat: {}", data_format);
                         }
 
-                        Some(strip_bom(activation, body).into())
+                        Some(strip_bom(activation, &body).into())
                     };
 
                     if let Some(data_object) = data_object {
