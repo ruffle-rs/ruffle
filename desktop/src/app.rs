@@ -8,7 +8,7 @@ use crate::util::{
 };
 use anyhow::{Context, Error};
 use gilrs::{Event, EventType, Gilrs};
-use ruffle_core::{PlayerEvent, StageDisplayState};
+use ruffle_core::PlayerEvent;
 use ruffle_render::backend::ViewportDimensions;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -339,14 +339,7 @@ impl App {
                                 ..
                             } = event
                             {
-                                if let Some(mut player) = self.player.get() {
-                                    if player.is_playing() {
-                                        player.update(|uc| {
-                                            uc.stage
-                                                .set_display_state(uc, StageDisplayState::Normal);
-                                        })
-                                    }
-                                }
+                                let _ = event_loop_proxy.send_event(RuffleEvent::ExitFullScreen);
                             }
 
                             let key_code = winit_to_ruffle_key_code(&event);
@@ -509,6 +502,14 @@ impl App {
                 winit::event::Event::UserEvent(RuffleEvent::CloseFile) => {
                     self.window.set_title("Ruffle"); // Reset title since file has been closed.
                     self.player.destroy();
+                }
+
+                winit::event::Event::UserEvent(RuffleEvent::ExitFullScreen) => {
+                    if let Some(mut player) = self.player.get() {
+                        if player.is_playing() {
+                            player.set_fullscreen(false);
+                        }
+                    }
                 }
 
                 winit::event::Event::UserEvent(RuffleEvent::ExitRequested) => {

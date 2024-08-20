@@ -787,6 +787,12 @@ impl Player {
         context.stage.root_clip()
     }
 
+    pub fn is_fullscreen(&mut self) -> bool {
+        self.mutate_with_update_context(|context| {
+            context.stage.display_state() != StageDisplayState::Normal
+        })
+    }
+
     pub fn set_fullscreen(&mut self, is_fullscreen: bool) {
         self.mutate_with_update_context(|context| {
             let display_state = if is_fullscreen {

@@ -166,7 +166,7 @@ impl RuffleGui {
             }
 
             if let Some(context_menu) = &mut self.context_menu {
-                if !context_menu.show(egui_ctx, &self.event_loop) {
+                if !context_menu.show(&locale, egui_ctx, &self.event_loop, player.is_fullscreen()) {
                     self.close_context_menu(player);
                 }
             }
