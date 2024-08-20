@@ -11,6 +11,9 @@
     "settings_autostart": {
         "message": "Açılış ekranı olmadan otomatik olarak oynat (sonrasında sesi açmak için tıkla)"
     },
+    "settings_swf_takeover": {
+        "message": "SWF dosyalarını indirmek yerine tarayıcıda oynat"
+    },
     "settings_log_level": {
         "message": "Kayıt düzeyi"
     },

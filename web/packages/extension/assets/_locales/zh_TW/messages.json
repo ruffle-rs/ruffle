@@ -11,6 +11,9 @@
     "settings_autostart": {
         "message": "自動播放Flash內容"
     },
+    "settings_swf_takeover": {
+        "message": "在瀏覽器中直接播放SWF文件，而不是下載。"
+    },
     "settings_log_level": {
         "message": "日誌層級(用在於開發人員工具裡的主控台)"
     },
@@ -106,6 +109,9 @@
     },
     "grant_single_site_permission": {
         "message": "永久在此網站使用"
+    },
+    "permissions_explanation": {
+        "message": "Ruffle 擴展程序在能夠訪問所有網站的數據時效果最佳。這使得它可以在任何網站首次加載時運行，從而立即使進行 Flash Player 檢測的網站上的 Flash 內容運行。這也使得它能夠從網絡上的其他位置加載 SWF 文件到其內部播放器頁面。如果你不授予此權限，你將需要在每個想使用 Ruffle 的網站上手動啓用 Ruffle，方法是點擊擴展圖標併爲該網站啓用它。"
     },
     "swf_player_permissions": {
         "message": "您必須授予此 URL 來源的權限才能從中載入 SWF。"
