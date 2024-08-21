@@ -41,10 +41,13 @@ impl FilePicker {
         let locale = &self.data.preferences.language();
         let mut dialog = AsyncFileDialog::new()
             .add_filter(
-                text(locale, "file-picker-filter-flash-files"),
+                text(locale, "file-picker-filter-supported"),
                 &["swf", "spl", "ruf"],
             )
-            .add_filter(text(locale, "file-picker-filter-all-files"), &["*"])
+            .add_filter(text(locale, "file-picker-filter-swf"), &["swf"])
+            .add_filter(text(locale, "file-picker-filter-spl"), &["spl"])
+            .add_filter(text(locale, "file-picker-filter-ruf"), &["ruf"])
+            .add_filter(text(locale, "file-picker-filter-all"), &["*"])
             .set_title(text(locale, "file-picker-title-open-file"));
 
         if let Some(dir) = dir {
