@@ -27,11 +27,13 @@ pub struct CssStream<'a> {
     input: &'a WStr,
 }
 
+const ASTERISK: u16 = '*' as u16;
 const OPEN_BLOCK: u16 = '{' as u16;
 const CLOSE_BLOCK: u16 = '}' as u16;
 const COMMA: u16 = ',' as u16;
 const COLON: u16 = ':' as u16;
 const SEMI_COLON: u16 = ';' as u16;
+const SLASH: u16 = '/' as u16;
 const SPACE: u16 = ' ' as u16;
 const NEWLINE: u16 = '\n' as u16;
 const RETURN: u16 = '\r' as u16;
@@ -44,16 +46,35 @@ impl<'a> CssStream<'a> {
         Self { pos: 0, input }
     }
 
-    fn skip_whitespace(&mut self) -> bool {
+    fn skip_whitespace_and_comments(&mut self) -> bool {
         let mut found = false;
-        while self.consume_any(&ANY_VALID_WHITESPACE).is_some() {
+        while self.skip_comment() || self.consume_any(&ANY_VALID_WHITESPACE).is_some() {
             found = true;
         }
         found
     }
 
+    fn skip_comment(&mut self) -> bool {
+        if self.peek2() == Some((SLASH, ASTERISK)) {
+            self.pos += 2; // Skip the `/*`
+            while self.peek2() != Some((ASTERISK, SLASH)) {
+                self.pos += 1;
+                if self.peek().is_none() {
+                    return false; // EOF without closing comment
+                }
+            }
+            self.pos += 2; // Skip the `*/`
+            return true;
+        }
+        false
+    }
+
     fn peek(&self) -> Option<u16> {
         self.input.get(self.pos)
+    }
+
+    fn peek2(&self) -> Option<(u16, u16)> {
+        Some((self.input.get(self.pos)?, self.input.get(self.pos + 1)?))
     }
 
     #[cfg(test)]
@@ -95,7 +116,7 @@ impl<'a> CssStream<'a> {
         let mut result = FnvHashMap::default();
 
         loop {
-            self.skip_whitespace();
+            self.skip_whitespace_and_comments();
             if self.peek().is_none() {
                 return Ok(result);
             }
@@ -114,12 +135,12 @@ impl<'a> CssStream<'a> {
         let mut result = Vec::new();
 
         loop {
-            self.skip_whitespace();
+            self.skip_whitespace_and_comments();
             let name = self.consume_until_any(&[OPEN_BLOCK, COMMA, SPACE, NEWLINE, RETURN, TAB]);
             if !name.is_empty() {
                 result.push(name);
             }
-            self.skip_whitespace();
+            self.skip_whitespace_and_comments();
 
             match self.peek() {
                 Some(OPEN_BLOCK) => {
@@ -146,13 +167,13 @@ impl<'a> CssStream<'a> {
     pub(crate) fn parse_properties(&mut self) -> Result<CssProperties<'a>, CssError> {
         let mut result = CssProperties::default();
 
-        loop {
+        'main: loop {
             // [NA] This is a bit awkward:
             // - spaces at the start of a name are skipped
             // - spaces in the middle of a name are errors
             // - spaces at the end of the name are kept
 
-            self.skip_whitespace();
+            self.skip_whitespace_and_comments();
 
             match self.peek() {
                 Some(CLOSE_BLOCK) => {
@@ -168,7 +189,7 @@ impl<'a> CssStream<'a> {
             let name_start = self.pos;
             let mut name = self.consume_until_any(&[COLON, SPACE, NEWLINE, RETURN, TAB]);
 
-            if self.skip_whitespace() {
+            if self.skip_whitespace_and_comments() {
                 let next = self.peek();
                 if next == Some(COLON) {
                     // Expand to contain the spaces at the end of a name, this is valid
@@ -190,21 +211,48 @@ impl<'a> CssStream<'a> {
             }
 
             // Okay, we've got the name sorted, now it's the value!
-            self.skip_whitespace();
-            let value = self.consume_until_any(&[SEMI_COLON, CLOSE_BLOCK]);
-            result.insert(name, value);
+            self.skip_whitespace_and_comments();
 
-            match self.peek() {
-                Some(SEMI_COLON) => {
-                    self.pos += 1;
-                    continue;
+            let value_start = self.pos;
+            let mut value = self.consume_until_any(&[SEMI_COLON, COLON, CLOSE_BLOCK]);
+            loop {
+                match self.peek() {
+                    Some(COLON) => {
+                        self.pos = value_start;
+                        let possible_value = self.consume_until_any(&[NEWLINE, RETURN]);
+                        match self.peek() {
+                            Some(NEWLINE) | Some(RETURN) => {
+                                self.pos += 1;
+                                result.insert(name, possible_value);
+                                continue 'main;
+                            }
+                            _ => {
+                                self.pos = value_start;
+                                value = self.consume_until_any(&[SEMI_COLON, CLOSE_BLOCK]);
+                                continue;
+                            }
+                        }
+                    }
+                    Some(SEMI_COLON) => {
+                        self.pos += 1;
+                        result.insert(name, value);
+                        continue 'main;
+                    }
+                    Some(CLOSE_BLOCK) => {
+                        self.pos += 1;
+                        let mut end_value = value.len();
+                        for (index, ch) in value.iter().enumerate() {
+                            if [NEWLINE, RETURN].contains(&ch) {
+                                end_value = index;
+                                break;
+                            }
+                        }
+                        result.insert(name, &value[..end_value]);
+                        return Ok(result);
+                    }
+                    None => return Err(CssError::PropertyValueMissing),
+                    _ => unreachable!(),
                 }
-                Some(CLOSE_BLOCK) => {
-                    self.pos += 1;
-                    return Ok(result);
-                }
-                None => return Err(CssError::PropertyValueMissing),
-                _ => unreachable!(),
             }
         }
     }
@@ -249,6 +297,43 @@ mod tests {
             Ok(vec![WStr::from_units(b"name")])
         );
         assert_eq!(stream.pos(), 6)
+    }
+
+    #[test]
+    fn parse_selectors_with_comment() {
+        let mut stream = CssStream::new(WStr::from_units(b"name /* comment */ {"));
+        assert_eq!(
+            stream.parse_selectors(),
+            Ok(vec![WStr::from_units(b"name")])
+        );
+        assert_eq!(stream.pos(), 20)
+    }
+
+    #[test]
+    fn parse_property_without_semicolon() {
+        let mut stream = CssStream::new(WStr::from_units(b"a { key: value \r\nkey2:v }"));
+        let mut result = FnvHashMap::default();
+        result.insert(WStr::from_units(b"a"), {
+            let mut properties = FnvHashMap::default();
+            properties.insert(WStr::from_units(b"key"), WStr::from_units(b"value "));
+            properties.insert(WStr::from_units(b"key2"), WStr::from_units(b"v "));
+            properties
+        });
+        assert_eq!(stream.parse(), Ok(result));
+        assert_eq!(stream.pos(), 25)
+    }
+
+    #[test]
+    fn parse_last_property_without_semicolon() {
+        let mut stream = CssStream::new(WStr::from_units(b"a { key: value \r\n }"));
+        let mut result = FnvHashMap::default();
+        result.insert(WStr::from_units(b"a"), {
+            let mut properties = FnvHashMap::default();
+            properties.insert(WStr::from_units(b"key"), WStr::from_units(b"value "));
+            properties
+        });
+        assert_eq!(stream.parse(), Ok(result));
+        assert_eq!(stream.pos(), 19)
     }
 
     #[test]

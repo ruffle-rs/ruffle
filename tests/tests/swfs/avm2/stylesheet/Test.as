@@ -196,6 +196,21 @@
 					"}");
 			});
 
+			test("parseCSS: last property without semicolon trimmed correctly", styleSheet, function() {
+				styleSheet.clear();
+				styleSheet.parseCSS("a{key1: value; key2: value \r\n} b{key3: value \n}");
+			});
+			
+			test("parseCSS: comment", styleSheet, function() {
+				styleSheet.clear();
+				styleSheet.parseCSS("/* comment */ a{key: value;}");
+			});
+
+			test("parseCSS: unclosed comment", styleSheet, function() {
+				styleSheet.clear();
+				styleSheet.parseCSS("/* comment a{key: value;}");
+			});
+
 			styleSheet = new AlwaysRedStyleSheet();
 			test("transform", styleSheet, function() {
 				styleSheet.setStyle("anything", "blue");
