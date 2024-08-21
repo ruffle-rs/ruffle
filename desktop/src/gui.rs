@@ -3,11 +3,13 @@ mod controller;
 mod dialogs;
 mod menu_bar;
 mod movie;
+mod picker;
 mod theme;
 mod widgets;
 
 pub use controller::GuiController;
 pub use movie::MovieView;
+pub use picker::FilePicker;
 use std::borrow::Cow;
 pub use theme::ThemePreference;
 use url::Url;

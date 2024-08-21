@@ -1,11 +1,10 @@
-use crate::gui::text;
 use crate::gui::widgets::PathOrUrlField;
+use crate::gui::{text, FilePicker};
 use crate::preferences::GlobalPreferences;
 use crate::{custom_event::RuffleEvent, player::LaunchOptions};
 use egui::{Align2, Button, Grid, Label, Layout, Sense, Ui, Widget, Window};
 use egui_extras::{Column, TableBuilder};
 use ruffle_frontend_utils::bookmarks::Bookmark;
-use std::sync::Weak;
 use unic_langid::LanguageIdentifier;
 use url::Url;
 use winit::event_loop::EventLoopProxy;
@@ -20,7 +19,7 @@ impl BookmarkAddDialog {
     pub fn new(
         preferences: GlobalPreferences,
         initial_url: Option<Url>,
-        window: Weak<winit::window::Window>,
+        picker: FilePicker,
     ) -> Self {
         Self {
             preferences,
@@ -29,7 +28,7 @@ impl BookmarkAddDialog {
                 .map(|x| ruffle_frontend_utils::url_to_readable_name(x).into_owned())
                 .unwrap_or_default(),
             // TODO: hint.
-            url: PathOrUrlField::new(initial_url, "", window),
+            url: PathOrUrlField::new(initial_url, "", picker),
         }
     }
 
@@ -100,8 +99,8 @@ struct SelectedBookmark {
 }
 
 pub struct BookmarksDialog {
-    window: Weak<winit::window::Window>,
     event_loop: EventLoopProxy<RuffleEvent>,
+    picker: FilePicker,
     preferences: GlobalPreferences,
     selected_bookmark: Option<SelectedBookmark>,
 }
@@ -109,11 +108,11 @@ pub struct BookmarksDialog {
 impl BookmarksDialog {
     pub fn new(
         preferences: GlobalPreferences,
-        window: Weak<winit::window::Window>,
+        picker: FilePicker,
         event_loop: EventLoopProxy<RuffleEvent>,
     ) -> Self {
         Self {
-            window,
+            picker,
             event_loop,
             preferences,
             selected_bookmark: None,
@@ -224,7 +223,7 @@ impl BookmarksDialog {
                                     url: PathOrUrlField::new(
                                         Some(bookmark.url.clone()),
                                         "",
-                                        self.window.clone(),
+                                        self.picker.clone(),
                                     ),
                                 });
                             }

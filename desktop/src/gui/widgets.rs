@@ -1,29 +1,26 @@
 use crate::gui::text;
-use crate::util::pick_file;
 use egui::{TextEdit, Ui};
 use std::path::Path;
-use std::sync::{Arc, Mutex, MutexGuard, Weak};
+use std::sync::{Arc, Mutex, MutexGuard};
 use unic_langid::LanguageIdentifier;
 use url::Url;
 
+use super::FilePicker;
+
 pub struct PathOrUrlField {
-    window: Weak<winit::window::Window>,
+    picker: FilePicker,
     value: Arc<Mutex<String>>,
     result: Option<Url>,
     hint: &'static str,
 }
 
 impl PathOrUrlField {
-    pub fn new(
-        default: Option<Url>,
-        hint: &'static str,
-        window: Weak<winit::window::Window>,
-    ) -> Self {
+    pub fn new(default: Option<Url>, hint: &'static str, picker: FilePicker) -> Self {
         if let Some(default) = default {
             if default.scheme() == "file" {
                 if let Ok(path) = default.to_file_path() {
                     return Self {
-                        window,
+                        picker,
                         value: Arc::new(Mutex::new(path.to_string_lossy().to_string())),
                         result: Some(default),
                         hint,
@@ -32,7 +29,7 @@ impl PathOrUrlField {
             }
 
             return Self {
-                window,
+                picker,
                 value: Arc::new(Mutex::new(default.to_string())),
                 result: Some(default),
                 hint,
@@ -40,7 +37,7 @@ impl PathOrUrlField {
         }
 
         Self {
-            window,
+            picker,
             value: Arc::new(Mutex::new("".to_string())),
             result: None,
             hint,
@@ -65,9 +62,9 @@ impl PathOrUrlField {
                     });
 
                 let value = self.value.clone();
-                let window = self.window.upgrade();
+                let picker = self.picker.clone();
                 tokio::spawn(async move {
-                    if let Some(path) = pick_file(dir, window.as_ref()).await {
+                    if let Some(path) = picker.pick_file(dir).await {
                         let mut value_lock = Self::lock_value(&value);
                         *value_lock = path.to_string_lossy().to_string();
                     }

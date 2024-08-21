@@ -1,11 +1,9 @@
 use crate::custom_event::RuffleEvent;
 use anyhow::{anyhow, Error};
 use gilrs::Button;
-use rfd::AsyncFileDialog;
 use ruffle_core::events::{GamepadButton, KeyCode, TextControlCode};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use url::Url;
-use wgpu::rwh::{HasDisplayHandle, HasWindowHandle};
 use winit::dpi::PhysicalSize;
 use winit::event::{KeyEvent, Modifiers};
 use winit::event_loop::EventLoop;
@@ -243,26 +241,6 @@ pub fn parse_url(path: &Path) -> Result<Url, Error> {
             .filter(|url| url.host().is_some() || url.scheme() == "file")
             .ok_or_else(|| anyhow!("Input path is not a file and could not be parsed as a URL."))
     }
-}
-
-pub async fn pick_file<W: HasWindowHandle + HasDisplayHandle>(
-    dir: Option<PathBuf>,
-    parent: Option<&W>,
-) -> Option<PathBuf> {
-    let mut dialog = AsyncFileDialog::new()
-        .add_filter("Flash Files", &["swf", "spl", "ruf"])
-        .add_filter("All Files", &["*"])
-        .set_title("Load a Flash File");
-
-    if let Some(dir) = dir {
-        dialog = dialog.set_directory(dir);
-    }
-
-    if let Some(parent) = parent {
-        dialog = dialog.set_parent(parent);
-    }
-
-    dialog.pick_file().await.map(|h| h.into())
 }
 
 #[cfg(not(feature = "tracy"))]

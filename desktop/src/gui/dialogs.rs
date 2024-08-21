@@ -17,10 +17,12 @@ use url::Url;
 use volume_controls::VolumeControls;
 use winit::event_loop::EventLoopProxy;
 
+use super::FilePicker;
+
 pub struct Dialogs {
-    window: Weak<winit::window::Window>,
     event_loop: EventLoopProxy<RuffleEvent>,
 
+    picker: FilePicker,
     preferences_dialog: Option<PreferencesDialog>,
     bookmarks_dialog: Option<BookmarksDialog>,
     bookmark_add_dialog: Option<BookmarkAddDialog>,
@@ -44,6 +46,7 @@ impl Dialogs {
         window: Weak<winit::window::Window>,
         event_loop: EventLoopProxy<RuffleEvent>,
     ) -> Self {
+        let picker = FilePicker::new(window);
         Self {
             preferences_dialog: None,
             bookmarks_dialog: None,
@@ -52,7 +55,7 @@ impl Dialogs {
             open_dialog: OpenDialog::new(
                 player_options,
                 default_path,
-                window.clone(),
+                picker.clone(),
                 event_loop.clone(),
             ),
             is_open_dialog_visible: false,
@@ -62,10 +65,14 @@ impl Dialogs {
 
             is_about_visible: false,
 
-            window,
             event_loop,
+            picker,
             preferences,
         }
+    }
+
+    pub fn file_picker(&self) -> FilePicker {
+        self.picker.clone()
     }
 
     pub fn recreate_open_dialog(
@@ -75,7 +82,7 @@ impl Dialogs {
         event_loop: EventLoopProxy<RuffleEvent>,
     ) {
         self.is_open_dialog_visible = false;
-        self.open_dialog = OpenDialog::new(opt, url, self.window.clone(), event_loop);
+        self.open_dialog = OpenDialog::new(opt, url, self.picker.clone(), event_loop);
     }
 
     pub fn open_file_advanced(&mut self) {
@@ -89,7 +96,7 @@ impl Dialogs {
     pub fn open_bookmarks(&mut self) {
         self.bookmarks_dialog = Some(BookmarksDialog::new(
             self.preferences.clone(),
-            self.window.clone(),
+            self.picker.clone(),
             self.event_loop.clone(),
         ));
     }
@@ -98,7 +105,7 @@ impl Dialogs {
         self.bookmark_add_dialog = Some(BookmarkAddDialog::new(
             self.preferences.clone(),
             initial_url,
-            self.window.clone(),
+            self.picker.clone(),
         ))
     }
 
