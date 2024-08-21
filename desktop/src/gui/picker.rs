@@ -1,3 +1,5 @@
+use super::text;
+use crate::preferences::GlobalPreferences;
 use rfd::AsyncFileDialog;
 use std::{
     path::PathBuf,
@@ -16,14 +18,16 @@ pub struct FilePicker {
 struct FilePickerData {
     parent: Weak<Window>,
     picking: AtomicBool,
+    preferences: GlobalPreferences,
 }
 
 impl FilePicker {
-    pub fn new(parent: Weak<Window>) -> Self {
+    pub fn new(parent: Weak<Window>, preferences: GlobalPreferences) -> Self {
         Self {
             data: Arc::new(FilePickerData {
                 parent,
                 picking: AtomicBool::new(false),
+                preferences,
             }),
         }
     }
@@ -34,10 +38,14 @@ impl FilePicker {
             return None;
         }
 
+        let locale = &self.data.preferences.language();
         let mut dialog = AsyncFileDialog::new()
-            .add_filter("Flash Files", &["swf", "spl", "ruf"])
-            .add_filter("All Files", &["*"])
-            .set_title("Load a Flash File");
+            .add_filter(
+                text(locale, "file-picker-filter-flash-files"),
+                &["swf", "spl", "ruf"],
+            )
+            .add_filter(text(locale, "file-picker-filter-all-files"), &["*"])
+            .set_title(text(locale, "file-picker-title-open-file"));
 
         if let Some(dir) = dir {
             dialog = dialog.set_directory(dir);
