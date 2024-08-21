@@ -66,7 +66,7 @@ impl Dialogs {
         window: Weak<winit::window::Window>,
         event_loop: EventLoopProxy<RuffleEvent>,
     ) -> Self {
-        let picker = FilePicker::new(window);
+        let picker = FilePicker::new(window, preferences.clone());
         Self {
             preferences_dialog: None,
             bookmarks_dialog: None,
