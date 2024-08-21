@@ -52,9 +52,9 @@ impl Avm1ObjectWindow {
                         keys.retain(|key| {
                             self.key_filter_string.is_empty()
                                 || key
-                                .to_string()
-                                .to_ascii_lowercase()
-                                .contains(&self.key_filter_string.to_ascii_lowercase())
+                                    .to_string()
+                                    .to_ascii_lowercase()
+                                    .contains(&self.key_filter_string.to_ascii_lowercase())
                         });
 
                         for key in keys {
