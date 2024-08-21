@@ -83,7 +83,7 @@ jobs:
         if: runner.os != 'macOS'
         run: |
           set +e
-          cargo nextest run --profile ci --cargo-profile ci --workspace --locked -j 4 --features imgtests,lzma,jpegxr render
+          cargo nextest run --profile ci --cargo-profile ci --workspace --locked -j 4 --features imgtests,lzma,jpegxr
           cat $(find . -name gdb.bt)
         env:
           # This is to counteract the disabling by rust-cache.

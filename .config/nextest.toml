@@ -2,4 +2,4 @@
 # as they tend to crash on GitHub Actions runners - maybe due to not enough memory.
 [[profile.ci.overrides]]
 filter = "test(/^\\[render\\] /)"
-threads-required = 4
+threads-required = 1
