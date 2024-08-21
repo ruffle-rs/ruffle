@@ -52,9 +52,9 @@ impl Avm1ObjectWindow {
                         keys.retain(|key| {
                             self.key_filter_string.is_empty()
                                 || key
-                                    .to_string()
-                                    .to_ascii_lowercase()
-                                    .contains(&self.key_filter_string.to_ascii_lowercase())
+                                .to_string()
+                                .to_ascii_lowercase()
+                                .contains(&self.key_filter_string.to_ascii_lowercase())
                         });
 
                         for key in keys {
@@ -111,7 +111,7 @@ impl Avm1ObjectWindow {
                             ui.label("Function");
                         } else if ui.button(object_name(value)).clicked() {
                             messages.push(Message::TrackAVM1Object(AVM1ObjectHandle::new(
-                                &mut activation.context,
+                                activation.context,
                                 value,
                             )));
                         }
@@ -120,7 +120,7 @@ impl Avm1ObjectWindow {
                         if let Some((_, _, object)) = value.resolve_reference(activation) {
                             open_display_object_button(
                                 ui,
-                                &mut activation.context,
+                                activation.context,
                                 messages,
                                 object,
                                 &mut self.hovered_debug_rect,
