@@ -1,6 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::api_version::ApiVersion;
-use crate::avm2::e4x::{E4XNamespace, E4XNode, E4XNodeKind};
+use crate::avm2::e4x::{string_to_multiname, E4XNamespace, E4XNode, E4XNodeKind};
 use crate::avm2::error::make_error_1089;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
@@ -635,6 +635,15 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
             let node = x.node();
             node.is_element() && node.has_property(name)
         })
+    }
+
+    fn has_own_property_string(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<bool, Error<'gc>> {
+        let multiname = string_to_multiname(activation, name.into());
+        Ok(self.has_own_property(&multiname))
     }
 
     // ECMA-357 9.2.1.2 [[Put]] (P, V)
