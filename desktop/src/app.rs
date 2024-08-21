@@ -3,7 +3,7 @@ use crate::gui::{GuiController, MENU_HEIGHT};
 use crate::player::{LaunchOptions, PlayerController};
 use crate::preferences::GlobalPreferences;
 use crate::util::{
-    get_screen_size, gilrs_button_to_gamepad_button, parse_url, pick_file, plot_stats_in_tracy,
+    get_screen_size, gilrs_button_to_gamepad_button, parse_url, plot_stats_in_tracy,
     winit_to_ruffle_key_code, winit_to_ruffle_text_control,
 };
 use anyhow::{Context, Error};
@@ -482,9 +482,10 @@ impl App {
 
                 winit::event::Event::UserEvent(RuffleEvent::BrowseAndOpen(options)) => {
                     let event_loop = event_loop_proxy.clone();
-                    let window = self.window.clone();
+                    let picker = self.gui.borrow().file_picker();
                     tokio::spawn(async move {
-                        if let Some(url) = pick_file(None, Some(&window))
+                        if let Some(url) = picker
+                            .pick_file(None)
                             .await
                             .and_then(|p| Url::from_file_path(p).ok())
                         {

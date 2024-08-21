@@ -23,6 +23,8 @@ use winit::event_loop::EventLoop;
 use winit::keyboard::{Key, NamedKey};
 use winit::window::{Theme, Window};
 
+use super::FilePicker;
+
 /// Integration layer connecting wgpu+winit to egui.
 pub struct GuiController {
     descriptors: Arc<Descriptors>,
@@ -147,6 +149,10 @@ impl GuiController {
 
     pub fn descriptors(&self) -> &Arc<Descriptors> {
         &self.descriptors
+    }
+
+    pub fn file_picker(&self) -> FilePicker {
+        self.gui.dialogs.file_picker()
     }
 
     pub fn resize(&mut self, size: PhysicalSize<u32>) {
