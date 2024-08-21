@@ -66,7 +66,8 @@ impl MenuBar {
         }
         if egui_ctx.input_mut(|input| input.consume_shortcut(&Self::SHORTCUT_FULLSCREEN)) {
             if let Some(player) = &mut player {
-                player.set_fullscreen(true);
+                let is_fullscreen = player.is_fullscreen();
+                player.set_fullscreen(!is_fullscreen);
             }
         }
     }
