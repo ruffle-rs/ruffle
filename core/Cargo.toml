@@ -68,6 +68,7 @@ unic-segment = "0.9.0"
 id3 = "1.14.0"
 either = "1.13.0"
 chardetng = "0.1.17"
+tracy-client = { version = "0.17.1", optional = true, default-features = false }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 workspace = true
@@ -79,6 +80,7 @@ version = "0.4.43"
 default = []
 lzma = ["lzma-rs", "swf/lzma"]
 avm_debug = []
+tracy_avm = ["dep:tracy-client"]
 deterministic = []
 timeline_debug = []
 mp3 = ["symphonia"]

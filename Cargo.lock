@@ -4269,6 +4269,7 @@ dependencies = [
  "symphonia",
  "thiserror",
  "tracing",
+ "tracy-client",
  "ttf-parser",
  "unic-segment",
  "url",
