@@ -1,6 +1,7 @@
 network-settings = Network Settings
 player-settings = Player Settings
 movie-parameters = Movie Parameters
+air-arguments = AIR Application Arguments
 
 custom-base-url = Custom Base URL
 

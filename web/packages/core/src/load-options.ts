@@ -667,6 +667,13 @@ export interface BaseLoadOptions {
      * This allows you to emulate Adobe AIR or Adobe Flash Player.
      */
     playerRuntime?: PlayerRuntime;
+
+    /**
+     * Arguments variables to pass to the AIR application.
+     *
+     * @default []
+     */
+    airArguments?: Array<string>;
 }
 
 /**

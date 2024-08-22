@@ -59,6 +59,7 @@ pub struct RuffleInstanceBuilder {
     pub(crate) socket_proxy: Vec<SocketProxy>,
     pub(crate) credential_allow_list: Vec<String>,
     pub(crate) player_runtime: PlayerRuntime,
+    pub(crate) air_arguments: Vec<String>,
     pub(crate) volume: f32,
     pub(crate) default_fonts: HashMap<DefaultFont, Vec<String>>,
     pub(crate) custom_fonts: Vec<(String, Vec<u8>)>,
@@ -95,6 +96,7 @@ impl Default for RuffleInstanceBuilder {
             socket_proxy: vec![],
             credential_allow_list: vec![],
             player_runtime: PlayerRuntime::FlashPlayer,
+            air_arguments: vec![],
             volume: 1.0,
             default_fonts: HashMap::new(),
             custom_fonts: vec![],
@@ -286,6 +288,11 @@ impl RuffleInstanceBuilder {
             "flashPlayer" => PlayerRuntime::FlashPlayer,
             _ => return,
         };
+    }
+
+    #[wasm_bindgen(js_name = "setAirArguments")]
+    pub fn set_air_arguments(&mut self, value: Vec<String>) {
+        self.air_arguments = value;
     }
 
     #[wasm_bindgen(js_name = "setVolume")]
@@ -597,6 +604,7 @@ impl RuffleInstanceBuilder {
             .with_max_execution_duration(self.max_execution_duration)
             .with_player_version(self.player_version)
             .with_player_runtime(self.player_runtime)
+            .with_air_arguments(self.air_arguments.clone())
             .with_compatibility_rules(self.compatibility_rules.clone())
             .with_quality(self.quality)
             .with_align(self.stage_align, self.force_align)

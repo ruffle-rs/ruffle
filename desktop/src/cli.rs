@@ -36,6 +36,10 @@ pub struct Opt {
     #[clap(name = "FILE", value_parser(parse_movie_file_or_url))]
     pub movie_url: Option<Url>,
 
+    /// Arguments variables to pass to the AIR application.
+    #[clap(last=true, allow_hyphen_values=true, action = clap::ArgAction::Append)]
+    pub air_arguments: Vec<String>,
+
     /// A "flashvars" parameter to provide to the movie.
     /// This can be repeated multiple times, for example -Pkey=value -Pfoo=bar.
     #[clap(short = 'P', action = clap::ArgAction::Append)]

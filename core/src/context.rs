@@ -109,6 +109,9 @@ pub struct UpdateContext<'gc> {
     /// variables.
     pub player_version: u8,
 
+    /// The AIR application arguments.
+    pub air_arguments: &'gc Vec<String>,
+
     /// Requests that the player re-renders after this execution (e.g. due to `updateAfterEvent`).
     pub needs_render: &'gc mut bool,
 
