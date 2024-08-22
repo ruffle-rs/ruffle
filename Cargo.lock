@@ -3409,17 +3409,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "objc-foundation"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1add1b659e36c9607c7aab864a76c7a4c2760cd0cd2e120f3fb8b952c7e22bf9"
-dependencies = [
- "block",
- "objc",
- "objc_id",
-]
-
-[[package]]
 name = "objc-sys"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3533,15 +3522,6 @@ dependencies = [
  "objc2 0.5.2",
  "objc2-foundation",
  "objc2-metal",
-]
-
-[[package]]
-name = "objc_id"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c92d4ddb4bd7b50d730c215ff871754d0da6b2178849f8a2a2ab69712d0c073b"
-dependencies = [
- "objc",
 ]
 
 [[package]]
@@ -4184,29 +4164,6 @@ dependencies = [
 [[package]]
 name = "rfd"
 version = "0.14.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "25a73a7337fc24366edfca76ec521f51877b114e42dab584008209cca6719251"
-dependencies = [
- "ashpd",
- "block",
- "dispatch",
- "js-sys",
- "log",
- "objc",
- "objc-foundation",
- "objc_id",
- "pollster",
- "raw-window-handle",
- "urlencoding",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
- "windows-sys 0.48.0",
-]
-
-[[package]]
-name = "rfd"
-version = "0.14.1"
 source = "git+https://github.com/PolyMeilex/rfd.git?rev=42dcc7d61fc5e278b4ed76bb9720ba4d89266f01#42dcc7d61fc5e278b4ed76bb9720ba4d89266f01"
 dependencies = [
  "ashpd",
@@ -4334,7 +4291,7 @@ dependencies = [
  "image",
  "os_info",
  "rand",
- "rfd 0.14.1 (git+https://github.com/PolyMeilex/rfd.git?rev=42dcc7d61fc5e278b4ed76bb9720ba4d89266f01)",
+ "rfd",
  "ruffle_core",
  "ruffle_frontend_utils",
  "ruffle_render",
@@ -4596,7 +4553,7 @@ dependencies = [
  "getrandom",
  "gloo-net",
  "js-sys",
- "rfd 0.14.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rfd",
  "ruffle_core",
  "ruffle_render",
  "ruffle_render_canvas",

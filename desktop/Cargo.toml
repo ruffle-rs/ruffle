@@ -32,7 +32,7 @@ winit = "0.29.15"
 webbrowser = "1.0.1"
 url = { workspace = true }
 dirs = "5.0"
-rfd = { git = "https://github.com/PolyMeilex/rfd.git", rev = "42dcc7d61fc5e278b4ed76bb9720ba4d89266f01" }
+rfd = { workspace = true }
 anyhow = { workspace = true }
 bytemuck = { workspace = true }
 os_info = { version = "3", default-features = false }
