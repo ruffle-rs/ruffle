@@ -14,6 +14,8 @@ package flash.display {
     public class Stage extends DisplayObjectContainer {
         private var _colorCorrection:String = ColorCorrection.DEFAULT;
         private var _mouseLock:Boolean = false;
+        private var _nativeWindow:NativeWindow;
+        private var _fullScreenSourceRect:Rectangle;
 
         public function Stage() {
             throw new Error("You cannot construct new instances of the Stage.");
@@ -182,7 +184,7 @@ package flash.display {
         override public function set x(value:Number):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
- 
+
         override public function set y(value:Number):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
@@ -214,8 +216,15 @@ package flash.display {
 
         public native function get fullScreenHeight():uint;
 
-        public native function get fullScreenSourceRect():Rectangle;
-        public native function set fullScreenSourceRect(value:Rectangle):void;
+        public function get fullScreenSourceRect():Rectangle {
+            stub_getter("flash.display.Stage", "fullScreenSourceRect");
+            return this._fullScreenSourceRect;
+        }
+
+        public function set fullScreenSourceRect(rect: Rectangle):void {
+            stub_setter("flash.display.Stage", "fullScreenSourceRect");
+            this._fullScreenSourceRect = rect;
+        }
 
         public native function get fullScreenWidth():uint;
 
@@ -325,6 +334,15 @@ package flash.display {
         [API("668")]
         public function setAspectRatio(newAspectRatio:String):void {
             stub_method("flash.display.Stage", "setAspectRatio");
+        }
+
+        [API("661")]
+        public function get nativeWindow():NativeWindow {
+            stub_getter("flash.display.Stage", "nativeWindow");
+            if (!this._nativeWindow) {
+                this._nativeWindow = new NativeWindow(new NativeWindowInitOptions(), this);
+            }
+            return this._nativeWindow;
         }
     }
 }
