@@ -56,7 +56,7 @@ base64 = "0.22.0"
 async-channel = { workspace = true }
 futures-util = { version = "0.3.30", features = ["sink"] }
 gloo-net =  { version = "0.6.0", default-features = false, features = ["websocket"] }
-rfd = { version = "0.14.1", features = ["file-handle-inner"] }
+rfd = { workspace = true, features = ["file-handle-inner"] }
 wasm-streams = "0.4.0"
 futures = { workspace = true }
 zip = { version = "2.1.6", default-features = false}
