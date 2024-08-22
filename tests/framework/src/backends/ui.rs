@@ -1,3 +1,5 @@
+use std::vec;
+
 use crate::test::Font;
 use chrono::{DateTime, Utc};
 use ruffle_core::backend::ui::{
@@ -187,4 +189,8 @@ impl UiBackend for TestUiBackend {
     }
 
     fn close_file_dialog(&mut self) {}
+
+    fn get_screens_sizes(&self) -> Vec<(u32, u32)> {
+        vec![(800, 600)]
+    }
 }
