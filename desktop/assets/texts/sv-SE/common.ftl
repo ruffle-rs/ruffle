@@ -4,3 +4,5 @@ browse = Bläddra
 save = Spara
 cancel = Avbryt
 remove = Ta bort
+enable = Aktivera
+disable = Avaktivera
