@@ -310,20 +310,13 @@ jobs:
     if: needs.create-nightly-release.outputs.is_active == 'true'
     runs-on: ubuntu-22.04
     permissions:
-      actions: write
+      actions: read
       attestations: write
-      checks: write
-      contents: write
-      deployments: write
-      discussions: write
+      checks: read
+      contents: read
       id-token: write
-      issues: write
       metadata: read
-      packages: write
-      pages: write
-      pull-requests: write
-      repository-projects: write
-      security-events: write
+      pull-requests: read
       statuses: write
     strategy:
       matrix:
