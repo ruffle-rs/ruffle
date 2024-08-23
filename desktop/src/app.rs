@@ -504,6 +504,14 @@ impl App {
                     self.player.destroy();
                 }
 
+                winit::event::Event::UserEvent(RuffleEvent::EnterFullScreen) => {
+                    if let Some(mut player) = self.player.get() {
+                        if player.is_playing() {
+                            player.set_fullscreen(true);
+                        }
+                    }
+                }
+
                 winit::event::Event::UserEvent(RuffleEvent::ExitFullScreen) => {
                     if let Some(mut player) = self.player.get() {
                         if player.is_playing() {
