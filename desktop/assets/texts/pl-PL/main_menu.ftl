@@ -37,4 +37,4 @@ debug-menu-open-movie-list = Pokaż znane filmy
 debug-menu-open-domain-list = Pokaż domeny
 debug-menu-search-display-objects = Szukaj wyświetlanych obiektów...
 view-menu = Widok
-view-menu-fullscreen = Pełny ekran
+view-menu-fullscreen = Tryb pełnoekranowy

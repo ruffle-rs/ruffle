@@ -10,9 +10,20 @@ update-ruffle = Uppdatera Ruffle
 ruffle-demo = Webbdemo
 ruffle-desktop = Skrivbordsprogram
 ruffle-wiki = Se Ruffle-wiki
+enable-hardware-acceleration = Det ser ut som att hårdvaruacceleration är avstängt. På grund av det kan Ruffle fungera långsamt. Du kan ta reda på hur man sätter på hårdvaruacceleration genom länken nedan:
+enable-hardware-acceleration-link = FAQ - Chrome Hårdvaruacceleration
 view-error-details = Visa Felinformation
 open-in-new-tab = Öppna i en ny flik
 click-to-unmute = Klicka för ljud
+clipboard-message-title = Kopierar och klistrar in i Ruffle
+clipboard-message-description =
+    { $variant ->
+       *[unsupported] Din webbläsare har inte fullständig åtkomst till urklipp,
+        [access-denied] Urklippsåtkomst har nekats,
+    } men du kan använda dom här kortkommandon istället:
+clipboard-message-copy = { " " } för att kopiera
+clipboard-message-cut = { " " } för att klippa
+clipboard-message-paste = { " " } för att klistra in
 error-file-protocol =
     Det verkar som att du kör Ruffle på "fil:"-protokollet.
     Detta fungerar inte eftersom webbläsare blockerar många funktioner från att fungera av säkerhetsskäl.

@@ -34,3 +34,5 @@ debug-menu-open-movie = Film anzeigen
 debug-menu-open-movie-list = Bekannte Filme anzeigen
 debug-menu-open-domain-list = Domains anzeigen
 debug-menu-search-display-objects = Objekte durchsuchen...
+view-menu = Ansicht
+view-menu-fullscreen = Vollbild

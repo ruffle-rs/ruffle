@@ -10,9 +10,19 @@ update-ruffle = Ruffle aktuallisieren
 ruffle-demo = Web-Demo
 ruffle-desktop = Desktop-Anwendung
 ruffle-wiki = Ruffle-Wiki anzeigen
+enable-hardware-acceleration-link = FAQ - Chrome Hardwarebeschleunigung
 view-error-details = Fehlerdetails anzeigen
 open-in-new-tab = In einem neuen Tab öffnen
 click-to-unmute = Klicke zum Entmuten
+clipboard-message-title = Kopieren und Einfügen in Ruffle
+clipboard-message-description =
+    { $variant ->
+       *[unsupported] Dein Browser unterstützt keinen vollständigen Zugriff auf die Zwischenablage,
+        [access-denied] Zugriff auf die Zwischenablage wurde verweigert,
+    } aber du kannst stattdessen auch diese Tastenkombinationen verwenden:
+clipboard-message-copy = { " " } zum Kopieren
+clipboard-message-cut = { " " } zum Ausschneiden
+clipboard-message-paste = { " " } zum Einfügen
 error-file-protocol =
     Es scheint, dass Sie Ruffle auf dem "file:"-Protokoll ausführen.
     Jedoch werden aus Sicherheitsgründen viele Funktionen vom Browser blockiert, weswegen die Datei nicht geladen werden kann.
