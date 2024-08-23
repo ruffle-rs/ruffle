@@ -264,7 +264,6 @@ impl ActivePlayer {
             .with_storage(preferences.storage_backend().create_backend(&opt))
             .with_fs_commands(Box::new(DesktopFSCommandProvider {
                 event_loop: event_loop.clone(),
-                window: window.clone(),
             }))
             .with_ui(
                 DesktopUiBackend::new(

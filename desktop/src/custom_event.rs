@@ -19,6 +19,9 @@ pub enum RuffleEvent {
     /// The user requested to close the current SWF.
     CloseFile,
 
+    /// The user requested to enter full screen.
+    EnterFullScreen,
+
     /// The user requested to exit full screen.
     ExitFullScreen,
 
