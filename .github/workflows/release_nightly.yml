@@ -315,7 +315,6 @@ jobs:
       checks: read
       contents: read
       id-token: write
-      metadata: read
       pull-requests: read
       statuses: write
     strategy:
