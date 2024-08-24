@@ -3,6 +3,7 @@ package flash.display
   import __ruffle__.stub_getter;
   import flash.geom.Rectangle;
 
+  // [API("733")] Ruffle doesn't support this API Version
   [API(661)]
   public class ScreenMode
   {
