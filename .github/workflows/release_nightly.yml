@@ -313,7 +313,7 @@ jobs:
       actions: read
       attestations: write
       checks: read
-      contents: read
+      contents: write
       id-token: write
       pull-requests: read
       statuses: write
