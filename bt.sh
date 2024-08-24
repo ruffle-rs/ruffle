@@ -8,6 +8,7 @@ ex=(
     -ex "set logging overwrite off"
     -ex "set logging file gdb.bt"
     -ex "set logging on"
+    -ex "set debuginfod enabled"
     -ex "set pagination off"
     -ex "handle SIG33 pass nostop noprint"
     -ex "echo backtrace:\n"
