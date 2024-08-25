@@ -19,6 +19,8 @@ use winit::event_loop::EventLoopProxy;
 
 pub struct Dialogs {
     window: Weak<winit::window::Window>,
+    event_loop: EventLoopProxy<RuffleEvent>,
+
     preferences_dialog: Option<PreferencesDialog>,
     bookmarks_dialog: Option<BookmarksDialog>,
     bookmark_add_dialog: Option<BookmarkAddDialog>,
@@ -47,7 +49,12 @@ impl Dialogs {
             bookmarks_dialog: None,
             bookmark_add_dialog: None,
 
-            open_dialog: OpenDialog::new(player_options, default_path, window.clone(), event_loop),
+            open_dialog: OpenDialog::new(
+                player_options,
+                default_path,
+                window.clone(),
+                event_loop.clone(),
+            ),
             is_open_dialog_visible: false,
 
             volume_controls: VolumeControls::new(&preferences),
@@ -56,6 +63,7 @@ impl Dialogs {
             is_about_visible: false,
 
             window,
+            event_loop,
             preferences,
         }
     }
@@ -82,6 +90,7 @@ impl Dialogs {
         self.bookmarks_dialog = Some(BookmarksDialog::new(
             self.preferences.clone(),
             self.window.clone(),
+            self.event_loop.clone(),
         ));
     }
 
