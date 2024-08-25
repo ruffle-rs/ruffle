@@ -19,3 +19,7 @@ storage-backend-disk = דיסק
 storage-backend-memory = זיכרון
 recent-limit = מגבלה אחרונה
 recent-clear = מחיקה
+theme = ערכת נושא
+theme-system = ברירת מחדל של המערכת
+theme-light = בהיר
+theme-dark = כהה
