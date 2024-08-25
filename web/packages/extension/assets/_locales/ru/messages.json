@@ -109,5 +109,8 @@
     },
     "grant_single_site_permission": {
         "message": "Постоянно включено для этого сайта"
+    },
+    "swf_player_permissions": {
+        "message": "Вам надо предоставить разрешение этому URL-адресу на загрузку SWF-файлов с него."
     }
 }

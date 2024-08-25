@@ -36,3 +36,5 @@ debug-menu-open-movie = Просмотр ролика
 debug-menu-open-movie-list = Известные ролики
 debug-menu-open-domain-list = Показать домены
 debug-menu-search-display-objects = Поиск объектов отображения...
+view-menu = Вид
+view-menu-fullscreen = Полноэкранный режим
