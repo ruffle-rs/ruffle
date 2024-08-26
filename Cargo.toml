@@ -59,14 +59,14 @@ bitflags = "2.6.0"
 bytemuck = "1.17.0"
 chrono = { version = "0.4.38", default-features = false }
 enum-map = "2.7.3"
-flate2 = "1.0.31"
+flate2 = "1.0.33"
 futures = "0.3.30"
 image = { version = "0.25.2", default-features = false }
 js-sys = "0.3.70"
 log = "0.4"
 num-derive = "0.4.2"
 num-traits = "0.2.19"
-serde = "1.0.208"
+serde = "1.0.209"
 thiserror = "1.0"
 url = "2.5.2"
 # Make sure to match wasm-bindgen-cli version to this everywhere.
