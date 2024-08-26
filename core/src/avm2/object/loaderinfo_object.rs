@@ -166,7 +166,6 @@ impl<'gc> LoaderInfoObject<'gc> {
             },
         ))
         .into();
-        this.install_instance_slots(activation.context.gc_context);
 
         class.call_native_init(this.into(), &[], activation)?;
 
@@ -214,7 +213,6 @@ impl<'gc> LoaderInfoObject<'gc> {
             },
         ))
         .into();
-        this.install_instance_slots(activation.context.gc_context);
 
         class.call_native_init(this.into(), &[], activation)?;
 

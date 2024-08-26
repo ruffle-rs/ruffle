@@ -95,7 +95,6 @@ impl<'gc> SoundChannelObject<'gc> {
                 position: Cell::new(0.0),
             },
         ));
-        sound_object.install_instance_slots(activation.context.gc_context);
 
         class.call_native_init(Value::Object(sound_object.into()), &[], activation)?;
 

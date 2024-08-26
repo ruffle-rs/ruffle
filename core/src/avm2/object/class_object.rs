@@ -261,7 +261,6 @@ impl<'gc> ClassObject<'gc> {
         );
 
         self.set_vtable(activation.context.gc_context, class_vtable);
-        self.base().install_instance_slots(activation.gc());
 
         self.run_class_initializer(activation)?;
 
@@ -801,8 +800,6 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         let instance_allocator = self.instance_allocator();
 
         let instance = instance_allocator(self, activation)?;
-
-        instance.install_instance_slots(activation.context.gc_context);
 
         self.call_init(instance.into(), arguments, activation)?;
 

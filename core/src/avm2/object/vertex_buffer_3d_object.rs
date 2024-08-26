@@ -38,7 +38,6 @@ impl<'gc> VertexBuffer3DObject<'gc> {
             },
         ))
         .into();
-        this.install_instance_slots(activation.gc());
 
         class.call_native_init(this.into(), &[], activation)?;
 

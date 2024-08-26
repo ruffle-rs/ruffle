@@ -54,7 +54,6 @@ impl<'gc> DateObject<'gc> {
             },
         ))
         .into();
-        instance.install_instance_slots(activation.context.gc_context);
 
         class.call_native_init(instance.into(), &[], activation)?;
 

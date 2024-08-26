@@ -79,7 +79,6 @@ impl<'gc> QNameObject<'gc> {
             },
         ))
         .into();
-        this.install_instance_slots(activation.context.gc_context);
 
         Ok(this)
     }

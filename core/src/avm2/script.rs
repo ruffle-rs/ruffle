@@ -565,7 +565,6 @@ impl<'gc> Script<'gc> {
             object_class.proto(), // Just use Object's prototype
             global_obj_vtable,
         );
-        global_object.install_instance_slots(mc);
 
         self.0.write(mc).globals = Some(global_object);
 

@@ -88,7 +88,6 @@ impl<'gc> BitmapDataObject<'gc> {
         .into();
 
         bitmap_data.init_object2(activation.context.gc_context, instance);
-        instance.install_instance_slots(activation.context.gc_context);
 
         // We call the custom BitmapData class with width and height...
         // but, it always seems to be 1 in Flash Player when constructed from timeline?
