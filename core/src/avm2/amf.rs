@@ -118,8 +118,7 @@ pub fn serialize_value<'gc>(
                         })
                         .collect();
 
-                    let val_type = val_type
-                        .unwrap_or(activation.avm2().classes().object.inner_class_definition());
+                    let val_type = val_type.unwrap_or(activation.avm2().class_defs().object);
 
                     let name = class_to_alias(activation, val_type);
                     Some(AmfValue::VectorObject(obj_vec, name, vec.is_fixed()))

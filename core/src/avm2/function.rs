@@ -268,9 +268,9 @@ pub fn display_function<'gc>(
                     .map(|b| Gc::ptr_eq(b, *method))
                     .unwrap_or(false)
                 {
-                    if bound_class.c_class().is_none() {
-                        // If the associated class has no c_class, it is a c_class,
-                        // and the instance initializer is the class initializer.
+                    if bound_class.is_c_class() {
+                        // If the associated class is a c_class, its initializer
+                        // method is a class initializer.
                         output.push_utf8("cinit");
                     }
                     // We purposely do nothing for instance initializers

@@ -16,7 +16,6 @@ use crate::avm2::vtable::{ClassBoundMethod, VTable};
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
-use crate::avm2::QName;
 use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
@@ -858,23 +857,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let base = self.base();
 
         base.install_bound_method(mc, disp_id, function)
-    }
-
-    /// Install a const trait on the global object.
-    /// This should only ever be called on the `global` object, during initialization.
-    #[no_dynamic]
-    fn install_const_late(
-        &self,
-        mc: &Mutation<'gc>,
-        name: QName<'gc>,
-        value: Value<'gc>,
-        class: Class<'gc>,
-    ) {
-        let new_slot_id = self
-            .vtable()
-            .install_const_trait_late(mc, name, value, class);
-
-        self.base().install_const_slot_late(mc, new_slot_id, value);
     }
 
     #[no_dynamic]

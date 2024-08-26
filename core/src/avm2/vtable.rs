@@ -534,28 +534,6 @@ impl<'gc> VTable<'gc> {
         )
     }
 
-    /// Install a const trait on the global object.
-    /// This should only ever be called via `Object::install_const_late`,
-    /// on the `global` object.
-    pub fn install_const_trait_late(
-        self,
-        mc: &Mutation<'gc>,
-        name: QName<'gc>,
-        value: Value<'gc>,
-        class: Class<'gc>,
-    ) -> u32 {
-        let mut write = self.0.write(mc);
-
-        write.default_slots.push(Some(value));
-        let new_slot_id = write.default_slots.len() as u32 - 1;
-        write
-            .resolved_traits
-            .insert(name, Property::new_const_slot(new_slot_id));
-        write.slot_classes.push(PropertyClass::Class(class));
-
-        new_slot_id
-    }
-
     /// Install an existing trait under a new name, provided by interface.
     /// This should only ever be called by `link_interfaces`.
     pub fn copy_property_for_interface(
