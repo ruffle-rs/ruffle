@@ -38,6 +38,7 @@ features = ["HtmlCanvasElement"]
 
 [features]
 render_debug_labels = []
+render_trace = ["wgpu/trace"]
 webgl = ["wgpu/webgl"]
 profile-with-tracy = ["profiling", "profiling/profile-with-tracy"]
 
