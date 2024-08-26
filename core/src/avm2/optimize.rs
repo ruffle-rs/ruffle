@@ -100,7 +100,7 @@ impl<'gc> OptValue<'gc> {
             || self.class == Some(classes.uint.inner_class_definition())
             || self.class == Some(classes.number.inner_class_definition())
             || self.class == Some(classes.boolean.inner_class_definition())
-            || self.class == Some(classes.void_def)
+            || self.class == Some(activation.avm2().class_defs().void)
     }
 
     pub fn merged_with(self, other: OptValue<'gc>) -> OptValue<'gc> {
@@ -344,7 +344,7 @@ pub fn optimize<'gc>(
             .classes()
             .function
             .inner_class_definition(),
-        void: activation.avm2().classes().void_def,
+        void: activation.avm2().class_defs().void,
         namespace: activation
             .avm2()
             .classes()

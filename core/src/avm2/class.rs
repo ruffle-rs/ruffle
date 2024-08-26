@@ -367,7 +367,7 @@ impl<'gc> Class<'gc> {
             ),
             object_vector_i_class.instance_init(),
             object_vector_c_class.instance_init(),
-            context.avm2.classes().class.inner_class_definition(),
+            context.avm2.class_defs().class,
             mc,
         );
 
@@ -573,7 +573,7 @@ impl<'gc> Class<'gc> {
             ClassData {
                 name: c_name,
                 param: None,
-                super_class: Some(activation.avm2().classes().class.inner_class_definition()),
+                super_class: Some(activation.avm2().class_defs().class),
                 attributes: ClassAttributes::FINAL,
                 protected_namespace,
                 direct_interfaces: Vec::new(),
@@ -871,7 +871,7 @@ impl<'gc> Class<'gc> {
             ClassData {
                 name: c_name,
                 param: None,
-                super_class: Some(activation.avm2().classes().class.inner_class_definition()),
+                super_class: Some(activation.avm2().class_defs().class),
                 attributes: ClassAttributes::FINAL,
                 protected_namespace: None,
                 direct_interfaces: Vec::new(),
@@ -1228,6 +1228,10 @@ impl<'gc> Class<'gc> {
         Ref::map(self.0.read(), |c| &c.traits)
     }
 
+    pub fn set_traits(&self, mc: &Mutation<'gc>, traits: Vec<Trait<'gc>>) {
+        self.0.write(mc).traits = traits;
+    }
+
     /// Get this class's instance allocator.
     ///
     /// If `None`, then you should use the instance allocator of the superclass
@@ -1311,6 +1315,10 @@ impl<'gc> Class<'gc> {
         self.0.write(mc).linked_class = ClassLink::LinkToClass(c_class);
     }
 
+    pub fn is_c_class(self) -> bool {
+        matches!(self.0.read().linked_class, ClassLink::LinkToInstance(_))
+    }
+
     pub fn i_class(self) -> Option<Class<'gc>> {
         if let ClassLink::LinkToInstance(i_class) = self.0.read().linked_class {
             Some(i_class)
@@ -1323,5 +1331,9 @@ impl<'gc> Class<'gc> {
         assert!(matches!(self.0.read().linked_class, ClassLink::Unlinked));
 
         self.0.write(mc).linked_class = ClassLink::LinkToInstance(i_class);
+    }
+
+    pub fn is_i_class(self) -> bool {
+        matches!(self.0.read().linked_class, ClassLink::LinkToClass(_))
     }
 }

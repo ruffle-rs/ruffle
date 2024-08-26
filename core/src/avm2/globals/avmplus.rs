@@ -377,7 +377,7 @@ fn describe_internal_body<'gc>(
                 let declared_by = method.class;
 
                 if flags.contains(DescribeTypeFlags::HIDE_OBJECT)
-                    && declared_by == activation.avm2().classes().object.inner_class_definition()
+                    && declared_by == activation.avm2().class_defs().object
                 {
                     continue;
                 }

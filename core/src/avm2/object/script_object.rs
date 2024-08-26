@@ -95,7 +95,6 @@ impl<'gc> ScriptObject<'gc> {
     /// This should *not* be used unless you really need
     /// to do something low-level, weird or lazily initialize the object.
     /// You shouldn't let scripts observe this weirdness.
-    /// Another exception is ES3 class-less objects, which we don't really understand well :)
     ///
     /// The "everyday" way to create a normal empty ScriptObject (AS "Object") is to call
     /// `avm2.classes().object.construct(self, &[])`.
@@ -352,19 +351,6 @@ impl<'gc> ScriptObjectWrapper<'gc> {
             } else {
                 slots.push(Value::Undefined)
             }
-        }
-    }
-
-    /// Set a slot by its index. This does extend the array if needed.
-    /// This should only be used during AVM initialization, not at runtime.
-    pub fn install_const_slot_late(&self, mc: &Mutation<'gc>, id: u32, value: Value<'gc>) {
-        let mut slots = self.slots_mut(mc);
-
-        if slots.len() < id as usize + 1 {
-            slots.resize(id as usize + 1, Value::Undefined);
-        }
-        if let Some(slot) = slots.get_mut(id as usize) {
-            *slot = value;
         }
     }
 

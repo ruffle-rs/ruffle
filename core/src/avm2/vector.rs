@@ -140,7 +140,7 @@ impl<'gc> VectorStorage<'gc> {
     /// Get the value type this vector coerces things to.
     pub fn value_type_for_coercion(&self, activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
         self.value_type
-            .unwrap_or_else(|| activation.avm2().classes().object.inner_class_definition())
+            .unwrap_or_else(|| activation.avm2().class_defs().object)
     }
 
     /// Check if a vector index is in bounds.
