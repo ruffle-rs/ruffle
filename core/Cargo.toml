@@ -73,7 +73,7 @@ chardetng = "0.1.17"
 workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies.wasm-bindgen-futures]
-version = "0.4.42"
+version = "0.4.43"
 
 [features]
 default = []
