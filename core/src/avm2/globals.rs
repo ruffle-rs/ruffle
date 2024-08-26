@@ -595,7 +595,6 @@ pub fn load_player_globals<'gc>(
     // operates on the global object until it gets its true vtable, so this should
     // be fine.
     let globals = ScriptObject::custom_object(mc, global_classdef, None, global_classdef.vtable());
-    globals.install_instance_slots(mc);
 
     let scope = ScopeChain::new(domain);
     let gs = scope.chain(mc, &[Scope::new(globals)]);

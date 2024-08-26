@@ -859,11 +859,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         base.install_bound_method(mc, disp_id, function)
     }
 
-    #[no_dynamic]
-    fn install_instance_slots(&self, mc: &Mutation<'gc>) {
-        self.base().install_instance_slots(mc);
-    }
-
     /// Call the object.
     fn call(
         self,

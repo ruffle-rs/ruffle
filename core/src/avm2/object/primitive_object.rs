@@ -101,7 +101,6 @@ impl<'gc> PrimitiveObject<'gc> {
             },
         ))
         .into();
-        this.install_instance_slots(activation.context.gc_context);
 
         //We explicitly DO NOT CALL the native initializers of primitives here.
         //If we did so, then those primitive initializers' method types would

@@ -95,10 +95,6 @@ impl<'gc> EventObject<'gc> {
             },
         ));
 
-        // not needed, as base Event has no instance slots.
-        // yes, this is flimsy. Could call this if install_instance_slots only took gc_context.
-        // event_object.install_instance_slots(activation);
-
         event_object.into()
     }
 
