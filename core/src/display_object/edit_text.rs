@@ -1496,7 +1496,7 @@ impl<'gc> EditText<'gc> {
                 let mut text = self.0.read().restrict.filter_allowed(&text);
 
                 if text.len() > self.available_chars() && self.available_chars() > 0 {
-                    text = text[0..self.available_chars()].to_owned();
+                    text = text.chars().take(self.available_chars()).collect();
                 }
 
                 if text.len() <= self.available_chars() {
