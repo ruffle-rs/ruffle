@@ -242,7 +242,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<Value<'gc>, Error<'gc>> {
         match self.vtable().get_trait(multiname) {
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
-                self.base().get_slot(slot_id)
+                Ok(self.base().get_slot(slot_id))
             }
             Some(Property::Method { disp_id }) => {
                 // avmplus has a special case for XML and XMLList objects, so we need one as well
@@ -348,8 +348,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 let value = self
                     .vtable()
                     .coerce_trait_value(slot_id, value, activation)?;
+
                 self.base()
-                    .set_slot(slot_id, value, activation.context.gc_context)
+                    .set_slot(slot_id, value, activation.context.gc_context);
+
+                Ok(())
             }
             Some(Property::Method { .. }) => {
                 // Similar to the get_property special case for XML/XMLList.
@@ -431,8 +434,11 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 let value = self
                     .vtable()
                     .coerce_trait_value(slot_id, value, activation)?;
+
                 self.base()
-                    .set_slot(slot_id, value, activation.context.gc_context)
+                    .set_slot(slot_id, value, activation.context.gc_context);
+
+                Ok(())
             }
             Some(Property::Method { .. }) => {
                 return Err(error::make_reference_error(
@@ -496,7 +502,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<Value<'gc>, Error<'gc>> {
         match self.vtable().get_trait(multiname) {
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
-                let obj = self.base().get_slot(slot_id)?.as_callable(
+                let obj = self.base().get_slot(slot_id).as_callable(
                     activation,
                     Some(multiname),
                     Some(Value::from(self.into())),
@@ -545,7 +551,8 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
     /// Retrieve a slot by its index.
     #[no_dynamic]
-    fn get_slot(self, id: u32) -> Result<Value<'gc>, Error<'gc>> {
+    #[inline(always)]
+    fn get_slot(self, id: u32) -> Value<'gc> {
         let base = self.base();
 
         base.get_slot(id)
@@ -562,19 +569,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         let value = self.vtable().coerce_trait_value(id, value, activation)?;
         let base = self.base();
 
-        base.set_slot(id, value, activation.gc())
+        base.set_slot(id, value, activation.gc());
+
+        Ok(())
     }
 
     #[no_dynamic]
-    fn set_slot_no_coerce(
-        self,
-        id: u32,
-        value: Value<'gc>,
-        mc: &Mutation<'gc>,
-    ) -> Result<(), Error<'gc>> {
+    fn set_slot_no_coerce(self, id: u32, value: Value<'gc>, mc: &Mutation<'gc>) {
         let base = self.base();
 
-        base.set_slot(id, value, mc)
+        base.set_slot(id, value, mc);
     }
 
     /// Call a method by its index.
@@ -1029,7 +1033,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         for (name, prop) in vtable.public_properties() {
             match prop {
                 Property::Slot { slot_id } | Property::ConstSlot { slot_id } => {
-                    values.push((name, self.base().get_slot(slot_id)?));
+                    values.push((name, self.base().get_slot(slot_id)));
                 }
                 Property::Virtual { get: Some(get), .. } => {
                     values.push((name, self.call_method(get, &[], activation)?))
