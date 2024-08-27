@@ -316,32 +316,28 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         }
     }
 
-    pub fn get_slot(&self, id: u32) -> Result<Value<'gc>, Error<'gc>> {
+    #[inline(always)]
+    pub fn get_slot(&self, id: u32) -> Value<'gc> {
         self.0
             .slots
             .get(id as usize)
             .cloned()
             .map(|s| s.get())
-            .ok_or_else(|| format!("Slot index {id} out of bounds!").into())
+            .expect("Slot index out of bounds")
     }
 
     /// Set a slot by its index.
-    pub fn set_slot(
-        &self,
-        id: u32,
-        value: Value<'gc>,
-        mc: &Mutation<'gc>,
-    ) -> Result<(), Error<'gc>> {
-        if let Some(slot) = self.0.slots.get(id as usize) {
-            Gc::write(mc, self.0);
-            // SAFETY: We just triggered a write barrier on the Gc.
-            let slot_write = unsafe { Write::assume(slot) };
-            slot_write.unlock().set(value);
+    pub fn set_slot(&self, id: u32, value: Value<'gc>, mc: &Mutation<'gc>) {
+        let slot = self
+            .0
+            .slots
+            .get(id as usize)
+            .expect("Slot index out of bounds");
 
-            Ok(())
-        } else {
-            Err(format!("Slot index {id} out of bounds!").into())
-        }
+        Gc::write(mc, self.0);
+        // SAFETY: We just triggered a write barrier on the Gc.
+        let slot_write = unsafe { Write::assume(slot) };
+        slot_write.unlock().set(value);
     }
 
     /// Retrieve a bound method from the method table.

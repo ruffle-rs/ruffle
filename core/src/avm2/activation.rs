@@ -1754,7 +1754,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_get_slot(&mut self, index: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
-        let value = object.get_slot(index)?;
+        let value = object.get_slot(index);
 
         self.push_stack(value);
 
@@ -1774,7 +1774,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value = self.pop_stack();
         let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
 
-        object.set_slot_no_coerce(index, value, self.context.gc_context)?;
+        object.set_slot_no_coerce(index, value, self.context.gc_context);
 
         Ok(FrameControl::Continue)
     }
@@ -1783,7 +1783,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value = self
             .global_scope()
             .map(|global| global.get_slot(index))
-            .transpose()?
             .unwrap_or(Value::Undefined);
 
         self.push_stack(value);

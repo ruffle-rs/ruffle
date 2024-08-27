@@ -364,7 +364,7 @@ impl Avm2ObjectWindow {
                     label_col(&mut row);
                     row.col(|ui| {
                         let value = object.get_slot(slot_id);
-                        ValueResultWidget::new(activation, value).show(ui, messages);
+                        ValueResultWidget::new(activation, Ok(value)).show(ui, messages);
                     });
                     row.col(|_| {});
                 });
