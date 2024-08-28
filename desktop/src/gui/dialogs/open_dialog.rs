@@ -290,7 +290,7 @@ impl OpenDialog {
         if let Some(url) = self.path.result() {
             if self
                 .event_loop
-                .send_event(RuffleEvent::OpenURL(
+                .send_event(RuffleEvent::Open(
                     url.clone(),
                     Box::new(self.options.clone()),
                 ))

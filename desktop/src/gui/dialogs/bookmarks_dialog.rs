@@ -247,7 +247,7 @@ impl BookmarksDialog {
                 false
             }
             Some(BookmarkAction::Start(url)) => {
-                let _ = self.event_loop.send_event(RuffleEvent::OpenURL(
+                let _ = self.event_loop.send_event(RuffleEvent::Open(
                     url,
                     Box::new(LaunchOptions::from(&self.preferences)),
                 ));
