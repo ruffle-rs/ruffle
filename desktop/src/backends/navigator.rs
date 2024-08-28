@@ -7,9 +7,9 @@ use std::path::Path;
 use url::Url;
 
 #[derive(Clone)]
-pub struct RfdNavigatorInterface;
+pub struct DesktopNavigatorInterface;
 
-impl NavigatorInterface for RfdNavigatorInterface {
+impl NavigatorInterface for DesktopNavigatorInterface {
     fn confirm_website_navigation(&self, url: &Url) -> bool {
         let message = format!("The SWF file wants to open the website {}", url);
         // TODO: Add a checkbox with a GUI toolkit
