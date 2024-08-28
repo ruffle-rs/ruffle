@@ -396,6 +396,10 @@ impl GuiController {
     pub fn show_open_dialog(&mut self) {
         self.gui.dialogs.open_file_advanced()
     }
+
+    pub fn show_open_url_dialog(&mut self, url: Url) {
+        self.gui.dialogs.open_open_url(url);
+    }
 }
 
 fn create_wgpu_instance(

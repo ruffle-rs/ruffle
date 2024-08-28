@@ -1,6 +1,7 @@
 mod about_dialog;
 mod bookmarks_dialog;
 mod open_dialog;
+mod open_url_dialog;
 mod preferences_dialog;
 mod volume_controls;
 
@@ -9,6 +10,7 @@ use crate::player::LaunchOptions;
 use crate::preferences::GlobalPreferences;
 use bookmarks_dialog::{BookmarkAddDialog, BookmarksDialog};
 use open_dialog::OpenDialog;
+use open_url_dialog::OpenUrlDialog;
 use preferences_dialog::PreferencesDialog;
 use ruffle_core::Player;
 use std::sync::Weak;
@@ -26,6 +28,7 @@ pub struct Dialogs {
     preferences_dialog: Option<PreferencesDialog>,
     bookmarks_dialog: Option<BookmarksDialog>,
     bookmark_add_dialog: Option<BookmarkAddDialog>,
+    open_url_dialog: Option<OpenUrlDialog>,
 
     open_dialog: OpenDialog,
     is_open_dialog_visible: bool,
@@ -51,6 +54,7 @@ impl Dialogs {
             preferences_dialog: None,
             bookmarks_dialog: None,
             bookmark_add_dialog: None,
+            open_url_dialog: None,
 
             open_dialog: OpenDialog::new(
                 player_options,
@@ -117,6 +121,10 @@ impl Dialogs {
         self.is_about_visible = true;
     }
 
+    pub fn open_open_url(&mut self, url: Url) {
+        self.open_url_dialog = Some(OpenUrlDialog::new(url));
+    }
+
     pub fn show(
         &mut self,
         locale: &LanguageIdentifier,
@@ -129,6 +137,7 @@ impl Dialogs {
         self.bookmark_add_dialog(locale, egui_ctx);
         self.volume_controls(locale, egui_ctx, player);
         self.about_dialog(locale, egui_ctx);
+        self.open_url_dialog(locale, egui_ctx);
     }
 
     fn open_dialog(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) {
@@ -189,6 +198,17 @@ impl Dialogs {
         if self.is_about_visible {
             let keep_open = about_dialog::show_about_dialog(locale, egui_ctx);
             self.is_about_visible = keep_open;
+        }
+    }
+
+    fn open_url_dialog(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) {
+        let keep_open = if let Some(dialog) = &mut self.open_url_dialog {
+            dialog.show(locale, egui_ctx)
+        } else {
+            true
+        };
+        if !keep_open {
+            self.open_url_dialog = None;
         }
     }
 }
