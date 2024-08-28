@@ -500,6 +500,10 @@ impl App {
                         .create_movie(&mut self.player, *options, url);
                 }
 
+                winit::event::Event::UserEvent(RuffleEvent::AskToOpenUrl(url)) => {
+                    self.gui.borrow_mut().show_open_url_dialog(url);
+                }
+
                 winit::event::Event::UserEvent(RuffleEvent::CloseFile) => {
                     self.window.set_title("Ruffle"); // Reset title since file has been closed.
                     self.player.destroy();
