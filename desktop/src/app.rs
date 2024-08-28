@@ -489,12 +489,12 @@ impl App {
                             .await
                             .and_then(|p| Url::from_file_path(p).ok())
                         {
-                            let _ = event_loop.send_event(RuffleEvent::OpenURL(url, options));
+                            let _ = event_loop.send_event(RuffleEvent::Open(url, options));
                         }
                     });
                 }
 
-                winit::event::Event::UserEvent(RuffleEvent::OpenURL(url, options)) => {
+                winit::event::Event::UserEvent(RuffleEvent::Open(url, options)) => {
                     self.gui
                         .borrow_mut()
                         .create_movie(&mut self.player, *options, url);

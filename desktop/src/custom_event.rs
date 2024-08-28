@@ -13,8 +13,8 @@ pub enum RuffleEvent {
     /// The user requested to pick and then open a file.
     BrowseAndOpen(Box<LaunchOptions>),
 
-    /// The user requested to open a URL.
-    OpenURL(url::Url, Box<LaunchOptions>),
+    /// The user requested to open a movie.
+    Open(url::Url, Box<LaunchOptions>),
 
     /// The user requested to close the current SWF.
     CloseFile,
