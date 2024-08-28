@@ -217,7 +217,7 @@ impl ActivePlayer {
             opt.socket_allowed.clone(),
             opt.tcp_connections.unwrap_or(SocketMode::Ask),
             Rc::new(content),
-            DesktopNavigatorInterface,
+            DesktopNavigatorInterface::new(event_loop.clone()),
         );
 
         if cfg!(feature = "external_video") && preferences.openh264_enabled() {

@@ -4,28 +4,39 @@ use std::fs::File;
 use std::io;
 use std::io::ErrorKind;
 use std::path::Path;
+use std::sync::{Arc, Mutex};
 use url::Url;
+use winit::event_loop::EventLoopProxy;
+
+use crate::custom_event::RuffleEvent;
+use crate::util::open_url;
 
 #[derive(Clone)]
-pub struct DesktopNavigatorInterface;
+pub struct DesktopNavigatorInterface {
+    // Arc + Mutex due to macOS
+    event_loop: Arc<Mutex<EventLoopProxy<RuffleEvent>>>,
+}
+
+impl DesktopNavigatorInterface {
+    pub fn new(event_loop: EventLoopProxy<RuffleEvent>) -> Self {
+        Self {
+            event_loop: Arc::new(Mutex::new(event_loop)),
+        }
+    }
+}
 
 impl NavigatorInterface for DesktopNavigatorInterface {
     fn navigate_to_website(&self, url: Url, ask: bool) {
-        if ask {
-            let message = format!("The SWF file wants to open the website {}", url);
-            // TODO: Add a checkbox with a GUI toolkit
-            let result = MessageDialog::new()
-                .set_title("Open website?")
-                .set_level(MessageLevel::Info)
-                .set_description(message)
-                .set_buttons(MessageButtons::OkCancel)
-                .show();
-            if result != MessageDialogResult::Ok {
-                return;
-            }
+        if !ask {
+            open_url(&url);
+            return;
         }
 
-        crate::util::open_url(&url);
+        let _ = self
+            .event_loop
+            .lock()
+            .expect("Non-poisoned event loop")
+            .send_event(RuffleEvent::AskToOpenUrl(url));
     }
 
     fn open_file(&self, path: &Path) -> io::Result<File> {
