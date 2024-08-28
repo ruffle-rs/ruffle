@@ -10,16 +10,22 @@ use url::Url;
 pub struct DesktopNavigatorInterface;
 
 impl NavigatorInterface for DesktopNavigatorInterface {
-    fn confirm_website_navigation(&self, url: &Url) -> bool {
-        let message = format!("The SWF file wants to open the website {}", url);
-        // TODO: Add a checkbox with a GUI toolkit
-        MessageDialog::new()
-            .set_title("Open website?")
-            .set_level(MessageLevel::Info)
-            .set_description(message)
-            .set_buttons(MessageButtons::OkCancel)
-            .show()
-            == MessageDialogResult::Ok
+    fn navigate_to_website(&self, url: Url, ask: bool) {
+        if ask {
+            let message = format!("The SWF file wants to open the website {}", url);
+            // TODO: Add a checkbox with a GUI toolkit
+            let result = MessageDialog::new()
+                .set_title("Open website?")
+                .set_level(MessageLevel::Info)
+                .set_description(message)
+                .set_buttons(MessageButtons::OkCancel)
+                .show();
+            if result != MessageDialogResult::Ok {
+                return;
+            }
+        }
+
+        crate::util::open_url(&url);
     }
 
     fn open_file(&self, path: &Path) -> io::Result<File> {

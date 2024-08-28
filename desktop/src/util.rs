@@ -283,3 +283,14 @@ pub fn plot_stats_in_tracy(instance: &wgpu::Instance) {
 
     tracy.frame_mark();
 }
+
+pub fn open_url(url: &Url) {
+    // TODO: This opens local files in the browser while flash opens them
+    // in the default program for the respective filetype.
+    // This especially includes mailto links. Ruffle opens the browser which opens
+    // the preferred program while flash opens the preferred program directly.
+    match webbrowser::open(url.as_str()) {
+        Ok(_output) => {}
+        Err(e) => tracing::error!("Could not open URL {}: {}", url.as_str(), e),
+    };
+}
