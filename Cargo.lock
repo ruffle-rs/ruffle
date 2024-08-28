@@ -4343,7 +4343,6 @@ dependencies = [
  "tracing",
  "url",
  "urlencoding",
- "webbrowser",
  "zip",
 ]
 
