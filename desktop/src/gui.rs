@@ -77,6 +77,22 @@ pub fn text_with_args<'a, T: AsRef<str>>(
         })
 }
 
+pub enum LocalizableText {
+    #[allow(dead_code)]
+    NonLocalizedText(Cow<'static, str>),
+    LocalizedText(&'static str),
+}
+
+impl LocalizableText {
+    pub fn localize(&self, locale: &LanguageIdentifier) -> Cow<'_, str> {
+        match self {
+            LocalizableText::NonLocalizedText(Cow::Borrowed(text)) => Cow::Borrowed(text),
+            LocalizableText::NonLocalizedText(Cow::Owned(text)) => Cow::Borrowed(text),
+            LocalizableText::LocalizedText(id) => text(locale, id),
+        }
+    }
+}
+
 /// Size of the top menu bar in pixels.
 /// This is the offset at which the movie will be shown,
 /// and added to the window size if trying to match a movie.
