@@ -18,7 +18,9 @@ package flash.display {
         public native function get useHandCursor():Boolean;
         public native function set useHandCursor(useHandCursor:Boolean):void;
 
+        [API("667")]
         public native function startDrag(lockCenter:Boolean = false, bounds:Rectangle = null):void;
+        [API("667")]
         public native function stopDrag():void;
 
         public native function get hitArea():Sprite;

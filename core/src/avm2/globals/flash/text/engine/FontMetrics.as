@@ -20,6 +20,7 @@ package flash.text.engine {
 
         public var superscriptScale:Number;
 
+        [API("674")]
         public var lineGap:Number;
       
         public function FontMetrics(emBox:Rectangle, strikethroughOffset:Number, strikethroughThickness:Number, underlineOffset:Number, underlineThickness:Number, subscriptOffset:Number, subscriptScale:Number, superscriptOffset:Number, superscriptScale:Number, lineGap:Number = 0) {

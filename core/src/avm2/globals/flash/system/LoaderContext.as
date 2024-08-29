@@ -5,8 +5,11 @@ package flash.system {
         public var allowCodeImport : Boolean;
         public var applicationDomain : ApplicationDomain;
         public var checkPolicyFile : Boolean;
+        [API("674")]
         public var imageDecodingPolicy : String;
+        [API("670")]
         public var parameters : Object; // unset by default
+        [API("670")]
         public var requestedContentParent : DisplayObjectContainer; // unset by default
         public var securityDomain : SecurityDomain;
 
