@@ -8,6 +8,7 @@ mod theme;
 mod widgets;
 
 pub use controller::GuiController;
+pub use dialogs::DialogDescriptor;
 pub use movie::MovieView;
 pub use picker::FilePicker;
 use std::borrow::Cow;

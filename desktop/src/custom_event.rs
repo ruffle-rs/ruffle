@@ -1,6 +1,6 @@
 //! Custom event type for desktop ruffle
 
-use crate::player::LaunchOptions;
+use crate::{gui::DialogDescriptor, player::LaunchOptions};
 
 /// User-defined events.
 pub enum RuffleEvent {
@@ -31,6 +31,6 @@ pub enum RuffleEvent {
     /// The user selected an item in the right-click context menu.
     ContextMenuItemClicked(usize),
 
-    /// The movie wants to open a URL link.
-    AskToOpenUrl(url::Url),
+    /// The movie wants to open a dialog.
+    OpenDialog(DialogDescriptor),
 }

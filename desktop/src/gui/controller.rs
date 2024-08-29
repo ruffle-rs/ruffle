@@ -23,7 +23,7 @@ use winit::event_loop::EventLoop;
 use winit::keyboard::{Key, NamedKey};
 use winit::window::{Theme, Window};
 
-use super::FilePicker;
+use super::{DialogDescriptor, FilePicker};
 
 /// Integration layer connecting wgpu+winit to egui.
 pub struct GuiController {
@@ -397,8 +397,8 @@ impl GuiController {
         self.gui.dialogs.open_file_advanced()
     }
 
-    pub fn show_open_url_dialog(&mut self, url: Url) {
-        self.gui.dialogs.open_open_url(url);
+    pub fn open_dialog(&mut self, dialog_event: DialogDescriptor) {
+        self.gui.dialogs.open_dialog(dialog_event);
     }
 }
 

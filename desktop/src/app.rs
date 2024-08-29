@@ -500,8 +500,8 @@ impl App {
                         .create_movie(&mut self.player, *options, url);
                 }
 
-                winit::event::Event::UserEvent(RuffleEvent::AskToOpenUrl(url)) => {
-                    self.gui.borrow_mut().show_open_url_dialog(url);
+                winit::event::Event::UserEvent(RuffleEvent::OpenDialog(descriptor)) => {
+                    self.gui.borrow_mut().open_dialog(descriptor);
                 }
 
                 winit::event::Event::UserEvent(RuffleEvent::CloseFile) => {

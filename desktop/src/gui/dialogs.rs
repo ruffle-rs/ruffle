@@ -41,6 +41,10 @@ pub struct Dialogs {
     preferences: GlobalPreferences,
 }
 
+pub enum DialogDescriptor {
+    OpenUrl(url::Url),
+}
+
 impl Dialogs {
     pub fn new(
         preferences: GlobalPreferences,
@@ -121,8 +125,12 @@ impl Dialogs {
         self.is_about_visible = true;
     }
 
-    pub fn open_open_url(&mut self, url: Url) {
-        self.open_url_dialog = Some(OpenUrlDialog::new(url));
+    pub fn open_dialog(&mut self, event: DialogDescriptor) {
+        match event {
+            DialogDescriptor::OpenUrl(url) => {
+                self.open_url_dialog = Some(OpenUrlDialog::new(url));
+            }
+        }
     }
 
     pub fn show(
