@@ -9,6 +9,7 @@ use url::Url;
 use winit::event_loop::EventLoopProxy;
 
 use crate::custom_event::RuffleEvent;
+use crate::gui::DialogDescriptor;
 use crate::util::open_url;
 
 #[derive(Clone)]
@@ -36,7 +37,7 @@ impl NavigatorInterface for DesktopNavigatorInterface {
             .event_loop
             .lock()
             .expect("Non-poisoned event loop")
-            .send_event(RuffleEvent::AskToOpenUrl(url));
+            .send_event(RuffleEvent::OpenDialog(DialogDescriptor::OpenUrl(url)));
     }
 
     fn open_file(&self, path: &Path) -> io::Result<File> {
