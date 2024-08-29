@@ -12,6 +12,7 @@ package flash.events
         public static const HTTP_STATUS:String = "httpStatus"; // The HTTPStatusEvent.HTTP_STATUS constant defines the value of the type property of a httpStatus event object.
 
         private var _status: int; // The HTTP status code returned by the server.
+        [API("690")]
         public var redirected: Boolean; // Indicates whether the request was redirected.
 
         [API("661")]

@@ -41,7 +41,9 @@ package flash.events
         public var delta: int;
         private var _isRelatedObjectInaccessible: Boolean;
 
+        [API("678")]
         public var movementX: Number;
+        [API("678")]
         public var movementY: Number;
 
         public function MouseEvent(type:String, 

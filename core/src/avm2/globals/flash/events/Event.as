@@ -73,17 +73,22 @@ package flash.events {
 
 		public static const FULLSCREEN:String = "fullScreen";
 
+		[API("667")]
 		public static const CONTEXT3D_CREATE:String = "context3DCreate";
 
+		[API("667")]
 		public static const TEXTURE_READY:String = "textureReady";
 
+		[API("682")]
 		public static const VIDEO_FRAME:String = "videoFrame";
 
 		[API("681")]
 		public static const SUSPEND:String = "suspend";
 
+		[API("682")]
 		public static const CHANNEL_MESSAGE:String = "channelMessage";
 
+		[API("682")]
 		public static const CHANNEL_STATE:String = "channelState";
 
 		[API("682")]

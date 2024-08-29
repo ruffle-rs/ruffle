@@ -1,5 +1,6 @@
 package flash.events
 {
+    [API("667")]
     public class PressAndTapGestureEvent extends GestureEvent
     {
         public static const GESTURE_PRESS_AND_TAP : String = "gesturePressAndTap";
