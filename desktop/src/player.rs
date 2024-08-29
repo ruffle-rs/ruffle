@@ -268,6 +268,7 @@ impl ActivePlayer {
             .with_ui(
                 DesktopUiBackend::new(
                     window.clone(),
+                    event_loop.clone(),
                     opt.open_url_mode,
                     font_database,
                     preferences,
