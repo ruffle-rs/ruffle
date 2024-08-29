@@ -1,6 +1,6 @@
 mod context_menu;
 mod controller;
-mod dialogs;
+pub mod dialogs;
 mod menu_bar;
 mod movie;
 mod picker;

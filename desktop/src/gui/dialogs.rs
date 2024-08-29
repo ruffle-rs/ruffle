@@ -1,5 +1,6 @@
 mod about_dialog;
 mod bookmarks_dialog;
+pub mod message_dialog;
 mod open_dialog;
 mod open_url_dialog;
 mod preferences_dialog;
@@ -9,6 +10,7 @@ use crate::custom_event::RuffleEvent;
 use crate::player::LaunchOptions;
 use crate::preferences::GlobalPreferences;
 use bookmarks_dialog::{BookmarkAddDialog, BookmarksDialog};
+use message_dialog::{MessageDialog, MessageDialogConfiguration};
 use open_dialog::OpenDialog;
 use open_url_dialog::OpenUrlDialog;
 use preferences_dialog::PreferencesDialog;
@@ -29,6 +31,7 @@ pub struct Dialogs {
     bookmarks_dialog: Option<BookmarksDialog>,
     bookmark_add_dialog: Option<BookmarkAddDialog>,
     open_url_dialog: Option<OpenUrlDialog>,
+    message_dialog: Option<MessageDialog>,
 
     open_dialog: OpenDialog,
     is_open_dialog_visible: bool,
@@ -43,6 +46,7 @@ pub struct Dialogs {
 
 pub enum DialogDescriptor {
     OpenUrl(url::Url),
+    ShowMessage(MessageDialogConfiguration),
 }
 
 impl Dialogs {
@@ -59,6 +63,7 @@ impl Dialogs {
             bookmarks_dialog: None,
             bookmark_add_dialog: None,
             open_url_dialog: None,
+            message_dialog: None,
 
             open_dialog: OpenDialog::new(
                 player_options,
@@ -130,6 +135,9 @@ impl Dialogs {
             DialogDescriptor::OpenUrl(url) => {
                 self.open_url_dialog = Some(OpenUrlDialog::new(url));
             }
+            DialogDescriptor::ShowMessage(config) => {
+                self.message_dialog = Some(MessageDialog::new(config));
+            }
         }
     }
 
@@ -146,6 +154,7 @@ impl Dialogs {
         self.show_volume_controls(locale, egui_ctx, player);
         self.show_about_dialog(locale, egui_ctx);
         self.show_open_url_dialog(locale, egui_ctx);
+        self.show_message_dialog(locale, egui_ctx);
     }
 
     fn show_open_dialog(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) {
@@ -217,6 +226,17 @@ impl Dialogs {
         };
         if !keep_open {
             self.open_url_dialog = None;
+        }
+    }
+
+    fn show_message_dialog(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) {
+        let keep_open = if let Some(dialog) = &mut self.message_dialog {
+            dialog.show(locale, egui_ctx)
+        } else {
+            true
+        };
+        if !keep_open {
+            self.message_dialog = None;
         }
     }
 }
