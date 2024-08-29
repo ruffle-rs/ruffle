@@ -79,7 +79,6 @@ pub fn text_with_args<'a, T: AsRef<str>>(
 }
 
 pub enum LocalizableText {
-    #[allow(dead_code)]
     NonLocalizedText(Cow<'static, str>),
     LocalizedText(&'static str),
 }
