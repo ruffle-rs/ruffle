@@ -511,7 +511,8 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             let Some(local_name) = name.local_name() else {
                 return Err(format!("Cannot set attribute {:?} without a local name", name).into());
             };
-            let new_attr = E4XNode::attribute(mc, local_name, value, Some(self.node()));
+            let ns = name.explicit_namespace().map(E4XNamespace::new_uri);
+            let new_attr = E4XNode::attribute(mc, ns, local_name, value, Some(self.node()));
 
             let node = self.0.node.get();
             let mut kind = node.kind_mut(mc);
