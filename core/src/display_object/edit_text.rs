@@ -1493,20 +1493,17 @@ impl<'gc> EditText<'gc> {
                     break 'paste;
                 }
 
-                let mut text = self.0.read().restrict.filter_allowed(&text);
+                let text = self.0.read().restrict.filter_allowed(&text);
+                let text = WString::from_utf8(&text);
+                let mut text = text.as_wstr();
 
-                if text.chars().count() > self.available_chars() && self.available_chars() > 0 {
-                    text = text.chars().take(self.available_chars()).collect();
+                if text.len() > self.available_chars() && self.available_chars() > 0 {
+                    text = &text[0..self.available_chars()];
                 }
 
-                if text.chars().count() <= self.available_chars() {
-                    self.replace_text(
-                        selection.start(),
-                        selection.end(),
-                        &WString::from_utf8(&text),
-                        context,
-                    );
-                    let new_pos = selection.start() + text.chars().count();
+                if text.len() <= self.available_chars() {
+                    self.replace_text(selection.start(), selection.end(), &text, context);
+                    let new_pos = selection.start() + text.len();
                     if is_selectable {
                         self.set_selection(
                             Some(TextSelection::for_position(new_pos)),
@@ -1514,7 +1511,7 @@ impl<'gc> EditText<'gc> {
                         );
                     } else {
                         self.set_selection(
-                            Some(TextSelection::for_position(self.text().chars().count())),
+                            Some(TextSelection::for_position(self.text().len())),
                             context.gc_context,
                         );
                     }
