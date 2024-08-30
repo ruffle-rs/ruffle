@@ -212,6 +212,7 @@ impl<'gc> E4XNode<'gc> {
 
     pub fn attribute(
         mc: &Mutation<'gc>,
+        namespace: Option<E4XNamespace<'gc>>,
         name: AvmString<'gc>,
         value: AvmString<'gc>,
         parent: Option<E4XNode<'gc>>,
@@ -220,7 +221,7 @@ impl<'gc> E4XNode<'gc> {
             mc,
             E4XNodeData {
                 parent,
-                namespace: None,
+                namespace: namespace.map(Box::new),
                 local_name: Some(name),
                 kind: E4XNodeKind::Attribute(value),
                 notification: None,

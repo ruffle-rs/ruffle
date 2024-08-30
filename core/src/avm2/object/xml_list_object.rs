@@ -722,6 +722,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                                 // 2.c.iv.3. Let y.[[Class]] = "attribute"
                                 E4XNode::attribute(
                                     activation.gc(),
+                                    x.explicit_namespace().map(E4XNamespace::new_uri),
                                     x.local_name().unwrap(),
                                     "".into(),
                                     r,
