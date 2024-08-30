@@ -1013,6 +1013,35 @@ impl<'gc> E4XNode<'gc> {
         let mut attribute_nodes = Vec::new();
         let mut namespaces = Vec::new();
 
+        fn make_unknown_ns_error<'gc>(
+            activation: &mut Activation<'_, 'gc>,
+            ns: Vec<u8>,
+            local_name: AvmString<'gc>,
+        ) -> Error<'gc> {
+            let error = if ns.is_empty() {
+                type_error(
+                    activation,
+                    &format!("Error #1084: Element or attribute (\":{}\") does not match QName production: QName::=(NCName':')?NCName.", local_name),
+                    1084,
+                )
+            } else {
+                // Note: Flash also uses this error message for attributes.
+                type_error(
+                    activation,
+                    &format!(
+                        "Error #1083: The prefix \"{}\" for element \"{}\" is not bound.",
+                        String::from_utf8_lossy(&ns),
+                        local_name
+                    ),
+                    1083,
+                )
+            };
+            match error {
+                Ok(err) => Error::AvmError(err),
+                Err(err) => err,
+            }
+        }
+
         let attributes: Result<Vec<_>, _> = bs.attributes().collect();
         for attribute in
             attributes.map_err(|e| make_xml_error(activation, XmlError::InvalidAttr(e)))?
@@ -1046,15 +1075,7 @@ impl<'gc> E4XNode<'gc> {
                     Some(E4XNamespace { prefix, uri })
                 }
                 ResolveResult::Unknown(ns) => {
-                    return Err(Error::AvmError(type_error(
-                        activation,
-                        &format!(
-                            "Error #1083: The prefix \"{}\" for element \"{}\" is not bound.",
-                            String::from_utf8_lossy(&ns),
-                            name
-                        ),
-                        1083,
-                    )?))
+                    return Err(make_unknown_ns_error(activation, ns, name));
                 }
                 ResolveResult::Unbound => {
                     // The default XML namespace declaration
@@ -1099,15 +1120,7 @@ impl<'gc> E4XNode<'gc> {
                 Some(E4XNamespace { prefix, uri })
             }
             ResolveResult::Unknown(ns) => {
-                return Err(Error::AvmError(type_error(
-                    activation,
-                    &format!(
-                        "Error #1083: The prefix \"{}\" for element \"{}\" is not bound.",
-                        String::from_utf8_lossy(&ns),
-                        name
-                    ),
-                    1083,
-                )?))
+                return Err(make_unknown_ns_error(activation, ns, name));
             }
             ResolveResult::Unbound => None,
         };
