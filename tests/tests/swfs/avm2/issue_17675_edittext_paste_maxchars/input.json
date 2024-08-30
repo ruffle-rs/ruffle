@@ -1,0 +1,4 @@
+[
+    { "type": "SetClipboardText", "text": "兔兔兔" },
+    { "type": "TextControl", "code": "Paste" }
+]
