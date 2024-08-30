@@ -865,6 +865,15 @@ impl<'gc> E4XNode<'gc> {
                     }
                     return Err(make_error_1085(activation, &expected));
                 }
+                Err(XmlError::IllFormed(IllFormedError::UnmatchedEndTag(_)))
+                    if open_tags.is_empty() =>
+                {
+                    return Err(Error::AvmError(type_error(
+                        activation,
+                        "Error #1088: The markup in the document following the root element must be well-formed.",
+                        1088,
+                    )?));
+                }
                 Err(err) => return Err(make_xml_error(activation, err)),
             };
 
