@@ -1502,7 +1502,7 @@ impl<'gc> EditText<'gc> {
                 }
 
                 if text.len() <= self.available_chars() {
-                    self.replace_text(selection.start(), selection.end(), &text, context);
+                    self.replace_text(selection.start(), selection.end(), text, context);
                     let new_pos = selection.start() + text.len();
                     if is_selectable {
                         self.set_selection(
