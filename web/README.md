@@ -85,7 +85,7 @@ Just make sure the `wasm-opt` program is in `$PATH`, and that it works.
 ##### `jpegxr`
 
 The release version of the extension is compiled with `jpegxr`.
-To enable it, set the the env `CARGO_FEATURES="jpegxr"`.
+To enable it, set the env `CARGO_FEATURES="jpegxr"`.
 
 Windows dependencies:
 
