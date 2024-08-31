@@ -303,7 +303,7 @@ fn strip_metadata(abc: &mut AbcFile) {
 /// If we don't properly declare 'namespace AS3' in the input to asc.jar, then
 /// a call like `self.AS3::toXMLString()` will end up getting compiled to weird bytecode like this:
 ///
-/// ```
+/// ```pcode
 /// getlex Multiname("AS3",[PackageNamespace(""),PrivateNamespace(null,"35"),PackageInternalNs(""),PrivateNamespace(null,"33"),ProtectedNamespace("XML"),StaticProtectedNs("XML")])
 /// coerce QName(PackageNamespace(""),"Namespace")
 /// getproperty RTQName("toXMLString")
