@@ -226,7 +226,7 @@ impl<'gc> Stack<'gc> {
 
 /// Checks if the method fits the following pattern:
 ///
-/// ```
+/// ```text
 /// [Debug/DebugFile/DebugLine] zero or more times
 /// GetLocal { index: 0 }
 /// [Debug/DebugFile/DebugLine] zero or more times
