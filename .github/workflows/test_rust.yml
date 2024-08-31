@@ -12,6 +12,22 @@ concurrency:
 
 env:
   FEATURES: lzma,jpegxr
+  TEST_OPTS: --workspace --locked --no-fail-fast -j 4
+
+  # This is to counteract the disabling by rust-cache.
+  # See: https://github.com/Swatinem/rust-cache/issues/43
+  CARGO_INCREMENTAL: '1'
+
+  # Supposedly makes "Updating crates.io index" faster on Windows.
+  # See: https://github.com/rust-lang/cargo/issues/9167
+  CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+
+  # Workaround for: https://github.com/nextest-rs/nextest/issues/1493
+  # See also: https://github.com/rust-lang/rustup/issues/3825
+  RUSTUP_WINDOWS_PATH_ADD_BIN: '1'
+
+  # (Linux) Just to silence warnings about it missing
+  XDG_RUNTIME_DIR: ''
 
 jobs:
   changes:
@@ -88,18 +104,11 @@ jobs:
 
       - name: Run tests
         shell: bash
-        run: cargo nextest run --profile ci --cargo-profile ci --workspace --locked --no-fail-fast -j 4 --features ${FEATURES}
-        env:
-          # This is to counteract the disabling by rust-cache.
-          # See: https://github.com/Swatinem/rust-cache/issues/43
-          CARGO_INCREMENTAL: '1'
-          # Supposedly makes "Updating crates.io index" faster on Windows.
-          # See: https://github.com/rust-lang/cargo/issues/9167
-          CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
-          # Workaround for: https://github.com/nextest-rs/nextest/issues/1493
-          # See also: https://github.com/rust-lang/rustup/issues/3825
-          RUSTUP_WINDOWS_PATH_ADD_BIN: '1'
-          XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
+        run: cargo nextest run --profile ci --cargo-profile ci ${TEST_OPTS} --features ${FEATURES}
+
+      - name: Run doctests
+        shell: bash
+        run: cargo test --doc --profile ci ${TEST_OPTS} --features ${FEATURES}
 
       - name: Upload images
         if: failure()
