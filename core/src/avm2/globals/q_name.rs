@@ -42,10 +42,21 @@ pub fn init<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let arguments_object = args[0].as_object().unwrap();
+    let arguments_list = arguments_object.as_array_storage().unwrap();
+    let arguments_list = arguments_list
+        .iter()
+        .map(|v| v.unwrap()) // Arguments should be array with no holes
+        .collect::<Vec<_>>();
+
     let this = this.as_qname_object().unwrap();
-    let namespace = if !matches!(args[1], Value::Undefined) {
-        let ns_arg = args.get(0).cloned().unwrap();
-        let local_arg = args.get(1).cloned().unwrap_or(Value::Undefined);
+    let namespace = if arguments_list.get(1).is_some() {
+        let ns_arg = arguments_list[0];
+        let mut local_arg = arguments_list[1];
+
+        if matches!(local_arg, Value::Undefined) {
+            local_arg = "".into();
+        }
 
         let api_version = activation.avm2().root_api_version;
 
@@ -54,13 +65,19 @@ pub fn init<'gc>(
             Value::Object(Object::QNameObject(qname)) => qname.uri().map(|uri| {
                 Namespace::package(uri, ApiVersion::AllVersions, &mut activation.borrow_gc())
             }),
-            Value::Undefined | Value::Null => None,
+            Value::Null => None,
+            Value::Undefined => Some(Namespace::package(
+                "",
+                api_version,
+                &mut activation.borrow_gc(),
+            )),
             v => Some(Namespace::package(
                 v.coerce_to_string(activation)?,
                 api_version,
                 &mut activation.borrow_gc(),
             )),
         };
+
         if let Value::Object(Object::QNameObject(qname)) = local_arg {
             this.set_local_name(activation.context.gc_context, qname.local_name());
         } else {
@@ -69,18 +86,21 @@ pub fn init<'gc>(
                 local_arg.coerce_to_string(activation)?,
             );
         }
+
         namespace
     } else {
-        let qname_arg = args.get(0).cloned().unwrap_or(Value::Undefined);
+        let qname_arg = arguments_list.get(0).copied().unwrap_or(Value::Undefined);
         if let Value::Object(Object::QNameObject(qname_obj)) = qname_arg {
             this.init_name(activation.context.gc_context, qname_obj.name().clone());
             return Ok(Value::Undefined);
         }
+
         let local = if qname_arg == Value::Undefined {
             "".into()
         } else {
             qname_arg.coerce_to_string(activation)?
         };
+
         if &*local != b"*" {
             this.set_local_name(activation.context.gc_context, local);
             Some(activation.avm2().find_public_namespace())
