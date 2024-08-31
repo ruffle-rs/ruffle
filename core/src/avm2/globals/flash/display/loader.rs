@@ -40,7 +40,7 @@ pub fn loader_allocator<'gc>(
     // us the correct value (0) for them.
     let loader_info = LoaderInfoObject::not_yet_loaded(
         activation,
-        Arc::new(SwfMovie::empty(activation.context.swf.version())),
+        Arc::new(SwfMovie::empty_child(activation.context.swf)),
         Some(loader),
         None,
         false,
@@ -93,7 +93,7 @@ pub fn load<'gc>(
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
     let content = MovieClip::new(
-        Arc::new(SwfMovie::empty(activation.context.swf.version())),
+        Arc::new(SwfMovie::empty_child(activation.context.swf)),
         activation.context.gc_context,
     );
 
@@ -103,7 +103,7 @@ pub fn load<'gc>(
         .unwrap()
         .set_loader_stream(
             LoaderStream::NotYetLoaded(
-                Arc::new(SwfMovie::empty(activation.context.swf.version())),
+                Arc::new(SwfMovie::empty_child(activation.context.swf)),
                 Some(content.into()),
                 false,
             ),
@@ -256,7 +256,7 @@ pub fn load_bytes<'gc>(
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
     let content = MovieClip::new(
-        Arc::new(SwfMovie::empty(activation.context.swf.version())),
+        Arc::new(SwfMovie::empty_child(activation.context.swf)),
         activation.context.gc_context,
     );
 
