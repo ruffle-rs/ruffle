@@ -10,6 +10,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FEATURES: lzma,jpegxr
+
 jobs:
   changes:
     name: Paths filter
@@ -67,6 +70,11 @@ jobs:
         if: runner.os == 'Linux'
         run: echo RUSTFLAGS=${RUSTFLAGS}\ --cfg=web_sys_unstable_apis\ -Clink-args=-znostart-stop-gc >> $GITHUB_ENV
 
+      - name: Enable image tests
+        if: runner.os != 'macOS'
+        shell: bash
+        run: echo FEATURES=${FEATURES},imgtests | tee -a $GITHUB_ENV
+
       - name: Cache Cargo output
         uses: Swatinem/rust-cache@v2
         with:
@@ -78,9 +86,9 @@ jobs:
         with:
           tool: cargo-nextest
 
-      - name: Run tests with image tests
-        if: runner.os != 'macOS'
-        run: cargo nextest run --profile ci --cargo-profile ci --workspace --locked --no-fail-fast -j 4 --features imgtests,lzma,jpegxr
+      - name: Run tests
+        shell: bash
+        run: cargo nextest run --profile ci --cargo-profile ci --workspace --locked --no-fail-fast -j 4 --features ${FEATURES}
         env:
           # This is to counteract the disabling by rust-cache.
           # See: https://github.com/Swatinem/rust-cache/issues/43
@@ -91,12 +99,6 @@ jobs:
           # Workaround for: https://github.com/nextest-rs/nextest/issues/1493
           # See also: https://github.com/rust-lang/rustup/issues/3825
           RUSTUP_WINDOWS_PATH_ADD_BIN: '1'
-          XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
-
-      - name: Run tests without image tests
-        if: runner.os == 'macOS'
-        run: cargo nextest run --profile ci --cargo-profile ci --workspace --locked --no-fail-fast -j 4 --features lzma,jpegxr
-        env:
           XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
 
       - name: Upload images
