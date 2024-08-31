@@ -64,8 +64,7 @@ jobs:
       # See also: https://github.com/dtolnay/linkme/issues/94
       # Additionally: https://lld.llvm.org/ELF/start-stop-gc
       - name: Disable linker start-stop-gc
-        # Note: We also use `rust-lld` on Windows, see `config.toml`.
-        if: runner.os != 'macOS'
+        if: runner.os == 'Linux'
         run: echo RUSTFLAGS=${RUSTFLAGS}\ --cfg=web_sys_unstable_apis\ -Clink-args=-znostart-stop-gc >> $GITHUB_ENV
 
       - name: Cache Cargo output
