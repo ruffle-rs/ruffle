@@ -160,10 +160,6 @@ pub fn winit_to_ruffle_key_code(event: &KeyEvent) -> Option<KeyCode> {
 }
 
 fn alpha_to_ruffle_key_code(char: &str) -> Option<KeyCode> {
-    if char.len() != 1 {
-        return None;
-    }
-
     let char = char.chars().next()?;
 
     if char.is_ascii_alphabetic() {
@@ -174,9 +170,9 @@ fn alpha_to_ruffle_key_code(char: &str) -> Option<KeyCode> {
     }
 
     if !char.is_ascii() {
-        // TODO Non-ASCII inputs have codes equal to their Unicode codes and yes,
-        //   they overlap with other codes, so that typing '½' and '-' both produce 189.
-        return None;
+        // Non-ASCII inputs have codes equal to their Unicode codes and yes,
+        // they overlap with other codes, so that typing '½' and '-' both produce 189.
+        return Some(KeyCode::from_code(char as u32));
     }
 
     None
