@@ -39,7 +39,10 @@ pub fn get_sandbox_type<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let sandbox_type = match activation.context.system.sandbox_type {
+    let movie = activation
+        .caller_movie()
+        .expect("Caller movie expected for sandboxType");
+    let sandbox_type = match movie.sandbox_type() {
         SandboxType::Remote => "remote",
         SandboxType::LocalWithFile => "localWithFile",
         SandboxType::LocalWithNetwork => "localWithNetwork",

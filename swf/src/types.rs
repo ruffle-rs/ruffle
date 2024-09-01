@@ -276,7 +276,7 @@ bitflags! {
 
         /// Whether this SWF should be placed in the network sandbox when run locally.
         ///
-        /// SWFs in the network sandbox can only access network resources,  not local resources.
+        /// SWFs in the network sandbox can only access network resources, not local resources.
         /// SWFs in the local sandbox can only access local resources, not network resources.
         const USE_NETWORK_SANDBOX = 1 << 0;
     }
