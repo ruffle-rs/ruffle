@@ -43,6 +43,7 @@ mod net_connection;
 pub mod pixel_bender;
 mod player;
 mod prelude;
+pub mod sandbox;
 pub mod socket;
 mod streams;
 pub mod string;
@@ -61,7 +62,6 @@ pub mod external;
 pub mod i18n;
 pub mod stub;
 
-pub use avm1::globals::system::SandboxType;
 pub use context_menu::ContextMenuItem;
 pub use events::PlayerEvent;
 pub use font::DefaultFont;

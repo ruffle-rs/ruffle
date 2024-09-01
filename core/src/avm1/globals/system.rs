@@ -7,6 +7,7 @@ use crate::avm1::runtime::Avm1;
 use crate::avm1::{ScriptObject, TObject, Value};
 use crate::avm1_stub;
 use crate::context::{GcContext, UpdateContext};
+use crate::sandbox::SandboxType;
 use bitflags::bitflags;
 use core::fmt;
 
@@ -35,26 +36,6 @@ impl fmt::Display for CpuArchitecture {
             CpuArchitecture::X86 => "x86",
             CpuArchitecture::Sparc => "SPARC",
             CpuArchitecture::Arm => "ARM",
-        })
-    }
-}
-
-/// Available type of sandbox for a given SWF
-#[allow(dead_code)]
-pub enum SandboxType {
-    Remote,
-    LocalWithFile,
-    LocalWithNetwork,
-    LocalTrusted,
-}
-
-impl fmt::Display for SandboxType {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt.write_str(match self {
-            SandboxType::Remote => "remote",
-            SandboxType::LocalWithFile => "localWithFile",
-            SandboxType::LocalWithNetwork => "localWithNetwork",
-            SandboxType::LocalTrusted => "localTrusted",
         })
     }
 }
