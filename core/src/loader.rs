@@ -600,6 +600,30 @@ impl<'gc> LoadManager<'gc> {
         did_finish
     }
 
+    pub fn run_exit_frame(context: &mut UpdateContext<'gc>) {
+        // The root movie might not have come from a loader, so check it separately.
+        // `fire_init_and_complete_events` is idempotent, so we unconditionally call it here
+        if let Some(movie) = context
+            .stage
+            .child_by_index(0)
+            .and_then(|o| o.as_movie_clip())
+        {
+            movie.try_fire_loaderinfo_events(context);
+        }
+        let handles: Vec<_> = context.load_manager.0.iter().map(|(h, _)| h).collect();
+        for handle in handles {
+            let Some(Loader::Movie { target_clip, .. }) = context.load_manager.get_loader(handle)
+            else {
+                continue;
+            };
+            if let Some(movie) = target_clip.as_movie_clip() {
+                if movie.try_fire_loaderinfo_events(context) {
+                    context.load_manager.remove_loader(handle)
+                }
+            }
+        }
+    }
+
     /// Display a dialog allowing a user to select a file
     ///
     /// Returns a future that will be resolved when a file is selected
@@ -2764,7 +2788,10 @@ impl<'gc> Loader<'gc> {
                         false,
                     );
                 }
-                true
+                // If the movie was loaded from avm1, clean it up now. If a movie (including an AVM1 movie)
+                // was loaded from avm2, clean it up in `run_exit_frame`, after we have a chance to fire
+                // the AVM2-side events
+                matches!(vm_data, MovieLoaderVMData::Avm1 { .. })
             }
         }
     }
