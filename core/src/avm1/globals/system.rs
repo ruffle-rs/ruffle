@@ -7,7 +7,6 @@ use crate::avm1::runtime::Avm1;
 use crate::avm1::{ScriptObject, TObject, Value};
 use crate::avm1_stub;
 use crate::context::{GcContext, UpdateContext};
-use crate::sandbox::SandboxType;
 use bitflags::bitflags;
 use core::fmt;
 
@@ -265,16 +264,20 @@ pub struct SystemProperties {
     pub manufacturer: Manufacturer,
     /// The os of the host
     pub os: OperatingSystem,
-    /// The type of the player sandbox
-    pub sandbox_type: SandboxType,
     /// The cpu architecture of the platform
     pub cpu_architecture: CpuArchitecture,
     /// The highest supported h264 decoder level
     pub idc_level: String,
 }
 
+impl Default for SystemProperties {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SystemProperties {
-    pub fn new(sandbox_type: SandboxType) -> Self {
+    pub fn new() -> Self {
         SystemProperties {
             //TODO: default to true on fp>=7, false <= 6
             exact_settings: true,
@@ -291,7 +294,6 @@ impl SystemProperties {
             dpi: 72_f32,
             manufacturer: Manufacturer::Linux,
             os: OperatingSystem::Linux,
-            sandbox_type,
             cpu_architecture: CpuArchitecture::X86,
             idc_level: "5.1".into(),
         }
