@@ -65,7 +65,7 @@ fn get_sandbox_type<'gc>(
             SandboxType::Remote => "remote",
             SandboxType::LocalWithFile => "localWithFile",
             SandboxType::LocalWithNetwork => "localWithNetwork",
-            SandboxType::LocalTrusted => "localTrusted",
+            SandboxType::LocalTrusted | SandboxType::Application => "localTrusted",
         },
     )
     .into())

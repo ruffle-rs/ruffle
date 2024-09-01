@@ -44,6 +44,7 @@ pub fn get_sandbox_type<'gc>(
         SandboxType::LocalWithFile => "localWithFile",
         SandboxType::LocalWithNetwork => "localWithNetwork",
         SandboxType::LocalTrusted => "localTrusted",
+        SandboxType::Application => "application",
     };
     return Ok(AvmString::new_utf8(activation.context.gc_context, sandbox_type).into());
 }
