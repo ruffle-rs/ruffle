@@ -5,6 +5,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ScriptObject, Value};
 use crate::avm1_stub;
 use crate::context::GcContext;
+use crate::sandbox::SandboxType;
 use crate::string::AvmString;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
@@ -60,7 +61,12 @@ fn get_sandbox_type<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(
         activation.context.gc_context,
-        activation.context.system.sandbox_type.to_string(),
+        match activation.context.system.sandbox_type {
+            SandboxType::Remote => "remote",
+            SandboxType::LocalWithFile => "localWithFile",
+            SandboxType::LocalWithNetwork => "localWithNetwork",
+            SandboxType::LocalTrusted => "localTrusted",
+        },
     )
     .into())
 }

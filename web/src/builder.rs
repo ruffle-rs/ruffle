@@ -11,9 +11,9 @@ use ruffle_core::backend::storage::{MemoryStorageBackend, StorageBackend};
 use ruffle_core::backend::ui::FontDefinition;
 use ruffle_core::compatibility_rules::CompatibilityRules;
 use ruffle_core::config::{Letterbox, NetworkingAccessMode};
+use ruffle_core::sandbox::SandboxType;
 use ruffle_core::{
-    swf, Color, DefaultFont, Player, PlayerBuilder, PlayerRuntime, SandboxType, StageAlign,
-    StageScaleMode,
+    swf, Color, DefaultFont, Player, PlayerBuilder, PlayerRuntime, StageAlign, StageScaleMode,
 };
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
