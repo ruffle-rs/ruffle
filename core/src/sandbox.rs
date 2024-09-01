@@ -24,4 +24,7 @@ pub enum SandboxType {
 
     /// The movie is a trusted local movie with access to both filesystem and network.
     LocalTrusted,
+
+    /// The movie is an AIR application with access to both filesystem and network.
+    Application,
 }
