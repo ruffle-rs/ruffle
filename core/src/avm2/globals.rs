@@ -519,7 +519,6 @@ pub fn load_player_globals<'gc>(
     let namespace_class = namespace::create_class(activation);
     let array_class = array::create_class(activation);
     let vector_generic_class = vector::create_generic_class(activation);
-    let date_class = date::create_class(activation);
 
     let vector_int_class = vector::create_builtin_class(activation, Some(int_class));
     let vector_uint_class = vector::create_builtin_class(activation, Some(uint_class));
@@ -545,7 +544,6 @@ pub fn load_player_globals<'gc>(
         (public_ns, "uint", uint_class),
         (public_ns, "Namespace", namespace_class),
         (public_ns, "Array", array_class),
-        (public_ns, "Date", date_class),
         (vector_public_ns, "Vector", vector_generic_class),
         (vector_internal_ns, "Vector$int", vector_int_class),
         (vector_internal_ns, "Vector$uint", vector_uint_class),
@@ -728,8 +726,6 @@ pub fn load_player_globals<'gc>(
         .unwrap()
         .object_vector = object_vector;
 
-    avm2_system_class!(date, activation, date_class, script);
-
     // Inside this call, the macro `avm2_system_classes_playerglobal`
     // triggers classloading. Therefore, we run `load_playerglobal`
     // relatively late, so that it can access classes defined before
@@ -814,6 +810,7 @@ fn load_playerglobal<'gc>(
     avm2_system_classes_playerglobal!(
         &mut *activation,
         [
+            ("", "Date", date),
             ("", "Error", error),
             ("", "ArgumentError", argumenterror),
             ("", "QName", qname),
