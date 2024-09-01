@@ -259,12 +259,15 @@ impl<'gc> LoaderInfoObject<'gc> {
         self.0.complete_event_fired.set(false);
     }
 
+    /// Fires the 'init' and 'complete' events if they haven't been fired yet.
+    /// Returns `true` if both events have been fired (either as a result of
+    /// this call, or due to a previous call).
     pub fn fire_init_and_complete_events(
         &self,
         context: &mut UpdateContext<'gc>,
         status: u16,
         redirected: bool,
-    ) {
+    ) -> bool {
         self.0.expose_content.set(true);
         if !self.0.init_event_fired.get() {
             self.0.init_event_fired.set(true);
@@ -313,8 +316,11 @@ impl<'gc> LoaderInfoObject<'gc> {
                 self.0.complete_event_fired.set(true);
                 let complete_evt = EventObject::bare_default_event(context, "complete");
                 Avm2::dispatch_event(context, complete_evt, (*self).into());
+                return true;
             }
+            return false;
         }
+        true
     }
 
     /// Unwrap this object's loader stream

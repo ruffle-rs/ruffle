@@ -96,9 +96,6 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_>) {
     stage.run_frame_scripts(context);
 
     *context.frame_phase = FramePhase::Exit;
-    Avm2::each_orphan_obj(context, |orphan, context| {
-        orphan.on_exit_frame(context);
-    });
     stage.exit_frame(context);
 
     // We cannot easily remove dead `GcWeak` instances from the orphan list
@@ -169,9 +166,6 @@ pub fn run_inner_goto_frame<'gc>(
     }
 
     *context.frame_phase = FramePhase::Exit;
-    Avm2::each_orphan_obj(context, |orphan, context| {
-        orphan.on_exit_frame(context);
-    });
     stage.exit_frame(context);
 
     // We cannot easily remove dead `GcWeak` instances from the orphan list

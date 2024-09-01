@@ -503,6 +503,21 @@ impl<'gc> MovieClip<'gc> {
         self.0.write(gc_context).set_initialized(true);
     }
 
+    /// Tries to fire events from our `LoaderInfo` object if we're ready - returns
+    /// `true` if both `init` and `complete` have been fired
+    pub fn try_fire_loaderinfo_events(self, context: &mut UpdateContext<'gc>) -> bool {
+        if self.0.read().initialized() {
+            if let Some(loader_info) = self
+                .loader_info()
+                .as_ref()
+                .and_then(|o| o.as_loader_info_object())
+            {
+                return loader_info.fire_init_and_complete_events(context, 0, false);
+            }
+        }
+        false
+    }
+
     /// Preload a chunk of the movie.
     ///
     /// A "chunk" is an implementor-chosen number of tags that are parsed
@@ -2722,27 +2737,6 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             for child in container.iter_render_list() {
                 child.run_frame_scripts(context);
             }
-        }
-    }
-
-    fn on_exit_frame(&self, context: &mut UpdateContext<'gc>) {
-        // Attempt to fire an "init" event on our `LoaderInfo`.
-        // This fires after we've exited our first frame, but before
-        // but before we enter a new frame. `loader_stream_init`
-        // keeps track if an "init" event has already been fired,
-        // so this becomes a no-op after the event has been fired.
-        if self.0.read().initialized() {
-            if let Some(loader_info) = self
-                .loader_info()
-                .as_ref()
-                .and_then(|o| o.as_loader_info_object())
-            {
-                loader_info.fire_init_and_complete_events(context, 0, false);
-            }
-        }
-
-        for child in self.iter_render_list() {
-            child.on_exit_frame(context);
         }
     }
 

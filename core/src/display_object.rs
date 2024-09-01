@@ -8,6 +8,7 @@ use crate::avm2::{
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
+use crate::loader::LoadManager;
 use crate::prelude::*;
 use crate::string::{AvmString, WString};
 use crate::tag_utils::SwfMovie;
@@ -2070,15 +2071,7 @@ pub trait TDisplayObject<'gc>:
         let dobject_constr = context.avm2.classes().display_object;
         Avm2::broadcast_event(context, exit_frame_evt, dobject_constr);
 
-        self.on_exit_frame(context);
-    }
-
-    fn on_exit_frame(&self, context: &mut UpdateContext<'gc>) {
-        if let Some(container) = self.as_container() {
-            for child in container.iter_render_list() {
-                child.on_exit_frame(context);
-            }
-        }
+        LoadManager::run_exit_frame(context);
     }
 
     /// Called before the child is about to be rendered.
