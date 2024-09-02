@@ -56,7 +56,7 @@ anyhow = "1.0"
 slotmap = "1.0.7"
 async-channel = "2.3.1"
 bitflags = "2.6.0"
-bytemuck = "1.17.0"
+bytemuck = "1.17.1"
 chrono = { version = "0.4.38", default-features = false }
 enum-map = "2.7.3"
 flate2 = "1.0.33"
@@ -72,7 +72,7 @@ url = "2.5.2"
 # Make sure to match wasm-bindgen-cli version to this everywhere.
 wasm-bindgen = "=0.2.93"
 walkdir = "2.5.0"
-tokio = { version = "1.39.3" }
+tokio = { version = "1.40.0" }
 rfd = { git = "https://github.com/PolyMeilex/rfd.git", rev = "42dcc7d61fc5e278b4ed76bb9720ba4d89266f01" }
 
 [workspace.lints.rust]
