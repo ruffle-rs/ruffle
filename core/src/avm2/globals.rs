@@ -662,7 +662,6 @@ pub fn load_player_globals<'gc>(
     global_obj_vtable.init_vtable(
         global_classdef,
         Some(object_class),
-        &global_classdef.traits(),
         Some(scope),
         Some(object_class.instance_vtable()),
         mc,

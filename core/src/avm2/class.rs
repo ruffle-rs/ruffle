@@ -743,7 +743,6 @@ impl<'gc> Class<'gc> {
         read.vtable.init_vtable(
             self,
             None,
-            &read.traits,
             None,
             read.super_class.map(|c| c.vtable()),
             context.gc_context,
