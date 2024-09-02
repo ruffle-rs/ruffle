@@ -36,3 +36,4 @@ debug-menu-open-movie = Переглянути фільм
 debug-menu-open-movie-list = Показати відомі фільми
 debug-menu-open-domain-list = Показати домени
 debug-menu-search-display-objects = Пошук зображуваних об’єктів...
+view-menu-fullscreen = Повний екран
