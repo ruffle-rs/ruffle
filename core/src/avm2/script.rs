@@ -553,7 +553,6 @@ impl<'gc> Script<'gc> {
         global_obj_vtable.init_vtable(
             global_class,
             Some(object_class),
-            &global_class.traits(),
             Some(scope),
             Some(object_class.instance_vtable()),
             mc,

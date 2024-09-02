@@ -212,7 +212,6 @@ impl<'gc> VTable<'gc> {
         self,
         defining_class_def: Class<'gc>,
         super_class_obj: Option<ClassObject<'gc>>,
-        traits: &[Trait<'gc>],
         scope: Option<ScopeChain<'gc>>,
         superclass_vtable: Option<Self>,
         mc: &Mutation<'gc>,
@@ -316,7 +315,7 @@ impl<'gc> VTable<'gc> {
             &mut write.slot_classes,
         );
 
-        for trait_data in traits {
+        for trait_data in &*defining_class_def.traits() {
             match trait_data.kind() {
                 TraitKind::Method { method, .. } => {
                     let entry = ClassBoundMethod {

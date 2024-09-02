@@ -211,7 +211,6 @@ impl<'gc> ClassObject<'gc> {
         self.instance_vtable().init_vtable(
             class,
             self.superclass_object(),
-            &class.traits(),
             Some(self.instance_scope()),
             self.superclass_object().map(|cls| cls.instance_vtable()),
             activation.context.gc_context,
@@ -254,7 +253,6 @@ impl<'gc> ClassObject<'gc> {
         class_vtable.init_vtable(
             c_class,
             Some(class_classobject),
-            &c_class.traits(),
             Some(self.class_scope()),
             Some(class_classobject.instance_vtable()),
             activation.context.gc_context,
