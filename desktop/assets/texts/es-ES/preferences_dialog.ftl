@@ -19,3 +19,7 @@ storage-backend-disk = Disco
 storage-backend-memory = Memoria
 recent-limit = Límite de recientes
 recent-clear = Borrar
+theme = Tema
+theme-system = Sistema
+theme-light = Claro
+theme-dark = Oscuro

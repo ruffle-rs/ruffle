@@ -47,6 +47,7 @@ align-bottom-right = Alinear abajo a la derecha
 align-force = Forzar alineación
 scale-mode = Modo de escala
 scale-mode-force = Forzar el modo de escala
+scale-mode-force-tooltip = Previene la película de cambiar el modo de escala, bloqueándolo al ajuste seleccionado.
 player-version = Versión del reproductor
 player-runtime = Infraestructura del reproductor
 player-runtime-flash = Reproductor de Flash
