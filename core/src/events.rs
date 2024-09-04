@@ -617,11 +617,13 @@ impl From<MouseButton> for KeyCode {
     }
 }
 
-/// Key codes for SWF4 keyPress button handlers. These are annoyingly different than
-/// `Key.isDown` key codes.
+/// Key codes for SWF4 keyPress button handlers.
+///
+/// These are annoyingly different than `Key.isDown` key codes.
+///
 /// TODO: After 18, these are mostly ASCII... should we just use u8? How are different
-/// keyboard layouts/languages handled?
-/// SWF19 pp. 198-199
+///   keyboard layouts/languages handled?
+///   SWF19 pp. 198-199
 #[derive(Debug, PartialEq, Eq, Copy, Clone, FromPrimitive, ToPrimitive)]
 pub enum ButtonKeyCode {
     Unknown = 0,

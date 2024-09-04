@@ -27,6 +27,7 @@ pub trait CommandHandler {
 }
 
 /// Holds either a normal BlendMode, or the shader for BlendMode.SHADER.
+///
 /// We cannot store the `PixelBenderShaderHandle` directly in `ExtendedBlendMode`,
 /// since we need to remember the shader even if the blend mode is changed
 /// to something else (so that the shader will still be used if we switch back)

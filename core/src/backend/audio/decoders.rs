@@ -97,6 +97,8 @@ impl<T: Decoder + ?Sized> Decoder for Box<T> {
     }
 }
 
+/// Audio stream decoder.
+///
 /// A "stream" sound is a sound that has its data distributed across `SoundStreamBlock` tags,
 /// one per each frame of a MovieClip. The sound is synced to the MovieClip's timeline, and will
 /// stop/seek as the MovieClip stops/seeks.
@@ -144,6 +146,8 @@ impl Iterator for StandardStreamDecoder {
     }
 }
 
+/// ADPCM stream decoder.
+///
 /// Stream sounds encoded with ADPCM have an ADPCM header in each `SoundStreamBlock` tag, unlike
 /// other compression formats that remain the same as if they were a single sound clip.
 /// Therefore, we must recreate the decoder with each `SoundStreamBlock` to parse the additional
@@ -482,6 +486,7 @@ impl Read for SubstreamTagReader {
 }
 
 /// Create a new decoder that reads data from a shared `Substream` instance.
+///
 /// This works similarly to `make_stream_decoder` but using the new buffer
 /// infrastructure that will eventually replace SWF-specific streaming.
 ///
@@ -537,6 +542,8 @@ impl Iterator for StandardSubstreamDecoder {
     }
 }
 
+/// ADPCM substream decoder.
+///
 /// Stream sounds encoded with ADPCM have an ADPCM header in each `SoundStreamBlock` tag, unlike
 /// other compression formats that remain the same as if they were a single sound clip.
 /// Therefore, we must recreate the decoder with each `SoundStreamBlock` to parse the additional
