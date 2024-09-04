@@ -15,6 +15,26 @@ pub struct Font {
     pub italic: bool,
 }
 
+#[derive(Clone, Copy)]
+pub enum TestKind {
+    Render,
+}
+
+impl TestKind {
+    pub fn name(self) -> &'static str {
+        match self {
+            TestKind::Render => "render",
+        }
+    }
+
+    pub fn ord(kind: &str) -> impl Ord {
+        match kind {
+            "render" => 0,
+            _ => 1,
+        }
+    }
+}
+
 pub struct Test {
     pub options: TestOptions,
     pub swf_path: VfsPath,
@@ -41,6 +61,14 @@ impl Test {
             root_path: test_dir,
             name,
         })
+    }
+
+    pub fn kind(&self) -> Option<TestKind> {
+        if self.options.player_options.needs_renderer() {
+            Some(TestKind::Render)
+        } else {
+            None
+        }
     }
 
     pub fn create_test_runner(&self, environment: &impl Environment) -> Result<TestRunner> {

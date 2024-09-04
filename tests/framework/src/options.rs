@@ -218,6 +218,10 @@ impl PlayerOptions {
             })
     }
 
+    pub fn needs_renderer(&self) -> bool {
+        self.with_renderer.is_some()
+    }
+
     pub fn create_renderer(
         &self,
         environment: &impl Environment,
