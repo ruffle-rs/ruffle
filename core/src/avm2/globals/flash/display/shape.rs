@@ -47,16 +47,18 @@ pub fn get_graphics<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let namespaces = activation.avm2().namespaces;
+
     if let Some(dobj) = this.as_display_object() {
         // Lazily initialize the `Graphics` object in a hidden property.
         let graphics = match this.get_property(
-            &Multiname::new(activation.avm2().flash_display_internal, "_graphics"),
+            &Multiname::new(namespaces.flash_display_internal, "_graphics"),
             activation,
         )? {
             Value::Undefined | Value::Null => {
                 let graphics = Value::from(StageObject::graphics(activation, dobj)?);
                 this.set_property(
-                    &Multiname::new(activation.avm2().flash_display_internal, "_graphics"),
+                    &Multiname::new(namespaces.flash_display_internal, "_graphics"),
                     graphics,
                     activation,
                 )?;

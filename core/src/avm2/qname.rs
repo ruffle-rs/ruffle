@@ -92,19 +92,16 @@ impl<'gc> QName<'gc> {
             .rsplit_once(WStr::from_units(b"::"))
             .or_else(|| name.rsplit_once(WStr::from_units(b".")));
 
-        let mut context = context.borrow_gc();
         if let Some((package_name, local_name)) = parts {
-            let package_name = context
-                .interner
-                .intern_wstr(context.gc_context, package_name);
+            let package_name = context.interner.intern_wstr(context.gc(), package_name);
 
             Self {
-                ns: Namespace::package(package_name, api_version, &mut context),
-                name: AvmString::new(context.gc_context, local_name),
+                ns: Namespace::package(package_name, api_version, &mut context.borrow_gc()),
+                name: AvmString::new(context.gc(), local_name),
             }
         } else {
             Self {
-                ns: Namespace::package("", api_version, &mut context),
+                ns: context.avm2.namespaces.public_for(api_version),
                 name,
             }
         }

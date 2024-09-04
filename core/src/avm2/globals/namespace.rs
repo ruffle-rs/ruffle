@@ -24,6 +24,7 @@ pub fn instance_init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.as_namespace_object() {
         let api_version = activation.avm2().root_api_version;
+        let namespaces = activation.avm2().namespaces;
 
         let (prefix, namespace) = match args {
             [prefix, uri] => {
@@ -75,10 +76,7 @@ pub fn instance_init<'gc>(
                     (None, ns)
                 }
             }
-            _ => (
-                Some("".into()),
-                activation.avm2().public_namespace_base_version,
-            ),
+            _ => (Some("".into()), namespaces.public_all()),
         };
 
         this.init_namespace(activation.context.gc_context, namespace);
@@ -171,9 +169,11 @@ pub fn uri<'gc>(
 
 /// Construct `Namespace`'s class.
 pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
-    let mc = activation.context.gc_context;
+    let mc = activation.gc();
+    let namespaces = activation.avm2().namespaces;
+
     let class = Class::new(
-        QName::new(activation.avm2().public_namespace_base_version, "Namespace"),
+        QName::new(namespaces.public_all(), "Namespace"),
         Some(activation.avm2().class_defs().object),
         Method::from_builtin(instance_init, "<Namespace instance initializer>", mc),
         Method::from_builtin(class_init, "<Namespace class initializer>", mc),
@@ -198,22 +198,14 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     )] = &[("prefix", Some(prefix), None), ("uri", Some(uri), None)];
     class.define_builtin_instance_properties(
         mc,
-        activation.avm2().public_namespace_base_version,
+        namespaces.public_all(),
         PUBLIC_INSTANCE_PROPERTIES,
     );
 
     const CONSTANTS_INT: &[(&str, i32)] = &[("length", 2)];
-    class.define_constant_int_class_traits(
-        activation.avm2().public_namespace_base_version,
-        CONSTANTS_INT,
-        activation,
-    );
+    class.define_constant_int_class_traits(namespaces.public_all(), CONSTANTS_INT, activation);
 
-    class.define_builtin_instance_methods(
-        mc,
-        activation.avm2().as3_namespace,
-        PUBLIC_INSTANCE_AND_PROTO_METHODS,
-    );
+    class.define_builtin_instance_methods(mc, namespaces.as3, PUBLIC_INSTANCE_AND_PROTO_METHODS);
 
     class.mark_traits_loaded(activation.context.gc_context);
     class

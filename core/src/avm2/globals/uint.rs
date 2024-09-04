@@ -219,9 +219,11 @@ fn value_of<'gc>(
 
 /// Construct `uint`'s class.
 pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
-    let mc = activation.context.gc_context;
+    let mc = activation.gc();
+    let namespaces = activation.avm2().namespaces;
+
     let class = Class::new(
-        QName::new(activation.avm2().public_namespace_base_version, "uint"),
+        QName::new(namespaces.public_all(), "uint"),
         Some(activation.avm2().class_defs().object),
         Method::from_builtin_and_params(
             instance_init,
@@ -254,14 +256,14 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     const CLASS_CONSTANTS_UINT: &[(&str, u32)] =
         &[("MAX_VALUE", u32::MAX), ("MIN_VALUE", u32::MIN)];
     class.define_constant_uint_class_traits(
-        activation.avm2().public_namespace_base_version,
+        namespaces.public_all(),
         CLASS_CONSTANTS_UINT,
         activation,
     );
 
     const CLASS_CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
     class.define_constant_int_class_traits(
-        activation.avm2().public_namespace_base_version,
+        namespaces.public_all(),
         CLASS_CONSTANTS_INT,
         activation,
     );
@@ -273,11 +275,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
         ("toString", to_string),
         ("valueOf", value_of),
     ];
-    class.define_builtin_instance_methods(
-        mc,
-        activation.avm2().as3_namespace,
-        AS3_INSTANCE_METHODS,
-    );
+    class.define_builtin_instance_methods(mc, namespaces.as3, AS3_INSTANCE_METHODS);
 
     class.mark_traits_loaded(activation.context.gc_context);
     class

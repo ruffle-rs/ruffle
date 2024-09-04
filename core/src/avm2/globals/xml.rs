@@ -728,6 +728,8 @@ pub fn append_child<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let namespaces = activation.avm2().namespaces;
+
     let xml = this.as_xml_object().unwrap();
     let child = args.get_value(0);
     let child = crate::avm2::e4x::maybe_escape_child(activation, child)?;
@@ -743,7 +745,7 @@ pub fn append_child<'gc>(
         .expect("Should have an XMLList");
     let length = xml_list.length();
     let name = Multiname::new(
-        activation.avm2().public_namespace_base_version,
+        namespaces.public_all(),
         AvmString::new_utf8(activation.context.gc_context, length.to_string()),
     );
     xml_list.set_property_local(&name, child, activation)?;

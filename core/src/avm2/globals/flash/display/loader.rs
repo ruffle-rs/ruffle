@@ -26,6 +26,8 @@ pub fn loader_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
+    let namespaces = activation.avm2().namespaces;
+
     // Loader does not have an associated `Character` variant, and can never be
     // instantiated from the timeline.
     let display_object = LoaderDisplay::empty(activation, activation.context.swf.clone()).into();
@@ -46,10 +48,7 @@ pub fn loader_allocator<'gc>(
         false,
     )?;
     loader.set_property(
-        &Multiname::new(
-            activation.avm2().flash_display_internal,
-            "_contentLoaderInfo",
-        ),
+        &Multiname::new(namespaces.flash_display_internal, "_contentLoaderInfo"),
         loader_info.into(),
         activation,
     )?;
@@ -61,15 +60,14 @@ pub fn load<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let namespaces = activation.avm2().namespaces;
+
     let url_request = args.get_object(activation, 0, "request")?;
     let context = args.try_get_object(activation, 1);
 
     let loader_info = this
         .get_property(
-            &Multiname::new(
-                activation.avm2().flash_display_internal,
-                "_contentLoaderInfo",
-            ),
+            &Multiname::new(namespaces.flash_display_internal, "_contentLoaderInfo"),
             activation,
         )?
         .as_object()
@@ -223,16 +221,15 @@ pub fn load_bytes<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let namespaces = activation.avm2().namespaces;
+
     let arg0 = args.get_object(activation, 0, "data")?;
     let bytes = arg0.as_bytearray().unwrap().bytes().to_vec();
     let context = args.try_get_object(activation, 1);
 
     let loader_info = this
         .get_property(
-            &Multiname::new(
-                activation.avm2().flash_display_internal,
-                "_contentLoaderInfo",
-            ),
+            &Multiname::new(namespaces.flash_display_internal, "_contentLoaderInfo"),
             activation,
         )?
         .as_object()
@@ -287,15 +284,14 @@ pub fn unload<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let namespaces = activation.avm2().namespaces;
+
     // TODO: Broadcast an "unload" event on the LoaderInfo
     avm2_stub_method!(activation, "flash.display.Loader", "unload");
 
     let loader_info = this
         .get_property(
-            &Multiname::new(
-                activation.avm2().flash_display_internal,
-                "_contentLoaderInfo",
-            ),
+            &Multiname::new(namespaces.flash_display_internal, "_contentLoaderInfo"),
             activation,
         )?
         .as_object()

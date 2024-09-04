@@ -686,9 +686,11 @@ fn is_dependent<'gc>(
 
 /// Construct `String`'s class.
 pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
-    let mc = activation.context.gc_context;
+    let mc = activation.gc();
+    let namespaces = activation.avm2().namespaces;
+
     let class = Class::new(
-        QName::new(activation.avm2().public_namespace_base_version, "String"),
+        QName::new(namespaces.public_all(), "String"),
         Some(activation.avm2().class_defs().object),
         Method::from_builtin(instance_init, "<String instance initializer>", mc),
         Method::from_builtin(class_init, "<String class initializer>", mc),
@@ -710,14 +712,10 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     )] = &[("length", Some(length), None)];
     class.define_builtin_instance_properties(
         mc,
-        activation.avm2().public_namespace_base_version,
+        namespaces.public_all(),
         PUBLIC_INSTANCE_PROPERTIES,
     );
-    class.define_builtin_instance_methods(
-        mc,
-        activation.avm2().as3_namespace,
-        PUBLIC_INSTANCE_AND_PROTO_METHODS,
-    );
+    class.define_builtin_instance_methods(mc, namespaces.as3, PUBLIC_INSTANCE_AND_PROTO_METHODS);
 
     #[cfg(feature = "test_only_as3")]
     {
@@ -737,20 +735,12 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     }
 
     const CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
-    class.define_constant_int_class_traits(
-        activation.avm2().public_namespace_base_version,
-        CONSTANTS_INT,
-        activation,
-    );
+    class.define_constant_int_class_traits(namespaces.public_all(), CONSTANTS_INT, activation);
 
     const AS3_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("fromCharCode", from_char_code)];
     const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("fromCharCode", from_char_code)];
-    class.define_builtin_class_methods(mc, activation.avm2().as3_namespace, AS3_CLASS_METHODS);
-    class.define_builtin_class_methods(
-        mc,
-        activation.avm2().public_namespace_base_version,
-        PUBLIC_CLASS_METHODS,
-    );
+    class.define_builtin_class_methods(mc, namespaces.as3, AS3_CLASS_METHODS);
+    class.define_builtin_class_methods(mc, namespaces.public_all(), PUBLIC_CLASS_METHODS);
 
     class.mark_traits_loaded(activation.context.gc_context);
     class

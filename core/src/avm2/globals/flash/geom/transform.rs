@@ -11,9 +11,11 @@ fn get_display_object<'gc>(
     this: Object<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<DisplayObject<'gc>, Error<'gc>> {
+    let namespaces = activation.avm2().namespaces;
+
     Ok(this
         .get_property(
-            &Multiname::new(activation.avm2().flash_geom_internal, "_displayObject"),
+            &Multiname::new(namespaces.flash_geom_internal, "_displayObject"),
             activation,
         )?
         .as_object()
@@ -27,8 +29,10 @@ pub fn init<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let namespaces = activation.avm2().namespaces;
+
     this.set_property(
-        &Multiname::new(activation.avm2().flash_geom_internal, "_displayObject"),
+        &Multiname::new(namespaces.flash_geom_internal, "_displayObject"),
         args.get_value(0),
         activation,
     )?;

@@ -738,7 +738,7 @@ fn handle_input_multiname<'gc>(
                 let mut ns = Vec::new();
                 ns.extend(name.namespace_set());
                 if !name.contains_public_namespace() {
-                    ns.push(activation.avm2().public_namespace_base_version);
+                    ns.push(activation.avm2().namespaces.public_all());
                 }
                 new_name.set_ns(NamespaceSet::new(ns, activation.gc()));
             }

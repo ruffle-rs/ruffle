@@ -196,7 +196,7 @@ impl<'gc> XmlListObject<'gc> {
                             ApiVersion::AllVersions,
                             &mut activation.context.borrow_gc(),
                         ),
-                        None => activation.avm2().public_namespace_base_version,
+                        None => activation.avm2().namespaces.public_all(),
                     };
 
                     *unlock!(
@@ -870,7 +870,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                         // FIXME: We probably need to take the namespace too.
                         // 2.e.i. Let z = ToAttributeName(x[i].[[Name]])
                         let z = Multiname::attribute(
-                            activation.avm2().public_namespace_base_version,
+                            activation.avm2().namespaces.public_all(),
                             child.local_name().expect("Attribute should have a name"),
                         );
                         // 2.e.ii. Call the [[Put]] method of x[i].[[Parent]] with arguments z and V

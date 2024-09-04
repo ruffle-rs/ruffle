@@ -899,7 +899,7 @@ pub fn splice<'gc>(
 pub fn create_generic_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(activation.avm2().vector_public_namespace, "Vector"),
+        QName::new(activation.avm2().namespaces.vector_public, "Vector"),
         Some(activation.avm2().class_defs().object),
         Method::from_builtin(generic_init, "<Vector instance initializer>", mc),
         Method::from_builtin(generic_init, "<Vector class initializer>", mc),
@@ -930,18 +930,16 @@ pub fn create_builtin_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
     param: Option<Class<'gc>>,
 ) -> Class<'gc> {
-    let mc = activation.context.gc_context;
+    let mc = activation.gc();
+    let namespaces = activation.avm2().namespaces;
 
     // FIXME - we should store a `Multiname` instead of a `QName`, and use the
     // `params` field. For now, this is good enough to get tests passing
     let name = if let Some(param) = param {
         let name = format!("Vector.<{}>", param.name().to_qualified_name(mc));
-        QName::new(
-            activation.avm2().vector_public_namespace,
-            AvmString::new_utf8(mc, name),
-        )
+        QName::new(namespaces.vector_public, AvmString::new_utf8(mc, name))
     } else {
-        QName::new(activation.avm2().vector_public_namespace, "Vector.<*>")
+        QName::new(namespaces.vector_public, "Vector.<*>")
     };
 
     let class = Class::new(
@@ -975,7 +973,7 @@ pub fn create_builtin_class<'gc>(
     ];
     class.define_builtin_instance_properties(
         mc,
-        activation.avm2().public_namespace_base_version,
+        namespaces.public_all(),
         PUBLIC_INSTANCE_PROPERTIES,
     );
 
@@ -1002,11 +1000,7 @@ pub fn create_builtin_class<'gc>(
         ("sort", sort),
         ("splice", splice),
     ];
-    class.define_builtin_instance_methods(
-        mc,
-        activation.avm2().as3_namespace,
-        AS3_INSTANCE_METHODS,
-    );
+    class.define_builtin_instance_methods(mc, namespaces.as3, AS3_INSTANCE_METHODS);
 
     class.mark_traits_loaded(activation.context.gc_context);
     class

@@ -257,9 +257,11 @@ pub fn init<'gc>(
 
 /// Construct `Object`'s i_class.
 pub fn create_i_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
-    let gc_context = activation.context.gc_context;
+    let gc_context = activation.gc();
+    let namespaces = activation.avm2().namespaces;
+
     let object_i_class = Class::custom_new(
-        QName::new(activation.avm2().public_namespace_base_version, "Object"),
+        QName::new(namespaces.public_all(), "Object"),
         None,
         Method::from_builtin(instance_init, "<Object instance initializer>", gc_context),
         gc_context,
@@ -294,7 +296,7 @@ pub fn create_i_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     ];
     object_i_class.define_builtin_instance_methods_with_sig(
         gc_context,
-        activation.avm2().as3_namespace,
+        namespaces.as3,
         as3_instance_methods,
     );
 
@@ -311,9 +313,11 @@ pub fn create_c_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
     class_i_class: Class<'gc>,
 ) -> Class<'gc> {
-    let gc_context = activation.context.gc_context;
+    let gc_context = activation.gc();
+    let namespaces = activation.avm2().namespaces;
+
     let object_c_class = Class::custom_new(
-        QName::new(activation.avm2().public_namespace_base_version, "Object$"),
+        QName::new(namespaces.public_all(), "Object$"),
         Some(class_i_class),
         Method::from_builtin(class_init, "<Object class initializer>", gc_context),
         gc_context,
@@ -323,7 +327,7 @@ pub fn create_c_class<'gc>(
     object_c_class.define_instance_trait(
         gc_context,
         Trait::from_const(
-            QName::new(activation.avm2().public_namespace_base_version, "length"),
+            QName::new(activation.avm2().namespaces.public_all(), "length"),
             Some(activation.avm2().multinames.int),
             Some(1.into()),
         ),
@@ -332,7 +336,7 @@ pub fn create_c_class<'gc>(
     const INTERNAL_INIT_METHOD: &[(&str, NativeMethodImpl)] = &[("init", init)];
     object_c_class.define_builtin_instance_methods(
         gc_context,
-        activation.avm2().internal_namespace,
+        namespaces.internal,
         INTERNAL_INIT_METHOD,
     );
 

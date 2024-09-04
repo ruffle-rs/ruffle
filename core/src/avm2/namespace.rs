@@ -336,3 +336,73 @@ impl<'gc> Namespace<'gc> {
         }
     }
 }
+
+/// List of common namespaces used in the rest of the AVM2.
+#[derive(Collect)]
+#[collect(no_drop)]
+pub struct CommonNamespaces<'gc> {
+    public_namespaces: [Namespace<'gc>; CommonNamespaces::PUBLIC_LEN],
+
+    pub(super) internal: Namespace<'gc>,
+    pub(super) as3: Namespace<'gc>,
+    pub(super) vector_public: Namespace<'gc>,
+    pub(super) vector_internal: Namespace<'gc>,
+    pub(super) proxy: Namespace<'gc>,
+
+    // These are required to facilitate shared access between Rust and AS.
+    pub(super) flash_display_internal: Namespace<'gc>,
+    pub(super) flash_utils_internal: Namespace<'gc>,
+    pub(super) flash_geom_internal: Namespace<'gc>,
+    pub(super) flash_events_internal: Namespace<'gc>,
+    pub(super) flash_text_engine_internal: Namespace<'gc>,
+    pub(super) flash_net_internal: Namespace<'gc>,
+}
+
+impl<'gc> CommonNamespaces<'gc> {
+    const PUBLIC_LEN: usize = ApiVersion::VM_INTERNAL as usize + 1;
+
+    pub fn new(context: &mut GcContext<'_, 'gc>) -> Self {
+        Self {
+            public_namespaces: std::array::from_fn(|val| {
+                Namespace::package("", ApiVersion::from_usize(val).unwrap(), context)
+            }),
+            internal: Namespace::internal("", context),
+            as3: Namespace::package(
+                "http://adobe.com/AS3/2006/builtin",
+                ApiVersion::AllVersions,
+                context,
+            ),
+            vector_public: Namespace::package("__AS3__.vec", ApiVersion::AllVersions, context),
+            vector_internal: Namespace::internal("__AS3__.vec", context),
+            proxy: Namespace::package(
+                "http://www.adobe.com/2006/actionscript/flash/proxy",
+                ApiVersion::AllVersions,
+                context,
+            ),
+            flash_display_internal: Namespace::internal("flash.display", context),
+            flash_utils_internal: Namespace::internal("flash.utils", context),
+            flash_geom_internal: Namespace::internal("flash.geom", context),
+            flash_events_internal: Namespace::internal("flash.events", context),
+            flash_text_engine_internal: Namespace::internal("flash.text.engine", context),
+            flash_net_internal: Namespace::internal("flash.net", context),
+        }
+    }
+
+    /// The public namespace, versioned with `ApiVersion::AllVersions`.
+    /// When calling into user code, you should almost always use `Avm2::find_public_namespace`
+    /// instead, as it will return the correct version for the current call stack.
+    #[inline]
+    pub fn public_all(&self) -> Namespace<'gc> {
+        self.public_namespaces[ApiVersion::AllVersions as usize]
+    }
+
+    #[inline]
+    pub fn public_vm_internal(&self) -> Namespace<'gc> {
+        self.public_namespaces[ApiVersion::VM_INTERNAL as usize]
+    }
+
+    #[inline]
+    pub fn public_for(&self, version: ApiVersion) -> Namespace<'gc> {
+        self.public_namespaces[version as usize]
+    }
+}

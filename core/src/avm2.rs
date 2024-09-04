@@ -80,7 +80,7 @@ pub use crate::avm2::error::Error;
 pub use crate::avm2::flv::FlvValueAvm2Ext;
 pub use crate::avm2::globals::flash::ui::context_menu::make_context_menu_state;
 pub use crate::avm2::multiname::{CommonMultinames, Multiname};
-pub use crate::avm2::namespace::Namespace;
+pub use crate::avm2::namespace::{CommonNamespaces, Namespace};
 pub use crate::avm2::object::{
     ArrayObject, BitmapDataObject, ClassObject, EventObject, Object, SoundChannelObject,
     StageObject, TObject,
@@ -91,7 +91,6 @@ pub use crate::avm2::value::Value;
 use self::api_version::ApiVersion;
 use self::object::WeakObject;
 use self::scope::Scope;
-use num_traits::FromPrimitive;
 
 const BROADCAST_WHITELIST: [&str; 4] = ["enterFrame", "exitFrame", "frameConstructed", "render"];
 
@@ -133,25 +132,8 @@ pub struct Avm2<'gc> {
     /// However, it's not strictly defined which items end up there.
     toplevel_global_object: Option<Object<'gc>>,
 
-    /// The public namespace, versioned with `ApiVersion::ALL_VERSIONS`.
-    /// When calling into user code, you should almost always use `find_public_namespace`
-    /// instead, as it will return the correct version for the current call stack.
-    public_namespace_base_version: Namespace<'gc>,
-    // FIXME - make this an enum map once gc-arena supports it
-    public_namespaces: Vec<Namespace<'gc>>,
-    public_namespace_vm_internal: Namespace<'gc>,
-    pub internal_namespace: Namespace<'gc>,
-    pub as3_namespace: Namespace<'gc>,
-    pub vector_public_namespace: Namespace<'gc>,
-    pub vector_internal_namespace: Namespace<'gc>,
-    pub proxy_namespace: Namespace<'gc>,
-    // these are required to facilitate shared access between Rust and AS
-    pub flash_display_internal: Namespace<'gc>,
-    pub flash_utils_internal: Namespace<'gc>,
-    pub flash_geom_internal: Namespace<'gc>,
-    pub flash_events_internal: Namespace<'gc>,
-    pub flash_text_engine_internal: Namespace<'gc>,
-    pub flash_net_internal: Namespace<'gc>,
+    /// Pre-created known namespaces.
+    namespaces: Gc<'gc, CommonNamespaces<'gc>>,
 
     pub multinames: Gc<'gc, CommonMultinames<'gc>>,
 
@@ -214,14 +196,8 @@ impl<'gc> Avm2<'gc> {
         let playerglobals_domain = Domain::uninitialized_domain(mc, None);
         let stage_domain = Domain::uninitialized_domain(mc, Some(playerglobals_domain));
 
-        let public_namespaces = (0..=(ApiVersion::VM_INTERNAL as usize))
-            .map(|val| Namespace::package("", ApiVersion::from_usize(val).unwrap(), context))
-            .collect();
-
-        let public_namespace_base_version =
-            Namespace::package("", ApiVersion::AllVersions, context);
-
-        let multinames = CommonMultinames::new(context, public_namespace_base_version);
+        let namespaces = CommonNamespaces::new(context);
+        let multinames = CommonMultinames::new(context, &namespaces);
 
         Self {
             player_version,
@@ -235,34 +211,7 @@ impl<'gc> Avm2<'gc> {
             system_class_defs: None,
             toplevel_global_object: None,
 
-            public_namespace_base_version,
-            public_namespaces,
-            public_namespace_vm_internal: Namespace::package("", ApiVersion::VM_INTERNAL, context),
-            internal_namespace: Namespace::internal("", context),
-            as3_namespace: Namespace::package(
-                "http://adobe.com/AS3/2006/builtin",
-                ApiVersion::AllVersions,
-                context,
-            ),
-            vector_public_namespace: Namespace::package(
-                "__AS3__.vec",
-                ApiVersion::AllVersions,
-                context,
-            ),
-            vector_internal_namespace: Namespace::internal("__AS3__.vec", context),
-            proxy_namespace: Namespace::package(
-                "http://www.adobe.com/2006/actionscript/flash/proxy",
-                ApiVersion::AllVersions,
-                context,
-            ),
-            // these are required to facilitate shared access between Rust and AS
-            flash_display_internal: Namespace::internal("flash.display", context),
-            flash_utils_internal: Namespace::internal("flash.utils", context),
-            flash_geom_internal: Namespace::internal("flash.geom", context),
-            flash_events_internal: Namespace::internal("flash.events", context),
-            flash_text_engine_internal: Namespace::internal("flash.text.engine", context),
-            flash_net_internal: Namespace::internal("flash.net", context),
-
+            namespaces: Gc::new(mc, namespaces),
             multinames: Gc::new(mc, multinames),
 
             native_method_table: Default::default(),
@@ -813,7 +762,7 @@ impl<'gc> Avm2<'gc> {
     /// See `AvmCore::findPublicNamespace()`
     /// https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/AvmCore.cpp#L5809C25-L5809C25
     pub fn find_public_namespace(&self) -> Namespace<'gc> {
-        self.public_namespaces[self.root_api_version as usize]
+        self.namespaces.public_for(self.root_api_version)
     }
 
     pub fn optimizer_enabled(&self) -> bool {

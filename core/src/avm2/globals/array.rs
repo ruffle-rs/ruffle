@@ -1335,7 +1335,7 @@ pub fn remove_at<'gc>(
 pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(activation.avm2().public_namespace_base_version, "Array"),
+        QName::new(activation.avm2().namespaces.public_all(), "Array"),
         Some(activation.avm2().class_defs().object),
         Method::from_builtin(instance_init, "<Array instance initializer>", mc),
         Method::from_builtin(class_init, "<Array class initializer>", mc),
@@ -1356,13 +1356,13 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     )] = &[("length", Some(length), Some(set_length))];
     class.define_builtin_instance_properties(
         mc,
-        activation.avm2().public_namespace_base_version,
+        activation.avm2().namespaces.public_all(),
         PUBLIC_INSTANCE_PROPERTIES,
     );
 
     class.define_builtin_instance_methods(
         mc,
-        activation.avm2().as3_namespace,
+        activation.avm2().namespaces.as3,
         PUBLIC_AS3_INSTANCE_METHODS,
     );
 
@@ -1380,14 +1380,14 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
         ("UNIQUESORT", SortOptions::UNIQUE_SORT.bits() as u32),
     ];
     class.define_constant_uint_class_traits(
-        activation.avm2().public_namespace_base_version,
+        activation.avm2().namespaces.public_all(),
         CONSTANTS_UINT,
         activation,
     );
 
     const CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
     class.define_constant_int_class_traits(
-        activation.avm2().public_namespace_base_version,
+        activation.avm2().namespaces.public_all(),
         CONSTANTS_INT,
         activation,
     );

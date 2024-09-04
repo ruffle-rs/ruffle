@@ -373,7 +373,7 @@ impl Definition {
                 && !class_trait
                     .name()
                     .namespace()
-                    .exact_version_match(avm2.as3_namespace)
+                    .exact_version_match(avm2.namespaces.as3)
             {
                 continue;
             }

@@ -10,7 +10,7 @@ pub fn make_shader_parameter<'gc>(
     param: &PixelBenderParam,
     index: usize,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let ns = activation.avm2().flash_display_internal;
+    let ns = activation.avm2().namespaces.flash_display_internal;
 
     match param {
         PixelBenderParam::Normal {
