@@ -262,6 +262,10 @@ impl<'gc> E4XNode<'gc> {
             return false;
         }
 
+        if self.namespace().map(|ns| ns.uri) != other.namespace().map(|ns| ns.uri) {
+            return false;
+        }
+
         let this = self.0.read();
         let other = other.0.read();
 
