@@ -55,7 +55,7 @@ pub fn instance_init<'gc>(
                 let ns = qname
                     .uri()
                     .map(|uri| Namespace::package(uri, api_version, &mut activation.borrow_gc()))
-                    .unwrap_or_else(|| Namespace::any(activation.context.gc_context));
+                    .unwrap_or_else(Namespace::any);
                 if ns.as_uri().is_empty() {
                     (Some("".into()), ns)
                 } else {

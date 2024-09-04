@@ -1706,13 +1706,13 @@ pub fn string_to_multiname<'gc>(
 ) -> Multiname<'gc> {
     if let Some(name) = name.strip_prefix(b'@') {
         if name == b"*" {
-            return Multiname::any_attribute(activation.gc());
+            return Multiname::any_attribute();
         }
 
         let name = AvmString::new(activation.context.gc_context, name);
         Multiname::attribute(activation.avm2().public_namespace_base_version, name)
     } else if &*name == b"*" {
-        Multiname::any(activation.context.gc_context)
+        Multiname::any()
     } else {
         Multiname::new(activation.avm2().public_namespace_base_version, name)
     }

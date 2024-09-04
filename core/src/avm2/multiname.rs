@@ -328,9 +328,9 @@ impl<'gc> Multiname<'gc> {
     }
 
     /// Indicates the any type (any name in any namespace).
-    pub fn any(mc: &Mutation<'gc>) -> Self {
+    pub fn any() -> Self {
         Self {
-            ns: NamespaceSet::single(Namespace::any(mc)),
+            ns: NamespaceSet::single(Namespace::any()),
             name: None,
             param: None,
             flags: Default::default(),
@@ -338,9 +338,9 @@ impl<'gc> Multiname<'gc> {
     }
 
     /// Indicates the any attribute type (any attribute in any namespace).
-    pub fn any_attribute(mc: &Mutation<'gc>) -> Self {
+    pub fn any_attribute() -> Self {
         Self {
-            ns: NamespaceSet::single(Namespace::any(mc)),
+            ns: NamespaceSet::single(Namespace::any()),
             name: None,
             param: None,
             flags: MultinameFlags::ATTRIBUTE,

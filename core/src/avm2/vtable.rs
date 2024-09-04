@@ -112,17 +112,13 @@ impl<'gc> VTable<'gc> {
         self.0.read().disp_metadata_table.get(disp_id).cloned()
     }
 
-    pub fn slot_class_name(
-        &self,
-        slot_id: u32,
-        mc: &Mutation<'gc>,
-    ) -> Result<Multiname<'gc>, Error<'gc>> {
+    pub fn slot_class_name(&self, slot_id: u32) -> Result<Multiname<'gc>, Error<'gc>> {
         self.0
             .read()
             .slot_classes
             .get(slot_id as usize)
             .ok_or_else(|| "Invalid slot ID".into())
-            .map(|c| c.get_name(mc))
+            .map(|c| c.get_name())
     }
 
     pub fn get_trait(self, name: &Multiname<'gc>) -> Option<Property> {

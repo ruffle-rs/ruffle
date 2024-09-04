@@ -227,10 +227,10 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
             "<int instance initializer>",
             vec![ParamConfig {
                 param_name: AvmString::new_utf8(activation.context.gc_context, "value"),
-                param_type_name: Multiname::any(activation.context.gc_context),
+                param_type_name: Multiname::any(),
                 default_value: Some(Value::Integer(0)),
             }],
-            Multiname::any(activation.context.gc_context),
+            Multiname::any(),
             true,
             mc,
         ),

@@ -393,7 +393,7 @@ impl<'gc> TranslationUnit<'gc> {
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
         if multiname_index.0 == 0 {
             let mc = context.gc_context;
-            Ok(Gc::new(mc, Multiname::any(mc)))
+            Ok(Gc::new(mc, Multiname::any()))
         } else {
             self.pool_multiname_static(multiname_index, context)
         }
