@@ -7,7 +7,8 @@ use syn::{
     TraitItem, Visibility,
 };
 
-/// `enum_trait_object` will define an enum whose variants each implement a trait.
+/// Define an enum whose variants each implement a trait.
+///
 /// It can be used as faux-dynamic dispatch. This is used as an alternative to a
 /// trait object, which doesn't get along with GC'd types.
 ///
