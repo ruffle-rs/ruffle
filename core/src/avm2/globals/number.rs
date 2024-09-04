@@ -373,9 +373,11 @@ fn value_of<'gc>(
 
 /// Construct `Number`'s class.
 pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
-    let mc = activation.context.gc_context;
+    let mc = activation.gc();
+    let namespaces = activation.avm2().namespaces;
+
     let class = Class::new(
-        QName::new(activation.avm2().public_namespace_base_version, "Number"),
+        QName::new(namespaces.public_all(), "Number"),
         Some(activation.avm2().class_defs().object),
         Method::from_builtin(instance_init, "<Number instance initializer>", mc),
         Method::from_builtin(class_init, "<Number class initializer>", mc),
@@ -410,14 +412,14 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
         ("LOG10E", std::f64::consts::LOG10_E),
     ];
     class.define_constant_number_class_traits(
-        activation.avm2().public_namespace_base_version,
+        namespaces.public_all(),
         CLASS_CONSTANTS_NUMBER,
         activation,
     );
 
     const CLASS_CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
     class.define_constant_int_class_traits(
-        activation.avm2().public_namespace_base_version,
+        namespaces.public_all(),
         CLASS_CONSTANTS_INT,
         activation,
     );
@@ -429,11 +431,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
         ("toString", to_string),
         ("valueOf", value_of),
     ];
-    class.define_builtin_instance_methods(
-        mc,
-        activation.avm2().as3_namespace,
-        AS3_INSTANCE_METHODS,
-    );
+    class.define_builtin_instance_methods(mc, namespaces.as3, AS3_INSTANCE_METHODS);
 
     class.mark_traits_loaded(activation.context.gc_context);
     class

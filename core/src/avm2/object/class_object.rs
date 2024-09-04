@@ -292,13 +292,11 @@ impl<'gc> ClassObject<'gc> {
         // interfaces (i.e. those that were not already implemented by the superclass)
         // Otherwise, our behavior diverges from Flash Player in certain cases.
         // See the ignored test 'tests/tests/swfs/avm2/weird_superinterface_properties/'
+        let internal_ns = activation.avm2().namespaces.public_vm_internal();
         for interface in &*class.all_interfaces() {
             for interface_trait in &*interface.traits() {
                 if !interface_trait.name().namespace().is_public() {
-                    let public_name = QName::new(
-                        activation.context.avm2.public_namespace_vm_internal,
-                        interface_trait.name().local_name(),
-                    );
+                    let public_name = QName::new(internal_ns, interface_trait.name().local_name());
                     self.instance_vtable().copy_property_for_interface(
                         activation.context.gc_context,
                         public_name,

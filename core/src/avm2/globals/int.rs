@@ -218,9 +218,11 @@ fn value_of<'gc>(
 
 /// Construct `int`'s class.
 pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
-    let mc = activation.context.gc_context;
+    let mc = activation.gc();
+    let namespaces = activation.avm2().namespaces;
+
     let class = Class::new(
-        QName::new(activation.avm2().public_namespace_base_version, "int"),
+        QName::new(namespaces.public_all(), "int"),
         Some(activation.avm2().class_defs().object),
         Method::from_builtin_and_params(
             instance_init,
@@ -257,11 +259,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
         ("MIN_VALUE", i32::MIN),
         ("length", 1),
     ];
-    class.define_constant_int_class_traits(
-        activation.avm2().public_namespace_base_version,
-        CLASS_CONSTANTS,
-        activation,
-    );
+    class.define_constant_int_class_traits(namespaces.public_all(), CLASS_CONSTANTS, activation);
 
     const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[
         ("toExponential", to_exponential),
@@ -270,11 +268,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
         ("toString", to_string),
         ("valueOf", value_of),
     ];
-    class.define_builtin_instance_methods(
-        mc,
-        activation.avm2().as3_namespace,
-        AS3_INSTANCE_METHODS,
-    );
+    class.define_builtin_instance_methods(mc, namespaces.as3, AS3_INSTANCE_METHODS);
 
     class.mark_traits_loaded(activation.context.gc_context);
     class

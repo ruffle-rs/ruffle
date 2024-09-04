@@ -13,15 +13,17 @@ fn dispatch_list<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
+    let namespaces = activation.avm2().namespaces;
+
     match this.get_property(
-        &Multiname::new(activation.avm2().flash_events_internal, "_dispatchList"),
+        &Multiname::new(namespaces.flash_events_internal, "_dispatchList"),
         activation,
     )? {
         Value::Object(o) => Ok(o),
         _ => {
             let dispatch_list = DispatchObject::empty_list(activation);
             this.init_property(
-                &Multiname::new(activation.avm2().flash_events_internal, "_dispatchList"),
+                &Multiname::new(namespaces.flash_events_internal, "_dispatchList"),
                 dispatch_list.into(),
                 activation,
             )?;
@@ -101,6 +103,8 @@ pub fn will_trigger<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let namespaces = activation.avm2().namespaces;
+
     let dispatch_list = dispatch_list(activation, this)?;
     let event_type = args.get_string(activation, 0)?;
 
@@ -114,7 +118,7 @@ pub fn will_trigger<'gc>(
 
     let target = this
         .get_property(
-            &Multiname::new(activation.avm2().flash_events_internal, "_target"),
+            &Multiname::new(namespaces.flash_events_internal, "_target"),
             activation,
         )?
         .as_object()
@@ -154,7 +158,7 @@ pub fn to_string<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let object_proto = activation.avm2().classes().object.prototype();
-    let name = Multiname::new(activation.avm2().public_namespace_base_version, "toString");
+    let name = Multiname::new(activation.avm2().namespaces.public_all(), "toString");
 
     object_proto
         .get_property(&name, activation)?

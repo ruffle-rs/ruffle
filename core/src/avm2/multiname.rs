@@ -1,8 +1,8 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{make_error_1032, make_error_1080};
+use crate::avm2::namespace::{CommonNamespaces, Namespace};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::Error;
-use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2::{Object, Value};
 use crate::context::GcContext;
@@ -543,17 +543,14 @@ pub struct CommonMultinames<'gc> {
 }
 
 impl<'gc> CommonMultinames<'gc> {
-    pub fn new(
-        context: &mut GcContext<'_, 'gc>,
-        public_namespace_base_version: Namespace<'gc>,
-    ) -> Self {
+    pub fn new(context: &mut GcContext<'_, 'gc>, namespaces: &CommonNamespaces<'gc>) -> Self {
         let mc = context.gc_context;
 
         let mut create_pub_multiname = |local_name: &'static [u8]| -> Gc<'gc, Multiname<'gc>> {
             Gc::new(
                 mc,
                 Multiname::new(
-                    public_namespace_base_version,
+                    namespaces.public_all(),
                     context
                         .interner
                         .intern_static(context.gc_context, WStr::from_units(local_name)),

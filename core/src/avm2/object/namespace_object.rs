@@ -18,7 +18,7 @@ pub fn namespace_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    let namespace = activation.context.avm2.public_namespace_base_version;
+    let namespace = activation.avm2().namespaces.public_all();
     Ok(NamespaceObject(Gc::new(
         activation.context.gc_context,
         NamespaceObjectData {

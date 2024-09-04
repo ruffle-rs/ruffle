@@ -57,9 +57,11 @@ pub fn create_i_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
     object_i_class: Class<'gc>,
 ) -> Class<'gc> {
-    let gc_context = activation.context.gc_context;
+    let gc_context = activation.gc();
+    let namespaces = activation.avm2().namespaces;
+
     let class_i_class = Class::custom_new(
-        QName::new(activation.avm2().public_namespace_base_version, "Class"),
+        QName::new(namespaces.public_all(), "Class"),
         Some(object_i_class),
         Method::from_builtin(instance_init, "<Class instance initializer>", gc_context),
         gc_context,
@@ -84,7 +86,7 @@ pub fn create_i_class<'gc>(
     )] = &[("prototype", Some(prototype), None)];
     class_i_class.define_builtin_instance_properties(
         gc_context,
-        activation.avm2().public_namespace_base_version,
+        namespaces.public_all(),
         PUBLIC_INSTANCE_PROPERTIES,
     );
 
@@ -101,9 +103,11 @@ pub fn create_c_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
     class_i_class: Class<'gc>,
 ) -> Class<'gc> {
-    let gc_context = activation.context.gc_context;
+    let gc_context = activation.gc();
+    let namespaces = activation.avm2().namespaces;
+
     let class_c_class = Class::custom_new(
-        QName::new(activation.avm2().public_namespace_base_version, "Class$"),
+        QName::new(namespaces.public_all(), "Class$"),
         Some(class_i_class),
         Method::from_builtin(class_init, "<Class class initializer>", gc_context),
         gc_context,
@@ -114,7 +118,7 @@ pub fn create_c_class<'gc>(
     // We need to define it, since it shows up in 'describeType'
     const CLASS_CONSTANTS: &[(&str, i32)] = &[("length", 1)];
     class_c_class.define_constant_int_instance_traits(
-        activation.avm2().public_namespace_base_version,
+        namespaces.public_all(),
         CLASS_CONSTANTS,
         activation,
     );

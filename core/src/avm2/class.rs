@@ -778,13 +778,11 @@ impl<'gc> Class<'gc> {
         // interfaces (i.e. those that were not already implemented by the superclass)
         // Otherwise, our behavior diverges from Flash Player in certain cases.
         // See the ignored test 'tests/tests/swfs/avm2/weird_superinterface_properties/'
+        let ns = context.avm2.namespaces.public_vm_internal();
         for interface in &interfaces {
             for interface_trait in &*interface.traits() {
                 if !interface_trait.name().namespace().is_public() {
-                    let public_name = QName::new(
-                        context.avm2.public_namespace_vm_internal,
-                        interface_trait.name().local_name(),
-                    );
+                    let public_name = QName::new(ns, interface_trait.name().local_name());
                     self.0.read().vtable.copy_property_for_interface(
                         context.gc_context,
                         public_name,
@@ -817,7 +815,7 @@ impl<'gc> Class<'gc> {
             )?);
         }
 
-        let name = QName::new(activation.avm2().public_namespace_base_version, name);
+        let name = QName::new(activation.avm2().namespaces.public_all(), name);
 
         let i_class = Class(GcCell::new(
             activation.context.gc_context,

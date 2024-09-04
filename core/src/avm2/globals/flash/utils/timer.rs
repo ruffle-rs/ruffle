@@ -13,9 +13,11 @@ pub fn stop<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let namespaces = activation.avm2().namespaces;
+
     let id = this
         .get_property(
-            &Multiname::new(activation.avm2().flash_utils_internal, "_timerId"),
+            &Multiname::new(namespaces.flash_utils_internal, "_timerId"),
             activation,
         )
         .unwrap()
@@ -24,7 +26,7 @@ pub fn stop<'gc>(
     if id != -1 {
         activation.context.timers.remove(id);
         this.set_property(
-            &Multiname::new(activation.avm2().flash_utils_internal, "_timerId"),
+            &Multiname::new(namespaces.flash_utils_internal, "_timerId"),
             (-1).into(),
             activation,
         )?;
@@ -39,9 +41,11 @@ pub fn start<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let namespaces = activation.avm2().namespaces;
+
     let id = this
         .get_property(
-            &Multiname::new(activation.avm2().flash_utils_internal, "_timerId"),
+            &Multiname::new(namespaces.flash_utils_internal, "_timerId"),
             activation,
         )
         .unwrap()
@@ -49,7 +53,7 @@ pub fn start<'gc>(
 
     let delay = this
         .get_property(
-            &Multiname::new(activation.avm2().flash_utils_internal, "_delay"),
+            &Multiname::new(namespaces.flash_utils_internal, "_delay"),
             activation,
         )
         .unwrap()
@@ -58,7 +62,7 @@ pub fn start<'gc>(
     if id == -1 {
         let on_update = this
             .get_property(
-                &Multiname::new(activation.avm2().flash_utils_internal, "onUpdate"),
+                &Multiname::new(namespaces.flash_utils_internal, "onUpdate"),
                 activation,
             )?
             .coerce_to_object(activation)?;
@@ -74,7 +78,7 @@ pub fn start<'gc>(
             false,
         );
         this.set_property(
-            &Multiname::new(activation.avm2().flash_utils_internal, "_timerId"),
+            &Multiname::new(namespaces.flash_utils_internal, "_timerId"),
             id.into(),
             activation,
         )?;
@@ -88,9 +92,11 @@ pub fn update_delay<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let namespaces = activation.avm2().namespaces;
+
     let id = this
         .get_property(
-            &Multiname::new(activation.avm2().flash_utils_internal, "_timerId"),
+            &Multiname::new(namespaces.flash_utils_internal, "_timerId"),
             activation,
         )
         .unwrap()
@@ -98,7 +104,7 @@ pub fn update_delay<'gc>(
 
     let delay = this
         .get_property(
-            &Multiname::new(activation.avm2().flash_utils_internal, "_delay"),
+            &Multiname::new(namespaces.flash_utils_internal, "_delay"),
             activation,
         )
         .unwrap()
@@ -107,6 +113,5 @@ pub fn update_delay<'gc>(
     if id != -1 {
         activation.context.timers.set_delay(id, delay);
     }
-
     Ok(Value::Undefined)
 }

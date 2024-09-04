@@ -1710,11 +1710,11 @@ pub fn string_to_multiname<'gc>(
         }
 
         let name = AvmString::new(activation.context.gc_context, name);
-        Multiname::attribute(activation.avm2().public_namespace_base_version, name)
+        Multiname::attribute(activation.avm2().namespaces.public_all(), name)
     } else if &*name == b"*" {
         Multiname::any()
     } else {
-        Multiname::new(activation.avm2().public_namespace_base_version, name)
+        Multiname::new(activation.avm2().namespaces.public_all(), name)
     }
 }
 

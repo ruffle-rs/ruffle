@@ -453,8 +453,8 @@ pub fn normalize<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let namespaces = activation.avm2().namespaces;
     let list = this.as_xml_list_object().unwrap();
-    let public_namespace = activation.avm2().public_namespace_base_version;
 
     // 1. Let i = 0
     let mut index = 0;
@@ -504,7 +504,7 @@ pub fn normalize<'gc>(
                     list.delete_property_local(
                         activation,
                         &Multiname::new(
-                            public_namespace,
+                            namespaces.public_all(),
                             AvmString::new_utf8(activation.gc(), (index + 1).to_string()),
                         ),
                     )?;
@@ -519,7 +519,7 @@ pub fn normalize<'gc>(
                 list.delete_property_local(
                     activation,
                     &Multiname::new(
-                        public_namespace,
+                        namespaces.public_all(),
                         AvmString::new_utf8(activation.gc(), index.to_string()),
                     ),
                 )?;
@@ -547,6 +547,7 @@ macro_rules! define_xml_proxy {
                 this: Object<'gc>,
                 args: &[Value<'gc>],
             ) -> Result<Value<'gc>, Error<'gc>> {
+                let namespaces = activation.avm2().namespaces;
                 let list = this.as_xml_list_object().unwrap();
 
                 let mut children = list.children_mut(activation.context.gc_context);
@@ -554,7 +555,7 @@ macro_rules! define_xml_proxy {
                     [child] => {
                         child
                             .get_or_create_xml(activation)
-                            .call_property(&Multiname::new(activation.avm2().as3_namespace, $as_name), args, activation)
+                            .call_property(&Multiname::new(namespaces.as3, $as_name), args, activation)
                     }
                     _ => Err(make_error_1086(activation, $as_name)),
                 }
@@ -591,6 +592,7 @@ pub fn namespace_internal_impl<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let list = this.as_xml_list_object().unwrap();
+    let namespaces = activation.avm2().namespaces;
     let mut children = list.children_mut(activation.context.gc_context);
 
     let args = if args[0] == Value::Bool(true) {
@@ -601,7 +603,7 @@ pub fn namespace_internal_impl<'gc>(
 
     match &mut children[..] {
         [child] => child.get_or_create_xml(activation).call_property(
-            &Multiname::new(activation.avm2().as3_namespace, "namespace"),
+            &Multiname::new(namespaces.as3, "namespace"),
             args,
             activation,
         ),

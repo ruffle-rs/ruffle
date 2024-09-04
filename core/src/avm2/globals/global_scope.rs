@@ -29,7 +29,7 @@ pub fn create_class<'gc>(
 ) -> Class<'gc> {
     let mc = activation.context.gc_context;
     let class = Class::custom_new(
-        QName::new(activation.avm2().public_namespace_base_version, "global"),
+        QName::new(activation.avm2().namespaces.public_all(), "global"),
         Some(activation.avm2().class_defs().object),
         Method::from_builtin(instance_init, "<global instance initializer>", mc),
         mc,

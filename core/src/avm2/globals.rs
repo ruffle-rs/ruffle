@@ -370,10 +370,7 @@ fn define_fn_on_global<'gc>(
     script: Script<'gc>,
 ) {
     let (_, global, domain) = script.init();
-    let qname = QName::new(
-        Namespace::package("", ApiVersion::AllVersions, &mut activation.borrow_gc()),
-        name,
-    );
+    let qname = QName::new(activation.avm2().namespaces.public_all(), name);
     let func = domain
         .get_defined_value(activation, qname)
         .expect("Function being defined on global should be defined in domain!");
@@ -446,6 +443,7 @@ fn vector_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<ClassObject<'gc>, Error<'gc>> {
     let mc = activation.context.gc_context;
+    let namespaces = activation.avm2().namespaces;
     let (_, global, mut domain) = script.init();
 
     let object_class = activation.avm2().classes().object;
@@ -457,7 +455,7 @@ fn vector_class<'gc>(
     let generic_cls = generic_vector.inner_class_definition();
     generic_cls.add_application(mc, param_class, vector_cls.inner_class_definition());
 
-    let legacy_name = QName::new(activation.avm2().vector_internal_namespace, legacy_name);
+    let legacy_name = QName::new(namespaces.vector_internal, legacy_name);
 
     global
         .init_property(&legacy_name.into(), vector_cls.into(), activation)
@@ -557,13 +555,13 @@ pub fn load_player_globals<'gc>(
     let vector_number_class = vector::create_builtin_class(activation, Some(number_class));
     let vector_object_class = vector::create_builtin_class(activation, None);
 
-    let public_ns = activation.avm2().public_namespace_base_version;
-    let vector_public_ns = activation.avm2().vector_public_namespace;
-    let vector_internal_ns = activation.avm2().vector_internal_namespace;
-
     // Unfortunately we need to specify the global traits manually, at least until
     // all the builtin classes are defined in AS.
     let mut global_traits = Vec::new();
+
+    let public_ns = activation.avm2().namespaces.public_all();
+    let vector_public_ns = activation.avm2().namespaces.vector_public;
+    let vector_internal_ns = activation.avm2().namespaces.vector_internal;
 
     let class_trait_list = &[
         (public_ns, "Object", object_i_class),

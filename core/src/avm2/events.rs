@@ -382,11 +382,10 @@ fn dispatch_event_to_target<'gc>(
         "Event dispatch: {} to {target:?}",
         event.as_event().unwrap().event_type(),
     );
+
+    let internal_ns = activation.avm2().namespaces.flash_events_internal;
     let dispatch_list = dispatcher
-        .get_property(
-            &Multiname::new(activation.avm2().flash_events_internal, "_dispatchList"),
-            activation,
-        )?
+        .get_property(&Multiname::new(internal_ns, "_dispatchList"), activation)?
         .as_object();
 
     if dispatch_list.is_none() {
@@ -448,11 +447,9 @@ pub fn dispatch_event<'gc>(
     event: Object<'gc>,
     simulate_dispatch: bool,
 ) -> Result<bool, Error<'gc>> {
+    let internal_ns = activation.avm2().namespaces.flash_events_internal;
     let target = this
-        .get_property(
-            &Multiname::new(activation.avm2().flash_events_internal, "_target"),
-            activation,
-        )?
+        .get_property(&Multiname::new(internal_ns, "_target"), activation)?
         .as_object()
         .unwrap_or(this);
 
