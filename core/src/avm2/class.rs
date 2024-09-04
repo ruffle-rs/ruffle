@@ -524,7 +524,7 @@ impl<'gc> Class<'gc> {
                     // A 'callable' class doesn't have a signature - let the
                     // method do any needed coercions
                     vec![],
-                    Multiname::any(activation.context.gc_context),
+                    Multiname::any(),
                     true,
                     activation.context.gc_context,
                 );

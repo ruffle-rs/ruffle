@@ -576,7 +576,7 @@ pub fn children<'gc>(
         activation,
         children,
         Some(xml.into()),
-        Some(Multiname::any(activation.gc())),
+        Some(Multiname::any()),
     )
     .into())
 }
@@ -646,7 +646,7 @@ pub fn attributes<'gc>(
         activation,
         attributes,
         Some(xml.into()),
-        Some(Multiname::any_attribute(activation.gc())),
+        Some(Multiname::any_attribute()),
     )
     .into())
 }
@@ -733,7 +733,7 @@ pub fn append_child<'gc>(
     let child = crate::avm2::e4x::maybe_escape_child(activation, child)?;
 
     // 1. Let children be the result of calling the [[Get]] method of x with argument "*"
-    let name = Multiname::any(activation.gc());
+    let name = Multiname::any();
     let children = xml.get_property_local(&name, activation)?;
 
     // 2. Call the [[Put]] method of children with arguments children.[[Length]] and child
@@ -1102,7 +1102,7 @@ pub fn set_children<'gc>(
     let value = args.get_value(0);
 
     // 1. Call the [[Put]] method of x with arguments "*" and value
-    xml.set_property_local(&Multiname::any(activation.gc()), value, activation)?;
+    xml.set_property_local(&Multiname::any(), value, activation)?;
 
     // 2. Return x
     Ok(xml.into())

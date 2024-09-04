@@ -226,7 +226,7 @@ pub fn children<'gc>(
         activation,
         sub_children,
         Some(list.into()),
-        Some(Multiname::any(activation.gc())),
+        Some(Multiname::any()),
     )
     .into())
 }
@@ -320,7 +320,7 @@ pub fn attributes<'gc>(
         activation,
         child_attrs,
         Some(list.into()),
-        Some(Multiname::any_attribute(activation.gc())),
+        Some(Multiname::any_attribute()),
     )
     .into())
 }
