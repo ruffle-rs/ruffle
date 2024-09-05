@@ -117,6 +117,25 @@ export function configureBuilder(
             builder.addGamepadButtonMapping(button, keyCode);
         }
     }
+
+    if (isExplicit(config.urlRewriteRules)) {
+        for (const [regexpOrString, replacement] of config.urlRewriteRules) {
+            if (regexpOrString instanceof RegExp) {
+                builder.addUrlRewriteRule(
+                    regexpOrString as RegExp,
+                    replacement,
+                );
+            } else {
+                const escapedString = (regexpOrString as string).replace(
+                    /[.*+?^${}()|[\]\\]/g,
+                    "\\$&",
+                );
+                const regexp = new RegExp(`^${escapedString}$`);
+                const escapedReplacement = replacement.replace(/\$/g, "$$$$");
+                builder.addUrlRewriteRule(regexp, escapedReplacement);
+            }
+        }
+    }
 }
 
 /**

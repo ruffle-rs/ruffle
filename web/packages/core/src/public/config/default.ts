@@ -52,4 +52,5 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     credentialAllowList: [],
     playerRuntime: PlayerRuntime.FlashPlayer,
     gamepadButtonMapping: {},
+    urlRewriteRules: [],
 };
