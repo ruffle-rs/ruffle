@@ -4,7 +4,7 @@ use crate::{
     audio, log_adapter, storage, ui, JavascriptPlayer, RuffleHandle, SocketProxy,
     RUFFLE_GLOBAL_PANIC,
 };
-use js_sys::Promise;
+use js_sys::{Promise, RegExp};
 use ruffle_core::backend::audio::{AudioBackend, NullAudioBackend};
 use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_core::backend::storage::{MemoryStorageBackend, StorageBackend};
@@ -62,6 +62,7 @@ pub struct RuffleInstanceBuilder {
     pub(crate) volume: f32,
     pub(crate) default_fonts: HashMap<DefaultFont, Vec<String>>,
     pub(crate) custom_fonts: Vec<(String, Vec<u8>)>,
+    pub(crate) url_rewrite_rules: Vec<(RegExp, String)>,
 }
 
 impl Default for RuffleInstanceBuilder {
@@ -98,6 +99,7 @@ impl Default for RuffleInstanceBuilder {
             volume: 1.0,
             default_fonts: HashMap::new(),
             custom_fonts: vec![],
+            url_rewrite_rules: vec![],
         }
     }
 }
@@ -316,6 +318,11 @@ impl RuffleInstanceBuilder {
                 .flat_map(|value| value.as_string())
                 .collect(),
         );
+    }
+
+    #[wasm_bindgen(js_name = "addUrlRewriteRule")]
+    pub fn add_url_rewrite_rules(&mut self, regexp: RegExp, replacement: String) {
+        self.url_rewrite_rules.push((regexp, replacement));
     }
 
     // TODO: This should be split into two methods that either load url or load data
@@ -602,6 +609,7 @@ impl RuffleInstanceBuilder {
             self.allow_script_access,
             self.allow_networking,
             self.upgrade_to_https,
+            self.url_rewrite_rules.clone(),
             self.base_url.clone(),
             log_subscriber.clone(),
             self.open_url_mode,
