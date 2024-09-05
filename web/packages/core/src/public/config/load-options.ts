@@ -708,6 +708,18 @@ export interface BaseLoadOptions {
      * @default {}
      */
     gamepadButtonMapping?: Partial<Record<GamepadButton, number>>;
+
+    /**
+     * A set of rules that rewrite URLs in both network requests and links.
+     *
+     * They are always scanned in order, and the first one that matches is used.
+     * A rule either matches using a RegExp (in which case the replacement may use `$...`),
+     * or a string (in which case the match and the replacement are always exact).
+     *
+     * They are useful when a SWF uses an obsolete URL, in which case
+     * you can rewrite it to something else that works.
+     */
+    urlRewriteRules?: Array<[RegExp | string, string]>;
 }
 
 /**
