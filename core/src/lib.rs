@@ -71,3 +71,4 @@ pub use player::{Player, PlayerBuilder, PlayerRuntime, StaticCallstack};
 pub use ruffle_render::backend::ViewportDimensions;
 pub use swf;
 pub use swf::Color;
+pub use ttf_parser;

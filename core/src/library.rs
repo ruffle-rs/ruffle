@@ -595,7 +595,9 @@ impl<'gc> Library<'gc> {
                 let font =
                     Font::from_swf_tag(gc_context, renderer, tag, encoding, FontType::Device);
                 let name = font.descriptor().name().to_owned();
-                info!("Loaded new device font \"{name}\" from swf tag");
+                let is_bold = font.descriptor().bold();
+                let is_italic = font.descriptor().italic();
+                info!("Loaded new device font \"{name}\" (bold: {is_bold}, italic: {is_italic}) from swf tag");
                 self.device_fonts.register(font);
             }
             FontDefinition::FontFile {
@@ -614,7 +616,7 @@ impl<'gc> Library<'gc> {
                     FontType::Device,
                 ) {
                     let name = font.descriptor().name().to_owned();
-                    info!("Loaded new device font \"{name}\" from file");
+                    info!("Loaded new device font \"{name}\" (bold: {is_bold}, italic: {is_italic}) from file");
                     self.device_fonts.register(font);
                 } else {
                     warn!("Failed to load device font from file");
