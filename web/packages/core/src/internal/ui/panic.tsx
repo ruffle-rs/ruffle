@@ -1,13 +1,14 @@
 import { text, textAsParagraphs } from "../i18n";
 import { createRef } from "tsx-dom";
 import { buildInfo } from "../../build-info";
-import { RUFFLE_ORIGIN } from "../constants";
+import { RUFFLE_ORIGIN, SUPPORTED_PROTOCOLS } from "../constants";
 import {
     InvalidOptionsError,
     InvalidSwfError,
     LoadRuffleWasmError,
     LoadSwfError,
 } from "../errors";
+import { OriginAPI } from "../../origin-api";
 
 interface PanicLink {
     type: "open_link";
@@ -23,7 +24,7 @@ interface PanicCreateReport {
     type: "create_report";
 }
 
-type PanicAction = PanicLink | PanicDetails | PanicCreateReport;
+export type PanicAction = PanicLink | PanicDetails | PanicCreateReport;
 
 function createPanicAction({
     action,
@@ -149,41 +150,40 @@ export const CommonActions = {
     },
 };
 
-function createPanicError(error: Error | null): {
+function createPanicError(error: Error | null, originAPI: OriginAPI): {
     body: HTMLDivElement;
     actions: PanicAction[];
 } {
     if (error instanceof LoadSwfError) {
-        if (error.swfUrl && !error.swfUrl.protocol.includes("http")) {
-            // Loading a swf on the `file:` protocol
+        const originErrorMessage = originAPI.loadSwfErrorMessage(error.swfUrl)
+        if (originErrorMessage !== undefined) {
+            return originErrorMessage;
+        } else if (error.swfUrl && !SUPPORTED_PROTOCOLS.includes(error.swfUrl.protocol)) {
+            // The website embedded a URL with an unsupported protocol
             return {
-                body: textAsParagraphs("error-file-protocol"),
-                actions: [
-                    CommonActions.OpenDemo,
-                    CommonActions.DownloadDesktop,
-                ],
+                body: textAsParagraphs("error-misconfigured-url"),
+                actions: [CommonActions.ShowDetails],
             };
-        }
-
-        if (
+        } else if (
             window.location.origin === error.swfUrl?.origin ||
             // The extension's internal player page is not restricted by CORS
             window.location.protocol.includes("extension")
         ) {
+            const tryHttpAdvice = originAPI.giveTryHttpAdvice(error.swfUrl);
             return {
-                body: textAsParagraphs("error-swf-fetch"),
+                body: textAsParagraphs("error-swf-fetch", {https: tryHttpAdvice}),
                 actions: [CommonActions.ShowDetails],
             };
+        } else {
+            // This is a selfhosted build of Ruffle that tried to make a cross-origin request
+            return {
+                body: textAsParagraphs("error-swf-cors"),
+                actions: [
+                    CommonActions.openWiki("Using-Ruffle#configure-cors-header"),
+                    CommonActions.ShowDetails,
+                ],
+            };
         }
-
-        // This is a selfhosted build of Ruffle that tried to make a cross-origin request
-        return {
-            body: textAsParagraphs("error-swf-cors"),
-            actions: [
-                CommonActions.openWiki("Using-Ruffle#configure-cors-header"),
-                CommonActions.ShowDetails,
-            ],
-        };
     }
 
     if (error instanceof InvalidSwfError) {
@@ -345,9 +345,10 @@ export function showPanicScreen(
     error: Error | null,
     errorArray: ErrorArray,
     swfUrl: URL | undefined,
+    originAPI: OriginAPI,
 ) {
     const errorText = errorArray.join("");
-    let { body, actions } = createPanicError(error);
+    let { body, actions } = createPanicError(error, originAPI);
 
     const panicBody = createRef<HTMLDivElement>();
     const showDetails = () => {

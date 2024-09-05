@@ -2,6 +2,7 @@ import type { DataLoadOptions, URLLoadOptions } from "../../load-options";
 import type { MovieMetadata } from "../../movie-metadata";
 import { InnerPlayer, ReadyState } from "./inner";
 import { Player } from "../../public/player";
+import { OriginAPI } from "../../origin-api";
 
 /**
  * The ruffle player element that should be inserted onto the page.
@@ -9,28 +10,40 @@ import { Player } from "../../public/player";
  * This element will represent the rendered and intractable flash movie.
  */
 export class RufflePlayerElement extends HTMLElement implements Player {
-    #inner: InnerPlayer;
+    #inner?: InnerPlayer;
 
     get onFSCommand(): ((command: string, args: string) => boolean) | null {
-        return this.#inner.onFSCommand;
+        return this.#inner!.onFSCommand;
     }
 
     set onFSCommand(
         value: ((command: string, args: string) => boolean) | null,
     ) {
-        this.#inner.onFSCommand = value;
+        this.#inner!.onFSCommand = value;
     }
 
     get readyState(): ReadyState {
-        return this.#inner._readyState;
+        return this.#inner!._readyState;
     }
 
     get metadata(): MovieMetadata | null {
-        return this.#inner.metadata;
+        return this.#inner!.metadata;
     }
 
     constructor() {
         super();
+    }
+
+    /**
+     * Initializes this Ruffle player element.
+     * This *must* always be directly called after creating the element via document#createElement.
+     * @param originAPI The OriginAPI of this Ruffle player element.
+     */
+    initialize(originAPI: OriginAPI) {
+        // The InnerPlayer is set here and not in the constructor to make sure initialize is always
+        // called after the player element is created.
+        // Otherwise, when it's forgotten in a new place, it might not be directly noticed which would
+        // lead to runtime errors.
         this.#inner = new InnerPlayer(
             this,
             () => this.debugPlayerInfo(),
@@ -38,7 +51,7 @@ export class RufflePlayerElement extends HTMLElement implements Player {
                 try {
                     Object.defineProperty(this, name, {
                         value: (...args: unknown[]) => {
-                            return this.#inner.callExternalInterface(
+                            return this.#inner!.callExternalInterface(
                                 name,
                                 args,
                             );
@@ -52,15 +65,16 @@ export class RufflePlayerElement extends HTMLElement implements Player {
                     );
                 }
             },
+            originAPI
         );
     }
 
     get loadedConfig(): URLLoadOptions | DataLoadOptions | null {
-        return this.#inner.loadedConfig ?? null;
+        return this.#inner!.loadedConfig ?? null;
     }
 
     connectedCallback(): void {
-        this.#inner.updateStyles();
+        this.#inner!.updateStyles();
     }
 
     static get observedAttributes(): string[] {
@@ -73,71 +87,79 @@ export class RufflePlayerElement extends HTMLElement implements Player {
         _newValue: string | undefined,
     ): void {
         if (name === "width" || name === "height") {
-            this.#inner.updateStyles();
+            this.#inner!.updateStyles();
         }
     }
 
     disconnectedCallback(): void {
-        this.#inner.destroy();
+        this.#inner!.destroy();
     }
 
     async reload(): Promise<void> {
-        await this.#inner.reload();
+        await this.#inner!.reload();
     }
 
     async load(
         options: string | URLLoadOptions | DataLoadOptions,
         isPolyfillElement: boolean = false,
     ): Promise<void> {
-        await this.#inner.load(options, isPolyfillElement);
+        await this.#inner!.load(options, isPolyfillElement);
     }
 
     play(): void {
-        this.#inner.play();
+        this.#inner!.play();
     }
 
     get isPlaying(): boolean {
-        return this.#inner.isPlaying;
+        return this.#inner!.isPlaying;
+    }
+
+    displayRootMovieUnsupportedUrlMessage(unsupportedUrl: string): void {
+        this.#inner!.displayRootMovieUnsupportedUrlMessage(unsupportedUrl);
+    }
+
+    getOriginAPI(): OriginAPI {
+        return this.#inner!.getOriginAPI();
     }
 
     get volume(): number {
-        return this.#inner.volume;
+        return this.#inner!.volume;
     }
 
     set volume(value: number) {
-        this.#inner.volume = value;
+        this.#inner!.volume = value;
     }
 
     get fullscreenEnabled(): boolean {
-        return this.#inner.fullscreenEnabled;
+        return this.#inner!.fullscreenEnabled;
     }
 
     get isFullscreen(): boolean {
-        return this.#inner.isFullscreen;
+        return this.#inner!.isFullscreen;
     }
 
     setFullscreen(isFull: boolean): void {
-        this.#inner.setFullscreen(isFull);
+        this.#inner!.setFullscreen(isFull);
     }
 
     enterFullscreen(): void {
-        this.#inner.enterFullscreen();
+        this.#inner!.enterFullscreen();
     }
 
     exitFullscreen(): void {
-        this.#inner.exitFullscreen();
+        this.#inner!.exitFullscreen();
     }
 
     async downloadSwf(): Promise<void> {
-        await this.#inner.downloadSwf();
+        await this.#inner!.downloadSwf();
     }
 
     pause(): void {
-        this.#inner.pause();
+        this.#inner!.pause();
     }
 
     set traceObserver(observer: ((message: string) => void) | null) {
-        this.#inner.traceObserver = observer;
+        this.#inner!.traceObserver = observer;
     }
 
     protected debugPlayerInfo(): string {
@@ -154,11 +176,19 @@ export class RufflePlayerElement extends HTMLElement implements Player {
     }
 
     get config(): URLLoadOptions | DataLoadOptions | object {
-        return this.#inner.config;
+        return this.#inner!.config;
     }
 
     set config(value: URLLoadOptions | DataLoadOptions | object) {
-        this.#inner.config = value;
+        this.#inner!.config = value;
+    }
+
+    hideSplashScreen(): void {
+        this.#inner!.hideSplashScreen()
+    }
+
+    showSplashScreen(): void {
+        this.#inner!.showSplashScreen()
     }
 }
 

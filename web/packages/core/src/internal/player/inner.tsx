@@ -14,7 +14,7 @@ import { text, textAsParagraphs } from "../i18n";
 import { swfFileName } from "../../swf-utils";
 import { isExtension } from "../../current-script";
 import { buildInfo } from "../../build-info";
-import { RUFFLE_ORIGIN } from "../constants";
+import { RUFFLE_ORIGIN, SUPPORTED_PROTOCOLS } from "../constants";
 import {
     InvalidOptionsError,
     InvalidSwfError,
@@ -26,6 +26,7 @@ import { createRuffleBuilder } from "../../load-ruffle";
 import { lookupElement } from "../register-element";
 import { configureBuilder } from "../builder";
 import { DEFAULT_CONFIG } from "../../config";
+import { OriginAPI } from "../../origin-api";
 
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
 
@@ -183,6 +184,9 @@ export class InnerPlayer {
     private pointerMoveMaxDistance = 0;
 
     private volumeSettings: VolumeControls;
+
+    private readonly originAPI: OriginAPI;
+
     private readonly debugPlayerInfo: () => string;
     protected readonly onCallbackAvailable: (name: string) => void;
 
@@ -190,10 +194,12 @@ export class InnerPlayer {
         element: HTMLElement,
         debugPlayerInfo: () => string,
         onCallbackAvailable: (name: string) => void,
+        originAPI: OriginAPI
     ) {
         this.element = element;
         this.debugPlayerInfo = debugPlayerInfo;
         this.onCallbackAvailable = onCallbackAvailable;
+        this.originAPI = originAPI;
 
         this.shadow = this.element.attachShadow({ mode: "open" });
         this.shadow.appendChild(ruffleShadowTemplate.content.cloneNode(true));
@@ -793,6 +799,7 @@ export class InnerPlayer {
      *
      * The options will be defaulted by the [[config]] field, which itself
      * is defaulted by a global `window.RufflePlayer.config`.
+     * @param inExtensionPlayer Whether the load command originates from the extension player.
      */
     async load(
         options: string | URLLoadOptions | DataLoadOptions,
@@ -843,6 +850,10 @@ export class InnerPlayer {
             if ("url" in options) {
                 console.log(`Loading SWF file ${options.url}`);
                 this.swfUrl = new URL(options.url, document.baseURI);
+                if (!SUPPORTED_PROTOCOLS.includes(this.swfUrl.protocol)) {
+                    this.displayRootMovieUnsupportedUrlMessage(this.swfUrl.toString());
+                    return;
+                }
 
                 this.instance!.stream_from(
                     this.swfUrl.href,
@@ -885,6 +896,14 @@ export class InnerPlayer {
             return this.instance.is_playing();
         }
         return false;
+    }
+
+    /**
+     * Returns the OriginAPI of this Ruffle player.
+     * @returns The OriginAPI of this Ruffle player.
+     */
+    getOriginAPI(): OriginAPI {
+        return this.originAPI;
     }
 
     /**
@@ -1892,7 +1911,7 @@ export class InnerPlayer {
         errorArray.push(this.getPanicData());
 
         // Clears out any existing content (ie play button or canvas) and replaces it with the error screen
-        showPanicScreen(this.container, error, errorArray, this.swfUrl);
+        showPanicScreen(this.container, error, errorArray, this.swfUrl, this.originAPI);
 
         // Do this last, just in case it causes any cascading issues.
         this.destroy();
@@ -1930,12 +1949,18 @@ export class InnerPlayer {
         this.container.prepend(div);
     }
 
+    displayRootMovieUnsupportedUrlMessage(unsupportedUrl: string) {
+        this.swfUrl = new URL(unsupportedUrl, document.baseURI);
+        this.displayRootMovieDownloadFailedMessage(false);
+    }
+
     protected displayRootMovieDownloadFailedMessage(invalidSwf: boolean): void {
         const openInNewTab = this.loadedConfig?.openInNewTab;
         if (
             openInNewTab &&
             this.swfUrl &&
-            window.location.origin !== this.swfUrl.origin
+            window.location.origin !== this.swfUrl.origin &&
+            SUPPORTED_PROTOCOLS.includes(this.swfUrl.protocol)
         ) {
             this.addOpenInNewTabMessage(openInNewTab, this.swfUrl);
         } else {
@@ -2007,12 +2032,12 @@ export class InnerPlayer {
         }
     }
 
-    private hideSplashScreen(): void {
+    hideSplashScreen(): void {
         this.splashScreen.classList.add("hidden");
         this.container.classList.remove("hidden");
     }
 
-    private showSplashScreen(): void {
+    showSplashScreen(): void {
         this.splashScreen.classList.remove("hidden");
         this.container.classList.add("hidden");
     }

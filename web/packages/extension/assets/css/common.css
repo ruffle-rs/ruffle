@@ -79,6 +79,14 @@ button {
     text-shadow: 0 0 0.1px white;
 }
 
+#modal button:hover {
+    background: var(--ruffle-blue);
+}
+
+button:not(#modal button):hover {
+    filter: brightness(1.2);
+}
+
 .options {
     display: flex;
     flex-flow: column;
@@ -156,4 +164,9 @@ button {
     width: 60px;
     height: 20px;
     margin: auto;
+}
+
+#modal {
+    background-color: #ffffffb0;
+    border-radius: 12px;
 }

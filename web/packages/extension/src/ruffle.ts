@@ -1,5 +1,6 @@
 import { installRuffle } from "ruffle-core";
 import { Message } from "./messages";
+import { ExtensionOrigin } from "./extemsion-origin";
 
 function handleMessage(message: Message) {
     switch (message.type) {
@@ -15,7 +16,7 @@ function handleMessage(message: Message) {
                 ...window.RufflePlayer.config,
                 openInNewTab,
             };
-            installRuffle("extension");
+            installRuffle("extension", new ExtensionOrigin());
             return {};
         }
         case "ping":
