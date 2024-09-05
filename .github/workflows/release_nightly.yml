@@ -157,6 +157,13 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           cp ${{ env.CARGO_BUILD_DIR }}/ruffle_desktop package/ruffle
+
+          # Package extras
+          mkdir -p package/extras
+          cp desktop/packages/linux/rs.ruffle.Ruffle.desktop package/extras
+          cp desktop/packages/linux/rs.ruffle.Ruffle.metainfo.xml package/extras
+          cp desktop/packages/linux/rs.ruffle.Ruffle.svg package/extras
+
           # We must enter the package/ directory in order to create a flat tarball (i.e. without a directory in it).
           cd package
           tar -czvf ../${{ env.PACKAGE_FILE }} *
