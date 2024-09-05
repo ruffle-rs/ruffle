@@ -29,7 +29,7 @@ use ruffle_core::StaticCallstack;
 use std::cell::RefCell;
 use std::env;
 use std::fs::File;
-use std::panic::PanicInfo;
+use std::panic::PanicHookInfo;
 use tracing_subscriber::fmt::Layer;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -74,7 +74,7 @@ fn init() {
     }));
 }
 
-fn panic_hook(info: &PanicInfo) {
+fn panic_hook(info: &PanicHookInfo) {
     CALLSTACK.with(|callstack| {
         if let Some(callstack) = &*callstack.borrow() {
             callstack.avm2(|callstack| println!("AVM2 stack trace: {callstack}"))
