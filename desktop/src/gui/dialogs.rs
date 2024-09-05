@@ -1,6 +1,7 @@
 mod about_dialog;
 mod bookmarks_dialog;
 pub mod message_dialog;
+pub mod network_access_dialog;
 mod open_dialog;
 mod open_url_dialog;
 mod preferences_dialog;
@@ -11,11 +12,12 @@ use crate::player::LaunchOptions;
 use crate::preferences::GlobalPreferences;
 use bookmarks_dialog::{BookmarkAddDialog, BookmarksDialog};
 use message_dialog::{MessageDialog, MessageDialogConfiguration};
+use network_access_dialog::{NetworkAccessDialog, NetworkAccessDialogConfiguration};
 use open_dialog::OpenDialog;
 use open_url_dialog::OpenUrlDialog;
 use preferences_dialog::PreferencesDialog;
 use ruffle_core::Player;
-use std::sync::Weak;
+use std::{collections::VecDeque, sync::Weak};
 use unic_langid::LanguageIdentifier;
 use url::Url;
 use volume_controls::VolumeControls;
@@ -33,6 +35,12 @@ pub struct Dialogs {
     open_url_dialog: Option<OpenUrlDialog>,
     message_dialog: Option<MessageDialog>,
 
+    // Use a queue for the following dialogs in order to:
+    //  1. support handling multiple instances of them,
+    //  2. prevent new instances popping up over existing ones
+    //     (and possibly stealing a click).
+    network_access_dialog_queue: VecDeque<NetworkAccessDialog>,
+
     open_dialog: OpenDialog,
     is_open_dialog_visible: bool,
 
@@ -47,6 +55,7 @@ pub struct Dialogs {
 pub enum DialogDescriptor {
     OpenUrl(url::Url),
     ShowMessage(MessageDialogConfiguration),
+    NetworkAccess(NetworkAccessDialogConfiguration),
 }
 
 impl Dialogs {
@@ -64,6 +73,8 @@ impl Dialogs {
             bookmark_add_dialog: None,
             open_url_dialog: None,
             message_dialog: None,
+
+            network_access_dialog_queue: VecDeque::new(),
 
             open_dialog: OpenDialog::new(
                 player_options,
@@ -138,6 +149,9 @@ impl Dialogs {
             DialogDescriptor::ShowMessage(config) => {
                 self.message_dialog = Some(MessageDialog::new(config));
             }
+            DialogDescriptor::NetworkAccess(config) => self
+                .network_access_dialog_queue
+                .push_back(NetworkAccessDialog::new(config)),
         }
     }
 
@@ -155,6 +169,7 @@ impl Dialogs {
         self.show_about_dialog(locale, egui_ctx);
         self.show_open_url_dialog(locale, egui_ctx);
         self.show_message_dialog(locale, egui_ctx);
+        self.show_network_access_dialog(locale, egui_ctx);
     }
 
     fn show_open_dialog(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) {
@@ -237,6 +252,21 @@ impl Dialogs {
         };
         if !keep_open {
             self.message_dialog = None;
+        }
+    }
+
+    fn show_network_access_dialog(
+        &mut self,
+        locale: &LanguageIdentifier,
+        egui_ctx: &egui::Context,
+    ) {
+        let keep_open = if let Some(dialog) = &mut self.network_access_dialog_queue.front_mut() {
+            dialog.show(locale, egui_ctx)
+        } else {
+            true
+        };
+        if !keep_open {
+            self.network_access_dialog_queue.pop_front();
         }
     }
 }
