@@ -4601,6 +4601,7 @@ dependencies = [
  "slotmap",
  "swf",
  "tempfile",
+ "thiserror",
  "tracing",
 ]
 
