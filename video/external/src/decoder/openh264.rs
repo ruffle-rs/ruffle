@@ -63,26 +63,17 @@ pub struct H264Decoder {
     /// How many bytes are used to store the length of the NALU (1, 2, 3, or 4).
     length_size: u8,
 
-    openh264: OpenH264,
+    openh264: Arc<OpenH264>,
     decoder: *mut ISVCDecoder,
 }
 
 impl H264Decoder {
     /// `extradata` should hold "AVCC (MP4) format" decoder configuration, including PPS and SPS.
     /// Make sure it has any start code emulation prevention "three bytes" removed.
-    pub fn new(openh264_lib_filename: &std::path::Path) -> Self {
+    pub fn new(h264: &OpenH264Codec) -> Self {
+        let openh264 = h264.openh264.clone();
         let mut decoder: *mut ISVCDecoder = ptr::null_mut();
         unsafe {
-            let openh264 = OpenH264::new(openh264_lib_filename).unwrap();
-
-            let version = openh264.WelsGetCodecVersion();
-
-            assert_eq!(
-                (version.uMajor, version.uMinor, version.uRevision),
-                (2, 4, 1),
-                "Unexpected OpenH264 version"
-            );
-
             openh264.WelsCreateDecoder(&mut decoder);
 
             let decoder_vtbl = (*decoder).as_ref().unwrap();
