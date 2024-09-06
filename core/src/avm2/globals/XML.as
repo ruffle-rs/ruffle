@@ -312,6 +312,6 @@ package {
             return XML.AS3::defaultSettings();
         }
 
-        public static const length:int = 1;
+        public static const length:* = 1;
     }
 }
