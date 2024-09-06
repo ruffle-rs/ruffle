@@ -1359,11 +1359,11 @@ pub struct OpenH264 {
         Result<unsafe extern "C" fn(pVersion: *mut OpenH264Version), ::libloading::Error>,
 }
 impl OpenH264 {
-    pub unsafe fn new<P>(path: P) -> Result<Self, ::libloading::Error>
+    pub unsafe fn new<P>(filename: P) -> Result<Self, ::libloading::Error>
     where
         P: AsRef<::std::ffi::OsStr>,
     {
-        let library = ::libloading::Library::new(path)?;
+        let library = ::libloading::Library::new(filename)?;
         Self::from_library(library)
     }
     pub unsafe fn from_library<L>(library: L) -> Result<Self, ::libloading::Error>
