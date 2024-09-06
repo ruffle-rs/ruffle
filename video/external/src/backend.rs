@@ -26,6 +26,7 @@ enum ProxyOrStream {
 }
 
 struct OpenH264Data {
+    local_filenames: Vec<&'static str>,
     download_filename: &'static str,
     download_sha256: &'static str,
 }
@@ -48,6 +49,12 @@ impl ExternalVideoBackend {
     fn get_openh264_data() -> Result<OpenH264Data, Box<dyn std::error::Error>> {
         const OS: &str = std::env::consts::OS;
         const ARCH: &str = std::env::consts::ARCH;
+
+        let local_filenames = match OS {
+            "linux" => vec!["libopenh264.so.7", "libopenh264.so.2.4.1", "libopenh264.so"],
+            // TODO: investigate other OSes
+            _ => vec![],
+        };
 
         // Source: https://github.com/cisco/openh264/releases/tag/v2.4.1
         let (download_filename, download_sha256) = match (OS, ARCH) {
@@ -87,17 +94,19 @@ impl ExternalVideoBackend {
         };
 
         Ok(OpenH264Data {
+            local_filenames,
             download_filename,
             download_sha256,
         })
     }
 
-    pub fn get_openh264() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    fn download_openh264(
+        openh264_data: &OpenH264Data,
+    ) -> Result<PathBuf, Box<dyn std::error::Error>> {
         // See the license at: https://www.openh264.org/BINARY_LICENSE.txt
         const URL_BASE: &str = "http://ciscobinary.openh264.org/";
         const URL_SUFFIX: &str = ".bz2";
 
-        let openh264_data = Self::get_openh264_data()?;
         let (filename, sha256sum) = (
             openh264_data.download_filename,
             openh264_data.download_sha256,
@@ -140,19 +149,32 @@ impl ExternalVideoBackend {
         Ok(filepath)
     }
 
-    pub fn new(openh264_lib_filepath: Option<PathBuf>) -> Self {
-        let h264_codec = if let Some(openh264_lib_filepath) = openh264_lib_filepath {
-            tracing::info!("Using OpenH264 at {:?}", openh264_lib_filepath);
-            OpenH264Codec::new(&openh264_lib_filepath)
-                .inspect_err(|err| tracing::error!("Error loading OpenH264: {:?}", err))
-                .ok()
-        } else {
-            None
-        };
+    pub fn load_openh264() -> Result<OpenH264Codec, Box<dyn std::error::Error>> {
+        let openh264_data = Self::get_openh264_data()?;
 
+        for filename in &openh264_data.local_filenames {
+            match OpenH264Codec::new(filename) {
+                Ok(codec) => return Ok(codec),
+                Err(err) => {
+                    tracing::warn!(
+                        "Failed to load system OpenH264 library {}: {}",
+                        filename,
+                        err
+                    );
+                }
+            }
+        }
+
+        tracing::info!("Downloading OpenH264 library");
+        let filename = Self::download_openh264(&openh264_data)?;
+        tracing::info!("Using OpenH264 at {:?}", filename);
+        Ok(OpenH264Codec::new(&filename)?)
+    }
+
+    pub fn new(openh264_codec: Option<OpenH264Codec>) -> Self {
         Self {
             streams: SlotMap::with_key(),
-            openh264_codec: h264_codec,
+            openh264_codec,
             software: SoftwareVideoBackend::new(),
         }
     }

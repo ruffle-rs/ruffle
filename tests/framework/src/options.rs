@@ -178,11 +178,11 @@ impl PlayerOptions {
             #[cfg(feature = "ruffle_video_external")]
             {
                 use ruffle_video_external::backend::ExternalVideoBackend;
-                let openh264_path = ExternalVideoBackend::get_openh264()
-                    .map_err(|e| anyhow!("Couldn't get OpenH264: {}", e))?;
+                let openh264 = ExternalVideoBackend::load_openh264()
+                    .map_err(|e| anyhow!("Couldn't load OpenH264: {}", e))?;
 
                 player_builder =
-                    player_builder.with_video(ExternalVideoBackend::new(Some(openh264_path)));
+                    player_builder.with_video(ExternalVideoBackend::new(Some(openh264)));
             }
 
             #[cfg(all(
