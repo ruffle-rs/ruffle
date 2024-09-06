@@ -25,6 +25,11 @@ enum ProxyOrStream {
     Owned(VideoStream),
 }
 
+struct OpenH264Data {
+    download_filename: &'static str,
+    download_sha256: &'static str,
+}
+
 /// A video backend that falls back to the software backend for most codecs,
 /// except for H.264, for which it uses an external decoder.
 pub struct ExternalVideoBackend {
@@ -40,43 +45,51 @@ impl Default for ExternalVideoBackend {
 }
 
 impl ExternalVideoBackend {
-    fn get_openh264_data() -> Result<(&'static str, &'static str), Box<dyn std::error::Error>> {
+    fn get_openh264_data() -> Result<OpenH264Data, Box<dyn std::error::Error>> {
+        const OS: &str = std::env::consts::OS;
+        const ARCH: &str = std::env::consts::ARCH;
+
         // Source: https://github.com/cisco/openh264/releases/tag/v2.4.1
-        match (std::env::consts::OS, std::env::consts::ARCH) {
-            ("linux", "x86") => Ok((
+        let (download_filename, download_sha256) = match (OS, ARCH) {
+            ("linux", "x86") => (
                 "libopenh264-2.4.1-linux32.7.so",
                 "b7cf0e407f99056d90cbf62787a34820a7595b2129b165319d50766e00a66704",
-            )),
-            ("linux", "x86_64") => Ok((
+            ),
+            ("linux", "x86_64") => (
                 "libopenh264-2.4.1-linux64.7.so",
                 "1392d21466bc638e68151b716d5b2086d54cd812afd43253f1adb5b6e0185f51",
-            )),
-            ("linux", "arm") => Ok((
+            ),
+            ("linux", "arm") => (
                 "libopenh264-2.4.1-linux-arm.7.so",
                 "fd1dfb27d30bb72e903c9d2b4c650104a4369d2e7ffe8a4a533e8db2e7e9b19e",
-            )),
-            ("linux", "aarch64") => Ok((
+            ),
+            ("linux", "aarch64") => (
                 "libopenh264-2.4.1-linux-arm64.7.so",
                 "e8ea7e42855ceb4a90e7bd0b3abeba0c58b5f97166e8b0a30eefd58e099557a4",
-            )),
-            ("macos", "x86_64") => Ok((
+            ),
+            ("macos", "x86_64") => (
                 "libopenh264-2.4.1-mac-x64.dylib",
                 "cc0ba518a63791c37571f3c851f0aa03a4fbda5410acc214ecd4f24f8d1c478e",
-            )),
-            ("macos", "aarch64") => Ok((
+            ),
+            ("macos", "aarch64") => (
                 "libopenh264-2.4.1-mac-arm64.dylib",
                 "213ff93831cfa3dd6d7ad0c3a3403a6ceedf4ac1341e1278b5b869d42fefb496",
-            )),
-            ("windows", "x86") => Ok((
+            ),
+            ("windows", "x86") => (
                 "openh264-2.4.1-win32.dll",
                 "83270149640469c994a62cc32a6d8c0413cd7b802b7f1f2f532159f5bdc1cedd",
-            )),
-            ("windows", "x86_64") => Ok((
+            ),
+            ("windows", "x86_64") => (
                 "openh264-2.4.1-win64.dll",
                 "081b0c081480d177cbfddfbc90b1613640e702f875897b30d8de195cde73dd34",
-            )),
-            (os, arch) => Err(format!("Unsupported OS/ARCH: {} {}", os, arch).into()),
-        }
+            ),
+            (os, arch) => return Err(format!("Unsupported OS/arch: {}/{}", os, arch).into()),
+        };
+
+        Ok(OpenH264Data {
+            download_filename,
+            download_sha256,
+        })
     }
 
     pub fn get_openh264() -> Result<PathBuf, Box<dyn std::error::Error>> {
@@ -84,7 +97,11 @@ impl ExternalVideoBackend {
         const URL_BASE: &str = "http://ciscobinary.openh264.org/";
         const URL_SUFFIX: &str = ".bz2";
 
-        let (filename, sha256sum) = Self::get_openh264_data()?;
+        let openh264_data = Self::get_openh264_data()?;
+        let (filename, sha256sum) = (
+            openh264_data.download_filename,
+            openh264_data.download_sha256,
+        );
 
         let current_exe = std::env::current_exe()?;
         let directory = current_exe
