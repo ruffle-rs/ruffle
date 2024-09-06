@@ -1,3 +1,4 @@
+use crate::decoder::openh264::OpenH264Codec;
 use crate::decoder::VideoDecoder;
 use bzip2::read::BzDecoder;
 use ruffle_render::backend::RenderBackend;
@@ -28,7 +29,7 @@ enum ProxyOrStream {
 /// except for H.264, for which it uses an external decoder.
 pub struct ExternalVideoBackend {
     streams: SlotMap<VideoStreamHandle, ProxyOrStream>,
-    openh264_lib_filepath: Option<PathBuf>,
+    openh264_codec: Option<OpenH264Codec>,
     software: SoftwareVideoBackend,
 }
 
@@ -123,9 +124,18 @@ impl ExternalVideoBackend {
     }
 
     pub fn new(openh264_lib_filepath: Option<PathBuf>) -> Self {
+        let h264_codec = if let Some(openh264_lib_filepath) = openh264_lib_filepath {
+            tracing::info!("Using OpenH264 at {:?}", openh264_lib_filepath);
+            OpenH264Codec::new(&openh264_lib_filepath)
+                .inspect_err(|err| tracing::error!("Error loading OpenH264: {:?}", err))
+                .ok()
+        } else {
+            None
+        };
+
         Self {
             streams: SlotMap::with_key(),
-            openh264_lib_filepath,
+            openh264_codec: h264_codec,
             software: SoftwareVideoBackend::new(),
         }
     }
@@ -142,10 +152,8 @@ impl VideoBackend for ExternalVideoBackend {
         filter: VideoDeblocking,
     ) -> Result<VideoStreamHandle, Error> {
         let proxy_or_stream = if codec == VideoCodec::H264 {
-            let openh264 = &self.openh264_lib_filepath;
-            if let Some(openh264) = openh264 {
-                tracing::info!("Using OpenH264 at {:?}", openh264);
-                let decoder = Box::new(crate::decoder::openh264::H264Decoder::new(openh264));
+            if let Some(h264_codec) = self.openh264_codec.as_ref() {
+                let decoder = Box::new(crate::decoder::openh264::H264Decoder::new(h264_codec));
                 let stream = VideoStream::new(decoder);
                 ProxyOrStream::Owned(stream)
             } else {
