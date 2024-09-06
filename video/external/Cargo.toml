@@ -14,6 +14,7 @@ swf = { path = "../../swf" }
 slotmap = { workspace = true }
 tracing = { workspace = true }
 ruffle_video_software = { path = "../software" }
+thiserror = { workspace = true }
 
 # Needed for OpenH264:
 libloading = "0.8.5"

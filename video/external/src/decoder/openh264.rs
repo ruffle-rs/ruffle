@@ -1,6 +1,8 @@
 use core::slice;
 use std::ffi::{c_int, c_uchar};
+use std::fmt::Display;
 use std::ptr;
+use std::sync::Arc;
 
 use crate::decoder::openh264_sys::{self, videoFormatI420, ISVCDecoder, OpenH264};
 use crate::decoder::VideoDecoder;
@@ -8,6 +10,53 @@ use crate::decoder::VideoDecoder;
 use ruffle_render::bitmap::BitmapFormat;
 use ruffle_video::error::Error;
 use ruffle_video::frame::{DecodedFrame, EncodedFrame, FrameDependency};
+use thiserror::Error;
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct OpenH264Version(u32, u32, u32);
+
+impl Display for OpenH264Version {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{}.{}", self.0, self.1, self.2)?;
+        Ok(())
+    }
+}
+
+#[derive(Debug, Error)]
+pub enum OpenH264Error {
+    #[error("Error while loading OpenH264: {0}")]
+    LibraryLoadingError(#[from] ::libloading::Error),
+
+    #[error("OpenH264 version mismatch, expected {0}, was {1}")]
+    VersionMismatchError(OpenH264Version, OpenH264Version),
+}
+
+/// OpenH264 codec representation.
+pub struct OpenH264Codec {
+    openh264: Arc<OpenH264>,
+}
+
+impl OpenH264Codec {
+    const VERSION: OpenH264Version = OpenH264Version(2, 4, 1);
+
+    pub fn new<P>(filename: P) -> Result<Self, OpenH264Error>
+    where
+        P: AsRef<::std::ffi::OsStr>,
+    {
+        let openh264 = unsafe { OpenH264::new(filename)? };
+
+        let version = unsafe { openh264.WelsGetCodecVersion() };
+        let version = OpenH264Version(version.uMajor, version.uMinor, version.uRevision);
+
+        if Self::VERSION != version {
+            return Err(OpenH264Error::VersionMismatchError(Self::VERSION, version));
+        }
+
+        Ok(Self {
+            openh264: Arc::new(openh264),
+        })
+    }
+}
 
 /// H264 video decoder.
 pub struct H264Decoder {
