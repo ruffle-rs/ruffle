@@ -370,7 +370,7 @@ impl Definition {
     ) {
         for class_trait in traits {
             if !class_trait.name().namespace().is_public()
-                && class_trait
+                && !class_trait
                     .name()
                     .namespace()
                     .exact_version_match(avm2.as3_namespace)
