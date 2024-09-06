@@ -2026,8 +2026,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_check_filter(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let xml = self.avm2().classes().xml.inner_class_definition();
-        let xml_list = self.avm2().classes().xml_list.inner_class_definition();
+        let xml = self.avm2().class_defs().xml;
+        let xml_list = self.avm2().class_defs().xml_list;
         let value = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
 
         if value.is_of_type(xml) || value.is_of_type(xml_list) {
@@ -2748,11 +2748,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Value::Bool(_) => "boolean",
             Value::Number(_) | Value::Integer(_) => "number",
             Value::Object(o) => {
-                let classes = self.avm2().classes();
+                let classes = self.avm2().class_defs();
 
                 match o {
                     Object::FunctionObject(_) => {
-                        if o.instance_class() == classes.function.inner_class_definition() {
+                        if o.instance_class() == classes.function {
                             "function"
                         } else {
                             // Subclasses always have a typeof = "object"
@@ -2760,8 +2760,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         }
                     }
                     Object::XmlObject(_) | Object::XmlListObject(_) => {
-                        if o.instance_class() == classes.xml_list.inner_class_definition()
-                            || o.instance_class() == classes.xml.inner_class_definition()
+                        if o.instance_class() == classes.xml_list
+                            || o.instance_class() == classes.xml
                         {
                             "xml"
                         } else {

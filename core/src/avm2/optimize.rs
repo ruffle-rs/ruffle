@@ -93,14 +93,14 @@ impl<'gc> OptValue<'gc> {
             return true;
         }
 
-        let classes = activation.avm2().classes();
+        let class_defs = activation.avm2().class_defs();
 
         // Primitives are always not-null
-        self.class == Some(classes.int.inner_class_definition())
-            || self.class == Some(classes.uint.inner_class_definition())
-            || self.class == Some(classes.number.inner_class_definition())
-            || self.class == Some(classes.boolean.inner_class_definition())
-            || self.class == Some(activation.avm2().class_defs().void)
+        self.class == Some(class_defs.int)
+            || self.class == Some(class_defs.uint)
+            || self.class == Some(class_defs.number)
+            || self.class == Some(class_defs.boolean)
+            || self.class == Some(class_defs.void)
     }
 
     pub fn merged_with(self, other: OptValue<'gc>) -> OptValue<'gc> {
@@ -332,24 +332,16 @@ pub fn optimize<'gc>(
         pub namespace: Class<'gc>,
     }
     let types = Types {
-        object: activation.avm2().classes().object.inner_class_definition(),
-        int: activation.avm2().classes().int.inner_class_definition(),
-        uint: activation.avm2().classes().uint.inner_class_definition(),
-        number: activation.avm2().classes().number.inner_class_definition(),
-        boolean: activation.avm2().classes().boolean.inner_class_definition(),
-        string: activation.avm2().classes().string.inner_class_definition(),
-        array: activation.avm2().classes().array.inner_class_definition(),
-        function: activation
-            .avm2()
-            .classes()
-            .function
-            .inner_class_definition(),
+        object: activation.avm2().class_defs().object,
+        int: activation.avm2().class_defs().int,
+        uint: activation.avm2().class_defs().uint,
+        number: activation.avm2().class_defs().number,
+        boolean: activation.avm2().class_defs().boolean,
+        string: activation.avm2().class_defs().string,
+        array: activation.avm2().class_defs().array,
+        function: activation.avm2().class_defs().function,
         void: activation.avm2().class_defs().void,
-        namespace: activation
-            .avm2()
-            .classes()
-            .namespace
-            .inner_class_definition(),
+        namespace: activation.avm2().class_defs().namespace,
     };
 
     let method_body = method
