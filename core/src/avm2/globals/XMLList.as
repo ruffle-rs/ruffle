@@ -248,6 +248,6 @@ package {
             return self.AS3::normalize();
         }
 
-        public static const length:int = 1;
+        public static const length:* = 1;
     }
 }
