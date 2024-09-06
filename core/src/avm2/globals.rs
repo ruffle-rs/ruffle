@@ -546,7 +546,6 @@ pub fn load_player_globals<'gc>(
     let number_class = number::create_class(activation);
     let int_class = int::create_class(activation);
     let uint_class = uint::create_class(activation);
-    let namespace_class = namespace::create_class(activation);
     let array_class = array::create_class(activation);
     let vector_generic_class = vector::create_generic_class(activation);
 
@@ -572,7 +571,6 @@ pub fn load_player_globals<'gc>(
         (public_ns, "Number", number_class),
         (public_ns, "int", int_class),
         (public_ns, "uint", uint_class),
-        (public_ns, "Namespace", namespace_class),
         (public_ns, "Array", array_class),
         (vector_public_ns, "Vector", vector_generic_class),
         (vector_internal_ns, "Vector$int", vector_int_class),
@@ -716,7 +714,6 @@ pub fn load_player_globals<'gc>(
     avm2_system_class!(number, activation, number_class, script);
     avm2_system_class!(int, activation, int_class, script);
     avm2_system_class!(uint, activation, uint_class, script);
-    avm2_system_class!(namespace, activation, namespace_class, script);
     avm2_system_class!(array, activation, array_class, script);
 
     avm2_system_class!(generic_vector, activation, vector_generic_class, script);
@@ -860,6 +857,7 @@ fn load_playerglobal<'gc>(
             ("", "ArgumentError", argumenterror),
             ("", "QName", qname),
             ("", "EvalError", evalerror),
+            ("", "Namespace", namespace),
             ("", "RangeError", rangeerror),
             ("", "RegExp", regexp),
             ("", "ReferenceError", referenceerror),
@@ -966,6 +964,7 @@ fn load_playerglobal<'gc>(
     avm2_system_class_defs_playerglobal!(
         &mut *activation,
         [
+            ("", "Namespace", namespace),
             ("", "XML", xml),
             ("", "XMLList", xml_list),
             ("flash.display", "Bitmap", bitmap),
