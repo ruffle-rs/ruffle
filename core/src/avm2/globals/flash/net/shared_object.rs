@@ -1,11 +1,10 @@
 //! `flash.net.SharedObject` builtin/prototype
 
-use crate::avm2::api_version::ApiVersion;
 use crate::avm2::error::error;
 use crate::avm2::object::TObject;
 use crate::avm2::Error::AvmError;
 use crate::avm2::Multiname;
-use crate::avm2::{Activation, Error, Namespace, Object, Value};
+use crate::avm2::{Activation, Error, Object, Value};
 use crate::string::AvmString;
 use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
 use flash_lso::types::{AMFVersion, Lso};
@@ -154,14 +153,7 @@ pub fn get_local<'gc>(
     let this = sharedobject_cls.construct(activation, &[])?;
 
     // Set the internal name
-    let ruffle_name = Multiname::new(
-        Namespace::package(
-            "__ruffle__",
-            ApiVersion::AllVersions,
-            &mut activation.borrow_gc(),
-        ),
-        "_ruffleName",
-    );
+    let ruffle_name = Multiname::new(activation.avm2().namespaces.__ruffle__, "_ruffleName");
     this.set_property(
         &ruffle_name,
         AvmString::new_utf8(activation.context.gc_context, &full_name).into(),
@@ -205,14 +197,7 @@ pub fn flush<'gc>(
         .get_public_property("data", activation)?
         .coerce_to_object(activation)?;
 
-    let ruffle_name = Multiname::new(
-        Namespace::package(
-            "__ruffle__",
-            ApiVersion::AllVersions,
-            &mut activation.borrow_gc(),
-        ),
-        "_ruffleName",
-    );
+    let ruffle_name = Multiname::new(activation.avm2().namespaces.__ruffle__, "_ruffleName");
     let name = this
         .get_property(&ruffle_name, activation)?
         .coerce_to_string(activation)?;
@@ -246,14 +231,7 @@ pub fn get_size<'gc>(
         .get_public_property("data", activation)?
         .coerce_to_object(activation)?;
 
-    let ruffle_name = Multiname::new(
-        Namespace::package(
-            "__ruffle__",
-            ApiVersion::AllVersions,
-            &mut activation.borrow_gc(),
-        ),
-        "_ruffleName",
-    );
+    let ruffle_name = Multiname::new(activation.avm2().namespaces.__ruffle__, "_ruffleName");
     let name = this
         .get_property(&ruffle_name, activation)?
         .coerce_to_string(activation)?;
@@ -293,14 +271,7 @@ pub fn clear<'gc>(
     this.set_public_property("data", data, activation)?;
 
     // Delete data from storage backend.
-    let ruffle_name = Multiname::new(
-        Namespace::package(
-            "__ruffle__",
-            ApiVersion::AllVersions,
-            &mut activation.borrow_gc(),
-        ),
-        "_ruffleName",
-    );
+    let ruffle_name = Multiname::new(activation.avm2().namespaces.__ruffle__, "_ruffleName");
     let name = this
         .get_property(&ruffle_name, activation)?
         .coerce_to_string(activation)?;
