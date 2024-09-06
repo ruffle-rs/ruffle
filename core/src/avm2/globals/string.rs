@@ -719,19 +719,8 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
 
     #[cfg(feature = "test_only_as3")]
     {
-        use crate::avm2::api_version::ApiVersion;
-        use crate::avm2::namespace::Namespace;
-
         const TEST_METHODS: &[(&str, NativeMethodImpl)] = &[("isDependent", is_dependent)];
-        class.define_builtin_instance_methods(
-            mc,
-            Namespace::package(
-                "__ruffle__",
-                ApiVersion::AllVersions,
-                &mut activation.borrow_gc(),
-            ),
-            TEST_METHODS,
-        );
+        class.define_builtin_instance_methods(mc, namespaces.__ruffle__, TEST_METHODS);
     }
 
     const CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];

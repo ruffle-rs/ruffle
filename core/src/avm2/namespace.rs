@@ -356,6 +356,8 @@ pub struct CommonNamespaces<'gc> {
     pub(super) flash_events_internal: Namespace<'gc>,
     pub(super) flash_text_engine_internal: Namespace<'gc>,
     pub(super) flash_net_internal: Namespace<'gc>,
+
+    pub(super) __ruffle__: Namespace<'gc>,
 }
 
 impl<'gc> CommonNamespaces<'gc> {
@@ -385,6 +387,8 @@ impl<'gc> CommonNamespaces<'gc> {
             flash_events_internal: Namespace::internal("flash.events", context),
             flash_text_engine_internal: Namespace::internal("flash.text.engine", context),
             flash_net_internal: Namespace::internal("flash.net", context),
+
+            __ruffle__: Namespace::package("__ruffle__", ApiVersion::AllVersions, context),
         }
     }
 
