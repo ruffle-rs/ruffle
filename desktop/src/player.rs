@@ -224,16 +224,16 @@ impl ActivePlayer {
             #[cfg(feature = "external_video")]
             {
                 use ruffle_video_external::backend::ExternalVideoBackend;
-                let path = tokio::task::block_in_place(ExternalVideoBackend::get_openh264);
-                let openh264_path = match path {
-                    Ok(path) => Some(path),
+                let openh264 = tokio::task::block_in_place(ExternalVideoBackend::load_openh264);
+                let openh264 = match openh264 {
+                    Ok(codec) => Some(codec),
                     Err(e) => {
-                        tracing::error!("Couldn't get OpenH264: {}", e);
+                        tracing::error!("Failed to load OpenH264: {}", e);
                         None
                     }
                 };
 
-                builder = builder.with_video(ExternalVideoBackend::new(openh264_path));
+                builder = builder.with_video(ExternalVideoBackend::new(openh264));
             }
         } else {
             #[cfg(feature = "software_video")]
