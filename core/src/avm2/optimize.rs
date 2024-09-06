@@ -222,7 +222,7 @@ impl<'gc> Stack<'gc> {
     }
 
     fn pop(&mut self, activation: &mut Activation<'_, 'gc>) -> Result<OptValue<'gc>, Error<'gc>> {
-        if self.len() == 0 {
+        if self.0.is_empty() {
             return Err(Error::AvmError(verify_error(
                 activation,
                 "Error #1024: Stack underflow occurred.",
@@ -329,7 +329,7 @@ impl<'gc> ScopeStack<'gc> {
     }
 
     fn pop(&mut self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
-        if self.len() == 0 {
+        if self.0.is_empty() {
             return Err(Error::AvmError(verify_error(
                 activation,
                 "Error #1018: Scope stack underflow occurred.",
@@ -395,10 +395,10 @@ impl<'gc> ScopeStack<'gc> {
 ///
 /// If all of these conditions are fulfilled, then the optimizer will predict the type of
 /// `FindPropStrict/FindProperty` opcodes.
-fn has_simple_scope_structure<'gc>(
+fn has_simple_scope_structure(
     code: &[Op],
     jump_targets: &HashMap<i32, Vec<JumpSource>>,
-    method_exceptions: &[Exception<'gc>],
+    method_exceptions: &[Exception<'_>],
 ) -> bool {
     if !method_exceptions.is_empty() {
         return false;
@@ -1976,6 +1976,7 @@ pub fn optimize<'gc>(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn check_target<'gc>(
     activation: &mut Activation<'_, 'gc>,
     seen_targets: &mut HashSet<i32>,
