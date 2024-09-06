@@ -126,11 +126,7 @@ impl<'gc> ScriptObject<'gc> {
         // can observe (the lack of) it.
         let base = ScriptObjectWrapper(Gc::new(
             mc,
-            ScriptObjectData::custom_new(
-                activation.avm2().classes().object.inner_class_definition(),
-                None,
-                vt,
-            ),
+            ScriptObjectData::custom_new(activation.avm2().class_defs().object, None, vt),
         ));
 
         ScriptObject(base.0).into()

@@ -78,7 +78,7 @@ pub fn serialize_value<'gc>(
                 }
             } else if let Some(vec) = o.as_vector_storage() {
                 let val_type = vec.value_type();
-                if val_type == Some(activation.avm2().classes().int.inner_class_definition()) {
+                if val_type == Some(activation.avm2().class_defs().int) {
                     let int_vec: Vec<_> = vec
                         .iter()
                         .map(|v| {
@@ -87,9 +87,7 @@ pub fn serialize_value<'gc>(
                         })
                         .collect();
                     Some(AmfValue::VectorInt(int_vec, vec.is_fixed()))
-                } else if val_type
-                    == Some(activation.avm2().classes().uint.inner_class_definition())
-                {
+                } else if val_type == Some(activation.avm2().class_defs().uint) {
                     let uint_vec: Vec<_> = vec
                         .iter()
                         .map(|v| {
@@ -98,9 +96,7 @@ pub fn serialize_value<'gc>(
                         })
                         .collect();
                     Some(AmfValue::VectorUInt(uint_vec, vec.is_fixed()))
-                } else if val_type
-                    == Some(activation.avm2().classes().number.inner_class_definition())
-                {
+                } else if val_type == Some(activation.avm2().class_defs().number) {
                     let num_vec: Vec<_> = vec
                         .iter()
                         .map(|v| {
@@ -388,7 +384,7 @@ pub fn deserialize_value<'gc>(
             let storage = VectorStorage::from_values(
                 vec.iter().map(|v| (*v).into()).collect(),
                 *is_fixed,
-                Some(activation.avm2().classes().number.inner_class_definition()),
+                Some(activation.avm2().class_defs().number),
             );
             VectorObject::from_vector(storage, activation)?.into()
         }
@@ -396,7 +392,7 @@ pub fn deserialize_value<'gc>(
             let storage = VectorStorage::from_values(
                 vec.iter().map(|v| (*v).into()).collect(),
                 *is_fixed,
-                Some(activation.avm2().classes().uint.inner_class_definition()),
+                Some(activation.avm2().class_defs().uint),
             );
             VectorObject::from_vector(storage, activation)?.into()
         }
@@ -404,7 +400,7 @@ pub fn deserialize_value<'gc>(
             let storage = VectorStorage::from_values(
                 vec.iter().map(|v| (*v).into()).collect(),
                 *is_fixed,
-                Some(activation.avm2().classes().int.inner_class_definition()),
+                Some(activation.avm2().class_defs().int),
             );
             VectorObject::from_vector(storage, activation)?.into()
         }

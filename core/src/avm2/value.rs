@@ -990,19 +990,19 @@ impl<'gc> Value<'gc> {
         activation: &mut Activation<'_, 'gc>,
         class: Class<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if class == activation.avm2().classes().int.inner_class_definition() {
+        if class == activation.avm2().class_defs().int {
             return Ok(self.coerce_to_i32(activation)?.into());
         }
 
-        if class == activation.avm2().classes().uint.inner_class_definition() {
+        if class == activation.avm2().class_defs().uint {
             return Ok(self.coerce_to_u32(activation)?.into());
         }
 
-        if class == activation.avm2().classes().number.inner_class_definition() {
+        if class == activation.avm2().class_defs().number {
             return Ok(self.coerce_to_number(activation)?.into());
         }
 
-        if class == activation.avm2().classes().boolean.inner_class_definition() {
+        if class == activation.avm2().class_defs().boolean {
             return Ok(self.coerce_to_boolean().into());
         }
 
@@ -1013,7 +1013,7 @@ impl<'gc> Value<'gc> {
             return Ok(Value::Null);
         }
 
-        if class == activation.avm2().classes().string.inner_class_definition() {
+        if class == activation.avm2().class_defs().string {
             return Ok(self.coerce_to_string(activation)?.into());
         }
 
@@ -1093,13 +1093,13 @@ impl<'gc> Value<'gc> {
         activation: &mut Activation<'_, 'gc>,
         type_object: Class<'gc>,
     ) -> bool {
-        if type_object == activation.avm2().classes().number.inner_class_definition() {
+        if type_object == activation.avm2().class_defs().number {
             return self.is_number();
         }
-        if type_object == activation.avm2().classes().uint.inner_class_definition() {
+        if type_object == activation.avm2().class_defs().uint {
             return self.is_u32();
         }
-        if type_object == activation.avm2().classes().int.inner_class_definition() {
+        if type_object == activation.avm2().class_defs().int {
             return self.is_i32();
         }
 

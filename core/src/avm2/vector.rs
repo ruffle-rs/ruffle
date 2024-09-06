@@ -118,11 +118,11 @@ impl<'gc> VectorStorage<'gc> {
     /// Get the default value for this vector.
     pub fn default(&self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
         if let Some(value_type) = self.value_type {
-            if value_type == activation.avm2().classes().int.inner_class_definition()
-                || value_type == activation.avm2().classes().uint.inner_class_definition()
+            if value_type == activation.avm2().class_defs().int
+                || value_type == activation.avm2().class_defs().uint
             {
                 Value::Integer(0)
-            } else if value_type == activation.avm2().classes().number.inner_class_definition() {
+            } else if value_type == activation.avm2().class_defs().number {
                 Value::Number(0.0)
             } else {
                 Value::Null
@@ -234,11 +234,11 @@ impl<'gc> VectorStorage<'gc> {
         if let Some(v) = self.storage.pop() {
             Ok(v)
         } else if let Some(value_type) = self.value_type() {
-            if value_type == activation.avm2().classes().uint.inner_class_definition()
-                || value_type == activation.avm2().classes().int.inner_class_definition()
+            if value_type == activation.avm2().class_defs().uint
+                || value_type == activation.avm2().class_defs().int
             {
                 Ok(Value::Integer(0))
-            } else if value_type == activation.avm2().classes().number.inner_class_definition() {
+            } else if value_type == activation.avm2().class_defs().number {
                 Ok(Value::Number(0.0))
             } else {
                 Ok(Value::Undefined)
@@ -280,11 +280,11 @@ impl<'gc> VectorStorage<'gc> {
         if !self.storage.is_empty() {
             Ok(self.storage.remove(0))
         } else if let Some(value_type) = self.value_type() {
-            if value_type == activation.avm2().classes().uint.inner_class_definition()
-                || value_type == activation.avm2().classes().int.inner_class_definition()
+            if value_type == activation.avm2().class_defs().uint
+                || value_type == activation.avm2().class_defs().int
             {
                 Ok(Value::Integer(0))
-            } else if value_type == activation.avm2().classes().number.inner_class_definition() {
+            } else if value_type == activation.avm2().class_defs().number {
                 Ok(Value::Number(0.0))
             } else {
                 Ok(Value::Undefined)

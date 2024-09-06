@@ -180,6 +180,19 @@ pub struct SystemClassDefs<'gc> {
     pub function: Class<'gc>,
     pub void: Class<'gc>,
 
+    pub array: Class<'gc>,
+    pub boolean: Class<'gc>,
+    pub int: Class<'gc>,
+    pub generic_vector: Class<'gc>,
+    pub namespace: Class<'gc>,
+    pub number: Class<'gc>,
+    pub string: Class<'gc>,
+    pub uint: Class<'gc>,
+    pub xml: Class<'gc>,
+    pub xml_list: Class<'gc>,
+
+    pub bitmap: Class<'gc>,
+    pub bitmapdata: Class<'gc>,
     pub igraphicsdata: Class<'gc>,
     pub graphicsbitmapfill: Class<'gc>,
     pub graphicsendfill: Class<'gc>,
@@ -323,6 +336,19 @@ impl<'gc> SystemClassDefs<'gc> {
             void,
 
             // temporary initialization
+            array: object,
+            boolean: object,
+            int: object,
+            generic_vector: object,
+            namespace: object,
+            number: object,
+            string: object,
+            uint: object,
+            xml: object,
+            xml_list: object,
+
+            bitmap: object,
+            bitmapdata: object,
             igraphicsdata: object,
             graphicsbitmapfill: object,
             graphicsendfill: object,
@@ -448,6 +474,9 @@ macro_rules! avm2_system_class {
 
         let sc = $activation.avm2().system_classes.as_mut().unwrap();
         sc.$field = class_object;
+
+        let scd = $activation.avm2().system_class_defs.as_mut().unwrap();
+        scd.$field = class_object.inner_class_definition();
     };
 }
 
@@ -940,6 +969,10 @@ fn load_playerglobal<'gc>(
     avm2_system_class_defs_playerglobal!(
         &mut *activation,
         [
+            ("", "XML", xml),
+            ("", "XMLList", xml_list),
+            ("flash.display", "Bitmap", bitmap),
+            ("flash.display", "BitmapData", bitmapdata),
             ("flash.display", "IGraphicsData", igraphicsdata),
             ("flash.display", "GraphicsBitmapFill", graphicsbitmapfill),
             ("flash.display", "GraphicsEndFill", graphicsendfill),
