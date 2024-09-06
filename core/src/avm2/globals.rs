@@ -85,15 +85,6 @@ pub struct SystemClasses<'gc> {
     pub textfield: ClassObject<'gc>,
     pub textformat: ClassObject<'gc>,
     pub graphics: ClassObject<'gc>,
-    pub igraphicsdata: ClassObject<'gc>,
-    pub graphicsbitmapfill: ClassObject<'gc>,
-    pub graphicsendfill: ClassObject<'gc>,
-    pub graphicsgradientfill: ClassObject<'gc>,
-    pub graphicspath: ClassObject<'gc>,
-    pub graphicstrianglepath: ClassObject<'gc>,
-    pub graphicssolidfill: ClassObject<'gc>,
-    pub graphicsshaderfill: ClassObject<'gc>,
-    pub graphicsstroke: ClassObject<'gc>,
     pub loader: ClassObject<'gc>,
     pub loaderinfo: ClassObject<'gc>,
     pub bytearray: ClassObject<'gc>,
@@ -188,6 +179,16 @@ pub struct SystemClassDefs<'gc> {
     pub class: Class<'gc>,
     pub function: Class<'gc>,
     pub void: Class<'gc>,
+
+    pub igraphicsdata: Class<'gc>,
+    pub graphicsbitmapfill: Class<'gc>,
+    pub graphicsendfill: Class<'gc>,
+    pub graphicsgradientfill: Class<'gc>,
+    pub graphicspath: Class<'gc>,
+    pub graphicstrianglepath: Class<'gc>,
+    pub graphicssolidfill: Class<'gc>,
+    pub graphicsshaderfill: Class<'gc>,
+    pub graphicsstroke: Class<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -203,6 +204,7 @@ impl<'gc> SystemClasses<'gc> {
             object,
             function,
             class,
+
             // temporary initialization
             string: object,
             boolean: object,
@@ -225,15 +227,6 @@ impl<'gc> SystemClasses<'gc> {
             textfield: object,
             textformat: object,
             graphics: object,
-            igraphicsdata: object,
-            graphicsbitmapfill: object,
-            graphicsendfill: object,
-            graphicsgradientfill: object,
-            graphicspath: object,
-            graphicstrianglepath: object,
-            graphicssolidfill: object,
-            graphicsshaderfill: object,
-            graphicsstroke: object,
             loader: object,
             loaderinfo: object,
             bytearray: object,
@@ -328,6 +321,17 @@ impl<'gc> SystemClassDefs<'gc> {
             class,
             function,
             void,
+
+            // temporary initialization
+            igraphicsdata: object,
+            graphicsbitmapfill: object,
+            graphicsendfill: object,
+            graphicsgradientfill: object,
+            graphicspath: object,
+            graphicstrianglepath: object,
+            graphicssolidfill: object,
+            graphicsshaderfill: object,
+            graphicsstroke: object,
         }
     }
 }
@@ -804,6 +808,21 @@ fn load_playerglobal<'gc>(
         }
     }
 
+    macro_rules! avm2_system_class_defs_playerglobal {
+        ($activation:expr, [$(($package:expr, $class_name:expr, $field:ident)),* $(,)?]) => {
+            let activation = $activation;
+            $(
+                // Lookup with the highest version, so we we see all defined classes here
+                let ns = Namespace::package($package, ApiVersion::VM_INTERNAL, &mut activation.borrow_gc());
+                let name = QName::new(ns, $class_name);
+                let class_object = activation.domain().get_defined_value(activation, name).unwrap_or_else(|e| panic!("Failed to lookup {name:?}: {e:?}"));
+                let class_def = class_object.as_object().unwrap().as_class_object().unwrap().inner_class_definition();
+                let sc = activation.avm2().system_class_defs.as_mut().unwrap();
+                sc.$field = class_def;
+            )*
+        }
+    }
+
     // This acts the same way as 'avm2_system_class', but for classes
     // declared in 'playerglobal'. Classes are declared as ("package", "class", field_name),
     // and are stored in 'avm2().system_classes'
@@ -830,22 +849,6 @@ fn load_playerglobal<'gc>(
             ("flash.display", "BitmapData", bitmapdata),
             ("flash.display", "Scene", scene),
             ("flash.display", "FrameLabel", framelabel),
-            ("flash.display", "IGraphicsData", igraphicsdata),
-            ("flash.display", "GraphicsBitmapFill", graphicsbitmapfill),
-            ("flash.display", "GraphicsEndFill", graphicsendfill),
-            (
-                "flash.display",
-                "GraphicsGradientFill",
-                graphicsgradientfill
-            ),
-            ("flash.display", "GraphicsPath", graphicspath),
-            (
-                "flash.display",
-                "GraphicsTrianglePath",
-                graphicstrianglepath
-            ),
-            ("flash.display", "GraphicsSolidFill", graphicssolidfill),
-            ("flash.display", "GraphicsStroke", graphicsstroke),
             ("flash.display", "Graphics", graphics),
             ("flash.display", "Loader", loader),
             ("flash.display", "LoaderInfo", loaderinfo),
@@ -931,6 +934,28 @@ fn load_playerglobal<'gc>(
             ("flash.filters", "GradientGlowFilter", gradientglowfilter),
             ("flash.filters", "ShaderFilter", shaderfilter),
             ("flash.events", "SampleDataEvent", sampledataevent),
+        ]
+    );
+
+    avm2_system_class_defs_playerglobal!(
+        &mut *activation,
+        [
+            ("flash.display", "IGraphicsData", igraphicsdata),
+            ("flash.display", "GraphicsBitmapFill", graphicsbitmapfill),
+            ("flash.display", "GraphicsEndFill", graphicsendfill),
+            (
+                "flash.display",
+                "GraphicsGradientFill",
+                graphicsgradientfill
+            ),
+            ("flash.display", "GraphicsPath", graphicspath),
+            (
+                "flash.display",
+                "GraphicsTrianglePath",
+                graphicstrianglepath
+            ),
+            ("flash.display", "GraphicsSolidFill", graphicssolidfill),
+            ("flash.display", "GraphicsStroke", graphicsstroke),
         ]
     );
 
