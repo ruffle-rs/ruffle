@@ -73,7 +73,7 @@ url = "2.5.2"
 wasm-bindgen = "=0.2.93"
 walkdir = "2.5.0"
 tokio = { version = "1.40.0" }
-rfd = { git = "https://github.com/PolyMeilex/rfd.git", rev = "42dcc7d61fc5e278b4ed76bb9720ba4d89266f01" }
+rfd = { git = "https://github.com/PolyMeilex/rfd.git", rev = "e0e725ec9a426acf7c93d9877c41e230fcee3fac" }
 
 [workspace.lints.rust]
 # Clippy nightly often adds new/buggy lints that we want to ignore.
