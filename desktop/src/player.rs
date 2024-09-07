@@ -227,7 +227,9 @@ impl ActivePlayer {
             #[cfg(feature = "external_video")]
             {
                 use ruffle_video_external::backend::ExternalVideoBackend;
-                let openh264 = tokio::task::block_in_place(ExternalVideoBackend::load_openh264);
+                let openh264 = tokio::task::block_in_place(|| {
+                    ExternalVideoBackend::load_openh264(&opt.cache_directory.join("video"))
+                });
                 let openh264 = match openh264 {
                     Ok(codec) => Some(codec),
                     Err(e) => {
