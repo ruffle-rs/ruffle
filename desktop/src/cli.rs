@@ -25,6 +25,12 @@ fn get_default_config_directory() -> std::path::PathBuf {
         .join("ruffle")
 }
 
+fn get_default_cache_directory() -> std::path::PathBuf {
+    dirs::cache_dir()
+        .expect("Couldn't find a valid cache dir")
+        .join("ruffle")
+}
+
 #[derive(Parser, Debug, Clone)]
 #[clap(
     name = "Ruffle",
@@ -112,6 +118,12 @@ pub struct Opt {
     /// Location of a directory to store Ruffle configuration.
     #[clap(long, default_value_os_t=get_default_config_directory())]
     pub config: std::path::PathBuf,
+
+    /// Directory that contains non-essential files created by Ruffle.
+    ///
+    /// This directory can be deleted without affecting functionality.
+    #[clap(long, default_value_os_t=get_default_cache_directory())]
+    pub cache_directory: std::path::PathBuf,
 
     /// Proxy to use when loading movies via URL.
     #[clap(long)]
