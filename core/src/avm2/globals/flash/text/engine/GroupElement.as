@@ -1,6 +1,4 @@
 package flash.text.engine {
-    namespace AS3 = "http://adobe.com/AS3/2006/builtin";
-
     import __ruffle__.stub_method;
 
     import flash.events.EventDispatcher;

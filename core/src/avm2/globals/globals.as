@@ -1,34 +1,11 @@
 // List is ordered alphabetically, except where superclasses/interfaces
 // need to come before subclasses and implementations.
 
-package {
-    // This names 'self.AS3::SomeMethod()' calls in 'XML.as' use a 'callproperty'
-    // opcode, instead of a weird dynamic lookup of the 'AS3' namespace
-    namespace AS3 = "http://adobe.com/AS3/2006/builtin";
-}
-
 include "__ruffle__/stubs.as"
 
-include "Error.as"
-
-include "ArgumentError.as"
-include "DefinitionError.as"
-include "JSON.as"
-include "EvalError.as"
-include "TypeError.as"
-include "Math.as"
-include "Namespace.as"
-include "QName.as"
-include "RangeError.as"
-include "ReferenceError.as"
-include "RegExp.as"
-include "SecurityError.as"
-include "SyntaxError.as"
-include "UninitializedError.as"
-include "URIError.as"
-include "VerifyError.as"
-
 include "Date.as"
+include "Math.as"
+include "RegExp.as"
 
 include "avmplus.as"
 
@@ -463,6 +440,3 @@ include "flash/utils/Timer.as"
 include "flash/xml/XMLNodeType.as"
 include "flash/xml/XMLNode.as" // XMLDocument extends XMLNode, so XMLNode needs to come before it.
 include "flash/xml/XMLDocument.as"
-
-include "XML.as"
-include "XMLList.as"

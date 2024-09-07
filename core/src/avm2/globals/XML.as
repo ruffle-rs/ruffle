@@ -45,7 +45,7 @@ package {
             };
         }
 
-        public function XML(value:* = undefined) {
+        public function XML(value:* = void 0) {
             this.init(value, XML.ignoreComments, XML.ignoreProcessingInstructions, XML.ignoreWhitespace);
         }
 
@@ -304,7 +304,7 @@ package {
             return XML.AS3::settings();
         }
 
-        XML.setSettings = function(v:* = undefined) {
+        XML.setSettings = function(v:* = void 0) {
             XML.AS3::setSettings(v)
         }
 

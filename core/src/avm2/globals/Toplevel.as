@@ -26,3 +26,26 @@ package {
 
     public native function trace(... rest):void;
 }
+
+// These classes are required by other core code, so we put them here. Toplevel.as
+// is loaded before the rest of the global code.
+
+include "Error.as"
+
+include "ArgumentError.as"
+include "DefinitionError.as"
+include "EvalError.as"
+include "TypeError.as"
+include "RangeError.as"
+include "ReferenceError.as"
+include "SecurityError.as"
+include "SyntaxError.as"
+include "UninitializedError.as"
+include "URIError.as"
+include "VerifyError.as"
+
+include "JSON.as"
+include "Namespace.as"
+include "QName.as"
+include "XML.as"
+include "XMLList.as"

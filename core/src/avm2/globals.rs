@@ -775,91 +775,49 @@ mod native {
     include!(concat!(env!("OUT_DIR"), "/native_table.rs"));
 }
 
-/// Loads classes from our custom 'playerglobal' (which are written in ActionScript)
-/// into the environment. See 'core/src/avm2/globals/README.md' for more information
-fn load_playerglobal<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    domain: Domain<'gc>,
-) -> Result<(), Error<'gc>> {
-    activation.avm2().native_method_table = native::NATIVE_METHOD_TABLE;
-    activation.avm2().native_instance_allocator_table = native::NATIVE_INSTANCE_ALLOCATOR_TABLE;
-    activation.avm2().native_super_initializer_table = native::NATIVE_SUPER_INITIALIZER_TABLE;
-    activation.avm2().native_call_handler_table = native::NATIVE_CALL_HANDLER_TABLE;
-
-    let movie = Arc::new(
-        SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), None)
-            .expect("playerglobal.swf should be valid"),
-    );
-
-    let slice = SwfSlice::from(movie.clone());
-
-    let mut reader = slice.read_from(0);
-
-    let tag_callback = |reader: &mut SwfStream<'_>, tag_code, _tag_len| {
-        if tag_code == TagCode::DoAbc2 {
-            let do_abc = reader
-                .read_do_abc_2()
-                .expect("playerglobal.swf should be valid");
-            Avm2::do_abc(
-                activation.context,
-                do_abc.data,
-                None,
-                do_abc.flags,
-                domain,
-                movie.clone(),
-            )
-            .expect("playerglobal.swf should be valid");
-        } else if tag_code != TagCode::End {
-            panic!("playerglobal should only contain `DoAbc2` tag - found tag {tag_code:?}")
-        }
-        Ok(ControlFlow::Continue)
-    };
-
-    let _ = tag_utils::decode_tags(&mut reader, tag_callback);
-    macro_rules! avm2_system_classes_playerglobal {
-        ($activation:expr, [$(($package:expr, $class_name:expr, $field:ident)),* $(,)?]) => {
-            let activation = $activation;
-            $(
-                // Lookup with the highest version, so we we see all defined classes here
-                let ns = Namespace::package($package, ApiVersion::VM_INTERNAL, &mut activation.borrow_gc());
-                let name = QName::new(ns, $class_name);
-                let class_object = activation.domain().get_defined_value(activation, name).unwrap_or_else(|e| panic!("Failed to lookup {name:?}: {e:?}"));
-                let class_object = class_object.as_object().unwrap().as_class_object().unwrap();
-                let sc = activation.avm2().system_classes.as_mut().unwrap();
-                sc.$field = class_object;
-            )*
-        }
+// This acts the same way as 'avm2_system_class', but for classes
+// declared in 'playerglobal'. Classes are declared as ("package", "class", field_name),
+// and are stored in 'avm2().system_classes'
+macro_rules! avm2_system_classes_playerglobal {
+    ($activation:expr, [$(($package:expr, $class_name:expr, $field:ident)),* $(,)?]) => {
+        let activation = $activation;
+        $(
+            // Lookup with the highest version, so we we see all defined classes here
+            let ns = Namespace::package($package, ApiVersion::VM_INTERNAL, &mut activation.borrow_gc());
+            let name = QName::new(ns, $class_name);
+            let class_object = activation.domain().get_defined_value(activation, name).unwrap_or_else(|e| panic!("Failed to lookup {name:?}: {e:?}"));
+            let class_object = class_object.as_object().unwrap().as_class_object().unwrap();
+            let sc = activation.avm2().system_classes.as_mut().unwrap();
+            sc.$field = class_object;
+        )*
     }
+}
 
-    macro_rules! avm2_system_class_defs_playerglobal {
-        ($activation:expr, [$(($package:expr, $class_name:expr, $field:ident)),* $(,)?]) => {
-            let activation = $activation;
-            $(
-                // Lookup with the highest version, so we we see all defined classes here
-                let ns = Namespace::package($package, ApiVersion::VM_INTERNAL, &mut activation.borrow_gc());
-                let name = QName::new(ns, $class_name);
-                let class_object = activation.domain().get_defined_value(activation, name).unwrap_or_else(|e| panic!("Failed to lookup {name:?}: {e:?}"));
-                let class_def = class_object.as_object().unwrap().as_class_object().unwrap().inner_class_definition();
-                let sc = activation.avm2().system_class_defs.as_mut().unwrap();
-                sc.$field = class_def;
-            )*
-        }
+macro_rules! avm2_system_class_defs_playerglobal {
+    ($activation:expr, [$(($package:expr, $class_name:expr, $field:ident)),* $(,)?]) => {
+        let activation = $activation;
+        $(
+            // Lookup with the highest version, so we we see all defined classes here
+            let ns = Namespace::package($package, ApiVersion::VM_INTERNAL, &mut activation.borrow_gc());
+            let name = QName::new(ns, $class_name);
+            let class_object = activation.domain().get_defined_value(activation, name).unwrap_or_else(|e| panic!("Failed to lookup {name:?}: {e:?}"));
+            let class_def = class_object.as_object().unwrap().as_class_object().unwrap().inner_class_definition();
+            let sc = activation.avm2().system_class_defs.as_mut().unwrap();
+            sc.$field = class_def;
+        )*
     }
+}
 
-    // This acts the same way as 'avm2_system_class', but for classes
-    // declared in 'playerglobal'. Classes are declared as ("package", "class", field_name),
-    // and are stored in 'avm2().system_classes'
+pub fn init_builtin_system_classes(activation: &mut Activation<'_, '_>) {
     avm2_system_classes_playerglobal!(
         &mut *activation,
         [
-            ("", "Date", date),
             ("", "Error", error),
             ("", "ArgumentError", argumenterror),
             ("", "QName", qname),
             ("", "EvalError", evalerror),
             ("", "Namespace", namespace),
             ("", "RangeError", rangeerror),
-            ("", "RegExp", regexp),
             ("", "ReferenceError", referenceerror),
             ("", "SecurityError", securityerror),
             ("", "SyntaxError", syntaxerror),
@@ -868,6 +826,25 @@ fn load_playerglobal<'gc>(
             ("", "VerifyError", verifyerror),
             ("", "XML", xml),
             ("", "XMLList", xml_list),
+        ]
+    );
+
+    avm2_system_class_defs_playerglobal!(
+        &mut *activation,
+        [
+            ("", "Namespace", namespace),
+            ("", "XML", xml),
+            ("", "XMLList", xml_list),
+        ]
+    );
+}
+
+pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
+    avm2_system_classes_playerglobal!(
+        &mut *activation,
+        [
+            ("", "Date", date),
+            ("", "RegExp", regexp),
             ("flash.display", "AVM1Movie", avm1movie),
             ("flash.display", "Bitmap", bitmap),
             ("flash.display", "BitmapData", bitmapdata),
@@ -964,9 +941,6 @@ fn load_playerglobal<'gc>(
     avm2_system_class_defs_playerglobal!(
         &mut *activation,
         [
-            ("", "Namespace", namespace),
-            ("", "XML", xml),
-            ("", "XMLList", xml_list),
             ("flash.display", "Bitmap", bitmap),
             ("flash.display", "BitmapData", bitmapdata),
             ("flash.display", "IGraphicsData", igraphicsdata),
@@ -987,6 +961,41 @@ fn load_playerglobal<'gc>(
             ("flash.display", "GraphicsStroke", graphicsstroke),
         ]
     );
+}
+
+/// Loads classes from our custom 'playerglobal' (which are written in ActionScript)
+/// into the environment. See 'core/src/avm2/globals/README.md' for more information
+fn load_playerglobal<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    domain: Domain<'gc>,
+) -> Result<(), Error<'gc>> {
+    activation.avm2().native_method_table = native::NATIVE_METHOD_TABLE;
+    activation.avm2().native_instance_allocator_table = native::NATIVE_INSTANCE_ALLOCATOR_TABLE;
+    activation.avm2().native_super_initializer_table = native::NATIVE_SUPER_INITIALIZER_TABLE;
+    activation.avm2().native_call_handler_table = native::NATIVE_CALL_HANDLER_TABLE;
+
+    let movie = Arc::new(
+        SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), None)
+            .expect("playerglobal.swf should be valid"),
+    );
+
+    let slice = SwfSlice::from(movie.clone());
+
+    let mut reader = slice.read_from(0);
+
+    let tag_callback = |reader: &mut SwfStream<'_>, tag_code, _tag_len| {
+        if tag_code == TagCode::DoAbc2 {
+            let do_abc = reader
+                .read_do_abc_2()
+                .expect("playerglobal.swf should be valid");
+            Avm2::load_builtin_abc(activation.context, do_abc.data, domain, movie.clone());
+        } else if tag_code != TagCode::End {
+            panic!("playerglobal should only contain `DoAbc2` tag - found tag {tag_code:?}")
+        }
+        Ok(ControlFlow::Continue)
+    };
+
+    let _ = tag_utils::decode_tags(&mut reader, tag_callback);
 
     // Domain memory must be initialized after playerglobals is loaded because it relies on ByteArray.
     domain.init_default_domain_memory(activation)?;
