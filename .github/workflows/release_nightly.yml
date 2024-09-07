@@ -108,9 +108,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: 1.80.1
+          toolchain: stable
           targets: ${{ matrix.target }}
 
       - name: Install Linux dependencies
@@ -299,9 +299,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: 1.80.1
+          toolchain: stable
 
       - name: Generate report
         run: ./stub-report/generate-report.sh
@@ -332,9 +332,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: 1.80.1
+          toolchain: stable
           targets: wasm32-unknown-unknown
 
       - name: Setup Node.js
