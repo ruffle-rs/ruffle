@@ -1,6 +1,4 @@
 package flash.net {
-    namespace AS3 = "http://adobe.com/AS3/2006/builtin";
-
     import flash.utils.escapeMultiByte;
     import flash.utils.unescapeMultiByte;
     public dynamic class URLVariables {

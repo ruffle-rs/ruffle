@@ -3,7 +3,7 @@ package {
     [Ruffle(CallHandler)]
     public final dynamic class XMLList {
 
-        public function XMLList(value:* = undefined) {
+        public function XMLList(value:* = void 0) {
             this.init(value, XML.ignoreComments, XML.ignoreProcessingInstructions, XML.ignoreWhitespace);
         }
 

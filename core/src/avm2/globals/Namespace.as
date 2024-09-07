@@ -14,7 +14,7 @@ package {
         prototype.setPropertyIsEnumerable("toString", false);
         prototype.setPropertyIsEnumerable("valueOf", false);
 
-        public function Namespace(prefix:* = undefined, uri:* = undefined) {
+        public function Namespace(prefix:* = void 0, uri:* = void 0) {
             this.init(arguments);
         }
 

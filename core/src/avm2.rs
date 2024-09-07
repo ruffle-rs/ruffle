@@ -4,7 +4,9 @@ use std::rc::Rc;
 
 use crate::avm2::class::AllocatorFn;
 use crate::avm2::error::make_error_1107;
-use crate::avm2::globals::{SystemClassDefs, SystemClasses};
+use crate::avm2::globals::{
+    init_builtin_system_classes, init_native_system_classes, SystemClassDefs, SystemClasses,
+};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::script::{Script, TranslationUnit};
@@ -597,8 +599,7 @@ impl<'gc> Avm2<'gc> {
         activation.set_outer(ScopeChain::new(domain));
 
         let num_scripts = abc.scripts.len();
-        let tunit =
-            TranslationUnit::from_abc(abc, domain, name, movie, activation.context.gc_context);
+        let tunit = TranslationUnit::from_abc(abc, domain, name, movie, activation.gc());
         tunit.load_classes(&mut activation)?;
         for i in 0..num_scripts {
             tunit.load_script(i as u32, &mut activation)?;
@@ -608,6 +609,44 @@ impl<'gc> Avm2<'gc> {
             return Ok(Some(tunit.get_script(num_scripts - 1).unwrap()));
         }
         Ok(None)
+    }
+
+    /// Load the playerglobal ABC file.
+    pub fn load_builtin_abc(
+        context: &mut UpdateContext<'gc>,
+        data: &[u8],
+        domain: Domain<'gc>,
+        movie: Arc<SwfMovie>,
+    ) {
+        let mut reader = Reader::new(data);
+        let abc = match reader.read() {
+            Ok(abc) => abc,
+            Err(_) => panic!("Builtin ABC should be valid"),
+        };
+
+        let mut activation = Activation::from_domain(context, domain);
+        // Make sure we have the correct domain for code that tries to access it
+        // using `activation.domain()`
+        activation.set_outer(ScopeChain::new(domain));
+
+        let tunit = TranslationUnit::from_abc(abc, domain, None, movie, activation.gc());
+        tunit
+            .load_classes(&mut activation)
+            .expect("Classes should load");
+
+        // The second script (script #1) is Toplevel.as, and includes important
+        // builtin classes such as Namespace, QName, and XML.
+        tunit
+            .load_script(1, &mut activation)
+            .expect("Script should load");
+        init_builtin_system_classes(&mut activation);
+
+        // The first script (script #0) is globals.as, and includes other builtin
+        // classes that are less critical for the AVM to load.
+        tunit
+            .load_script(0, &mut activation)
+            .expect("Script should load");
+        init_native_system_classes(&mut activation);
     }
 
     pub fn stage_domain(&self) -> Domain<'gc> {
