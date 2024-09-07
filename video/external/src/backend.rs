@@ -12,7 +12,7 @@ use sha2::{Digest, Sha256};
 use slotmap::SlotMap;
 use std::fs::File;
 use std::io::copy;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use swf::{VideoCodec, VideoDeblocking};
 
 enum ProxyOrStream {
@@ -102,6 +102,7 @@ impl ExternalVideoBackend {
 
     fn download_openh264(
         openh264_data: &OpenH264Data,
+        directory: &Path,
     ) -> Result<PathBuf, Box<dyn std::error::Error>> {
         // See the license at: https://www.openh264.org/BINARY_LICENSE.txt
         const URL_BASE: &str = "http://ciscobinary.openh264.org/";
@@ -112,10 +113,7 @@ impl ExternalVideoBackend {
             openh264_data.download_sha256,
         );
 
-        let current_exe = std::env::current_exe()?;
-        let directory = current_exe
-            .parent()
-            .ok_or("Could not determine Ruffle location.")?;
+        std::fs::create_dir_all(directory)?;
         let filepath = directory.join(filename);
 
         // If the binary doesn't exist in the expected location, download it.
@@ -149,7 +147,7 @@ impl ExternalVideoBackend {
         Ok(filepath)
     }
 
-    pub fn load_openh264() -> Result<OpenH264Codec, Box<dyn std::error::Error>> {
+    pub fn load_openh264(directory: &Path) -> Result<OpenH264Codec, Box<dyn std::error::Error>> {
         let openh264_data = Self::get_openh264_data()?;
 
         for filename in &openh264_data.local_filenames {
@@ -166,7 +164,7 @@ impl ExternalVideoBackend {
         }
 
         tracing::info!("Downloading OpenH264 library");
-        let filename = Self::download_openh264(&openh264_data)?;
+        let filename = Self::download_openh264(&openh264_data, directory)?;
         tracing::info!("Using OpenH264 at {:?}", filename);
         Ok(OpenH264Codec::new(&filename)?)
     }
