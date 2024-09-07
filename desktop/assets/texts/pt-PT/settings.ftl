@@ -3,7 +3,7 @@ player-settings = Opções do Leitor
 movie-parameters = Parâmetros de Filme
 custom-base-url = URL Base Personalizado
 spoof-swf-url = Disfarçar URL do SWF
-referer-url = URL de referência
+referer-url = URL de Referência
 cookie = Cookie
 proxy = Proxy
 upgrade-http = Converter HTTP em HTTPS
@@ -32,7 +32,7 @@ quality-high16x16 = Alta (16x16)
 quality-high16x16linear = Alta (16x16) Linear
 letterbox = Letterbox
 letterbox-on = Ligado
-letterbox-fullscreen = Apenas Fullscreen
+letterbox-fullscreen = Apenas Ecrã Inteiro
 letterbox-off = Desligado
 align = Alinhamento do Palco
 align-center = Centro
@@ -61,7 +61,7 @@ scale-mode-exactfit-tooltip =
     Garante que o filme preencha a janela inteira, desconsiderando a proporção de aspeto.
     
     Corresponde ao StageScaleMode.EXACT_FIT
-scale-mode-noborder = Recortar
+scale-mode-noborder = Cortar
 scale-mode-noborder-tooltip =
     Preenche a janela inteira, mantendo a proporção de aspeto, cortando o filme se necessário.
     
