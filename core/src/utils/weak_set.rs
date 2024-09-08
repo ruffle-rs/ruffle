@@ -1,5 +1,6 @@
 use std::borrow::Borrow;
 use std::cell::Cell;
+use std::default::Default;
 use std::hash::{BuildHasher, Hash};
 use std::marker::PhantomData;
 use std::ops::DerefMut;
@@ -12,19 +13,29 @@ use hashbrown::HashSet;
 /// Stale entries get regularly cleaned up in response to memory pressure:
 /// - in the tracing phase of each GC cycle;
 /// - upon insertion when the set is at capacity.
-#[derive(Default)]
 pub struct WeakSet<'gc, T: 'gc> {
     // Note that `GcWeak<T>` does not implement `Hash`, so the `RawTable`
     // API is used for lookups and insertions.
-    table: CollectCell<'gc, HashSet<GcWeak<'gc, T>>>,
+    table: CollectCell<'gc, HashSet<GcWeak<'gc, T>, ()>>,
     hasher: fnv::FnvBuildHasher,
 }
 
-impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
-    fn hash<K: Hash + ?Sized>(build_hasher: &impl BuildHasher, key: &K) -> u64 {
-        build_hasher.hash_one(key)
+impl<'gc, T: 'gc> WeakSet<'gc, T> {
+    pub fn new() -> Self {
+        Self {
+            table: Default::default(),
+            hasher: Default::default(),
+        }
     }
+}
 
+impl<'gc, T: 'gc> Default for WeakSet<'gc, T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
     /// Finds the given key in the map.
     pub fn get<Q>(&self, mc: &Mutation<'gc>, key: &Q) -> Option<Gc<'gc, T>>
     where
@@ -32,7 +43,7 @@ impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
         Q: Hash + Eq + ?Sized,
     {
         let raw = self.table.as_ref(mc).raw_table();
-        let hash = Self::hash(&self.hasher, key);
+        let hash = self.hasher.hash_one(key);
         let mut found = None;
         let _ = raw.find(hash, |(weak, _)| {
             if let Some(strong) = weak.upgrade(mc) {
@@ -46,16 +57,16 @@ impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
         found
     }
 
-    /// Finds the given key in the map, and return its and its hash.
+    /// Finds the given key in the map, and return its entry.
     /// This also cleans up stale buckets found along the way.
     /// TODO: add proper entry API?
-    pub fn entry<Q>(&mut self, mc: &Mutation<'gc>, key: &Q) -> (Option<Gc<'gc, T>>, u64)
+    pub fn entry<'a, Q>(&'a mut self, mc: &'a Mutation<'gc>, key: &Q) -> Entry<'a, 'gc, T>
     where
         T: Borrow<Q>,
         Q: Hash + Eq + ?Sized,
     {
         let raw = self.table.as_mut().raw_table_mut();
-        let hash = Self::hash(&self.hasher, key);
+        let hash = self.hasher.hash_one(key);
 
         // SAFETY: the iterator doesn't outlive the `HashSet`.
         for bucket in unsafe { raw.iter_hash(hash) } {
@@ -65,7 +76,10 @@ impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
             if let Some(strong) = weak.upgrade(mc) {
                 // The entry matches, return it.
                 if (*strong).borrow() == key {
-                    return (Some(strong), hash);
+                    return Entry::Occupied(OccupiedEntry {
+                        _table: PhantomData,
+                        value: strong,
+                    });
                 }
             } else {
                 // The entry is stale, delete it.
@@ -74,21 +88,25 @@ impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
             }
         }
 
-        (None, hash)
+        Entry::Vacant(VacantEntry {
+            table: self,
+            mc,
+            hash,
+        })
     }
 
-    /// Inserts a new key in the set.
-    /// The key must not already exist
-    /// TODO: add proper entry API?
-    pub fn insert_fresh_no_hash(&mut self, mc: &Mutation<'gc>, key: Gc<'gc, T>) -> Gc<'gc, T> {
-        let hash = Self::hash(&self.hasher, &key);
-        self.insert_fresh(mc, hash, key)
+    pub fn insert_unique_unchecked(&mut self, mc: &Mutation<'gc>, key: Gc<'gc, T>) -> Gc<'gc, T> {
+        let hash = self.hasher.hash_one(&*key);
+        self.insert_fresh(mc, hash, key);
+        key
     }
 
-    /// Inserts a new key in the set.
-    /// The key must not already exist, and `hash` must be its hash.
-    /// TODO: add proper entry API?
-    pub fn insert_fresh(&mut self, mc: &Mutation<'gc>, hash: u64, key: Gc<'gc, T>) -> Gc<'gc, T> {
+    fn insert_fresh<'a>(
+        &'a mut self,
+        mc: &'a Mutation<'gc>,
+        hash: u64,
+        key: Gc<'gc, T>,
+    ) -> OccupiedEntry<'a, 'gc, T> {
         let entry = (Gc::downgrade(key), ());
 
         let raw = self.table.as_mut().raw_table_mut();
@@ -100,7 +118,10 @@ impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
                 .expect("failed to grow table");
         }
 
-        key
+        OccupiedEntry {
+            _table: PhantomData,
+            value: key,
+        }
     }
 
     /// Prune stale entries and/or resize the table to ensure at least one extra entry can be added.
@@ -119,7 +140,7 @@ impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
             table
                 .raw_table_mut()
                 .reserve(extra, |(weak, _)| match weak.upgrade(mc) {
-                    Some(strong) => Self::hash(&self.hasher, &*strong),
+                    Some(strong) => self.hasher.hash_one(&*strong),
                     None => unreachable!("unexpected stale entry"),
                 });
         }
@@ -140,6 +161,58 @@ unsafe impl<'gc, T> Collect for WeakSet<'gc, T> {
             }
             keep
         });
+    }
+}
+
+pub enum Entry<'a, 'gc, T> {
+    Vacant(VacantEntry<'a, 'gc, T>),
+    Occupied(OccupiedEntry<'a, 'gc, T>),
+}
+
+impl<'a, 'gc, T: Hash> Entry<'a, 'gc, T> {
+    pub fn get(&self) -> Option<Gc<'gc, T>> {
+        match self {
+            Self::Vacant(_) => None,
+            Self::Occupied(e) => Some(e.get()),
+        }
+    }
+
+    /// Sets the value of this entry, if it's empty.
+    ///
+    /// The given value should have the same hash as the value initially used
+    /// to construct this [`Entry`].
+    pub fn or_insert(self, key: impl FnOnce() -> Gc<'gc, T>) -> OccupiedEntry<'a, 'gc, T> {
+        match self {
+            Self::Vacant(e) => e.insert(key()),
+            Self::Occupied(e) => e,
+        }
+    }
+}
+
+pub struct VacantEntry<'a, 'gc, T> {
+    mc: &'a Mutation<'gc>,
+    table: &'a mut WeakSet<'gc, T>,
+    hash: u64,
+}
+
+impl<'a, 'gc, T: Hash> VacantEntry<'a, 'gc, T> {
+    /// Sets the value of this entry.
+    ///
+    /// The given value should have the same hash as the value initially used
+    /// to construct this [`VacantEntry`].
+    pub fn insert(self, key: Gc<'gc, T>) -> OccupiedEntry<'a, 'gc, T> {
+        self.table.insert_fresh(self.mc, self.hash, key)
+    }
+}
+
+pub struct OccupiedEntry<'a, 'gc, T> {
+    _table: PhantomData<&'a mut WeakSet<'gc, T>>,
+    value: Gc<'gc, T>,
+}
+
+impl<'a, 'gc, T: Hash> OccupiedEntry<'a, 'gc, T> {
+    pub fn get(&self) -> Gc<'gc, T> {
+        self.value
     }
 }
 

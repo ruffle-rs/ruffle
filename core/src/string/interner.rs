@@ -1,7 +1,6 @@
 use core::fmt;
 use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
-use std::ops::Deref;
 
 use gc_arena::{Collect, Gc, Mutation};
 
@@ -67,13 +66,13 @@ static INTERNED_CHARS: [u8; INTERNED_CHAR_LEN] = {
 
 impl<'gc> AvmStringInterner<'gc> {
     pub fn new(mc: &Mutation<'gc>) -> Self {
-        let mut interned = WeakSet::default();
+        let mut interned = WeakSet::new();
 
         // We can't use `Self::intern_static` because we don't have a Self yet.
         let mut intern_from_static = |s: &'static [u8]| {
             let wstr = WStr::from_units(s);
             let repr = AvmStringRepr::from_raw_static(wstr, true);
-            interned.insert_fresh_no_hash(mc, Gc::new(mc, repr))
+            interned.insert_unique_unchecked(mc, Gc::new(mc, repr))
         };
 
         Self {
@@ -92,18 +91,20 @@ impl<'gc> AvmStringInterner<'gc> {
         S: Into<Cow<'a, WStr>>,
     {
         let s = s.into();
-        self.intern_inner(mc, s, |s| {
+        let entry = self.interned.entry(mc, &*s).or_insert(|| {
             let repr = AvmStringRepr::from_raw(s.into_owned(), true);
             Gc::new(mc, repr)
-        })
+        });
+        AvmAtom(entry.get())
     }
 
     #[must_use]
     pub fn intern_static(&mut self, mc: &Mutation<'gc>, s: &'static WStr) -> AvmAtom<'gc> {
-        self.intern_inner(mc, s, |s| {
+        let entry = self.interned.entry(mc, s).or_insert(|| {
             let repr = AvmStringRepr::from_raw_static(s, true);
             Gc::new(mc, repr)
-        })
+        });
+        AvmAtom(entry.get())
     }
 
     #[must_use]
@@ -111,26 +112,12 @@ impl<'gc> AvmStringInterner<'gc> {
         if let Some(atom) = s.as_interned() {
             atom
         } else {
-            self.intern_inner(mc, s, |s| {
+            let entry = self.interned.entry(mc, s.as_wstr()).or_insert(|| {
                 let repr = s.to_fully_owned(mc);
                 repr.mark_interned();
                 repr
-            })
-        }
-    }
-
-    // The string returned by `f` should be interned, and equivalent to `s`.
-    fn intern_inner<S, F>(&mut self, mc: &Mutation<'gc>, s: S, f: F) -> AvmAtom<'gc>
-    where
-        S: Deref<Target = WStr>,
-        F: FnOnce(S) -> Gc<'gc, AvmStringRepr<'gc>>,
-    {
-        match self.interned.entry(mc, s.deref()) {
-            (Some(atom), _) => AvmAtom(atom),
-            (None, h) => {
-                let atom = self.interned.insert_fresh(mc, h, f(s));
-                AvmAtom(atom)
-            }
+            });
+            AvmAtom(entry.get())
         }
     }
 
