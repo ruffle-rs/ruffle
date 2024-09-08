@@ -178,7 +178,6 @@ pub fn get_child_by_name<'gc>(
         if let Some(child) = dobj.child_by_name(&name, false) {
             return Ok(child.object2());
         } else {
-            tracing::warn!("Display object container has no child with name {}", name);
             return Ok(Value::Null);
         }
     }
