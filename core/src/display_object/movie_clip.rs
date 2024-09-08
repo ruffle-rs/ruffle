@@ -4238,11 +4238,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
                     .exported_name
                     .write(context.gc_context) = Some(*name);
             } else {
-                tracing::warn!(
-                    "Registering export for non-movie clip: {} (ID: {})",
-                    name,
-                    id
-                );
+                // This is fairly common, don't log anything here
             }
         } else {
             tracing::warn!(
