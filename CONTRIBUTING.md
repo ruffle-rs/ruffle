@@ -233,7 +233,7 @@ This is a free and open source SDK capable of compiling ActionScript 3 code. It 
 4. Define the `FLEX_HOME` and `PLAYERGLOBAL_HOME` environment variables to the path of the extracted SDK root, and the path of the `<sdk-root>/frameworks/libs/player` subdirectory, respectively.
 5. Edit `<sdk-root>/frameworks/flex-config.xml` and change `<target-player>27.0</target-player>` to `<target-player>32.0</target-player>`.
 
-After `mxmlc` is set up, create a file `test.as` in a text editor, per the following template:
+After `mxmlc` is set up, create a file `Test.as` (note the capitalization) in a text editor, per the following template:
 
 ```as
 package {
@@ -247,10 +247,10 @@ trace("Hello World!");
 Then compile it using:
 
 ```sh
-mxmlc -output test.swf -compiler.debug=true Test.as
+mxmlc -o test.swf -debug Test.as
 ```
 
-You may want to use Docker instead - something like `docker run -it --rm -v ${PWD}:/src jeko/airbuild mxmlc -output test.swf -compiler.debug=true Test.as` works well.
+You may want to use Docker instead - something like `docker run -it --rm -v ${PWD}:/src jeko/airbuild mxmlc -o test.swf -debug Test.as` works well.
 
 ### RABCDAsm
 
