@@ -33,8 +33,7 @@ pub fn instance_init<'gc>(
                 } else {
                     uri.coerce_to_string(activation)?
                 };
-                let namespace =
-                    Namespace::package(namespace_uri, api_version, &mut activation.borrow_gc());
+                let namespace = Namespace::package(namespace_uri, api_version, activation.context);
                 let prefix_str = prefix.coerce_to_string(activation)?;
 
                 // The order is important here to match Flash
@@ -55,7 +54,7 @@ pub fn instance_init<'gc>(
             [Value::Object(Object::QNameObject(qname))] => {
                 let ns = qname
                     .uri()
-                    .map(|uri| Namespace::package(uri, api_version, &mut activation.borrow_gc()))
+                    .map(|uri| Namespace::package(uri, api_version, activation.context))
                     .unwrap_or_else(Namespace::any);
                 if ns.as_uri().is_empty() {
                     (Some("".into()), ns)
@@ -68,7 +67,7 @@ pub fn instance_init<'gc>(
                 let ns = Namespace::package(
                     val.coerce_to_string(activation)?,
                     api_version,
-                    &mut activation.borrow_gc(),
+                    activation.context,
                 );
                 if ns.as_uri().is_empty() {
                     (Some("".into()), ns)

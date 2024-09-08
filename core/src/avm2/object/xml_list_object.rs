@@ -191,11 +191,9 @@ impl<'gc> XmlListObject<'gc> {
             if !matches!(*last_node.kind(), E4XNodeKind::ProcessingInstruction(_)) {
                 if let Some(name) = last_node.local_name() {
                     let ns = match last_node.namespace() {
-                        Some(ns) => Namespace::package(
-                            ns.uri,
-                            ApiVersion::AllVersions,
-                            &mut activation.context.borrow_gc(),
-                        ),
+                        Some(ns) => {
+                            Namespace::package(ns.uri, ApiVersion::AllVersions, activation.context)
+                        }
                         None => activation.avm2().namespaces.public_all(),
                     };
 

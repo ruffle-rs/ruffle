@@ -1,7 +1,11 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::Error;
+use crate::context::UpdateContext;
 use crate::string::{AvmAtom, AvmString};
+use crate::utils::weak_set::WeakSet;
 use crate::{avm2::script::TranslationUnit, context::GcContext};
+use gc_arena::barrier::unlock;
+use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc};
 use num_traits::FromPrimitive;
 use ruffle_wstr::WStr;
@@ -10,28 +14,62 @@ use swf::avm2::types::{Index, Namespace as AbcNamespace};
 
 use super::api_version::ApiVersion;
 
-#[derive(Clone, Copy, Collect, Debug, PartialEq)]
+#[derive(Clone, Copy, Collect, Debug)]
 #[collect(no_drop)]
 pub struct Namespace<'gc>(
     // `None` represents the wildcard namespace `Namespace::any()`.
-    Option<Gc<'gc, NamespaceData<'gc>>>,
+    Option<Gc<'gc, NamespaceData<AvmAtom<'gc>>>>,
 );
 
 /// Represents the name of a namespace.
 #[allow(clippy::enum_variant_names)]
-#[derive(Copy, Clone, Collect, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Collect, Debug, PartialEq, Eq, Hash)]
 #[collect(no_drop)]
-enum NamespaceData<'gc> {
+enum NamespaceData<N> {
     // note: this is the default "public namespace", corresponding to both
     // ABC Namespace and PackageNamespace
-    Namespace(AvmAtom<'gc>, #[collect(require_static)] ApiVersion),
-    PackageInternal(AvmAtom<'gc>),
-    Protected(AvmAtom<'gc>),
-    Explicit(AvmAtom<'gc>),
-    StaticProtected(AvmAtom<'gc>),
-    // note: private namespaces are always compared by pointer identity
-    // of the enclosing `Gc`.
-    Private(AvmAtom<'gc>),
+    Namespace(N, #[collect(require_static)] ApiVersion),
+    PackageInternal(N),
+    Protected(N),
+    Explicit(N),
+    StaticProtected(N),
+    // note: private namespaces are the only kind that do not get interned,
+    // so that each instance is considered separate.
+    Private(N),
+}
+
+type NamespaceInterner<'gc> = WeakSet<'gc, NamespaceData<AvmAtom<'gc>>>;
+
+impl<N> NamespaceData<N> {
+    fn map<M>(self, f: impl FnOnce(N) -> M) -> NamespaceData<M> {
+        match self {
+            Self::Namespace(n, v) => NamespaceData::Namespace(f(n), v),
+            Self::PackageInternal(n) => NamespaceData::PackageInternal(f(n)),
+            Self::Protected(n) => NamespaceData::Protected(f(n)),
+            Self::Explicit(n) => NamespaceData::Explicit(f(n)),
+            Self::StaticProtected(n) => NamespaceData::StaticProtected(f(n)),
+            Self::Private(n) => NamespaceData::Private(f(n)),
+        }
+    }
+}
+
+// TODO(moulins): allow passing an AvmAtom or a non-static `&WStr` directly
+impl<'gc, N: Into<AvmString<'gc>>> NamespaceData<N> {
+    fn intern(
+        self,
+        interner: &mut NamespaceInterner<'gc>,
+        context: &mut GcContext<'_, 'gc>,
+    ) -> Namespace<'gc> {
+        debug_assert!(
+            !matches!(self, NamespaceData::Private(_)),
+            "private namespaces shouldn't be interned"
+        );
+
+        let mc = context.gc();
+        let raw = self.map(|name| context.interner.intern(mc, name.into()));
+        let entry = interner.entry(mc, &raw).or_insert(|| Gc::new(mc, raw));
+        Namespace(Some(entry.get()))
+    }
 }
 
 fn strip_version_mark(url: &WStr, is_playerglobals: bool) -> Option<(&WStr, ApiVersion)> {
@@ -114,7 +152,7 @@ impl<'gc> Namespace<'gc> {
         let mut namespace_name =
             translation_unit.pool_string(index.0, &mut activation.borrow_gc())?;
 
-        // Private namespaces don't get any of the namespace version checks
+        // Private namespaces don't get any of the namespace version checks, and shouldn't be interned.
         if let AbcNamespace::Private(_) = abc_namespace {
             return Ok(Self(Some(Gc::new(
                 mc,
@@ -217,7 +255,8 @@ impl<'gc> Namespace<'gc> {
             AbcNamespace::StaticProtected(_) => NamespaceData::StaticProtected(namespace_name),
             AbcNamespace::Private(_) => unreachable!(),
         };
-        Ok(Self(Some(Gc::new(mc, ns))))
+
+        Ok(Self::intern(ns, activation.context))
     }
 
     pub fn any() -> Self {
@@ -228,29 +267,19 @@ impl<'gc> Namespace<'gc> {
     pub fn package(
         package_name: impl Into<AvmString<'gc>>,
         api_version: ApiVersion,
-        context: &mut GcContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
     ) -> Self {
-        let atom = context
-            .interner
-            .intern(context.gc_context, package_name.into());
-        Self(Some(Gc::new(
-            context.gc_context,
-            NamespaceData::Namespace(atom, api_version),
-        )))
+        Self::intern(NamespaceData::Namespace(package_name, api_version), context)
     }
 
     // TODO(moulins): allow passing an AvmAtom or a non-static `&WStr` directly
-    pub fn internal(
-        package_name: impl Into<AvmString<'gc>>,
-        context: &mut GcContext<'_, 'gc>,
-    ) -> Self {
-        let atom = context
-            .interner
-            .intern(context.gc_context, package_name.into());
-        Self(Some(Gc::new(
-            context.gc_context,
-            NamespaceData::PackageInternal(atom),
-        )))
+    fn intern(
+        raw: NamespaceData<impl Into<AvmString<'gc>>>,
+        context: &mut UpdateContext<'gc>,
+    ) -> Namespace<'gc> {
+        let namespaces = Gc::write(context.gc(), context.avm2.namespaces);
+        let interner = unlock!(namespaces, CommonNamespaces, interner);
+        raw.intern(&mut interner.borrow_mut(), &mut context.borrow_gc())
     }
 
     pub fn is_public(&self) -> bool {
@@ -298,13 +327,9 @@ impl<'gc> Namespace<'gc> {
     /// Namespace does not implement `PartialEq`, so that each caller is required
     /// to explicitly choose either `exact_version_match` or `matches_ns`.
     pub fn exact_version_match(&self, other: Self) -> bool {
-        if self.0.map(Gc::as_ptr) == other.0.map(Gc::as_ptr) {
-            true
-        } else if self.is_private() || other.is_private() {
-            false
-        } else {
-            self.0 == other.0
-        }
+        // Namespaces are interned (unless they are private), so comparing Gc pointers
+        // is enough to determine equality.
+        self.0.map(Gc::as_ptr) == other.0.map(Gc::as_ptr)
     }
 
     /// Compares this namespace to another, considering them equal if this namespace's version
@@ -358,37 +383,54 @@ pub struct CommonNamespaces<'gc> {
     pub(super) flash_net_internal: Namespace<'gc>,
 
     pub(super) __ruffle__: Namespace<'gc>,
+
+    interner: RefLock<NamespaceInterner<'gc>>,
 }
 
 impl<'gc> CommonNamespaces<'gc> {
     const PUBLIC_LEN: usize = ApiVersion::VM_INTERNAL as usize + 1;
 
     pub fn new(context: &mut GcContext<'_, 'gc>) -> Self {
+        let mut interner = WeakSet::new();
+        let mut intern = |raw: NamespaceData<&'static [u8]>| {
+            let raw = raw.map(WStr::from_units);
+            raw.intern(&mut interner, context)
+        };
+
         Self {
             public_namespaces: std::array::from_fn(|val| {
-                Namespace::package("", ApiVersion::from_usize(val).unwrap(), context)
+                let version = ApiVersion::from_usize(val).unwrap();
+                intern(NamespaceData::Namespace(b"", version))
             }),
-            internal: Namespace::internal("", context),
-            as3: Namespace::package(
-                "http://adobe.com/AS3/2006/builtin",
+            internal: intern(NamespaceData::PackageInternal(b"")),
+            as3: intern(NamespaceData::Namespace(
+                b"http://adobe.com/AS3/2006/builtin",
                 ApiVersion::AllVersions,
-                context,
-            ),
-            vector_public: Namespace::package("__AS3__.vec", ApiVersion::AllVersions, context),
-            vector_internal: Namespace::internal("__AS3__.vec", context),
-            proxy: Namespace::package(
-                "http://www.adobe.com/2006/actionscript/flash/proxy",
+            )),
+            vector_public: intern(NamespaceData::Namespace(
+                b"__AS3__.vec",
                 ApiVersion::AllVersions,
-                context,
-            ),
-            flash_display_internal: Namespace::internal("flash.display", context),
-            flash_utils_internal: Namespace::internal("flash.utils", context),
-            flash_geom_internal: Namespace::internal("flash.geom", context),
-            flash_events_internal: Namespace::internal("flash.events", context),
-            flash_text_engine_internal: Namespace::internal("flash.text.engine", context),
-            flash_net_internal: Namespace::internal("flash.net", context),
+            )),
+            vector_internal: intern(NamespaceData::PackageInternal(b"__AS3__.vec")),
+            proxy: intern(NamespaceData::Namespace(
+                b"http://www.adobe.com/2006/actionscript/flash/proxy",
+                ApiVersion::AllVersions,
+            )),
+            flash_display_internal: intern(NamespaceData::PackageInternal(b"flash.display")),
+            flash_utils_internal: intern(NamespaceData::PackageInternal(b"flash.utils")),
+            flash_geom_internal: intern(NamespaceData::PackageInternal(b"flash.geom")),
+            flash_events_internal: intern(NamespaceData::PackageInternal(b"flash.events")),
+            flash_text_engine_internal: intern(NamespaceData::PackageInternal(
+                b"flash.text.engine",
+            )),
+            flash_net_internal: intern(NamespaceData::PackageInternal(b"flash.net")),
 
-            __ruffle__: Namespace::package("__ruffle__", ApiVersion::AllVersions, context),
+            __ruffle__: intern(NamespaceData::Namespace(
+                b"__ruffle__",
+                ApiVersion::AllVersions,
+            )),
+
+            interner: RefLock::new(interner),
         }
     }
 
