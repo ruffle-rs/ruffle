@@ -278,7 +278,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // Run verifier for bytecode methods
         if let Method::Bytecode(method) = method {
-            if method.verified_info.read().is_none() {
+            if method.verified_info.borrow().is_none() {
                 BytecodeMethod::verify(method, &mut created_activation)?;
             }
         }
@@ -449,11 +449,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.max_scope_size = (body.max_scope_depth - body.init_scope_depth) as usize;
 
         // Everything is now setup for the verifier to run
-        if method.verified_info.read().is_none() {
+        if method.verified_info.borrow().is_none() {
             BytecodeMethod::verify(method, self)?;
         }
 
-        let verified_info = method.verified_info.read();
+        let verified_info = method.verified_info.borrow();
         let signature = &verified_info.as_ref().unwrap().param_config;
 
         if user_arguments.len() > signature.len() && !has_rest_or_args {
@@ -753,7 +753,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         // The method must be verified at this point
 
-        let verified_info = method.verified_info.read();
+        let verified_info = method.verified_info.borrow();
         let verified_code = verified_info.as_ref().unwrap().parsed_code.as_slice();
 
         self.ip = 0;
@@ -784,7 +784,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Error::RustError(_) => return Err(error),
         };
 
-        let verified_info = method.verified_info.read();
+        let verified_info = method.verified_info.borrow();
         let exception_list = &verified_info.as_ref().unwrap().exceptions;
 
         // Use `coerce_to_object` so that we handle primitives correctly.
@@ -1596,7 +1596,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<Exception>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let verified_info = method.verified_info.read();
+        let verified_info = method.verified_info.borrow();
         let exception_list = &verified_info.as_ref().unwrap().exceptions;
 
         let ex = &exception_list[index.0 as usize];
