@@ -25,7 +25,7 @@
         "archiver": "^7.0.1",
         "json5": "^2.2.3",
         "ts-loader": "^9.5.1",
-        "typescript": "^5.5.4",
+        "typescript": "^5.6.2",
         "webpack-cli": "^5.1.4",
         "axios": "^1.7.7",
         "form-data": "^4.0.0",
