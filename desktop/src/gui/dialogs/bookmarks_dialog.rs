@@ -1,12 +1,13 @@
-use crate::gui::text;
 use crate::gui::widgets::PathOrUrlField;
+use crate::gui::{text, FilePicker};
 use crate::preferences::GlobalPreferences;
+use crate::{custom_event::RuffleEvent, player::LaunchOptions};
 use egui::{Align2, Button, Grid, Label, Layout, Sense, Ui, Widget, Window};
 use egui_extras::{Column, TableBuilder};
 use ruffle_frontend_utils::bookmarks::Bookmark;
-use std::sync::Weak;
 use unic_langid::LanguageIdentifier;
 use url::Url;
+use winit::event_loop::EventLoopProxy;
 
 pub struct BookmarkAddDialog {
     preferences: GlobalPreferences,
@@ -18,7 +19,7 @@ impl BookmarkAddDialog {
     pub fn new(
         preferences: GlobalPreferences,
         initial_url: Option<Url>,
-        window: Weak<winit::window::Window>,
+        picker: FilePicker,
     ) -> Self {
         Self {
             preferences,
@@ -27,7 +28,7 @@ impl BookmarkAddDialog {
                 .map(|x| ruffle_frontend_utils::url_to_readable_name(x).into_owned())
                 .unwrap_or_default(),
             // TODO: hint.
-            url: PathOrUrlField::new(initial_url, "", window),
+            url: PathOrUrlField::new(initial_url, "", picker),
         }
     }
 
@@ -98,15 +99,21 @@ struct SelectedBookmark {
 }
 
 pub struct BookmarksDialog {
-    window: Weak<winit::window::Window>,
+    event_loop: EventLoopProxy<RuffleEvent>,
+    picker: FilePicker,
     preferences: GlobalPreferences,
     selected_bookmark: Option<SelectedBookmark>,
 }
 
 impl BookmarksDialog {
-    pub fn new(preferences: GlobalPreferences, window: Weak<winit::window::Window>) -> Self {
+    pub fn new(
+        preferences: GlobalPreferences,
+        picker: FilePicker,
+        event_loop: EventLoopProxy<RuffleEvent>,
+    ) -> Self {
         Self {
-            window,
+            picker,
+            event_loop,
             preferences,
             selected_bookmark: None,
         }
@@ -114,7 +121,7 @@ impl BookmarksDialog {
 
     pub fn show(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) -> bool {
         let mut keep_open = true;
-        let should_close = false;
+        let mut should_close = false;
 
         Window::new(text(locale, "bookmarks-dialog"))
             .open(&mut keep_open)
@@ -129,7 +136,7 @@ impl BookmarksDialog {
                     .min_height(100.0)
                     .show_inside(ui, |ui| {
                         if self.preferences.have_bookmarks() {
-                            self.show_bookmark_table(locale, ui);
+                            should_close = self.show_bookmark_table(locale, ui);
                         } else {
                             ui.centered_and_justified(|ui| {
                                 ui.label(text(locale, "bookmarks-dialog-no-bookmarks"));
@@ -143,7 +150,7 @@ impl BookmarksDialog {
         keep_open && !should_close
     }
 
-    fn show_bookmark_table(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
+    fn show_bookmark_table(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) -> bool {
         let text_height = egui::TextStyle::Body
             .resolve(ui.style())
             .size
@@ -151,6 +158,7 @@ impl BookmarksDialog {
 
         enum BookmarkAction {
             Remove(usize),
+            Start(Url),
         }
 
         let mut action = None;
@@ -198,6 +206,10 @@ impl BookmarksDialog {
 
                             let response = row.response();
                             response.context_menu(|ui| {
+                                if ui.button(text(locale, "start")).clicked() {
+                                    ui.close_menu();
+                                    action = Some(BookmarkAction::Start(bookmark.url.clone()))
+                                }
                                 if ui.button(text(locale, "remove")).clicked() {
                                     ui.close_menu();
                                     action = Some(BookmarkAction::Remove(index));
@@ -211,25 +223,37 @@ impl BookmarksDialog {
                                     url: PathOrUrlField::new(
                                         Some(bookmark.url.clone()),
                                         "",
-                                        self.window.clone(),
+                                        self.picker.clone(),
                                     ),
                                 });
+                            }
+                            if response.double_clicked() {
+                                action = Some(BookmarkAction::Start(bookmark.url.clone()));
                             }
                         });
                     }
                 });
             });
 
-        if let Some(action) = action {
-            if let Err(e) = self.preferences.write_bookmarks(|writer| match action {
-                BookmarkAction::Remove(index) => {
+        match action {
+            Some(BookmarkAction::Remove(index)) => {
+                if let Err(e) = self.preferences.write_bookmarks(|writer| {
                     // TODO: Recalculate the index for the selected bookmark, if it survives, otherwise just set to None.
                     self.selected_bookmark = None;
                     writer.remove(index);
+                }) {
+                    tracing::warn!("Couldn't update bookmarks: {e}");
                 }
-            }) {
-                tracing::warn!("Couldn't update bookmarks: {e}");
+                false
             }
+            Some(BookmarkAction::Start(url)) => {
+                let _ = self.event_loop.send_event(RuffleEvent::Open(
+                    url,
+                    Box::new(LaunchOptions::from(&self.preferences)),
+                ));
+                true
+            }
+            None => false,
         }
     }
 

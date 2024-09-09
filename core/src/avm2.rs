@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use crate::avm2::class::AllocatorFn;
 use crate::avm2::error::make_error_1107;
-use crate::avm2::globals::SystemClasses;
+use crate::avm2::globals::{SystemClassDefs, SystemClasses};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::script::{Script, TranslationUnit};
@@ -126,6 +126,9 @@ pub struct Avm2<'gc> {
     /// System classes.
     system_classes: Option<SystemClasses<'gc>>,
 
+    /// System class definitions.
+    system_class_defs: Option<SystemClassDefs<'gc>>,
+
     /// Top-level global object. It contains most top-level types (Object, Class) and functions.
     /// However, it's not strictly defined which items end up there.
     toplevel_global_object: Option<Object<'gc>>,
@@ -157,7 +160,7 @@ pub struct Avm2<'gc> {
     native_instance_allocator_table: &'static [Option<(&'static str, AllocatorFn)>],
 
     #[collect(require_static)]
-    native_instance_init_table: &'static [Option<(&'static str, NativeMethodImpl)>],
+    native_super_initializer_table: &'static [Option<(&'static str, NativeMethodImpl)>],
 
     #[collect(require_static)]
     native_call_handler_table: &'static [Option<(&'static str, NativeMethodImpl)>],
@@ -221,6 +224,7 @@ impl<'gc> Avm2<'gc> {
             playerglobals_domain,
             stage_domain,
             system_classes: None,
+            system_class_defs: None,
             toplevel_global_object: None,
 
             public_namespace_base_version: Namespace::package("", ApiVersion::AllVersions, context),
@@ -253,7 +257,7 @@ impl<'gc> Avm2<'gc> {
 
             native_method_table: Default::default(),
             native_instance_allocator_table: Default::default(),
-            native_instance_init_table: Default::default(),
+            native_super_initializer_table: Default::default(),
             native_call_handler_table: Default::default(),
             broadcast_list: Default::default(),
 
@@ -287,6 +291,13 @@ impl<'gc> Avm2<'gc> {
     /// This function panics if the interpreter has not yet been initialized.
     pub fn classes(&self) -> &SystemClasses<'gc> {
         self.system_classes.as_ref().unwrap()
+    }
+
+    /// Return the current set of system class definitions.
+    ///
+    /// This function panics if the interpreter has not yet been initialized.
+    pub fn class_defs(&self) -> &SystemClassDefs<'gc> {
+        self.system_class_defs.as_ref().unwrap()
     }
 
     pub fn toplevel_global_object(&self) -> Option<Object<'gc>> {

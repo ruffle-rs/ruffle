@@ -24,7 +24,7 @@ pub fn q_name_allocator<'gc>(
         activation.context.gc_context,
         QNameObjectData {
             base,
-            name: RefLock::new(Multiname::any(activation.context.gc_context)),
+            name: RefLock::new(Multiname::any()),
         },
     ))
     .into())
@@ -79,7 +79,6 @@ impl<'gc> QNameObject<'gc> {
             },
         ))
         .into();
-        this.install_instance_slots(activation.context.gc_context);
 
         Ok(this)
     }

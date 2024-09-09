@@ -1,3 +1,6 @@
+use crate::custom_event::RuffleEvent;
+use crate::gui::dialogs::message_dialog::MessageDialogConfiguration;
+use crate::gui::{DialogDescriptor, LocalizableText};
 use crate::preferences::GlobalPreferences;
 use anyhow::Error;
 use chrono::{DateTime, Utc};
@@ -15,6 +18,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 use tracing::error;
 use url::Url;
+use winit::event_loop::EventLoopProxy;
 use winit::raw_window_handle::HasDisplayHandle;
 use winit::window::{Fullscreen, Window};
 
@@ -114,6 +118,7 @@ impl FileDialogResult for DesktopFileDialogResult {
 
 pub struct DesktopUiBackend {
     window: Arc<Window>,
+    event_loop: EventLoopProxy<RuffleEvent>,
     cursor_visible: bool,
     clipboard: Clipboard,
     preferences: GlobalPreferences,
@@ -127,6 +132,7 @@ pub struct DesktopUiBackend {
 impl DesktopUiBackend {
     pub fn new(
         window: Arc<Window>,
+        event_loop: EventLoopProxy<RuffleEvent>,
         open_url_mode: OpenURLMode,
         font_database: Rc<fontdb::Database>,
         preferences: GlobalPreferences,
@@ -142,6 +148,7 @@ impl DesktopUiBackend {
         );
         Ok(Self {
             window,
+            event_loop,
             cursor_visible: true,
             clipboard,
             preferences,
@@ -165,8 +172,6 @@ impl DesktopUiBackend {
         }
     }
 }
-
-const DOWNLOAD_FAILED_MESSAGE: &str = "Ruffle failed to open or download this file.";
 
 impl UiBackend for DesktopUiBackend {
     fn mouse_visible(&self) -> bool {
@@ -199,21 +204,27 @@ impl UiBackend for DesktopUiBackend {
     }
 
     fn display_root_movie_download_failed_message(&self, _invalid_swf: bool) {
-        let dialog = MessageDialog::new()
-            .set_level(MessageLevel::Warning)
-            .set_title("Ruffle - Load failed")
-            .set_description(DOWNLOAD_FAILED_MESSAGE)
-            .set_buttons(MessageButtons::Ok);
-        dialog.show();
+        let _ = self
+            .event_loop
+            .send_event(RuffleEvent::OpenDialog(DialogDescriptor::ShowMessage(
+                MessageDialogConfiguration::new(
+                    LocalizableText::LocalizedText("message-dialog-root-movie-load-error-title"),
+                    LocalizableText::LocalizedText(
+                        "message-dialog-root-movie-load-error-description",
+                    ),
+                ),
+            )));
     }
 
     fn message(&self, message: &str) {
-        let dialog = MessageDialog::new()
-            .set_level(MessageLevel::Info)
-            .set_title("Ruffle")
-            .set_description(message)
-            .set_buttons(MessageButtons::Ok);
-        dialog.show();
+        let _ = self
+            .event_loop
+            .send_event(RuffleEvent::OpenDialog(DialogDescriptor::ShowMessage(
+                MessageDialogConfiguration::new(
+                    LocalizableText::NonLocalizedText("Ruffle".into()),
+                    LocalizableText::NonLocalizedText(message.to_string().into()),
+                ),
+            )));
     }
 
     fn display_unsupported_video(&self, url: Url) {

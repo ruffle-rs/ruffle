@@ -1,6 +1,6 @@
 //! Custom event type for desktop ruffle
 
-use crate::player::LaunchOptions;
+use crate::{gui::DialogDescriptor, player::LaunchOptions};
 
 /// User-defined events.
 pub enum RuffleEvent {
@@ -13,11 +13,14 @@ pub enum RuffleEvent {
     /// The user requested to pick and then open a file.
     BrowseAndOpen(Box<LaunchOptions>),
 
-    /// The user requested to open a URL.
-    OpenURL(url::Url, Box<LaunchOptions>),
+    /// The user requested to open a movie.
+    Open(url::Url, Box<LaunchOptions>),
 
     /// The user requested to close the current SWF.
     CloseFile,
+
+    /// The user requested to enter full screen.
+    EnterFullScreen,
 
     /// The user requested to exit full screen.
     ExitFullScreen,
@@ -27,4 +30,7 @@ pub enum RuffleEvent {
 
     /// The user selected an item in the right-click context menu.
     ContextMenuItemClicked(usize),
+
+    /// The movie wants to open a dialog.
+    OpenDialog(DialogDescriptor),
 }

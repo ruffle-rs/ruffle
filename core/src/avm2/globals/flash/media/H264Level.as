@@ -6,6 +6,7 @@
 package flash.media
 {
 
+    [API("674")]
     public final class H264Level
     {
         // Constant for H.264 level 1.

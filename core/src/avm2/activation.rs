@@ -567,7 +567,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .bound_superclass_object
             .expect("Superclass object is required to run super_init");
 
-        bound_superclass_object.call_native_init(receiver.into(), args, self)
+        bound_superclass_object.call_super_init(receiver.into(), args, self)
     }
 
     /// Retrieve a local register.
@@ -1514,6 +1514,18 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         // main path for dynamic names
+        if multiname.has_lazy_name() {
+            let name_value = self.context.avm2.peek(0);
+            if matches!(name_value, Value::Object(Object::XmlListObject(_))) {
+                // ECMA-357 11.3.1 The delete Operator
+                // If the type of the operand is XMLList, then a TypeError exception is thrown.
+                return Err(Error::AvmError(type_error(
+                    self,
+                    "Error #1119: Delete operator is not supported with operand of type XMLList.",
+                    1119,
+                )?));
+            }
+        }
         let multiname = multiname.fill_with_runtime_params(self)?;
         let object = self.pop_stack();
         let object = object.coerce_to_object_or_typeerror(self, Some(&multiname))?;
@@ -1742,7 +1754,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_get_slot(&mut self, index: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
-        let value = object.get_slot(index)?;
+        let value = object.get_slot(index);
 
         self.push_stack(value);
 
@@ -1762,7 +1774,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value = self.pop_stack();
         let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
 
-        object.set_slot_no_coerce(index, value, self.context.gc_context)?;
+        object.set_slot_no_coerce(index, value, self.context.gc_context);
 
         Ok(FrameControl::Continue)
     }
@@ -1771,7 +1783,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value = self
             .global_scope()
             .map(|global| global.get_slot(index))
-            .transpose()?
             .unwrap_or(Value::Undefined);
 
         self.push_stack(value);
@@ -2015,8 +2026,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_check_filter(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let xml = self.avm2().classes().xml.inner_class_definition();
-        let xml_list = self.avm2().classes().xml_list.inner_class_definition();
+        let xml = self.avm2().class_defs().xml;
+        let xml_list = self.avm2().class_defs().xml_list;
         let value = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
 
         if value.is_of_type(xml) || value.is_of_type(xml_list) {
@@ -2737,11 +2748,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Value::Bool(_) => "boolean",
             Value::Number(_) | Value::Integer(_) => "number",
             Value::Object(o) => {
-                let classes = self.avm2().classes();
+                let classes = self.avm2().class_defs();
 
                 match o {
                     Object::FunctionObject(_) => {
-                        if o.instance_class() == classes.function.inner_class_definition() {
+                        if o.instance_class() == classes.function {
                             "function"
                         } else {
                             // Subclasses always have a typeof = "object"
@@ -2749,8 +2760,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         }
                     }
                     Object::XmlObject(_) | Object::XmlListObject(_) => {
-                        if o.instance_class() == classes.xml_list.inner_class_definition()
-                            || o.instance_class() == classes.xml.inner_class_definition()
+                        if o.instance_class() == classes.xml_list
+                            || o.instance_class() == classes.xml
                         {
                             "xml"
                         } else {

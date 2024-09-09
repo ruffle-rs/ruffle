@@ -5,7 +5,7 @@ package flash.display {
     import flash.geom.Rectangle;
     import flash.ui.ContextMenu;
 
-    [Ruffle(NativeInstanceInit)]
+    [Ruffle(SuperInitializer)]
     public class InteractiveObject extends DisplayObject {
         private var _accessibilityImpl:AccessibilityImplementation = null;
         private var _needsSoftKeyboard:Boolean = false;
@@ -26,17 +26,21 @@ package flash.display {
         public native function get mouseEnabled():Boolean;
         public native function set mouseEnabled(value:Boolean):void;
 
+        [API("670")]
         public function get needsSoftKeyboard():Boolean {
             return this._needsSoftKeyboard;
         }
+        [API("670")]
         public function set needsSoftKeyboard(value:Boolean):void {
             stub_setter("flash.display.InteractiveObject", "needsSoftKeyboard");
             this._needsSoftKeyboard = value;
         }
 
+        [API("670")]
         public function get softKeyboardInputAreaOfInterest():Rectangle {
             return this._softKeyboardInputAreaOfInterest;
         }
+        [API("670")]
         public function set softKeyboardInputAreaOfInterest(value:Rectangle):void {
             stub_setter("flash.display.InteractiveObject", "softKeyboardInputAreaOfInterest");
             this._softKeyboardInputAreaOfInterest = value;

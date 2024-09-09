@@ -6,10 +6,11 @@ use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::globals::global_scope;
 use crate::avm2::method::{BytecodeMethod, Method};
-use crate::avm2::object::{ClassObject, Object, TObject};
+use crate::avm2::object::{Object, ScriptObject, TObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::Value;
+use crate::avm2::vtable::VTable;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::{Avm2, Error};
@@ -18,7 +19,6 @@ use crate::string::{AvmAtom, AvmString};
 use crate::tag_utils::SwfMovie;
 use crate::PlayerRuntime;
 use gc_arena::{Collect, Gc, GcCell, Mutation};
-use std::cell::Ref;
 use std::fmt::Debug;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -254,28 +254,7 @@ impl<'gc> TranslationUnit<'gc> {
 
         drop(read);
 
-        let object_class = activation.avm2().classes().object;
-        let class_classdef = activation.avm2().classes().class.inner_class_definition();
-
-        let global_classdef = global_scope::create_class(
-            activation,
-            object_class.inner_class_definition(),
-            class_classdef,
-        );
-
-        let global_class =
-            ClassObject::from_class(activation, global_classdef, Some(object_class))?;
-
-        let global_obj = global_class.construct(activation, &[])?;
-
-        let script = Script::from_abc_index(
-            self,
-            script_index,
-            global_obj,
-            global_class,
-            domain,
-            activation,
-        )?;
+        let script = Script::from_abc_index(self, script_index, domain, activation)?;
         self.0.write(activation.context.gc_context).scripts[script_index as usize] = Some(script);
 
         script.load_traits(self, script_index, activation)?;
@@ -414,7 +393,7 @@ impl<'gc> TranslationUnit<'gc> {
     ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
         if multiname_index.0 == 0 {
             let mc = context.gc_context;
-            Ok(Gc::new(mc, Multiname::any(mc)))
+            Ok(Gc::new(mc, Multiname::any()))
         } else {
             self.pool_multiname_static(multiname_index, context)
         }
@@ -430,22 +409,13 @@ pub struct Script<'gc>(pub GcCell<'gc, ScriptData<'gc>>);
 #[collect(no_drop)]
 pub struct ScriptData<'gc> {
     /// The global object for the script.
-    globals: Object<'gc>,
-
-    /// The class of this script's global object.
-    global_class: Option<Class<'gc>>,
-
-    /// The ClassObject of this script's global object.
-    global_class_obj: Option<ClassObject<'gc>>,
+    globals: Option<Object<'gc>>,
 
     /// The domain associated with this script.
     domain: Domain<'gc>,
 
     /// The initializer method to run for the script.
     init: Method<'gc>,
-
-    /// Traits that this script uses.
-    traits: Vec<Trait<'gc>>,
 
     /// Whether or not we loaded our traits.
     traits_loaded: bool,
@@ -474,16 +444,13 @@ impl<'gc> Script<'gc> {
         Self(GcCell::new(
             mc,
             ScriptData {
-                globals,
-                global_class: None,
-                global_class_obj: None,
+                globals: Some(globals),
                 domain,
                 init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
                     "<Built-in script initializer>",
                     mc,
                 ),
-                traits: Vec::new(),
                 traits_loaded: true,
                 initialized: false,
                 translation_unit: None,
@@ -504,8 +471,6 @@ impl<'gc> Script<'gc> {
     pub fn from_abc_index(
         unit: TranslationUnit<'gc>,
         script_index: u32,
-        globals: Object<'gc>,
-        global_class_obj: ClassObject<'gc>,
         domain: Domain<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
@@ -521,12 +486,9 @@ impl<'gc> Script<'gc> {
         Ok(Self(GcCell::new(
             activation.context.gc_context,
             ScriptData {
-                globals,
-                global_class: Some(global_class_obj.inner_class_definition()),
-                global_class_obj: Some(global_class_obj),
+                globals: None,
                 domain,
                 init,
-                traits: Vec::new(),
                 traits_loaded: false,
                 initialized: false,
                 translation_unit: Some(unit),
@@ -547,7 +509,9 @@ impl<'gc> Script<'gc> {
         script_index: u32,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mut write = self.0.write(activation.context.gc_context);
+        let mc = activation.gc();
+
+        let mut write = self.0.write(mc);
 
         if write.traits_loaded {
             return Ok(());
@@ -561,30 +525,47 @@ impl<'gc> Script<'gc> {
             .get(script_index as usize)
             .ok_or_else(|| "LoadError: Script index not valid".into());
         let script = script?;
+        let mut domain = write.domain;
+
+        let mut traits = Vec::new();
 
         for abc_trait in script.traits.iter() {
             let newtrait = Trait::from_abc_trait(unit, abc_trait, activation)?;
-            write
-                .domain
-                .export_definition(newtrait.name(), self, activation.context.gc_context);
+            domain.export_definition(newtrait.name(), self, mc);
             if let TraitKind::Class { class, .. } = newtrait.kind() {
-                write
-                    .domain
-                    .export_class(newtrait.name(), *class, activation.context.gc_context);
+                domain.export_class(newtrait.name(), *class, mc);
             }
 
-            write.traits.push(newtrait.clone());
-            write
-                .global_class
-                .expect("Global class should be initialized")
-                .define_instance_trait(activation.context.gc_context, newtrait);
+            traits.push(newtrait);
         }
 
         drop(write);
 
-        self.global_class()
-            .mark_traits_loaded(activation.context.gc_context);
-        self.global_class().init_vtable(activation.context)?;
+        // Now that we have the traits, create the global class for this script
+        // and use it to initialize a vtable and global object.
+
+        let global_class = global_scope::create_class(activation, traits);
+
+        let scope = ScopeChain::new(domain);
+        let object_class = activation.avm2().classes().object;
+
+        let global_obj_vtable = VTable::empty(mc);
+        global_obj_vtable.init_vtable(
+            global_class,
+            Some(object_class),
+            Some(scope),
+            Some(object_class.instance_vtable()),
+            mc,
+        );
+
+        let global_object = ScriptObject::custom_object(
+            mc,
+            global_class,
+            object_class.proto(), // Just use Object's prototype
+            global_obj_vtable,
+        );
+
+        self.0.write(mc).globals = Some(global_object);
 
         Ok(())
     }
@@ -592,7 +573,9 @@ impl<'gc> Script<'gc> {
     /// Return the entrypoint for the script and the scope it should run in.
     pub fn init(self) -> (Method<'gc>, Object<'gc>, Domain<'gc>) {
         let read = self.0.read();
-        (read.init, read.globals, read.domain)
+        let globals = read.globals.expect("Global object should be initialized");
+
+        (read.init, globals, read.domain)
     }
 
     pub fn domain(self) -> Domain<'gc> {
@@ -610,16 +593,9 @@ impl<'gc> Script<'gc> {
     pub fn global_class(self) -> Class<'gc> {
         self.0
             .read()
-            .global_class
-            .expect("Global class should be initialized if it is accessed")
-    }
-
-    pub fn set_global_class(self, mc: &Mutation<'gc>, global_class: Class<'gc>) {
-        self.0.write(mc).global_class = Some(global_class);
-    }
-
-    pub fn set_global_class_obj(self, mc: &Mutation<'gc>, global_class_obj: ClassObject<'gc>) {
-        self.0.write(mc).global_class_obj = Some(global_class_obj);
+            .globals
+            .expect("Global object should be initialized")
+            .instance_class()
     }
 
     /// Return the global scope for the script.
@@ -629,46 +605,16 @@ impl<'gc> Script<'gc> {
     pub fn globals(self, context: &mut UpdateContext<'gc>) -> Result<Object<'gc>, Error<'gc>> {
         let mut write = self.0.write(context.gc_context);
 
+        let globals = write.globals.expect("Global object should be initialized");
+
         if !write.initialized {
             write.initialized = true;
-
-            let globals = write.globals;
-            let domain = write.domain;
-
             drop(write);
 
-            let scope = ScopeChain::new(domain);
-
-            globals.vtable().init_vtable(
-                globals.instance_class(),
-                Some(context.avm2.classes().object),
-                &self.traits()?,
-                Some(scope),
-                None,
-                context.gc_context,
-            );
-            globals.install_instance_slots(context.gc_context);
-
             Avm2::run_script_initializer(self, context)?;
-
-            Ok(globals)
-        } else {
-            Ok(write.globals)
-        }
-    }
-
-    /// Return traits for this script.
-    ///
-    /// This function will return an error if it is incorrectly called before
-    /// traits are loaded.
-    pub fn traits<'a>(&'a self) -> Result<Ref<'a, [Trait<'gc>]>, Error<'gc>> {
-        let read = self.0.read();
-
-        if !read.traits_loaded {
-            return Err("LoadError: Script traits accessed before they were loaded!".into());
         }
 
-        Ok(Ref::map(read, |read| &read.traits[..]))
+        Ok(globals)
     }
 }
 

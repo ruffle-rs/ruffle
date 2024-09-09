@@ -13,12 +13,12 @@ workspace = true
 [dependencies]
 linkme = { version = "0.3", optional = true }
 byteorder = "1.5"
-bitstream-io = "2.5.0"
+bitstream-io = "2.5.3"
 flate2 = { workspace = true }
 fnv = "1.0.7"
 gc-arena = { package = "ruffle_gc_arena", path = "../ruffle_gc_arena" }
 slotmap = { workspace = true }
-indexmap = "2.4.0"
+indexmap = "2.5.0"
 tracing = { workspace = true }
 ruffle_render = { path = "../render", features = ["tessellator"] }
 ruffle_video = { path = "../video" }
@@ -43,7 +43,7 @@ serde = { workspace = true }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser", rev = "754b1184037aa9952a907107284fb73897e26adc", optional = true }
 regress = "0.10"
-flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "f9e3de59a86df1c954fecba6b4b752df61cad73a" }
+flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "98679aa0cdcad5fecc5c7321b2eac35b69dbcd5f" }
 lzma-rs = {version = "0.3.0", optional = true }
 dasp = { version = "0.11.0", features = ["interpolate", "interpolate-linear", "signal"], optional = true }
 symphonia = { version = "0.5.4", default-features = false, features = ["mp3"], optional = true }
@@ -68,17 +68,19 @@ unic-segment = "0.9.0"
 id3 = "1.14.0"
 either = "1.13.0"
 chardetng = "0.1.17"
+tracy-client = { version = "0.17.1", optional = true, default-features = false }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies.wasm-bindgen-futures]
-version = "0.4.42"
+version = "0.4.43"
 
 [features]
 default = []
 lzma = ["lzma-rs", "swf/lzma"]
 avm_debug = []
+tracy_avm = ["dep:tracy-client"]
 deterministic = []
 timeline_debug = []
 mp3 = ["symphonia"]

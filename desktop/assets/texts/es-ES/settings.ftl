@@ -46,7 +46,16 @@ align-top-right = Alinear arriba a la derecha
 align-bottom-right = Alinear abajo a la derecha
 align-force = Forzar alineación
 scale-mode = Modo de escala
+scale-mode-noscale-tooltip =
+    Muestra la película en su tamaño original, sin ampliar.
+    
+    Corresponde a StageScaleMode.NO_SCALE
+scale-mode-showall-tooltip =
+    Amplía la película para llenar la ventana tanto como sea posible sin recortar, manteniendo la relación de aspecto.
+    
+    Corresponde a StageScaleMode.SHOW_ALL
 scale-mode-force = Forzar el modo de escala
+scale-mode-force-tooltip = Previene que la película cambie su modo de escala, bloqueándolo al ajuste seleccionado.
 player-version = Versión del reproductor
 player-runtime = Infraestructura del reproductor
 player-runtime-flash = Reproductor de Flash

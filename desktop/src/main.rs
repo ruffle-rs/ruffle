@@ -15,6 +15,8 @@ mod gui;
 mod log;
 mod player;
 mod preferences;
+#[cfg(feature = "tracy")]
+mod tracy;
 mod util;
 
 use crate::preferences::GlobalPreferences;
@@ -31,7 +33,6 @@ use std::panic::PanicInfo;
 use tracing_subscriber::fmt::Layer;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-
 use url::Url;
 
 thread_local! {
@@ -175,7 +176,7 @@ async fn main() -> Result<(), Error> {
 
     #[cfg(feature = "tracy")]
     let subscriber = {
-        let tracy_subscriber = tracing_tracy::TracyLayer::new();
+        let tracy_subscriber = tracing_tracy::TracyLayer::new(tracy::RuffleTracyConfig::default());
         subscriber.with(tracy_subscriber)
     };
 

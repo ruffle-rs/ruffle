@@ -78,7 +78,7 @@ pub fn serialize_value<'gc>(
                 }
             } else if let Some(vec) = o.as_vector_storage() {
                 let val_type = vec.value_type();
-                if val_type == Some(activation.avm2().classes().int.inner_class_definition()) {
+                if val_type == Some(activation.avm2().class_defs().int) {
                     let int_vec: Vec<_> = vec
                         .iter()
                         .map(|v| {
@@ -87,9 +87,7 @@ pub fn serialize_value<'gc>(
                         })
                         .collect();
                     Some(AmfValue::VectorInt(int_vec, vec.is_fixed()))
-                } else if val_type
-                    == Some(activation.avm2().classes().uint.inner_class_definition())
-                {
+                } else if val_type == Some(activation.avm2().class_defs().uint) {
                     let uint_vec: Vec<_> = vec
                         .iter()
                         .map(|v| {
@@ -98,9 +96,7 @@ pub fn serialize_value<'gc>(
                         })
                         .collect();
                     Some(AmfValue::VectorUInt(uint_vec, vec.is_fixed()))
-                } else if val_type
-                    == Some(activation.avm2().classes().number.inner_class_definition())
-                {
+                } else if val_type == Some(activation.avm2().class_defs().number) {
                     let num_vec: Vec<_> = vec
                         .iter()
                         .map(|v| {
@@ -118,8 +114,7 @@ pub fn serialize_value<'gc>(
                         })
                         .collect();
 
-                    let val_type = val_type
-                        .unwrap_or(activation.avm2().classes().object.inner_class_definition());
+                    let val_type = val_type.unwrap_or(activation.avm2().class_defs().object);
 
                     let name = class_to_alias(activation, val_type);
                     Some(AmfValue::VectorObject(obj_vec, name, vec.is_fixed()))
@@ -203,11 +198,15 @@ pub fn recursive_serialize<'gc>(
 ) -> Result<(), Error<'gc>> {
     if let Some(static_properties) = static_properties {
         let vtable = obj.vtable();
+        // TODO: respect versioning
         let mut props = vtable.public_properties();
         // Flash appears to use vtable iteration order, but we sort ours
         // to make our test output consistent.
         props.sort_by_key(|(name, _)| name.to_utf8_lossy().to_string());
         for (name, prop) in props {
+            if let Property::Method { .. } = prop {
+                continue;
+            }
             if let Property::Virtual { get, set } = prop {
                 if !(get.is_some() && set.is_some()) {
                     continue;
@@ -385,7 +384,7 @@ pub fn deserialize_value<'gc>(
             let storage = VectorStorage::from_values(
                 vec.iter().map(|v| (*v).into()).collect(),
                 *is_fixed,
-                Some(activation.avm2().classes().number.inner_class_definition()),
+                Some(activation.avm2().class_defs().number),
             );
             VectorObject::from_vector(storage, activation)?.into()
         }
@@ -393,7 +392,7 @@ pub fn deserialize_value<'gc>(
             let storage = VectorStorage::from_values(
                 vec.iter().map(|v| (*v).into()).collect(),
                 *is_fixed,
-                Some(activation.avm2().classes().uint.inner_class_definition()),
+                Some(activation.avm2().class_defs().uint),
             );
             VectorObject::from_vector(storage, activation)?.into()
         }
@@ -401,7 +400,7 @@ pub fn deserialize_value<'gc>(
             let storage = VectorStorage::from_values(
                 vec.iter().map(|v| (*v).into()).collect(),
                 *is_fixed,
-                Some(activation.avm2().classes().int.inner_class_definition()),
+                Some(activation.avm2().class_defs().int),
             );
             VectorObject::from_vector(storage, activation)?.into()
         }

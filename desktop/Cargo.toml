@@ -32,7 +32,7 @@ winit = "0.29.15"
 webbrowser = "1.0.1"
 url = { workspace = true }
 dirs = "5.0"
-rfd = { git = "https://github.com/PolyMeilex/rfd.git", rev = "42dcc7d61fc5e278b4ed76bb9720ba4d89266f01" }
+rfd = { workspace = true }
 anyhow = { workspace = true }
 bytemuck = { workspace = true }
 os_info = { version = "3", default-features = false }
@@ -42,12 +42,12 @@ wgpu = { workspace = true }
 futures = { workspace = true }
 chrono = { workspace = true }
 fluent-templates = "0.10.1"
-toml_edit = { version = "0.22.17", features = ["parse"] }
+toml_edit = { version = "0.22.20", features = ["parse"] }
 gilrs = "0.10"
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"]}
 
 # Deliberately held back to match tracy client used by profiling crate
-tracing-tracy = { version = "=0.10.4", optional = true }
+tracing-tracy = { version = "=0.11.1", optional = true, features = ["demangle"] }
 rand = "0.8.5"
 thiserror.workspace = true
 

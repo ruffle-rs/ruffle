@@ -511,7 +511,8 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             let Some(local_name) = name.local_name() else {
                 return Err(format!("Cannot set attribute {:?} without a local name", name).into());
             };
-            let new_attr = E4XNode::attribute(mc, local_name, value, Some(self.node()));
+            let ns = name.explicit_namespace().map(E4XNamespace::new_uri);
+            let new_attr = E4XNode::attribute(mc, ns, local_name, value, Some(self.node()));
 
             let node = self.0.node.get();
             let mut kind = node.kind_mut(mc);
@@ -636,6 +637,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         }
     }
 
+    // ECMA-357 9.1.1.3 [[Delete]] (P)
     fn delete_property_local(
         self,
         activation: &mut Activation<'_, 'gc>,
@@ -643,40 +645,71 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
     ) -> Result<bool, Error<'gc>> {
         let name = handle_input_multiname(name.clone(), activation);
 
-        if name.has_explicit_namespace() {
-            return Err(format!(
-                "Can not set property {:?} with an explicit namespace yet",
-                name
-            )
-            .into());
+        // 1. If ToString(ToUint32(P)) == P, throw a TypeError exception
+        // NOTE: This doesn't actually throw in Flash.
+        if let Some(local_name) = name.local_name() {
+            if local_name.parse::<usize>().is_ok() {
+                return Ok(true);
+            }
         }
 
-        let mc = activation.context.gc_context;
         let node = self.0.node.get();
-        let mut kind = node.kind_mut(mc);
-        let E4XNodeKind::Element {
-            children,
-            attributes,
-            ..
-        } = &mut *kind
-        else {
-            return Ok(false);
+
+        // 2. Let n = ToXMLName(P)
+
+        // 3. If Type(n) is AttributeName
+        if name.is_attribute() {
+            let E4XNodeKind::Element { attributes, .. } = &mut *node.kind_mut(activation.gc())
+            else {
+                return Ok(true);
+            };
+
+            // 3.a. For each a in x.[[Attributes]]
+            attributes.retain(|attr| {
+                // 3.a.i. If ((n.[[Name]].localName == "*") or
+                //            (n.[[Name]].localName == a.[[Name]].localName))
+                // and ((n.[[Name]].uri == null) or (n.[[Name]].uri == a.[[Name]].uri))
+                if attr.matches_name(&name) {
+                    // 3.a.i.1. Let a.[[Parent]] = null
+                    attr.set_parent(None, activation.gc());
+                    // 3.a.i.2. Remove the attribute a from x.[[Attributes]]
+                    false
+                } else {
+                    true
+                }
+            });
+
+            // 3.b. Return true
+            return Ok(true);
+        }
+
+        let E4XNodeKind::Element { children, .. } = &mut *node.kind_mut(activation.gc()) else {
+            return Ok(true);
         };
 
-        let retain_non_matching = |node: &E4XNode<'gc>| {
-            if node.matches_name(&name) {
-                node.set_parent(None, mc);
+        // 4. Let dp = 0
+        // 5. For q = 0 to x.[[Length]]-1
+        children.retain(|child| {
+            // 5.a. If ((n.localName == "*")
+            //   or (x[q].[[Class]] == "element" and x[q].[[Name]].localName == n.localName))
+            //   and ((n.uri == null) or (x[q].[[Class]] == “element” and n.uri == x[q].[[Name]].uri ))
+            let should_retain = if name.is_any_name() {
                 false
+            } else if child.is_element() {
+                !child.matches_name(&name)
             } else {
                 true
-            }
-        };
+            };
 
-        if name.is_attribute() {
-            attributes.retain(retain_non_matching);
-        } else {
-            children.retain(retain_non_matching);
-        }
+            if !should_retain {
+                child.set_parent(None, activation.gc());
+            }
+
+            should_retain
+        });
+
+        // 6. Let x.[[Length]] = x.[[Length]] - dp
+        // 7. Return true.
         Ok(true)
     }
 }

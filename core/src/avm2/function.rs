@@ -184,6 +184,18 @@ pub fn exec<'gc>(
                 resolved_signature,
                 bound_class,
             )?;
+
+            #[cfg(feature = "tracy_avm")]
+            let _span = {
+                let mut name = WString::new();
+                display_function(&mut name, &method, bound_class);
+                let span = tracy_client::Client::running()
+                    .expect("tracy_client should be running")
+                    .span_alloc(None, &name.to_utf8_lossy(), "rust", 0, 0);
+                span.emit_color(0x2c4980);
+                span
+            };
+
             activation
                 .context
                 .avm2
@@ -210,6 +222,23 @@ pub fn exec<'gc>(
                 bound_class,
                 callee,
             )?;
+
+            #[cfg(feature = "tracy_avm")]
+            let _span = {
+                let mut name = WString::new();
+                display_function(&mut name, &method, bound_class);
+                let option = tracy_client::Client::running();
+                let span = option.expect("tracy_client should be running").span_alloc(
+                    None,
+                    &name.to_utf8_lossy(),
+                    bm.owner_movie().url(),
+                    line!(),
+                    0,
+                );
+                span.emit_color(0x425fa1);
+                span
+            };
+
             activation
                 .context
                 .avm2
@@ -268,9 +297,9 @@ pub fn display_function<'gc>(
                     .map(|b| Gc::ptr_eq(b, *method))
                     .unwrap_or(false)
                 {
-                    if bound_class.c_class().is_none() {
-                        // If the associated class has no c_class, it is a c_class,
-                        // and the instance initializer is the class initializer.
+                    if bound_class.is_c_class() {
+                        // If the associated class is a c_class, its initializer
+                        // method is a class initializer.
                         output.push_utf8("cinit");
                     }
                     // We purposely do nothing for instance initializers

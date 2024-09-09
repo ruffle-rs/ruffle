@@ -47,6 +47,7 @@ align-force = Erzwingen
 scale-mode = Skalierungsmodus
 scale-mode-force = Erzwingen
 player-version = Spieler Version
+player-runtime = Spieler-Laufzeitumgebung
 player-runtime-flash = Flash Player
 player-runtime-air = Adobe AIR
 custom-framerate = Benutzerdefinierte Bildfrequenz

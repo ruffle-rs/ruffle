@@ -17,5 +17,5 @@ num-derive = { workspace = true }
 num-traits = { workspace = true }
 
 [dev-dependencies]
-insta = "1.39.0"
+insta = "1.40.0"
 naga = { workspace = true, features = ["wgsl-out"] }

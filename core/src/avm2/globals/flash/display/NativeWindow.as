@@ -10,7 +10,7 @@ package flash.display
   import __ruffle__.stub_getter;
   import __ruffle__.stub_setter;
   import __ruffle__.stub_constructor;
-  
+
   [API("661")]
   public class NativeWindow extends EventDispatcher
   {
@@ -35,7 +35,7 @@ package flash.display
     public function NativeWindow(initOptions:NativeWindowInitOptions, _stage:Stage = null)
     {
       stub_constructor("flash.display.NativeWindow");
-      NativeApplication.nativeApplication._openedWindows.push(this);
+      NativeApplication.nativeApplication.openedWindows.push(this);
       if (_stage)
       {
         this._stage = _stage;
@@ -43,10 +43,6 @@ package flash.display
         {
           dispatchEvent(new NativeWindowBoundsEvent(NativeWindowBoundsEvent.RESIZE, false, false, _bounds, _bounds = new Rectangle(x, y, width, height)));
         });
-      }
-      else
-      {
-        stub_constructor("flash.display.NativeWindow without stage");
       }
 
       _maximizable = initOptions.maximizable;
@@ -112,8 +108,7 @@ package flash.display
     public function set bounds(value:Rectangle):void
     {
       stub_setter("flash.display.NativeWindow", "bounds");
-      _bounds.height = height = value.height;
-      _bounds.width = width = value.width;
+      _bounds = value;
     }
 
     public function get maximizable():Boolean
@@ -168,7 +163,7 @@ package flash.display
     public function close():void
     {
       stub_method("flash.display.NativeWindow", "close");
-      if (!dispatchEvent(new Event(Event.CLOSING, false, true)))
+      if (dispatchEvent(new Event(Event.CLOSING, false, true)))
       {
         _closed = true;
         dispatchEvent(new Event(Event.CLOSE));
@@ -260,6 +255,7 @@ package flash.display
 
     public function get active():Boolean
     {
+      stub_getter("flash.display.NativeWindow", "active");
       return true;
     }
 
@@ -294,7 +290,7 @@ package flash.display
       stub_getter("flash.display.NativeWindow", "renderMode");
       return "auto";
     }
-    
+
     public function get supportsMenu():Boolean
     {
       stub_getter("flash.display.NativeWindow", "supportsMenu");
@@ -307,7 +303,6 @@ package flash.display
       return false;
     }
 
-    [API("661")]
     public function get supportsTransparency():Boolean
     {
       stub_getter("flash.display.NativeWindow", "supportsTransparency");

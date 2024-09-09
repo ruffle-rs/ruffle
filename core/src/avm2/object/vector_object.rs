@@ -86,8 +86,6 @@ impl<'gc> VectorObject<'gc> {
         ))
         .into();
 
-        object.install_instance_slots(activation.context.gc_context);
-
         Ok(object)
     }
 }

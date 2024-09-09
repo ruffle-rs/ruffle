@@ -15,7 +15,7 @@ use crate::string::{AvmString, WString};
 use swf::Color;
 
 /// Implements `flash.display.Stage`'s native instance constructor.
-pub fn native_instance_init<'gc>(
+pub fn super_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],

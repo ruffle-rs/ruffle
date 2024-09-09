@@ -171,6 +171,7 @@ package flash.text {
             return true;
         }
 
+        [API("670")]
         public function get textInteractionMode():String {
             stub_getter("flash.text.TextField", "textInteractionMode");
             return TextInteractionMode.NORMAL;

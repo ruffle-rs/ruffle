@@ -8,6 +8,7 @@ package flash.events
   [API("661")]
   public class NativeWindowDisplayStateEvent extends Event
   {
+    public static const DISPLAY_STATE_CHANGING:String = "displayStateChanging";
     public static const DISPLAY_STATE_CHANGE:String = "displayStateChange";
 
     // The display state of the NativeWindow before the change.

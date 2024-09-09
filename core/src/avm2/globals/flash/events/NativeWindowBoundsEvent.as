@@ -11,6 +11,9 @@ package flash.events
   [API("661")]
   public class NativeWindowBoundsEvent extends Event
   {
+    public static const MOVING:String = "moving";
+    public static const MOVE:String = "move";
+    public static const RESIZING:String = "resizing";
     public static const RESIZE:String = "resize";
 
     // The bounds of the window before the change.
@@ -35,7 +38,11 @@ package flash.events
     // [override] Returns a string that contains all the properties of the NativeWindowBoundsEvent object.
     override public function toString():String
     {
-      return this.formatToString("NativeWindowBoundsEvent", "type", "bubbles", "cancelable");
+      // According to the documentation, the format should be:
+      // [NativeWindowBoundsEvent type=value bubbles=value cancelable=value previousDisplayState=value currentDisplayState=value]
+      // but it seems that previousDisplayState and currentDisplayState doesn't exist.
+      // It's likely a mistake in the documentation.
+      return this.formatToString("NativeWindowBoundsEvent", "type", "bubbles", "cancelable", "beforeBounds", "afterBounds");
     }
 
     public function get beforeBounds():Rectangle

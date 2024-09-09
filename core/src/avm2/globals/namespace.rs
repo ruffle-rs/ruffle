@@ -55,7 +55,7 @@ pub fn instance_init<'gc>(
                 let ns = qname
                     .uri()
                     .map(|uri| Namespace::package(uri, api_version, &mut activation.borrow_gc()))
-                    .unwrap_or_else(|| Namespace::any(activation.context.gc_context));
+                    .unwrap_or_else(Namespace::any);
                 if ns.as_uri().is_empty() {
                     (Some("".into()), ns)
                 } else {
@@ -101,7 +101,7 @@ fn class_call<'gc>(
 }
 
 /// Implements `Namespace`'s native instance initializer.
-pub fn native_instance_init<'gc>(
+pub fn super_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -174,21 +174,17 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     let mc = activation.context.gc_context;
     let class = Class::new(
         QName::new(activation.avm2().public_namespace_base_version, "Namespace"),
-        Some(activation.avm2().classes().object.inner_class_definition()),
+        Some(activation.avm2().class_defs().object),
         Method::from_builtin(instance_init, "<Namespace instance initializer>", mc),
         Method::from_builtin(class_init, "<Namespace class initializer>", mc),
-        activation.avm2().classes().class.inner_class_definition(),
+        activation.avm2().class_defs().class,
         mc,
     );
 
     class.set_instance_allocator(mc, namespace_allocator);
-    class.set_native_instance_init(
+    class.set_super_init(
         mc,
-        Method::from_builtin(
-            native_instance_init,
-            "<Namespace native instance initializer>",
-            mc,
-        ),
+        Method::from_builtin(super_init, "<Namespace native instance initializer>", mc),
     );
     class.set_call_handler(
         mc,

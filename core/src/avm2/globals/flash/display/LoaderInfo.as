@@ -5,7 +5,7 @@ package flash.display {
     import flash.events.UncaughtErrorEvents;
 
     [Ruffle(InstanceAllocator)]
-    [Ruffle(NativeInstanceInit)]
+    [Ruffle(SuperInitializer)]
     public class LoaderInfo extends EventDispatcher {
         public function LoaderInfo() {
             throw new Error("LoaderInfo cannot be constructed");

@@ -19,3 +19,7 @@ storage-backend-disk = Диск
 storage-backend-memory = Память
 recent-limit = Недавний лимит
 recent-clear = Очистить
+theme = Тема
+theme-system = Как в системе
+theme-light = Светлая
+theme-dark = Тёмная

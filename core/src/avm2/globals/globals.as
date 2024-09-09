@@ -27,6 +27,8 @@ include "UninitializedError.as"
 include "URIError.as"
 include "VerifyError.as"
 
+include "Date.as"
+
 include "avmplus.as"
 
 include "flash/accessibility/Accessibility.as"

@@ -1,6 +1,6 @@
 {
     "settings_ruffle_enable": {
-        "message": "Kör Flashinnehåll i Ruffle"
+        "message": "Spela upp Flash-innehåll i Ruffle"
     },
     "settings_ignore_optout": {
         "message": "Kör Flashinnehåll även på sidor som inte tillåter Ruffle"
@@ -10,6 +10,9 @@
     },
     "settings_autostart": {
         "message": "Kör Flashinnehåll automatiskt (klicka sedan för ljud)"
+    },
+    "settings_swf_takeover": {
+        "message": "Spela SWF filer i webbläsaren istället för att ladda ner"
     },
     "settings_log_level": {
         "message": "Loggnivå"
@@ -94,5 +97,14 @@
     },
     "settings_saved": {
         "message": "Inställningar Sparade"
+    },
+    "permissions_grant": {
+        "message": "Ge Ruffle tillåtelse att få tillgång till min data på alla sidor"
+    },
+    "permissions_not_granted": {
+        "message": "Du behöver trycka på Ruffle ikonen på varje sida du vill använda Ruffle på"
+    },
+    "grant_single_site_permission": {
+        "message": "Sätt på permanent på denna sida"
     }
 }

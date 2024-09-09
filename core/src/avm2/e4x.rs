@@ -212,6 +212,7 @@ impl<'gc> E4XNode<'gc> {
 
     pub fn attribute(
         mc: &Mutation<'gc>,
+        namespace: Option<E4XNamespace<'gc>>,
         name: AvmString<'gc>,
         value: AvmString<'gc>,
         parent: Option<E4XNode<'gc>>,
@@ -220,7 +221,7 @@ impl<'gc> E4XNode<'gc> {
             mc,
             E4XNodeData {
                 parent,
-                namespace: None,
+                namespace: namespace.map(Box::new),
                 local_name: Some(name),
                 kind: E4XNodeKind::Attribute(value),
                 notification: None,
@@ -258,6 +259,10 @@ impl<'gc> E4XNode<'gc> {
 
     pub fn equals(&self, other: &Self) -> bool {
         if self.local_name() != other.local_name() {
+            return false;
+        }
+
+        if self.namespace().map(|ns| ns.uri) != other.namespace().map(|ns| ns.uri) {
             return false;
         }
 
@@ -865,6 +870,15 @@ impl<'gc> E4XNode<'gc> {
                     }
                     return Err(make_error_1085(activation, &expected));
                 }
+                Err(XmlError::IllFormed(IllFormedError::UnmatchedEndTag(_)))
+                    if open_tags.is_empty() =>
+                {
+                    return Err(Error::AvmError(type_error(
+                        activation,
+                        "Error #1088: The markup in the document following the root element must be well-formed.",
+                        1088,
+                    )?));
+                }
                 Err(err) => return Err(make_xml_error(activation, err)),
             };
 
@@ -1003,6 +1017,35 @@ impl<'gc> E4XNode<'gc> {
         let mut attribute_nodes = Vec::new();
         let mut namespaces = Vec::new();
 
+        fn make_unknown_ns_error<'gc>(
+            activation: &mut Activation<'_, 'gc>,
+            ns: Vec<u8>,
+            local_name: AvmString<'gc>,
+        ) -> Error<'gc> {
+            let error = if ns.is_empty() {
+                type_error(
+                    activation,
+                    &format!("Error #1084: Element or attribute (\":{}\") does not match QName production: QName::=(NCName':')?NCName.", local_name),
+                    1084,
+                )
+            } else {
+                // Note: Flash also uses this error message for attributes.
+                type_error(
+                    activation,
+                    &format!(
+                        "Error #1083: The prefix \"{}\" for element \"{}\" is not bound.",
+                        String::from_utf8_lossy(&ns),
+                        local_name
+                    ),
+                    1083,
+                )
+            };
+            match error {
+                Ok(err) => Error::AvmError(err),
+                Err(err) => err,
+            }
+        }
+
         let attributes: Result<Vec<_>, _> = bs.attributes().collect();
         for attribute in
             attributes.map_err(|e| make_xml_error(activation, XmlError::InvalidAttr(e)))?
@@ -1036,15 +1079,7 @@ impl<'gc> E4XNode<'gc> {
                     Some(E4XNamespace { prefix, uri })
                 }
                 ResolveResult::Unknown(ns) => {
-                    return Err(Error::AvmError(type_error(
-                        activation,
-                        &format!(
-                            "Error #1083: The prefix \"{}\" for element \"{}\" is not bound.",
-                            String::from_utf8_lossy(&ns),
-                            name
-                        ),
-                        1083,
-                    )?))
+                    return Err(make_unknown_ns_error(activation, ns, name));
                 }
                 ResolveResult::Unbound => {
                     // The default XML namespace declaration
@@ -1089,15 +1124,7 @@ impl<'gc> E4XNode<'gc> {
                 Some(E4XNamespace { prefix, uri })
             }
             ResolveResult::Unknown(ns) => {
-                return Err(Error::AvmError(type_error(
-                    activation,
-                    &format!(
-                        "Error #1083: The prefix \"{}\" for element \"{}\" is not bound.",
-                        String::from_utf8_lossy(&ns),
-                        name
-                    ),
-                    1083,
-                )?))
+                return Err(make_unknown_ns_error(activation, ns, name));
             }
             ResolveResult::Unbound => None,
         };
@@ -1679,13 +1706,13 @@ pub fn string_to_multiname<'gc>(
 ) -> Multiname<'gc> {
     if let Some(name) = name.strip_prefix(b'@') {
         if name == b"*" {
-            return Multiname::any_attribute(activation.gc());
+            return Multiname::any_attribute();
         }
 
         let name = AvmString::new(activation.context.gc_context, name);
         Multiname::attribute(activation.avm2().public_namespace_base_version, name)
     } else if &*name == b"*" {
-        Multiname::any(activation.context.gc_context)
+        Multiname::any()
     } else {
         Multiname::new(activation.avm2().public_namespace_base_version, name)
     }

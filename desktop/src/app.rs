@@ -3,7 +3,7 @@ use crate::gui::{GuiController, MENU_HEIGHT};
 use crate::player::{LaunchOptions, PlayerController};
 use crate::preferences::GlobalPreferences;
 use crate::util::{
-    get_screen_size, gilrs_button_to_gamepad_button, parse_url, pick_file, plot_stats_in_tracy,
+    get_screen_size, gilrs_button_to_gamepad_button, parse_url, plot_stats_in_tracy,
     winit_to_ruffle_key_code, winit_to_ruffle_text_control,
 };
 use anyhow::{Context, Error};
@@ -482,26 +482,39 @@ impl App {
 
                 winit::event::Event::UserEvent(RuffleEvent::BrowseAndOpen(options)) => {
                     let event_loop = event_loop_proxy.clone();
-                    let window = self.window.clone();
+                    let picker = self.gui.borrow().file_picker();
                     tokio::spawn(async move {
-                        if let Some(url) = pick_file(None, Some(&window))
+                        if let Some(url) = picker
+                            .pick_file(None)
                             .await
                             .and_then(|p| Url::from_file_path(p).ok())
                         {
-                            let _ = event_loop.send_event(RuffleEvent::OpenURL(url, options));
+                            let _ = event_loop.send_event(RuffleEvent::Open(url, options));
                         }
                     });
                 }
 
-                winit::event::Event::UserEvent(RuffleEvent::OpenURL(url, options)) => {
+                winit::event::Event::UserEvent(RuffleEvent::Open(url, options)) => {
                     self.gui
                         .borrow_mut()
                         .create_movie(&mut self.player, *options, url);
                 }
 
+                winit::event::Event::UserEvent(RuffleEvent::OpenDialog(descriptor)) => {
+                    self.gui.borrow_mut().open_dialog(descriptor);
+                }
+
                 winit::event::Event::UserEvent(RuffleEvent::CloseFile) => {
                     self.window.set_title("Ruffle"); // Reset title since file has been closed.
                     self.player.destroy();
+                }
+
+                winit::event::Event::UserEvent(RuffleEvent::EnterFullScreen) => {
+                    if let Some(mut player) = self.player.get() {
+                        if player.is_playing() {
+                            player.set_fullscreen(true);
+                        }
+                    }
                 }
 
                 winit::event::Event::UserEvent(RuffleEvent::ExitFullScreen) => {

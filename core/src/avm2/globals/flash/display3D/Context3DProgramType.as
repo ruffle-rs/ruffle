@@ -6,7 +6,7 @@
 package flash.display3D
 {
     
-    
+    [API("674")]
     public final class Context3DProgramType
     {
         // A fragment (or pixel) program.

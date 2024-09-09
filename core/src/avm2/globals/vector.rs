@@ -249,12 +249,16 @@ pub fn concat<'gc>(
         return Err("Not a vector-structured object".into());
     };
 
+    let original_length = new_vector_storage.length();
+
+    let use_swf10_behavior = activation
+        .caller_movie()
+        .map_or(false, |m| m.version() < 11);
+
     let val_class = new_vector_storage.value_type_for_coercion(activation);
 
     for arg in args {
-        let arg_obj = arg
-            .as_object()
-            .ok_or("Cannot concat Vector with null or undefined")?;
+        let arg_obj = arg.coerce_to_object_or_typeerror(activation, None)?;
 
         // this is Vector.<int/uint/Number/*>
         let my_base_vector_class = activation
@@ -284,21 +288,17 @@ pub fn concat<'gc>(
             continue;
         };
 
-        for val in old_vec {
-            if let Ok(val_obj) = val.coerce_to_object(activation) {
-                if !val.is_of_type(activation, val_class) {
-                    let other_val_class = val_obj.instance_class();
-                    return Err(format!(
-                        "TypeError: Cannot coerce Vector value of type {:?} to type {:?}",
-                        other_val_class.name(),
-                        val_class.name()
-                    )
-                    .into());
-                }
-            }
-
+        for (i, val) in old_vec.iter().enumerate() {
+            let insertion_index = (original_length + i) as i32;
             let coerced_val = val.coerce_to_type(activation, val_class)?;
-            new_vector_storage.push(coerced_val, activation)?;
+
+            if use_swf10_behavior {
+                // See bugzilla 504525: In SWFv10, calling `concat` with multiple
+                // arguments passed results in concatenating in the wrong order.
+                new_vector_storage.insert(insertion_index, coerced_val, activation)?;
+            } else {
+                new_vector_storage.push(coerced_val, activation)?;
+            }
         }
     }
 
@@ -901,10 +901,10 @@ pub fn create_generic_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<
     let mc = activation.context.gc_context;
     let class = Class::new(
         QName::new(activation.avm2().vector_public_namespace, "Vector"),
-        Some(activation.avm2().classes().object.inner_class_definition()),
+        Some(activation.avm2().class_defs().object),
         Method::from_builtin(generic_init, "<Vector instance initializer>", mc),
         Method::from_builtin(generic_init, "<Vector class initializer>", mc),
-        activation.avm2().classes().class.inner_class_definition(),
+        activation.avm2().class_defs().class,
         mc,
     );
 
@@ -947,10 +947,10 @@ pub fn create_builtin_class<'gc>(
 
     let class = Class::new(
         name,
-        Some(activation.avm2().classes().object.inner_class_definition()),
+        Some(activation.avm2().class_defs().object),
         Method::from_builtin(instance_init, "<Vector.<T> instance initializer>", mc),
         Method::from_builtin(class_init, "<Vector.<T> class initializer>", mc),
-        activation.avm2().classes().class.inner_class_definition(),
+        activation.avm2().class_defs().class,
         mc,
     );
 

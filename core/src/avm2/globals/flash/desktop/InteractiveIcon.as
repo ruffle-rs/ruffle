@@ -5,23 +5,21 @@
 
 package flash.desktop
 {
+  import __ruffle__.stub_getter;
+
   [API("661")]
   public class InteractiveIcon extends Icon
   {
-    // The current display height of the icon in pixels.
-    private var _height:int;
-
-    // The current display width of the icon in pixels.
-    private var _width:int;
-
     public function get height():int
     {
-      return this._height;
+      stub_getter("flash.desktop.InteractiveIcon", "height");
+      return 64;
     }
 
     public function get width():int
     {
-      return this._width;
+      stub_getter("flash.desktop.InteractiveIcon", "width");
+      return 64;
     }
   }
 }

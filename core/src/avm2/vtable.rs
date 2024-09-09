@@ -112,17 +112,13 @@ impl<'gc> VTable<'gc> {
         self.0.read().disp_metadata_table.get(disp_id).cloned()
     }
 
-    pub fn slot_class_name(
-        &self,
-        slot_id: u32,
-        mc: &Mutation<'gc>,
-    ) -> Result<Multiname<'gc>, Error<'gc>> {
+    pub fn slot_class_name(&self, slot_id: u32) -> Result<Multiname<'gc>, Error<'gc>> {
         self.0
             .read()
             .slot_classes
             .get(slot_id as usize)
             .ok_or_else(|| "Invalid slot ID".into())
-            .map(|c| c.get_name(mc))
+            .map(|c| c.get_name())
     }
 
     pub fn get_trait(self, name: &Multiname<'gc>) -> Option<Property> {
@@ -212,7 +208,6 @@ impl<'gc> VTable<'gc> {
         self,
         defining_class_def: Class<'gc>,
         super_class_obj: Option<ClassObject<'gc>>,
-        traits: &[Trait<'gc>],
         scope: Option<ScopeChain<'gc>>,
         superclass_vtable: Option<Self>,
         mc: &Mutation<'gc>,
@@ -316,7 +311,7 @@ impl<'gc> VTable<'gc> {
             &mut write.slot_classes,
         );
 
-        for trait_data in traits {
+        for trait_data in &*defining_class_def.traits() {
             match trait_data.kind() {
                 TraitKind::Method { method, .. } => {
                     let entry = ClassBoundMethod {
@@ -532,28 +527,6 @@ impl<'gc> VTable<'gc> {
             super_class_obj,
             Some(class),
         )
-    }
-
-    /// Install a const trait on the global object.
-    /// This should only ever be called via `Object::install_const_late`,
-    /// on the `global` object.
-    pub fn install_const_trait_late(
-        self,
-        mc: &Mutation<'gc>,
-        name: QName<'gc>,
-        value: Value<'gc>,
-        class: Class<'gc>,
-    ) -> u32 {
-        let mut write = self.0.write(mc);
-
-        write.default_slots.push(Some(value));
-        let new_slot_id = write.default_slots.len() as u32 - 1;
-        write
-            .resolved_traits
-            .insert(name, Property::new_const_slot(new_slot_id));
-        write.slot_classes.push(PropertyClass::Class(class));
-
-        new_slot_id
     }
 
     /// Install an existing trait under a new name, provided by interface.

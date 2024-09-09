@@ -1,13 +1,16 @@
 mod context_menu;
 mod controller;
-mod dialogs;
+pub mod dialogs;
 mod menu_bar;
 mod movie;
+mod picker;
 mod theme;
 mod widgets;
 
 pub use controller::GuiController;
+pub use dialogs::DialogDescriptor;
 pub use movie::MovieView;
+pub use picker::FilePicker;
 use std::borrow::Cow;
 pub use theme::ThemePreference;
 use url::Url;
@@ -73,6 +76,21 @@ pub fn text_with_args<'a, T: AsRef<str>>(
             tracing::error!("Unknown desktop text id '{id}'");
             Cow::Borrowed(id)
         })
+}
+
+pub enum LocalizableText {
+    NonLocalizedText(Cow<'static, str>),
+    LocalizedText(&'static str),
+}
+
+impl LocalizableText {
+    pub fn localize(&self, locale: &LanguageIdentifier) -> Cow<'_, str> {
+        match self {
+            LocalizableText::NonLocalizedText(Cow::Borrowed(text)) => Cow::Borrowed(text),
+            LocalizableText::NonLocalizedText(Cow::Owned(text)) => Cow::Borrowed(text),
+            LocalizableText::LocalizedText(id) => text(locale, id),
+        }
+    }
 }
 
 /// Size of the top menu bar in pixels.

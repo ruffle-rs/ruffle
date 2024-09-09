@@ -10,7 +10,7 @@ use crate::avm2::vtable::VTable;
 use crate::avm2::Multiname;
 use crate::avm2::{Error, QName};
 use crate::string::AvmString;
-use gc_arena::barrier::unlock;
+use gc_arena::barrier::{unlock, Write};
 use gc_arena::{
     lock::{Lock, RefLock},
     Collect, Gc, GcWeak, Mutation,
@@ -50,7 +50,7 @@ pub struct ScriptObjectData<'gc> {
     values: RefLock<DynamicMap<DynamicKey<'gc>, Value<'gc>>>,
 
     /// Slots stored on this object.
-    slots: RefLock<Vec<Value<'gc>>>,
+    slots: Vec<Lock<Value<'gc>>>,
 
     /// Methods stored on this object.
     bound_methods: RefLock<Vec<Option<FunctionObject<'gc>>>>,
@@ -95,7 +95,6 @@ impl<'gc> ScriptObject<'gc> {
     /// This should *not* be used unless you really need
     /// to do something low-level, weird or lazily initialize the object.
     /// You shouldn't let scripts observe this weirdness.
-    /// Another exception is ES3 class-less objects, which we don't really understand well :)
     ///
     /// The "everyday" way to create a normal empty ScriptObject (AS "Object") is to call
     /// `avm2.classes().object.construct(self, &[])`.
@@ -127,14 +126,8 @@ impl<'gc> ScriptObject<'gc> {
         // can observe (the lack of) it.
         let base = ScriptObjectWrapper(Gc::new(
             mc,
-            ScriptObjectData::custom_new(
-                activation.avm2().classes().object.inner_class_definition(),
-                None,
-                vt,
-            ),
+            ScriptObjectData::custom_new(activation.avm2().class_defs().object, None, vt),
         ));
-
-        base.install_instance_slots(mc);
 
         ScriptObject(base.0).into()
     }
@@ -161,9 +154,18 @@ impl<'gc> ScriptObjectData<'gc> {
         proto: Option<Object<'gc>>,
         vtable: VTable<'gc>,
     ) -> Self {
+        let default_slots = vtable.default_slots();
+        let mut slots = vec![Lock::new(Value::Undefined); default_slots.len()];
+
+        for (i, value) in default_slots.iter().enumerate() {
+            if let Some(value) = value {
+                slots[i] = Lock::new(*value);
+            }
+        }
+
         ScriptObjectData {
             values: RefLock::new(Default::default()),
-            slots: RefLock::new(Vec::new()),
+            slots,
             bound_methods: RefLock::new(Vec::new()),
             proto: Lock::new(proto),
             instance_class,
@@ -186,14 +188,6 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         mc: &Mutation<'gc>,
     ) -> RefMut<DynamicMap<DynamicKey<'gc>, Value<'gc>>> {
         unlock!(Gc::write(mc, self.0), ScriptObjectData, values).borrow_mut()
-    }
-
-    fn slots(&self) -> Ref<Vec<Value<'gc>>> {
-        self.0.slots.borrow()
-    }
-
-    fn slots_mut(&self, mc: &Mutation<'gc>) -> RefMut<Vec<Value<'gc>>> {
-        unlock!(Gc::write(mc, self.0), ScriptObjectData, slots).borrow_mut()
     }
 
     fn bound_methods(&self) -> Ref<Vec<Option<FunctionObject<'gc>>>> {
@@ -318,54 +312,28 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         }
     }
 
-    pub fn get_slot(&self, id: u32) -> Result<Value<'gc>, Error<'gc>> {
-        self.slots()
+    #[inline(always)]
+    pub fn get_slot(&self, id: u32) -> Value<'gc> {
+        self.0
+            .slots
             .get(id as usize)
             .cloned()
-            .ok_or_else(|| format!("Slot index {id} out of bounds!").into())
+            .map(|s| s.get())
+            .expect("Slot index out of bounds")
     }
 
     /// Set a slot by its index.
-    pub fn set_slot(
-        &self,
-        id: u32,
-        value: Value<'gc>,
-        mc: &Mutation<'gc>,
-    ) -> Result<(), Error<'gc>> {
-        if let Some(slot) = self.slots_mut(mc).get_mut(id as usize) {
-            *slot = value;
-            Ok(())
-        } else {
-            Err(format!("Slot index {id} out of bounds!").into())
-        }
-    }
+    pub fn set_slot(&self, id: u32, value: Value<'gc>, mc: &Mutation<'gc>) {
+        let slot = self
+            .0
+            .slots
+            .get(id as usize)
+            .expect("Slot index out of bounds");
 
-    pub fn install_instance_slots(&self, mc: &Mutation<'gc>) {
-        use std::ops::Deref;
-        let vtable = self.vtable();
-        let default_slots = vtable.default_slots();
-        let mut slots = self.slots_mut(mc);
-
-        for value in default_slots.deref() {
-            if let Some(value) = value {
-                slots.push(*value);
-            } else {
-                slots.push(Value::Undefined)
-            }
-        }
-    }
-
-    /// Set a slot by its index. This does extend the array if needed.
-    /// This should only be used during AVM initialization, not at runtime.
-    pub fn install_const_slot_late(&self, mc: &Mutation<'gc>, id: u32, value: Value<'gc>) {
-        let mut slots = self.slots_mut(mc);
-
-        if slots.len() < id as usize + 1 {
-            slots.resize(id as usize + 1, Value::Undefined);
-        }
-        if let Some(slot) = slots.get_mut(id as usize) {
-            *slot = value;
-        }
+        Gc::write(mc, self.0);
+        // SAFETY: We just triggered a write barrier on the Gc.
+        let slot_write = unsafe { Write::assume(slot) };
+        slot_write.unlock().set(value);
     }
 
     /// Retrieve a bound method from the method table.

@@ -46,7 +46,28 @@ align-top-right = Вгорі праворуч
 align-bottom-right = Внизу праворуч
 align-force = Примусово
 scale-mode = Режим масштабування
+scale-mode-noscale = Немасштабований (100%)
+scale-mode-noscale-tooltip =
+    Показує фільм у вихідному розмірі без масштабування.
+    
+    Відповідає StageScaleMode.NO_SCALE
+scale-mode-showall = Збільшити до розміру
+scale-mode-showall-tooltip =
+    Збільшує масштаб фільму, щоб максимально заповнити вікно без обрізання, зберігаючи співвідношення сторін.
+    
+    Відповідає StageScaleMode.SHOW_ALL
+scale-mode-exactfit = Розтягнути до розміру
+scale-mode-exactfit-tooltip =
+    Гарантує, що фільм заповнить все вікно, не враховуючи співвідношення сторін.
+    
+    Відповідає StageScaleMode.EXACT_FIT
+scale-mode-noborder = Обрізати до розміру
+scale-mode-noborder-tooltip =
+    Заповнює все вікно, зберігаючи співвідношення сторін, за потреби обрізаючи фільм.
+    
+    Відповідає StageScaleMode.NO_BORDER
 scale-mode-force = Примусово
+scale-mode-force-tooltip = Запобігає зміні режиму масштабування фільму, фіксуючи для нього вибране налаштування.
 player-version = Версія плеєра
 player-runtime = Система виконання запуску плеєра
 player-runtime-flash = Flash Player

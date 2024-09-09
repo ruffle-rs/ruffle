@@ -166,9 +166,8 @@ impl<'gc> LoaderInfoObject<'gc> {
             },
         ))
         .into();
-        this.install_instance_slots(activation.context.gc_context);
 
-        class.call_native_init(this.into(), &[], activation)?;
+        class.call_super_init(this.into(), &[], activation)?;
 
         Ok(this)
     }
@@ -214,9 +213,8 @@ impl<'gc> LoaderInfoObject<'gc> {
             },
         ))
         .into();
-        this.install_instance_slots(activation.context.gc_context);
 
-        class.call_native_init(this.into(), &[], activation)?;
+        class.call_super_init(this.into(), &[], activation)?;
 
         Ok(this)
     }
@@ -357,7 +355,7 @@ impl<'gc> LoaderInfoObject<'gc> {
                 .expect("for_display_object cannot return Err");
 
             class_object
-                .call_native_init(object.into(), &[], activation)
+                .call_super_init(object.into(), &[], activation)
                 .expect("Native init should succeed");
 
             unlock!(

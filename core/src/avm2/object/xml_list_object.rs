@@ -722,6 +722,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                                 // 2.c.iv.3. Let y.[[Class]] = "attribute"
                                 E4XNode::attribute(
                                     activation.gc(),
+                                    x.explicit_namespace().map(E4XNamespace::new_uri),
                                     x.local_name().unwrap(),
                                     "".into(),
                                     r,
@@ -990,11 +991,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                         // 2.h.i. Call the [[Put]] method of x[i] with arguments "*" and V
                         self.xml_object_child(index, activation)
                             .unwrap()
-                            .set_property_local(
-                                &Multiname::any(activation.gc()),
-                                value,
-                                activation,
-                            )?;
+                            .set_property_local(&Multiname::any(), value, activation)?;
                     }
 
                     // NOTE: Not specified in the spec, but avmplus returns here, so we do the same.

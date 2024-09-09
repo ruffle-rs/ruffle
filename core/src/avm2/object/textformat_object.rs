@@ -74,7 +74,6 @@ impl<'gc> TextFormatObject<'gc> {
             },
         ))
         .into();
-        this.install_instance_slots(activation.gc());
 
         Ok(this)
     }

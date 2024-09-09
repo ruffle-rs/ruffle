@@ -4,7 +4,7 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::display_object::TDisplayObject;
 
-pub fn native_instance_init<'gc>(
+pub fn super_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],

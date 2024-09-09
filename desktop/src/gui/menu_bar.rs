@@ -119,7 +119,7 @@ impl MenuBar {
                             for bookmark in bookmarks.iter().filter(|x| !x.is_invalid()) {
                                 if Button::new(&bookmark.name).ui(ui).clicked() {
                                     ui.close_menu();
-                                    let _ = self.event_loop.send_event(RuffleEvent::OpenURL(bookmark.url.clone(), Box::new(self.default_launch_options.clone())));
+                                    let _ = self.event_loop.send_event(RuffleEvent::Open(bookmark.url.clone(), Box::new(self.default_launch_options.clone())));
                                 }
                             }
                         });
@@ -238,7 +238,7 @@ impl MenuBar {
                         for recent in recents {
                             if ui.button(&recent.name).clicked() {
                                 ui.close_menu();
-                                let _ = self.event_loop.send_event(RuffleEvent::OpenURL(
+                                let _ = self.event_loop.send_event(RuffleEvent::Open(
                                     recent.url.clone(),
                                     Box::new(self.default_launch_options.clone()),
                                 ));
@@ -427,7 +427,7 @@ impl MenuBar {
         if let Some((movie_url, opts)) = self.currently_opened.take() {
             let _ = self
                 .event_loop
-                .send_event(RuffleEvent::OpenURL(movie_url, opts.into()));
+                .send_event(RuffleEvent::Open(movie_url, opts.into()));
         }
         ui.close_menu();
     }

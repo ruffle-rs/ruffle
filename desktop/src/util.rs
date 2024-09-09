@@ -1,11 +1,9 @@
 use crate::custom_event::RuffleEvent;
 use anyhow::{anyhow, Error};
 use gilrs::Button;
-use rfd::AsyncFileDialog;
 use ruffle_core::events::{GamepadButton, KeyCode, TextControlCode};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use url::Url;
-use wgpu::rwh::{HasDisplayHandle, HasWindowHandle};
 use winit::dpi::PhysicalSize;
 use winit::event::{KeyEvent, Modifiers};
 use winit::event_loop::EventLoop;
@@ -67,68 +65,68 @@ pub fn winit_to_ruffle_key_code(event: &KeyEvent) -> Option<KeyCode> {
 
     let is_numpad = event.location == KeyLocation::Numpad;
     let key_code = match event.logical_key.as_ref() {
-        Key::Named(NamedKey::Backspace) => KeyCode::Backspace,
-        Key::Named(NamedKey::Tab) => KeyCode::Tab,
-        Key::Named(NamedKey::Enter) => KeyCode::Return,
-        Key::Named(NamedKey::Shift) => KeyCode::Shift,
-        Key::Named(NamedKey::Control) => KeyCode::Control,
-        Key::Named(NamedKey::Alt) => KeyCode::Alt,
+        Key::Named(NamedKey::Backspace) => KeyCode::BACKSPACE,
+        Key::Named(NamedKey::Tab) => KeyCode::TAB,
+        Key::Named(NamedKey::Enter) => KeyCode::RETURN,
+        Key::Named(NamedKey::Shift) => KeyCode::SHIFT,
+        Key::Named(NamedKey::Control) => KeyCode::CONTROL,
+        Key::Named(NamedKey::Alt) => KeyCode::ALT,
         // AltGr is ignored by FP
         Key::Named(NamedKey::AltGraph) => return None,
-        Key::Named(NamedKey::CapsLock) => KeyCode::CapsLock,
-        Key::Named(NamedKey::Escape) => KeyCode::Escape,
-        Key::Named(NamedKey::Space) => KeyCode::Space,
+        Key::Named(NamedKey::CapsLock) => KeyCode::CAPS_LOCK,
+        Key::Named(NamedKey::Escape) => KeyCode::ESCAPE,
+        Key::Named(NamedKey::Space) => KeyCode::SPACE,
         // Note: FP DOES care about modifiers for numpad keys,
         // so that Shift+Numpad7 produces 16+36, not 16+103.
-        Key::Character("0") if is_numpad => KeyCode::Numpad0,
-        Key::Character("1") if is_numpad => KeyCode::Numpad1,
-        Key::Character("2") if is_numpad => KeyCode::Numpad2,
-        Key::Character("3") if is_numpad => KeyCode::Numpad3,
-        Key::Character("4") if is_numpad => KeyCode::Numpad4,
-        Key::Character("5") if is_numpad => KeyCode::Numpad5,
-        Key::Character("6") if is_numpad => KeyCode::Numpad6,
-        Key::Character("7") if is_numpad => KeyCode::Numpad7,
-        Key::Character("8") if is_numpad => KeyCode::Numpad8,
-        Key::Character("9") if is_numpad => KeyCode::Numpad9,
-        Key::Character("*") if is_numpad => KeyCode::Multiply,
-        Key::Character("+") if is_numpad => KeyCode::Plus,
-        Key::Character("-") if is_numpad => KeyCode::NumpadMinus,
-        Key::Character(".") if is_numpad => KeyCode::NumpadPeriod,
-        Key::Character("/") if is_numpad => KeyCode::NumpadSlash,
-        Key::Character("0") | Key::Character(")") => KeyCode::Key0,
-        Key::Character("1") | Key::Character("!") => KeyCode::Key1,
-        Key::Character("2") | Key::Character("@") => KeyCode::Key2,
-        Key::Character("3") | Key::Character("#") => KeyCode::Key3,
-        Key::Character("4") | Key::Character("$") => KeyCode::Key4,
-        Key::Character("5") | Key::Character("%") => KeyCode::Key5,
-        Key::Character("6") | Key::Character("^") => KeyCode::Key6,
-        Key::Character("7") | Key::Character("&") => KeyCode::Key7,
-        Key::Character("8") | Key::Character("*") => KeyCode::Key8,
-        Key::Character("9") | Key::Character("(") => KeyCode::Key9,
-        Key::Character(";") | Key::Character(":") => KeyCode::Semicolon,
-        Key::Character("=") | Key::Character("+") => KeyCode::Equals,
-        Key::Character(",") | Key::Character("<") => KeyCode::Comma,
-        Key::Character("-") | Key::Character("_") => KeyCode::Minus,
-        Key::Character(".") | Key::Character(">") => KeyCode::Period,
-        Key::Character("/") | Key::Character("?") => KeyCode::Slash,
-        Key::Character("`") | Key::Character("~") => KeyCode::Grave,
-        Key::Character("[") | Key::Character("{") => KeyCode::LBracket,
-        Key::Character("\\") | Key::Character("|") => KeyCode::Backslash,
-        Key::Character("]") | Key::Character("}") => KeyCode::RBracket,
-        Key::Character("'") | Key::Character("\"") => KeyCode::Apostrophe,
-        Key::Named(NamedKey::PageUp) => KeyCode::PgUp,
-        Key::Named(NamedKey::PageDown) => KeyCode::PgDown,
-        Key::Named(NamedKey::End) => KeyCode::End,
-        Key::Named(NamedKey::Home) => KeyCode::Home,
-        Key::Named(NamedKey::ArrowLeft) => KeyCode::Left,
-        Key::Named(NamedKey::ArrowUp) => KeyCode::Up,
-        Key::Named(NamedKey::ArrowRight) => KeyCode::Right,
-        Key::Named(NamedKey::ArrowDown) => KeyCode::Down,
-        Key::Named(NamedKey::Insert) => KeyCode::Insert,
-        Key::Named(NamedKey::Delete) => KeyCode::Delete,
-        Key::Named(NamedKey::Pause) => KeyCode::Pause,
-        Key::Named(NamedKey::NumLock) => KeyCode::NumLock,
-        Key::Named(NamedKey::ScrollLock) => KeyCode::ScrollLock,
+        Key::Character("0") if is_numpad => KeyCode::NUMPAD0,
+        Key::Character("1") if is_numpad => KeyCode::NUMPAD1,
+        Key::Character("2") if is_numpad => KeyCode::NUMPAD2,
+        Key::Character("3") if is_numpad => KeyCode::NUMPAD3,
+        Key::Character("4") if is_numpad => KeyCode::NUMPAD4,
+        Key::Character("5") if is_numpad => KeyCode::NUMPAD5,
+        Key::Character("6") if is_numpad => KeyCode::NUMPAD6,
+        Key::Character("7") if is_numpad => KeyCode::NUMPAD7,
+        Key::Character("8") if is_numpad => KeyCode::NUMPAD8,
+        Key::Character("9") if is_numpad => KeyCode::NUMPAD9,
+        Key::Character("*") if is_numpad => KeyCode::MULTIPLY,
+        Key::Character("+") if is_numpad => KeyCode::PLUS,
+        Key::Character("-") if is_numpad => KeyCode::NUMPAD_MINUS,
+        Key::Character(".") if is_numpad => KeyCode::NUMPAD_PERIOD,
+        Key::Character("/") if is_numpad => KeyCode::NUMPAD_SLASH,
+        Key::Character("0") | Key::Character(")") => KeyCode::KEY0,
+        Key::Character("1") | Key::Character("!") => KeyCode::KEY1,
+        Key::Character("2") | Key::Character("@") => KeyCode::KEY2,
+        Key::Character("3") | Key::Character("#") => KeyCode::KEY3,
+        Key::Character("4") | Key::Character("$") => KeyCode::KEY4,
+        Key::Character("5") | Key::Character("%") => KeyCode::KEY5,
+        Key::Character("6") | Key::Character("^") => KeyCode::KEY6,
+        Key::Character("7") | Key::Character("&") => KeyCode::KEY7,
+        Key::Character("8") | Key::Character("*") => KeyCode::KEY8,
+        Key::Character("9") | Key::Character("(") => KeyCode::KEY9,
+        Key::Character(";") | Key::Character(":") => KeyCode::SEMICOLON,
+        Key::Character("=") | Key::Character("+") => KeyCode::EQUALS,
+        Key::Character(",") | Key::Character("<") => KeyCode::COMMA,
+        Key::Character("-") | Key::Character("_") => KeyCode::MINUS,
+        Key::Character(".") | Key::Character(">") => KeyCode::PERIOD,
+        Key::Character("/") | Key::Character("?") => KeyCode::SLASH,
+        Key::Character("`") | Key::Character("~") => KeyCode::GRAVE,
+        Key::Character("[") | Key::Character("{") => KeyCode::LBRACKET,
+        Key::Character("\\") | Key::Character("|") => KeyCode::BACKSLASH,
+        Key::Character("]") | Key::Character("}") => KeyCode::RBRACKET,
+        Key::Character("'") | Key::Character("\"") => KeyCode::APOSTROPHE,
+        Key::Named(NamedKey::PageUp) => KeyCode::PG_UP,
+        Key::Named(NamedKey::PageDown) => KeyCode::PG_DOWN,
+        Key::Named(NamedKey::End) => KeyCode::END,
+        Key::Named(NamedKey::Home) => KeyCode::HOME,
+        Key::Named(NamedKey::ArrowLeft) => KeyCode::LEFT,
+        Key::Named(NamedKey::ArrowUp) => KeyCode::UP,
+        Key::Named(NamedKey::ArrowRight) => KeyCode::RIGHT,
+        Key::Named(NamedKey::ArrowDown) => KeyCode::DOWN,
+        Key::Named(NamedKey::Insert) => KeyCode::INSERT,
+        Key::Named(NamedKey::Delete) => KeyCode::DELETE,
+        Key::Named(NamedKey::Pause) => KeyCode::PAUSE,
+        Key::Named(NamedKey::NumLock) => KeyCode::NUM_LOCK,
+        Key::Named(NamedKey::ScrollLock) => KeyCode::SCROLL_LOCK,
         Key::Named(NamedKey::F1) => KeyCode::F1,
         Key::Named(NamedKey::F2) => KeyCode::F2,
         Key::Named(NamedKey::F3) => KeyCode::F3,
@@ -155,9 +153,9 @@ pub fn winit_to_ruffle_key_code(event: &KeyEvent) -> Option<KeyCode> {
         Key::Named(NamedKey::F24) => KeyCode::F24,
         Key::Character(char) => {
             // Handle alphabetic characters
-            alpha_to_ruffle_key_code(char).unwrap_or(KeyCode::Unknown)
+            alpha_to_ruffle_key_code(char).unwrap_or(KeyCode::UNKNOWN)
         }
-        _ => KeyCode::Unknown,
+        _ => KeyCode::UNKNOWN,
     };
     Some(key_code)
 }
@@ -173,7 +171,7 @@ fn alpha_to_ruffle_key_code(char: &str) -> Option<KeyCode> {
         // ASCII alphabetic characters are all mapped to
         // their respective KeyCodes, which happen to have
         // the same numerical value as uppercase characters.
-        return KeyCode::from_u8(char.to_ascii_uppercase() as u8);
+        return Some(KeyCode::from_code(char.to_ascii_uppercase() as u32));
     }
 
     if !char.is_ascii() {
@@ -245,26 +243,6 @@ pub fn parse_url(path: &Path) -> Result<Url, Error> {
     }
 }
 
-pub async fn pick_file<W: HasWindowHandle + HasDisplayHandle>(
-    dir: Option<PathBuf>,
-    parent: Option<&W>,
-) -> Option<PathBuf> {
-    let mut dialog = AsyncFileDialog::new()
-        .add_filter("Flash Files", &["swf", "spl", "ruf"])
-        .add_filter("All Files", &["*"])
-        .set_title("Load a Flash File");
-
-    if let Some(dir) = dir {
-        dialog = dialog.set_directory(dir);
-    }
-
-    if let Some(parent) = parent {
-        dialog = dialog.set_parent(parent);
-    }
-
-    dialog.pick_file().await.map(|h| h.into())
-}
-
 #[cfg(not(feature = "tracy"))]
 pub fn plot_stats_in_tracy(_instance: &wgpu::Instance) {}
 
@@ -304,4 +282,15 @@ pub fn plot_stats_in_tracy(instance: &wgpu::Instance) {
     }
 
     tracy.frame_mark();
+}
+
+pub fn open_url(url: &Url) {
+    // TODO: This opens local files in the browser while flash opens them
+    // in the default program for the respective filetype.
+    // This especially includes mailto links. Ruffle opens the browser which opens
+    // the preferred program while flash opens the preferred program directly.
+    match webbrowser::open(url.as_str()) {
+        Ok(_output) => {}
+        Err(e) => tracing::error!("Could not open URL {}: {}", url.as_str(), e),
+    };
 }

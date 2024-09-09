@@ -10,6 +10,25 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FEATURES: lzma,jpegxr
+  TEST_OPTS: --workspace --locked --no-fail-fast -j 4
+
+  # This is to counteract the disabling by rust-cache.
+  # See: https://github.com/Swatinem/rust-cache/issues/43
+  CARGO_INCREMENTAL: '1'
+
+  # Supposedly makes "Updating crates.io index" faster on Windows.
+  # See: https://github.com/rust-lang/cargo/issues/9167
+  CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
+
+  # Workaround for: https://github.com/nextest-rs/nextest/issues/1493
+  # See also: https://github.com/rust-lang/rustup/issues/3825
+  RUSTUP_WINDOWS_PATH_ADD_BIN: '1'
+
+  # (Linux) Just to silence warnings about it missing
+  XDG_RUNTIME_DIR: ''
+
 jobs:
   changes:
     name: Paths filter
@@ -64,9 +83,13 @@ jobs:
       # See also: https://github.com/dtolnay/linkme/issues/94
       # Additionally: https://lld.llvm.org/ELF/start-stop-gc
       - name: Disable linker start-stop-gc
-        # Note: We also use `rust-lld` on Windows, see `config.toml`.
-        if: runner.os != 'macOS'
+        if: runner.os == 'Linux'
         run: echo RUSTFLAGS=${RUSTFLAGS}\ --cfg=web_sys_unstable_apis\ -Clink-args=-znostart-stop-gc >> $GITHUB_ENV
+
+      - name: Enable image tests
+        if: runner.os != 'macOS'
+        shell: bash
+        run: echo FEATURES=${FEATURES},imgtests | tee -a $GITHUB_ENV
 
       - name: Cache Cargo output
         uses: Swatinem/rust-cache@v2
@@ -79,26 +102,13 @@ jobs:
         with:
           tool: cargo-nextest
 
-      - name: Run tests with image tests
-        if: runner.os != 'macOS'
-        run: cargo nextest run --profile ci --cargo-profile ci --workspace --locked --no-fail-fast -j 4 --features imgtests,lzma,jpegxr
-        env:
-          # This is to counteract the disabling by rust-cache.
-          # See: https://github.com/Swatinem/rust-cache/issues/43
-          CARGO_INCREMENTAL: '1'
-          # Supposedly makes "Updating crates.io index" faster on Windows.
-          # See: https://github.com/rust-lang/cargo/issues/9167
-          CARGO_NET_GIT_FETCH_WITH_CLI: 'true'
-          # Workaround for: https://github.com/nextest-rs/nextest/issues/1493
-          # See also: https://github.com/rust-lang/rustup/issues/3825
-          RUSTUP_WINDOWS_PATH_ADD_BIN: '1'
-          XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
+      - name: Run tests
+        shell: bash
+        run: cargo nextest run --profile ci --cargo-profile ci ${TEST_OPTS} --features ${FEATURES}
 
-      - name: Run tests without image tests
-        if: runner.os == 'macOS'
-        run: cargo nextest run --profile ci --cargo-profile ci --workspace --locked --no-fail-fast -j 4 --features lzma,jpegxr
-        env:
-          XDG_RUNTIME_DIR: '' # dummy value, just to silence warnings about it missing
+      - name: Run doctests
+        shell: bash
+        run: cargo test --doc --profile ci ${TEST_OPTS} --features ${FEATURES}
 
       - name: Upload images
         if: failure()

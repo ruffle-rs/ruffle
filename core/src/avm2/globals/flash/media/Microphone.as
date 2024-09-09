@@ -2,6 +2,8 @@ package flash.media {
     import flash.events.EventDispatcher;
 
     public final class Microphone extends EventDispatcher {
+        
+        [API("672")]
         public static function getEnhancedMicrophone(index:int = -1):Microphone {
             __ruffle__.stub_method("flash.media.Microphone", "getEnhancedMicrophone");
             return new Microphone();
@@ -56,11 +58,13 @@ package flash.media {
             __ruffle__.stub_setter("flash.media.Microphone", "encodeQuality");
         }
 
+        [API("672")]
         public function get enhancedOptions():MicrophoneEnhancedOptions {
             __ruffle__.stub_getter("flash.media.Microphone", "enhancedOptions");
             return new MicrophoneEnhancedOptions();
         }
 
+        [API("672")]
         public function set enhancedOptions(params:MicrophoneEnhancedOptions) {
             __ruffle__.stub_setter("flash.media.Microphone", "enhancedOptions");
         }

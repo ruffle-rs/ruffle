@@ -6,18 +6,23 @@
 package flash.display3D
 {
 
+    [API("686")]
     public final class Context3DTextureFilter
     {
         // Use anisotropic filter with radio 16 when upsampling textures
+        [API("698")]
         public static const ANISOTROPIC16X:String = "anisotropic16x";
 
         // Use anisotropic filter with radio 2 when upsampling textures
+        [API("698")]
         public static const ANISOTROPIC2X:String = "anisotropic2x";
 
         // Use anisotropic filter with radio 4 when upsampling textures
+        [API("698")]
         public static const ANISOTROPIC4X:String = "anisotropic4x";
 
         // Use anisotropic filter with radio 8 when upsampling textures
+        [API("698")]
         public static const ANISOTROPIC8X:String = "anisotropic8x";
 
         // Use linear interpolation when upsampling textures (gives a smooth, blurry look).

@@ -370,7 +370,7 @@ pub fn get_vector<'gc>(
             height,
         );
 
-        let value_type = activation.avm2().classes().uint.inner_class_definition();
+        let value_type = activation.avm2().class_defs().uint;
         let new_storage = VectorStorage::from_values(pixels, false, Some(value_type));
 
         return Ok(VectorObject::from_vector(new_storage, activation)?.into());

@@ -127,11 +127,11 @@ impl<'gc> PropertyClass<'gc> {
         }
     }
 
-    pub fn get_name(&self, mc: &Mutation<'gc>) -> Multiname<'gc> {
+    pub fn get_name(&self) -> Multiname<'gc> {
         match self {
             PropertyClass::Class(class) => class.name().into(),
             PropertyClass::Name(gc) => gc.0.clone(),
-            PropertyClass::Any => Multiname::any(mc),
+            PropertyClass::Any => Multiname::any(),
         }
     }
 }

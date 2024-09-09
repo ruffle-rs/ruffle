@@ -4,11 +4,11 @@ package {
     public final class QName {
         public static const length = 2;
         
-        public function QName(uri:* = undefined, localName:*=undefined) {
-            this.init(uri, localName)
+        public function QName(uri:* = undefined, localName:* = undefined) {
+            this.init(arguments);
         }
 
-        private native function init(uri:*, localName:*):void;
+        private native function init(args:Array):void;
 
         public native function get localName():String;
         public native function get uri():String;

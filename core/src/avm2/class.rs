@@ -129,19 +129,20 @@ pub struct ClassData<'gc> {
     /// Must be called each time a new class instance is constructed.
     instance_init: Method<'gc>,
 
-    /// The native instance initializer for this class.
+    /// The super initializer for this class, called when super() is called for
+    /// a subclass.
     ///
     /// This may be provided to allow natively-constructed classes to
     /// initialize themselves in a different manner from user-constructed ones.
     /// For example, the user-accessible constructor may error out (as it's not
     /// a valid class to construct for users), but native code may still call
-    /// it's constructor stack.
+    /// its constructor stack.
     ///
-    /// By default, a class's `native_instance_init` will be initialized to the
-    /// same method as the regular one. You must specify a separate native
+    /// By default, a class's `super_init` will be initialized to the
+    /// same method as the regular one. You must specify a separate super
     /// initializer to change initialization behavior based on what code is
     /// constructing the class.
-    native_instance_init: Method<'gc>,
+    super_init: Method<'gc>,
 
     /// Traits for a given class.
     ///
@@ -221,7 +222,7 @@ impl<'gc> Class<'gc> {
         class_i_class: Class<'gc>,
         mc: &Mutation<'gc>,
     ) -> Self {
-        let native_instance_init = instance_init;
+        let super_init = instance_init;
 
         let instance_allocator = super_class
             .map(|c| c.instance_allocator())
@@ -239,7 +240,7 @@ impl<'gc> Class<'gc> {
                 all_interfaces: Vec::new(),
                 instance_allocator,
                 instance_init,
-                native_instance_init,
+                super_init,
                 traits: Vec::new(),
                 vtable: VTable::empty(mc),
                 call_handler: None,
@@ -269,7 +270,7 @@ impl<'gc> Class<'gc> {
                 all_interfaces: Vec::new(),
                 instance_allocator: Allocator(scriptobject_allocator),
                 instance_init: class_init,
-                native_instance_init: class_init,
+                super_init: class_init,
                 traits: Vec::new(),
                 vtable: VTable::empty(mc),
                 call_handler: None,
@@ -292,7 +293,7 @@ impl<'gc> Class<'gc> {
         instance_init: Method<'gc>,
         mc: &Mutation<'gc>,
     ) -> Self {
-        let native_instance_init = instance_init;
+        let super_init = instance_init;
 
         Class(GcCell::new(
             mc,
@@ -306,7 +307,7 @@ impl<'gc> Class<'gc> {
                 all_interfaces: Vec::new(),
                 instance_allocator: Allocator(scriptobject_allocator),
                 instance_init,
-                native_instance_init,
+                super_init,
                 traits: Vec::new(),
                 vtable: VTable::empty(mc),
                 call_handler: None,
@@ -367,7 +368,7 @@ impl<'gc> Class<'gc> {
             ),
             object_vector_i_class.instance_init(),
             object_vector_c_class.instance_init(),
-            context.avm2.classes().class.inner_class_definition(),
+            context.avm2.class_defs().class,
             mc,
         );
 
@@ -482,7 +483,7 @@ impl<'gc> Class<'gc> {
         }
 
         let instance_init = unit.load_method(abc_instance.init_method, false, activation)?;
-        let mut native_instance_init = instance_init;
+        let mut super_init = instance_init;
         let class_init = unit.load_method(abc_class.init_method, false, activation)?;
         let mut native_call_handler = None;
 
@@ -501,7 +502,7 @@ impl<'gc> Class<'gc> {
                 .map(|(_name, ptr)| Allocator(ptr));
 
             if let Some((name, table_native_init)) =
-                activation.avm2().native_instance_init_table[class_index as usize]
+                activation.avm2().native_super_initializer_table[class_index as usize]
             {
                 let method = Method::from_builtin_and_params(
                     table_native_init,
@@ -511,7 +512,7 @@ impl<'gc> Class<'gc> {
                     instance_init.is_variadic(),
                     activation.context.gc_context,
                 );
-                native_instance_init = method;
+                super_init = method;
             }
 
             if let Some((name, table_native_call_handler)) =
@@ -523,7 +524,7 @@ impl<'gc> Class<'gc> {
                     // A 'callable' class doesn't have a signature - let the
                     // method do any needed coercions
                     vec![],
-                    Multiname::any(activation.context.gc_context),
+                    Multiname::any(),
                     true,
                     activation.context.gc_context,
                 );
@@ -547,7 +548,7 @@ impl<'gc> Class<'gc> {
                 all_interfaces: Vec::new(),
                 instance_allocator,
                 instance_init,
-                native_instance_init,
+                super_init,
                 traits: Vec::new(),
                 vtable: VTable::empty(activation.context.gc_context),
                 call_handler: native_call_handler,
@@ -573,14 +574,14 @@ impl<'gc> Class<'gc> {
             ClassData {
                 name: c_name,
                 param: None,
-                super_class: Some(activation.avm2().classes().class.inner_class_definition()),
+                super_class: Some(activation.avm2().class_defs().class),
                 attributes: ClassAttributes::FINAL,
                 protected_namespace,
                 direct_interfaces: Vec::new(),
                 all_interfaces: Vec::new(),
                 instance_allocator: Allocator(scriptobject_allocator),
                 instance_init: class_init,
-                native_instance_init: class_init,
+                super_init: class_init,
                 traits: Vec::new(),
                 vtable: VTable::empty(activation.context.gc_context),
                 call_handler: None,
@@ -742,7 +743,6 @@ impl<'gc> Class<'gc> {
         read.vtable.init_vtable(
             self,
             None,
-            &read.traits,
             None,
             read.super_class.map(|c| c.vtable()),
             context.gc_context,
@@ -841,7 +841,7 @@ impl<'gc> Class<'gc> {
                     "<Activation object constructor>",
                     activation.context.gc_context,
                 ),
-                native_instance_init: Method::from_builtin(
+                super_init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
                     "<Activation object constructor>",
                     activation.context.gc_context,
@@ -871,7 +871,7 @@ impl<'gc> Class<'gc> {
             ClassData {
                 name: c_name,
                 param: None,
-                super_class: Some(activation.avm2().classes().class.inner_class_definition()),
+                super_class: Some(activation.avm2().class_defs().class),
                 attributes: ClassAttributes::FINAL,
                 protected_namespace: None,
                 direct_interfaces: Vec::new(),
@@ -882,7 +882,7 @@ impl<'gc> Class<'gc> {
                     "<Activation object class constructor>",
                     activation.context.gc_context,
                 ),
-                native_instance_init: Method::from_builtin(
+                super_init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
                     "<Activation object class constructor>",
                     activation.context.gc_context,
@@ -1228,6 +1228,10 @@ impl<'gc> Class<'gc> {
         Ref::map(self.0.read(), |c| &c.traits)
     }
 
+    pub fn set_traits(&self, mc: &Mutation<'gc>, traits: Vec<Trait<'gc>>) {
+        self.0.write(mc).traits = traits;
+    }
+
     /// Get this class's instance allocator.
     ///
     /// If `None`, then you should use the instance allocator of the superclass
@@ -1246,14 +1250,14 @@ impl<'gc> Class<'gc> {
         self.0.read().instance_init
     }
 
-    /// Get this class's native-code instance initializer.
-    pub fn native_instance_init(self) -> Method<'gc> {
-        self.0.read().native_instance_init
+    /// Get this class's super() initializer.
+    pub fn super_init(self) -> Method<'gc> {
+        self.0.read().super_init
     }
 
-    /// Set a native-code instance initializer for this class.
-    pub fn set_native_instance_init(self, mc: &Mutation<'gc>, new_native_init: Method<'gc>) {
-        self.0.write(mc).native_instance_init = new_native_init;
+    /// Set a super() initializer for this class.
+    pub fn set_super_init(self, mc: &Mutation<'gc>, new_super_init: Method<'gc>) {
+        self.0.write(mc).super_init = new_super_init;
     }
 
     /// Set a call handler for this class.
@@ -1311,6 +1315,10 @@ impl<'gc> Class<'gc> {
         self.0.write(mc).linked_class = ClassLink::LinkToClass(c_class);
     }
 
+    pub fn is_c_class(self) -> bool {
+        matches!(self.0.read().linked_class, ClassLink::LinkToInstance(_))
+    }
+
     pub fn i_class(self) -> Option<Class<'gc>> {
         if let ClassLink::LinkToInstance(i_class) = self.0.read().linked_class {
             Some(i_class)
@@ -1323,5 +1331,9 @@ impl<'gc> Class<'gc> {
         assert!(matches!(self.0.read().linked_class, ClassLink::Unlinked));
 
         self.0.write(mc).linked_class = ClassLink::LinkToInstance(i_class);
+    }
+
+    pub fn is_i_class(self) -> bool {
+        matches!(self.0.read().linked_class, ClassLink::LinkToClass(_))
     }
 }

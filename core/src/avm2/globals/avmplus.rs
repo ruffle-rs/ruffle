@@ -315,7 +315,7 @@ fn describe_internal_body<'gc>(
                     continue;
                 }
                 let prop_class_name = vtable
-                    .slot_class_name(*slot_id, activation.context.gc_context)?
+                    .slot_class_name(*slot_id)?
                     .to_qualified_name_or_star(activation.context.gc_context);
 
                 let access = match prop {
@@ -377,7 +377,7 @@ fn describe_internal_body<'gc>(
                 let declared_by = method.class;
 
                 if flags.contains(DescribeTypeFlags::HIDE_OBJECT)
-                    && declared_by == activation.avm2().classes().object.inner_class_definition()
+                    && declared_by == activation.avm2().class_defs().object
                 {
                     continue;
                 }

@@ -15,6 +15,7 @@ use gc_arena::Collect;
 use std::collections::BTreeMap;
 
 /// An intermediate format of representing shared data between ActionScript and elsewhere.
+///
 /// Regardless of the capabilities of both sides, all data will be translated to this potentially
 /// lossy format. Any recursion or additional metadata in ActionScript will not be translated.
 #[derive(Debug, Clone, PartialEq)]

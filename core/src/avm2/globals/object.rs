@@ -279,7 +279,7 @@ pub fn create_i_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
             has_own_property,
             vec![ParamConfig::optional(
                 "name",
-                Multiname::any(activation.context.gc_context),
+                Multiname::any(),
                 Value::Undefined,
             )],
             Multiname::new(activation.avm2().public_namespace_base_version, "Boolean"),
@@ -289,7 +289,7 @@ pub fn create_i_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
             is_prototype_of,
             vec![ParamConfig::optional(
                 "theClass",
-                Multiname::any(activation.context.gc_context),
+                Multiname::any(),
                 Value::Undefined,
             )],
             Multiname::new(activation.avm2().public_namespace_base_version, "Boolean"),
@@ -299,7 +299,7 @@ pub fn create_i_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
             property_is_enumerable,
             vec![ParamConfig::optional(
                 "name",
-                Multiname::any(activation.context.gc_context),
+                Multiname::any(),
                 Value::Undefined,
             )],
             Multiname::new(activation.avm2().public_namespace_base_version, "Boolean"),

@@ -8,7 +8,6 @@ include "Object.as"
 include "Array.as"
 include "Boolean.as"
 include "Class.as"
-include "Date.as"
 
 include "Function.as"
 include "Number.as"

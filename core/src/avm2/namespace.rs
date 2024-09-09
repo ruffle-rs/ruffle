@@ -2,7 +2,7 @@ use crate::avm2::Error;
 use crate::context::UpdateContext;
 use crate::string::{AvmAtom, AvmString};
 use crate::{avm2::script::TranslationUnit, context::GcContext};
-use gc_arena::{Collect, Gc, Mutation};
+use gc_arena::{Collect, Gc};
 use num_traits::FromPrimitive;
 use ruffle_wstr::WStr;
 use std::fmt::Debug;
@@ -12,7 +12,10 @@ use super::api_version::ApiVersion;
 
 #[derive(Clone, Copy, Collect, Debug, PartialEq)]
 #[collect(no_drop)]
-pub struct Namespace<'gc>(Gc<'gc, NamespaceData<'gc>>);
+pub struct Namespace<'gc>(
+    // `None` represents the wildcard namespace `Namespace::any()`.
+    Option<Gc<'gc, NamespaceData<'gc>>>,
+);
 
 /// Represents the name of a namespace.
 #[allow(clippy::enum_variant_names)]
@@ -29,7 +32,6 @@ enum NamespaceData<'gc> {
     // note: private namespaces are always compared by pointer identity
     // of the enclosing `Gc`.
     Private(AvmAtom<'gc>),
-    Any,
 }
 
 fn strip_version_mark(url: &WStr, is_playerglobals: bool) -> Option<(&WStr, ApiVersion)> {
@@ -85,7 +87,7 @@ impl<'gc> Namespace<'gc> {
         context: &mut UpdateContext<'gc>,
     ) -> Result<Self, Error<'gc>> {
         if namespace_index.0 == 0 {
-            return Ok(Self::any(context.gc_context));
+            return Ok(Self::any());
         }
 
         let actual_index = namespace_index.0 as usize - 1;
@@ -111,10 +113,10 @@ impl<'gc> Namespace<'gc> {
 
         // Private namespaces don't get any of the namespace version checks
         if let AbcNamespace::Private(_) = abc_namespace {
-            return Ok(Self(Gc::new(
+            return Ok(Self(Some(Gc::new(
                 context.gc_context,
                 NamespaceData::Private(namespace_name),
-            )));
+            ))));
         }
 
         // FIXME - AvmCore gets this from an external source. I'm not exactly sure
@@ -212,11 +214,11 @@ impl<'gc> Namespace<'gc> {
             AbcNamespace::StaticProtected(_) => NamespaceData::StaticProtected(namespace_name),
             AbcNamespace::Private(_) => unreachable!(),
         };
-        Ok(Self(Gc::new(context.gc_context, ns)))
+        Ok(Self(Some(Gc::new(context.gc_context, ns))))
     }
 
-    pub fn any(mc: &Mutation<'gc>) -> Self {
-        Self(Gc::new(mc, NamespaceData::Any))
+    pub fn any() -> Self {
+        Self(None)
     }
 
     // TODO(moulins): allow passing an AvmAtom or a non-static `&WStr` directly
@@ -228,10 +230,10 @@ impl<'gc> Namespace<'gc> {
         let atom = context
             .interner
             .intern(context.gc_context, package_name.into());
-        Self(Gc::new(
+        Self(Some(Gc::new(
             context.gc_context,
             NamespaceData::Namespace(atom, api_version),
-        ))
+        )))
     }
 
     // TODO(moulins): allow passing an AvmAtom or a non-static `&WStr` directly
@@ -242,42 +244,41 @@ impl<'gc> Namespace<'gc> {
         let atom = context
             .interner
             .intern(context.gc_context, package_name.into());
-        Self(Gc::new(
+        Self(Some(Gc::new(
             context.gc_context,
             NamespaceData::PackageInternal(atom),
-        ))
+        )))
     }
 
     pub fn is_public(&self) -> bool {
-        matches!(*self.0, NamespaceData::Namespace(name, _) if name.as_wstr().is_empty())
+        matches!(self.0.as_deref(), Some(NamespaceData::Namespace(name, _)) if name.as_wstr().is_empty())
     }
 
     pub fn is_public_ignoring_ns(&self) -> bool {
-        matches!(*self.0, NamespaceData::Namespace(_, _))
+        matches!(self.0.as_deref(), Some(NamespaceData::Namespace(_, _)))
     }
 
     pub fn is_any(&self) -> bool {
-        matches!(*self.0, NamespaceData::Any)
+        self.0.is_none()
     }
 
     pub fn is_private(&self) -> bool {
-        matches!(*self.0, NamespaceData::Private(_))
+        matches!(self.0.as_deref(), Some(NamespaceData::Private(_)))
     }
 
     pub fn is_namespace(&self) -> bool {
-        matches!(*self.0, NamespaceData::Namespace(_, _))
+        matches!(self.0.as_deref(), Some(NamespaceData::Namespace(_, _)))
     }
 
     pub fn as_uri_opt(&self) -> Option<AvmString<'gc>> {
-        match *self.0 {
-            NamespaceData::Namespace(a, _) => Some(a.into()),
-            NamespaceData::PackageInternal(a) => Some(a.into()),
-            NamespaceData::Protected(a) => Some(a.into()),
-            NamespaceData::Explicit(a) => Some(a.into()),
-            NamespaceData::StaticProtected(a) => Some(a.into()),
-            NamespaceData::Private(a) => Some(a.into()),
-            NamespaceData::Any => None,
-        }
+        self.0.map(|data| match *data {
+            NamespaceData::Namespace(a, _) => a.into(),
+            NamespaceData::PackageInternal(a) => a.into(),
+            NamespaceData::Protected(a) => a.into(),
+            NamespaceData::Explicit(a) => a.into(),
+            NamespaceData::StaticProtected(a) => a.into(),
+            NamespaceData::Private(a) => a.into(),
+        })
     }
 
     /// Get the string value of this namespace, ignoring its type.
@@ -294,12 +295,12 @@ impl<'gc> Namespace<'gc> {
     /// Namespace does not implement `PartialEq`, so that each caller is required
     /// to explicitly choose either `exact_version_match` or `matches_ns`.
     pub fn exact_version_match(&self, other: Self) -> bool {
-        if Gc::as_ptr(self.0) == Gc::as_ptr(other.0) {
+        if self.0.map(Gc::as_ptr) == other.0.map(Gc::as_ptr) {
             true
         } else if self.is_private() || other.is_private() {
             false
         } else {
-            *self.0 == *other.0
+            self.0 == other.0
         }
     }
 
@@ -312,10 +313,10 @@ impl<'gc> Namespace<'gc> {
         if self.exact_version_match(other) {
             return true;
         }
-        match (&*self.0, &*other.0) {
+        match (self.0.as_deref(), other.0.as_deref()) {
             (
-                NamespaceData::Namespace(name1, version1),
-                NamespaceData::Namespace(name2, version2),
+                Some(NamespaceData::Namespace(name1, version1)),
+                Some(NamespaceData::Namespace(name2, version2)),
             ) => {
                 let name_matches = name1 == name2;
                 let version_matches = version1 <= version2;
@@ -326,8 +327,8 @@ impl<'gc> Namespace<'gc> {
         }
     }
     pub fn matches_api_version(&self, match_version: ApiVersion) -> bool {
-        match &*self.0 {
-            NamespaceData::Namespace(_, namespace_version) => namespace_version <= &match_version,
+        match self.0.as_deref() {
+            Some(NamespaceData::Namespace(_, version)) => version <= &match_version,
             _ => true,
         }
     }

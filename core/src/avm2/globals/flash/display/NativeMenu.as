@@ -5,7 +5,9 @@ package flash.display
     import __ruffle__.stub_method;
     import __ruffle__.stub_getter;
     
-    [API("661")]
+    // According to the documentation, it should be [API("661")]
+    // but airglobal.swc disagrees with that:
+    [API("667")]
     public class NativeMenu extends EventDispatcher
     {
 
@@ -14,9 +16,6 @@ package flash.display
 
         // The array of NativeMenuItem objects in this menu.
         public var items:Array;
-
-        // The number of NativeMenuItem objects in this menu.
-        private var _numItems:int;
 
         // The parent menu.
         private var _parent:NativeMenu;
@@ -30,14 +29,16 @@ package flash.display
         public function addItem(item:NativeMenuItem):NativeMenuItem
         {
             stub_method("flash.display.NativeMenu", "addItem");
-            return null;
+            this.items.push(item);
+            return item;
         }
 
         // Inserts a menu item at the specified position.
         public function addItemAt(item:NativeMenuItem, index:int):NativeMenuItem
         {
             stub_method("flash.display.NativeMenu", "addItemAt");
-            return null;
+            this.items[index] = item;
+            return item;
         }
 
         // Adds a submenu to the menu by inserting a new menu item.
@@ -99,6 +100,7 @@ package flash.display
         public function removeAllItems():void
         {
             stub_method("flash.display.NativeMenu", "removeAllItems");
+            this.items = [];
         }
 
         // Removes the specified menu item.
@@ -121,7 +123,8 @@ package flash.display
             stub_method("flash.display.NativeMenu", "setItemIndex");
         }
 
-        [API("668")]
+        // According to the documentation, it should be [API("668")]
+        // but there is no version gate in airglobal.swc
         public function get isSupported():Boolean
         {
             return this._isSupported;
@@ -129,7 +132,7 @@ package flash.display
 
         public function get numItems():int
         {
-            return this._numItems;
+            return this.items.length;
         }
 
         public function get parent():NativeMenu

@@ -6,6 +6,7 @@
 package flash.system
 {
 
+    [API("682")]
     public final class MessageChannelState
     {
         // This state indicates that the message channel has been closed and doesn't have any more messages to deliver.

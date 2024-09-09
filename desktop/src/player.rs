@@ -1,6 +1,6 @@
 use crate::backends::{
-    CpalAudioBackend, DesktopExternalInterfaceProvider, DesktopFSCommandProvider, DesktopUiBackend,
-    RfdNavigatorInterface,
+    CpalAudioBackend, DesktopExternalInterfaceProvider, DesktopFSCommandProvider,
+    DesktopNavigatorInterface, DesktopUiBackend,
 };
 use crate::custom_event::RuffleEvent;
 use crate::gui::MovieView;
@@ -218,7 +218,7 @@ impl ActivePlayer {
             opt.socket_allowed.clone(),
             opt.tcp_connections.unwrap_or(SocketMode::Ask),
             Rc::new(content),
-            RfdNavigatorInterface,
+            DesktopNavigatorInterface::new(event_loop.clone()),
         );
 
         if cfg!(feature = "external_video") && preferences.openh264_enabled() {
@@ -265,11 +265,11 @@ impl ActivePlayer {
             .with_storage(preferences.storage_backend().create_backend(&opt))
             .with_fs_commands(Box::new(DesktopFSCommandProvider {
                 event_loop: event_loop.clone(),
-                window: window.clone(),
             }))
             .with_ui(
                 DesktopUiBackend::new(
                     window.clone(),
+                    event_loop.clone(),
                     opt.open_url_mode,
                     font_database,
                     preferences,

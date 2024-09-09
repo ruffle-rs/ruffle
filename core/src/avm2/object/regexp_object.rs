@@ -75,9 +75,8 @@ impl<'gc> RegExpObject<'gc> {
             },
         ))
         .into();
-        this.install_instance_slots(activation.context.gc_context);
 
-        class.call_native_init(this.into(), &[], activation)?;
+        class.call_super_init(this.into(), &[], activation)?;
 
         Ok(this)
     }

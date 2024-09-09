@@ -272,10 +272,11 @@ pub enum PixelBenderShaderArgument<'a> {
     },
 }
 
-/// An image input. This accepts both an owned BitmapHandle,
-/// and a borrowed texture (used when applying a filter to
-/// a texture that we don't have ownership of, and therefore
-/// cannot construct a BitmapHandle for).
+/// An image input.
+///
+/// This accepts both an owned BitmapHandle, and a borrowed texture
+/// (used when applying a filter to a texture that we don't have
+/// ownership of, and therefore cannot construct a BitmapHandle for).
 #[derive(Debug, Clone)]
 pub enum ImageInputTexture<'a> {
     Bitmap(BitmapHandle),

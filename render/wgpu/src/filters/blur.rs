@@ -10,7 +10,7 @@ use swf::BlurFilter as BlurFilterArgs;
 use wgpu::util::StagingBelt;
 use wgpu::{BufferSlice, CommandEncoder, RenderPipeline, TextureView};
 
-/// This is a 1:1 match of of `struct Filter` in `blur.wgsl`. See that, and the usage below, for more info.
+/// This is a 1:1 match of `struct Filter` in `blur.wgsl`. See that, and the usage below, for more info.
 /// Since WebGL requires 16 byte struct size (alignment), some of these fields (namely m2 and last_weight)
 /// are passed in precomputed, even though they are trivial to get (addition/multiplication by constant).
 /// The struct would have to be padded with dummy data otherwise anyway - these are at least useful.

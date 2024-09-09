@@ -17,7 +17,7 @@ const INSUFFICIENT: &str =
     "Error #2099: The loading object is not sufficiently loaded to provide this information.";
 
 /// Implements `flash.display.LoaderInfo`'s native instance constructor.
-pub fn native_instance_init<'gc>(
+pub fn super_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],

@@ -211,7 +211,6 @@ impl<'gc> ClassObject<'gc> {
         self.instance_vtable().init_vtable(
             class,
             self.superclass_object(),
-            &class.traits(),
             Some(self.instance_scope()),
             self.superclass_object().map(|cls| cls.instance_vtable()),
             activation.context.gc_context,
@@ -254,14 +253,12 @@ impl<'gc> ClassObject<'gc> {
         class_vtable.init_vtable(
             c_class,
             Some(class_classobject),
-            &c_class.traits(),
             Some(self.class_scope()),
             Some(class_classobject.instance_vtable()),
             activation.context.gc_context,
         );
 
         self.set_vtable(activation.context.gc_context, class_vtable);
-        self.base().install_instance_slots(activation.gc());
 
         self.run_class_initializer(activation)?;
 
@@ -378,14 +375,14 @@ impl<'gc> ClassObject<'gc> {
     /// The native initializer is called when native code needs to construct an
     /// object, or when supercalling into a parent constructor (as there are
     /// classes that cannot be constructed but can be supercalled).
-    pub fn call_native_init(
+    pub fn call_super_init(
         self,
         receiver: Value<'gc>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let scope = self.0.instance_scope.get();
-        let method = self.native_constructor();
+        let method = self.super_constructor();
         exec(
             method,
             scope,
@@ -676,8 +673,8 @@ impl<'gc> ClassObject<'gc> {
         self.inner_class_definition().instance_init()
     }
 
-    pub fn native_constructor(self) -> Method<'gc> {
-        self.inner_class_definition().native_instance_init()
+    pub fn super_constructor(self) -> Method<'gc> {
+        self.inner_class_definition().super_init()
     }
 
     pub fn call_handler(self) -> Option<Method<'gc>> {
@@ -801,8 +798,6 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         let instance_allocator = self.instance_allocator();
 
         let instance = instance_allocator(self, activation)?;
-
-        instance.install_instance_slots(activation.context.gc_context);
 
         self.call_init(instance.into(), arguments, activation)?;
 

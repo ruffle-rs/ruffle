@@ -103,7 +103,7 @@ impl<'gc> Sockets<'gc> {
 
         // NOTE: This call will send SocketAction::Connect to sender with connection status.
         backend.connect_socket(
-            host,
+            sanitize_host(&host).to_string(),
             port,
             Duration::from_millis(target.timeout().into()),
             handle,
@@ -137,7 +137,7 @@ impl<'gc> Sockets<'gc> {
 
         // NOTE: This call will send SocketAction::Connect to sender with connection status.
         backend.connect_socket(
-            host,
+            sanitize_host(&host).to_string(),
             port,
             Duration::from_millis(xml_socket.timeout().into()),
             handle,
@@ -433,5 +433,31 @@ impl<'gc> Sockets<'gc> {
                 }
             }
         }
+    }
+}
+
+/// Flash treats a socket host as a cstring, and stops reading at a null byte.
+/// We need to account for this here.
+fn sanitize_host(host: &str) -> &str {
+    host.split('\0').next().unwrap()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::sanitize_host;
+
+    #[test]
+    fn truncate_host_at_null() {
+        assert_eq!(
+            sanitize_host("1.2.3.4\0nonsense that gets dropped\0"),
+            "1.2.3.4"
+        );
+        assert_eq!(sanitize_host("\0nonsense"), "");
+        assert_eq!(sanitize_host("host\0"), "host");
+    }
+
+    #[test]
+    fn normal_host() {
+        assert_eq!(sanitize_host("1.2.3.4"), "1.2.3.4");
     }
 }

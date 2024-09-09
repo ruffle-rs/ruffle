@@ -55,7 +55,6 @@ impl<'gc> StageObject<'gc> {
                 display_object,
             },
         ));
-        instance.install_instance_slots(activation.context.gc_context);
 
         Ok(instance)
     }
@@ -72,7 +71,7 @@ impl<'gc> StageObject<'gc> {
     ) -> Result<Self, Error<'gc>> {
         let this = Self::for_display_object(activation, display_object, class)?;
 
-        class.call_native_init(this.into(), &[], activation)?;
+        class.call_super_init(this.into(), &[], activation)?;
 
         Ok(this)
     }
@@ -87,7 +86,7 @@ impl<'gc> StageObject<'gc> {
     ) -> Result<Self, Error<'gc>> {
         let this = Self::for_display_object(activation, display_object, class)?;
 
-        class.call_native_init(this.into(), args, activation)?;
+        class.call_super_init(this.into(), args, activation)?;
 
         Ok(this)
     }
@@ -105,7 +104,6 @@ impl<'gc> StageObject<'gc> {
                 display_object,
             },
         ));
-        this.install_instance_slots(activation.context.gc_context);
 
         // note: for Graphics, there's no need to call init.
 

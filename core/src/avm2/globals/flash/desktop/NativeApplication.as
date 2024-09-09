@@ -17,7 +17,7 @@ package flash.desktop
   {
     private static var _instance:NativeApplication;
 
-    public var _openedWindows:Array = [];
+    private var _openedWindows:Array = [];
 
     private var _idleThreshold:int = 300;
 
@@ -78,31 +78,31 @@ package flash.desktop
 
     public function get runtimeVersion():String
     {
-      stub_method("flash.desktop.NativeApplication", "runtimeVersion");
+      stub_getter("flash.desktop.NativeApplication", "runtimeVersion");
       return "5.0.0";
     }
 
     public function get runtimePatchLevel():uint
     {
-      stub_method("flash.desktop.NativeApplication", "runtimePatchLevel");
+      stub_getter("flash.desktop.NativeApplication", "runtimePatchLevel");
       return 0;
     }
 
     public function get applicationID():String
     {
-      stub_method("flash.desktop.NativeApplication", "applicationID");
+      stub_getter("flash.desktop.NativeApplication", "applicationID");
       return "";
     }
 
     public function get publisherID():String
     {
-      stub_method("flash.desktop.NativeApplication", "publisherID");
+      stub_getter("flash.desktop.NativeApplication", "publisherID");
       return "";
     }
 
     public function get applicationDescriptor():XML
     {
-      stub_method("flash.desktop.NativeApplication", "applicationDescriptor");
+      stub_getter("flash.desktop.NativeApplication", "applicationDescriptor");
       return null;
     }
 
@@ -114,7 +114,7 @@ package flash.desktop
 
     public function set autoExit(param1:Boolean):void
     {
-      stub_getter("flash.desktop.NativeApplication", "autoExit");
+      stub_setter("flash.desktop.NativeApplication", "autoExit");
     }
 
     public function get icon():InteractiveIcon
@@ -172,35 +172,37 @@ package flash.desktop
 
     public function get idleThreshold():int
     {
+      stub_getter("flash.desktop.NativeApplication", "idleThreshold");
       return this._idleThreshold;
     }
 
     public function set idleThreshold(value:int):void
     {
+      stub_setter("flash.desktop.NativeApplication", "idleThreshold");
       this._idleThreshold = value;
     }
 
     public function copy():Boolean
     {
-      stub_getter("flash.desktop.NativeApplication", "copy");
+      stub_method("flash.desktop.NativeApplication", "copy");
       return false;
     }
 
     public function cut():Boolean
     {
-      stub_getter("flash.desktop.NativeApplication", "cut");
+      stub_method("flash.desktop.NativeApplication", "cut");
       return false;
     }
 
     public function paste():Boolean
     {
-      stub_getter("flash.desktop.NativeApplication", "paste");
+      stub_method("flash.desktop.NativeApplication", "paste");
       return false;
     }
 
     public function clear():Boolean
     {
-      stub_getter("flash.desktop.NativeApplication", "clear");
+      stub_method("flash.desktop.NativeApplication", "clear");
       return false;
     }
 
@@ -246,12 +248,15 @@ package flash.desktop
     }
 
     // [API("721")] Ruffle doesn't support this API Version
+    [API("681")]
     public function get isCompiledAOT():Boolean
     {
       stub_getter("flash.desktop.NativeApplication", "isCompiledAOT");
       return false;
     }
 
+    // [API("721")] Ruffle doesn't support this API Version
+    [API("681")]
     public function get isActive():Boolean
     {
       stub_getter("flash.desktop.NativeApplication", "isActive");

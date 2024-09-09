@@ -108,9 +108,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: stable
+          toolchain: 1.80.1
           targets: ${{ matrix.target }}
 
       - name: Install Linux dependencies
@@ -157,6 +157,13 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           cp ${{ env.CARGO_BUILD_DIR }}/ruffle_desktop package/ruffle
+
+          # Package extras
+          mkdir -p package/extras
+          cp desktop/packages/linux/rs.ruffle.Ruffle.desktop package/extras
+          cp desktop/packages/linux/rs.ruffle.Ruffle.metainfo.xml package/extras
+          cp desktop/packages/linux/rs.ruffle.Ruffle.svg package/extras
+
           # We must enter the package/ directory in order to create a flat tarball (i.e. without a directory in it).
           cd package
           tar -czvf ../${{ env.PACKAGE_FILE }} *
@@ -292,9 +299,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: stable
+          toolchain: 1.80.1
 
       - name: Generate report
         run: ./stub-report/generate-report.sh
@@ -310,8 +317,13 @@ jobs:
     if: needs.create-nightly-release.outputs.is_active == 'true'
     runs-on: ubuntu-22.04
     permissions:
-      contents: read
+      actions: read
+      attestations: write
+      checks: read
+      contents: write
       id-token: write
+      pull-requests: read
+      statuses: write
     strategy:
       matrix:
         demo: [false, true]
@@ -320,9 +332,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: stable
+          toolchain: 1.80.1
           targets: wasm32-unknown-unknown
 
       - name: Setup Node.js
@@ -343,7 +355,7 @@ jobs:
         uses: sigoden/install-binary@v1
         with:
           repo: WebAssembly/binaryen
-          tag: version_118
+          tag: version_119
           name: wasm-opt
 
       - name: Install node packages
@@ -574,15 +586,15 @@ jobs:
 
       - name: Update PKGBUILD
         run: >
-          sed -i ./PKGBUILD
+          sed -i desktop/packages/linux/aur/ruffle-nightly-bin/PKGBUILD
           -e "s/@VERSION@/${{ steps.current_time_dots.outputs.formattedTime }}/"
           -e "s/@SHA512SUM@/$(sha512sum ${{ needs.create-nightly-release.outputs.package_prefix }}-linux-x86_64.tar.gz | cut -d' ' -f1)/"
 
       - name: Publish AUR package
-        uses: KSXGitHub/github-actions-deploy-aur@v2.7.2
+        uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
         with:
           pkgname: ruffle-nightly-bin
-          pkgbuild: ./PKGBUILD
+          pkgbuild: desktop/packages/linux/aur/ruffle-nightly-bin/PKGBUILD
           commit_username: RuffleBuild
           commit_email: ruffle@ruffle.rs
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}

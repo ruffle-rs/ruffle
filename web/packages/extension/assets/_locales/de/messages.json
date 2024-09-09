@@ -11,6 +11,9 @@
     "settings_autostart": {
         "message": "Automatisch ohne Splash-Screen abspielen (zum Entstummen klicken)"
     },
+    "settings_swf_takeover": {
+        "message": "SWF-Dateien im Browser abspielen, anstatt sie herunterzuladen"
+    },
     "settings_log_level": {
         "message": "Protokoll-Stufe"
     },

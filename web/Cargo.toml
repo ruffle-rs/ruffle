@@ -46,7 +46,7 @@ ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 ruffle_video_software = { path = "../video/software" }
 url = { workspace = true }
 wasm-bindgen = { workspace = true }
-wasm-bindgen-futures = "0.4.42"
+wasm-bindgen-futures = "0.4.43"
 serde-wasm-bindgen = "0.6.5"
 chrono = { workspace = true, features = ["wasmbind", "clock"] }
 getrandom = { version = "0.2", features = ["js"] }
@@ -56,10 +56,10 @@ base64 = "0.22.0"
 async-channel = { workspace = true }
 futures-util = { version = "0.3.30", features = ["sink"] }
 gloo-net =  { version = "0.6.0", default-features = false, features = ["websocket"] }
-rfd = { version = "0.14.1", features = ["file-handle-inner"] }
+rfd = { workspace = true, features = ["file-handle-inner"] }
 wasm-streams = "0.4.0"
 futures = { workspace = true }
-zip = { version = "2.1.6", default-features = false}
+zip = { version = "2.2.0", default-features = false}
 
 [dependencies.ruffle_core]
 path = "../core"

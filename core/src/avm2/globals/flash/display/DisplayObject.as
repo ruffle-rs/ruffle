@@ -11,7 +11,7 @@ package flash.display {
     import flash.events.EventDispatcher;
 
     [Ruffle(InstanceAllocator)]
-    [Ruffle(NativeInstanceInit)]
+    [Ruffle(SuperInitializer)]
     public class DisplayObject extends EventDispatcher implements IBitmapDrawable {
         private var _accessibilityProperties:AccessibilityProperties;
 
@@ -93,7 +93,9 @@ package flash.display {
         public native function get visible():Boolean;
         public native function set visible(value:Boolean):void;
 
+        [API("686")]
         public native function get metaData():Object;
+        [API("686")]
         public native function set metaData(value:Object):void;
 
         public native function get mouseX():Number;

@@ -19,7 +19,7 @@ pub fn bitmap_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let bitmap_cls = activation.avm2().classes().bitmap.inner_class_definition();
+    let bitmap_cls = activation.avm2().class_defs().bitmap;
     let bitmapdata_cls = activation.context.avm2.classes().bitmapdata;
 
     let mut class_def = Some(class.inner_class_definition());

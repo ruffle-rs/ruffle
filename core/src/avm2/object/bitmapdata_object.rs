@@ -88,7 +88,6 @@ impl<'gc> BitmapDataObject<'gc> {
         .into();
 
         bitmap_data.init_object2(activation.context.gc_context, instance);
-        instance.install_instance_slots(activation.context.gc_context);
 
         // We call the custom BitmapData class with width and height...
         // but, it always seems to be 1 in Flash Player when constructed from timeline?
@@ -96,7 +95,7 @@ impl<'gc> BitmapDataObject<'gc> {
         // when the custom class makes a super() call, the BitmapData constructor will
         // load in the real data from the linked SymbolClass.
         if class != activation.avm2().classes().bitmapdata {
-            class.call_native_init(instance.into(), &[1.into(), 1.into()], activation)?;
+            class.call_super_init(instance.into(), &[1.into(), 1.into()], activation)?;
         }
 
         Ok(instance)

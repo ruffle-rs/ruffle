@@ -1,13 +1,10 @@
 use crate::custom_event::RuffleEvent;
 
 use ruffle_core::external::FsCommandProvider;
-use std::sync::Arc;
 use winit::event_loop::EventLoopProxy;
-use winit::window::{Fullscreen, Window};
 
 pub struct DesktopFSCommandProvider {
     pub event_loop: EventLoopProxy<RuffleEvent>,
-    pub window: Arc<Window>,
 }
 
 impl FsCommandProvider for DesktopFSCommandProvider {
@@ -18,10 +15,12 @@ impl FsCommandProvider for DesktopFSCommandProvider {
             }
             "fullscreen" => {
                 match args {
-                    "true" => self
-                        .window
-                        .set_fullscreen(Some(Fullscreen::Borderless(None))),
-                    "false" => self.window.set_fullscreen(None),
+                    "true" => {
+                        let _ = self.event_loop.send_event(RuffleEvent::EnterFullScreen);
+                    }
+                    "false" => {
+                        let _ = self.event_loop.send_event(RuffleEvent::ExitFullScreen);
+                    }
                     _ => {}
                 };
             }
