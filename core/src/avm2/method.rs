@@ -166,6 +166,7 @@ impl<'gc> BytecodeMethod<'gc> {
         let abc = txunit.abc();
         let mut signature = Vec::new();
         let mut return_type = Multiname::any();
+        let mut abc_method_body = None;
 
         if abc.methods.get(abc_method.0 as usize).is_some() {
             let method = &abc.methods[abc_method.0 as usize];
@@ -178,20 +179,8 @@ impl<'gc> BytecodeMethod<'gc> {
                 .deref()
                 .clone();
 
-            for (index, method_body) in abc.method_bodies.iter().enumerate() {
-                if method_body.method.0 == abc_method.0 {
-                    return Ok(Self {
-                        txunit,
-                        abc: txunit.abc(),
-                        abc_method: abc_method.0,
-                        abc_method_body: Some(index as u32),
-                        verified_info: GcCell::new(activation.context.gc_context, None),
-                        signature,
-                        return_type,
-                        is_function,
-                        activation_class: Lock::new(None),
-                    });
-                }
+            if let Some(body) = method.body {
+                abc_method_body = Some(body.0);
             }
         }
 
@@ -199,7 +188,7 @@ impl<'gc> BytecodeMethod<'gc> {
             txunit,
             abc: txunit.abc(),
             abc_method: abc_method.0,
-            abc_method_body: None,
+            abc_method_body,
             verified_info: GcCell::new(activation.context.gc_context, None),
             signature,
             return_type,
