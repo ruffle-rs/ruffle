@@ -5,7 +5,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::TranslationUnit;
 use crate::avm2::Value;
-use gc_arena::{Collect, Gc, Mutation};
+use gc_arena::Collect;
 
 use super::class::Class;
 
@@ -39,16 +39,12 @@ pub enum PropertyClass<'gc> {
     /// from the `Object` class
     Any,
     Class(Class<'gc>),
-    Name(Gc<'gc, (Multiname<'gc>, Option<TranslationUnit<'gc>>)>),
+    Name(Box<(Multiname<'gc>, Option<TranslationUnit<'gc>>)>),
 }
 
 impl<'gc> PropertyClass<'gc> {
-    pub fn name(
-        mc: &Mutation<'gc>,
-        name: Multiname<'gc>,
-        unit: Option<TranslationUnit<'gc>>,
-    ) -> Self {
-        PropertyClass::Name(Gc::new(mc, (name, unit)))
+    pub fn name(name: Multiname<'gc>, unit: Option<TranslationUnit<'gc>>) -> Self {
+        PropertyClass::Name(Box::new((name, unit)))
     }
 
     /// Returns `value` coerced to the type of this `PropertyClass`.
