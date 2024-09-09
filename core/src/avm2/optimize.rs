@@ -1010,10 +1010,10 @@ pub fn optimize<'gc>(
 
                 if let Some(vtable) = stack_value.vtable() {
                     let slot_classes = vtable.slot_classes();
-                    let value_class = slot_classes.get(*slot_id as usize).copied();
-                    if let Some(mut value_class) = value_class {
+                    let value_class = slot_classes.get(*slot_id as usize);
+                    if let Some(value_class) = value_class {
                         let resolved_value_class = value_class.get_class(activation);
-                        if let Ok(class) = resolved_value_class {
+                        if let Ok((class, new_prop)) = resolved_value_class {
                             stack_push_done = true;
 
                             if let Some(class) = class {
@@ -1021,14 +1021,15 @@ pub fn optimize<'gc>(
                             } else {
                                 stack.push_any();
                             }
+                            if let Some(new_prop) = new_prop {
+                                drop(slot_classes);
+                                vtable.set_slot_class(
+                                    activation.context.gc_context,
+                                    *slot_id as usize,
+                                    new_prop,
+                                );
+                            }
                         }
-
-                        drop(slot_classes);
-                        vtable.set_slot_class(
-                            activation.context.gc_context,
-                            *slot_id as usize,
-                            value_class,
-                        );
                     }
                 }
 
@@ -1052,9 +1053,10 @@ pub fn optimize<'gc>(
                             | Some(Property::ConstSlot { slot_id }) => {
                                 *op = Op::GetSlot { index: slot_id };
 
-                                let mut value_class = vtable.slot_classes()[slot_id as usize];
+                                let slot_classes = vtable.slot_classes();
+                                let value_class = &slot_classes[slot_id as usize];
                                 let resolved_value_class = value_class.get_class(activation);
-                                if let Ok(class) = resolved_value_class {
+                                if let Ok((class, new_prop)) = resolved_value_class {
                                     stack_push_done = true;
 
                                     if let Some(class) = class {
@@ -1062,13 +1064,15 @@ pub fn optimize<'gc>(
                                     } else {
                                         stack.push_any();
                                     }
+                                    if let Some(new_prop) = new_prop {
+                                        drop(slot_classes);
+                                        vtable.set_slot_class(
+                                            activation.context.gc_context,
+                                            slot_id as usize,
+                                            new_prop,
+                                        );
+                                    }
                                 }
-
-                                vtable.set_slot_class(
-                                    activation.context.gc_context,
-                                    slot_id as usize,
-                                    value_class,
-                                );
                             }
                             Some(Property::Virtual {
                                 get: Some(disp_id), ..
@@ -1103,10 +1107,11 @@ pub fn optimize<'gc>(
 
                                 // If the set value's type is the same as the type of the slot,
                                 // a SetSlotNoCoerce can be emitted.
-                                let mut value_class = vtable.slot_classes()[slot_id as usize];
+                                let slot_classes = vtable.slot_classes();
+                                let value_class = &slot_classes[slot_id as usize];
                                 let resolved_value_class = value_class.get_class(activation);
 
-                                if let Ok(slot_class) = resolved_value_class {
+                                if let Ok((slot_class, new_prop)) = resolved_value_class {
                                     if let Some(slot_class) = slot_class {
                                         if let Some(set_value_class) = set_value.class {
                                             if set_value_class == slot_class {
@@ -1116,6 +1121,14 @@ pub fn optimize<'gc>(
                                     } else {
                                         // Slot type was Any, no coercion will be done anyways
                                         *op = Op::SetSlotNoCoerce { index: slot_id };
+                                    }
+                                    if let Some(new_prop) = new_prop {
+                                        drop(slot_classes);
+                                        vtable.set_slot_class(
+                                            activation.context.gc_context,
+                                            slot_id as usize,
+                                            new_prop,
+                                        );
                                     }
                                 }
                             }
@@ -1147,10 +1160,11 @@ pub fn optimize<'gc>(
 
                                 // If the set value's type is the same as the type of the slot,
                                 // a SetSlotNoCoerce can be emitted.
-                                let mut value_class = vtable.slot_classes()[slot_id as usize];
+                                let slot_classes = vtable.slot_classes();
+                                let value_class = &slot_classes[slot_id as usize];
                                 let resolved_value_class = value_class.get_class(activation);
 
-                                if let Ok(slot_class) = resolved_value_class {
+                                if let Ok((slot_class, new_prop)) = resolved_value_class {
                                     if let Some(slot_class) = slot_class {
                                         if let Some(set_value_class) = set_value.class {
                                             if set_value_class == slot_class {
@@ -1160,6 +1174,14 @@ pub fn optimize<'gc>(
                                     } else {
                                         // Slot type was Any, no coercion will be done anyways
                                         *op = Op::SetSlotNoCoerce { index: slot_id };
+                                    }
+                                    if let Some(new_prop) = new_prop {
+                                        drop(slot_classes);
+                                        vtable.set_slot_class(
+                                            activation.context.gc_context,
+                                            slot_id as usize,
+                                            new_prop,
+                                        );
                                     }
                                 }
                             }
@@ -1220,14 +1242,25 @@ pub fn optimize<'gc>(
                         match vtable.get_trait(multiname) {
                             Some(Property::Slot { slot_id })
                             | Some(Property::ConstSlot { slot_id }) => {
-                                let mut value_class = vtable.slot_classes()[slot_id as usize];
+                                let slot_classes = vtable.slot_classes();
+                                let value_class = &slot_classes[slot_id as usize];
                                 let resolved_value_class = value_class.get_class(activation);
 
-                                if let Ok(Some(slot_class)) = resolved_value_class {
-                                    if let Some(instance_class) = slot_class.i_class() {
+                                if let Ok((slot_class, new_prop)) = resolved_value_class {
+                                    if let Some(instance_class) =
+                                        slot_class.and_then(|c| c.i_class())
+                                    {
                                         // ConstructProp on a c_class will construct its i_class
                                         stack_push_done = true;
                                         stack.push_class(instance_class);
+                                    }
+                                    if let Some(new_prop) = new_prop {
+                                        drop(slot_classes);
+                                        vtable.set_slot_class(
+                                            activation.context.gc_context,
+                                            slot_id as usize,
+                                            new_prop,
+                                        );
                                     }
                                 }
                             }
@@ -1304,13 +1337,15 @@ pub fn optimize<'gc>(
                             | Some(Property::ConstSlot { slot_id }) => {
                                 if stack_value.not_null(activation) {
                                     if *num_args == 1 {
-                                        let mut value_class =
-                                            vtable.slot_classes()[slot_id as usize];
+                                        let slot_classes = vtable.slot_classes();
+                                        let value_class = &slot_classes[slot_id as usize];
                                         let resolved_value_class =
                                             value_class.get_class(activation);
 
-                                        if let Ok(Some(slot_class)) = resolved_value_class {
-                                            if let Some(called_class) = slot_class.i_class() {
+                                        if let Ok((slot_class, new_prop)) = resolved_value_class {
+                                            if let Some(called_class) =
+                                                slot_class.and_then(|c| c.i_class())
+                                            {
                                                 // Calling a c_class will perform a simple coercion to the class
                                                 if called_class.call_handler().is_none() {
                                                     *op = Op::CoerceSwapPop {
@@ -1335,6 +1370,14 @@ pub fn optimize<'gc>(
                                                     stack_push_done = true;
                                                     stack.push_class(types.number);
                                                 }
+                                            }
+                                            if let Some(new_prop) = new_prop {
+                                                drop(slot_classes);
+                                                vtable.set_slot_class(
+                                                    activation.context.gc_context,
+                                                    slot_id as usize,
+                                                    new_prop,
+                                                );
                                             }
                                         }
                                     }
@@ -1446,23 +1489,27 @@ pub fn optimize<'gc>(
                     let global_scope = outer_scope.get_unchecked(0);
 
                     let class = global_scope.values().instance_class();
-                    let mut value_class = class.vtable().slot_classes()[*slot_id as usize];
+                    let vtable = class.vtable();
+                    let slot_classes = vtable.slot_classes();
+                    let value_class = &slot_classes[*slot_id as usize];
                     let resolved_value_class = value_class.get_class(activation);
-                    if let Ok(class) = resolved_value_class {
+                    if let Ok((value_class, new_prop)) = resolved_value_class {
                         stack_push_done = true;
 
-                        if let Some(class) = class {
-                            stack.push_class(class);
+                        if let Some(value_class) = value_class {
+                            stack.push_class(value_class);
                         } else {
                             stack.push_any();
                         }
+                        if let Some(new_prop) = new_prop {
+                            drop(slot_classes);
+                            class.vtable().set_slot_class(
+                                activation.context.gc_context,
+                                *slot_id as usize,
+                                new_prop,
+                            );
+                        }
                     }
-
-                    class.vtable().set_slot_class(
-                        activation.context.gc_context,
-                        *slot_id as usize,
-                        value_class,
-                    );
                 }
 
                 if !stack_push_done {

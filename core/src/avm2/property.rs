@@ -31,7 +31,7 @@ pub enum Property {
 /// Additionally, property class resolution uses special
 /// logic, different from normal "runtime" class resolution,
 /// that allows private types to be referenced.
-#[derive(Collect, Clone, Copy)]
+#[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub enum PropertyClass<'gc> {
     /// The type `*` (Multiname::is_any()). This allows
@@ -52,20 +52,19 @@ impl<'gc> PropertyClass<'gc> {
     }
 
     /// Returns `value` coerced to the type of this `PropertyClass`.
-    /// The bool is `true` if this `PropertyClass` was just modified
-    /// to cache a class resolution, and `false` if it was not modified.
+    /// Along with a new `PropertyClass` if it was just modified
+    /// to cache a class resolution
     pub fn coerce(
-        &mut self,
+        &self,
         activation: &mut Activation<'_, 'gc>,
         value: Value<'gc>,
-    ) -> Result<(Value<'gc>, bool), Error<'gc>> {
-        let (class, changed) = match self {
-            PropertyClass::Class(class) => (Some(*class), false),
+    ) -> Result<(Value<'gc>, Option<Self>), Error<'gc>> {
+        let (class, new_prop) = match self {
+            PropertyClass::Class(class) => (Some(*class), None),
             PropertyClass::Name(gc) => {
                 let (name, unit) = &**gc;
                 if name.is_any_name() {
-                    *self = PropertyClass::Any;
-                    (None, true)
+                    (None, Some(PropertyClass::Any))
                 } else {
                     // Note - we look up the class in the domain by name, which allows us to look up private classes.
                     // This also has the advantage of letting us coerce to a class while the `ClassObject`
@@ -76,8 +75,7 @@ impl<'gc> PropertyClass<'gc> {
                     let domain =
                         unit.map_or(activation.avm2().playerglobals_domain, |u| u.domain());
                     if let Some(class) = domain.get_class(activation.context, name) {
-                        *self = PropertyClass::Class(class);
-                        (Some(class), true)
+                        (Some(class), Some(PropertyClass::Class(class)))
                     } else {
                         return Err(format!(
                             "Could not resolve class {name:?} for property coercion"
@@ -86,35 +84,33 @@ impl<'gc> PropertyClass<'gc> {
                     }
                 }
             }
-            PropertyClass::Any => (None, false),
+            PropertyClass::Any => (None, None),
         };
 
         if let Some(class) = class {
-            Ok((value.coerce_to_type(activation, class)?, changed))
+            Ok((value.coerce_to_type(activation, class)?, new_prop))
         } else {
             // We have a type of '*' ("any"), so don't
             // perform any coercions
-            Ok((value, changed))
+            Ok((value, new_prop))
         }
     }
 
     pub fn get_class(
-        &mut self,
+        &self,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Option<Class<'gc>>, Error<'gc>> {
+    ) -> Result<(Option<Class<'gc>>, Option<Self>), Error<'gc>> {
         match self {
-            PropertyClass::Class(class) => Ok(Some(*class)),
+            PropertyClass::Class(class) => Ok((Some(*class), None)),
             PropertyClass::Name(gc) => {
                 let (name, unit) = &**gc;
                 if name.is_any_name() {
-                    *self = PropertyClass::Any;
-                    Ok(None)
+                    Ok((None, Some(PropertyClass::Any)))
                 } else {
                     let domain =
                         unit.map_or(activation.avm2().playerglobals_domain, |u| u.domain());
                     if let Some(class) = domain.get_class(activation.context, name) {
-                        *self = PropertyClass::Class(class);
-                        Ok(Some(class))
+                        Ok((Some(class), Some(PropertyClass::Class(class))))
                     } else {
                         Err(
                             format!("Could not resolve class {name:?} for property class lookup")
@@ -123,7 +119,7 @@ impl<'gc> PropertyClass<'gc> {
                     }
                 }
             }
-            PropertyClass::Any => Ok(None),
+            PropertyClass::Any => Ok((None, None)),
         }
     }
 

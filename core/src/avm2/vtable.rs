@@ -18,7 +18,7 @@ use std::ops::DerefMut;
 #[collect(no_drop)]
 pub struct VTable<'gc>(GcCell<'gc, VTableData<'gc>>);
 
-#[derive(Collect, Clone)]
+#[derive(Collect)]
 #[collect(no_drop)]
 pub struct VTableData<'gc> {
     scope: Option<ScopeChain<'gc>>,
@@ -152,15 +152,16 @@ impl<'gc> VTable<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        // Drop the `write()` guard, as 'slot_class.coerce' may need to access this vtable.
-        let mut slot_class = { self.0.read().slot_classes[slot_id as usize] };
+        let read = self.0.read();
+        let slot_class = &read.slot_classes[slot_id as usize];
 
-        let (value, changed) = slot_class.coerce(activation, value)?;
+        let (value, new_prop) = slot_class.coerce(activation, value)?;
+        drop(read);
 
-        // Calling coerce modified `PropertyClass` to cache the class lookup,
+        // Calling coerce produced a cached class lookup,
         // so store the new value back in the vtable.
-        if changed {
-            self.0.write(activation.context.gc_context).slot_classes[slot_id as usize] = slot_class;
+        if let Some(new_prop) = new_prop {
+            self.0.write(activation.context.gc_context).slot_classes[slot_id as usize] = new_prop;
         }
         Ok(value)
     }
