@@ -10,8 +10,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::QName;
 use bitflags::bitflags;
-use gc_arena::Collect;
-use std::ops::Deref;
+use gc_arena::{Collect, Gc};
 use swf::avm2::types::{
     DefaultValue as AbcDefaultValue, Trait as AbcTrait, TraitKind as AbcTraitKind,
 };
@@ -75,7 +74,7 @@ pub enum TraitKind<'gc> {
     /// to.
     Slot {
         slot_id: u32,
-        type_name: Multiname<'gc>,
+        type_name: Gc<'gc, Multiname<'gc>>,
         default_value: Value<'gc>,
         unit: Option<TranslationUnit<'gc>>,
     },
@@ -100,7 +99,7 @@ pub enum TraitKind<'gc> {
     /// be overridden.
     Const {
         slot_id: u32,
-        type_name: Multiname<'gc>,
+        type_name: Gc<'gc, Multiname<'gc>>,
         default_value: Value<'gc>,
         unit: Option<TranslationUnit<'gc>>,
     },
@@ -157,7 +156,7 @@ impl<'gc> Trait<'gc> {
 
     pub fn from_slot(
         name: QName<'gc>,
-        type_name: Multiname<'gc>,
+        type_name: Gc<'gc, Multiname<'gc>>,
         default_value: Option<Value<'gc>>,
     ) -> Self {
         Trait {
@@ -175,7 +174,7 @@ impl<'gc> Trait<'gc> {
 
     pub fn from_const(
         name: QName<'gc>,
-        type_name: Multiname<'gc>,
+        type_name: Gc<'gc, Multiname<'gc>>,
         default_value: Option<Value<'gc>>,
     ) -> Self {
         Trait {
@@ -205,10 +204,7 @@ impl<'gc> Trait<'gc> {
                 type_name,
                 value,
             } => {
-                let type_name = unit
-                    .pool_multiname_static_any(*type_name, activation.context)?
-                    .deref()
-                    .clone();
+                let type_name = unit.pool_multiname_static_any(*type_name, activation.context)?;
                 let default_value = slot_default_value(unit, value, &type_name, activation)?;
                 Trait {
                     name,
@@ -272,10 +268,7 @@ impl<'gc> Trait<'gc> {
                 type_name,
                 value,
             } => {
-                let type_name = unit
-                    .pool_multiname_static_any(*type_name, activation.context)?
-                    .deref()
-                    .clone();
+                let type_name = unit.pool_multiname_static_any(*type_name, activation.context)?;
                 let default_value = slot_default_value(unit, value, &type_name, activation)?;
                 Trait {
                     name,

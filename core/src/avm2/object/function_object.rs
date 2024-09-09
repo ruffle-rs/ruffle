@@ -30,20 +30,22 @@ pub fn function_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
+    let mc = activation.gc();
+
     let dummy = Gc::new(
-        activation.context.gc_context,
+        mc,
         NativeMethod {
             method: |_, _, _| Ok(Value::Undefined),
             name: "<Empty Function>",
             signature: vec![],
-            resolved_signature: GcCell::new(activation.context.gc_context, None),
-            return_type: Multiname::any(),
+            resolved_signature: GcCell::new(mc, None),
+            return_type: Gc::new(mc, Multiname::any()),
             is_variadic: true,
         },
     );
 
     Ok(FunctionObject(Gc::new(
-        activation.context.gc_context,
+        mc,
         FunctionObjectData {
             base,
             exec: RefLock::new(BoundMethod::from_method(

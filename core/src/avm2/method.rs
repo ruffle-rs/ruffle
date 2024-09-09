@@ -15,7 +15,6 @@ use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, GcCell, Mutation};
 use std::borrow::Cow;
 use std::fmt;
-use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::Arc;
 use swf::avm2::types::{
@@ -61,7 +60,7 @@ pub struct ParamConfig<'gc> {
     pub param_name: AvmString<'gc>,
 
     /// The name of the type of the parameter.
-    pub param_type_name: Multiname<'gc>,
+    pub param_type_name: Gc<'gc, Multiname<'gc>>,
 
     /// The default value for this parameter.
     pub default_value: Option<Value<'gc>>,
@@ -80,10 +79,7 @@ impl<'gc> ParamConfig<'gc> {
         } else {
             AvmString::from("<Unnamed Parameter>")
         };
-        let param_type_name = txunit
-            .pool_multiname_static_any(config.kind, activation.context)?
-            .deref()
-            .clone();
+        let param_type_name = txunit.pool_multiname_static_any(config.kind, activation.context)?;
 
         let default_value = if let Some(dv) = &config.default_value {
             Some(abc_default_value(txunit, dv, activation)?)
@@ -98,7 +94,10 @@ impl<'gc> ParamConfig<'gc> {
         })
     }
 
-    pub fn of_type(name: impl Into<AvmString<'gc>>, param_type_name: Multiname<'gc>) -> Self {
+    pub fn of_type(
+        name: impl Into<AvmString<'gc>>,
+        param_type_name: Gc<'gc, Multiname<'gc>>,
+    ) -> Self {
         Self {
             param_name: name.into(),
             param_type_name,
@@ -108,7 +107,7 @@ impl<'gc> ParamConfig<'gc> {
 
     pub fn optional(
         name: impl Into<AvmString<'gc>>,
-        param_type_name: Multiname<'gc>,
+        param_type_name: Gc<'gc, Multiname<'gc>>,
         default_value: impl Into<Value<'gc>>,
     ) -> Self {
         Self {
@@ -142,7 +141,7 @@ pub struct BytecodeMethod<'gc> {
     pub signature: Vec<ParamConfig<'gc>>,
 
     /// The return type of this method.
-    pub return_type: Multiname<'gc>,
+    pub return_type: Gc<'gc, Multiname<'gc>>,
 
     /// The associated activation class. Initialized lazily, and only
     /// if the method requires it.
@@ -163,9 +162,11 @@ impl<'gc> BytecodeMethod<'gc> {
         is_function: bool,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
+        let mc = activation.gc();
+
         let abc = txunit.abc();
         let mut signature = Vec::new();
-        let mut return_type = Multiname::any();
+        let mut return_type = Gc::new(mc, Multiname::any());
         let mut abc_method_body = None;
 
         if abc.methods.get(abc_method.0 as usize).is_some() {
@@ -174,10 +175,8 @@ impl<'gc> BytecodeMethod<'gc> {
                 signature.push(ParamConfig::from_abc_param(param, txunit, activation)?);
             }
 
-            return_type = txunit
-                .pool_multiname_static_any(method.return_type, activation.context)?
-                .deref()
-                .clone();
+            return_type =
+                txunit.pool_multiname_static_any(method.return_type, activation.context)?;
 
             if let Some(body) = method.body {
                 abc_method_body = Some(body.0);
@@ -189,7 +188,7 @@ impl<'gc> BytecodeMethod<'gc> {
             abc: txunit.abc(),
             abc_method: abc_method.0,
             abc_method_body,
-            verified_info: GcCell::new(activation.context.gc_context, None),
+            verified_info: GcCell::new(mc, None),
             signature,
             return_type,
             is_function,
@@ -337,7 +336,7 @@ pub struct NativeMethod<'gc> {
     pub resolved_signature: GcCell<'gc, Option<Vec<ResolvedParamConfig<'gc>>>>,
 
     /// The return type of this method.
-    pub return_type: Multiname<'gc>,
+    pub return_type: Gc<'gc, Multiname<'gc>>,
 
     /// Whether or not this method accepts parameters beyond those
     /// mentioned in the parameter list.
@@ -391,7 +390,7 @@ impl<'gc> Method<'gc> {
         method: NativeMethodImpl,
         name: &'static str,
         signature: Vec<ParamConfig<'gc>>,
-        return_type: Multiname<'gc>,
+        return_type: Gc<'gc, Multiname<'gc>>,
         is_variadic: bool,
         mc: &Mutation<'gc>,
     ) -> Self {
@@ -418,7 +417,7 @@ impl<'gc> Method<'gc> {
                 signature: Vec::new(),
                 resolved_signature: GcCell::new(mc, None),
                 // FIXME - take in the real return type. This is needed for 'describeType'
-                return_type: Multiname::any(),
+                return_type: Gc::new(mc, Multiname::any()),
                 is_variadic: true,
             },
         ))
@@ -436,10 +435,10 @@ impl<'gc> Method<'gc> {
         }
     }
 
-    pub fn return_type(&self) -> Multiname<'gc> {
+    pub fn return_type(&self) -> Gc<'gc, Multiname<'gc>> {
         match self {
-            Method::Native(nm) => nm.return_type.clone(),
-            Method::Bytecode(bm) => bm.return_type.clone(),
+            Method::Native(nm) => nm.return_type,
+            Method::Bytecode(bm) => bm.return_type,
         }
     }
 

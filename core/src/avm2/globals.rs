@@ -2,7 +2,6 @@ use crate::avm2::activation::Activation;
 use crate::avm2::api_version::ApiVersion;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
-use crate::avm2::multiname::Multiname;
 use crate::avm2::object::{ClassObject, ScriptObject, TObject};
 use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::script::Script;
@@ -613,7 +612,7 @@ pub fn load_player_globals<'gc>(
         // right now.
         global_traits.push(Trait::from_const(
             qname,
-            Multiname::new(public_ns, "Function"),
+            activation.avm2().multinames.function,
             Some(Value::Null),
         ));
     }

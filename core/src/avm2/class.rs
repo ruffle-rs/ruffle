@@ -16,7 +16,7 @@ use crate::context::UpdateContext;
 use crate::string::WString;
 use bitflags::bitflags;
 use fnv::FnvHashMap;
-use gc_arena::{Collect, GcCell, Mutation};
+use gc_arena::{Collect, Gc, GcCell, Mutation};
 
 use std::cell::Ref;
 use std::collections::HashSet;
@@ -524,7 +524,7 @@ impl<'gc> Class<'gc> {
                     // A 'callable' class doesn't have a signature - let the
                     // method do any needed coercions
                     vec![],
-                    Multiname::any(),
+                    Gc::new(activation.gc(), Multiname::any()),
                     true,
                     activation.context.gc_context,
                 );
@@ -1031,7 +1031,7 @@ impl<'gc> Class<'gc> {
             activation.context.gc_context,
             Trait::from_const(
                 name,
-                Multiname::new(activation.avm2().public_namespace_base_version, "Function"),
+                activation.avm2().multinames.function,
                 Some(value),
             ),
         );
@@ -1049,7 +1049,7 @@ impl<'gc> Class<'gc> {
                 activation.context.gc_context,
                 Trait::from_const(
                     QName::new(namespace, name),
-                    Multiname::new(activation.avm2().public_namespace_base_version, "Number"),
+                    activation.avm2().multinames.number,
                     Some(value.into()),
                 ),
             );
@@ -1068,7 +1068,7 @@ impl<'gc> Class<'gc> {
                 activation.context.gc_context,
                 Trait::from_const(
                     QName::new(namespace, name),
-                    Multiname::new(activation.avm2().public_namespace_base_version, "uint"),
+                    activation.avm2().multinames.uint,
                     Some(value.into()),
                 ),
             );
@@ -1087,7 +1087,7 @@ impl<'gc> Class<'gc> {
                 activation.context.gc_context,
                 Trait::from_const(
                     QName::new(namespace, name),
-                    Multiname::new(activation.avm2().public_namespace_base_version, "int"),
+                    activation.avm2().multinames.int,
                     Some(value.into()),
                 ),
             );
@@ -1121,7 +1121,7 @@ impl<'gc> Class<'gc> {
             &'static str,
             NativeMethodImpl,
             Vec<ParamConfig<'gc>>,
-            Multiname<'gc>,
+            Gc<'gc, Multiname<'gc>>,
         )>,
     ) {
         for (name, value, params, return_type) in items {
@@ -1198,7 +1198,7 @@ impl<'gc> Class<'gc> {
                 activation.context.gc_context,
                 Trait::from_const(
                     QName::new(namespace, name),
-                    Multiname::new(activation.avm2().public_namespace_base_version, "int"),
+                    activation.avm2().multinames.int,
                     Some(value.into()),
                 ),
             );

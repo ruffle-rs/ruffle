@@ -5,6 +5,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::TranslationUnit;
 use crate::avm2::Value;
+use crate::string::AvmString;
 use gc_arena::{Collect, Gc, Mutation};
 
 use super::class::Class;
@@ -39,13 +40,13 @@ pub enum PropertyClass<'gc> {
     /// from the `Object` class
     Any,
     Class(Class<'gc>),
-    Name(Gc<'gc, (Multiname<'gc>, Option<TranslationUnit<'gc>>)>),
+    Name(Gc<'gc, (Gc<'gc, Multiname<'gc>>, Option<TranslationUnit<'gc>>)>),
 }
 
 impl<'gc> PropertyClass<'gc> {
     pub fn name(
         mc: &Mutation<'gc>,
-        name: Multiname<'gc>,
+        name: Gc<'gc, Multiname<'gc>>,
         unit: Option<TranslationUnit<'gc>>,
     ) -> Self {
         PropertyClass::Name(Gc::new(mc, (name, unit)))
@@ -127,11 +128,11 @@ impl<'gc> PropertyClass<'gc> {
         }
     }
 
-    pub fn get_name(&self) -> Multiname<'gc> {
+    pub fn get_name(&self, mc: &Mutation<'gc>) -> AvmString<'gc> {
         match self {
-            PropertyClass::Class(class) => class.name().into(),
-            PropertyClass::Name(gc) => gc.0.clone(),
-            PropertyClass::Any => Multiname::any(),
+            PropertyClass::Class(class) => class.name().to_qualified_name(mc),
+            PropertyClass::Name(gc) => gc.0.to_qualified_name_or_star(mc),
+            PropertyClass::Any => AvmString::new_utf8(mc, "*"),
         }
     }
 }

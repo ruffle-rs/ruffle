@@ -9,6 +9,8 @@ use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{AvmString, Error, Multiname, QName};
 
+use gc_arena::Gc;
+
 /// Implements `int`'s instance initializer.
 fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -227,10 +229,10 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
             "<int instance initializer>",
             vec![ParamConfig {
                 param_name: AvmString::new_utf8(activation.context.gc_context, "value"),
-                param_type_name: Multiname::any(),
+                param_type_name: Gc::new(mc, Multiname::any()),
                 default_value: Some(Value::Integer(0)),
             }],
-            Multiname::any(),
+            Gc::new(mc, Multiname::any()),
             true,
             mc,
         ),
