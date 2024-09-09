@@ -16,7 +16,7 @@ use crate::PlayerRuntime;
 
 use fnv::FnvHashMap;
 use gc_arena::lock::GcRefLock;
-use gc_arena::{Collect, Mutation};
+use gc_arena::{Collect, Gc, Mutation};
 use std::sync::Arc;
 use swf::avm2::read::Reader;
 use swf::DoAbc2Flag;
@@ -79,7 +79,7 @@ pub use crate::avm2::domain::{Domain, DomainPtr};
 pub use crate::avm2::error::Error;
 pub use crate::avm2::flv::FlvValueAvm2Ext;
 pub use crate::avm2::globals::flash::ui::context_menu::make_context_menu_state;
-pub use crate::avm2::multiname::Multiname;
+pub use crate::avm2::multiname::{CommonMultinames, Multiname};
 pub use crate::avm2::namespace::Namespace;
 pub use crate::avm2::object::{
     ArrayObject, BitmapDataObject, ClassObject, EventObject, Object, SoundChannelObject,
@@ -153,6 +153,8 @@ pub struct Avm2<'gc> {
     pub flash_text_engine_internal: Namespace<'gc>,
     pub flash_net_internal: Namespace<'gc>,
 
+    pub multinames: Gc<'gc, CommonMultinames<'gc>>,
+
     #[collect(require_static)]
     native_method_table: &'static [Option<(&'static str, NativeMethodImpl)>],
 
@@ -207,27 +209,33 @@ impl<'gc> Avm2<'gc> {
         player_version: u8,
         player_runtime: PlayerRuntime,
     ) -> Self {
-        let playerglobals_domain = Domain::uninitialized_domain(context.gc_context, None);
-        let stage_domain =
-            Domain::uninitialized_domain(context.gc_context, Some(playerglobals_domain));
+        let mc = context.gc_context;
+
+        let playerglobals_domain = Domain::uninitialized_domain(mc, None);
+        let stage_domain = Domain::uninitialized_domain(mc, Some(playerglobals_domain));
 
         let public_namespaces = (0..=(ApiVersion::VM_INTERNAL as usize))
             .map(|val| Namespace::package("", ApiVersion::from_usize(val).unwrap(), context))
             .collect();
+
+        let public_namespace_base_version =
+            Namespace::package("", ApiVersion::AllVersions, context);
+
+        let multinames = CommonMultinames::new(context, public_namespace_base_version);
 
         Self {
             player_version,
             player_runtime,
             stack: Vec::new(),
             scope_stack: Vec::new(),
-            call_stack: GcRefLock::new(context.gc_context, CallStack::new().into()),
+            call_stack: GcRefLock::new(mc, CallStack::new().into()),
             playerglobals_domain,
             stage_domain,
             system_classes: None,
             system_class_defs: None,
             toplevel_global_object: None,
 
-            public_namespace_base_version: Namespace::package("", ApiVersion::AllVersions, context),
+            public_namespace_base_version,
             public_namespaces,
             public_namespace_vm_internal: Namespace::package("", ApiVersion::VM_INTERNAL, context),
             internal_namespace: Namespace::internal("", context),
@@ -254,6 +262,8 @@ impl<'gc> Avm2<'gc> {
             flash_events_internal: Namespace::internal("flash.events", context),
             flash_text_engine_internal: Namespace::internal("flash.text.engine", context),
             flash_net_internal: Namespace::internal("flash.net", context),
+
+            multinames: Gc::new(mc, multinames),
 
             native_method_table: Default::default(),
             native_instance_allocator_table: Default::default(),

@@ -10,6 +10,8 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::QName;
 
+use gc_arena::Gc;
+
 /// Implements `Object`'s instance initializer.
 pub fn instance_init<'gc>(
     _activation: &mut Activation<'_, 'gc>,
@@ -279,30 +281,30 @@ pub fn create_i_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
             has_own_property,
             vec![ParamConfig::optional(
                 "name",
-                Multiname::any(),
+                Gc::new(gc_context, Multiname::any()),
                 Value::Undefined,
             )],
-            Multiname::new(activation.avm2().public_namespace_base_version, "Boolean"),
+            activation.avm2().multinames.boolean,
         ),
         (
             "isPrototypeOf",
             is_prototype_of,
             vec![ParamConfig::optional(
                 "theClass",
-                Multiname::any(),
+                Gc::new(gc_context, Multiname::any()),
                 Value::Undefined,
             )],
-            Multiname::new(activation.avm2().public_namespace_base_version, "Boolean"),
+            activation.avm2().multinames.boolean,
         ),
         (
             "propertyIsEnumerable",
             property_is_enumerable,
             vec![ParamConfig::optional(
                 "name",
-                Multiname::any(),
+                Gc::new(gc_context, Multiname::any()),
                 Value::Undefined,
             )],
-            Multiname::new(activation.avm2().public_namespace_base_version, "Boolean"),
+            activation.avm2().multinames.boolean,
         ),
     ];
     object_i_class.define_builtin_instance_methods_with_sig(
@@ -337,7 +339,7 @@ pub fn create_c_class<'gc>(
         gc_context,
         Trait::from_const(
             QName::new(activation.avm2().public_namespace_base_version, "length"),
-            Multiname::new(activation.avm2().public_namespace_base_version, "int"),
+            activation.avm2().multinames.int,
             Some(1.into()),
         ),
     );

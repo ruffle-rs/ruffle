@@ -4,7 +4,7 @@ use crate::avm2::Error;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2::{Object, Value};
-use crate::context::UpdateContext;
+use crate::context::{GcContext, UpdateContext};
 use crate::string::{AvmString, WStr, WString};
 use bitflags::bitflags;
 use gc_arena::Gc;
@@ -516,6 +516,43 @@ impl<'gc> From<QName<'gc>> for Multiname<'gc> {
             name: Some(q.local_name()),
             param: None,
             flags: Default::default(),
+        }
+    }
+}
+
+#[derive(Collect)]
+#[collect(no_drop)]
+pub struct CommonMultinames<'gc> {
+    pub boolean: Gc<'gc, Multiname<'gc>>,
+    pub function: Gc<'gc, Multiname<'gc>>,
+    pub int: Gc<'gc, Multiname<'gc>>,
+    pub number: Gc<'gc, Multiname<'gc>>,
+    pub uint: Gc<'gc, Multiname<'gc>>,
+}
+
+impl<'gc> CommonMultinames<'gc> {
+    pub fn new(
+        context: &mut GcContext<'_, 'gc>,
+        public_namespace_base_version: Namespace<'gc>,
+    ) -> Self {
+        let mut create_pub_multiname = |local_name: &'static [u8]| -> Gc<'gc, Multiname<'gc>> {
+            Gc::new(
+                context.gc_context,
+                Multiname::new(
+                    public_namespace_base_version,
+                    context
+                        .interner
+                        .intern_static(context.gc_context, WStr::from_units(local_name)),
+                ),
+            )
+        };
+
+        Self {
+            boolean: create_pub_multiname(b"Boolean"),
+            function: create_pub_multiname(b"Function"),
+            int: create_pub_multiname(b"int"),
+            number: create_pub_multiname(b"Number"),
+            uint: create_pub_multiname(b"uint"),
         }
     }
 }
