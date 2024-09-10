@@ -375,9 +375,6 @@ pub struct Player {
     /// Any compatibility rules to apply for this movie.
     compatibility_rules: CompatibilityRules,
 
-    /// A map from gamepad buttons to key codes.
-    gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
-
     /// Debug UI windows
     #[cfg(feature = "egui")]
     debug_ui: Rc<RefCell<crate::debug_ui::DebugUi>>,
@@ -1008,31 +1005,8 @@ impl Player {
     ///    second wave of event processing.
     fn handle_input_event(&mut self, event: PlayerEvent) -> bool {
         let mut player_event_handled = false;
-        // Optionally transform gamepad button events into key events.
-        let event = match event {
-            PlayerEvent::GamepadButtonDown { button } => {
-                if let Some(key_code) = self.gamepad_button_mapping.get(&button) {
-                    PlayerEvent::KeyDown {
-                        key_code: *key_code,
-                        key_char: None,
-                    }
-                } else {
-                    // Just ignore this event.
-                    return false;
-                }
-            }
-            PlayerEvent::GamepadButtonUp { button } => {
-                if let Some(key_code) = self.gamepad_button_mapping.get(&button) {
-                    PlayerEvent::KeyUp {
-                        key_code: *key_code,
-                        key_char: None,
-                    }
-                } else {
-                    // Just ignore this event.
-                    return false;
-                }
-            }
-            _ => event,
+        let Some(event) = self.input.map_input_event(event) else {
+            return false;
         };
 
         let prev_mouse_buttons = self.input.get_mouse_down_buttons();
@@ -2856,7 +2830,7 @@ impl PlayerBuilder {
                 actions_since_timeout_check: 0,
 
                 // Input
-                input: Default::default(),
+                input: InputManager::new(self.gamepad_button_mapping),
                 mouse_in_stage: true,
                 mouse_position: Point::ZERO,
                 mouse_cursor: MouseCursor::Arrow,
@@ -2876,7 +2850,6 @@ impl PlayerBuilder {
                 load_behavior: self.load_behavior,
                 spoofed_url: self.spoofed_url.clone(),
                 compatibility_rules: self.compatibility_rules.clone(),
-                gamepad_button_mapping: self.gamepad_button_mapping,
                 stub_tracker: StubCollection::new(),
                 #[cfg(feature = "egui")]
                 debug_ui: Default::default(),

@@ -1,6 +1,6 @@
-use crate::events::{KeyCode, MouseButton, PlayerEvent, TextControlCode};
+use crate::events::{GamepadButton, KeyCode, MouseButton, PlayerEvent, TextControlCode};
 use chrono::{DateTime, TimeDelta, Utc};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 struct ClickEventData {
     x: f64,
@@ -24,10 +24,13 @@ pub struct InputManager {
     last_char: Option<char>,
     last_text_control: Option<TextControlCode>,
     last_click: Option<ClickEventData>,
+
+    /// A map from gamepad buttons to key codes.
+    gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
 }
 
 impl InputManager {
-    pub fn new() -> Self {
+    pub fn new(gamepad_button_mapping: HashMap<GamepadButton, KeyCode>) -> Self {
         Self {
             keys_down: HashSet::new(),
             keys_toggled: HashSet::new(),
@@ -35,6 +38,7 @@ impl InputManager {
             last_char: None,
             last_text_control: None,
             last_click: None,
+            gamepad_button_mapping,
         }
     }
 
@@ -60,6 +64,35 @@ impl InputManager {
         self.last_key = key_code;
         if key_code != KeyCode::UNKNOWN {
             self.keys_down.remove(&key_code);
+        }
+    }
+
+    pub fn map_input_event(&mut self, event: PlayerEvent) -> Option<PlayerEvent> {
+        // Optionally transform gamepad button events into key events.
+        match event {
+            PlayerEvent::GamepadButtonDown { button } => {
+                if let Some(key_code) = self.gamepad_button_mapping.get(&button) {
+                    Some(PlayerEvent::KeyDown {
+                        key_code: *key_code,
+                        key_char: None,
+                    })
+                } else {
+                    // Just ignore this event.
+                    None
+                }
+            }
+            PlayerEvent::GamepadButtonUp { button } => {
+                if let Some(key_code) = self.gamepad_button_mapping.get(&button) {
+                    Some(PlayerEvent::KeyUp {
+                        key_code: *key_code,
+                        key_char: None,
+                    })
+                } else {
+                    // Just ignore this event.
+                    None
+                }
+            }
+            _ => Some(event),
         }
     }
 
@@ -155,11 +188,5 @@ impl InputManager {
             buttons.insert(MouseButton::Right);
         }
         buttons
-    }
-}
-
-impl Default for InputManager {
-    fn default() -> Self {
-        Self::new()
     }
 }
