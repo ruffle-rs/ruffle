@@ -14,7 +14,7 @@ use crate::backend::{
     log::LogBackend,
     navigator::{NavigatorBackend, Request},
     storage::StorageBackend,
-    ui::{InputManager, MouseCursor, UiBackend},
+    ui::{MouseCursor, UiBackend},
 };
 use crate::compatibility_rules::CompatibilityRules;
 use crate::config::Letterbox;
@@ -33,6 +33,7 @@ use crate::external::{ExternalInterface, ExternalInterfaceProvider, NullFsComman
 use crate::external::{FsCommandProvider, Value as ExternalValue};
 use crate::focus_tracker::NavigationDirection;
 use crate::frame_lifecycle::{run_all_phases_avm2, FramePhase};
+use crate::input::InputManager;
 use crate::library::Library;
 use crate::limits::ExecutionLimit;
 use crate::loader::{LoadBehavior, LoadManager};

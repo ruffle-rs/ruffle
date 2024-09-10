@@ -34,6 +34,7 @@ pub mod focus_tracker;
 mod font;
 mod frame_lifecycle;
 mod html;
+mod input;
 mod library;
 pub mod limits;
 pub mod loader;

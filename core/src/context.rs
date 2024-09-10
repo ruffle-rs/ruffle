@@ -18,13 +18,14 @@ use crate::backend::{
     log::LogBackend,
     navigator::NavigatorBackend,
     storage::StorageBackend,
-    ui::{InputManager, UiBackend},
+    ui::UiBackend,
 };
 use crate::context_menu::ContextMenuState;
 use crate::display_object::{EditText, MovieClip, SoundTransform, Stage};
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
 use crate::frame_lifecycle::FramePhase;
+use crate::input::InputManager;
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::local_connection::LocalConnections;
