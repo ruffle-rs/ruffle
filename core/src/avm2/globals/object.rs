@@ -7,10 +7,7 @@ use crate::avm2::object::{FunctionObject, Object, TObject};
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::Multiname;
 use crate::avm2::QName;
-
-use gc_arena::Gc;
 
 /// Implements `Object`'s instance initializer.
 pub fn instance_init<'gc>(
@@ -281,7 +278,7 @@ pub fn create_i_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
             has_own_property,
             vec![ParamConfig::optional(
                 "name",
-                Gc::new(gc_context, Multiname::any()),
+                activation.avm2().multinames.any,
                 Value::Undefined,
             )],
             activation.avm2().multinames.boolean,
@@ -291,7 +288,7 @@ pub fn create_i_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
             is_prototype_of,
             vec![ParamConfig::optional(
                 "theClass",
-                Gc::new(gc_context, Multiname::any()),
+                activation.avm2().multinames.any,
                 Value::Undefined,
             )],
             activation.avm2().multinames.boolean,
@@ -301,7 +298,7 @@ pub fn create_i_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
             property_is_enumerable,
             vec![ParamConfig::optional(
                 "name",
-                Gc::new(gc_context, Multiname::any()),
+                activation.avm2().multinames.any,
                 Value::Undefined,
             )],
             activation.avm2().multinames.boolean,

@@ -7,9 +7,7 @@ use crate::avm2::globals::number::print_with_radix;
 use crate::avm2::method::{Method, NativeMethodImpl, ParamConfig};
 use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::{AvmString, Error, Multiname, QName};
-
-use gc_arena::Gc;
+use crate::avm2::{AvmString, Error, QName};
 
 /// Implements `int`'s instance initializer.
 fn instance_init<'gc>(
@@ -229,10 +227,10 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
             "<int instance initializer>",
             vec![ParamConfig {
                 param_name: AvmString::new_utf8(activation.context.gc_context, "value"),
-                param_type_name: Gc::new(mc, Multiname::any()),
+                param_type_name: activation.avm2().multinames.any,
                 default_value: Some(Value::Integer(0)),
             }],
-            Gc::new(mc, Multiname::any()),
+            activation.avm2().multinames.any,
             true,
             mc,
         ),

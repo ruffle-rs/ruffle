@@ -524,7 +524,7 @@ impl<'gc> Class<'gc> {
                     // A 'callable' class doesn't have a signature - let the
                     // method do any needed coercions
                     vec![],
-                    Gc::new(activation.gc(), Multiname::any()),
+                    activation.avm2().multinames.any,
                     true,
                     activation.context.gc_context,
                 );
@@ -1029,11 +1029,7 @@ impl<'gc> Class<'gc> {
     ) {
         self.define_instance_trait(
             activation.context.gc_context,
-            Trait::from_const(
-                name,
-                activation.avm2().multinames.function,
-                Some(value),
-            ),
+            Trait::from_const(name, activation.avm2().multinames.function, Some(value)),
         );
     }
 
