@@ -10,6 +10,7 @@ use quick_xml::escape::escape;
 use quick_xml::events::BytesStart;
 use regress::Regex;
 use std::fmt;
+use std::sync::OnceLock;
 
 pub const ELEMENT_NODE: u8 = 1;
 pub const TEXT_NODE: u8 = 3;
@@ -555,6 +556,8 @@ impl<'gc> fmt::Debug for XmlNode<'gc> {
     }
 }
 
+static ENTITY_REGEX: OnceLock<Regex> = OnceLock::new();
+
 /// Handles flash-specific XML unescaping behavior.
 /// We accept all XML entities, and also accept standalone '&' without
 /// a corresponding ';'
@@ -564,7 +567,7 @@ pub fn custom_unescape(
 ) -> Result<String, quick_xml::Error> {
     let input = decoder.decode(data)?;
 
-    let re = Regex::new(r"&[^;]*;").unwrap();
+    let re = ENTITY_REGEX.get_or_init(|| Regex::new(r"&[^;]*;").unwrap());
     let mut result = String::new();
     let mut last_end = 0;
 
