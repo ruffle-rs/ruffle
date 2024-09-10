@@ -433,10 +433,7 @@ fn describe_internal_body<'gc>(
                     let setter = vtable
                         .get_full_method(*set)
                         .unwrap_or_else(|| panic!("Missing 'set' method for id {set:?}"));
-                    (
-                        setter.method.signature()[0].param_type_name.clone(),
-                        setter.class,
-                    )
+                    (setter.method.signature()[0].param_type_name, setter.class)
                 } else {
                     unreachable!();
                 };

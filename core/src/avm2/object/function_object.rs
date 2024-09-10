@@ -8,7 +8,7 @@ use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::value::Value;
-use crate::avm2::{Error, Multiname};
+use crate::avm2::Error;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{
@@ -39,7 +39,7 @@ pub fn function_allocator<'gc>(
             name: "<Empty Function>",
             signature: vec![],
             resolved_signature: GcCell::new(mc, None),
-            return_type: Gc::new(mc, Multiname::any()),
+            return_type: activation.avm2().multinames.any,
             is_variadic: true,
         },
     );

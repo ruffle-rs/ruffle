@@ -523,6 +523,8 @@ impl<'gc> From<QName<'gc>> for Multiname<'gc> {
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct CommonMultinames<'gc> {
+    pub any: Gc<'gc, Multiname<'gc>>,
+
     pub boolean: Gc<'gc, Multiname<'gc>>,
     pub function: Gc<'gc, Multiname<'gc>>,
     pub int: Gc<'gc, Multiname<'gc>>,
@@ -535,9 +537,11 @@ impl<'gc> CommonMultinames<'gc> {
         context: &mut GcContext<'_, 'gc>,
         public_namespace_base_version: Namespace<'gc>,
     ) -> Self {
+        let mc = context.gc_context;
+
         let mut create_pub_multiname = |local_name: &'static [u8]| -> Gc<'gc, Multiname<'gc>> {
             Gc::new(
-                context.gc_context,
+                mc,
                 Multiname::new(
                     public_namespace_base_version,
                     context
@@ -548,6 +552,7 @@ impl<'gc> CommonMultinames<'gc> {
         };
 
         Self {
+            any: Gc::new(mc, Multiname::any()),
             boolean: create_pub_multiname(b"Boolean"),
             function: create_pub_multiname(b"Function"),
             int: create_pub_multiname(b"int"),

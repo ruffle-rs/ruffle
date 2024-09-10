@@ -166,7 +166,7 @@ impl<'gc> BytecodeMethod<'gc> {
 
         let abc = txunit.abc();
         let mut signature = Vec::new();
-        let mut return_type = Gc::new(mc, Multiname::any());
+        let mut return_type = activation.avm2().multinames.any;
         let mut abc_method_body = None;
 
         if abc.methods.get(abc_method.0 as usize).is_some() {

@@ -460,13 +460,13 @@ impl<'gc> VTable<'gc> {
                             type_name, unit, ..
                         } => (
                             Property::new_slot(new_slot_id),
-                            PropertyClass::name(mc, type_name.clone(), *unit),
+                            PropertyClass::name(mc, *type_name, *unit),
                         ),
                         TraitKind::Const {
                             type_name, unit, ..
                         } => (
                             Property::new_const_slot(new_slot_id),
-                            PropertyClass::name(mc, type_name.clone(), *unit),
+                            PropertyClass::name(mc, *type_name, *unit),
                         ),
                         TraitKind::Class { class, .. } => (
                             Property::new_const_slot(new_slot_id),
