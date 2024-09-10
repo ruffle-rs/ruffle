@@ -866,38 +866,125 @@ where
     C: FnMut(&mut Activation<'a, 'gc>, Value<'gc>, Value<'gc>) -> Result<Ordering, Error<'gc>>,
 {
     let mut unique_sort_satisfied = true;
-    let mut error_signal = Ok(());
 
-    values.sort_unstable_by(|(_a_index, a), (_b_index, b)| {
+    qsort(values, &mut |(_, a), (_, b)| {
         let unresolved_a = *a;
         let unresolved_b = *b;
 
         if matches!(unresolved_a, Value::Undefined) && matches!(unresolved_b, Value::Undefined) {
             unique_sort_satisfied = false;
-            return Ordering::Equal;
+            return Ok(Ordering::Equal);
         } else if matches!(unresolved_a, Value::Undefined) {
-            return Ordering::Greater;
+            return Ok(Ordering::Greater);
         } else if matches!(unresolved_b, Value::Undefined) {
-            return Ordering::Less;
+            return Ok(Ordering::Less);
         }
 
-        match sort_func(activation, *a, *b) {
-            Ok(Ordering::Equal) => {
+        sort_func(activation, *a, *b).map(|cmp| {
+            if cmp == Ordering::Equal {
                 unique_sort_satisfied = false;
                 Ordering::Equal
+            } else if options.contains(SortOptions::DESCENDING) {
+                cmp.reverse()
+            } else {
+                cmp
             }
-            Ok(v) if options.contains(SortOptions::DESCENDING) => v.reverse(),
-            Ok(v) => v,
-            Err(e) => {
-                error_signal = Err(e);
-                Ordering::Less
-            }
-        }
-    });
-
-    error_signal?;
+        })
+    })?;
 
     Ok(!options.contains(SortOptions::UNIQUE_SORT) || unique_sort_satisfied)
+}
+
+/// A port of the avmplus QuickSort implementation.
+///
+/// This differs from Rust's `slice::sort` in the following way:
+/// - the comparison function is faillible and can return an error, short-circuiting the sort;
+/// - the comparison function isn't required to define a valid total order: in such cases, the sort
+///   will permute the slice arbitrarily, but won't return an error.
+///
+/// Original code: https://github.com/adobe/avmplus/blob/master/core/ArrayClass.cpp#L637
+fn qsort<T, E>(
+    slice: &mut [T],
+    cmp: &mut impl FnMut(&T, &T) -> Result<Ordering, E>,
+) -> Result<(), E> {
+    match slice {
+        // Empty and one-element slices are trivially sorted.
+        [] | [_] => return Ok(()),
+        // Fast-path for two elements.
+        [a, b] => {
+            if cmp(a, b)?.is_gt() {
+                swap(a, b);
+            }
+            return Ok(());
+        }
+        // Fast-path for three elements.
+        [a, b, c] => {
+            if cmp(a, b)?.is_gt() {
+                swap(a, b);
+            }
+            if cmp(b, c)?.is_gt() {
+                swap(b, c);
+                if cmp(a, b)?.is_gt() {
+                    swap(a, b);
+                }
+            }
+            return Ok(());
+        }
+        _ => (),
+    }
+
+    // Select the middle element of the slice as the pivot, and put it at the beginning.
+    slice.swap(0, slice.len() / 2);
+
+    // Order the elements (excluding the pivot) such that all elements lower
+    // than the pivot come before all elements greater than the pivot.
+    //
+    // This is done by iterating from both ends, swapping greater elements with
+    // lower ones along the way.
+    let mut left = 0;
+    let mut right = slice.len();
+    loop {
+        // Find an element greater than the pivot from the left.
+        loop {
+            left += 1;
+            if left >= slice.len() || cmp(&slice[left], &slice[0])?.is_gt() {
+                break;
+            }
+        }
+
+        // Find an element lower than the pivot from the right.
+        loop {
+            right -= 1;
+            if right == 0 || cmp(&slice[right], &slice[0])?.is_lt() {
+                break;
+            }
+        }
+
+        // Nothing left to swap, we are done.
+        if right < left {
+            break;
+        }
+
+        // Otherwise, swap left and right, and keep going.
+        slice.swap(left, right);
+    }
+
+    // Put the pivot in its final position.
+    slice.swap(0, right);
+
+    // The elements are now ordered as follows:
+    // [..right]: lower partition
+    // [right..left]: middle partition (equal to pivot)
+    // [left..]: higher partition
+
+    // Recurse into both higher and lower partitions, with the smallest first.
+    let (mut fst, mut snd) = slice.split_at_mut(left);
+    fst = &mut fst[..right];
+    if fst.len() >= snd.len() {
+        swap(&mut fst, &mut snd);
+    }
+    qsort(fst, cmp)?;
+    qsort(snd, cmp)
 }
 
 pub fn compare_string_case_sensitive<'gc>(
