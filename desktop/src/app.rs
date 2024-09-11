@@ -492,7 +492,7 @@ impl App {
                     let picker = self.gui.borrow().file_picker();
                     tokio::spawn(async move {
                         if let Some(url) = picker
-                            .pick_file(None)
+                            .pick_ruffle_file(None)
                             .await
                             .and_then(|p| Url::from_file_path(p).ok())
                         {
