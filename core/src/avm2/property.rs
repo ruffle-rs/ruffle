@@ -130,12 +130,10 @@ impl<'gc> PropertyClass<'gc> {
     }
 
     pub fn get_name(&self, context: &mut GcContext<'_, 'gc>) -> AvmString<'gc> {
-        let mc = context.gc_context;
-
         match self {
-            PropertyClass::Class(class) => class.name().to_qualified_name(mc),
+            PropertyClass::Class(class) => class.name().to_qualified_name(context.gc_context),
             PropertyClass::Name(gc) => gc.0.to_qualified_name_or_star(context),
-            PropertyClass::Any => context.interner.get_char(mc, '*' as u16),
+            PropertyClass::Any => context.interner.get_ascii_char('*'),
         }
     }
 }

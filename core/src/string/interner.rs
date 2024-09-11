@@ -155,6 +155,12 @@ impl<'gc> AvmStringInterner<'gc> {
         }
     }
 
+    // Like get_char, but panics if the passed char is not ASCII.
+    #[must_use]
+    pub fn get_ascii_char(&self, c: char) -> AvmString<'gc> {
+        self.chars[c as usize].into()
+    }
+
     #[must_use]
     pub fn substring(
         &self,
