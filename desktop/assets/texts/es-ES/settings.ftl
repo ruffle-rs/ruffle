@@ -46,14 +46,23 @@ align-top-right = Alinear arriba a la derecha
 align-bottom-right = Alinear abajo a la derecha
 align-force = Forzar alineación
 scale-mode = Modo de escala
+scale-mode-noscale = No escalado (100%)
 scale-mode-noscale-tooltip =
     Muestra la película en su tamaño original, sin ampliar.
     
     Corresponde a StageScaleMode.NO_SCALE
+scale-mode-showall = Ampliar para ajustar
 scale-mode-showall-tooltip =
     Amplía la película para llenar la ventana tanto como sea posible sin recortar, manteniendo la relación de aspecto.
     
     Corresponde a StageScaleMode.SHOW_ALL
+scale-mode-exactfit = Estirar para ajustar
+scale-mode-exactfit-tooltip =
+    Se asegura que la película rellena toda la ventana, sin importar la relación de aspecto.
+    
+    Corresponde a StageScaleMode.EXACT_FIT
+scale-mode-noborder = Recortar para ajustar
+scale-mode-noborder-tooltip = Rellana toda la ventana mientras mantiene la relación de aspecto, recortando la película si es necesario.
 scale-mode-force = Forzar el modo de escala
 scale-mode-force-tooltip = Previene que la película cambie su modo de escala, bloqueándolo al ajuste seleccionado.
 player-version = Versión del reproductor
