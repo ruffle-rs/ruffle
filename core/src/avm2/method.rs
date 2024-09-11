@@ -79,7 +79,7 @@ impl<'gc> ParamConfig<'gc> {
         } else {
             AvmString::from("<Unnamed Parameter>")
         };
-        let param_type_name = txunit.pool_multiname_static_any(config.kind, activation.context)?;
+        let param_type_name = txunit.pool_multiname_static_any(activation, config.kind)?;
 
         let default_value = if let Some(dv) = &config.default_value {
             Some(abc_default_value(txunit, dv, activation)?)
@@ -175,8 +175,7 @@ impl<'gc> BytecodeMethod<'gc> {
                 signature.push(ParamConfig::from_abc_param(param, txunit, activation)?);
             }
 
-            return_type =
-                txunit.pool_multiname_static_any(method.return_type, activation.context)?;
+            return_type = txunit.pool_multiname_static_any(activation, method.return_type)?;
 
             if let Some(body) = method.body {
                 abc_method_body = Some(body.0);

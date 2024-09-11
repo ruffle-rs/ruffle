@@ -1,3 +1,5 @@
+use crate::avm2::activation::Activation;
+use crate::avm2::error::make_error_1033;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Error, Namespace};
 use crate::context::UpdateContext;
@@ -40,52 +42,36 @@ impl<'gc> QName<'gc> {
 
     /// Pull a `QName` from the multiname pool.
     ///
-    /// This function returns an Err if the multiname does not exist or is not
-    /// a `QName`.
+    /// This function returns an Err if the multiname is not a `QName`.
     pub fn from_abc_multiname(
+        activation: &mut Activation<'_, 'gc>,
         translation_unit: TranslationUnit<'gc>,
         multiname_index: Index<AbcMultiname>,
-        context: &mut UpdateContext<'gc>,
     ) -> Result<Self, Error<'gc>> {
-        if multiname_index.0 == 0 {
-            return Err("Attempted to load a trait name of index zero".into());
+        let name = Multiname::from_abc_index(activation, translation_unit, multiname_index)?;
+
+        if name.is_any_namespace()
+            || name.is_any_name()
+            || name.has_lazy_component()
+            || name.is_attribute()
+        {
+            return Err(make_error_1033(activation));
         }
 
-        let actual_index = multiname_index.0 as usize - 1;
-        let abc = translation_unit.abc();
-        let abc_multiname: Result<_, Error<'gc>> = abc
-            .constant_pool
-            .multinames
-            .get(actual_index)
-            .ok_or_else(|| format!("Unknown multiname constant {}", multiname_index.0).into());
+        // For any non-QName not in the playerglobals domain, return an error.
+        if !name.is_qname()
+            && !translation_unit
+                .domain()
+                .is_playerglobals_domain(activation.avm2())
+        {
+            return Err(make_error_1033(activation));
+        }
 
-        Ok(match abc_multiname? {
-            AbcMultiname::QName { namespace, name } => Self {
-                ns: translation_unit.pool_namespace(*namespace, context)?,
-                name: translation_unit
-                    .pool_string(name.0, &mut context.borrow_gc())?
-                    .into(),
-            },
-            AbcMultiname::Multiname {
-                namespace_set,
-                name,
-            } => {
-                let ns_set =
-                    Multiname::abc_namespace_set(translation_unit, *namespace_set, context)?;
-                if ns_set.len() == 1 {
-                    Self {
-                        ns: ns_set.get(0).unwrap(),
-                        name: translation_unit
-                            .pool_string(name.0, &mut context.borrow_gc())?
-                            .into(),
-                    }
-                } else {
-                    return Err(
-                        "Attempted to pull QName from multiname with multiple namespaces".into(),
-                    );
-                }
-            }
-            _ => return Err("Attempted to pull QName from non-QName multiname".into()),
+        // Now we know that the Multiname must have an explicit namespace and a local name.
+
+        Ok(Self {
+            ns: name.namespace_set()[0],
+            name: name.local_name().unwrap(),
         })
     }
 

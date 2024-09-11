@@ -1,19 +1,18 @@
 use crate::avm2::activation::Activation;
+use crate::avm2::error::{make_error_1032, make_error_1080};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::Error;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2::{Object, Value};
-use crate::context::{GcContext, UpdateContext};
+use crate::context::GcContext;
 use crate::string::{AvmString, WStr, WString};
 use bitflags::bitflags;
 use gc_arena::Gc;
 use gc_arena::{Collect, Mutation};
 use std::fmt::Debug;
 use std::ops::Deref;
-use swf::avm2::types::{
-    AbcFile, Index, Multiname as AbcMultiname, NamespaceSet as AbcNamespaceSet,
-};
+use swf::avm2::types::{Index, Multiname as AbcMultiname, NamespaceSet as AbcNamespaceSet};
 
 #[derive(Clone, Copy, Debug, Collect)]
 #[collect(no_drop)]
@@ -141,14 +140,12 @@ impl<'gc> Multiname<'gc> {
     /// Read a namespace set from the ABC constant pool, and return a list of
     /// copied namespaces.
     pub fn abc_namespace_set(
+        activation: &mut Activation<'_, 'gc>,
         translation_unit: TranslationUnit<'gc>,
         namespace_set_index: Index<AbcNamespaceSet>,
-        context: &mut UpdateContext<'gc>,
     ) -> Result<NamespaceSet<'gc>, Error<'gc>> {
         if namespace_set_index.0 == 0 {
-            return Err(Error::RustError(
-                "Multiname namespace set must not be null".into(),
-            ));
+            return Err(make_error_1032(activation, 0));
         }
 
         let actual_index = namespace_set_index.0 as usize - 1;
@@ -163,33 +160,57 @@ impl<'gc> Multiname<'gc> {
         let ns_set = ns_set?;
 
         if ns_set.len() == 1 {
-            Ok(NamespaceSet::single(
-                translation_unit.pool_namespace(ns_set[0], context)?,
-            ))
+            let namespace = translation_unit.pool_namespace(activation, ns_set[0])?;
+
+            if namespace.is_any() {
+                return Err(make_error_1080(activation));
+            }
+
+            Ok(NamespaceSet::single(namespace))
         } else {
             let mut result = Vec::with_capacity(ns_set.len());
             for ns in ns_set {
-                result.push(translation_unit.pool_namespace(*ns, context)?)
+                let namespace = translation_unit.pool_namespace(activation, *ns)?;
+
+                // Namespace sets must not have Any namespaces in them
+                if namespace.is_any() {
+                    return Err(make_error_1080(activation));
+                }
+
+                result.push(namespace)
             }
-            Ok(NamespaceSet::multiple(result, context.gc_context))
+
+            Ok(NamespaceSet::multiple(result, activation.gc()))
         }
     }
 
     pub fn from_abc_index(
+        activation: &mut Activation<'_, 'gc>,
         translation_unit: TranslationUnit<'gc>,
         multiname_index: Index<AbcMultiname>,
-        context: &mut UpdateContext<'gc>,
     ) -> Result<Self, Error<'gc>> {
-        let mc = context.gc_context;
+        let mc = activation.gc();
+
+        if multiname_index.0 == 0 {
+            return Err(make_error_1032(activation, 0));
+        }
+
         let abc = translation_unit.abc();
-        let abc_multiname = Self::resolve_multiname_index(&abc, multiname_index)?;
+
+        let abc_multiname = abc
+            .constant_pool
+            .multinames
+            .get(multiname_index.0 as usize - 1)
+            .ok_or_else(|| format!("Unknown multiname constant {}", multiname_index.0))?;
 
         let mut multiname = match abc_multiname {
             AbcMultiname::QName { namespace, name } | AbcMultiname::QNameA { namespace, name } => {
                 Self {
-                    ns: NamespaceSet::single(translation_unit.pool_namespace(*namespace, context)?),
+                    ns: NamespaceSet::single(
+                        translation_unit.pool_namespace(activation, *namespace)?,
+                    ),
                     name: translation_unit
-                        .pool_string_option(name.0, &mut context.borrow_gc())?
+                        .pool_string_option(name.0, &mut activation.borrow_gc())?
                         .map(|v| v.into()),
                     param: None,
                     flags: MultinameFlags::IS_QNAME,
@@ -198,7 +219,7 @@ impl<'gc> Multiname<'gc> {
             AbcMultiname::RTQName { name } | AbcMultiname::RTQNameA { name } => Self {
                 ns: NamespaceSet::multiple(vec![], mc),
                 name: translation_unit
-                    .pool_string_option(name.0, &mut context.borrow_gc())?
+                    .pool_string_option(name.0, &mut activation.borrow_gc())?
                     .map(|v| v.into()),
                 param: None,
                 flags: MultinameFlags::HAS_LAZY_NS | MultinameFlags::IS_QNAME,
@@ -219,16 +240,16 @@ impl<'gc> Multiname<'gc> {
                 namespace_set,
                 name,
             } => Self {
-                ns: Self::abc_namespace_set(translation_unit, *namespace_set, context)?,
+                ns: Self::abc_namespace_set(activation, translation_unit, *namespace_set)?,
                 name: translation_unit
-                    .pool_string_option(name.0, &mut context.borrow_gc())?
+                    .pool_string_option(name.0, &mut activation.borrow_gc())?
                     .map(|v| v.into()),
                 param: None,
                 flags: Default::default(),
             },
             AbcMultiname::MultinameL { namespace_set }
             | AbcMultiname::MultinameLA { namespace_set } => Self {
-                ns: Self::abc_namespace_set(translation_unit, *namespace_set, context)?,
+                ns: Self::abc_namespace_set(activation, translation_unit, *namespace_set)?,
                 name: None,
                 param: None,
                 flags: MultinameFlags::HAS_LAZY_NAME,
@@ -238,7 +259,7 @@ impl<'gc> Multiname<'gc> {
                 parameters,
             } => {
                 let mut base = translation_unit
-                    .pool_multiname_static(*base_type, context)?
+                    .pool_multiname_static(activation, *base_type)?
                     .deref()
                     .clone();
 
@@ -251,7 +272,7 @@ impl<'gc> Multiname<'gc> {
                 }
 
                 base.param =
-                    Some(translation_unit.pool_multiname_static_any(parameters[0], context)?);
+                    Some(translation_unit.pool_multiname_static_any(activation, parameters[0])?);
                 base
             }
         };
@@ -308,23 +329,6 @@ impl<'gc> Multiname<'gc> {
             param: self.param,
             flags: self.flags & (MultinameFlags::ATTRIBUTE | MultinameFlags::IS_QNAME),
         })
-    }
-
-    /// Retrieve a given multiname index from the ABC file, yielding an error
-    /// if the multiname index is zero.
-    pub fn resolve_multiname_index(
-        abc: &AbcFile,
-        multiname_index: Index<AbcMultiname>,
-    ) -> Result<&AbcMultiname, Error<'gc>> {
-        let actual_index: Result<usize, Error<'gc>> = (multiname_index.0 as usize)
-            .checked_sub(1)
-            .ok_or_else(|| "Attempted to resolve a multiname at index zero. This is a bug.".into());
-
-        let actual_index = actual_index?;
-        abc.constant_pool
-            .multinames
-            .get(actual_index)
-            .ok_or_else(|| format!("Unknown multiname constant {}", multiname_index.0).into())
     }
 
     /// Indicates the any type (any name in any namespace).
@@ -414,7 +418,9 @@ impl<'gc> Multiname<'gc> {
     pub fn is_any_namespace(&self) -> bool {
         match self.ns {
             NamespaceSet::Single(ns) => ns.is_any(),
-            NamespaceSet::Multiple(ns) => ns.iter().any(|ns| ns.is_any()),
+
+            // NamespaceSet::Multiple should not have any Any namespaces in it
+            NamespaceSet::Multiple(_) => false,
         }
     }
 

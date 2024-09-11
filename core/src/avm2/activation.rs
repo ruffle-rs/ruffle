@@ -732,9 +732,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         method: Gc<'gc, BytecodeMethod<'gc>>,
         index: Index<AbcNamespace>,
     ) -> Result<Namespace<'gc>, Error<'gc>> {
-        method
-            .translation_unit()
-            .pool_namespace(index, self.context)
+        method.translation_unit().pool_namespace(self, index)
     }
 
     /// Retrieve a method entry from the current ABC file's method table.
