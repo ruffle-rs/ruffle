@@ -1,5 +1,6 @@
 mod about_dialog;
 mod bookmarks_dialog;
+pub mod filesystem_access_dialog;
 pub mod message_dialog;
 pub mod network_access_dialog;
 mod open_dialog;
@@ -11,6 +12,7 @@ use crate::custom_event::RuffleEvent;
 use crate::player::LaunchOptions;
 use crate::preferences::GlobalPreferences;
 use bookmarks_dialog::{BookmarkAddDialog, BookmarksDialog};
+use filesystem_access_dialog::{FilesystemAccessDialog, FilesystemAccessDialogConfiguration};
 use message_dialog::{MessageDialog, MessageDialogConfiguration};
 use network_access_dialog::{NetworkAccessDialog, NetworkAccessDialogConfiguration};
 use open_dialog::OpenDialog;
@@ -40,6 +42,8 @@ pub struct Dialogs {
     //  2. prevent new instances popping up over existing ones
     //     (and possibly stealing a click).
     network_access_dialog_queue: VecDeque<NetworkAccessDialog>,
+    filesystem_access_dialog: Option<FilesystemAccessDialog>,
+    filesystem_access_dialog_queue: VecDeque<FilesystemAccessDialogConfiguration>,
 
     open_dialog: OpenDialog,
     is_open_dialog_visible: bool,
@@ -56,6 +60,7 @@ pub enum DialogDescriptor {
     OpenUrl(url::Url),
     ShowMessage(MessageDialogConfiguration),
     NetworkAccess(NetworkAccessDialogConfiguration),
+    FilesystemAccess(FilesystemAccessDialogConfiguration),
 }
 
 impl Dialogs {
@@ -75,6 +80,8 @@ impl Dialogs {
             message_dialog: None,
 
             network_access_dialog_queue: VecDeque::new(),
+            filesystem_access_dialog: None,
+            filesystem_access_dialog_queue: VecDeque::new(),
 
             open_dialog: OpenDialog::new(
                 player_options,
@@ -152,6 +159,9 @@ impl Dialogs {
             DialogDescriptor::NetworkAccess(config) => self
                 .network_access_dialog_queue
                 .push_back(NetworkAccessDialog::new(config)),
+            DialogDescriptor::FilesystemAccess(config) => {
+                self.filesystem_access_dialog_queue.push_back(config)
+            }
         }
     }
 
@@ -170,6 +180,7 @@ impl Dialogs {
         self.show_open_url_dialog(locale, egui_ctx);
         self.show_message_dialog(locale, egui_ctx);
         self.show_network_access_dialog(locale, egui_ctx);
+        self.show_filesystem_access_dialog(locale, egui_ctx);
     }
 
     fn show_open_dialog(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) {
@@ -267,6 +278,28 @@ impl Dialogs {
         };
         if !keep_open {
             self.network_access_dialog_queue.pop_front();
+        }
+    }
+
+    fn show_filesystem_access_dialog(
+        &mut self,
+        locale: &LanguageIdentifier,
+        egui_ctx: &egui::Context,
+    ) {
+        let keep_open = if let Some(dialog) = &mut self.filesystem_access_dialog {
+            dialog.show(locale, egui_ctx)
+        } else {
+            true
+        };
+        if !keep_open {
+            self.filesystem_access_dialog = None;
+        }
+
+        if self.filesystem_access_dialog.is_none() {
+            self.filesystem_access_dialog = self
+                .filesystem_access_dialog_queue
+                .pop_front()
+                .map(FilesystemAccessDialog::new);
         }
     }
 }
