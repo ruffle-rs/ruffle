@@ -33,11 +33,6 @@ impl FilePicker {
     }
 
     pub async fn pick_ruffle_file(&self, dir: Option<PathBuf>) -> Option<PathBuf> {
-        if self.data.picking.swap(true, Ordering::SeqCst) {
-            // Already picking
-            return None;
-        }
-
         let locale = &self.data.preferences.language();
         let mut dialog = AsyncFileDialog::new()
             .add_filter(
@@ -54,12 +49,27 @@ impl FilePicker {
             dialog = dialog.set_directory(dir);
         }
 
+        if let Some(result) = self.show_dialog(dialog, |d| d.pick_file()) {
+            result.await.map(|h| h.into())
+        } else {
+            None
+        }
+    }
+
+    pub fn show_dialog<F, O>(&self, mut dialog: AsyncFileDialog, f: F) -> Option<O>
+    where
+        F: FnOnce(AsyncFileDialog) -> O,
+    {
         if let Some(parent) = self.data.parent.upgrade() {
             dialog = dialog.set_parent(&parent);
         }
 
-        let result = dialog.pick_file().await.map(|h| h.into());
+        if self.data.picking.swap(true, Ordering::SeqCst) {
+            // Already picking
+            return None;
+        }
+        let result = f(dialog);
         self.data.picking.store(false, Ordering::SeqCst);
-        result
+        Some(result)
     }
 }
