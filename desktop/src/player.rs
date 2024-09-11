@@ -3,7 +3,7 @@ use crate::backends::{
     DesktopNavigatorInterface, DesktopUiBackend,
 };
 use crate::custom_event::RuffleEvent;
-use crate::gui::MovieView;
+use crate::gui::{FilePicker, MovieView};
 use crate::preferences::GlobalPreferences;
 use crate::{CALLSTACK, RENDER_INFO, SWF_INFO};
 use anyhow::anyhow;
@@ -130,6 +130,7 @@ impl ActivePlayer {
         movie_view: MovieView,
         font_database: Rc<fontdb::Database>,
         preferences: GlobalPreferences,
+        file_picker: FilePicker,
     ) -> Self {
         let mut builder = PlayerBuilder::new();
 
@@ -277,6 +278,7 @@ impl ActivePlayer {
                     opt.open_url_mode,
                     font_database,
                     preferences,
+                    file_picker,
                 )
                 .expect("Couldn't create ui backend"),
             )
@@ -390,6 +392,7 @@ pub struct PlayerController {
     descriptors: Arc<Descriptors>,
     font_database: Rc<fontdb::Database>,
     preferences: GlobalPreferences,
+    file_picker: FilePicker,
 }
 
 impl PlayerController {
@@ -399,6 +402,7 @@ impl PlayerController {
         descriptors: Arc<Descriptors>,
         font_database: fontdb::Database,
         preferences: GlobalPreferences,
+        file_picker: FilePicker,
     ) -> Self {
         Self {
             player: None,
@@ -407,6 +411,7 @@ impl PlayerController {
             descriptors,
             font_database: Rc::new(font_database),
             preferences,
+            file_picker,
         }
     }
 
@@ -420,6 +425,7 @@ impl PlayerController {
             movie_view,
             self.font_database.clone(),
             self.preferences.clone(),
+            self.file_picker.clone(),
         ));
     }
 
