@@ -32,7 +32,7 @@ impl FilePicker {
         }
     }
 
-    pub async fn pick_file(&self, dir: Option<PathBuf>) -> Option<PathBuf> {
+    pub async fn pick_ruffle_file(&self, dir: Option<PathBuf>) -> Option<PathBuf> {
         if self.data.picking.swap(true, Ordering::SeqCst) {
             // Already picking
             return None;

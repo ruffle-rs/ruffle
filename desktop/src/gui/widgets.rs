@@ -64,7 +64,7 @@ impl PathOrUrlField {
                 let value = self.value.clone();
                 let picker = self.picker.clone();
                 tokio::spawn(async move {
-                    if let Some(path) = picker.pick_file(dir).await {
+                    if let Some(path) = picker.pick_ruffle_file(dir).await {
                         let mut value_lock = Self::lock_value(&value);
                         *value_lock = path.to_string_lossy().to_string();
                     }
