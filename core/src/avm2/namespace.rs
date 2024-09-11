@@ -1,5 +1,5 @@
+use crate::avm2::activation::Activation;
 use crate::avm2::Error;
-use crate::context::UpdateContext;
 use crate::string::{AvmAtom, AvmString};
 use crate::{avm2::script::TranslationUnit, context::GcContext};
 use gc_arena::{Collect, Gc};
@@ -82,13 +82,15 @@ impl<'gc> Namespace<'gc> {
     /// otherwise you run a risk of creating a duplicate of private ns singleton.
     /// Based on https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/AbcParser.cpp#L1459
     pub fn from_abc_namespace(
+        activation: &mut Activation<'_, 'gc>,
         translation_unit: TranslationUnit<'gc>,
         namespace_index: Index<AbcNamespace>,
-        context: &mut UpdateContext<'gc>,
     ) -> Result<Self, Error<'gc>> {
         if namespace_index.0 == 0 {
             return Ok(Self::any());
         }
+
+        let mc = activation.gc();
 
         let actual_index = namespace_index.0 as usize - 1;
         let abc = translation_unit.abc();
@@ -109,12 +111,13 @@ impl<'gc> Namespace<'gc> {
             | AbcNamespace::Private(idx) => idx,
         };
 
-        let mut namespace_name = translation_unit.pool_string(index.0, &mut context.borrow_gc())?;
+        let mut namespace_name =
+            translation_unit.pool_string(index.0, &mut activation.borrow_gc())?;
 
         // Private namespaces don't get any of the namespace version checks
         if let AbcNamespace::Private(_) = abc_namespace {
             return Ok(Self(Some(Gc::new(
-                context.gc_context,
+                mc,
                 NamespaceData::Private(namespace_name),
             ))));
         }
@@ -159,14 +162,14 @@ impl<'gc> Namespace<'gc> {
         let api_version = if index.0 != 0 {
             let is_playerglobals = translation_unit
                 .domain()
-                .is_playerglobals_domain(context.avm2);
+                .is_playerglobals_domain(activation.avm2());
 
             let mut api_version = ApiVersion::AllVersions;
             let stripped = strip_version_mark(namespace_name.as_wstr(), is_playerglobals);
             let has_version_mark = stripped.is_some();
             if let Some((stripped, version)) = stripped {
-                let stripped_string = AvmString::new(context.gc_context, stripped);
-                namespace_name = context.interner.intern(context.gc_context, stripped_string);
+                let stripped_string = AvmString::new(mc, stripped);
+                namespace_name = activation.context.interner.intern(mc, stripped_string);
                 api_version = version;
             }
 
@@ -191,9 +194,9 @@ impl<'gc> Namespace<'gc> {
                 // However, there's no reason to hold on to invalid API versions for the
                 // current active series (player runtime), so let's just do the conversion immediately.
                 api_version =
-                    api_version.to_valid_playerglobals_version(context.avm2.player_runtime);
+                    api_version.to_valid_playerglobals_version(activation.avm2().player_runtime);
             } else if is_public {
-                api_version = translation_unit.api_version(context.avm2);
+                api_version = translation_unit.api_version(activation.avm2());
             };
             api_version
         } else {
@@ -201,7 +204,7 @@ impl<'gc> Namespace<'gc> {
             // However, Flash Player appears to always use the root SWF api version
             // for all swfs (e.g. those loaded through `Loader`). We can simply our code
             // by skipping walking the stack, and just using the API version of our root SWF.
-            context.avm2.root_api_version
+            activation.avm2().root_api_version
         };
 
         let ns = match abc_namespace {
@@ -214,7 +217,7 @@ impl<'gc> Namespace<'gc> {
             AbcNamespace::StaticProtected(_) => NamespaceData::StaticProtected(namespace_name),
             AbcNamespace::Private(_) => unreachable!(),
         };
-        Ok(Self(Some(Gc::new(context.gc_context, ns))))
+        Ok(Self(Some(Gc::new(mc, ns))))
     }
 
     pub fn any() -> Self {

@@ -65,7 +65,7 @@ impl<'gc> PropertyClass<'gc> {
             PropertyClass::Class(class) => (Some(*class), false),
             PropertyClass::Name(gc) => {
                 let (name, unit) = &**gc;
-                if name.is_any_name() {
+                if name.is_any_namespace() && name.is_any_name() {
                     *self = PropertyClass::Any;
                     (None, true)
                 } else {
@@ -108,7 +108,7 @@ impl<'gc> PropertyClass<'gc> {
             PropertyClass::Class(class) => Ok(Some(*class)),
             PropertyClass::Name(gc) => {
                 let (name, unit) = &**gc;
-                if name.is_any_name() {
+                if name.is_any_namespace() && name.is_any_name() {
                     *self = PropertyClass::Any;
                     Ok(None)
                 } else {

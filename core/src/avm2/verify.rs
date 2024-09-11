@@ -314,7 +314,7 @@ pub fn verify_method<'gc>(
                 AbcOp::FindDef { index } => {
                     let multiname = method
                         .translation_unit()
-                        .pool_maybe_uninitialized_multiname(index, activation.context)?;
+                        .pool_maybe_uninitialized_multiname(activation, index)?;
 
                     if multiname.has_lazy_component() {
                         return Err(Error::AvmError(verify_error(
@@ -328,7 +328,7 @@ pub fn verify_method<'gc>(
                 AbcOp::GetLex { index } => {
                     let multiname = method
                         .translation_unit()
-                        .pool_maybe_uninitialized_multiname(index, activation.context)?;
+                        .pool_maybe_uninitialized_multiname(activation, index)?;
 
                     if multiname.has_lazy_component() {
                         return Err(Error::AvmError(verify_error(
@@ -370,7 +370,7 @@ pub fn verify_method<'gc>(
                 | AbcOp::Coerce { index: name_index } => {
                     let multiname = method
                         .translation_unit()
-                        .pool_maybe_uninitialized_multiname(name_index, activation.context)?;
+                        .pool_maybe_uninitialized_multiname(activation, name_index)?;
 
                     if multiname.has_lazy_component() {
                         // This matches FP's error message
@@ -419,7 +419,7 @@ pub fn verify_method<'gc>(
         } else {
             let pooled_type_name = method
                 .translation_unit()
-                .pool_maybe_uninitialized_multiname(exception.type_name, activation.context)?;
+                .pool_maybe_uninitialized_multiname(activation, exception.type_name)?;
 
             if pooled_type_name.has_lazy_component() {
                 // This matches FP's error message
@@ -444,7 +444,7 @@ pub fn verify_method<'gc>(
         } else {
             let pooled_variable_name = method
                 .translation_unit()
-                .pool_maybe_uninitialized_multiname(exception.variable_name, activation.context)?;
+                .pool_maybe_uninitialized_multiname(activation, exception.variable_name)?;
 
             // FIXME: avmplus also seems to check the namespace(s)?
             if pooled_variable_name.has_lazy_component()
@@ -831,11 +831,9 @@ fn pool_multiname<'gc>(
     translation_unit: TranslationUnit<'gc>,
     index: Index<AbcMultiname>,
 ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
-    if index.0 == 0 {
-        return Err(make_error_1032(activation, 0));
-    }
-
-    translation_unit.pool_maybe_uninitialized_multiname(index, activation.context)
+    // `Multiname::from_abc_index` will do constant pool range checks anyway, so
+    // don't perform an extra one here
+    translation_unit.pool_maybe_uninitialized_multiname(activation, index)
 }
 
 fn pool_string<'gc>(

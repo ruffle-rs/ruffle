@@ -439,45 +439,39 @@ impl<'gc> Class<'gc> {
             .ok_or_else(|| "LoadError: Instance index not valid".into());
         let abc_instance = abc_instance?;
 
-        let name = QName::from_abc_multiname(unit, abc_instance.name, activation.context)?;
+        let name = QName::from_abc_multiname(activation, unit, abc_instance.name)?;
+
         let super_class = if abc_instance.super_name.0 == 0 {
             None
         } else {
-            let multiname =
-                unit.pool_multiname_static(abc_instance.super_name, activation.context)?;
+            let multiname = unit.pool_multiname_static(activation, abc_instance.super_name)?;
 
             Some(
                 activation
                     .domain()
                     .get_class(activation.context, &multiname)
                     .ok_or_else(|| {
-                        make_error_1014(
-                            activation,
-                            multiname.to_qualified_name(activation.context.gc_context),
-                        )
+                        make_error_1014(activation, multiname.to_qualified_name(activation.gc()))
                     })?,
             )
         };
 
         let protected_namespace = if let Some(ns) = &abc_instance.protected_namespace {
-            Some(unit.pool_namespace(*ns, activation.context)?)
+            Some(unit.pool_namespace(activation, *ns)?)
         } else {
             None
         };
 
         let mut interfaces = Vec::with_capacity(abc_instance.interfaces.len());
         for interface_name in &abc_instance.interfaces {
-            let multiname = unit.pool_multiname_static(*interface_name, activation.context)?;
+            let multiname = unit.pool_multiname_static(activation, *interface_name)?;
 
             interfaces.push(
                 activation
                     .domain()
                     .get_class(activation.context, &multiname)
                     .ok_or_else(|| {
-                        make_error_1014(
-                            activation,
-                            multiname.to_qualified_name(activation.context.gc_context),
-                        )
+                        make_error_1014(activation, multiname.to_qualified_name(activation.gc()))
                     })?,
             );
         }

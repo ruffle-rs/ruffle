@@ -255,6 +255,16 @@ pub fn make_error_1032<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) ->
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1033<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = verify_error(activation, "Error #1033: Cpool entry is wrong type.", 1033);
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1054<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = verify_error(
         activation,
@@ -279,6 +289,20 @@ pub fn make_error_1065<'gc>(
         activation,
         &format!("Error #1065: Variable {qualified_name} is not defined."),
         1065,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1080<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = type_error(
+        activation,
+        "Error #1080: Illegal value for namespace.",
+        1080,
     );
     match err {
         Ok(err) => Error::AvmError(err),
@@ -540,6 +564,20 @@ pub fn make_error_2008<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &s
 
 #[inline(never)]
 #[cold]
+pub fn make_error_2025<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = argument_error(
+        activation,
+        "Error #2025: The supplied DisplayObject must be a child of the caller.",
+        2025,
+    );
+    match err {
+        Ok(err) => Error::AvmError(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_2027<'gc>(activation: &mut Activation<'_, 'gc>, value: i32) -> Error<'gc> {
     let err = range_error(
         activation,
@@ -593,20 +631,6 @@ pub fn make_error_2097<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         activation,
         "Error #2097: The FileFilter Array is not in the correct format.",
         2097,
-    );
-    match err {
-        Ok(err) => Error::AvmError(err),
-        Err(err) => err,
-    }
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_error_2025<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    let err = argument_error(
-        activation,
-        "Error #2025: The supplied DisplayObject must be a child of the caller.",
-        2025,
     );
     match err {
         Ok(err) => Error::AvmError(err),
