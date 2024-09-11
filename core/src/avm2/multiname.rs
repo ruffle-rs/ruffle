@@ -464,9 +464,11 @@ impl<'gc> Multiname<'gc> {
 
     /// Like `to_qualified_name`, but returns `*` if `self.is_any()` is true.
     /// This is used by `describeType`
-    pub fn to_qualified_name_or_star(&self, mc: &Mutation<'gc>) -> AvmString<'gc> {
+    pub fn to_qualified_name_or_star(&self, context: &mut GcContext<'_, 'gc>) -> AvmString<'gc> {
+        let mc = context.gc_context;
+
         if self.is_any_name() {
-            AvmString::new_utf8(mc, "*")
+            context.interner.get_char(mc, '*' as u16)
         } else {
             self.to_qualified_name(mc)
         }
