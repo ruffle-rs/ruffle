@@ -1,8 +1,7 @@
+use crate::backends::navigator::NavigatorInterface;
 use crate::bundle::Bundle;
 use std::fmt::{Debug, Formatter};
-use std::fs::File;
 use std::io::{ErrorKind, Read};
-use std::path::Path;
 use url::Url;
 
 pub enum PlayingContent {
@@ -41,10 +40,10 @@ impl PlayingContent {
         }
     }
 
-    pub fn get_local_file(
+    pub async fn get_local_file(
         &self,
         url: &Url,
-        open_file: impl FnOnce(&Path) -> std::io::Result<File>,
+        interface: impl NavigatorInterface,
     ) -> Result<Vec<u8>, std::io::Error> {
         match self {
             PlayingContent::DirectFile(_) => {
@@ -52,7 +51,7 @@ impl PlayingContent {
                     .to_file_path()
                     .map_err(|_| std::io::Error::other("Could not turn url into file path"))?;
                 let mut result = vec![];
-                let mut file = open_file(&path)?;
+                let mut file = interface.open_file(&path).await?;
                 file.read_to_end(&mut result)?;
                 Ok(result)
             }

@@ -44,7 +44,7 @@ impl NavigatorInterface for DesktopNavigatorInterface {
             .send_event(RuffleEvent::OpenDialog(DialogDescriptor::OpenUrl(url)));
     }
 
-    fn open_file(&self, path: &Path) -> io::Result<File> {
+    async fn open_file(&self, path: &Path) -> io::Result<File> {
         File::open(path).or_else(|e| {
             if cfg!(feature = "sandbox") {
                 use rfd::FileDialog;
