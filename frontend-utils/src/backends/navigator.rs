@@ -30,7 +30,7 @@ use url::{ParseError, Url};
 pub trait NavigatorInterface: Clone + Send + 'static {
     fn navigate_to_website(&self, url: Url, ask: bool);
 
-    fn open_file(&self, path: &Path) -> io::Result<File>;
+    fn open_file(&self, path: &Path) -> impl std::future::Future<Output = io::Result<File>> + Send;
 
     fn confirm_socket(
         &self,
@@ -215,8 +215,7 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
                     // when we actually load a filesystem url, strip them out.
                     processed_url.set_query(None);
 
-                    let contents =
-                        content.get_local_file(&processed_url, |path| interface.open_file(path));
+                    let contents = content.get_local_file(&processed_url, interface).await;
 
                     let response: Box<dyn SuccessResponse> = Box::new(Response {
                         url: response_url.to_string(),
@@ -488,7 +487,7 @@ mod tests {
     impl NavigatorInterface for () {
         fn navigate_to_website(&self, _url: Url, _ask: bool) {}
 
-        fn open_file(&self, path: &Path) -> io::Result<File> {
+        async fn open_file(&self, path: &Path) -> io::Result<File> {
             File::open(path)
         }
 
