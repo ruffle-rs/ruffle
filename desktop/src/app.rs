@@ -84,6 +84,7 @@ impl App {
             gui.descriptors().clone(),
             font_database,
             preferences.clone(),
+            gui.file_picker(),
         );
 
         if let Some(movie_url) = &movie_url {
