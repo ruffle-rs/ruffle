@@ -302,7 +302,8 @@ fn describe_internal_body<'gc>(
                 if !flags.contains(DescribeTypeFlags::INCLUDE_VARIABLES) {
                     continue;
                 }
-                let prop_class_name = vtable.slot_class_name(mc, *slot_id)?;
+                let prop_class_name =
+                    vtable.slot_class_name(&mut activation.borrow_gc(), *slot_id)?;
 
                 let access = match prop {
                     Property::ConstSlot { .. } => "readonly",
@@ -356,7 +357,10 @@ fn describe_internal_body<'gc>(
                     continue;
                 }
 
-                let return_type_name = method.method.return_type().to_qualified_name_or_star(mc);
+                let return_type_name = method
+                    .method
+                    .return_type()
+                    .to_qualified_name_or_star(&mut activation.borrow_gc());
                 let declared_by = method.class;
 
                 if flags.contains(DescribeTypeFlags::HIDE_OBJECT)
@@ -453,7 +457,8 @@ fn describe_internal_body<'gc>(
                     Some(ns.as_uri())
                 };
 
-                let accessor_type = method_type.to_qualified_name_or_star(mc);
+                let accessor_type =
+                    method_type.to_qualified_name_or_star(&mut activation.borrow_gc());
                 let declared_by = defining_class.dollar_removed_name(mc).to_qualified_name(mc);
 
                 let accessor_obj = activation
@@ -541,7 +546,7 @@ fn write_params<'gc>(
     for param in method.signature() {
         let param_type_name = param
             .param_type_name
-            .to_qualified_name_or_star(activation.context.gc_context);
+            .to_qualified_name_or_star(&mut activation.borrow_gc());
         let optional = param.default_value.is_some();
         let param_obj = activation
             .avm2()
