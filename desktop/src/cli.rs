@@ -181,6 +181,10 @@ pub struct Opt {
     #[clap(long, default_value = "allow")]
     pub open_url_mode: OpenURLMode,
 
+    /// How to handle non-interactive filesystem access.
+    #[clap(long, default_value = "allow")]
+    pub filesystem_access_mode: FilesystemAccessMode,
+
     /// Provide a dummy (completely empty) External Interface to the movie.
     /// This may break some movies that expect an External Interface to be functional,
     /// but may fix others that always require an External Interface.
@@ -414,4 +418,16 @@ enum NamedKeyCode {
     Backslash = 220,
     RBracket = 221,
     Apostrophe = 222,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, clap::ValueEnum)]
+pub enum FilesystemAccessMode {
+    /// Always allow non-interactive access to the filesystem.
+    Allow,
+
+    /// Refuse all non-interactive access to the filesystem.
+    Deny,
+
+    /// Ask the user before accessing the filesystem non-interactively.
+    Ask,
 }
