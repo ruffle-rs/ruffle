@@ -182,7 +182,7 @@ pub struct Opt {
     pub open_url_mode: OpenURLMode,
 
     /// How to handle non-interactive filesystem access.
-    #[clap(long, default_value = "allow")]
+    #[clap(long, default_value = "ask")]
     pub filesystem_access_mode: FilesystemAccessMode,
 
     /// Provide a dummy (completely empty) External Interface to the movie.
