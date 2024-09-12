@@ -352,15 +352,16 @@ pub fn get_url<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
-        let root = match &*loader_stream {
-            LoaderStream::NotYetLoaded(_, _, false) => return Ok(Value::Null),
-            LoaderStream::NotYetLoaded(root, _, true) | LoaderStream::Swf(root, _) => root,
-        };
-        return Ok(AvmString::new_utf8(activation.context.gc_context, root.url()).into());
+    if let Some(loader_info) = this.as_loader_info_object() {
+        if !loader_info.expose_content() {
+            return Ok(Value::Null);
+        }
+        if let Some(loader_stream) = loader_info.as_loader_stream() {
+            let root = match &*loader_stream {
+                LoaderStream::NotYetLoaded(root, _, _) | LoaderStream::Swf(root, _) => root,
+            };
+            return Ok(AvmString::new_utf8(activation.context.gc_context, root.url()).into());
+        }
     }
 
     Ok(Value::Undefined)
