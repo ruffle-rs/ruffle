@@ -23,7 +23,7 @@ ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymose
 ruffle_render = { path = "../render", features = ["clap"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
 ruffle_video_software = { path = "../video/software", optional = true }
-ruffle_video_external = { path = "../video/external", optional = true }
+ruffle_video_external = { path = "../video/external", features = ["openh264"], optional = true }
 ruffle_frontend_utils = { path = "../frontend-utils", features = ["cpal"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
