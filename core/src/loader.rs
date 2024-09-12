@@ -2521,6 +2521,10 @@ impl<'gc> Loader<'gc> {
                 "addChild at the correct time"
             );
 
+            if let Some(loader_info) = loader_info.as_loader_info_object() {
+                loader_info.set_expose_content();
+            }
+
             // Note that we do *not* use the 'addChild' method here:
             // Per the flash docs, our implementation always throws
             // an 'unsupported' error. Also, the AVM2 side of our movie
