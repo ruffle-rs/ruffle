@@ -16,7 +16,7 @@ pub fn get_os<'gc>(
         PlayerRuntime::AIR => {
             if cfg!(windows) {
                 "Windows 10"
-            } else if cfg!(target_os = "macos") {
+            } else if cfg!(target_vendor = "apple") {
                 "Mac OS 10.5.2"
             } else {
                 "Linux 5.10.49"
@@ -37,7 +37,7 @@ pub fn get_version<'gc>(
         PlayerRuntime::AIR => {
             if cfg!(windows) {
                 "WIN"
-            } else if cfg!(target_os = "macos") {
+            } else if cfg!(target_vendor = "apple") {
                 "MAC"
             } else {
                 "LNX"
