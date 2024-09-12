@@ -234,15 +234,14 @@ impl ActivePlayer {
                 let openh264 = tokio::task::block_in_place(|| {
                     OpenH264Codec::load(&opt.cache_directory.join("video"))
                 });
-                let openh264 = match openh264 {
-                    Ok(codec) => Some(codec),
+                let backend = match openh264 {
+                    Ok(codec) => ExternalVideoBackend::new_with_openh264(codec),
                     Err(e) => {
                         tracing::error!("Failed to load OpenH264: {}", e);
-                        None
+                        ExternalVideoBackend::new()
                     }
                 };
-
-                builder = builder.with_video(ExternalVideoBackend::new(openh264));
+                builder = builder.with_video(backend);
             }
         } else {
             #[cfg(feature = "software_video")]

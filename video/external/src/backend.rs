@@ -1,3 +1,4 @@
+#[cfg(feature = "openh264")]
 use crate::decoder::openh264::OpenH264Codec;
 use crate::decoder::VideoDecoder;
 
@@ -26,21 +27,42 @@ enum ProxyOrStream {
 /// except for H.264, for which it uses an external decoder.
 pub struct ExternalVideoBackend {
     streams: SlotMap<VideoStreamHandle, ProxyOrStream>,
+    #[cfg(feature = "openh264")]
     openh264_codec: Option<OpenH264Codec>,
     software: SoftwareVideoBackend,
 }
 
 impl Default for ExternalVideoBackend {
     fn default() -> Self {
-        Self::new(None)
+        Self::new()
     }
 }
 
 impl ExternalVideoBackend {
-    pub fn new(openh264_codec: Option<OpenH264Codec>) -> Self {
+    fn make_decoder(&mut self) -> Result<Box<dyn VideoDecoder>, Error> {
+        #[cfg(feature = "openh264")]
+        if let Some(h264_codec) = self.openh264_codec.as_ref() {
+            let decoder = Box::new(crate::decoder::openh264::H264Decoder::new(h264_codec));
+            return Ok(decoder);
+        }
+
+        Err(Error::DecoderError("No OpenH264".into()))
+    }
+
+    pub fn new() -> Self {
         Self {
             streams: SlotMap::with_key(),
-            openh264_codec,
+            #[cfg(feature = "openh264")]
+            openh264_codec: None,
+            software: SoftwareVideoBackend::new(),
+        }
+    }
+
+    #[cfg(feature = "openh264")]
+    pub fn new_with_openh264(openh264_codec: OpenH264Codec) -> Self {
+        Self {
+            streams: SlotMap::with_key(),
+            openh264_codec: Some(openh264_codec),
             software: SoftwareVideoBackend::new(),
         }
     }
@@ -57,13 +79,9 @@ impl VideoBackend for ExternalVideoBackend {
         filter: VideoDeblocking,
     ) -> Result<VideoStreamHandle, Error> {
         let proxy_or_stream = if codec == VideoCodec::H264 {
-            if let Some(h264_codec) = self.openh264_codec.as_ref() {
-                let decoder = Box::new(crate::decoder::openh264::H264Decoder::new(h264_codec));
-                let stream = VideoStream::new(decoder);
-                ProxyOrStream::Owned(stream)
-            } else {
-                return Err(Error::DecoderError("No OpenH264".into()));
-            }
+            let decoder = self.make_decoder()?;
+            let stream = VideoStream::new(decoder);
+            ProxyOrStream::Owned(stream)
         } else {
             ProxyOrStream::Proxied(
                 self.software

@@ -187,7 +187,7 @@ impl PlayerOptions {
                     .map_err(|e| anyhow!("Couldn't load OpenH264: {}", e))?;
 
                 player_builder =
-                    player_builder.with_video(ExternalVideoBackend::new(Some(openh264)));
+                    player_builder.with_video(ExternalVideoBackend::new_with_openh264(openh264));
             }
 
             #[cfg(all(

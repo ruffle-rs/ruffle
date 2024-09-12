@@ -16,7 +16,7 @@ ruffle_render = { path = "../../render", features = ["serde"] }
 ruffle_input_format = { path = "../input-format" }
 ruffle_socket_format = { path = "../socket-format" }
 ruffle_video_software = { path = "../../video/software", optional = true }
-ruffle_video_external = { path = "../../video/external", optional = true }
+ruffle_video_external = { path = "../../video/external", features = ["openh264"], optional = true }
 image = { workspace = true, features  = ["png"] }
 regex = "1.10.6"
 url = { workspace = true }
