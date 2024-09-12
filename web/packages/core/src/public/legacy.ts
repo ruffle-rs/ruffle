@@ -157,4 +157,11 @@ export interface LegacyRuffleAPI {
      * Fetches the loaded SWF and downloads it.
      */
     downloadSwf(): Promise<void>;
+
+    /**
+     * Show a dismissible message in front of the player.
+     *
+     * @param message The message shown to the user.
+     */
+    displayMessage(message: string): void;
 }

@@ -1951,7 +1951,7 @@ export class InnerPlayer {
      *
      * @param message The message shown to the user.
      */
-    protected displayMessage(message: string): void {
+    public displayMessage(message: string): void {
         const div = document.createElement("div");
         div.id = "message-overlay";
         const messageDiv = document.createElement("div");
