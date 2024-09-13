@@ -1,6 +1,7 @@
 network-settings = Paramètres réseau
 player-settings = Paramètres du lecteur
 movie-parameters = Paramètres de l'animation
+air-arguments = Arguments de l'application AIR
 custom-base-url = URL de base personnalisée
 spoof-swf-url = URL détournée du SWF
 referer-url = URL référente

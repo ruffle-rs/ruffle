@@ -24,12 +24,13 @@ package flash.desktop
     public function NativeApplication()
     {
       super();
-      // TODO
       setTimeout(function():void
       {
-        dispatchEvent(new InvokeEvent(InvokeEvent.INVOKE, false, false, null, []));
+        dispatchEvent(new InvokeEvent(InvokeEvent.INVOKE, false, false, null, getArgumentsInternal()));
       }, 500);
     }
+
+    private static native function getArgumentsInternal():Array;
 
     public static function get nativeApplication():NativeApplication
     {

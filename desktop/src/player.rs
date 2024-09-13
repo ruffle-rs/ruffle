@@ -53,6 +53,7 @@ impl From<&GlobalPreferences> for LaunchOptions {
     fn from(value: &GlobalPreferences) -> Self {
         Self {
             player: PlayerOptions {
+                air_arguments: value.cli.air_arguments.clone(),
                 parameters: value.cli.parameters().collect(),
                 max_execution_duration: value.cli.max_execution_duration,
                 base: value.cli.base.clone(),
@@ -298,6 +299,7 @@ impl ActivePlayer {
             .with_page_url(opt.player.spoof_url.clone().map(|url| url.to_string()))
             .with_player_version(opt.player.player_version)
             .with_player_runtime(opt.player.player_runtime.unwrap_or_default())
+            .with_air_arguments(opt.player.air_arguments.clone())
             .with_frame_rate(opt.player.frame_rate)
             .with_avm2_optimizer_enabled(opt.avm2_optimizer_enabled);
         let player = builder.build();

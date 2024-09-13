@@ -9,6 +9,7 @@ use url::Url;
 
 #[derive(Default, Debug, PartialEq, Clone)]
 pub struct PlayerOptions {
+    pub air_arguments: Vec<String>,
     pub parameters: Vec<(String, String)>,
     pub max_execution_duration: Option<Duration>,
     pub base: Option<Url>,
@@ -33,7 +34,10 @@ impl PlayerOptions {
     pub fn or(&self, other: &Self) -> Self {
         let mut parameters = other.parameters.clone();
         parameters.append(&mut self.parameters.clone());
+        let mut air_arguments = other.air_arguments.clone();
+        air_arguments.append(&mut self.air_arguments.clone());
         Self {
+            air_arguments,
             parameters,
             max_execution_duration: self.max_execution_duration.or(other.max_execution_duration),
             base: self.base.clone().or_else(|| other.base.clone()),

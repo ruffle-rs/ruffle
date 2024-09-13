@@ -103,6 +103,9 @@ export function configureBuilder(
     if (isExplicit(config.playerRuntime)) {
         builder.setPlayerRuntime(config.playerRuntime);
     }
+    if (isExplicit(config.airArguments)) {
+        builder.setAirArguments(config.airArguments);
+    }
 
     if (isExplicit(config.socketProxy)) {
         for (const proxy of config.socketProxy) {
