@@ -720,6 +720,9 @@ fn handle_input_multiname<'gc>(
 ) -> Multiname<'gc> {
     // Special case to handle code like: xml["@attr"]
     // FIXME: Figure out the exact semantics.
+    // NOTE: It is very important the code within the if-statement is not run
+    // when the passed name has the Any namespace. Otherwise, we run the risk of
+    // creating a NamespaceSet::Multiple with an Any namespace in it.
     if !name.has_explicit_namespace()
         && !name.is_attribute()
         && !name.is_any_name()
