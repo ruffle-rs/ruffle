@@ -276,32 +276,20 @@ pub fn create_i_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
         (
             "hasOwnProperty",
             has_own_property,
-            vec![ParamConfig::optional(
-                "name",
-                activation.avm2().multinames.any,
-                Value::Undefined,
-            )],
-            activation.avm2().multinames.boolean,
+            vec![ParamConfig::optional("name", None, Value::Undefined)],
+            Some(activation.avm2().multinames.boolean),
         ),
         (
             "isPrototypeOf",
             is_prototype_of,
-            vec![ParamConfig::optional(
-                "theClass",
-                activation.avm2().multinames.any,
-                Value::Undefined,
-            )],
-            activation.avm2().multinames.boolean,
+            vec![ParamConfig::optional("theClass", None, Value::Undefined)],
+            Some(activation.avm2().multinames.boolean),
         ),
         (
             "propertyIsEnumerable",
             property_is_enumerable,
-            vec![ParamConfig::optional(
-                "name",
-                activation.avm2().multinames.any,
-                Value::Undefined,
-            )],
-            activation.avm2().multinames.boolean,
+            vec![ParamConfig::optional("name", None, Value::Undefined)],
+            Some(activation.avm2().multinames.boolean),
         ),
     ];
     object_i_class.define_builtin_instance_methods_with_sig(
@@ -336,7 +324,7 @@ pub fn create_c_class<'gc>(
         gc_context,
         Trait::from_const(
             QName::new(activation.avm2().public_namespace_base_version, "length"),
-            activation.avm2().multinames.int,
+            Some(activation.avm2().multinames.int),
             Some(1.into()),
         ),
     );

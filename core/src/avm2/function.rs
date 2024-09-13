@@ -118,10 +118,10 @@ impl<'gc> BoundMethod<'gc> {
         }
     }
 
-    pub fn return_type(&self) -> &Multiname<'gc> {
+    pub fn return_type(&self) -> Option<Gc<'gc, Multiname<'gc>>> {
         match &self.method {
-            Method::Native(method) => &method.return_type,
-            Method::Bytecode(method) => &method.return_type,
+            Method::Native(method) => method.return_type,
+            Method::Bytecode(method) => method.return_type,
         }
     }
 }

@@ -47,10 +47,14 @@ pub enum PropertyClass<'gc> {
 impl<'gc> PropertyClass<'gc> {
     pub fn name(
         mc: &Mutation<'gc>,
-        name: Gc<'gc, Multiname<'gc>>,
+        name: Option<Gc<'gc, Multiname<'gc>>>,
         unit: Option<TranslationUnit<'gc>>,
     ) -> Self {
-        PropertyClass::Name(Gc::new(mc, (name, unit)))
+        if let Some(name) = name {
+            PropertyClass::Name(Gc::new(mc, (name, unit)))
+        } else {
+            PropertyClass::Any
+        }
     }
 
     /// Returns `value` coerced to the type of this `PropertyClass`.
@@ -65,27 +69,21 @@ impl<'gc> PropertyClass<'gc> {
             PropertyClass::Class(class) => (Some(*class), false),
             PropertyClass::Name(gc) => {
                 let (name, unit) = &**gc;
-                if name.is_any_namespace() && name.is_any_name() {
-                    *self = PropertyClass::Any;
-                    (None, true)
-                } else {
-                    // Note - we look up the class in the domain by name, which allows us to look up private classes.
-                    // This also has the advantage of letting us coerce to a class while the `ClassObject`
-                    // is still being constructed (since the `Class` will already exist in the domain).
 
-                    // We should only be missing a translation unit when performing a lookup from playerglobals,
-                    // so use that domain if we don't have a translation unit.
-                    let domain =
-                        unit.map_or(activation.avm2().playerglobals_domain, |u| u.domain());
-                    if let Some(class) = domain.get_class(activation.context, name) {
-                        *self = PropertyClass::Class(class);
-                        (Some(class), true)
-                    } else {
-                        return Err(format!(
-                            "Could not resolve class {name:?} for property coercion"
-                        )
-                        .into());
-                    }
+                // Note - we look up the class in the domain by name, which allows us to look up private classes.
+                // This also has the advantage of letting us coerce to a class while the `ClassObject`
+                // is still being constructed (since the `Class` will already exist in the domain).
+
+                // We should only be missing a translation unit when performing a lookup from playerglobals,
+                // so use that domain if we don't have a translation unit.
+                let domain = unit.map_or(activation.avm2().playerglobals_domain, |u| u.domain());
+                if let Some(class) = domain.get_class(activation.context, name) {
+                    *self = PropertyClass::Class(class);
+                    (Some(class), true)
+                } else {
+                    return Err(
+                        format!("Could not resolve class {name:?} for property coercion").into(),
+                    );
                 }
             }
             PropertyClass::Any => (None, false),
@@ -108,21 +106,16 @@ impl<'gc> PropertyClass<'gc> {
             PropertyClass::Class(class) => Ok(Some(*class)),
             PropertyClass::Name(gc) => {
                 let (name, unit) = &**gc;
-                if name.is_any_namespace() && name.is_any_name() {
-                    *self = PropertyClass::Any;
-                    Ok(None)
+
+                let domain = unit.map_or(activation.avm2().playerglobals_domain, |u| u.domain());
+                if let Some(class) = domain.get_class(activation.context, name) {
+                    *self = PropertyClass::Class(class);
+                    Ok(Some(class))
                 } else {
-                    let domain =
-                        unit.map_or(activation.avm2().playerglobals_domain, |u| u.domain());
-                    if let Some(class) = domain.get_class(activation.context, name) {
-                        *self = PropertyClass::Class(class);
-                        Ok(Some(class))
-                    } else {
-                        Err(
-                            format!("Could not resolve class {name:?} for property class lookup")
-                                .into(),
-                        )
-                    }
+                    Err(
+                        format!("Could not resolve class {name:?} for property class lookup")
+                            .into(),
+                    )
                 }
             }
             PropertyClass::Any => Ok(None),

@@ -64,7 +64,7 @@ fn format_signature(params: &[ParamConfig], is_variadic: bool) -> Vec<ParamInfo>
         result.push(ParamInfo {
             type_info: param
                 .param_type_name
-                .local_name()
+                .and_then(|m| m.local_name())
                 .map(|n| n.to_string())
                 .unwrap_or_else(|| "*".to_string()),
             value: param.default_value.and_then(|v| format_value(&v)),
@@ -158,7 +158,7 @@ impl FunctionInfo {
         Self {
             returns: method
                 .return_type()
-                .local_name()
+                .and_then(|m| m.local_name())
                 .map(|n| n.to_string())
                 .unwrap_or_else(|| "void".to_string()),
             args: format_signature(method.signature(), method.is_variadic()),
@@ -170,7 +170,7 @@ impl FunctionInfo {
         Self {
             returns: executable
                 .return_type()
-                .local_name()
+                .and_then(|m| m.local_name())
                 .map(|n| n.to_string())
                 .unwrap_or_else(|| "void".to_string()),
             args: format_signature(executable.signature(), executable.is_variadic()),
@@ -390,7 +390,9 @@ impl Definition {
                         .insert(
                             trait_name,
                             VariableInfo {
-                                type_info: type_name.local_name().map(|n| n.to_string()),
+                                type_info: type_name
+                                    .and_then(|m| m.local_name())
+                                    .map(|n| n.to_string()),
                                 value: format_value(default_value),
                                 stubbed: false,
                             },
@@ -411,7 +413,7 @@ impl Definition {
                             type_info: Some(
                                 method
                                     .return_type()
-                                    .local_name()
+                                    .and_then(|m| m.local_name())
                                     .map(|n| n.to_string())
                                     .unwrap_or_else(|| "*".to_string()),
                             ),
@@ -429,7 +431,8 @@ impl Definition {
                                 method
                                     .signature()
                                     .first()
-                                    .and_then(|p| p.param_type_name.local_name())
+                                    .and_then(|p| p.param_type_name)
+                                    .and_then(|m| m.local_name())
                                     .map(|t| t.to_string())
                                     .unwrap_or_else(|| "*".to_string()),
                             ),
@@ -451,7 +454,9 @@ impl Definition {
                         .insert(
                             trait_name,
                             VariableInfo {
-                                type_info: type_name.local_name().map(|n| n.to_string()),
+                                type_info: type_name
+                                    .and_then(|m| m.local_name())
+                                    .map(|n| n.to_string()),
                                 value: format_value(default_value),
                                 stubbed: false,
                             },

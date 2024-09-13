@@ -518,7 +518,7 @@ impl<'gc> Class<'gc> {
                     // A 'callable' class doesn't have a signature - let the
                     // method do any needed coercions
                     vec![],
-                    activation.avm2().multinames.any,
+                    None,
                     true,
                     activation.context.gc_context,
                 );
@@ -1022,8 +1022,12 @@ impl<'gc> Class<'gc> {
         value: Value<'gc>,
     ) {
         self.define_instance_trait(
-            activation.context.gc_context,
-            Trait::from_const(name, activation.avm2().multinames.function, Some(value)),
+            activation.gc(),
+            Trait::from_const(
+                name,
+                Some(activation.avm2().multinames.function),
+                Some(value),
+            ),
         );
     }
 
@@ -1036,10 +1040,10 @@ impl<'gc> Class<'gc> {
     ) {
         for &(name, value) in items {
             self.define_class_trait(
-                activation.context.gc_context,
+                activation.gc(),
                 Trait::from_const(
                     QName::new(namespace, name),
-                    activation.avm2().multinames.number,
+                    Some(activation.avm2().multinames.number),
                     Some(value.into()),
                 ),
             );
@@ -1055,10 +1059,10 @@ impl<'gc> Class<'gc> {
     ) {
         for &(name, value) in items {
             self.define_class_trait(
-                activation.context.gc_context,
+                activation.gc(),
                 Trait::from_const(
                     QName::new(namespace, name),
-                    activation.avm2().multinames.uint,
+                    Some(activation.avm2().multinames.uint),
                     Some(value.into()),
                 ),
             );
@@ -1077,7 +1081,7 @@ impl<'gc> Class<'gc> {
                 activation.context.gc_context,
                 Trait::from_const(
                     QName::new(namespace, name),
-                    activation.avm2().multinames.int,
+                    Some(activation.avm2().multinames.int),
                     Some(value.into()),
                 ),
             );
@@ -1111,7 +1115,7 @@ impl<'gc> Class<'gc> {
             &'static str,
             NativeMethodImpl,
             Vec<ParamConfig<'gc>>,
-            Gc<'gc, Multiname<'gc>>,
+            Option<Gc<'gc, Multiname<'gc>>>,
         )>,
     ) {
         for (name, value, params, return_type) in items {
@@ -1188,7 +1192,7 @@ impl<'gc> Class<'gc> {
                 activation.context.gc_context,
                 Trait::from_const(
                     QName::new(namespace, name),
-                    activation.avm2().multinames.int,
+                    Some(activation.avm2().multinames.int),
                     Some(value.into()),
                 ),
             );
