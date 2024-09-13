@@ -74,7 +74,7 @@ pub enum TraitKind<'gc> {
     /// to.
     Slot {
         slot_id: u32,
-        type_name: Gc<'gc, Multiname<'gc>>,
+        type_name: Option<Gc<'gc, Multiname<'gc>>>,
         default_value: Value<'gc>,
         unit: Option<TranslationUnit<'gc>>,
     },
@@ -99,7 +99,7 @@ pub enum TraitKind<'gc> {
     /// be overridden.
     Const {
         slot_id: u32,
-        type_name: Gc<'gc, Multiname<'gc>>,
+        type_name: Option<Gc<'gc, Multiname<'gc>>>,
         default_value: Value<'gc>,
         unit: Option<TranslationUnit<'gc>>,
     },
@@ -156,7 +156,7 @@ impl<'gc> Trait<'gc> {
 
     pub fn from_slot(
         name: QName<'gc>,
-        type_name: Gc<'gc, Multiname<'gc>>,
+        type_name: Option<Gc<'gc, Multiname<'gc>>>,
         default_value: Option<Value<'gc>>,
     ) -> Self {
         Trait {
@@ -164,7 +164,7 @@ impl<'gc> Trait<'gc> {
             attributes: TraitAttributes::empty(),
             kind: TraitKind::Slot {
                 slot_id: 0,
-                default_value: default_value.unwrap_or_else(|| default_value_for_type(&type_name)),
+                default_value: default_value.unwrap_or_else(|| default_value_for_type(type_name)),
                 type_name,
                 unit: None,
             },
@@ -174,7 +174,7 @@ impl<'gc> Trait<'gc> {
 
     pub fn from_const(
         name: QName<'gc>,
-        type_name: Gc<'gc, Multiname<'gc>>,
+        type_name: Option<Gc<'gc, Multiname<'gc>>>,
         default_value: Option<Value<'gc>>,
     ) -> Self {
         Trait {
@@ -182,7 +182,7 @@ impl<'gc> Trait<'gc> {
             attributes: TraitAttributes::empty(),
             kind: TraitKind::Const {
                 slot_id: 0,
-                default_value: default_value.unwrap_or_else(|| default_value_for_type(&type_name)),
+                default_value: default_value.unwrap_or_else(|| default_value_for_type(type_name)),
                 type_name,
                 unit: None,
             },
@@ -205,7 +205,7 @@ impl<'gc> Trait<'gc> {
                 value,
             } => {
                 let type_name = unit.pool_multiname_static_any(activation, *type_name)?;
-                let default_value = slot_default_value(unit, value, &type_name, activation)?;
+                let default_value = slot_default_value(unit, value, type_name, activation)?;
                 Trait {
                     name,
                     attributes: trait_attribs_from_abc_traits(abc_trait),
@@ -269,7 +269,7 @@ impl<'gc> Trait<'gc> {
                 value,
             } => {
                 let type_name = unit.pool_multiname_static_any(activation, *type_name)?;
-                let default_value = slot_default_value(unit, value, &type_name, activation)?;
+                let default_value = slot_default_value(unit, value, type_name, activation)?;
                 Trait {
                     name,
                     attributes: trait_attribs_from_abc_traits(abc_trait),
@@ -386,7 +386,7 @@ impl<'gc> Trait<'gc> {
 fn slot_default_value<'gc>(
     translation_unit: TranslationUnit<'gc>,
     value: &Option<AbcDefaultValue>,
-    type_name: &Multiname<'gc>,
+    type_name: Option<Gc<'gc, Multiname<'gc>>>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(value) = value {
@@ -399,29 +399,31 @@ fn slot_default_value<'gc>(
 
 /// Returns the default "null" value for the given type.
 /// (`0` for ints, `null` for objects, etc.)
-fn default_value_for_type<'gc>(type_name: &Multiname<'gc>) -> Value<'gc> {
-    // TODO: It's technically possible to have a multiname in here, so this should go through something
-    // like `Activation::resolve_type` to get an actual `Class` object, and then check something like `Class::built_in_type`.
-    // The Multiname is guaranteed to be static by `pool.pool_multiname_static` earlier.
-    if type_name.is_any_name() {
-        Value::Undefined
-    } else if type_name.contains_public_namespace() {
-        let name = type_name.local_name().unwrap_or_default();
-        if &name == b"Boolean" {
-            false.into()
-        } else if &name == b"Number" {
-            f64::NAN.into()
-        } else if &name == b"int" {
-            0.into()
-        } else if &name == b"String" {
-            Value::Null
-        } else if &name == b"uint" {
-            0.into()
+fn default_value_for_type<'gc>(type_name: Option<Gc<'gc, Multiname<'gc>>>) -> Value<'gc> {
+    if let Some(type_name) = type_name {
+        // TODO: It's technically possible to have a multiname in here, so this should go through something
+        // like `Activation::resolve_type` to get an actual `Class` object, and then check something like `Class::built_in_type`.
+        // The Multiname is guaranteed to be static by `pool.pool_multiname_static` earlier.
+        if type_name.contains_public_namespace() {
+            let name = type_name.local_name().unwrap_or_default();
+            if &name == b"Boolean" {
+                false.into()
+            } else if &name == b"Number" {
+                f64::NAN.into()
+            } else if &name == b"int" {
+                0.into()
+            } else if &name == b"String" {
+                Value::Null
+            } else if &name == b"uint" {
+                0.into()
+            } else {
+                Value::Null // Object type
+            }
         } else {
-            Value::Null // Object type
+            // Object type
+            Value::Null
         }
     } else {
-        // Object type
-        Value::Null
+        Value::Undefined
     }
 }

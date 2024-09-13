@@ -5,9 +5,13 @@ use crate::avm2::method::Method;
 use crate::avm2::object::{ArrayObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::property::Property;
-
 use crate::avm2::{Activation, Error, Multiname, Namespace, Object, Value};
+use crate::context::GcContext;
+use crate::string::AvmString;
+
 use crate::avm2_stub_method;
+
+use gc_arena::Gc;
 
 // Implements `avmplus.describeTypeJSON`
 pub fn describe_type_json<'gc>(
@@ -357,10 +361,8 @@ fn describe_internal_body<'gc>(
                     continue;
                 }
 
-                let return_type_name = method
-                    .method
-                    .return_type()
-                    .to_qualified_name_or_star(&mut activation.borrow_gc());
+                let return_type_name =
+                    display_name(&mut activation.borrow_gc(), method.method.return_type());
                 let declared_by = method.class;
 
                 if flags.contains(DescribeTypeFlags::HIDE_OBJECT)
@@ -457,8 +459,7 @@ fn describe_internal_body<'gc>(
                     Some(ns.as_uri())
                 };
 
-                let accessor_type =
-                    method_type.to_qualified_name_or_star(&mut activation.borrow_gc());
+                let accessor_type = display_name(&mut activation.borrow_gc(), method_type);
                 let declared_by = defining_class.dollar_removed_name(mc).to_qualified_name(mc);
 
                 let accessor_obj = activation
@@ -535,6 +536,17 @@ fn describe_internal_body<'gc>(
     Ok(traits)
 }
 
+fn display_name<'gc>(
+    context: &mut GcContext<'_, 'gc>,
+    name: Option<Gc<'gc, Multiname<'gc>>>,
+) -> AvmString<'gc> {
+    if let Some(name) = name {
+        name.to_qualified_name_or_star(context)
+    } else {
+        context.interner.get_ascii_char('*')
+    }
+}
+
 fn write_params<'gc>(
     method: &Method<'gc>,
     activation: &mut Activation<'_, 'gc>,
@@ -544,9 +556,7 @@ fn write_params<'gc>(
         .as_array_storage_mut(activation.context.gc_context)
         .unwrap();
     for param in method.signature() {
-        let param_type_name = param
-            .param_type_name
-            .to_qualified_name_or_star(&mut activation.borrow_gc());
+        let param_type_name = display_name(&mut activation.borrow_gc(), param.param_type_name);
         let optional = param.default_value.is_some();
         let param_obj = activation
             .avm2()

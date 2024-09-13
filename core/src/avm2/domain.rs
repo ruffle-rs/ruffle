@@ -221,7 +221,7 @@ impl<'gc> Domain<'gc> {
 
         if let Some(class) = class {
             if let Some(param) = multiname.param() {
-                if !param.is_any_name() {
+                if let Some(param) = param {
                     if let Some(resolved_param) = self.get_class(context, &param) {
                         return Some(Class::with_type_param(context, class, Some(resolved_param)));
                     }

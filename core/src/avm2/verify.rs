@@ -98,7 +98,7 @@ pub fn verify_method<'gc>(
     }
 
     let resolved_param_config = resolve_param_config(activation, method.signature())?;
-    let resolved_return_type = resolve_return_type(activation, &method.return_type)?;
+    let resolved_return_type = resolve_return_type(activation, method.return_type)?;
 
     let mut seen_exception_indices = HashSet::new();
 
@@ -671,26 +671,24 @@ pub fn resolve_param_config<'gc>(
     let mut resolved_param_config = Vec::new();
 
     for param in param_config {
-        if param.param_type_name.has_lazy_component() {
-            return Err(make_error_1014(activation, "[]".into()));
-        }
+        let resolved_class = if let Some(param_type_name) = param.param_type_name {
+            if param_type_name.has_lazy_component() {
+                return Err(make_error_1014(activation, "[]".into()));
+            }
 
-        let resolved_class = if param.param_type_name.is_any_name() {
-            None
+            Some(
+                activation
+                    .domain()
+                    .get_class(activation.context, &param_type_name)
+                    .ok_or_else(|| {
+                        make_error_1014(
+                            activation,
+                            param_type_name.to_qualified_name(activation.gc()),
+                        )
+                    })?,
+            )
         } else {
-            let lookedup_class = activation
-                .domain()
-                .get_class(activation.context, &param.param_type_name)
-                .ok_or_else(|| {
-                    make_error_1014(
-                        activation,
-                        param
-                            .param_type_name
-                            .to_qualified_name(activation.context.gc_context),
-                    )
-                })?;
-
-            Some(lookedup_class)
+            None
         };
 
         resolved_param_config.push(ResolvedParamConfig {
@@ -705,27 +703,24 @@ pub fn resolve_param_config<'gc>(
 
 fn resolve_return_type<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    return_type: &Multiname<'gc>,
+    return_type: Option<Gc<'gc, Multiname<'gc>>>,
 ) -> Result<Option<Class<'gc>>, Error<'gc>> {
-    if return_type.has_lazy_component() {
-        return Err(make_error_1014(activation, "[]".into()));
-    }
+    if let Some(return_type) = return_type {
+        if return_type.has_lazy_component() {
+            return Err(make_error_1014(activation, "[]".into()));
+        }
 
-    if return_type.is_any_name() {
-        return Ok(None);
+        Ok(Some(
+            activation
+                .domain()
+                .get_class(activation.context, &return_type)
+                .ok_or_else(|| {
+                    make_error_1014(activation, return_type.to_qualified_name(activation.gc()))
+                })?,
+        ))
+    } else {
+        Ok(None)
     }
-
-    Ok(Some(
-        activation
-            .domain()
-            .get_class(activation.context, return_type)
-            .ok_or_else(|| {
-                make_error_1014(
-                    activation,
-                    return_type.to_qualified_name(activation.context.gc_context),
-                )
-            })?,
-    ))
 }
 
 // Taken from avmplus's opcodes.tbl

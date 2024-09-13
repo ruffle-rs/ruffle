@@ -96,8 +96,9 @@ pub struct Multiname<'gc> {
     name: Option<AvmString<'gc>>,
 
     /// The type parameter required to satisfy this multiname. If None, then
-    /// this multiname is satisfied by any type parameter or no type parameter
-    param: Option<Gc<'gc, Multiname<'gc>>>,
+    /// this multiname does not have a type parameter. If Some(None), then
+    /// this multiname uses the Any type parameter (`*`).
+    param: Option<Option<Gc<'gc, Multiname<'gc>>>>,
 
     #[collect(require_static)]
     flags: MultinameFlags,
@@ -287,6 +288,7 @@ impl<'gc> Multiname<'gc> {
         ) {
             multiname.flags |= MultinameFlags::ATTRIBUTE;
         }
+
         Ok(multiname)
     }
 
@@ -436,7 +438,7 @@ impl<'gc> Multiname<'gc> {
     }
 
     /// List the parameters that the selected class must match.
-    pub fn param(&self) -> Option<Gc<'gc, Multiname<'gc>>> {
+    pub fn param(&self) -> Option<Option<Gc<'gc, Multiname<'gc>>>> {
         self.param
     }
 
@@ -461,7 +463,11 @@ impl<'gc> Multiname<'gc> {
 
         if let Some(param) = self.param {
             uri.push_str(WStr::from_units(b".<"));
-            uri.push_str(&param.to_qualified_name(mc));
+            if let Some(param) = param {
+                uri.push_str(&param.to_qualified_name(mc));
+            } else {
+                uri.push_str(WStr::from_units(b"*"));
+            }
             uri.push_str(WStr::from_units(b">"));
         }
 
@@ -529,8 +535,6 @@ impl<'gc> From<QName<'gc>> for Multiname<'gc> {
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct CommonMultinames<'gc> {
-    pub any: Gc<'gc, Multiname<'gc>>,
-
     pub boolean: Gc<'gc, Multiname<'gc>>,
     pub function: Gc<'gc, Multiname<'gc>>,
     pub int: Gc<'gc, Multiname<'gc>>,
@@ -558,7 +562,6 @@ impl<'gc> CommonMultinames<'gc> {
         };
 
         Self {
-            any: Gc::new(mc, Multiname::any()),
             boolean: create_pub_multiname(b"Boolean"),
             function: create_pub_multiname(b"Function"),
             int: create_pub_multiname(b"int"),

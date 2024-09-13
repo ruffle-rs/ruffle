@@ -612,7 +612,7 @@ pub fn load_player_globals<'gc>(
         // right now.
         global_traits.push(Trait::from_const(
             qname,
-            activation.avm2().multinames.function,
+            Some(activation.avm2().multinames.function),
             Some(Value::Null),
         ));
     }

@@ -60,7 +60,7 @@ pub struct ParamConfig<'gc> {
     pub param_name: AvmString<'gc>,
 
     /// The name of the type of the parameter.
-    pub param_type_name: Gc<'gc, Multiname<'gc>>,
+    pub param_type_name: Option<Gc<'gc, Multiname<'gc>>>,
 
     /// The default value for this parameter.
     pub default_value: Option<Value<'gc>>,
@@ -96,7 +96,7 @@ impl<'gc> ParamConfig<'gc> {
 
     pub fn of_type(
         name: impl Into<AvmString<'gc>>,
-        param_type_name: Gc<'gc, Multiname<'gc>>,
+        param_type_name: Option<Gc<'gc, Multiname<'gc>>>,
     ) -> Self {
         Self {
             param_name: name.into(),
@@ -107,7 +107,7 @@ impl<'gc> ParamConfig<'gc> {
 
     pub fn optional(
         name: impl Into<AvmString<'gc>>,
-        param_type_name: Gc<'gc, Multiname<'gc>>,
+        param_type_name: Option<Gc<'gc, Multiname<'gc>>>,
         default_value: impl Into<Value<'gc>>,
     ) -> Self {
         Self {
@@ -140,8 +140,9 @@ pub struct BytecodeMethod<'gc> {
     /// The parameter signature of this method.
     pub signature: Vec<ParamConfig<'gc>>,
 
-    /// The return type of this method.
-    pub return_type: Gc<'gc, Multiname<'gc>>,
+    /// The return type of this method, or None if the method does not coerce
+    /// its return value.
+    pub return_type: Option<Gc<'gc, Multiname<'gc>>>,
 
     /// The associated activation class. Initialized lazily, and only
     /// if the method requires it.
@@ -164,7 +165,7 @@ impl<'gc> BytecodeMethod<'gc> {
     ) -> Result<Self, Error<'gc>> {
         let abc = txunit.abc();
         let mut signature = Vec::new();
-        let mut return_type = activation.avm2().multinames.any;
+        let mut return_type = None;
         let mut abc_method_body = None;
 
         if abc.methods.get(abc_method.0 as usize).is_some() {
@@ -289,7 +290,7 @@ impl<'gc> BytecodeMethod<'gc> {
         }
 
         for param in self.signature() {
-            if !param.param_type_name.is_any_name() || param.default_value.is_some() {
+            if param.param_type_name.is_some() || param.default_value.is_some() {
                 return false;
             }
         }
@@ -336,8 +337,9 @@ pub struct NativeMethod<'gc> {
     /// The resolved parameter signature of the method.
     pub resolved_signature: GcCell<'gc, Option<Vec<ResolvedParamConfig<'gc>>>>,
 
-    /// The return type of this method.
-    pub return_type: Gc<'gc, Multiname<'gc>>,
+    /// The return type of this method, or None if the method does not coerce
+    /// its return value.
+    pub return_type: Option<Gc<'gc, Multiname<'gc>>>,
 
     /// Whether or not this method accepts parameters beyond those
     /// mentioned in the parameter list.
@@ -391,7 +393,7 @@ impl<'gc> Method<'gc> {
         method: NativeMethodImpl,
         name: &'static str,
         signature: Vec<ParamConfig<'gc>>,
-        return_type: Gc<'gc, Multiname<'gc>>,
+        return_type: Option<Gc<'gc, Multiname<'gc>>>,
         is_variadic: bool,
         mc: &Mutation<'gc>,
     ) -> Self {
@@ -418,7 +420,7 @@ impl<'gc> Method<'gc> {
                 signature: Vec::new(),
                 resolved_signature: GcCell::new(mc, None),
                 // FIXME - take in the real return type. This is needed for 'describeType'
-                return_type: Gc::new(mc, Multiname::any()),
+                return_type: None,
                 is_variadic: true,
             },
         ))
@@ -436,7 +438,7 @@ impl<'gc> Method<'gc> {
         }
     }
 
-    pub fn return_type(&self) -> Gc<'gc, Multiname<'gc>> {
+    pub fn return_type(&self) -> Option<Gc<'gc, Multiname<'gc>>> {
         match self {
             Method::Native(nm) => nm.return_type,
             Method::Bytecode(bm) => bm.return_type,

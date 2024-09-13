@@ -386,16 +386,17 @@ impl<'gc> TranslationUnit<'gc> {
     /// Retrieve a static, or non-runtime, multiname from the current constant
     /// pool.
     ///
-    /// This version of the function treats index 0 as the any-type `*`.
+    /// This version of the function returns None for index 0.
     pub fn pool_multiname_static_any(
         self,
         activation: &mut Activation<'_, 'gc>,
         multiname_index: Index<AbcMultiname>,
-    ) -> Result<Gc<'gc, Multiname<'gc>>, Error<'gc>> {
+    ) -> Result<Option<Gc<'gc, Multiname<'gc>>>, Error<'gc>> {
         if multiname_index.0 == 0 {
-            Ok(activation.avm2().multinames.any)
+            Ok(None)
         } else {
             self.pool_multiname_static(activation, multiname_index)
+                .map(Some)
         }
     }
 }
