@@ -764,6 +764,8 @@ pub fn slice<'gc>(
 }
 
 /// Implements `Vector.sort`
+///
+/// TODO: Consider sharing this code with `globals::array::sort`?
 pub fn sort<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -813,21 +815,18 @@ pub fn sort<'gc>(
         drop(vs);
 
         let mut unique_sort_satisfied = true;
-        let mut error_signal = Ok(());
-        values.sort_unstable_by(|a, b| match compare(activation, *a, *b) {
-            Ok(Ordering::Equal) => {
-                unique_sort_satisfied = false;
-                Ordering::Equal
-            }
-            Ok(v) if options.contains(SortOptions::DESCENDING) => v.reverse(),
-            Ok(v) => v,
-            Err(e) => {
-                error_signal = Err(e);
-                Ordering::Less
-            }
-        });
-
-        error_signal?;
+        super::array::qsort(&mut values, &mut |a, b| {
+            compare(activation, *a, *b).map(|cmp| {
+                if cmp == Ordering::Equal {
+                    unique_sort_satisfied = false;
+                    Ordering::Equal
+                } else if options.contains(SortOptions::DESCENDING) {
+                    cmp.reverse()
+                } else {
+                    cmp
+                }
+            })
+        })?;
 
         //NOTE: RETURNINDEXEDARRAY does NOT actually return anything useful.
         //The actual sorting still happens, but the results are discarded.

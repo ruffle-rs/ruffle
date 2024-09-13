@@ -903,7 +903,9 @@ where
 ///   will permute the slice arbitrarily, but won't return an error.
 ///
 /// Original code: https://github.com/adobe/avmplus/blob/master/core/ArrayClass.cpp#L637
-fn qsort<T, E>(
+///
+/// NOTE: this is `pub(super)` so it can be called by `vector::sort`.
+pub(super) fn qsort<T, E>(
     slice: &mut [T],
     cmp: &mut impl FnMut(&T, &T) -> Result<Ordering, E>,
 ) -> Result<(), E> {
