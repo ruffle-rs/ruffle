@@ -155,11 +155,14 @@ async fn main() -> Result<(), Error> {
     let opt = Opt::parse();
     let preferences = GlobalPreferences::load(opt.clone())?;
 
+    let logs_path = &preferences.cli.cache_directory.join("log");
+    let log_path = preferences.log_filename_pattern().create_path(logs_path);
+    if let Some(parent) = log_path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+
     // [NA] `_guard` cannot be `_` or it'll immediately drop
     // https://docs.rs/tracing-appender/latest/tracing_appender/non_blocking/index.html
-    let log_path = preferences
-        .log_filename_pattern()
-        .create_path(&preferences.cli.config);
     let (non_blocking_file, _file_guard) = tracing_appender::non_blocking(File::create(log_path)?);
     let (non_blocking_stdout, _stdout_guard) = tracing_appender::non_blocking(std::io::stdout());
 
