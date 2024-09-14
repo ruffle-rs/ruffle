@@ -12,7 +12,7 @@ workspace = true
 
 [dependencies]
 clap = { workspace = true }
-cpal = "0.15.3"
+cpal = { workspace = true }
 egui = { workspace = true }
 egui_extras = { git = "https://github.com/emilk/egui.git", rev = "f4697bc007447c6c2674beb4e25f599fb7afa093", default-features = false, features = ["image"] }
 egui-wgpu = { git = "https://github.com/emilk/egui.git", rev = "f4697bc007447c6c2674beb4e25f599fb7afa093", features = ["winit"] }
@@ -24,7 +24,7 @@ ruffle_render = { path = "../render", features = ["clap"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
 ruffle_video_software = { path = "../video/software", optional = true }
 ruffle_video_external = { path = "../video/external", optional = true }
-ruffle_frontend_utils = { path = "../frontend-utils" }
+ruffle_frontend_utils = { path = "../frontend-utils", features = ["cpal"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing-appender = "0.2.3"
