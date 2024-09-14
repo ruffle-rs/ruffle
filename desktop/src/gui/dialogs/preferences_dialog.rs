@@ -1,3 +1,4 @@
+use crate::cli::GameModePreference;
 use crate::gui::{available_languages, optional_text, text, ThemePreference};
 use crate::log::FilenamePattern;
 use crate::preferences::{storage::StorageBackend, GlobalPreferences};
@@ -18,6 +19,10 @@ pub struct PreferencesDialog {
     power_preference: PowerPreference,
     power_preference_readonly: bool,
     power_preference_changed: bool,
+
+    gamemode_preference: GameModePreference,
+    gamemode_preference_readonly: bool,
+    gamemode_preference_changed: bool,
 
     language: LanguageIdentifier,
     language_changed: bool,
@@ -68,6 +73,10 @@ impl PreferencesDialog {
             power_preference_readonly: preferences.cli.power.is_some(),
             power_preference_changed: false,
 
+            gamemode_preference: preferences.gamemode_preference(),
+            gamemode_preference_readonly: preferences.cli.gamemode.is_some(),
+            gamemode_preference_changed: false,
+
             language: preferences.language(),
             language_changed: false,
 
@@ -113,6 +122,10 @@ impl PreferencesDialog {
                         .striped(true)
                         .show(ui, |ui| {
                             self.show_graphics_preferences(locale, &locked_text, ui);
+
+                            if cfg!(target_os = "linux") {
+                                self.show_gamemode_preferences(locale, &locked_text, ui);
+                            }
 
                             self.show_language_preferences(locale, ui);
 
@@ -289,6 +302,46 @@ impl PreferencesDialog {
         ui.end_row();
     }
 
+    fn show_gamemode_preferences(
+        &mut self,
+        locale: &LanguageIdentifier,
+        locked_text: &str,
+        ui: &mut Ui,
+    ) {
+        ui.label(text(locale, "gamemode"))
+            .on_hover_text_at_pointer(text(locale, "gamemode-tooltip"));
+        if self.gamemode_preference_readonly {
+            ui.label(gamemode_preference_name(locale, self.gamemode_preference))
+                .on_hover_text(locked_text);
+        } else {
+            let previous = self.gamemode_preference;
+            ComboBox::from_id_salt("gamemode")
+                .selected_text(gamemode_preference_name(locale, self.gamemode_preference))
+                .show_ui(ui, |ui| {
+                    let values = [
+                        GameModePreference::Default,
+                        GameModePreference::On,
+                        GameModePreference::Off,
+                    ];
+                    for value in values {
+                        let response = ui.selectable_value(
+                            &mut self.gamemode_preference,
+                            value,
+                            gamemode_preference_name(locale, value),
+                        );
+
+                        if let Some(tooltip) = gamemode_preference_tooltip(locale, value) {
+                            response.on_hover_text_at_pointer(tooltip);
+                        }
+                    }
+                });
+            if self.gamemode_preference != previous {
+                self.gamemode_preference_changed = true;
+            }
+        }
+        ui.end_row();
+    }
+
     fn show_audio_preferences(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
         ui.label(text(locale, "audio-output-device"));
 
@@ -459,6 +512,9 @@ impl PreferencesDialog {
             if self.theme_preference_changed {
                 preferences.set_theme_preference(self.theme_preference);
             }
+            if self.gamemode_preference_changed {
+                preferences.set_gamemode_preference(self.gamemode_preference);
+            }
         }) {
             // [NA] TODO: Better error handling... everywhere in desktop, really
             tracing::error!("Could not save preferences: {e}");
@@ -498,6 +554,27 @@ fn theme_preference_name(
         ThemePreference::Light => text(locale, "theme-light"),
         ThemePreference::Dark => text(locale, "theme-dark"),
     }
+}
+
+fn gamemode_preference_name(
+    locale: &LanguageIdentifier,
+    gamemode_preference: GameModePreference,
+) -> Cow<str> {
+    match gamemode_preference {
+        GameModePreference::Default => text(locale, "gamemode-default"),
+        GameModePreference::On => text(locale, "enable"),
+        GameModePreference::Off => text(locale, "disable"),
+    }
+}
+
+fn gamemode_preference_tooltip(
+    locale: &LanguageIdentifier,
+    gamemode_preference: GameModePreference,
+) -> Option<Cow<str>> {
+    Some(match gamemode_preference {
+        GameModePreference::Default => text(locale, "gamemode-default-tooltip"),
+        _ => return None,
+    })
 }
 
 fn filename_pattern_name(locale: &LanguageIdentifier, pattern: FilenamePattern) -> Cow<str> {
