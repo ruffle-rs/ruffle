@@ -10,10 +10,20 @@ update-ruffle = 更新 Ruffle
 ruffle-demo = 网页演示
 ruffle-desktop = 桌面应用程序
 ruffle-wiki = 查看 Ruffle Wiki
-enable-hardware-acceleration = 看起来硬件加速未启用。虽然 Ruffle 可能运行，但可能会非常慢。您可以通过此链接了解启用硬件加速的方法。
+enable-hardware-acceleration = 看起来硬件加速已被禁用。虽然Ruffle可能可以运行，但速度可能会非常慢。您可以通过下面的链接了解如何启用硬件加速：
+enable-hardware-acceleration-link = 常见问题 - Chrome 硬件加速
 view-error-details = 查看错误详情
 open-in-new-tab = 在新标签页中打开
 click-to-unmute = 点击取消静音
+clipboard-message-title = 在Ruffle中复制粘贴
+clipboard-message-description =
+    { $variant ->
+       *[unsupported] 您的浏览器不支持完全剪贴板访问,
+        [access-denied] 对剪贴板的访问已被拒绝,
+    } 但您仍然可以使用以下快捷键:
+clipboard-message-copy = { " " } 复制
+clipboard-message-cut = { " " } 剪切
+clipboard-message-paste = { " " } 粘贴
 error-file-protocol =
     看来您正在 "file:" 协议上使用 Ruffle。
     由于浏览器以安全原因阻止许多功能，因此这不起作用。
@@ -30,6 +40,9 @@ error-wasm-mime-type =
     Ruffle 在试图初始化时遇到了一个重大问题。
     该网站服务器没有提供 ".asm” 文件正确的 MIME 类型。
     如果您是服务器管理员，请查阅 Ruffle Wiki 获取帮助。
+error-invalid-swf =
+    Ruffle无法解析请求的文件。
+    最有可能的原因是该请求文件不是一个合法的SWF文件。
 error-swf-fetch =
     Ruffle 无法加载 Flash SWF 文件。
     最可能的原因是文件不再存在所以 Ruffle 没有要加载的内容。

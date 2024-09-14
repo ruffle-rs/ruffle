@@ -10,7 +10,7 @@ use std::path::Path;
 bitflags! {
     /// A set of currently held-down mouse buttons.
     ///
-    /// Convertable from `MouseButton`, which is intended to represent ONE
+    /// Convertible from `MouseButton`, which is intended to represent ONE
     /// button being held or released.
     #[derive(Clone, Copy)]
     pub struct MouseButtons: u8 {
@@ -96,8 +96,13 @@ impl InputInjector {
                     AutomatedEvent::Wait => break,
                     AutomatedEvent::MouseMove { .. }
                     | AutomatedEvent::KeyDown { .. }
+                    | AutomatedEvent::KeyUp { .. }
                     | AutomatedEvent::TextInput { .. }
-                    | AutomatedEvent::TextControl { .. } => {}
+                    | AutomatedEvent::TextControl { .. }
+                    | AutomatedEvent::SetClipboardText { .. }
+                    | AutomatedEvent::MouseWheel { .. }
+                    | AutomatedEvent::FocusGained
+                    | AutomatedEvent::FocusLost => {}
                     AutomatedEvent::MouseDown { btn, .. } => {
                         self.buttons |= (*btn).into();
                     }

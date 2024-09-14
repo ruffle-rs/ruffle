@@ -64,7 +64,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .bevelfilter
             .inner_class_definition();
-        if object.is_of_type(bevel_filter, &mut activation.context) {
+        if object.is_of_type(bevel_filter) {
             return avm2_to_bevel_filter(activation, object);
         }
 
@@ -73,7 +73,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .blurfilter
             .inner_class_definition();
-        if object.is_of_type(blur_filter, &mut activation.context) {
+        if object.is_of_type(blur_filter) {
             return avm2_to_blur_filter(activation, object);
         }
 
@@ -82,7 +82,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .colormatrixfilter
             .inner_class_definition();
-        if object.is_of_type(color_matrix_filter, &mut activation.context) {
+        if object.is_of_type(color_matrix_filter) {
             return avm2_to_color_matrix_filter(activation, object);
         }
 
@@ -91,7 +91,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .convolutionfilter
             .inner_class_definition();
-        if object.is_of_type(convolution_filter, &mut activation.context) {
+        if object.is_of_type(convolution_filter) {
             return avm2_to_convolution_filter(activation, object);
         }
 
@@ -100,7 +100,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .displacementmapfilter
             .inner_class_definition();
-        if object.is_of_type(displacement_map_filter, &mut activation.context) {
+        if object.is_of_type(displacement_map_filter) {
             return avm2_to_displacement_map_filter(activation, object);
         }
 
@@ -109,7 +109,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .dropshadowfilter
             .inner_class_definition();
-        if object.is_of_type(drop_shadow_filter, &mut activation.context) {
+        if object.is_of_type(drop_shadow_filter) {
             return avm2_to_drop_shadow_filter(activation, object);
         }
 
@@ -118,7 +118,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .glowfilter
             .inner_class_definition();
-        if object.is_of_type(glow_filter, &mut activation.context) {
+        if object.is_of_type(glow_filter) {
             return avm2_to_glow_filter(activation, object);
         }
 
@@ -127,7 +127,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .gradientbevelfilter
             .inner_class_definition();
-        if object.is_of_type(gradient_bevel_filter, &mut activation.context) {
+        if object.is_of_type(gradient_bevel_filter) {
             return Ok(Filter::GradientBevelFilter(avm2_to_gradient_filter(
                 activation, object,
             )?));
@@ -138,7 +138,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .gradientglowfilter
             .inner_class_definition();
-        if object.is_of_type(gradient_glow_filter, &mut activation.context) {
+        if object.is_of_type(gradient_glow_filter) {
             return Ok(Filter::GradientGlowFilter(avm2_to_gradient_filter(
                 activation, object,
             )?));
@@ -149,7 +149,7 @@ impl FilterAvm2Ext for Filter {
             .classes()
             .shaderfilter
             .inner_class_definition();
-        if object.is_of_type(shader_filter, &mut activation.context) {
+        if object.is_of_type(shader_filter) {
             return Ok(Filter::ShaderFilter(avm2_to_shader_filter(
                 activation, object,
             )?));
@@ -362,11 +362,11 @@ fn avm2_to_convolution_filter<'gc>(
     {
         if let Some(array) = matrix_object.as_array_storage() {
             for value in array.iter() {
-                matrix.push(Fixed16::from_f64(
+                matrix.push(
                     value
                         .unwrap_or(Value::Undefined)
-                        .coerce_to_number(activation)?,
-                ));
+                        .coerce_to_number(activation)? as f32,
+                );
             }
         }
     }
@@ -399,11 +399,11 @@ fn avm2_to_convolution_filter<'gc>(
     if preserve_alpha {
         flags |= ConvolutionFilterFlags::PRESERVE_ALPHA;
     }
-    matrix.resize((matrix_x * matrix_y) as usize, Fixed16::ZERO);
+    matrix.resize((matrix_x * matrix_y) as usize, 0.0f32);
     Ok(Filter::ConvolutionFilter(ConvolutionFilter {
-        bias: Fixed16::from_f64(bias),
+        bias: bias as f32,
         default_color: Color::from_rgb(color, (alpha * 255.0) as u8),
-        divisor: Fixed16::from_f64(divisor),
+        divisor: divisor as f32,
         matrix,
         num_matrix_cols: matrix_x.clamp(0, 255) as u8,
         num_matrix_rows: matrix_y.clamp(0, 255) as u8,
@@ -420,7 +420,7 @@ fn convolution_filter_to_avm2<'gc>(
         filter
             .matrix
             .iter()
-            .map(|v| Value::from(v.to_f64()))
+            .map(|v| Value::from(f64::from(*v)))
             .collect(),
     )?;
     activation.avm2().classes().convolutionfilter.construct(
@@ -429,8 +429,8 @@ fn convolution_filter_to_avm2<'gc>(
             filter.num_matrix_cols.into(),
             filter.num_matrix_rows.into(),
             matrix.into(),
-            filter.divisor.to_f64().into(),
-            filter.bias.to_f64().into(),
+            filter.divisor.into(),
+            filter.bias.into(),
             filter.is_preserve_alpha().into(),
             filter.is_clamped().into(),
             filter.default_color.to_rgb().into(),

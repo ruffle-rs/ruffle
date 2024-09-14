@@ -1,3 +1,40 @@
-xml.namespace(): 
+<root/>
+// namespace()
 ns.prefix: 
 ns.uri: 
+// namespace("")
+ns is null
+// namespace("other")
+ns is null
+
+<root xmlns="http://example.org"/>
+// namespace()
+ns.prefix: 
+ns.uri: http://example.org
+// namespace("")
+ns.prefix: 
+ns.uri: http://example.org
+// namespace("other")
+ns is null
+
+<root xmlns:other="http://other.com"/>
+// namespace()
+ns.prefix: 
+ns.uri: 
+// namespace("")
+ns is null
+// namespace("other")
+ns.prefix: other
+ns.uri: http://other.com
+
+<root xmlns:other="http://other.com" xmlns="http://example.org"/>
+// namespace()
+ns.prefix: 
+ns.uri: http://example.org
+// namespace("")
+ns.prefix: 
+ns.uri: http://example.org
+// namespace("other")
+ns.prefix: other
+ns.uri: http://other.com
+

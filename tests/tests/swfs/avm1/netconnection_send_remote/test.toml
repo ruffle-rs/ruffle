@@ -1,0 +1,4 @@
+# Note that this test doesn't run natively in Flash Player, see README.md
+
+num_ticks = 10
+log_fetch = true

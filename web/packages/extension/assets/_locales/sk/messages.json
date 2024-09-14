@@ -94,5 +94,20 @@
     },
     "settings_saved": {
         "message": "Nastavenia uložené"
+    },
+    "onboarding_page": {
+        "message": "Vstupná stránka"
+    },
+    "permissions_grant": {
+        "message": "Udeliť Ruffle povolenie na prístup k mojim údajom na všetkých stránkach"
+    },
+    "permissions_not_granted": {
+        "message": "Budete musieť kliknúť na ikonu Ruffle na každej stránke, na ktorej chcete Ruffle použiť"
+    },
+    "grant_single_site_permission": {
+        "message": "Natrvalo povoliť pre túto stránku"
+    },
+    "swf_player_permissions": {
+        "message": "Ak chcete z tejto URL adresy načítať súbory SWF, musíte udeliť oprávnenie."
     }
 }

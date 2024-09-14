@@ -1,0 +1,36 @@
+xml.normalize() (XML)
+ Before: 4
+ After: 3
+
+xml.normalize() (XMLList)
+ Before: 4
+ After: 3
+
+with_child.normalize() (XML)
+ Before: 3
+  child: 4
+ After: 2
+  child: 3
+
+with_child.normalize() (XMLList)
+ Before: 3
+  child: 4
+ After: 2
+  child: 3
+
+whitespace.normalize() (XML)
+ Before: 2
+ After: 0
+
+whitespace.normalize() (XMLList)
+ Before: 2
+ After: 1
+
+empty.normalize() (XML)
+ Before: 4
+ After: 0
+
+empty.normalize() (XMLList)
+ Before: 4
+ After: 0
+

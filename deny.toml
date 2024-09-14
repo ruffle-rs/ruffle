@@ -1,10 +1,9 @@
-
+[graph]
 # If true, metadata will be collected with `--all-features`.
 all-features = true
 
 [licenses]
-# The lint level for crates which do not have a detectable license
-unlicensed = "deny"
+version = 2
 
 # List of explicitly allowed licenses
 allow = [
@@ -16,18 +15,13 @@ allow = [
     "BSD-3-Clause",
     "ISC",
     "Unicode-DFS-2016",
+    "Unicode-3.0",
     "MPL-2.0",
     "BSL-1.0",
     "CC0-1.0",
     "OFL-1.1",
     "LicenseRef-UFL-1.0",
-]
-
-# List of explicitly disallowed licenses
-deny = [
-    "GPL-1.0",
-    "GPL-2.0",
-    "GPL-3.0",
+    "OpenSSL"
 ]
 
 # Some crates don't have (easily) machine readable licensing information,
@@ -51,26 +45,43 @@ name = "nihav_codec_support"
 expression = "MIT"
 license-files = []
 
+[[licenses.clarify]]
+name = "ring"
+expression = "MIT AND ISC AND OpenSSL"
+license-files = [
+    { path = "LICENSE", hash = 0xbd0eed23 }
+]
+
 [bans]
 # Lint level for when multiple versions of the same crate are detected
 multiple-versions = "warn"
 
-# We are manually pinning `tracing-tracy` to match the version used by
-# `profiling`, but this can get stale easily.
-deny = [{ name = "tracy-client", deny-multiple-versions = true }]
+deny = [
+    # We are manually pinning `tracing-tracy` to match the version used by
+    # `profiling`, but this can get stale easily.
+    { name = "tracy-client", deny-multiple-versions = true },
+    # Having multiple versions of this can silently cause images (such as
+    # the logo in the about dialog) in egui to not appear.
+    { name = "image", deny-multiple-versions = true },
+]
 
 [sources]
 # Lint level for what to happen when a crate from a crate registry that is not
 # in the allow list is encountered
-unknown-registry = "warn"
+unknown-registry = "deny"
 # Lint level for what to happen when a crate from a git repository that is not
 # in the allow list is encountered
-unknown-git = "warn"
+unknown-git = "deny"
 
 [sources.allow-org]
 #  github.com organizations to allow git sources for
 github = [
     "ruffle-rs",
-    "kyren",
-    "gfx-rs",
+    # TODO: Remove once a release with https://github.com/emilk/egui/pull/4939 in it is out.
+    "emilk",
+    # TODO: Remove once a release with https://github.com/PolyMeilex/rfd/pull/209 in it is out.
+    "PolyMeilex",
 ]
+
+[advisories]
+version = 2

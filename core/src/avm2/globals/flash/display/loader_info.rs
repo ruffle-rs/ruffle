@@ -6,9 +6,9 @@ use crate::avm2::error::error;
 use crate::avm2::object::{DomainObject, LoaderStream, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{AvmString, Error};
-use crate::avm2_stub_getter;
 use crate::display_object::TDisplayObject;
 use crate::loader::ContentType;
+use crate::{avm2_stub_getter, avm2_stub_method};
 use swf::{write_swf, Compression};
 
 pub use crate::avm2::object::loader_info_allocator;
@@ -17,7 +17,7 @@ const INSUFFICIENT: &str =
     "Error #2099: The loading object is not sufficiently loaded to provide this information.";
 
 /// Implements `flash.display.LoaderInfo`'s native instance constructor.
-pub fn native_instance_init<'gc>(
+pub fn super_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -118,23 +118,26 @@ pub fn get_bytes_loaded<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
-        match &*loader_stream {
-            LoaderStream::NotYetLoaded(_, None, _) => return Ok(0.into()),
-            LoaderStream::Swf(_, root) | LoaderStream::NotYetLoaded(_, Some(root), _) => {
-                return Ok(root
-                    .as_movie_clip()
-                    .map(|mc| mc.compressed_loaded_bytes())
-                    .unwrap_or_default()
-                    .into())
+    let loader_info = this.as_loader_info_object().unwrap();
+    let loader_stream = loader_info.as_loader_stream().unwrap();
+    match &*loader_stream {
+        LoaderStream::NotYetLoaded(swf, None, _) => {
+            if loader_info.errored() {
+                return Ok(swf.compressed_len().into());
             }
-        };
+            Ok(0.into())
+        }
+        LoaderStream::Swf(swf, root) | LoaderStream::NotYetLoaded(swf, Some(root), _) => {
+            if root.as_bitmap().is_some() {
+                return Ok(swf.compressed_len().into());
+            }
+            Ok(root
+                .as_movie_clip()
+                .map(|mc| mc.compressed_loaded_bytes())
+                .unwrap_or_default()
+                .into())
+        }
     }
-
-    Ok(Value::Undefined)
 }
 
 /// `content` getter
@@ -143,15 +146,18 @@ pub fn get_content<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
+    let loader_info = this.as_loader_info_object().unwrap();
+    if !loader_info.expose_content() {
+        return Ok(Value::Null);
+    }
+
+    if let Some(loader_stream) = loader_info.as_loader_stream() {
         match &*loader_stream {
             LoaderStream::Swf(_, root) | LoaderStream::NotYetLoaded(_, Some(root), _) => {
                 if root.movie().is_action_script_3() || !root.movie().is_movie() {
                     return Ok(root.object2());
                 } else {
+                    // The movie was an AVM1 movie, return an AVM1Movie object
                     let root_obj = *root;
                     drop(loader_stream);
 
@@ -389,63 +395,77 @@ pub fn get_bytes<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(loader_stream) = this
-        .as_loader_info_object()
-        .and_then(|o| o.as_loader_stream())
-    {
-        let root = match &*loader_stream {
-            LoaderStream::NotYetLoaded(_, None, _) => {
-                // If we haven't even started loading yet (we have no root clip),
-                // then return null. FIXME - we should probably store the ByteArray
-                // in a field, and initialize it when we start loading.
-                return Ok(Value::Null);
+    let loader_info = this.as_loader_info_object().unwrap();
+    let loader_stream = loader_info.as_loader_stream().unwrap();
+    let (root, dobj) = match &*loader_stream {
+        LoaderStream::NotYetLoaded(_, None, _) => {
+            if loader_info.errored() {
+                return Ok(activation
+                    .context
+                    .avm2
+                    .classes()
+                    .bytearray
+                    .construct(activation, &[])?
+                    .into());
             }
-            LoaderStream::NotYetLoaded(swf, Some(_), _) => swf,
-            LoaderStream::Swf(root, _) => root,
-        };
-
-        let ba_class = activation.context.avm2.classes().bytearray;
-        let ba = ba_class.construct(activation, &[])?;
-
-        if root.data().is_empty() {
-            return Ok(ba.into());
+            // If we haven't even started loading yet (we have no root clip),
+            // then return null. FIXME - we should probably store the ByteArray
+            // in a field, and initialize it when we start loading.
+            return Ok(Value::Null);
         }
+        LoaderStream::NotYetLoaded(swf, Some(dobj), _) => (swf, dobj),
+        LoaderStream::Swf(root, dobj) => (root, dobj),
+    };
 
-        let mut ba_write = ba.as_bytearray_mut(activation.context.gc_context).unwrap();
+    let ba_class = activation.context.avm2.classes().bytearray;
+    let ba = ba_class.construct(activation, &[])?;
 
-        // First, write a fake header corresponding to an
-        // uncompressed SWF
-        let mut header = root.header().swf_header().clone();
-        header.compression = Compression::None;
-
-        write_swf(&header, &[], &mut *ba_write).unwrap();
-
-        // `swf` always writes an implicit end tag, let's cut that
-        // off. We scroll back 2 bytes before writing the actual
-        // datastream as it is guaranteed to at least be as long as
-        // the implicit end tag we want to get rid of.
-        let correct_header_length = ba_write.len() - 2;
-        ba_write.set_position(correct_header_length);
-        ba_write
-            .write_bytes(root.data())
-            .map_err(|e| e.to_avm(activation))?;
-
-        // `swf` wrote the wrong length (since we wrote the data
-        // ourselves), so we need to overwrite it ourselves.
-        ba_write.set_position(4);
-        ba_write.set_endian(Endian::Little);
-        ba_write
-            .write_unsigned_int((root.data().len() + correct_header_length) as u32)
-            .map_err(|e| e.to_avm(activation))?;
-
-        // Finally, reset the array to the correct state.
-        ba_write.set_position(0);
-        ba_write.set_endian(Endian::Big);
-
+    if root.data().is_empty() {
         return Ok(ba.into());
     }
 
-    Ok(Value::Undefined)
+    if dobj.as_bitmap().is_some() {
+        // TODO - we need to construct a fake SWF that contains a 'Define' tag for the image data.
+        avm2_stub_method!(
+            activation,
+            "flash.display.LoaderInfo",
+            "bytes",
+            "with image"
+        );
+    }
+
+    let mut ba_write = ba.as_bytearray_mut().unwrap();
+
+    // First, write a fake header corresponding to an
+    // uncompressed SWF
+    let mut header = root.header().swf_header().clone();
+    header.compression = Compression::None;
+
+    write_swf(&header, &[], &mut *ba_write).unwrap();
+
+    // `swf` always writes an implicit end tag, let's cut that
+    // off. We scroll back 2 bytes before writing the actual
+    // datastream as it is guaranteed to at least be as long as
+    // the implicit end tag we want to get rid of.
+    let correct_header_length = ba_write.len() - 2;
+    ba_write.set_position(correct_header_length);
+    ba_write
+        .write_bytes(root.data())
+        .map_err(|e| e.to_avm(activation))?;
+
+    // `swf` wrote the wrong length (since we wrote the data
+    // ourselves), so we need to overwrite it ourselves.
+    ba_write.set_position(4);
+    ba_write.set_endian(Endian::Little);
+    ba_write
+        .write_unsigned_int((root.data().len() + correct_header_length) as u32)
+        .map_err(|e| e.to_avm(activation))?;
+
+    // Finally, reset the array to the correct state.
+    ba_write.set_position(0);
+    ba_write.set_endian(Endian::Big);
+
+    Ok(ba.into())
 }
 
 /// `loader` getter

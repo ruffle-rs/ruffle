@@ -229,15 +229,14 @@ impl Turbulence {
             let noise = self.noise2(color_channel, vec, stitch_info);
             sum += if fractal_sum { noise } else { noise.abs() } / ratio;
             ratio *= 2.0;
-            stitch_info.as_mut().map(|stitch_info| {
+            if let Some(ref mut stitch_info) = stitch_info {
                 // Update stitch values. Subtracting PerlinN before the multiplication and
                 // adding it afterward simplifies to subtracting it once.
                 stitch_info.width *= 2;
                 stitch_info.wrap_x = 2 * stitch_info.wrap_x - PERLIN_N;
                 stitch_info.height *= 2;
                 stitch_info.wrap_y = 2 * stitch_info.wrap_y - PERLIN_N;
-                stitch_info
-            });
+            }
         }
         sum
     }

@@ -1,0 +1,20 @@
+Initial stage projectionCenter: (x=250, y=250)
+matrix is initially set: (a=1, b=0, c=0, d=1, tx=0, ty=0)
+matrix3D is initially null: null
+null
+perspectiveProjection is initially null: null
+Initial fieldOfView: 55
+Initial focalLength: 480.2455317428
+Initial projectionCenter: (x=250, y=250)
+perspectiveProjection is set: [object PerspectiveProjection]
+matrix is still set: (a=1, b=0, c=0, d=1, tx=0, ty=0)
+matrix3D is still null: null
+perspectiveProjection returns a clone: true
+root has a default projection: [object PerspectiveProjection]
+Initial root fieldOfView: 55
+Initial root focalLength: 480.2455317428
+Initial root projectionCenter: (x=250, y=187.5)
+changed root fieldOfView: 100
+changed root focalLength: 209.7749077943
+changed root fieldOfView: 100
+changed root focalLength: 209.7749077943

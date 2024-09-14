@@ -9,6 +9,7 @@ package flash.display3D {
     import __ruffle__.stub_method;
     import __ruffle__.stub_getter;
 
+    [API("674")]
     public final class Context3D extends EventDispatcher {
         public native function clear(red:Number = 0.0, green:Number = 0.0, blue:Number = 0.0, alpha:Number = 1.0, depth:Number = 1.0, stencil:uint = 0, mask:uint = 0xffffffff):void;
 
@@ -47,16 +48,15 @@ package flash.display3D {
 
         public native function setTextureAt(sampler:int, texture:TextureBase):void;
 
-        public function get profile():String {
-            stub_getter("flash.display3D.Context3D", "profile");
-            return "baseline";
-        }
+        public native function get profile():String;
 
+        [API("700")]
         public function get maxBackBufferWidth():int {
             stub_getter("flash.display3D.Context3D", "maxBackBufferWidth");
             return 2048;
         }
 
+        [API("700")]
         public function get maxBackBufferHeight():int {
             stub_getter("flash.display3D.Context3D", "maxBackBufferHeight");
             return 2048;
@@ -79,5 +79,7 @@ package flash.display3D {
         ):void {
             stub_method("flash.display3D.Context3D", "setStencilActions");
         }
+
+        public native function dispose(recreate:Boolean = true):void;
     }
 }

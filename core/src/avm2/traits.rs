@@ -10,8 +10,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::QName;
 use bitflags::bitflags;
-use gc_arena::{Collect, GcCell};
-use std::ops::Deref;
+use gc_arena::{Collect, Gc};
 use swf::avm2::types::{
     DefaultValue as AbcDefaultValue, Trait as AbcTrait, TraitKind as AbcTraitKind,
 };
@@ -75,7 +74,7 @@ pub enum TraitKind<'gc> {
     /// to.
     Slot {
         slot_id: u32,
-        type_name: Multiname<'gc>,
+        type_name: Gc<'gc, Multiname<'gc>>,
         default_value: Value<'gc>,
         unit: Option<TranslationUnit<'gc>>,
     },
@@ -91,10 +90,7 @@ pub enum TraitKind<'gc> {
 
     /// A class property on an object that can be used to construct more
     /// objects.
-    Class {
-        slot_id: u32,
-        class: GcCell<'gc, Class<'gc>>,
-    },
+    Class { slot_id: u32, class: Class<'gc> },
 
     /// A free function (not an instance method) that can be called.
     Function { slot_id: u32, function: Method<'gc> },
@@ -103,16 +99,14 @@ pub enum TraitKind<'gc> {
     /// be overridden.
     Const {
         slot_id: u32,
-        type_name: Multiname<'gc>,
+        type_name: Gc<'gc, Multiname<'gc>>,
         default_value: Value<'gc>,
         unit: Option<TranslationUnit<'gc>>,
     },
 }
 
 impl<'gc> Trait<'gc> {
-    pub fn from_class(class: GcCell<'gc, Class<'gc>>) -> Self {
-        let name = class.read().name();
-
+    pub fn from_class(name: QName<'gc>, class: Class<'gc>) -> Self {
         Trait {
             name,
             attributes: TraitAttributes::empty(),
@@ -162,7 +156,7 @@ impl<'gc> Trait<'gc> {
 
     pub fn from_slot(
         name: QName<'gc>,
-        type_name: Multiname<'gc>,
+        type_name: Gc<'gc, Multiname<'gc>>,
         default_value: Option<Value<'gc>>,
     ) -> Self {
         Trait {
@@ -180,7 +174,7 @@ impl<'gc> Trait<'gc> {
 
     pub fn from_const(
         name: QName<'gc>,
-        type_name: Multiname<'gc>,
+        type_name: Gc<'gc, Multiname<'gc>>,
         default_value: Option<Value<'gc>>,
     ) -> Self {
         Trait {
@@ -202,7 +196,7 @@ impl<'gc> Trait<'gc> {
         abc_trait: &AbcTrait,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Self, Error<'gc>> {
-        let name = QName::from_abc_multiname(unit, abc_trait.name, &mut activation.context)?;
+        let name = QName::from_abc_multiname(activation, unit, abc_trait.name)?;
 
         Ok(match &abc_trait.kind {
             AbcTraitKind::Slot {
@@ -210,10 +204,7 @@ impl<'gc> Trait<'gc> {
                 type_name,
                 value,
             } => {
-                let type_name = unit
-                    .pool_multiname_static_any(*type_name, &mut activation.context)?
-                    .deref()
-                    .clone();
+                let type_name = unit.pool_multiname_static_any(activation, *type_name)?;
                 let default_value = slot_default_value(unit, value, &type_name, activation)?;
                 Trait {
                     name,
@@ -277,10 +268,7 @@ impl<'gc> Trait<'gc> {
                 type_name,
                 value,
             } => {
-                let type_name = unit
-                    .pool_multiname_static_any(*type_name, &mut activation.context)?
-                    .deref()
-                    .clone();
+                let type_name = unit.pool_multiname_static_any(activation, *type_name)?;
                 let default_value = slot_default_value(unit, value, &type_name, activation)?;
                 Trait {
                     name,

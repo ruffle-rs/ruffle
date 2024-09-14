@@ -5,9 +5,9 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::TranslationUnit;
 use crate::avm2::Value;
-use gc_arena::GcCell;
-use gc_arena::Mutation;
-use gc_arena::{Collect, Gc};
+use crate::context::GcContext;
+use crate::string::AvmString;
+use gc_arena::{Collect, Gc, Mutation};
 
 use super::class::Class;
 
@@ -33,21 +33,21 @@ pub enum Property {
 /// Additionally, property class resolution uses special
 /// logic, different from normal "runtime" class resolution,
 /// that allows private types to be referenced.
-#[derive(Collect, Clone)]
+#[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub enum PropertyClass<'gc> {
     /// The type `*` (Multiname::is_any()). This allows
     /// `Value::Undefined`, so it needs to be distinguished
     /// from the `Object` class
     Any,
-    Class(GcCell<'gc, Class<'gc>>),
-    Name(Gc<'gc, (Multiname<'gc>, Option<TranslationUnit<'gc>>)>),
+    Class(Class<'gc>),
+    Name(Gc<'gc, (Gc<'gc, Multiname<'gc>>, Option<TranslationUnit<'gc>>)>),
 }
 
 impl<'gc> PropertyClass<'gc> {
     pub fn name(
         mc: &Mutation<'gc>,
-        name: Multiname<'gc>,
+        name: Gc<'gc, Multiname<'gc>>,
         unit: Option<TranslationUnit<'gc>>,
     ) -> Self {
         PropertyClass::Name(Gc::new(mc, (name, unit)))
@@ -65,7 +65,7 @@ impl<'gc> PropertyClass<'gc> {
             PropertyClass::Class(class) => (Some(*class), false),
             PropertyClass::Name(gc) => {
                 let (name, unit) = &**gc;
-                if name.is_any_name() {
+                if name.is_any_namespace() && name.is_any_name() {
                     *self = PropertyClass::Any;
                     (None, true)
                 } else {
@@ -77,7 +77,7 @@ impl<'gc> PropertyClass<'gc> {
                     // so use that domain if we don't have a translation unit.
                     let domain =
                         unit.map_or(activation.avm2().playerglobals_domain, |u| u.domain());
-                    if let Some(class) = domain.get_class(name, activation.context.gc_context)? {
+                    if let Some(class) = domain.get_class(activation.context, name) {
                         *self = PropertyClass::Class(class);
                         (Some(class), true)
                     } else {
@@ -100,11 +100,40 @@ impl<'gc> PropertyClass<'gc> {
         }
     }
 
-    pub fn get_name(&self, mc: &Mutation<'gc>) -> Multiname<'gc> {
+    pub fn get_class(
+        &mut self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Option<Class<'gc>>, Error<'gc>> {
         match self {
-            PropertyClass::Class(class) => class.read().name().into(),
-            PropertyClass::Name(gc) => gc.0.clone(),
-            PropertyClass::Any => Multiname::any(mc),
+            PropertyClass::Class(class) => Ok(Some(*class)),
+            PropertyClass::Name(gc) => {
+                let (name, unit) = &**gc;
+                if name.is_any_namespace() && name.is_any_name() {
+                    *self = PropertyClass::Any;
+                    Ok(None)
+                } else {
+                    let domain =
+                        unit.map_or(activation.avm2().playerglobals_domain, |u| u.domain());
+                    if let Some(class) = domain.get_class(activation.context, name) {
+                        *self = PropertyClass::Class(class);
+                        Ok(Some(class))
+                    } else {
+                        Err(
+                            format!("Could not resolve class {name:?} for property class lookup")
+                                .into(),
+                        )
+                    }
+                }
+            }
+            PropertyClass::Any => Ok(None),
+        }
+    }
+
+    pub fn get_name(&self, context: &mut GcContext<'_, 'gc>) -> AvmString<'gc> {
+        match self {
+            PropertyClass::Class(class) => class.name().to_qualified_name(context.gc_context),
+            PropertyClass::Name(gc) => gc.0.to_qualified_name_or_star(context),
+            PropertyClass::Any => context.interner.get_ascii_char('*'),
         }
     }
 }

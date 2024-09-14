@@ -163,7 +163,7 @@ fn send<'gc>(
     };
 
     let method_name = args
-        .get(1)
+        .get(2)
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?;
     let method = NavigationMethod::from_method_str(&method_name).unwrap_or(NavigationMethod::Post);

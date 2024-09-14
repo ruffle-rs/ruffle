@@ -30,7 +30,7 @@ pub struct Timers<'gc> {
 
 impl<'gc> Timers<'gc> {
     /// Ticks all timers and runs necessary callbacks.
-    pub fn update_timers(context: &mut UpdateContext<'_, 'gc>, dt: f64) -> Option<f64> {
+    pub fn update_timers(context: &mut UpdateContext<'gc>, dt: f64) -> Option<f64> {
         context.timers.cur_time = context
             .timers
             .cur_time
@@ -71,7 +71,7 @@ impl<'gc> Timers<'gc> {
                 TimerCallback::Avm1Function { func, params } => {
                     if let Some(level0) = level0 {
                         let mut avm1_activation = Activation::from_nothing(
-                            context.reborrow(),
+                            context,
                             ActivationIdentifier::root("[Timer Callback]"),
                             level0,
                         );
@@ -116,7 +116,7 @@ impl<'gc> Timers<'gc> {
                     if !removed {
                         if let Some(level0) = level0 {
                             let mut avm1_activation = Activation::from_nothing(
-                                context.reborrow(),
+                                context,
                                 ActivationIdentifier::root("[Timer Callback]"),
                                 level0,
                             );
@@ -141,8 +141,7 @@ impl<'gc> Timers<'gc> {
                 }
                 TimerCallback::Avm2Callback { closure, params } => {
                     let domain = context.avm2.stage_domain();
-                    let mut avm2_activation =
-                        Avm2Activation::from_domain(context.reborrow(), domain);
+                    let mut avm2_activation = Avm2Activation::from_domain(context, domain);
                     match closure.call(Avm2Value::Null, &params, &mut avm2_activation) {
                         Ok(v) => v.coerce_to_boolean(),
                         Err(e) => {
@@ -258,6 +257,34 @@ impl<'gc> Timers<'gc> {
         len < old_len
     }
 
+    pub fn remove_all(&mut self) {
+        self.timers.clear()
+    }
+
+    /// Changes the delay of a timer.
+    pub fn set_delay(&mut self, id: i32, interval: i32) {
+        // SANITY: Set a minimum interval so we don't spam too much.
+        let interval = interval.max(Self::MIN_INTERVAL) as u64 * (Self::TIMER_SCALE as u64);
+
+        // Due to the limitations of `BinaryHeap`, we have to do this in a slightly roundabout way.
+        let mut timer = None;
+        for t in self.timers.iter() {
+            if t.id == id {
+                timer = Some(t.clone());
+                break;
+            }
+        }
+
+        if let Some(mut timer) = timer {
+            self.remove(id);
+            timer.interval = interval;
+            timer.tick_time = self.cur_time + interval;
+            self.timers.push(timer);
+        } else {
+            panic!("Changing delay of non-existent timer");
+        }
+    }
+
     fn peek(&self) -> Option<&Timer<'gc>> {
         self.timers.peek()
     }
@@ -286,7 +313,7 @@ unsafe impl<'gc> Collect for Timers<'gc> {
 }
 /// A timer created via `setInterval`/`setTimeout`.
 /// Runs a callback when it ticks.
-#[derive(Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct Timer<'gc> {
     /// The ID of the timer.

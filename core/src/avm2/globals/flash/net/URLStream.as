@@ -5,10 +5,10 @@ package flash.net {
     import flash.utils.IDataInput;
     import flash.utils.ByteArray;
     import flash.events.Event;
+    import flash.events.HTTPStatusEvent;
     import flash.events.IOErrorEvent;
-    import flash.events.SecurityErrorEvent;
     import flash.events.ProgressEvent;
-    import flash.events;
+    import flash.events.SecurityErrorEvent;
     import __ruffle__.stub_constructor;
     import __ruffle__.stub_method;
     import __ruffle__.stub_getter;
@@ -16,6 +16,8 @@ package flash.net {
 
     public class URLStream extends EventDispatcher implements IDataInput {
         private var _endian:String = Endian.BIG_ENDIAN;
+        private var _connected:Boolean = false;
+
         // FIXME - we currently implement `URLStream` using a `URLLoader`,
         // which means that content can't actually be "streamed" (it becomes
         // available all at once when the entire download finishes).
@@ -33,7 +35,6 @@ package flash.net {
             this._loader.addEventListener(Event.OPEN, function(e:*):void {
                 self.dispatchEvent(new Event(Event.OPEN));
             });
-
             this._loader.addEventListener(Event.COMPLETE, function(e:*):void {
                 self._loader.data.endian = self._endian;
                 self.dispatchEvent(new Event(Event.COMPLETE));
@@ -48,6 +49,9 @@ package flash.net {
                 self._loader.data.endian = self._endian;
                 self.dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, e.bytesLoaded, e.bytesTotal));
             });
+            this._loader.addEventListener(HTTPStatusEvent.HTTP_STATUS, function(e:*):void {
+                self.dispatchEvent(new HTTPStatusEvent(HTTPStatusEvent.HTTP_STATUS, false, false, e.status, e.redirected));
+            });
         }
 
         public function get bytesAvailable():uint {
@@ -55,6 +59,10 @@ package flash.net {
                 return this._loader.data.bytesAvailable;
             }
             return 0;
+        }
+
+        public function get connected():Boolean {
+            return _connected;
         }
 
         public function get endian():String {
@@ -74,10 +82,12 @@ package flash.net {
 
         public function load(request:URLRequest):void {
             this._loader.load(request);
+            this._connected = true;
         }
 
         public function close():void {
             this._loader.close();
+            this._connected = false;
         }
 
         public function get objectEncoding():uint {

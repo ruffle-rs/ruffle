@@ -1,5 +1,5 @@
 //! CSS dimension types
-use std::cmp::{max, min, Ord};
+use std::cmp::{max, min};
 use std::ops::{Add, AddAssign, Sub};
 use swf::{Rectangle, Twips};
 

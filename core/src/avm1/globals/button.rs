@@ -9,7 +9,7 @@ use crate::avm1::ArrayObject;
 use crate::avm1::{globals, Object, ScriptObject, TObject, Value};
 use crate::avm1_stub;
 use crate::context::GcContext;
-use crate::display_object::{Avm1Button, TDisplayObject};
+use crate::display_object::{Avm1Button, TDisplayObject, TInteractiveObject};
 use crate::string::AvmString;
 
 macro_rules! button_getter {
@@ -47,6 +47,8 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "scale9Grid" => property(button_getter!(scale_9_grid), button_setter!(set_scale_9_grid); DONT_DELETE | DONT_ENUM | VERSION_8);
     "filters" => property(button_getter!(filters), button_setter!(set_filters); DONT_DELETE | DONT_ENUM | VERSION_8);
     "cacheAsBitmap" => property(button_getter!(cache_as_bitmap), button_setter!(set_cache_as_bitmap); DONT_DELETE | DONT_ENUM | VERSION_8);
+    // NOTE: `tabEnabled` is not a built-in property of Button.
+    "tabIndex" => property(button_getter!(tab_index), button_setter!(set_tab_index); VERSION_6);
 };
 
 pub fn create_proto<'gc>(
@@ -113,9 +115,7 @@ fn set_filters<'gc>(
     if let Value::Object(value) = value {
         for index in value.get_keys(activation, false).into_iter().rev() {
             let filter_object = value.get(index, activation)?.coerce_to_object(activation);
-            if let Some(filter) =
-                bitmap_filter::avm1_to_filter(filter_object, &mut activation.context)
-            {
+            if let Some(filter) = bitmap_filter::avm1_to_filter(filter_object, activation.context) {
                 filters.push(filter);
             }
         }
@@ -171,5 +171,37 @@ fn set_scale_9_grid<'gc>(
     } else {
         this.set_scaling_grid(activation.context.gc_context, Default::default());
     };
+    Ok(())
+}
+
+fn tab_index<'gc>(
+    this: Avm1Button<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(index) = this.as_interactive().and_then(|this| this.tab_index()) {
+        Ok(Value::Number(index as f64))
+    } else {
+        Ok(Value::Undefined)
+    }
+}
+
+fn set_tab_index<'gc>(
+    this: Avm1Button<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Result<(), Error<'gc>> {
+    if let Some(this) = this.as_interactive() {
+        let value = match value {
+            Value::Undefined | Value::Null => None,
+            Value::Bool(_) | Value::Number(_) => {
+                // FIXME This coercion is not perfect, as it wraps
+                //       instead of falling back to MIN, as FP does
+                let i32_value = value.coerce_to_i32(activation)?;
+                Some(i32_value)
+            }
+            _ => Some(i32::MIN),
+        };
+        this.set_tab_index(activation.context, value);
+    }
     Ok(())
 }

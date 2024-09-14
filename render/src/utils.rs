@@ -42,6 +42,16 @@ pub fn decode_define_bits_jpeg(data: &[u8], alpha_data: Option<&[u8]>) -> Result
     }
 }
 
+pub fn decode_define_bits_jpeg_dimensions(data: &[u8]) -> Result<(u16, u16), Error> {
+    let format = determine_jpeg_tag_format(data);
+    match format {
+        JpegTagFormat::Jpeg => decode_jpeg_dimensions(data),
+        JpegTagFormat::Png => decode_png_dimensions(data),
+        JpegTagFormat::Gif => decode_gif_dimensions(data),
+        JpegTagFormat::Unknown => Err(Error::UnknownType),
+    }
+}
+
 /// Glues the JPEG encoding tables from a JPEGTables SWF tag to the JPEG data
 /// in a DefineBits tag, producing complete JPEG data suitable for a decoder.
 pub fn glue_tables_to_jpeg<'a>(
@@ -153,6 +163,18 @@ fn validate_size(width: u16, height: u16) -> Result<(), Error> {
     Ok(())
 }
 
+fn decode_jpeg_dimensions(jpeg_data: &[u8]) -> Result<(u16, u16), Error> {
+    let jpeg_data = remove_invalid_jpeg_data(jpeg_data);
+
+    let mut decoder = jpeg_decoder::Decoder::new(&jpeg_data[..]);
+    decoder.read_info()?;
+    let metadata = decoder
+        .info()
+        .expect("info() should always return Some if read_info returned Ok");
+    validate_size(metadata.width, metadata.height)?;
+    Ok((metadata.width, metadata.height))
+}
+
 /// Decodes a JPEG with optional alpha data.
 /// The decoded bitmap will have pre-multiplied alpha.
 fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap, Error> {
@@ -235,7 +257,7 @@ fn decode_jpeg(jpeg_data: &[u8], alpha_data: Option<&[u8]>) -> Result<Bitmap, Er
 /// palletized.
 pub fn decode_define_bits_lossless(swf_tag: &swf::DefineBitsLossless) -> Result<Bitmap, Error> {
     // Decompress the image data (DEFLATE compression).
-    let mut decoded_data = decompress_zlib(swf_tag.data)?;
+    let mut decoded_data = decompress_zlib(&swf_tag.data)?;
 
     let has_alpha = swf_tag.version == 2;
 
@@ -329,6 +351,20 @@ pub fn decode_define_bits_lossless(swf_tag: &swf::DefineBitsLossless) -> Result<
     ))
 }
 
+fn decode_png_dimensions(data: &[u8]) -> Result<(u16, u16), Error> {
+    use png::Transformations;
+
+    let mut decoder = png::Decoder::new(data);
+    // Normalize output to 8-bit grayscale or RGB.
+    // Ideally we'd want to normalize to 8-bit RGB only, but seems like the `png` crate provides no such a feature.
+    decoder.set_transformations(Transformations::normalize_to_color8());
+    let reader = decoder.read_info()?;
+    Ok((
+        reader.info().width.try_into().expect("Invalid PNG width"),
+        reader.info().height.try_into().expect("Invalid PNG height"),
+    ))
+}
+
 /// Decodes the bitmap data in DefineBitsLossless tag into RGBA.
 /// DefineBitsLossless is Zlib encoded pixel data (similar to PNG), possibly
 /// palletized.
@@ -376,6 +412,13 @@ fn decode_png(data: &[u8]) -> Result<Bitmap, Error> {
     };
 
     Ok(Bitmap::new(info.width, info.height, format, data))
+}
+
+fn decode_gif_dimensions(data: &[u8]) -> Result<(u16, u16), Error> {
+    let mut decode_options = gif::DecodeOptions::new();
+    decode_options.set_color_output(gif::ColorOutput::RGBA);
+    let reader = decode_options.read_info(data)?;
+    Ok((reader.width(), reader.height()))
 }
 
 /// Decodes the bitmap data in DefineBitsLossless tag into RGBA.

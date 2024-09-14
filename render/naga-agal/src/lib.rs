@@ -48,6 +48,7 @@ pub enum ShaderType {
     Fragment,
 }
 
+pub use builder::{TEXTURE_SAMPLER_START_BIND_INDEX, TEXTURE_START_BIND_INDEX};
 pub use types::{Filter, Mipmap, SamplerConfig, Wrapping};
 
 /**

@@ -1,0 +1,5 @@
+Constructed Parent from main swf
+Roundtrip: [class Parent]
+Calling super()
+Constructed Parent from child swf
+Roundtrip: [class Child]

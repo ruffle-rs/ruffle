@@ -8,6 +8,7 @@ use crate::{
 use bitstream_io::BitRead;
 use byteorder::{LittleEndian, ReadBytesExt};
 use simple_asn1::ASN1Block;
+use std::borrow::Cow;
 use std::io::{self, Read};
 
 /// Parse a decompressed SWF.
@@ -178,14 +179,7 @@ fn make_zlib_reader<'a, R: Read + 'a>(input: R) -> Result<Box<dyn Read + 'a>> {
     Ok(Box::new(ZlibDecoder::new(input)))
 }
 
-#[cfg(all(feature = "libflate", not(feature = "flate2")))]
-fn make_zlib_reader<'a, R: Read + 'a>(input: R) -> Result<Box<dyn Read + 'a>> {
-    use libflate::zlib::Decoder;
-    let decoder = Decoder::new(input)?;
-    Ok(Box::new(decoder))
-}
-
-#[cfg(not(any(feature = "flate2", feature = "libflate")))]
+#[cfg(not(feature = "flate2"))]
 fn make_zlib_reader<'a, R: Read + 'a>(_input: R) -> Result<Box<dyn Read + 'a>> {
     Err(Error::unsupported(
         "Support for Zlib compressed SWFs is not enabled.",
@@ -214,7 +208,7 @@ fn make_lzma_reader<'a, R: Read + 'a>(
     // Bytes 0..5: LZMA properties
     // Bytes 5..13: Uncompressed length
     //
-    // To deal with the mangled header, use lzma_rs options to anually provide uncompressed length.
+    // To deal with the mangled header, use lzma_rs options to manually provide uncompressed length.
 
     // Read compressed length (ignored)
     let _ = input.read_u32::<LittleEndian>()?;
@@ -469,30 +463,18 @@ impl<'a> Reader<'a> {
                 Tag::EnableTelemetry { password_hash }
             }
             TagCode::ImportAssets => {
-                let url = tag_reader.read_str()?;
-                let num_imports = tag_reader.read_u16()?;
-                let mut imports = Vec::with_capacity(num_imports as usize);
-                for _ in 0..num_imports {
-                    imports.push(ExportedAsset {
-                        id: tag_reader.read_u16()?,
-                        name: tag_reader.read_str()?,
-                    });
+                let import_assets = tag_reader.read_import_assets()?;
+                Tag::ImportAssets {
+                    url: import_assets.0,
+                    imports: import_assets.1,
                 }
-                Tag::ImportAssets { url, imports }
             }
             TagCode::ImportAssets2 => {
-                let url = tag_reader.read_str()?;
-                tag_reader.read_u8()?; // Reserved; must be 1
-                tag_reader.read_u8()?; // Reserved; must be 0
-                let num_imports = tag_reader.read_u16()?;
-                let mut imports = Vec::with_capacity(num_imports as usize);
-                for _ in 0..num_imports {
-                    imports.push(ExportedAsset {
-                        id: tag_reader.read_u16()?,
-                        name: tag_reader.read_str()?,
-                    });
+                let import_assets = tag_reader.read_import_assets_2()?;
+                Tag::ImportAssets {
+                    url: import_assets.0,
+                    imports: import_assets.1,
                 }
-                Tag::ImportAssets { url, imports }
             }
 
             TagCode::JpegTables => {
@@ -1854,6 +1836,37 @@ impl<'a> Reader<'a> {
         Ok(exports)
     }
 
+    pub fn read_import_assets(&mut self) -> Result<(&'a SwfStr, ExportAssets<'a>)> {
+        let url = self.read_str()?;
+        let num_imports = self.read_u16()?;
+        let mut imports = Vec::with_capacity(num_imports as usize);
+        for _ in 0..num_imports {
+            imports.push(ExportedAsset {
+                id: self.read_u16()?,
+                name: self.read_str()?,
+            });
+        }
+
+        Ok((url, imports))
+    }
+
+    pub fn read_import_assets_2(&mut self) -> Result<(&'a SwfStr, ExportAssets<'a>)> {
+        let url = self.read_str()?;
+        self.read_u8()?; // Reserved; must be 1
+        self.read_u8()?; // Reserved; must be 0
+        let num_imports = self.read_u16()?;
+        let mut imports = Vec::with_capacity(num_imports as usize);
+
+        for _ in 0..num_imports {
+            imports.push(ExportedAsset {
+                id: self.read_u16()?,
+                name: self.read_str()?,
+            });
+        }
+
+        Ok((url, imports))
+    }
+
     pub fn read_place_object(&mut self) -> Result<PlaceObject<'a>> {
         Ok(PlaceObject {
             version: 1,
@@ -2155,12 +2168,12 @@ impl<'a> Reader<'a> {
     fn read_convolution_filter(&mut self) -> Result<ConvolutionFilter> {
         let num_matrix_cols = self.read_u8()?;
         let num_matrix_rows = self.read_u8()?;
-        let divisor = self.read_fixed16()?;
-        let bias = self.read_fixed16()?;
+        let divisor = self.read_f32()?;
+        let bias = self.read_f32()?;
         let num_entries = num_matrix_cols * num_matrix_rows;
         let mut matrix = Vec::with_capacity(num_entries as usize);
         for _ in 0..num_entries {
-            matrix.push(self.read_fixed16()?);
+            matrix.push(self.read_f32()?);
         }
         Ok(ConvolutionFilter {
             num_matrix_cols,
@@ -2496,7 +2509,7 @@ impl<'a> Reader<'a> {
             format,
             width,
             height,
-            data,
+            data: Cow::Borrowed(data),
         })
     }
 
@@ -2555,9 +2568,7 @@ pub fn read_compression_type<R: Read>(mut input: R) -> Result<Compression> {
 #[allow(clippy::unusual_byte_groupings)]
 pub mod tests {
     use super::*;
-    use crate::tag_code::TagCode;
     use crate::test_data;
-    use std::vec::Vec;
 
     fn reader(data: &[u8]) -> Reader<'_> {
         let default_version = 13;

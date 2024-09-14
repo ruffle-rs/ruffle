@@ -2,33 +2,44 @@ use crate::external_interface::ExternalInterfaceTestProvider;
 use ruffle_core::external::Value as ExternalValue;
 use ruffle_test_framework::environment::Environment;
 use ruffle_test_framework::options::TestOptions;
-use ruffle_test_framework::set_logger;
+use ruffle_test_framework::runner::TestStatus;
 use ruffle_test_framework::test::Test;
 use ruffle_test_framework::vfs::{PhysicalFS, VfsPath};
 use std::collections::BTreeMap;
+use std::thread::sleep;
 
 pub fn external_interface_avm1(
     environment: &impl Environment,
 ) -> Result<(), libtest_mimic::Failed> {
-    set_logger();
-    Ok(Test::from_options(
+    let test = &Test::from_options(
         TestOptions {
-            num_frames: Some(1),
+            num_frames: Some(2),
             ..Default::default()
         },
         VfsPath::new(PhysicalFS::new("tests/swfs/avm1/external_interface/")),
         "external_interface_avm1".to_string(),
-    )?
-    .run(
-        |player| {
-            player
-                .lock()
-                .unwrap()
-                .add_external_interface(Box::new(ExternalInterfaceTestProvider::new()));
-            Ok(())
-        },
-        |player| {
-            let mut player_locked = player.lock().unwrap();
+    )?;
+    let mut runner = test.create_test_runner(environment)?;
+
+    runner
+        .player()
+        .lock()
+        .unwrap()
+        .add_external_interface(Box::new(ExternalInterfaceTestProvider::new()));
+
+    let mut first = true;
+
+    loop {
+        runner.tick();
+        match runner.test()? {
+            TestStatus::Continue => {}
+            TestStatus::Sleep(duration) => sleep(duration),
+            TestStatus::Finished => break,
+        }
+
+        if first {
+            first = false;
+            let mut player_locked = runner.player().lock().unwrap();
 
             let parroted =
                 player_locked.call_internal_interface("parrot", vec!["Hello World!".into()]);
@@ -60,34 +71,43 @@ pub fn external_interface_avm1(
             player_locked.log_backend().avm_trace(&format!(
                 "After calling `callWith` with a complex payload: {result:?}",
             ));
-            Ok(())
-        },
-        environment,
-    )?)
+        }
+    }
+
+    Ok(())
 }
 
 pub fn external_interface_avm2(
     environment: &impl Environment,
 ) -> Result<(), libtest_mimic::Failed> {
-    set_logger();
-    Ok(Test::from_options(
+    let test = &Test::from_options(
         TestOptions {
-            num_frames: Some(1),
+            num_frames: Some(2),
             ..Default::default()
         },
         VfsPath::new(PhysicalFS::new("tests/swfs/avm2/external_interface/")),
         "external_interface_avm2".to_string(),
-    )?
-    .run(
-        |player| {
-            player
-                .lock()
-                .unwrap()
-                .add_external_interface(Box::new(ExternalInterfaceTestProvider::new()));
-            Ok(())
-        },
-        |player| {
-            let mut player_locked = player.lock().unwrap();
+    )?;
+    let mut runner = test.create_test_runner(environment)?;
+    runner
+        .player()
+        .lock()
+        .unwrap()
+        .add_external_interface(Box::new(ExternalInterfaceTestProvider::new()));
+
+    let mut first = true;
+
+    loop {
+        runner.tick();
+        match runner.test()? {
+            TestStatus::Continue => {}
+            TestStatus::Sleep(duration) => sleep(duration),
+            TestStatus::Finished => break,
+        }
+
+        if first {
+            first = false;
+            let mut player_locked = runner.player().lock().unwrap();
 
             let parroted =
                 player_locked.call_internal_interface("parrot", vec!["Hello World!".into()]);
@@ -110,8 +130,8 @@ pub fn external_interface_avm2(
             player_locked.log_backend().avm_trace(&format!(
                 "After calling `callWith` with a complex payload: {result:?}",
             ));
-            Ok(())
-        },
-        environment,
-    )?)
+        }
+    }
+
+    Ok(())
 }

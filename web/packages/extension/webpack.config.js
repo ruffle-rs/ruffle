@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 import fs from "fs";
 import url from "url";
 import json5 from "json5";
@@ -55,11 +53,22 @@ function transformManifest(content, env) {
                 id: firefoxExtensionId,
             },
         };
+        manifest.background = {
+            scripts: ["dist/background.js"],
+        };
     } else {
         manifest.version_name =
             versionChannel === "nightly"
                 ? `${packageVersion} nightly ${buildDate}`
                 : packageVersion;
+
+        manifest.background = {
+            service_worker: "dist/background.js",
+        };
+
+        // Chrome runs the extension in a single shared process by default,
+        // which prevents extension pages from loading in Incognito tabs
+        manifest.incognito = "split";
     }
 
     return JSON.stringify(manifest);
@@ -80,16 +89,19 @@ export default function (/** @type {Record<string, any>} */ env, _argv) {
         entry: {
             popup: "./src/popup.ts",
             options: "./src/options.ts",
+            onboard: "./src/onboard.ts",
             content: "./src/content.ts",
             ruffle: "./src/ruffle.ts",
             background: "./src/background.ts",
             player: "./src/player.ts",
             pluginPolyfill: "./src/plugin-polyfill.ts",
+            siteContentScript4399: "./src/4399-content-script.ts",
         },
         output: {
             path: url.fileURLToPath(new URL("assets/dist/", import.meta.url)),
-            publicPath: "",
+            publicPath: "auto",
             clean: true,
+            assetModuleFilename: "assets/[name][ext][query]",
         },
         module: {
             rules: [
@@ -113,13 +125,12 @@ export default function (/** @type {Record<string, any>} */ env, _argv) {
         optimization: {
             minimize: false,
         },
+        devtool: mode === "development" ? "source-map" : false,
         plugins: [
             new CopyPlugin({
                 patterns: [
                     {
-                        from: env["firefox"]
-                            ? "manifest_firefox.json5"
-                            : "manifest_other.json5",
+                        from: "manifest.json5",
                         to: "../manifest.json",
                         transform: (content) =>
                             transformManifest(
@@ -129,6 +140,7 @@ export default function (/** @type {Record<string, any>} */ env, _argv) {
                     },
                     { from: "LICENSE*" },
                     { from: "README.md" },
+                    { from: "4399_rules.json" },
                 ],
             }),
         ],

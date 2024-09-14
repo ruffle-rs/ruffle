@@ -10,10 +10,13 @@ update-ruffle = עדכן את Ruffle
 ruffle-demo = הדגמה
 ruffle-desktop = אפליקציית שולחן עבודה
 ruffle-wiki = ראה את Ruffle wiki
-enable-hardware-acceleration = נראה שהאצת החומרה שלך לא מופעלת. בעוד שראפל עשוי לעבוד, הוא יכול להיות איטי. תוכל לראות כיצד להפעיל תכונה זו בלחיצה על הלינק הזה.
 view-error-details = ראה פרטי שגיאה
 open-in-new-tab = פתח בכרטיסייה חדשה
 click-to-unmute = לחץ על מנת לבטל השתקה
+clipboard-message-title = העתקה והדבקה בRuffle
+clipboard-message-copy = { " " } עבור העתקה
+clipboard-message-cut = { " " } עבור גזירה
+clipboard-message-paste = { " " } עבור הדבקה
 error-file-protocol =
     נדמה שאתה מריץ את Ruffle תחת פרוטוקול "file:".
     זה לא יעבוד מכיוון שדפדפנים חוסמים אפשרויות רבות מלעבוד עקב סיבות אבטחה.
@@ -30,6 +33,9 @@ error-wasm-mime-type =
     Ruffle נתקל בבעיה חמורה תוך כדי ניסיון לאתחל.
     שרתו של אתר זה לא משייך קבצי ".wasm" עם סוג הMIME הנכון.
     אם אתה מנהל האתר, אנא עיין והועץ בwiki של Ruffle על מנת לקבל עזרה.
+error-invalid-swf =
+    Ruffle לא יכול לנתח את הקובץ המבוקש.
+    הסיבה הסבירה ביותר לבעיה זו היא בגלל שהקובץ המבוקש אינו SWF חוקי.
 error-swf-fetch =
     Ruffle נכשל לטעון את קובץ הפלאש/swf. .
     זה נובע ככל הנראה מכיוון והקובץ לא קיים יותר, אז אין לRuffle מה לטעון.

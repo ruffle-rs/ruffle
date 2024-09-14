@@ -201,6 +201,9 @@ declare global {
  * @param plugin The plugin to install
  */
 export function installPlugin(plugin: RufflePlugin): void {
+    if (navigator.plugins.namedItem("Shockwave Flash")) {
+        return;
+    }
     if (!("install" in navigator.plugins) || !navigator.plugins["install"]) {
         Object.defineProperty(navigator, "plugins", {
             value: new RufflePluginArray(navigator.plugins),

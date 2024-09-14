@@ -1,0 +1,20 @@
+===== sprite
+Focus: [object Sprite]
+Focus: [object Sprite]
+Focus: null
+Focus: [object Sprite]
+===== clip
+Focus: [object MovieClip]
+Focus: [object MovieClip]
+Focus: null
+Focus: [object MovieClip]
+===== text
+Focus: [object TextField]
+Focus: [object TextField]
+Focus: null
+Focus: [object TextField]
+===== button
+Focus: [object SimpleButton]
+Focus: [object SimpleButton]
+Focus: null
+Focus: [object SimpleButton]

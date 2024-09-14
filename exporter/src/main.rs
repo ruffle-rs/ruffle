@@ -73,11 +73,6 @@ struct Opt {
     #[clap(long, short, default_value = "high")]
     power: PowerPreference,
 
-    /// Location to store a wgpu trace output
-    #[clap(long)]
-    #[cfg(feature = "render_trace")]
-    trace_path: Option<PathBuf>,
-
     /// Skip unsupported movie types (currently AVM 2)
     #[clap(long, action)]
     skip_unsupported: bool,
@@ -244,10 +239,7 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
         if opt.output_path == Some(PathBuf::from("-")) {
             let mut bytes: Vec<u8> = Vec::new();
             image
-                .write_to(
-                    &mut io::Cursor::new(&mut bytes),
-                    image::ImageOutputFormat::Png,
-                )
+                .write_to(&mut io::Cursor::new(&mut bytes), image::ImageFormat::Png)
                 .expect("Encoding failed");
             io::stdout()
                 .write_all(bytes.as_slice())
@@ -385,17 +377,6 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
     Ok(())
 }
 
-#[cfg(feature = "render_trace")]
-fn trace_path(opt: &Opt) -> Option<&Path> {
-    if let Some(path) = &opt.trace_path {
-        let _ = std::fs::create_dir_all(path);
-        Some(path)
-    } else {
-        None
-    }
-}
-
-#[cfg(not(feature = "render_trace"))]
 fn trace_path(_opt: &Opt) -> Option<&Path> {
     None
 }

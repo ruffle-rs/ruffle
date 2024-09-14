@@ -1,0 +1,8 @@
+Output of test1: worked!
+Output of test2: 1
+Output of test3: returned
+Error of test4: VerifyError: Error #1011: Method contained illegal opcode.
+Error of test5: VerifyError: Error #1020: Code cannot fall off the end of a method.
+Error of test6: VerifyError: Error #1021: At least one branch target was not on a valid instruction in the method.
+Output of test7: true
+Output of test8: [object Tests]

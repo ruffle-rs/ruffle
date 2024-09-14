@@ -1,0 +1,191 @@
+Text: 'abcABC012^\-* &ąδłĄΔŁß'
+====================
+Restrict set: 'undefined'
+Restrict get: 'null'
+Text: 'abcABC012^\-* &ąδłĄΔŁß'
+====================
+Restrict set: 'null'
+Restrict get: 'null'
+Text: 'abcABC012^\-* &ąδłĄΔŁß'
+====================
+Restrict set: ''
+Restrict get: ''
+Text: ''
+====================
+Restrict set: 'false'
+Restrict get: 'false'
+Text: 'aa'
+====================
+Restrict set: '1'
+Restrict get: '1'
+Text: '1'
+====================
+Restrict set: 'true'
+Restrict get: 'true'
+Text: ''
+====================
+Restrict set: '0.1'
+Restrict get: '0.1'
+Text: '01'
+====================
+Restrict set: 'NaN'
+Restrict get: 'NaN'
+Text: 'aa'
+====================
+Restrict set: '[object Object]'
+Restrict get: '[object Object]'
+Text: 'bcbc '
+====================
+Restrict set: 'aB*Δ'
+Restrict get: 'aB*Δ'
+Text: 'aBaB*Δ'
+====================
+Restrict set: 'aa'
+Restrict get: 'aa'
+Text: 'aa'
+====================
+Restrict set: 'a-z'
+Restrict get: 'a-z'
+Text: 'abcabc'
+====================
+Restrict set: 'A-Z'
+Restrict get: 'A-Z'
+Text: 'ABCABC'
+====================
+Restrict set: 'a-bA'
+Restrict get: 'a-bA'
+Text: 'abAb'
+====================
+Restrict set: 'a-'
+Restrict get: 'a-'
+Text: 'aa'
+====================
+Restrict set: '-b'
+Restrict get: '-b'
+Text: 'abCABC012^\-* &'
+====================
+Restrict set: 'b-a'
+Restrict get: 'b-a'
+Text: 'bb'
+====================
+Restrict set: 'A-z'
+Restrict get: 'A-z'
+Text: 'abcABC^\'
+====================
+Restrict set: '-'
+Restrict get: '-'
+Text: ''
+====================
+Restrict set: '--'
+Restrict get: '--'
+Text: ''
+====================
+Restrict set: '---'
+Restrict get: '---'
+Text: ''
+====================
+Restrict set: '----'
+Restrict get: '----'
+Text: ''
+====================
+Restrict set: '-----'
+Restrict get: '-----'
+Text: ''
+====================
+Restrict set: '-----b'
+Restrict get: '-----b'
+Text: 'abCABC012^\-* &'
+====================
+Restrict set: 'b-----'
+Restrict get: 'b-----'
+Text: 'bb'
+====================
+Restrict set: 'a-b-c'
+Restrict get: 'a-b-c'
+Text: 'abcABC012^\-* &'
+====================
+Restrict set: 'a-b-A'
+Restrict get: 'a-b-A'
+Text: 'abAb012-* &'
+====================
+Restrict set: 'a-a-b'
+Restrict get: 'a-a-b'
+Text: 'abCABC012^\-* &'
+====================
+Restrict set: '\\-\^'
+Restrict get: '\\-\^'
+Text: '^\'
+====================
+Restrict set: '\^-\\'
+Restrict get: '\^-\\'
+Text: '^'
+====================
+Restrict set: '^'
+Restrict get: '^'
+Text: 'abcABC012^\-* &ąδłĄΔŁß'
+====================
+Restrict set: '^^'
+Restrict get: '^^'
+Text: 'abcABC012^\-* &ąδłĄΔŁß'
+====================
+Restrict set: '\^a'
+Restrict get: '\^a'
+Text: 'aa^'
+====================
+Restrict set: '^\^'
+Restrict get: '^\^'
+Text: 'abcABC012\-* &ąδłĄΔŁß'
+====================
+Restrict set: '^aą'
+Restrict get: '^aą'
+Text: 'AbcABC012^\-* &δłĄΔŁß'
+====================
+Restrict set: 'a^b^c'
+Restrict get: 'a^b^c'
+Text: 'acac'
+====================
+Restrict set: 'a^b^c^A^B'
+Restrict get: 'a^b^c^A^B'
+Text: 'aBcaBc'
+====================
+Restrict set: 'a-zA-Z^bC'
+Restrict get: 'a-zA-Z^bC'
+Text: 'aBcABc'
+====================
+Restrict set: 'a-zA-Z^'
+Restrict get: 'a-zA-Z^'
+Text: 'abcABC'
+====================
+Restrict set: '\-'
+Restrict get: '\-'
+Text: '-'
+====================
+Restrict set: 'a\-z'
+Restrict get: 'a\-z'
+Text: 'aa-'
+====================
+Restrict set: '\\'
+Restrict get: '\\'
+Text: '\'
+====================
+Restrict set: '\^'
+Restrict get: '\^'
+Text: '^'
+====================
+Restrict set: '\ab'
+Restrict get: '\ab'
+Text: 'abab'
+====================
+Restrict set: 'a\'
+Restrict get: 'a\'
+Text: 'aa'
+====================
+Restrict set: ' -~'
+Restrict get: ' -~'
+Text: 'abcABC012^\-* &'
+====================
+Restrict set: 'α-ω'
+Restrict get: 'α-ω'
+Text: 'δ'
+====================
+No more restricts

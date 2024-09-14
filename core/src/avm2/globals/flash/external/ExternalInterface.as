@@ -10,9 +10,6 @@ package flash.external
       
       public static native function call(functionName: String, ... arguments) : *;
 
-      public static function get objectID():String {
-         stub_getter("flash.external.ExternalInterface", "objectID");
-         return null;
-      }
+      public static native function get objectID():String;
    }
 }

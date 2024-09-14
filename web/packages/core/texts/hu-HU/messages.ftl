@@ -10,10 +10,20 @@ update-ruffle = Ruffle frissítése
 ruffle-demo = Webes demó
 ruffle-desktop = Asztali alkalmazás
 ruffle-wiki = Ruffle Wiki megnyitása
-enable-hardware-acceleration = Úgy tűnik, a hardveres gyorsítás nincs engedélyezve. Bár a Ruffle működhet, nagyon lassú lehet. Ezt a hivatkozást követve megtudhatod, hogyan engedélyezd a hardveres gyorsítást.
+enable-hardware-acceleration = Úgy tűnik, a hardveres gyorsítás ki van kapcsolva. Bár a Ruffle működhet, nagyon lassú lehet. Az alábbi hivatkozást követve megtudhatod, hogyan engedélyezd a hardveres gyorsítást:
+enable-hardware-acceleration-link = GYIK - Chrome hardveres gyorsítás
 view-error-details = Hiba részletei
 open-in-new-tab = Megnyitás új lapon
 click-to-unmute = Kattints a némítás feloldásához
+clipboard-message-title = Másolás és beíllesztés a Ruffle-ben
+clipboard-message-description =
+    { $variant ->
+       *[unsupported] A böngésződ nem támogatja a vágólaphoz való teljes hozzáférést,
+        [access-denied] A vágólaphoz való hozzáférés el lett utasítva,
+    } de mindig használhatod ezeket a gyorsbillentyűket helyette:
+clipboard-message-copy = { " " } másoláshoz
+clipboard-message-cut = { " " } kivágáshoz
+clipboard-message-paste = { " " } beillesztéshez
 error-file-protocol =
     Úgy tűnik, a Ruffle-t a "file:" protokollon futtatod.
     Ez nem működik, mivel így a böngészők biztonsági okokból számos funkció működését letiltják.
@@ -30,6 +40,9 @@ error-wasm-mime-type =
     A Ruffle komoly problémába ütközött az inicializálás során.
     Ez a webszerver a ".wasm" fájlokat nem a megfelelő MIME-típussal szolgálja ki.
     Ha a szerver rendszergazdája vagy, kérjük, keresd fel a Ruffle wikit segítségért.
+error-invalid-swf =
+    A Ruffle nem tudta értelmezni a kért fájlt.
+    Ennek a legvalószínűbb oka az, hogy a kért fájl nem érvényes SWF.
 error-swf-fetch =
     A Ruffle nem tudta betölteni a Flash SWF fájlt.
     A legvalószínűbb ok az, hogy a fájl már nem létezik, így a Ruffle számára nincs mit betölteni.

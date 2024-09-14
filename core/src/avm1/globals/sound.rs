@@ -79,7 +79,7 @@ fn attach_sound<'gc>(
             .owner()
             .unwrap_or_else(|| activation.base_clip().avm1_root())
             .movie();
-        if let Some(Character::Sound(sound)) = activation
+        if let Some((_, Character::Sound(sound))) = activation
             .context
             .library
             .library_for_movie_mut(movie)
@@ -296,7 +296,7 @@ fn set_pan<'gc>(
         if let Some(owner) = sound.owner() {
             let mut transform = owner.base().sound_transform().clone();
             transform.set_pan(pan);
-            owner.set_sound_transform(&mut activation.context, transform);
+            owner.set_sound_transform(activation.context, transform);
         } else {
             let mut transform = activation.context.global_sound_transform().clone();
             transform.set_pan(pan);
@@ -339,7 +339,7 @@ fn set_transform<'gc>(
         }
 
         if let Some(owner) = sound.owner() {
-            owner.set_sound_transform(&mut activation.context, transform);
+            owner.set_sound_transform(activation.context, transform);
         } else {
             activation.context.set_global_sound_transform(transform);
         };
@@ -363,7 +363,7 @@ fn set_volume<'gc>(
                 volume,
                 ..*owner.base().sound_transform()
             };
-            owner.set_sound_transform(&mut activation.context, transform);
+            owner.set_sound_transform(activation.context, transform);
         } else {
             let transform = SoundTransform {
                 volume,
@@ -439,7 +439,7 @@ fn stop<'gc>(
                 .owner()
                 .unwrap_or_else(|| activation.base_clip().avm1_root())
                 .movie();
-            if let Some(Character::Sound(sound)) = activation
+            if let Some((_, Character::Sound(sound))) = activation
                 .context
                 .library
                 .library_for_movie_mut(movie)

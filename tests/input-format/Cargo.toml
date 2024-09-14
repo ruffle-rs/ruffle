@@ -7,7 +7,10 @@ license.workspace = true
 repository.workspace = true
 version.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
-serde = { version = "1.0.193", features = ["derive"] }
-serde_json = "1.0.109"
-bitflags = "2.4.1"
+serde = { workspace = true, features = ["derive"] }
+serde_json = "1.0.128"
+bitflags = { workspace = true }

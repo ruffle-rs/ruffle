@@ -90,6 +90,7 @@ package flash.geom {
 			this.append(m);
 		}
 
+		[API("674")]
 		public function copyRawDataFrom(vector:Vector.<Number>, index:uint = 0, transpose:Boolean = false):void {
 			if (transpose) {
 				this.transpose();
@@ -107,6 +108,7 @@ package flash.geom {
 		}
 
 		// Based on https://github.com/openfl/openfl/blob/develop/src/openfl/geom/Matrix3D.hx#L542C1-L573
+		[API("674")]
 		public function copyRowTo(row:uint, vector3D:Vector3D):void {
 			if (row > 3) {
 				throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
@@ -141,6 +143,7 @@ package flash.geom {
 		}
 
 		// Based on https://github.com/openfl/openfl/blob/develop/src/openfl/geom/Matrix3D.hx#L504-L534
+		[API("674")]
 		public function copyRowFrom(row:uint, vector3D:Vector3D):void {
 			if (row > 3) {
 				throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
@@ -377,11 +380,13 @@ package flash.geom {
 			this.prepend(m);
 		}
 
+		[API("674")]
 		public function copyFrom(other:Matrix3D):void {
 			// This makes a copy of other.rawData
 			this._rawData = other.rawData;
 		}
 
+		[API("674")]
 		public function copyRawDataTo(vector:Vector.<Number>, index:uint = 0, transpose:Boolean = false):void {
 			if (transpose) {
 				this.transpose();
@@ -502,6 +507,7 @@ package flash.geom {
 			return !(components[2].x == 0 || components[2].y == 0 || components[2].y == 0);
 		}
 
+		[API("674")]
 		public function copyColumnTo(column:uint, vector3D:Vector3D):void {
 			if (column > 3) {
 				throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
@@ -537,6 +543,7 @@ package flash.geom {
 			}
 		}
 
+		[API("674")]
 		public function copyColumnFrom(column:uint, vector3D:Vector3D):void {
 			if (column > 3) {
 				throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);

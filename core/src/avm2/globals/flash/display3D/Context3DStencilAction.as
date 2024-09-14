@@ -6,6 +6,7 @@
 package flash.display3D
 {
 
+    [API("674")]
     public final class Context3DStencilAction
     {
         // Decrement the stencil buffer value, clamping at 0, the minimum value.

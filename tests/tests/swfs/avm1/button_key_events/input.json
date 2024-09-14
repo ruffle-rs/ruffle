@@ -1,0 +1,17 @@
+[
+  { "type": "KeyDown", "key_code": 65 },
+  { "type": "TextInput", "codepoint": "a" },
+  { "type": "KeyUp", "key_code": 65 },
+  { "type": "KeyDown", "key_code": 66 },
+  { "type": "TextInput", "codepoint": "b" },
+  { "type": "KeyDown", "key_code": 65 },
+  { "type": "TextInput", "codepoint": "a" },
+  { "type": "KeyUp", "key_code": 66 },
+  { "type": "KeyUp", "key_code": 65 },
+  { "type": "KeyDown", "key_code": 9 },
+  { "type": "TextInput", "codepoint": "\t" },
+  { "type": "KeyUp", "key_code": 9 },
+  { "type": "KeyDown", "key_code": 65 },
+  { "type": "TextInput", "codepoint": "a" },
+  { "type": "KeyUp", "key_code": 65 }
+]

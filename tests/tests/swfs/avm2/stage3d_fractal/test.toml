@@ -6,4 +6,4 @@ max_outliers = 25
 
 [player_options]
 max_execution_duration = { secs = 1000, nanos = 0 }
-with_renderer = { optional = false, sample_count = 1, exclude_warp = true }
+with_renderer = { optional = false, sample_count = 1 }

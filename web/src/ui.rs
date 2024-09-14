@@ -9,14 +9,15 @@ use ruffle_core::backend::ui::{
 use ruffle_web_common::JsResult;
 use std::borrow::Cow;
 use url::Url;
-use wasm_bindgen::JsCast;
-use web_sys::{HtmlCanvasElement, HtmlDocument, HtmlTextAreaElement};
+use wasm_bindgen::{JsCast, JsValue};
+use web_sys::{
+    Blob, HtmlCanvasElement, HtmlDocument, HtmlElement, HtmlTextAreaElement, Url as JsUrl,
+};
 
 use chrono::{DateTime, Utc};
+use js_sys::{Array, Uint8Array};
 
-#[cfg(target_arch = "wasm32")]
-use chrono::{NaiveDateTime, TimeZone};
-
+#[allow(dead_code)]
 #[derive(Debug)]
 struct FullScreenError {
     jsval: String,
@@ -35,19 +36,51 @@ impl std::error::Error for FullScreenError {
 }
 
 pub struct WebFileDialogResult {
-    handle: Option<FileHandle>,
+    canceled: bool,
+    file_name: Option<String>,
+    modification_time: Option<DateTime<Utc>>,
     contents: Vec<u8>,
 }
 
 impl WebFileDialogResult {
-    pub async fn new(handle: Option<FileHandle>) -> Self {
+    pub async fn new_pick(handle: Option<FileHandle>) -> Self {
         let contents = if let Some(handle) = handle.as_ref() {
             handle.read().await
         } else {
             Vec::new()
         };
 
-        Self { handle, contents }
+        #[cfg(not(target_arch = "wasm32"))]
+        let file_name = None;
+
+        #[cfg(target_arch = "wasm32")]
+        let file_name = handle.as_ref().map(|handle| handle.file_name());
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let modification_time = None;
+
+        #[cfg(target_arch = "wasm32")]
+        let modification_time = if let Some(ref handle) = handle {
+            DateTime::from_timestamp(handle.inner().last_modified() as i64, 0)
+        } else {
+            None
+        };
+
+        Self {
+            canceled: handle.is_none(),
+            file_name,
+            modification_time,
+            contents,
+        }
+    }
+
+    fn new_download(file_name: String) -> Self {
+        Self {
+            canceled: false,
+            file_name: Some(file_name),
+            modification_time: None,
+            contents: Vec::new(),
+        }
     }
 }
 
@@ -58,9 +91,26 @@ fn get_extension_from_filename(filename: &str) -> Option<String> {
         .map(|x| ".".to_owned() + x)
 }
 
+fn download_as_file(filename: Option<&str>, data: &[u8]) -> Result<(), JsValue> {
+    let array = Uint8Array::from(data);
+    let blob = Blob::new_with_u8_array_sequence(&Array::of1(&array))?;
+    let window = web_sys::window().ok_or(JsValue::from("no window"))?;
+    let document = window.document().ok_or(JsValue::from("no document"))?;
+    let a = document.create_element("a")?;
+
+    let url = JsUrl::create_object_url_with_blob(&blob)?;
+    a.set_attribute("href", &url)?;
+    a.set_attribute("download", filename.unwrap_or(""))?;
+    a.dyn_into::<HtmlElement>()
+        .map_err(|_| JsValue::from("not an HtmlElement"))?
+        .click();
+    JsUrl::revoke_object_url(&url)?;
+    Ok(())
+}
+
 impl FileDialogResult for WebFileDialogResult {
     fn is_cancelled(&self) -> bool {
-        self.handle.is_none()
+        self.canceled
     }
 
     fn creation_time(&self) -> Option<DateTime<Utc>> {
@@ -69,54 +119,37 @@ impl FileDialogResult for WebFileDialogResult {
     }
 
     fn modification_time(&self) -> Option<DateTime<Utc>> {
-        #[cfg(target_arch = "wasm32")]
-        if let Some(handle) = &self.handle {
-            NaiveDateTime::from_timestamp_opt(handle.inner().last_modified() as i64, 0)
-                .map(|ts| Utc.from_utc_datetime(&ts))
-        } else {
-            None
-        }
-
-        #[cfg(not(target_arch = "wasm32"))]
-        None
+        self.modification_time
     }
 
     fn file_name(&self) -> Option<String> {
-        #[cfg(target_arch = "wasm32")]
-        return self.handle.as_ref().map(|handle| handle.file_name());
-
-        #[cfg(not(target_arch = "wasm32"))]
-        None
+        self.file_name.clone()
     }
 
     fn size(&self) -> Option<u64> {
-        #[cfg(target_arch = "wasm32")]
-        return self.handle.as_ref().map(|x| x.inner().size() as u64);
-        #[cfg(not(target_arch = "wasm32"))]
-        None
+        Some(self.contents.len() as u64)
     }
 
     fn file_type(&self) -> Option<String> {
-        if let Some(handle) = &self.handle {
-            get_extension_from_filename(&handle.file_name())
+        if let Some(ref file_name) = self.file_name {
+            get_extension_from_filename(file_name)
         } else {
             None
         }
-    }
-
-    fn creator(&self) -> Option<String> {
-        None
     }
 
     fn contents(&self) -> &[u8] {
         &self.contents
     }
 
-    fn write(&self, _data: &[u8]) {
-        //NOOP
-    }
+    fn write_and_refresh(&mut self, data: &[u8]) {
+        self.contents = data.to_vec();
+        self.modification_time = Some(Utc::now());
 
-    fn refresh(&mut self) {}
+        if let Err(err) = download_as_file(self.file_name.as_deref(), &self.contents[..]) {
+            tracing::error!("Download failed: {:?}", err);
+        }
+    }
 }
 
 /// An implementation of `UiBackend` utilizing `web_sys` bindings to input APIs.
@@ -189,6 +222,12 @@ impl UiBackend for WebUiBackend {
         self.clipboard_content.to_owned()
     }
 
+    fn clipboard_available(&mut self) -> bool {
+        // On web, we have to assume that the clipboard
+        // is available due to the JS `paste` event.
+        true
+    }
+
     fn set_clipboard_content(&mut self, content: String) {
         self.clipboard_content = content.to_owned();
         // We use `document.execCommand("copy")` as `navigator.clipboard.writeText("string")`
@@ -209,6 +248,7 @@ impl UiBackend for WebUiBackend {
             let editing_text = self.js_player.is_virtual_keyboard_focused();
             textarea.set_value(&content);
             let _ = element.append_child(&textarea);
+            let _ = textarea.focus();
             textarea.select();
 
             match document.exec_command("copy") {
@@ -222,6 +262,10 @@ impl UiBackend for WebUiBackend {
                 Err(e) => tracing::error!("Couldn't set clipboard contents: {:?}", e),
             }
 
+            if let Ok(element) = element.clone().dyn_into::<HtmlElement>() {
+                // Ensure we don't lose our focus.
+                let _ = element.focus();
+            }
             let _ = element.remove_child(&textarea);
             if editing_text {
                 // Return focus to the text area
@@ -240,8 +284,9 @@ impl UiBackend for WebUiBackend {
         }
     }
 
-    fn display_root_movie_download_failed_message(&self) {
-        self.js_player.display_root_movie_download_failed_message()
+    fn display_root_movie_download_failed_message(&self, invalid_swf: bool) {
+        self.js_player
+            .display_root_movie_download_failed_message(invalid_swf)
     }
 
     fn message(&self, message: &str) {
@@ -252,8 +297,12 @@ impl UiBackend for WebUiBackend {
         self.js_player.open_virtual_keyboard()
     }
 
-    fn language(&self) -> &LanguageIdentifier {
-        &self.language
+    fn close_virtual_keyboard(&self) {
+        self.js_player.close_virtual_keyboard()
+    }
+
+    fn language(&self) -> LanguageIdentifier {
+        self.language.clone()
     }
 
     fn display_unsupported_video(&self, url: Url) {
@@ -302,7 +351,7 @@ impl UiBackend for WebUiBackend {
             }
 
             let result: Result<Box<dyn FileDialogResult>, DialogLoaderError> = Ok(Box::new(
-                WebFileDialogResult::new(dialog.pick_file().await).await,
+                WebFileDialogResult::new_pick(dialog.pick_file().await).await,
             ));
             result
         }))
@@ -315,7 +364,7 @@ impl UiBackend for WebUiBackend {
     fn display_file_save_dialog(
         &mut self,
         file_name: String,
-        title: String,
+        _title: String,
     ) -> Option<DialogResultFuture> {
         // Prevent opening multiple dialogs at the same time
         if self.dialog_open {
@@ -323,16 +372,9 @@ impl UiBackend for WebUiBackend {
         }
         self.dialog_open = true;
 
-        // Create the dialog future
         Some(Box::pin(async move {
-            // Select the location to save the file to
-            let dialog = AsyncFileDialog::new()
-                .set_title(&title)
-                .set_file_name(&file_name);
-
-            let result: Result<Box<dyn FileDialogResult>, DialogLoaderError> = Ok(Box::new(
-                WebFileDialogResult::new(dialog.save_file().await).await,
-            ));
+            let result: Result<Box<dyn FileDialogResult>, DialogLoaderError> =
+                Ok(Box::new(WebFileDialogResult::new_download(file_name)));
             result
         }))
     }

@@ -9,8 +9,8 @@ use crate::backend::audio::SoundInstanceHandle;
 use crate::context::UpdateContext;
 use crate::display_object::SoundTransform;
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
-use std::cell::{Ref, RefMut};
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use std::cell::{Cell, RefCell};
 
 /// A class instance allocator that allocates SoundChannel objects.
 pub fn sound_channel_allocator<'gc>(
@@ -19,15 +19,15 @@ pub fn sound_channel_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(SoundChannelObject(GcCell::new(
+    Ok(SoundChannelObject(Gc::new(
         activation.context.gc_context,
         SoundChannelObjectData {
             base,
-            sound_channel_data: SoundChannelData::NotLoaded {
+            sound_channel_data: RefCell::new(SoundChannelData::NotLoaded {
                 sound_transform: None,
                 should_stop: false,
-            },
-            position: 0.0,
+            }),
+            position: Cell::new(0.0),
         },
     ))
     .into())
@@ -35,33 +35,38 @@ pub fn sound_channel_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct SoundChannelObject<'gc>(pub GcCell<'gc, SoundChannelObjectData<'gc>>);
+pub struct SoundChannelObject<'gc>(pub Gc<'gc, SoundChannelObjectData<'gc>>);
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
-pub struct SoundChannelObjectWeak<'gc>(pub GcWeakCell<'gc, SoundChannelObjectData<'gc>>);
+pub struct SoundChannelObjectWeak<'gc>(pub GcWeak<'gc, SoundChannelObjectData<'gc>>);
 
 impl fmt::Debug for SoundChannelObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("SoundChannelObject")
-            .field("ptr", &self.0.as_ptr())
+            .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
 }
 
 #[derive(Collect)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct SoundChannelObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
 
     /// The sound this object holds.
-    #[collect(require_static)]
-    sound_channel_data: SoundChannelData,
+    sound_channel_data: RefCell<SoundChannelData>,
 
     /// Position of the last playing sound in milliseconds.
-    position: f64,
+    position: Cell<f64>,
 }
+
+const _: () = assert!(std::mem::offset_of!(SoundChannelObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<SoundChannelObjectData>() == std::mem::align_of::<ScriptObjectData>()
+);
 
 pub enum SoundChannelData {
     NotLoaded {
@@ -79,40 +84,40 @@ impl<'gc> SoundChannelObject<'gc> {
         let class = activation.avm2().classes().soundchannel;
         let base = ScriptObjectData::new(class);
 
-        let sound_object = SoundChannelObject(GcCell::new(
+        let sound_object = SoundChannelObject(Gc::new(
             activation.context.gc_context,
             SoundChannelObjectData {
                 base,
-                sound_channel_data: SoundChannelData::NotLoaded {
+                sound_channel_data: RefCell::new(SoundChannelData::NotLoaded {
                     sound_transform: None,
                     should_stop: false,
-                },
-                position: 0.0,
+                }),
+                position: Cell::new(0.0),
             },
         ));
-        sound_object.install_instance_slots(activation.context.gc_context);
 
-        class.call_native_init(Value::Object(sound_object.into()), &[], activation)?;
+        class.call_super_init(Value::Object(sound_object.into()), &[], activation)?;
 
         Ok(sound_object)
     }
 
     /// Return the position of the playing sound in seconds.
-    pub fn position(self, context: &mut UpdateContext<'_, 'gc>) -> f64 {
+    pub fn position(self, context: &mut UpdateContext<'gc>) -> f64 {
         // The position is cached on read. This means that if the position isn't read until after
         // the sound has played, the position will be 0 (#9952).
-        let mut write = self.0.write(context.gc_context);
-        if let SoundChannelData::Loaded { sound_instance } = write.sound_channel_data {
-            if let Some(pos) = context.audio.get_sound_position(sound_instance) {
-                write.position = pos;
+        let sound_channel_data = self.0.sound_channel_data.borrow();
+        if let SoundChannelData::Loaded { sound_instance } = &*sound_channel_data {
+            if let Some(pos) = context.audio.get_sound_position(*sound_instance) {
+                self.0.position.set(pos);
             }
         }
 
-        write.position
+        self.0.position.get()
     }
 
     pub fn instance(self) -> Option<SoundInstanceHandle> {
-        match &self.0.read().sound_channel_data {
+        let sound_channel_data = self.0.sound_channel_data.borrow();
+        match &*sound_channel_data {
             SoundChannelData::NotLoaded { .. } => None,
             SoundChannelData::Loaded { sound_instance } => Some(*sound_instance),
         }
@@ -123,8 +128,8 @@ impl<'gc> SoundChannelObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         instance: SoundInstanceHandle,
     ) {
-        let mut this = self.0.write(activation.context.gc_context);
-        match &mut this.sound_channel_data {
+        let mut sound_channel_data = self.0.sound_channel_data.borrow_mut();
+        match &mut *sound_channel_data {
             SoundChannelData::NotLoaded {
                 sound_transform,
                 should_stop,
@@ -138,7 +143,7 @@ impl<'gc> SoundChannelObject<'gc> {
                 if *should_stop {
                     activation.context.stop_sound(instance);
                 }
-                this.sound_channel_data = SoundChannelData::Loaded {
+                *sound_channel_data = SoundChannelData::Loaded {
                     sound_instance: instance,
                 }
             }
@@ -151,8 +156,8 @@ impl<'gc> SoundChannelObject<'gc> {
     }
 
     pub fn sound_transform(self, activation: &mut Activation<'_, 'gc>) -> Option<SoundTransform> {
-        let this = self.0.read();
-        match &this.sound_channel_data {
+        let sound_channel_data = self.0.sound_channel_data.borrow();
+        match &*sound_channel_data {
             SoundChannelData::NotLoaded {
                 sound_transform, ..
             } => sound_transform.clone(),
@@ -168,8 +173,8 @@ impl<'gc> SoundChannelObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         new_sound_transform: SoundTransform,
     ) {
-        let mut this = self.0.write(activation.context.gc_context);
-        match &mut this.sound_channel_data {
+        let mut sound_channel_data = self.0.sound_channel_data.borrow_mut();
+        match &mut *sound_channel_data {
             SoundChannelData::NotLoaded {
                 sound_transform, ..
             } => {
@@ -184,8 +189,8 @@ impl<'gc> SoundChannelObject<'gc> {
     }
 
     pub fn stop(self, activation: &mut Activation<'_, 'gc>) {
-        let mut this = self.0.write(activation.context.gc_context);
-        match &mut this.sound_channel_data {
+        let mut sound_channel_data = self.0.sound_channel_data.borrow_mut();
+        match &mut *sound_channel_data {
             SoundChannelData::NotLoaded {
                 sound_transform: _,
                 should_stop,
@@ -200,20 +205,20 @@ impl<'gc> SoundChannelObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for SoundChannelObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        Ref::map(self.0.read(), |read| &read.base)
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
+
+        unsafe { Gc::cast(self.0) }
     }
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        RefMut::map(self.0.write(mc), |write| &mut write.base)
+    fn as_ptr(&self) -> *const ObjectPtr {
+        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
     fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         Ok(Object::from(*self).into())
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.as_ptr() as *const ObjectPtr
     }
 
     fn as_sound_channel(self) -> Option<SoundChannelObject<'gc>> {

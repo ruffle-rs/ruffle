@@ -8,14 +8,13 @@ use naga::{
     ImageQuery, Literal, LocalVariable, MathFunction, Module, RelationalFunction, ResourceBinding,
     ScalarKind, ShaderStage, Span, Statement, SwizzleComponent, Type, TypeInner, VectorSize,
 };
-use naga_oil::compose::{Composer, NagaModuleDescriptor};
 use ruffle_render::pixel_bender::{
     Opcode, Operation, PixelBenderParam, PixelBenderParamQualifier, PixelBenderReg,
     PixelBenderRegChannel, PixelBenderRegKind, PixelBenderShader, PixelBenderTypeOpcode,
     OUT_COORD_NAME,
 };
 
-pub const VERTEX_SHADER_ENTRYPOINT: &str = "main_vertex";
+pub const VERTEX_SHADER_ENTRYPOINT: &str = "filter__vertex_entry_point";
 pub const FRAGMENT_SHADER_ENTRYPOINT: &str = "main";
 
 pub struct NagaModules {
@@ -81,7 +80,7 @@ pub struct ShaderBuilder<'a> {
 /// Any subsequent opcodes will be added to the `after_if` block.
 /// When we encounter an 'OpElse' opcode, we switch to adding opcodes to the `after_else` block
 /// by setting `in_after_if` to false.
-/// When we encouter an `OpEndIf` opcode, we pop our `IfElse` entry from the stack, and emit
+/// When we encounter an `OpEndIf` opcode, we pop our `IfElse` entry from the stack, and emit
 /// a `Statement::If` with the `after_if` and `after_else` blocks.
 #[derive(Debug)]
 enum BlockStackEntry {
@@ -127,25 +126,8 @@ impl<'a> ShaderBuilder<'a> {
         static VERTEX_SHADER: OnceLock<Module> = OnceLock::new();
         let vertex_shader = VERTEX_SHADER
             .get_or_init(|| {
-                let mut composer = Composer::default();
-                // [NA] Hack to get all capabilities since nobody exposes this type easily
-                let capabilities = composer.capabilities;
-                composer = composer.with_capabilities(!capabilities);
-
-                composer
-                    .make_naga_module(NagaModuleDescriptor {
-                        source: ruffle_render::shader_source::SHADER_FILTER_COMMON,
-                        file_path: "shaders/filter/common.wgsl",
-                        shader_defs: Default::default(),
-                        ..Default::default()
-                    })
-                    .unwrap_or_else(|e| {
-                        panic!(
-                            "shader_filter_common.wgsl failed to compile:\n{}\n{:#?}",
-                            e.emit_to_string(&composer),
-                            e
-                        )
-                    })
+                naga::front::wgsl::parse_str(ruffle_render::shader_source::SHADER_FILTER_COMMON)
+                    .expect("Failed to parse vertex shader")
             })
             .clone();
 
@@ -154,8 +136,7 @@ impl<'a> ShaderBuilder<'a> {
                 name: None,
                 inner: TypeInner::Vector {
                     size: naga::VectorSize::Bi,
-                    kind: ScalarKind::Float,
-                    width: 4,
+                    scalar: naga::Scalar::F32,
                 },
             },
             Span::UNDEFINED,
@@ -166,8 +147,8 @@ impl<'a> ShaderBuilder<'a> {
                 name: None,
                 inner: TypeInner::Vector {
                     size: naga::VectorSize::Quad,
-                    kind: ScalarKind::Float,
-                    width: 4,
+
+                    scalar: naga::Scalar::F32,
                 },
             },
             Span::UNDEFINED,
@@ -178,8 +159,7 @@ impl<'a> ShaderBuilder<'a> {
                 name: None,
                 inner: TypeInner::Vector {
                     size: naga::VectorSize::Quad,
-                    kind: ScalarKind::Sint,
-                    width: 4,
+                    scalar: naga::Scalar::I32,
                 },
             },
             Span::UNDEFINED,
@@ -191,7 +171,7 @@ impl<'a> ShaderBuilder<'a> {
                 inner: TypeInner::Matrix {
                     columns: naga::VectorSize::Bi,
                     rows: naga::VectorSize::Bi,
-                    width: 4,
+                    scalar: naga::Scalar::F32,
                 },
             },
             Span::UNDEFINED,
@@ -203,7 +183,7 @@ impl<'a> ShaderBuilder<'a> {
                 inner: TypeInner::Matrix {
                     columns: naga::VectorSize::Tri,
                     rows: naga::VectorSize::Tri,
-                    width: 4,
+                    scalar: naga::Scalar::F32,
                 },
             },
             Span::UNDEFINED,
@@ -215,7 +195,7 @@ impl<'a> ShaderBuilder<'a> {
                 inner: TypeInner::Matrix {
                     columns: naga::VectorSize::Quad,
                     rows: naga::VectorSize::Quad,
-                    width: 4,
+                    scalar: naga::Scalar::F32,
                 },
             },
             Span::UNDEFINED,
@@ -900,7 +880,7 @@ impl<'a> ShaderBuilder<'a> {
                             })
                         }
                         Opcode::Sub | Opcode::Add | Opcode::Mul => {
-                            // The destiation is also used as the first operand: 'dst = dst <op> src'
+                            // The destination is also used as the first operand: 'dst = dst <op> src'
                             let left = self.load_src_register(&dst)?;
 
                             let op = match opcode {
@@ -1388,8 +1368,44 @@ impl<'a> ShaderBuilder<'a> {
                         }
                     }
                 }
-                Operation::Loop { unknown } => {
-                    tracing::warn!("Unimplemented Loop opcode with data: {unknown:?}")
+                Operation::Select {
+                    src1,
+                    src2,
+                    dst,
+                    condition,
+                } => {
+                    let src1_expr = self.load_src_register(src1)?;
+                    let src2_expr = self.load_src_register(src2)?;
+
+                    let expr_zero: Handle<Expression> = match condition.kind {
+                        PixelBenderRegKind::Float => self.zerof32,
+                        PixelBenderRegKind::Int => self.zeroi32,
+                    };
+                    if condition.channels.len() != 1 {
+                        panic!("'Select' condition must be a scalar: {condition:?}");
+                    }
+
+                    // FIXME - `load_src_register` always gives us a vec4 - ideally, we would
+                    // have a flag to avoid this pointless splat-and-extract.
+                    let cond_expr = self.load_src_register(condition)?;
+                    let first_component = self.evaluate_expr(Expression::AccessIndex {
+                        base: cond_expr,
+                        index: 0,
+                    });
+
+                    let is_true = self.evaluate_expr(Expression::Binary {
+                        op: BinaryOperator::NotEqual,
+                        left: first_component,
+                        right: expr_zero,
+                    });
+
+                    let select_expr = self.evaluate_expr(Expression::Select {
+                        condition: is_true,
+                        accept: src1_expr,
+                        reject: src2_expr,
+                    });
+
+                    self.emit_dest_store(select_expr, dst)?;
                 }
                 Operation::Nop => {}
             }
@@ -1635,7 +1651,7 @@ impl<'a> ShaderBuilder<'a> {
             ) {
                 panic!("Unexpected to matrix channel for dst {dst:?}");
             }
-            // Write each channel of the source to the channel specified by the destiation mask
+            // Write each channel of the source to the channel specified by the destination mask
             let src_component_index = *src_channel as u32;
             let dst_component_index = *dst_channel as u32;
             let src_component = self.evaluate_expr(Expression::AccessIndex {

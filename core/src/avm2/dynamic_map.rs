@@ -1,6 +1,6 @@
 use fnv::FnvBuildHasher;
 use gc_arena::Collect;
-use hashbrown::{self, raw::RawTable};
+use hashbrown::raw::RawTable;
 use std::{cell::Cell, hash::Hash};
 
 use super::{string::AvmString, Object};
@@ -14,8 +14,13 @@ pub struct DynamicProperty<V> {
 
 #[derive(Eq, PartialEq, Hash, Copy, Clone, Collect)]
 #[collect(no_drop)]
-pub enum StringOrObject<'gc> {
+pub enum DynamicKey<'gc> {
     String(AvmString<'gc>),
+    // When the name parses as a non-negative integer, we use that integer as the key
+    // See `ScriptObject::get_property_local` and `ScriptObject::set_property_local`.
+    // This is observable when iterating over the object keys, as the key
+    // can be `number`
+    Uint(u32),
     Object(Object<'gc>),
 }
 

@@ -1,0 +1,29 @@
+Using dictionary
+key = -3 (typeof key = string) val = int: Negative 3
+key = 1 (typeof key = number) val = 1-int
+key = 2 (typeof key = number) val = 2-int
+key = 2.5 (typeof key = string) val = 2.5-float
+key = false (typeof key = string) val = false-bool
+key = true (typeof key = string) val = true-bool
+After update:
+key = -3 (typeof key = string) val = String: Negative 3
+key = 1 (typeof key = number) val = 1-string
+key = 2 (typeof key = number) val = 2-int
+key = 2.5 (typeof key = string) val = 2.5-string
+key = false (typeof key = string) val = false-bool
+key = true (typeof key = string) val = true-string
+
+Using Object
+key = -3 (typeof key = string) val = int: Negative 3
+key = 1 (typeof key = number) val = 1-int
+key = 2 (typeof key = number) val = 2-int
+key = 2.5 (typeof key = string) val = 2.5-float
+key = false (typeof key = string) val = false-bool
+key = true (typeof key = string) val = true-bool
+After update:
+key = -3 (typeof key = string) val = String: Negative 3
+key = 1 (typeof key = number) val = 1-string
+key = 2 (typeof key = number) val = 2-int
+key = 2.5 (typeof key = string) val = 2.5-string
+key = false (typeof key = string) val = false-bool
+key = true (typeof key = string) val = true-string

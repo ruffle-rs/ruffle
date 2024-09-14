@@ -8,11 +8,11 @@ import {
     AutoPlay,
     Letterbox,
     LogLevel,
-    PublicAPI,
+    installRuffle,
     UnmuteOverlay,
 } from "ruffle-core";
 
-window.RufflePlayer = PublicAPI.negotiate(window.RufflePlayer, "local");
+installRuffle("local");
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>

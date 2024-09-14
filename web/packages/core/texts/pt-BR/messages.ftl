@@ -10,9 +10,19 @@ update-ruffle = Atualizar Ruffle
 ruffle-demo = Demo Web
 ruffle-desktop = Aplicativo de Desktop
 ruffle-wiki = Ver Wiki do Ruffle
+enable-hardware-acceleration = Parece que a aceleração de hardware está desabilitada. Embora o Ruffle possa funcionar, ele pode ser muito lento. Você pode descobrir como habilitar a aceleração de hardware seguindo o link abaixo:
 view-error-details = Ver detalhes do erro
 open-in-new-tab = Abrir em uma nova guia
 click-to-unmute = Clique para ativar o som
+clipboard-message-title = Copiando e colando no Ruffle
+clipboard-message-description =
+    { $variant ->
+       *[unsupported] Seu navegador não suporta acesso total à área de transferência,
+        [access-denied] O acesso à área de transferência foi negado,
+    } mas você sempre pode usar estes atalhos:
+clipboard-message-copy = { " " } para copiar
+clipboard-message-cut = { " " } para recortar
+clipboard-message-paste = { " " } para colar
 error-file-protocol =
     Parece que você está executando o Ruffle no protocolo "file:".
     Isto não funciona como navegadores bloqueiam muitos recursos de funcionar por razões de segurança.
@@ -29,6 +39,9 @@ error-wasm-mime-type =
     Ruffle encontrou um grande problema ao tentar inicializar.
     Este servidor de web não está servindo ".wasm" arquivos com o tipo MIME correto.
     Se você é o administrador do servidor, por favor consulte o wiki do Ruffle para obter ajuda.
+error-invalid-swf =
+    Ruffle não pode analisar o arquivo solicitado.
+    O motivo provável é que o arquivo solicitado não seja um SWF válido.
 error-swf-fetch =
     Ruffle falhou ao carregar o arquivo Flash SWF.
     A razão provável é que o arquivo não existe mais, então não há nada para o Ruffle carregar.

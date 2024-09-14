@@ -1,0 +1,18 @@
+// 'GET' method
+request.method: GET
+// 'get' method
+request.method: get
+// 'Get' method
+error: ArgumentError: Error #2008: Parameter method must be one of the accepted values.
+// 'POST' method
+request.method: POST
+// 'post' method
+request.method: post
+// 'PoST' method
+error: ArgumentError: Error #2008: Parameter method must be one of the accepted values.
+// 'PUT' method
+error: ArgumentError: Error #2008: Parameter method must be one of the accepted values.
+// 'put' method
+error: ArgumentError: Error #2008: Parameter method must be one of the accepted values.
+// 'DELETE' method
+error: ArgumentError: Error #2008: Parameter method must be one of the accepted values.

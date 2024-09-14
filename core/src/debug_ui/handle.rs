@@ -15,7 +15,7 @@ pub struct DisplayObjectHandle {
 
 impl DisplayObjectHandle {
     pub fn new<'gc>(
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: impl Into<DisplayObject<'gc>>,
     ) -> Self {
         let object = object.into();
@@ -64,10 +64,7 @@ pub struct AVM1ObjectHandle {
 }
 
 impl AVM1ObjectHandle {
-    pub fn new<'gc>(
-        context: &mut UpdateContext<'_, 'gc>,
-        object: crate::avm1::Object<'gc>,
-    ) -> Self {
+    pub fn new<'gc>(context: &mut UpdateContext<'gc>, object: crate::avm1::Object<'gc>) -> Self {
         Self {
             root: context.dynamic_root.stash(context.gc_context, object),
             ptr: object.as_ptr(),
@@ -107,10 +104,7 @@ pub struct AVM2ObjectHandle {
 }
 
 impl AVM2ObjectHandle {
-    pub fn new<'gc>(
-        context: &mut UpdateContext<'_, 'gc>,
-        object: crate::avm2::Object<'gc>,
-    ) -> Self {
+    pub fn new<'gc>(context: &mut UpdateContext<'gc>, object: crate::avm2::Object<'gc>) -> Self {
         Self {
             root: context.dynamic_root.stash(context.gc_context, object),
             ptr: object.as_ptr(),
@@ -142,3 +136,45 @@ impl Hash for AVM2ObjectHandle {
 }
 
 impl Eq for AVM2ObjectHandle {}
+
+// Domain
+
+#[derive(Clone)]
+pub struct DomainHandle {
+    root: DynamicRoot<Rootable![crate::avm2::Domain<'_>]>,
+    ptr: *const crate::avm2::DomainPtr,
+}
+
+impl DomainHandle {
+    pub fn new<'gc>(context: &mut UpdateContext<'gc>, domain: crate::avm2::Domain<'gc>) -> Self {
+        Self {
+            root: context.dynamic_root.stash(context.gc_context, domain),
+            ptr: domain.as_ptr(),
+        }
+    }
+
+    pub fn fetch<'gc>(&self, dynamic_root_set: DynamicRootSet<'gc>) -> crate::avm2::Domain<'gc> {
+        *dynamic_root_set.fetch(&self.root)
+    }
+}
+
+impl Debug for DomainHandle {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("DomainHandle").field(&self.ptr).finish()
+    }
+}
+
+impl PartialEq<DomainHandle> for DomainHandle {
+    #[inline(always)]
+    fn eq(&self, other: &DomainHandle) -> bool {
+        self.ptr == other.ptr
+    }
+}
+
+impl Hash for DomainHandle {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.ptr.hash(state);
+    }
+}
+
+impl Eq for DomainHandle {}

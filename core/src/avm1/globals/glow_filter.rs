@@ -118,8 +118,9 @@ impl<'gc> GlowFilter<'gc> {
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
-            let color = Color::from_rgb(value.coerce_to_u32(activation)?, 0);
-            self.0.write(activation.context.gc_context).color = color;
+            let value = value.coerce_to_u32(activation)?;
+            let mut write = self.0.write(activation.context.gc_context);
+            write.color = Color::from_rgb(value, write.color.a);
         }
         Ok(())
     }

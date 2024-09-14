@@ -1,0 +1,6 @@
+PASS: flash.net::URLRequest/set url ()
+PASS: flash.net::URLRequest/set data ()
+PASS: flash.net::URLRequest/set method ()
+PASS: flash.net::URLRequest/get url ()
+PASS: flash.net::URLRequest/get data ()
+PASS: flash.net::URLRequest/get method ()

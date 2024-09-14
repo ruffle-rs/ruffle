@@ -10,7 +10,6 @@ update-ruffle = Ruffle updaten
 ruffle-demo = Web Demo
 ruffle-desktop = Desktopapplicatie
 ruffle-wiki = Bekijk de Ruffle Wiki
-enable-hardware-acceleration = Het lijkt erop dat hardwareversnelling niet beschikbaar is. Ruffle zal werken, maar gaat waarschijnlijk erg traag zijn. Je kan lezen hoe hardwareversnelling in te schakelen is door deze link te volgen.
 view-error-details = Foutdetails tonen
 open-in-new-tab = Openen in een nieuw tabblad
 click-to-unmute = Klik om te ontdempen
@@ -30,6 +29,9 @@ error-wasm-mime-type =
     Ruffle heeft een groot probleem ondervonden tijdens het initialiseren.
     Deze webserver serveert ".wasm" bestanden niet met het juiste MIME type.
     Als je de serverbeheerder bent, kijk dan in de Ruffle wiki voor hulp.
+error-invalid-swf =
+    Ruffle kon het gevraagde bestand niet verwerken.
+    Waarschijnlijk is het geen geldig SWF bestand.
 error-swf-fetch =
     Ruffle kon het Flash SWF bestand niet inladen.
     De meest waarschijnlijke reden is dat het bestand niet langer bestaat, en er dus niets is om in te laden.

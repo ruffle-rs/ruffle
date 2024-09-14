@@ -1,0 +1,1237 @@
+MovieClip property: false
+Button property: false
+TextField property: false
+default:
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+global:
+  setting _focusrect to "0"
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "[object Object]"
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "4294967296"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "2147483648"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to ""
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "NaN"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "test"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "NaN"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "-1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "1.1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "0.1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "0"
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "false"
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "null"
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "undefined"
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "true"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "null"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "undefined"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "0"
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "[object Object]"
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "4294967296"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "2147483648"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to ""
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "NaN"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "test"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "NaN"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "-1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "1.1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "0.1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "0"
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "false"
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "null"
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "undefined"
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "true"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "null"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "undefined"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+_root:
+  setting _focusrect to "0"
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "[object Object]"
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "4294967296"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "2147483648"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to ""
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "NaN"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "test"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "NaN"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "-1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "1.1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "0.1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "0"
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "false"
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "null"
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "undefined"
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "true"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "null"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "undefined"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "0"
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "[object Object]"
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "4294967296"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "2147483648"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to ""
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "NaN"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "test"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "NaN"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "-1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "1.1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "0.1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "0"
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "false"
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "null"
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "undefined"
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "true"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "null"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "undefined"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+MovieClip:
+  setting _focusrect to "0"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "[object Object]"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "4294967296"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "2147483648"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to ""
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = false
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "NaN"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "test"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "NaN"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = false
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "-1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "1.1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "0.1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "0"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = false
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "false"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = false
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "null"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "undefined"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "true"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "null"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "undefined"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "0"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "[object Object]"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "4294967296"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "2147483648"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to ""
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = false
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "NaN"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "test"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "NaN"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = false
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "-1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "1.1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "0.1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "0"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = false
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "false"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = false
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "null"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "undefined"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "true"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "null"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "undefined"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+Button:
+  setting _focusrect to "0"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = true
+    text._focusrect = null
+  setting _focusrect to "1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = true
+    text._focusrect = null
+  setting _focusrect to "[object Object]"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = true
+    text._focusrect = null
+  setting _focusrect to "4294967296"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = true
+    text._focusrect = null
+  setting _focusrect to "2147483648"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = true
+    text._focusrect = null
+  setting _focusrect to ""
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = false
+    text._focusrect = null
+  setting _focusrect to "NaN"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = true
+    text._focusrect = null
+  setting _focusrect to "test"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = true
+    text._focusrect = null
+  setting _focusrect to "NaN"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = false
+    text._focusrect = null
+  setting _focusrect to "-1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = true
+    text._focusrect = null
+  setting _focusrect to "1.1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = true
+    text._focusrect = null
+  setting _focusrect to "0.1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = true
+    text._focusrect = null
+  setting _focusrect to "0"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = false
+    text._focusrect = null
+  setting _focusrect to "1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = true
+    text._focusrect = null
+  setting _focusrect to "false"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = false
+    text._focusrect = null
+  setting _focusrect to "null"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "undefined"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "true"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = true
+    text._focusrect = null
+  setting _focusrect to "null"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "undefined"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "0"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = true
+    text._focusrect = null
+  setting _foCusRect to "1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = true
+    text._focusrect = null
+  setting _foCusRect to "[object Object]"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = true
+    text._focusrect = null
+  setting _foCusRect to "4294967296"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = true
+    text._focusrect = null
+  setting _foCusRect to "2147483648"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = true
+    text._focusrect = null
+  setting _foCusRect to ""
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = false
+    text._focusrect = null
+  setting _foCusRect to "NaN"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = true
+    text._focusrect = null
+  setting _foCusRect to "test"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = true
+    text._focusrect = null
+  setting _foCusRect to "NaN"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = false
+    text._focusrect = null
+  setting _foCusRect to "-1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = true
+    text._focusrect = null
+  setting _foCusRect to "1.1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = true
+    text._focusrect = null
+  setting _foCusRect to "0.1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = true
+    text._focusrect = null
+  setting _foCusRect to "0"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = false
+    text._focusrect = null
+  setting _foCusRect to "1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = true
+    text._focusrect = null
+  setting _foCusRect to "false"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = false
+    text._focusrect = null
+  setting _foCusRect to "null"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "undefined"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "true"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = true
+    text._focusrect = null
+  setting _foCusRect to "null"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "undefined"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+TextField:
+  setting _focusrect to "0"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = true
+  setting _focusrect to "1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = true
+  setting _focusrect to "[object Object]"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = true
+  setting _focusrect to "4294967296"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = true
+  setting _focusrect to "2147483648"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = true
+  setting _focusrect to ""
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = false
+  setting _focusrect to "NaN"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = true
+  setting _focusrect to "test"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = true
+  setting _focusrect to "NaN"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = false
+  setting _focusrect to "-1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = true
+  setting _focusrect to "1.1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = true
+  setting _focusrect to "0.1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = true
+  setting _focusrect to "0"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = false
+  setting _focusrect to "1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = true
+  setting _focusrect to "false"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = false
+  setting _focusrect to "null"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "undefined"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "true"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = true
+  setting _focusrect to "null"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _focusrect to "undefined"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "0"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = true
+  setting _foCusRect to "1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = true
+  setting _foCusRect to "[object Object]"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = true
+  setting _foCusRect to "4294967296"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = true
+  setting _foCusRect to "2147483648"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = true
+  setting _foCusRect to ""
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = false
+  setting _foCusRect to "NaN"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = true
+  setting _foCusRect to "test"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = true
+  setting _foCusRect to "NaN"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = false
+  setting _foCusRect to "-1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = true
+  setting _foCusRect to "1.1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = true
+  setting _foCusRect to "0.1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = true
+  setting _foCusRect to "0"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = false
+  setting _foCusRect to "1"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = true
+  setting _foCusRect to "false"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = false
+  setting _foCusRect to "null"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "undefined"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "true"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = true
+  setting _foCusRect to "null"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+  setting _foCusRect to "undefined"
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = null
+    button._focusrect = null
+    text._focusrect = null
+Testing _focusrect case-sensitivity
+    _focusrect = true
+    _root._focusrect = true
+    clip._focusrect = true
+    button._focusrect = true
+    text._focusrect = true
+    _foCusRect = true
+    _root._foCusRect = true
+    clip._foCusRect = true
+    button._foCusRect = true
+    text._foCusRect = true
+    _focusrect = false
+    _root._focusrect = false
+    clip._focusrect = false
+    button._focusrect = false
+    text._focusrect = false
+    _foCusRect = false
+    _root._foCusRect = false
+    clip._foCusRect = false
+    button._foCusRect = false
+    text._foCusRect = false
+Testing _focusrect persistence
+After load movie: false

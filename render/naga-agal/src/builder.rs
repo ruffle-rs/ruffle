@@ -4,7 +4,7 @@ use std::num::NonZeroU32;
 use naga::{
     AddressSpace, ArraySize, Block, BuiltIn, Constant, DerivativeControl, EntryPoint,
     FunctionArgument, FunctionResult, GlobalVariable, ImageClass, ImageDimension, Literal,
-    Override, ResourceBinding, ShaderStage, StructMember, SwizzleComponent, UnaryOperator,
+    ResourceBinding, Scalar, ShaderStage, StructMember, SwizzleComponent, UnaryOperator,
 };
 use naga::{BinaryOperator, MathFunction};
 use naga::{
@@ -19,20 +19,11 @@ use crate::{
     SHADER_ENTRY_POINT,
 };
 
-const VERTEX_PROGRAM_CONTANTS: u64 = 128;
+const VERTEX_PROGRAM_CONSTANTS: u64 = 128;
 const FRAGMENT_PROGRAM_CONSTANTS: u64 = 28;
 
-const SAMPLER_REPEAT_LINEAR: usize = 0;
-const SAMPLER_REPEAT_NEAREST: usize = 1;
-const SAMPLER_CLAMP_LINEAR: usize = 2;
-const SAMPLER_CLAMP_NEAREST: usize = 3;
-const SAMPLER_CLAMP_U_REPEAT_V_LINEAR: usize = 4;
-const SAMPLER_CLAMP_U_REPEAT_V_NEAREST: usize = 5;
-const SAMPLER_REPEAT_U_CLAMP_V_LINEAR: usize = 6;
-const SAMPLER_REPEAT_U_CLAMP_V_NEAREST: usize = 7;
-
-const TEXTURE_SAMPLER_START_BIND_INDEX: u32 = 2;
-const TEXTURE_START_BIND_INDEX: u32 = 10;
+pub const TEXTURE_SAMPLER_START_BIND_INDEX: u32 = 2;
+pub const TEXTURE_START_BIND_INDEX: u32 = 10;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -42,31 +33,20 @@ const SWIZZLE_XXXX: u8 = 0b00000000;
 const SWIZZLE_YYYY: u8 = 0b01010101;
 const SWIZZLE_ZZZZ: u8 = 0b10101010;
 const SWIZZLE_WWWW: u8 = 0b11111111;
-struct TextureSamplers {
-    repeat_linear: Handle<Expression>,
-    repeat_nearest: Handle<Expression>,
-    clamp_linear: Handle<Expression>,
-    clamp_nearest: Handle<Expression>,
-    clamp_u_repeat_v_linear: Handle<Expression>,
-    clamp_u_repeat_v_nearest: Handle<Expression>,
-    repeat_u_clamp_v_linear: Handle<Expression>,
-    repeat_u_clamp_v_nearest: Handle<Expression>,
-}
 
 #[derive(Copy, Clone)]
 struct TextureBindingData {
     // The `Expression::GlobalVariable` corresponding to the texture that we loaded.
-    expr: Handle<Expression>,
-    // The sample config values extracted from the opcode
-    // (which may override or be overridden by values set by Context3D.setSamplerStateAt)
-    sampler_config: SamplerConfig,
+    texture_global_var: Handle<Expression>,
+    // The `Expression::GlobalVariable` corresponding to bound sampler for the texture
+    sampler_global_var: Handle<Expression>,
 }
 
 pub(crate) struct NagaBuilder<'a> {
     pub(crate) module: Module,
     pub(crate) func: Function,
 
-    // This evaluate to a Pointer to the temporary 'main' destiation location
+    // This evaluate to a Pointer to the temporary 'main' destination location
     // (the output position for a vertex shader, or the output color for a fragment shader)
     // which can be used with Expression::Load and Expression::Store
     // This is needed because an AGAL shader can write to the output register
@@ -120,9 +100,6 @@ pub(crate) struct NagaBuilder<'a> {
     // The Naga representation of `u32`
     u32_type: Handle<Type>,
 
-    // For a fragment shader, our 4 bound texture samplers
-    texture_samplers: Option<TextureSamplers>,
-
     // A stack of if/else blocks, using to push statements
     // into the correct block.
     blocks: Vec<BlockStackEntry>,
@@ -133,7 +110,7 @@ pub(crate) struct NagaBuilder<'a> {
 /// Any subsequent opcodes will be added to the `after_if` block.
 /// When we encounter an 'else' opcode, we switch to adding opcodes to the `after_else` block
 /// by setting `in_after_if` to false.
-/// When we encouter an `eif` opcode, we pop our `IfElse` entry from the stack, and emit
+/// When we encounter an `eif` opcode, we pop our `IfElse` entry from the stack, and emit
 /// a `Statement::If` with the `after_if` and `after_else` blocks.
 #[derive(Debug)]
 enum BlockStackEntry {
@@ -152,28 +129,25 @@ impl VertexAttributeFormat {
             return module.types.insert(
                 Type {
                     name: None,
-                    inner: TypeInner::Scalar {
-                        kind: ScalarKind::Float,
-                        width: 4,
-                    },
+                    inner: TypeInner::Scalar(Scalar::F32),
                 },
                 Span::UNDEFINED,
             );
         }
-        let (size, width, kind) = match self {
+        let (size, scalar) = match self {
             VertexAttributeFormat::Float1 => unreachable!(),
-            VertexAttributeFormat::Float2 => (VectorSize::Bi, 4, ScalarKind::Float),
-            VertexAttributeFormat::Float3 => (VectorSize::Tri, 4, ScalarKind::Float),
-            VertexAttributeFormat::Float4 => (VectorSize::Quad, 4, ScalarKind::Float),
+            VertexAttributeFormat::Float2 => (VectorSize::Bi, Scalar::F32),
+            VertexAttributeFormat::Float3 => (VectorSize::Tri, Scalar::F32),
+            VertexAttributeFormat::Float4 => (VectorSize::Quad, Scalar::F32),
             // The conversion is done by wgpu, since we specify
             // `wgpu::VertexFormat::Unorm8x4` in `CurrentPipeline::rebuild_pipeline`
-            VertexAttributeFormat::Bytes4 => (VectorSize::Quad, 4, ScalarKind::Float),
+            VertexAttributeFormat::Bytes4 => (VectorSize::Quad, Scalar::F32),
         };
 
         module.types.insert(
             Type {
                 name: None,
-                inner: TypeInner::Vector { size, kind, width },
+                inner: TypeInner::Vector { size, scalar },
             },
             Span::UNDEFINED,
         )
@@ -211,13 +185,12 @@ impl VertexAttributeFormat {
 
                 let const_expr_f32_zero = builder
                     .module
-                    .const_expressions
+                    .global_expressions
                     .append(Expression::Literal(Literal::F32(0.0)), Span::UNDEFINED);
 
                 let constant_zero = builder.module.constants.append(
                     Constant {
                         name: None,
-                        r#override: Override::None,
                         ty: builder.f32_type,
                         init: const_expr_f32_zero,
                     },
@@ -235,13 +208,12 @@ impl VertexAttributeFormat {
 
                 let const_expr_f32_1 = builder
                     .module
-                    .const_expressions
+                    .global_expressions
                     .append(Expression::Literal(Literal::F32(1.0)), Span::UNDEFINED);
 
                 let constant_one = builder.module.constants.append(
                     Constant {
                         name: None,
-                        r#override: Override::None,
                         ty: builder.f32_type,
                         init: const_expr_f32_1,
                     },
@@ -268,11 +240,12 @@ impl VertexAttributeFormat {
 
 /// Combines information extracted from the AGAL bytecode itself
 /// with information provided from the AVM side of ruffle
-/// (based on the Context3D methods that ActionSCript called)
+/// (based on the Context3D methods that ActionScript called)
 #[derive(Debug)]
 pub struct ShaderConfig<'a> {
     pub shader_type: ShaderType,
     pub vertex_attributes: &'a [Option<VertexAttributeFormat>; 8],
+    #[allow(dead_code)] // set but never read
     pub sampler_configs: &'a [SamplerConfig; 8],
     pub version: AgalVersion,
 }
@@ -435,7 +408,7 @@ impl<'a> NagaBuilder<'a> {
                 inner: TypeInner::Matrix {
                     columns: VectorSize::Tri,
                     rows: VectorSize::Tri,
-                    width: 4,
+                    scalar: Scalar::F32,
                 },
             },
             Span::UNDEFINED,
@@ -447,7 +420,7 @@ impl<'a> NagaBuilder<'a> {
                 inner: TypeInner::Matrix {
                     columns: VectorSize::Tri,
                     rows: VectorSize::Quad,
-                    width: 4,
+                    scalar: Scalar::F32,
                 },
             },
             Span::UNDEFINED,
@@ -459,7 +432,7 @@ impl<'a> NagaBuilder<'a> {
                 inner: TypeInner::Matrix {
                     columns: VectorSize::Quad,
                     rows: VectorSize::Quad,
-                    width: 4,
+                    scalar: Scalar::F32,
                 },
             },
             Span::UNDEFINED,
@@ -498,10 +471,7 @@ impl<'a> NagaBuilder<'a> {
         let f32_type = module.types.insert(
             Type {
                 name: None,
-                inner: TypeInner::Scalar {
-                    kind: ScalarKind::Float,
-                    width: 4,
-                },
+                inner: TypeInner::Scalar(Scalar::F32),
             },
             Span::UNDEFINED,
         );
@@ -509,10 +479,7 @@ impl<'a> NagaBuilder<'a> {
         let u32_type = module.types.insert(
             Type {
                 name: None,
-                inner: TypeInner::Scalar {
-                    kind: ScalarKind::Uint,
-                    width: 4,
-                },
+                inner: TypeInner::Scalar(Scalar::U32),
             },
             Span::UNDEFINED,
         );
@@ -606,7 +573,7 @@ impl<'a> NagaBuilder<'a> {
                             base: vec4f,
                             size: ArraySize::Constant(
                                 NonZeroU32::new(match shader_config.shader_type {
-                                    ShaderType::Vertex => VERTEX_PROGRAM_CONTANTS as u32,
+                                    ShaderType::Vertex => VERTEX_PROGRAM_CONSTANTS as u32,
                                     ShaderType::Fragment => FRAGMENT_PROGRAM_CONSTANTS as u32,
                                 })
                                 .unwrap(),
@@ -620,46 +587,6 @@ impl<'a> NagaBuilder<'a> {
             },
             Span::UNDEFINED,
         );
-
-        let texture_samplers = if let ShaderType::Fragment = shader_config.shader_type {
-            let samplers = (0..8)
-                .map(|i| {
-                    let var = module.global_variables.append(
-                        GlobalVariable {
-                            name: Some(format!("sampler{}", i)),
-                            space: naga::AddressSpace::Handle,
-                            binding: Some(naga::ResourceBinding {
-                                group: 0,
-                                binding: TEXTURE_SAMPLER_START_BIND_INDEX + i,
-                            }),
-                            ty: module.types.insert(
-                                Type {
-                                    name: None,
-                                    inner: TypeInner::Sampler { comparison: false },
-                                },
-                                Span::UNDEFINED,
-                            ),
-                            init: None,
-                        },
-                        Span::UNDEFINED,
-                    );
-                    func.expressions
-                        .append(Expression::GlobalVariable(var), Span::UNDEFINED)
-                })
-                .collect::<Vec<_>>();
-            Some(TextureSamplers {
-                clamp_linear: samplers[SAMPLER_CLAMP_LINEAR],
-                clamp_nearest: samplers[SAMPLER_CLAMP_NEAREST],
-                repeat_linear: samplers[SAMPLER_REPEAT_LINEAR],
-                repeat_nearest: samplers[SAMPLER_REPEAT_NEAREST],
-                clamp_u_repeat_v_linear: samplers[SAMPLER_CLAMP_U_REPEAT_V_LINEAR],
-                clamp_u_repeat_v_nearest: samplers[SAMPLER_CLAMP_U_REPEAT_V_NEAREST],
-                repeat_u_clamp_v_linear: samplers[SAMPLER_REPEAT_U_CLAMP_V_LINEAR],
-                repeat_u_clamp_v_nearest: samplers[SAMPLER_REPEAT_U_CLAMP_V_NEAREST],
-            })
-        } else {
-            None
-        };
 
         let constant_registers = func.expressions.append(
             Expression::GlobalVariable(constant_registers_global),
@@ -687,7 +614,6 @@ impl<'a> NagaBuilder<'a> {
             f32_type,
             u32_type,
             constant_registers,
-            texture_samplers,
             texture_bindings: [None; 8],
             temporary_registers: vec![None; num_temporaries],
             image2d,
@@ -755,14 +681,13 @@ impl<'a> NagaBuilder<'a> {
     }
 
     fn emit_const_register_load(&mut self, index: usize) -> Result<Handle<Expression>> {
-        let const_value_expr = self.module.const_expressions.append(
+        let const_value_expr = self.module.global_expressions.append(
             Expression::Literal(Literal::U32(index as u32)),
             Span::UNDEFINED,
         );
         let index_const = self.module.constants.append(
             Constant {
                 name: None,
-                r#override: Override::None,
                 ty: self.u32_type,
                 init: const_value_expr,
             },
@@ -800,13 +725,8 @@ impl<'a> NagaBuilder<'a> {
     fn emit_texture_load(
         &mut self,
         index: usize,
-        sampler_field: &SamplerField,
-    ) -> Result<Handle<Expression>> {
-        let sampler_config = SamplerConfig {
-            wrapping: sampler_field.wrapping,
-            filter: sampler_field.filter,
-            mipmap: sampler_field.mipmap,
-        };
+        dimension: Dimension,
+    ) -> Result<TextureBindingData> {
         if self.texture_bindings[index].is_none() {
             let global_var = self.module.global_variables.append(
                 GlobalVariable {
@@ -818,7 +738,7 @@ impl<'a> NagaBuilder<'a> {
                     }),
                     // Note - we assume that a given texture is always sampled with the same dimension
                     // (2d or cube)
-                    ty: match sampler_field.dimension {
+                    ty: match dimension {
                         Dimension::TwoD => self.image2d,
                         Dimension::Cube => self.imagecube,
                     },
@@ -826,25 +746,40 @@ impl<'a> NagaBuilder<'a> {
                 },
                 Span::UNDEFINED,
             );
+
+            let sampler_var = self.module.global_variables.append(
+                GlobalVariable {
+                    name: Some(format!("sampler{}", index)),
+                    space: naga::AddressSpace::Handle,
+                    binding: Some(naga::ResourceBinding {
+                        group: 0,
+                        binding: TEXTURE_SAMPLER_START_BIND_INDEX + index as u32,
+                    }),
+                    ty: self.module.types.insert(
+                        Type {
+                            name: None,
+                            inner: TypeInner::Sampler { comparison: false },
+                        },
+                        Span::UNDEFINED,
+                    ),
+                    init: None,
+                },
+                Span::UNDEFINED,
+            );
+
             self.texture_bindings[index] = Some(TextureBindingData {
-                expr: self
+                texture_global_var: self
                     .func
                     .expressions
                     .append(Expression::GlobalVariable(global_var), Span::UNDEFINED),
-                sampler_config,
+                sampler_global_var: self
+                    .func
+                    .expressions
+                    .append(Expression::GlobalVariable(sampler_var), Span::UNDEFINED),
             });
         }
         let data = self.texture_bindings[index].as_ref().unwrap();
-        // AGAL requires that a given texture ID always be sampled with the same settings
-        // within a program
-        if data.sampler_config != sampler_config {
-            return Err(Error::SamplerConfigMismatch {
-                texture: index,
-                old: data.sampler_config,
-                new: sampler_config,
-            });
-        }
-        Ok(self.texture_bindings[index].unwrap().expr)
+        Ok(*data)
     }
 
     fn emit_source_field_load(
@@ -921,7 +856,7 @@ impl<'a> NagaBuilder<'a> {
                             convert: Some(4),
                         });
 
-                        let const_indirect_offset = self.module.const_expressions.append(
+                        let const_indirect_offset = self.module.global_expressions.append(
                             Expression::Literal(Literal::U32(source.indirect_offset as u32)),
                             Span::UNDEFINED,
                         );
@@ -929,7 +864,6 @@ impl<'a> NagaBuilder<'a> {
                         let offset_constant = self.module.constants.append(
                             Constant {
                                 name: None,
-                                r#override: Override::None,
                                 ty: self.u32_type,
                                 init: const_indirect_offset,
                             },
@@ -1218,53 +1152,10 @@ impl<'a> NagaBuilder<'a> {
             Opcode::Tex => {
                 let sampler_field = source2.assert_sampler();
 
-                let texture_samplers = self.texture_samplers.as_ref().unwrap();
-
                 let texture_id = sampler_field.reg_num;
                 if sampler_field.reg_type != RegisterType::Sampler {
                     panic!("Invalid sample register type {:?}", sampler_field);
                 }
-
-                // Always take filter/wrapping from the shader config, which takes into account both the values
-                // from the opcode and any Context3D.setSamplerStateAt calls.
-                // FIXME - refactor this to just bind the correct sampler at the proper index from the wgpu side.
-                let sampler_config = self.shader_config.sampler_configs[texture_id as usize];
-                let filter = sampler_config.filter;
-                let wrapping = sampler_config.wrapping;
-
-                let sampler_binding = match (filter, wrapping) {
-                    (Filter::Linear, Wrapping::Clamp) => texture_samplers.clamp_linear,
-                    (Filter::Linear, Wrapping::Repeat) => texture_samplers.repeat_linear,
-                    (Filter::Linear, Wrapping::ClampURepeatV) => {
-                        texture_samplers.clamp_u_repeat_v_linear
-                    }
-                    (Filter::Linear, Wrapping::RepeatUClampV) => {
-                        texture_samplers.repeat_u_clamp_v_linear
-                    }
-                    (Filter::Nearest, Wrapping::Clamp) => texture_samplers.clamp_nearest,
-                    (Filter::Nearest, Wrapping::Repeat) => texture_samplers.repeat_nearest,
-                    (Filter::Nearest, Wrapping::ClampURepeatV) => {
-                        texture_samplers.clamp_u_repeat_v_nearest
-                    }
-                    (Filter::Nearest, Wrapping::RepeatUClampV) => {
-                        texture_samplers.repeat_u_clamp_v_nearest
-                    }
-                    (
-                        Filter::Anisotropic2x
-                        | Filter::Anisotropic4x
-                        | Filter::Anisotropic8x
-                        | Filter::Anisotropic16x,
-                        _,
-                    ) => {
-                        // FIXME - implement anisotropic filters with wgpu
-                        match wrapping {
-                            Wrapping::Clamp => texture_samplers.clamp_linear,
-                            Wrapping::Repeat => texture_samplers.repeat_linear,
-                            Wrapping::ClampURepeatV => texture_samplers.clamp_u_repeat_v_linear,
-                            Wrapping::RepeatUClampV => texture_samplers.repeat_u_clamp_v_linear,
-                        }
-                    }
-                };
 
                 let coord = self.emit_source_field_load(source1, false)?;
                 let coord = match sampler_field.dimension {
@@ -1296,10 +1187,11 @@ impl<'a> NagaBuilder<'a> {
                     }
                 };
 
-                let image = self.emit_texture_load(texture_id as usize, sampler_field)?;
+                let texture_binding =
+                    self.emit_texture_load(texture_id as usize, sampler_field.dimension)?;
                 let tex = self.evaluate_expr(Expression::ImageSample {
-                    image,
-                    sampler: sampler_binding,
+                    image: texture_binding.texture_global_var,
+                    sampler: texture_binding.sampler_global_var,
                     coordinate: coord,
                     array_index: None,
                     offset: None,
@@ -1706,14 +1598,13 @@ impl<'a> NagaBuilder<'a> {
 
                 let constant_f32_zero = self
                     .module
-                    .const_expressions
+                    .global_expressions
                     .append(Expression::Literal(Literal::F32(0.0)), Span::UNDEFINED);
 
                 // Check `source < 0.0`.
                 let constant_zero = self.module.constants.append(
                     Constant {
                         name: None,
-                        r#override: Override::None,
                         ty: self.f32_type,
                         init: constant_f32_zero,
                     },
@@ -1747,10 +1638,7 @@ impl<'a> NagaBuilder<'a> {
             &mut self.return_type,
             Type {
                 name: None,
-                inner: TypeInner::Scalar {
-                    kind: ScalarKind::Float,
-                    width: 0,
-                },
+                inner: TypeInner::Scalar(Scalar::F32),
             },
         );
 

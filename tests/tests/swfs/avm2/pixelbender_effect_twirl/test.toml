@@ -6,4 +6,4 @@ max_outliers = 1003
 
 [player_options]
 viewport_dimensions = { width = 600, height = 700, scale_factor = 1 }
-with_renderer = { optional = false, sample_count = 1, exclude_warp = true }
+with_renderer = { optional = false, sample_count = 1 }

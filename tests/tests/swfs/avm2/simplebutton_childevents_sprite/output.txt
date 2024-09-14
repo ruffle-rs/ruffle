@@ -1,0 +1,13 @@
+instance3:[Event type="added" bubbles=true cancelable=false eventPhase=2] target: [object MySprite]
+target.stage: null target.name: instance3 target.parent: null target.parent.parent: <missing>
+instance2:[Event type="added" bubbles=true cancelable=false eventPhase=2] target: [object MyButton]
+target.stage: null target.name: instance2 target.parent: [object MyButtonContainer] target.parent.parent: null
+---- addChild
+instance1:[Event type="added" bubbles=true cancelable=false eventPhase=2] target: [object MyButtonContainer]
+target.stage: [object Stage] target.name: instance1 target.parent: [object Test] target.parent.parent: [object Stage]
+instance1:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2] target: [object MyButtonContainer]
+target.stage: [object Stage] target.name: instance1 target.parent: [object Test] target.parent.parent: [object Stage]
+instance2:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2] target: [object MyButton]
+target.stage: [object Stage] target.name: instance2 target.parent: [object MyButtonContainer] target.parent.parent: [object Test]
+instance3:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2] target: [object MySprite]
+target.stage: [object Stage] target.name: instance3 target.parent: null target.parent.parent: <missing>

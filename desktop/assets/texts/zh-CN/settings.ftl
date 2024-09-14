@@ -3,9 +3,10 @@ player-settings = 播放器设置
 movie-parameters = 影片参数
 custom-base-url = 自定义基础网址
 spoof-swf-url = SWF 网址欺骗
+referer-url = 来源链接(Referer)
+cookie = Cookie
 proxy = 代理
 upgrade-http = 升级 HTTP 到 HTTPS
-upgrade-http-check = 升级
 tcp-connections = TCP 连接
 tcp-connections-allow = 允许
 tcp-connections-ask = 询问
@@ -45,13 +46,32 @@ align-top-right = 右上
 align-bottom-right = 右下
 align-force = 强制
 scale-mode = 缩放模式
-scale-mode-exactfit = 精确填充
-scale-mode-noborder = 无边框
-scale-mode-noscale = 无缩放
-scale-mode-showall = 显示全部
+scale-mode-noscale = 无缩放 (100%)
+scale-mode-noscale-tooltip =
+    显示影片的原始大小，没有任何缩放。
+    
+    对应于 StageScaleMode.NO_SCALE
+scale-mode-showall = 缩放以适应
+scale-mode-showall-tooltip =
+    将影片放大以尽可能填满窗口，同时不进行裁剪，保持长宽比。
+    
+    对应 StageScaleMode.SHOW_ALL
+scale-mode-exactfit = 拉伸以适应
+scale-mode-exactfit-tooltip =
+    确保影片填满整个窗口，忽略长宽比。
+    
+    对应 StageScaleMode.EXACT_FIT
+scale-mode-noborder = 裁剪以适应
+scale-mode-noborder-tooltip =
+    填满整个窗口，同时保持长宽比，必要时裁剪画面。
+    
+    对应 StageScaleMode.NO_BORDER
 scale-mode-force = 强制
+scale-mode-force-tooltip = 防止影片改变缩放模式，将其锁定为所选设置。
 player-version = 播放器版本
+player-runtime = 运行时系统
+player-runtime-flash = Flash Player
+player-runtime-air = Adobe AIR
 custom-framerate = 自定义帧率
 custom-framerate-suffix = { " " } fps
 dummy-external-interface = 虚拟外部接口
-dummy-external-interface-check = 启用

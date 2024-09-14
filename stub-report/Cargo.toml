@@ -1,0 +1,16 @@
+[package]
+name = "stub-report"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[dependencies]
+clap = { workspace = true }
+anyhow = { workspace = true }
+ruffle_core = { path = "../core", features = ["known_stubs"] }
+
+[lints]
+workspace = true

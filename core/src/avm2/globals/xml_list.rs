@@ -3,12 +3,13 @@
 pub use crate::avm2::object::xml_list_allocator;
 use crate::avm2::{
     e4x::{name_to_multiname, simple_content_to_string, E4XNode, E4XNodeKind},
-    error::type_error,
+    error::make_error_1086,
     multiname::Multiname,
     object::{E4XOrXml, XmlListObject, XmlObject},
     parameters::ParametersExt,
     Activation, Error, Object, TObject, Value,
 };
+use crate::string::AvmString;
 
 fn has_complex_content_inner(children: &[E4XOrXml<'_>]) -> bool {
     match children {
@@ -91,6 +92,40 @@ pub fn call_handler<'gc>(
         .xml_list
         .construct(activation, args)?
         .into())
+}
+
+// ECMA-357 13.5.4.11 XMLList.prototype.elements ([name])
+pub fn elements<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_xml_list_object().unwrap();
+    // 2. Let name = ToXMLName(name)
+    let multiname = name_to_multiname(activation, &args[0], false)?;
+
+    // 3. Let m = a new XMLList with m.[[TargetObject]] = list and m.[[TargetProperty]] = name
+    let list = XmlListObject::new(activation, Some(this.into()), Some(multiname.clone()));
+
+    // 4. For i = 0 to list.[[Length]]-1
+    let mut children = this.children_mut(activation.gc());
+    for child in &mut *children {
+        // 4.a. If list[i].[[Class]] == "element"
+        if child.node().is_element() {
+            // 4.a.i. Let r = list[i].elements(name)
+            let r = child
+                .get_or_create_xml(activation)
+                .elements(&multiname, activation);
+
+            // 4.a.ii. If r.[[Length]] > 0, call the [[Append]] method of m with argument r
+            if r.length() > 0 {
+                list.append(r.into(), activation.gc());
+            }
+        }
+    }
+
+    // 5. Return m
+    Ok(list.into())
 }
 
 pub fn has_complex_content<'gc>(
@@ -191,9 +226,36 @@ pub fn children<'gc>(
         activation,
         sub_children,
         Some(list.into()),
-        Some(Multiname::any(activation.gc())),
+        Some(Multiname::any()),
     )
     .into())
+}
+
+/// 13.5.4.8 XMLList.prototype.contains (value)
+pub fn contains<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let list = this.as_xml_list_object().unwrap();
+    let value = args.get_value(0);
+    let length = list.length();
+
+    // 1. For i = 0 to list.[[Length]]-1
+    // NOTE: cannot use children_mut here since the value can be this same list, which causes a panic.
+    for index in 0..length {
+        let child = list
+            .xml_object_child(index, activation)
+            .expect("index should be in between 0 and length");
+
+        // 2.a. If the result of the comparison list[i] == value is true, return true
+        if child.abstract_eq(&value, activation)? {
+            return Ok(true.into());
+        }
+    }
+
+    // 2. Return false
+    Ok(false.into())
 }
 
 pub fn copy<'gc>(
@@ -258,31 +320,9 @@ pub fn attributes<'gc>(
         activation,
         child_attrs,
         Some(list.into()),
-        Some(Multiname::any_attribute(activation.gc())),
+        Some(Multiname::any_attribute()),
     )
     .into())
-}
-
-pub fn name<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let list = this.as_xml_list_object().unwrap();
-
-    let mut children = list.children_mut(activation.context.gc_context);
-    match &mut children[..] {
-        [child] => {
-            child
-                .get_or_create_xml(activation)
-                .call_public_property("name", &[], activation)
-        }
-        _ => Err(Error::AvmError(type_error(
-            activation,
-            "Error #1086: The name method only works on lists containing one item.",
-            1086,
-        )?)),
-    }
 }
 
 pub fn descendants<'gc>(
@@ -406,4 +446,165 @@ pub fn processing_instructions<'gc>(
     // FIXME: This should call XmlObject's processing_instructions() and concat everything together
     //        (Necessary for correct target object/property and dirty flag).
     Ok(XmlListObject::new_with_children(activation, nodes, Some(xml_list.into()), None).into())
+}
+
+pub fn normalize<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let list = this.as_xml_list_object().unwrap();
+    let public_namespace = activation.avm2().public_namespace_base_version;
+
+    // 1. Let i = 0
+    let mut index = 0;
+
+    // 2. While i < list.[[Length]]
+    while index < list.length() {
+        let child = list
+            .node_child(index)
+            .expect("index should be between 0 and length");
+
+        // a. If list[i].[[Class]] == "element"
+        if child.is_element() {
+            // i. Call the normalize method of list[i]
+            child.normalize(activation.gc());
+
+            // ii. Let i = i + 1
+            index += 1;
+        // b. Else if list[i].[[Class]] == "text"
+        } else if child.is_text() {
+            let should_remove = {
+                let (E4XNodeKind::Text(text) | E4XNodeKind::CData(text)) =
+                    &mut *child.kind_mut(activation.gc())
+                else {
+                    unreachable!()
+                };
+
+                // i. While ((i+1) < list.[[Length]]) and (list[i + 1].[[Class]] == "text")
+                while index + 1 < list.length()
+                    && list
+                        .node_child(index + 1)
+                        .expect("index should be between 0 and length")
+                        .is_text()
+                {
+                    let other = list
+                        .node_child(index + 1)
+                        .expect("index should be between 0 and length");
+
+                    let (E4XNodeKind::Text(other) | E4XNodeKind::CData(other)) = &*other.kind()
+                    else {
+                        unreachable!()
+                    };
+
+                    // 1. Let list[i].[[Value]] be the result of concatenating list[i].[[Value]] and list[i + 1].[[Value]]
+                    *text = AvmString::concat(activation.gc(), *text, *other);
+
+                    // 2. Call the [[Delete]] method of list with argument ToString(i + 1)
+                    list.delete_property_local(
+                        activation,
+                        &Multiname::new(
+                            public_namespace,
+                            AvmString::new_utf8(activation.gc(), (index + 1).to_string()),
+                        ),
+                    )?;
+                }
+
+                text.len() == 0
+            };
+
+            // ii. If list[i].[[Value]].length == 0
+            if should_remove {
+                // 1. Call the [[Delete]] method of list with argument ToString(i)
+                list.delete_property_local(
+                    activation,
+                    &Multiname::new(
+                        public_namespace,
+                        AvmString::new_utf8(activation.gc(), index.to_string()),
+                    ),
+                )?;
+            // iii. Else
+            } else {
+                // 1. Let i = i + 1
+                index += 1;
+            }
+        // c. Else
+        } else {
+            // i. Let i = i + 1
+            index += 1;
+        }
+    }
+
+    // 3. Return list
+    Ok(this.into())
+}
+
+macro_rules! define_xml_proxy {
+    ( $( ($rust_name:ident, $as_name:expr) ),*, ) => {
+        $(
+            pub fn $rust_name<'gc>(
+                activation: &mut Activation<'_, 'gc>,
+                this: Object<'gc>,
+                args: &[Value<'gc>],
+            ) -> Result<Value<'gc>, Error<'gc>> {
+                let list = this.as_xml_list_object().unwrap();
+
+                let mut children = list.children_mut(activation.context.gc_context);
+                match &mut children[..] {
+                    [child] => {
+                        child
+                            .get_or_create_xml(activation)
+                            .call_property(&Multiname::new(activation.avm2().as3_namespace, $as_name), args, activation)
+                    }
+                    _ => Err(make_error_1086(activation, $as_name)),
+                }
+            }
+        )*
+    };
+}
+
+define_xml_proxy!(
+    (add_namespace, "addNamespace"),
+    (append_child, "appendChild"),
+    (child_index, "childIndex"),
+    (in_scope_namespaces, "inScopeNamespaces"),
+    (insert_child_after, "insertChildAfter"),
+    (insert_child_before, "insertChildBefore"),
+    (local_name, "localName"),
+    (name, "name"),
+    (namespace_declarations, "namespaceDeclarations"),
+    (node_kind, "nodeKind"),
+    (prepend_child, "prependChild"),
+    (remove_namespace, "removeNamespace"),
+    (replace, "replace"),
+    (set_children, "setChildren"),
+    (set_local_name, "setLocalName"),
+    (set_name, "setName"),
+    (set_namespace, "setNamespace"),
+);
+
+// Special case since the XMLObject's method has to know if prefix was passed or not.
+// namespace_internal_impl(hasPrefix:Boolean, prefix:String = null):*
+pub fn namespace_internal_impl<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let list = this.as_xml_list_object().unwrap();
+    let mut children = list.children_mut(activation.context.gc_context);
+
+    let args = if args[0] == Value::Bool(true) {
+        &args[1..]
+    } else {
+        &[]
+    };
+
+    match &mut children[..] {
+        [child] => child.get_or_create_xml(activation).call_property(
+            &Multiname::new(activation.avm2().as3_namespace, "namespace"),
+            args,
+            activation,
+        ),
+        _ => Err(make_error_1086(activation, "namespace")),
+    }
 }

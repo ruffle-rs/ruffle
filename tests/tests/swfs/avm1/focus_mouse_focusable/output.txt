@@ -1,0 +1,8 @@
+Focus changed: null -> _level0.text7
+Focus changed: _level0.text7 -> null
+Focus changed: null -> _level0.text5
+Focus changed: _level0.text5 -> null
+Focus changed: null -> _level0.text3
+Focus changed: _level0.text3 -> null
+Focus changed: null -> _level0.text1
+Focus changed: _level0.text1 -> null

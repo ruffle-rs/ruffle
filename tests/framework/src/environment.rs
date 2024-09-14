@@ -14,24 +14,22 @@ pub trait Environment {
         false
     }
 
-    /// Creates any amount of render backends for a new test run.
+    /// Creates a render backend for a new test run.
     ///
-    /// This method must return both a [RenderBackend] and [RenderInterface] as pairs,
-    /// and they will be treated as pairs for the purposes of this test framework.
+    /// This method must return both a [RenderBackend] and [RenderInterface] as a pair.
     ///
     /// All relevant methods in the [RenderInterface] will receive the same [RenderBackend]
     /// that was provided here with that interface.
     ///
-    /// A separate test run will be performed for each renderer returned as a result of this method.
-    /// If none are returned, a single test will be performed without any renderer.
+    /// If None is returned, a test will be performed without any renderer.
     ///
     /// If [Self::is_render_supported] returned false, this won't be attempted.
-    fn create_renderers(
+    fn create_renderer(
         &self,
         _width: u32,
         _height: u32,
-    ) -> Vec<(Box<dyn RenderInterface>, Box<dyn RenderBackend>)> {
-        vec![]
+    ) -> Option<(Box<dyn RenderInterface>, Box<dyn RenderBackend>)> {
+        None
     }
 }
 

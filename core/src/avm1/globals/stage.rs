@@ -75,7 +75,7 @@ fn set_align<'gc>(
     activation
         .context
         .stage
-        .set_align(&mut activation.context, align);
+        .set_align(activation.context, align);
     Ok(Value::Undefined)
 }
 
@@ -113,7 +113,7 @@ fn set_scale_mode<'gc>(
     activation
         .context
         .stage
-        .set_scale_mode(&mut activation.context, scale_mode);
+        .set_scale_mode(activation.context, scale_mode, true);
     Ok(Value::Undefined)
 }
 
@@ -143,12 +143,12 @@ fn set_display_state<'gc>(
         activation
             .context
             .stage
-            .set_display_state(&mut activation.context, StageDisplayState::FullScreen);
+            .set_display_state(activation.context, StageDisplayState::FullScreen);
     } else if display_state.eq_ignore_case(WStr::from_units(b"normal")) {
         activation
             .context
             .stage
-            .set_display_state(&mut activation.context, StageDisplayState::Normal);
+            .set_display_state(activation.context, StageDisplayState::Normal);
     }
 
     Ok(Value::Undefined)
@@ -175,7 +175,7 @@ fn set_show_menu<'gc>(
     activation
         .context
         .stage
-        .set_show_menu(&mut activation.context, show_menu);
+        .set_show_menu(activation.context, show_menu);
     Ok(Value::Undefined)
 }
 

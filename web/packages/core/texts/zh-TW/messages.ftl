@@ -13,9 +13,19 @@ ruffle-wiki = 查看Ruffle Wiki
 enable-hardware-acceleration =
     看起來你的硬體加速沒有開啟，雖然Ruffle還可以執行，但是你會感覺到會很慢。
     你可以在下方連結找到如何開啟硬體加速。
+enable-hardware-acceleration-link = FAQ - Chrome硬體加速
 view-error-details = 檢視錯誤詳細資料
 open-in-new-tab = 開啟新增分頁
 click-to-unmute = 點擊以取消靜音
+clipboard-message-title = 在Ruffle執行複製、貼上。
+clipboard-message-description =
+    { $variant ->
+       *[unsupported] 你的瀏覽器不支援完整剪貼簿使用,
+        [access-denied] 剪貼簿使用權被拒絕訪問,
+    } 你可以直接使用快捷鍵:
+clipboard-message-copy = { " " } 複製
+clipboard-message-cut = { " " } 剪下
+clipboard-message-paste = { " " } 貼上
 error-file-protocol =
     看起來你想要用Ruffle來執行"file:"的協議。
     因為瀏覽器禁了很多功能以資安的理由來講。
@@ -32,6 +42,9 @@ error-wasm-mime-type =
     目前Ruffle初始化時遇到重大問題。
     這網頁伺服器並沒有服務".wasm"檔案或正確的網際網路媒體類型。
     如果你是伺服器管理員，請查詢Ruffle wiki得到需求幫助。
+error-invalid-swf =
+    目前Ruffle無法讀取Flash的SWF檔案。
+    很有可能要讀取的檔案並一個不是有效的SWF。
 error-swf-fetch =
     目前Ruffle無法讀取Flash的SWF檔案。
     很有可能要讀取的檔案不存在，所以Ruffle讀不到東西。

@@ -1,0 +1,7 @@
+for in namespace
+ uri
+ prefix
+
+for each in namespace
+ u
+ p

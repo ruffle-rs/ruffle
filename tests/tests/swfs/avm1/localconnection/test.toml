@@ -1,0 +1,1 @@
+num_ticks = 300 # Test may finish in less, but it'll `fscommand:exit` when it's done.

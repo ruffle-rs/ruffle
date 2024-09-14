@@ -17,7 +17,7 @@ pub fn init<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let parent_domain = if matches!(args[0], Value::Null) {
-        activation.avm2().stage_domain()
+        activation.avm2().playerglobals_domain()
     } else {
         args.get_object(activation, 0, "parentDomain")?
             .as_application_domain()
@@ -123,7 +123,7 @@ pub fn get_qualified_definition_names<'gc>(
                 .map(|name| Value::String(name.to_qualified_name(activation.context.gc_context)))
                 .collect(),
             false,
-            Some(activation.avm2().classes().string),
+            Some(activation.avm2().class_defs().string),
         );
 
         let name_vector = VectorObject::from_vector(storage, activation)?;

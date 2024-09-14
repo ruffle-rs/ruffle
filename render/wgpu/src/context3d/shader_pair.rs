@@ -8,15 +8,7 @@ use std::{
 };
 use wgpu::SamplerBindingType;
 
-use super::{
-    current_pipeline::{
-        BoundTextureData, SAMPLER_CLAMP_LINEAR, SAMPLER_CLAMP_NEAREST,
-        SAMPLER_CLAMP_U_REPEAT_V_LINEAR, SAMPLER_CLAMP_U_REPEAT_V_NEAREST, SAMPLER_REPEAT_LINEAR,
-        SAMPLER_REPEAT_NEAREST, SAMPLER_REPEAT_U_CLAMP_V_LINEAR, SAMPLER_REPEAT_U_CLAMP_V_NEAREST,
-        TEXTURE_START_BIND_INDEX,
-    },
-    MAX_VERTEX_ATTRIBUTES,
-};
+use super::MAX_VERTEX_ATTRIBUTES;
 
 use crate::descriptors::Descriptors;
 
@@ -116,74 +108,28 @@ impl ShaderPairAgal {
                         },
                         count: None,
                     },
-                    // One sampler per filter/wrapping combination - see BitmapFilters
-                    // An AGAL shader can use any of these samplers, so
-                    // we need to bind them all.
-                    wgpu::BindGroupLayoutEntry {
-                        binding: SAMPLER_REPEAT_LINEAR,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: SAMPLER_REPEAT_NEAREST,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: SAMPLER_CLAMP_LINEAR,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: SAMPLER_CLAMP_NEAREST,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: SAMPLER_CLAMP_U_REPEAT_V_LINEAR,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: SAMPLER_CLAMP_U_REPEAT_V_NEAREST,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: SAMPLER_REPEAT_U_CLAMP_V_LINEAR,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: SAMPLER_REPEAT_U_CLAMP_V_NEAREST,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
                 ];
 
-                for (i, bound_texture) in data.bound_textures.iter().enumerate() {
-                    if let Some(bound_texture) = bound_texture {
-                        let dimension = if bound_texture.cube {
-                            wgpu::TextureViewDimension::Cube
-                        } else {
-                            wgpu::TextureViewDimension::D2
+                for (i, texture_info) in data.texture_infos.iter().enumerate() {
+                    if let Some(texture_info) = texture_info {
+                        let dimension = match texture_info {
+                            ShaderTextureInfo::D2 => wgpu::TextureViewDimension::D2,
+                            ShaderTextureInfo::Cube => wgpu::TextureViewDimension::Cube,
                         };
                         layout_entries.push(wgpu::BindGroupLayoutEntry {
-                            binding: TEXTURE_START_BIND_INDEX + i as u32,
+                            binding: naga_agal::TEXTURE_START_BIND_INDEX + i as u32,
                             visibility: wgpu::ShaderStages::FRAGMENT,
                             ty: wgpu::BindingType::Texture {
                                 sample_type: wgpu::TextureSampleType::Float { filterable: true },
                                 view_dimension: dimension,
                                 multisampled: false,
                             },
+                            count: None,
+                        });
+                        layout_entries.push(wgpu::BindGroupLayoutEntry {
+                            binding: naga_agal::TEXTURE_SAMPLER_START_BIND_INDEX + i as u32,
+                            visibility: wgpu::ShaderStages::FRAGMENT,
+                            ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
                             count: None,
                         });
                     }
@@ -208,9 +154,15 @@ impl ShaderPairAgal {
     }
 }
 
+#[derive(Hash, PartialEq, Eq, Clone, Copy)]
+pub enum ShaderTextureInfo {
+    D2,
+    Cube,
+}
+
 #[derive(Hash, Eq, PartialEq, Clone)]
 pub struct ShaderCompileData {
     pub sampler_configs: [SamplerConfig; 8],
     pub vertex_attributes: [Option<VertexAttributeFormat>; MAX_VERTEX_ATTRIBUTES],
-    pub bound_textures: [Option<BoundTextureData>; 8],
+    pub texture_infos: [Option<ShaderTextureInfo>; 8],
 }

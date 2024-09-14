@@ -5,12 +5,12 @@ use crate::avm2::TObject;
 use crate::avm2::Value;
 use crate::avm2::{Error, Object};
 use crate::avm2_stub_method;
-use ruffle_render::backend::Context3DTextureFilter;
 use ruffle_render::backend::Context3DWrapMode;
 use ruffle_render::backend::{
     BufferUsage, Context3DBlendFactor, Context3DCompareMode, Context3DTextureFormat,
     Context3DTriangleFace, Context3DVertexBufferFormat, ProgramType,
 };
+use ruffle_render::backend::{Context3DProfile, Context3DTextureFilter};
 use swf::{Rectangle, Twips};
 
 pub fn create_index_buffer<'gc>(
@@ -229,6 +229,24 @@ pub fn present<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn get_profile<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(context) = this.as_context_3d() {
+        return match context.with_context_3d(|context| context.profile()) {
+            Context3DProfile::Baseline => Ok("baseline".into()),
+            Context3DProfile::BaselineConstrained => Ok("baselineConstrained".into()),
+            Context3DProfile::BaselineExtended => Ok("baselineExtended".into()),
+            Context3DProfile::Standard => Ok("standard".into()),
+            Context3DProfile::StandardConstrained => Ok("standardConstrained".into()),
+            Context3DProfile::StandardExtended => Ok("standardExtended".into()),
+        };
+    }
+    Ok(Value::Undefined)
+}
+
 pub fn set_culling<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -338,7 +356,7 @@ pub fn set_program_constants_from_vector<'gc>(
         let num_registers = args.get_i32(activation, 3)?;
 
         let to_take = if num_registers != -1 {
-            // Each register requries 4 floating-point values
+            // Each register requires 4 floating-point values
             // FIXME - throw an error if 'vector' is too small
             num_registers as usize * 4
         } else {
@@ -498,7 +516,6 @@ pub fn set_texture_at<'gc>(
                     .classes()
                     .cubetexture
                     .inner_class_definition(),
-                &mut activation.context,
             );
             Some(obj.as_texture().unwrap().handle())
         };
@@ -709,5 +726,18 @@ pub fn set_scissor_rectangle<'gc>(
     };
 
     context3d.set_scissor_rectangle(rectangle);
+    Ok(Value::Undefined)
+}
+
+pub fn dispose<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "flash.display3D.Context3D", "dispose");
+    this.as_context_3d()
+        .unwrap()
+        .stage3d()
+        .set_context3d(None, activation.context.gc_context);
     Ok(Value::Undefined)
 }

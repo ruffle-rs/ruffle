@@ -2,7 +2,7 @@
 
 use crate::context::UpdateContext;
 use crate::drawing::Drawing;
-use crate::font::{EvalParameters, Font};
+use crate::font::{EvalParameters, Font, FontType};
 use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
 use crate::string::{utils as string_utils, WStr};
@@ -10,8 +10,11 @@ use crate::tag_utils::SwfMovie;
 use crate::DefaultFont;
 use gc_arena::Collect;
 use ruffle_render::shape_utils::DrawCommand;
-use std::cmp::{max, min};
-use std::ops::Deref;
+use std::cmp::{max, min, Ordering};
+use std::fmt::{Debug, Formatter};
+use std::mem;
+use std::ops::{Deref, Range};
+use std::slice::Iter;
 use std::sync::Arc;
 use swf::{Point, Twips};
 
@@ -24,7 +27,7 @@ fn draw_underline(
     width: Twips,
     color: swf::Color,
 ) {
-    if width < Twips::from_pixels(1.0) {
+    if width < Twips::ONE {
         return;
     }
 
@@ -66,8 +69,22 @@ pub struct LayoutContext<'a, 'gc> {
     /// The highest font size observed within the current line.
     max_font_size: Twips,
 
-    /// The growing list of layout boxes to return when layout has finished.
+    /// The growing list of layout lines to return when layout has finished.
+    lines: Vec<LayoutLine<'gc>>,
+
+    /// A counter used for indexing lines.
+    /// Contains the index of the line currently being laid out.
+    current_line_index: usize,
+
+    /// A growing list of layout boxes that form the line currently being laid out.
     boxes: Vec<LayoutBox<'gc>>,
+
+    /// The bounds of all laid-out text, excluding margins.
+    ///
+    /// None indicates that no bounds have yet to be calculated. If the layout
+    /// ends without a line having been generated, the default bounding box
+    /// should be used.
+    bounds: Option<BoxBounds<Twips>>,
 
     /// The exterior bounds of all laid-out text, including left and right
     /// margins.
@@ -77,22 +94,16 @@ pub struct LayoutContext<'a, 'gc> {
     /// should be used.
     exterior_bounds: Option<BoxBounds<Twips>>,
 
-    /// Whether or not we are laying out the first line of a paragraph.
+    /// Whether we are laying out the first line of a paragraph.
     is_first_line: bool,
 
-    /// Whether or not we encountered a line break of any kind during layout.
+    /// Whether we encountered a line break of any kind during layout.
     ///
     /// Flash always applies at least one count of the line leading to the
     /// total text bounds of the laid-out text, even if there are no line
     /// breaks to host that leading. This flags that we need to add leading to
     /// the singular line if we have yet to process a newline.
     has_line_break: bool,
-
-    /// The first box within the current line.
-    ///
-    /// If equal to the length of the array, then no layout boxes currently
-    /// exist for this line.
-    current_line: usize,
 
     /// The right margin of the first span in the current line.
     current_line_span: TextSpan,
@@ -109,11 +120,13 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             font: None,
             text,
             max_font_size: Default::default(),
+            lines: Vec::new(),
+            current_line_index: 0,
             boxes: Vec::new(),
+            bounds: None,
             exterior_bounds: None,
             is_first_line: true,
             has_line_break: false,
-            current_line: 0,
             current_line_span: Default::default(),
             max_bounds,
         }
@@ -158,54 +171,49 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         let mut line_drawing = Drawing::new();
         let mut has_underline: bool = false;
 
-        if let Some(linelist) = self.boxes.get(self.current_line..) {
-            for linebox in linelist {
-                if linebox.is_text_box() {
-                    if let Some((_t, tf, font, params, color)) =
-                        linebox.as_renderable_text(self.text)
+        for linebox in self.boxes.iter() {
+            if linebox.is_text_box() {
+                if let Some((_t, tf, font, params, color)) = linebox.as_renderable_text(self.text) {
+                    let underline_baseline =
+                        font.get_baseline_for_height(params.height()) + Twips::from_pixels(2.0);
+                    let mut line_extended = false;
+
+                    if let (Some(starting_pos), Some(underline_color)) =
+                        (starting_pos, underline_color)
                     {
-                        let underline_baseline =
-                            font.get_baseline_for_height(params.height()) + Twips::from_pixels(2.0);
-                        let mut line_extended = false;
-
-                        if let (Some(starting_pos), Some(underline_color)) =
-                            (starting_pos, underline_color)
+                        if tf.underline.unwrap_or(false)
+                            && underline_baseline + linebox.bounds().origin().y()
+                                == starting_pos.y()
+                            && underline_color == color
                         {
-                            if tf.underline.unwrap_or(false)
-                                && underline_baseline + linebox.bounds().origin().y()
-                                    == starting_pos.y()
-                                && underline_color == color
-                            {
-                                //Underline is at the same baseline, extend it
-                                current_width =
-                                    Some(linebox.bounds().extent_x() - starting_pos.x());
+                            //Underline is at the same baseline, extend it
+                            current_width = Some(linebox.bounds().extent_x() - starting_pos.x());
 
-                                line_extended = true;
-                            }
+                            line_extended = true;
+                        }
+                    }
+
+                    if !line_extended {
+                        //For whatever reason, we cannot extend the current underline.
+                        //This can happen if we don't have an underline to extend, the
+                        //underlines don't match, or this span doesn't call for one.
+                        if let (Some(pos), Some(width), Some(color)) =
+                            (starting_pos, current_width, underline_color)
+                        {
+                            draw_underline(&mut line_drawing, pos, width, color);
+                            has_underline = true;
+                            starting_pos = None;
+                            current_width = None;
+                            underline_color = None;
                         }
 
-                        if !line_extended {
-                            //For whatever reason, we cannot extend the current underline.
-                            //This can happen if we don't have an underline to extend, the
-                            //underlines don't match, or this span doesn't call for one.
-                            if let (Some(pos), Some(width), Some(color)) =
-                                (starting_pos, current_width, underline_color)
-                            {
-                                draw_underline(&mut line_drawing, pos, width, color);
-                                has_underline = true;
-                                starting_pos = None;
-                                current_width = None;
-                                underline_color = None;
-                            }
-
-                            if tf.underline.unwrap_or(false) {
-                                starting_pos = Some(
-                                    linebox.bounds().origin()
-                                        + Position::from((Twips::ZERO, underline_baseline)),
-                                );
-                                current_width = Some(linebox.bounds().width());
-                                underline_color = Some(color);
-                            }
+                        if tf.underline.unwrap_or(false) {
+                            starting_pos = Some(
+                                linebox.bounds().origin()
+                                    + Position::from((Twips::ZERO, underline_baseline)),
+                            );
+                            current_width = Some(linebox.bounds().width());
+                            underline_color = Some(color);
                         }
                     }
                 }
@@ -225,7 +233,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         }
 
         if has_underline {
-            self.append_box(LayoutBox::from_drawing(line_drawing));
+            let pos = self.last_box_end_position();
+            self.append_box(LayoutBox::from_drawing(pos, line_drawing));
         }
     }
 
@@ -245,19 +254,16 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// parameter will result in no empty lines being added.
     fn fixup_line(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         only_line: bool,
         final_line_of_para: bool,
-        text: Option<(&'a WStr, usize, &TextSpan)>,
-        is_device_font: bool,
+        end: usize,
+        span: &TextSpan,
+        font_type: FontType,
     ) {
-        if self.boxes.get_mut(self.current_line..).is_none() {
-            return;
-        }
-
         let mut line_bounds = None;
         let mut box_count: i32 = 0;
-        for linebox in self.boxes.get_mut(self.current_line..).unwrap() {
+        for linebox in self.boxes.iter_mut() {
             let (text, _tf, font, params, _color) =
                 linebox.as_renderable_text(self.text).expect("text");
 
@@ -277,6 +283,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             box_count += 1;
         }
 
+        if self.boxes.is_empty() {
+            self.append_text(WStr::empty(), end, end, span);
+        }
+
         let mut line_bounds = line_bounds.unwrap_or_default();
 
         let left_adjustment =
@@ -291,15 +301,15 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                 swf::TextAlign::Center => (misalignment) / 2,
                 swf::TextAlign::Right => misalignment,
             },
-            Twips::from_pixels(0.0),
+            Twips::ZERO,
         );
         let interim_adjustment = max(
             if !final_line_of_para && self.effective_alignment() == swf::TextAlign::Justify {
                 misalignment / max(box_count.saturating_sub(1), 1)
             } else {
-                Twips::from_pixels(0.0)
+                Twips::ZERO
             },
-            Twips::from_pixels(0.0),
+            Twips::ZERO,
         );
 
         let font_leading_adjustment = if only_line {
@@ -308,11 +318,11 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             self.font_leading_adjustment()
         };
         if self.current_line_span.bullet && self.is_first_line && box_count > 0 {
-            self.append_bullet(context, &self.current_line_span.clone(), is_device_font);
+            self.append_bullet(context, &self.current_line_span.clone(), font_type);
         }
 
         box_count = 0;
-        for linebox in self.boxes.get_mut(self.current_line..).unwrap() {
+        for linebox in self.boxes.iter_mut() {
             // TODO: This attempts to keep text of multiple font sizes vertically
             // aligned correctly. It does not consider the baseline of the font,
             // which is information we don't have yet.
@@ -330,24 +340,54 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             box_count += 1;
         }
 
-        if let Some((text, end, span)) = text {
-            if box_count == 0 {
-                self.append_text(&text[end..end], end, end, span);
-            }
-        }
-
         self.append_underlines();
 
-        line_bounds +=
-            Position::from((left_adjustment + align_adjustment, Twips::from_pixels(0.0)));
-        line_bounds += Size::from((Twips::from_pixels(0.0), font_leading_adjustment));
+        line_bounds += Position::from((left_adjustment + align_adjustment, Twips::ZERO));
+        line_bounds += Size::from((Twips::ZERO, font_leading_adjustment));
 
-        self.current_line = self.boxes.len();
+        self.flush_line(end);
 
         if let Some(eb) = &mut self.exterior_bounds {
             *eb += line_bounds;
         } else {
             self.exterior_bounds = Some(line_bounds);
+        }
+    }
+
+    fn flush_line(&mut self, end: usize) {
+        if self.boxes.is_empty() {
+            return;
+        }
+
+        let boxes = mem::take(&mut self.boxes);
+        let first_box = boxes.first().unwrap();
+        let start = first_box.start();
+        let bounds = boxes
+            .iter()
+            .filter(|b| b.is_text_box())
+            .fold(first_box.bounds, |bounds, b| bounds + b.bounds);
+
+        // Update last line's end position to take into account the delimiter.
+        // It's easier to do it here, but maybe after some refactors this update
+        // will not be needed, and the end position will be calculated correctly.
+        if let Some(last_line) = self.lines.last_mut() {
+            last_line.end = start;
+        }
+
+        self.lines.push(LayoutLine {
+            index: self.current_line_index,
+            bounds,
+            start,
+            end,
+            boxes,
+        });
+        self.current_line_index += 1;
+
+        // Update layout bounds
+        if let Some(lb) = &mut self.bounds {
+            *lb += bounds;
+        } else {
+            self.bounds = Some(bounds);
         }
     }
 
@@ -362,29 +402,23 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// the current positions into the text and format spans we are laying out.
     fn explicit_newline(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc>,
-        text: &'a WStr,
+        context: &mut UpdateContext<'gc>,
         end: usize,
         span: &TextSpan,
-        is_device_font: bool,
+        font_type: FontType,
     ) {
-        self.fixup_line(
-            context,
-            false,
-            true,
-            Some((text, end, span)),
-            is_device_font,
-        );
+        self.fixup_line(context, false, true, end, span, font_type);
 
-        self.cursor.set_x(Twips::from_pixels(0.0));
+        self.cursor.set_x(Twips::ZERO);
         self.cursor += (
-            Twips::from_pixels(0.0),
+            Twips::ZERO,
             self.max_font_size + self.line_leading_adjustment(),
         )
             .into();
 
         self.is_first_line = true;
         self.has_line_break = true;
+        self.max_font_size = Twips::from_pixels(self.current_line_span.font.size);
     }
 
     /// Adjust the text layout cursor down to the next line.
@@ -397,34 +431,28 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// the current positions into the text and format spans we are laying out.
     fn newline(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc>,
-        text: &'a WStr,
+        context: &mut UpdateContext<'gc>,
         end: usize,
         span: &TextSpan,
-        is_device_font: bool,
+        font_type: FontType,
     ) {
-        self.fixup_line(
-            context,
-            false,
-            false,
-            Some((text, end, span)),
-            is_device_font,
-        );
+        self.fixup_line(context, false, false, end, span, font_type);
 
-        self.cursor.set_x(Twips::from_pixels(0.0));
+        self.cursor.set_x(Twips::ZERO);
         self.cursor += (
-            Twips::from_pixels(0.0),
+            Twips::ZERO,
             self.max_font_size + self.line_leading_adjustment(),
         )
             .into();
 
         self.is_first_line = false;
         self.has_line_break = true;
+        self.max_font_size = Twips::from_pixels(self.current_line_span.font.size);
     }
 
     /// Adjust the text layout cursor in response to a tab.
     ///
-    /// Tabs can do two separate things in Flash, depending on whether or not
+    /// Tabs can do two separate things in Flash, depending on whether
     /// tab stops have been manually determined. If they have been, then the
     /// text cursor goes to the next closest tab stop that has not yet been
     /// passed, or if no such stop exists, tabs do nothing. If no tab stops
@@ -432,7 +460,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// tab index.
     fn tab(&mut self) {
         if self.current_line_span.tab_stops.is_empty() {
-            let modulo_factor = Twips::from_pixels(self.current_line_span.size * 2.7);
+            let modulo_factor = Twips::from_pixels(self.current_line_span.font.size * 2.7);
             let stop_modulo_tab =
                 ((self.cursor.x().get() / modulo_factor.get()) + 1) * modulo_factor.get();
             self.cursor.set_x(Twips::new(stop_modulo_tab));
@@ -451,29 +479,30 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     fn newspan(&mut self, first_span: &TextSpan) {
         if self.is_start_of_line() {
             self.current_line_span = first_span.clone();
-            self.max_font_size = Twips::from_pixels(first_span.size);
+            self.max_font_size = Twips::from_pixels(first_span.font.size);
         } else {
-            self.max_font_size = max(self.max_font_size, Twips::from_pixels(first_span.size));
+            self.max_font_size = max(self.max_font_size, Twips::from_pixels(first_span.font.size));
         }
     }
 
     fn resolve_font(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         span: &TextSpan,
-        is_device_font: bool,
+        font_type: FontType,
     ) -> Option<Font<'gc>> {
-        let font_name = span.font.to_utf8_lossy();
+        let font_name = span.font.face.to_utf8_lossy();
 
         // Note that the SWF can still contain a DefineFont tag with no glyphs/layout info in this case (see #451).
         // In an ideal world, device fonts would search for a matching font on the system and render it in some way.
-        if !is_device_font {
+        if font_type != FontType::Device {
             if let Some(font) = context
                 .library
                 .get_embedded_font_by_name(
                     &font_name,
-                    span.bold,
-                    span.italic,
+                    font_type,
+                    span.style.bold,
+                    span.style.italic,
                     Some(self.movie.clone()),
                 )
                 .filter(|f| f.has_glyphs())
@@ -486,10 +515,34 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             // return None;
         }
 
+        // Check if the font name is one of the known default fonts.
+        if let Some(default_font) = match font_name.deref() {
+            "_serif" => Some(DefaultFont::Serif),
+            "_sans" => Some(DefaultFont::Sans),
+            "_typewriter" => Some(DefaultFont::Typewriter),
+            "_ゴシック" => Some(DefaultFont::JapaneseGothic),
+            "_等幅" => Some(DefaultFont::JapaneseGothicMono),
+            "_明朝" => Some(DefaultFont::JapaneseMincho),
+            _ => None,
+        } {
+            return context
+                .library
+                .default_font(
+                    default_font,
+                    span.style.bold,
+                    span.style.italic,
+                    context.ui,
+                    context.renderer,
+                    context.gc_context,
+                )
+                .first()
+                .copied();
+        }
+
         if let Some(font) = context.library.get_or_load_device_font(
             &font_name,
-            span.bold,
-            span.italic,
+            span.style.bold,
+            span.style.italic,
             context.ui,
             context.renderer,
             context.gc_context,
@@ -497,21 +550,31 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             return Some(font);
         }
 
-        // [NA] I suspect that there might be undocumented more aliases.
-        // I think I've seen translated versions of these used in the wild...
-        let default_font = match font_name.deref() {
-            "_serif" => DefaultFont::Serif,
-            "_typewriter" => DefaultFont::Typewriter,
-            _ => DefaultFont::Sans,
-        };
-
         // TODO: handle multiple fonts for a definition, each covering different sets of glyphs
+
+        // At this point, the font name was neither one of the default
+        // fonts nor matched any device font. We explicitly handle some of the
+        // well-known aliases for the default fonts for better compatibility
+        // with devices that don't have those fonts installed. As a last resort
+        // we fall back to using sans (like Flash).
+        let default_font = match font_name.deref() {
+            "Times New Roman" => DefaultFont::Serif,
+            "Arial" => DefaultFont::Sans,
+            "Courier New" => DefaultFont::Typewriter,
+            _ => {
+                if font_name.contains("Ming") || font_name.contains('明') {
+                    DefaultFont::JapaneseMincho
+                } else {
+                    DefaultFont::Sans
+                }
+            }
+        };
         context
             .library
             .default_font(
                 default_font,
-                span.bold,
-                span.italic,
+                span.style.bold,
+                span.style.italic,
                 context.ui,
                 context.renderer,
                 context.gc_context,
@@ -545,7 +608,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// Append text fragments to the current line of the given layout context.
     ///
     /// This function bypasses the text fragmentation necessary for justify to
-    /// work and it should only be called internally.
+    /// work, and it should only be called internally.
     fn append_text_fragment(&mut self, text: &'a WStr, start: usize, end: usize, span: &TextSpan) {
         if let Some(font) = self.font {
             let params = EvalParameters::from_span(span);
@@ -567,14 +630,11 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// cursor is moved down.
     fn append_bullet(
         &mut self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         span: &TextSpan,
-        is_device_font: bool,
+        font_type: FontType,
     ) {
-        if let Some(bullet_font) = self
-            .resolve_font(context, span, is_device_font)
-            .or(self.font)
-        {
+        if let Some(bullet_font) = self.resolve_font(context, span, font_type).or(self.font) {
             let mut bullet_cursor = self.cursor;
 
             bullet_cursor.set_x(
@@ -586,12 +646,17 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             let bullet = WStr::from_units(&[0x2022u16]);
             let text_size = Size::from(bullet_font.measure(bullet, params, false));
             let text_bounds = BoxBounds::from_position_and_size(bullet_cursor, text_size);
-            let mut new_bullet = LayoutBox::from_bullet(bullet_font, span);
+            let pos = self.last_box_end_position();
+            let mut new_bullet = LayoutBox::from_bullet(pos, bullet_font, span);
 
             new_bullet.bounds = text_bounds;
 
             self.append_box(new_bullet);
         }
+    }
+
+    fn last_box_end_position(&self) -> usize {
+        self.boxes.last().map(|b| b.end()).unwrap_or(0)
     }
 
     /// Add a box to the current line of text.
@@ -647,35 +712,158 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// Destroy the layout context, returning the newly constructed layout list.
     fn end_layout(
         mut self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         fs: &'a FormatSpans,
-        is_device_font: bool,
-    ) -> (Vec<LayoutBox<'gc>>, BoxBounds<Twips>) {
+        font_type: FontType,
+    ) -> Layout<'gc> {
+        let last_span = fs.last_span().expect("At least one span should be present");
         self.fixup_line(
             context,
             !self.has_line_break,
             true,
-            fs.last_span()
-                .map(|ls| (fs.displayed_text(), fs.displayed_text().len(), ls)),
-            is_device_font,
+            fs.displayed_text().len(),
+            last_span,
+            font_type,
         );
 
-        (self.boxes, self.exterior_bounds.unwrap_or_default())
+        Layout {
+            bounds: self.bounds.unwrap_or_default(),
+            exterior_bounds: self.exterior_bounds.unwrap_or_default(),
+            lines: self.lines,
+        }
     }
 
     fn is_start_of_line(&self) -> bool {
-        self.current_line >= self.boxes.len()
+        self.boxes.is_empty()
     }
 }
 
-/// A `LayoutBox` represents a single content box within a fully laid-out
-/// `EditText`.
+/// A `Layout` represents a fully laid-out text field.
+/// It consists of [`LayoutLine`]s.
+#[derive(Clone, Debug, Collect)]
+#[collect(no_drop)]
+pub struct Layout<'gc> {
+    #[collect(require_static)]
+    bounds: BoxBounds<Twips>,
+
+    #[collect(require_static)]
+    exterior_bounds: BoxBounds<Twips>,
+
+    lines: Vec<LayoutLine<'gc>>,
+}
+
+impl<'gc> Layout<'gc> {
+    /// Bounds of this layout, i.e. a union of bounds of all layout boxes.
+    pub fn bounds(&self) -> BoxBounds<Twips> {
+        self.bounds
+    }
+
+    /// Exterior bounds of this layout.
+    ///
+    /// The returned bounds will include the text bounds itself,
+    /// as well as left and right margins on any of the lines.
+    pub fn exterior_bounds(&self) -> BoxBounds<Twips> {
+        self.exterior_bounds
+    }
+
+    pub fn lines(&self) -> &Vec<LayoutLine<'gc>> {
+        &self.lines
+    }
+
+    pub fn boxes_iter(&self) -> LayoutBoxIter<'_, 'gc> {
+        LayoutBoxIter {
+            lines_iter: self.lines.iter(),
+            boxes_iter: None,
+        }
+    }
+
+    pub fn find_line_index_by_position(&self, position: usize) -> Option<usize> {
+        let result = self.lines.binary_search_by(|probe| {
+            if probe.end <= position {
+                Ordering::Less
+            } else if position < probe.start {
+                Ordering::Greater
+            } else {
+                Ordering::Equal
+            }
+        });
+        result.ok()
+    }
+}
+
+/// A `LayoutLine` represents a single line of text.
+/// It consists of [`LayoutBox`]es.
+#[derive(Clone, Debug, Collect)]
+#[collect(no_drop)]
+pub struct LayoutLine<'gc> {
+    /// Zero-based index of the line in the text.
+    #[collect(require_static)]
+    index: usize,
+
+    /// Line bounds.
+    /// It is a union of bounds of all layout
+    /// boxes contained within this line.
+    #[collect(require_static)]
+    bounds: BoxBounds<Twips>,
+
+    /// The start position of the line (inclusive).
+    start: usize,
+
+    /// The end position of the line (exclusive).
+    /// This position includes the line delimiter.
+    end: usize,
+
+    /// Layout boxes contained within this line.
+    boxes: Vec<LayoutBox<'gc>>,
+}
+
+impl<'gc> LayoutLine<'gc> {
+    pub fn index(&self) -> usize {
+        self.index
+    }
+
+    pub fn bounds(&self) -> BoxBounds<Twips> {
+        self.bounds
+    }
+
+    pub fn start(&self) -> usize {
+        self.start
+    }
+
+    pub fn end(&self) -> usize {
+        self.end
+    }
+
+    pub fn len(&self) -> usize {
+        self.end() - self.start()
+    }
+
+    pub fn text_range(&self) -> Range<usize> {
+        self.start..self.end
+    }
+
+    pub fn offset_y(&self) -> Twips {
+        self.bounds().offset_y()
+    }
+
+    pub fn extent_y(&self) -> Twips {
+        self.bounds().extent_y()
+    }
+
+    pub fn boxes_iter(&self) -> Iter<'_, LayoutBox<'gc>> {
+        self.boxes.iter()
+    }
+}
+
+/// A `LayoutBox` represents a single content box within a layout.
 ///
-/// The content of each box is determined by `LayoutContent`.
+/// The content of each box is determined by [`LayoutContent`].
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub struct LayoutBox<'gc> {
     /// The rectangle corresponding to the outer boundaries of the content box.
+    ///
+    /// TODO Currently, only text boxes have meaningful bounds.
     #[collect(require_static)]
     bounds: BoxBounds<Twips>,
 
@@ -686,7 +874,7 @@ pub struct LayoutBox<'gc> {
 /// Represents different content modes of a given `LayoutBox`.
 ///
 /// Currently, a `LayoutBox` can contain `Text`, `Bullet`s, or a `Drawing`.
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub enum LayoutContent<'gc> {
     /// A layout box containing some part of a text span.
@@ -694,10 +882,10 @@ pub enum LayoutContent<'gc> {
     /// The text is assumed to be pulled from the same `FormatSpans` that
     /// generated this layout box.
     Text {
-        /// The start position of the text to render.
+        /// The start position of the text to render (inclusive).
         start: usize,
 
-        /// The end position of the text to render.
+        /// The end position of the text to render (exclusive).
         end: usize,
 
         /// The formatting options for the text box.
@@ -722,6 +910,9 @@ pub enum LayoutContent<'gc> {
     /// This is almost identical to `Text`, but the text contents are assumed
     /// to be U+2022.
     Bullet {
+        /// The position of the bullet.
+        position: usize,
+
         /// The formatting options for the text box.
         #[collect(require_static)]
         text_format: TextFormat,
@@ -744,7 +935,33 @@ pub enum LayoutContent<'gc> {
     /// The drawing will be rendered with its origin at the position of the
     /// layout box's bounds. The size of those bounds do not affect the
     /// rendering of the drawing.
-    Drawing(#[collect(require_static)] Drawing),
+    Drawing {
+        /// The position of the drawing in text.
+        position: usize,
+
+        #[collect(require_static)]
+        drawing: Drawing,
+    },
+}
+
+impl<'gc> Debug for LayoutContent<'gc> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LayoutContent::Text { start, end, .. } => f
+                .debug_struct("Text")
+                .field("start", start)
+                .field("end", end)
+                .finish(),
+            LayoutContent::Bullet { position, .. } => f
+                .debug_struct("Bullet")
+                .field("position", position)
+                .finish(),
+            LayoutContent::Drawing { position, .. } => f
+                .debug_struct("Drawing")
+                .field("position", position)
+                .finish(),
+        }
+    }
 }
 
 impl<'gc> LayoutBox<'gc> {
@@ -760,165 +977,159 @@ impl<'gc> LayoutBox<'gc> {
                 text_format: span.get_text_format(),
                 font,
                 params,
-                color: span.color,
+                color: span.font.color,
             },
         }
     }
 
     /// Construct a bullet.
-    pub fn from_bullet(font: Font<'gc>, span: &TextSpan) -> Self {
+    pub fn from_bullet(position: usize, font: Font<'gc>, span: &TextSpan) -> Self {
         let params = EvalParameters::from_span(span);
 
         Self {
             bounds: Default::default(),
             content: LayoutContent::Bullet {
+                position,
                 text_format: span.get_text_format(),
                 font,
                 params,
-                color: span.color,
+                color: span.font.color,
             },
         }
     }
 
     /// Construct a drawing.
-    pub fn from_drawing(drawing: Drawing) -> Self {
+    pub fn from_drawing(position: usize, drawing: Drawing) -> Self {
         Self {
             bounds: Default::default(),
-            content: LayoutContent::Drawing(drawing),
+            content: LayoutContent::Drawing { position, drawing },
         }
     }
+}
 
-    /// Construct a new layout hierarchy from text spans.
-    ///
-    /// The returned bounds will include both the text bounds itself, as well
-    /// as left and right margins on any of the lines.
-    pub fn lower_from_text_spans(
-        fs: &FormatSpans,
-        context: &mut UpdateContext<'_, 'gc>,
-        movie: Arc<SwfMovie>,
-        bounds: Twips,
-        is_word_wrap: bool,
-        is_device_font: bool,
-    ) -> (Vec<LayoutBox<'gc>>, BoxBounds<Twips>) {
-        let mut layout_context = LayoutContext::new(movie, bounds, fs.displayed_text());
+/// Construct a new layout from text spans.
+pub fn lower_from_text_spans<'gc>(
+    fs: &FormatSpans,
+    context: &mut UpdateContext<'gc>,
+    movie: Arc<SwfMovie>,
+    bounds: Twips,
+    is_word_wrap: bool,
+    font_type: FontType,
+) -> Layout<'gc> {
+    let mut layout_context = LayoutContext::new(movie, bounds, fs.displayed_text());
 
-        for (span_start, _end, span_text, span) in fs.iter_spans() {
-            if let Some(font) = layout_context.resolve_font(context, span, is_device_font) {
-                layout_context.font = Some(font);
-                layout_context.newspan(span);
+    for (span_start, _end, span_text, span) in fs.iter_spans() {
+        if let Some(font) = layout_context.resolve_font(context, span, font_type) {
+            layout_context.font = Some(font);
+            layout_context.newspan(span);
 
-                let params = EvalParameters::from_span(span);
+            let params = EvalParameters::from_span(span);
 
-                for text in span_text.split(&[b'\n', b'\r', b'\t'][..]) {
-                    let slice_start = text.offset_in(span_text).unwrap();
-                    let delimiter = if slice_start > 0 {
-                        span_text
-                            .get(slice_start - 1)
-                            .and_then(|c| u8::try_from(c).ok())
-                    } else {
-                        None
-                    };
+            for text in span_text.split(&[b'\n', b'\r', b'\t'][..]) {
+                let slice_start = text.offset_in(span_text).unwrap();
+                let delimiter = if slice_start > 0 {
+                    span_text
+                        .get(slice_start - 1)
+                        .and_then(|c| u8::try_from(c).ok())
+                } else {
+                    None
+                };
 
-                    match delimiter {
-                        Some(b'\n' | b'\r') => {
-                            layout_context.explicit_newline(context, text, 0, span, is_device_font)
-                        }
-                        Some(b'\t') => layout_context.tab(),
-                        _ => {}
-                    }
+                match delimiter {
+                    Some(b'\n' | b'\r') => layout_context.explicit_newline(
+                        context,
+                        span_start + slice_start - 1,
+                        span,
+                        font_type,
+                    ),
+                    Some(b'\t') => layout_context.tab(),
+                    _ => {}
+                }
 
-                    let start = span_start + slice_start;
+                let start = span_start + slice_start;
 
-                    let mut last_breakpoint = 0;
+                let mut last_breakpoint = 0;
 
-                    if is_word_wrap {
-                        let (mut width, mut offset) = layout_context.wrap_dimensions(span);
+                if is_word_wrap {
+                    let (mut width, mut offset) = layout_context.wrap_dimensions(span);
 
-                        while let Some(breakpoint) = font.wrap_line(
-                            &text[last_breakpoint..],
-                            params,
-                            width,
-                            offset,
-                            layout_context.is_start_of_line(),
-                        ) {
-                            // This ensures that the space causing the line break
-                            // is included in the line it broke.
-                            let next_breakpoint = string_utils::next_char_boundary(
-                                text,
-                                last_breakpoint + breakpoint,
-                            );
+                    while let Some(breakpoint) = font.wrap_line(
+                        &text[last_breakpoint..],
+                        params,
+                        width,
+                        offset,
+                        layout_context.is_start_of_line(),
+                    ) {
+                        // This ensures that the space causing the line break
+                        // is included in the line it broke.
+                        let next_breakpoint =
+                            string_utils::next_char_boundary(text, last_breakpoint + breakpoint);
 
-                            // If text doesn't fit at the start of a line, it
-                            // won't fit on the next either, abort and put the
-                            // whole text on the line (will be cut-off). This
-                            // can happen for small text fields with single
-                            // characters.
-                            if breakpoint == 0 && layout_context.is_start_of_line() {
-                                break;
-                            } else if breakpoint == 0 {
-                                layout_context.newline(
-                                    context,
-                                    text,
-                                    next_breakpoint,
-                                    span,
-                                    is_device_font,
-                                );
-
-                                let next_dim = layout_context.wrap_dimensions(span);
-
-                                width = next_dim.0;
-                                offset = next_dim.1;
-
-                                if last_breakpoint >= text.len() {
-                                    break;
-                                } else {
-                                    continue;
-                                }
-                            }
-
-                            layout_context.append_text(
-                                &text[last_breakpoint..next_breakpoint],
-                                start + last_breakpoint,
-                                start + next_breakpoint,
-                                span,
-                            );
-
-                            last_breakpoint = next_breakpoint;
-                            if last_breakpoint >= text.len() {
-                                break;
-                            }
-
+                        // If text doesn't fit at the start of a line, it
+                        // won't fit on the next either, abort and put the
+                        // whole text on the line (will be cut-off). This
+                        // can happen for small text fields with single
+                        // characters.
+                        if breakpoint == 0 && layout_context.is_start_of_line() {
+                            break;
+                        } else if breakpoint == 0 {
                             layout_context.newline(
                                 context,
-                                text,
-                                next_breakpoint,
+                                start + next_breakpoint,
                                 span,
-                                is_device_font,
+                                font_type,
                             );
+
                             let next_dim = layout_context.wrap_dimensions(span);
 
                             width = next_dim.0;
                             offset = next_dim.1;
+
+                            if last_breakpoint >= text.len() {
+                                break;
+                            } else {
+                                continue;
+                            }
                         }
-                    }
 
-                    let span_end = text.len();
-
-                    if last_breakpoint < span_end {
                         layout_context.append_text(
-                            &text[last_breakpoint..span_end],
+                            &text[last_breakpoint..next_breakpoint],
                             start + last_breakpoint,
-                            start + span_end,
+                            start + next_breakpoint,
                             span,
                         );
+
+                        last_breakpoint = next_breakpoint;
+                        if last_breakpoint >= text.len() {
+                            break;
+                        }
+
+                        layout_context.newline(context, start + next_breakpoint, span, font_type);
+                        let next_dim = layout_context.wrap_dimensions(span);
+
+                        width = next_dim.0;
+                        offset = next_dim.1;
                     }
+                }
+
+                let span_end = text.len();
+
+                if last_breakpoint < span_end {
+                    layout_context.append_text(
+                        &text[last_breakpoint..span_end],
+                        start + last_breakpoint,
+                        start + span_end,
+                        span,
+                    );
                 }
             }
         }
-
-        layout_context.end_layout(context, fs, is_device_font)
     }
 
+    layout_context.end_layout(context, fs, font_type)
+}
+
+impl<'gc> LayoutBox<'gc> {
     pub fn bounds(&self) -> BoxBounds<Twips> {
         self.bounds
     }
@@ -967,6 +1178,7 @@ impl<'gc> LayoutBox<'gc> {
                 font,
                 params,
                 color,
+                ..
             } => Some((
                 WStr::from_units(&[0x2022u16]),
                 text_format,
@@ -974,7 +1186,7 @@ impl<'gc> LayoutBox<'gc> {
                 *params,
                 swf::Color::from_rgb(color.to_rgb(), 0xFF),
             )),
-            LayoutContent::Drawing(..) => None,
+            LayoutContent::Drawing { .. } => None,
         }
     }
 
@@ -983,7 +1195,7 @@ impl<'gc> LayoutBox<'gc> {
         match &self.content {
             LayoutContent::Text { .. } => None,
             LayoutContent::Bullet { .. } => None,
-            LayoutContent::Drawing(drawing) => Some(drawing),
+            LayoutContent::Drawing { drawing, .. } => Some(drawing),
         }
     }
 
@@ -993,6 +1205,22 @@ impl<'gc> LayoutBox<'gc> {
 
     pub fn is_bullet(&self) -> bool {
         matches!(&self.content, LayoutContent::Bullet { .. })
+    }
+
+    pub fn start(&self) -> usize {
+        match &self.content {
+            LayoutContent::Text { start, .. } => *start,
+            LayoutContent::Bullet { position, .. } => *position,
+            LayoutContent::Drawing { position, .. } => *position,
+        }
+    }
+
+    pub fn end(&self) -> usize {
+        match &self.content {
+            LayoutContent::Text { end, .. } => *end,
+            LayoutContent::Bullet { position, .. } => *position,
+            LayoutContent::Drawing { position, .. } => *position,
+        }
     }
 }
 
@@ -1005,4 +1233,31 @@ pub struct LayoutMetrics {
     pub height: Twips,
 
     pub x: Twips,
+}
+
+pub struct LayoutBoxIter<'layout, 'gc> {
+    lines_iter: Iter<'layout, LayoutLine<'gc>>,
+    boxes_iter: Option<Iter<'layout, LayoutBox<'gc>>>,
+}
+
+impl<'layout, 'gc> Iterator for LayoutBoxIter<'layout, 'gc> {
+    type Item = &'layout LayoutBox<'gc>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if let Some(boxes_iter) = self.boxes_iter.as_mut() {
+                if let Some(next) = boxes_iter.next() {
+                    return Some(next);
+                }
+            }
+
+            if let Some(next_line) = self.lines_iter.next() {
+                self.boxes_iter = Some(next_line.boxes_iter());
+            } else {
+                self.boxes_iter = None;
+                // No more lines
+                return None;
+            }
+        }
+    }
 }

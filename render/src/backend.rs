@@ -1,6 +1,6 @@
 pub mod null;
 
-use crate::bitmap::{Bitmap, BitmapHandle, BitmapSource, PixelRegion, SyncHandle};
+use crate::bitmap::{Bitmap, BitmapHandle, BitmapSource, PixelRegion, RgbaBufRead, SyncHandle};
 use crate::commands::CommandList;
 use crate::error::Error;
 use crate::filters::Filter;
@@ -9,13 +9,12 @@ use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
 use downcast_rs::{impl_downcast, Downcast};
 use ruffle_wstr::WStr;
-use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::fmt::Debug;
 use std::rc::Rc;
 use std::sync::Arc;
-use swf::{self, Color, Rectangle, Twips};
+use swf::{Color, Rectangle, Twips};
 
 pub struct BitmapCacheEntry {
     pub handle: BitmapHandle,
@@ -86,7 +85,7 @@ pub trait RenderBackend: Downcast {
         region: PixelRegion,
     ) -> Result<(), Error>;
 
-    fn create_context3d(&mut self) -> Result<Box<dyn Context3D>, Error>;
+    fn create_context3d(&mut self, profile: Context3DProfile) -> Result<Box<dyn Context3D>, Error>;
     fn context3d_present(&mut self, context: &mut dyn Context3D) -> Result<(), Error>;
 
     fn debug_info(&self) -> Cow<'static, str>;
@@ -104,10 +103,31 @@ pub trait RenderBackend: Downcast {
         &mut self,
         handle: PixelBenderShaderHandle,
         arguments: &[PixelBenderShaderArgument],
-        target: BitmapHandle,
-    ) -> Result<Box<dyn SyncHandle>, Error>;
+        target: &PixelBenderTarget,
+    ) -> Result<PixelBenderOutput, Error>;
+
+    fn resolve_sync_handle(
+        &mut self,
+        handle: Box<dyn SyncHandle>,
+        with_rgba: RgbaBufRead,
+    ) -> Result<(), Error>;
 }
 impl_downcast!(RenderBackend);
+
+pub enum PixelBenderTarget {
+    // The shader will write to the provided bitmap texture,
+    // producing a `PixelBenderOutput::Bitmap` with the corresponding
+    // `SyncHandle`
+    Bitmap(BitmapHandle),
+    // The shader will write to a temporary texture, which will then
+    // be immediately read back as bytes (in `PixelBenderOutput::Bytes`)
+    Bytes { width: u32, height: u32 },
+}
+
+pub enum PixelBenderOutput {
+    Bitmap(Box<dyn SyncHandle>),
+    Bytes(Vec<u8>),
+}
 
 pub trait IndexBuffer: Downcast {}
 impl_downcast!(IndexBuffer);
@@ -222,6 +242,7 @@ pub enum ProgramType {
 }
 
 pub trait Context3D: Downcast {
+    fn profile(&self) -> Context3DProfile;
     // The BitmapHandle for the texture we're rendering to
     fn bitmap_handle(&self) -> BitmapHandle;
     // Whether or not we should actually render the texture
@@ -280,6 +301,36 @@ pub enum Context3DTriangleFace {
     Back,
     Front,
     FrontAndBack,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum Context3DProfile {
+    Baseline,
+    BaselineConstrained,
+    BaselineExtended,
+    Standard,
+    StandardConstrained,
+    StandardExtended,
+}
+
+impl Context3DProfile {
+    pub fn from_wstr(s: &WStr) -> Option<Self> {
+        if s == b"baseline" {
+            Some(Context3DProfile::Baseline)
+        } else if s == b"baselineConstrained" {
+            Some(Context3DProfile::BaselineConstrained)
+        } else if s == b"baselineExtended" {
+            Some(Context3DProfile::BaselineExtended)
+        } else if s == b"standard" {
+            Some(Context3DProfile::Standard)
+        } else if s == b"standardConstrained" {
+            Some(Context3DProfile::StandardConstrained)
+        } else if s == b"standardExtended" {
+            Some(Context3DProfile::StandardExtended)
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -441,6 +492,8 @@ pub enum Context3DCommand<'a> {
     },
     CopyBitmapToTexture {
         source: Vec<u8>,
+        source_width: u32,
+        source_height: u32,
         dest: Rc<dyn Texture>,
         layer: u32,
     },
@@ -479,8 +532,9 @@ pub struct ShapeHandle(pub Arc<dyn ShapeHandleImpl>);
 pub trait ShapeHandleImpl: Downcast + Debug {}
 impl_downcast!(ShapeHandleImpl);
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(deny_unknown_fields))]
 pub struct ViewportDimensions {
     /// The dimensions of the stage's containing viewport.
     pub width: u32,

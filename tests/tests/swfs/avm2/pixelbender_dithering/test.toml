@@ -1,0 +1,10 @@
+# Based on https://github.com/FlashBacks1998/Custom-Pixel-Bender-Example-Ordered-Dithering-
+# The prints were sorted to avoid relying on object iteration order
+num_ticks = 1
+
+[image_comparisons.output]
+tolerance = 1
+max_outliers = 19813
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }

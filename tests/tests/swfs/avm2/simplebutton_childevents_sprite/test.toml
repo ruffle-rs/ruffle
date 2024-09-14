@@ -1,0 +1,5 @@
+# Clips SymbolClass-attached to Sprite subclasses (instead of MovieClip)
+# do not receive frame progression events (frameConstructed, exitFrame)
+# (or do not have a frame run?)
+num_frames = 1
+known_failure = true

@@ -36,7 +36,7 @@ pub(crate) mod glow_filter;
 pub(crate) mod gradient_filter;
 mod key;
 mod load_vars;
-mod local_connection;
+pub(crate) mod local_connection;
 mod math;
 mod matrix;
 pub(crate) mod mouse;
@@ -53,6 +53,7 @@ pub(crate) mod shared_object;
 pub(crate) mod sound;
 mod stage;
 pub(crate) mod string;
+pub(crate) mod style_sheet;
 pub(crate) mod system;
 pub(crate) mod system_capabilities;
 pub(crate) mod system_ime;
@@ -536,6 +537,7 @@ pub fn create_globals<'gc>(
 
     let sound_proto = sound::create_proto(context, object_proto, function_proto);
 
+    let style_sheet_proto = style_sheet::create_proto(context, object_proto, function_proto);
     let text_field_proto = text_field::create_proto(context, object_proto, function_proto);
     let text_format_proto = text_format::create_proto(context, object_proto, function_proto);
 
@@ -648,6 +650,13 @@ pub fn create_globals<'gc>(
         constructor_to_fn!(sound::constructor),
         function_proto,
         sound_proto,
+    );
+    let style_sheet = FunctionObject::constructor(
+        gc_context,
+        Executable::Native(style_sheet::constructor),
+        constructor_to_fn!(style_sheet::constructor),
+        function_proto,
+        style_sheet_proto,
     );
     let text_field = FunctionObject::constructor(
         gc_context,
@@ -938,6 +947,12 @@ pub fn create_globals<'gc>(
         text_field.into(),
         Attribute::DONT_ENUM,
     );
+    text_field.define_value(
+        gc_context,
+        "StyleSheet",
+        style_sheet.into(),
+        Attribute::DONT_ENUM | Attribute::VERSION_7,
+    );
     globals.define_value(
         gc_context,
         "TextFormat",
@@ -1181,7 +1196,7 @@ pub fn remove_display_object<'gc>(this: DisplayObject<'gc>, activation: &mut Act
     if depth >= AVM_DEPTH_BIAS && depth < AVM_MAX_REMOVE_DEPTH && !this.avm1_removed() {
         // Need a parent to remove from.
         if let Some(mut parent) = this.avm1_parent().and_then(|o| o.as_movie_clip()) {
-            parent.remove_child(&mut activation.context, this);
+            parent.remove_child(activation.context, this);
         }
     }
 }

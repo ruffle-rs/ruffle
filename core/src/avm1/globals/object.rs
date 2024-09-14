@@ -12,14 +12,14 @@ use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "addProperty" => method(add_property; DONT_ENUM | DONT_DELETE);
-    "hasOwnProperty" => method(has_own_property; DONT_ENUM | DONT_DELETE);
-    "isPropertyEnumerable" => method(is_property_enumerable; DONT_DELETE | DONT_ENUM);
-    "isPrototypeOf" => method(is_prototype_of; DONT_ENUM | DONT_DELETE);
+    "addProperty" => method(add_property; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "hasOwnProperty" => method(has_own_property; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "isPropertyEnumerable" => method(is_property_enumerable; DONT_DELETE | DONT_ENUM | VERSION_6);
+    "isPrototypeOf" => method(is_prototype_of; DONT_ENUM | DONT_DELETE | VERSION_6);
     "toString" => method(to_string; DONT_ENUM | DONT_DELETE);
     "valueOf" => method(value_of; DONT_ENUM | DONT_DELETE);
-    "watch" => method(watch; DONT_ENUM | DONT_DELETE);
-    "unwatch" => method(unwatch; DONT_ENUM | DONT_DELETE);
+    "watch" => method(watch; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "unwatch" => method(unwatch; DONT_ENUM | DONT_DELETE | VERSION_6);
 };
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {

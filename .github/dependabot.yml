@@ -1,0 +1,48 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/web/"
+    versioning-strategy: increase
+    schedule:
+      interval: "weekly"
+    groups:
+      npm-minor:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      winit-wgpu-egui:
+        patterns:
+        - "winit"
+        - "wgpu"
+        - "naga"
+        - "egui*"
+        - "raw-window-handle"
+      wasm-bindgen:
+        patterns:
+        - "wasm-bindgen"
+        - "js-sys"
+        - "web-sys"
+        - "wasm-bindgen-futures"
+      cargo-minor:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "tracing-tracy"
+      - dependency-name: "tracy-client"
+      - dependency-name: "profiling"

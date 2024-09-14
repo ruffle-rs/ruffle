@@ -1,0 +1,8 @@
+id3event id3:[object ID3Info]
+album:test album
+artist:test artist
+comment:test comment
+genre:test genre
+songName:test title
+track:5555
+year:9999

@@ -39,11 +39,11 @@ impl FromWStr for Mode {
     type Err = Infallible;
 
     fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
-        if s.eq_ignore_case(WStr::from_units(b"clamp")) {
+        if s == WStr::from_units(b"clamp") {
             Ok(Self::Clamp)
-        } else if s.eq_ignore_case(WStr::from_units(b"ignore")) {
+        } else if s == WStr::from_units(b"ignore") {
             Ok(Self::Ignore)
-        } else if s.eq_ignore_case(WStr::from_units(b"color")) {
+        } else if s == WStr::from_units(b"color") {
             Ok(Self::Color)
         } else {
             Ok(Self::Wrap)
@@ -140,7 +140,7 @@ impl<'gc> DisplacementMapFilter<'gc> {
         Self(GcCell::new(gc_context, self.0.read().clone()))
     }
 
-    fn map_bitmap(&self, context: &mut UpdateContext<'_, 'gc>) -> Option<Object<'gc>> {
+    fn map_bitmap(&self, context: &mut UpdateContext<'gc>) -> Option<Object<'gc>> {
         if let Some(map_bitmap) = self.0.read().map_bitmap {
             let proto = context.avm1.prototypes().bitmap_data;
             let result = ScriptObject::new(context.gc_context, Some(proto));
@@ -176,15 +176,20 @@ impl<'gc> DisplacementMapFilter<'gc> {
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
-        if let Some(Value::Object(object)) = value {
+        let Some(value) = value else { return Ok(()) };
+
+        if let Value::Object(object) = value {
             if let Some(x) = object.get_local_stored("x", activation, false) {
                 let x = x.coerce_to_f64(activation)?.clamp_to_i32();
                 if let Some(y) = object.get_local_stored("y", activation, false) {
                     let y = y.coerce_to_f64(activation)?.clamp_to_i32();
                     self.0.write(activation.context.gc_context).map_point = Point::new(x, y);
+                    return Ok(());
                 }
             }
         }
+
+        self.0.write(activation.context.gc_context).map_point = Point::default();
         Ok(())
     }
 
@@ -282,8 +287,9 @@ impl<'gc> DisplacementMapFilter<'gc> {
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
-            let color = Color::from_rgb(value.coerce_to_u32(activation)?, u8::MAX);
-            self.0.write(activation.context.gc_context).color = color;
+            let value = value.coerce_to_u32(activation)?;
+            let mut write = self.0.write(activation.context.gc_context);
+            write.color = Color::from_rgb(value, write.color.a);
         }
         Ok(())
     }
@@ -302,7 +308,7 @@ impl<'gc> DisplacementMapFilter<'gc> {
 
     pub fn filter(
         &self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
     ) -> ruffle_render::filters::DisplacementMapFilter {
         let filter = self.0.read();
         ruffle_render::filters::DisplacementMapFilter {
@@ -382,7 +388,7 @@ fn method<'gc>(
 
     Ok(match index {
         GET_MAP_BITMAP => this
-            .map_bitmap(&mut activation.context)
+            .map_bitmap(activation.context)
             .map_or(Value::Undefined, Value::from),
         SET_MAP_BITMAP => {
             this.set_map_bitmap(activation, args.get(0))?;

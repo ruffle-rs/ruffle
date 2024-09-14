@@ -29,6 +29,8 @@
 			trace("loader.contentLoaderInfo.bytesTotal = " + loader.contentLoaderInfo.bytesTotal);
 			trace("loader.contentLoaderInfo.bytes = " + loader.contentLoaderInfo.bytes); 
 			trace("loader.contentLoaderInfo.url = " + loader.contentLoaderInfo.url);
+
+			var bytes = ByteArray(new loadableSwf);
 			
 			function dump(event:Event) {
 				var url = loader.contentLoaderInfo.url;
@@ -43,6 +45,7 @@
 					+ ", loader.contentLoaderInfo.bytesLoaded = " + loader.contentLoaderInfo.bytesLoaded
 					+ ", loader.contentLoaderInfo.bytesTotal = " + loader.contentLoaderInfo.bytesTotal
 					+ ", loader.contentLoaderInfo.url = " + url);	
+				trace("bytes.position = " + bytes.position);
 			}
 			
 			loader.contentLoaderInfo.addEventListener(Event.OPEN, function(e) {
@@ -73,7 +76,7 @@
 				trace("loader.content after addChild attempt: " + loader.content);
 			});
 			
-			loader.loadBytes(ByteArray(new loadableSwf));
+			loader.loadBytes(bytes);
 		}
 	}
 }

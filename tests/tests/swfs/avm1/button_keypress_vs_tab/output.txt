@@ -1,0 +1,20 @@
+Focus changed: null -> _level0.button1
+button.onKeyDown: 9
+Tab pressed
+Focus changed: _level0.button1 -> _level0.button2
+button.onKeyUp: 9
+button.onKeyDown: 9
+Tab pressed
+Focus changed: _level0.button2 -> _level0.button1
+button.onKeyUp: 9
+button.onKeyDown: 27
+===== Escape pressed
+button.onKeyUp: 27
+button.onKeyDown: 9
+Tab pressed
+keyPress 3 tab
+button.onKeyUp: 9
+button.onKeyDown: 9
+Tab pressed
+keyPress 3 tab
+button.onKeyUp: 9

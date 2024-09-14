@@ -5,6 +5,7 @@
 package flash.events
 {
     
+    [API("667")]
     public class DRMAuthenticationErrorEvent extends ErrorEvent
     {
         // The string constant to use for the authentication error event in the type parameter when adding and removing event listeners.

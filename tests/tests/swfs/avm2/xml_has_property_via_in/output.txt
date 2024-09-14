@@ -1,0 +1,26 @@
+@val in a
+true
+
+val in a
+false
+
+item in a
+false
+
+@item in a
+false
+
+a in a
+true
+
+@a in a
+false
+
+0 in a
+true
+
+1 in a
+false
+
+propertyIsEnumerable in a
+true

@@ -1,15 +1,14 @@
 //! Object representation for `flash.utils.Dictionary`
 
 use crate::avm2::activation::Activation;
-use crate::avm2::dynamic_map::StringOrObject;
+use crate::avm2::dynamic_map::DynamicKey;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::AvmString;
 use core::fmt;
-use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
-use std::cell::{Ref, RefMut};
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 
 /// A class instance allocator that allocates Dictionary objects.
 pub fn dictionary_allocator<'gc>(
@@ -18,7 +17,7 @@ pub fn dictionary_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(DictionaryObject(GcCell::new(
+    Ok(DictionaryObject(Gc::new(
         activation.context.gc_context,
         DictionaryObjectData { base },
     ))
@@ -32,36 +31,40 @@ pub fn dictionary_allocator<'gc>(
 /// keys are objects instead of strings.
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct DictionaryObject<'gc>(pub GcCell<'gc, DictionaryObjectData<'gc>>);
+pub struct DictionaryObject<'gc>(pub Gc<'gc, DictionaryObjectData<'gc>>);
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
-pub struct DictionaryObjectWeak<'gc>(pub GcWeakCell<'gc, DictionaryObjectData<'gc>>);
+pub struct DictionaryObjectWeak<'gc>(pub GcWeak<'gc, DictionaryObjectData<'gc>>);
 
 impl fmt::Debug for DictionaryObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("DictionaryObject")
-            .field("ptr", &self.0.as_ptr())
+            .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
 }
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct DictionaryObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
 }
 
+const _: () = assert!(std::mem::offset_of!(DictionaryObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<DictionaryObjectData>() == std::mem::align_of::<ScriptObjectData>()
+);
+
 impl<'gc> DictionaryObject<'gc> {
     /// Retrieve a value in the dictionary's object space.
     pub fn get_property_by_object(self, name: Object<'gc>) -> Value<'gc> {
-        self.0
-            .read()
-            .base
-            .values
+        self.base()
+            .values()
             .as_hashmap()
-            .get(&StringOrObject::Object(name))
+            .get(&DynamicKey::Object(name))
             .cloned()
             .map(|v| v.value)
             .unwrap_or(Value::Undefined)
@@ -69,44 +72,36 @@ impl<'gc> DictionaryObject<'gc> {
 
     /// Set a value in the dictionary's object space.
     pub fn set_property_by_object(self, name: Object<'gc>, value: Value<'gc>, mc: &Mutation<'gc>) {
-        self.0
-            .write(mc)
-            .base
-            .values
-            .insert(StringOrObject::Object(name), value);
+        self.base()
+            .values_mut(mc)
+            .insert(DynamicKey::Object(name), value);
     }
 
     /// Delete a value from the dictionary's object space.
     pub fn delete_property_by_object(self, name: Object<'gc>, mc: &Mutation<'gc>) {
-        self.0
-            .write(mc)
-            .base
-            .values
-            .remove(&StringOrObject::Object(name));
+        self.base().values_mut(mc).remove(&DynamicKey::Object(name));
     }
 
     pub fn has_property_by_object(self, name: Object<'gc>) -> bool {
-        self.0
-            .read()
-            .base
-            .values
+        self.base()
+            .values()
             .as_hashmap()
-            .get(&StringOrObject::Object(name))
+            .get(&DynamicKey::Object(name))
             .is_some()
     }
 }
 
 impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        Ref::map(self.0.read(), |read| &read.base)
-    }
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        RefMut::map(self.0.write(mc), |write| &mut write.base)
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.as_ptr() as *const ObjectPtr
+        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
     fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
@@ -130,13 +125,11 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
     fn get_enumerant_value(
         self,
         index: u32,
-        activation: &mut Activation<'_, 'gc>,
+        _activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(*self
-            .0
-            .write(activation.context.gc_context)
-            .base
-            .values
+            .base()
+            .values()
             .value_at(index as usize)
             .unwrap_or(&Value::Undefined))
     }

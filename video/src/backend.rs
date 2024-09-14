@@ -26,6 +26,15 @@ pub trait VideoBackend {
         filter: VideoDeblocking,
     ) -> Result<VideoStreamHandle, Error>;
 
+    /// Configure the decoder of a given video stream.
+    ///
+    /// The `configuration_data` contains codec-specific parameters.
+    fn configure_video_stream_decoder(
+        &mut self,
+        stream: VideoStreamHandle,
+        configuration_data: &[u8],
+    ) -> Result<(), Error>;
+
     /// Preload a frame of a given video stream.
     ///
     /// No decoding is intended to happen at this point in time. Instead, the

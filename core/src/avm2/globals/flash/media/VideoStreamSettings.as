@@ -7,6 +7,7 @@ package flash.media
 {
     import __ruffle__.stub_method;
 
+    [API("674")]
     public class VideoStreamSettings
     {
         // Retrieve the maximum amount of bandwidth that the current outgoing video feed can use, in bytes per second.

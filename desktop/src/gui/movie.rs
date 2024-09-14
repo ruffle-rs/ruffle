@@ -87,6 +87,7 @@ impl MovieViewRenderer {
                     // 1: vec2 texture coordinates
                     attributes: &wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x2],
                 }],
+                compilation_options: Default::default(),
             },
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
@@ -116,8 +117,10 @@ impl MovieViewRenderer {
                     blend: Some(wgpu::BlendState::REPLACE),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
+                compilation_options: Default::default(),
             }),
             multiview: None,
+            cache: None,
         });
         let vertices = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,

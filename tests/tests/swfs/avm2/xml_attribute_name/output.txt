@@ -1,0 +1,40 @@
+name = xml.@bar.name: bar
+xml[name]: attribute
+xml[name]: new attribute
+xml["bar"]: element
+xml["@bar"]: new attribute
+name2 = xml.bar.name(): bar
+xml[name2]: element
+xml[name2]: new element
+xml["bar"]: new element
+xml["@bar"]: new attribute
+xml["@foo"]: My new attr
+<foo bar="new attribute" foo="My new attr">
+  <bar>new element</bar>
+</foo>
+Has property: true
+After delete: xml["@foo"] = 
+<foo bar="new attribute">
+  <bar>new element</bar>
+</foo>
+List: <foo bar="new attribute">
+  <bar>new element</bar>
+</foo>
+<foo bar="new attribute">
+  <bar>new element</bar>
+</foo>
+list["@bar"] = new attributenew attribute
+<foo bar="new attribute">
+  <bar>new element</bar>
+</foo>
+<foo bar="new attribute">
+  <bar>new element</bar>
+</foo>
+After delete:
+list["@bar"] = 
+<foo>
+  <bar>new element</bar>
+</foo>
+<foo>
+  <bar>new element</bar>
+</foo>

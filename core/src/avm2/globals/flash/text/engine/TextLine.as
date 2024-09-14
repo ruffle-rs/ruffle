@@ -4,13 +4,15 @@ package flash.text.engine {
     import __ruffle__.stub_method;
 
     import flash.display.DisplayObjectContainer;
+    import flash.errors.IllegalOperationError;
     import flash.geom.Rectangle;
+    import flash.ui.ContextMenu;
 
     // FIXME: None of the DisplayObjectContainer methods actually work on
     // the TextLine class in Ruffle, despite the methods working fine in FP-
     // however, it's unlikely that SWFs will actually attempt to add children
     // to a TextLine.
-    [Ruffle(NativeInstanceInit)]
+    [Ruffle(SuperInitializer)]
     public final class TextLine extends DisplayObjectContainer {
         internal var _specifiedWidth:Number = 0.0;
         internal var _textBlock:TextBlock = null;
@@ -93,13 +95,18 @@ package flash.text.engine {
             return 0.0;
         }
 
-        public function hasTabs():Boolean {
+        public function get hasTabs():Boolean {
             stub_getter("flash.text.engine.TextLine", "hasTabs");
             return false;
         }
 
         public function getAtomIndexAtPoint(stageX:Number, stageY:Number):int {
             stub_method("flash.text.engine.TextLine", "getAtomIndexAtPoint");
+            return -1;
+        }
+
+        public function getAtomIndexAtCharIndex(charIndex:int):int {
+            stub_method("flash.text.engine.TextLine", "getAtomIndexAtCharIndex");
             return -1;
         }
 
@@ -110,5 +117,49 @@ package flash.text.engine {
 
         // This function does nothing in Flash Player 32
         public function flushAtomData():void { }
+
+        // Overrides
+
+        override public function get contextMenu():ContextMenu {
+            return null;
+        }
+
+        override public function set contextMenu(cm:ContextMenu):void {
+            throw new IllegalOperationError("Error #2181: The TextLine class does not implement this property or method.", 2181);
+        }
+
+        override public function get focusRect():Object {
+            return null;
+        }
+
+        override public function set focusRect(value:Object):void {
+            throw new IllegalOperationError("Error #2181: The TextLine class does not implement this property or method.", 2181);
+        }
+
+        override public function get tabChildren():Boolean {
+            return false;
+        }
+
+        override public function set tabChildren(value:Boolean):void {
+            throw new IllegalOperationError("Error #2181: The TextLine class does not implement this property or method.", 2181);
+        }
+
+        override public function get tabEnabled():Boolean {
+            return false;
+        }
+
+        override public function set tabEnabled(value:Boolean):void {
+            throw new IllegalOperationError("Error #2181: The TextLine class does not implement this property or method.", 2181);
+        }
+
+        override public function get tabIndex():int {
+            return -1;
+        }
+
+        override public function set tabIndex(index:int):void {
+            throw new IllegalOperationError("Error #2181: The TextLine class does not implement this property or method.", 2181);
+        }
+
+        // End of overrides
     }
 }

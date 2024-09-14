@@ -1,0 +1,8 @@
+Color: 16777215
+Font size: 15
+Font family: Arial,_sans
+Is Bold: true
+Is Italic: true
+Leading: 5
+Text align: center
+Underlined: true

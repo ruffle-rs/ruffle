@@ -3,7 +3,7 @@ use core::ops::{Bound, Index, IndexMut, Range, RangeBounds};
 
 use super::{ptr, FromWStr, Pattern, WString};
 
-/// A UCS2 string slice, analoguous to `&'a str`.
+/// A UCS2 string slice, analogous to `&'a str`.
 #[repr(transparent)]
 pub struct WStr {
     /// See the `ptr` module for more details.
@@ -11,7 +11,7 @@ pub struct WStr {
 }
 
 #[cold]
-pub(super) fn panic_on_invalid_length(len: usize) -> ! {
+pub fn panic_on_invalid_length(len: usize) -> ! {
     panic!("Too many code units in Ruffle string (len = {})", len)
 }
 
@@ -320,7 +320,7 @@ impl WStr {
 
     /// Returns `true` is the string contains only LATIN1 characters.
     ///
-    /// Note that this doesn't necessarily means that `self.is_wide()` is `false`.
+    /// Note that this doesn't necessarily mean that `self.is_wide()` is `false`.
     #[inline]
     pub fn is_latin1(&self) -> bool {
         super::ops::str_is_latin1(self)
@@ -344,6 +344,18 @@ impl WStr {
     #[inline]
     pub fn make_ascii_lowercase(&mut self) {
         super::ops::str_make_ascii_lowercase(self)
+    }
+
+    /// Returns a new string with all ASCII characters mapped to their uppercase equivalent.
+    #[inline]
+    pub fn to_ascii_uppercase(&self) -> WString {
+        super::ops::str_to_ascii_uppercase(self)
+    }
+
+    /// Converts this string to its ASCII uppercase equivalent in-place.
+    #[inline]
+    pub fn make_ascii_uppercase(&mut self) {
+        super::ops::str_make_ascii_uppercase(self)
     }
 
     /// Analogue of [`str::replace`].

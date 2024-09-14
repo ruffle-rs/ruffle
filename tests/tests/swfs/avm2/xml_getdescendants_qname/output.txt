@@ -1,0 +1,21 @@
+getdescendants QName(null, null)
+element
+element
+
+getdescendants Multiname(null, [Namespace("")])
+text
+element
+text
+element
+text
+text
+text
+
+getdescendants Multiname(null, [Namespace(""), Namespace("x")])
+text
+element
+text
+element
+text
+text
+text

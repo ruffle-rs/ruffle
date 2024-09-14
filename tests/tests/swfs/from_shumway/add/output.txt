@@ -1,0 +1,11 @@
+3
+NaN
+NaN
+_level0a
+NaN
+1a
+a1
+NaN
+nulla
+b[type Function]
+[type Object]c

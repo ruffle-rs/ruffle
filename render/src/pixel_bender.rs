@@ -199,7 +199,7 @@ pub enum Opcode {
     SampleNearest = 0x30,
     SampleLinear = 0x31,
     LoadIntOrFloat = 0x32,
-    Loop = 0x33,
+    Select = 0x33,
     If = 0x34,
     Else = 0x35,
     EndIf = 0x36,
@@ -250,8 +250,11 @@ pub enum Operation {
     },
     Else,
     EndIf,
-    Loop {
-        unknown: Box<[u8]>,
+    Select {
+        src1: PixelBenderReg,
+        src2: PixelBenderReg,
+        condition: PixelBenderReg,
+        dst: PixelBenderReg,
     },
 }
 
@@ -269,14 +272,21 @@ pub enum PixelBenderShaderArgument<'a> {
     },
 }
 
-/// An image input. This accepts both an owned BitmapHandle,
-/// and a borrowed texture (used when applying a filter to
-/// a texture that we don't have ownership of, and therefore
-/// cannot construct a BitmapHandle for).
+/// An image input.
+///
+/// This accepts both an owned BitmapHandle, and a borrowed texture
+/// (used when applying a filter to a texture that we don't have
+/// ownership of, and therefore cannot construct a BitmapHandle for).
 #[derive(Debug, Clone)]
 pub enum ImageInputTexture<'a> {
     Bitmap(BitmapHandle),
     TextureRef(&'a dyn RawTexture),
+    Bytes {
+        width: u32,
+        height: u32,
+        channels: u32,
+        bytes: Vec<u8>,
+    },
 }
 
 impl PartialEq for ImageInputTexture<'_> {
@@ -585,11 +595,29 @@ fn read_op<R: Read>(
                 _ => unreachable!(),
             }
         }
-        Opcode::Loop => {
-            let mut unknown = vec![0u8; 23];
-            data.read_exact(&mut unknown)?;
-            shader.operations.push(Operation::Loop {
-                unknown: unknown.into(),
+        Opcode::Select => {
+            let dst = data.read_u16::<LittleEndian>()?;
+            let mask = data.read_u8()?;
+            assert_eq!(mask & 0xF, 0);
+            let dst_reg = read_dst_reg(dst, mask >> 4)?;
+
+            let condition = read_uint24(data)?;
+            assert_eq!(data.read_u8()?, 0);
+            let condition_reg = read_src_reg(condition, 1)?;
+
+            let src1 = read_uint24(data)?;
+            assert_eq!(data.read_u8()?, 0);
+            let src_reg1 = read_src_reg(src1, 1)?;
+
+            let src2 = read_uint24(data)?;
+            assert_eq!(data.read_u8()?, 0);
+            let src_reg2 = read_src_reg(src2, 1)?;
+
+            shader.operations.push(Operation::Select {
+                condition: condition_reg,
+                src1: src_reg1,
+                src2: src_reg2,
+                dst: dst_reg,
             });
         }
         _ => {

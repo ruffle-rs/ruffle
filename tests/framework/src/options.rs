@@ -3,8 +3,8 @@ use crate::environment::{Environment, RenderInterface};
 use crate::image_trigger::ImageTrigger;
 use crate::util::write_image;
 use anyhow::{anyhow, Result};
-use approx::assert_relative_eq;
-use image::ImageOutputFormat;
+use approx::relative_eq;
+use image::ImageFormat;
 use regex::Regex;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{PlayerBuilder, PlayerRuntime, ViewportDimensions};
@@ -15,7 +15,7 @@ use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 use vfs::VfsPath;
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct TestOptions {
     pub num_frames: Option<u32>,
@@ -30,6 +30,7 @@ pub struct TestOptions {
     pub player_options: PlayerOptions,
     pub log_fetch: bool,
     pub required_features: RequiredFeatures,
+    pub fonts: HashMap<String, FontOptions>,
 }
 
 impl Default for TestOptions {
@@ -47,6 +48,7 @@ impl Default for TestOptions {
             player_options: PlayerOptions::default(),
             log_fetch: false,
             required_features: RequiredFeatures::default(),
+            fonts: Default::default(),
         }
     }
 }
@@ -81,7 +83,7 @@ impl TestOptions {
     }
 }
 
-#[derive(Deserialize, Default)]
+#[derive(Clone, Deserialize, Default)]
 #[serde(default, deny_unknown_fields)]
 pub struct Approximations {
     number_patterns: Vec<String>,
@@ -90,19 +92,31 @@ pub struct Approximations {
 }
 
 impl Approximations {
-    pub fn compare(&self, actual: f64, expected: f64) {
-        match (self.epsilon, self.max_relative) {
-            (Some(epsilon), Some(max_relative)) => assert_relative_eq!(
+    pub fn compare(&self, actual: f64, expected: f64) -> Result<()> {
+        let result = match (self.epsilon, self.max_relative) {
+            (Some(epsilon), Some(max_relative)) => relative_eq!(
                 actual,
                 expected,
                 epsilon = epsilon,
                 max_relative = max_relative
             ),
-            (Some(epsilon), None) => assert_relative_eq!(actual, expected, epsilon = epsilon),
+            (Some(epsilon), None) => relative_eq!(actual, expected, epsilon = epsilon),
             (None, Some(max_relative)) => {
-                assert_relative_eq!(actual, expected, max_relative = max_relative)
+                relative_eq!(actual, expected, max_relative = max_relative)
             }
-            (None, None) => assert_relative_eq!(actual, expected),
+            (None, None) => relative_eq!(actual, expected),
+        };
+
+        if result {
+            Ok(())
+        } else {
+            Err(anyhow!(
+                "Approximation failed: expected {}, found {}. Episilon = {:?}, Max Relative = {:?}",
+                expected,
+                actual,
+                self.epsilon,
+                self.max_relative
+            ))
         }
     }
 
@@ -114,7 +128,7 @@ impl Approximations {
     }
 }
 
-#[derive(Deserialize, Default)]
+#[derive(Clone, Deserialize, Default)]
 #[serde(default, deny_unknown_fields)]
 pub struct RequiredFeatures {
     lzma: bool,
@@ -127,7 +141,7 @@ impl RequiredFeatures {
     }
 }
 
-#[derive(Deserialize, Default)]
+#[derive(Clone, Deserialize, Default)]
 #[serde(default, deny_unknown_fields)]
 pub struct PlayerOptions {
     max_execution_duration: Option<Duration>,
@@ -160,10 +174,28 @@ impl PlayerOptions {
 
         player_builder = player_builder.with_player_runtime(self.runtime);
 
-        #[cfg(feature = "ruffle_video_software")]
         if self.with_video {
-            use ruffle_video_software::backend::SoftwareVideoBackend;
-            player_builder = player_builder.with_video(SoftwareVideoBackend::new())
+            #[cfg(feature = "ruffle_video_external")]
+            {
+                let current_exe = std::env::current_exe()?;
+                let directory = current_exe.parent().expect("Executable parent dir");
+
+                use ruffle_video_external::backend::ExternalVideoBackend;
+                let openh264 = ExternalVideoBackend::load_openh264(directory)
+                    .map_err(|e| anyhow!("Couldn't load OpenH264: {}", e))?;
+
+                player_builder =
+                    player_builder.with_video(ExternalVideoBackend::new(Some(openh264)));
+            }
+
+            #[cfg(all(
+                not(feature = "ruffle_video_external"),
+                feature = "ruffle_video_software"
+            ))]
+            {
+                player_builder = player_builder
+                    .with_video(ruffle_video_software::backend::SoftwareVideoBackend::new());
+            }
         }
 
         Ok(player_builder)
@@ -193,11 +225,11 @@ impl PlayerOptions {
         &self,
         environment: &impl Environment,
         dimensions: ViewportDimensions,
-    ) -> Vec<(Box<dyn RenderInterface>, Box<dyn RenderBackend>)> {
+    ) -> Option<(Box<dyn RenderInterface>, Box<dyn RenderBackend>)> {
         if self.with_renderer.is_some() {
-            environment.create_renderers(dimensions.width, dimensions.height)
+            environment.create_renderer(dimensions.width, dimensions.height)
         } else {
-            vec![]
+            None
         }
     }
 }
@@ -232,7 +264,7 @@ impl ImageComparison {
                 write_image(
                     &test_path.join(format!("{name}.actual-{environment_name}.png"))?,
                     &actual_image,
-                    ImageOutputFormat::Png,
+                    ImageFormat::Png,
                 )
             } else {
                 Ok(())
@@ -310,7 +342,7 @@ impl ImageComparison {
                 write_image(
                     &test_path.join(format!("{name}.difference-color-{environment_name}.png"))?,
                     &difference_image,
-                    ImageOutputFormat::Png,
+                    ImageFormat::Png,
                 )?;
             }
 
@@ -334,7 +366,7 @@ impl ImageComparison {
                         &test_path
                             .join(format!("{name}.difference-alpha-{environment_name}.png"))?,
                         &difference_image,
-                        ImageOutputFormat::Png,
+                        ImageFormat::Png,
                     )?;
                 }
             }
@@ -354,12 +386,11 @@ impl ImageComparison {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct RenderOptions {
     optional: bool,
     pub sample_count: u32,
-    pub exclude_warp: bool,
 }
 
 impl Default for RenderOptions {
@@ -367,7 +398,15 @@ impl Default for RenderOptions {
         Self {
             optional: false,
             sample_count: 1,
-            exclude_warp: false,
         }
     }
+}
+
+#[derive(Deserialize, Default, Clone)]
+#[serde(default, deny_unknown_fields)]
+pub struct FontOptions {
+    pub family: String,
+    pub path: String,
+    pub bold: bool,
+    pub italic: bool,
 }

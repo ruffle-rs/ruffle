@@ -1,18 +1,25 @@
-use anyhow::{Context, Error};
-use arboard::Clipboard;
+use crate::custom_event::RuffleEvent;
+use crate::gui::dialogs::message_dialog::MessageDialogConfiguration;
+use crate::gui::{DialogDescriptor, LocalizableText};
+use crate::preferences::GlobalPreferences;
+use anyhow::Error;
 use chrono::{DateTime, Utc};
+use egui_winit::clipboard::Clipboard;
+use fontdb::Family;
 use rfd::{
     AsyncFileDialog, FileHandle, MessageButtons, MessageDialog, MessageDialogResult, MessageLevel,
 };
 use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_core::backend::ui::{
     DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter, FontDefinition,
-    FullscreenError, LanguageIdentifier, MouseCursor, UiBackend, US_ENGLISH,
+    FullscreenError, LanguageIdentifier, MouseCursor, UiBackend,
 };
 use std::rc::Rc;
-use sys_locale::get_locale;
+use std::sync::Arc;
 use tracing::error;
 use url::Url;
+use winit::event_loop::EventLoopProxy;
+use winit::raw_window_handle::HasDisplayHandle;
 use winit::window::{Fullscreen, Window};
 
 pub struct DesktopFileDialogResult {
@@ -82,21 +89,17 @@ impl FileDialogResult for DesktopFileDialogResult {
         }
     }
 
-    fn creator(&self) -> Option<String> {
-        None
-    }
-
     fn contents(&self) -> &[u8] {
         &self.contents
     }
 
-    fn write(&self, data: &[u8]) {
+    fn write_and_refresh(&mut self, data: &[u8]) {
+        // write
         if let Some(handle) = &self.handle {
             let _ = std::fs::write(handle.path(), data);
         }
-    }
 
-    fn refresh(&mut self) {
+        // refresh
         let md = self
             .handle
             .as_ref()
@@ -114,30 +117,45 @@ impl FileDialogResult for DesktopFileDialogResult {
 }
 
 pub struct DesktopUiBackend {
-    window: Rc<Window>,
+    window: Arc<Window>,
+    event_loop: EventLoopProxy<RuffleEvent>,
     cursor_visible: bool,
     clipboard: Clipboard,
-    language: LanguageIdentifier,
+    preferences: GlobalPreferences,
     preferred_cursor: MouseCursor,
     open_url_mode: OpenURLMode,
+    font_database: Rc<fontdb::Database>,
     /// Is a dialog currently open
     dialog_open: bool,
 }
 
 impl DesktopUiBackend {
-    pub fn new(window: Rc<Window>, open_url_mode: OpenURLMode) -> Result<Self, Error> {
-        let preferred_language = get_locale();
-        let language = preferred_language
-            .and_then(|l| l.parse().ok())
-            .unwrap_or_else(|| US_ENGLISH.clone());
+    pub fn new(
+        window: Arc<Window>,
+        event_loop: EventLoopProxy<RuffleEvent>,
+        open_url_mode: OpenURLMode,
+        font_database: Rc<fontdb::Database>,
+        preferences: GlobalPreferences,
+    ) -> Result<Self, Error> {
+        // The window handle is only relevant to linux/wayland
+        // If it fails it'll fallback to x11 or wlr-data-control
+        let clipboard = Clipboard::new(
+            window
+                .clone()
+                .display_handle()
+                .ok()
+                .map(|handle| handle.as_raw()),
+        );
         Ok(Self {
             window,
+            event_loop,
             cursor_visible: true,
-            clipboard: Clipboard::new().context("Couldn't get platform clipboard")?,
-            language,
+            clipboard,
+            preferences,
             preferred_cursor: MouseCursor::Arrow,
             open_url_mode,
             dialog_open: false,
+            font_database,
         })
     }
 
@@ -155,8 +173,6 @@ impl DesktopUiBackend {
     }
 }
 
-const DOWNLOAD_FAILED_MESSAGE: &str = "Ruffle failed to open or download this file.";
-
 impl UiBackend for DesktopUiBackend {
     fn mouse_visible(&self) -> bool {
         self.cursor_visible
@@ -171,13 +187,11 @@ impl UiBackend for DesktopUiBackend {
     }
 
     fn clipboard_content(&mut self) -> String {
-        self.clipboard.get_text().unwrap_or_default()
+        self.clipboard.get().unwrap_or_default()
     }
 
     fn set_clipboard_content(&mut self, content: String) {
-        if let Err(e) = self.clipboard.set_text(content) {
-            error!("Couldn't set clipboard contents: {:?}", e);
-        }
+        self.clipboard.set(content);
     }
 
     fn set_fullscreen(&mut self, is_full: bool) -> Result<(), FullscreenError> {
@@ -189,22 +203,28 @@ impl UiBackend for DesktopUiBackend {
         Ok(())
     }
 
-    fn display_root_movie_download_failed_message(&self) {
-        let dialog = MessageDialog::new()
-            .set_level(MessageLevel::Warning)
-            .set_title("Ruffle - Load failed")
-            .set_description(DOWNLOAD_FAILED_MESSAGE)
-            .set_buttons(MessageButtons::Ok);
-        dialog.show();
+    fn display_root_movie_download_failed_message(&self, _invalid_swf: bool) {
+        let _ = self
+            .event_loop
+            .send_event(RuffleEvent::OpenDialog(DialogDescriptor::ShowMessage(
+                MessageDialogConfiguration::new(
+                    LocalizableText::LocalizedText("message-dialog-root-movie-load-error-title"),
+                    LocalizableText::LocalizedText(
+                        "message-dialog-root-movie-load-error-description",
+                    ),
+                ),
+            )));
     }
 
     fn message(&self, message: &str) {
-        let dialog = MessageDialog::new()
-            .set_level(MessageLevel::Info)
-            .set_title("Ruffle")
-            .set_description(message)
-            .set_buttons(MessageButtons::Ok);
-        dialog.show();
+        let _ = self
+            .event_loop
+            .send_event(RuffleEvent::OpenDialog(DialogDescriptor::ShowMessage(
+                MessageDialogConfiguration::new(
+                    LocalizableText::NonLocalizedText("Ruffle".into()),
+                    LocalizableText::NonLocalizedText(message.to_string().into()),
+                ),
+            )));
     }
 
     fn display_unsupported_video(&self, url: Url) {
@@ -249,18 +269,63 @@ impl UiBackend for DesktopUiBackend {
 
     fn load_device_font(
         &self,
-        _name: &str,
-        _is_bold: bool,
-        _is_italic: bool,
-        _register: &mut dyn FnMut(FontDefinition),
+        name: &str,
+        is_bold: bool,
+        is_italic: bool,
+        register: &mut dyn FnMut(FontDefinition),
     ) {
+        let query = fontdb::Query {
+            families: &[Family::Name(name)],
+            weight: if is_bold {
+                fontdb::Weight::BOLD
+            } else {
+                fontdb::Weight::NORMAL
+            },
+            style: if is_italic {
+                fontdb::Style::Italic
+            } else {
+                fontdb::Style::Normal
+            },
+            ..Default::default()
+        };
+
+        // It'd be nice if we can get the full list of candidates... Feature request?
+        if let Some(id) = self.font_database.query(&query) {
+            if let Some(face) = self.font_database.face(id) {
+                tracing::info!("Loading device font \"{}\" for \"{name}\" (italic: {is_italic}, bold: {is_bold})", face.post_script_name);
+
+                match &face.source {
+                    fontdb::Source::File(path) => match std::fs::read(path) {
+                        Ok(bytes) => register(FontDefinition::FontFile {
+                            name: name.to_owned(),
+                            is_bold,
+                            is_italic,
+                            data: bytes,
+                            index: face.index,
+                        }),
+                        Err(e) => error!("Couldn't read font file at {path:?}: {e}"),
+                    },
+                    fontdb::Source::Binary(bin) | fontdb::Source::SharedFile(_, bin) => {
+                        register(FontDefinition::FontFile {
+                            name: name.to_owned(),
+                            is_bold,
+                            is_italic,
+                            data: bin.as_ref().as_ref().to_vec(),
+                            index: face.index,
+                        })
+                    }
+                };
+            }
+        }
     }
 
     // Unused on desktop
     fn open_virtual_keyboard(&self) {}
 
-    fn language(&self) -> &LanguageIdentifier {
-        &self.language
+    fn close_virtual_keyboard(&self) {}
+
+    fn language(&self) -> LanguageIdentifier {
+        self.preferences.language().clone()
     }
 
     fn display_file_open_dialog(&mut self, filters: Vec<FileFilter>) -> Option<DialogResultFuture> {

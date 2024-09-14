@@ -1,0 +1,45 @@
+Tab pressed
+Focus changed: text1 -> text2
+Tab pressed
+Focus changed: text2 -> text3
+Tab pressed
+Focus changed: text3 -> text4
+Tab pressed
+Focus changed: text4 -> text1
+Tab pressed
+Focus changed: text1 -> text2
+Escape pressed, moving to stage 1
+Focus changed: text2 -> text4
+Tab pressed
+Focus changed: text4 -> text1
+Tab pressed
+Focus changed: text1 -> text2
+Tab pressed
+Focus changed: text2 -> text3
+Tab pressed
+Focus changed: text3 -> text4
+Tab pressed
+Focus changed: text4 -> text1
+Escape pressed, moving to stage 2
+Tab pressed
+Focus changed: text1 -> text3
+Tab pressed
+Focus changed: text3 -> text4
+Tab pressed
+Focus changed: text4 -> text1
+Tab pressed
+Focus changed: text1 -> text3
+Tab pressed
+Focus changed: text3 -> text4
+Escape pressed, moving to stage 3
+Focus changed: text4 -> text1
+Tab pressed
+Focus changed: text1 -> text2
+Tab pressed
+Focus changed: text2 -> text3
+Tab pressed
+Focus changed: text3 -> text4
+Tab pressed
+Focus changed: text4 -> text2
+Tab pressed
+Focus changed: text2 -> text3

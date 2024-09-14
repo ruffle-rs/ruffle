@@ -139,9 +139,9 @@ impl<W: Write> Writer<W> {
         self.write_u30(i.0)
     }
 
-    fn write_string(&mut self, s: &str) -> Result<()> {
+    fn write_string(&mut self, s: &[u8]) -> Result<()> {
         self.write_u30(s.len() as u32)?;
-        self.output.write_all(s.as_bytes())?;
+        self.output.write_all(s)?;
         Ok(())
     }
 
@@ -615,12 +615,9 @@ impl<W: Write> Writer<W> {
                 self.write_opcode(OpCode::Call)?;
                 self.write_u30(num_args)?;
             }
-            Op::CallMethod {
-                ref index,
-                num_args,
-            } => {
+            Op::CallMethod { index, num_args } => {
                 self.write_opcode(OpCode::CallMethod)?;
-                self.write_index(index)?;
+                self.write_u30(index)?;
                 self.write_u30(num_args)?;
             }
             Op::CallProperty {
@@ -907,14 +904,11 @@ impl<W: Write> Writer<W> {
             Op::Li16 => self.write_opcode(OpCode::Li16)?,
             Op::Li32 => self.write_opcode(OpCode::Li32)?,
             Op::Li8 => self.write_opcode(OpCode::Li8)?,
-            Op::LookupSwitch {
-                default_offset,
-                ref case_offsets,
-            } => {
+            Op::LookupSwitch(ref lookup_switch) => {
                 self.write_opcode(OpCode::LookupSwitch)?;
-                self.write_i24(default_offset)?;
-                self.write_u30(case_offsets.len() as u32 - 1)?;
-                for offset in case_offsets.iter() {
+                self.write_i24(lookup_switch.default_offset)?;
+                self.write_u30(lookup_switch.case_offsets.len() as u32 - 1)?;
+                for offset in lookup_switch.case_offsets.iter() {
                     self.write_i24(*offset)?;
                 }
             }
@@ -954,10 +948,6 @@ impl<W: Write> Writer<W> {
             Op::PushByte { value } => {
                 self.write_opcode(OpCode::PushByte)?;
                 self.write_u8(value)?;
-            }
-            Op::PushConstant { value } => {
-                self.write_opcode(OpCode::PushConstant)?;
-                self.write_u30(value)?;
             }
             Op::PushDouble { ref value } => {
                 self.write_opcode(OpCode::PushDouble)?;
@@ -1126,7 +1116,7 @@ pub mod tests {
 
         assert_eq!(
             write(Op::CallMethod {
-                index: Index::new(1),
+                index: 1,
                 num_args: 2
             }),
             b"\x43\x01\x02"
@@ -1439,10 +1429,10 @@ pub mod tests {
         assert_eq!(write(Op::Li8), b"\x35");
 
         assert_eq!(
-            write(Op::LookupSwitch {
+            write(Op::LookupSwitch(Box::new(LookupSwitch {
                 default_offset: 1,
                 case_offsets: Box::new([3, 4, 5])
-            }),
+            }))),
             b"\x1B\x01\x00\x00\x02\x03\x00\x00\x04\x00\x00\x05\x00\x00"
         );
 
@@ -1498,8 +1488,6 @@ pub mod tests {
         assert_eq!(write(Op::PopScope), b"\x1D");
 
         assert_eq!(write(Op::PushByte { value: 1 }), b"\x24\x01");
-
-        assert_eq!(write(Op::PushConstant { value: 1 }), b"\x22\x01");
 
         assert_eq!(
             write(Op::PushDouble {

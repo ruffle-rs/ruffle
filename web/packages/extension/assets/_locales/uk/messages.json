@@ -1,0 +1,119 @@
+{
+    "settings_ruffle_enable": {
+        "message": "Відтворити Flash контент у Ruffle"
+    },
+    "settings_ignore_optout": {
+        "message": "Відтворити Flash контент навіть на сайтах, які забороняють Ruffle"
+    },
+    "settings_show_swf_download": {
+        "message": "Показати завантаження SWF у контекстному меню"
+    },
+    "settings_autostart": {
+        "message": "Автоматичне відтворення Flash контенту (клацніть, щоб увімкнути звук)"
+    },
+    "settings_swf_takeover": {
+        "message": "Відтворюйте файли SWF у браузері замість завантаження"
+    },
+    "settings_log_level": {
+        "message": "Рівень журналу"
+    },
+    "settings_log_level_error": {
+        "message": "Помилки"
+    },
+    "settings_log_level_warn": {
+        "message": "Попередження"
+    },
+    "settings_log_level_info": {
+        "message": "Інформація"
+    },
+    "settings_max_execution_duration": {
+        "message": "Максимально дозволена тривалість виконання ActionScript (у секундах)"
+    },
+    "settings_player_version": {
+        "message": "Номер версії Flash Player для емуляції (діапазон 1-32)"
+    },
+    "settings_preferred_renderer": {
+        "message": "Бажаний візуалізатор"
+    },
+    "settings_preferred_renderer_auto": {
+        "message": "Автоматичний"
+    },
+    "settings_advanced_options": {
+        "message": "Розширені опції"
+    },
+    "settings_reset": {
+        "message": "Скидання налаштувань"
+    },
+    "settings_reset_confirm": {
+        "message": "Ви впевнені, що хочете відновити налаштування Ruffle до початкових, за замовчуванням?"
+    },
+    "status_init": {
+        "message": "Читання поточної вкладки…"
+    },
+    "status_no_tabs": {
+        "message": "Немає активної вкладки."
+    },
+    "status_tabs_error": {
+        "message": "Під час пошуку поточної вкладки сталася помилка."
+    },
+    "status_message_init": {
+        "message": "Перевірка стану Ruffle на поточній вкладці…"
+    },
+    "status_result_running": {
+        "message": "Ruffle готовий до запуску Flash контенту на поточній вкладці."
+    },
+    "status_result_running_protected": {
+        "message": "Ruffle готовий запускати Flash контент, який ви запитуєте."
+    },
+    "status_result_optout": {
+        "message": "Ruffle не може завантажитися, оскільки поточний вебсайт позначив себе як несумісний."
+    },
+    "status_result_disabled": {
+        "message": "Ruffle вимкнено."
+    },
+    "status_result_error": {
+        "message": "Під час запиту поточної сторінки екземпляром Ruffle, сталася помилка."
+    },
+    "status_result_protected": {
+        "message": "Ruffle не може завантажитися на захищених сторінках браузера."
+    },
+    "action_reload": {
+        "message": "Перезавантажте вкладку, щоб застосувати зміни"
+    },
+    "open_player_page": {
+        "message": "Відкрити SWF плеєр"
+    },
+    "open_settings_page": {
+        "message": "Відкрити сторінку налаштувань"
+    },
+    "settings_page": {
+        "message": "Сторінка налаштувань"
+    },
+    "description": {
+        "message": "Повертає Flash в інтернет, де йому і належить бути."
+    },
+    "save_settings": {
+        "message": "Зберегти налаштування"
+    },
+    "settings_saved": {
+        "message": "Налаштування збережено"
+    },
+    "onboarding_page": {
+        "message": "Сторінка адаптації"
+    },
+    "permissions_grant": {
+        "message": "Надати Ruffle дозвіл на доступ до моїх даних на всіх сайтах"
+    },
+    "permissions_not_granted": {
+        "message": "Вам потрібно буде натиснути значок Ruffle на кожному сайті, де ви хочете використовувати Ruffle"
+    },
+    "grant_single_site_permission": {
+        "message": "Увімкнути назавжди для цього сайту"
+    },
+    "permissions_explanation": {
+        "message": "Розширення Ruffle найкраще працює з можливістю доступу до даних на всіх вебсайтах. Це дозволяє йому запускатися під час першого завантаження будь-якого вебсайту, отже, дозволяючи йому переконати вебсайти, які виявляють Flash Player, негайно дозволити запускати Flash контент. Це також дає йому можливість завантажувати SWF файли на внутрішню сторінку програвача з інших місць в інтернеті та дозволяє автоматично завантажувати прямі SWF посилання на цю сторінку. Якщо ви не надасте цей дозвіл, вам потрібно буде вручну ввімкнути Ruffle на кожному вебсайті, на якому ви хочете його використовувати, клацнувши піктограму розширення та ввімкнувши його для цього вебсайту."
+    },
+    "swf_player_permissions": {
+        "message": "Ви повинні надати дозвіл цьому джерелу URL, щоб завантажувати з нього файли SWF."
+    }
+}

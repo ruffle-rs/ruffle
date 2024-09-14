@@ -239,8 +239,9 @@ impl<'gc> BevelFilter<'gc> {
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
-            let color = Color::from_rgb(value.coerce_to_u32(activation)?, 0);
-            self.0.write(activation.context.gc_context).highlight = color;
+            let value = value.coerce_to_u32(activation)?;
+            let mut write = self.0.write(activation.context.gc_context);
+            write.highlight = Color::from_rgb(value, write.highlight.a);
         }
         Ok(())
     }
@@ -271,8 +272,9 @@ impl<'gc> BevelFilter<'gc> {
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
-            let color = Color::from_rgb(value.coerce_to_u32(activation)?, 0);
-            self.0.write(activation.context.gc_context).shadow = color;
+            let value = value.coerce_to_u32(activation)?;
+            let mut write = self.0.write(activation.context.gc_context);
+            write.shadow = Color::from_rgb(value, write.shadow.a);
         }
         Ok(())
     }

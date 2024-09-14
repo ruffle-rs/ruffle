@@ -2,7 +2,7 @@ use crate::avm2::{
     Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
 };
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
+use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
 use crate::library::{Library, MovieLibrarySource};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
@@ -12,7 +12,7 @@ use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
 use std::cell::{Ref, RefCell, RefMut};
 use std::sync::Arc;
-use swf::{Fixed16, Fixed8, Twips};
+use swf::{Fixed16, Fixed8};
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
@@ -89,7 +89,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         Some(*self)
     }
 
-    fn replace_with(&self, context: &mut UpdateContext<'_, 'gc>, id: CharacterId) {
+    fn replace_with(&self, context: &mut UpdateContext<'gc>, id: CharacterId) {
         if let Some(new_morph_shape) = context
             .library
             .library_for_movie_mut(self.movie())
@@ -114,15 +114,15 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(&self, context: &mut UpdateContext<'_, 'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
         self.0.write(context.gc_context).object = Some(to);
     }
 
     /// Construct objects placed on this frame.
-    fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
+    fn construct_frame(&self, context: &mut UpdateContext<'gc>) {
         if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
             let class = context.avm2.classes().morphshape;
-            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let mut activation = Avm2Activation::from_nothing(context);
             match Avm2StageObject::for_display_object_childless(
                 &mut activation,
                 (*self).into(),
@@ -155,7 +155,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
 
     fn hit_test_shape(
         &self,
-        _context: &mut UpdateContext<'_, 'gc>,
+        _context: &mut UpdateContext<'gc>,
         point: Point<Twips>,
         options: HitTestOptions,
     ) -> bool {
@@ -215,7 +215,7 @@ impl MorphShapeStatic {
     }
 
     /// Retrieves the `Frame` for the given ratio.
-    /// Lazily intializes the frame if it does not yet exist.
+    /// Lazily initializes the frame if it does not yet exist.
     fn get_frame(&self, ratio: u16) -> RefMut<'_, Frame> {
         let frames = self.frames.borrow_mut();
         RefMut::map(frames, |frames| {
@@ -226,7 +226,7 @@ impl MorphShapeStatic {
     }
 
     /// Retrieves the `ShapeHandle` for the given ratio.
-    /// Lazily intializes and tessellates the shape if it does not yet exist.
+    /// Lazily initializes and tessellates the shape if it does not yet exist.
     fn get_shape<'gc>(
         &self,
         context: &mut RenderContext<'_, 'gc>,
@@ -238,13 +238,9 @@ impl MorphShapeStatic {
             handle
         } else {
             let library = library.library_for_movie(self.movie.clone()).unwrap();
-            let handle = context.renderer.register_shape(
-                (&frame.shape).into(),
-                &MovieLibrarySource {
-                    library,
-                    gc_context: context.gc_context,
-                },
-            );
+            let handle = context
+                .renderer
+                .register_shape((&frame.shape).into(), &MovieLibrarySource { library });
             frame.shape_handle = Some(handle.clone());
             handle
         }

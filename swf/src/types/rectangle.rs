@@ -58,11 +58,18 @@ impl<T: PointCoordinate + Ord> Rectangle<T> {
 }
 
 impl<T: Coordinate> Rectangle<T> {
-    const INVALID: Self = Self {
+    pub const INVALID: Self = Self {
         x_min: T::INVALID,
         x_max: T::INVALID,
         y_min: T::INVALID,
         y_max: T::INVALID,
+    };
+
+    pub const ZERO: Self = Self {
+        x_min: T::ZERO,
+        x_max: T::ZERO,
+        y_min: T::ZERO,
+        y_max: T::ZERO,
     };
 
     #[inline]
@@ -122,6 +129,22 @@ impl<T: Coordinate> Rectangle<T> {
             && self.x_max >= other.x_min
             && self.y_min <= other.y_max
             && self.y_max >= other.y_min
+    }
+
+    #[must_use]
+    pub fn grow(mut self, amount: T) -> Self {
+        if self.is_valid() {
+            self.x_min -= amount;
+            self.x_max += amount;
+            self.y_min -= amount;
+            self.y_max += amount;
+        }
+        self
+    }
+
+    #[must_use]
+    pub fn is_point(&self) -> bool {
+        self.x_min == self.x_max && self.y_min == self.y_max
     }
 }
 

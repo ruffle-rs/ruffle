@@ -1,0 +1,10 @@
+// Object.prototype.toString.call(new Vector.<*>())
+[object Vector.<*>]
+// Object.prototype.toString.call(new Vector.<Object>())
+[object Vector.<Object>]
+// Object.prototype.toString.call(new Vector.<String>())
+[object Vector.<String>]
+// Object.prototype.toString.call(new Vector.<XML>())
+[object Vector.<XML>]
+// Object.prototype.toString.call(new Vector.<Sprite>())
+[object Vector.<flash.display::Sprite>]

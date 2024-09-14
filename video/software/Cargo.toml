@@ -7,17 +7,20 @@ license.workspace = true
 repository.workspace = true
 version.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 ruffle_render = { path = "../../render" }
 ruffle_video = { path = ".." }
 swf = { path = "../../swf" }
-generational-arena = "0.2.9"
-thiserror = "1.0"
-flate2 = "1.0.28"
-log = "0.4"
+slotmap = { workspace = true }
+thiserror = { workspace = true }
+flate2 = { workspace = true }
+log = { workspace = true }
 
-h263-rs = { git = "https://github.com/ruffle-rs/h263-rs", rev = "16700664e2b3334f0a930f99af86011aebee14cc", optional = true }
-h263-rs-deblock = { git = "https://github.com/ruffle-rs/h263-rs", rev = "16700664e2b3334f0a930f99af86011aebee14cc", optional = true }
+h263-rs = { git = "https://github.com/ruffle-rs/h263-rs", rev = "f0fa94c366a1d0383df99aa835add175658d6bad", optional = true }
+h263-rs-deblock = { git = "https://github.com/ruffle-rs/h263-rs", rev = "f0fa94c366a1d0383df99aa835add175658d6bad", optional = true }
 nihav_core = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "83c7e1094d603d9fc1212d39d99abb17f3a3226b", optional = true }
 nihav_codec_support = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "83c7e1094d603d9fc1212d39d99abb17f3a3226b", optional = true }
 nihav_duck = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "83c7e1094d603d9fc1212d39d99abb17f3a3226b", optional = true }

@@ -7,6 +7,7 @@ package flash.events
     
     public class VideoTextureEvent extends Event
     {
+        [API("706")]
         public static const RENDER_STATE:String = "renderState"; // The VideoTextureEvent.RENDER_STATE constant defines the value of the type property of a renderState event object.
 
         private var _status: String; // The status of the VideoTexture object.
@@ -17,15 +18,15 @@ package flash.events
             super(type,bubbles,cancelable);
             this._status = status;
             this._colorSpace = colorSpace;
-        }
-        
+        }        
 
+        [API("706")]
         public function get status() : String
         {
             return this._status;
         }
         
-
+        [API("706")]
         public function get colorSpace() : String
         {
             return this._colorSpace;

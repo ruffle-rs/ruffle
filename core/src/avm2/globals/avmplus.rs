@@ -1,12 +1,12 @@
+use crate::avm2::class::Class;
 pub use crate::avm2::globals::flash::utils::get_qualified_class_name;
 use crate::avm2::metadata::Metadata;
 use crate::avm2::method::Method;
 use crate::avm2::object::{ArrayObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::property::Property;
-use crate::avm2::{ClassObject, Namespace};
 
-use crate::avm2::{Activation, Error, Object, Value};
+use crate::avm2::{Activation, Error, Multiname, Namespace, Object, Value};
 use crate::avm2_stub_method;
 
 // Implements `avmplus.describeTypeJSON`
@@ -15,46 +15,47 @@ pub fn describe_type_json<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let value = args[0].coerce_to_object(activation)?;
     let flags = DescribeTypeFlags::from_bits(args.get_u32(activation, 1)?).expect("Invalid flags!");
+    if args[0] == Value::Null {
+        return describe_type_json_null(activation, flags);
+    }
 
-    let class_obj = value.as_class_object().or_else(|| value.instance_of());
+    let value = args[0].coerce_to_object(activation)?;
+    let class_def = value.instance_class();
     let object = activation
         .avm2()
         .classes()
         .object
         .construct(activation, &[])?;
-    let Some(class_obj) = class_obj else {
-        return Ok(Value::Null);
-    };
 
-    let is_static = value.as_class_object().is_some();
-    if !is_static && flags.contains(DescribeTypeFlags::USE_ITRAITS) {
-        return Ok(Value::Null);
+    let mut used_class_def = class_def;
+    if flags.contains(DescribeTypeFlags::USE_ITRAITS) {
+        if let Some(i_class) = used_class_def.i_class() {
+            used_class_def = i_class;
+        } else {
+            return Ok(Value::Null);
+        }
     }
 
-    let class = class_obj.inner_class_definition();
-    let class = class.read();
-
-    let qualified_name = class
-        .name()
+    let qualified_name = used_class_def
+        .dollar_removed_name(activation.context.gc_context)
         .to_qualified_name(activation.context.gc_context);
 
     object.set_public_property("name", qualified_name.into(), activation)?;
 
     object.set_public_property(
         "isDynamic",
-        (is_static || !class.is_sealed()).into(),
+        (!used_class_def.is_sealed()).into(),
         activation,
     )?;
+    object.set_public_property("isFinal", used_class_def.is_final().into(), activation)?;
     object.set_public_property(
-        "isFinal",
-        (is_static || class.is_final()).into(),
+        "isStatic",
+        value.as_class_object().is_some().into(),
         activation,
     )?;
-    object.set_public_property("isStatic", is_static.into(), activation)?;
 
-    let traits = describe_internal_body(activation, class_obj, is_static, flags)?;
+    let traits = describe_internal_body(activation, used_class_def, flags)?;
     if flags.contains(DescribeTypeFlags::INCLUDE_TRAITS) {
         object.set_public_property("traits", traits.into(), activation)?;
     } else {
@@ -81,16 +82,109 @@ bitflags::bitflags! {
     }
 }
 
+fn describe_type_json_null<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    flags: DescribeTypeFlags,
+) -> Result<Value<'gc>, Error<'gc>> {
+    if flags.contains(DescribeTypeFlags::USE_ITRAITS) {
+        return Ok(Value::Null);
+    }
+    let object = activation
+        .avm2()
+        .classes()
+        .object
+        .construct(activation, &[])?;
+
+    object.set_public_property("name", "null".into(), activation)?;
+    object.set_public_property("isDynamic", false.into(), activation)?;
+    object.set_public_property("isFinal", true.into(), activation)?;
+    object.set_public_property("isStatic", false.into(), activation)?;
+
+    let traits = activation
+        .avm2()
+        .classes()
+        .object
+        .construct(activation, &[])?;
+
+    if flags.contains(DescribeTypeFlags::INCLUDE_TRAITS) {
+        traits.set_public_property(
+            "bases",
+            if flags.contains(DescribeTypeFlags::INCLUDE_BASES) {
+                ArrayObject::empty(activation)?.into()
+            } else {
+                Value::Null
+            },
+            activation,
+        )?;
+        traits.set_public_property(
+            "interfaces",
+            if flags.contains(DescribeTypeFlags::INCLUDE_INTERFACES) {
+                ArrayObject::empty(activation)?.into()
+            } else {
+                Value::Null
+            },
+            activation,
+        )?;
+        traits.set_public_property(
+            "variables",
+            if flags.contains(DescribeTypeFlags::INCLUDE_VARIABLES) {
+                ArrayObject::empty(activation)?.into()
+            } else {
+                Value::Null
+            },
+            activation,
+        )?;
+        traits.set_public_property(
+            "accessors",
+            if flags.contains(DescribeTypeFlags::INCLUDE_ACCESSORS) {
+                ArrayObject::empty(activation)?.into()
+            } else {
+                Value::Null
+            },
+            activation,
+        )?;
+        traits.set_public_property(
+            "methods",
+            if flags.contains(DescribeTypeFlags::INCLUDE_METHODS) {
+                ArrayObject::empty(activation)?.into()
+            } else {
+                Value::Null
+            },
+            activation,
+        )?;
+        traits.set_public_property(
+            "metadata",
+            if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
+                ArrayObject::empty(activation)?.into()
+            } else {
+                Value::Null
+            },
+            activation,
+        )?;
+        traits.set_public_property(
+            "constructor",
+            if flags.contains(DescribeTypeFlags::INCLUDE_CONSTRUCTOR) {
+                ArrayObject::empty(activation)?.into()
+            } else {
+                Value::Null
+            },
+            activation,
+        )?;
+        object.set_public_property("traits", traits.into(), activation)?;
+    } else {
+        object.set_public_property("traits", Value::Null, activation)?;
+    }
+
+    Ok(object.into())
+}
+
 fn describe_internal_body<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    class_obj: ClassObject<'gc>,
-    is_static: bool,
+    class_def: Class<'gc>,
     flags: DescribeTypeFlags,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    // If we were passed a non-ClassObject, or the caller specifically requested it, then
-    // look at the instance "traits" (our implementation is different than avmplus)
+    let mc = activation.gc();
 
-    let use_instance_traits = !is_static || flags.contains(DescribeTypeFlags::USE_ITRAITS);
     let traits = activation
         .avm2()
         .classes()
@@ -133,60 +227,29 @@ fn describe_internal_body<'gc>(
         traits.set_public_property("methods", Value::Null, activation)?;
     }
 
-    let mut bases_array = bases
-        .as_array_storage_mut(activation.context.gc_context)
-        .unwrap();
-    let mut interfaces_array = interfaces
-        .as_array_storage_mut(activation.context.gc_context)
-        .unwrap();
-    let mut variables_array = variables
-        .as_array_storage_mut(activation.context.gc_context)
-        .unwrap();
-    let mut accessors_array = accessors
-        .as_array_storage_mut(activation.context.gc_context)
-        .unwrap();
-    let mut methods_array = methods
-        .as_array_storage_mut(activation.context.gc_context)
-        .unwrap();
+    let mut bases_array = bases.as_array_storage_mut(mc).unwrap();
+    let mut interfaces_array = interfaces.as_array_storage_mut(mc).unwrap();
+    let mut variables_array = variables.as_array_storage_mut(mc).unwrap();
+    let mut accessors_array = accessors.as_array_storage_mut(mc).unwrap();
+    let mut methods_array = methods.as_array_storage_mut(mc).unwrap();
 
-    let superclass = if use_instance_traits {
-        class_obj.superclass_object()
-    } else {
-        Some(activation.avm2().classes().class)
-    };
+    let superclass = class_def.super_class();
 
     if flags.contains(DescribeTypeFlags::INCLUDE_BASES) {
-        let mut current_super_obj = superclass;
-        while let Some(super_obj) = current_super_obj {
-            let super_name = super_obj
-                .inner_class_definition()
-                .read()
-                .name()
-                .to_qualified_name(activation.context.gc_context);
+        let mut current_super_class = superclass;
+        while let Some(super_class) = current_super_class {
+            let super_name = super_class.name().to_qualified_name(mc);
             bases_array.push(super_name.into());
-            current_super_obj = super_obj.superclass_object();
+            current_super_class = super_class.super_class();
         }
     }
 
-    // When we're describing a Class object, we use the class vtable (which hides instance properties)
-    let vtable = if use_instance_traits {
-        class_obj.instance_vtable()
-    } else {
-        class_obj.class_vtable()
-    };
+    let vtable = class_def.vtable();
+    let super_vtable = class_def.super_class().map(|c| c.vtable());
 
-    let super_vtable = if use_instance_traits {
-        class_obj.superclass_object().map(|c| c.instance_vtable())
-    } else {
-        class_obj.instance_of().map(|c| c.instance_vtable())
-    };
-
-    if flags.contains(DescribeTypeFlags::INCLUDE_INTERFACES) && use_instance_traits {
-        for interface in class_obj.interfaces() {
-            let interface_name = interface
-                .read()
-                .name()
-                .to_qualified_name(activation.context.gc_context);
+    if flags.contains(DescribeTypeFlags::INCLUDE_INTERFACES) {
+        for interface in &*class_def.all_interfaces() {
+            let interface_name = interface.name().to_qualified_name(mc);
             interfaces_array.push(interface_name.into());
         }
     }
@@ -216,6 +279,10 @@ fn describe_internal_body<'gc>(
             continue;
         }
 
+        if !ns.matches_api_version(activation.avm2().root_api_version) {
+            continue;
+        }
+
         if flags.contains(DescribeTypeFlags::HIDE_NSURI_METHODS)
             && skip_ns
                 .iter()
@@ -235,9 +302,8 @@ fn describe_internal_body<'gc>(
                 if !flags.contains(DescribeTypeFlags::INCLUDE_VARIABLES) {
                     continue;
                 }
-                let prop_class_name = vtable
-                    .slot_class_name(*slot_id, activation.context.gc_context)?
-                    .to_qualified_name_or_star(activation.context.gc_context);
+                let prop_class_name =
+                    vtable.slot_class_name(&mut activation.borrow_gc(), *slot_id)?;
 
                 let access = match prop {
                     Property::ConstSlot { .. } => "readonly",
@@ -280,23 +346,30 @@ fn describe_internal_body<'gc>(
                 let method = vtable
                     .get_full_method(*disp_id)
                     .unwrap_or_else(|| panic!("Missing method for id {disp_id:?}"));
-                let return_type_name = method
-                    .method
-                    .return_type()
-                    .to_qualified_name_or_star(activation.context.gc_context);
-                let declared_by = method.class;
 
-                if flags.contains(DescribeTypeFlags::HIDE_OBJECT)
-                    && declared_by == activation.avm2().classes().object
+                // Don't include methods that also exist in any interface
+                if method
+                    .class
+                    .all_interfaces()
+                    .iter()
+                    .any(|interface| interface.vtable().has_trait(&Multiname::new(ns, prop_name)))
                 {
                     continue;
                 }
 
-                let declared_by_name = declared_by
-                    .inner_class_definition()
-                    .read()
-                    .name()
-                    .to_qualified_name(activation.context.gc_context);
+                let return_type_name = method
+                    .method
+                    .return_type()
+                    .to_qualified_name_or_star(&mut activation.borrow_gc());
+                let declared_by = method.class;
+
+                if flags.contains(DescribeTypeFlags::HIDE_OBJECT)
+                    && declared_by == activation.avm2().class_defs().object
+                {
+                    continue;
+                }
+
+                let declared_by_name = declared_by.dollar_removed_name(mc).to_qualified_name(mc);
 
                 let trait_metadata = vtable.get_metadata_for_disp(disp_id);
 
@@ -364,13 +437,19 @@ fn describe_internal_body<'gc>(
                     let setter = vtable
                         .get_full_method(*set)
                         .unwrap_or_else(|| panic!("Missing 'set' method for id {set:?}"));
-                    (
-                        setter.method.signature()[0].param_type_name.clone(),
-                        setter.class,
-                    )
+                    (setter.method.signature()[0].param_type_name, setter.class)
                 } else {
                     unreachable!();
                 };
+
+                // Don't include virtual properties that also exist in any interface
+                if defining_class
+                    .all_interfaces()
+                    .iter()
+                    .any(|interface| interface.vtable().has_trait(&Multiname::new(ns, prop_name)))
+                {
+                    continue;
+                }
 
                 let uri = if ns.as_uri().is_empty() {
                     None
@@ -379,12 +458,8 @@ fn describe_internal_body<'gc>(
                 };
 
                 let accessor_type =
-                    method_type.to_qualified_name_or_star(activation.context.gc_context);
-                let declared_by = defining_class
-                    .inner_class_definition()
-                    .read()
-                    .name()
-                    .to_qualified_name(activation.context.gc_context);
+                    method_type.to_qualified_name_or_star(&mut activation.borrow_gc());
+                let declared_by = defining_class.dollar_removed_name(mc).to_qualified_name(mc);
 
                 let accessor_obj = activation
                     .avm2()
@@ -432,11 +507,9 @@ fn describe_internal_body<'gc>(
         }
     }
 
-    let constructor = class_obj.constructor();
+    let constructor = class_def.instance_init();
     // Flash only shows a <constructor> element if it has at least one parameter
-    if flags.contains(DescribeTypeFlags::INCLUDE_CONSTRUCTOR)
-        && use_instance_traits
-        && !constructor.signature().is_empty()
+    if flags.contains(DescribeTypeFlags::INCLUDE_CONSTRUCTOR) && !constructor.signature().is_empty()
     {
         let params = write_params(&constructor, activation)?;
         traits.set_public_property("constructor", params.into(), activation)?;
@@ -473,7 +546,7 @@ fn write_params<'gc>(
     for param in method.signature() {
         let param_type_name = param
             .param_type_name
-            .to_qualified_name_or_star(activation.context.gc_context);
+            .to_qualified_name_or_star(&mut activation.borrow_gc());
         let optional = param.default_value.is_some();
         let param_obj = activation
             .avm2()

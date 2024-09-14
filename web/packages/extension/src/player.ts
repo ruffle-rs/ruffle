@@ -1,8 +1,8 @@
 import * as utils from "./utils";
-import { PublicAPI } from "ruffle-core";
+import { installRuffle, PublicAPI } from "ruffle-core";
 import type {
     Letterbox,
-    RufflePlayer,
+    Player,
     DataLoadOptions,
     URLLoadOptions,
 } from "ruffle-core";
@@ -17,10 +17,9 @@ declare global {
     }
 }
 
-const api = PublicAPI.negotiate(window.RufflePlayer!, "local");
-window.RufflePlayer = api;
-const ruffle = api.newest()!;
-let player: RufflePlayer;
+installRuffle("local");
+const ruffle = (window.RufflePlayer as PublicAPI).newest()!;
+let player: Player;
 
 const playerContainer = document.getElementById("player-container")!;
 const overlay = document.getElementById("overlay")!;
@@ -33,6 +32,9 @@ const reloadSwf = document.getElementById("reload-swf")!;
 const infoContainer = document.getElementById("info-container")!;
 const webFormSubmit = document.getElementById("web-form-submit")!;
 const webURL = document.getElementById("web-url")! as HTMLInputElement;
+const modal = document.getElementById("modal")! as HTMLDialogElement;
+const closeModal = document.getElementById("close")! as HTMLButtonElement;
+const grant = document.getElementById("grant")! as HTMLButtonElement;
 
 // This is the base config always used by the extension player.
 // It has the highest priority and its options cannot be overwritten.
@@ -40,6 +42,7 @@ const baseExtensionConfig = {
     letterbox: "on" as Letterbox,
     forceScale: true,
     forceAlign: true,
+    showSwfDownload: true,
 };
 
 const swfToFlashVersion: { [key: number]: string } = {
@@ -99,12 +102,37 @@ function unload() {
     }
 }
 
-function load(options: string | DataLoadOptions | URLLoadOptions) {
+async function load(options: string | DataLoadOptions | URLLoadOptions) {
     unload();
     player = ruffle.createPlayer();
     player.id = "player";
     playerContainer.append(player);
-    player.load(options, false);
+    const url =
+        typeof options === "string"
+            ? options
+            : "url" in options
+              ? options["url"]
+              : undefined;
+    let origin;
+    try {
+        origin = url ? new URL(url).origin + "/" : url;
+    } catch {
+        // Ignore
+    }
+    const hostPermissionsForSpecifiedTab =
+        await utils.hasHostPermissionForSpecifiedTab(origin);
+    if (origin && !hostPermissionsForSpecifiedTab) {
+        const result = await showModal(origin);
+        if (result === "") {
+            const swfPlayerPermissions = utils.i18n.getMessage(
+                "swf_player_permissions",
+            );
+            alert(swfPlayerPermissions);
+            history.pushState("", document.title, window.location.pathname);
+            return;
+        }
+    }
+    await player.load(options);
     player.addEventListener("loadedmetadata", () => {
         if (player.metadata) {
             for (const [key, value] of Object.entries(player.metadata)) {
@@ -222,6 +250,41 @@ reloadSwf.addEventListener("click", () => {
         }
     }
 });
+function showModal(origin: string) {
+    return new Promise((resolve, _reject) => {
+        grant.textContent = "Grant permissions on " + origin;
+        function grantClicked() {
+            modal.close();
+            utils.permissions
+                .request({
+                    origins: [origin],
+                })
+                .then((permissionsGranted) => {
+                    if (permissionsGranted) {
+                        resolve(origin);
+                    } else {
+                        resolve("");
+                    }
+                })
+                .catch(() => {
+                    resolve("");
+                })
+                .finally(() => {
+                    closeModal.removeEventListener("click", closeClicked);
+                });
+        }
+
+        function closeClicked() {
+            modal.close();
+            resolve("");
+            grant.removeEventListener("click", grantClicked);
+        }
+
+        grant.addEventListener("click", grantClicked, { once: true });
+        closeModal.addEventListener("click", closeClicked, { once: true });
+        modal.showModal();
+    });
+}
 
 window.addEventListener("load", () => {
     if (

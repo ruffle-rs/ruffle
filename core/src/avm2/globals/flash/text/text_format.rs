@@ -4,8 +4,8 @@ use crate::avm2::object::{ArrayObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::ecma_conversions::round_to_even;
+use crate::html::TextDisplay;
 use crate::string::{AvmString, WStr};
-use crate::{avm2_stub_getter, avm2_stub_setter};
 
 pub use crate::avm2::object::textformat_allocator as text_format_allocator;
 
@@ -185,20 +185,51 @@ pub fn set_color<'gc>(
 }
 
 pub fn get_display<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.text.TextFormat", "display");
-    Ok("block".into())
+    if let Some(text_format) = this.as_text_format() {
+        return Ok(text_format
+            .display
+            .as_ref()
+            .map_or(Value::Null, |display| match display {
+                TextDisplay::Block => "block".into(),
+                TextDisplay::Inline => "inline".into(),
+                TextDisplay::None => "none".into(),
+            }));
+    }
+
+    Ok(Value::Undefined)
 }
 
 pub fn set_display<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.text.TextFormat", "display");
+    if let Some(mut text_format) = this.as_text_format_mut() {
+        let value = args.get(0).unwrap_or(&Value::Undefined);
+        let value = match value {
+            Value::Undefined | Value::Null => {
+                text_format.display = None;
+                return Ok(Value::Undefined);
+            }
+            value => value.coerce_to_string(activation)?,
+        };
+
+        text_format.display = if &value == b"block" {
+            Some(TextDisplay::Block)
+        } else if &value == b"inline" {
+            Some(TextDisplay::Inline)
+        } else if &value == b"none" {
+            Some(TextDisplay::None)
+        } else {
+            // No error message for this, silently set it to None/null
+            None
+        };
+    }
+
     Ok(Value::Undefined)
 }
 

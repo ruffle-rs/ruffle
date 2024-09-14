@@ -8,6 +8,7 @@ package flash.system {
 		public static native function loadPolicyFile(url: String):void;
 		public static native function showSettings(panel: String = "default"):void;
 
+		[API("661")]
 		public static const APPLICATION:String = "application";
 		public static const LOCAL_TRUSTED:String = "localTrusted";
 		public static const LOCAL_WITH_FILE:String = "localWithFile";

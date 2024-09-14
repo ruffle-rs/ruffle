@@ -105,38 +105,72 @@ package flash.ui {
         public static const BACKSLASH: uint = 220;
         public static const RIGHTBRACKET: uint = 221;
         public static const QUOTE: uint = 222;
+
+        [API("669")]
         public static const SETUP: uint = 0x0100001C;
+        [API("669")]
         public static const NEXT: uint = 0x0100000E;
+        [API("669")]
         public static const MENU: uint = 0x01000012;
+        [API("669")]
         public static const CHANNEL_UP: uint = 0x01000004;
+        [API("669")]
         public static const EXIT: uint = 0x01000015;
+        [API("669")]
         public static const BLUE: uint = 0x01000003;
+        [API("669")]
         public static const CHANNEL_DOWN: uint = 0x01000005;
+        [API("669")]
         public static const INPUT: uint = 0x0100001B;
+        [API("669")]
         public static const DVR: uint = 0x01000019;
+        [API("669")]
         public static const SEARCH: uint = 0x0100001F;
+        [API("669")]
         public static const MASTER_SHELL: uint = 0x0100001E;
+        [API("669")]
         public static const SKIP_BACKWARD: uint = 0x0100000D;
+        [API("669")] // [NA] This should be 719, but it's not supported at time of writing
         public static const PLAY_PAUSE: uint = 0x01000020;
+        [API("669")]
         public static const HELP: uint = 0x0100001D;
+        [API("669")]
         public static const VOD: uint = 0x0100001A;
+        [API("669")]
         public static const LIVE: uint = 0x01000010;
+        [API("669")]
         public static const RED: uint = 0x01000000;
+        [API("669")]
         public static const PREVIOUS: uint = 0x0100000F;
+        [API("669")]
         public static const RECORD: uint = 0x01000006;
+        [API("669")]
         public static const STOP: uint = 0x01000009;
+        [API("669")]
         public static const SUBTITLE: uint = 0x01000018;
+        [API("669")]
         public static const PLAY: uint = 0x01000007;
+        [API("669")]
         public static const GUIDE: uint = 0x01000014;
+        [API("669")]
         public static const YELLOW: uint = 0x01000002;
+        [API("669")]
         public static const REWIND: uint = 0x0100000B;
+        [API("669")]
         public static const INFO: uint = 0x01000013;
+        [API("669")]
         public static const LAST: uint = 0x01000011;
+        [API("669")]
         public static const PAUSE: uint = 0x01000008;
+        [API("669")]
         public static const AUDIO: uint = 0x01000017;
+        [API("669")]
         public static const GREEN: uint = 0x01000001;
+        [API("669")]
         public static const FAST_FORWARD: uint = 0x0100000A;
+        [API("669")]
         public static const SKIP_FORWARD: uint = 0x0100000C;
+        [API("669")]
         public static const BACK: uint = 0x01000016;
 
         public static const STRING_BEGIN: String = "\uf72a";

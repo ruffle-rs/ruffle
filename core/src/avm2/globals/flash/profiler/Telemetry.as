@@ -1,4 +1,5 @@
 package flash.profiler {
+    [API("678")] // the docs say 682, that's wrong
     public final class Telemetry {
         public static const connected: Boolean = false;
         public static const spanMarker: Number = 0;

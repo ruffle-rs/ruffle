@@ -1,284 +1,216 @@
-use crate::custom_event::RuffleEvent;
 use anyhow::{anyhow, Error};
-use rfd::FileDialog;
-use ruffle_core::events::{KeyCode, TextControlCode};
-use std::path::{Path, PathBuf};
+use gilrs::Button;
+use ruffle_core::events::{GamepadButton, KeyCode, TextControlCode};
+use std::path::Path;
 use url::Url;
 use winit::dpi::PhysicalSize;
-use winit::event::{ModifiersState, VirtualKeyCode};
-use winit::event_loop::EventLoop;
+use winit::event::{KeyEvent, Modifiers};
+use winit::keyboard::{Key, KeyLocation, NamedKey};
+use winit::window::Window;
 
-/// Converts a `VirtualKeyCode` and `ModifiersState` to a Ruffle `TextControlCode`.
+/// Converts a winit event to a Ruffle `TextControlCode`.
 /// Returns `None` if there is no match.
-/// TODO: Handle Ctrl+Arrows and Home/End keys
 pub fn winit_to_ruffle_text_control(
-    key: VirtualKeyCode,
-    modifiers: ModifiersState,
+    event: &KeyEvent,
+    modifiers: &Modifiers,
 ) -> Option<TextControlCode> {
-    let shift = modifiers.contains(ModifiersState::SHIFT);
-    let ctrl_cmd = modifiers.contains(ModifiersState::CTRL)
-        || (modifiers.contains(ModifiersState::LOGO) && cfg!(target_os = "macos"));
-    if ctrl_cmd {
-        match key {
-            VirtualKeyCode::A => Some(TextControlCode::SelectAll),
-            VirtualKeyCode::C => Some(TextControlCode::Copy),
-            VirtualKeyCode::V => Some(TextControlCode::Paste),
-            VirtualKeyCode::X => Some(TextControlCode::Cut),
-            _ => None,
+    let shift = modifiers.state().shift_key();
+    let ctrl_cmd = modifiers.state().control_key()
+        || (modifiers.state().super_key() && cfg!(target_os = "macos"));
+    match event.logical_key.as_ref() {
+        Key::Named(NamedKey::Enter) => Some(TextControlCode::Enter),
+        Key::Character("a") if ctrl_cmd => Some(TextControlCode::SelectAll),
+        Key::Character("c") if ctrl_cmd => Some(TextControlCode::Copy),
+        Key::Character("v") if ctrl_cmd => Some(TextControlCode::Paste),
+        Key::Character("x") if ctrl_cmd => Some(TextControlCode::Cut),
+        Key::Named(NamedKey::Backspace) if ctrl_cmd => Some(TextControlCode::BackspaceWord),
+        Key::Named(NamedKey::Backspace) => Some(TextControlCode::Backspace),
+        Key::Named(NamedKey::Delete) if ctrl_cmd => Some(TextControlCode::DeleteWord),
+        Key::Named(NamedKey::Delete) => Some(TextControlCode::Delete),
+        Key::Named(NamedKey::ArrowLeft) if ctrl_cmd && shift => {
+            Some(TextControlCode::SelectLeftWord)
         }
-    } else {
-        match key {
-            VirtualKeyCode::Back => Some(TextControlCode::Backspace),
-            VirtualKeyCode::Delete => Some(TextControlCode::Delete),
-            VirtualKeyCode::Left => {
-                if shift {
-                    Some(TextControlCode::SelectLeft)
-                } else {
-                    Some(TextControlCode::MoveLeft)
-                }
-            }
-            VirtualKeyCode::Right => {
-                if shift {
-                    Some(TextControlCode::SelectRight)
-                } else {
-                    Some(TextControlCode::MoveRight)
-                }
-            }
-            _ => None,
+        Key::Named(NamedKey::ArrowLeft) if ctrl_cmd => Some(TextControlCode::MoveLeftWord),
+        Key::Named(NamedKey::ArrowLeft) if shift => Some(TextControlCode::SelectLeft),
+        Key::Named(NamedKey::ArrowLeft) => Some(TextControlCode::MoveLeft),
+        Key::Named(NamedKey::ArrowRight) if ctrl_cmd && shift => {
+            Some(TextControlCode::SelectRightWord)
         }
+        Key::Named(NamedKey::ArrowRight) if ctrl_cmd => Some(TextControlCode::MoveRightWord),
+        Key::Named(NamedKey::ArrowRight) if shift => Some(TextControlCode::SelectRight),
+        Key::Named(NamedKey::ArrowRight) => Some(TextControlCode::MoveRight),
+        Key::Named(NamedKey::Home) if ctrl_cmd && shift => {
+            Some(TextControlCode::SelectLeftDocument)
+        }
+        Key::Named(NamedKey::Home) if ctrl_cmd => Some(TextControlCode::MoveLeftDocument),
+        Key::Named(NamedKey::Home) if shift => Some(TextControlCode::SelectLeftLine),
+        Key::Named(NamedKey::Home) => Some(TextControlCode::MoveLeftLine),
+        Key::Named(NamedKey::End) if ctrl_cmd && shift => {
+            Some(TextControlCode::SelectRightDocument)
+        }
+        Key::Named(NamedKey::End) if ctrl_cmd => Some(TextControlCode::MoveRightDocument),
+        Key::Named(NamedKey::End) if shift => Some(TextControlCode::SelectRightLine),
+        Key::Named(NamedKey::End) => Some(TextControlCode::MoveRightLine),
+        _ => None,
     }
 }
 
-/// Convert a winit `VirtualKeyCode` into a Ruffle `KeyCode`.
+/// Convert a winit event into a Ruffle `KeyCode`.
 /// Return `KeyCode::Unknown` if there is no matching Flash key code.
-pub fn winit_to_ruffle_key_code(key_code: VirtualKeyCode) -> KeyCode {
-    match key_code {
-        VirtualKeyCode::Back => KeyCode::Backspace,
-        VirtualKeyCode::Tab => KeyCode::Tab,
-        VirtualKeyCode::Return => KeyCode::Return,
-        VirtualKeyCode::LShift | VirtualKeyCode::RShift => KeyCode::Shift,
-        VirtualKeyCode::LControl | VirtualKeyCode::RControl => KeyCode::Control,
-        VirtualKeyCode::LAlt | VirtualKeyCode::RAlt => KeyCode::Alt,
-        VirtualKeyCode::Capital => KeyCode::CapsLock,
-        VirtualKeyCode::Escape => KeyCode::Escape,
-        VirtualKeyCode::Space => KeyCode::Space,
-        VirtualKeyCode::Key0 => KeyCode::Key0,
-        VirtualKeyCode::Key1 => KeyCode::Key1,
-        VirtualKeyCode::Key2 => KeyCode::Key2,
-        VirtualKeyCode::Key3 => KeyCode::Key3,
-        VirtualKeyCode::Key4 => KeyCode::Key4,
-        VirtualKeyCode::Key5 => KeyCode::Key5,
-        VirtualKeyCode::Key6 => KeyCode::Key6,
-        VirtualKeyCode::Key7 => KeyCode::Key7,
-        VirtualKeyCode::Key8 => KeyCode::Key8,
-        VirtualKeyCode::Key9 => KeyCode::Key9,
-        VirtualKeyCode::A => KeyCode::A,
-        VirtualKeyCode::B => KeyCode::B,
-        VirtualKeyCode::C => KeyCode::C,
-        VirtualKeyCode::D => KeyCode::D,
-        VirtualKeyCode::E => KeyCode::E,
-        VirtualKeyCode::F => KeyCode::F,
-        VirtualKeyCode::G => KeyCode::G,
-        VirtualKeyCode::H => KeyCode::H,
-        VirtualKeyCode::I => KeyCode::I,
-        VirtualKeyCode::J => KeyCode::J,
-        VirtualKeyCode::K => KeyCode::K,
-        VirtualKeyCode::L => KeyCode::L,
-        VirtualKeyCode::M => KeyCode::M,
-        VirtualKeyCode::N => KeyCode::N,
-        VirtualKeyCode::O => KeyCode::O,
-        VirtualKeyCode::P => KeyCode::P,
-        VirtualKeyCode::Q => KeyCode::Q,
-        VirtualKeyCode::R => KeyCode::R,
-        VirtualKeyCode::S => KeyCode::S,
-        VirtualKeyCode::T => KeyCode::T,
-        VirtualKeyCode::U => KeyCode::U,
-        VirtualKeyCode::V => KeyCode::V,
-        VirtualKeyCode::W => KeyCode::W,
-        VirtualKeyCode::X => KeyCode::X,
-        VirtualKeyCode::Y => KeyCode::Y,
-        VirtualKeyCode::Z => KeyCode::Z,
-        VirtualKeyCode::Semicolon => KeyCode::Semicolon,
-        VirtualKeyCode::Equals => KeyCode::Equals,
-        VirtualKeyCode::Comma => KeyCode::Comma,
-        VirtualKeyCode::Minus => KeyCode::Minus,
-        VirtualKeyCode::Period => KeyCode::Period,
-        VirtualKeyCode::Slash => KeyCode::Slash,
-        VirtualKeyCode::Grave => KeyCode::Grave,
-        VirtualKeyCode::LBracket => KeyCode::LBracket,
-        VirtualKeyCode::Backslash => KeyCode::Backslash,
-        VirtualKeyCode::RBracket => KeyCode::RBracket,
-        VirtualKeyCode::Apostrophe => KeyCode::Apostrophe,
-        VirtualKeyCode::Numpad0 => KeyCode::Numpad0,
-        VirtualKeyCode::Numpad1 => KeyCode::Numpad1,
-        VirtualKeyCode::Numpad2 => KeyCode::Numpad2,
-        VirtualKeyCode::Numpad3 => KeyCode::Numpad3,
-        VirtualKeyCode::Numpad4 => KeyCode::Numpad4,
-        VirtualKeyCode::Numpad5 => KeyCode::Numpad5,
-        VirtualKeyCode::Numpad6 => KeyCode::Numpad6,
-        VirtualKeyCode::Numpad7 => KeyCode::Numpad7,
-        VirtualKeyCode::Numpad8 => KeyCode::Numpad8,
-        VirtualKeyCode::Numpad9 => KeyCode::Numpad9,
-        VirtualKeyCode::NumpadMultiply => KeyCode::Multiply,
-        VirtualKeyCode::NumpadAdd => KeyCode::Plus,
-        VirtualKeyCode::NumpadSubtract => KeyCode::NumpadMinus,
-        VirtualKeyCode::NumpadDecimal => KeyCode::NumpadPeriod,
-        VirtualKeyCode::NumpadDivide => KeyCode::NumpadSlash,
-        VirtualKeyCode::PageUp => KeyCode::PgUp,
-        VirtualKeyCode::PageDown => KeyCode::PgDown,
-        VirtualKeyCode::End => KeyCode::End,
-        VirtualKeyCode::Home => KeyCode::Home,
-        VirtualKeyCode::Left => KeyCode::Left,
-        VirtualKeyCode::Up => KeyCode::Up,
-        VirtualKeyCode::Right => KeyCode::Right,
-        VirtualKeyCode::Down => KeyCode::Down,
-        VirtualKeyCode::Insert => KeyCode::Insert,
-        VirtualKeyCode::Delete => KeyCode::Delete,
-        VirtualKeyCode::Pause => KeyCode::Pause,
-        VirtualKeyCode::Scroll => KeyCode::ScrollLock,
-        VirtualKeyCode::F1 => KeyCode::F1,
-        VirtualKeyCode::F2 => KeyCode::F2,
-        VirtualKeyCode::F3 => KeyCode::F3,
-        VirtualKeyCode::F4 => KeyCode::F4,
-        VirtualKeyCode::F5 => KeyCode::F5,
-        VirtualKeyCode::F6 => KeyCode::F6,
-        VirtualKeyCode::F7 => KeyCode::F7,
-        VirtualKeyCode::F8 => KeyCode::F8,
-        VirtualKeyCode::F9 => KeyCode::F9,
-        VirtualKeyCode::F10 => KeyCode::F10,
-        VirtualKeyCode::F11 => KeyCode::F11,
-        VirtualKeyCode::F12 => KeyCode::F12,
-        _ => KeyCode::Unknown,
+pub fn winit_to_ruffle_key_code(event: &KeyEvent) -> Option<KeyCode> {
+    // Note: it would be tempting to use event.key_without_modifiers() here, but FP
+    // does not care about keys without modifiers at all, it does its own mapping,
+    // so that on English UK, Shift+3 produces 16+163, not 16+51.
+
+    let is_numpad = event.location == KeyLocation::Numpad;
+    let key_code = match event.logical_key.as_ref() {
+        Key::Named(NamedKey::Backspace) => KeyCode::BACKSPACE,
+        Key::Named(NamedKey::Tab) => KeyCode::TAB,
+        Key::Named(NamedKey::Enter) => KeyCode::RETURN,
+        Key::Named(NamedKey::Shift) => KeyCode::SHIFT,
+        Key::Named(NamedKey::Control) => KeyCode::CONTROL,
+        Key::Named(NamedKey::Alt) => KeyCode::ALT,
+        // AltGr is ignored by FP
+        Key::Named(NamedKey::AltGraph) => return None,
+        Key::Named(NamedKey::CapsLock) => KeyCode::CAPS_LOCK,
+        Key::Named(NamedKey::Escape) => KeyCode::ESCAPE,
+        Key::Named(NamedKey::Space) => KeyCode::SPACE,
+        // Note: FP DOES care about modifiers for numpad keys,
+        // so that Shift+Numpad7 produces 16+36, not 16+103.
+        Key::Character("0") if is_numpad => KeyCode::NUMPAD0,
+        Key::Character("1") if is_numpad => KeyCode::NUMPAD1,
+        Key::Character("2") if is_numpad => KeyCode::NUMPAD2,
+        Key::Character("3") if is_numpad => KeyCode::NUMPAD3,
+        Key::Character("4") if is_numpad => KeyCode::NUMPAD4,
+        Key::Character("5") if is_numpad => KeyCode::NUMPAD5,
+        Key::Character("6") if is_numpad => KeyCode::NUMPAD6,
+        Key::Character("7") if is_numpad => KeyCode::NUMPAD7,
+        Key::Character("8") if is_numpad => KeyCode::NUMPAD8,
+        Key::Character("9") if is_numpad => KeyCode::NUMPAD9,
+        Key::Character("*") if is_numpad => KeyCode::MULTIPLY,
+        Key::Character("+") if is_numpad => KeyCode::PLUS,
+        Key::Character("-") if is_numpad => KeyCode::NUMPAD_MINUS,
+        Key::Character(".") if is_numpad => KeyCode::NUMPAD_PERIOD,
+        Key::Character("/") if is_numpad => KeyCode::NUMPAD_SLASH,
+        Key::Character("0") | Key::Character(")") => KeyCode::KEY0,
+        Key::Character("1") | Key::Character("!") => KeyCode::KEY1,
+        Key::Character("2") | Key::Character("@") => KeyCode::KEY2,
+        Key::Character("3") | Key::Character("#") => KeyCode::KEY3,
+        Key::Character("4") | Key::Character("$") => KeyCode::KEY4,
+        Key::Character("5") | Key::Character("%") => KeyCode::KEY5,
+        Key::Character("6") | Key::Character("^") => KeyCode::KEY6,
+        Key::Character("7") | Key::Character("&") => KeyCode::KEY7,
+        Key::Character("8") | Key::Character("*") => KeyCode::KEY8,
+        Key::Character("9") | Key::Character("(") => KeyCode::KEY9,
+        Key::Character(";") | Key::Character(":") => KeyCode::SEMICOLON,
+        Key::Character("=") | Key::Character("+") => KeyCode::EQUALS,
+        Key::Character(",") | Key::Character("<") => KeyCode::COMMA,
+        Key::Character("-") | Key::Character("_") => KeyCode::MINUS,
+        Key::Character(".") | Key::Character(">") => KeyCode::PERIOD,
+        Key::Character("/") | Key::Character("?") => KeyCode::SLASH,
+        Key::Character("`") | Key::Character("~") => KeyCode::GRAVE,
+        Key::Character("[") | Key::Character("{") => KeyCode::LBRACKET,
+        Key::Character("\\") | Key::Character("|") => KeyCode::BACKSLASH,
+        Key::Character("]") | Key::Character("}") => KeyCode::RBRACKET,
+        Key::Character("'") | Key::Character("\"") => KeyCode::APOSTROPHE,
+        Key::Named(NamedKey::PageUp) => KeyCode::PG_UP,
+        Key::Named(NamedKey::PageDown) => KeyCode::PG_DOWN,
+        Key::Named(NamedKey::End) => KeyCode::END,
+        Key::Named(NamedKey::Home) => KeyCode::HOME,
+        Key::Named(NamedKey::ArrowLeft) => KeyCode::LEFT,
+        Key::Named(NamedKey::ArrowUp) => KeyCode::UP,
+        Key::Named(NamedKey::ArrowRight) => KeyCode::RIGHT,
+        Key::Named(NamedKey::ArrowDown) => KeyCode::DOWN,
+        Key::Named(NamedKey::Insert) => KeyCode::INSERT,
+        Key::Named(NamedKey::Delete) => KeyCode::DELETE,
+        Key::Named(NamedKey::Pause) => KeyCode::PAUSE,
+        Key::Named(NamedKey::NumLock) => KeyCode::NUM_LOCK,
+        Key::Named(NamedKey::ScrollLock) => KeyCode::SCROLL_LOCK,
+        Key::Named(NamedKey::F1) => KeyCode::F1,
+        Key::Named(NamedKey::F2) => KeyCode::F2,
+        Key::Named(NamedKey::F3) => KeyCode::F3,
+        Key::Named(NamedKey::F4) => KeyCode::F4,
+        Key::Named(NamedKey::F5) => KeyCode::F5,
+        Key::Named(NamedKey::F6) => KeyCode::F6,
+        Key::Named(NamedKey::F7) => KeyCode::F7,
+        Key::Named(NamedKey::F8) => KeyCode::F8,
+        Key::Named(NamedKey::F9) => KeyCode::F9,
+        Key::Named(NamedKey::F10) => KeyCode::F10,
+        Key::Named(NamedKey::F11) => KeyCode::F11,
+        Key::Named(NamedKey::F12) => KeyCode::F12,
+        Key::Named(NamedKey::F13) => KeyCode::F13,
+        Key::Named(NamedKey::F14) => KeyCode::F14,
+        Key::Named(NamedKey::F15) => KeyCode::F15,
+        Key::Named(NamedKey::F16) => KeyCode::F16,
+        Key::Named(NamedKey::F17) => KeyCode::F17,
+        Key::Named(NamedKey::F18) => KeyCode::F18,
+        Key::Named(NamedKey::F19) => KeyCode::F19,
+        Key::Named(NamedKey::F20) => KeyCode::F20,
+        Key::Named(NamedKey::F21) => KeyCode::F21,
+        Key::Named(NamedKey::F22) => KeyCode::F22,
+        Key::Named(NamedKey::F23) => KeyCode::F23,
+        Key::Named(NamedKey::F24) => KeyCode::F24,
+        Key::Character(char) => {
+            // Handle alphabetic characters
+            alpha_to_ruffle_key_code(char).unwrap_or(KeyCode::UNKNOWN)
+        }
+        _ => KeyCode::UNKNOWN,
+    };
+    Some(key_code)
+}
+
+fn alpha_to_ruffle_key_code(char: &str) -> Option<KeyCode> {
+    if char.len() != 1 {
+        return None;
+    }
+
+    let char = char.chars().next()?;
+
+    if char.is_ascii_alphabetic() {
+        // ASCII alphabetic characters are all mapped to
+        // their respective KeyCodes, which happen to have
+        // the same numerical value as uppercase characters.
+        return Some(KeyCode::from_code(char.to_ascii_uppercase() as u32));
+    }
+
+    if !char.is_ascii() {
+        // TODO Non-ASCII inputs have codes equal to their Unicode codes and yes,
+        //   they overlap with other codes, so that typing '½' and '-' both produce 189.
+        return None;
+    }
+
+    None
+}
+
+pub fn gilrs_button_to_gamepad_button(button: Button) -> Option<GamepadButton> {
+    match button {
+        Button::South => Some(GamepadButton::South),
+        Button::East => Some(GamepadButton::East),
+        Button::North => Some(GamepadButton::North),
+        Button::West => Some(GamepadButton::West),
+        Button::LeftTrigger => Some(GamepadButton::LeftTrigger),
+        Button::LeftTrigger2 => Some(GamepadButton::LeftTrigger2),
+        Button::RightTrigger => Some(GamepadButton::RightTrigger),
+        Button::RightTrigger2 => Some(GamepadButton::RightTrigger2),
+        Button::Select => Some(GamepadButton::Select),
+        Button::Start => Some(GamepadButton::Start),
+        Button::DPadUp => Some(GamepadButton::DPadUp),
+        Button::DPadDown => Some(GamepadButton::DPadDown),
+        Button::DPadLeft => Some(GamepadButton::DPadLeft),
+        Button::DPadRight => Some(GamepadButton::DPadRight),
+        // GilRs has some more buttons that are seemingly not supported anywhere
+        // like C or Z.
+        _ => None,
     }
 }
 
-/// Return a character for the given key code and shift state.
-pub fn winit_key_to_char(key_code: VirtualKeyCode, is_shift_down: bool) -> Option<char> {
-    // We need to know the character that a keypress outputs for both key down and key up events,
-    // but the winit keyboard API does not provide a way to do this (winit/#753).
-    // CharacterReceived events are insufficent because they only fire on key down, not on key up.
-    // This is a half-measure to map from keyboard keys back to a character, but does will not work fully
-    // for international layouts.
-    Some(match (key_code, is_shift_down) {
-        (VirtualKeyCode::Space, _) => ' ',
-        (VirtualKeyCode::Key0, _) => '0',
-        (VirtualKeyCode::Key1, _) => '1',
-        (VirtualKeyCode::Key2, _) => '2',
-        (VirtualKeyCode::Key3, _) => '3',
-        (VirtualKeyCode::Key4, _) => '4',
-        (VirtualKeyCode::Key5, _) => '5',
-        (VirtualKeyCode::Key6, _) => '6',
-        (VirtualKeyCode::Key7, _) => '7',
-        (VirtualKeyCode::Key8, _) => '8',
-        (VirtualKeyCode::Key9, _) => '9',
-        (VirtualKeyCode::A, false) => 'a',
-        (VirtualKeyCode::A, true) => 'A',
-        (VirtualKeyCode::B, false) => 'b',
-        (VirtualKeyCode::B, true) => 'B',
-        (VirtualKeyCode::C, false) => 'c',
-        (VirtualKeyCode::C, true) => 'C',
-        (VirtualKeyCode::D, false) => 'd',
-        (VirtualKeyCode::D, true) => 'D',
-        (VirtualKeyCode::E, false) => 'e',
-        (VirtualKeyCode::E, true) => 'E',
-        (VirtualKeyCode::F, false) => 'f',
-        (VirtualKeyCode::F, true) => 'F',
-        (VirtualKeyCode::G, false) => 'g',
-        (VirtualKeyCode::G, true) => 'G',
-        (VirtualKeyCode::H, false) => 'h',
-        (VirtualKeyCode::H, true) => 'H',
-        (VirtualKeyCode::I, false) => 'i',
-        (VirtualKeyCode::I, true) => 'I',
-        (VirtualKeyCode::J, false) => 'j',
-        (VirtualKeyCode::J, true) => 'J',
-        (VirtualKeyCode::K, false) => 'k',
-        (VirtualKeyCode::K, true) => 'K',
-        (VirtualKeyCode::L, false) => 'l',
-        (VirtualKeyCode::L, true) => 'L',
-        (VirtualKeyCode::M, false) => 'm',
-        (VirtualKeyCode::M, true) => 'M',
-        (VirtualKeyCode::N, false) => 'n',
-        (VirtualKeyCode::N, true) => 'N',
-        (VirtualKeyCode::O, false) => 'o',
-        (VirtualKeyCode::O, true) => 'O',
-        (VirtualKeyCode::P, false) => 'p',
-        (VirtualKeyCode::P, true) => 'P',
-        (VirtualKeyCode::Q, false) => 'q',
-        (VirtualKeyCode::Q, true) => 'Q',
-        (VirtualKeyCode::R, false) => 'r',
-        (VirtualKeyCode::R, true) => 'R',
-        (VirtualKeyCode::S, false) => 's',
-        (VirtualKeyCode::S, true) => 'S',
-        (VirtualKeyCode::T, false) => 't',
-        (VirtualKeyCode::T, true) => 'T',
-        (VirtualKeyCode::U, false) => 'u',
-        (VirtualKeyCode::U, true) => 'U',
-        (VirtualKeyCode::V, false) => 'v',
-        (VirtualKeyCode::V, true) => 'V',
-        (VirtualKeyCode::W, false) => 'w',
-        (VirtualKeyCode::W, true) => 'W',
-        (VirtualKeyCode::X, false) => 'x',
-        (VirtualKeyCode::X, true) => 'X',
-        (VirtualKeyCode::Y, false) => 'y',
-        (VirtualKeyCode::Y, true) => 'Y',
-        (VirtualKeyCode::Z, false) => 'z',
-        (VirtualKeyCode::Z, true) => 'Z',
-
-        (VirtualKeyCode::Semicolon, false) => ';',
-        (VirtualKeyCode::Semicolon, true) => ':',
-        (VirtualKeyCode::Equals, false) => '=',
-        (VirtualKeyCode::Equals, true) => '+',
-        (VirtualKeyCode::Comma, false) => ',',
-        (VirtualKeyCode::Comma, true) => '<',
-        (VirtualKeyCode::Minus, false) => '-',
-        (VirtualKeyCode::Minus, true) => '_',
-        (VirtualKeyCode::Period, false) => '.',
-        (VirtualKeyCode::Period, true) => '>',
-        (VirtualKeyCode::Slash, false) => '/',
-        (VirtualKeyCode::Slash, true) => '?',
-        (VirtualKeyCode::Grave, false) => '`',
-        (VirtualKeyCode::Grave, true) => '~',
-        (VirtualKeyCode::LBracket, false) => '[',
-        (VirtualKeyCode::LBracket, true) => '{',
-        (VirtualKeyCode::Backslash, false) => '\\',
-        (VirtualKeyCode::Backslash, true) => '|',
-        (VirtualKeyCode::RBracket, false) => ']',
-        (VirtualKeyCode::RBracket, true) => '}',
-        (VirtualKeyCode::Apostrophe, false) => '\'',
-        (VirtualKeyCode::Apostrophe, true) => '"',
-        (VirtualKeyCode::NumpadMultiply, _) => '*',
-        (VirtualKeyCode::NumpadAdd, _) => '+',
-        (VirtualKeyCode::NumpadSubtract, _) => '-',
-        (VirtualKeyCode::NumpadDecimal, _) => '.',
-        (VirtualKeyCode::NumpadDivide, _) => '/',
-
-        (VirtualKeyCode::Numpad0, false) => '0',
-        (VirtualKeyCode::Numpad1, false) => '1',
-        (VirtualKeyCode::Numpad2, false) => '2',
-        (VirtualKeyCode::Numpad3, false) => '3',
-        (VirtualKeyCode::Numpad4, false) => '4',
-        (VirtualKeyCode::Numpad5, false) => '5',
-        (VirtualKeyCode::Numpad6, false) => '6',
-        (VirtualKeyCode::Numpad7, false) => '7',
-        (VirtualKeyCode::Numpad8, false) => '8',
-        (VirtualKeyCode::Numpad9, false) => '9',
-        (VirtualKeyCode::NumpadEnter, _) => '\r',
-
-        (VirtualKeyCode::Tab, _) => '\t',
-        (VirtualKeyCode::Return, _) => '\r',
-        (VirtualKeyCode::Back, _) => '\u{0008}',
-
-        _ => return None,
-    })
-}
-
-pub fn get_screen_size(event_loop: &EventLoop<RuffleEvent>) -> PhysicalSize<u32> {
+pub fn get_screen_size(window: &Window) -> PhysicalSize<u32> {
     let mut min_x = 0;
     let mut min_y = 0;
     let mut max_x = 0;
     let mut max_y = 0;
 
-    for monitor in event_loop.available_monitors() {
+    for monitor in window.available_monitors() {
         let size = monitor.size();
         let position = monitor.position();
         min_x = min_x.min(position.x);
@@ -310,39 +242,6 @@ pub fn parse_url(path: &Path) -> Result<Url, Error> {
     }
 }
 
-fn actually_pick_file(dir: Option<PathBuf>) -> Option<PathBuf> {
-    let mut dialog = FileDialog::new()
-        .add_filter("Flash Files", &["swf", "spl"])
-        .add_filter("All Files", &["*"])
-        .set_title("Load a Flash File");
-
-    if let Some(dir) = dir {
-        dialog = dialog.set_directory(dir);
-    }
-
-    dialog.pick_file()
-}
-
-// [NA] Horrible hacky workaround for https://github.com/rust-windowing/winit/issues/2291
-// We only need the workaround from within UI code, not when executing custom events
-// The workaround causes Ruffle to show as "not responding" on windows, so we don't use it if we don't need to
-#[cfg(windows)]
-pub fn pick_file(in_ui: bool, path: Option<PathBuf>) -> Option<PathBuf> {
-    if in_ui {
-        std::thread::spawn(move || actually_pick_file(path))
-            .join()
-            .ok()
-            .flatten()
-    } else {
-        actually_pick_file(path)
-    }
-}
-
-#[cfg(not(windows))]
-pub fn pick_file(_in_ui: bool, path: Option<PathBuf>) -> Option<PathBuf> {
-    actually_pick_file(path)
-}
-
 #[cfg(not(feature = "tracy"))]
 pub fn plot_stats_in_tracy(_instance: &wgpu::Instance) {}
 
@@ -355,7 +254,9 @@ pub fn plot_stats_in_tracy(instance: &wgpu::Instance) {
     const TEXTURE_VIEWS: PlotName = plot_name!("Texture Views");
 
     let tracy = Client::running().expect("tracy client must be running");
-    let report = instance.generate_report();
+    let report = instance
+        .generate_report()
+        .expect("reports should be available on desktop");
 
     #[allow(unused_mut)]
     let mut backend = None;
@@ -365,7 +266,7 @@ pub fn plot_stats_in_tracy(instance: &wgpu::Instance) {
     }
     #[cfg(windows)]
     {
-        backend = backend.or(report.dx12).or(report.dx11);
+        backend = backend.or(report.dx12);
     }
     #[cfg(any(target_os = "macos", target_os = "ios"))]
     {
@@ -373,11 +274,22 @@ pub fn plot_stats_in_tracy(instance: &wgpu::Instance) {
     }
 
     if let Some(stats) = backend {
-        tracy.plot(BIND_GROUPS, stats.bind_groups.num_occupied as f64);
-        tracy.plot(BUFFERS, stats.buffers.num_occupied as f64);
-        tracy.plot(TEXTURES, stats.textures.num_occupied as f64);
-        tracy.plot(TEXTURE_VIEWS, stats.texture_views.num_occupied as f64);
+        tracy.plot(BIND_GROUPS, stats.bind_groups.num_allocated as f64);
+        tracy.plot(BUFFERS, stats.buffers.num_allocated as f64);
+        tracy.plot(TEXTURES, stats.textures.num_allocated as f64);
+        tracy.plot(TEXTURE_VIEWS, stats.texture_views.num_allocated as f64);
     }
 
     tracy.frame_mark();
+}
+
+pub fn open_url(url: &Url) {
+    // TODO: This opens local files in the browser while flash opens them
+    // in the default program for the respective filetype.
+    // This especially includes mailto links. Ruffle opens the browser which opens
+    // the preferred program while flash opens the preferred program directly.
+    match webbrowser::open(url.as_str()) {
+        Ok(_output) => {}
+        Err(e) => tracing::error!("Could not open URL {}: {}", url.as_str(), e),
+    };
 }

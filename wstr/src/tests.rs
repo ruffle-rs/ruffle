@@ -5,7 +5,7 @@ use alloc::vec::Vec;
 use core::fmt::Debug;
 
 macro_rules! bstr {
-    ($str:literal) => {
+    ($str:expr) => {
         WStr::from_units($str)
     };
 }
@@ -213,4 +213,200 @@ fn split_ascii_prefix() {
     assert_eq!(utils::split_ascii_prefix(""), (&b""[..], ""));
     assert_eq!(utils::split_ascii_prefix("abc"), (&b"abc"[..], ""));
     assert_eq!(utils::split_ascii_prefix("abcd€fg"), (&b"abcd"[..], "€fg"));
+}
+
+#[test]
+fn char_boundary() {
+    // bytes
+    let bytes = bstr!(b"abcdefgh");
+    assert_eq!(utils::next_char_boundary(bytes, 8), 8);
+    assert_eq!(utils::prev_char_boundary(bytes, 8), 7);
+    assert_eq!(utils::next_char_boundary(bytes, 7), 8);
+    assert_eq!(utils::prev_char_boundary(bytes, 4), 3);
+    assert_eq!(utils::next_char_boundary(bytes, 3), 4);
+    assert_eq!(utils::prev_char_boundary(bytes, 1), 0);
+    assert_eq!(utils::next_char_boundary(bytes, 0), 1);
+    assert_eq!(utils::prev_char_boundary(bytes, 0), 0);
+
+    // wide
+    let wide = wstr!('↓''↑''a''b''c');
+    assert_eq!(utils::next_char_boundary(wide, 5), 5);
+    assert_eq!(utils::prev_char_boundary(wide, 5), 4);
+    assert_eq!(utils::next_char_boundary(wide, 4), 5);
+    assert_eq!(utils::prev_char_boundary(wide, 3), 2);
+    assert_eq!(utils::next_char_boundary(wide, 2), 3);
+    assert_eq!(utils::prev_char_boundary(wide, 1), 0);
+    assert_eq!(utils::next_char_boundary(wide, 0), 1);
+    assert_eq!(utils::prev_char_boundary(wide, 0), 0);
+
+    // surrogate pairs
+    #[rustfmt::skip]
+    let sp = WStr::from_units(&[
+        '↓' as u16,
+        0xd83d, 0xdf01, // 🜁
+        'a' as u16,
+        0xd83d, 0xdf03, // 🜃
+        '↓' as u16,
+    ]);
+    assert_eq!(utils::next_char_boundary(sp, 7), 7);
+    assert_eq!(utils::prev_char_boundary(sp, 7), 6);
+    assert_eq!(utils::next_char_boundary(sp, 6), 7);
+    assert_eq!(utils::prev_char_boundary(sp, 6), 4);
+    assert_eq!(utils::next_char_boundary(sp, 4), 6);
+    assert_eq!(utils::prev_char_boundary(sp, 4), 3);
+    assert_eq!(utils::next_char_boundary(sp, 3), 4);
+    assert_eq!(utils::prev_char_boundary(sp, 3), 1);
+    assert_eq!(utils::next_char_boundary(sp, 1), 3);
+    assert_eq!(utils::prev_char_boundary(sp, 1), 0);
+    assert_eq!(utils::next_char_boundary(sp, 0), 1);
+    assert_eq!(utils::prev_char_boundary(sp, 0), 0);
+}
+
+#[test]
+fn utf8_index_mapping() {
+    #[rustfmt::skip]
+    let utf16 = WStr::from_units(&[
+        'a' as u16,
+        'b' as u16,
+        'c' as u16,
+        '↓' as u16,
+        'a' as u16,
+        'b' as u16,
+        0xd83d, 0xdf01, // 🜁
+        'a' as u16,
+        'ł' as u16,
+        0xd83d, 0xdf03, // 🜃
+        '↓' as u16,
+        'a' as u16,
+        'b' as u16,
+        'c' as u16,
+    ]);
+
+    // utf16 indices
+    // a    | b    | c    | ↓    | a    | b    | 🜁         | a    | ł    | 🜃         | ↓    | a    | b    | c
+    // 0061 | 0062 | 0063 | 2193 | 0061 | 0062 | d83d df01 | 0061 | 0142 | d83d df03 | 2193 | 0061 | 0062 | 0063
+    // 0    | 1    | 2    | 3    | 4    | 5    | 6    7    | 8    | 9    | 10   11   | 12   | 13   | 14   | 15
+
+    // utf8 indices
+    // a  | b  | c  | ↓        | a  | b  | 🜁           | a  | ł     | 🜃           | ↓        | a  | b  | c
+    // 61 | 62 | 63 | e2 86 93 | 61 | 62 | f0 9f 9c 81 | 61 | c5 82 | f0 9f 9c 83 | e2 86 93 | 61 | 62 | 63
+    // 0  | 1  | 2  | 3  4  5  | 6  | 7  | 8  9  10 11 | 12 | 13 14 | 15 16 17 18 | 19 20 21 | 22 | 23 | 24
+
+    let to_utf8 = WStrToUtf8::new(utf16);
+    let utf8 = to_utf8.to_utf8_lossy();
+
+    assert_eq!(utf8, "abc↓ab🜁ał🜃↓abc");
+    assert_eq!(utf8.len(), 25);
+    assert_eq!(utf16.len(), 16);
+
+    assert_eq!(to_utf8.utf16_index(0), Some(0));
+    assert_eq!(to_utf8.utf16_index(2), Some(2));
+    assert_eq!(to_utf8.utf16_index(3), Some(3));
+    assert_eq!(to_utf8.utf16_index(6), Some(4));
+    assert_eq!(to_utf8.utf16_index(7), Some(5));
+    assert_eq!(to_utf8.utf16_index(8), Some(6));
+    assert_eq!(to_utf8.utf16_index(13), Some(9));
+    assert_eq!(to_utf8.utf16_index(15), Some(10));
+    assert_eq!(to_utf8.utf16_index(22), Some(13));
+    assert_eq!(to_utf8.utf16_index(24), Some(15));
+
+    assert_eq!(to_utf8.utf8_index(0), Some(0));
+    assert_eq!(to_utf8.utf8_index(2), Some(2));
+    assert_eq!(to_utf8.utf8_index(3), Some(3));
+    assert_eq!(to_utf8.utf8_index(4), Some(6));
+    assert_eq!(to_utf8.utf8_index(5), Some(7));
+    assert_eq!(to_utf8.utf8_index(6), Some(8));
+    assert_eq!(to_utf8.utf8_index(9), Some(13));
+    assert_eq!(to_utf8.utf8_index(10), Some(15));
+    assert_eq!(to_utf8.utf8_index(13), Some(22));
+    assert_eq!(to_utf8.utf8_index(15), Some(24));
+
+    // last (potential) position
+    assert_eq!(to_utf8.utf16_index(25), Some(16));
+    assert_eq!(to_utf8.utf8_index(16), Some(25));
+
+    // out of bounds
+    assert_eq!(to_utf8.utf16_index(26), None);
+    assert_eq!(to_utf8.utf8_index(17), None);
+
+    // indices outside of character boundary
+    assert_eq!(to_utf8.utf16_index(4), Some(4));
+    assert_eq!(to_utf8.utf16_index(5), Some(4));
+    assert_eq!(to_utf8.utf16_index(9), Some(8));
+    assert_eq!(to_utf8.utf16_index(10), Some(8));
+    assert_eq!(to_utf8.utf8_index(7), Some(12));
+    assert_eq!(to_utf8.utf8_index(11), Some(19));
+}
+
+#[test]
+fn utf8_index_mapping_empty() {
+    let utf16 = WStr::empty();
+
+    let to_utf8 = WStrToUtf8::new(utf16);
+    let utf8 = to_utf8.to_utf8_lossy();
+
+    assert_eq!(utf8.len(), 0);
+    assert_eq!(utf16.len(), 0);
+
+    assert_eq!(to_utf8.utf16_index(0), Some(0));
+    assert_eq!(to_utf8.utf16_index(1), None);
+}
+
+#[test]
+fn parse() {
+    fn test_u32(string: &[u8]) {
+        let actual = bstr!(string).parse::<u32>();
+        if let Ok(expected) = core::str::from_utf8(string).unwrap().parse::<u32>() {
+            assert!(actual.is_ok());
+            assert_eq!(actual.unwrap(), expected);
+        } else {
+            assert!(actual.is_err());
+        }
+    }
+
+    fn test_i32(string: &[u8]) {
+        let actual = bstr!(string).parse::<i32>();
+        if let Ok(expected) = core::str::from_utf8(string).unwrap().parse::<i32>() {
+            assert!(actual.is_ok());
+            assert_eq!(actual.unwrap(), expected);
+        } else {
+            assert!(actual.is_err());
+        }
+    }
+
+    test_u32(b"0");
+    test_u32(b"123");
+    test_u32(b"001");
+    test_u32(b"123asd");
+    test_u32(b"asdf");
+    test_u32(b"");
+    test_u32(b"   ");
+    test_u32(b"123");
+    test_u32(b"4294967295");
+    test_u32(b"4294967296");
+    test_u32(b"4294967297");
+    test_u32(b"+0");
+    test_u32(b"+1");
+    test_u32(b"-1");
+    test_u32(b"-0");
+    test_u32(b"-");
+    test_u32(b"+");
+
+    test_i32(b"0");
+    test_i32(b"123");
+    test_i32(b"001");
+    test_i32(b"123asd");
+    test_i32(b"asdf");
+    test_i32(b"");
+    test_i32(b"   ");
+    test_i32(b"123");
+    test_i32(b"4294967295");
+    test_i32(b"4294967296");
+    test_i32(b"4294967297");
+    test_i32(b"+0");
+    test_i32(b"+1");
+    test_i32(b"-1");
+    test_i32(b"-0");
+    test_i32(b"-");
+    test_i32(b"+");
 }

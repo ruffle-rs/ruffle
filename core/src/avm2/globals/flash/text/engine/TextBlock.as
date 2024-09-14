@@ -39,7 +39,7 @@ package flash.text.engine {
             if (textJustifier) {
                 this.textJustifier = textJustifier;
             } else {
-                // This should creaate a new TextJustifier with locale "en", but we don't actually support creating TextJustifiers yet.
+                // This should create a new TextJustifier with locale "en", but we don't actually support creating TextJustifiers yet.
             }
 
             this.lineRotation = lineRotation;

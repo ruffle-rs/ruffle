@@ -1,0 +1,7 @@
+num_ticks = 1
+
+# FIXME FP is more strict regarding the error 2037
+known_failure = true
+
+# this test currently overflows the stack
+ignore = true

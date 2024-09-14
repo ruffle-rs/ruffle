@@ -1,5 +1,8 @@
-use crate::avm2::{Activation, ArrayObject, ArrayStorage, TObject as _, Value as Avm2Value};
+use crate::avm2::{
+    object::DateObject, Activation, ArrayObject, ArrayStorage, TObject as _, Value as Avm2Value,
+};
 use crate::string::AvmString;
+use chrono::DateTime;
 use flv_rs::{Value as FlvValue, Variable as FlvVariable};
 
 fn avm2_object_from_flv_variables<'gc>(
@@ -45,6 +48,18 @@ fn avm2_array_from_flv_values<'gc>(
         .into()
 }
 
+fn avm2_date_from_flv_date<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    unix_time: f64,
+    _local_offset: i16,
+) -> Avm2Value<'gc> {
+    let date_time = DateTime::from_timestamp(unix_time as i64, 0).expect("invalid timestamp");
+
+    DateObject::from_date_time(activation, date_time)
+        .unwrap()
+        .into()
+}
+
 pub trait FlvValueAvm2Ext<'gc> {
     fn to_avm2_value(self, activation: &mut Activation<'_, 'gc>) -> Avm2Value<'gc>;
 }
@@ -59,6 +74,10 @@ impl<'gc> FlvValueAvm2Ext<'gc> for FlvValue<'_> {
             FlvValue::String(string_data) | FlvValue::LongString(string_data) => {
                 AvmString::new_utf8_bytes(activation.context.gc_context, string_data).into()
             }
+            FlvValue::Date {
+                unix_time,
+                local_offset,
+            } => avm2_date_from_flv_date(activation, unix_time, local_offset),
             FlvValue::Number(value) => value.into(),
             FlvValue::Boolean(value) => value.into(),
             FlvValue::Null => Avm2Value::Null,

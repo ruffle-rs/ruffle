@@ -5,6 +5,8 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ScriptObject, Value};
 use crate::avm1_stub;
 use crate::context::GcContext;
+use crate::prelude::TDisplayObject;
+use crate::sandbox::SandboxType;
 use crate::string::AvmString;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
@@ -58,9 +60,15 @@ fn get_sandbox_type<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let movie = activation.base_clip().movie();
     Ok(AvmString::new_utf8(
         activation.context.gc_context,
-        activation.context.system.sandbox_type.to_string(),
+        match movie.sandbox_type() {
+            SandboxType::Remote => "remote",
+            SandboxType::LocalWithFile => "localWithFile",
+            SandboxType::LocalWithNetwork => "localWithNetwork",
+            SandboxType::LocalTrusted | SandboxType::Application => "localTrusted",
+        },
     )
     .into())
 }

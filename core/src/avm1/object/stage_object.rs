@@ -8,7 +8,7 @@ use crate::avm1::{Object, ObjectPtr, ScriptObject, TObject, Value};
 use crate::avm_warn;
 use crate::context::UpdateContext;
 use crate::display_object::{
-    DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer,
+    DisplayObject, EditText, MovieClip, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
 };
 use crate::string::{AvmString, WStr};
 use crate::types::Percent;
@@ -87,7 +87,7 @@ impl<'gc> StageObject<'gc> {
 
     /// Clears all text field bindings from this stage object, and places the textfields on the unbound list.
     /// This is called when the object is removed from the stage.
-    pub fn unregister_text_field_bindings(self, context: &mut UpdateContext<'_, 'gc>) {
+    pub fn unregister_text_field_bindings(self, context: &mut UpdateContext<'gc>) {
         for binding in self
             .0
             .write(context.gc_context)
@@ -257,10 +257,9 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
                 binding.variable_name.eq_ignore_case(&name)
             }
         }) {
-            binding.text_field.set_html_text(
-                &value.coerce_to_string(activation)?,
-                &mut activation.context,
-            );
+            binding
+                .text_field
+                .set_html_text(&value.coerce_to_string(activation)?, activation.context);
         }
 
         let base = obj.base;
@@ -592,7 +591,7 @@ fn set_visible<'gc>(
     // Because this property dates to the era of Flash 4, this is actually coerced to an integer.
     // `_visible = "false";` coerces to NaN and has no effect.
     if let Some(n) = property_coerce_to_number(activation, val)? {
-        this.set_visible(activation.context.gc_context, n != 0.0);
+        this.set_visible(activation.context, n != 0.0);
     }
     Ok(())
 }
@@ -607,7 +606,7 @@ fn set_width<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_width(&mut activation.context, val);
+        this.set_width(activation.context, val);
     }
     Ok(())
 }
@@ -622,7 +621,7 @@ fn set_height<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_height(&mut activation.context, val);
+        this.set_height(activation.context, val);
     }
     Ok(())
 }
@@ -733,22 +732,61 @@ fn set_high_quality<'gc>(
         activation
             .context
             .stage
-            .set_quality(&mut activation.context, quality);
+            .set_quality(activation.context, quality);
     }
     Ok(())
 }
 
-fn focus_rect<'gc>(activation: &mut Activation<'_, 'gc>, _this: DisplayObject<'gc>) -> Value<'gc> {
-    avm_warn!(activation, "Unimplemented property _focusrect");
-    Value::Null
+fn refers_to_stage_focus_rect<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: DisplayObject<'gc>,
+) -> bool {
+    activation.swf_version() <= 5 || this.parent().is_some_and(|p| p.as_stage().is_some())
+}
+
+fn focus_rect<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
+    if refers_to_stage_focus_rect(activation, this) {
+        let val = activation.context.stage.stage_focus_rect();
+        if activation.swf_version() <= 5 {
+            Value::Number(if val { 1.0 } else { 0.0 })
+        } else {
+            Value::Bool(val)
+        }
+    } else if let Some(obj) = this.as_interactive() {
+        match obj.focus_rect() {
+            Some(val) => Value::Bool(val),
+            None => Value::Null,
+        }
+    } else {
+        Value::Undefined
+    }
 }
 
 fn set_focus_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: DisplayObject<'gc>,
-    _val: Value<'gc>,
+    this: DisplayObject<'gc>,
+    val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    avm_warn!(activation, "Unimplemented property _focusrect");
+    if refers_to_stage_focus_rect(activation, this) {
+        let val = match val {
+            Value::Undefined | Value::Null => {
+                // undefined & null are ignored
+                return Ok(());
+            }
+            Value::Object(_) => false,
+            _ => val.coerce_to_f64(activation)? != 0.0,
+        };
+        activation
+            .context
+            .stage
+            .set_stage_focus_rect(activation.context.gc(), val);
+    } else if let Some(obj) = this.as_interactive() {
+        let val = match val {
+            Value::Undefined | Value::Null => None,
+            _ => Some(val.as_bool(activation.swf_version())),
+        };
+        obj.set_focus_rect(activation.context.gc(), val);
+    }
     Ok(())
 }
 
@@ -790,18 +828,18 @@ fn set_quality<'gc>(
         activation
             .context
             .stage
-            .set_quality(&mut activation.context, quality);
+            .set_quality(activation.context, quality);
     }
     Ok(())
 }
 
 fn x_mouse<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
-    let local = this.local_mouse_position(&activation.context);
+    let local = this.local_mouse_position(activation.context);
     local.x.to_pixels().into()
 }
 
 fn y_mouse<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
-    let local = this.local_mouse_position(&activation.context);
+    let local = this.local_mouse_position(activation.context);
     local.y.to_pixels().into()
 }
 

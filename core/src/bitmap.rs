@@ -22,7 +22,7 @@ pub mod turbulence;
 ///  - Widths and heights exceeding 0x666666 are invalid in all versions
 ///  - Pixel counts (of any width/height) exceeding 0x20000000 pixels
 ///
-/// All of these are curently enforced.
+/// All of these are currently enforced.
 pub fn is_size_valid(swf_version: u8, width: u32, height: u32) -> bool {
     // From :
     //

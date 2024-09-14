@@ -3,9 +3,10 @@ player-settings = プレイヤー設定
 movie-parameters = 映像パラメーター
 custom-base-url = カスタムベースURL
 spoof-swf-url = SWFのURLを偽装
+referer-url = リファラ URL
+cookie = Cookie
 proxy = プロキシ
 upgrade-http = HTTPをHTTPSに置き換え
-upgrade-http-check = 置き換える
 tcp-connections = TCP接続
 tcp-connections-allow = 許可する
 tcp-connections-ask = 要求する
@@ -45,13 +46,19 @@ align-top-right = 右上
 align-bottom-right = 右下
 align-force = 強制
 scale-mode = スケールモード
-scale-mode-exactfit = フィット
-scale-mode-noborder = ふちなし
-scale-mode-noscale = スケールなし
-scale-mode-showall = すべて表示
+scale-mode-noscale = 拡大しない(100%)
+scale-mode-noscale-tooltip =
+    ムービーを拡大せず、オリジナルのサイズで表示する。
+    
+    StageScaleMode.NO_SCALEに一致します。
+scale-mode-showall = ウィンドウに合わせる
+scale-mode-exactfit = 引き伸ばす
 scale-mode-force = 強制
+scale-mode-force-tooltip = ムービーによるスケールモードの変更を抑制し、現在の設定を保持する。
 player-version = プレイヤーのバージョン
+player-runtime = プレイヤーのランタイム環境
+player-runtime-flash = Flashプレイヤー
+player-runtime-air = Adobe AIR
 custom-framerate = カスタムフレームレート
 custom-framerate-suffix = { " " } fps
 dummy-external-interface = ダミー外部インターフェース
-dummy-external-interface-check = 有効

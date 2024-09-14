@@ -1,0 +1,25 @@
+loader.content = null
+loader.contentLoaderInfo.content = null
+loader.contentLoaderInfo.bytesLoaded = 0
+loader.contentLoaderInfo.bytesTotal = 0
+loader.contentLoaderInfo.url = null
+loader.contentLoaderInfo.parameters = [object Object]
+Event [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=0 bytesTotal=28417]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 0, loader.contentLoaderInfo.bytesTotal = 28417, loader.contentLoaderInfo.url = null
+Event [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=28417 bytesTotal=28417]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 28417, loader.contentLoaderInfo.bytesTotal = 28417, loader.contentLoaderInfo.url = null
+Directly after load:
+loader.content = null
+loader.contentLoaderInfo.content = null
+loader.contentLoaderInfo.bytesLoaded = 28417
+loader.contentLoaderInfo.bytesTotal = 28417
+loader.contentLoaderInfo.url = null
+loader.contentLoaderInfo.parameters = [object Object]
+Calling super() in Main()
+Called super() in Main()
+exitFrame in Test
+exitFrame in Test
+Event [Event type="init" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object Bitmap], loader.contentLoaderInfo.bytesLoaded = 28417, loader.contentLoaderInfo.bytesTotal = 28417, loader.contentLoaderInfo.url = file:///
+Init: loader.content = [object Bitmap]
+Init: loader.content.bitmapData = [object BitmapData]
+Event [Event type="complete" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object Bitmap], loader.contentLoaderInfo.bytesLoaded = 28417, loader.contentLoaderInfo.bytesTotal = 28417, loader.contentLoaderInfo.url = file:///
+exitFrame in Test
+exitFrame in Test

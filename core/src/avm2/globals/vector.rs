@@ -14,10 +14,8 @@ use crate::avm2::object::{
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
-use crate::avm2::Multiname;
 use crate::avm2::QName;
 use crate::string::AvmString;
-use gc_arena::GcCell;
 use std::cmp::{max, min, Ordering};
 
 pub fn generic_vector_allocator<'gc>(
@@ -74,15 +72,18 @@ fn class_call<'gc>(
         )?));
     }
 
-    let this_class = activation.subclass_object().unwrap();
+    let this_class = activation
+        .bound_class()
+        .expect("Method call without bound class?");
+
     let value_type = this_class
-        .as_class_params()
-        .ok_or("Cannot convert to unparametrized Vector")?; // technically unreachable
+        .param()
+        .expect("Cannot convert to unparametrized Vector"); // technically unreachable
 
     let arg = args.get(0).cloned().unwrap();
     let arg = arg.as_object().ok_or("Cannot convert to Vector")?;
 
-    if arg.instance_of() == Some(this_class) {
+    if arg.instance_class() == this_class {
         return Ok(arg.into());
     }
 
@@ -93,9 +94,7 @@ fn class_call<'gc>(
     let mut new_storage = VectorStorage::new(0, false, value_type, activation);
     new_storage.reserve_exact(length as usize);
 
-    let value_type_for_coercion = new_storage
-        .value_type_for_coercion(activation)
-        .inner_class_definition();
+    let value_type_for_coercion = new_storage.value_type_for_coercion(activation);
 
     let mut iter = ArrayIter::new(activation, arg)?;
 
@@ -250,23 +249,24 @@ pub fn concat<'gc>(
         return Err("Not a vector-structured object".into());
     };
 
-    let val_class = new_vector_storage
-        .value_type_for_coercion(activation)
-        .inner_class_definition();
+    let original_length = new_vector_storage.length();
+
+    let use_swf10_behavior = activation
+        .caller_movie()
+        .map_or(false, |m| m.version() < 11);
+
+    let val_class = new_vector_storage.value_type_for_coercion(activation);
 
     for arg in args {
-        let arg_obj = arg
-            .as_object()
-            .ok_or("Cannot concat Vector with null or undefined")?;
+        let arg_obj = arg.coerce_to_object_or_typeerror(activation, None)?;
 
         // this is Vector.<int/uint/Number/*>
         let my_base_vector_class = activation
-            .subclass_object()
+            .bound_class()
             .expect("Method call without bound class?");
-        if !arg.is_of_type(activation, my_base_vector_class.inner_class_definition()) {
+
+        if !arg.is_of_type(activation, my_base_vector_class) {
             let base_vector_name = my_base_vector_class
-                .inner_class_definition()
-                .read()
                 .name()
                 .to_qualified_name_err_message(activation.context.gc_context);
 
@@ -288,23 +288,17 @@ pub fn concat<'gc>(
             continue;
         };
 
-        for val in old_vec {
-            if let Ok(val_obj) = val.coerce_to_object(activation) {
-                if !val.is_of_type(activation, val_class) {
-                    let other_val_class = val_obj
-                        .instance_of_class_definition()
-                        .ok_or("TypeError: Tried to concat a bare object into a Vector")?;
-                    return Err(format!(
-                        "TypeError: Cannot coerce Vector value of type {:?} to type {:?}",
-                        other_val_class.read().name(),
-                        val_class.read().name()
-                    )
-                    .into());
-                }
-            }
-
+        for (i, val) in old_vec.iter().enumerate() {
+            let insertion_index = (original_length + i) as i32;
             let coerced_val = val.coerce_to_type(activation, val_class)?;
-            new_vector_storage.push(coerced_val, activation)?;
+
+            if use_swf10_behavior {
+                // See bugzilla 504525: In SWFv10, calling `concat` with multiple
+                // arguments passed results in concatenating in the wrong order.
+                new_vector_storage.insert(insertion_index, coerced_val, activation)?;
+            } else {
+                new_vector_storage.push(coerced_val, activation)?;
+            }
         }
     }
 
@@ -452,9 +446,8 @@ pub fn filter<'gc>(
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
 
     let value_type = this
-        .instance_of()
-        .unwrap()
-        .as_class_params()
+        .instance_class()
+        .param()
         .ok_or("Cannot filter unparameterized vector")?; // technically unreachable
     let mut new_storage = VectorStorage::new(0, false, value_type, activation);
     let mut iter = ArrayIter::new(activation, this)?;
@@ -581,14 +574,11 @@ pub fn map<'gc>(
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
 
     let value_type = this
-        .instance_of()
-        .unwrap()
-        .as_class_params()
+        .instance_class()
+        .param()
         .ok_or("Cannot filter unparameterized vector")?; // technically unreachable
     let mut new_storage = VectorStorage::new(0, false, value_type, activation);
-    let value_type_for_coercion = new_storage
-        .value_type_for_coercion(activation)
-        .inner_class_definition();
+    let value_type_for_coercion = new_storage.value_type_for_coercion(activation);
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some(r) = iter.next(activation) {
@@ -623,9 +613,7 @@ pub fn push<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
-        let value_type = vs
-            .value_type_for_coercion(activation)
-            .inner_class_definition();
+        let value_type = vs.value_type_for_coercion(activation);
 
         // Pushing nothing will still throw if the Vector is fixed.
         vs.check_fixed(activation)?;
@@ -662,9 +650,7 @@ pub fn unshift<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
-        let value_type = vs
-            .value_type_for_coercion(activation)
-            .inner_class_definition();
+        let value_type = vs.value_type_for_coercion(activation);
 
         for arg in args.iter().rev() {
             let coerced_arg = arg.coerce_to_type(activation, value_type)?;
@@ -690,9 +676,9 @@ pub fn insert_at<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_i32(activation)?;
-        let value_type = vs
-            .value_type_for_coercion(activation)
-            .inner_class_definition();
+
+        let value_type = vs.value_type_for_coercion(activation);
+
         let value = args
             .get(1)
             .cloned()
@@ -778,6 +764,8 @@ pub fn slice<'gc>(
 }
 
 /// Implements `Vector.sort`
+///
+/// TODO: Consider sharing this code with `globals::array::sort`?
 pub fn sort<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -827,21 +815,18 @@ pub fn sort<'gc>(
         drop(vs);
 
         let mut unique_sort_satisfied = true;
-        let mut error_signal = Ok(());
-        values.sort_unstable_by(|a, b| match compare(activation, *a, *b) {
-            Ok(Ordering::Equal) => {
-                unique_sort_satisfied = false;
-                Ordering::Equal
-            }
-            Ok(v) if options.contains(SortOptions::DESCENDING) => v.reverse(),
-            Ok(v) => v,
-            Err(e) => {
-                error_signal = Err(e);
-                Ordering::Less
-            }
-        });
-
-        error_signal?;
+        super::array::qsort(&mut values, &mut |a, b| {
+            compare(activation, *a, *b).map(|cmp| {
+                if cmp == Ordering::Equal {
+                    unique_sort_satisfied = false;
+                    Ordering::Equal
+                } else if options.contains(SortOptions::DESCENDING) {
+                    cmp.reverse()
+                } else {
+                    cmp
+                }
+            })
+        })?;
 
         //NOTE: RETURNINDEXEDARRAY does NOT actually return anything useful.
         //The actual sorting still happens, but the results are discarded.
@@ -880,9 +865,7 @@ pub fn splice<'gc>(
             .unwrap_or(Value::Undefined)
             .coerce_to_i32(activation)?;
         let value_type = vs.value_type();
-        let value_type_for_coercion = vs
-            .value_type_for_coercion(activation)
-            .inner_class_definition();
+        let value_type_for_coercion = vs.value_type_for_coercion(activation);
 
         let start = vs.clamp_parameter_index(start_len);
         let end = max(
@@ -913,36 +896,46 @@ pub fn splice<'gc>(
 }
 
 /// Construct `Vector`'s class.
-pub fn create_generic_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_generic_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     let mc = activation.context.gc_context;
     let class = Class::new(
         QName::new(activation.avm2().vector_public_namespace, "Vector"),
-        Some(Multiname::new(
-            activation.avm2().public_namespace_base_version,
-            "Object",
-        )),
+        Some(activation.avm2().class_defs().object),
         Method::from_builtin(generic_init, "<Vector instance initializer>", mc),
         Method::from_builtin(generic_init, "<Vector class initializer>", mc),
+        activation.avm2().class_defs().class,
         mc,
     );
 
-    let mut write = class.write(mc);
-    write.set_attributes(ClassAttributes::GENERIC | ClassAttributes::FINAL);
-    write.set_instance_allocator(generic_vector_allocator);
+    class.set_attributes(mc, ClassAttributes::GENERIC | ClassAttributes::FINAL);
+    class.set_instance_allocator(mc, generic_vector_allocator);
+
+    class.mark_traits_loaded(activation.context.gc_context);
+    class
+        .init_vtable(activation.context)
+        .expect("Native class's vtable should initialize");
+
+    let c_class = class.c_class().expect("Class::new returns an i_class");
+
+    c_class.mark_traits_loaded(activation.context.gc_context);
+    c_class
+        .init_vtable(activation.context)
+        .expect("Native class's vtable should initialize");
+
     class
 }
 
 /// Construct `Vector.<int/uint/Number/*>`'s class.
 pub fn create_builtin_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    param: Option<GcCell<'gc, Class<'gc>>>,
-) -> GcCell<'gc, Class<'gc>> {
+    param: Option<Class<'gc>>,
+) -> Class<'gc> {
     let mc = activation.context.gc_context;
 
     // FIXME - we should store a `Multiname` instead of a `QName`, and use the
     // `params` field. For now, this is good enough to get tests passing
     let name = if let Some(param) = param {
-        let name = format!("Vector.<{}>", param.read().name().to_qualified_name(mc));
+        let name = format!("Vector.<{}>", param.name().to_qualified_name(mc));
         QName::new(
             activation.avm2().vector_public_namespace,
             AvmString::new_utf8(mc, name),
@@ -953,29 +946,24 @@ pub fn create_builtin_class<'gc>(
 
     let class = Class::new(
         name,
-        Some(Multiname::new(
-            activation.avm2().public_namespace_base_version,
-            "Object",
-        )),
+        Some(activation.avm2().class_defs().object),
         Method::from_builtin(instance_init, "<Vector.<T> instance initializer>", mc),
         Method::from_builtin(class_init, "<Vector.<T> class initializer>", mc),
+        activation.avm2().class_defs().class,
         mc,
     );
-
-    let mut write = class.write(mc);
 
     // TODO: Vector.<*> is also supposed to be final, but currently
     // that'd make it impossible for us to create derived Vector.<MyType>.
     if param.is_some() {
-        write.set_attributes(ClassAttributes::FINAL);
+        class.set_attributes(mc, ClassAttributes::FINAL);
     }
-    write.set_param(Some(param));
-    write.set_instance_allocator(vector_allocator);
-    write.set_call_handler(Method::from_builtin(
-        class_call,
-        "<Vector.<T> call handler>",
+    class.set_param(mc, Some(param));
+    class.set_instance_allocator(mc, vector_allocator);
+    class.set_call_handler(
         mc,
-    ));
+        Method::from_builtin(class_call, "<Vector.<T> call handler>", mc),
+    );
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,
@@ -985,7 +973,7 @@ pub fn create_builtin_class<'gc>(
         ("length", Some(length), Some(set_length)),
         ("fixed", Some(fixed), Some(set_fixed)),
     ];
-    write.define_builtin_instance_properties(
+    class.define_builtin_instance_properties(
         mc,
         activation.avm2().public_namespace_base_version,
         PUBLIC_INSTANCE_PROPERTIES,
@@ -1014,11 +1002,23 @@ pub fn create_builtin_class<'gc>(
         ("sort", sort),
         ("splice", splice),
     ];
-    write.define_builtin_instance_methods(
+    class.define_builtin_instance_methods(
         mc,
         activation.avm2().as3_namespace,
         AS3_INSTANCE_METHODS,
     );
+
+    class.mark_traits_loaded(activation.context.gc_context);
+    class
+        .init_vtable(activation.context)
+        .expect("Native class's vtable should initialize");
+
+    let c_class = class.c_class().expect("Class::new returns an i_class");
+
+    c_class.mark_traits_loaded(activation.context.gc_context);
+    c_class
+        .init_vtable(activation.context)
+        .expect("Native class's vtable should initialize");
 
     class
 }

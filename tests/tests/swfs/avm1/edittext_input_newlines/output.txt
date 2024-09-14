@@ -1,0 +1,9 @@
+text.onChanged: a
+text.onChanged: aa
+text: aa
+text multiline: 
+textMultiline.onChanged: a
+textMultiline.onChanged: a\r
+textMultiline.onChanged: a\ra
+text: aa
+text multiline: a\ra

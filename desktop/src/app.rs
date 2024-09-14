@@ -1,80 +1,118 @@
-use crate::cli::Opt;
 use crate::custom_event::RuffleEvent;
 use crate::gui::{GuiController, MENU_HEIGHT};
-use crate::player::{PlayerController, PlayerOptions};
+use crate::player::{LaunchOptions, PlayerController};
+use crate::preferences::GlobalPreferences;
 use crate::util::{
-    get_screen_size, parse_url, pick_file, plot_stats_in_tracy, winit_key_to_char,
+    get_screen_size, gilrs_button_to_gamepad_button, parse_url, plot_stats_in_tracy,
     winit_to_ruffle_key_code, winit_to_ruffle_text_control,
 };
 use anyhow::{Context, Error};
-use ruffle_core::{PlayerEvent, StageDisplayState};
+use gilrs::{Event, EventType, Gilrs};
+use ruffle_core::PlayerEvent;
 use ruffle_render::backend::ViewportDimensions;
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 use url::Url;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
-use winit::event::{ElementState, KeyboardInput, ModifiersState, VirtualKeyCode, WindowEvent};
-use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
-use winit::window::{Fullscreen, Icon, Window, WindowBuilder};
+use winit::event::{ElementState, KeyEvent, Modifiers, WindowEvent};
+use winit::event_loop::{ControlFlow, EventLoop};
+use winit::keyboard::{Key, NamedKey};
+use winit::window::{Fullscreen, Icon, Window, WindowAttributes};
 
 pub struct App {
-    opt: Opt,
-    window: Rc<Window>,
+    preferences: GlobalPreferences,
+    window: Arc<Window>,
     event_loop: Option<EventLoop<RuffleEvent>>,
     gui: Rc<RefCell<GuiController>>,
     player: PlayerController,
     min_window_size: LogicalSize<u32>,
     max_window_size: PhysicalSize<u32>,
+    initial_movie_url: Option<Url>,
+    no_gui: bool,
+    preferred_width: Option<f64>,
+    preferred_height: Option<f64>,
+    start_fullscreen: bool,
 }
 
 impl App {
-    pub fn new(opt: Opt) -> Result<Self, Error> {
-        let movie_url = opt.movie_url.clone();
+    pub async fn new(preferences: GlobalPreferences) -> Result<Self, Error> {
+        let movie_url = preferences.cli.movie_url.clone();
         let icon_bytes = include_bytes!("../assets/favicon-32.rgba");
         let icon =
             Icon::from_rgba(icon_bytes.to_vec(), 32, 32).context("Couldn't load app icon")?;
 
-        let event_loop = EventLoopBuilder::with_user_event().build();
+        let event_loop = EventLoop::with_user_event().build()?;
 
-        let min_window_size = (16, if opt.no_gui { 16 } else { MENU_HEIGHT + 16 }).into();
-        let max_window_size = get_screen_size(&event_loop);
+        let no_gui = preferences.cli.no_gui;
+        let min_window_size = (16, if no_gui { 16 } else { MENU_HEIGHT + 16 }).into();
+        let preferred_width = preferences.cli.width;
+        let preferred_height = preferences.cli.height;
+        let start_fullscreen = preferences.cli.fullscreen;
 
-        let window = WindowBuilder::new()
+        let window_attributes = WindowAttributes::default()
             .with_visible(false)
             .with_title("Ruffle")
             .with_window_icon(Some(icon))
-            .with_min_inner_size(min_window_size)
-            .with_max_inner_size(max_window_size)
-            .build(&event_loop)?;
-        let window = Rc::new(window);
+            .with_min_inner_size(min_window_size);
 
-        let mut gui = GuiController::new(window.clone(), &event_loop, &opt)?;
+        // TODO: Migrate to ActiveEventLoop::create_window, see:
+        // https://github.com/rust-windowing/winit/releases/tag/v0.30.0
+        #[allow(deprecated)]
+        let window = event_loop.create_window(window_attributes)?;
+        let max_window_size = get_screen_size(&window);
+        window.set_max_inner_size(Some(max_window_size));
+        let window = Arc::new(window);
+
+        let mut font_database = fontdb::Database::default();
+        font_database.load_system_fonts();
+
+        let mut gui = GuiController::new(
+            window.clone(),
+            &event_loop,
+            preferences.clone(),
+            &font_database,
+            movie_url.clone(),
+            no_gui,
+        )
+        .await?;
 
         let mut player = PlayerController::new(
             event_loop.create_proxy(),
             window.clone(),
             gui.descriptors().clone(),
+            font_database,
+            preferences.clone(),
         );
 
-        if let Some(movie_url) = movie_url {
-            gui.create_movie(&mut player, PlayerOptions::from(&opt), movie_url);
+        if let Some(movie_url) = &movie_url {
+            gui.create_movie(
+                &mut player,
+                LaunchOptions::from(&preferences),
+                movie_url.clone(),
+            );
         } else {
             gui.show_open_dialog();
         }
 
         Ok(Self {
-            opt,
+            preferences,
             window,
             event_loop: Some(event_loop),
             gui: Rc::new(RefCell::new(gui)),
             player,
             min_window_size,
             max_window_size,
+            initial_movie_url: movie_url,
+            no_gui,
+            preferred_width,
+            preferred_height,
+            start_fullscreen,
         })
     }
 
-    pub fn run(mut self) -> ! {
+    pub fn run(mut self) -> Result<(), Error> {
         enum LoadingState {
             Loading,
             WaitingForResize,
@@ -85,21 +123,30 @@ impl App {
         let mut time = Instant::now();
         let mut next_frame_time = None;
         let mut minimized = false;
-        let mut modifiers = ModifiersState::empty();
-        let mut fullscreen_down = false;
+        let mut modifiers = Modifiers::default();
 
-        if self.opt.movie_url.is_none() {
+        if self.initial_movie_url.is_none() {
             // No SWF provided on command line; show window with dummy movie immediately.
             self.window.set_visible(true);
             loaded = LoadingState::Loaded;
         }
 
+        let mut gilrs = Gilrs::new()
+            .inspect_err(|err| {
+                tracing::warn!("Gamepad support could not be initialized: {err}");
+            })
+            .ok();
+
         // Poll UI events.
         let event_loop = self.event_loop.take().expect("App already running");
-        event_loop.run(move |event, _window_target, control_flow| {
+        let event_loop_proxy = event_loop.create_proxy();
+        // TODO: Migrate to `EventLoop::run_app` and `impl ApplicationHandler<RuffleEvent> for App`,
+        // see: https://github.com/rust-windowing/winit/releases/tag/v0.30.0
+        #[allow(deprecated)]
+        event_loop.run(move |event, elwt| {
             let mut check_redraw = false;
             match event {
-                winit::event::Event::LoopDestroyed => {
+                winit::event::Event::LoopExiting => {
                     if let Some(mut player) = self.player.get() {
                         player.flush_shared_objects();
                     }
@@ -108,9 +155,9 @@ impl App {
                 }
 
                 // Core loop
-                winit::event::Event::MainEventsCleared
-                    if matches!(loaded, LoadingState::Loaded) =>
-                {
+                // [NA] This used to be called `MainEventsCleared`, but I think the behaviour is different now.
+                // We should look at changing our tick to happen somewhere else if we see any behavioural problems.
+                winit::event::Event::AboutToWait if matches!(loaded, LoadingState::Loaded) => {
                     let new_time = Instant::now();
                     let dt = new_time.duration_since(time).as_micros();
                     if dt > 0 {
@@ -126,7 +173,10 @@ impl App {
                 }
 
                 // Render
-                winit::event::Event::RedrawRequested(_) => {
+                winit::event::Event::WindowEvent {
+                    event: WindowEvent::RedrawRequested,
+                    ..
+                } => {
                     // Don't render when minimized to avoid potential swap chain errors in `wgpu`.
                     if !minimized {
                         if let Some(mut player) = self.player.get() {
@@ -145,25 +195,25 @@ impl App {
                         // Event consumed by GUI.
                         return;
                     }
-                    let height_offset = if self.window.fullscreen().is_some() || self.opt.no_gui {
+                    let height_offset = if self.window.fullscreen().is_some() || self.no_gui {
                         0.0
                     } else {
                         MENU_HEIGHT as f64 * self.window.scale_factor()
                     };
                     match event {
                         WindowEvent::CloseRequested => {
-                            *control_flow = ControlFlow::Exit;
+                            elwt.exit();
                             return;
                         }
                         WindowEvent::Resized(size) => {
-                            // TODO: Change this when winit adds a `Window::minimzed` or `WindowEvent::Minimize`.
+                            // TODO: Change this when winit adds a `Window::minimized` or `WindowEvent::Minimize`.
                             minimized = size.width == 0 && size.height == 0;
 
                             if let Some(mut player) = self.player.get() {
                                 let viewport_scale_factor = self.window.scale_factor();
                                 player.set_viewport_dimensions(ViewportDimensions {
                                     width: size.width,
-                                    height: size.height - height_offset as u32,
+                                    height: size.height.saturating_sub(height_offset as u32),
                                     scale_factor: viewport_scale_factor,
                                 });
                             }
@@ -189,10 +239,16 @@ impl App {
                             if let Ok(url) = parse_url(&file) {
                                 self.gui.borrow_mut().create_movie(
                                     &mut self.player,
-                                    PlayerOptions::from(&self.opt),
+                                    LaunchOptions::from(&self.preferences),
                                     url,
                                 );
                             }
+                        }
+                        WindowEvent::Focused(true) => {
+                            self.player.handle_event(PlayerEvent::FocusGained);
+                        }
+                        WindowEvent::Focused(false) => {
+                            self.player.handle_event(PlayerEvent::FocusLost);
                         }
                         WindowEvent::MouseInput { button, state, .. } => {
                             if self.gui.borrow_mut().is_context_menu_visible() {
@@ -207,25 +263,47 @@ impl App {
                                 MouseButton::Left => RuffleMouseButton::Left,
                                 MouseButton::Right => RuffleMouseButton::Right,
                                 MouseButton::Middle => RuffleMouseButton::Middle,
-                                MouseButton::Other(_) => RuffleMouseButton::Unknown,
+                                _ => RuffleMouseButton::Unknown,
                             };
                             let event = match state {
-                                ElementState::Pressed => PlayerEvent::MouseDown { x, y, button },
+                                // TODO We should get information about click index from the OS,
+                                //   but winit does not support that yet.
+                                ElementState::Pressed => PlayerEvent::MouseDown {
+                                    x,
+                                    y,
+                                    button,
+                                    index: None,
+                                },
                                 ElementState::Released => PlayerEvent::MouseUp { x, y, button },
                             };
-                            if state == ElementState::Pressed && button == RuffleMouseButton::Right
+                            let handled = self.player.handle_event(event);
+                            if !handled
+                                && state == ElementState::Pressed
+                                && button == RuffleMouseButton::Right
                             {
                                 // Show context menu.
-                                // TODO: Should be squelched if player consumes the right click event.
                                 if let Some(mut player) = self.player.get() {
                                     let context_menu = player.prepare_context_menu();
-                                    self.gui.borrow_mut().show_context_menu(context_menu);
+
+                                    // MouseUp event will be ignored when the context menu is shown,
+                                    // but it has to be dispatched when the menu closes.
+                                    let close_event = PlayerEvent::MouseUp {
+                                        x,
+                                        y,
+                                        button: RuffleMouseButton::Right,
+                                    };
+                                    self.gui
+                                        .borrow_mut()
+                                        .show_context_menu(context_menu, close_event);
                                 }
                             }
-                            self.player.handle_event(event);
                             check_redraw = true;
                         }
                         WindowEvent::MouseWheel { delta, .. } => {
+                            if self.gui.borrow_mut().is_context_menu_visible() {
+                                return;
+                            }
+
                             use ruffle_core::events::MouseWheelDelta;
                             use winit::event::MouseScrollDelta;
                             let delta = match delta {
@@ -256,80 +334,49 @@ impl App {
                         WindowEvent::ModifiersChanged(new_modifiers) => {
                             modifiers = new_modifiers;
                         }
-                        WindowEvent::KeyboardInput { input, .. } => {
-                            // Handle fullscreen keyboard shortcuts: Alt+Return, Escape.
-                            match input {
-                                KeyboardInput {
-                                    state: ElementState::Pressed,
-                                    virtual_keycode: Some(VirtualKeyCode::Return),
-                                    ..
-                                } if modifiers.alt() => {
-                                    if !fullscreen_down {
-                                        if let Some(mut player) = self.player.get() {
-                                            player.update(|uc| {
-                                                uc.stage.toggle_display_state(uc);
-                                            });
-                                        }
-                                    }
-                                    fullscreen_down = true;
-                                    return;
-                                }
-                                KeyboardInput {
-                                    state: ElementState::Released,
-                                    virtual_keycode: Some(VirtualKeyCode::Return),
-                                    ..
-                                } if fullscreen_down => {
-                                    fullscreen_down = false;
-                                }
-                                KeyboardInput {
-                                    state: ElementState::Pressed,
-                                    virtual_keycode: Some(VirtualKeyCode::Escape),
-                                    ..
-                                } => {
-                                    if let Some(mut player) = self.player.get() {
-                                        if player.is_playing() {
-                                            player.update(|uc| {
-                                                uc.stage.set_display_state(
-                                                    uc,
-                                                    StageDisplayState::Normal,
-                                                );
-                                            })
-                                        }
-                                    }
-                                }
-                                _ => (),
+                        WindowEvent::KeyboardInput { event, .. } => {
+                            if self.gui.borrow_mut().is_context_menu_visible() {
+                                return;
                             }
 
-                            if let Some(key) = input.virtual_keycode {
-                                let key_code = winit_to_ruffle_key_code(key);
-                                let key_char = winit_key_to_char(key, modifiers.shift());
-                                match input.state {
-                                    ElementState::Pressed => {
-                                        self.player.handle_event(PlayerEvent::KeyDown {
-                                            key_code,
-                                            key_char,
+                            // Handle escaping from fullscreen.
+                            if let KeyEvent {
+                                state: ElementState::Pressed,
+                                logical_key: Key::Named(NamedKey::Escape),
+                                ..
+                            } = event
+                            {
+                                let _ = event_loop_proxy.send_event(RuffleEvent::ExitFullScreen);
+                            }
+
+                            let key_code = winit_to_ruffle_key_code(&event);
+                            // [NA] TODO: This event used to give a single char. `last()` is functionally the same,
+                            // but we may want to be better at this in the future.
+                            let key_char = event.text.clone().and_then(|text| text.chars().last());
+
+                            match (key_code, &event.state) {
+                                (Some(key_code), ElementState::Pressed) => {
+                                    self.player
+                                        .handle_event(PlayerEvent::KeyDown { key_code, key_char });
+                                    if let Some(control_code) =
+                                        winit_to_ruffle_text_control(&event, &modifiers)
+                                    {
+                                        self.player.handle_event(PlayerEvent::TextControl {
+                                            code: control_code,
                                         });
-                                        if let Some(control_code) =
-                                            winit_to_ruffle_text_control(key, modifiers)
-                                        {
-                                            self.player.handle_event(PlayerEvent::TextControl {
-                                                code: control_code,
-                                            });
+                                    } else if let Some(text) = event.text {
+                                        for codepoint in text.chars() {
+                                            self.player
+                                                .handle_event(PlayerEvent::TextInput { codepoint });
                                         }
                                     }
-                                    ElementState::Released => {
-                                        self.player.handle_event(PlayerEvent::KeyUp {
-                                            key_code,
-                                            key_char,
-                                        });
-                                    }
-                                };
-                                check_redraw = true;
-                            }
-                        }
-                        WindowEvent::ReceivedCharacter(codepoint) => {
-                            let event = PlayerEvent::TextInput { codepoint };
-                            self.player.handle_event(event);
+                                }
+                                (Some(key_code), ElementState::Released) => {
+                                    self.player
+                                        .handle_event(PlayerEvent::KeyUp { key_code, key_char });
+                                }
+                                _ => {}
+                            };
                             check_redraw = true;
                         }
                         _ => (),
@@ -337,68 +384,92 @@ impl App {
                 }
                 winit::event::Event::UserEvent(RuffleEvent::TaskPoll) => self.player.poll(),
                 winit::event::Event::UserEvent(RuffleEvent::OnMetadata(swf_header)) => {
-                    let movie_width = swf_header.stage_size().width().to_pixels();
-                    let movie_height = swf_header.stage_size().height().to_pixels();
-                    let height_offset = if self.window.fullscreen().is_some() || self.opt.no_gui {
+                    let height_offset = if self.window.fullscreen().is_some() || self.no_gui {
                         0.0
                     } else {
                         MENU_HEIGHT as f64
                     };
 
-                    let window_size: Size = match (self.opt.width, self.opt.height) {
-                        (None, None) => {
-                            LogicalSize::new(movie_width, movie_height + height_offset).into()
-                        }
-                        (Some(width), None) => {
-                            let scale = width / movie_width;
-                            let height = movie_height * scale;
-                            PhysicalSize::new(
+                    // To prevent issues like waiting on resize indefinitely (#11364) or desyncing the window state on Windows,
+                    // do not resize while window is maximized.
+                    let should_resize = !self.window.is_maximized();
+
+                    let viewport_size = if should_resize {
+                        let movie_width = swf_header.stage_size().width().to_pixels();
+                        let movie_height = swf_header.stage_size().height().to_pixels();
+
+                        let window_size: Size = match (self.preferred_width, self.preferred_height)
+                        {
+                            (None, None) => {
+                                LogicalSize::new(movie_width, movie_height + height_offset).into()
+                            }
+                            (Some(width), None) => {
+                                let scale = width / movie_width;
+                                let height = movie_height * scale;
+                                PhysicalSize::new(
+                                    width.max(1.0),
+                                    height.max(1.0) + height_offset * self.window.scale_factor(),
+                                )
+                                .into()
+                            }
+                            (None, Some(height)) => {
+                                let scale = height / movie_height;
+                                let width = movie_width * scale;
+                                PhysicalSize::new(
+                                    width.max(1.0),
+                                    height.max(1.0) + height_offset * self.window.scale_factor(),
+                                )
+                                .into()
+                            }
+                            (Some(width), Some(height)) => PhysicalSize::new(
                                 width.max(1.0),
                                 height.max(1.0) + height_offset * self.window.scale_factor(),
                             )
-                            .into()
+                            .into(),
+                        };
+
+                        let window_size = Size::clamp(
+                            window_size,
+                            self.min_window_size.into(),
+                            self.max_window_size.into(),
+                            self.window.scale_factor(),
+                        );
+
+                        let viewport_size = self.window.inner_size();
+                        let mut window_resize_denied = false;
+
+                        if let Some(new_viewport_size) = self.window.request_inner_size(window_size)
+                        {
+                            if new_viewport_size != viewport_size {
+                                self.gui.borrow_mut().resize(new_viewport_size);
+                            } else {
+                                tracing::warn!("Unable to resize window");
+                                window_resize_denied = true;
+                            }
                         }
-                        (None, Some(height)) => {
-                            let scale = height / movie_height;
-                            let width = movie_width * scale;
-                            PhysicalSize::new(
-                                width.max(1.0),
-                                height.max(1.0) + height_offset * self.window.scale_factor(),
-                            )
-                            .into()
+
+                        let viewport_size = self.window.inner_size();
+
+                        // On X11 (and possibly other platforms), the window size is not updated immediately.
+                        // On a successful resize request, wait for the window to be resized to the requested size
+                        // before we start running the SWF (which can observe the viewport size in "noScale" mode)
+                        if !window_resize_denied && window_size != viewport_size.into() {
+                            loaded = LoadingState::WaitingForResize;
+                        } else {
+                            loaded = LoadingState::Loaded;
                         }
-                        (Some(width), Some(height)) => PhysicalSize::new(
-                            width.max(1.0),
-                            height.max(1.0) + height_offset * self.window.scale_factor(),
-                        )
-                        .into(),
+
+                        viewport_size
+                    } else {
+                        self.window.inner_size()
                     };
 
-                    let window_size = Size::clamp(
-                        window_size,
-                        self.min_window_size.into(),
-                        self.max_window_size.into(),
-                        self.window.scale_factor(),
-                    );
-
-                    self.window.set_inner_size(window_size);
-                    self.window.set_fullscreen(if self.opt.fullscreen {
+                    self.window.set_fullscreen(if self.start_fullscreen {
                         Some(Fullscreen::Borderless(None))
                     } else {
                         None
                     });
                     self.window.set_visible(true);
-
-                    let viewport_size = self.window.inner_size();
-
-                    // On X11 (and possibly other platforms), the window size is not updated immediately.
-                    // Wait for the window to be resized to the requested size before we start running
-                    // the SWF (which can observe the viewport size in "noScale" mode)
-                    if window_size != viewport_size.into() {
-                        loaded = LoadingState::WaitingForResize;
-                    } else {
-                        loaded = LoadingState::Loaded;
-                    }
 
                     let viewport_scale_factor = self.window.scale_factor();
                     if let Some(mut player) = self.player.get() {
@@ -417,31 +488,76 @@ impl App {
                 }
 
                 winit::event::Event::UserEvent(RuffleEvent::BrowseAndOpen(options)) => {
-                    if let Some(url) =
-                        pick_file(false, None).and_then(|p| Url::from_file_path(p).ok())
-                    {
-                        self.gui
-                            .borrow_mut()
-                            .create_movie(&mut self.player, *options, url);
-                    }
+                    let event_loop = event_loop_proxy.clone();
+                    let picker = self.gui.borrow().file_picker();
+                    tokio::spawn(async move {
+                        if let Some(url) = picker
+                            .pick_file(None)
+                            .await
+                            .and_then(|p| Url::from_file_path(p).ok())
+                        {
+                            let _ = event_loop.send_event(RuffleEvent::Open(url, options));
+                        }
+                    });
                 }
 
-                winit::event::Event::UserEvent(RuffleEvent::OpenURL(url, options)) => {
+                winit::event::Event::UserEvent(RuffleEvent::Open(url, options)) => {
                     self.gui
                         .borrow_mut()
                         .create_movie(&mut self.player, *options, url);
                 }
 
+                winit::event::Event::UserEvent(RuffleEvent::OpenDialog(descriptor)) => {
+                    self.gui.borrow_mut().open_dialog(descriptor);
+                }
+
                 winit::event::Event::UserEvent(RuffleEvent::CloseFile) => {
+                    self.window.set_title("Ruffle"); // Reset title since file has been closed.
                     self.player.destroy();
                 }
 
+                winit::event::Event::UserEvent(RuffleEvent::EnterFullScreen) => {
+                    if let Some(mut player) = self.player.get() {
+                        if player.is_playing() {
+                            player.set_fullscreen(true);
+                        }
+                    }
+                }
+
+                winit::event::Event::UserEvent(RuffleEvent::ExitFullScreen) => {
+                    if let Some(mut player) = self.player.get() {
+                        if player.is_playing() {
+                            player.set_fullscreen(false);
+                        }
+                    }
+                }
+
                 winit::event::Event::UserEvent(RuffleEvent::ExitRequested) => {
-                    *control_flow = ControlFlow::Exit;
+                    elwt.exit();
                     return;
                 }
 
                 _ => (),
+            }
+
+            if let Some(Event { event, .. }) = gilrs.as_mut().and_then(|gilrs| gilrs.next_event()) {
+                match event {
+                    EventType::ButtonPressed(button, _) => {
+                        if let Some(button) = gilrs_button_to_gamepad_button(button) {
+                            self.player
+                                .handle_event(PlayerEvent::GamepadButtonDown { button });
+                            check_redraw = true;
+                        }
+                    }
+                    EventType::ButtonReleased(button, _) => {
+                        if let Some(button) = gilrs_button_to_gamepad_button(button) {
+                            self.player
+                                .handle_event(PlayerEvent::GamepadButtonUp { button });
+                            check_redraw = true;
+                        }
+                    }
+                    _ => {}
+                }
             }
 
             // Check for a redraw request.
@@ -454,7 +570,7 @@ impl App {
             }
 
             // After polling events, sleep the event loop until the next event or the next frame.
-            *control_flow = if matches!(loaded, LoadingState::Loaded) {
+            elwt.set_control_flow(if matches!(loaded, LoadingState::Loaded) {
                 if let Some(next_frame_time) = next_frame_time {
                     ControlFlow::WaitUntil(next_frame_time)
                 } else {
@@ -464,7 +580,8 @@ impl App {
                 }
             } else {
                 ControlFlow::Wait
-            };
-        });
+            });
+        })?;
+        Ok(())
     }
 }

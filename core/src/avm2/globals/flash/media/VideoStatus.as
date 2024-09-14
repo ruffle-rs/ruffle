@@ -6,6 +6,7 @@
 package flash.media
 {
 
+    [API("670")]
     public final class VideoStatus
     {
         // Indicates hardware-accelerated (GPU) video decoding.

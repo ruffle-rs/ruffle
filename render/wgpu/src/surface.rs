@@ -4,12 +4,13 @@ pub mod target;
 use crate::backend::RenderTargetMode;
 use crate::blend::ComplexBlend;
 use crate::buffer_pool::TexturePool;
+use crate::dynamic_transforms::DynamicTransforms;
 use crate::filters::FilterSource;
 use crate::mesh::Mesh;
 use crate::pixel_bender::{run_pixelbender_shader_impl, ShaderMode};
 use crate::surface::commands::{chunk_blends, Chunk, CommandRenderer};
 use crate::utils::{remove_srgb, supported_sample_count};
-use crate::{ColorAdjustments, Descriptors, MaskState, Pipelines, Transforms, UniformBuffer};
+use crate::{Descriptors, MaskState, Pipelines};
 use ruffle_render::commands::CommandList;
 use ruffle_render::pixel_bender::{ImageInputTexture, PixelBenderShaderArgument};
 use ruffle_render::quality::StageQuality;
@@ -48,8 +49,11 @@ impl Surface {
         };
         let frame_buffer_format = remove_srgb(surface_format);
 
-        let sample_count =
-            supported_sample_count(&descriptors.adapter, quality, frame_buffer_format);
+        let sample_count = supported_sample_count(
+            &descriptors.adapter,
+            quality.sample_count(),
+            frame_buffer_format,
+        );
         let pipelines = descriptors.pipelines(sample_count, frame_buffer_format);
         Self {
             size,
@@ -68,9 +72,8 @@ impl Surface {
         frame_view: &wgpu::TextureView,
         render_target_mode: RenderTargetMode,
         descriptors: &'global Descriptors,
-        uniform_buffers: &'frame mut UniformBuffer<'global, Transforms>,
-        color_buffers: &'frame mut UniformBuffer<'global, ColorAdjustments>,
-        uniform_encoder: &'frame mut wgpu::CommandEncoder,
+        staging_belt: &'frame mut wgpu::util::StagingBelt,
+        dynamic_transforms: &'global DynamicTransforms,
         draw_encoder: &'frame mut wgpu::CommandEncoder,
         meshes: &'global Vec<Mesh>,
         commands: CommandList,
@@ -82,9 +85,8 @@ impl Surface {
             descriptors,
             meshes,
             commands,
-            uniform_buffers,
-            color_buffers,
-            uniform_encoder,
+            staging_belt,
+            dynamic_transforms,
             draw_encoder,
             layer,
             texture_pool,
@@ -94,7 +96,6 @@ impl Surface {
             descriptors,
             self.format,
             self.actual_surface_format,
-            self.size,
             frame_view,
             target.color_view(),
             target.whole_frame_bind_group(descriptors),
@@ -112,9 +113,8 @@ impl Surface {
         descriptors: &'global Descriptors,
         meshes: &'global Vec<Mesh>,
         commands: CommandList,
-        uniform_buffers: &'frame mut UniformBuffer<'global, Transforms>,
-        color_buffers: &'frame mut UniformBuffer<'global, ColorAdjustments>,
-        uniform_encoder: &'frame mut wgpu::CommandEncoder,
+        staging_belt: &'global mut wgpu::util::StagingBelt,
+        dynamic_transforms: &'global DynamicTransforms,
         draw_encoder: &'frame mut wgpu::CommandEncoder,
         nearest_layer: LayerRef<'frame>,
         texture_pool: &mut TexturePool,
@@ -132,11 +132,10 @@ impl Surface {
         let mut num_masks = 0;
         let mut mask_state = MaskState::NoMask;
         let chunks = chunk_blends(
-            commands.commands,
+            commands,
             descriptors,
-            uniform_buffers,
-            color_buffers,
-            uniform_encoder,
+            staging_belt,
+            dynamic_transforms,
             draw_encoder,
             meshes,
             self.quality,
@@ -151,7 +150,13 @@ impl Surface {
 
         for chunk in chunks {
             match chunk {
-                Chunk::Draw(chunk, needs_stencil) => {
+                Chunk::Draw(chunk, needs_stencil, transform_buffers) => {
+                    transform_buffers.copy_to(
+                        staging_belt,
+                        &descriptors.device,
+                        draw_encoder,
+                        &dynamic_transforms.buffer,
+                    );
                     let mut render_pass =
                         draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                             label: create_debug_label!(
@@ -175,9 +180,7 @@ impl Surface {
                     let mut renderer = CommandRenderer::new(
                         &self.pipelines,
                         descriptors,
-                        uniform_buffers,
-                        color_buffers,
-                        uniform_encoder,
+                        dynamic_transforms,
                         render_pass,
                         num_masks,
                         mask_state,
@@ -325,28 +328,8 @@ impl Surface {
                         );
                     }
 
-                    if descriptors.limits.max_push_constant_size > 0 {
-                        render_pass.set_push_constants(
-                            wgpu::ShaderStages::VERTEX,
-                            0,
-                            bytemuck::cast_slice(&[Transforms {
-                                world_matrix: [
-                                    [self.size.width as f32, 0.0, 0.0, 0.0],
-                                    [0.0, self.size.height as f32, 0.0, 0.0],
-                                    [0.0, 0.0, 1.0, 0.0],
-                                    [0.0, 0.0, 0.0, 1.0],
-                                ],
-                            }]),
-                        );
-                        render_pass.set_bind_group(1, &blend_bind_group, &[]);
-                    } else {
-                        render_pass.set_bind_group(
-                            1,
-                            target.whole_frame_bind_group(descriptors),
-                            &[0],
-                        );
-                        render_pass.set_bind_group(2, &blend_bind_group, &[]);
-                    }
+                    render_pass.set_bind_group(1, target.whole_frame_bind_group(descriptors), &[0]);
+                    render_pass.set_bind_group(2, &blend_bind_group, &[]);
 
                     render_pass.set_vertex_buffer(0, descriptors.quad.vertices_pos.slice(..));
                     render_pass.set_index_buffer(

@@ -154,7 +154,11 @@ pub fn random<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(activation.context.rng.gen_range(0.0f64..1.0f64).into())
+    // See https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/MathUtils.cpp#L1731C24-L1731C44
+    // This generated a restricted set of 'f64' values, which some SWFs implicitly rely on.
+    const MAX_VAL: u32 = 0x7FFFFFFF;
+    let rand = activation.context.rng.gen_range(0..MAX_VAL);
+    Ok(((rand as f64) / (MAX_VAL as f64 + 1f64)).into())
 }
 
 pub fn create<'gc>(
@@ -195,9 +199,10 @@ mod tests {
         [19] => {
             [] => f64::NAN,
             [Value::Null] => f64::NAN,
+            // TODO: figure out the exact f64 returned, and add @epsilon as needed, see test_exp
             [-1.0] => f64::acos(-1.0),
             [0.0] => f64::acos(0.0),
-            [1.0] => f64::acos(1.0)
+            [1.0] => 0.0 // f64::acos(1.0)
         }
     );
 
@@ -205,8 +210,9 @@ mod tests {
         [19] => {
             [] => f64::NAN,
             [Value::Null] => f64::NAN,
+            // TODO: figure out the exact f64 returned, and add @epsilon as needed, see test_exp
             [-1.0] => f64::asin(-1.0),
-            [0.0] => f64::asin(0.0),
+            [0.0] => 0.0, // f64::asin(0.0),
             [1.0] => f64::asin(1.0)
         }
     );
@@ -215,8 +221,9 @@ mod tests {
         [19] => {
             [] => f64::NAN,
             [Value::Null] => f64::NAN,
+            // TODO: figure out the exact f64 returned, and add @epsilon as needed, see test_exp
             [-1.0] => f64::atan(-1.0),
-            [0.0] => f64::atan(0.0),
+            [0.0] => 0.0, // f64::atan(0.0),
             [1.0] => f64::atan(1.0)
         }
     );
@@ -234,7 +241,7 @@ mod tests {
             [] => f64::NAN,
             [Value::Null] => f64::NAN,
             [0.0] => 1.0,
-            [std::f64::consts::PI] => f64::cos(std::f64::consts::PI)
+            [std::f64::consts::PI] => -1.0 // f64::cos(std::f64::consts::PI)
         }
     );
 
@@ -242,8 +249,8 @@ mod tests {
         [19] => {
             [] => f64::NAN,
             [Value::Null] => f64::NAN,
-            [1.0] => f64::exp(1.0),
-            [2.0] => f64::exp(2.0)
+            @epsilon(1e-12) [1.0] => f64::from_bits(0x4005bf0a8b145769), // f64::exp(1.0), e, 2.718281828459045
+            @epsilon(1e-12) [2.0] => f64::from_bits(0x401d8e64b8d4ddae)  // f64::exp(2.0), e^2, 7.3890560989306495
         }
     );
 
@@ -294,8 +301,8 @@ mod tests {
         [19] => {
             [] => f64::NAN,
             [Value::Null] => f64::NAN,
-            [0.0] => f64::sin(0.0),
-            [std::f64::consts::PI / 2.0] => f64::sin(std::f64::consts::PI / 2.0)
+            [0.0] => 0.0, // f64::sin(0.0),
+            [std::f64::consts::PI / 2.0] => 1.0 // f64::sin(std::f64::consts::PI / 2.0)
         }
     );
 
@@ -303,7 +310,8 @@ mod tests {
         [19] => {
             [] => f64::NAN,
             [Value::Null] => f64::NAN,
-            [0.0] => f64::sqrt(0.0),
+            [0.0] => 0.0, // f64::sqrt(0.0),
+            // TODO: figure out the exact f64 returned, and add @epsilon as needed, see test_exp
             [5.0] => f64::sqrt(5.0)
         }
     );
@@ -312,7 +320,8 @@ mod tests {
         [19] => {
             [] => f64::NAN,
             [Value::Null] => f64::NAN,
-            [0.0] => f64::tan(0.0),
+            [0.0] => 0.0, // f64::tan(0.0),
+            // TODO: figure out the exact f64 returned, and add @epsilon as needed, see test_exp
             [1.0] => f64::tan(1.0)
         }
     );
@@ -342,9 +351,10 @@ mod tests {
         [19] => {
             [] => f64::NAN,
             [Value::Null] => f64::NAN,
+            // TODO: figure out the exact f64 returned, and add @epsilon as needed, see test_exp
             [2.0] => f64::ln(2.0),
-            [0.0] => f64::ln(0.0),
-            [1.0] => f64::ln(1.0)
+            [0.0] => f64::NEG_INFINITY, // f64::ln(0.0),
+            [1.0] => 0 // f64::ln(1.0)
         }
     );
 

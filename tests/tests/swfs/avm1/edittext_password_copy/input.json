@@ -1,0 +1,20 @@
+[
+    { "type": "SetClipboardText", "text": "password" },
+    { "type": "TextControl", "code": "Paste" },
+    { "type": "SetClipboardText", "text": "" },
+    { "type": "KeyDown", "key_code": 27 },
+    { "type": "TextControl", "code": "SelectAll" },
+    { "type": "TextControl", "code": "Copy" },
+    { "type": "TextControl", "code": "Paste" },
+    { "type": "TextControl", "code": "Paste" },
+    { "type": "KeyDown", "key_code": 27 },
+    { "type": "SetClipboardText", "text": "password" },
+    { "type": "TextControl", "code": "Paste" },
+    { "type": "SetClipboardText", "text": "" },
+    { "type": "KeyDown", "key_code": 27 },
+    { "type": "TextControl", "code": "SelectAll" },
+    { "type": "TextControl", "code": "Cut" },
+    { "type": "TextControl", "code": "Paste" },
+    { "type": "TextControl", "code": "Paste" },
+    { "type": "KeyDown", "key_code": 27 }
+]

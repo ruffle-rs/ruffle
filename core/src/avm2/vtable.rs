@@ -7,10 +7,8 @@ use crate::avm2::property_map::PropertyMap;
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
-use crate::avm2::Multiname;
-use crate::avm2::Namespace;
-use crate::avm2::QName;
+use crate::avm2::{Class, Error, Multiname, Namespace, QName};
+use crate::context::GcContext;
 use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, Mutation};
 use std::cell::Ref;
@@ -24,10 +22,6 @@ pub struct VTable<'gc>(GcCell<'gc, VTableData<'gc>>);
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct VTableData<'gc> {
-    /// should always be Some post-initialization
-    defining_class: Option<ClassObject<'gc>>,
-
-    /// should always be Some post-initialization
     scope: Option<ScopeChain<'gc>>,
 
     protected_namespace: Option<Namespace<'gc>>,
@@ -49,14 +43,21 @@ pub struct VTableData<'gc> {
     default_slots: Vec<Option<Value<'gc>>>,
 }
 
+impl PartialEq for VTable<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        GcCell::ptr_eq(self.0, other.0)
+    }
+}
+
 // TODO: it might make more sense to just bind the Method to the VTable (and this its class and scope) directly
 // would also be nice to somehow remove the Option-ness from `defining_class` and `scope` fields for this
 // to be more intuitive and cheaper
 #[derive(Collect, Clone)]
 #[collect(no_drop)]
 pub struct ClassBoundMethod<'gc> {
-    pub class: ClassObject<'gc>,
-    pub scope: ScopeChain<'gc>,
+    pub class: Class<'gc>,
+    pub super_class_obj: Option<ClassObject<'gc>>,
+    pub scope: Option<ScopeChain<'gc>>,
     pub method: Method<'gc>,
 }
 
@@ -65,7 +66,6 @@ impl<'gc> VTable<'gc> {
         VTable(GcCell::new(
             mc,
             VTableData {
-                defining_class: None,
                 scope: None,
                 protected_namespace: None,
                 resolved_traits: PropertyMap::new(),
@@ -78,36 +78,27 @@ impl<'gc> VTable<'gc> {
         ))
     }
 
-    /// A special case for newcatch. A single variable (q)name that maps to slot 1.
+    /// A special case for newcatch. A single variable (q)name that maps to slot 0.
     pub fn newcatch(mc: &Mutation<'gc>, vname: &QName<'gc>) -> Self {
         let mut rt = PropertyMap::new();
 
-        rt.insert(*vname, Property::Slot { slot_id: 1 });
+        rt.insert(*vname, Property::Slot { slot_id: 0 });
 
         let vt = VTable(GcCell::new(
             mc,
             VTableData {
-                defining_class: None,
                 scope: None,
                 protected_namespace: None,
                 resolved_traits: rt,
                 slot_metadata_table: HashMap::new(),
                 disp_metadata_table: HashMap::new(),
                 method_table: vec![],
-                // Compilers expect `setslot 1` to work on the `newcatch` object.
-                // `setslot 1` maps to index 1, so we need two slots here, because Ruffle
-                // maps setslot arg directly to the slot array index, unlike AVM which does the
-                // -1 shift.
-                default_slots: vec![None, None],
-                slot_classes: vec![PropertyClass::Any, PropertyClass::Any],
+                default_slots: vec![None],
+                slot_classes: vec![PropertyClass::Any],
             },
         ));
 
         vt
-    }
-
-    pub fn duplicate(self, mc: &Mutation<'gc>) -> Self {
-        VTable(GcCell::new(mc, self.0.read().clone()))
     }
 
     pub fn resolved_traits(&self) -> Ref<'_, PropertyMap<'gc, Property>> {
@@ -124,15 +115,15 @@ impl<'gc> VTable<'gc> {
 
     pub fn slot_class_name(
         &self,
+        context: &mut GcContext<'_, 'gc>,
         slot_id: u32,
-        mc: &Mutation<'gc>,
-    ) -> Result<Multiname<'gc>, Error<'gc>> {
+    ) -> Result<AvmString<'gc>, Error<'gc>> {
         self.0
             .read()
             .slot_classes
             .get(slot_id as usize)
             .ok_or_else(|| "Invalid slot ID".into())
-            .map(|c| c.get_name(mc))
+            .map(|c| c.get_name(context))
     }
 
     pub fn get_trait(self, name: &Multiname<'gc>) -> Option<Property> {
@@ -167,7 +158,7 @@ impl<'gc> VTable<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // Drop the `write()` guard, as 'slot_class.coerce' may need to access this vtable.
-        let mut slot_class = { self.0.read().slot_classes[slot_id as usize].clone() };
+        let mut slot_class = { self.0.read().slot_classes[slot_id as usize] };
 
         let (value, changed) = slot_class.coerce(activation, value)?;
 
@@ -204,6 +195,14 @@ impl<'gc> VTable<'gc> {
         Ref::map(self.0.read(), |v| &v.default_slots)
     }
 
+    pub fn slot_classes(&self) -> Ref<Vec<PropertyClass<'gc>>> {
+        Ref::map(self.0.read(), |v| &v.slot_classes)
+    }
+
+    pub fn set_slot_class(&self, mc: &Mutation<'gc>, index: usize, value: PropertyClass<'gc>) {
+        self.0.write(mc).slot_classes[index] = value;
+    }
+
     /// Calculate the flattened list of instance traits that this class
     /// maintains.
     ///
@@ -212,12 +211,12 @@ impl<'gc> VTable<'gc> {
     #[allow(clippy::if_same_then_else)]
     pub fn init_vtable(
         self,
-        defining_class: ClassObject<'gc>,
-        traits: &[Trait<'gc>],
-        scope: ScopeChain<'gc>,
+        defining_class_def: Class<'gc>,
+        super_class_obj: Option<ClassObject<'gc>>,
+        scope: Option<ScopeChain<'gc>>,
         superclass_vtable: Option<Self>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
+        mc: &Mutation<'gc>,
+    ) {
         // Let's talk about slot_ids and disp_ids.
         // Specification is one thing, but reality is another.
 
@@ -264,21 +263,17 @@ impl<'gc> VTable<'gc> {
         // such slot with `getslot` wouldn't have passed verification in the first place.
         // So such SWFs shouldn't be encountered in the wild.
         //
-        // Worst-case is that someone can hand-craft such an SWF speficically for Ruffle
+        // Worst-case is that someone can hand-craft such an SWF specifically for Ruffle
         // and be able to access private class members with `getslot/setslot,
         // so long-term it's still something we should verify.
         // (and it's far from the only verification check we lack anyway)
 
-        let mut write = self.0.write(activation.context.gc_context);
+        let mut write = self.0.write(mc);
         let write = write.deref_mut();
 
-        write.defining_class = Some(defining_class);
-        write.scope = Some(scope);
+        write.scope = scope;
 
-        write.protected_namespace = defining_class
-            .inner_class_definition()
-            .read()
-            .protected_namespace();
+        write.protected_namespace = defining_class_def.protected_namespace();
 
         if let Some(superclass_vtable) = superclass_vtable {
             write.resolved_traits = superclass_vtable.0.read().resolved_traits.clone();
@@ -321,11 +316,12 @@ impl<'gc> VTable<'gc> {
             &mut write.slot_classes,
         );
 
-        for trait_data in traits {
+        for trait_data in &*defining_class_def.traits() {
             match trait_data.kind() {
                 TraitKind::Method { method, .. } => {
                     let entry = ClassBoundMethod {
-                        class: defining_class,
+                        class: defining_class_def,
+                        super_class_obj,
                         scope,
                         method: *method,
                     };
@@ -353,7 +349,8 @@ impl<'gc> VTable<'gc> {
                 }
                 TraitKind::Getter { method, .. } => {
                     let entry = ClassBoundMethod {
-                        class: defining_class,
+                        class: defining_class_def,
+                        super_class_obj,
                         scope,
                         method: *method,
                     };
@@ -390,7 +387,8 @@ impl<'gc> VTable<'gc> {
                 }
                 TraitKind::Setter { method, .. } => {
                     let entry = ClassBoundMethod {
-                        class: defining_class,
+                        class: defining_class_def,
+                        super_class_obj,
                         scope,
                         method: *method,
                     };
@@ -427,26 +425,29 @@ impl<'gc> VTable<'gc> {
                 }
                 TraitKind::Slot { slot_id, .. }
                 | TraitKind::Const { slot_id, .. }
-                | TraitKind::Function { slot_id, .. }
                 | TraitKind::Class { slot_id, .. } => {
                     let slot_id = *slot_id;
 
-                    let value = trait_to_default_value(scope, trait_data, activation);
+                    let value = trait_to_default_value(trait_data);
                     let value = Some(value);
 
                     let new_slot_id = if slot_id == 0 {
                         default_slots.push(value);
                         default_slots.len() as u32 - 1
-                    } else if let Some(Some(_)) = default_slots.get(slot_id as usize) {
-                        // slot_id conflict
-                        default_slots.push(value);
-                        default_slots.len() as u32 - 1
                     } else {
-                        if slot_id as usize >= default_slots.len() {
-                            default_slots.resize_with(slot_id as usize + 1, Default::default);
+                        // it's non-zero, so let's turn it from 1-based to 0-based.
+                        let slot_id = slot_id - 1;
+                        if let Some(Some(_)) = default_slots.get(slot_id as usize) {
+                            // slot_id conflict
+                            default_slots.push(value);
+                            default_slots.len() as u32 - 1
+                        } else {
+                            if slot_id as usize >= default_slots.len() {
+                                default_slots.resize_with(slot_id as usize + 1, Default::default);
+                            }
+                            default_slots[slot_id as usize] = value;
+                            slot_id
                         }
-                        default_slots[slot_id as usize] = value;
-                        slot_id
                     };
 
                     if new_slot_id as usize >= slot_classes.len() {
@@ -460,36 +461,18 @@ impl<'gc> VTable<'gc> {
                             type_name, unit, ..
                         } => (
                             Property::new_slot(new_slot_id),
-                            PropertyClass::name(
-                                activation.context.gc_context,
-                                type_name.clone(),
-                                *unit,
-                            ),
-                        ),
-                        TraitKind::Function { .. } => (
-                            Property::new_slot(new_slot_id),
-                            PropertyClass::Class(
-                                activation
-                                    .avm2()
-                                    .classes()
-                                    .function
-                                    .inner_class_definition(),
-                            ),
+                            PropertyClass::name(mc, *type_name, *unit),
                         ),
                         TraitKind::Const {
                             type_name, unit, ..
                         } => (
                             Property::new_const_slot(new_slot_id),
-                            PropertyClass::name(
-                                activation.context.gc_context,
-                                type_name.clone(),
-                                *unit,
-                            ),
+                            PropertyClass::name(mc, *type_name, *unit),
                         ),
-                        TraitKind::Class { .. } => (
+                        TraitKind::Class { class, .. } => (
                             Property::new_const_slot(new_slot_id),
                             PropertyClass::Class(
-                                activation.avm2().classes().class.inner_class_definition(),
+                                class.c_class().expect("Trait should hold an i_class"),
                             ),
                         ),
                         _ => unreachable!(),
@@ -503,10 +486,9 @@ impl<'gc> VTable<'gc> {
 
                     slot_classes[new_slot_id as usize] = new_class;
                 }
+                TraitKind::Function { .. } => panic!("TraitKind::Function shouldn't appear"),
             }
         }
-
-        Ok(())
     }
 
     /// Retrieve a bound instance method suitable for use as a value.
@@ -525,46 +507,31 @@ impl<'gc> VTable<'gc> {
         receiver: Object<'gc>,
         disp_id: u32,
     ) -> Option<FunctionObject<'gc>> {
-        if let Some(ClassBoundMethod {
-            class,
-            scope,
-            method,
-        }) = self.get_full_method(disp_id)
-        {
-            Some(FunctionObject::from_method(
-                activation,
-                method,
-                scope,
-                Some(receiver),
-                Some(class),
-            ))
-        } else {
-            None
-        }
+        self.get_full_method(disp_id)
+            .map(|method| Self::bind_method(activation, receiver, method))
     }
 
-    /// Install a const trait on the global object.
-    /// This should only ever be called via `Object::install_const_late`,
-    /// on the `global` object.
-    pub fn install_const_trait_late(
-        self,
-        mc: &Mutation<'gc>,
-        name: QName<'gc>,
-        value: Value<'gc>,
-        class: ClassObject<'gc>,
-    ) -> u32 {
-        let mut write = self.0.write(mc);
+    /// Bind an instance method to a receiver, allowing it to be used as a value. See `VTable::make_bound_method`
+    pub fn bind_method(
+        activation: &mut Activation<'_, 'gc>,
+        receiver: Object<'gc>,
+        method: ClassBoundMethod<'gc>,
+    ) -> FunctionObject<'gc> {
+        let ClassBoundMethod {
+            class,
+            super_class_obj,
+            scope,
+            method,
+        } = method;
 
-        write.default_slots.push(Some(value));
-        let new_slot_id = write.default_slots.len() as u32 - 1;
-        write
-            .resolved_traits
-            .insert(name, Property::new_const_slot(new_slot_id));
-        write
-            .slot_classes
-            .push(PropertyClass::Class(class.inner_class_definition()));
-
-        new_slot_id
+        FunctionObject::from_method(
+            activation,
+            method,
+            scope.expect("Scope should exist here"),
+            Some(receiver),
+            super_class_obj,
+            Some(class),
+        )
     }
 
     /// Install an existing trait under a new name, provided by interface.
@@ -598,20 +565,11 @@ impl<'gc> VTable<'gc> {
     }
 }
 
-fn trait_to_default_value<'gc>(
-    scope: ScopeChain<'gc>,
-    trait_data: &Trait<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-) -> Value<'gc> {
+fn trait_to_default_value<'gc>(trait_data: &Trait<'gc>) -> Value<'gc> {
     match trait_data.kind() {
         TraitKind::Slot { default_value, .. } => *default_value,
         TraitKind::Const { default_value, .. } => *default_value,
-        TraitKind::Function { function, .. } => {
-            FunctionObject::from_function(activation, *function, scope)
-                .unwrap()
-                .into()
-        }
-        TraitKind::Class { .. } => Value::Undefined,
+        TraitKind::Class { .. } => Value::Null,
         _ => unreachable!(),
     }
 }

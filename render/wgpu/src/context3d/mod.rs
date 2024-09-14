@@ -1,7 +1,6 @@
 use ruffle_render::backend::{
-    Context3D, Context3DBlendFactor, Context3DCommand, Context3DCompareMode,
-    Context3DTextureFormat, Context3DVertexBufferFormat, IndexBuffer, ProgramType, Texture as _,
-    VertexBuffer,
+    Context3D, Context3DBlendFactor, Context3DCommand, Context3DCompareMode, Context3DProfile,
+    Context3DTextureFormat, Context3DVertexBufferFormat, IndexBuffer, ProgramType, VertexBuffer,
 };
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::error::Error;
@@ -17,6 +16,7 @@ use wgpu::{CommandEncoder, Extent3d, RenderPass};
 
 use crate::context3d::current_pipeline::{BoundTextureData, AGAL_FLOATS_PER_REGISTER};
 use crate::descriptors::Descriptors;
+use crate::utils::supported_sample_count;
 use crate::Texture;
 
 use std::num::NonZeroU64;
@@ -45,13 +45,14 @@ const STENCIL_MASK: u32 = 1 << 2;
 /// lifetime management - we can store an `Rc<dyn VertexBuffer>` or `Rc<dyn IndexBuffer>`
 /// in the `VertexBuffer3DObject` or `IndexBuffer3DObject`. If we delayed creating them,
 /// we would need to store a `GcCell<Option<Rc<dyn VertexBuffer>>>`, which prevents
-/// us from obtaining a long-lived reference to the `wgpu:Bufer` (it would instead be
+/// us from obtaining a long-lived reference to the `wgpu:Buffer` (it would instead be
 /// tied to the `Ref` returned by `GcCell::read`).
 pub struct WgpuContext3D {
     // We only use some of the fields from `Descriptors`, but we
     // store an entire `Arc<Descriptors>` rather than wrapping the fields
     // we need in individual `Arc`s.
     descriptors: Arc<Descriptors>,
+    profile: Context3DProfile,
 
     buffer_staging_belt: StagingBelt,
 
@@ -98,7 +99,7 @@ pub struct WgpuContext3D {
 }
 
 impl WgpuContext3D {
-    pub fn new(descriptors: Arc<Descriptors>) -> Self {
+    pub fn new(descriptors: Arc<Descriptors>, profile: Context3DProfile) -> Self {
         let make_dummy_handle = || {
             let texture_label = create_debug_label!("Render target texture");
             let format = wgpu::TextureFormat::Rgba8Unorm;
@@ -140,6 +141,7 @@ impl WgpuContext3D {
                 });
 
         Self {
+            profile,
             descriptors,
             buffer_staging_belt,
             back_buffer_raw_texture_handle,
@@ -371,13 +373,16 @@ const MAX_VERTEX_ATTRIBUTES: usize = 8;
 
 #[derive(Clone, Debug)]
 pub struct VertexAttributeInfo {
-    // An offset in units of buffer entires (f32 or u8)
+    // An offset in units of buffer entries (f32 or u8)
     offset_in_32bit_units: u64,
     format: Context3DVertexBufferFormat,
     buffer: Rc<VertexBufferWrapper>,
 }
 
 impl Context3D for WgpuContext3D {
+    fn profile(&self) -> Context3DProfile {
+        self.profile
+    }
     fn bitmap_handle(&self) -> BitmapHandle {
         self.front_buffer_raw_texture_handle.clone()
     }
@@ -542,6 +547,8 @@ impl Context3D for WgpuContext3D {
                 wants_best_resolution: _,
                 wants_best_resolution_on_browser_zoom: _,
             } => {
+                let format = wgpu::TextureFormat::Rgba8Unorm;
+
                 let mut sample_count = anti_alias;
                 if sample_count == 0 {
                     sample_count = 1;
@@ -551,9 +558,10 @@ impl Context3D for WgpuContext3D {
                     // Round down to nearest power of 2
                     sample_count = next_pot / 2;
                 }
+                sample_count =
+                    supported_sample_count(&self.descriptors.adapter, sample_count, format);
 
                 let texture_label = create_debug_label!("Render target texture");
-                let format = wgpu::TextureFormat::Rgba8Unorm;
 
                 let make_it = || {
                     // TODO - see if we can deduplicate this with the code in `CommandTarget`
@@ -712,7 +720,7 @@ impl Context3D for WgpuContext3D {
                 // to keep a copy of the data on the CPU side. We round *down* the offset to
                 // the closest multiple of 4 bytes, and round *up* the length to the closest
                 // multiple of 4 bytes. We then perform a copy from our CPU-side buffer, which
-                // which uses the existing data (at the beiginning or end) to fill out the copy
+                // which uses the existing data (at the beginning or end) to fill out the copy
                 // to the required length and offset. Without this, we would lose data in the CPU
                 // buffer whenever we performed a copy with an unalignd offset or length.
                 let offset_bytes = start_offset * std::mem::size_of::<u16>();
@@ -997,6 +1005,8 @@ impl Context3D for WgpuContext3D {
             }
             Context3DCommand::CopyBitmapToTexture {
                 mut source,
+                source_width,
+                source_height,
                 dest,
                 layer,
             } => {
@@ -1008,17 +1018,17 @@ impl Context3D for WgpuContext3D {
                 // BitmapData's gpu texture might be modified before we actually submit
                 // `buffer_command_encoder` to the device.
                 let dest_format = dest.texture.format();
-                let mut bytes_per_row = dest_format.block_size(None).unwrap()
-                    * (dest.width() / dest_format.block_dimensions().0);
+                let mut bytes_per_row = dest_format.block_copy_size(None).unwrap()
+                    * (source_width / dest_format.block_dimensions().0);
 
-                let rows_per_image = dest.height() / dest_format.block_dimensions().1;
+                let rows_per_image = source_height / dest_format.block_dimensions().1;
 
                 // Wgpu requires us to pad the image rows to a multiple of COPY_BYTES_PER_ROW_ALIGNMENT
-                if (dest.width() * 4) % COPY_BYTES_PER_ROW_ALIGNMENT != 0
+                if (source_width * 4) % COPY_BYTES_PER_ROW_ALIGNMENT != 0
                     && matches!(dest.texture.format(), wgpu::TextureFormat::Rgba8Unorm)
                 {
                     source = source
-                        .chunks_exact(dest.width() as usize * 4)
+                        .chunks_exact(source_width as usize * 4)
                         .flat_map(|row| {
                             let padding_len = COPY_BYTES_PER_ROW_ALIGNMENT as usize
                                 - (row.len() % COPY_BYTES_PER_ROW_ALIGNMENT as usize);
@@ -1027,7 +1037,7 @@ impl Context3D for WgpuContext3D {
                         })
                         .collect();
 
-                    bytes_per_row = source.len() as u32 / dest.height();
+                    bytes_per_row = source.len() as u32 / source_height;
                 }
 
                 let texture_buffer = self.descriptors.device.create_buffer(&BufferDescriptor {
@@ -1062,10 +1072,10 @@ impl Context3D for WgpuContext3D {
                         },
                         aspect: wgpu::TextureAspect::All,
                     },
-                    // The copy size uses the orignal image, with the original row size
+                    // The copy size uses the original image, with the original row size
                     wgpu::Extent3d {
-                        width: dest.width(),
-                        height: dest.height(),
+                        width: source_width,
+                        height: source_height,
                         depth_or_array_layers: 1,
                     },
                 );

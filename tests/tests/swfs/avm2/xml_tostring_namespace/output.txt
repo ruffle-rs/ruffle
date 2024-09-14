@@ -1,0 +1,12 @@
+// xml.toXMLString()
+<root xmlns="http://example.com" xmlns:ns1="http://xxx.com/">
+  <ns1:foo xmlns:ns2="http://yyy.com/">
+    <ns2:bar abc="1" ns1:def="2" ns2:ghi="3">bar</ns2:bar>
+  </ns1:foo>
+</root>
+// xml.child(0).toXMLString()
+<ns1:foo xmlns:ns2="http://yyy.com/" xmlns="http://example.com" xmlns:ns1="http://xxx.com/">
+  <ns2:bar abc="1" ns1:def="2" ns2:ghi="3">bar</ns2:bar>
+</ns1:foo>
+// xml.child(0).child(0).toXMLString()
+<ns2:bar abc="1" ns1:def="2" ns2:ghi="3" xmlns:ns2="http://yyy.com/" xmlns="http://example.com" xmlns:ns1="http://xxx.com/">bar</ns2:bar>

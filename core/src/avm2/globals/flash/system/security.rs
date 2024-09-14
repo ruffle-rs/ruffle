@@ -5,6 +5,7 @@ use crate::avm2::object::Object;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2_stub_method;
+use crate::sandbox::SandboxType;
 use crate::string::AvmString;
 use url::Url;
 
@@ -38,7 +39,16 @@ pub fn get_sandbox_type<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let sandbox_type = activation.context.system.sandbox_type.to_string();
+    let movie = activation
+        .caller_movie()
+        .expect("Caller movie expected for sandboxType");
+    let sandbox_type = match movie.sandbox_type() {
+        SandboxType::Remote => "remote",
+        SandboxType::LocalWithFile => "localWithFile",
+        SandboxType::LocalWithNetwork => "localWithNetwork",
+        SandboxType::LocalTrusted => "localTrusted",
+        SandboxType::Application => "application",
+    };
     return Ok(AvmString::new_utf8(activation.context.gc_context, sandbox_type).into());
 }
 

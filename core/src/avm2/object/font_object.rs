@@ -4,9 +4,7 @@ use crate::avm2::value::Value;
 use crate::avm2::{Activation, ClassObject, Error};
 use crate::character::Character;
 use crate::font::Font;
-use gc_arena::Mutation;
-use gc_arena::{Collect, GcCell, GcWeakCell};
-use std::cell::{Ref, RefMut};
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use std::fmt;
 
 /// A class instance allocator that allocates Font objects.
@@ -20,7 +18,7 @@ pub fn font_allocator<'gc>(
         .context
         .library
         .avm2_class_registry()
-        .class_symbol(class)
+        .class_symbol(class.inner_class_definition())
     {
         if let Some(lib) = activation.context.library.library_for_movie(movie) {
             if let Some(Character::Font(font)) = lib.character_by_id(id) {
@@ -35,7 +33,7 @@ pub fn font_allocator<'gc>(
         None
     };
 
-    Ok(FontObject(GcCell::new(
+    Ok(FontObject(Gc::new(
         activation.context.gc_context,
         FontObjectData { base, font },
     ))
@@ -44,12 +42,16 @@ pub fn font_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct FontObject<'gc>(pub GcCell<'gc, FontObjectData<'gc>>);
+pub struct FontObject<'gc>(pub Gc<'gc, FontObjectData<'gc>>);
+
+#[derive(Clone, Collect, Copy, Debug)]
+#[collect(no_drop)]
+pub struct FontObjectWeak<'gc>(pub GcWeak<'gc, FontObjectData<'gc>>);
 
 impl<'gc> FontObject<'gc> {
     pub fn for_font(mc: &Mutation<'gc>, class: ClassObject<'gc>, font: Font<'gc>) -> Object<'gc> {
         let base = ScriptObjectData::new(class);
-        FontObject(GcCell::new(
+        FontObject(Gc::new(
             mc,
             FontObjectData {
                 base,
@@ -60,21 +62,17 @@ impl<'gc> FontObject<'gc> {
     }
 }
 
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct FontObjectWeak<'gc>(pub GcWeakCell<'gc, FontObjectData<'gc>>);
-
 impl<'gc> TObject<'gc> for FontObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        Ref::map(self.0.read(), |read| &read.base)
-    }
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        RefMut::map(self.0.write(mc), |write| &mut write.base)
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.as_ptr() as *const ObjectPtr
+        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
     fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
@@ -82,18 +80,23 @@ impl<'gc> TObject<'gc> for FontObject<'gc> {
     }
 
     fn as_font(&self) -> Option<Font<'gc>> {
-        self.0.read().font
+        self.0.font
     }
 }
 
 #[derive(Collect)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct FontObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
 
     font: Option<Font<'gc>>,
 }
+
+const _: () = assert!(std::mem::offset_of!(FontObjectData, base) == 0);
+const _: () =
+    assert!(std::mem::align_of::<FontObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl fmt::Debug for FontObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

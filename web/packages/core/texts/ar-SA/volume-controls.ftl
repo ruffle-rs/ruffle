@@ -1,3 +1,2 @@
-volume-controls = التحكم بالصوت
 volume-controls-mute = كتم
-volume-controls-volume = مستوى الصوت
+volume-controls-unmute = إلغاء الكتم

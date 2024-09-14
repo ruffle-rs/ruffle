@@ -25,7 +25,7 @@ pub fn make_shader_parameter<'gc>(
                 .shaderparameter
                 .construct(activation, &[])?;
             let type_name =
-                AvmString::new_utf8(activation.context.gc_context, &param_type.to_string());
+                AvmString::new_utf8(activation.context.gc_context, param_type.to_string());
 
             obj.set_property(&Multiname::new(ns, "_index"), index.into(), activation)?;
             obj.set_property(&Multiname::new(ns, "_type"), type_name.into(), activation)?;

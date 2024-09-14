@@ -304,6 +304,21 @@ export interface DefaultFonts {
      * `_typewriter`, a Monospace font (similar to Courier)
      */
     typewriter?: Array<string>;
+
+    /**
+     * `_ゴシック`, a Japanese Gothic font
+     */
+    japaneseGothic?: Array<string>;
+
+    /**
+     * `_等幅`, a Japanese Gothic Mono font
+     */
+    japaneseGothicMono?: Array<string>;
+
+    /**
+     * `_明朝`, a Japanese Mincho font
+     */
+    japaneseMincho?: Array<string>;
 }
 
 /**
@@ -504,6 +519,13 @@ export interface BaseLoadOptions {
      * @default false
      */
     forceScale?: boolean;
+
+    /**
+     * If set to true, the Stage's displayState can be changed
+     *
+     * @default false
+     */
+    allowFullscreen?: boolean;
 
     /**
      * Sets and locks the player's frame rate, overriding the movie's frame rate.

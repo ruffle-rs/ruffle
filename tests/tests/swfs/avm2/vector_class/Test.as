@@ -58,7 +58,19 @@
 			trace("Vector.<CustomClass>: " + getDefinitionByName(name));
 			trace("ApplicationDomain.hasDefinition Vector.<CustomClass>: " + ApplicationDomain.currentDomain.hasDefinition(name));
 			trace("ApplicationDomain.getDefinition Vector.<CustomClass>: " + ApplicationDomain.currentDomain.getDefinition(name));
-			
+
+			vec = new Vector.<Vector.<int>>();
+			name = getQualifiedClassName(vec);
+			trace("Vector.<Vector.<int>> name: " + name);
+			trace("__AS3__.vec::Vector.<__AS3__.vec::Vector.<int>>: " + getDefinitionByName(name));
+			trace("ApplicationDomain.hasDefinition __AS3__.vec::Vector.<__AS3__.vec::Vector.<int>>: " + ApplicationDomain.currentDomain.hasDefinition(name));
+			trace("ApplicationDomain.getDefinition __AS3__.vec::Vector.<__AS3__.vec::Vector.<int>>: " + ApplicationDomain.currentDomain.getDefinition(name));
+			name = "Vector.<Vector.<int>>";
+			trace("Vector.<Vector.<int>>: " + getDefinitionByName(name));
+			trace("ApplicationDomain.hasDefinition Vector.<Vector.<int>>: " + ApplicationDomain.currentDomain.hasDefinition(name));
+			trace("ApplicationDomain.getDefinition Vector.<Vector.<int>>: " + ApplicationDomain.currentDomain.getDefinition(name));
+			trace("Vector.<Number> without namespace" + getDefinitionByName("Vector.<Number>"));
+
 			trace("Vector.<Number> without namespace" + getDefinitionByName("Vector.<Number>"));
 			try {
 				trace("Vector without namespace: " + getDefinitionByName("Vector"));

@@ -1,0 +1,8 @@
+Shader metadata: description Value: Ordered Dithering
+Shader parameter: matrixHeight Value: 4
+Shader parameter: matrixWidth Value: 4
+Shader metadata: name Value: OrderDithering
+Shader metadata: namespace Value: YourNamespace
+Shader input: src Value: null
+Shader metadata: vendor Value: YourVendor
+Shader metadata: version Value: 1

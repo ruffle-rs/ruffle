@@ -5,6 +5,7 @@ use crate::filters::glow::GlowFilter;
 use crate::filters::FilterSource;
 use crate::surface::target::CommandTarget;
 use swf::DropShadowFilter as DropShadowFilterArgs;
+use wgpu::util::StagingBelt;
 
 /// Drop shadow is just Glow with an offset.
 /// None of this strictly needs to be a struct,
@@ -12,10 +13,12 @@ use swf::DropShadowFilter as DropShadowFilterArgs;
 pub struct DropShadowFilter;
 
 impl DropShadowFilter {
+    #[allow(clippy::too_many_arguments)]
     pub fn apply(
         descriptors: &Descriptors,
         texture_pool: &mut TexturePool,
         draw_encoder: &mut wgpu::CommandEncoder,
+        staging_belt: &mut StagingBelt,
         source: &FilterSource,
         filter: &DropShadowFilterArgs,
         blur_filter: &BlurFilter,
@@ -29,6 +32,7 @@ impl DropShadowFilter {
             descriptors,
             texture_pool,
             draw_encoder,
+            staging_belt,
             source,
             &filter.inner_glow_filter(),
             blur_filter,

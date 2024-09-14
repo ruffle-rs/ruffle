@@ -6,11 +6,9 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use core::fmt;
-use gc_arena::barrier::unlock;
-use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
-use std::cell::{Cell, Ref, RefMut};
+use std::cell::Cell;
 
 /// A class instance allocator that allocates ShaderData objects.
 pub fn shader_data_allocator<'gc>(
@@ -20,7 +18,7 @@ pub fn shader_data_allocator<'gc>(
     Ok(ShaderDataObject(Gc::new(
         activation.gc(),
         ShaderDataObjectData {
-            base: RefLock::new(ScriptObjectData::new(class)),
+            base: ScriptObjectData::new(class),
             shader: Cell::new(None),
         },
     ))
@@ -57,20 +55,26 @@ impl<'gc> ShaderDataObject<'gc> {
 
 #[derive(Collect)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct ShaderDataObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     shader: Cell<Option<PixelBenderShaderHandle>>,
 }
 
-impl<'gc> TObject<'gc> for ShaderDataObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+const _: () = assert!(std::mem::offset_of!(ShaderDataObjectData, base) == 0);
+const _: () = assert!(
+    std::mem::align_of::<ShaderDataObjectData>() == std::mem::align_of::<ScriptObjectData>()
+);
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), ShaderDataObjectData, base).borrow_mut()
+impl<'gc> TObject<'gc> for ShaderDataObject<'gc> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
+
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {

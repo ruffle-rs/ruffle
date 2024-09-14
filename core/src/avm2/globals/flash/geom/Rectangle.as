@@ -183,6 +183,7 @@ package flash.geom {
             return "(x=" + this.x + ", y=" + this.y + ", w=" + this.width + ", h=" + this.height + ")";
         }
 
+        [API("674")]
         public function copyFrom(sourceRect: Rectangle): void {
             this.x = sourceRect.x;
             this.y = sourceRect.y;
@@ -190,6 +191,7 @@ package flash.geom {
             this.height = sourceRect.height;
         }
 
+        [API("674")]
         public function setTo(xa: Number, ya: Number, widtha: Number, heighta: Number): void {
             this.x = xa;
             this.y = ya;

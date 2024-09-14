@@ -1,0 +1,6 @@
+Focus changed: null -> _level0.button1
+Focus changed: _level0.button1 -> _level0.button2
+Focus changed: _level0.button2 -> _level0.button3
+Focus changed: _level0.button3 -> _level0.button4
+Focus changed: _level0.button4 -> _level0.button5
+Focus changed: _level0.button5 -> _level0.clip6

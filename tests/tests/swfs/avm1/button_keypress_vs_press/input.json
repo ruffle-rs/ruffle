@@ -1,0 +1,17 @@
+[
+  { "type": "KeyDown", "key_code": 13 },
+  { "type": "TextControl", "code": "Enter" },
+  { "type": "KeyUp", "key_code": 13 },
+  { "type": "KeyDown", "key_code": 32 },
+  { "type": "TextInput", "codepoint": " " },
+  { "type": "KeyUp", "key_code": 32 },
+  { "type": "KeyDown", "key_code": 9 },
+  { "type": "TextInput", "codepoint": "\t" },
+  { "type": "KeyUp", "key_code": 9 },
+  { "type": "KeyDown", "key_code": 13 },
+  { "type": "TextControl", "code": "Enter" },
+  { "type": "KeyUp", "key_code": 13 },
+  { "type": "KeyDown", "key_code": 32 },
+  { "type": "TextInput", "codepoint": " " },
+  { "type": "KeyUp", "key_code": 32 }
+]

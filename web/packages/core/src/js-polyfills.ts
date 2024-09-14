@@ -132,7 +132,7 @@ function tryPolyfillReflect(): void {
  * @param func The function to test.
  * @returns True if the function hasn't been overridden.
  */
-// eslint-disable-next-line @typescript-eslint/ban-types
+// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
 function isNativeFunction(func: Function): boolean {
     const val =
         typeof Function.prototype.toString === "function"

@@ -11,6 +11,9 @@
     "settings_autostart": {
         "message": "Açılış ekranı olmadan otomatik olarak oynat (sonrasında sesi açmak için tıkla)"
     },
+    "settings_swf_takeover": {
+        "message": "SWF dosyalarını indirmek yerine tarayıcıda oynat"
+    },
     "settings_log_level": {
         "message": "Kayıt düzeyi"
     },
@@ -94,5 +97,20 @@
     },
     "settings_saved": {
         "message": "Ayarlar Kaydedildi"
+    },
+    "onboarding_page": {
+        "message": "Karşılama Sayfası"
+    },
+    "permissions_grant": {
+        "message": "Ruffle'a verilerime tüm sitelerde erişmesine izin ver"
+    },
+    "permissions_not_granted": {
+        "message": "Ruffle'ı kullanmak istediğiniz her site için Ruffle simgesine tıklamanız gerekecek"
+    },
+    "grant_single_site_permission": {
+        "message": "Bu site için kalıcı olarak aktif et"
+    },
+    "swf_player_permissions": {
+        "message": "SWF'leri indirmek için bu URL kaynağına izin vermeniz gerekir."
     }
 }

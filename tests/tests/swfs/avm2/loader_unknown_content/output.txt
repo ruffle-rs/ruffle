@@ -1,12 +1,24 @@
 Event: open event: [Event type="open" bubbles=false cancelable=false eventPhase=2]
 Content: null
 Bytes length: 0
+loader.contentLoaderInfo.bytesLoaded = 0
+loader.contentLoaderInfo.bytesTotal = 0
+Caught error: Error: Error #2099: The loading object is not sufficiently loaded to provide this information.
 Event: progress event: [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=0 bytesTotal=20]
 Content: null
 Bytes length: 0
+loader.contentLoaderInfo.bytesLoaded = 0
+loader.contentLoaderInfo.bytesTotal = 20
+Caught error: Error: Error #2099: The loading object is not sufficiently loaded to provide this information.
 Event: progress event: [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=20 bytesTotal=20]
 Content: null
 Bytes length: 0
+loader.contentLoaderInfo.bytesLoaded = 20
+loader.contentLoaderInfo.bytesTotal = 20
+Caught error: Error: Error #2099: The loading object is not sufficiently loaded to provide this information.
 Event: ioError event: [IOErrorEvent type="ioError" bubbles=false cancelable=false eventPhase=2 text="Error #2124: Loaded file is an unknown type. URL: file:///[[RUFFLE PATH]]
 Content: null
 Bytes length: 0
+loader.contentLoaderInfo.bytesLoaded = 20
+loader.contentLoaderInfo.bytesTotal = 20
+Caught error: Error: Error #2099: The loading object is not sufficiently loaded to provide this information.

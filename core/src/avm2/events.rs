@@ -1,7 +1,7 @@
 //! Core event structure
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::type_error;
+use crate::avm2::error::make_error_2007;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -46,22 +46,22 @@ pub enum PropagationMode {
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct Event<'gc> {
-    /// Whether or not the event "bubbles" - fires on it's parents after it
+    /// Whether the event "bubbles" - fires on its parents after it
     /// fires on the child.
     bubbles: bool,
 
-    /// Whether or not the event has a default response that an event handler
+    /// Whether the event has a default response that an event handler
     /// can request to not occur.
     cancelable: bool,
 
-    /// Whether or not the event's default response has been cancelled.
+    /// Whether the event's default response has been cancelled.
     cancelled: bool,
 
-    /// Whether or not event propagation has stopped.
+    /// Whether event propagation has stopped.
     #[collect(require_static)]
     propagation: PropagationMode,
 
-    /// The object currently having it's event handlers invoked.
+    /// The object currently having its event handlers invoked.
     current_target: Option<Object<'gc>>,
 
     /// The current event phase.
@@ -370,11 +370,12 @@ pub fn parent_of(target: Object<'_>) -> Option<Object<'_>> {
 /// `EventObject`, or this function will panic. You must have already set the
 /// event's phase to match what targets you are dispatching to, or you will
 /// call the wrong handlers.
-pub fn dispatch_event_to_target<'gc>(
+fn dispatch_event_to_target<'gc>(
     activation: &mut Activation<'_, 'gc>,
     dispatcher: Object<'gc>,
     target: Object<'gc>,
     event: Object<'gc>,
+    simulate_dispatch: bool,
 ) -> Result<(), Error<'gc>> {
     avm_debug!(
         activation.context.avm2,
@@ -413,6 +414,10 @@ pub fn dispatch_event_to_target<'gc>(
 
     drop(evtmut);
 
+    if simulate_dispatch {
+        return Ok(());
+    }
+
     for handler in handlers.iter() {
         if event
             .as_event()
@@ -441,6 +446,7 @@ pub fn dispatch_event<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     event: Object<'gc>,
+    simulate_dispatch: bool,
 ) -> Result<bool, Error<'gc>> {
     let target = this
         .get_property(
@@ -469,18 +475,7 @@ pub fn dispatch_event<'gc>(
         event
             .call_public_property("clone", &[], activation)?
             .as_object()
-            .ok_or_else(|| {
-                let error = type_error(
-                    activation,
-                    "Error #2007: Parameter event must be non-null.",
-                    2007,
-                );
-
-                match error {
-                    Err(e) => e,
-                    Ok(e) => Error::AvmError(e),
-                }
-            })?
+            .ok_or_else(|| make_error_2007(activation, "event"))?
     } else {
         event
     };
@@ -497,7 +492,7 @@ pub fn dispatch_event<'gc>(
             break;
         }
 
-        dispatch_event_to_target(activation, *ancestor, *ancestor, event)?;
+        dispatch_event_to_target(activation, *ancestor, *ancestor, event, simulate_dispatch)?;
     }
 
     event
@@ -506,7 +501,7 @@ pub fn dispatch_event<'gc>(
         .set_phase(EventPhase::AtTarget);
 
     if !event.as_event().unwrap().is_propagation_stopped() {
-        dispatch_event_to_target(activation, this, target, event)?;
+        dispatch_event_to_target(activation, this, target, event, simulate_dispatch)?;
     }
 
     event
@@ -520,11 +515,10 @@ pub fn dispatch_event<'gc>(
                 break;
             }
 
-            dispatch_event_to_target(activation, *ancestor, *ancestor, event)?;
+            dispatch_event_to_target(activation, *ancestor, *ancestor, event, simulate_dispatch)?;
         }
     }
 
-    let was_not_cancelled = !event.as_event().unwrap().is_cancelled();
-
-    Ok(was_not_cancelled)
+    let handled = event.as_event().unwrap().dispatched;
+    Ok(handled)
 }

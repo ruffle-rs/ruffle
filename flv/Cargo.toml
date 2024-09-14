@@ -6,5 +6,5 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-bitflags = "2.4.1"
-thiserror = "1.0"
+bitflags = { workspace = true }
+thiserror = { workspace = true }

@@ -1,0 +1,548 @@
+// new BitmapFilter
+[object Object]
+// f.clone()
+undefined
+// f == f.clone()
+false
+
+// new BevelFilter
+[object Object]
+// f.clone()
+[object Object]
+// f == f.clone()
+false
+// bevelMC.filters[0]
+distance=10, angle=44.999253346525, highlightColor=65280, highlightAlpha=1, shadowColor=255, shadowAlpha=1, quality=2, strength=1.5, knockout=false, blurX=10, blurY=10, type=inner, clone=[type Function]
+// bevelMC.filters = [f]
+distance=4, angle=44.9999999772279, highlightColor=16777215, highlightAlpha=1, shadowColor=0, shadowAlpha=1, quality=1, strength=1, knockout=false, blurX=4, blurY=4, type=inner, clone=[type Function]
+// f.angle = 360
+angle=0
+// f.angle = 361
+angle=1
+// f.angle = -1
+angle=-1
+// f.angle = 366
+angle=6
+// f.distance = 1000
+distance=1000
+// f.distance = 2.5
+distance=2.5
+// f.distance = -1
+distance=-1
+// f.highlightAlpha = 0.5
+highlightColor=16777215, highlightAlpha=0.498039215686275
+// f.highlightColor = 16777471
+highlightColor=255, highlightAlpha=0.498039215686275
+// f.highlightAlpha = 1.5
+highlightColor=255, highlightAlpha=1
+// f.highlightColor = -305419896
+highlightColor=13347208, highlightAlpha=1
+// f.highlightAlpha = -1
+highlightColor=13347208, highlightAlpha=0
+// f.shadowAlpha = 0.5
+shadowColor=0, shadowAlpha=0.498039215686275
+// f.shadowColor = 16777471
+shadowColor=255, shadowAlpha=0.498039215686275
+// f.shadowAlpha = 1.5
+shadowColor=255, shadowAlpha=1
+// f.shadowColor = -305419896
+shadowColor=13347208, shadowAlpha=1
+// f.shadowAlpha = -1
+shadowColor=13347208, shadowAlpha=0
+// f.quality = 2.5
+quality=2
+// f.quality = -1
+quality=0
+// f.quality = 100
+quality=15
+// f.strength = 256
+strength=255
+// f.strength = 1.5
+strength=1.5
+// f.strength = -1
+strength=0
+// f.blurX = f.blurY = 100.5
+blurX=100.5, blurY=100.5
+// f.blurX = f.blurY = -1
+blurX=0, blurY=0
+// f.blurX = f.blurY = 256
+blurX=255, blurY=255
+// f.type = invalid
+type=full
+// f.type = INNER
+type=full
+// f.type = 0
+type=full
+// f.knockout = false
+knockout=false
+// f.knockout = true
+knockout=true
+// f.knockout = null
+knockout=false
+
+// new BlurFilter
+[object Object]
+// f.clone()
+[object Object]
+// f == f.clone()
+false
+// blurMC.filters[0]
+blurX=9, blurY=9, quality=2, clone=[type Function]
+// blurMC.filters = [f]
+blurX=4, blurY=4, quality=1, clone=[type Function]
+// f.quality = 2.5
+quality=2
+// f.quality = -1
+quality=0
+// f.quality = 100
+quality=15
+// f.blurX = f.blurY = 100.5
+blurX=100.5, blurY=100.5
+// f.blurX = f.blurY = -1
+blurX=0, blurY=0
+// f.blurX = f.blurY = 256
+blurX=255, blurY=255
+
+// new ColorMatrixFilter
+[object Object]
+// f.clone()
+[object Object]
+// f == f.clone()
+false
+// colorMatrixMC.filters[0]
+matrix=[1.10561990737915,0.896963536739349,-1.15258347988129,0,28.2250022888184,-0.257689893245697,0.772316873073578,0.335373044013977,0,28.2250003814697,0.8850017786026,-0.860078454017639,0.825076699256897,0,28.2250003814697,0,0,0,1,0], clone=[type Function]
+// colorMatrixMC.filters = [f]
+matrix=[1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0], clone=[type Function]
+// new ColorMatrixFilter(null)
+matrix=[1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0], clone=[type Function]
+// new ColorMatrixFilter(undefined)
+matrix=[1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0], clone=[type Function]
+// new ColorMatrixFilter(-1)
+matrix=[NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN], clone=[type Function]
+// f.matrix = []
+matrix=[NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN]
+// f.matrix = [0]
+matrix=[0,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN]
+// f.matrix = [1.5]
+matrix=[1.5,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN]
+// f.matrix = [1000]
+matrix=[1000,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN]
+// f.matrix = [-1000]
+matrix=[-1000,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN]
+// f.matrix = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
+matrix=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
+// f.matrix = null
+matrix=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
+// f.matrix = undefined
+matrix=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
+// f.matrix = [null,null]
+matrix=[NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN]
+// f.matrix = [test,undefined]
+matrix=[NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN]
+// f.matrix = [true,false]
+matrix=[1,0,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN]
+// f.matrix = ASDASDASD
+matrix=[NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN]
+// f.matrix = -1
+matrix=[NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN]
+
+// new ConvolutionFilter
+[object Object]
+// f.clone()
+[object Object]
+// f == f.clone()
+false
+// convolutionMC.filters[0]
+matrixX=3, matrixY=3, matrix=[0.200000002980232,0,-0.5,2.29999995231628,1,0,0,0.699999988079071,-1.60000002384186], divisor=2, bias=1, preserveAlpha=false, clamp=true, color=16737792, alpha=1, clone=[type Function]
+// convolutionMC.filters = [f]
+matrixX=0, matrixY=0, matrix=[], divisor=1, bias=0, preserveAlpha=true, clamp=true, color=0, alpha=0, clone=[type Function]
+// f.alpha = 0.5
+color=0, alpha=0.498039215686275
+// f.color = 16777471
+color=255, alpha=0.498039215686275
+// f.alpha = 1.5
+color=255, alpha=1
+// f.color = -305419896
+color=13347208, alpha=1
+// f.alpha = -1
+color=13347208, alpha=0
+// f.bias = 100.5
+bias=100.5
+// f.bias = -100.5
+bias=-100.5
+// f.divisor = 100.5
+divisor=100.5
+// f.divisor = -100.5
+divisor=-100.5
+// f.preserveAlpha = false
+preserveAlpha=false
+// f.preserveAlpha = true
+preserveAlpha=true
+// f.preserveAlpha = null
+preserveAlpha=false
+// f.clamp = false
+clamp=false
+// f.clamp = true
+clamp=true
+// f.clamp = null
+clamp=false
+// f.matrix = [1,2,3,4]
+matrixX=0, matrixY=0, matrix=[1,2,3,4]
+// f.matrix = ASDASD
+matrixX=0, matrixY=0, matrix=[NaN,NaN,NaN,NaN,NaN,NaN]
+// f.matrix = [object Object]
+matrixX=0, matrixY=0, matrix=[]
+// f.matrix = [-1000.5]
+matrixX=0, matrixY=0, matrix=[-1000.5]
+// f.matrixX = 2
+matrixX=2, matrixY=0, matrix=[-1000.5]
+// f.matrixY = 2
+matrixX=2, matrixY=2, matrix=[-1000.5,0,0,0]
+// f.matrix = ASDASDASD
+matrixX=2, matrixY=2, matrix=[NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN]
+// f.matrix = 1234
+matrixX=2, matrixY=2, matrix=[0,0,0,0]
+// f.matrix = [-1,-2,-3,-4,-5]
+matrixX=2, matrixY=2, matrix=[-1,-2,-3,-4,-5]
+// f.matrixX = 3.5
+matrixX=3, matrixY=2, matrix=[-1,-2,-3,-4,-5,0]
+// f.matrixY = 4.5
+matrixX=3, matrixY=4, matrix=[-1,-2,-3,-4,-5,0,0,0,0,0,0,0]
+// f.matrix = ASD
+matrixX=3, matrixY=4, matrix=[NaN,NaN,NaN,0,0,0,0,0,0,0,0,0]
+// f.matrix = [1aaa,2,null,undefined,5]
+matrixX=3, matrixY=4, matrix=[NaN,2,NaN,NaN,5,0,0,0,0,0,0,0]
+// f.matrixX = f.matrixY = -100
+matrixX=0, matrixY=0, matrix=[NaN,2,NaN,NaN,5,0,0,0,0,0,0,0]
+// f.matrixX = f.matrixY = 100
+matrixX=15, matrixY=15, matrix=[NaN,2,NaN,NaN,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+
+// new DisplacementMapFilter
+[object Object]
+// f.clone()
+[object Object]
+// f == f.clone()
+false
+mapBitmap=undefined, mapPoint=(x=0, y=0), componentX=0, componentY=0, scaleX=0, scaleY=0, mode=wrap, color=0, alpha=0, clone=[type Function]
+// f.alpha = 0.5
+color=0, alpha=0.498039215686275
+// f.color = 16777471
+color=255, alpha=0.498039215686275
+// f.alpha = 1.5
+color=255, alpha=1
+// f.color = -305419896
+color=13347208, alpha=1
+// f.alpha = -1
+color=13347208, alpha=0
+// f.componentX = f.componentY = 123
+componentX=123, componentY=123
+// f.componentX = f.componentY = -234.5
+componentX=-234, componentY=-234
+// f.scaleX = f.scaleY = -234.5
+scaleX=-234.5, scaleY=-234.5
+// f.scaleX = f.scaleY = 65536
+scaleX=65535, scaleY=65535
+// f.scaleX = f.scaleY = -65536
+scaleX=-65535, scaleY=-65535
+// f.mode = clamp
+mode=clamp
+// f.mode = test
+mode=wrap
+// f.mode = ignore
+mode=ignore
+// f.mode = null
+mode=wrap
+// f.mode = color
+mode=color
+// f.mode = wrap
+mode=wrap
+// f.mode = Color
+mode=wrap
+// f.mapBitmap = [object Object]
+mapBitmap=[object Object]
+// f.mapBitmap.setPixel32(0, 0, 0xFF0000FF)
+width = 10, height = 10, getPixel(0, 0) = -16776961
+// f.mapBitmap.dispose()
+width = -1, height = -1
+// f.mapBitmap = 45
+mapBitmap=[object Object]
+// f.mapPoint = (x=12.5, y=-4200)
+mapPoint=(x=12, y=-4200)
+// f.mapPoint = [object Object]
+mapPoint=(x=0, y=0)
+// f.mapPoint = [object Object]
+mapPoint=(x=65540, y=-65540)
+// f.mapPoint = null
+mapPoint=(x=0, y=0)
+// f.mapPoint == f.mapPoint
+false
+// f.mapPoint.x += 10
+mapPoint=(x=0, y=0)
+
+// new DropShadowFilter
+[object Object]
+// f.clone()
+[object Object]
+// f == f.clone()
+false
+// dropShadowMC.filters[0]
+distance=10, angle=49.9991703850277, color=0, alpha=1, quality=2, inner=true, knockout=true, blurX=10, blurY=10, strength=1.09765625, hideObject=false, clone=[type Function]
+// dropShadowMC.filters = [f]
+distance=4, angle=44.9999999772279, color=0, alpha=1, quality=1, inner=false, knockout=false, blurX=4, blurY=4, strength=1, hideObject=false, clone=[type Function]
+// f.distance = 1000
+distance=1000
+// f.distance = 2.5
+distance=2.5
+// f.distance = -1
+distance=-1
+// f.angle = 360
+angle=0
+// f.angle = 361
+angle=1
+// f.angle = -1
+angle=-1
+// f.angle = 366
+angle=6
+// f.alpha = 0.5
+color=0, alpha=0.498039215686275
+// f.color = 16777471
+color=255, alpha=0.498039215686275
+// f.alpha = 1.5
+color=255, alpha=1
+// f.color = -305419896
+color=13347208, alpha=1
+// f.alpha = -1
+color=13347208, alpha=0
+// f.quality = 2.5
+quality=2
+// f.quality = -1
+quality=0
+// f.quality = 100
+quality=15
+// f.strength = 256
+strength=255
+// f.strength = 1.5
+strength=1.5
+// f.strength = -1
+strength=0
+// f.blurX = f.blurY = 100.5
+blurX=100.5, blurY=100.5
+// f.blurX = f.blurY = -1
+blurX=0, blurY=0
+// f.blurX = f.blurY = 256
+blurX=255, blurY=255
+// f.inner = false
+inner=false
+// f.inner = true
+inner=true
+// f.inner = null
+inner=false
+// f.knockout = false
+knockout=false
+// f.knockout = true
+knockout=true
+// f.knockout = null
+knockout=false
+// f.hideObject = false
+hideObject=false
+// f.hideObject = true
+hideObject=true
+// f.hideObject = null
+hideObject=false
+
+// new GlowFilter
+[object Object]
+// f.clone()
+[object Object]
+// f == f.clone()
+false
+// glowMC.filters[0]
+color=65535, alpha=1, quality=2, inner=true, knockout=true, blurX=10, blurY=10, strength=1.3984375, clone=[type Function]
+// glowMC.filters = [f]
+color=16711680, alpha=1, quality=1, inner=false, knockout=false, blurX=6, blurY=6, strength=2, clone=[type Function]
+// f.alpha = 0.5
+color=16711680, alpha=0.498039215686275
+// f.color = 16777471
+color=255, alpha=0.498039215686275
+// f.alpha = 1.5
+color=255, alpha=1
+// f.color = -305419896
+color=13347208, alpha=1
+// f.alpha = -1
+color=13347208, alpha=0
+// f.quality = 2.5
+quality=2
+// f.quality = -1
+quality=0
+// f.quality = 100
+quality=15
+// f.strength = 256
+strength=255
+// f.strength = 1.5
+strength=1.5
+// f.strength = -1
+strength=0
+// f.blurX = f.blurY = 100.5
+blurX=100.5, blurY=100.5
+// f.blurX = f.blurY = -1
+blurX=0, blurY=0
+// f.blurX = f.blurY = 256
+blurX=255, blurY=255
+// f.inner = false
+inner=false
+// f.inner = true
+inner=true
+// f.inner = null
+inner=false
+// f.knockout = false
+knockout=false
+// f.knockout = true
+knockout=true
+// f.knockout = null
+knockout=false
+
+// new GradientBevelFilter
+[object Object]
+// f.clone()
+[object Object]
+// f == f.clone()
+false
+// gradientBevelMC.filters[0]
+distance=10, angle=49.9991703850277, colors=[16711935,16711680,65484], alphas=[1,0,1], ratios=[0,128,255], blurX=10, blurY=10, quality=2, strength=1.09765625, knockout=true, type=outer, clone=[type Function]
+// gradientBevelMC.filters = [f]
+distance=4, angle=44.9999999772279, colors=[], alphas=[], ratios=[], blurX=4, blurY=4, quality=1, strength=1, knockout=false, type=inner, clone=[type Function]
+// f.distance = 1000
+distance=1000
+// f.distance = 2.5
+distance=2.5
+// f.distance = -1
+distance=-1
+// f.angle = 360
+angle=0
+// f.angle = 361
+angle=1
+// f.angle = -1
+angle=-1
+// f.angle = 366
+angle=6
+// f.alphas = [1]
+colors=[], alphas=[], ratios=[]
+// f.colors = [-305419896,10]
+colors=[13347208,10], alphas=[0,0], ratios=[0,0]
+// f.ratios = [500,50.5,100]
+colors=[13347208,10], alphas=[0,0], ratios=[255,50]
+// f.colors = ASDF
+colors=[0,0,0,0], alphas=[0,0,0,0], ratios=[255,50,0,0]
+// f.ratios = null
+colors=[0,0,0,0], alphas=[0,0,0,0], ratios=[255,50,0,0]
+// f.alphas = [0.5,1.5,-0.5]
+colors=[0,0,0,0], alphas=[0.501960784313725,1,0,1], ratios=[255,50,0,0]
+// f.ratios = [50]
+colors=[0], alphas=[0.501960784313725], ratios=[50]
+// f.colors = 5
+colors=[], alphas=[], ratios=[]
+// f.colors = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]
+colors=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16], alphas=[0.501960784313725,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0], ratios=[50,50,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+// f.blurX = f.blurY = 100.5
+blurX=100.5, blurY=100.5
+// f.blurX = f.blurY = -1
+blurX=0, blurY=0
+// f.blurX = f.blurY = 256
+blurX=255, blurY=255
+// f.quality = 2.5
+quality=2
+// f.quality = -1
+quality=0
+// f.quality = 100
+quality=15
+// f.strength = 256
+strength=255
+// f.strength = 1.5
+strength=1.5
+// f.strength = -1
+strength=0
+// f.knockout = false
+knockout=false
+// f.knockout = true
+knockout=true
+// f.knockout = null
+knockout=false
+// f.type = invalid
+type=full
+// f.type = INNER
+type=full
+// f.type = 0
+type=full
+
+// new GradientGlowFilter
+[object Object]
+// f.clone()
+[object Object]
+// f == f.clone()
+false
+// gradientGlowMC.filters[0]
+distance=10, angle=49.9991703850277, colors=[16711935,65280], alphas=[0,1], ratios=[0,255], blurX=10, blurY=10, quality=2, strength=1.09765625, knockout=true, type=full, clone=[type Function]
+// gradientGlowMC.filters = [f]
+distance=4, angle=44.9999999772279, colors=[], alphas=[], ratios=[], blurX=4, blurY=4, quality=1, strength=1, knockout=false, type=inner, clone=[type Function]
+// f.distance = 1000
+distance=1000
+// f.distance = 2.5
+distance=2.5
+// f.distance = -1
+distance=-1
+// f.angle = 360
+angle=0
+// f.angle = 361
+angle=1
+// f.angle = -1
+angle=-1
+// f.angle = 366
+angle=6
+// f.alphas = [1]
+colors=[], alphas=[], ratios=[]
+// f.colors = [-305419896,10]
+colors=[13347208,10], alphas=[0,0], ratios=[0,0]
+// f.ratios = [500,50.5,100]
+colors=[13347208,10], alphas=[0,0], ratios=[255,50]
+// f.colors = ASDF
+colors=[0,0,0,0], alphas=[0,0,0,0], ratios=[255,50,0,0]
+// f.ratios = null
+colors=[0,0,0,0], alphas=[0,0,0,0], ratios=[255,50,0,0]
+// f.alphas = [0.5,1.5,-0.5]
+colors=[0,0,0,0], alphas=[0.501960784313725,1,0,1], ratios=[255,50,0,0]
+// f.ratios = [50]
+colors=[0], alphas=[0.501960784313725], ratios=[50]
+// f.colors = 5
+colors=[], alphas=[], ratios=[]
+// f.colors = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]
+colors=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16], alphas=[0.501960784313725,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0], ratios=[50,50,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+// f.blurX = f.blurY = 100.5
+blurX=100.5, blurY=100.5
+// f.blurX = f.blurY = -1
+blurX=0, blurY=0
+// f.blurX = f.blurY = 256
+blurX=255, blurY=255
+// f.quality = 2.5
+quality=2
+// f.quality = -1
+quality=0
+// f.quality = 100
+quality=15
+// f.strength = 256
+strength=255
+// f.strength = 1.5
+strength=1.5
+// f.strength = -1
+strength=0
+// f.knockout = false
+knockout=false
+// f.knockout = true
+knockout=true
+// f.knockout = null
+knockout=false
+// f.type = invalid
+type=full
+// f.type = INNER
+type=full
+// f.type = 0
+type=full

@@ -79,9 +79,9 @@ package
 		*   @param positionX X component of the camera's position
 		*   @param positionY Y component of the camera's position
 		*   @param positionZ Z component of the camera's position
-		*   @param targetX X compoennt of the point the camera is aiming at
-		*   @param targetY Y compoennt of the point the camera is aiming at
-		*   @param targetZ Z compoennt of the point the camera is aiming at
+		*   @param targetX X component of the point the camera is aiming at
+		*   @param targetY Y component of the point the camera is aiming at
+		*   @param targetZ Z component of the point the camera is aiming at
 		*   @param upDirX X component of the direction considered to be "up"
 		*   @param upDirX X component of the direction considered to be "up"
 		*   @param upDirY Y component of the direction considered to be "up"

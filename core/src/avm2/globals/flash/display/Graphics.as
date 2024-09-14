@@ -35,6 +35,7 @@ package flash.display
         public native function lineGradientStyle(
             type:String, colors:Array, alphas:Array, ratios:Array, matrix:Matrix = null, spreadMethod:String = "pad", interpolationMethod:String = "rgb", focalPointRatio:Number = 0
         ):void;
+        [API("674")]
         public native function cubicCurveTo(controlX1:Number, controlY1:Number, controlX2:Number, controlY2:Number, anchorX:Number, anchorY:Number):void;
         public native function copyFrom(sourceGraphics:Graphics):void;
         public native function drawPath(commands:Vector.<int>, data:Vector.<Number>, winding:String = "evenOdd"):void;
@@ -45,6 +46,7 @@ package flash.display
         public native function drawGraphicsData(graphicsData:Vector.<IGraphicsData>):void;
         //public native function lineShaderStyle(shader:Shader, matrix:Matrix = null):void;
         public native function lineBitmapStyle(bitmap:BitmapData, matrix:Matrix = null, repeat:Boolean = true, smooth:Boolean = false):void;
+        [API("686")]
         public native function readGraphicsData(recurse:Boolean = true):Vector.<IGraphicsData>;
     }
 }

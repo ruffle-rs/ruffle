@@ -1,0 +1,19 @@
+num_frames = 1
+
+[fonts.regular]
+family = "Tinos"
+path = "tinos.ttf"
+bold = false
+italic = false
+
+[fonts.bold]
+family = "Tinos"
+path = "tinos-bold.ttf"
+bold = true
+italic = false
+
+[image_comparisons.output]
+max_outliers = 3
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }

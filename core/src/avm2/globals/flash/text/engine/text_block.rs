@@ -65,9 +65,9 @@ pub fn create_text_line<'gc>(
 
     // FIXME: TextLine should be its own DisplayObject
     let display_object: EditText =
-        EditText::new_tlf(&mut activation.context, movie, 0.0, 0.0, width, 15.0);
+        EditText::new_tlf(activation.context, movie, 0.0, 0.0, width, 15.0);
 
-    display_object.set_text(text.as_wstr(), &mut activation.context);
+    display_object.set_text(text.as_wstr(), activation.context);
 
     // FIXME: This needs to use `intrinsic_bounds` to measure the width
     // of the provided text, and set the width of the EditText to that.
@@ -80,7 +80,7 @@ pub fn create_text_line<'gc>(
     apply_format(activation, display_object, text.as_wstr(), element_format)?;
 
     let instance = initialize_for_allocator(activation, display_object.into(), class)?;
-    class.call_native_init(instance.into(), &[], activation)?;
+    class.call_super_init(instance.into(), &[], activation)?;
 
     instance.set_property(
         &Multiname::new(activation.avm2().flash_text_engine_internal, "_textBlock"),
@@ -139,7 +139,7 @@ fn apply_format<'gc>(
             .get_public_property("fontSize", activation)?
             .coerce_to_number(activation)?;
 
-        let (font, bold, italic) = if let Value::Object(font_description) =
+        let (font, bold, italic, is_device_font) = if let Value::Object(font_description) =
             element_format.get_public_property("fontDescription", activation)?
         {
             (
@@ -162,9 +162,13 @@ fn apply_format<'gc>(
                         .coerce_to_string(activation)?
                         == b"italic",
                 ),
+                &font_description
+                    .get_public_property("fontLookup", activation)?
+                    .coerce_to_string(activation)?
+                    == b"device",
             )
         } else {
-            (None, None, None)
+            (None, None, None, true)
         };
 
         let format = TextFormat {
@@ -176,15 +180,18 @@ fn apply_format<'gc>(
             ..TextFormat::default()
         };
 
-        display_object.set_text_format(0, text.len(), format.clone(), &mut activation.context);
-        display_object.set_new_text_format(format, &mut activation.context);
+        display_object.set_is_device_font(activation.context, is_device_font);
+        display_object.set_text_format(0, text.len(), format.clone(), activation.context);
+        display_object.set_new_text_format(format, activation.context);
+    } else {
+        display_object.set_is_device_font(activation.context, true);
     }
 
-    display_object.set_word_wrap(true, &mut activation.context);
+    display_object.set_word_wrap(true, activation.context);
 
-    let measured_text = display_object.measure_text(&mut activation.context);
+    let measured_text = display_object.measure_text(activation.context);
 
-    display_object.set_height(&mut activation.context, measured_text.1.to_pixels());
+    display_object.set_height(activation.context, measured_text.1.to_pixels());
 
     Ok(())
 }

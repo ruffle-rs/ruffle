@@ -1,0 +1,60 @@
+Focus at: _level0.text
+Tab pressed
+Focus at: _level0.clip
+_level0.clip.onKeyUp: 9
+_level0.clip.onKeyDown: 13
+_level0.clip.onPress: 13
+_level0.clip.onRelease: 13
+_level0.clip.onKeyUp: 13
+_level0.clip.onKeyDown: 32
+_level0.clip.onPress: 32
+_level0.clip.onRelease: 32
+_level0.clip.onKeyUp: 32
+_level0.clip.onKeyDown: 65
+_level0.clip.onKeyUp: 65
+_level0.clip.onMouseMove
+Tab pressed
+Focus at: _level0.button
+_level0.button.onKeyUp: 9
+_level0.button.onKeyDown: 13
+press
+_level0.button.onPress: 13
+release
+_level0.button.onRelease: 13
+_level0.button.onKeyUp: 13
+_level0.button.onKeyDown: 32
+press
+_level0.button.onPress: 32
+release
+_level0.button.onRelease: 32
+_level0.button.onKeyUp: 32
+_level0.button.onKeyDown: 65
+_level0.button.onKeyUp: 65
+_level0.clip.onMouseMove
+Tab pressed
+Focus at: _level0.text
+_level0.clip.onMouseMove
+Escape pressed
+Tab pressed
+Focus at: _level0.clip
+_level0.clip.onKeyUp: 9
+_level0.clip.onKeyDown: 13
+_level0.clip.onKeyUp: 13
+_level0.clip.onKeyDown: 32
+_level0.clip.onKeyUp: 32
+_level0.clip.onKeyDown: 65
+_level0.clip.onKeyUp: 65
+_level0.clip.onMouseMove
+Tab pressed
+Focus at: _level0.button
+_level0.button.onKeyUp: 9
+_level0.button.onKeyDown: 13
+_level0.button.onKeyUp: 13
+_level0.button.onKeyDown: 32
+_level0.button.onKeyUp: 32
+_level0.button.onKeyDown: 65
+_level0.button.onKeyUp: 65
+_level0.clip.onMouseMove
+Tab pressed
+Focus at: _level0.text
+_level0.clip.onMouseMove

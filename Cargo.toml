@@ -12,6 +12,8 @@ members = [
     "scanner",
     "exporter",
 
+    "frontend-utils",
+
     "render",
     "render/canvas",
     "render/naga-agal",
@@ -20,8 +22,11 @@ members = [
 
     "ruffle_gc_arena",
 
+    "stub-report",
+
     "video",
     "video/software",
+    "video/external",
 
     "tests",
     "tests/input-format",
@@ -41,13 +46,48 @@ repository = "https://github.com/ruffle-rs/ruffle"
 version = "0.1.0"
 
 [workspace.dependencies]
-# gc-arena = { git = "https://github.com/kyren/gc-arena", rev = "efd89fc683c6bb456af3e226c33763cb822645e9" }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-naga = { version = "0.14.2", features = ["validate", "wgsl-out"] }
-naga_oil = "0.11.0"
-wgpu = "0.18.0"
-egui = "0.24.1"
+naga = { version = "22.1.0", features = ["wgsl-out"] }
+wgpu = "22.1.0"
+egui = { git = "https://github.com/emilk/egui.git", rev = "f4697bc007447c6c2674beb4e25f599fb7afa093" }
+clap = { version = "4.5.17", features = ["derive"] }
+anyhow = "1.0"
+slotmap = "1.0.7"
+async-channel = "2.3.1"
+bitflags = "2.6.0"
+bytemuck = "1.18.0"
+chrono = { version = "0.4.38", default-features = false }
+enum-map = "2.7.3"
+flate2 = "1.0.33"
+futures = "0.3.30"
+image = { version = "0.25.2", default-features = false }
+js-sys = "0.3.70"
+log = "0.4"
+num-derive = "0.4.2"
+num-traits = "0.2.19"
+serde = "1.0.210"
+thiserror = "1.0"
+url = "2.5.2"
+# Make sure to match wasm-bindgen-cli version to this everywhere.
+wasm-bindgen = "=0.2.93"
+walkdir = "2.5.0"
+tokio = { version = "1.40.0" }
+rfd = { git = "https://github.com/PolyMeilex/rfd.git", rev = "e0e725ec9a426acf7c93d9877c41e230fcee3fac" }
+
+[workspace.lints.rust]
+# Clippy nightly often adds new/buggy lints that we want to ignore.
+# Don't warn about these new lints on stable.
+renamed_and_removed_lints = "allow"
+unknown_lints = "allow"
+
+[workspace.lints.clippy]
+# LONG-TERM: These lints are unhelpful.
+manual_map = "allow"             # Less readable: Suggests `opt.map(..)` instsead of `if let Some(opt) { .. }`
+manual_range_contains = "allow"  # Less readable: Suggests `(a..b).contains(n)` instead of `n >= a && n < b`
+assigning_clones = "allow"       # Sometimes useful, but more often than not it doesn't do anything as
+                                 # we overwrite an empty item. And sometimes it can even be a footgun
+                                 # by keeping big allocations alive.
 
 # Don't optimize build scripts and macros.
 [profile.release.build-override]
@@ -84,8 +124,15 @@ inherits = "release"
 [profile.web-wasm-extensions]
 inherits = "release"
 
-[patch.crates-io]
-# These are needed because https://github.com/gfx-rs/wgpu/pull/4778
-# is not yet in the latest wgpu release. TODO: Remove when it is.
-wgpu = { git = "https://github.com/gfx-rs/wgpu", branch = "v0.18" }
-naga = { git = "https://github.com/gfx-rs/wgpu", branch = "v0.18" }
+[profile.ci]
+inherits = "release"
+debug-assertions = true
+overflow-checks = true
+# "Not too slow to compile, fast enough to run."
+opt-level = 2
+# Takes too long, especially on Windows, with marginal benefit otherwise.
+lto = "off"
+# This is also set with higher authority in `test_rust.yml`.
+incremental = true
+# Right between the defaults of 16 and 256, for crate fragment caching.
+codegen-units = 64

@@ -1,0 +1,90 @@
+_level0.text1
+  x = 2
+  y = 3
+  w = 2
+  h = 3
+_level0.text1
+  x = 2.1
+  y = 3.9
+  w = 2.1
+  h = 3.9
+_level0.text2
+  x = 0
+  y = 0
+  w = 0
+  h = 0
+_level0.text3
+  x = 0
+  y = 0
+  w = 0
+  h = 0
+_level0.text4
+  x = 0
+  y = 0
+  w = 0
+  h = 0
+_level0.text5
+  x = 1
+  y = 1
+  w = 1
+  h = 1
+_level0.text6
+  x = 0
+  y = 0
+  w = 0
+  h = 0
+_level0.text7
+  x = 0
+  y = 0
+  w = 0
+  h = 0
+_level0.text8
+  x = 0
+  y = 0
+  w = 0
+  h = 0
+_level0.text9
+  x = -2
+  y = -2
+  w = 2
+  h = 2
+_level0.text10
+  x = -2
+  y = -2
+  w = 2
+  h = 2
+_level0.text11
+  x = -2
+  y = -2
+  w = 2
+  h = 2
+_level0.text12
+  x = 0
+  y = 0
+  w = 0
+  h = 0
+_level0.text13
+  x = 0
+  y = 0
+  w = 0
+  h = 0
+_level0.text14
+  x = 0
+  y = 0
+  w = 0
+  h = 0
+_level0.text15
+  x = 0
+  y = 0
+  w = 0
+  h = 0
+_level0.text16
+  x = 0
+  y = 0
+  w = 0
+  h = 0
+_level0.text17
+  x = 50
+  y = 50
+  w = 50
+  h = 50

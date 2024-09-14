@@ -10,7 +10,6 @@ update-ruffle = Actualitza Ruffle
 ruffle-demo = Demostració web
 ruffle-desktop = Aplicació d'escriptori
 ruffle-wiki = Obre la wiki de Ruffle
-enable-hardware-acceleration = Sembla que l'acceleració per maquinari no està activada. Tot i que Ruffle podria funcionar, és probable que ho faci molt lentament. Pots trobar informació sobre com activar l'acceleració per maquinari al següent enllaç.
 view-error-details = Mostra detalls de l'error
 open-in-new-tab = Obre en una pestanya nova
 click-to-unmute = Feu clic per activar el so
@@ -29,6 +28,9 @@ error-wasm-mime-type =
     Ruffle ha topat amb un problema greu mentre provava d'inicialitzar-se.
     Aquest servidor no està servint els fitxers ".wasm" amb el tipus MIME adequat.
     Si sou l'administrador del servidor, us preguem que consulteu la wiki de Ruffle per obtenir ajuda.
+error-invalid-swf =
+    Ruffle no ha pogut llegir el fitxer sol·licitat.
+    La raó més probable és que no sigui un fitxer SWF vàlid.
 error-swf-fetch =
     Ruffle no ha pogut carregar el fitxer SWF Flash.
     La raó més probable és que el fitxer ja no existeixi, així que no hi ha res que el Ruffle pugui carregar.

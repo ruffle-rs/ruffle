@@ -1,0 +1,4 @@
+progress, bytesLoaded: 0, bytesLoaded: 8647
+progress, bytesLoaded: 8647, bytesLoaded: 8647
+init
+complete

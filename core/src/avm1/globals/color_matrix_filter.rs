@@ -81,19 +81,30 @@ impl<'gc> ColorMatrixFilter<'gc> {
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
-        if let Some(Value::Object(object)) = value {
-            let mut matrix = [0.0; 4 * 5];
-            for (i, m) in matrix.iter_mut().enumerate() {
-                let i = i as i32;
-                let length = object.length(activation)?;
-                if i < length {
-                    *m = object
-                        .get_element(activation, i)
-                        .coerce_to_f64(activation)? as f32;
+        // Note that FP 11 and FP 32 behave differently here:
+        // - FP 11 ignores non-object values, whereas FP 32 treat them as an empty array,
+        //   except for null and undefined;
+        // - FP 11 uses `0` as a default for missing elements, whereas FP 32 uses `NaN`.
+        // This implements FP 32 semantics.
+        let mut matrix = [f32::NAN; 4 * 5];
+
+        match value {
+            None | Some(Value::Null | Value::Undefined) => return Ok(()),
+            Some(Value::Object(object)) => {
+                for (i, m) in matrix.iter_mut().enumerate() {
+                    let i = i as i32;
+                    let length = object.length(activation)?;
+                    if i < length {
+                        *m = object
+                            .get_element(activation, i)
+                            .coerce_to_f64(activation)? as f32;
+                    }
                 }
             }
-            self.0.write(activation.context.gc_context).matrix = matrix;
+            _ => (),
         }
+
+        self.0.write(activation.context.gc_context).matrix = matrix;
         Ok(())
     }
 

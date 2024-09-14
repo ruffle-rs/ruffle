@@ -9,9 +9,10 @@ use crate::avm2::Error;
 use crate::context::UpdateContext;
 use crate::display_object::TDisplayObject;
 use crate::display_object::{DisplayObject, InteractiveObject, TInteractiveObject};
-use crate::events::KeyCode;
+use crate::events::{KeyCode, MouseButton};
 use crate::string::AvmString;
-use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
+use gc_arena::barrier::unlock;
+use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 
@@ -22,11 +23,11 @@ pub fn event_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    Ok(EventObject(GcCell::new(
+    Ok(EventObject(Gc::new(
         activation.context.gc_context,
         EventObjectData {
             base,
-            event: Event::new(""),
+            event: RefLock::new(Event::new("")),
         },
     ))
     .into())
@@ -34,28 +35,33 @@ pub fn event_allocator<'gc>(
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct EventObject<'gc>(pub GcCell<'gc, EventObjectData<'gc>>);
+pub struct EventObject<'gc>(pub Gc<'gc, EventObjectData<'gc>>);
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
-pub struct EventObjectWeak<'gc>(pub GcWeakCell<'gc, EventObjectData<'gc>>);
+pub struct EventObjectWeak<'gc>(pub GcWeak<'gc, EventObjectData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct EventObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
 
     /// The event this object holds.
-    event: Event<'gc>,
+    event: RefLock<Event<'gc>>,
 }
+
+const _: () = assert!(std::mem::offset_of!(EventObjectData, base) == 0);
+const _: () =
+    assert!(std::mem::align_of::<EventObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> EventObject<'gc> {
     /// Create a bare Event instance while skipping the usual `construct()` pipeline.
     /// It's just slightly faster and doesn't require an Activation.
     /// This is equivalent to
     /// classes.event.construct(activation, &[event_type, false, false])
-    pub fn bare_default_event<S>(context: &mut UpdateContext<'_, 'gc>, event_type: S) -> Object<'gc>
+    pub fn bare_default_event<S>(context: &mut UpdateContext<'gc>, event_type: S) -> Object<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
@@ -66,7 +72,7 @@ impl<'gc> EventObject<'gc> {
     /// It's just slightly faster and doesn't require an Activation.
     /// Note that if you need an Event subclass, you need to construct it via .construct().
     pub fn bare_event<S>(
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         event_type: S,
         bubbles: bool,
         cancelable: bool,
@@ -81,14 +87,13 @@ impl<'gc> EventObject<'gc> {
         event.set_bubbles(bubbles);
         event.set_cancelable(cancelable);
 
-        let event_object = EventObject(GcCell::new(
+        let event_object = EventObject(Gc::new(
             context.gc_context,
-            EventObjectData { base, event },
+            EventObjectData {
+                base,
+                event: RefLock::new(event),
+            },
         ));
-
-        // not needed, as base Event has no instance slots.
-        // yes, this is flimsy. Could call this if install_instance_slots only took gc_context.
-        // event_object.install_instance_slots(activation);
 
         event_object.into()
     }
@@ -100,11 +105,12 @@ impl<'gc> EventObject<'gc> {
         related_object: Option<InteractiveObject<'gc>>,
         delta: i32,
         bubbles: bool,
+        button: MouseButton,
     ) -> Object<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
-        let local = target.local_mouse_position(&activation.context);
+        let local = target.local_mouse_position(activation.context);
 
         let event_type: AvmString<'gc> = event_type.into();
 
@@ -130,19 +136,82 @@ impl<'gc> EventObject<'gc> {
                     activation
                         .context
                         .input
-                        .is_key_down(KeyCode::Control)
+                        .is_key_down(KeyCode::CONTROL)
                         .into(),
                     // altKey
-                    activation.context.input.is_key_down(KeyCode::Alt).into(),
+                    activation.context.input.is_key_down(KeyCode::ALT).into(),
                     // shiftKey
-                    activation.context.input.is_key_down(KeyCode::Shift).into(),
+                    activation.context.input.is_key_down(KeyCode::SHIFT).into(),
                     // buttonDown
-                    activation.context.input.is_mouse_down().into(),
+                    activation.context.input.is_key_down(button.into()).into(),
                     // delta
                     delta.into(),
                 ],
             )
             .unwrap() // we don't expect to break here
+    }
+
+    pub fn mouse_event_down(
+        activation: &mut Activation<'_, 'gc>,
+        target: DisplayObject<'gc>,
+        button: MouseButton,
+    ) -> Object<'gc> {
+        Self::mouse_event(
+            activation,
+            match button {
+                MouseButton::Left => "mouseDown",
+                MouseButton::Right => "rightMouseDown",
+                MouseButton::Middle => "middleMouseDown",
+                MouseButton::Unknown => unreachable!(),
+            },
+            target,
+            None,
+            0,
+            true,
+            button,
+        )
+    }
+
+    pub fn mouse_event_up(
+        activation: &mut Activation<'_, 'gc>,
+        target: DisplayObject<'gc>,
+        button: MouseButton,
+    ) -> Object<'gc> {
+        Self::mouse_event(
+            activation,
+            match button {
+                MouseButton::Left => "mouseUp",
+                MouseButton::Right => "rightMouseUp",
+                MouseButton::Middle => "middleMouseUp",
+                MouseButton::Unknown => unreachable!(),
+            },
+            target,
+            None,
+            0,
+            true,
+            button,
+        )
+    }
+
+    pub fn mouse_event_click(
+        activation: &mut Activation<'_, 'gc>,
+        target: DisplayObject<'gc>,
+        button: MouseButton,
+    ) -> Object<'gc> {
+        Self::mouse_event(
+            activation,
+            match button {
+                MouseButton::Left => "click",
+                MouseButton::Right => "rightClick",
+                MouseButton::Middle => "middleClick",
+                MouseButton::Unknown => unreachable!(),
+            },
+            target,
+            None,
+            0,
+            true,
+            button,
+        )
     }
 
     pub fn text_event<S>(
@@ -211,19 +280,83 @@ impl<'gc> EventObject<'gc> {
             )
             .unwrap() // we don't expect to break here
     }
+
+    pub fn progress_event<S>(
+        activation: &mut Activation<'_, 'gc>,
+        event_type: S,
+        bytes_loaded: u64,
+        bytes_total: u64,
+        bubbles: bool,
+        cancelable: bool,
+    ) -> Object<'gc>
+    where
+        S: Into<AvmString<'gc>>,
+    {
+        let event_type: AvmString<'gc> = event_type.into();
+
+        let progress_event_cls = activation.avm2().classes().progressevent;
+        progress_event_cls
+            .construct(
+                activation,
+                &[
+                    event_type.into(),
+                    // bubbles
+                    bubbles.into(),
+                    // cancelable
+                    cancelable.into(),
+                    // bytesLoaded
+                    (bytes_loaded as f64).into(),
+                    // bytesToal
+                    (bytes_total as f64).into(),
+                ],
+            )
+            .unwrap() // we don't expect to break here
+    }
+
+    pub fn focus_event<S>(
+        activation: &mut Activation<'_, 'gc>,
+        event_type: S,
+        cancelable: bool,
+        related_object: Option<InteractiveObject<'gc>>,
+        key_code: u32,
+    ) -> Object<'gc>
+    where
+        S: Into<AvmString<'gc>>,
+    {
+        let event_type: AvmString<'gc> = event_type.into();
+        let shift_key = activation.context.input.is_key_down(KeyCode::SHIFT);
+
+        let class = activation.avm2().classes().focusevent;
+        class
+            .construct(
+                activation,
+                &[
+                    event_type.into(),
+                    true.into(),
+                    cancelable.into(),
+                    related_object
+                        .map(|o| o.as_displayobject().object2())
+                        .unwrap_or(Value::Null),
+                    shift_key.into(),
+                    key_code.into(),
+                    "none".into(), // TODO implement direction
+                ],
+            )
+            .unwrap()
+    }
 }
 
 impl<'gc> TObject<'gc> for EventObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        Ref::map(self.0.read(), |read| &read.base)
-    }
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        RefMut::map(self.0.write(mc), |write| &mut write.base)
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.as_ptr() as *const ObjectPtr
+        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
     fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
@@ -231,29 +364,20 @@ impl<'gc> TObject<'gc> for EventObject<'gc> {
     }
 
     fn as_event(&self) -> Option<Ref<Event<'gc>>> {
-        Some(Ref::map(self.0.read(), |d| &d.event))
+        Some(self.0.event.borrow())
     }
 
     fn as_event_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<Event<'gc>>> {
-        Some(RefMut::map(self.0.write(mc), |d| &mut d.event))
+        Some(unlock!(Gc::write(mc, self.0), EventObjectData, event).borrow_mut())
     }
 }
 
 impl<'gc> Debug for EventObject<'gc> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self.0.try_read() {
-            Ok(obj) => f
-                .debug_struct("EventObject")
-                .field("type", &obj.event.event_type())
-                .field("class", &obj.base.debug_class_name())
-                .field("ptr", &self.0.as_ptr())
-                .finish(),
-            Err(err) => f
-                .debug_struct("EventObject")
-                .field("type", &err)
-                .field("class", &err)
-                .field("ptr", &self.0.as_ptr())
-                .finish(),
-        }
+        f.debug_struct("EventObject")
+            .field("type", &self.0.event.borrow().event_type())
+            .field("class", &self.base().debug_class_name())
+            .field("ptr", &Gc::as_ptr(self.0))
+            .finish()
     }
 }

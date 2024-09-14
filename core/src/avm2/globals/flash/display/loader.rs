@@ -3,6 +3,7 @@
 use indexmap::IndexMap;
 
 use crate::avm2::activation::Activation;
+use crate::avm2::error::make_error_2007;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;
@@ -16,6 +17,7 @@ use crate::avm2_stub_method;
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::display_object::LoaderDisplay;
 use crate::display_object::MovieClip;
+use crate::loader::LoadManager;
 use crate::loader::MovieLoaderVMData;
 use crate::tag_utils::SwfMovie;
 use std::sync::Arc;
@@ -62,12 +64,6 @@ pub fn load<'gc>(
     let url_request = args.get_object(activation, 0, "request")?;
     let context = args.try_get_object(activation, 1);
 
-    // This is a dummy MovieClip, which will get overwritten in `Loader`
-    let content = MovieClip::new(
-        Arc::new(SwfMovie::empty(activation.context.swf.version())),
-        activation.context.gc_context,
-    );
-
     let loader_info = this
         .get_property(
             &Multiname::new(
@@ -78,6 +74,28 @@ pub fn load<'gc>(
         )?
         .as_object()
         .unwrap();
+
+    let loader_info_object = loader_info.as_loader_info_object().unwrap();
+
+    if loader_info_object.init_event_fired() {
+        // FIXME: When calling load/loadBytes, then calling load/loadBytes again
+        // before the `init` event is fired, the first load is cancelled.
+        avm2_stub_method!(
+            activation,
+            "flash.display.Loader",
+            "load",
+            "reusing a Loader"
+        );
+    }
+
+    // Unload the loader, in case something was already loaded.
+    loader_info_object.unload(activation);
+
+    // This is a dummy MovieClip, which will get overwritten in `Loader`
+    let content = MovieClip::new(
+        Arc::new(SwfMovie::empty(activation.context.swf.version())),
+        activation.context.gc_context,
+    );
 
     // Update the LoaderStream - we still have a fake SwfMovie, but we now have the real target clip.
     loader_info
@@ -120,10 +138,10 @@ pub fn request_from_url_request<'gc>(
     // FIXME: set `followRedirects`  and `userAgent`
     // from the `URLRequest`
 
-    let mut url = url_request
-        .get_public_property("url", activation)?
-        .coerce_to_string(activation)?
-        .to_string();
+    let mut url = match url_request.get_public_property("url", activation)? {
+        Value::Null => return Err(make_error_2007(activation, "url")),
+        url => url.coerce_to_string(activation)?.to_string(),
+    };
 
     let method = url_request
         .get_public_property("method", activation)?
@@ -157,9 +175,8 @@ pub fn request_from_url_request<'gc>(
         string_headers.insert(name, value);
     }
 
-    // TODO: URLRequest.method should not be able to have invalid types.
-    // We should throw an error there on set.
-    let method = NavigationMethod::from_method_str(&method).unwrap_or(NavigationMethod::Get);
+    let method =
+        NavigationMethod::from_method_str(&method).expect("URLRequest should have a valid method");
     let data = url_request.get_public_property("data", activation)?;
     let body = match (method, data) {
         (_, Value::Null | Value::Undefined) => None,
@@ -207,14 +224,8 @@ pub fn load_bytes<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let arg0 = args.get_object(activation, 0, "data")?;
-    let bytearray = arg0.as_bytearray().unwrap();
+    let bytes = arg0.as_bytearray().unwrap().bytes().to_vec();
     let context = args.try_get_object(activation, 1);
-
-    // This is a dummy MovieClip, which will get overwritten in `Loader`
-    let content = MovieClip::new(
-        Arc::new(SwfMovie::empty(activation.context.swf.version())),
-        activation.context.gc_context,
-    );
 
     let loader_info = this
         .get_property(
@@ -227,19 +238,46 @@ pub fn load_bytes<'gc>(
         .as_object()
         .unwrap();
 
-    let future = activation.context.load_manager.load_movie_into_clip_bytes(
-        activation.context.player.clone(),
+    let loader_info_object = loader_info.as_loader_info_object().unwrap();
+
+    if loader_info_object.init_event_fired() {
+        // FIXME: When calling load/loadBytes, then calling load/loadBytes again
+        // before the `init` event is fired, the first load is cancelled.
+        avm2_stub_method!(
+            activation,
+            "flash.display.Loader",
+            "loadBytes",
+            "reusing a Loader"
+        );
+    }
+
+    // Unload the loader, in case something was already loaded.
+    loader_info_object.unload(activation);
+
+    // This is a dummy MovieClip, which will get overwritten in `Loader`
+    let content = MovieClip::new(
+        Arc::new(SwfMovie::empty(activation.context.swf.version())),
+        activation.context.gc_context,
+    );
+
+    let default_domain = activation
+        .caller_domain()
+        .expect("Missing caller domain in Loader.loadBytes");
+
+    if let Err(e) = LoadManager::load_movie_into_clip_bytes(
+        activation.context,
         content.into(),
-        bytearray.bytes().to_vec(),
+        bytes,
         MovieLoaderVMData::Avm2 {
             loader_info,
             context,
-            default_domain: activation
-                .caller_domain()
-                .expect("Missing caller domain in Loader.loadBytes"),
+            default_domain,
         },
-    );
-    activation.context.navigator.spawn_future(future);
+    ) {
+        return Err(Error::RustError(
+            format!("Error in Loader.loadBytes: {e:?}").into(),
+        ));
+    }
 
     Ok(Value::Undefined)
 }
@@ -249,13 +287,8 @@ pub fn unload<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // TODO: Broadcast an "unload" event on the LoaderInfo and reset LoaderInfo properties
+    // TODO: Broadcast an "unload" event on the LoaderInfo
     avm2_stub_method!(activation, "flash.display.Loader", "unload");
-    let _ = crate::avm2::globals::flash::display::display_object_container::remove_child_at(
-        activation,
-        this,
-        &[0.into()],
-    );
 
     let loader_info = this
         .get_property(

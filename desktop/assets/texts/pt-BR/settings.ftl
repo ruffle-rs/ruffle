@@ -3,16 +3,17 @@ player-settings = Configurações do Reprodutor
 movie-parameters = Parâmetros do Filme
 custom-base-url = URL Base personalizada
 spoof-swf-url = Disfarçar URL do SWF
+referer-url = URL de referência
+cookie = Cookie
 proxy = Proxy
 upgrade-http = Atualizar HTTP para HTTPS
-upgrade-http-check = Atualizar
 tcp-connections = Conexões TCP
 tcp-connections-allow = Permitir
 tcp-connections-ask = Perguntar
 tcp-connections-deny = Recusar
 open-url-mode = Abrir Links
 open-url-mode-allow = Autorizar
-open-url-mode-confirm = Confirmar
+open-url-mode-confirm = Perguntar
 open-url-mode-deny = Recusar
 load-behavior = Comportamento de Carregamento
 load-behavior-streaming = Transmissão
@@ -45,13 +46,29 @@ align-top-right = Superior-Direito
 align-bottom-right = Inferior-Direito
 align-force = Forçar
 scale-mode = Modo de Escala
-scale-mode-exactfit = Ajuste Exato
-scale-mode-noborder = Sem Borda
-scale-mode-noscale = Nenhuma Escala
-scale-mode-showall = Mostrar tudo
+scale-mode-noscale = Sem escala (100%)
+scale-mode-noscale-tooltip =
+    Exibe o filme em seu tamanho original, sem qualquer ampliação.
+    
+    Corresponde a StageScaleMode.NO_SCALE
+scale-mode-showall = Enquadrar
+scale-mode-showall-tooltip =
+    Amplia o filme para preencher a janela o máximo possível sem cortes, mantendo a proporção.
+    
+    Corresponde a StageScaleMode.SHOW_ALL
+scale-mode-exactfit = Esticar
+scale-mode-exactfit-tooltip =
+    Garante que o filme preencha a janela inteira, desconsiderando a proporção de aspecto.
+    
+    Corresponde a StageScaleMode.EXACT_FIT
+scale-mode-noborder = Cortar
+scale-mode-noborder-tooltip =
+    Preenche a janela inteira, mantendo a proporção de aspecto, cortando o filme se necessário.
+    
+    Corresponde a StageScaleMode.NO_BORDER
 scale-mode-force = Forçar
+scale-mode-force-tooltip = Evita que o filme altere o modo de escala, bloqueando-o na configuração selecionada.
 player-version = Versão do Reprodutor
 custom-framerate = Taxa de quadros personalizada
 custom-framerate-suffix = { " " } fps
 dummy-external-interface = Interface Externa Fictícia
-dummy-external-interface-check = Habilitar

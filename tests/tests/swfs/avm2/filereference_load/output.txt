@@ -1,0 +1,32 @@
+select event
+file.name: test.txt
+file.size: 13
+file.data: null
+
+open event
+file.name: test.txt
+file.size: 13
+file.data: null
+
+progress event
+0 / 13
+file.name: test.txt
+file.size: 13
+file.data: null
+
+open event
+file.name: test.txt
+file.size: 13
+file.data: null
+
+progress event
+13 / 13
+file.name: test.txt
+file.size: 13
+file.data: null
+
+complete event
+file.name: test.txt
+file.size: 13
+file.data: Hello, World!
+

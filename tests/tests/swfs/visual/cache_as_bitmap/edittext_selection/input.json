@@ -1,0 +1,8 @@
+[
+  { "type": "Wait" },
+  { "type": "Wait" },
+  { "type": "TextControl", "code": "MoveLeft" },
+  { "type": "TextControl", "code": "MoveRight" },
+  { "type": "TextControl", "code": "MoveRight" },
+  { "type": "Wait" }
+]

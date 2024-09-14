@@ -1,0 +1,13 @@
+num_ticks = 8
+
+image_comparisons."output.01.tab".trigger = 1
+image_comparisons."output.02.move".trigger = 2
+image_comparisons."output.03.left_down".trigger = 3
+image_comparisons."output.04.left_up".trigger = 4
+image_comparisons."output.05.right_down".trigger = 5
+image_comparisons."output.06.right_up".trigger = 6
+image_comparisons."output.07.middle_down".trigger = 7
+image_comparisons."output.08.middle_up".trigger = 8
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }

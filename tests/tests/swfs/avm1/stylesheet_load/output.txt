@@ -1,0 +1,49 @@
+/// Load valid
+true
+styleSheet.parse()
+onLoad(true)
+styleSheet.getStyle("a") = {
+    "color" = string "blue "
+}
+styleSheet.getStyle("b") = {
+    "color" = string "red "
+}
+styleSheet.getStyle("nonexistant") = null
+
+/// Load valid2 (merged or not?)
+true
+styleSheet.parse()
+onLoad(true)
+styleSheet.getStyle("a") = {
+    "fontStyle" = string "italic "
+}
+styleSheet.getStyle("b") = {
+    "color" = string "red "
+}
+styleSheet.getStyle("nonexistant") = null
+
+/// Load invalid
+true
+styleSheet.parse()
+onLoad(false)
+styleSheet.getStyle("a") = {
+    "fontStyle" = string "italic "
+}
+styleSheet.getStyle("b") = {
+    "color" = string "red "
+}
+styleSheet.getStyle("nonexistant") = null
+
+/// Load non existant
+true
+onLoad(false)
+styleSheet.getStyle("a") = {
+    "fontStyle" = string "italic "
+}
+styleSheet.getStyle("b") = {
+    "color" = string "red "
+}
+styleSheet.getStyle("nonexistant") = null
+
+/// Load no value
+false

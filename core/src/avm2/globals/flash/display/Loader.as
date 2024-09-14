@@ -29,6 +29,7 @@ package flash.display {
 
 		public function unloadAndStop(gc:Boolean = true):void {
 			stub_method("flash.display.Loader", "unloadAndStop");
+			this.unload();
 		}
 		
 		public function close():void {

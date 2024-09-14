@@ -160,10 +160,10 @@ impl<'gc> Value<'gc> {
     /// we are aware, version-gated:
     ///
     /// * In SWF6 and lower, `undefined` is coerced to `0.0` (like `false`)
-    /// rather than `NaN` as required by spec.
+    ///   rather than `NaN` as required by spec.
     /// * In SWF5 and lower, hexadecimal is unsupported.
     /// * In SWF4 and lower, `0.0` is returned rather than `NaN` if a string cannot
-    /// be converted to a number.
+    ///   be converted to a number.
     fn primitive_as_number(&self, activation: &mut Activation<'_, 'gc>) -> f64 {
         match self {
             Value::Undefined if activation.swf_version() < 7 => 0.0,

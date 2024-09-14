@@ -6,6 +6,7 @@
 package flash.display3D
 {
 
+    [API("674")]
     public final class Context3DRenderMode
     {
         // Automatically choose rendering engine.

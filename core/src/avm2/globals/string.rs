@@ -2,16 +2,15 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
+use crate::avm2::error::make_error_1004;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
 use crate::avm2::regexp::RegExpFlags;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::Multiname;
 use crate::avm2::QName;
 use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::string::{AvmString, WString};
-use gc_arena::GcCell;
 
 // All of these methods will be defined as both
 // AS3 instance methods and methods on the `String` class prototype.
@@ -77,7 +76,8 @@ pub fn class_init<'gc>(
                 Method::from_builtin(*method, name, gc_context),
                 scope,
                 None,
-                Some(this_class),
+                None,
+                None,
             )
             .into(),
             activation,
@@ -129,11 +129,14 @@ fn char_at<'gc>(
         }
 
         let index = if !n.is_nan() { n as usize } else { 0 };
-        let ret = s
-            .get(index)
-            .map(WString::from_unit)
-            .map(|s| AvmString::new(activation.context.gc_context, s))
-            .unwrap_or_default();
+        let ret = if let Some(c) = s.get(index) {
+            activation
+                .context
+                .interner
+                .get_char(activation.context.gc_context, c)
+        } else {
+            activation.context.interner.empty()
+        };
         return Ok(ret.into());
     }
 
@@ -170,13 +173,15 @@ fn concat<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mut ret = WString::from(Value::from(this).coerce_to_string(activation)?.as_wstr());
+    let lhs = Value::from(this).coerce_to_string(activation)?;
+
+    let mut ret = lhs;
     for arg in args {
         let s = arg.coerce_to_string(activation)?;
-        ret.push_str(&s);
+        ret = AvmString::concat(activation.context.gc_context, ret, s);
     }
 
-    Ok(AvmString::new(activation.context.gc_context, ret).into())
+    Ok(ret.into())
 }
 
 /// Implements `String.fromCharCode`
@@ -445,8 +450,11 @@ fn slice<'gc>(
     };
 
     if start_index < end_index {
-        let ret = WString::from(&this[start_index..end_index]);
-        Ok(AvmString::new(activation.context.gc_context, ret).into())
+        Ok(activation
+            .context
+            .interner
+            .substring(activation.context.gc_context, this, start_index, end_index)
+            .into())
     } else {
         Ok("".into())
     }
@@ -483,10 +491,12 @@ fn split<'gc>(
         this.iter()
             .take(limit)
             .map(|c| {
-                Value::from(AvmString::new(
-                    activation.context.gc_context,
-                    WString::from_unit(c),
-                ))
+                Value::from(
+                    activation
+                        .context
+                        .interner
+                        .get_char(activation.context.gc_context, c),
+                )
             })
             .collect()
     } else {
@@ -526,6 +536,12 @@ fn substr<'gc>(
         .unwrap_or(&Value::Number(0x7fffffff as f64))
         .coerce_to_number(activation)?;
 
+    let len = if len.is_nan() {
+        0.0
+    } else {
+        len.min(0x7fffffff as f64)
+    };
+
     let len = if len < 0. {
         if len.is_infinite() {
             0.
@@ -542,14 +558,13 @@ fn substr<'gc>(
         len
     };
 
-    let end_index = if len == f64::INFINITY {
-        this.len()
-    } else {
-        this.len().min(start_index + len as usize)
-    };
+    let end_index = this.len().min(start_index + len as usize);
 
-    let ret = WString::from(&this[start_index..end_index]);
-    return Ok(AvmString::new(activation.context.gc_context, ret).into());
+    Ok(activation
+        .context
+        .interner
+        .substring(activation.context.gc_context, this, start_index, end_index)
+        .into())
 }
 
 /// Implements `String.substring`
@@ -583,8 +598,11 @@ fn substring<'gc>(
         std::mem::swap(&mut end_index, &mut start_index);
     }
 
-    let ret = WString::from(&this[start_index..end_index]);
-    return Ok(AvmString::new(activation.context.gc_context, ret).into());
+    Ok(activation
+        .context
+        .interner
+        .substring(activation.context.gc_context, this, start_index, end_index)
+        .into())
 }
 
 /// Implements `String.toLowerCase`
@@ -605,9 +623,9 @@ fn to_lower_case<'gc>(
     .into())
 }
 
-/// Implements `String.toString`
+/// Implements `String.prototype.toString`
 fn to_string<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -617,7 +635,12 @@ fn to_string<'gc>(
         }
     }
 
-    Ok("".into())
+    let string_proto = activation.avm2().classes().string.prototype();
+    if Object::ptr_eq(string_proto, this) {
+        return Ok("".into());
+    }
+
+    Err(make_error_1004(activation, "String.prototype.toString"))
 }
 
 /// Implements `String.valueOf`
@@ -647,47 +670,74 @@ fn to_upper_case<'gc>(
     .into())
 }
 
+#[cfg(feature = "test_only_as3")]
+fn is_dependent<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(prim) = this.as_primitive() {
+        if let Value::String(s) = *prim {
+            return Ok(s.is_dependent().into());
+        }
+    }
+    panic!();
+}
+
 /// Construct `String`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     let mc = activation.context.gc_context;
     let class = Class::new(
         QName::new(activation.avm2().public_namespace_base_version, "String"),
-        Some(Multiname::new(
-            activation.avm2().public_namespace_base_version,
-            "Object",
-        )),
+        Some(activation.avm2().class_defs().object),
         Method::from_builtin(instance_init, "<String instance initializer>", mc),
         Method::from_builtin(class_init, "<String class initializer>", mc),
+        activation.avm2().class_defs().class,
         mc,
     );
 
-    let mut write = class.write(mc);
-    write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
-    write.set_instance_allocator(primitive_allocator);
-    write.set_call_handler(Method::from_builtin(
-        call_handler,
-        "<String call handler>",
+    class.set_attributes(mc, ClassAttributes::FINAL | ClassAttributes::SEALED);
+    class.set_instance_allocator(mc, primitive_allocator);
+    class.set_call_handler(
         mc,
-    ));
+        Method::from_builtin(call_handler, "<String call handler>", mc),
+    );
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,
         Option<NativeMethodImpl>,
         Option<NativeMethodImpl>,
     )] = &[("length", Some(length), None)];
-    write.define_builtin_instance_properties(
+    class.define_builtin_instance_properties(
         mc,
         activation.avm2().public_namespace_base_version,
         PUBLIC_INSTANCE_PROPERTIES,
     );
-    write.define_builtin_instance_methods(
+    class.define_builtin_instance_methods(
         mc,
         activation.avm2().as3_namespace,
         PUBLIC_INSTANCE_AND_PROTO_METHODS,
     );
 
+    #[cfg(feature = "test_only_as3")]
+    {
+        use crate::avm2::api_version::ApiVersion;
+        use crate::avm2::namespace::Namespace;
+
+        const TEST_METHODS: &[(&str, NativeMethodImpl)] = &[("isDependent", is_dependent)];
+        class.define_builtin_instance_methods(
+            mc,
+            Namespace::package(
+                "__ruffle__",
+                ApiVersion::AllVersions,
+                &mut activation.borrow_gc(),
+            ),
+            TEST_METHODS,
+        );
+    }
+
     const CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
-    write.define_constant_int_class_traits(
+    class.define_constant_int_class_traits(
         activation.avm2().public_namespace_base_version,
         CONSTANTS_INT,
         activation,
@@ -695,12 +745,24 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
 
     const AS3_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("fromCharCode", from_char_code)];
     const PUBLIC_CLASS_METHODS: &[(&str, NativeMethodImpl)] = &[("fromCharCode", from_char_code)];
-    write.define_builtin_class_methods(mc, activation.avm2().as3_namespace, AS3_CLASS_METHODS);
-    write.define_builtin_class_methods(
+    class.define_builtin_class_methods(mc, activation.avm2().as3_namespace, AS3_CLASS_METHODS);
+    class.define_builtin_class_methods(
         mc,
         activation.avm2().public_namespace_base_version,
         PUBLIC_CLASS_METHODS,
     );
+
+    class.mark_traits_loaded(activation.context.gc_context);
+    class
+        .init_vtable(activation.context)
+        .expect("Native class's vtable should initialize");
+
+    let c_class = class.c_class().expect("Class::new returns an i_class");
+
+    c_class.mark_traits_loaded(activation.context.gc_context);
+    c_class
+        .init_vtable(activation.context)
+        .expect("Native class's vtable should initialize");
 
     class
 }

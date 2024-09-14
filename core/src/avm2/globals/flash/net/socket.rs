@@ -43,7 +43,7 @@ pub fn connect<'gc>(
 
     let UpdateContext {
         sockets, navigator, ..
-    } = &mut activation.context;
+    } = activation.context;
 
     sockets.connect_avm2(*navigator, socket, host.to_utf8_lossy().into_owned(), port);
 
@@ -88,7 +88,7 @@ pub fn close<'gc>(
             return Err(invalid_socket_error(activation));
         }
 
-        let UpdateContext { sockets, .. } = &mut activation.context;
+        let UpdateContext { sockets, .. } = activation.context;
 
         sockets.close(handle)
     }
@@ -152,7 +152,7 @@ pub fn get_connected<'gc>(
         None => return Ok(Value::Undefined),
     };
 
-    let UpdateContext { sockets, .. } = &mut activation.context;
+    let UpdateContext { sockets, .. } = activation.context;
 
     let handle = match socket.handle() {
         Some(handle) => handle,
@@ -202,7 +202,7 @@ pub fn flush<'gc>(
             return Err(invalid_socket_error(activation));
         }
 
-        let UpdateContext { sockets, .. } = &mut activation.context;
+        let UpdateContext { sockets, .. } = activation.context;
 
         let mut buffer = socket.write_buffer();
         let len = buffer.len();
@@ -266,7 +266,7 @@ pub fn read_bytes<'gc>(
             .map_err(|e| e.to_avm(activation))?;
 
         let mut ba_write = bytearray
-            .as_bytearray_mut(activation.gc())
+            .as_bytearray_mut()
             .expect("Parameter must be a bytearray!");
 
         ba_write

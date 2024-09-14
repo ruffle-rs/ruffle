@@ -1,5 +1,3 @@
-// vim:syntax=javascript
-
 class Column extends MovieClip
 {
     function attachIcon(n : Number, initObject : Object) {

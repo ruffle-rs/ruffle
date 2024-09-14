@@ -16,7 +16,7 @@ impl Default for TestLogBackend {
 }
 
 impl TestLogBackend {
-    pub fn trace_output(self) -> String {
+    pub fn trace_output(&self) -> String {
         self.trace_output.take()
     }
 }

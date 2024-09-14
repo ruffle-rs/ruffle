@@ -1,5 +1,5 @@
+use crate::test::Font;
 use chrono::{DateTime, Utc};
-use image::EncodableLayout;
 use ruffle_core::backend::ui::{
     DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter, FontDefinition,
     FullscreenError, LanguageIdentifier, MouseCursor, UiBackend, US_ENGLISH,
@@ -13,6 +13,7 @@ use url::Url;
 pub struct TestFileDialogResult {
     canceled: bool,
     file_name: Option<String>,
+    contents: Vec<u8>,
 }
 
 impl TestFileDialogResult {
@@ -20,6 +21,7 @@ impl TestFileDialogResult {
         Self {
             canceled: true,
             file_name: None,
+            contents: Vec::new(),
         }
     }
 
@@ -27,6 +29,7 @@ impl TestFileDialogResult {
         Self {
             canceled: false,
             file_name: Some(file_name),
+            contents: b"Hello, World!".to_vec(),
         }
     }
 }
@@ -45,28 +48,24 @@ impl FileDialogResult for TestFileDialogResult {
     }
 
     fn file_name(&self) -> Option<String> {
-        (!self.is_cancelled()).then(|| self.file_name.clone().unwrap())
+        self.file_name.clone()
     }
 
     fn size(&self) -> Option<u64> {
-        None
+        Some(self.contents.len() as u64)
     }
 
     fn file_type(&self) -> Option<String> {
         (!self.is_cancelled()).then(|| ".txt".to_string())
     }
 
-    fn creator(&self) -> Option<String> {
-        None
-    }
-
     fn contents(&self) -> &[u8] {
-        b"Hello, World!".as_bytes()
+        &self.contents
     }
 
-    fn write(&self, _data: &[u8]) {}
-
-    fn refresh(&mut self) {}
+    fn write_and_refresh(&mut self, data: &[u8]) {
+        self.contents = data.to_vec();
+    }
 }
 
 /// This is an implementation of [`UiBackend`], designed for use in tests
@@ -76,8 +75,20 @@ impl FileDialogResult for TestFileDialogResult {
 ///   otherwise a user cancellation will be simulated
 /// * Attempting to display a file save dialog with a file name hint of "debug-success.txt" will simulate successfully selecting a destination
 ///   otherwise a user cancellation will be simulated
-#[derive(Default)]
-pub struct TestUiBackend;
+/// * Simulated in-memory clipboard
+pub struct TestUiBackend {
+    fonts: Vec<Font>,
+    clipboard: String,
+}
+
+impl TestUiBackend {
+    pub fn new(fonts: Vec<Font>) -> Self {
+        Self {
+            fonts,
+            clipboard: "".to_string(),
+        }
+    }
+}
 
 impl UiBackend for TestUiBackend {
     fn mouse_visible(&self) -> bool {
@@ -89,34 +100,52 @@ impl UiBackend for TestUiBackend {
     fn set_mouse_cursor(&mut self, _cursor: MouseCursor) {}
 
     fn clipboard_content(&mut self) -> String {
-        "".to_string()
+        self.clipboard.clone()
     }
 
-    fn set_clipboard_content(&mut self, _content: String) {}
+    fn set_clipboard_content(&mut self, content: String) {
+        self.clipboard = content;
+    }
 
     fn set_fullscreen(&mut self, _is_full: bool) -> Result<(), FullscreenError> {
         Ok(())
     }
 
-    fn display_root_movie_download_failed_message(&self) {}
+    fn display_root_movie_download_failed_message(&self, _invalid_swf: bool) {}
 
     fn message(&self, _message: &str) {}
 
     fn open_virtual_keyboard(&self) {}
 
-    fn language(&self) -> &LanguageIdentifier {
-        &US_ENGLISH
+    fn close_virtual_keyboard(&self) {}
+
+    fn language(&self) -> LanguageIdentifier {
+        US_ENGLISH.clone()
     }
 
     fn display_unsupported_video(&self, _url: Url) {}
 
     fn load_device_font(
         &self,
-        _name: &str,
-        _is_bold: bool,
-        _is_italic: bool,
-        _register: &mut dyn FnMut(FontDefinition),
+        name: &str,
+        is_bold: bool,
+        is_italic: bool,
+        register: &mut dyn FnMut(FontDefinition),
     ) {
+        for font in &self.fonts {
+            if font.family != name || font.bold != is_bold || font.italic != is_italic {
+                continue;
+            }
+
+            register(FontDefinition::FontFile {
+                name: name.to_owned(),
+                is_bold,
+                is_italic,
+                data: font.bytes.clone(),
+                index: 0,
+            });
+            break;
+        }
     }
 
     fn display_file_open_dialog(&mut self, filters: Vec<FileFilter>) -> Option<DialogResultFuture> {

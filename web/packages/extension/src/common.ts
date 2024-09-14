@@ -5,6 +5,8 @@ export interface Options extends BaseLoadOptions {
     ruffleEnable: boolean;
     ignoreOptout: boolean;
     autostart: boolean;
+    showReloadButton: boolean;
+    swfTakeover: boolean;
 }
 
 interface OptionElement<T> {
@@ -156,6 +158,7 @@ export async function bindOptions(
         // Prevent transition on load.
         // Method from https://stackoverflow.com/questions/11131875.
         element.label.classList.add("notransition");
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
         element.label.offsetHeight; // Trigger a reflow, flushing the CSS changes.
         element.label.classList.remove("notransition");
 
@@ -199,5 +202,12 @@ export async function bindOptions(
 }
 
 export async function resetOptions(): Promise<void> {
-    utils.storage.sync.clear();
+    // This setting is consistent for the browser in use and should not change
+    const data = await utils.storage.sync.get({
+        responseHeadersUnsupported: false,
+    });
+    await utils.storage.sync.clear();
+    if (data["responseHeadersUnsupported"]) {
+        utils.storage.sync.set({ responseHeadersUnsupported: true });
+    }
 }

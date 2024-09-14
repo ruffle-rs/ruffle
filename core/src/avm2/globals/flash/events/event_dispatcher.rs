@@ -19,7 +19,7 @@ fn dispatch_list<'gc>(
     )? {
         Value::Object(o) => Ok(o),
         _ => {
-            let dispatch_list = DispatchObject::empty_list(activation.context.gc_context);
+            let dispatch_list = DispatchObject::empty_list(activation);
             this.init_property(
                 &Multiname::new(activation.avm2().flash_events_internal, "_dispatchList"),
                 dispatch_list.into(),
@@ -51,7 +51,7 @@ pub fn add_event_listener<'gc>(
         .ok_or_else(|| Error::from("Internal properties should have what I put in them"))?
         .add_event_listener(event_type, priority, listener, use_capture);
 
-    Avm2::register_broadcast_listener(&mut activation.context, this, event_type);
+    Avm2::register_broadcast_listener(activation.context, this, event_type);
 
     Ok(Value::Undefined)
 }
@@ -139,7 +139,9 @@ pub fn dispatch_event<'gc>(
         return Err("Dispatched Events must be subclasses of Event.".into());
     }
 
-    Ok(dispatch_event_internal(activation, this, event)?.into())
+    dispatch_event_internal(activation, this, event, false)?;
+    let not_canceled = !event.as_event().unwrap().is_cancelled();
+    Ok(not_canceled.into())
 }
 
 /// Implements `EventDispatcher.toString`.

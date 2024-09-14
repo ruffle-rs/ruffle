@@ -9,8 +9,8 @@ use crate::string::{SwfStr, WINDOWS_1252};
 use crate::tag_code::TagCode;
 use crate::types::*;
 use crate::write::write_swf;
+use std::borrow::Cow;
 use std::fs::File;
-use std::vec::Vec;
 
 #[allow(dead_code)]
 pub fn echo_swf(filename: &str) {
@@ -165,9 +165,9 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 format: BitmapFormat::Rgb32,
                 width: 8,
                 height: 8,
-                data: &[
+                data: Cow::Borrowed(&[
                     120, 218, 251, 207, 192, 240, 255, 255, 8, 198, 0, 4, 128, 127, 129,
-                ],
+                ]),
             }),
             read_tag_bytes_from_file(
                 "tests/swfs/DefineBitsLossless.swf",
@@ -182,9 +182,9 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 format: BitmapFormat::Rgb32,
                 width: 8,
                 height: 8,
-                data: &[
+                data: Cow::Borrowed(&[
                     120, 218, 107, 96, 96, 168, 107, 24, 193, 24, 0, 227, 81, 63, 129,
-                ],
+                ]),
             }),
             read_tag_bytes_from_file(
                 "tests/swfs/DefineBitsLossless2.swf",
@@ -2659,11 +2659,11 @@ pub fn avm2_tests() -> Vec<Avm2TestData> {
                 uints: vec![],
                 doubles: vec![],
                 strings: vec![
-                    "".to_string(),
-                    "void".to_string(),
-                    "Avm2Test".to_string(),
-                    "trace".to_string(),
-                    "Test".to_string(),
+                    "".to_string().into_bytes(),
+                    "void".to_string().into_bytes(),
+                    "Avm2Test".to_string().into_bytes(),
+                    "trace".to_string().into_bytes(),
+                    "Test".to_string().into_bytes(),
                 ],
                 namespaces: vec![Namespace::Package(Index::new(1))],
                 namespace_sets: vec![],
@@ -2688,12 +2688,14 @@ pub fn avm2_tests() -> Vec<Avm2TestData> {
                     params: vec![],
                     return_type: Index::new(1),
                     flags: MethodFlags::empty(),
+                    body: Some(Index::new(0)),
                 },
                 Method {
                     name: Index::new(0),
                     params: vec![],
                     return_type: Index::new(0),
                     flags: MethodFlags::empty(),
+                    body: Some(Index::new(1)),
                 },
             ],
             metadata: vec![],

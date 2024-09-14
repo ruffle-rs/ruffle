@@ -16,13 +16,52 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Generate version seal
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: https://registry.npmjs.org
+
+      - name: Install wasm-bindgen
+        run: cargo install wasm-bindgen-cli --version 0.2.93
+
+      # Keep the version number in sync in all workflows,
+      # and in the extension builder Dockerfile!
+      - name: Install wasm-opt
+        uses: sigoden/install-binary@v1
+        with:
+          repo: WebAssembly/binaryen
+          tag: version_119
+          name: wasm-opt
+
+      - name: Install fclones
+        run: cargo install fclones
+
+      - name: Install node packages
+        working-directory: web
+        shell: bash -l {0}
+        run: npm ci
+
+      - name: Seal version data
+        shell: bash -l {0}
+        working-directory: web
         env:
-          ENABLE_VERSION_SEAL: true
-        working-directory: ./web
-        run: |
-          npm install
-          node packages/core/tools/set_version.js
+          ENABLE_VERSION_SEAL: "true"
+        run: npm run version-seal
+
+      - name: Build web normally
+        working-directory: web
+        shell: bash -l {0}
+        env:
+          CARGO_FEATURES: jpegxr
+          WASM_SOURCE: cargo_and_store
+        run: npm run build:repro
 
       - name: Build Docker image with Ruffle in it
         run: docker build --tag ruffle-web-docker -f web/docker/Dockerfile .
@@ -32,6 +71,27 @@ jobs:
 
       - name: Check that the Firefox extension was built
         run: test -f web/docker/docker_builds/packages/extension/dist/firefox_unsigned.xpi
+
+      - name: Compare the two extensions
+        run: |
+          mkdir firefox_extensions
+          mkdir firefox_extensions/docker_build
+          mkdir firefox_extensions/normal_build
+          unzip -d firefox_extensions/normal_build "./web/packages/extension/dist/firefox_unsigned.xpi"
+          unzip -d firefox_extensions/docker_build "./web/docker/docker_builds/packages/extension/dist/firefox_unsigned.xpi"
+          fclones group --unique firefox_extensions/normal_build firefox_extensions/docker_build -o result.txt -f fdupes
+          fclones group --unique firefox_extensions/normal_build firefox_extensions/docker_build -o firefox_extensions/differences.txt
+          cat result.txt
+
+      - name: Check that the comparison was identical
+        run: test ! -s result.txt
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: result
+          path: firefox_extensions/
 
       - name: Notify Discord
         uses: th0th/notify-discord@v0.4.1

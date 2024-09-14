@@ -9,12 +9,9 @@ package flash.display {
     import flash.display.Stage;
     import flash.geom.Point;
     import flash.events.EventDispatcher;
-    
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_setter;
 
     [Ruffle(InstanceAllocator)]
-    [Ruffle(NativeInstanceInit)]
+    [Ruffle(SuperInitializer)]
     public class DisplayObject extends EventDispatcher implements IBitmapDrawable {
         private var _accessibilityProperties:AccessibilityProperties;
 
@@ -61,16 +58,24 @@ package flash.display {
         public native function get rotation():Number;
         public native function set rotation(value:Number):void;
 
+        [API("662")]
         public native function get rotationX():Number;
+        [API("662")]
         public native function set rotationX(value:Number):void;
 
+        [API("662")]
         public native function get rotationY():Number;
+        [API("662")]
         public native function set rotationY(value:Number):void;
 
+        [API("662")]
         public native function get rotationZ():Number;
+        [API("662")]
         public native function set rotationZ(value:Number):void;
 
+        [API("662")]
         public native function get scaleZ():Number;
+        [API("662")]
         public native function set scaleZ(value:Number):void;
 
         public native function get scale9Grid():Rectangle;
@@ -87,6 +92,11 @@ package flash.display {
 
         public native function get visible():Boolean;
         public native function set visible(value:Boolean):void;
+
+        [API("686")]
+        public native function get metaData():Object;
+        [API("686")]
+        public native function set metaData(value:Object):void;
 
         public native function get mouseX():Number;
 

@@ -1,0 +1,5 @@
+num_ticks = 1
+
+[approximations]
+number_patterns = ["angle=([\\d.]+)"]
+epsilon = 0.001

@@ -40,8 +40,8 @@ fn main_vertex(in: VertexInput) -> VertexOutput {
     return VertexOutput(pos, in.uv);
 }
 
-fn unpack_components(packed: u32) -> vec2<u32> {
-    return vec2<u32>(packed >> 8u, packed & 15u);
+fn unpack_components(packed_components: u32) -> vec2<u32> {
+    return vec2<u32>(packed_components >> 8u, packed_components & 15u);
 }
 
 fn get_component(map: vec4<f32>, component: u32) -> f32 {

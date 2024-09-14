@@ -1,3 +1,5 @@
+// nc.isConnected:false
+// nc.isConnected:true
 onStatus update
 level: status
 code: NetStream.Play.Start

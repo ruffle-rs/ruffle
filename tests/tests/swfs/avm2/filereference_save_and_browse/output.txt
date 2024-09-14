@@ -1,0 +1,43 @@
+select event
+file.name: debug-success.txt
+file.data: null
+
+open event
+file.name: debug-success.txt
+file.data: null
+
+progress event
+13 / 13
+file.name: debug-success.txt
+file.data: null
+
+complete event
+file.name: debug-success.txt
+file.data: null
+
+select event 2
+file.name: test.txt
+file.data: null
+
+open event
+file.name: test.txt
+file.data: null
+
+progress event
+0 / 13
+file.name: test.txt
+file.data: null
+
+open event
+file.name: test.txt
+file.data: null
+
+progress event
+13 / 13
+file.name: test.txt
+file.data: null
+
+complete event
+file.name: test.txt
+file.data: Hello, World!
+

@@ -69,7 +69,7 @@ pub fn call_handler<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this_class = activation.subclass_object().unwrap();
+    let this_class = activation.avm2().classes().regexp;
 
     if args.len() == 1 {
         let arg = args.get(0).cloned().unwrap();
