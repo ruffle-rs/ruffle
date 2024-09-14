@@ -242,6 +242,22 @@ dependencies = [
 
 [[package]]
 name = "ashpd"
+version = "0.9.0"
+source = "git+https://github.com/bilelmoussaoui/ashpd.git?rev=34c0ab8f83cd16c3190ecc4cc51021daa531d89b#34c0ab8f83cd16c3190ecc4cc51021daa531d89b"
+dependencies = [
+ "enumflags2",
+ "futures-channel",
+ "futures-util",
+ "rand",
+ "serde",
+ "serde_repr",
+ "tokio",
+ "url",
+ "zbus",
+]
+
+[[package]]
+name = "ashpd"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bfe7e0dd0ac5a401dc116ed9f9119cf9decc625600474cb41f0fc0a0050abc9a"
@@ -4233,7 +4249,7 @@ version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8af382a047821a08aa6bfc09ab0d80ff48d45d8726f7cd8e44891f7cb4a4278e"
 dependencies = [
- "ashpd",
+ "ashpd 0.9.1",
  "block2",
  "js-sys",
  "log",
@@ -4342,6 +4358,7 @@ name = "ruffle_desktop"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "ashpd 0.9.0",
  "bytemuck",
  "chrono",
  "clap",
@@ -5459,8 +5476,10 @@ dependencies = [
  "libc",
  "mio",
  "pin-project-lite",
+ "signal-hook-registry",
  "socket2",
  "tokio-macros",
+ "tracing",
  "windows-sys 0.52.0",
 ]
 
@@ -6842,6 +6861,7 @@ dependencies = [
  "serde_repr",
  "sha1",
  "static_assertions",
+ "tokio",
  "tracing",
  "uds_windows",
  "windows-sys 0.52.0",
