@@ -31,12 +31,12 @@
         </p>
     </description>
     <categories>
-        <category>Game</category>
-        <category>Utility</category>
-        <category>Graphics</category>
         <category>AudioVideo</category>
         <category>Player</category>
+        <category>Graphics</category>
         <category>Viewer</category>
+        <category>Utility</category>
+        <category>Game</category>
     </categories>
     <keywords>
         <keyword>flash</keyword>
