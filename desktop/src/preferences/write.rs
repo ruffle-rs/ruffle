@@ -1,3 +1,4 @@
+use crate::cli::GameModePreference;
 use crate::gui::ThemePreference;
 use crate::log::FilenamePattern;
 use crate::preferences::storage::StorageBackend;
@@ -107,6 +108,17 @@ impl<'a> PreferencesWriter<'a> {
         if let Some(watcher) = self.1.map(|w| &w.theme_preference_watcher) {
             let _ = watcher.send(theme_preference);
         }
+    }
+
+    pub fn set_gamemode_preference(&mut self, gamemode_preference: GameModePreference) {
+        self.0.edit(|values, toml_document| {
+            if let Some(gamemode_preference) = gamemode_preference.as_str() {
+                toml_document["gamemode"] = value(gamemode_preference);
+            } else {
+                toml_document.remove("gamemode");
+            }
+            values.gamemode_preference = gamemode_preference;
+        });
     }
 }
 
@@ -273,6 +285,20 @@ mod tests {
         test(
             "theme = \"dark\"",
             |writer| writer.set_theme_preference(ThemePreference::System),
+            "",
+        );
+    }
+
+    #[test]
+    fn set_gamemode() {
+        test(
+            "gamemode = 6\n",
+            |writer| writer.set_gamemode_preference(GameModePreference::Off),
+            "gamemode = \"off\"\n",
+        );
+        test(
+            "gamemode = \"on\"",
+            |writer| writer.set_gamemode_preference(GameModePreference::Default),
             "",
         );
     }

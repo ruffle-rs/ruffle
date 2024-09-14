@@ -3,7 +3,7 @@ mod write;
 
 pub mod storage;
 
-use crate::cli::Opt;
+use crate::cli::{GameModePreference, Opt};
 use crate::gui::ThemePreference;
 use crate::log::FilenamePattern;
 use crate::preferences::read::read_preferences;
@@ -116,6 +116,15 @@ impl GlobalPreferences {
                 .lock()
                 .expect("Preferences is not reentrant")
                 .graphics_power_preference
+        })
+    }
+
+    pub fn gamemode_preference(&self) -> GameModePreference {
+        self.cli.gamemode.unwrap_or_else(|| {
+            self.preferences
+                .lock()
+                .expect("Non-poisoned preferences")
+                .gamemode_preference
         })
     }
 
@@ -250,6 +259,7 @@ impl GlobalPreferences {
 pub struct SavedGlobalPreferences {
     pub graphics_backend: GraphicsBackend,
     pub graphics_power_preference: PowerPreference,
+    pub gamemode_preference: GameModePreference,
     pub language: LanguageIdentifier,
     pub output_device: Option<String>,
     pub mute: bool,
@@ -271,6 +281,7 @@ impl Default for SavedGlobalPreferences {
         Self {
             graphics_backend: Default::default(),
             graphics_power_preference: Default::default(),
+            gamemode_preference: Default::default(),
             language: locale,
             output_device: None,
             mute: false,
