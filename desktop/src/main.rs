@@ -160,6 +160,9 @@ async fn main() -> Result<(), Error> {
     if let Some(parent) = log_path.parent() {
         std::fs::create_dir_all(parent)?;
     }
+    if let Err(err) = migrate_logs(&preferences, logs_path) {
+        tracing::warn!("Failed to migrate logs: {}", err);
+    }
 
     // [NA] `_guard` cannot be `_` or it'll immediately drop
     // https://docs.rs/tracing-appender/latest/tracing_appender/non_blocking/index.html
@@ -193,4 +196,39 @@ async fn main() -> Result<(), Error> {
     }
     shutdown();
     result
+}
+
+/// Move logs from config directory into proper log directory.
+///
+/// This exists because in older versions Ruffle created log files in the config directory.
+///
+/// TODO Remove this after some time.
+fn migrate_logs(
+    preferences: &GlobalPreferences,
+    log_path: &std::path::Path,
+) -> std::io::Result<()> {
+    tracing::debug!("Migrating logs from config directory to log directory");
+    let config_path = &preferences.cli.config;
+    let paths = std::fs::read_dir(config_path)?;
+
+    for dir in paths.flatten() {
+        if dir.file_name().as_encoded_bytes().ends_with(b".log") {
+            let src = dir.path();
+            let dest = log_path.join(dir.file_name());
+            tracing::info!(
+                "Moving log file {} -> {}",
+                src.to_string_lossy(),
+                dest.to_string_lossy()
+            );
+            if let Err(err) = std::fs::rename(&src, &dest) {
+                tracing::warn!(
+                    "Failed to move log file {} -> {}: {err}",
+                    src.to_string_lossy(),
+                    dest.to_string_lossy()
+                )
+            }
+        }
+    }
+
+    Ok(())
 }
