@@ -9,6 +9,7 @@ use ruffle_core::{LoadBehavior, PlayerRuntime, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::path::Path;
+use std::str::FromStr;
 use std::time::Duration;
 use url::Url;
 
@@ -61,6 +62,19 @@ pub struct Opt {
     /// This option temporarily overrides any stored preference.
     #[clap(long, short)]
     pub power: Option<PowerPreference>,
+
+    /// GameMode preference.
+    ///
+    /// This allows enabling or disabling GameMode manually.
+    /// When enabled, GameMode will be requested only when a movie is loaded.
+    ///
+    /// The default preference enables GameMode when power preference is set to high.
+    /// This option temporarily overrides any stored preference.
+    ///
+    /// See <https://github.com/FeralInteractive/gamemode>.
+    #[clap(long)]
+    #[cfg_attr(not(target_os = "linux"), clap(hide = true))]
+    pub gamemode: Option<GameModePreference>,
 
     /// Type of storage backend to use. This determines where local storage data is saved (e.g. shared objects).
     ///
@@ -295,6 +309,36 @@ impl Opt {
                 (parameter.clone(), "".to_string())
             }
         })
+    }
+}
+
+#[derive(Default, Debug, Copy, Clone, PartialEq, Eq, clap::ValueEnum)]
+pub enum GameModePreference {
+    #[default]
+    Default,
+    On,
+    Off,
+}
+
+impl GameModePreference {
+    pub fn as_str(&self) -> Option<&'static str> {
+        match self {
+            GameModePreference::Default => None,
+            GameModePreference::On => Some("on"),
+            GameModePreference::Off => Some("off"),
+        }
+    }
+}
+
+impl FromStr for GameModePreference {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "on" => Ok(GameModePreference::On),
+            "off" => Ok(GameModePreference::Off),
+            _ => Err(()),
+        }
     }
 }
 
