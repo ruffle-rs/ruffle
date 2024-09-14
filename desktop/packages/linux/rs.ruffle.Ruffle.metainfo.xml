@@ -35,6 +35,7 @@
         <category>Player</category>
         <category>Graphics</category>
         <category>Viewer</category>
+        <category>VectorGraphics</category>
         <category>Utility</category>
         <category>Game</category>
     </categories>
