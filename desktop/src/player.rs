@@ -1,6 +1,6 @@
 use crate::backends::{
-    CpalAudioBackend, DesktopExternalInterfaceProvider, DesktopFSCommandProvider,
-    DesktopNavigatorInterface, DesktopUiBackend,
+    DesktopExternalInterfaceProvider, DesktopFSCommandProvider, DesktopNavigatorInterface,
+    DesktopUiBackend,
 };
 use crate::custom_event::RuffleEvent;
 use crate::gui::{FilePicker, MovieView};
@@ -11,6 +11,7 @@ use ruffle_core::backend::navigator::{OpenURLMode, SocketMode};
 use ruffle_core::config::Letterbox;
 use ruffle_core::events::{GamepadButton, KeyCode};
 use ruffle_core::{DefaultFont, LoadBehavior, Player, PlayerBuilder, PlayerEvent};
+use ruffle_frontend_utils::backends::audio::CpalAudioBackend;
 use ruffle_frontend_utils::backends::executor::{AsyncExecutor, PollRequester};
 use ruffle_frontend_utils::backends::navigator::ExternalNavigatorBackend;
 use ruffle_frontend_utils::bundle::source::BundleSourceError;
@@ -134,7 +135,7 @@ impl ActivePlayer {
     ) -> Self {
         let mut builder = PlayerBuilder::new();
 
-        match CpalAudioBackend::new(&preferences) {
+        match CpalAudioBackend::new(preferences.output_device_name().as_deref()) {
             Ok(audio) => {
                 builder = builder.with_audio(audio);
             }

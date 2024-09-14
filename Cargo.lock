@@ -4397,6 +4397,8 @@ version = "0.1.0"
 dependencies = [
  "async-channel",
  "async-io",
+ "bytemuck",
+ "cpal",
  "futures-lite",
  "macro_rules_attribute",
  "reqwest",

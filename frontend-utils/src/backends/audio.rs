@@ -1,11 +1,28 @@
-use crate::preferences::GlobalPreferences;
-use anyhow::{anyhow, Context, Error};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use cpal::SampleFormat;
 use ruffle_core::backend::audio::{
     swf, AudioBackend, AudioMixer, DecodeError, RegisterError, SoundHandle, SoundInstanceHandle,
     SoundStreamInfo, SoundTransform,
 };
 use ruffle_core::impl_audio_mixer_backend;
+
+#[derive(Debug, thiserror::Error)]
+pub enum CpalError {
+    #[error("No audio devices available")]
+    NoDevices,
+
+    #[error("Failed to get default output config")]
+    DefaultStream(#[from] cpal::DefaultStreamConfigError),
+
+    #[error("Unsupported sample format {0:?}")]
+    UnsupportedSampleFormat(SampleFormat),
+
+    #[error("Couldn't play the audio stream")]
+    Play(#[from] cpal::PlayStreamError),
+
+    #[error("Failed to construct audio stream")]
+    Build(#[from] cpal::BuildStreamError),
+}
 
 pub struct CpalAudioBackend {
     #[allow(dead_code)]
@@ -17,16 +34,16 @@ pub struct CpalAudioBackend {
 }
 
 impl CpalAudioBackend {
-    pub fn new(preferences: &GlobalPreferences) -> Result<Self, Error> {
+    pub fn new(preferred_device_name: Option<&str>) -> Result<Self, CpalError> {
         // Create CPAL audio device.
         let host = cpal::default_host();
-        let device = get_suitable_output_device(preferences, &host)
-            .ok_or_else(|| anyhow!("No audio devices available"))?;
+        let device =
+            get_suitable_output_device(preferred_device_name, &host).ok_or(CpalError::NoDevices)?;
 
         // Create audio stream for device.
         let config = device
             .default_output_config()
-            .context("Failed to get default output config")?;
+            .map_err(CpalError::DefaultStream)?;
         let sample_format = config.sample_format();
         let config = cpal::StreamConfig::from(config);
         let mixer = AudioMixer::new(config.channels as u8, config.sample_rate.0);
@@ -63,11 +80,11 @@ impl CpalAudioBackend {
                     error_handler,
                     None,
                 ),
-                _ => anyhow::bail!("Unsupported sample format {sample_format:?}"),
+                _ => return Err(CpalError::UnsupportedSampleFormat(sample_format)),
             }?
         };
 
-        stream.play().context("Couldn't play the audio stream")?;
+        stream.play().map_err(CpalError::Play)?;
 
         Ok(Self {
             device,
@@ -91,14 +108,14 @@ impl AudioBackend for CpalAudioBackend {
 }
 
 fn get_suitable_output_device(
-    preferences: &GlobalPreferences,
+    preferred_device_name: Option<&str>,
     host: &cpal::Host,
 ) -> Option<cpal::Device> {
     // First let's check for any user preference...
-    if let Some(preferred_device_name) = preferences.output_device_name() {
+    if let Some(preferred_device_name) = preferred_device_name {
         if let Ok(mut devices) = host.output_devices() {
             if let Some(device) =
-                devices.find(|device| device.name().ok().as_deref() == Some(&preferred_device_name))
+                devices.find(|device| device.name().ok().as_deref() == Some(preferred_device_name))
             {
                 return Some(device);
             }
