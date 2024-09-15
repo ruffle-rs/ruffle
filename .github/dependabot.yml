@@ -12,11 +12,17 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    labels:
+      - "T-chore"
+      - "A-deps"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    labels:
+      - "T-chore"
+      - "A-deps"
 
   - package-ecosystem: "cargo"
     directory: "/"
@@ -46,3 +52,6 @@ updates:
       - dependency-name: "tracing-tracy"
       - dependency-name: "tracy-client"
       - dependency-name: "profiling"
+    labels:
+      - "T-chore"
+      - "A-deps"
