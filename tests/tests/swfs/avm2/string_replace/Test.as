@@ -93,3 +93,10 @@ trace("<<a>>".replace(/(a)(b)?|(c)/, rFN))
 
 // The pattern is string and the replacement is a function
 trace("<<a>>".replace("a", rFN))
+
+trace("// regex calling into itself")
+
+var pattern = /simple/g
+trace("this is simple, really simple.".replace(pattern, function (match) {
+  return match.replace(pattern, "complicated")
+}))

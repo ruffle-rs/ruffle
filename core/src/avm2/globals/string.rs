@@ -5,7 +5,7 @@ use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::error::make_error_1004;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
-use crate::avm2::regexp::RegExpFlags;
+use crate::avm2::regexp::{RegExp, RegExpFlags};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::QName;
@@ -355,18 +355,18 @@ fn replace<'gc>(
     let this = Value::from(this).coerce_to_string(activation)?;
     let pattern = args.get(0).unwrap_or(&Value::Undefined);
     let replacement = args.get(1).unwrap_or(&Value::Undefined);
-    // Handles regex patterns.
-    if let Some(mut regexp) = pattern
+
+    if let Some(regexp) = pattern
         .as_object()
         .as_ref()
-        .and_then(|o| o.as_regexp_mut(activation.context.gc_context))
+        .and_then(|o| o.as_regexp_object())
     {
         // Replacement is either a function or treatable as string.
         if let Some(f) = replacement.as_object().and_then(|o| o.as_function_object()) {
-            return Ok(regexp.replace_fn(activation, this, &f)?.into());
+            return Ok(RegExp::replace_fn(regexp, activation, this, &f)?.into());
         } else {
             let replacement = replacement.coerce_to_string(activation)?;
-            return Ok(regexp.replace_string(activation, this, replacement)?.into());
+            return Ok(RegExp::replace_string(regexp, activation, this, replacement)?.into());
         }
     }
 

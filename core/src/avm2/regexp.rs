@@ -13,6 +13,8 @@ use bitflags::bitflags;
 use gc_arena::Collect;
 use ruffle_wstr::WStr;
 
+use super::object::RegExpObject;
+
 #[derive(Collect, Debug)]
 #[collect(no_drop)]
 pub struct RegExp<'gc> {
@@ -214,12 +216,12 @@ impl<'gc> RegExp<'gc> {
     /// Implements string.replace(regex, replacement) where the replacement is
     /// a function.
     pub fn replace_fn(
-        &mut self,
+        regexp: RegExpObject<'gc>,
         activation: &mut Activation<'_, 'gc>,
         text: AvmString<'gc>,
         f: &FunctionObject<'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
-        self.replace_with_fn(activation, &text, |activation, txt, m| {
+        Self::replace_with_fn(regexp, activation, &text, |activation, txt, m| {
             let args = std::iter::once(Some(&m.range))
                 .chain((m.captures.iter()).map(|x| x.as_ref()))
                 .map(|o| match o {
@@ -241,12 +243,12 @@ impl<'gc> RegExp<'gc> {
     /// Implements string.replace(regex, replacement) where the replacement may be
     /// a string with $-sequences.
     pub fn replace_string(
-        &mut self,
+        regexp: RegExpObject<'gc>,
         activation: &mut Activation<'_, 'gc>,
         text: AvmString<'gc>,
         replacement: AvmString<'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
-        self.replace_with_fn(activation, &text, |_activation, txt, m| {
+        RegExp::replace_with_fn(regexp, activation, &text, |_activation, txt, m| {
             Ok(Self::effective_replacement(&replacement, txt, m))
         })
     }
@@ -254,8 +256,9 @@ impl<'gc> RegExp<'gc> {
     // Helper for replace_string and replace_function.
     //
     // Replaces occurrences of regex with results of f(activation, &text, &match)
+    // Panics if regexp isn't a regexp
     fn replace_with_fn<'a, F>(
-        &mut self,
+        regexp: RegExpObject<'gc>,
         activation: &mut Activation<'_, 'gc>,
         text: &AvmString<'gc>,
         mut f: F,
@@ -268,8 +271,16 @@ impl<'gc> RegExp<'gc> {
         ) -> Result<Cow<'a, WStr>, Error<'gc>>,
     {
         let mut start = 0;
-        let mut m = self.find_utf16_match(*text, start);
 
+        let (is_global, mut m) = {
+            // we only hold onto a mutable lock on the regular expression
+            // for a small window, because f might refer to the RegExp
+            // (See https://github.com/ruffle-rs/ruffle/issues/17899)
+            let mut re = regexp.as_regexp_mut(activation.gc()).unwrap();
+            let global_flag = re.flags().contains(RegExpFlags::GLOBAL);
+
+            (global_flag, re.find_utf16_match(*text, start))
+        };
         if m.is_none() {
             // Nothing to do; short circuit and just return the original string, to avoid any allocs or functions
             return Ok(*text);
@@ -290,10 +301,16 @@ impl<'gc> RegExp<'gc> {
                 start += 1;
             }
 
-            if !self.flags().contains(RegExpFlags::GLOBAL) {
+            if !is_global {
                 break;
             }
-            m = self.find_utf16_match(*text, start);
+            // Again, here we only hold onto a mutable lock for
+            // the RegExp long enough to do our matching, so that
+            // when we call f we don't have a lock
+            m = regexp
+                .as_regexp_mut(activation.gc())
+                .unwrap()
+                .find_utf16_match(*text, start);
         }
 
         ret.push_str(&text[start..]);
@@ -347,7 +364,11 @@ impl<'gc> RegExp<'gc> {
         ArrayObject::from_storage(activation, storage)
     }
 
-    fn find_utf16_match(&mut self, text: AvmString<'gc>, start: usize) -> Option<regress::Match> {
+    pub fn find_utf16_match(
+        &mut self,
+        text: AvmString<'gc>,
+        start: usize,
+    ) -> Option<regress::Match> {
         self.find_utf8_match_at(text, start, |text, mut re_match| {
             // Sort the capture endpoints by increasing index, so that CachedText::utf16_index is efficient.
             let mut utf8_indices = re_match
