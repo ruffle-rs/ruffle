@@ -1,0 +1,9 @@
+ByteArray UTF-8: Fx
+ByteArray UTF-16 Little endian: ∀x
+ByteArray UTF-16 Big endian: ∀x
+URLLoader dataFormat=text utf8: lastName=Jones&firstName=Tom
+URLLoader dataFormat=text utf16le: lastName=Jo∀nes&firstName=Tom
+URLLoader dataFormat=text utf16be: lastName=Jo∀nes&firstName=Tom
+URLLoader dataFormat=variables utf8: firstName=Tom&lastName=Jones
+URLLoader dataFormat=variables utf16le: firstName=Tom&lastName=Jo%E2%88%80nes
+URLLoader dataFormat=variables utf16be: firstName=Tom&lastName=Jo%E2%88%80nes

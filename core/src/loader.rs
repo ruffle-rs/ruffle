@@ -5,13 +5,14 @@ use crate::avm1::{Attribute, Avm1};
 use crate::avm1::{ExecutionReason, NativeObject};
 use crate::avm1::{Object, SoundObject, TObject, Value};
 use crate::avm2::bytearray::ByteArrayStorage;
+use crate::avm2::globals::flash::utils::byte_array::strip_bom;
 use crate::avm2::object::{
     ByteArrayObject, EventObject as Avm2EventObject, FileReferenceObject, LoaderStream,
     TObject as _,
 };
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, BitmapDataObject, Domain as Avm2Domain,
-    Object as Avm2Object, Value as Avm2Value,
+    Object as Avm2Object,
 };
 use crate::backend::navigator::{ErrorResponse, OwnedFuture, Request, SuccessResponse};
 use crate::backend::ui::DialogResultFuture;
@@ -1560,8 +1561,7 @@ impl<'gc> Loader<'gc> {
                         if body.is_empty() {
                             None
                         } else {
-                            let string_value =
-                                AvmString::new_utf8_bytes(activation.context.gc_context, &body);
+                            let string_value = strip_bom(activation, &body);
 
                             activation
                                 .avm2()
@@ -1576,10 +1576,7 @@ impl<'gc> Loader<'gc> {
                             tracing::warn!("Invalid URLLoaderDataFormat: {}", data_format);
                         }
 
-                        let string_value =
-                            AvmString::new_utf8_bytes(activation.context.gc_context, &body);
-
-                        Some(Avm2Value::String(string_value))
+                        Some(strip_bom(activation, &body).into())
                     };
 
                     if let Some(data_object) = data_object {
