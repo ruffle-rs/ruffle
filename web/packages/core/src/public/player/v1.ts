@@ -158,4 +158,16 @@ export interface PlayerV1 {
      * @param message The message shown to the user.
      */
     displayMessage(message: string): void;
+
+    /**
+     * Calls an External Interface callback with the given name and arguments.
+     *
+     * This will call any ActionScript code assigned to the given name.
+     * If no such External Interface callback exists with the given name, this method silently fails and returns `undefined`.
+     *
+     * @param name Name of the callback to call.
+     * @param args Any arguments to pass to the callback.
+     * @returns Any value returned by the callback.
+     */
+    callExternalInterface(name: string, ...args: unknown[]): unknown;
 }

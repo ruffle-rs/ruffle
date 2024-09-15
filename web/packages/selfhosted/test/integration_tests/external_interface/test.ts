@@ -8,6 +8,7 @@ import {
 } from "../../utils.js";
 import { expect, use } from "chai";
 import chaiHtml from "chai-html";
+import { Player } from "ruffle-core";
 
 use(chaiHtml);
 
@@ -50,6 +51,10 @@ declare global {
 
             // Going to be redefined as part of a test
             redefinedMethod: () => string;
+
+            ruffle<V extends keyof Player.APIVersions = 1>(
+                version?: V,
+            ): Player.APIVersions[V];
         }
     }
 
@@ -135,10 +140,30 @@ ExternalInterface.objectID: "flash_name"
         );
     });
 
-    it("returns a value", async () => {
+    it("returns a value with legacy API", async () => {
         const player = await browser.$("<ruffle-object>");
         const returned = await browser.execute(
             (player) => player.returnAValue(123.4),
+            player,
+        );
+
+        expect(returned).to.eql(123.4);
+
+        const actualOutput = await getTraceOutput(browser, player);
+        expect(actualOutput).to.eql(
+            `returnAValue called with 123.4
+  [
+    123.4
+  ]
+`,
+        );
+    });
+
+    it("returns a value with V1 API", async () => {
+        const player = await browser.$("<ruffle-object>");
+        const returned = await browser.execute(
+            (player) =>
+                player.ruffle().callExternalInterface("returnAValue", 123.4),
             player,
         );
 
