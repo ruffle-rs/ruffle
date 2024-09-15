@@ -102,4 +102,8 @@ export class PlayerV1Impl implements PlayerV1 {
     set config(value: URLLoadOptions | DataLoadOptions | object) {
         this.#inner.config = value;
     }
+
+    callExternalInterface(name: string, ...args: unknown[]): unknown {
+        return this.#inner.callExternalInterface(name, args);
+    }
 }
