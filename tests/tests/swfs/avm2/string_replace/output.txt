@@ -39,3 +39,5 @@ undefinedbbbb
 // replace a regex with function, check arguments
 <<a,a,,,2,<<a>>>>
 <<a,2,<<a>>>>
+// regex calling into itself
+this is complicated, really complicated.
