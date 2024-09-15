@@ -28,7 +28,7 @@ jobs:
           create_pull_request: true
           pull_request_title: 'chore: Update translations'
           pull_request_body: 'New Crowdin pull request with translations'
-          pull_request_labels: 'localization'
+          pull_request_labels: 'T-chore, A-i18n'
           pull_request_base_branch_name: 'master'
           commit_message: 'chore: Update translations from Crowdin'
         env:
