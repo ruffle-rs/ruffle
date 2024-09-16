@@ -6,16 +6,16 @@ spoof-swf-url = محاكاة رابط SWF
 referer-url = الرابط المرجعي
 cookie = ملف تعريف الارتباط
 proxy = الخادم الوكيل
-upgrade-http = ترقية HTTP إلى HTTPS
-tcp-connections = اتصالات TCP
-tcp-connections-allow = سماح
-tcp-connections-ask = طلب
-tcp-connections-deny = رفض
-open-url-mode = فتح الروابط
-open-url-mode-allow = سماح
-open-url-mode-confirm = اسأل
-open-url-mode-deny = رفض
-load-behavior = تحميل السلوك
+upgrade-http = حوِّل HTTP إلى HTTPS
+tcp-connections = إتصالات TCP
+tcp-connections-allow = إسمح
+tcp-connections-ask = إطلب
+tcp-connections-deny = إرفض
+open-url-mode = إفتح روابط
+open-url-mode-allow = إسمح
+open-url-mode-confirm = إطلب
+open-url-mode-deny = إرفض
+load-behavior = حمِّل سلوكًا
 load-behavior-streaming = البث
 load-behavior-delayed = مؤجل
 load-behavior-blocking = حجب
@@ -53,10 +53,10 @@ scale-mode-noscale-tooltip =
     يتوافق مع StageScaleMode.NO_SCALE
 scale-mode-showall = تكبير/تصغير للإحتواء
 scale-mode-showall-tooltip =
-    تكبير الفيلم لملء النافذة قدر الإمكان دون إقتصاص، مع الحفاظ على نسبة طول والعرض.
+    يكبر الفيلم ليملأ النافذة قدر الإمكان دون إقتصاص، مع الحفاظ على نسبة طول والعرض.
     
     يتوافق مع StageScaleMode.SHOW_ALL
-scale-mode-exactfit = تمديد للإحتواء
+scale-mode-exactfit = إمتد للإحتواء
 scale-mode-exactfit-tooltip =
     يضمن أن الفيلم يملأ النافذة بأكملها، بغض النظر عن نسبة الطول والعرض.
     
@@ -66,12 +66,12 @@ scale-mode-noborder-tooltip =
     يملأ النافذة بأكملها مع الحفاظ على نسبة الطول والعرض، مع اقتصاص الفيلم إذا لزم الأمر.
     
     يتوافق مع StageScaleMode.NO_BORDER
-scale-mode-force = إجبار
+scale-mode-force = إجبر
 scale-mode-force-tooltip = يمنع الفيلم من تغيير وضع المقياس، ويثبته على الإعداد المحدد.
 player-version = إصدار المشغل
 player-runtime = مدة التشغيل
 player-runtime-flash = مشغل الفلاش
 player-runtime-air = Adobe AIR
 custom-framerate = معدل إطار مخصص
-custom-framerate-suffix = { " " } معدل الإطار
+custom-framerate-suffix = { " " } إطار/ث
 dummy-external-interface = واجهة خارجية زائفة

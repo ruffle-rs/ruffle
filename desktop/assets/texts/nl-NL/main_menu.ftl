@@ -36,3 +36,5 @@ debug-menu-open-movie = Bekijk film
 debug-menu-open-movie-list = Laat bekende films zien
 debug-menu-open-domain-list = Toon applicatiedomeinen
 debug-menu-search-display-objects = Doorzoek weergaveobjecten...
+view-menu = Weergave
+view-menu-fullscreen = Naar volledig scherm
