@@ -21,7 +21,7 @@
         "@types/chrome": "^0.0.271",
         "@types/common-tags": "^1.8.4",
         "@types/firefox-webext-browser": "^120.0.4",
-        "@types/jsonwebtoken": "^9.0.6",
+        "@types/jsonwebtoken": "^9.0.7",
         "archiver": "^7.0.1",
         "json5": "^2.2.3",
         "ts-loader": "^9.5.1",
