@@ -45,7 +45,9 @@ pub fn fill_rect<'gc>(
         return;
     }
 
-    let target = if rect.width() == target.width() && rect.height() == target.height() {
+    let is_full = rect.width() == target.width() && rect.height() == target.height();
+
+    let target = if is_full {
         // If we're filling the whole region, we can discard the gpu data
         target.overwrite_cpu_pixels_from_gpu(mc).0
     } else {
@@ -55,9 +57,11 @@ pub fn fill_rect<'gc>(
     let mut write = target.write(mc);
     let color = Color::from(color).to_premultiplied_alpha(write.transparency());
 
-    for y in rect.y_min..rect.y_max {
-        for x in rect.x_min..rect.x_max {
-            write.set_pixel32_raw(x, y, color);
+    if is_full {
+        write.fill(color);
+    } else {
+        for y in rect.y_min..rect.y_max {
+            write.set_pixel32_row_raw(rect.x_min, rect.x_max, y, color);
         }
     }
     write.set_cpu_dirty(mc, rect);
