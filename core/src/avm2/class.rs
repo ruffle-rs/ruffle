@@ -1106,6 +1106,7 @@ impl<'gc> Class<'gc> {
         }
     }
 
+    #[allow(clippy::type_complexity)]
     #[inline(never)]
     pub fn define_builtin_instance_methods_with_sig(
         self,
