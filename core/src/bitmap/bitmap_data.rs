@@ -711,6 +711,19 @@ impl<'gc> BitmapData<'gc> {
     }
 
     #[inline]
+    pub fn set_pixel32_row_raw(&mut self, x1: u32, x2: u32, y: u32, color: Color) {
+        let p1 = (x1 + y * self.width) as usize;
+        let p2 = (x2 + y * self.width) as usize;
+        let slice = &mut self.pixels[p1..p2];
+        slice.fill(color);
+    }
+
+    #[inline]
+    pub fn fill(&mut self, color: Color) {
+        self.pixels.fill(color);
+    }
+
+    #[inline]
     pub fn get_pixel32_raw(&self, x: u32, y: u32) -> Color {
         self.pixels[(x + y * self.width()) as usize]
     }
