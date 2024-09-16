@@ -10,9 +10,20 @@ update-ruffle = Ruffle updaten
 ruffle-demo = Web Demo
 ruffle-desktop = Desktopapplicatie
 ruffle-wiki = Bekijk de Ruffle Wiki
+enable-hardware-acceleration = Het lijkt erop dat hardwareversnelling is uitgeschakeld. Ruffle zou hierdoor erg traag kunnen zijn. In de link hieronder wordt uitgelegd hoe je hardwareversnelling kunt inschakelen:
+enable-hardware-acceleration-link = FAQ - Chrome Hardwareversnelling
 view-error-details = Foutdetails tonen
 open-in-new-tab = Openen in een nieuw tabblad
 click-to-unmute = Klik om te ontdempen
+clipboard-message-title = Kopiëren en plakken in Ruffle
+clipboard-message-description =
+    { $variant ->
+       *[unsupported] Je browser heeft geen ondersteuning voor volledige toegang tot het klembord,
+        [access-denied] Toegang tot het klembord werd geweigerd,
+    } maar je kunt altijd nog de volgende sneltoetsen gebruiken:
+clipboard-message-copy = { " " } om te kopiëren
+clipboard-message-cut = { " " } om te knippen
+clipboard-message-paste = { " " } om te plakken
 error-file-protocol =
     Het lijkt erop dat je Ruffle gebruikt met het "file" protocol.
     De meeste browsers blokkeren dit om veiligheidsredenen, waardoor het niet werkt.

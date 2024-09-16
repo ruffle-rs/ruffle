@@ -46,7 +46,28 @@ align-top-right = Rechtsboven
 align-bottom-right = Rechtsonder
 align-force = Forceren
 scale-mode = Schaalmodus
+scale-mode-noscale = Ongeschaald (100%)
+scale-mode-noscale-tooltip =
+    Geeft de film weer in de oorspronkelijke grootte, zonder zoom.
+    
+    Komt overeen met StageScaleMode.NO_SCALE
+scale-mode-showall = Maak passend
+scale-mode-showall-tooltip =
+    Zoomt de film in om het venster zoveel mogelijk te vullen, zonder bij te snijden en met behoud van de beeldverhouding.
+    
+    Komt overeen met StageScaleMode.SHOW_ALL
+scale-mode-exactfit = Uitrekken naar passend
+scale-mode-exactfit-tooltip =
+    Zorgt ervoor dat de film het hele venster vult, zonder rekening te houden met de beeldverhouding.
+    
+    Komt overeen met StageScaleMode.EXACT_FIT
+scale-mode-noborder = Bijsnijden naar passend
+scale-mode-noborder-tooltip =
+    Vult het hele venster met behoud van de beeldverhouding, en snijdt indien nodig bij.
+    
+    Komt overeen met StageScaleMode.NO_BORDER
 scale-mode-force = Forceren
+scale-mode-force-tooltip = Voorkomt dat de film de schaalmodus wijzigt door de geselecteerde modus te vergrendelen.
 player-version = Spelerversie
 player-runtime = Soort speler
 player-runtime-flash = Flash speler

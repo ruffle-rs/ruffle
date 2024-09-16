@@ -1,1 +1,1 @@
-context-menu-exit-fullscreen = الخروج من ملء الشاشة
+context-menu-exit-fullscreen = إخرج من ملء الشاشة

@@ -19,3 +19,7 @@ storage-backend-disk = Schijf
 storage-backend-memory = Geheugen
 recent-limit = Recent limiet
 recent-clear = Legen
+theme = Thema
+theme-system = Systeemstandaard
+theme-light = Licht
+theme-dark = Donker

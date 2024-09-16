@@ -1,2 +1,2 @@
-volume-controls-mute = كتم
-volume-controls-unmute = إلغاء الكتم
+volume-controls-mute = إكتم
+volume-controls-unmute = ألغِ الكتم
