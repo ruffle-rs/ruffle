@@ -6204,12 +6204,12 @@ dependencies = [
 
 [[package]]
 name = "webbrowser"
-version = "1.0.1"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "425ba64c1e13b1c6e8c5d2541c8fac10022ca584f33da781db01b5756aef1f4e"
+checksum = "2e5f07fb9bc8de2ddfe6b24a71a75430673fd679e568c48b52716cef1cfae923"
 dependencies = [
  "block2",
- "core-foundation 0.9.4",
+ "core-foundation 0.10.0",
  "home",
  "jni",
  "log",
