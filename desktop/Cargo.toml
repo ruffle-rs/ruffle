@@ -18,7 +18,7 @@ egui_extras = { git = "https://github.com/emilk/egui.git", rev = "f4697bc007447c
 egui-wgpu = { git = "https://github.com/emilk/egui.git", rev = "f4697bc007447c6c2674beb4e25f599fb7afa093", features = ["winit"] }
 image = { workspace = true, features = ["png"] }
 egui-winit = { git = "https://github.com/emilk/egui.git", rev = "f4697bc007447c6c2674beb4e25f599fb7afa093" }
-fontdb = "0.21"
+fontdb = "0.22"
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymoser", "default_compatibility_rules", "egui"] }
 ruffle_render = { path = "../render", features = ["clap"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
@@ -43,7 +43,7 @@ futures = { workspace = true }
 chrono = { workspace = true }
 fluent-templates = "0.10.1"
 toml_edit = { version = "0.22.20", features = ["parse"] }
-gilrs = "0.10"
+gilrs = "0.11"
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"]}
 
 # Deliberately held back to match tracy client used by profiling crate

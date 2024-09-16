@@ -22,7 +22,7 @@ regex = "1.10.6"
 url = { workspace = true }
 chrono = { workspace = true }
 approx = "0.5.1"
-pretty_assertions = "1.4.0"
+pretty_assertions = "1.4.1"
 serde = { workspace = true }
 toml = "0.8.16"
 anyhow = { workspace = true }
