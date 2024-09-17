@@ -67,6 +67,7 @@ scale-mode-noborder-tooltip =
     
     Соответствует StageScaleMode.NO_BORDER
 scale-mode-force = Принудительно
+scale-mode-force-tooltip = Предотвращает изменение режима масштабирования ролика, фиксируя выбранную настройку.
 player-version = Версия Flash Player'а
 player-runtime = Среда выполнения
 player-runtime-flash = Flash Player
