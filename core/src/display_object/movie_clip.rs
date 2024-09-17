@@ -4863,12 +4863,6 @@ struct MovieClipStatic<'gc> {
     /// Preload progress for the given clip's tag stream.
     preload_progress: GcCell<'gc, PreloadProgress>,
 
-    /// Holds the tag offset for the furthest DoAbc/DoAbc2/SymbolClass tags that we've
-    /// already run. These tags are run as part of normal frame processing - this
-    /// is observable by ActionScript, which might load a class in a stop()'d MovieClip,
-    /// and then advance to a frame containing a SymbolClass that references the loaded class.
-    processed_bytecode_tags_pos: GcCell<'gc, i64>,
-
     // These two maps hold DoAbc/SymbolClass data that was loaded during preloading, but
     // hasn't yet been executed yet. The first time we encounter a frame, we will remove
     // the `Vec` from this map, and process it in `run_eager_script_and_symbol`
@@ -4913,7 +4907,6 @@ impl<'gc> MovieClipStatic<'gc> {
             avm2_class: GcCell::new(gc_context, None),
             loader_info,
             preload_progress: GcCell::new(gc_context, Default::default()),
-            processed_bytecode_tags_pos: GcCell::new(gc_context, -1),
             abc_tags: GcCell::new(gc_context, Default::default()),
             symbolclass_names: GcCell::new(gc_context, Default::default()),
         }
