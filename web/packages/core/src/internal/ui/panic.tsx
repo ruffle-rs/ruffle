@@ -260,7 +260,8 @@ function createPanicError(error: Error | null): {
         }
 
         if (
-            message.includes("could not download wasm module") &&
+            (message.includes("could not download wasm module") ||
+            message.includes("webassembly compilation aborted")) &&
             error.cause.name === "TypeError"
         ) {
             // Usually a transient network error or botched deployment
