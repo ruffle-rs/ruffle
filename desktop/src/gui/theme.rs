@@ -2,7 +2,6 @@
 use crate::dbus::{ColorScheme, FreedesktopSettings};
 use crate::preferences::GlobalPreferences;
 use egui::Context;
-use futures::StreamExt;
 use std::error::Error;
 use std::str::FromStr;
 use std::sync::{Arc, Weak};
@@ -68,6 +67,8 @@ impl ThemeController {
     #[cfg(target_os = "linux")]
     async fn start_dbus_theme_watcher_linux(&self) {
         async fn start_inner(this: &ThemeController) -> Result<(), Box<dyn Error>> {
+            use futures::StreamExt;
+
             let Some(ref connection) = this.data().zbus_connection else {
                 return Ok(());
             };
