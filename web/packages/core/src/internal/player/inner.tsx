@@ -1835,6 +1835,7 @@ export class InnerPlayer {
         }
         this.panicked = true;
         this.hideSplashScreen();
+        const originalError = error;
 
         if (
             error instanceof Error &&
@@ -1854,6 +1855,7 @@ export class InnerPlayer {
                 this.addOpenInNewTabMessage(openInNewTab, swfUrl);
                 return;
             }
+            error = error.cause;
         }
 
         const errorArray: Array<string | null> & {
@@ -1892,7 +1894,7 @@ export class InnerPlayer {
         errorArray.push(this.getPanicData());
 
         // Clears out any existing content (ie play button or canvas) and replaces it with the error screen
-        showPanicScreen(this.container, error, errorArray, this.swfUrl);
+        showPanicScreen(this.container, originalError, errorArray, this.swfUrl);
 
         // Do this last, just in case it causes any cascading issues.
         this.destroy();
