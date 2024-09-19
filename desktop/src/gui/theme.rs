@@ -1,5 +1,5 @@
 #[cfg(target_os = "linux")]
-use crate::dbus::{ColorScheme, FreedesktopSettings};
+use crate::dbus::FreedesktopSettings;
 use crate::preferences::GlobalPreferences;
 use egui::Context;
 use std::error::Error;
@@ -15,7 +15,7 @@ struct ThemeControllerData {
     theme_preference: ThemePreference,
 
     #[cfg(target_os = "linux")]
-    zbus_connection: Option<zbus::Connection>,
+    freedesktop_settings: Option<FreedesktopSettings>,
 }
 
 #[derive(Clone)]
@@ -32,9 +32,11 @@ impl ThemeController {
             egui_ctx,
             theme_preference: Default::default(), // Will be set later
             #[cfg(target_os = "linux")]
-            zbus_connection: zbus::Connection::session()
+            freedesktop_settings: FreedesktopSettings::new()
                 .await
-                .inspect_err(|err| tracing::warn!("Failed to connect to D-Bus: {err}"))
+                .inspect_err(|err| {
+                    tracing::warn!("Failed to instantiate FreedesktopSettings: {err}")
+                })
                 .ok(),
         })));
 
@@ -69,28 +71,16 @@ impl ThemeController {
         async fn start_inner(this: &ThemeController) -> Result<(), Box<dyn Error>> {
             use futures::StreamExt;
 
-            let Some(ref connection) = this.data().zbus_connection else {
+            let Some(ref settings) = this.data().freedesktop_settings else {
                 return Ok(());
             };
-
-            let settings = FreedesktopSettings::new(connection).await?;
 
             let mut stream = Box::pin(settings.watch_color_scheme().await?);
 
             let this2 = this.clone();
             tokio::spawn(Box::pin(async move {
                 while let Some(scheme) = stream.next().await {
-                    match scheme {
-                        Ok(scheme) => {
-                            this2.set_theme(scheme_to_theme(scheme));
-                        }
-                        Err(err) => {
-                            tracing::warn!(
-                                "Error while watching for color scheme changes: {}",
-                                err
-                            );
-                        }
-                    }
+                    this2.set_theme(scheme_to_theme(scheme));
                 }
             }));
 
@@ -152,10 +142,9 @@ impl ThemeController {
 
     #[cfg(target_os = "linux")]
     async fn get_system_theme(&self) -> Result<Theme, Box<dyn Error>> {
-        let Some(ref connection) = self.data().zbus_connection else {
+        let Some(ref settings) = self.data().freedesktop_settings else {
             return Ok(Theme::Dark);
         };
-        let settings = FreedesktopSettings::new(connection).await?;
         let scheme = settings.color_scheme().await?;
 
         Ok(scheme_to_theme(scheme))
@@ -175,10 +164,10 @@ impl ThemeController {
 }
 
 #[cfg(target_os = "linux")]
-fn scheme_to_theme(color_scheme: ColorScheme) -> Theme {
-    use crate::dbus::ColorScheme;
+fn scheme_to_theme(color_scheme: ashpd::desktop::settings::ColorScheme) -> Theme {
+    use ashpd::desktop::settings::ColorScheme;
     match color_scheme {
-        ColorScheme::Default => Theme::Light,
+        ColorScheme::NoPreference => Theme::Light,
         ColorScheme::PreferLight => Theme::Light,
         ColorScheme::PreferDark => Theme::Dark,
     }
