@@ -178,7 +178,7 @@ jobs:
         shell: bash -l {0}
         run: |
           npm ci
-          npm run wdio -- --headless --${{ matrix.browser }}
+          npm run wdio -- --headless --parallel --${{ matrix.browser }}
 
   # The rest is needed only because otherwise the real jobs couldn't be made required for merging PRs,
   # as they would fail the entire workflow run if skipped - this makes GitHub happy instead.
