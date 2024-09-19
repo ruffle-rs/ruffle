@@ -137,9 +137,9 @@ impl ThemeController {
     }
 
     fn set_theme_internal(&self, data: MutexGuard<'_, ThemeControllerData>, theme: Theme) {
-        data.egui_ctx.set_visuals(match theme {
-            Theme::Light => egui::Visuals::light(),
-            Theme::Dark => egui::Visuals::dark(),
+        data.egui_ctx.set_theme(match theme {
+            Theme::Light => egui::Theme::Light,
+            Theme::Dark => egui::Theme::Dark,
         });
         if let Some(window) = data.window.upgrade() {
             window.request_redraw();
