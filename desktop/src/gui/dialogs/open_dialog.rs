@@ -569,7 +569,7 @@ impl OpenDialog {
                     ui.horizontal(|ui| {
                         ui.text_edit_singleline(value);
                         if ui
-                            .button("x")
+                            .button("🗑")
                             .on_hover_text(text(locale, "open-dialog-remove-parameter"))
                             .clicked()
                         {
