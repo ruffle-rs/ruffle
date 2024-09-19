@@ -68,6 +68,9 @@ jobs:
       # Keep the version number in sync in all workflows,
       # and in the extension builder Dockerfile!
       - name: Install wasm-opt
+        # It runs for a long time, and the build is already slow on Windows,
+        # where it doesn't have much benefit anyway - most tests are run on Ubuntu.
+        if: matrix.os != 'windows-latest'
         uses: sigoden/install-binary@v1
         with:
           repo: WebAssembly/binaryen
