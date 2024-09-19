@@ -89,6 +89,7 @@ jobs:
           npm run build
 
       - name: Check formatting
+        if: matrix.os == 'ubuntu-24.04'
         working-directory: web
         run: npm run lint
 
