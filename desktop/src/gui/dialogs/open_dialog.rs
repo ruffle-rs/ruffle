@@ -525,7 +525,7 @@ impl OpenDialog {
                         ui.add_sized(
                             ui.available_size(),
                             Slider::new(&mut self.framerate, 0.0..=100.0)
-                                .clamp_to_range(false)
+                                .clamping(egui::SliderClamping::Never)
                                 .suffix(text(locale, "custom-framerate-suffix")),
                         );
                     });

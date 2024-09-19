@@ -50,7 +50,7 @@ tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 naga = { version = "22.1.0", features = ["wgsl-out"] }
 wgpu = "22.1.0"
-egui = { git = "https://github.com/emilk/egui.git", rev = "f4697bc007447c6c2674beb4e25f599fb7afa093" }
+egui = { git = "https://github.com/emilk/egui.git", rev = "e0f0b7f47f4094967530214aec060b9f1ce5954e" }
 clap = { version = "4.5.17", features = ["derive"] }
 cpal = "0.15.3"
 anyhow = "1.0"
