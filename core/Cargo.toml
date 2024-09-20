@@ -55,7 +55,7 @@ hashbrown = { version = "0.14.5", features = ["raw"] }
 scopeguard = "1.2.0"
 fluent-templates = "0.10.1"
 egui = { workspace = true, optional = true }
-egui_extras = { git = "https://github.com/emilk/egui.git", rev = "e0f0b7f47f4094967530214aec060b9f1ce5954e", default-features = false, optional = true }
+egui_extras = { git = "https://github.com/emilk/egui.git", rev = "06f709481a4e5e74bec961544c77e9afcae265db", default-features = false, optional = true }
 png = { version = "0.17.13", optional = true }
 flv-rs = { path = "../flv" }
 async-channel = { workspace = true }
