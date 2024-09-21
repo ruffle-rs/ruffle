@@ -16,23 +16,46 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Crowdin push
+      - name: Crowdin download
         uses: crowdin/github-action@v2
         with:
           config: 'crowdin.yml'
           upload_sources: false
           upload_translations: false
           download_translations: true
-          localization_branch_name: l10n_crowdin_translations
-
-          create_pull_request: true
-          pull_request_title: 'chore: Update translations'
-          pull_request_body: 'New Crowdin pull request with translations'
-          pull_request_labels: 'T-chore, A-i18n'
-          pull_request_base_branch_name: 'master'
-          commit_message: 'chore: Update translations from Crowdin'
+          push_translations: false
+          create_pull_request: false
         env:
           CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
+
+      - name: Commit
+        run: |
+          git config user.name "RuffleBuild"
+          git config user.email "ruffle@ruffle.rs"
+          git checkout -b l10n_crowdin_translations
+          git add -A
+          git commit -m 'chore: Update translations from Crowdin'
+
+      - name: Push
+        uses: ad-m/github-push-action@master
+        with:
+          branch: l10n_crowdin_translations
+          github_token: ${{ secrets.RUFFLE_BUILD_TOKEN }}
+          force: true
+
+      - name: Create a PR
+        run: |
+          prs=$(gh pr list --base master --head l10n_crowdin_translations --limit 1 --json id | jq length)
+          if [ "$prs" = 1 ]; then echo "PR already exists"; exit 0; fi
+
+          gh pr create \
+            --title 'chore: Update translations' \
+            --body 'New Crowdin pull request with translations 🎉' \
+            --head l10n_crowdin_translations \
+            --base master \
+            --label T-chore \
+            --label A-i18n
+        env:
           # Use a custom token rather than the automatic GITHUB_TOKEN, as the automatic one doesn't allow created PRs to trigger workflows
           # By using our own token (and thus own user), workflows will run, and the PR will be able to be merged.
           GITHUB_TOKEN: ${{ secrets.RUFFLE_BUILD_TOKEN }}
