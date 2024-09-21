@@ -4237,8 +4237,9 @@ dependencies = [
 
 [[package]]
 name = "rfd"
-version = "0.14.1"
-source = "git+https://github.com/PolyMeilex/rfd.git?rev=e0e725ec9a426acf7c93d9877c41e230fcee3fac#e0e725ec9a426acf7c93d9877c41e230fcee3fac"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8af382a047821a08aa6bfc09ab0d80ff48d45d8726f7cd8e44891f7cb4a4278e"
 dependencies = [
  "ashpd",
  "block2",
