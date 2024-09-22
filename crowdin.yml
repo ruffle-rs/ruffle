@@ -30,3 +30,8 @@ files:
     translation: /web/packages/core/texts/%locale%/%original_file_name%
     dest: /web/core/%original_file_name%
     type: ftl
+
+  - source: /desktop/packages/linux/locale/*.pot
+    translation: /desktop/packages/linux/locale/%file_name%/%two_letters_code%.po
+    dest: /desktop/linux/%original_file_name%
+    type: gettext
