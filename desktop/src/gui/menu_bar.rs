@@ -23,6 +23,8 @@ pub struct MenuBar {
 
 impl MenuBar {
     const SHORTCUT_FULLSCREEN: KeyboardShortcut = KeyboardShortcut::new(Modifiers::NONE, Key::F11);
+    const SHORTCUT_FULLSCREEN_WINDOWS: KeyboardShortcut =
+        KeyboardShortcut::new(Modifiers::ALT, Key::Enter);
     const SHORTCUT_OPEN: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::O);
     const SHORTCUT_OPEN_ADVANCED: KeyboardShortcut =
         KeyboardShortcut::new(Modifiers::COMMAND.plus(Modifiers::SHIFT), Key::O);
@@ -64,7 +66,14 @@ impl MenuBar {
                 player.set_is_playing(!player.is_playing());
             }
         }
-        if egui_ctx.input_mut(|input| input.consume_shortcut(&Self::SHORTCUT_FULLSCREEN)) {
+        let mut fullscreen_pressed =
+            egui_ctx.input_mut(|input| input.consume_shortcut(&Self::SHORTCUT_FULLSCREEN));
+        if cfg!(windows) && !fullscreen_pressed {
+            // TODO We can remove this shortcut when we add some kind of preferences.
+            fullscreen_pressed = egui_ctx
+                .input_mut(|input| input.consume_shortcut(&Self::SHORTCUT_FULLSCREEN_WINDOWS));
+        }
+        if fullscreen_pressed {
             if let Some(player) = &mut player {
                 let is_fullscreen = player.is_fullscreen();
                 player.set_fullscreen(!is_fullscreen);
