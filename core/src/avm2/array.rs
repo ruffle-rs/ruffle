@@ -114,6 +114,25 @@ impl<'gc> ArrayStorage<'gc> {
         }
     }
 
+    /// Replace the existing dense storage with a new dense storage.
+    /// Panics if this `ArrayStorage` is sparse.
+    pub fn replace_dense_storage(&mut self, new_storage: Vec<Option<Value<'gc>>>) {
+        let new_occupied_count = new_storage.iter().filter(|v| v.is_some()).count();
+
+        match self {
+            ArrayStorage::Dense {
+                storage,
+                occupied_count,
+            } => {
+                *occupied_count = new_occupied_count;
+                *storage = new_storage;
+            }
+            ArrayStorage::Sparse { .. } => {
+                panic!("Cannot replace dense storage on sparse ArrayStorage");
+            }
+        }
+    }
+
     /// Retrieve a value from array storage by index.
     ///
     /// Array holes and out of bounds values will be treated the same way, by

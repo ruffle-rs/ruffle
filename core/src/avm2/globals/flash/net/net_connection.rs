@@ -11,6 +11,7 @@ use crate::{
 };
 use flash_lso::packet::Header;
 use flash_lso::types::AMFVersion;
+use flash_lso::types::ObjectId;
 use flash_lso::types::Value as AMFValue;
 use fnv::FnvHashMap;
 use ruffle_wstr::WStr;
@@ -266,7 +267,7 @@ pub fn call<'gc>(
                 activation.context,
                 handle,
                 command.to_string(),
-                AMFValue::StrictArray(arguments),
+                AMFValue::StrictArray(ObjectId::INVALID, arguments),
                 responder,
             );
         } else {
@@ -274,7 +275,7 @@ pub fn call<'gc>(
                 activation.context,
                 handle,
                 command.to_string(),
-                AMFValue::StrictArray(arguments),
+                AMFValue::StrictArray(ObjectId::INVALID, arguments),
             );
         }
 
