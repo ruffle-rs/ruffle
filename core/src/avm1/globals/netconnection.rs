@@ -11,6 +11,7 @@ use crate::context::UpdateContext;
 use crate::net_connection::{NetConnectionHandle, NetConnections, ResponderCallback};
 use crate::string::{AvmString, StringContext};
 use flash_lso::packet::Header;
+use flash_lso::types::ObjectId;
 use flash_lso::types::Value as AMFValue;
 use gc_arena::{Collect, Gc};
 use ruffle_wstr::WStr;
@@ -273,7 +274,7 @@ fn call<'gc>(
                 activation.context,
                 handle,
                 command.to_string(),
-                AMFValue::StrictArray(arguments),
+                AMFValue::StrictArray(ObjectId::INVALID, arguments),
                 responder,
             );
         } else {
@@ -281,7 +282,7 @@ fn call<'gc>(
                 activation.context,
                 handle,
                 command.to_string(),
-                AMFValue::StrictArray(arguments),
+                AMFValue::StrictArray(ObjectId::INVALID, arguments),
             );
         }
     }

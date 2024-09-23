@@ -1754,7 +1754,7 @@ dependencies = [
 [[package]]
 name = "flash-lso"
 version = "0.6.0"
-source = "git+https://github.com/ruffle-rs/rust-flash-lso?rev=98679aa0cdcad5fecc5c7321b2eac35b69dbcd5f#98679aa0cdcad5fecc5c7321b2eac35b69dbcd5f"
+source = "git+https://github.com/ruffle-rs/rust-flash-lso?rev=cbd18e1a79cf902f8ff1d2bf551801c4021b3be6#cbd18e1a79cf902f8ff1d2bf551801c4021b3be6"
 dependencies = [
  "enumset",
  "nom",

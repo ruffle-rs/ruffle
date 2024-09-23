@@ -8,7 +8,7 @@ use crate::display_object::TDisplayObject;
 use crate::string::{AvmString, StringContext};
 use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
-use flash_lso::types::{Lso, Reference, Value as AmfValue};
+use flash_lso::types::{Lso, ObjectId, Reference, Value as AmfValue};
 use gc_arena::{Collect, GcCell};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -77,7 +77,7 @@ pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -
         Value::String(string) => AmfValue::String(string.to_string()),
         Value::Object(object) => {
             let lso = new_lso(activation, "root", object);
-            AmfValue::Object(lso.into_iter().collect(), None)
+            AmfValue::Object(ObjectId::INVALID, lso.into_iter().collect(), None)
         }
         Value::MovieClip(_) => AmfValue::Undefined,
     }
@@ -156,7 +156,7 @@ pub fn deserialize_value<'gc>(
         AmfValue::Number(f) => (*f).into(),
         AmfValue::String(s) => Value::String(AvmString::new_utf8(activation.context.gc_context, s)),
         AmfValue::Bool(b) => (*b).into(),
-        AmfValue::ECMAArray(_, associative, len) => {
+        AmfValue::ECMAArray(_, _, associative, len) => {
             let array_constructor = activation.context.avm1.prototypes().array_constructor;
             if let Ok(Value::Object(obj)) =
                 array_constructor.construct(activation, &[(*len).into()])
@@ -188,7 +188,7 @@ pub fn deserialize_value<'gc>(
                 Value::Undefined
             }
         }
-        AmfValue::Object(elements, _) => {
+        AmfValue::Object(_, elements, _) => {
             // Deserialize Object
             let obj = ScriptObject::new(
                 activation.context.gc_context,
