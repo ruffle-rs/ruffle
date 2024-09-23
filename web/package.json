@@ -9,7 +9,7 @@
         "./packages/*"
     ],
     "devDependencies": {
-        "@eslint/js": "^9.11.0",
+        "@eslint/js": "^9.11.1",
         "@types/eslint__js": "^8.42.3",
         "@wdio/browserstack-service": "^9.0.9",
         "@wdio/cli": "^8.40.2",
@@ -21,7 +21,7 @@
         "chai-html": "^3.0.0",
         "copy-webpack-plugin": "^12.0.2",
         "cross-env": "^7.0.3",
-        "eslint": "^9.11.0",
+        "eslint": "^9.11.1",
         "eslint-config-prettier": "^9.1.0",
         "eslint-plugin-jsdoc": "^50.2.4",
         "eslint-plugin-prettier": "^5.2.1",
@@ -36,7 +36,7 @@
         "ts-loader": "^9.5.1",
         "tsx": "^4.19.1",
         "typescript": "^5.6.2",
-        "typescript-eslint": "^8.6.0",
+        "typescript-eslint": "^8.7.0",
         "webdriverio": "^8.40.0",
         "webpack": "^5.94.0",
         "webpack-cli": "^5.1.4"
