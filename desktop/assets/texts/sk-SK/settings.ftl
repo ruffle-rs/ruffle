@@ -46,7 +46,28 @@ align-top-right = Vpravo hore
 align-bottom-right = Vpravo dole
 align-force = Vynútiť
 scale-mode = Režim natiahnutia
+scale-mode-noscale = Neškálované (100%)
+scale-mode-noscale-tooltip =
+    Zobrazí film v pôvodnej veľkosti bez akéhokoľvek zväčšenia.
+    
+    Zodpovedá StageScaleMode.NO_SCALE
+scale-mode-showall = Priblíženie na mieru
+scale-mode-showall-tooltip =
+    Priblíži film tak, aby čo najviac vyplnil okno bez orezania, aby sa zachoval pôvodný pomer strán.
+    
+    Zodpovedá StageScaleMode.SHOW_ALL
+scale-mode-exactfit = Roztiahnuť na mieru
+scale-mode-exactfit-tooltip =
+    Zaistí, aby film vyplnil celé okno bez ohľadu na pomer strán.
+    
+    Zodpovedá StageScaleMode.EXACT_FIT
+scale-mode-noborder = Orezať na mieru
+scale-mode-noborder-tooltip =
+    Vyplní celé okno pričom zachová pomer strán, oreže film pokiaľ je to nutné.
+    
+    Zodpovedá StageScaleMode.NO_BORDER
 scale-mode-force = Vynútiť
+scale-mode-force-tooltip = Zabráni filmu zmeniť režim škálovania a uzamkne ho na vybranom nastavení.
 player-version = Verzia prehrávača
 player-runtime = Doba behu prehrávača
 player-runtime-flash = Flash prehrávač
