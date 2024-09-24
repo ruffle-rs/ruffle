@@ -37,13 +37,19 @@ impl DesktopNavigatorInterface {
         movie_path: Option<PathBuf>,
         filesystem_access_mode: FilesystemAccessMode,
     ) -> Self {
+        let mut allowed_paths = Vec::new();
+        if let Some(movie_path) = movie_path {
+            if let Some(parent) = movie_path.parent() {
+                // TODO Be smarter here, we do not necessarily want to allow
+                //   access to the SWF's dir, but we also do not want to present
+                //   the dialog to the user too often.
+                allowed_paths.push(parent.to_path_buf());
+            }
+            allowed_paths.push(movie_path);
+        }
         Self {
             event_loop: Arc::new(Mutex::new(event_loop)),
-            allowed_paths: Arc::new(Mutex::new(if let Some(movie_path) = movie_path {
-                vec![movie_path]
-            } else {
-                Vec::new()
-            })),
+            allowed_paths: Arc::new(Mutex::new(allowed_paths)),
             filesystem_access_mode,
         }
     }
