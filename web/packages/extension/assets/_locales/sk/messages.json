@@ -11,6 +11,9 @@
     "settings_autostart": {
         "message": "Spustiť automaticky bez úvodnej obrazovky (potom kliknutím zrušíte stlmenie)"
     },
+    "settings_swf_takeover": {
+        "message": "Prehrať SWF súbory v prehliadači namiesto sťahovania"
+    },
     "settings_log_level": {
         "message": "Úroveň logu"
     },
@@ -106,6 +109,9 @@
     },
     "grant_single_site_permission": {
         "message": "Natrvalo povoliť pre túto stránku"
+    },
+    "permissions_explanation": {
+        "message": "Rozšírenie Ruffle funguje najlepšie s možnosťou prístupu k dátam na všetkých webových stránkach. To mu umožňuje spustiť sa pri prvom načítaní ľubovoľnej webovej stránky, a preto môže presvedčiť webové stránky, ktoré vykonávajú detekciu Flash Playeru, aby okamžite nechali spustiť obsah Flash. Dáva mu to tiež možnosť načítať súbory SWF do svojej internej stránky prehrávača z iných miest na webe a umožňuje mu to automaticky načítať priame odkazy SWF do tejto stránky. Ak toto oprávnenie neudelíte, budete musieť Ruffle povoliť ručne na každej webovej stránke, na ktorej ho chcete používať, kliknutím na ikonu rozšírenia a jeho povolením pre danú webovú stránku."
     },
     "swf_player_permissions": {
         "message": "Ak chcete z tejto URL adresy načítať súbory SWF, musíte udeliť oprávnenie."
