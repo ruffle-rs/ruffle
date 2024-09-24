@@ -41,8 +41,8 @@ sys-locale = "0.3.1"
 wgpu = { workspace = true }
 futures = { workspace = true }
 chrono = { workspace = true }
-fluent-templates = "0.10.1"
-toml_edit = { version = "0.22.20", features = ["parse"] }
+fluent-templates = "0.11.0"
+toml_edit = { version = "0.22.22", features = ["parse"] }
 gilrs = "0.11"
 tokio = { workspace = true, features = ["rt-multi-thread", "macros"]}
 
