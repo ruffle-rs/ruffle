@@ -1548,9 +1548,7 @@ impl<W: Write> Writer<W> {
                 is_smoothed,
                 is_repeating,
             } => {
-                // Bitmap smoothing only an option in SWF version 8+.
-                // Lower versions use 0x40 and 0x41 type even when unsmoothed.
-                let fill_style_type = match (is_smoothed || self.version < 8, is_repeating) {
+                let fill_style_type = match (is_smoothed, is_repeating) {
                     (true, true) => 0x40,
                     (true, false) => 0x41,
                     (false, true) => 0x42,
