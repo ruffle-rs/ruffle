@@ -12,7 +12,7 @@
         "message": "Reproduzir automaticamente conteúdo Flash (clique para ativar o som)"
     },
     "settings_swf_takeover": {
-        "message": "Reproduza arquivos SWF no navegador em vez de baixá-los"
+        "message": "Reproduza arquivos SWF no navegador invés de baixá-los"
     },
     "settings_log_level": {
         "message": "Nível de registro"
@@ -102,7 +102,7 @@
         "message": "Página de integração"
     },
     "permissions_grant": {
-        "message": "Conceda permissão ao Ruffle para acessar meus dados em todos os sites"
+        "message": "Conceder permissão ao Ruffle para acessar meus dados em todos os sites"
     },
     "permissions_not_granted": {
         "message": "Você precisará clicar no ícone Ruffle em todos os sites nos quais desejar usar o Ruffle"

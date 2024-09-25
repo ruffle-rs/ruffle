@@ -11,6 +11,9 @@
     "settings_autostart": {
         "message": "Automatisch afspelen zonder startscherm (daarna klikken om dempen op te heffen)"
     },
+    "settings_swf_takeover": {
+        "message": "Speel SWF-bestanden in de browser in plaats van ze te downloaden"
+    },
     "settings_log_level": {
         "message": "Logniveau"
     },
@@ -94,5 +97,23 @@
     },
     "settings_saved": {
         "message": "Instellingen opgeslagen"
+    },
+    "onboarding_page": {
+        "message": "Eerste-gebruik pagina"
+    },
+    "permissions_grant": {
+        "message": "Geef Ruffle toegang tot mijn gegevens op alle websites"
+    },
+    "permissions_not_granted": {
+        "message": "Je zal het Ruffle icoon moeten aanklikken op elke website waar je Ruffle wil gebruiken"
+    },
+    "grant_single_site_permission": {
+        "message": "Permanent inschakelen voor deze website"
+    },
+    "permissions_explanation": {
+        "message": "De Ruffle extensie werkt het beste met toegang tot data op alle websites. Hierdoor kan deze draaien als de website nog aan het laden is, en websites die Flash Player detecteren overtuigen dat het er is. Het maakt het ook mogelijk om SWF-bestanden van andere plekken op het internet te laten en automatisch SWF links in de pagina te laden. Zonder deze toestemming moet je Ruffle handmatig inschakelen op elke website waar je het wil gebruiken door het icoon aan te klikken en dan in te schakelen."
+    },
+    "swf_player_permissions": {
+        "message": "Je moet toestemming aan deze URL bron geven om er SWF-bestanden vanuit te kunnen laden."
     }
 }
