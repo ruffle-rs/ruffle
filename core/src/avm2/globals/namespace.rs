@@ -31,7 +31,9 @@ pub fn init<'gc>(
     let (prefix, namespace) = match arguments_list.as_slice() {
         [prefix, uri] => {
             let namespace_uri = if let Value::Object(Object::QNameObject(qname)) = uri {
-                qname.uri().unwrap_or_else(|| activation.strings().empty())
+                qname
+                    .uri(activation.strings())
+                    .unwrap_or_else(|| activation.strings().empty())
             } else {
                 uri.coerce_to_string(activation)?
             };
@@ -54,7 +56,7 @@ pub fn init<'gc>(
             (resulting_prefix, namespace)
         }
         [Value::Object(Object::QNameObject(qname))] => {
-            let uri = qname.uri();
+            let uri = qname.uri(activation.strings());
             let ns = uri.map_or_else(Namespace::any, |uri| {
                 Namespace::package(uri, api_version, activation.strings())
             });
@@ -110,11 +112,11 @@ pub fn get_prefix<'gc>(
 
 /// Implements `Namespace.uri`'s getter
 pub fn get_uri<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_namespace_object().unwrap();
 
-    Ok(this.namespace().as_uri().into())
+    Ok(this.namespace().as_uri(activation.strings()).into())
 }

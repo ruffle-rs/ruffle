@@ -281,8 +281,8 @@ impl<'gc> Namespace<'gc> {
     /// Get the string value of this namespace, ignoring its type.
     ///
     /// TODO: Is this *actually* the namespace URI?
-    pub fn as_uri(&self) -> AvmString<'gc> {
-        self.as_uri_opt().unwrap_or_else(|| "".into())
+    pub fn as_uri(&self, context: &mut StringContext<'gc>) -> AvmString<'gc> {
+        self.as_uri_opt().unwrap_or_else(|| context.empty())
     }
 
     /// Compares two namespaces, requiring that their versions match exactly.

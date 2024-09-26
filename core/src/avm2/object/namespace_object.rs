@@ -24,11 +24,8 @@ pub fn namespace_allocator<'gc>(
         NamespaceObjectData {
             base,
             namespace: Lock::new(namespace),
-            prefix: Lock::new(if namespace.as_uri().is_empty() {
-                Some(activation.strings().empty())
-            } else {
-                None
-            }),
+            // The public namespace has no prefix
+            prefix: Lock::new(Some(activation.strings().empty())),
         },
     ))
     .into())
@@ -84,7 +81,7 @@ impl<'gc> NamespaceObject<'gc> {
             NamespaceObjectData {
                 base,
                 namespace: Lock::new(namespace),
-                prefix: Lock::new(if namespace.as_uri().is_empty() {
+                prefix: Lock::new(if namespace.as_uri(activation.strings()).is_empty() {
                     Some(activation.strings().empty())
                 } else {
                     None
@@ -127,7 +124,11 @@ impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
     }
 
     fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(self.0.namespace.get().as_uri().into())
+        // TODO(moulins): pass in a StringContext so we can call .as_uri() directly.
+        match self.0.namespace.get().as_uri_opt() {
+            Some(uri) => Ok(uri.into()),
+            None => Ok("".into()),
+        }
     }
 
     fn as_namespace(&self) -> Option<Namespace<'gc>> {
@@ -157,10 +158,10 @@ impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
     fn get_enumerant_value(
         self,
         index: u32,
-        _activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         Ok(match index {
-            1 => self.namespace().as_uri().into(),
+            1 => self.namespace().as_uri(activation.strings()).into(),
             2 => self.prefix().map(Into::into).unwrap_or(Value::Undefined),
             _ => Value::Undefined,
         })

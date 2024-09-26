@@ -426,7 +426,7 @@ impl<'gc> ClassObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         let property = self.instance_vtable().get_trait(multiname);
         if property.is_none() {
-            let qualified_multiname_name = multiname.as_uri(activation.context.gc_context);
+            let qualified_multiname_name = multiname.as_uri(activation.strings());
             let qualified_class_name = self
                 .inner_class_definition()
                 .name()

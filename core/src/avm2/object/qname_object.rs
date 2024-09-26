@@ -8,6 +8,7 @@ use crate::avm2::AvmString;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
+use crate::string::StringContext;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
@@ -111,21 +112,23 @@ impl<'gc> QNameObject<'gc> {
         write_name.set_is_qname(is_qname);
     }
 
-    pub fn uri(&self) -> Option<AvmString<'gc>> {
+    pub fn uri(&self, context: &mut StringContext<'gc>) -> Option<AvmString<'gc>> {
         let name = self.0.name.borrow();
 
         if name.is_any_namespace() {
             None
         } else if name.namespace_set().len() > 1 {
-            Some("".into())
+            Some(context.empty())
         } else {
-            Some(
-                name.namespace_set()
-                    .first()
-                    .expect("Malformed multiname")
-                    .as_uri(),
-            )
+            name.namespace_set()
+                .first()
+                .expect("Malformed multiname")
+                .as_uri_opt()
         }
+    }
+
+    pub fn is_any_namespace(&self) -> bool {
+        self.0.name.borrow().is_any_namespace()
     }
 
     pub fn init_name(self, mc: &Mutation<'gc>, name: Multiname<'gc>) {
@@ -177,7 +180,7 @@ impl<'gc> TObject<'gc> for QNameObject<'gc> {
         Ok(match index {
             1 => self.local_name().into(),
             2 => self
-                .uri()
+                .uri(activation.strings())
                 .unwrap_or_else(|| activation.strings().empty())
                 .into(),
             _ => Value::Undefined,

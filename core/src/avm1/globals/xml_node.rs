@@ -271,7 +271,7 @@ fn prefix<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this
         .as_xml_node()
-        .and_then(|n| n.prefix(activation.context.gc_context))
+        .and_then(|n| n.prefix(activation.strings()))
         .map_or(Value::Null, Value::from))
 }
 
@@ -382,7 +382,7 @@ fn namespace_uri<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
-        if let Some(prefix) = node.prefix(activation.context.gc_context) {
+        if let Some(prefix) = node.prefix(activation.strings()) {
             return Ok(node
                 .lookup_namespace_uri(&prefix)
                 .unwrap_or_else(|| activation.strings().empty().into()));

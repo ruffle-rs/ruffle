@@ -89,9 +89,9 @@ impl<'gc> AvmString<'gc> {
         }
     }
 
-    pub fn as_wstr(&self) -> &WStr {
-        match &self.source {
-            Source::Managed(s) => s,
+    pub fn as_wstr(&self) -> &'gc WStr {
+        match self.source {
+            Source::Managed(s) => Gc::as_ref(s).as_wstr(),
             Source::Static(s) => s,
         }
     }
