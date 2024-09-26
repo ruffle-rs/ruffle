@@ -171,12 +171,15 @@ impl<'gc> TObject<'gc> for QNameObject<'gc> {
     fn get_enumerant_value(
         self,
         index: u32,
-        _activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // NOTE: Weird avmplus behavior, get_enumerant_name returns uri first, but get_enumerant_value returns localName first.
         Ok(match index {
             1 => self.local_name().into(),
-            2 => self.uri().map(Into::into).unwrap_or("".into()),
+            2 => self
+                .uri()
+                .unwrap_or_else(|| activation.strings().empty())
+                .into(),
             _ => Value::Undefined,
         })
     }

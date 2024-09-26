@@ -188,7 +188,7 @@ impl<'gc> MovieClipReference<'gc> {
     pub fn coerce_to_string(&self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
         match self.resolve_reference(activation) {
             // Couldn't find the reference
-            None => "".into(),
+            None => activation.strings().empty(),
             // Found the reference, cached, we can't re-use `self.path` sadly, it would be quicker if we could
             // But if the clip has been re-named, since being created then `mc.path() != path`
             Some((true, _, dobj)) => AvmString::new(activation.gc(), dobj.path()),
