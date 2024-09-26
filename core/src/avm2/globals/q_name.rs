@@ -55,7 +55,7 @@ pub fn init<'gc>(
         let mut local_arg = arguments_list[1];
 
         if matches!(local_arg, Value::Undefined) {
-            local_arg = "".into();
+            local_arg = activation.strings().empty().into();
         }
 
         let api_version = activation.avm2().root_api_version;
@@ -92,7 +92,7 @@ pub fn init<'gc>(
         }
 
         let local = if qname_arg == Value::Undefined {
-            "".into()
+            activation.strings().empty()
         } else {
             qname_arg.coerce_to_string(activation)?
         };

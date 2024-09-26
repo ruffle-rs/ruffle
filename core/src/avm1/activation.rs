@@ -826,7 +826,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let object = object_val.coerce_to_object(self);
 
         let method_name = if method_name == Value::Undefined {
-            "".into()
+            self.strings().empty()
         } else {
             method_name.coerce_to_string(self)?
         };
@@ -1722,7 +1722,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let object = object_val.coerce_to_object(self);
 
         let method_name = if method_name == Value::Undefined {
-            "".into()
+            self.strings().empty()
         } else {
             method_name.coerce_to_string(self)?
         };

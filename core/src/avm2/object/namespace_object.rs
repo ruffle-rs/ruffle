@@ -25,7 +25,7 @@ pub fn namespace_allocator<'gc>(
             base,
             namespace: Lock::new(namespace),
             prefix: Lock::new(if namespace.as_uri().is_empty() {
-                Some("".into())
+                Some(activation.strings().empty())
             } else {
                 None
             }),
@@ -85,7 +85,7 @@ impl<'gc> NamespaceObject<'gc> {
                 base,
                 namespace: Lock::new(namespace),
                 prefix: Lock::new(if namespace.as_uri().is_empty() {
-                    Some("".into())
+                    Some(activation.strings().empty())
                 } else {
                     None
                 }),

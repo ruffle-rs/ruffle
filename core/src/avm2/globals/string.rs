@@ -46,11 +46,10 @@ pub fn instance_init<'gc>(
 
     if let Some(mut value) = this.as_primitive_mut(activation.context.gc_context) {
         if !matches!(*value, Value::String(_)) {
-            *value = args
-                .get(0)
-                .unwrap_or(&Value::String("".into()))
-                .coerce_to_string(activation)?
-                .into();
+            *value = match args.get(0) {
+                Some(arg) => arg.coerce_to_string(activation)?.into(),
+                None => activation.strings().empty().into(),
+            }
         }
     }
 
@@ -92,11 +91,10 @@ pub fn call_handler<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(args
-        .get(0)
-        .unwrap_or(&Value::String("".into()))
-        .coerce_to_string(activation)?
-        .into())
+    match args.get(0) {
+        Some(arg) => arg.coerce_to_string(activation).map(Into::into),
+        None => Ok(activation.strings().empty().into()),
+    }
 }
 
 /// Implements `length` property's getter
@@ -125,7 +123,7 @@ fn char_at<'gc>(
             .unwrap_or(&Value::Number(0.0))
             .coerce_to_number(activation)?;
         if n < 0.0 {
-            return Ok("".into());
+            return Ok(activation.strings().empty().into());
         }
 
         let index = if !n.is_nan() { n as usize } else { 0 };
@@ -452,7 +450,7 @@ fn slice<'gc>(
             .substring(this, start_index..end_index)
             .into())
     } else {
-        Ok("".into())
+        Ok(activation.strings().empty().into())
     }
 }
 
@@ -537,7 +535,7 @@ fn substr<'gc>(
         } else if len <= -1.0 {
             let wrapped_around = this.len() as f64 + len;
             if wrapped_around as usize + start_index >= this.len() {
-                return Ok("".into());
+                return Ok(activation.strings().empty().into());
             };
             wrapped_around
         } else {
@@ -624,7 +622,7 @@ fn to_string<'gc>(
 
     let string_proto = activation.avm2().classes().string.prototype();
     if Object::ptr_eq(string_proto, this) {
-        return Ok("".into());
+        return Ok(activation.strings().empty().into());
     }
 
     Err(make_error_1004(activation, "String.prototype.toString"))

@@ -253,7 +253,7 @@ where
             let item = resolve_array_hole(activation, this, i, item)?;
 
             if matches!(item, Value::Undefined) || matches!(item, Value::Null) {
-                accum.push("".into());
+                accum.push(activation.strings().empty());
             } else {
                 accum.push(conv(item, activation)?.coerce_to_string(activation)?);
             }

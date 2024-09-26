@@ -23,7 +23,7 @@ pub fn reg_exp_allocator<'gc>(
         activation.context.gc_context,
         RegExpObjectData {
             base,
-            regexp: RefLock::new(RegExp::new("")),
+            regexp: RefLock::new(RegExp::new(activation.strings().empty())),
         },
     ))
     .into())

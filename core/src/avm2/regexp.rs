@@ -228,7 +228,7 @@ impl<'gc> RegExp<'gc> {
                     Some(r) => {
                         AvmString::new(activation.context.gc_context, &txt[r.start..r.end]).into()
                     }
-                    None => "".into(),
+                    None => activation.strings().empty().into(),
                 })
                 .chain(std::iter::once(m.range.start.into()))
                 .chain(std::iter::once((*txt).into()))

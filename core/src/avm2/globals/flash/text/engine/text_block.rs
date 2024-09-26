@@ -48,7 +48,7 @@ pub fn create_text_line<'gc>(
         None => {
             let txt = content
                 .get_public_property("text", activation)
-                .unwrap_or("".into());
+                .unwrap_or_else(|_| activation.strings().empty().into());
 
             if matches!(txt, Value::Null) {
                 // FP returns a null TextLine when `o` is null- note that

@@ -677,27 +677,18 @@ fn set_name<'gc>(
 }
 
 fn drop_target<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
-    this.as_movie_clip()
-        .and_then(|mc| mc.drop_target())
-        .map_or_else(
-            || {
-                if activation.swf_version() < 6 {
-                    Value::Undefined
-                } else {
-                    "".into()
-                }
-            },
-            |drop_target| {
-                AvmString::new(activation.context.gc_context, drop_target.slash_path()).into()
-            },
-        )
+    match this.as_movie_clip().and_then(|mc| mc.drop_target()) {
+        Some(target) => AvmString::new(activation.gc(), target.slash_path()).into(),
+        None if activation.swf_version() < 6 => Value::Undefined,
+        None => activation.strings().empty().into(),
+    }
 }
 
 fn url<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
-    this.as_movie_clip().map_or_else(
-        || "".into(),
-        |mc| AvmString::new_utf8(activation.context.gc_context, mc.movie().url()).into(),
-    )
+    match this.as_movie_clip() {
+        Some(mc) => AvmString::new_utf8(activation.gc(), mc.movie().url()).into(),
+        None => activation.strings().empty().into(),
+    }
 }
 
 fn high_quality<'gc>(
