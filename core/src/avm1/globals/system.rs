@@ -6,7 +6,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::runtime::Avm1;
 use crate::avm1::{ScriptObject, TObject, Value};
 use crate::avm1_stub;
-use crate::context::{GcContext, UpdateContext};
+use crate::context::{StringContext, UpdateContext};
 use bitflags::bitflags;
 use core::fmt;
 
@@ -500,7 +500,7 @@ pub fn on_status<'gc>(
 }
 
 pub fn create<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
     security: Object<'gc>,

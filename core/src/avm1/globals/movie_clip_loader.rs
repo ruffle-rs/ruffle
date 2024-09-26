@@ -9,7 +9,7 @@ use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, Value};
 use crate::backend::navigator::Request;
-use crate::context::GcContext;
+use crate::context::StringContext;
 use crate::display_object::TDisplayObject;
 use crate::loader::MovieLoaderVMData;
 
@@ -163,7 +163,7 @@ fn get_progress<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
     array_proto: Object<'gc>,

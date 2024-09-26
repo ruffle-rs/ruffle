@@ -7,13 +7,13 @@ use crate::avm1::runtime::skip_actions;
 use crate::avm1::scope::{Scope, ScopeClass};
 use crate::avm1::{fscommand, globals, scope, ArrayObject, ScriptObject, Value};
 use crate::backend::navigator::{NavigationMethod, Request};
-use crate::context::UpdateContext;
+use crate::context::{StringContext, UpdateContext};
 use crate::display_object::{
     DisplayObject, DisplayObjectContainer, MovieClip, TDisplayObject, TDisplayObjectContainer,
 };
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use crate::loader::MovieLoaderVMData;
-use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
+use crate::string::{AvmString, AvmStringInterner, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::SwfSlice;
 use crate::vminterface::Instantiator;
 use crate::{avm_error, avm_warn};
@@ -241,6 +241,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     #[inline(always)]
     pub fn gc(&self) -> &'gc gc_arena::Mutation<'gc> {
         self.context.gc_context
+    }
+
+    pub fn strings(&self) -> &AvmStringInterner<'gc> {
+        self.context.strings
+    }
+
+    pub fn strings_mut(&mut self) -> StringContext<'_, 'gc> {
+        self.context.strings_mut()
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -868,7 +876,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .iter()
             .map(|s| {
                 self.context
-                    .interner
+                    .strings
                     .intern_wstr(self.context.gc_context, s.decode(self.encoding()))
                     .into()
             })

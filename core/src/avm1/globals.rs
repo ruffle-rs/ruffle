@@ -4,7 +4,7 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
-use crate::context::GcContext;
+use crate::context::StringContext;
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use crate::string::{AvmString, WStr, WString};
 use gc_arena::Collect;
@@ -518,7 +518,7 @@ pub struct SystemPrototypes<'gc> {
 
 /// Initialize default global scope and builtins for an AVM1 instance.
 pub fn create_globals<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'_, 'gc>,
 ) -> (
     SystemPrototypes<'gc>,
     Object<'gc>,
@@ -1207,7 +1207,7 @@ mod tests {
     use super::*;
 
     fn setup<'gc>(activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
-        create_globals(&mut activation.context.borrow_gc()).1
+        create_globals(&mut activation.strings_mut()).1
     }
 
     test_method!(boolean_function, "Boolean", setup,

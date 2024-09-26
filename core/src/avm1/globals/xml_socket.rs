@@ -3,7 +3,7 @@ use crate::avm1::object::{NativeObject, Object};
 use crate::avm1::property_decl::define_properties_on;
 use crate::avm1::{property_decl::Declaration, ScriptObject};
 use crate::avm1::{Activation, Error, Executable, ExecutionReason, TObject, Value};
-use crate::context::{GcContext, UpdateContext};
+use crate::context::{StringContext, UpdateContext};
 use crate::display_object::TDisplayObject;
 use crate::socket::SocketHandle;
 use crate::string::AvmString;
@@ -247,7 +247,7 @@ pub fn constructor<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
@@ -257,7 +257,7 @@ pub fn create_proto<'gc>(
 }
 
 pub fn create_class<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'_, 'gc>,
     xml_socket_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

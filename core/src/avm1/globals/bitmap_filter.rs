@@ -13,7 +13,7 @@ use crate::avm1::globals::gradient_filter::GradientFilter;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Attribute, Object, ScriptObject, TObject, Value};
-use crate::context::{GcContext, UpdateContext};
+use crate::context::{StringContext, UpdateContext};
 use ruffle_render::filters::Filter;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -194,7 +194,7 @@ pub fn create_instance<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

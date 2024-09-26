@@ -5,13 +5,13 @@ use std::borrow::Cow;
 use crate::avm1::function::{Executable, FunctionObject, NativeFunction};
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
-use crate::context::GcContext;
+use crate::context::StringContext;
 
 /// Defines a list of properties on a [`ScriptObject`].
 #[inline(never)]
 pub fn define_properties_on<'gc>(
     decls: &[Declaration],
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'_, 'gc>,
     this: ScriptObject<'gc>,
     fn_proto: Object<'gc>,
 ) {
@@ -63,15 +63,15 @@ impl Declaration {
     /// defined a property.
     pub fn define_on<'gc>(
         &self,
-        context: &mut GcContext<'_, 'gc>,
+        context: &mut StringContext<'_, 'gc>,
         this: ScriptObject<'gc>,
         fn_proto: Object<'gc>,
     ) -> Value<'gc> {
         let mc = context.gc_context;
 
         let name = match ruffle_wstr::from_utf8(self.name) {
-            Cow::Borrowed(name) => context.interner.intern_static(mc, name),
-            Cow::Owned(name) => context.interner.intern_wstr(mc, name),
+            Cow::Borrowed(name) => context.strings.intern_static(mc, name),
+            Cow::Owned(name) => context.strings.intern_wstr(mc, name),
         };
 
         let value = match self.kind {
@@ -93,7 +93,7 @@ impl Declaration {
             }
             DeclKind::String(s) => {
                 let s = ruffle_wstr::from_utf8(s);
-                context.interner.intern_wstr(mc, s).into()
+                context.strings.intern_wstr(mc, s).into()
             }
             DeclKind::Bool(b) => b.into(),
             DeclKind::Int(i) => i.into(),

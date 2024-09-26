@@ -6,7 +6,7 @@ use crate::avm2::object::{ArrayObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::property::Property;
 use crate::avm2::{Activation, Error, Multiname, Namespace, Object, Value};
-use crate::context::GcContext;
+use crate::context::StringContext;
 use crate::string::AvmString;
 
 use crate::avm2_stub_method;
@@ -306,8 +306,7 @@ fn describe_internal_body<'gc>(
                 if !flags.contains(DescribeTypeFlags::INCLUDE_VARIABLES) {
                     continue;
                 }
-                let prop_class_name =
-                    vtable.slot_class_name(&mut activation.borrow_gc(), *slot_id)?;
+                let prop_class_name = vtable.slot_class_name(activation.strings_mut(), *slot_id)?;
 
                 let access = match prop {
                     Property::ConstSlot { .. } => "readonly",
@@ -362,7 +361,7 @@ fn describe_internal_body<'gc>(
                 }
 
                 let return_type_name =
-                    display_name(&mut activation.borrow_gc(), method.method.return_type());
+                    display_name(activation.strings_mut(), method.method.return_type());
                 let declared_by = method.class;
 
                 if flags.contains(DescribeTypeFlags::HIDE_OBJECT)
@@ -459,7 +458,7 @@ fn describe_internal_body<'gc>(
                     Some(ns.as_uri())
                 };
 
-                let accessor_type = display_name(&mut activation.borrow_gc(), method_type);
+                let accessor_type = display_name(activation.strings_mut(), method_type);
                 let declared_by = defining_class.dollar_removed_name(mc).to_qualified_name(mc);
 
                 let accessor_obj = activation
@@ -537,13 +536,13 @@ fn describe_internal_body<'gc>(
 }
 
 fn display_name<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: StringContext<'_, 'gc>,
     name: Option<Gc<'gc, Multiname<'gc>>>,
 ) -> AvmString<'gc> {
     if let Some(name) = name {
         name.to_qualified_name_or_star(context)
     } else {
-        context.interner.get_ascii_char('*')
+        context.strings.get_ascii_char('*')
     }
 }
 
@@ -556,7 +555,7 @@ fn write_params<'gc>(
         .as_array_storage_mut(activation.context.gc_context)
         .unwrap();
     for param in method.signature() {
-        let param_type_name = display_name(&mut activation.borrow_gc(), param.param_type_name);
+        let param_type_name = display_name(activation.strings_mut(), param.param_type_name);
         let optional = param.default_value.is_some();
         let param_obj = activation
             .avm2()

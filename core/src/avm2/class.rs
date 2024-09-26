@@ -803,8 +803,7 @@ impl<'gc> Class<'gc> {
         method: &AbcMethod,
         body: &AbcMethodBody,
     ) -> Result<Class<'gc>, Error<'gc>> {
-        let name =
-            translation_unit.pool_string(method.name.as_u30(), &mut activation.borrow_gc())?;
+        let name = translation_unit.pool_string(method.name.as_u30(), activation.strings_mut())?;
         let mut traits = Vec::with_capacity(body.traits.len());
 
         for trait_entry in body.traits.iter() {

@@ -5,7 +5,7 @@ use crate::avm2::script::TranslationUnit;
 use crate::avm2::Error;
 use crate::avm2::QName;
 use crate::avm2::{Object, Value};
-use crate::context::GcContext;
+use crate::context::StringContext;
 use crate::string::{AvmString, WStr, WString};
 use bitflags::bitflags;
 use gc_arena::Gc;
@@ -211,7 +211,7 @@ impl<'gc> Multiname<'gc> {
                         translation_unit.pool_namespace(activation, *namespace)?,
                     ),
                     name: translation_unit
-                        .pool_string_option(name.0, &mut activation.borrow_gc())?
+                        .pool_string_option(name.0, activation.strings_mut())?
                         .map(|v| v.into()),
                     param: None,
                     flags: MultinameFlags::IS_QNAME,
@@ -220,7 +220,7 @@ impl<'gc> Multiname<'gc> {
             AbcMultiname::RTQName { name } | AbcMultiname::RTQNameA { name } => Self {
                 ns: NamespaceSet::multiple(vec![], mc),
                 name: translation_unit
-                    .pool_string_option(name.0, &mut activation.borrow_gc())?
+                    .pool_string_option(name.0, activation.strings_mut())?
                     .map(|v| v.into()),
                 param: None,
                 flags: MultinameFlags::HAS_LAZY_NS | MultinameFlags::IS_QNAME,
@@ -243,7 +243,7 @@ impl<'gc> Multiname<'gc> {
             } => Self {
                 ns: Self::abc_namespace_set(activation, translation_unit, *namespace_set)?,
                 name: translation_unit
-                    .pool_string_option(name.0, &mut activation.borrow_gc())?
+                    .pool_string_option(name.0, activation.strings_mut())?
                     .map(|v| v.into()),
                 param: None,
                 flags: Default::default(),
@@ -476,9 +476,9 @@ impl<'gc> Multiname<'gc> {
 
     /// Like `to_qualified_name`, but returns `*` if `self.is_any()` is true.
     /// This is used by `describeType`
-    pub fn to_qualified_name_or_star(&self, context: &mut GcContext<'_, 'gc>) -> AvmString<'gc> {
+    pub fn to_qualified_name_or_star(&self, context: StringContext<'_, 'gc>) -> AvmString<'gc> {
         if self.is_any_name() {
-            context.interner.get_ascii_char('*')
+            context.strings.get_ascii_char('*')
         } else {
             self.to_qualified_name(context.gc_context)
         }
@@ -543,7 +543,7 @@ pub struct CommonMultinames<'gc> {
 }
 
 impl<'gc> CommonMultinames<'gc> {
-    pub fn new(context: &mut GcContext<'_, 'gc>, namespaces: &CommonNamespaces<'gc>) -> Self {
+    pub fn new(context: &mut StringContext<'_, 'gc>, namespaces: &CommonNamespaces<'gc>) -> Self {
         let mc = context.gc_context;
 
         let mut create_pub_multiname = |local_name: &'static [u8]| -> Gc<'gc, Multiname<'gc>> {
@@ -552,7 +552,7 @@ impl<'gc> CommonMultinames<'gc> {
                 Multiname::new(
                     namespaces.public_all(),
                     context
-                        .interner
+                        .strings
                         .intern_static(context.gc_context, WStr::from_units(local_name)),
                 ),
             )

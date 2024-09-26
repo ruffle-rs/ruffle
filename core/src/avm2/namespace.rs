@@ -1,7 +1,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::Error;
 use crate::string::{AvmAtom, AvmString};
-use crate::{avm2::script::TranslationUnit, context::GcContext};
+use crate::{avm2::script::TranslationUnit, context::StringContext};
 use gc_arena::{Collect, Gc};
 use num_traits::FromPrimitive;
 use ruffle_wstr::WStr;
@@ -111,8 +111,7 @@ impl<'gc> Namespace<'gc> {
             | AbcNamespace::Private(idx) => idx,
         };
 
-        let mut namespace_name =
-            translation_unit.pool_string(index.0, &mut activation.borrow_gc())?;
+        let mut namespace_name = translation_unit.pool_string(index.0, activation.strings_mut())?;
 
         // Private namespaces don't get any of the namespace version checks
         if let AbcNamespace::Private(_) = abc_namespace {
@@ -168,8 +167,7 @@ impl<'gc> Namespace<'gc> {
             let stripped = strip_version_mark(namespace_name.as_wstr(), is_playerglobals);
             let has_version_mark = stripped.is_some();
             if let Some((stripped, version)) = stripped {
-                let stripped_string = AvmString::new(mc, stripped);
-                namespace_name = activation.context.interner.intern(mc, stripped_string);
+                namespace_name = activation.context.strings.intern_wstr(mc, stripped);
                 api_version = version;
             }
 
@@ -228,10 +226,10 @@ impl<'gc> Namespace<'gc> {
     pub fn package(
         package_name: impl Into<AvmString<'gc>>,
         api_version: ApiVersion,
-        context: &mut GcContext<'_, 'gc>,
+        context: StringContext<'_, 'gc>,
     ) -> Self {
         let atom = context
-            .interner
+            .strings
             .intern(context.gc_context, package_name.into());
         Self(Some(Gc::new(
             context.gc_context,
@@ -242,10 +240,10 @@ impl<'gc> Namespace<'gc> {
     // TODO(moulins): allow passing an AvmAtom or a non-static `&WStr` directly
     pub fn internal(
         package_name: impl Into<AvmString<'gc>>,
-        context: &mut GcContext<'_, 'gc>,
+        context: StringContext<'_, 'gc>,
     ) -> Self {
         let atom = context
-            .interner
+            .strings
             .intern(context.gc_context, package_name.into());
         Self(Some(Gc::new(
             context.gc_context,
@@ -363,32 +361,38 @@ pub struct CommonNamespaces<'gc> {
 impl<'gc> CommonNamespaces<'gc> {
     const PUBLIC_LEN: usize = ApiVersion::VM_INTERNAL as usize + 1;
 
-    pub fn new(context: &mut GcContext<'_, 'gc>) -> Self {
+    pub fn new(context: &mut StringContext<'_, 'gc>) -> Self {
+        macro_rules! ctx {
+            () => {
+                context.reborrow()
+            };
+        }
+
         Self {
             public_namespaces: std::array::from_fn(|val| {
-                Namespace::package("", ApiVersion::from_usize(val).unwrap(), context)
+                Namespace::package("", ApiVersion::from_usize(val).unwrap(), ctx!())
             }),
-            internal: Namespace::internal("", context),
+            internal: Namespace::internal("", ctx!()),
             as3: Namespace::package(
                 "http://adobe.com/AS3/2006/builtin",
                 ApiVersion::AllVersions,
-                context,
+                ctx!(),
             ),
-            vector_public: Namespace::package("__AS3__.vec", ApiVersion::AllVersions, context),
-            vector_internal: Namespace::internal("__AS3__.vec", context),
+            vector_public: Namespace::package("__AS3__.vec", ApiVersion::AllVersions, ctx!()),
+            vector_internal: Namespace::internal("__AS3__.vec", ctx!()),
             proxy: Namespace::package(
                 "http://www.adobe.com/2006/actionscript/flash/proxy",
                 ApiVersion::AllVersions,
-                context,
+                ctx!(),
             ),
-            flash_display_internal: Namespace::internal("flash.display", context),
-            flash_utils_internal: Namespace::internal("flash.utils", context),
-            flash_geom_internal: Namespace::internal("flash.geom", context),
-            flash_events_internal: Namespace::internal("flash.events", context),
-            flash_text_engine_internal: Namespace::internal("flash.text.engine", context),
-            flash_net_internal: Namespace::internal("flash.net", context),
+            flash_display_internal: Namespace::internal("flash.display", ctx!()),
+            flash_utils_internal: Namespace::internal("flash.utils", ctx!()),
+            flash_geom_internal: Namespace::internal("flash.geom", ctx!()),
+            flash_events_internal: Namespace::internal("flash.events", ctx!()),
+            flash_text_engine_internal: Namespace::internal("flash.text.engine", ctx!()),
+            flash_net_internal: Namespace::internal("flash.net", ctx!()),
 
-            __ruffle__: Namespace::package("__ruffle__", ApiVersion::AllVersions, context),
+            __ruffle__: Namespace::package("__ruffle__", ApiVersion::AllVersions, ctx!()),
         }
     }
 

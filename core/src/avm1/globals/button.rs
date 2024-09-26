@@ -8,7 +8,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::ArrayObject;
 use crate::avm1::{globals, Object, ScriptObject, TObject, Value};
 use crate::avm1_stub;
-use crate::context::GcContext;
+use crate::context::StringContext;
 use crate::display_object::{Avm1Button, TDisplayObject, TInteractiveObject};
 use crate::string::AvmString;
 
@@ -52,7 +52,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 };
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

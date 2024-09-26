@@ -18,7 +18,7 @@ use crate::backend::{
 };
 use crate::compatibility_rules::CompatibilityRules;
 use crate::config::Letterbox;
-use crate::context::GcContext;
+use crate::context::StringContext;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::context_menu::{
     BuiltInItemFlags, ContextMenuCallback, ContextMenuItem, ContextMenuState,
@@ -156,7 +156,7 @@ struct GcRootData<'gc> {
     avm2: Avm2<'gc>,
 
     action_queue: ActionQueue<'gc>,
-    interner: AvmStringInterner<'gc>,
+    strings: AvmStringInterner<'gc>,
 
     /// Object which manages asynchronous processes that need to interact with
     /// data in the GC arena.
@@ -239,7 +239,7 @@ impl<'gc> GcRootData<'gc> {
             self.stage,
             &mut self.library,
             &mut self.action_queue,
-            &mut self.interner,
+            &mut self.strings,
             &mut self.avm1,
             &mut self.avm2,
             &mut self.drag_object,
@@ -2201,7 +2201,7 @@ impl Player {
                 ui: this.ui.deref_mut(),
                 action_queue,
                 gc_context,
-                interner,
+                strings: interner,
                 stage,
                 mouse_data,
                 input: &this.input,
@@ -2740,10 +2740,10 @@ impl PlayerBuilder {
         external_interface_providers: Vec<Box<dyn ExternalInterfaceProvider>>,
         fs_command_provider: Box<dyn FsCommandProvider>,
     ) -> GcRoot<'gc> {
-        let mut interner = AvmStringInterner::new(gc_context);
-        let mut init = GcContext {
+        let mut strings = AvmStringInterner::new(gc_context);
+        let mut init = StringContext {
             gc_context,
-            interner: &mut interner,
+            strings: &mut strings,
         };
 
         let data = GcRootData {
@@ -2751,7 +2751,7 @@ impl PlayerBuilder {
             action_queue: ActionQueue::new(),
             avm1: Avm1::new(&mut init, player_version),
             avm2: Avm2::new(&mut init, player_version, player_runtime),
-            interner,
+            strings,
             current_context_menu: None,
             drag_object: None,
             external_interface: ExternalInterface::new(

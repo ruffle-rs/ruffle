@@ -52,24 +52,24 @@ use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 use web_time::Instant;
 
-/// Minimal context, useful for manipulating the GC heap.
-pub struct GcContext<'a, 'gc> {
+/// Minimal context, useful for allocating GC'd strings.
+pub struct StringContext<'a, 'gc> {
     /// The mutation context to allocate and mutate `Gc` pointers.
     pub gc_context: &'gc Mutation<'gc>,
 
     /// The global string interner.
-    pub interner: &'a mut AvmStringInterner<'gc>,
+    pub strings: &'a mut AvmStringInterner<'gc>,
 }
 
-impl<'a, 'gc> GcContext<'a, 'gc> {
+impl<'a, 'gc> StringContext<'a, 'gc> {
     #[inline(always)]
-    pub fn reborrow<'b>(&'b mut self) -> GcContext<'b, 'gc>
+    pub fn reborrow<'b>(&'b mut self) -> StringContext<'b, 'gc>
     where
         'a: 'b,
     {
-        GcContext {
+        StringContext {
             gc_context: self.gc_context,
-            interner: self.interner,
+            strings: self.strings,
         }
     }
 
@@ -93,7 +93,7 @@ pub struct UpdateContext<'gc> {
     pub gc_context: &'gc Mutation<'gc>,
 
     /// The global string interner.
-    pub interner: &'gc mut AvmStringInterner<'gc>,
+    pub strings: &'gc mut AvmStringInterner<'gc>,
 
     /// A collection of stubs encountered during this movie.
     pub stub_tracker: &'gc mut StubCollection,
@@ -469,13 +469,13 @@ impl<'a, 'gc> UpdateContext<'gc> {
     }
 
     #[inline]
-    pub fn borrow_gc<'b>(&'b mut self) -> GcContext<'b, 'gc>
+    pub fn strings_mut<'b>(&'b mut self) -> StringContext<'b, 'gc>
     where
         'a: 'b,
     {
-        GcContext {
+        StringContext {
             gc_context: self.gc_context,
-            interner: self.interner,
+            strings: self.strings,
         }
     }
 

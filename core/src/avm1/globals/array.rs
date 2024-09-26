@@ -6,7 +6,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, TObject, Value};
-use crate::context::GcContext;
+use crate::context::StringContext;
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::AvmString;
 use bitflags::bitflags;
@@ -62,7 +62,7 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
 };
 
 pub fn create_array_object<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'_, 'gc>,
     array_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
@@ -743,7 +743,7 @@ fn qsort<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

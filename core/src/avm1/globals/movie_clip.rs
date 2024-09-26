@@ -8,7 +8,7 @@ use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{self, ArrayObject, Object, ScriptObject, TObject, Value};
 use crate::backend::navigator::NavigationMethod;
-use crate::context::{GcContext, UpdateContext};
+use crate::context::{StringContext, UpdateContext};
 use crate::display_object::{Bitmap, EditText, MovieClip, TInteractiveObject};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
@@ -261,7 +261,7 @@ pub fn hit_test<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

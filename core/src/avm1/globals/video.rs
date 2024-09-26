@@ -6,7 +6,7 @@ use crate::avm1::object::{NativeObject, Object, TObject};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::value::Value;
 use crate::avm1::ScriptObject;
-use crate::context::GcContext;
+use crate::context::StringContext;
 use crate::display_object::{TDisplayObject, Video};
 
 macro_rules! video_method {
@@ -56,7 +56,7 @@ pub fn attach_video<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

@@ -1059,7 +1059,7 @@ impl<'gc> E4XNode<'gc> {
             let local_name = ruffle_wstr::from_utf8_bytes(local_name.into_inner());
             let name = activation
                 .context
-                .interner
+                .strings
                 .intern_wstr(activation.gc(), local_name)
                 .into();
 
@@ -1110,7 +1110,7 @@ impl<'gc> E4XNode<'gc> {
         let local_name = ruffle_wstr::from_utf8_bytes(local_name.into_inner());
         let name = activation
             .context
-            .interner
+            .strings
             .intern_wstr(activation.gc(), local_name)
             .into();
 

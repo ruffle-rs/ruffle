@@ -14,7 +14,7 @@ use crate::avm2::vtable::VTable;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::{Avm2, Error};
-use crate::context::{GcContext, UpdateContext};
+use crate::context::{StringContext, UpdateContext};
 use crate::string::{AvmAtom, AvmString};
 use crate::tag_utils::SwfMovie;
 use crate::PlayerRuntime;
@@ -276,7 +276,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn pool_string_option(
         self,
         string_index: u32,
-        context: &mut GcContext<'_, 'gc>,
+        context: StringContext<'_, 'gc>,
     ) -> Result<Option<AvmAtom<'gc>>, Error<'gc>> {
         if string_index == 0 {
             Ok(None)
@@ -294,7 +294,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn pool_string(
         self,
         string_index: u32,
-        context: &mut GcContext<'_, 'gc>,
+        context: StringContext<'_, 'gc>,
     ) -> Result<AvmAtom<'gc>, Error<'gc>> {
         let mut write = self.0.write(context.gc_context);
         if let Some(Some(atom)) = write.strings.get(string_index as usize) {
@@ -314,7 +314,7 @@ impl<'gc> TranslationUnit<'gc> {
         };
 
         let atom = context
-            .interner
+            .strings
             .intern_wstr(context.gc_context, ruffle_wstr::from_utf8_bytes(raw));
 
         write.strings[string_index as usize] = Some(atom);

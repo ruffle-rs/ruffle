@@ -131,11 +131,10 @@ fn char_at<'gc>(
         let index = if !n.is_nan() { n as usize } else { 0 };
         let ret = if let Some(c) = s.get(index) {
             activation
-                .context
-                .interner
+                .strings()
                 .get_char(activation.context.gc_context, c)
         } else {
-            activation.context.interner.empty()
+            activation.strings().empty()
         };
         return Ok(ret.into());
     }
@@ -451,8 +450,7 @@ fn slice<'gc>(
 
     if start_index < end_index {
         Ok(activation
-            .context
-            .interner
+            .strings()
             .substring(activation.context.gc_context, this, start_index, end_index)
             .into())
     } else {
@@ -493,8 +491,7 @@ fn split<'gc>(
             .map(|c| {
                 Value::from(
                     activation
-                        .context
-                        .interner
+                        .strings()
                         .get_char(activation.context.gc_context, c),
                 )
             })
@@ -561,8 +558,7 @@ fn substr<'gc>(
     let end_index = this.len().min(start_index + len as usize);
 
     Ok(activation
-        .context
-        .interner
+        .strings()
         .substring(activation.context.gc_context, this, start_index, end_index)
         .into())
 }
@@ -599,8 +595,7 @@ fn substring<'gc>(
     }
 
     Ok(activation
-        .context
-        .interner
+        .strings()
         .substring(activation.context.gc_context, this, start_index, end_index)
         .into())
 }

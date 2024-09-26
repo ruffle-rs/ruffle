@@ -194,7 +194,7 @@ impl<'gc> XmlListObject<'gc> {
                         Some(ns) => Namespace::package(
                             ns.uri,
                             ApiVersion::AllVersions,
-                            &mut activation.context.borrow_gc(),
+                            activation.strings_mut(),
                         ),
                         None => activation.avm2().namespaces.public_all(),
                     };

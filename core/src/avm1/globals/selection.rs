@@ -3,7 +3,7 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, Value};
-use crate::context::GcContext;
+use crate::context::StringContext;
 use crate::display_object::{EditText, TDisplayObject, TInteractiveObject, TextSelection};
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
@@ -138,7 +138,7 @@ pub fn set_focus<'gc>(
 }
 
 pub fn create_selection_object<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
     broadcaster_functions: BroadcasterFunctions<'gc>,
@@ -150,7 +150,7 @@ pub fn create_selection_object<'gc>(
     object.into()
 }
 
-pub fn create_proto<'gc>(context: &mut GcContext<'_, 'gc>, proto: Object<'gc>) -> Object<'gc> {
+pub fn create_proto<'gc>(context: &mut StringContext<'_, 'gc>, proto: Object<'gc>) -> Object<'gc> {
     // It's a custom prototype but it's empty.
     ScriptObject::new(context.gc_context, Some(proto)).into()
 }

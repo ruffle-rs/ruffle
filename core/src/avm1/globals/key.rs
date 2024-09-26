@@ -3,7 +3,7 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, Value};
-use crate::context::GcContext;
+use crate::context::StringContext;
 use crate::events::KeyCode;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
@@ -82,7 +82,7 @@ pub fn get_code<'gc>(
 }
 
 pub fn create_key_object<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
     broadcaster_functions: BroadcasterFunctions<'gc>,

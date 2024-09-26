@@ -3,7 +3,7 @@
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
-use crate::context::GcContext;
+use crate::context::StringContext;
 use crate::string::AvmString;
 use gc_arena::{Collect, GcCell};
 use swf::{ColorTransform, Fixed8};
@@ -265,7 +265,7 @@ fn concat<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

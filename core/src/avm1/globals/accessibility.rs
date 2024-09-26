@@ -5,7 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, Value};
 use crate::avm1_stub;
-use crate::context::GcContext;
+use crate::context::StringContext;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "isActive" => method(is_active; DONT_DELETE | READ_ONLY);
@@ -41,7 +41,7 @@ pub fn update_properties<'gc>(
 }
 
 pub fn create_accessibility_object<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

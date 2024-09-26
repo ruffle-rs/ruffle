@@ -4,7 +4,7 @@ use crate::avm1::{
     Activation, Attribute, Error, Executable, NativeObject, Object, ScriptObject, TObject, Value,
 };
 use crate::avm1_stub;
-use crate::context::GcContext;
+use crate::context::StringContext;
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 use flash_lso::amf0::read::AMF0Decoder;
@@ -596,7 +596,7 @@ fn constructor<'gc>(
 }
 
 pub fn create_constructor<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

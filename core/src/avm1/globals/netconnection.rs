@@ -7,7 +7,7 @@ use crate::avm1::{
     Value,
 };
 use crate::avm1_stub;
-use crate::context::{GcContext, UpdateContext};
+use crate::context::{StringContext, UpdateContext};
 use crate::net_connection::{NetConnectionHandle, NetConnections, ResponderCallback};
 use crate::string::AvmString;
 use flash_lso::packet::Header;
@@ -334,7 +334,7 @@ fn connect<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
@@ -344,7 +344,7 @@ pub fn create_proto<'gc>(
 }
 
 pub fn create_class<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'_, 'gc>,
     netconnection_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

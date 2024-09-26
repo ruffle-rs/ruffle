@@ -8,7 +8,7 @@ use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::Value;
 use crate::avm2::{Class, Error, Multiname, Namespace, QName};
-use crate::context::GcContext;
+use crate::context::StringContext;
 use crate::string::AvmString;
 use gc_arena::{Collect, GcCell, Mutation};
 use std::cell::Ref;
@@ -115,7 +115,7 @@ impl<'gc> VTable<'gc> {
 
     pub fn slot_class_name(
         &self,
-        context: &mut GcContext<'_, 'gc>,
+        context: StringContext<'_, 'gc>,
         slot_id: u32,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         self.0

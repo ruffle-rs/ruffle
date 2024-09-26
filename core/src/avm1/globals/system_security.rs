@@ -4,7 +4,7 @@ use crate::avm1::object::Object;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ScriptObject, Value};
 use crate::avm1_stub;
-use crate::context::GcContext;
+use crate::context::StringContext;
 use crate::prelude::TDisplayObject;
 use crate::sandbox::SandboxType;
 use crate::string::AvmString;
@@ -92,7 +92,7 @@ fn policy_file_resolver<'gc>(
 }
 
 pub fn create<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'_, 'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
