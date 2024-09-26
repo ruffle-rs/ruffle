@@ -201,10 +201,10 @@ impl MovieView {
         }
     }
 
-    pub fn render<'pass, 'global: 'pass>(
-        &'pass self,
-        renderer: &'global MovieViewRenderer,
-        render_pass: &mut wgpu::RenderPass<'pass>,
+    pub fn render(
+        &self,
+        renderer: &MovieViewRenderer,
+        render_pass: &mut wgpu::RenderPass<'static>,
     ) {
         render_pass.set_pipeline(&renderer.pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);

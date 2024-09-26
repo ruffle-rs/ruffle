@@ -74,11 +74,9 @@ unknown-registry = "deny"
 unknown-git = "deny"
 
 [sources.allow-org]
-#  github.com organizations to allow git sources for
+# github.com organizations to allow git sources for
 github = [
     "ruffle-rs",
-    # TODO: Remove once a release with https://github.com/emilk/egui/pull/4939 in it is out.
-    "emilk",
 ]
 
 [advisories]
