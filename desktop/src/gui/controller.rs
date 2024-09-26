@@ -353,18 +353,20 @@ impl GuiController {
         {
             let surface_view = surface_texture.texture.create_view(&Default::default());
 
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &surface_view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                label: Some("egui_render"),
-                ..Default::default()
-            });
+            let mut render_pass = encoder
+                .begin_render_pass(&wgpu::RenderPassDescriptor {
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &surface_view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    label: Some("egui_render"),
+                    ..Default::default()
+                })
+                .forget_lifetime();
 
             if let Some(movie_view) = movie_view {
                 movie_view.render(&self.movie_view_renderer, &mut render_pass);
