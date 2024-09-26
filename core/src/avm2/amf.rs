@@ -306,7 +306,7 @@ pub fn deserialize_value_impl<'gc>(
             // First let's create an array out of `values` (dense portion), then we add the elements onto it.
             let mut arr: Vec<Option<Value<'gc>>> = Vec::with_capacity(values.len());
             for value in values {
-                arr.push(Some(deserialize_value(activation, value)?));
+                arr.push(Some(deserialize_value_impl(activation, value, object_map)?));
             }
             array
                 .as_array_storage_mut(activation.context.gc_context)
@@ -317,7 +317,7 @@ pub fn deserialize_value_impl<'gc>(
             for element in elements {
                 array.set_public_property(
                     AvmString::new_utf8(activation.context.gc_context, element.name()),
-                    deserialize_value(activation, element.value())?,
+                    deserialize_value_impl(activation, element.value(), object_map)?,
                     activation,
                 )?;
             }
@@ -330,7 +330,7 @@ pub fn deserialize_value_impl<'gc>(
 
             let mut arr: Vec<Option<Value<'gc>>> = Vec::with_capacity(values.len());
             for value in values {
-                arr.push(Some(deserialize_value(activation, value)?));
+                arr.push(Some(deserialize_value_impl(activation, value, object_map)?));
             }
 
             array
@@ -352,7 +352,7 @@ pub fn deserialize_value_impl<'gc>(
 
             for entry in elements {
                 let name = entry.name();
-                let value = deserialize_value(activation, entry.value())?;
+                let value = deserialize_value_impl(activation, entry.value(), object_map)?;
                 // Flash player logs the error and continues deserializing the rest of the object,
                 // even when calling a customer setter
                 if let Err(e) = obj.set_public_property(
@@ -435,7 +435,7 @@ pub fn deserialize_value_impl<'gc>(
             let new_values = vec
                 .iter()
                 .map(|v| {
-                    deserialize_value(activation, v).map(|value| {
+                    deserialize_value_impl(activation, v, object_map).map(|value| {
                         // There's no Vector.<void>: convert any
                         // Undefined items in the Vector to Null.
                         if matches!(value, Value::Undefined) {
@@ -466,8 +466,8 @@ pub fn deserialize_value_impl<'gc>(
                 .expect("Failed to get dictionary from constructed object");
 
             for (key, value) in values {
-                let key = deserialize_value(activation, key)?;
-                let value = deserialize_value(activation, value)?;
+                let key = deserialize_value_impl(activation, key, object_map)?;
+                let value = deserialize_value_impl(activation, value, object_map)?;
 
                 if let Value::Object(key) = key {
                     dict_obj.set_property_by_object(key, value, activation.context.gc_context);
@@ -489,7 +489,7 @@ pub fn deserialize_value_impl<'gc>(
             );
             Value::Undefined
         }
-        AmfValue::AMF3(val) => deserialize_value(activation, val)?,
+        AmfValue::AMF3(val) => deserialize_value_impl(activation, val, object_map)?,
         AmfValue::Unsupported => Value::Undefined,
         AmfValue::Amf3ObjectReference(r) => {
             if let Some(o) = object_map.get(r) {
