@@ -3,7 +3,7 @@
 use crate::avm1::Attribute;
 use crate::avm1::{Activation, NativeObject};
 use crate::avm1::{ArrayObject, Error, Object, ScriptObject, TObject, Value};
-use crate::string::{AvmString, WStr, WString};
+use crate::string::{AvmString, StringContext, WStr, WString};
 use crate::xml;
 use gc_arena::{Collect, GcCell, Mutation};
 use quick_xml::escape::escape;
@@ -282,10 +282,10 @@ impl<'gc> XmlNode<'gc> {
         })
     }
 
-    pub fn prefix(self, gc_context: &Mutation<'gc>) -> Option<AvmString<'gc>> {
+    pub fn prefix(self, context: &mut StringContext<'gc>) -> Option<AvmString<'gc>> {
         self.node_name().map(|name| match name.find(b':') {
-            Some(i) if i + 1 < name.len() => AvmString::new(gc_context, &name[..i]),
-            _ => "".into(),
+            Some(i) if i + 1 < name.len() => AvmString::new(context.gc(), &name[..i]),
+            _ => context.empty(),
         })
     }
 

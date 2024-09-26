@@ -123,17 +123,15 @@ impl<'gc> QName<'gc> {
     /// a `Mutation` is not available. Normally, you should
     /// use `to_qualified_name`
     pub fn to_qualified_name_no_mc(self) -> Either<AvmString<'gc>, WString> {
-        let uri = self.namespace().as_uri();
         let name = self.local_name();
-        if uri.is_empty() {
-            Either::Left(name)
-        } else {
-            Either::Right({
+        match self.namespace().as_uri_opt() {
+            Some(uri) if !uri.is_empty() => Either::Right({
                 let mut buf = WString::from(uri.as_wstr());
                 buf.push_str(WStr::from_units(b"::"));
                 buf.push_str(&name);
                 buf
-            })
+            }),
+            _ => Either::Left(name),
         }
     }
 
@@ -141,14 +139,16 @@ impl<'gc> QName<'gc> {
     // the namespace and local name. This matches the output produced by
     // Flash Player in error messages
     pub fn to_qualified_name_err_message(self, mc: &Mutation<'gc>) -> AvmString<'gc> {
-        let mut buf = WString::new();
-        let uri = self.namespace().as_uri();
-        if !uri.is_empty() {
-            buf.push_str(&uri);
-            buf.push_char('.');
+        let name = self.local_name();
+        match self.namespace().as_uri_opt() {
+            Some(uri) if !uri.is_empty() => {
+                let mut buf = WString::from(uri.as_wstr());
+                buf.push_char('.');
+                buf.push_str(&name);
+                AvmString::new(mc, buf)
+            }
+            _ => name,
         }
-        buf.push_str(&self.local_name());
-        AvmString::new(mc, buf)
     }
 
     pub fn local_name(&self) -> AvmString<'gc> {
