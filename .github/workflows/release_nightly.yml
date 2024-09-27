@@ -11,7 +11,7 @@ on:
 jobs:
   create-nightly-release:
     name: Create Nightly Release
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       is_active: ${{ steps.activity.outputs.is_active }}
       date: ${{ steps.current_time_underscores.outputs.formattedTime }}
@@ -69,7 +69,7 @@ jobs:
       matrix:
         include:
           - build_name: linux-x86_64
-            os: ubuntu-22.04
+            os: ubuntu-24.04
 
           # Mac does two Rust builds to make a universal binary
           - build_name: macos-x86_64
@@ -293,7 +293,7 @@ jobs:
     name: Build AVM2 stub repository
     needs: create-nightly-release
     if: needs.create-nightly-release.outputs.is_active == 'true'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Clone Ruffle repo
         uses: actions/checkout@v4
@@ -315,7 +315,7 @@ jobs:
     name: Build web${{ matrix.demo && ' demo' || '' }}
     needs: create-nightly-release
     if: needs.create-nightly-release.outputs.is_active == 'true'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       actions: read
       attestations: write
@@ -562,7 +562,7 @@ jobs:
   publish-aur-package:
     name: Publish AUR package
     needs: [create-nightly-release, build]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: github.repository == 'ruffle-rs/ruffle'
     steps:
       - uses: actions/checkout@v4
