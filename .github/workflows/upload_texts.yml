@@ -16,6 +16,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install dependencies
+        run: |
+          sudo apt-get install -y itstool gettext appstream
+
+      - name: Generate desktop & metainfo sources
+        working-directory: desktop/packages/linux
+        run: |
+          make update
+
       - name: Crowdin push
         uses: crowdin/github-action@v2
         with:
