@@ -16,6 +16,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install dependencies
+        run: |
+          sudo apt-get install -y itstool gettext appstream
+
+      - name: Generate desktop & metainfo sources
+        working-directory: desktop/packages/linux
+        run: |
+          make update
+
+      # Crowdin action creates files and directories as root,
+      # however we need write access to them to apply changes,
+      # so just create them here instead of relying on Crowdin.
+      - name: Create locale directories
+        working-directory: desktop/packages/linux
+        run: |
+          mkdir -p locale/rs.ruffle.Ruffle.desktop
+          mkdir -p locale/rs.ruffle.Ruffle.metainfo.xml
+
       - name: Crowdin download
         uses: crowdin/github-action@v2
         with:
@@ -27,6 +45,11 @@ jobs:
           create_pull_request: false
         env:
           CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
+
+      - name: Apply desktop & metainfo sources
+        working-directory: desktop/packages/linux
+        run: |
+          make apply
 
       - name: Commit
         run: |
