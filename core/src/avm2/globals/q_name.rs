@@ -62,19 +62,15 @@ pub fn init<'gc>(
 
         let namespace = match ns_arg {
             Value::Object(Object::NamespaceObject(ns)) => Some(ns.namespace()),
-            Value::Object(Object::QNameObject(qname)) => qname.uri().map(|uri| {
-                Namespace::package(uri, ApiVersion::AllVersions, &mut activation.borrow_gc())
-            }),
+            Value::Object(Object::QNameObject(qname)) => qname
+                .uri()
+                .map(|uri| Namespace::package(uri, ApiVersion::AllVersions, activation.strings())),
             Value::Null => None,
-            Value::Undefined => Some(Namespace::package(
-                "",
-                api_version,
-                &mut activation.borrow_gc(),
-            )),
+            Value::Undefined => Some(Namespace::package("", api_version, activation.strings())),
             v => Some(Namespace::package(
                 v.coerce_to_string(activation)?,
                 api_version,
-                &mut activation.borrow_gc(),
+                activation.strings(),
             )),
         };
 

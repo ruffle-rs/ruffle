@@ -5,8 +5,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::TranslationUnit;
 use crate::avm2::Value;
-use crate::context::GcContext;
-use crate::string::AvmString;
+use crate::string::{AvmString, StringContext};
 use gc_arena::{Collect, Gc};
 
 use super::class::Class;
@@ -113,7 +112,7 @@ impl<'gc> PropertyClass<'gc> {
         }
     }
 
-    pub fn get_name(&self, context: &mut GcContext<'_, 'gc>) -> AvmString<'gc> {
+    pub fn get_name(&self, context: &mut StringContext<'gc>) -> AvmString<'gc> {
         match self {
             PropertyClass::Class(class) => class.name().to_qualified_name(context.gc_context),
             PropertyClass::Name(name, _) => name.to_qualified_name_or_star(context),

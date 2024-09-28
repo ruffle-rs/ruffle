@@ -12,8 +12,8 @@ use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::bitmap_data::{ChannelOptions, ThresholdOperation};
 use crate::bitmap::{is_size_valid, operations};
 use crate::character::Character;
-use crate::context::GcContext;
 use crate::display_object::DisplayObject;
+use crate::string::StringContext;
 use crate::swf::BlendMode;
 use crate::{avm1_stub, avm_error};
 use gc_arena::{GcCell, Mutation};
@@ -1522,7 +1522,7 @@ fn load_bitmap<'gc>(
 }
 
 pub fn create_constructor<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: ScriptObject<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

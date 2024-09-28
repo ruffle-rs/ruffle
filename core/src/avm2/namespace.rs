@@ -1,7 +1,7 @@
 use crate::avm2::activation::Activation;
+use crate::avm2::script::TranslationUnit;
 use crate::avm2::Error;
-use crate::string::{AvmAtom, AvmString};
-use crate::{avm2::script::TranslationUnit, context::GcContext};
+use crate::string::{AvmAtom, AvmString, StringContext};
 use gc_arena::{Collect, Gc};
 use num_traits::FromPrimitive;
 use ruffle_wstr::WStr;
@@ -111,8 +111,7 @@ impl<'gc> Namespace<'gc> {
             | AbcNamespace::Private(idx) => idx,
         };
 
-        let mut namespace_name =
-            translation_unit.pool_string(index.0, &mut activation.borrow_gc())?;
+        let mut namespace_name = translation_unit.pool_string(index.0, activation.strings())?;
 
         // Private namespaces don't get any of the namespace version checks
         if let AbcNamespace::Private(_) = abc_namespace {
@@ -169,7 +168,11 @@ impl<'gc> Namespace<'gc> {
             let has_version_mark = stripped.is_some();
             if let Some((stripped, version)) = stripped {
                 let stripped_string = AvmString::new(mc, stripped);
-                namespace_name = activation.context.interner.intern(mc, stripped_string);
+                namespace_name = activation
+                    .context
+                    .strings
+                    .interner
+                    .intern(mc, stripped_string);
                 api_version = version;
             }
 
@@ -228,7 +231,7 @@ impl<'gc> Namespace<'gc> {
     pub fn package(
         package_name: impl Into<AvmString<'gc>>,
         api_version: ApiVersion,
-        context: &mut GcContext<'_, 'gc>,
+        context: &mut StringContext<'gc>,
     ) -> Self {
         let atom = context
             .interner
@@ -242,7 +245,7 @@ impl<'gc> Namespace<'gc> {
     // TODO(moulins): allow passing an AvmAtom or a non-static `&WStr` directly
     pub fn internal(
         package_name: impl Into<AvmString<'gc>>,
-        context: &mut GcContext<'_, 'gc>,
+        context: &mut StringContext<'gc>,
     ) -> Self {
         let atom = context
             .interner
@@ -363,7 +366,7 @@ pub struct CommonNamespaces<'gc> {
 impl<'gc> CommonNamespaces<'gc> {
     const PUBLIC_LEN: usize = ApiVersion::VM_INTERNAL as usize + 1;
 
-    pub fn new(context: &mut GcContext<'_, 'gc>) -> Self {
+    pub fn new(context: &mut StringContext<'gc>) -> Self {
         Self {
             public_namespaces: std::array::from_fn(|val| {
                 Namespace::package("", ApiVersion::from_usize(val).unwrap(), context)

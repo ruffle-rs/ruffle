@@ -840,7 +840,7 @@ fn pool_string<'gc>(
         return Err(make_error_1032(activation, 0));
     }
 
-    translation_unit.pool_string(index.0, &mut activation.borrow_gc())
+    translation_unit.pool_string(index.0, activation.strings())
 }
 
 fn pool_class<'gc>(

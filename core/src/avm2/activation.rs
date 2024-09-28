@@ -20,8 +20,8 @@ use crate::avm2::value::Value;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::{Avm2, Error};
-use crate::context::{GcContext, UpdateContext};
-use crate::string::{AvmAtom, AvmString};
+use crate::context::UpdateContext;
+use crate::string::{AvmAtom, AvmString, StringContext};
 use crate::tag_utils::SwfMovie;
 use gc_arena::Gc;
 use smallvec::SmallVec;
@@ -150,6 +150,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     #[inline(always)]
     pub fn gc(&self) -> &'gc gc_arena::Mutation<'gc> {
         self.context.gc_context
+    }
+
+    #[inline(always)]
+    pub fn strings(&mut self) -> &mut StringContext<'gc> {
+        &mut self.context.strings
     }
 
     /// Construct an activation that does not represent any particular scope.
@@ -635,11 +640,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     pub fn avm2(&mut self) -> &mut Avm2<'gc> {
         self.context.avm2
-    }
-
-    #[inline]
-    pub fn borrow_gc(&mut self) -> GcContext<'_, 'gc> {
-        self.context.borrow_gc()
     }
 
     pub fn scope_frame(&self) -> &[Scope<'gc>] {

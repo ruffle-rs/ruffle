@@ -10,9 +10,9 @@ use crate::avm2::globals::{
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::script::{Script, TranslationUnit};
-use crate::context::{GcContext, UpdateContext};
+use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, DisplayObjectWeak, TDisplayObject};
-use crate::string::AvmString;
+use crate::string::{AvmString, StringContext};
 use crate::tag_utils::SwfMovie;
 use crate::PlayerRuntime;
 
@@ -189,7 +189,7 @@ pub struct Avm2<'gc> {
 impl<'gc> Avm2<'gc> {
     /// Construct a new AVM interpreter.
     pub fn new(
-        context: &mut GcContext<'_, 'gc>,
+        context: &mut StringContext<'gc>,
         player_version: u8,
         player_runtime: PlayerRuntime,
     ) -> Self {

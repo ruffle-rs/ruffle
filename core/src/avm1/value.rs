@@ -914,7 +914,7 @@ mod test {
             );
             assert_eq!(null.to_primitive_num(activation).unwrap(), null);
 
-            let (protos, global, _) = create_globals(&mut activation.context.borrow_gc());
+            let (protos, global, _) = create_globals(activation.strings());
             let vglobal = Value::Object(global);
 
             assert_eq!(vglobal.to_primitive_num(activation).unwrap(), undefined);

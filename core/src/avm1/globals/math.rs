@@ -3,7 +3,7 @@ use crate::avm1::error::Error;
 use crate::avm1::object::Object;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ScriptObject, Value};
-use crate::context::GcContext;
+use crate::string::StringContext;
 
 use rand::Rng;
 use std::f64::consts;
@@ -162,7 +162,7 @@ pub fn random<'gc>(
 }
 
 pub fn create<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
@@ -179,11 +179,7 @@ mod tests {
     fn setup<'gc>(activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
         let object_proto = activation.context.avm1.prototypes().object;
         let function_proto = activation.context.avm1.prototypes().function;
-        create(
-            &mut activation.context.borrow_gc(),
-            object_proto,
-            function_proto,
-        )
+        create(activation.strings(), object_proto, function_proto)
     }
 
     test_method!(test_abs, "abs", setup,

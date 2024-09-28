@@ -43,16 +43,16 @@ impl<'gc> Metadata<'gc> {
                 .get(single_metadata.0 as usize)
                 .ok_or_else(|| format!("Unknown metadata {}", single_metadata.0))?;
 
-            let name = translation_unit
-                .pool_string(single_metadata.name.0, &mut activation.borrow_gc())?;
+            let name =
+                translation_unit.pool_string(single_metadata.name.0, activation.strings())?;
 
             let mut current_metadata_items = vec![];
             for metadata_item in single_metadata.items.iter() {
-                let key = translation_unit
-                    .pool_string(metadata_item.key.0, &mut activation.borrow_gc())?;
+                let key =
+                    translation_unit.pool_string(metadata_item.key.0, activation.strings())?;
 
-                let value = translation_unit
-                    .pool_string(metadata_item.value.0, &mut activation.borrow_gc())?;
+                let value =
+                    translation_unit.pool_string(metadata_item.value.0, activation.strings())?;
 
                 let item = MetadataItem {
                     key: key.into(),

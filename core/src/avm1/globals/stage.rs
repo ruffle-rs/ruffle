@@ -7,9 +7,8 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, Value};
-use crate::context::GcContext;
 use crate::display_object::StageDisplayState;
-use crate::string::{AvmString, WStr, WString};
+use crate::string::{AvmString, StringContext, WStr, WString};
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "align" => property(align, set_align);
@@ -21,7 +20,7 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
 };
 
 pub fn create_stage_object<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     array_proto: Object<'gc>,
     fn_proto: Object<'gc>,

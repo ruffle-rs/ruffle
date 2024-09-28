@@ -132,10 +132,11 @@ fn char_at<'gc>(
         let ret = if let Some(c) = s.get(index) {
             activation
                 .context
+                .strings
                 .interner
                 .get_char(activation.context.gc_context, c)
         } else {
-            activation.context.interner.empty()
+            activation.context.strings.interner.empty()
         };
         return Ok(ret.into());
     }
@@ -452,6 +453,7 @@ fn slice<'gc>(
     if start_index < end_index {
         Ok(activation
             .context
+            .strings
             .interner
             .substring(activation.context.gc_context, this, start_index, end_index)
             .into())
@@ -494,6 +496,7 @@ fn split<'gc>(
                 Value::from(
                     activation
                         .context
+                        .strings
                         .interner
                         .get_char(activation.context.gc_context, c),
                 )
@@ -562,6 +565,7 @@ fn substr<'gc>(
 
     Ok(activation
         .context
+        .strings
         .interner
         .substring(activation.context.gc_context, this, start_index, end_index)
         .into())
@@ -600,6 +604,7 @@ fn substring<'gc>(
 
     Ok(activation
         .context
+        .strings
         .interner
         .substring(activation.context.gc_context, this, start_index, end_index)
         .into())

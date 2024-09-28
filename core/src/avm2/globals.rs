@@ -783,7 +783,7 @@ macro_rules! avm2_system_classes_playerglobal {
         let activation = $activation;
         $(
             // Lookup with the highest version, so we we see all defined classes here
-            let ns = Namespace::package($package, ApiVersion::VM_INTERNAL, &mut activation.borrow_gc());
+            let ns = Namespace::package($package, ApiVersion::VM_INTERNAL, activation.strings());
             let name = QName::new(ns, $class_name);
             let class_object = activation.domain().get_defined_value(activation, name).unwrap_or_else(|e| panic!("Failed to lookup {name:?}: {e:?}"));
             let class_object = class_object.as_object().unwrap().as_class_object().unwrap();
@@ -798,7 +798,7 @@ macro_rules! avm2_system_class_defs_playerglobal {
         let activation = $activation;
         $(
             // Lookup with the highest version, so we we see all defined classes here
-            let ns = Namespace::package($package, ApiVersion::VM_INTERNAL, &mut activation.borrow_gc());
+            let ns = Namespace::package($package, ApiVersion::VM_INTERNAL, activation.strings());
             let name = QName::new(ns, $class_name);
             let class_object = activation.domain().get_defined_value(activation, name).unwrap_or_else(|e| panic!("Failed to lookup {name:?}: {e:?}"));
             let class_def = class_object.as_object().unwrap().as_class_object().unwrap().inner_class_definition();

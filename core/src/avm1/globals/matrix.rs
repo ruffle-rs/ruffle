@@ -6,8 +6,7 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::point::{point_to_object, value_to_point};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
-use crate::context::GcContext;
-use crate::string::AvmString;
+use crate::string::{AvmString, StringContext};
 
 use ruffle_render::matrix::Matrix;
 use swf::Twips;
@@ -455,7 +454,7 @@ fn to_string<'gc>(
 }
 
 pub fn create_matrix_object<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     matrix_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
@@ -469,7 +468,7 @@ pub fn create_matrix_object<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

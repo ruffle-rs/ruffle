@@ -6,10 +6,10 @@ use crate::avm1::object::TObject;
 use crate::avm1::property_map::PropertyMap;
 use crate::avm1::scope::Scope;
 use crate::avm1::{scope, Activation, ActivationIdentifier, Error, Object, Value};
-use crate::context::{GcContext, UpdateContext};
+use crate::context::UpdateContext;
 use crate::frame_lifecycle::FramePhase;
 use crate::prelude::*;
-use crate::string::AvmString;
+use crate::string::{AvmString, StringContext};
 use crate::tag_utils::SwfSlice;
 use crate::{avm1, avm_debug};
 use gc_arena::{Collect, Gc, Mutation};
@@ -90,7 +90,7 @@ pub struct Avm1<'gc> {
 }
 
 impl<'gc> Avm1<'gc> {
-    pub fn new(context: &mut GcContext<'_, 'gc>, player_version: u8) -> Self {
+    pub fn new(context: &mut StringContext<'gc>, player_version: u8) -> Self {
         let gc_context = context.gc_context;
         let (prototypes, globals, broadcaster_functions) = create_globals(context);
 

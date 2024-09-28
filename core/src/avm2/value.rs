@@ -521,7 +521,7 @@ pub fn abc_default_value<'gc>(
         AbcDefaultValue::Uint(u) => abc_uint(translation_unit, *u).map(|v| v.into()),
         AbcDefaultValue::Double(d) => abc_double(translation_unit, *d).map(|v| v.into()),
         AbcDefaultValue::String(s) => translation_unit
-            .pool_string(s.0, &mut activation.borrow_gc())
+            .pool_string(s.0, activation.strings())
             .map(Into::into),
         AbcDefaultValue::True => Ok(true.into()),
         AbcDefaultValue::False => Ok(false.into()),
@@ -841,6 +841,7 @@ impl<'gc> Value<'gc> {
                 if *i >= 0 && *i < 10 {
                     activation
                         .context
+                        .strings
                         .interner
                         .get_char(activation.context.gc_context, '0' as u16 + *i as u16)
                 } else {

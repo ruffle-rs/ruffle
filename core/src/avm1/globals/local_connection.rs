@@ -8,10 +8,10 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{
     ActivationIdentifier, ExecutionReason, NativeObject, Object, ScriptObject, Value,
 };
-use crate::context::{GcContext, UpdateContext};
+use crate::context::UpdateContext;
 use crate::display_object::TDisplayObject;
 use crate::local_connection::{LocalConnectionHandle, LocalConnections};
-use crate::string::AvmString;
+use crate::string::{AvmString, StringContext};
 use flash_lso::types::Value as AmfValue;
 use gc_arena::{Collect, Gc};
 use std::cell::RefCell;
@@ -245,7 +245,7 @@ pub fn constructor<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

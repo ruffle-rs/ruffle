@@ -6,9 +6,8 @@ use crate::avm1::{
 use crate::avm1::{Activation, Error, Value};
 use crate::avm1_stub;
 use crate::backend::navigator::Request;
-use crate::context::GcContext;
 use crate::html::{transform_dashes_to_camel_case, CssStream, TextFormat};
-use crate::string::AvmString;
+use crate::string::{AvmString, StringContext};
 use gc_arena::Gc;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -211,7 +210,7 @@ pub fn constructor<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

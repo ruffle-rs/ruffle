@@ -4,8 +4,7 @@ use crate::avm1::globals::system::SystemCapabilities;
 use crate::avm1::object::Object;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ScriptObject, Value};
-use crate::context::GcContext;
-use crate::string::AvmString;
+use crate::string::{AvmString, StringContext};
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "supports64BitProcesses" => property(get_has_64_bit_support);
@@ -256,7 +255,7 @@ pub fn get_max_idc_level<'gc>(
 }
 
 pub fn create<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

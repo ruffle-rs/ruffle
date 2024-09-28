@@ -3,7 +3,7 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, Value};
-use crate::context::GcContext;
+use crate::string::StringContext;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "show" => method(show_mouse; DONT_DELETE | DONT_ENUM | READ_ONLY);
@@ -31,7 +31,7 @@ pub fn hide_mouse<'gc>(
 }
 
 pub fn create_mouse_object<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
     broadcaster_functions: BroadcasterFunctions<'gc>,
