@@ -1,5 +1,5 @@
 use core::fmt;
-use std::borrow::{Borrow, Cow};
+use std::borrow::Borrow;
 use std::cell::Cell;
 use std::hash::{BuildHasher, Hash, Hasher};
 use std::marker::PhantomData;
@@ -8,7 +8,7 @@ use std::ops::{Deref, DerefMut};
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use hashbrown::HashSet;
 
-use crate::string::{AvmString, AvmStringRepr, WStr, WString};
+use crate::string::{AvmString, AvmStringRepr, WStr};
 
 // An interned `AvmString`, with fast by-pointer equality and hashing.
 #[derive(Copy, Clone, Collect)]
@@ -52,8 +52,8 @@ impl<'gc> AvmAtom<'gc> {
 pub struct AvmStringInterner<'gc> {
     interned: WeakSet<'gc, AvmStringRepr<'gc>>,
 
-    empty: Gc<'gc, AvmStringRepr<'gc>>,
-    chars: [Gc<'gc, AvmStringRepr<'gc>>; INTERNED_CHAR_LEN],
+    pub(super) empty: Gc<'gc, AvmStringRepr<'gc>>,
+    pub(super) chars: [Gc<'gc, AvmStringRepr<'gc>>; INTERNED_CHAR_LEN],
 }
 
 const INTERNED_CHAR_LEN: usize = 128;
@@ -88,41 +88,8 @@ impl<'gc> AvmStringInterner<'gc> {
         }
     }
 
-    #[must_use]
-    pub fn intern_wstr<'a, S>(&mut self, mc: &Mutation<'gc>, s: S) -> AvmAtom<'gc>
-    where
-        S: Into<Cow<'a, WStr>>,
-    {
-        let s = s.into();
-        self.intern_inner(mc, s, |s| {
-            let repr = AvmStringRepr::from_raw(s.into_owned(), true);
-            Gc::new(mc, repr)
-        })
-    }
-
-    #[must_use]
-    pub fn intern_static(&mut self, mc: &Mutation<'gc>, s: &'static WStr) -> AvmAtom<'gc> {
-        self.intern_inner(mc, s, |s| {
-            let repr = AvmStringRepr::from_raw_static(s, true);
-            Gc::new(mc, repr)
-        })
-    }
-
-    #[must_use]
-    pub fn intern(&mut self, mc: &Mutation<'gc>, s: AvmString<'gc>) -> AvmAtom<'gc> {
-        if let Some(atom) = s.as_interned() {
-            atom
-        } else {
-            self.intern_inner(mc, s, |s| {
-                let repr = s.to_fully_owned(mc);
-                repr.mark_interned();
-                repr
-            })
-        }
-    }
-
-    // The string returned by `f` should be interned, and equivalent to `s`.
-    fn intern_inner<S, F>(&mut self, mc: &Mutation<'gc>, s: S, f: F) -> AvmAtom<'gc>
+    /// The string returned by `f` should be interned, and equivalent to `s`.
+    pub(super) fn intern_inner<S, F>(&mut self, mc: &Mutation<'gc>, s: S, f: F) -> AvmAtom<'gc>
     where
         S: Deref<Target = WStr>,
         F: FnOnce(S) -> Gc<'gc, AvmStringRepr<'gc>>,
@@ -137,32 +104,12 @@ impl<'gc> AvmStringInterner<'gc> {
     }
 
     #[must_use]
-    pub fn empty(&self) -> AvmString<'gc> {
-        self.empty.into()
-    }
-
-    #[must_use]
-    pub fn get(&self, mc: &Mutation<'gc>, s: &WStr) -> Option<AvmAtom<'gc>> {
+    pub(super) fn get(&self, mc: &Mutation<'gc>, s: &WStr) -> Option<AvmAtom<'gc>> {
         self.interned.get(mc, s).map(AvmAtom)
     }
 
     #[must_use]
-    pub fn get_char(&self, mc: &Mutation<'gc>, c: u16) -> AvmString<'gc> {
-        if let Some(s) = self.chars.get(c as usize) {
-            (*s).into()
-        } else {
-            AvmString::new(mc, WString::from_unit(c))
-        }
-    }
-
-    // Like get_char, but panics if the passed char is not ASCII.
-    #[must_use]
-    pub fn get_ascii_char(&self, c: char) -> AvmString<'gc> {
-        self.chars[c as usize].into()
-    }
-
-    #[must_use]
-    pub fn substring(
+    pub(super) fn substring(
         &self,
         mc: &Mutation<'gc>,
         s: AvmString<'gc>,

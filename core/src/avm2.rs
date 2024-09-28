@@ -193,7 +193,7 @@ impl<'gc> Avm2<'gc> {
         player_version: u8,
         player_runtime: PlayerRuntime,
     ) -> Self {
-        let mc = context.gc_context;
+        let mc = context.gc();
 
         let playerglobals_domain = Domain::uninitialized_domain(mc, None);
         let stage_domain = Domain::uninitialized_domain(mc, Some(playerglobals_domain));

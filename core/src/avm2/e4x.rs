@@ -1057,12 +1057,7 @@ impl<'gc> E4XNode<'gc> {
             let (ns, local_name) = parser.resolve_attribute(attribute.key);
 
             let local_name = ruffle_wstr::from_utf8_bytes(local_name.into_inner());
-            let name = activation
-                .context
-                .strings
-                .interner
-                .intern_wstr(activation.gc(), local_name)
-                .into();
+            let name = activation.strings().intern_wstr(local_name).into();
 
             let namespace = match ns {
                 ResolveResult::Bound(ns) if ns.into_inner() == b"http://www.w3.org/2000/xmlns/" => {
@@ -1109,12 +1104,7 @@ impl<'gc> E4XNode<'gc> {
         let (ns, local_name) = parser.resolve_element(bs.name());
 
         let local_name = ruffle_wstr::from_utf8_bytes(local_name.into_inner());
-        let name = activation
-            .context
-            .strings
-            .interner
-            .intern_wstr(activation.gc(), local_name)
-            .into();
+        let name = activation.strings().intern_wstr(local_name).into();
 
         let namespace = match ns {
             ResolveResult::Bound(ns) => {
