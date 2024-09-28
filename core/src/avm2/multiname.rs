@@ -477,7 +477,7 @@ impl<'gc> Multiname<'gc> {
     /// This is used by `describeType`
     pub fn to_qualified_name_or_star(&self, context: &mut StringContext<'gc>) -> AvmString<'gc> {
         if self.is_any_name() {
-            context.interner.get_ascii_char('*')
+            context.get_ascii_char('*')
         } else {
             self.to_qualified_name(context.gc_context)
         }
@@ -543,16 +543,12 @@ pub struct CommonMultinames<'gc> {
 
 impl<'gc> CommonMultinames<'gc> {
     pub fn new(context: &mut StringContext<'gc>, namespaces: &CommonNamespaces<'gc>) -> Self {
-        let mc = context.gc_context;
-
         let mut create_pub_multiname = |local_name: &'static [u8]| -> Gc<'gc, Multiname<'gc>> {
             Gc::new(
-                mc,
+                context.gc(),
                 Multiname::new(
                     namespaces.public_all(),
-                    context
-                        .interner
-                        .intern_static(context.gc_context, WStr::from_units(local_name)),
+                    context.intern_static(WStr::from_units(local_name)),
                 ),
             )
         };

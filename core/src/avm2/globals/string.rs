@@ -130,13 +130,9 @@ fn char_at<'gc>(
 
         let index = if !n.is_nan() { n as usize } else { 0 };
         let ret = if let Some(c) = s.get(index) {
-            activation
-                .context
-                .strings
-                .interner
-                .get_char(activation.context.gc_context, c)
+            activation.strings().get_char(c)
         } else {
-            activation.context.strings.interner.empty()
+            activation.strings().empty()
         };
         return Ok(ret.into());
     }
@@ -452,10 +448,8 @@ fn slice<'gc>(
 
     if start_index < end_index {
         Ok(activation
-            .context
-            .strings
-            .interner
-            .substring(activation.context.gc_context, this, start_index, end_index)
+            .strings()
+            .substring(this, start_index, end_index)
             .into())
     } else {
         Ok("".into())
@@ -492,15 +486,7 @@ fn split<'gc>(
         // Special case this to match Flash's behavior.
         this.iter()
             .take(limit)
-            .map(|c| {
-                Value::from(
-                    activation
-                        .context
-                        .strings
-                        .interner
-                        .get_char(activation.context.gc_context, c),
-                )
-            })
+            .map(|c| Value::from(activation.strings().get_char(c)))
             .collect()
     } else {
         this.split(&delimiter)
@@ -564,10 +550,8 @@ fn substr<'gc>(
     let end_index = this.len().min(start_index + len as usize);
 
     Ok(activation
-        .context
-        .strings
-        .interner
-        .substring(activation.context.gc_context, this, start_index, end_index)
+        .strings()
+        .substring(this, start_index, end_index)
         .into())
 }
 
@@ -603,10 +587,8 @@ fn substring<'gc>(
     }
 
     Ok(activation
-        .context
-        .strings
-        .interner
-        .substring(activation.context.gc_context, this, start_index, end_index)
+        .strings()
+        .substring(this, start_index, end_index)
         .into())
 }
 

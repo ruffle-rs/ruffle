@@ -313,10 +313,7 @@ impl<'gc> TranslationUnit<'gc> {
                 .as_slice()
         };
 
-        let atom = context
-            .interner
-            .intern_wstr(context.gc_context, ruffle_wstr::from_utf8_bytes(raw));
-
+        let atom = context.intern_wstr(ruffle_wstr::from_utf8_bytes(raw));
         write.strings[string_index as usize] = Some(atom);
         Ok(atom)
     }

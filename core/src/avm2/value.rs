@@ -839,11 +839,7 @@ impl<'gc> Value<'gc> {
             }
             Value::Integer(i) => {
                 if *i >= 0 && *i < 10 {
-                    activation
-                        .context
-                        .strings
-                        .interner
-                        .get_char(activation.context.gc_context, '0' as u16 + *i as u16)
+                    activation.strings().get_char('0' as u16 + *i as u16)
                 } else {
                     AvmString::new_utf8(activation.context.gc_context, i.to_string())
                 }

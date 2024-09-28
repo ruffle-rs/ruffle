@@ -167,12 +167,7 @@ impl<'gc> Namespace<'gc> {
             let stripped = strip_version_mark(namespace_name.as_wstr(), is_playerglobals);
             let has_version_mark = stripped.is_some();
             if let Some((stripped, version)) = stripped {
-                let stripped_string = AvmString::new(mc, stripped);
-                namespace_name = activation
-                    .context
-                    .strings
-                    .interner
-                    .intern(mc, stripped_string);
+                namespace_name = activation.strings().intern_wstr(stripped);
                 api_version = version;
             }
 
@@ -233,9 +228,7 @@ impl<'gc> Namespace<'gc> {
         api_version: ApiVersion,
         context: &mut StringContext<'gc>,
     ) -> Self {
-        let atom = context
-            .interner
-            .intern(context.gc_context, package_name.into());
+        let atom = context.intern(package_name.into());
         Self(Some(Gc::new(
             context.gc_context,
             NamespaceData::Namespace(atom, api_version),
@@ -247,9 +240,7 @@ impl<'gc> Namespace<'gc> {
         package_name: impl Into<AvmString<'gc>>,
         context: &mut StringContext<'gc>,
     ) -> Self {
-        let atom = context
-            .interner
-            .intern(context.gc_context, package_name.into());
+        let atom = context.intern(package_name.into());
         Self(Some(Gc::new(
             context.gc_context,
             NamespaceData::PackageInternal(atom),

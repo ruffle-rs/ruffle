@@ -868,16 +868,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self,
         action: ConstantPool,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let encoding = self.encoding();
         let constants = action
             .strings
             .iter()
-            .map(|s| {
-                self.context
-                    .strings
-                    .interner
-                    .intern_wstr(self.context.gc_context, s.decode(self.encoding()))
-                    .into()
-            })
+            .map(|s| self.strings().intern_wstr(s.decode(encoding)).into())
             .collect();
 
         self.context

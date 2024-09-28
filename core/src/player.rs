@@ -2201,10 +2201,7 @@ impl Player {
                 ui: this.ui.deref_mut(),
                 action_queue,
                 gc_context,
-                strings: StringContext {
-                    gc_context,
-                    interner,
-                },
+                strings: StringContext::from_parts(gc_context, interner),
                 stage,
                 mouse_data,
                 input: &this.input,
@@ -2748,10 +2745,7 @@ impl PlayerBuilder {
             // SAFETY: Extending this borrow to `'gc` is sound, as the result of this
             // block implements `Collect`, preventing any `&'gc _` outliving it.
             let interner: &'gc mut _ = unsafe { &mut *(&mut interner as *mut _) };
-            let mut init = StringContext {
-                gc_context,
-                interner,
-            };
+            let mut init = StringContext::from_parts(gc_context, interner);
             (
                 Avm1::new(&mut init, player_version),
                 Avm2::new(&mut init, player_version, player_runtime),
