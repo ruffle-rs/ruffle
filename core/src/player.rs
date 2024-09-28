@@ -18,7 +18,6 @@ use crate::backend::{
 };
 use crate::compatibility_rules::CompatibilityRules;
 use crate::config::Letterbox;
-use crate::context::GcContext;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::context_menu::{
     BuiltInItemFlags, ContextMenuCallback, ContextMenuItem, ContextMenuState,
@@ -43,6 +42,7 @@ use crate::net_connection::NetConnections;
 use crate::prelude::*;
 use crate::socket::Sockets;
 use crate::streams::StreamManager;
+use crate::string::StringContext;
 use crate::string::{AvmString, AvmStringInterner};
 use crate::stub::StubCollection;
 use crate::tag_utils::SwfMovie;
@@ -2201,7 +2201,10 @@ impl Player {
                 ui: this.ui.deref_mut(),
                 action_queue,
                 gc_context,
-                interner,
+                strings: StringContext {
+                    gc_context,
+                    interner,
+                },
                 stage,
                 mouse_data,
                 input: &this.input,
@@ -2741,16 +2744,25 @@ impl PlayerBuilder {
         fs_command_provider: Box<dyn FsCommandProvider>,
     ) -> GcRoot<'gc> {
         let mut interner = AvmStringInterner::new(gc_context);
-        let mut init = GcContext {
-            gc_context,
-            interner: &mut interner,
+        let (avm1, avm2) = {
+            // SAFETY: Extending this borrow to `'gc` is sound, as the result of this
+            // block implements `Collect`, preventing any `&'gc _` outliving it.
+            let interner: &'gc mut _ = unsafe { &mut *(&mut interner as *mut _) };
+            let mut init = StringContext {
+                gc_context,
+                interner,
+            };
+            (
+                Avm1::new(&mut init, player_version),
+                Avm2::new(&mut init, player_version, player_runtime),
+            )
         };
 
         let data = GcRootData {
             audio_manager: AudioManager::new(),
             action_queue: ActionQueue::new(),
-            avm1: Avm1::new(&mut init, player_version),
-            avm2: Avm2::new(&mut init, player_version, player_runtime),
+            avm1,
+            avm2,
             interner,
             current_context_menu: None,
             drag_object: None,

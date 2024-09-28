@@ -6,8 +6,8 @@ use crate::avm1::globals::bevel_filter::BevelFilterType;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, ArrayObject, Error, Object, ScriptObject, TObject, Value};
-use crate::context::{GcContext, UpdateContext};
-use crate::string::{AvmString, WStr};
+use crate::context::UpdateContext;
+use crate::string::{AvmString, StringContext, WStr};
 use gc_arena::{Collect, GcCell, Mutation};
 use std::ops::Deref;
 use swf::{Color, Fixed16, Fixed8, GradientFilterFlags, GradientRecord};
@@ -520,7 +520,7 @@ fn method<'gc>(
 }
 
 pub fn create_bevel_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
@@ -530,7 +530,7 @@ pub fn create_bevel_proto<'gc>(
 }
 
 pub fn create_bevel_constructor<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
@@ -544,7 +544,7 @@ pub fn create_bevel_constructor<'gc>(
 }
 
 pub fn create_glow_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
@@ -554,7 +554,7 @@ pub fn create_glow_proto<'gc>(
 }
 
 pub fn create_glow_constructor<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

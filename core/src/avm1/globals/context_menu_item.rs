@@ -4,8 +4,7 @@ use crate::avm1::object::TObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::Object;
 use crate::avm1::{ScriptObject, Value};
-use crate::context::GcContext;
-use crate::string::AvmString;
+use crate::string::{AvmString, StringContext};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "copy" => method(copy; DONT_ENUM | DONT_DELETE);
@@ -90,7 +89,7 @@ pub fn copy<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

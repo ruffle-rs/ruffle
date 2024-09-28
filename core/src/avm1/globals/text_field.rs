@@ -4,12 +4,11 @@ use crate::avm1::globals::bitmap_filter;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{globals, ArrayObject, Object, ScriptObject, TObject, Value};
-use crate::context::GcContext;
 use crate::display_object::{
     AutoSizeMode, EditText, TDisplayObject, TInteractiveObject, TextSelection,
 };
 use crate::html::TextFormat;
-use crate::string::{AvmString, WStr};
+use crate::string::{AvmString, StringContext, WStr};
 use gc_arena::Gc;
 use swf::Color;
 
@@ -109,7 +108,7 @@ pub fn constructor<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

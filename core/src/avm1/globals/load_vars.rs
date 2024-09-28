@@ -9,8 +9,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::avm1_stub;
 use crate::backend::navigator::{NavigationMethod, Request};
-use crate::context::GcContext;
-use crate::string::AvmString;
+use crate::string::{AvmString, StringContext};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "load" => method(load; DONT_ENUM | DONT_DELETE);
@@ -37,7 +36,7 @@ pub fn constructor<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

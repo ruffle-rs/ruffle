@@ -3,8 +3,8 @@ use crate::avm1::object::{NativeObject, Object, TObject};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, ScriptObject, Value};
 use crate::avm1_stub;
-use crate::context::GcContext;
 use crate::streams::NetStream;
+use crate::string::StringContext;
 
 pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -172,7 +172,7 @@ fn get_time<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
@@ -182,7 +182,7 @@ pub fn create_proto<'gc>(
 }
 
 pub fn create_class<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     netstream_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

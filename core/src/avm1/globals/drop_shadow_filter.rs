@@ -4,7 +4,7 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
-use crate::context::GcContext;
+use crate::string::StringContext;
 use gc_arena::{Collect, GcCell, Mutation};
 use std::ops::Deref;
 use swf::{Color, DropShadowFilterFlags, Fixed16, Fixed8};
@@ -431,7 +431,7 @@ fn method<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
@@ -441,7 +441,7 @@ pub fn create_proto<'gc>(
 }
 
 pub fn create_constructor<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

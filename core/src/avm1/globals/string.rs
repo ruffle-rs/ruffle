@@ -7,8 +7,7 @@ use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, TObject, Value};
-use crate::context::GcContext;
-use crate::string::{utils as string_utils, AvmString, WString};
+use crate::string::{utils as string_utils, AvmString, StringContext, WString};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "toString" => method(to_string_value_of; DONT_ENUM | DONT_DELETE);
@@ -72,7 +71,7 @@ pub fn string_function<'gc>(
 }
 
 pub fn create_string_object<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     string_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
@@ -90,7 +89,7 @@ pub fn create_string_object<'gc>(
 
 /// Creates `String.prototype`.
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

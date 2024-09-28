@@ -6,8 +6,7 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, TObject, Value};
-use crate::context::GcContext;
-use crate::string::AvmString;
+use crate::string::{AvmString, StringContext};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "toString" => method(to_string; DONT_ENUM | DONT_DELETE);
@@ -46,7 +45,7 @@ pub fn boolean_function<'gc>(
 }
 
 pub fn create_boolean_object<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     boolean_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
@@ -61,7 +60,7 @@ pub fn create_boolean_object<'gc>(
 
 /// Creates `Boolean.prototype`.
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

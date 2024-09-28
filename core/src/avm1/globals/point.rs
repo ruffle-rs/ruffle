@@ -5,8 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, ExecutionReason, FunctionObject};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
-use crate::context::GcContext;
-use crate::string::AvmString;
+use crate::string::{AvmString, StringContext};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "toString" => method(to_string);
@@ -284,7 +283,7 @@ fn offset<'gc>(
 }
 
 pub fn create_point_object<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     point_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
@@ -301,7 +300,7 @@ pub fn create_point_object<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

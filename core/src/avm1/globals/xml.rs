@@ -7,8 +7,7 @@ use crate::avm1::{
 };
 use crate::avm_warn;
 use crate::backend::navigator::Request;
-use crate::context::GcContext;
-use crate::string::{AvmString, WStr, WString};
+use crate::string::{AvmString, StringContext, WStr, WString};
 use crate::xml::{custom_unescape, XmlNode, ELEMENT_NODE, TEXT_NODE};
 use gc_arena::{Collect, GcCell, Mutation};
 use quick_xml::errors::IllFormedError;
@@ -566,7 +565,7 @@ fn spawn_xml_fetch<'gc>(
 }
 
 pub fn create_constructor<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

@@ -4,8 +4,8 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, Value};
-use crate::context::GcContext;
 use crate::external::{Callback, Value as ExternalValue};
+use crate::string::StringContext;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "available" => property(get_available; DONT_ENUM | DONT_DELETE | READ_ONLY);
@@ -84,7 +84,7 @@ pub fn call<'gc>(
 }
 
 pub fn create_external_interface_object<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
@@ -93,7 +93,7 @@ pub fn create_external_interface_object<'gc>(
     object.into()
 }
 
-pub fn create_proto<'gc>(context: &mut GcContext<'_, 'gc>, proto: Object<'gc>) -> Object<'gc> {
+pub fn create_proto<'gc>(context: &mut StringContext<'gc>, proto: Object<'gc>) -> Object<'gc> {
     // It's a custom prototype but it's empty.
     ScriptObject::new(context.gc_context, Some(proto)).into()
 }

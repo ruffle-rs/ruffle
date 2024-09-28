@@ -5,8 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::function::{ExecutionName, ExecutionReason};
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
-use crate::context::GcContext;
-use crate::string::AvmString;
+use crate::string::{AvmString, StringContext};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "call" => method(call; DONT_ENUM | DONT_DELETE);
@@ -117,7 +116,7 @@ pub fn apply<'gc>(
 /// them in order to obtain a valid ECMAScript `Function` prototype. The
 /// returned object is also a bare object, which will need to be linked into
 /// the prototype of `Object`.
-pub fn create_proto<'gc>(context: &mut GcContext<'_, 'gc>, proto: Object<'gc>) -> Object<'gc> {
+pub fn create_proto<'gc>(context: &mut StringContext<'gc>, proto: Object<'gc>) -> Object<'gc> {
     let function_proto = ScriptObject::new(context.gc_context, Some(proto));
     define_properties_on(PROTO_DECLS, context, function_proto, function_proto.into());
     function_proto.into()

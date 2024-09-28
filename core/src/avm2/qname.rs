@@ -93,10 +93,13 @@ impl<'gc> QName<'gc> {
             .or_else(|| name.rsplit_once(WStr::from_units(b".")));
 
         if let Some((package_name, local_name)) = parts {
-            let package_name = context.interner.intern_wstr(context.gc(), package_name);
+            let package_name = context
+                .strings
+                .interner
+                .intern_wstr(context.gc(), package_name);
 
             Self {
-                ns: Namespace::package(package_name, api_version, &mut context.borrow_gc()),
+                ns: Namespace::package(package_name, api_version, &mut context.strings),
                 name: AvmString::new(context.gc(), local_name),
             }
         } else {

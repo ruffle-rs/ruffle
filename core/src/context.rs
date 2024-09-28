@@ -34,8 +34,7 @@ use crate::player::{MouseData, Player};
 use crate::prelude::*;
 use crate::socket::Sockets;
 use crate::streams::StreamManager;
-use crate::string::AvmString;
-use crate::string::AvmStringInterner;
+use crate::string::{AvmString, StringContext};
 use crate::stub::StubCollection;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::timer::Timers;
@@ -52,48 +51,22 @@ use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 use web_time::Instant;
 
-/// Minimal context, useful for manipulating the GC heap.
-pub struct GcContext<'a, 'gc> {
-    /// The mutation context to allocate and mutate `Gc` pointers.
-    pub gc_context: &'gc Mutation<'gc>,
-
-    /// The global string interner.
-    pub interner: &'a mut AvmStringInterner<'gc>,
-}
-
-impl<'a, 'gc> GcContext<'a, 'gc> {
-    #[inline(always)]
-    pub fn reborrow<'b>(&'b mut self) -> GcContext<'b, 'gc>
-    where
-        'a: 'b,
-    {
-        GcContext {
-            gc_context: self.gc_context,
-            interner: self.interner,
-        }
-    }
-
-    /// Convenience method to retrieve the current GC context. Note that explicitly writing
-    /// `self.gc_context` can be sometimes necessary to satisfy the borrow checker.
-    #[inline(always)]
-    pub fn gc(&self) -> &'gc Mutation<'gc> {
-        self.gc_context
-    }
-}
-
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.
 /// `Player` creates this when it begins a tick and passes it through the call stack to
 /// children and the VM.
 pub struct UpdateContext<'gc> {
+    /// The mutation context to allocate and mutate `Gc` pointers.
+    ///
+    /// NOTE: This is redundant with `strings.gc_context`, but is used by
+    /// too much code to remove.
+    pub gc_context: &'gc Mutation<'gc>,
+
+    /// The string context.
+    pub strings: StringContext<'gc>,
+
     /// The queue of actions that will be run after the display list updates.
     /// Display objects and actions can push actions onto the queue.
     pub action_queue: &'gc mut ActionQueue<'gc>,
-
-    /// The mutation context to allocate and mutate `Gc` pointers.
-    pub gc_context: &'gc Mutation<'gc>,
-
-    /// The global string interner.
-    pub interner: &'gc mut AvmStringInterner<'gc>,
 
     /// A collection of stubs encountered during this movie.
     pub stub_tracker: &'gc mut StubCollection,
@@ -460,23 +433,12 @@ impl<'gc> UpdateContext<'gc> {
     }
 }
 
-impl<'a, 'gc> UpdateContext<'gc> {
+impl<'gc> UpdateContext<'gc> {
     /// Convenience method to retrieve the current GC context. Note that explicitly writing
     /// `self.gc_context` can be sometimes necessary to satisfy the borrow checker.
     #[inline(always)]
     pub fn gc(&self) -> &'gc Mutation<'gc> {
         self.gc_context
-    }
-
-    #[inline]
-    pub fn borrow_gc<'b>(&'b mut self) -> GcContext<'b, 'gc>
-    where
-        'a: 'b,
-    {
-        GcContext {
-            gc_context: self.gc_context,
-            interner: self.interner,
-        }
     }
 
     pub fn avm_trace(&self, message: &str) {

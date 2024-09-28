@@ -6,8 +6,7 @@ use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Executable, NativeObject, Object, ScriptObject, TObject, Value};
 use crate::avm1_stub;
 use crate::backend::ui::{FileDialogResult, FileFilter};
-use crate::context::GcContext;
-use crate::string::AvmString;
+use crate::string::{AvmString, StringContext};
 use gc_arena::{Collect, GcCell};
 use url::Url;
 
@@ -437,7 +436,7 @@ fn constructor<'gc>(
 }
 
 pub fn create_constructor<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
     array_proto: Object<'gc>,
