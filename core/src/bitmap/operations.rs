@@ -1669,7 +1669,7 @@ pub fn set_vector<'gc>(
             let color = iter
                 .next()
                 .expect("BitmapData.setVector: Expected element")
-                .as_u32(activation.context.gc_context)
+                .as_u32(activation.strings())
                 .expect("BitmapData.setVector: Expected uint vector");
             bitmap_data.set_pixel32_raw(
                 x,

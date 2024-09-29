@@ -6,7 +6,7 @@ use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Namespace;
-use crate::string::AvmString;
+use crate::string::{AvmString, StringContext};
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
@@ -123,12 +123,8 @@ impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        // TODO(moulins): pass in a StringContext so we can call .as_uri() directly.
-        match self.0.namespace.get().as_uri_opt() {
-            Some(uri) => Ok(uri.into()),
-            None => Ok("".into()),
-        }
+    fn value_of(&self, context: &mut StringContext<'gc>) -> Result<Value<'gc>, Error<'gc>> {
+        Ok(self.0.namespace.get().as_uri(context).into())
     }
 
     fn as_namespace(&self) -> Option<Namespace<'gc>> {

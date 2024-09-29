@@ -365,10 +365,7 @@ pub fn set_program_constants_from_vector<'gc>(
 
         let raw_data = vector
             .iter()
-            .map(|val| {
-                val.as_number(activation.context.gc_context)
-                    .map(|val| val as f32)
-            })
+            .map(|val| val.as_number(activation.strings()).map(|val| val as f32))
             .take(to_take)
             .collect::<Result<Vec<f32>, _>>()?;
 
@@ -384,13 +381,13 @@ pub fn clear<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
-        let red = args[0].as_number(activation.context.gc_context)?;
-        let green = args[1].as_number(activation.context.gc_context)?;
-        let blue = args[2].as_number(activation.context.gc_context)?;
-        let alpha = args[3].as_number(activation.context.gc_context)?;
-        let depth = args[4].as_number(activation.context.gc_context)?;
-        let stencil = args[5].as_integer(activation.context.gc_context)? as u32;
-        let mask = args[6].as_integer(activation.context.gc_context)? as u32;
+        let red = args[0].as_number(activation.strings())?;
+        let green = args[1].as_number(activation.strings())?;
+        let blue = args[2].as_number(activation.strings())?;
+        let alpha = args[3].as_number(activation.strings())?;
+        let depth = args[4].as_number(activation.strings())?;
+        let stencil = args[5].as_integer(activation.strings())? as u32;
+        let mask = args[6].as_integer(activation.strings())? as u32;
         context.set_clear(red, green, blue, alpha, depth, stencil, mask);
     }
     Ok(Value::Undefined)
@@ -403,11 +400,11 @@ pub fn create_texture<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
-        let width = args[0].as_integer(activation.context.gc_context)? as u32;
-        let height = args[1].as_integer(activation.context.gc_context)? as u32;
+        let width = args[0].as_integer(activation.strings())? as u32;
+        let height = args[1].as_integer(activation.strings())? as u32;
         let format = args[2].coerce_to_string(activation)?;
         let optimize_for_render_to_texture = args[3].coerce_to_boolean();
-        let streaming_levels = args[4].as_integer(activation.context.gc_context)? as u32;
+        let streaming_levels = args[4].as_integer(activation.strings())? as u32;
         let format = Context3DTextureFormat::from_wstr(&format).ok_or_else(|| {
             Error::RustError(
                 format!("Unsupported texture format in createTexture: {:?}", format).into(),
@@ -436,8 +433,8 @@ pub fn create_rectangle_texture<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
-        let width = args[0].as_integer(activation.context.gc_context)? as u32;
-        let height = args[1].as_integer(activation.context.gc_context)? as u32;
+        let width = args[0].as_integer(activation.strings())? as u32;
+        let height = args[1].as_integer(activation.strings())? as u32;
         let format = args[2].coerce_to_string(activation)?;
         let optimize_for_render_to_texture = args[3].coerce_to_boolean();
         let format = Context3DTextureFormat::from_wstr(&format).ok_or_else(|| {
@@ -472,10 +469,10 @@ pub fn create_cube_texture<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
-        let size = args[0].as_integer(activation.context.gc_context)? as u32;
+        let size = args[0].as_integer(activation.strings())? as u32;
         let format = args[1].coerce_to_string(activation)?;
         let optimize_for_render_to_texture = args[2].coerce_to_boolean();
-        let streaming_levels = args[3].as_integer(activation.context.gc_context)? as u32;
+        let streaming_levels = args[3].as_integer(activation.strings())? as u32;
         let format = Context3DTextureFormat::from_wstr(&format).ok_or_else(|| {
             Error::RustError(
                 format!(
@@ -504,7 +501,7 @@ pub fn set_texture_at<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
-        let sampler = args[0].as_integer(activation.context.gc_context)? as u32;
+        let sampler = args[0].as_integer(activation.strings())? as u32;
         let mut cube = false;
         let texture = if matches!(args[1], Value::Null) {
             None
@@ -655,7 +652,7 @@ pub fn set_sampler_state_at<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
-        let sampler = args[0].as_integer(activation.context.gc_context)? as u32;
+        let sampler = args[0].as_integer(activation.strings())? as u32;
         let wrap = args[1].coerce_to_string(activation)?;
         let filter = args[2].coerce_to_string(activation)?;
         let mip_filter = args[3].coerce_to_string(activation)?;

@@ -103,7 +103,7 @@ fn length<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Value::String(s) = this.value_of(activation.context.gc_context)? {
+    if let Value::String(s) = this.value_of(activation.strings())? {
         return Ok(s.len().into());
     }
 
@@ -116,7 +116,7 @@ fn char_at<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Value::String(s) = this.value_of(activation.context.gc_context)? {
+    if let Value::String(s) = this.value_of(activation.strings())? {
         // This function takes Number, so if we use coerce_to_i32 instead of coerce_to_number, the value may overflow.
         let n = args
             .get(0)
@@ -144,7 +144,7 @@ fn char_code_at<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Value::String(s) = this.value_of(activation.context.gc_context)? {
+    if let Value::String(s) = this.value_of(activation.strings())? {
         // This function takes Number, so if we use coerce_to_i32 instead of coerce_to_number, the value may overflow.
         let n = args
             .get(0)
@@ -634,7 +634,7 @@ fn value_of<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    this.value_of(activation.context.gc_context)
+    this.value_of(activation.strings())
 }
 
 /// Implements `String.toUpperCase`

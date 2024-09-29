@@ -3,9 +3,10 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::value::{Hint, Value};
 use crate::avm2::Error;
+use crate::string::StringContext;
 use chrono::{DateTime, Utc};
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak};
 use std::cell::Cell;
 
 /// A class instance allocator that allocates Date objects.
@@ -96,7 +97,7 @@ impl<'gc> TObject<'gc> for DateObject<'gc> {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
+    fn value_of(&self, _context: &mut StringContext<'gc>) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(date) = self.date_time() {
             Ok((date.timestamp_millis() as f64).into())
         } else {

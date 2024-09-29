@@ -181,7 +181,7 @@ fn value_of<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    this.value_of(activation.context.gc_context)
+    this.value_of(activation.strings())
 }
 
 /// `Object.prototype.hasOwnProperty`

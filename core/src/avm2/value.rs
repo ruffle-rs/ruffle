@@ -9,8 +9,8 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
-use crate::string::{AvmAtom, AvmString, WStr};
-use gc_arena::{Collect, Mutation};
+use crate::string::{AvmAtom, AvmString, StringContext, WStr};
+use gc_arena::Collect;
 use num_bigint::BigInt;
 use num_traits::{ToPrimitive, Zero};
 use std::mem::size_of;
@@ -556,13 +556,13 @@ impl<'gc> Value<'gc> {
     /// object methods called. This should only be used if you specifically
     /// need the behavior of only handling actual numbers; otherwise you should
     /// use the appropriate `coerce_to_` method.
-    pub fn as_number(&self, mc: &Mutation<'gc>) -> Result<f64, Error<'gc>> {
+    pub fn as_number(&self, context: &mut StringContext<'gc>) -> Result<f64, Error<'gc>> {
         match self {
             // Methods that look for numbers in Flash Player don't seem to care
             // about user-defined `valueOf` implementations. This code upholds
             // that limitation as long as `TObject`'s `value_of` method also
             // does not call user-defined functions.
-            Value::Object(num) => match num.value_of(mc)? {
+            Value::Object(num) => match num.value_of(context)? {
                 Value::Number(num) => Ok(num),
                 Value::Integer(num) => Ok(num as f64),
                 _ => Err(format!("Expected Number, int, or uint, found {self:?}").into()),
@@ -574,9 +574,9 @@ impl<'gc> Value<'gc> {
     }
 
     /// Like `as_number`, but for `i32`
-    pub fn as_integer(&self, mc: &Mutation<'gc>) -> Result<i32, Error<'gc>> {
+    pub fn as_integer(&self, context: &mut StringContext<'gc>) -> Result<i32, Error<'gc>> {
         match self {
-            Value::Object(num) => match num.value_of(mc)? {
+            Value::Object(num) => match num.value_of(context)? {
                 Value::Number(num) => Ok(num as i32),
                 Value::Integer(num) => Ok(num),
                 _ => Err(format!("Expected Number, int, or uint, found {self:?}").into()),
@@ -588,9 +588,9 @@ impl<'gc> Value<'gc> {
     }
 
     /// Like `as_number`, but for `u32`
-    pub fn as_u32(&self, mc: &Mutation<'gc>) -> Result<u32, Error<'gc>> {
+    pub fn as_u32(&self, context: &mut StringContext<'gc>) -> Result<u32, Error<'gc>> {
         match self {
-            Value::Object(num) => match num.value_of(mc)? {
+            Value::Object(num) => match num.value_of(context)? {
                 Value::Number(num) => Ok(num as u32),
                 Value::Integer(num) => Ok(num as u32),
                 _ => Err(format!("Expected Number, int, or uint, found {self:?}").into()),
@@ -654,7 +654,7 @@ impl<'gc> Value<'gc> {
         });
 
         match self {
-            Value::Object(Object::PrimitiveObject(o)) => o.value_of(activation.context.gc_context),
+            Value::Object(Object::PrimitiveObject(o)) => o.value_of(activation.strings()),
             Value::Object(o) if hint == Hint::String => {
                 let object = *o;
 

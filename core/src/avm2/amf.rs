@@ -82,7 +82,7 @@ pub fn serialize_value<'gc>(
                     let int_vec: Vec<_> = vec
                         .iter()
                         .map(|v| {
-                            v.as_integer(activation.context.gc_context)
+                            v.as_integer(activation.strings())
                                 .expect("Unexpected non-int value in int vector")
                         })
                         .collect();
@@ -91,7 +91,7 @@ pub fn serialize_value<'gc>(
                     let uint_vec: Vec<_> = vec
                         .iter()
                         .map(|v| {
-                            v.as_u32(activation.context.gc_context)
+                            v.as_u32(activation.strings())
                                 .expect("Unexpected non-uint value in int vector")
                         })
                         .collect();
@@ -100,7 +100,7 @@ pub fn serialize_value<'gc>(
                     let num_vec: Vec<_> = vec
                         .iter()
                         .map(|v| {
-                            v.as_number(activation.context.gc_context)
+                            v.as_number(activation.strings())
                                 .expect("Unexpected non-uint value in int vector")
                         })
                         .collect();
