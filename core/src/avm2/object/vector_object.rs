@@ -239,10 +239,6 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         }
     }
 
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Object(Object::from(*self)))
-    }
-
     fn as_vector_storage(&self) -> Option<Ref<VectorStorage<'gc>>> {
         Some(self.0.vector.borrow())
     }

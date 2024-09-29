@@ -987,7 +987,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ///
     /// `valueOf` is a method used to request an object be coerced to a
     /// primitive value. Typically, this would be a number of some kind.
-    fn value_of(&self, mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>>;
+    ///
+    /// The default implementation wraps the object in a `Value`, using the
+    /// `Into<Object<'gc>>` implementation.
+    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
+        Ok(Value::Object((*self).into()))
+    }
 
     /// Determine if this object is an instance of a given type.
     ///

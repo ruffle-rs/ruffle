@@ -8,7 +8,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::WString;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak};
 use std::fmt::Debug;
 use tracing::{enabled, Level};
 
@@ -127,10 +127,6 @@ impl<'gc> TObject<'gc> for ErrorObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Object(Object::from(*self)))
     }
 
     fn as_error_object(&self) -> Option<ErrorObject<'gc>> {

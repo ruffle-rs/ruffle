@@ -3,10 +3,9 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
-use crate::avm2::value::Value;
 use crate::avm2::Error;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak};
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
 use std::cell::Cell;
 
@@ -79,10 +78,6 @@ impl<'gc> TObject<'gc> for ShaderDataObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Object(Object::from(*self)))
     }
 
     fn as_shader_data(&self) -> Option<ShaderDataObject<'gc>> {

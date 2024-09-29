@@ -1,6 +1,5 @@
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
-use crate::avm2::value::Value;
 use crate::avm2::{Activation, ClassObject, Error};
 use crate::character::Character;
 use crate::font::Font;
@@ -73,10 +72,6 @@ impl<'gc> TObject<'gc> for FontObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Object(Object::from(*self)))
     }
 
     fn as_font(&self) -> Option<Font<'gc>> {

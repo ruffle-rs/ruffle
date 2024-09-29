@@ -4,7 +4,6 @@ use crate::avm2::activation::Activation;
 use crate::avm2::domain::Domain;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
-use crate::avm2::value::Value;
 use crate::avm2::Error;
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -108,11 +107,5 @@ impl<'gc> TObject<'gc> for DomainObject<'gc> {
 
     fn init_application_domain(&self, mc: &Mutation<'gc>, domain: Domain<'gc>) {
         unlock!(Gc::write(mc, self.0), DomainObjectData, domain).set(domain);
-    }
-
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        let this: Object<'gc> = Object::DomainObject(*self);
-
-        Ok(this.into())
     }
 }

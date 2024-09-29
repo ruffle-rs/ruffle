@@ -1,11 +1,10 @@
 use crate::avm2::bytearray::{ByteArrayError, Endian, ObjectEncoding};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
-use crate::avm2::value::Value;
 use crate::avm2::{Activation, Error};
 use crate::socket::SocketHandle;
+use gc_arena::GcWeak;
 use gc_arena::{Collect, Gc};
-use gc_arena::{GcWeak, Mutation};
 use std::cell::{Cell, RefCell, RefMut};
 use std::fmt;
 
@@ -51,10 +50,6 @@ impl<'gc> TObject<'gc> for SocketObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Object(Object::from(*self)))
     }
 
     fn as_socket(&self) -> Option<SocketObject<'gc>> {

@@ -487,10 +487,6 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Object(Object::from(*self)))
-    }
-
     fn as_xml_list_object(&self) -> Option<Self> {
         Some(*self)
     }

@@ -3,9 +3,8 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
-use crate::avm2::value::Value;
 use crate::avm2::Error;
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak};
 use ruffle_render::backend::VertexBuffer;
 use std::rc::Rc;
 
@@ -91,10 +90,6 @@ impl<'gc> TObject<'gc> for VertexBuffer3DObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Object(Object::from(*self)))
     }
 
     fn as_vertex_buffer(&self) -> Option<VertexBuffer3DObject<'gc>> {
