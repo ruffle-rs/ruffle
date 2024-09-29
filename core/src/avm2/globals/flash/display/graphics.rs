@@ -13,7 +13,7 @@ use crate::avm2::vector::VectorStorage;
 use crate::avm2::{ArrayStorage, Error};
 use crate::avm2_stub_method;
 use crate::display_object::TDisplayObject;
-use crate::drawing::Drawing;
+use crate::drawing::{Drawing, DrawingFill, DrawingPath};
 use crate::string::{AvmString, WStr};
 use ruffle_render::shape_utils::{DrawCommand, FillRule, GradientType};
 use std::f64::consts::FRAC_1_SQRT_2;
@@ -1269,13 +1269,107 @@ pub fn line_bitmap_style<'gc>(
 /// Implements `Graphics.readGraphicsData`
 pub fn read_graphics_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.display.Graphics", "readGraphicsData");
+
+    let mut result = Vec::new();
+
+    if let Some(this) = this.as_display_object() {
+        if let Some(draw) = this.as_drawing(activation.context.gc_context) {
+            for path in draw.paths() {
+                match path {
+                    DrawingPath::Fill(DrawingFill {
+                        style, commands, ..
+                    }) => {
+                        match style {
+                            FillStyle::Color(color) => {
+                                let color_value = Value::Integer(color.to_rgb() as i32);
+                                let alpha_value = Value::Number(255.0 / (color.a as f64));
+
+                                result.push(Value::Object(
+                                    activation
+                                        .avm2()
+                                        .classes()
+                                        .graphicssolidfill
+                                        .construct(activation, &[color_value, alpha_value])?,
+                                ));
+                            }
+                            _ => println!("unsupported style {style:?}"),
+                        };
+
+                        let mut path_commands = Vec::new();
+                        let mut path_data = Vec::new();
+
+                        let mut add_point = |p: &Point<Twips>| {
+                            let x = p.x.to_pixels();
+                            let y = p.y.to_pixels();
+                            path_data.push(x);
+                            path_data.push(y);
+                        };
+
+                        for command in commands {
+                            match command {
+                                DrawCommand::MoveTo(point) => {
+                                    path_commands.push(1 /* MOVE_TO */);
+                                    add_point(point);
+                                }
+                                DrawCommand::LineTo(point) => {
+                                    path_commands.push(2 /* LINE_TO */);
+                                    add_point(point);
+                                }
+                                DrawCommand::QuadraticCurveTo { control, anchor } => {
+                                    path_commands.push(3 /* CURVE_TO */);
+                                    add_point(control);
+                                    add_point(anchor);
+                                }
+                                _ => println!("unsupported command {command:?}"),
+                            }
+                        }
+
+                        let commands_storage = VectorStorage::from_values(
+                            path_commands.into_iter().map(|v| v.into()).collect(),
+                            true,
+                            Some(activation.avm2().class_defs().int),
+                        );
+                        let commands_vector =
+                            Value::Object(VectorObject::from_vector(commands_storage, activation)?);
+
+                        let data_storage = VectorStorage::from_values(
+                            path_data.into_iter().map(|v| v.into()).collect(),
+                            true,
+                            Some(activation.avm2().class_defs().number),
+                        );
+                        let data_vector =
+                            Value::Object(VectorObject::from_vector(data_storage, activation)?);
+
+                        result.push(Value::Object(
+                            activation
+                                .avm2()
+                                .classes()
+                                .graphicspath
+                                .construct(activation, &[commands_vector, data_vector])?,
+                        ));
+
+                        // Only do this at the end?
+                        result.push(Value::Object(
+                            activation
+                                .avm2()
+                                .classes()
+                                .graphicsendfill
+                                .construct(activation, &[])?,
+                        ));
+                    }
+                    _ => println!("unsupported path: {path:?}"),
+                }
+            }
+        }
+    }
+
     let value_type = activation.avm2().class_defs().igraphicsdata;
-    let new_storage = VectorStorage::new(0, false, Some(value_type), activation);
-    Ok(VectorObject::from_vector(new_storage, activation)?.into())
+    let storage = VectorStorage::from_values(result, false, Some(value_type));
+    Ok(VectorObject::from_vector(storage, activation)?.into())
 }
 
 fn read_point<'gc>(

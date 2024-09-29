@@ -169,6 +169,9 @@ pub struct SystemClasses<'gc> {
     pub dictionary: ClassObject<'gc>,
     pub id3info: ClassObject<'gc>,
     pub textrun: ClassObject<'gc>,
+    pub graphicssolidfill: ClassObject<'gc>,
+    pub graphicspath: ClassObject<'gc>,
+    pub graphicsendfill: ClassObject<'gc>,
 }
 
 #[derive(Clone, Collect)]
@@ -322,6 +325,9 @@ impl<'gc> SystemClasses<'gc> {
             dictionary: object,
             id3info: object,
             textrun: object,
+            graphicssolidfill: object,
+            graphicspath: object,
+            graphicsendfill: object,
         }
     }
 }
@@ -851,6 +857,9 @@ pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
             ("flash.display", "Scene", scene),
             ("flash.display", "FrameLabel", framelabel),
             ("flash.display", "Graphics", graphics),
+            ("flash.display", "GraphicsSolidFill", graphicssolidfill),
+            ("flash.display", "GraphicsPath", graphicspath),
+            ("flash.display", "GraphicsEndFill", graphicsendfill),
             ("flash.display", "Loader", loader),
             ("flash.display", "LoaderInfo", loaderinfo),
             ("flash.display", "MorphShape", morphshape),

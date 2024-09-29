@@ -104,7 +104,8 @@ impl<'gc> Graphic<'gc> {
 
     pub fn drawing(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, Drawing> {
         RefMut::map(self.0.write(gc_context), |w| {
-            w.drawing.get_or_insert_with(Drawing::new)
+            w.drawing
+                .get_or_insert_with(|| Drawing::from_swf_shape(&w.static_data.shape))
         })
     }
 }
