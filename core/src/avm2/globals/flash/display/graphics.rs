@@ -1286,13 +1286,13 @@ fn read_point<'gc>(
     let x = data
         .get(*data_index, activation)
         .ok()?
-        .as_number(activation.context.gc_context)
+        .as_number(activation.strings())
         .expect("data is not a Vec.<Number>");
 
     let y = data
         .get(*data_index + 1, activation)
         .ok()?
-        .as_number(activation.context.gc_context)
+        .as_number(activation.strings())
         .expect("data is not a Vec.<Number>");
 
     *data_index += 2;
@@ -1395,7 +1395,7 @@ fn process_commands<'gc>(
         let command = commands
             .get(i, activation)
             .expect("missing command")
-            .as_integer(activation.context.gc_context)
+            .as_integer(activation.strings())
             .expect("commands is not a Vec.<int>");
 
         if process_command(activation, drawing, data, command, &mut data_index).is_none() {

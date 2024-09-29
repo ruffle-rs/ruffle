@@ -260,7 +260,7 @@ pub fn get_time<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_date_object().unwrap();
-    this.value_of(activation.context.gc_context)
+    this.value_of(activation.strings())
 }
 
 /// Implements `setTime` method.
