@@ -752,10 +752,6 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         self.to_string(activation)
     }
 
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Object(Object::from(*self)))
-    }
-
     fn call(
         self,
         _receiver: Value<'gc>,

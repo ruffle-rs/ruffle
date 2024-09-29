@@ -3,7 +3,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
-use crate::avm2::value::Value;
 use crate::avm2::Avm2;
 use crate::avm2::Error;
 use crate::avm2::EventObject;
@@ -296,10 +295,6 @@ impl<'gc> TObject<'gc> for SoundObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Object::from(*self).into())
     }
 
     fn as_sound_object(self) -> Option<SoundObject<'gc>> {

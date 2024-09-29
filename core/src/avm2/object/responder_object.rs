@@ -1,6 +1,5 @@
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, FunctionObject, Object, ObjectPtr, TObject};
-use crate::avm2::value::Value;
 use crate::avm2::{Activation, Error};
 use crate::context::UpdateContext;
 use crate::net_connection::ResponderCallback;
@@ -46,10 +45,6 @@ impl<'gc> TObject<'gc> for ResponderObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Object((*self).into()))
     }
 
     fn as_responder(self) -> Option<ResponderObject<'gc>> {

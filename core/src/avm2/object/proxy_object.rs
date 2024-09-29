@@ -8,7 +8,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak};
 
 /// A class instance allocator that allocates Proxy objects.
 pub fn proxy_allocator<'gc>(
@@ -63,10 +63,6 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Object::from(*self).into())
     }
 
     fn get_property_local(

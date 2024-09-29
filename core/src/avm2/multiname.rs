@@ -449,7 +449,7 @@ impl<'gc> Multiname<'gc> {
             None => WStr::empty(),
         };
 
-        uri.push_str(&ns);
+        uri.push_str(ns);
 
         if let Some(name) = self.name {
             if !uri.is_empty() {

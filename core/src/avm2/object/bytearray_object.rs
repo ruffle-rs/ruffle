@@ -7,7 +7,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::character::Character;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak};
 use std::cell::{Ref, RefCell, RefMut};
 
 /// A class instance allocator that allocates ByteArray objects.
@@ -219,10 +219,6 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         }
 
         self.base().has_own_property(name)
-    }
-
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Object(Object::from(*self)))
     }
 
     fn as_bytearray(&self) -> Option<Ref<ByteArrayStorage>> {

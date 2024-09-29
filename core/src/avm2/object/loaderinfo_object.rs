@@ -4,7 +4,6 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::argument_error;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, StageObject, TObject};
-use crate::avm2::value::Value;
 use crate::avm2::Avm2;
 use crate::avm2::Error;
 use crate::avm2::EventObject;
@@ -409,10 +408,6 @@ impl<'gc> TObject<'gc> for LoaderInfoObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Object((*self).into()))
     }
 
     fn as_loader_info_object(&self) -> Option<&LoaderInfoObject<'gc>> {
