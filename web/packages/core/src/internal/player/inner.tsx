@@ -42,7 +42,13 @@ declare global {
         webkitCancelFullScreen?: () => void;
     }
     interface Element {
+        /**
+         * @ignore
+         */
         webkitRequestFullscreen?: (options: unknown) => unknown;
+        /**
+         * @ignore
+         */
         webkitRequestFullScreen?: (options: unknown) => unknown;
     }
 }
@@ -1592,7 +1598,7 @@ export class InnerPlayer {
 
                         // Then we have to close the context menu manually after the callback finishes.
                         this.hideContextMenu();
-                    }
+                    };
                     if (this.contextMenuSupported) {
                         menuItem.addEventListener("click", itemAction);
                         menuItem.addEventListener("contextmenu", itemAction);
