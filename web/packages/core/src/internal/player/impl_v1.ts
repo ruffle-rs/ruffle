@@ -43,7 +43,7 @@ export class PlayerV1Impl implements PlayerV1 {
         await this.#inner.load(options, isPolyfillElement);
     }
 
-    play(): void {
+    resume(): void {
         this.#inner.play();
     }
 
@@ -87,8 +87,12 @@ export class PlayerV1Impl implements PlayerV1 {
         this.#inner.displayMessage(message);
     }
 
-    pause(): void {
+    suspend(): void {
         this.#inner.pause();
+    }
+
+    get suspended(): boolean {
+        return !this.#inner.isPlaying;
     }
 
     set traceObserver(observer: ((message: string) => void) | null) {

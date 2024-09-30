@@ -97,21 +97,36 @@ export interface LegacyRuffleAPI {
     load(options: string | URLLoadOptions | DataLoadOptions): Promise<void>;
 
     /**
-     * Plays or resumes the movie.
+     * Resumes the movie from suspension.
+     *
+     * The movie will now resume executing any frames, scripts and sounds.
+     * If the movie is not suspended or no movie is loaded, this method will do nothing.
+     *
+     * @remarks
+     * This method was confusingly named and kept for legacy compatibility.
+     * "Playing" in this context referred to "not being suspended", and <b>not</b> the Flash concept of playing/paused.
      *
      * @deprecated Please use {@link PlayerElement.ruffle | ruffle()} to access a versioned API.
      * This method may be replaced by Flash and is not guaranteed to exist.
-     * A direct replacement is {@link PlayerV1.play}
+     * A direct replacement is {@link PlayerV1.resume}
      */
     play(): void;
 
     /**
-     * Whether this player is currently playing.
+     * Checks if this player is not suspended.
+     *
+     * A suspended movie will not execute any frames, scripts or sounds.
+     * This movie is considered inactive and will not wake up until resumed.
+     * If no movie is loaded, this method will return true.
+     *
+     * @remarks
+     * This method was confusingly named and kept for legacy compatibility.
+     * "Playing" in this context referred to "not being suspended", and <b>not</b> the Flash concept of playing/paused.
      *
      * @returns True if this player is playing, false if it's paused or hasn't started yet.
      * @deprecated Please use {@link PlayerElement.ruffle | ruffle()} to access a versioned API.
      * This method may be replaced by Flash and is not guaranteed to exist.
-     * A direct replacement is {@link PlayerV1.isPlaying}
+     * A direct replacement is {@link PlayerV1.suspended} (though inversed!)
      */
     get isPlaying(): boolean;
 
@@ -191,14 +206,19 @@ export interface LegacyRuffleAPI {
     exitFullscreen(): void;
 
     /**
-     * Pauses this player.
+     * Suspends the movie.
      *
-     * No more frames, scripts or sounds will be executed.
-     * This movie will be considered inactive and will not wake up until resumed.
+     * A suspended movie will not execute any frames, scripts or sounds.
+     * This movie is considered inactive and will not wake up until resumed.
+     * If the movie is already suspended or no movie is loaded, this method will do nothing.
+     *
+     * @remarks
+     * This method was confusingly named and kept for legacy compatibility.
+     * "Pause" in this context referred to "suspended", and <b>not</b> the Flash concept of playing/paused.
      *
      * @deprecated Please use {@link PlayerElement.ruffle | ruffle()} to access a versioned API.
      * This method may be replaced by Flash and is not guaranteed to exist.
-     * A direct replacement is {@link PlayerV1.pause}
+     * A direct replacement is {@link PlayerV1.suspend}
      */
     pause(): void;
 

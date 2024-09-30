@@ -109,7 +109,7 @@ export async function setupAndPlay(
             player.ruffle().traceObserver = (msg) => {
                 player.__ruffle_log__ += msg + "\n";
             };
-            player.ruffle().play();
+            player.ruffle().resume();
         },
         await player,
     );

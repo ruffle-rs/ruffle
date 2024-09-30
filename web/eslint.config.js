@@ -117,7 +117,7 @@ export default tseslint.config(
             ],
             "jsdoc/check-tag-names": [
                 "error",
-                { definedTags: ["privateRemarks"] },
+                { definedTags: ["privateRemarks", "remarks"] },
             ],
         },
         settings: {

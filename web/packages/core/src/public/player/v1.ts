@@ -67,18 +67,6 @@ export interface PlayerV1 {
     load(options: string | URLLoadOptions | DataLoadOptions): Promise<void>;
 
     /**
-     * Plays or resumes the movie.
-     */
-    play(): void;
-
-    /**
-     * Whether this player is currently playing.
-     *
-     * @returns True if this player is playing, false if it's paused or hasn't started yet.
-     */
-    get isPlaying(): boolean;
-
-    /**
      * Returns the master volume of the player.
      *
      * The volume is linear and not adapted for logarithmic hearing.
@@ -131,12 +119,40 @@ export interface PlayerV1 {
     exitFullscreen(): void;
 
     /**
-     * Pauses this player.
+     * Checks if this movie is suspended.
      *
-     * No more frames, scripts or sounds will be executed.
-     * This movie will be considered inactive and will not wake up until resumed.
+     * A suspended movie will not execute any frames, scripts or sounds.
+     * This movie is considered inactive and will not wake up until resumed.
+     * If no movie is loaded, this method will return true.
+     *
+     * @see {@link suspend} to suspend the player
+     * @see {@link resume} to resume the player from suspension
+     * @returns `true` if the movie is suspended or does not exist, `false` if the movie is playing
      */
-    pause(): void;
+    get suspended(): boolean;
+
+    /**
+     * Suspends the movie.
+     *
+     * A suspended movie will not execute any frames, scripts or sounds.
+     * This movie is considered inactive and will not wake up until resumed.
+     * If the movie is already suspended or no movie is loaded, this method will do nothing.
+     *
+     * @see {@link suspended} to check if the player is suspended
+     * @see {@link resume} to resume the player from suspension
+     */
+    suspend(): void;
+
+    /**
+     * Resumes the movie from suspension.
+     *
+     * The movie will now resume executing any frames, scripts and sounds.
+     * If the movie is not suspended or no movie is loaded, this method will do nothing.
+     *
+     * @see {@link suspended} to suspend the player
+     * @see {@link suspend} to check if the player is suspended
+     */
+    resume(): void;
 
     /**
      * Sets a trace observer on this flash player.
