@@ -28,6 +28,6 @@
         "webpack-dev-server": "^5.1.0",
         "ts-node": "^10.9.2",
         "@types/chai": "^5.0.0",
-        "@types/chai-html": "^1.3.2"
+        "@types/chai-html": "^3.0.0"
     }
 }
