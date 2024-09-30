@@ -477,7 +477,7 @@ impl<'gc> Multiname<'gc> {
     /// This is used by `describeType`
     pub fn to_qualified_name_or_star(&self, context: &mut StringContext<'gc>) -> AvmString<'gc> {
         if self.is_any_name() {
-            context.get_ascii_char('*')
+            context.ascii_char(b'*')
         } else {
             self.to_qualified_name(context.gc_context)
         }

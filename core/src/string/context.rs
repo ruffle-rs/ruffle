@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, ops::Range};
 
 use gc_arena::{Gc, Mutation};
 
@@ -76,7 +76,7 @@ impl<'gc> StringContext<'gc> {
     }
 
     #[must_use]
-    pub fn get_char(&self, c: u16) -> AvmString<'gc> {
+    pub fn make_char(&self, c: u16) -> AvmString<'gc> {
         if let Some(s) = self.interner.chars.get(c as usize) {
             (*s).into()
         } else {
@@ -84,20 +84,15 @@ impl<'gc> StringContext<'gc> {
         }
     }
 
-    // Like get_char, but panics if the passed char is not ASCII.
+    /// Like `make_char`, but panics if the passed char is not ASCII.
     #[must_use]
-    pub fn get_ascii_char(&self, c: char) -> AvmString<'gc> {
+    pub fn ascii_char(&self, c: u8) -> AvmString<'gc> {
         self.interner.chars[c as usize].into()
     }
 
     #[must_use]
-    pub fn substring(
-        &self,
-        s: AvmString<'gc>,
-        start_index: usize,
-        end_index: usize,
-    ) -> AvmString<'gc> {
+    pub fn substring(&self, s: AvmString<'gc>, range: Range<usize>) -> AvmString<'gc> {
         self.interner
-            .substring(self.gc(), s, start_index, end_index)
+            .substring(self.gc(), s, range.start, range.end)
     }
 }
