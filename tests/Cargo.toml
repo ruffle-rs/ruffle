@@ -24,7 +24,7 @@ lzma = ["ruffle_test_framework/lzma"]
 
 [dependencies]
 ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
-regex = "1.10.6"
+regex = "1.11.0"
 
 [dev-dependencies]
 ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug", "avm_debug", "audio", "mp3", "default_font", "test_only_as3"] }
