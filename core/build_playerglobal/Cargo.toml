@@ -16,5 +16,5 @@ proc-macro2 = "1.0.86"
 quote = "1.0.37"
 swf = { path = "../../swf" }
 clap = { workspace = true }
-regex = "1.10.6"
+regex = "1.11.0"
 walkdir = { workspace = true }

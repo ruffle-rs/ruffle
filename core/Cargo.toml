@@ -50,13 +50,13 @@ symphonia = { version = "0.5.4", default-features = false, features = ["mp3"], o
 enumset = "1.1.5"
 bytemuck = { workspace = true }
 clap = { workspace = true, optional=true }
-realfft = "3.3.0"
+realfft = "3.4.0"
 hashbrown = { version = "0.14.5", features = ["raw"] }
 scopeguard = "1.2.0"
 fluent-templates = "0.11.0"
 egui = { workspace = true, optional = true }
 egui_extras = { version = "0.29.0", default-features = false, optional = true }
-png = { version = "0.17.13", optional = true }
+png = { version = "0.17.14", optional = true }
 flv-rs = { path = "../flv" }
 async-channel = { workspace = true }
 jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "71dbe614c02c30a2e9fd1e9e2e7c7a749abe2798", optional = true }
