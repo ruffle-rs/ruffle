@@ -48,7 +48,7 @@ export interface LegacyRuffleAPI {
     get metadata(): MovieMetadata | null;
 
     /**
-     * Reloads the player, as if you called {@link RufflePlayer.load} with the same config as the last time it was called.
+     * Reloads the player, as if you called {@link load} with the same config as the last time it was called.
      *
      * If this player has never been loaded, this method will return an error.
      */
@@ -61,13 +61,13 @@ export interface LegacyRuffleAPI {
      *
      * @param options One of the following:
      * - A URL, passed as a string, which will load a URL with default options.
-     * - A [[URLLoadOptions]] object, to load a URL with options.
-     * - A [[DataLoadOptions]] object, to load data with options.
+     * - A {@link URLLoadOptions} object, to load a URL with options.
+     * - A {@link DataLoadOptions} object, to load data with options.
      * The options, if provided, must only contain values provided for this specific movie.
      * They must not contain any default values, since those would overwrite other configuration
      * settings with a lower priority (e.g. the general RufflePlayer config).
      *
-     * The options will be defaulted by the [[config]] field, which itself
+     * The options will be defaulted by the {@link config} field, which itself
      * is defaulted by a global `window.RufflePlayer.config`.
      */
     load(options: string | URLLoadOptions | DataLoadOptions): Promise<void>;
@@ -105,7 +105,7 @@ export interface LegacyRuffleAPI {
     /**
      * Checks if this player is allowed to be fullscreen by the browser.
      *
-     * @returns True if you may call [[enterFullscreen]].
+     * @returns True if you may call {@link enterFullscreen}.
      */
     get fullscreenEnabled(): boolean;
 
@@ -127,7 +127,7 @@ export interface LegacyRuffleAPI {
     /**
      * Requests the browser to make this player fullscreen.
      *
-     * This is not guaranteed to succeed, please check [[fullscreenEnabled]] first.
+     * This is not guaranteed to succeed, please check {@link fullscreenEnabled} first.
      */
     enterFullscreen(): void;
 

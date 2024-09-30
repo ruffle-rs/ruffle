@@ -8,8 +8,8 @@ declare global {
         /**
          * The public API for generating a ruffle player.
          * This may be a config holder, which will be converted to a
-         * [[PublicAPI]] via [[installRuffle]], or an actual
-         * [[PublicAPI]] instance itself.
+         * {@link PublicAPI} via {@link installRuffle}, or an actual
+         * {@link PublicAPI} instance itself.
          */
         RufflePlayer?: PublicAPILike | PublicAPI;
     }
@@ -18,8 +18,8 @@ declare global {
 /**
  * Represents a potential installation of a Ruffle public API.
  *
- * Unlike [[PublicAPI]], this may come from any source, past or future.
- * It needs to be forwards compatible and convertible into a modern day [[PublicAPI]].
+ * Unlike {@link PublicAPI}, this may come from any source, past or future.
+ * It needs to be forwards compatible and convertible into a modern day {@link PublicAPI}.
  */
 export interface PublicAPILike {
     config?: DataLoadOptions | URLLoadOptions | object;

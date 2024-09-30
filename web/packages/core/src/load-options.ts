@@ -676,7 +676,7 @@ export interface URLLoadOptions extends BaseLoadOptions {
     /**
      * The URL to load a movie from.
      *
-     * If there is a query portion of this URL, then default [[parameters]]
+     * If there is a query portion of this URL, then default {@link parameters}
      * will be extracted from that.
      */
     url: string;
