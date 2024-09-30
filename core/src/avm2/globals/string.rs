@@ -130,7 +130,7 @@ fn char_at<'gc>(
 
         let index = if !n.is_nan() { n as usize } else { 0 };
         let ret = if let Some(c) = s.get(index) {
-            activation.strings().get_char(c)
+            activation.strings().make_char(c)
         } else {
             activation.strings().empty()
         };
@@ -449,7 +449,7 @@ fn slice<'gc>(
     if start_index < end_index {
         Ok(activation
             .strings()
-            .substring(this, start_index, end_index)
+            .substring(this, start_index..end_index)
             .into())
     } else {
         Ok("".into())
@@ -486,7 +486,7 @@ fn split<'gc>(
         // Special case this to match Flash's behavior.
         this.iter()
             .take(limit)
-            .map(|c| Value::from(activation.strings().get_char(c)))
+            .map(|c| Value::from(activation.strings().make_char(c)))
             .collect()
     } else {
         this.split(&delimiter)
@@ -551,7 +551,7 @@ fn substr<'gc>(
 
     Ok(activation
         .strings()
-        .substring(this, start_index, end_index)
+        .substring(this, start_index..end_index)
         .into())
 }
 
@@ -588,7 +588,7 @@ fn substring<'gc>(
 
     Ok(activation
         .strings()
-        .substring(this, start_index, end_index)
+        .substring(this, start_index..end_index)
         .into())
 }
 
