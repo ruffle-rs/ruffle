@@ -12,7 +12,7 @@ import { isSwf } from "../../swf-utils";
  * A polyfill html element.
  *
  * This specific class tries to polyfill existing `<embed>` tags,
- * and should not be used. Prefer [[RufflePlayer]] instead.
+ * and should not be used. Prefer {@link RufflePlayer} instead.
  *
  * @internal
  */

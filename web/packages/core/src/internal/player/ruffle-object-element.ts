@@ -17,7 +17,7 @@ import { isSwf } from "../../swf-utils";
  * @param obj Object to check
  * @param key Key to find
  * @param defaultValue Value if not found
- * @returns Value if found, else [[defaultValue]]
+ * @returns Value if found, else {@link defaultValue}
  */
 function findCaseInsensitive(
     obj: Record<string, string>,
@@ -34,7 +34,7 @@ function findCaseInsensitive(
 }
 
 /**
- * Returns all flash params ([[HTMLParamElement]]) that are for the given object.
+ * Returns all flash params ({@link HTMLParamElement}) that are for the given object.
  *
  * @param elem Element to check.
  * @returns A record of every parameter.
@@ -59,7 +59,7 @@ function paramsOf(elem: Element): Record<string, string> {
  * A polyfill html element.
  *
  * This specific class tries to polyfill existing `<object>` tags,
- * and should not be used. Prefer [[RufflePlayer]] instead.
+ * and should not be used. Prefer {@link RufflePlayer} instead.
  *
  * @internal
  */
