@@ -4,9 +4,12 @@
     <metadata_license>CC0-1.0</metadata_license>
     <project_license>MIT OR Apache-2.0</project_license>
     <name>Ruffle</name>
+    <name xml:lang="pl">Ruffle</name>
     <summary>Play Flash games &amp; movies</summary>
+    <summary xml:lang="pl">Graj w gry i odtwarzaj filmy Flash</summary>
     <developer id="rs.ruffle">
         <name>The Ruffle Team</name>
+        <name xml:lang="pl">Zespół Ruffle</name>
     </developer>
     <update_contact>ruffle@ruffle.rs</update_contact>
     <launchable type="desktop-id">rs.ruffle.Ruffle.desktop</launchable>
@@ -17,10 +20,12 @@
             the security pitfalls that Flash had a reputation for.
             Ruffle puts Flash back on the web, where it belongs!
         </p>
+        <p xml:lang="pl">Ruffle jest emulatorem Flash Playera napisanym w języku programowania Rust. Wykorzystując gwarancje bezpieczeństwa języka Rust, możemy pewnie uniknąć wszystkich luk bezpieczeństwa, z których Flash był znany. Ruffle przywraca Flasha do sieci, gdzie jest jego miejsce!</p>
         <p>
             This application lets you run Flash content on your computer without a browser in-between,
             and take full advantage of your GPU and system resources to get those extra frames when playing intense games.
         </p>
+        <p xml:lang="pl">Ta aplikacja umożliwia uruchamianie zawartości Flash bezpośrednio na komputerze, bez konieczności używania przeglądarki, a także pełne wykorzystanie procesora graficznego i zasobów systemu, co pozwala uzyskać dodatkowe klatki podczas grania w wymagające gry.</p>
         <p>
             Ruffle is an entirely open source project maintained by volunteers.
             We're all passionate about the preservation of internet history, and we were drawn to working on this
@@ -29,6 +34,7 @@
             If you would like to help support this project, we welcome all contributions of any kind –
             even if it's just playing some old games and seeing how well they run.
         </p>
+        <p xml:lang="pl">Ruffle to projekt całkowicie open source, prowadzony przez wolontariuszy. Wszyscy jesteśmy pasjonatami konserwacji historii Internetu i zostaliśmy przyciągnięci do pracy nad tym projektem, aby pomóc zachować wiele stron internetowych i mnóstwo treści, które nie będą już dostępne, gdy użytkownicy nie będą mogli uruchomić oficjalnego Flash Playera. Jeśli chcesz wesprzeć ten projekt, chętnie przyjmiemy wszelkie wsparcie – nawet jeśli jest to po prostu granie w stare gry i weryfikacja jak dobrze działają.</p>
     </description>
     <categories>
         <category>AudioVideo</category>
@@ -40,10 +46,15 @@
     </categories>
     <keywords>
         <keyword>flash</keyword>
+        <keyword xml:lang="pl">flash</keyword>
         <keyword>swf</keyword>
+        <keyword xml:lang="pl">swf</keyword>
         <keyword>player</keyword>
+        <keyword xml:lang="pl">odtwarzacz</keyword>
         <keyword>emulator</keyword>
+        <keyword xml:lang="pl">emulator</keyword>
         <keyword>rust</keyword>
+        <keyword xml:lang="pl">rust</keyword>
     </keywords>
     <url type="homepage">https://ruffle.rs</url>
     <url type="bugtracker">https://github.com/ruffle-rs/ruffle/issues</url>
