@@ -48,13 +48,13 @@ jobs:
           prs=$(gh pr list --base master --head l10n_crowdin_translations --limit 1 --json id | jq length)
           if [ "$prs" = 1 ]; then echo "PR already exists"; exit 0; fi
 
-          gh pr create \
+          pr_url=$(gh pr create \
             --title 'chore: Update translations' \
             --body 'New Crowdin pull request with translations 🎉' \
             --head l10n_crowdin_translations \
-            --base master \
-            --label T-chore \
-            --label A-i18n
+            --base master)
+
+          gh pr edit "$pr_url" --add-label T-chore --add-label A-i18n
         env:
           # Use a custom token rather than the automatic GITHUB_TOKEN, as the automatic one doesn't allow created PRs to trigger workflows
           # By using our own token (and thus own user), workflows will run, and the PR will be able to be merged.
