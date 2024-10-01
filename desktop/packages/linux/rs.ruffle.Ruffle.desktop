@@ -1,10 +1,14 @@
 [Desktop Entry]
 Type=Application
+Name[pl]=Ruffle
 Name=Ruffle
+GenericName[pl]=Odtwarzacz Flash
 GenericName=Flash Player
+Comment[pl]=Graj w gry i odtwarzaj filmy Flash
 Comment=Play Flash games & movies
 Icon=rs.ruffle.Ruffle
 Exec=ruffle %u
 MimeType=application/x-shockwave-flash;application/vnd.adobe.flash.movie
 Categories=AudioVideo;Player;Graphics;Viewer;VectorGraphics;Game
+Keywords[pl]=flash;swf;odtwarzacz;emulator;rust
 Keywords=flash;swf;player;emulator;rust
