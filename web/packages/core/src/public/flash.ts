@@ -1,5 +1,5 @@
 /**
- * These are properties and methods that Flash added to its <embed>/<object> tags.
+ * These are properties and methods that Flash added to its `<embed>/<object>` tags.
  * These don't seem to be documented in full anywhere, and Ruffle adds them as we encounter some.
  * You are discouraged from using these, and they exist only to support legacy websites from decades ago.
  *
