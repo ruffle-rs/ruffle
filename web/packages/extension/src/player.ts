@@ -1,11 +1,7 @@
 import * as utils from "./utils";
 import { installRuffle, PublicAPI } from "ruffle-core";
-import type {
-    Letterbox,
-    Player,
-    DataLoadOptions,
-    URLLoadOptions,
-} from "ruffle-core";
+
+import type { Config, Player } from "ruffle-core";
 
 declare global {
     interface Navigator {
@@ -39,7 +35,7 @@ const grant = document.getElementById("grant")! as HTMLButtonElement;
 // This is the base config always used by the extension player.
 // It has the highest priority and its options cannot be overwritten.
 const baseExtensionConfig = {
-    letterbox: "on" as Letterbox,
+    letterbox: "on" as Config.Letterbox,
     forceScale: true,
     forceAlign: true,
     showSwfDownload: true,
@@ -102,7 +98,9 @@ function unload() {
     }
 }
 
-async function load(options: string | DataLoadOptions | URLLoadOptions) {
+async function load(
+    options: string | Config.DataLoadOptions | Config.URLLoadOptions,
+) {
     unload();
     player = ruffle.createPlayer();
     player.id = "player";

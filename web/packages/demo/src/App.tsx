@@ -1,11 +1,11 @@
 import { Player } from "./player.tsx";
 import { useRef, useState, DragEvent, useCallback } from "react";
-import { BaseLoadOptions, MovieMetadata } from "ruffle-core";
+import type { Config, MovieMetadata } from "ruffle-core";
 import { Navbar } from "./navbar.tsx";
 import { MetadataPanel } from "./metadata.tsx";
 
 interface AppProperties {
-    ruffleBaseConfig: BaseLoadOptions;
+    ruffleBaseConfig: Config.BaseLoadOptions;
     allowUrlLoading: boolean;
     allowSampleSwfs: boolean;
 }
@@ -33,9 +33,12 @@ export function App({
     };
 
     // useCallback because this will be called from useEffect, we need this function to not change
-    const onSelectUrl = useCallback((url: string, options: BaseLoadOptions) => {
-        player.current?.loadUrl(url, options);
-    }, []);
+    const onSelectUrl = useCallback(
+        (url: string, options: Config.BaseLoadOptions) => {
+            player.current?.loadUrl(url, options);
+        },
+        [],
+    );
 
     const onSelectFile = (file: File) => {
         player.current?.loadFile(file);

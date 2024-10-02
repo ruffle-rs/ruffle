@@ -5,8 +5,7 @@
  */
 
 export * from "./public-api";
-export * from "./public/config/config";
-export * from "./public/config/load-options";
+export * as Config from "./public/config";
 export * from "./build-info";
 export * from "./movie-metadata";
 export * from "./install";
