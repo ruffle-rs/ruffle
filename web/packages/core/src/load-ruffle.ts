@@ -11,7 +11,8 @@ import {
 } from "wasm-feature-detect";
 import type { RuffleInstanceBuilder, ZipWriter } from "../dist/ruffle_web";
 import { setPolyfillsOnLoad } from "./js-polyfills";
-import { internalSourceApi } from "./source-api";
+
+import { internalSourceApi } from "./internal/internal-source-api";
 
 type ProgressCallback = (bytesLoaded: number, bytesTotal: number) => void;
 
