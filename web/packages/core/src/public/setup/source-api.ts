@@ -1,4 +1,4 @@
-import { Player } from "./public/player";
+import { Player } from "../player";
 
 /**
  * Represents this particular version of Ruffle.

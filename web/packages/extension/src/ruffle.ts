@@ -1,4 +1,4 @@
-import { installRuffle } from "ruffle-core";
+import { Setup } from "ruffle-core";
 import { Message } from "./messages";
 
 function handleMessage(message: Message) {
@@ -15,7 +15,7 @@ function handleMessage(message: Message) {
                 ...window.RufflePlayer.config,
                 openInNewTab,
             };
-            installRuffle("extension");
+            Setup.installRuffle("extension");
             return {};
         }
         case "ping":

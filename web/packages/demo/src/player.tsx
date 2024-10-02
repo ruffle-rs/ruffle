@@ -1,6 +1,6 @@
 import React, { ReactNode, DragEvent } from "react";
 import {
-    PublicAPI,
+    Setup,
     Player as RufflePlayer,
     MovieMetadata,
     Config,
@@ -33,7 +33,7 @@ export class Player extends React.Component<PlayerAttributes> {
     }
 
     componentDidMount() {
-        this.player = (window.RufflePlayer as PublicAPI)
+        this.player = (window.RufflePlayer as Setup.PublicAPI)
             .newest()!
             .createPlayer()!;
         this.player.id = "player";
