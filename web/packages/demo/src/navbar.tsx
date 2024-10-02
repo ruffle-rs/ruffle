@@ -7,7 +7,7 @@ import {
     useState,
     DragEvent,
 } from "react";
-import { BaseLoadOptions } from "ruffle-core";
+import type { Config } from "ruffle-core";
 import { DemoSwf, SampleSelection } from "./navbar/samples.tsx";
 
 declare global {
@@ -25,7 +25,7 @@ interface NavbarProps {
     allowSampleSwfs: boolean;
     onToggleMetadata: () => void;
     onReloadMovie: () => void;
-    onSelectUrl: (url: string, options: BaseLoadOptions) => void;
+    onSelectUrl: (url: string, options: Config.BaseLoadOptions) => void;
     onSelectFile: (file: File) => void;
     selectedFilename: string | null;
     setSelectedFilename: (value: string | null) => void;

@@ -3,14 +3,14 @@ import {
     PublicAPI,
     Player as RufflePlayer,
     MovieMetadata,
-    BaseLoadOptions,
+    Config,
 } from "ruffle-core";
 
 export interface PlayerAttributes {
     id?: string | undefined;
     children?: ReactNode;
     onLoadedMetadata: (metadata: MovieMetadata) => void;
-    baseConfig?: BaseLoadOptions;
+    baseConfig?: Config.BaseLoadOptions;
     onDragEnter: (event: DragEvent<HTMLElement>) => void;
     onDragLeave: (event: DragEvent<HTMLElement>) => void;
     onDragOver: (event: DragEvent<HTMLElement>) => void;
@@ -78,7 +78,7 @@ export class Player extends React.Component<PlayerAttributes> {
         }
     }
 
-    loadUrl(url: string, options: BaseLoadOptions) {
+    loadUrl(url: string, options: Config.BaseLoadOptions) {
         if (!this.isLoading) {
             this.isLoading = true;
             this.player

@@ -1,7 +1,7 @@
 import * as utils from "./utils";
-import type { BaseLoadOptions } from "ruffle-core";
+import type { Config } from "ruffle-core";
 
-export interface Options extends BaseLoadOptions {
+export interface Options extends Config.BaseLoadOptions {
     ruffleEnable: boolean;
     ignoreOptout: boolean;
     autostart: boolean;
