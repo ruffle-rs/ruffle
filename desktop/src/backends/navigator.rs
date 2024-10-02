@@ -20,6 +20,58 @@ use crate::gui::dialogs::network_access_dialog::{
 use crate::gui::DialogDescriptor;
 use crate::util::open_url;
 
+// TODO Make this more generic, maybe a manager?
+#[derive(Clone)]
+pub struct PathAllowList {
+    allowed_path_prefixes: Arc<Mutex<Vec<PathBuf>>>,
+}
+
+impl PathAllowList {
+    fn new(movie_path: Option<PathBuf>) -> Self {
+        let mut allowed_path_prefixes = Vec::new();
+        if let Some(movie_path) = movie_path {
+            if let Some(parent) = movie_path.parent() {
+                // TODO Be smarter here, we do not necessarily want to allow
+                //   access to the SWF's dir, but we also do not want to present
+                //   the dialog to the user too often.
+                allowed_path_prefixes.push(parent.to_path_buf());
+            }
+            allowed_path_prefixes.push(movie_path);
+        }
+        Self {
+            allowed_path_prefixes: Arc::new(Mutex::new(allowed_path_prefixes)),
+        }
+    }
+
+    /// Checks whether the user already allowed access to the file.
+    pub fn is_path_allowed(&self, path: &Path) -> bool {
+        for path_prefix in self
+            .allowed_path_prefixes
+            .lock()
+            .expect("Non-poisoned lock")
+            .as_slice()
+        {
+            let Ok(path_prefix) = path_prefix.canonicalize() else {
+                continue;
+            };
+            let Ok(path) = path.canonicalize() else {
+                continue;
+            };
+            if path.starts_with(path_prefix) {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn add_allowed_path_prefix(&self, path_prefix: PathBuf) {
+        self.allowed_path_prefixes
+            .lock()
+            .expect("Non-poisoned lock")
+            .push(path_prefix);
+    }
+}
+
 #[derive(Clone)]
 pub struct DesktopNavigatorInterface {
     // Arc + Mutex due to macOS
@@ -27,8 +79,7 @@ pub struct DesktopNavigatorInterface {
 
     filesystem_access_mode: FilesystemAccessMode,
 
-    // TODO Make this more generic, maybe a manager?
-    allowed_paths: Arc<Mutex<Vec<PathBuf>>>,
+    allow_list: PathAllowList,
 }
 
 impl DesktopNavigatorInterface {
@@ -37,19 +88,9 @@ impl DesktopNavigatorInterface {
         movie_path: Option<PathBuf>,
         filesystem_access_mode: FilesystemAccessMode,
     ) -> Self {
-        let mut allowed_paths = Vec::new();
-        if let Some(movie_path) = movie_path {
-            if let Some(parent) = movie_path.parent() {
-                // TODO Be smarter here, we do not necessarily want to allow
-                //   access to the SWF's dir, but we also do not want to present
-                //   the dialog to the user too often.
-                allowed_paths.push(parent.to_path_buf());
-            }
-            allowed_paths.push(movie_path);
-        }
         Self {
             event_loop: Arc::new(Mutex::new(event_loop)),
-            allowed_paths: Arc::new(Mutex::new(allowed_paths)),
+            allow_list: PathAllowList::new(movie_path),
             filesystem_access_mode,
         }
     }
@@ -63,7 +104,7 @@ impl DesktopNavigatorInterface {
             .send_event(RuffleEvent::OpenDialog(DialogDescriptor::FilesystemAccess(
                 FilesystemAccessDialogConfiguration::new(
                     notifier,
-                    self.allowed_paths.clone(),
+                    self.allow_list.clone(),
                     path.to_path_buf(),
                 ),
             )));
@@ -89,10 +130,14 @@ impl NavigatorInterface for DesktopNavigatorInterface {
     async fn open_file(&self, path: &Path) -> io::Result<File> {
         let path = &path.canonicalize()?;
 
-        let allow = match self.filesystem_access_mode {
-            FilesystemAccessMode::Allow => true,
-            FilesystemAccessMode::Deny => false,
-            FilesystemAccessMode::Ask => self.ask_for_filesystem_access(path).await,
+        let allow = if self.allow_list.is_path_allowed(path) {
+            true
+        } else {
+            match self.filesystem_access_mode {
+                FilesystemAccessMode::Allow => true,
+                FilesystemAccessMode::Deny => false,
+                FilesystemAccessMode::Ask => self.ask_for_filesystem_access(path).await,
+            }
         };
 
         if !allow {
