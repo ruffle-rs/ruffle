@@ -1,6 +1,6 @@
 import { buildInfo } from "../build-info";
 import { pluginPolyfill, polyfill } from "../polyfills";
-import { PlayerElement } from "../public/player-element";
+import { PlayerElement } from "../public/player";
 import { registerElement } from "./register-element";
 import { RufflePlayerElement } from "./player/ruffle-player-element";
 import { InstallationOptions } from "../public/setup";

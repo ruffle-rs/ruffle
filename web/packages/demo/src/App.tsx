@@ -1,6 +1,6 @@
 import { Player } from "./player.tsx";
 import { useRef, useState, DragEvent, useCallback } from "react";
-import type { Config, MovieMetadata } from "ruffle-core";
+import type { Config, Player as RufflePlayer } from "ruffle-core";
 import { Navbar } from "./navbar.tsx";
 import { MetadataPanel } from "./metadata.tsx";
 
@@ -15,7 +15,9 @@ export function App({
     allowUrlLoading,
     allowSampleSwfs,
 }: AppProperties) {
-    const [metadata, setMetadata] = useState<MovieMetadata | null>(null);
+    const [metadata, setMetadata] = useState<RufflePlayer.MovieMetadata | null>(
+        null,
+    );
     const [metadataVisible, setMetadataVisible] = useState<boolean>(false);
     const [selectedFilename, setSelectedFilename] = useState<string | null>(
         null,
