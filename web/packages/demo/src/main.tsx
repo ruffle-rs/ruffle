@@ -4,9 +4,9 @@ import "./common.css";
 import "./lato.css";
 import "./index.css";
 import { App } from "./App.tsx";
-import { Config, installRuffle } from "ruffle-core";
+import { Config, Setup } from "ruffle-core";
 
-installRuffle("local");
+Setup.installRuffle("local");
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>

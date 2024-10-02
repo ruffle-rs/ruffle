@@ -1,5 +1,5 @@
 import * as utils from "./utils";
-import { installRuffle, PublicAPI } from "ruffle-core";
+import { Setup } from "ruffle-core";
 
 import type { Config, Player } from "ruffle-core";
 
@@ -13,8 +13,8 @@ declare global {
     }
 }
 
-installRuffle("local");
-const ruffle = (window.RufflePlayer as PublicAPI).newest()!;
+Setup.installRuffle("local");
+const ruffle = (window.RufflePlayer as Setup.PublicAPI).newest()!;
 let player: Player;
 
 const playerContainer = document.getElementById("player-container")!;

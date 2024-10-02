@@ -3,7 +3,7 @@ import { pluginPolyfill, polyfill } from "../polyfills";
 import { Player } from "../public/player";
 import { registerElement } from "./register-element";
 import { RufflePlayerElement } from "./player/ruffle-player-element";
-import { InstallationOptions } from "../install";
+import { InstallationOptions } from "../public/setup";
 
 /**
  * The actual source API that describes this installation.

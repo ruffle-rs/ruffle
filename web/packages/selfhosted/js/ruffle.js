@@ -1,7 +1,7 @@
 // eslint-disable-next-line no-unused-vars
 /* global __webpack_public_path__:writable */
 
-import { installRuffle } from "ruffle-core";
+import { Setup } from "ruffle-core";
 
 let currentScriptURL = null;
 
@@ -46,7 +46,7 @@ function publicPath(config) {
     return path;
 }
 
-installRuffle("local", {
+Setup.installRuffle("local", {
     onFirstLoad: () => {
         __webpack_public_path__ = publicPath(window.RufflePlayer?.config);
     },

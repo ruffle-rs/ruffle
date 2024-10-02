@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { Player, PublicAPI } from "ruffle-core";
+import { Player, Setup } from "ruffle-core";
 
 declare global {
     interface Window {
@@ -178,7 +178,7 @@ export function loadJsAPI(swf?: string) {
         await injectRuffleAndWait(browser);
 
         player = (await browser.execute(() => {
-            const ruffle = (window.RufflePlayer as PublicAPI).newest();
+            const ruffle = (window.RufflePlayer as Setup.PublicAPI).newest();
             const player = ruffle!.createPlayer();
             const container = document.getElementById("test-container");
             container!.appendChild(player);
