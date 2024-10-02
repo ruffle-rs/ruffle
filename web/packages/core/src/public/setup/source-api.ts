@@ -1,4 +1,4 @@
-import { PlayerElement } from "../player-element";
+import { PlayerElement } from "../player";
 
 /**
  * Represents this particular version of Ruffle.

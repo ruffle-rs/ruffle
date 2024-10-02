@@ -1,7 +1,6 @@
 import type { DataLoadOptions, URLLoadOptions } from "../../public/config";
-import type { MovieMetadata } from "../../movie-metadata";
+import type { MovieMetadata, PlayerElement } from "../../public/player";
 import { InnerPlayer, ReadyState } from "./inner";
-import { PlayerElement } from "../../public/player-element";
 
 /**
  * The ruffle player element that should be inserted onto the page.

@@ -9,7 +9,7 @@ import {
     WindowMode,
     DEFAULT_CONFIG,
 } from "../../public/config";
-import type { MovieMetadata } from "../../movie-metadata";
+import type { MovieMetadata } from "../../public/player";
 import { ruffleShadowTemplate } from "../ui/shadow-template";
 import { text, textAsParagraphs } from "../i18n";
 import { swfFileName } from "../../swf-utils";

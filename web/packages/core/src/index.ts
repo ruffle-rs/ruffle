@@ -6,8 +6,5 @@
 
 export * as Setup from "./public/setup";
 export * as Config from "./public/config";
+export * as Player from "./public/player";
 export * from "./build-info";
-export * from "./movie-metadata";
-export * from "./public/flash";
-export * from "./public/legacy";
-export * from "./public/player-element";

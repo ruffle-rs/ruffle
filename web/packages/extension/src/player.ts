@@ -1,7 +1,7 @@
 import * as utils from "./utils";
 import { Setup } from "ruffle-core";
 
-import type { Config, PlayerElement } from "ruffle-core";
+import type { Config, Player } from "ruffle-core";
 
 declare global {
     interface Navigator {
@@ -15,7 +15,7 @@ declare global {
 
 Setup.installRuffle("local");
 const ruffle = (window.RufflePlayer as Setup.PublicAPI).newest()!;
-let player: PlayerElement;
+let player: Player.PlayerElement;
 
 const playerContainer = document.getElementById("player-container")!;
 const overlay = document.getElementById("overlay")!;
