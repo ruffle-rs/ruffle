@@ -3,5 +3,6 @@
    "excludePrivate": true,
    "excludeProtected": true,
    "excludeExternals": true,
-   "sort": "enum-member-source-order"
+   "sort": "enum-member-source-order",
+   "plugin": ["typedoc-plugin-mdn-links"]
 }
