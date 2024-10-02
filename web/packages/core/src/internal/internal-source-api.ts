@@ -1,6 +1,6 @@
 import { buildInfo } from "../build-info";
 import { pluginPolyfill, polyfill } from "../polyfills";
-import { Player } from "../public/player";
+import { PlayerElement } from "../public/player-element";
 import { registerElement } from "./register-element";
 import { RufflePlayerElement } from "./player/ruffle-player-element";
 import { InstallationOptions } from "../public/setup";
@@ -40,7 +40,7 @@ export const internalSourceApi = {
      * @returns The player element. This is a DOM element that may be inserted
      * into the current page as you wish.
      */
-    createPlayer(): Player {
+    createPlayer(): PlayerElement {
         const name = registerElement("ruffle-player", RufflePlayerElement);
         return document.createElement(name) as RufflePlayerElement;
     },

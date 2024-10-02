@@ -9,4 +9,4 @@ import { FlashAPI } from "./flash";
  * In addition to usual HTML attributes, this player contains methods and properties that belong to both
  * the **Flash JS API** and **legacy Ruffle API**s.
  */
-export interface Player extends HTMLElement, LegacyRuffleAPI, FlashAPI {}
+export interface PlayerElement extends HTMLElement, LegacyRuffleAPI, FlashAPI {}
