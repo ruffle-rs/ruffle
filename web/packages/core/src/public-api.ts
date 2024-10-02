@@ -1,7 +1,10 @@
 import { Version } from "./version";
 import { VersionRange } from "./version-range";
 import { SourceAPI } from "./source-api";
-import type { DataLoadOptions, URLLoadOptions } from "./load-options";
+import type {
+    DataLoadOptions,
+    URLLoadOptions,
+} from "./public/config/load-options";
 
 declare global {
     interface Window {

@@ -7,7 +7,7 @@ import {
     UnmuteOverlay,
     URLLoadOptions,
     WindowMode,
-} from "../../load-options";
+} from "../../public/config/load-options";
 import type { MovieMetadata } from "../../movie-metadata";
 import { ruffleShadowTemplate } from "../ui/shadow-template";
 import { text, textAsParagraphs } from "../i18n";
@@ -25,7 +25,7 @@ import { showPanicScreen } from "../ui/panic";
 import { createRuffleBuilder } from "../../load-ruffle";
 import { lookupElement } from "../register-element";
 import { configureBuilder } from "../builder";
-import { DEFAULT_CONFIG } from "../../config";
+import { DEFAULT_CONFIG } from "../../public/config/config";
 
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
 

@@ -1,4 +1,7 @@
-import type { DataLoadOptions, URLLoadOptions } from "../../load-options";
+import type {
+    DataLoadOptions,
+    URLLoadOptions,
+} from "../../public/config/load-options";
 import type { MovieMetadata } from "../../movie-metadata";
 import { InnerPlayer, ReadyState } from "./inner";
 import { Player } from "../../public/player";

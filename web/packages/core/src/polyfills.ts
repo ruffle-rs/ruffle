@@ -2,7 +2,10 @@ import { RuffleObjectElement } from "./internal/player/ruffle-object-element";
 import { RuffleEmbedElement } from "./internal/player/ruffle-embed-element";
 import { installPlugin, FLASH_PLUGIN } from "./plugin-polyfill";
 import { publicPath } from "./public-path";
-import type { DataLoadOptions, URLLoadOptions } from "./load-options";
+import type {
+    DataLoadOptions,
+    URLLoadOptions,
+} from "./public/config/load-options";
 import { isExtension } from "./current-script";
 
 const globalConfig: DataLoadOptions | URLLoadOptions | object =

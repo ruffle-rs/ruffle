@@ -1,4 +1,4 @@
-import { BaseLoadOptions } from "./load-options";
+import { BaseLoadOptions } from "./public/config/load-options";
 import { currentScriptURL, isExtension } from "./current-script";
 
 /**
