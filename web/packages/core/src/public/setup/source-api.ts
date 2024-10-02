@@ -1,4 +1,4 @@
-import { Player } from "../player";
+import { PlayerElement } from "../player-element";
 
 /**
  * Represents this particular version of Ruffle.
@@ -34,5 +34,5 @@ export interface SourceAPI {
      * @returns The player element. This is a DOM element that may be inserted
      * into the current page as you wish.
      */
-    createPlayer(): Player;
+    createPlayer(): PlayerElement;
 }
