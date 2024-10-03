@@ -209,6 +209,7 @@ export function installPlugin(plugin: RufflePlugin): void {
             value: new RufflePluginArray(navigator.plugins),
             writable: false,
         });
+        Object.setPrototypeOf(navigator.plugins, PluginArray.prototype);
     }
 
     const plugins = navigator.plugins;
@@ -222,6 +223,7 @@ export function installPlugin(plugin: RufflePlugin): void {
             value: new RuffleMimeTypeArray(navigator.mimeTypes),
             writable: false,
         });
+        Object.setPrototypeOf(navigator.mimeTypes, MimeTypeArray.prototype);
     }
 
     const mimeTypes = navigator.mimeTypes;
