@@ -367,7 +367,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         let boxes = mem::take(&mut self.boxes);
         let first_box = boxes.first().unwrap();
         let start = first_box.start();
-        let bounds = boxes
+        let interior_bounds = boxes
             .iter()
             .filter(|b| b.is_text_box())
             .fold(first_box.interior_bounds, |bounds, b| {
@@ -383,7 +383,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         self.lines.push(LayoutLine {
             index: self.current_line_index,
-            bounds,
+            interior_bounds,
             start,
             end,
             boxes,
@@ -392,9 +392,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         // Update layout bounds
         if let Some(lb) = &mut self.bounds {
-            *lb += bounds;
+            *lb += interior_bounds;
         } else {
-            self.bounds = Some(bounds);
+            self.bounds = Some(interior_bounds);
         }
     }
 
@@ -813,11 +813,15 @@ pub struct LayoutLine<'gc> {
     #[collect(require_static)]
     index: usize,
 
-    /// Line bounds.
-    /// It is a union of bounds of all layout
+    /// Interior line bounds.
+    ///
+    /// It is a union of interior bounds of all layout
     /// boxes contained within this line.
+    ///
+    /// TODO This probably shouldn't be used, we should
+    ///   always prefer bounds, not interior_bounds.
     #[collect(require_static)]
-    bounds: BoxBounds<Twips>,
+    interior_bounds: BoxBounds<Twips>,
 
     /// The start position of the line (inclusive).
     start: usize,
@@ -835,8 +839,8 @@ impl<'gc> LayoutLine<'gc> {
         self.index
     }
 
-    pub fn bounds(&self) -> BoxBounds<Twips> {
-        self.bounds
+    pub fn interior_bounds(&self) -> BoxBounds<Twips> {
+        self.interior_bounds
     }
 
     pub fn start(&self) -> usize {
@@ -856,11 +860,11 @@ impl<'gc> LayoutLine<'gc> {
     }
 
     pub fn offset_y(&self) -> Twips {
-        self.bounds().offset_y()
+        self.interior_bounds().offset_y()
     }
 
     pub fn extent_y(&self) -> Twips {
-        self.bounds().extent_y()
+        self.interior_bounds().extent_y()
     }
 
     pub fn boxes_iter(&self) -> Iter<'_, LayoutBox<'gc>> {
