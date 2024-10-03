@@ -334,12 +334,16 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             let baseline_adjustment = self.max_ascent;
 
             if layout_box.is_text_box() {
-                layout_box.interior_bounds += Position::from((
+                let position = Position::from((
                     left_adjustment + align_adjustment + (interim_adjustment * box_count),
                     baseline_adjustment,
                 ));
+                layout_box.interior_bounds += position;
+                layout_box.bounds += position;
             } else if layout_box.is_bullet() {
-                layout_box.interior_bounds += Position::from((Twips::ZERO, baseline_adjustment));
+                let position = Position::from((Twips::ZERO, baseline_adjustment));
+                layout_box.interior_bounds += position;
+                layout_box.bounds += position;
             }
 
             box_count += 1;
@@ -624,11 +628,16 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         if let Some(font) = self.font {
             let params = EvalParameters::from_span(span);
             let ascent = font.get_baseline_for_height(params.height());
+            let descent = font.get_descent_for_height(params.height());
             let text_size = Size::from(font.measure(text, params));
             let box_origin = self.cursor - (Twips::ZERO, ascent).into();
 
             let mut new_box = LayoutBox::from_text(start, end, font, span);
             new_box.interior_bounds = BoxBounds::from_position_and_size(box_origin, text_size);
+            new_box.bounds = BoxBounds::from_position_and_size(
+                box_origin,
+                Size::from((text_size.width(), ascent + descent)),
+            );
 
             self.cursor += (text_size.width(), Twips::ZERO).into();
             self.append_box(new_box);
@@ -656,6 +665,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
             let params = EvalParameters::from_span(span);
             let ascent = bullet_font.get_baseline_for_height(params.height());
+            let descent = bullet_font.get_descent_for_height(params.height());
             let bullet = WStr::from_units(&[0x2022u16]);
             let text_size = Size::from(bullet_font.measure(bullet, params));
             let box_origin = bullet_cursor - (Twips::ZERO, ascent).into();
@@ -663,6 +673,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             let pos = self.last_box_end_position();
             let mut new_bullet = LayoutBox::from_bullet(pos, bullet_font, span);
             new_bullet.interior_bounds = BoxBounds::from_position_and_size(box_origin, text_size);
+            new_bullet.bounds = BoxBounds::from_position_and_size(
+                box_origin,
+                Size::from((text_size.width(), ascent + descent)),
+            );
 
             self.append_box(new_bullet);
         }
@@ -878,6 +892,15 @@ impl<'gc> LayoutLine<'gc> {
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub struct LayoutBox<'gc> {
+    /// Outer bounds of this layout box.
+    ///
+    /// The width of those bounds is equal to the width of the glyphs inside,
+    /// whereas the height is equal to the font height (ascent + descent).
+    ///
+    /// TODO Currently, only text boxes have meaningful bounds.
+    #[collect(require_static)]
+    bounds: BoxBounds<Twips>,
+
     /// The rectangle corresponding to the bounds of the rendered content,
     /// i.e. the smallest rectangle that contains all glyphs.
     ///
@@ -990,6 +1013,7 @@ impl<'gc> LayoutBox<'gc> {
 
         Self {
             interior_bounds: Default::default(),
+            bounds: Default::default(),
             content: LayoutContent::Text {
                 start,
                 end,
@@ -1007,6 +1031,7 @@ impl<'gc> LayoutBox<'gc> {
 
         Self {
             interior_bounds: Default::default(),
+            bounds: Default::default(),
             content: LayoutContent::Bullet {
                 position,
                 text_format: span.get_text_format(),
@@ -1021,6 +1046,7 @@ impl<'gc> LayoutBox<'gc> {
     pub fn from_drawing(position: usize, drawing: Drawing) -> Self {
         Self {
             interior_bounds: Default::default(),
+            bounds: Default::default(),
             content: LayoutContent::Drawing { position, drawing },
         }
     }
@@ -1149,6 +1175,10 @@ pub fn lower_from_text_spans<'gc>(
 }
 
 impl<'gc> LayoutBox<'gc> {
+    pub fn bounds(&self) -> BoxBounds<Twips> {
+        self.bounds
+    }
+
     pub fn interior_bounds(&self) -> BoxBounds<Twips> {
         self.interior_bounds
     }
