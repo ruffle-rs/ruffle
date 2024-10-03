@@ -1291,9 +1291,9 @@ impl<'gc> EditText<'gc> {
         // First determine which line of text is the closest match to the Y position...
         let mut closest_line: Option<&LayoutLine> = None;
         for line in text.layout.lines().iter() {
-            if let Some(closest_extent_y) = closest_line.map(|l| l.bounds().extent_y()) {
-                if line.bounds().extent_y() > closest_extent_y
-                    && position.y >= line.bounds().offset_y()
+            if let Some(closest_extent_y) = closest_line.map(|l| l.interior_bounds().extent_y()) {
+                if line.interior_bounds().extent_y() > closest_extent_y
+                    && position.y >= line.interior_bounds().offset_y()
                 {
                     closest_line = Some(line);
                 }
@@ -1878,7 +1878,7 @@ impl<'gc> EditText<'gc> {
         let line = line.and_then(|line| layout.lines().get(line));
 
         let (boxes, union_bounds) = if let Some(line) = line {
-            (Either::Left(line.boxes_iter()), line.bounds())
+            (Either::Left(line.boxes_iter()), line.interior_bounds())
         } else {
             (Either::Right(layout.boxes_iter()), layout.bounds())
         };
