@@ -90,7 +90,7 @@
         "message": "Настройки"
     },
     "description": {
-        "message": "Возвращает Flash домой - в Интернет."
+        "message": "Возвращает Flash в Сеть на своё прежнее место."
     },
     "save_settings": {
         "message": "Сохранить настройки"
