@@ -377,6 +377,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             .fold(first_box.interior_bounds, |bounds, b| {
                 bounds + b.interior_bounds
             });
+        let bounds = boxes
+            .iter()
+            .filter(|b| b.is_text_box())
+            .fold(first_box.bounds, |bounds, b| bounds + b.bounds);
 
         // Update last line's end position to take into account the delimiter.
         // It's easier to do it here, but maybe after some refactors this update
@@ -388,6 +392,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         self.lines.push(LayoutLine {
             index: self.current_line_index,
             interior_bounds,
+            bounds,
             start,
             end,
             boxes,
@@ -827,6 +832,14 @@ pub struct LayoutLine<'gc> {
     #[collect(require_static)]
     index: usize,
 
+    /// Line bounds.
+    ///
+    /// They represent the area where this line is drawn.
+    /// Their height will be equal to the largest character
+    /// height (ascent + descent) on this line, leading is not included.
+    #[collect(require_static)]
+    bounds: BoxBounds<Twips>,
+
     /// Interior line bounds.
     ///
     /// It is a union of interior bounds of all layout
@@ -851,6 +864,10 @@ pub struct LayoutLine<'gc> {
 impl<'gc> LayoutLine<'gc> {
     pub fn index(&self) -> usize {
         self.index
+    }
+
+    pub fn bounds(&self) -> BoxBounds<Twips> {
+        self.bounds
     }
 
     pub fn interior_bounds(&self) -> BoxBounds<Twips> {
