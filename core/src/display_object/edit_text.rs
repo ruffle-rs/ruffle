@@ -897,7 +897,7 @@ impl<'gc> EditText<'gc> {
 
     /// Render a layout box, plus its children.
     fn render_layout_box(self, context: &mut RenderContext<'_, 'gc>, lbox: &LayoutBox<'gc>) {
-        let origin = lbox.bounds().origin();
+        let origin = lbox.interior_bounds().origin();
 
         let edit_text = self.0.read();
 
@@ -1307,7 +1307,8 @@ impl<'gc> EditText<'gc> {
         if let Some(line) = closest_line {
             for layout_box in line.boxes_iter() {
                 if layout_box.is_text_box() {
-                    if position.x >= layout_box.bounds().offset_x() || closest_layout_box.is_none()
+                    if position.x >= layout_box.interior_bounds().offset_x()
+                        || closest_layout_box.is_none()
                     {
                         closest_layout_box = Some(layout_box);
                     } else {
@@ -1318,7 +1319,7 @@ impl<'gc> EditText<'gc> {
         }
 
         if let Some(layout_box) = closest_layout_box {
-            let origin = layout_box.bounds().origin();
+            let origin = layout_box.interior_bounds().origin();
             let mut matrix = Matrix::translate(origin.x(), origin.y());
             matrix = matrix.inverse().expect("Invertible layout matrix");
             let local_position = matrix * position;
@@ -2040,7 +2041,7 @@ impl<'gc> EditText<'gc> {
         text.layout.boxes_iter().any(|layout| {
             layout.is_link()
                 && layout
-                    .bounds()
+                    .interior_bounds()
                     .contains(Position::from((position.x, position.y)))
         })
     }
@@ -2325,7 +2326,11 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
             for layout_box in edit_text.layout.boxes_iter() {
                 if draw_boxes {
-                    context.draw_rect_outline(Color::RED, layout_box.bounds().into(), Twips::ONE);
+                    context.draw_rect_outline(
+                        Color::RED,
+                        layout_box.interior_bounds().into(),
+                        Twips::ONE,
+                    );
                 }
                 self.render_layout_box(context, layout_box);
             }
