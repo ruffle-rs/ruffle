@@ -278,7 +278,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             if self.current_line_span.align != swf::TextAlign::Left {
                 linebox.bounds = linebox
                     .bounds
-                    .with_size(font.measure(text.trim_end(), params, false).into());
+                    .with_size(font.measure(text.trim_end(), params).into());
             }
 
             if let Some(line_bounds) = &mut line_bounds {
@@ -621,7 +621,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         if let Some(font) = self.font {
             let params = EvalParameters::from_span(span);
             let ascent = font.get_baseline_for_height(params.height());
-            let text_size = Size::from(font.measure(text, params, false));
+            let text_size = Size::from(font.measure(text, params));
             let box_origin = self.cursor - (Twips::ZERO, ascent).into();
 
             let mut new_box = LayoutBox::from_text(start, end, font, span);
@@ -654,7 +654,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             let params = EvalParameters::from_span(span);
             let ascent = bullet_font.get_baseline_for_height(params.height());
             let bullet = WStr::from_units(&[0x2022u16]);
-            let text_size = Size::from(bullet_font.measure(bullet, params, false));
+            let text_size = Size::from(bullet_font.measure(bullet, params));
             let box_origin = bullet_cursor - (Twips::ZERO, ascent).into();
 
             let pos = self.last_box_end_position();

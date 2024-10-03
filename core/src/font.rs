@@ -619,10 +619,8 @@ impl<'gc> Font<'gc> {
     }
 
     /// Measure a particular string's metrics (width and height).
-    ///
-    /// The `round` flag causes the returned coordinates to be rounded down to
-    /// the nearest pixel.
-    pub fn measure(&self, text: &WStr, params: EvalParameters, round: bool) -> (Twips, Twips) {
+    pub fn measure(&self, text: &WStr, params: EvalParameters) -> (Twips, Twips) {
+        let round = false;
         let mut width = Twips::ZERO;
         let mut height = Twips::ZERO;
 
@@ -690,7 +688,6 @@ impl<'gc> Font<'gc> {
                 // +1 is fine because ' ' is 1 unit
                 text.slice(word_start..word_end + 1).unwrap_or(word),
                 params,
-                false,
             );
 
             if is_start_of_line && measure.0 > remaining_width {
@@ -707,8 +704,7 @@ impl<'gc> Font<'gc> {
                     prev_char_index = word_start + prev_frag_end;
 
                     if let Some((frag_end, _)) = char_iter.next() {
-                        last_passing_breakpoint =
-                            self.measure(&cur_slice[..frag_end], params, false);
+                        last_passing_breakpoint = self.measure(&cur_slice[..frag_end], params);
 
                         prev_frag_end = frag_end;
                     } else {
