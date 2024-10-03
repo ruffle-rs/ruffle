@@ -189,12 +189,13 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                         (starting_pos, underline_color)
                     {
                         if tf.underline.unwrap_or(false)
-                            && underline_baseline + linebox.bounds().origin().y()
+                            && underline_baseline + linebox.interior_bounds().origin().y()
                                 == starting_pos.y()
                             && underline_color == color
                         {
                             //Underline is at the same baseline, extend it
-                            current_width = Some(linebox.bounds().extent_x() - starting_pos.x());
+                            current_width =
+                                Some(linebox.interior_bounds().extent_x() - starting_pos.x());
 
                             line_extended = true;
                         }
@@ -216,10 +217,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
                         if tf.underline.unwrap_or(false) {
                             starting_pos = Some(
-                                linebox.bounds().origin()
+                                linebox.interior_bounds().origin()
                                     + Position::from((Twips::ZERO, underline_baseline)),
                             );
-                            current_width = Some(linebox.bounds().width());
+                            current_width = Some(linebox.interior_bounds().width());
                             underline_color = Some(color);
                         }
                     }
@@ -276,15 +277,15 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
             //Flash ignores trailing spaces when aligning lines, so should we
             if self.current_line_span.align != swf::TextAlign::Left {
-                linebox.bounds = linebox
-                    .bounds
+                linebox.interior_bounds = linebox
+                    .interior_bounds
                     .with_size(font.measure(text.trim_end(), params).into());
             }
 
             if let Some(line_bounds) = &mut line_bounds {
-                *line_bounds += linebox.bounds;
+                *line_bounds += linebox.interior_bounds;
             } else {
-                line_bounds = Some(linebox.bounds);
+                line_bounds = Some(linebox.interior_bounds);
             }
 
             box_count += 1;
@@ -333,12 +334,12 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             let baseline_adjustment = self.max_ascent;
 
             if layout_box.is_text_box() {
-                layout_box.bounds += Position::from((
+                layout_box.interior_bounds += Position::from((
                     left_adjustment + align_adjustment + (interim_adjustment * box_count),
                     baseline_adjustment,
                 ));
             } else if layout_box.is_bullet() {
-                layout_box.bounds += Position::from((Twips::ZERO, baseline_adjustment));
+                layout_box.interior_bounds += Position::from((Twips::ZERO, baseline_adjustment));
             }
 
             box_count += 1;
@@ -369,7 +370,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         let bounds = boxes
             .iter()
             .filter(|b| b.is_text_box())
-            .fold(first_box.bounds, |bounds, b| bounds + b.bounds);
+            .fold(first_box.interior_bounds, |bounds, b| {
+                bounds + b.interior_bounds
+            });
 
         // Update last line's end position to take into account the delimiter.
         // It's easier to do it here, but maybe after some refactors this update
@@ -625,7 +628,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             let box_origin = self.cursor - (Twips::ZERO, ascent).into();
 
             let mut new_box = LayoutBox::from_text(start, end, font, span);
-            new_box.bounds = BoxBounds::from_position_and_size(box_origin, text_size);
+            new_box.interior_bounds = BoxBounds::from_position_and_size(box_origin, text_size);
 
             self.cursor += (text_size.width(), Twips::ZERO).into();
             self.append_box(new_box);
@@ -659,7 +662,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
             let pos = self.last_box_end_position();
             let mut new_bullet = LayoutBox::from_bullet(pos, bullet_font, span);
-            new_bullet.bounds = BoxBounds::from_position_and_size(box_origin, text_size);
+            new_bullet.interior_bounds = BoxBounds::from_position_and_size(box_origin, text_size);
 
             self.append_box(new_bullet);
         }
@@ -871,11 +874,13 @@ impl<'gc> LayoutLine<'gc> {
 #[derive(Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub struct LayoutBox<'gc> {
-    /// The rectangle corresponding to the outer boundaries of the content box.
+    /// The rectangle corresponding to the bounds of the rendered content,
+    /// i.e. the smallest rectangle that contains all glyphs.
     ///
     /// TODO Currently, only text boxes have meaningful bounds.
+    /// TODO [KJ] Can't we replace it with bounds?
     #[collect(require_static)]
-    bounds: BoxBounds<Twips>,
+    interior_bounds: BoxBounds<Twips>,
 
     /// What content is contained by the content box.
     content: LayoutContent<'gc>,
@@ -980,7 +985,7 @@ impl<'gc> LayoutBox<'gc> {
         let params = EvalParameters::from_span(span);
 
         Self {
-            bounds: Default::default(),
+            interior_bounds: Default::default(),
             content: LayoutContent::Text {
                 start,
                 end,
@@ -997,7 +1002,7 @@ impl<'gc> LayoutBox<'gc> {
         let params = EvalParameters::from_span(span);
 
         Self {
-            bounds: Default::default(),
+            interior_bounds: Default::default(),
             content: LayoutContent::Bullet {
                 position,
                 text_format: span.get_text_format(),
@@ -1011,7 +1016,7 @@ impl<'gc> LayoutBox<'gc> {
     /// Construct a drawing.
     pub fn from_drawing(position: usize, drawing: Drawing) -> Self {
         Self {
-            bounds: Default::default(),
+            interior_bounds: Default::default(),
             content: LayoutContent::Drawing { position, drawing },
         }
     }
@@ -1140,8 +1145,8 @@ pub fn lower_from_text_spans<'gc>(
 }
 
 impl<'gc> LayoutBox<'gc> {
-    pub fn bounds(&self) -> BoxBounds<Twips> {
-        self.bounds
+    pub fn interior_bounds(&self) -> BoxBounds<Twips> {
+        self.interior_bounds
     }
 
     pub fn content(&self) -> &LayoutContent<'gc> {
