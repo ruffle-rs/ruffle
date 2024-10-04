@@ -205,11 +205,17 @@ export function installPlugin(plugin: RufflePlugin): void {
         return;
     }
     if (!("install" in navigator.plugins) || !navigator.plugins["install"]) {
+        const originalPlugins = navigator.plugins;
+        const plugins = new RufflePluginArray(originalPlugins);
+
+        const proto = Object.create(Object.getPrototypeOf(originalPlugins));
+        Object.setPrototypeOf(proto, Object.getPrototypeOf(plugins));
+        Object.setPrototypeOf(plugins, proto);
+
         Object.defineProperty(navigator, "plugins", {
-            value: new RufflePluginArray(navigator.plugins),
+            value: plugins,
             writable: false,
         });
-        Object.setPrototypeOf(navigator.plugins, PluginArray.prototype);
     }
 
     const plugins = navigator.plugins;
@@ -219,11 +225,17 @@ export function installPlugin(plugin: RufflePlugin): void {
         plugin.length > 0 &&
         (!("install" in navigator.mimeTypes) || !navigator.mimeTypes["install"])
     ) {
+        const originalMimeTypes = navigator.mimeTypes;
+        const mimeTypes = new RuffleMimeTypeArray(originalMimeTypes);
+
+        const proto = Object.create(Object.getPrototypeOf(originalMimeTypes));
+        Object.setPrototypeOf(proto, Object.getPrototypeOf(mimeTypes));
+        Object.setPrototypeOf(mimeTypes, proto);
+
         Object.defineProperty(navigator, "mimeTypes", {
-            value: new RuffleMimeTypeArray(navigator.mimeTypes),
+            value: mimeTypes,
             writable: false,
         });
-        Object.setPrototypeOf(navigator.mimeTypes, MimeTypeArray.prototype);
     }
 
     const mimeTypes = navigator.mimeTypes;
