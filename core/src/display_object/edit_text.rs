@@ -1979,6 +1979,20 @@ impl<'gc> EditText<'gc> {
         Some(index - start_index)
     }
 
+    pub fn char_bounds(self, index: usize) -> Option<Rectangle<Twips>> {
+        let edit_text = self.0.read();
+        let text = edit_text.text_spans.text();
+
+        if index >= text.len() {
+            return None;
+        }
+
+        let bounds = edit_text.layout.char_bounds(index, text)?;
+        let padding = Twips::from_pixels(Self::INTERNAL_PADDING);
+        let bounds = Matrix::translate(padding, padding) * bounds;
+        Some(bounds)
+    }
+
     fn execute_avm1_asfunction(
         self,
         context: &mut UpdateContext<'gc>,
@@ -2322,6 +2336,13 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
                     edit_text.layout.exterior_bounds().into(),
                     Twips::ONE,
                 );
+
+                let text = &self.text();
+                for i in 0..text.len() {
+                    if let Some(bounds) = edit_text.layout.char_bounds(i, text) {
+                        context.draw_rect_outline(Color::MAGENTA, bounds, Twips::ONE);
+                    }
+                }
             }
 
             for layout_box in edit_text.layout.boxes_iter() {
