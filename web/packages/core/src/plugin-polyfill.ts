@@ -180,15 +180,15 @@ FLASH_PLUGIN.install({
     enabledPlugin: FLASH_PLUGIN,
 });
 
-declare global {
-    interface PluginArray {
-        install?: (plugin: Plugin) => void;
-    }
-
-    interface MimeTypeArray {
-        install?: (mimeType: MimeType) => void;
-    }
-}
+// declare global {
+//     interface PluginArray {
+//         install?: (plugin: Plugin) => void;
+//     }
+//
+//     interface MimeTypeArray {
+//         install?: (mimeType: MimeType) => void;
+//     }
+// }
 
 /**
  * Install a fake plugin such that detectors will see it in `navigator.plugins`.
@@ -205,40 +205,46 @@ export function installPlugin(plugin: RufflePlugin): void {
         return;
     }
     if (!("install" in navigator.plugins) || !navigator.plugins["install"]) {
-        const originalPlugins = navigator.plugins;
-        const plugins = new RufflePluginArray(originalPlugins);
+        const plugins = new RufflePluginArray(navigator.plugins);
 
-        const proto = Object.create(Object.getPrototypeOf(originalPlugins));
-        Object.setPrototypeOf(proto, Object.getPrototypeOf(plugins));
+        // bypass missing method
+        //@ts-ignore
+        PluginArray.prototype.install = function (plugin: Plugin) {};
+
+        const proto = Object.create(PluginArray.prototype);
         Object.setPrototypeOf(plugins, proto);
 
         Object.defineProperty(navigator, "plugins", {
             value: plugins,
             writable: false,
         });
+
+        // bypass TypeError on Firefox
+        for (const method of ["namedItem", "item", "refresh"]) {
+            Object.defineProperty(navigator.plugins, method, {
+                configurable: false,
+                enumerable: true,
+                value: function namedItem() {
+                    return this[arguments[0]] || null;
+                },
+            });
+        }
     }
 
-    const plugins = navigator.plugins;
+    const plugins = navigator.plugins as RufflePluginArray;
     plugins.install!(plugin);
 
     if (
         plugin.length > 0 &&
         (!("install" in navigator.mimeTypes) || !navigator.mimeTypes["install"])
     ) {
-        const originalMimeTypes = navigator.mimeTypes;
-        const mimeTypes = new RuffleMimeTypeArray(originalMimeTypes);
-
-        const proto = Object.create(Object.getPrototypeOf(originalMimeTypes));
-        Object.setPrototypeOf(proto, Object.getPrototypeOf(mimeTypes));
-        Object.setPrototypeOf(mimeTypes, proto);
-
         Object.defineProperty(navigator, "mimeTypes", {
-            value: mimeTypes,
+            value: new RuffleMimeTypeArray(navigator.mimeTypes),
             writable: false,
         });
     }
 
-    const mimeTypes = navigator.mimeTypes;
+    const mimeTypes = navigator.mimeTypes as RuffleMimeTypeArray;
     for (let i = 0; i < plugin.length; i += 1) {
         mimeTypes.install!(plugin[i]!);
     }
