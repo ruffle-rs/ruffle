@@ -73,10 +73,7 @@ pub fn instance_init<'gc>(
 
     if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
         if args.len() == 1 {
-            if let Some(expected_len) = args
-                .get(0)
-                .and_then(|v| v.as_number(activation.strings()).ok())
-            {
+            if let Some(expected_len) = args.get(0).filter(|v| v.is_number()).map(|v| v.as_f64()) {
                 if expected_len < 0.0 || expected_len.is_nan() || expected_len.fract() != 0.0 {
                     return Err(Error::AvmError(range_error(
                         activation,

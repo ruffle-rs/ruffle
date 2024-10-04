@@ -332,16 +332,15 @@ pub fn stringify<'gc>(
             };
             Some(indent_bytes)
         }
-    } else {
-        let indent_size = spaces
-            .as_number(activation.strings())
-            .unwrap_or(0.0)
-            .clamp(0.0, 10.0) as u16;
+    } else if spaces.is_number() {
+        let indent_size = spaces.as_f64().clamp(0.0, 10.0) as u16;
         if indent_size == 0 {
             None
         } else {
             Some(Cow::Owned(b" ".repeat(indent_size.into())))
         }
+    } else {
+        None
     };
 
     let mut serializer = AvmSerializer::new(replacer);
