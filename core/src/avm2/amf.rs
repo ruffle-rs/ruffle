@@ -79,31 +79,13 @@ pub fn serialize_value<'gc>(
             } else if let Some(vec) = o.as_vector_storage() {
                 let val_type = vec.value_type();
                 if val_type == Some(activation.avm2().class_defs().int) {
-                    let int_vec: Vec<_> = vec
-                        .iter()
-                        .map(|v| {
-                            v.as_integer(activation.strings())
-                                .expect("Unexpected non-int value in int vector")
-                        })
-                        .collect();
+                    let int_vec: Vec<_> = vec.iter().map(|v| v.as_i32()).collect();
                     Some(AmfValue::VectorInt(int_vec, vec.is_fixed()))
                 } else if val_type == Some(activation.avm2().class_defs().uint) {
-                    let uint_vec: Vec<_> = vec
-                        .iter()
-                        .map(|v| {
-                            v.as_u32(activation.strings())
-                                .expect("Unexpected non-uint value in int vector")
-                        })
-                        .collect();
+                    let uint_vec: Vec<_> = vec.iter().map(|v| v.as_u32()).collect();
                     Some(AmfValue::VectorUInt(uint_vec, vec.is_fixed()))
                 } else if val_type == Some(activation.avm2().class_defs().number) {
-                    let num_vec: Vec<_> = vec
-                        .iter()
-                        .map(|v| {
-                            v.as_number(activation.strings())
-                                .expect("Unexpected non-uint value in int vector")
-                        })
-                        .collect();
+                    let num_vec: Vec<_> = vec.iter().map(|v| v.as_f64()).collect();
                     Some(AmfValue::VectorDouble(num_vec, vec.is_fixed()))
                 } else {
                     let obj_vec: Vec<_> = vec

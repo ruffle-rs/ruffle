@@ -1283,17 +1283,9 @@ fn read_point<'gc>(
     data: &VectorStorage<'gc>,
     data_index: &mut usize,
 ) -> Option<Point<Twips>> {
-    let x = data
-        .get(*data_index, activation)
-        .ok()?
-        .as_number(activation.strings())
-        .expect("data is not a Vec.<Number>");
+    let x = data.get(*data_index, activation).ok()?.as_f64();
 
-    let y = data
-        .get(*data_index + 1, activation)
-        .ok()?
-        .as_number(activation.strings())
-        .expect("data is not a Vec.<Number>");
+    let y = data.get(*data_index + 1, activation).ok()?.as_f64();
 
     *data_index += 2;
 
@@ -1395,8 +1387,7 @@ fn process_commands<'gc>(
         let command = commands
             .get(i, activation)
             .expect("missing command")
-            .as_integer(activation.strings())
-            .expect("commands is not a Vec.<int>");
+            .as_i32();
 
         if process_command(activation, drawing, data, command, &mut data_index).is_none() {
             break;
