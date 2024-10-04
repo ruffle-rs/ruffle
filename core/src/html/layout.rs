@@ -2,7 +2,7 @@
 
 use crate::context::UpdateContext;
 use crate::drawing::Drawing;
-use crate::font::{EvalParameters, Font, FontType};
+use crate::font::{EvalParameters, Font, FontType, Glyph};
 use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
 use crate::string::{utils as string_utils, WStr};
@@ -16,7 +16,7 @@ use std::mem;
 use std::ops::{Deref, Range};
 use std::slice::Iter;
 use std::sync::Arc;
-use swf::{Point, Twips};
+use swf::{Point, Rectangle, Twips};
 
 /// Draw an underline on a particular drawing.
 ///
@@ -821,6 +821,13 @@ impl<'gc> Layout<'gc> {
         });
         result.ok()
     }
+
+    /// Returns char bounds of the given char relative to this layout.
+    pub fn char_bounds(&self, position: usize, text: &WStr) -> Option<Rectangle<Twips>> {
+        let line_index = self.find_line_index_by_position(position)?;
+        let line = self.lines.get(line_index)?;
+        line.char_bounds(position, text)
+    }
 }
 
 /// A `LayoutLine` represents a single line of text.
@@ -900,6 +907,36 @@ impl<'gc> LayoutLine<'gc> {
 
     pub fn boxes_iter(&self) -> Iter<'_, LayoutBox<'gc>> {
         self.boxes.iter()
+    }
+
+    pub fn find_box_index_by_position(&self, position: usize) -> Option<usize> {
+        let result = self.boxes.binary_search_by(|probe| {
+            if probe.end() <= position {
+                Ordering::Less
+            } else if position < probe.start() {
+                Ordering::Greater
+            } else {
+                Ordering::Equal
+            }
+        });
+        result.ok()
+    }
+
+    /// Returns char bounds of the given char relative to the whole layout.
+    pub fn char_bounds(&self, position: usize, text: &WStr) -> Option<Rectangle<Twips>> {
+        let box_index = self.find_box_index_by_position(position)?;
+        let layout_box = self.boxes.get(box_index)?;
+
+        let line_bounds = self.bounds();
+        let origin_x = layout_box.bounds().origin().x();
+        let x_bounds = layout_box.char_x_bounds(position, text)?;
+
+        Some(Rectangle {
+            x_min: origin_x + x_bounds.0,
+            x_max: origin_x + x_bounds.1,
+            y_min: line_bounds.offset_y(),
+            y_max: line_bounds.extent_y(),
+        })
     }
 }
 
@@ -1287,6 +1324,27 @@ impl<'gc> LayoutBox<'gc> {
             LayoutContent::Bullet { position, .. } => *position,
             LayoutContent::Drawing { position, .. } => *position,
         }
+    }
+
+    /// Return x-axis char bounds of the given char relative to this layout box.
+    pub fn char_x_bounds(&self, position: usize, text: &WStr) -> Option<(Twips, Twips)> {
+        let relative_position = position.checked_sub(self.start())?;
+
+        let mut x_bounds = None;
+        if let Some((text, _tf, font, params, _color)) = self.as_renderable_text(text) {
+            font.evaluate(
+                text,
+                Default::default(),
+                params,
+                |pos, _transform, _glyph: &Glyph, advance, x| {
+                    if pos == relative_position {
+                        x_bounds = Some((x, x + advance));
+                    }
+                },
+            );
+        }
+
+        x_bounds
     }
 }
 
