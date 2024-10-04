@@ -1650,3 +1650,41 @@ pub fn get_paragraph_length<'gc>(
         .unwrap_or(-1)
         .into())
 }
+
+pub fn get_char_boundaries<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let Some(this) = this
+        .as_display_object()
+        .and_then(|this| this.as_edit_text())
+    else {
+        return Ok(Value::Undefined);
+    };
+
+    let char_index = args.get_i32(activation, 0)?;
+    if char_index < 0 {
+        return Ok(Value::Null);
+    }
+
+    let Some(bounds) = this.char_bounds(char_index as usize) else {
+        return Ok(Value::Null);
+    };
+
+    let rect = activation
+        .avm2()
+        .classes()
+        .rectangle
+        .construct(
+            activation,
+            &[
+                bounds.x_min.to_pixels().into(),
+                bounds.y_min.to_pixels().into(),
+                bounds.width().to_pixels().into(),
+                bounds.height().to_pixels().into(),
+            ],
+        )?
+        .into();
+    Ok(rect)
+}
