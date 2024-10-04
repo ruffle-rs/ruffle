@@ -208,8 +208,8 @@ export function installPlugin(plugin: RufflePlugin): void {
         const plugins = new RufflePluginArray(navigator.plugins);
 
         // bypass missing method
-        //@ts-ignore
-        PluginArray.prototype.install = function (plugin: Plugin) {};
+        // @ts-expect-error: We're adding a method to the object
+        PluginArray.prototype.install = function (_) {};
 
         const proto = Object.create(PluginArray.prototype);
         Object.setPrototypeOf(plugins, proto);
@@ -220,15 +220,27 @@ export function installPlugin(plugin: RufflePlugin): void {
         });
 
         // bypass TypeError on Firefox
-        for (const method of ["namedItem", "item", "refresh"]) {
-            Object.defineProperty(navigator.plugins, method, {
-                configurable: false,
-                enumerable: true,
-                value: function namedItem() {
-                    return this[arguments[0]] || null;
-                },
-            });
-        }
+        Object.defineProperty(navigator.plugins, "namedItem", {
+            configurable: false,
+            enumerable: true,
+            value: function namedItem(str: string) {
+                return this[str] || null;
+            },
+        });
+
+        Object.defineProperty(navigator.plugins, "refresh", {
+            configurable: false,
+            enumerable: true,
+            value: function refresh() {},
+        });
+
+        Object.defineProperty(navigator.plugins, "item", {
+            configurable: false,
+            enumerable: true,
+            value: function item(index: number) {
+                return this[index] || null;
+            },
+        });
     }
 
     const plugins = navigator.plugins as RufflePluginArray;
