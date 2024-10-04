@@ -405,7 +405,7 @@ impl<'gc> Multiname<'gc> {
 
     pub fn explicit_namespace(&self) -> Option<AvmString<'gc>> {
         match self.ns {
-            NamespaceSet::Single(ns) if ns.is_namespace() && !ns.is_public() => Some(ns.as_uri()),
+            NamespaceSet::Single(ns) if ns.is_namespace() && !ns.is_public() => ns.as_uri_opt(),
             _ => None,
         }
     }
@@ -444,16 +444,19 @@ impl<'gc> Multiname<'gc> {
     pub fn to_qualified_name(&self, mc: &Mutation<'gc>) -> AvmString<'gc> {
         let mut uri = WString::new();
         let ns = match self.ns.get(0).filter(|_| self.ns.len() == 1) {
-            Some(ns) if ns.is_any() => "*".into(),
-            Some(ns) => ns.as_uri(),
-            None => "".into(),
+            Some(ns) if ns.is_any() => WStr::from_units(b"*"),
+            Some(ns) => ns.as_uri_opt().map(|uri| uri.as_wstr()).unwrap_or_default(),
+            None => WStr::empty(),
         };
 
-        uri.push_str(&ns);
+        uri.push_str(ns);
 
         if let Some(name) = self.name {
             if !uri.is_empty() {
                 uri.push_str(WStr::from_units(b"::"));
+            } else if self.param.is_none() {
+                // Special-case this to avoid allocating.
+                return name;
             }
             uri.push_str(&name);
         } else {
@@ -485,26 +488,27 @@ impl<'gc> Multiname<'gc> {
 
     // note: I didn't look very deeply into how different exactly this should be
     // this is currently generally based on to_qualified_name, without params and leading ::
-    pub fn as_uri(&self, mc: &Mutation<'gc>) -> AvmString<'gc> {
-        let mut uri = WString::new();
+    pub fn as_uri(&self, context: &mut StringContext<'gc>) -> AvmString<'gc> {
         let ns = match self.ns.get(0).filter(|_| self.ns.len() == 1) {
-            Some(ns) if ns.is_any() => "*".into(),
-            Some(ns) => ns.as_uri(),
-            None => "".into(),
+            Some(ns) if ns.is_any() => WStr::from_units(b"*"),
+            Some(ns) => ns.as_uri(context).as_wstr(),
+            None => WStr::empty(),
         };
 
-        if !ns.is_empty() {
-            uri.push_str(&ns);
-            uri.push_str(WStr::from_units(b"::"));
-        }
-
-        if let Some(name) = self.name {
-            uri.push_str(&name);
+        if ns.is_empty() {
+            // Special-case this to avoid allocating.
+            self.name.unwrap_or_else(|| context.ascii_char(b'*'))
         } else {
-            uri.push_str(WStr::from_units(b"*"));
+            let mut uri = WString::new();
+            uri.push_str(ns);
+            uri.push_str(WStr::from_units(b"::"));
+            uri.push_str(
+                self.name
+                    .as_deref()
+                    .unwrap_or_else(|| WStr::from_units(b"*")),
+            );
+            AvmString::new(context.gc(), uri)
         }
-
-        AvmString::new(mc, uri)
     }
 
     pub fn set_ns(&mut self, ns: NamespaceSet<'gc>) {

@@ -116,7 +116,7 @@ fn char_at<'gc>(
         .and_then(|i| string.get(i))
         .map(WString::from_unit)
         .map(|ret| AvmString::new(activation.context.gc_context, ret))
-        .unwrap_or_else(|| "".into());
+        .unwrap_or_else(|| activation.strings().empty());
 
     Ok(ret.into())
 }
@@ -250,7 +250,7 @@ fn slice<'gc>(
         let ret = WString::from(&this[start_index..end_index]);
         Ok(AvmString::new(activation.context.gc_context, ret).into())
     } else {
-        Ok("".into())
+        Ok(activation.strings().empty().into())
     }
 }
 
@@ -332,7 +332,7 @@ fn substr<'gc>(
         let ret = WString::from(&this[start_index..end_index]);
         Ok(AvmString::new(activation.context.gc_context, ret).into())
     } else {
-        Ok("".into())
+        Ok(activation.strings().empty().into())
     }
 }
 

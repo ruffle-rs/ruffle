@@ -104,10 +104,6 @@ impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Object::from(*self).into())
-    }
-
     fn as_dictionary_object(self) -> Option<DictionaryObject<'gc>> {
         Some(self)
     }

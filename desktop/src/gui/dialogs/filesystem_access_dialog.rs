@@ -1,9 +1,6 @@
-use crate::gui::text;
+use crate::{backends::PathAllowList, gui::text};
 use egui::{Align2, ComboBox, Ui, Window};
-use std::{
-    path::PathBuf,
-    sync::{Arc, Mutex},
-};
+use std::path::PathBuf;
 use tokio::sync::oneshot::Sender;
 use unic_langid::LanguageIdentifier;
 
@@ -17,9 +14,7 @@ pub struct FilesystemAccessDialogConfiguration {
     notifier: Option<Sender<FilesystemAccessDialogResult>>,
 
     /// Collection of already allowed paths that can be updated.
-    ///
-    /// TODO Make this more generic, maybe a manager?
-    allowed_paths: Arc<Mutex<Vec<PathBuf>>>,
+    allow_list: PathAllowList,
 
     /// Path of the file to access.
     path: PathBuf,
@@ -28,12 +23,12 @@ pub struct FilesystemAccessDialogConfiguration {
 impl FilesystemAccessDialogConfiguration {
     pub fn new(
         notifier: Sender<FilesystemAccessDialogResult>,
-        allowed_paths: Arc<Mutex<Vec<PathBuf>>>,
+        allow_list: PathAllowList,
         path: PathBuf,
     ) -> Self {
         Self {
             notifier: Some(notifier),
-            allowed_paths,
+            allow_list,
             path,
         }
     }
@@ -63,20 +58,28 @@ impl Drop for FilesystemAccessDialog {
 
 impl FilesystemAccessDialog {
     pub fn new(config: FilesystemAccessDialogConfiguration) -> Self {
-        let allowed = Self::is_path_allowed(&config);
+        // This check needs to be done as late as possible, because we want the
+        // user's decision to apply to every future dialog,
+        // not only those requested after the decision.
+        let allowed = config.allow_list.is_path_allowed(&config.path);
+
         let selectable_paths = Self::get_selectable_paths(&config);
         let selected_path = selectable_paths
             .first()
             .cloned()
             .unwrap_or_else(PathBuf::new);
 
-        Self {
+        let mut dialog = Self {
             config,
             allowed,
             remember_access: false,
             selected_path,
             selectable_paths,
+        };
+        if allowed {
+            dialog.respond(FilesystemAccessDialogResult::Allow);
         }
+        dialog
     }
 
     /// Returns paths that will be shown in the dropdown menu.
@@ -102,25 +105,6 @@ impl FilesystemAccessDialog {
         selectable_paths
     }
 
-    /// Checks whether the user already allowed access to the file.
-    ///
-    /// This check needs to be done as late as possible, because we want the
-    /// user's decision to apply to every future dialog,
-    /// not only those requested after the decision.
-    fn is_path_allowed(config: &FilesystemAccessDialogConfiguration) -> bool {
-        for path_prefix in config
-            .allowed_paths
-            .lock()
-            .expect("Non-poisoned lock")
-            .as_slice()
-        {
-            if config.path.starts_with(path_prefix) {
-                return true;
-            }
-        }
-        false
-    }
-
     fn respond(&mut self, result: FilesystemAccessDialogResult) {
         if let Some(notifier) = std::mem::take(&mut self.config.notifier) {
             let _ = notifier.send(result);
@@ -129,7 +113,6 @@ impl FilesystemAccessDialog {
 
     pub fn show(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) -> bool {
         if self.allowed {
-            self.respond(FilesystemAccessDialogResult::Allow);
             return false;
         }
 
@@ -175,10 +158,8 @@ impl FilesystemAccessDialog {
                 if ui.button(primary_text).clicked() {
                     if self.remember_access {
                         self.config
-                            .allowed_paths
-                            .lock()
-                            .expect("Non-poisoned lock")
-                            .push(self.selected_path.clone());
+                            .allow_list
+                            .add_allowed_path_prefix(self.selected_path.clone());
                     }
                     self.respond(FilesystemAccessDialogResult::Allow);
                     should_close = true;

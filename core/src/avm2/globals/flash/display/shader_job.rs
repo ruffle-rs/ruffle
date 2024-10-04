@@ -107,18 +107,18 @@ pub fn get_shader_args<'gc>(
                     let width = shader_input
                         .get_public_property("width", activation)
                         .unwrap()
-                        .as_u32(activation.context.gc_context)
+                        .as_u32(activation.strings())
                         .unwrap();
                     let height = shader_input
                         .get_public_property("height", activation)
                         .unwrap()
-                        .as_u32(activation.context.gc_context)
+                        .as_u32(activation.strings())
                         .unwrap();
 
                     let input_channels = shader_input
                         .get_public_property("channels", activation)
                         .unwrap()
-                        .as_u32(activation.context.gc_context)
+                        .as_u32(activation.strings())
                         .unwrap();
 
                     assert_eq!(*channels as u32, input_channels);
@@ -156,8 +156,7 @@ pub fn get_shader_args<'gc>(
                                 bytes: vector
                                     .iter()
                                     .flat_map(|val| {
-                                        (val.as_number(activation.context.gc_context).unwrap()
-                                            as f32)
+                                        (val.as_number(activation.strings()).unwrap() as f32)
                                             .to_le_bytes()
                                     })
                                     .collect(),
@@ -210,12 +209,12 @@ pub fn start<'gc>(
 
     let output_width = this
         .get_public_property("width", activation)?
-        .as_u32(activation.context.gc_context)
+        .as_u32(activation.strings())
         .expect("ShaderJob.width is not a number");
 
     let output_height = this
         .get_public_property("height", activation)?
-        .as_u32(activation.context.gc_context)
+        .as_u32(activation.strings())
         .expect("ShaderJob.height is not a number");
 
     let pixel_bender_target = if let Some(bitmap) = target.as_bitmap_data() {

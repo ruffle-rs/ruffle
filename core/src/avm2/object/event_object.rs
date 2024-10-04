@@ -27,7 +27,7 @@ pub fn event_allocator<'gc>(
         activation.context.gc_context,
         EventObjectData {
             base,
-            event: RefLock::new(Event::new("")),
+            event: RefLock::new(Event::new(activation.strings().empty())),
         },
     ))
     .into())
@@ -357,10 +357,6 @@ impl<'gc> TObject<'gc> for EventObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Object((*self).into()))
     }
 
     fn as_event(&self) -> Option<Ref<Event<'gc>>> {

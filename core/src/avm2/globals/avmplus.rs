@@ -262,7 +262,7 @@ fn describe_internal_body<'gc>(
     let mut skip_ns: Vec<Namespace<'_>> = Vec::new();
     if let Some(super_vtable) = super_vtable {
         for (_, ns, prop) in super_vtable.resolved_traits().iter() {
-            if !ns.as_uri().is_empty() {
+            if !ns.as_uri(activation.strings()).is_empty() {
                 if let Property::Method { .. } = prop {
                     if !skip_ns
                         .iter()
@@ -294,11 +294,7 @@ fn describe_internal_body<'gc>(
             continue;
         }
 
-        let uri = if ns.as_uri().is_empty() {
-            None
-        } else {
-            Some(ns.as_uri())
-        };
+        let uri = ns.as_uri_opt().filter(|uri| !uri.is_empty());
 
         match prop {
             Property::ConstSlot { slot_id } | Property::Slot { slot_id } => {
@@ -451,12 +447,7 @@ fn describe_internal_body<'gc>(
                     continue;
                 }
 
-                let uri = if ns.as_uri().is_empty() {
-                    None
-                } else {
-                    Some(ns.as_uri())
-                };
-
+                let uri = ns.as_uri_opt().filter(|uri| !uri.is_empty());
                 let accessor_type = display_name(activation.strings(), method_type);
                 let declared_by = defining_class.dollar_removed_name(mc).to_qualified_name(mc);
 

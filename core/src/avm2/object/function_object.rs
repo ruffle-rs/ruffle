@@ -186,10 +186,6 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         self.to_string(activation)
     }
 
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Object(Object::from(*self)))
-    }
-
     fn as_executable(&self) -> Option<Ref<BoundMethod<'gc>>> {
         Some(self.0.exec.borrow())
     }

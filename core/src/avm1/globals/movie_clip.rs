@@ -1544,7 +1544,7 @@ pub fn get_url<'gc>(
 
         let window = match args.get(1) {
             Some(window) => window.coerce_to_string(activation)?,
-            None => "".into(),
+            None => activation.strings().empty(),
         };
 
         let method = match args.get(2) {

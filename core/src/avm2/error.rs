@@ -91,7 +91,7 @@ pub fn make_reference_error<'gc>(
     multiname: &Multiname<'gc>,
     object_class: Class<'gc>,
 ) -> Error<'gc> {
-    let qualified_name = multiname.as_uri(activation.context.gc_context);
+    let qualified_name = multiname.as_uri(activation.strings());
     let class_name = object_class
         .name()
         .to_qualified_name_err_message(activation.context.gc_context);
@@ -283,7 +283,7 @@ pub fn make_error_1065<'gc>(
     activation: &mut Activation<'_, 'gc>,
     name: &Multiname<'gc>,
 ) -> Error<'gc> {
-    let qualified_name = name.as_uri(activation.context.gc_context);
+    let qualified_name = name.as_uri(activation.strings());
 
     let err = reference_error(
         activation,

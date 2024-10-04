@@ -75,7 +75,10 @@ fn deserialize_json<'gc>(
     let val = deserialize_json_inner(activation, json, reviver)?;
     match reviver {
         None => Ok(val),
-        Some(reviver) => reviver.call(Value::Null, &["".into(), val], activation),
+        Some(reviver) => {
+            let args = [activation.strings().empty().into(), val];
+            reviver.call(Value::Null, &args, activation)
+        }
     }
 }
 
@@ -255,7 +258,8 @@ impl<'gc> AvmSerializer<'gc> {
         activation: &mut Activation<'_, 'gc>,
         value: Value<'gc>,
     ) -> Result<JsonValue, Error<'gc>> {
-        let mapped = self.map_value(activation, || "".into(), value)?;
+        let empty = activation.strings().empty();
+        let mapped = self.map_value(activation, || empty, value)?;
         self.serialize_value(activation, mapped)
     }
 }
@@ -330,7 +334,7 @@ pub fn stringify<'gc>(
         }
     } else {
         let indent_size = spaces
-            .as_number(activation.context.gc_context)
+            .as_number(activation.strings())
             .unwrap_or(0.0)
             .clamp(0.0, 10.0) as u16;
         if indent_size == 0 {

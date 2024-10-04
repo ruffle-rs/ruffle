@@ -55,7 +55,7 @@ pub fn init<'gc>(
         let mut local_arg = arguments_list[1];
 
         if matches!(local_arg, Value::Undefined) {
-            local_arg = "".into();
+            local_arg = activation.strings().empty().into();
         }
 
         let api_version = activation.avm2().root_api_version;
@@ -63,7 +63,7 @@ pub fn init<'gc>(
         let namespace = match ns_arg {
             Value::Object(Object::NamespaceObject(ns)) => Some(ns.namespace()),
             Value::Object(Object::QNameObject(qname)) => qname
-                .uri()
+                .uri(activation.strings())
                 .map(|uri| Namespace::package(uri, ApiVersion::AllVersions, activation.strings())),
             Value::Null => None,
             Value::Undefined => Some(Namespace::package("", api_version, activation.strings())),
@@ -92,7 +92,7 @@ pub fn init<'gc>(
         }
 
         let local = if qname_arg == Value::Undefined {
-            "".into()
+            activation.strings().empty()
         } else {
             qname_arg.coerce_to_string(activation)?
         };
@@ -128,12 +128,14 @@ pub fn get_local_name<'gc>(
 
 /// Implements `QName.uri`'s getter
 pub fn get_uri<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.as_qname_object() {
-        return Ok(this.uri().map(Value::from).unwrap_or(Value::Null));
+        return Ok(this
+            .uri(activation.strings())
+            .map_or_else(|| Value::Null, Value::from));
     }
 
     Ok(Value::Undefined)
@@ -146,7 +148,7 @@ pub fn to_string<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.as_qname_object() {
-        return Ok(this.name().as_uri(activation.context.gc_context).into());
+        return Ok(this.name().as_uri(activation.strings()).into());
     }
 
     Ok(Value::Undefined)

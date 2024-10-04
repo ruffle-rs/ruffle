@@ -1082,7 +1082,7 @@ impl<'gc> E4XNode<'gc> {
                     if &*name == b"xmlns" {
                         namespaces.push(E4XNamespace {
                             uri: value,
-                            prefix: Some("".into()),
+                            prefix: Some(activation.strings().empty()),
                         });
                         continue;
                     }
@@ -1328,7 +1328,9 @@ impl<'gc> E4XNode<'gc> {
             return self_ns.is_empty();
         }
 
-        name.namespace_set().iter().any(|ns| ns.as_uri() == self_ns)
+        name.namespace_set()
+            .iter()
+            .any(|ns| ns.as_uri_opt().expect("NS set cannot contain Any") == self_ns)
     }
 
     pub fn descendants(&self, name: &Multiname<'gc>, out: &mut Vec<E4XOrXml<'gc>>) {

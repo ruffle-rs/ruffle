@@ -261,10 +261,6 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             || self.base().property_is_enumerable(name)
     }
 
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Object(Object::from(*self)))
-    }
-
     fn as_array_object(&self) -> Option<ArrayObject<'gc>> {
         Some(*self)
     }

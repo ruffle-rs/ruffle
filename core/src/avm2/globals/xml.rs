@@ -143,7 +143,7 @@ pub fn set_name<'gc>(
 
     let name = match args.get_value(0) {
         // 2. If (Type(name) is Object) and (name.[[Class]] == "QName") and (name.uri == null)
-        Value::Object(Object::QNameObject(qname)) if qname.uri().is_none() => {
+        Value::Object(Object::QNameObject(qname)) if qname.is_any_namespace() => {
             // a. Let name = name.localName
             qname.local_name().into()
         }
@@ -171,7 +171,7 @@ pub fn set_name<'gc>(
         None
     } else {
         new_name
-            .uri()
+            .uri(activation.strings())
             .filter(|uri| !uri.is_empty())
             .map(E4XNamespace::new_uri)
     };
@@ -272,7 +272,7 @@ pub fn add_namespace<'gc>(
         activation.gc(),
         E4XNamespace {
             prefix: ns.prefix(),
-            uri: ns.namespace().as_uri(),
+            uri: ns.namespace().as_uri(activation.strings()),
         },
     );
 
@@ -311,7 +311,7 @@ pub fn set_namespace<'gc>(
         .unwrap();
     let ns = E4XNamespace {
         prefix: ns.prefix(),
-        uri: ns.namespace().as_uri(),
+        uri: ns.namespace().as_uri(activation.strings()),
     };
 
     // 3. Let x.[[Name]] be a new QName created as if by calling the constructor new QName(ns2, x.[[Name]])
@@ -360,7 +360,7 @@ pub fn remove_namespace<'gc>(
         .unwrap();
     let ns = E4XNamespace {
         prefix: ns.prefix(),
-        uri: ns.namespace().as_uri(),
+        uri: ns.namespace().as_uri(activation.strings()),
     };
 
     // 3. Let thisNS be the result of calling [[GetNamespace]] on x.[[Name]] with argument x.[[InScopeNamespaces]]

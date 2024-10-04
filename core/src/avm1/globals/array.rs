@@ -256,7 +256,7 @@ pub fn join<'gc>(
     };
 
     if length <= 0 {
-        return Ok("".into());
+        return Ok(activation.strings().empty().into());
     }
 
     let parts = (0..length)
