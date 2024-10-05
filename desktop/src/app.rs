@@ -13,7 +13,7 @@ use ruffle_render::backend::ViewportDimensions;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use url::Url;
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
@@ -563,18 +563,23 @@ impl ApplicationHandler<RuffleEvent> for App {
                     self.next_frame_time = None;
                 }
                 self.check_redraw();
-                // After polling events, sleep the event loop until the next event or the next frame.
-                event_loop.set_control_flow(if matches!(self.loaded, LoadingState::Loaded) {
-                    if let Some(next_frame_time) = self.next_frame_time {
-                        ControlFlow::WaitUntil(next_frame_time)
-                    } else {
-                        // prevent 100% cpu use
-                        // TODO: use set_request_repaint_callback to correctly get egui repaint requests.
-                        ControlFlow::WaitUntil(Instant::now() + Duration::from_millis(10))
-                    }
-                } else {
-                    ControlFlow::Wait
-                });
+            }
+        }
+
+        // The event loop is finished; let's find out how long we need to wait for
+        // (but don't change something that's already requesting a sooner update, or we'll delay it)
+        if let Some(next_frame_time) = self.next_frame_time {
+            match event_loop.control_flow() {
+                // A "Wait" has no time limit, set ours
+                ControlFlow::Wait => {
+                    event_loop.set_control_flow(ControlFlow::WaitUntil(next_frame_time))
+                }
+                // If the existing "WaitUntil" is later than ours, update it
+                ControlFlow::WaitUntil(next) if next > next_frame_time => {
+                    event_loop.set_control_flow(ControlFlow::WaitUntil(next_frame_time));
+                }
+                // It's sooner than ours, don't delay it
+                _ => {}
             }
         }
     }
