@@ -1,5 +1,5 @@
 use crate::{
-    avm1::SoundObject,
+    avm1::{NativeObject, Object as Avm1Object, TObject as _},
     avm2::{Avm2, EventObject as Avm2EventObject, SoundChannelObject},
     buffer::Substream,
     context::UpdateContext,
@@ -389,8 +389,11 @@ impl<'gc> AudioManager<'gc> {
             if let Some(pos) = context.audio.get_sound_position(sound.instance) {
                 // Sounds still playing; update position for AVM1 sounds.
                 // AVM2 sounds do not update position and instead grab the position on demand.
-                if let Some(avm1_object) = sound.avm1_object {
-                    avm1_object.set_position(context.gc_context, pos.round() as u32);
+
+                if let Some(object) = sound.avm1_object {
+                    if let NativeObject::Sound(sound) = object.native() {
+                        sound.set_position(pos.round() as u32);
+                    }
                 }
                 true
             } else {
@@ -400,14 +403,16 @@ impl<'gc> AudioManager<'gc> {
                     .and_then(|sound| context.audio.get_sound_duration(sound))
                     .unwrap_or_default();
                 if let Some(object) = sound.avm1_object {
-                    object.set_position(context.gc_context, duration.round() as u32);
+                    if let NativeObject::Sound(sound) = object.native() {
+                        sound.set_position(duration.round() as u32);
+                    }
 
                     // Fire soundComplete event.
                     if let Some(root) = context.stage.root_clip() {
                         context.action_queue.queue_action(
                             root,
                             crate::context::ActionType::Method {
-                                object: object.into(),
+                                object,
                                 name: "onSoundComplete",
                                 args: vec![],
                             },
@@ -441,7 +446,7 @@ impl<'gc> AudioManager<'gc> {
         sound: SoundHandle,
         settings: &swf::SoundInfo,
         display_object: Option<DisplayObject<'gc>>,
-        avm1_object: Option<SoundObject<'gc>>,
+        avm1_object: Option<Avm1Object<'gc>>,
     ) -> Option<SoundInstanceHandle> {
         if self.sounds.len() < Self::MAX_SOUNDS {
             let handle = audio.start_sound(sound, settings).ok()?;
@@ -793,7 +798,7 @@ pub struct SoundInstance<'gc> {
     transform: display_object::SoundTransform,
 
     /// The AVM1 `Sound` object associated with this sound, if any.
-    avm1_object: Option<SoundObject<'gc>>,
+    avm1_object: Option<Avm1Object<'gc>>,
 
     /// The AVM2 `SoundChannel` object associated with this sound, if any.
     avm2_object: Option<SoundChannelObject<'gc>>,

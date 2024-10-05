@@ -3,7 +3,7 @@
 use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm1::{Attribute, Avm1};
 use crate::avm1::{ExecutionReason, NativeObject};
-use crate::avm1::{Object, SoundObject, TObject, Value};
+use crate::avm1::{Object, TObject, Value};
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::globals::flash::utils::byte_array::strip_bom;
 use crate::avm2::object::{
@@ -530,7 +530,7 @@ impl<'gc> LoadManager<'gc> {
     pub fn load_sound_avm1(
         &mut self,
         player: Weak<Mutex<Player>>,
-        target_object: SoundObject<'gc>,
+        target_object: Object<'gc>,
         request: Request,
         is_streaming: bool,
     ) -> OwnedFuture<(), Error> {
@@ -838,7 +838,7 @@ pub enum Loader<'gc> {
         self_handle: Option<LoaderHandle>,
 
         /// The target AVM1 object to load the audio into.
-        target_object: SoundObject<'gc>,
+        target_object: Object<'gc>,
     },
 
     /// Loader that is loading an MP3 into an AVM2 Sound object.
@@ -1743,7 +1743,7 @@ impl<'gc> Loader<'gc> {
             Loader::SoundAvm1 { self_handle, .. } => {
                 self_handle.expect("Loader not self-introduced")
             }
-            _ => return Box::pin(async { Err(Error::NotLoadVarsLoader) }),
+            _ => return Box::pin(async { Err(Error::NotSoundLoader) }),
         };
 
         let player = player
@@ -1763,16 +1763,20 @@ impl<'gc> Loader<'gc> {
                     _ => return Err(Error::NotSoundLoader),
                 };
 
+                let NativeObject::Sound(sound) = sound_object.native() else {
+                    return Err(Error::NotSoundLoader);
+                };
+
                 let success = response
                     .map_err(|e| e.error)
                     .and_then(|(body, _, _, _)| {
                         let handle = uc.audio.register_mp3(&body)?;
-                        sound_object.set_sound(uc.gc_context, Some(handle));
+                        sound.set_sound(Some(handle));
                         let duration = uc
                             .audio
                             .get_sound_duration(handle)
                             .map(|d| d.round() as u32);
-                        sound_object.set_duration(uc.gc_context, duration);
+                        sound.set_duration(duration);
                         Ok(())
                     })
                     .is_ok();
@@ -1788,7 +1792,7 @@ impl<'gc> Loader<'gc> {
 
                 // Streaming sounds should auto-play.
                 if is_streaming {
-                    crate::avm1::start_sound(&mut activation, sound_object.into(), &[])?;
+                    crate::avm1::start_sound(&mut activation, sound_object, &[])?;
                 }
 
                 Ok(())
