@@ -20,7 +20,7 @@ mod tracy;
 mod util;
 
 use crate::preferences::GlobalPreferences;
-use anyhow::Error;
+use anyhow::{Context, Error};
 use app::App;
 use clap::Parser;
 use cli::Opt;
@@ -188,7 +188,11 @@ async fn main() -> Result<(), Error> {
 
     subscriber.init();
 
-    let result = App::new(preferences).await.and_then(|app| app.run());
+    let result = App::new(preferences)
+        .await
+        .and_then(|(mut app, event_loop)| {
+            event_loop.run_app(&mut app).context("Event loop failure")
+        });
 
     #[cfg(windows)]
     if let Err(error) = &result {
