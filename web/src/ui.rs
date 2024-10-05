@@ -199,6 +199,10 @@ impl WebUiBackend {
             .set_property("cursor", cursor)
             .warn_on_error();
     }
+
+    pub fn set_clipboard_content_buffer(&mut self, content: String) {
+        self.clipboard_content = content;
+    }
 }
 
 impl UiBackend for WebUiBackend {
@@ -229,7 +233,8 @@ impl UiBackend for WebUiBackend {
     }
 
     fn set_clipboard_content(&mut self, content: String) {
-        self.clipboard_content = content.to_owned();
+        self.set_clipboard_content_buffer(content.to_owned());
+
         // We use `document.execCommand("copy")` as `navigator.clipboard.writeText("string")`
         // is available only in secure contexts (HTTPS).
         if let Some(element) = self.canvas.parent_element() {
