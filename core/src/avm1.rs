@@ -36,7 +36,6 @@ pub use globals::sound::start as start_sound;
 pub use globals::system::SystemProperties;
 pub use object::array_object::ArrayObject;
 pub use object::script_object::ScriptObject;
-pub use object::sound_object::SoundObject;
 pub use object::stage_object::StageObject;
 pub use object::{NativeObject, Object, ObjectPtr, TObject};
 pub use property::Attribute;
