@@ -201,7 +201,7 @@ export class InnerPlayer {
         this.debugPlayerInfo = debugPlayerInfo;
         this.onCallbackAvailable = onCallbackAvailable;
 
-        this.shadow = this.element.attachShadow({ mode: "open" });
+        this.shadow = this.element.attachShadow({ mode: "open", delegatesFocus: true });
         this.shadow.appendChild(ruffleShadowTemplate.content.cloneNode(true));
 
         this.dynamicStyles = this.shadow.getElementById(
