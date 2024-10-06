@@ -71,7 +71,7 @@ export class PlayerV1Impl implements PlayerV1 {
         this.#inner.setFullscreen(isFull);
     }
 
-    enterFullscreen(): void {
+    requestFullscreen(): void {
         this.#inner.enterFullscreen();
     }
 
