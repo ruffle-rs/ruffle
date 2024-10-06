@@ -1209,9 +1209,9 @@ pub fn draw_graphics_data<'gc>(
 
         if let Some(mut drawing) = this.as_drawing(activation.context.gc_context) {
             for elem in vector.iter() {
-                let obj = elem.coerce_to_object(activation)?;
-
-                handle_igraphics_data(activation, &mut drawing, &obj)?;
+                if let Some(obj) = elem.as_object() {
+                    handle_igraphics_data(activation, &mut drawing, &obj)?;
+                }
             }
         };
     }
