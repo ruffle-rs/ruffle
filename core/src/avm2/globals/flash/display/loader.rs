@@ -147,30 +147,33 @@ pub fn request_from_url_request<'gc>(
 
     let headers = url_request
         .get_public_property("requestHeaders", activation)?
-        .coerce_to_object(activation)?
-        .as_array_object()
-        .unwrap();
+        .as_object();
 
-    let headers = headers.as_array_storage().unwrap();
     let mut string_headers = IndexMap::default();
-    for i in 0..headers.length() {
-        let Some(header) = headers.get(i).and_then(|val| val.as_object()) else {
-            continue;
-        };
+    if let Some(headers) = headers {
+        let headers = headers.as_array_object().unwrap();
 
-        let name = header
-            .get_public_property("name", activation)?
-            .coerce_to_string(activation)?
-            .to_string();
-        let value = header
-            .get_public_property("value", activation)?
-            .coerce_to_string(activation)?
-            .to_string();
+        let headers = headers.as_array_storage().unwrap();
 
-        // Note - testing with Flash Player shows that later entries in the array
-        // overwrite earlier ones with the same name. Flash Player never sends an HTTP
-        // request with duplicate headers
-        string_headers.insert(name, value);
+        for i in 0..headers.length() {
+            let Some(header) = headers.get(i).and_then(|val| val.as_object()) else {
+                continue;
+            };
+
+            let name = header
+                .get_public_property("name", activation)?
+                .coerce_to_string(activation)?
+                .to_string();
+            let value = header
+                .get_public_property("value", activation)?
+                .coerce_to_string(activation)?
+                .to_string();
+
+            // Note - testing with Flash Player shows that later entries in the array
+            // overwrite earlier ones with the same name. Flash Player never sends an HTTP
+            // request with duplicate headers
+            string_headers.insert(name, value);
+        }
     }
 
     let method =

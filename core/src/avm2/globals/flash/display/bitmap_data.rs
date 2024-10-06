@@ -469,17 +469,14 @@ pub fn set_pixels<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let rectangle = args.get_object(activation, 0, "rect")?;
+    let bytearray = args.get_object(activation, 1, "inputByteArray")?;
 
-    let bytearray = args
-        .get(1)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation)?;
     if let Some(bitmap_data) = this.as_bitmap_data() {
         let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
 
         let mut ba_write = bytearray
             .as_bytearray_mut()
-            .ok_or("ArgumentError: Parameter must be a bytearray")?;
+            .expect("Parameter must be a bytearray");
 
         operations::set_pixels_from_byte_array(
             activation.context.gc_context,
@@ -559,13 +556,9 @@ pub fn copy_channel<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
-        let source_bitmap = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)?;
 
+        let source_bitmap = args.get_object(activation, 0, "sourceBitmapData")?;
         let source_rect = args.get_object(activation, 1, "sourceRect")?;
-
         let dest_point = args.get_object(activation, 2, "destPoint")?;
 
         let dest_x = dest_point

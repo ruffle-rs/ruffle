@@ -65,7 +65,9 @@ pub fn start<'gc>(
                 &Multiname::new(namespaces.flash_utils_internal, "onUpdate"),
                 activation,
             )?
-            .coerce_to_object(activation)?;
+            .as_object()
+            .expect("Internal function is object");
+
         // Note - we deliberately do *not* check if currentCount is less than repeatCount.
         // Calling 'start' on a timer that has currentCount >= repeatCount will tick exactly
         // once, and then stop immediately. This is handled by Timer.onUpdate
