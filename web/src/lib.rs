@@ -38,7 +38,8 @@ use wasm_bindgen::convert::FromWasmAbi;
 use wasm_bindgen::prelude::*;
 use web_sys::{
     AddEventListenerOptions, ClipboardEvent, Element, Event, EventTarget, FocusEvent,
-    HtmlCanvasElement, HtmlElement, KeyboardEvent, Node, PointerEvent, WheelEvent, Window,
+    HtmlCanvasElement, HtmlElement, KeyboardEvent, Node, PointerEvent, ShadowRoot, WheelEvent,
+    Window,
 };
 
 static RUFFLE_GLOBAL_PANIC: Once = Once::new();
@@ -518,7 +519,11 @@ impl RuffleHandle {
         // Register the instance and create the animation frame closure.
         let mut ruffle = Self::add_instance(instance)?;
 
-        Self::set_up_focus_management(ruffle, parent)?;
+        // For backward compatibility.
+        parent.set_tab_index(-1);
+
+        let shadow_host = Self::get_shadow_host(&parent);
+        Self::set_up_focus_management(ruffle, shadow_host.unwrap_or(parent))?;
 
         // Create the animation frame closure.
         ruffle.with_instance_mut(|instance| {
@@ -786,11 +791,18 @@ impl RuffleHandle {
         Ok(ruffle)
     }
 
+    fn get_shadow_host(element: &HtmlElement) -> Option<HtmlElement> {
+        element
+            .get_root_node()
+            .dyn_ref::<ShadowRoot>()
+            .map(|root| root.host())
+            .and_then(|el| el.dyn_into::<HtmlElement>().ok())
+    }
+
     fn set_up_focus_management(
         ruffle: RuffleHandle,
         focus_target: HtmlElement,
     ) -> Result<(), RuffleInstanceError> {
-        focus_target.set_tab_index(-1);
         ruffle.with_instance_mut(|instance| {
             let focus_target_clone = focus_target.clone();
             instance.focusin_callback = Some(JsCallback::register(
