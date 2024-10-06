@@ -1,12 +1,13 @@
 //! `String` class impl
 
+use gc_arena::Gc;
+
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{ArrayObject, Object, TObject, Value};
+use crate::avm1::{ArrayObject, NativeObject, Object, ScriptObject, TObject, Value};
 use crate::string::{utils as string_utils, AvmString, StringContext, WString};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -38,19 +39,19 @@ pub fn string<'gc>(
     let value = match args.get(0).cloned() {
         Some(Value::String(s)) => s,
         Some(v) => v.coerce_to_string(activation)?,
-        _ => AvmString::default(),
+        None => activation.strings().empty(),
     };
 
-    if let Some(mut vbox) = this.as_value_object() {
-        let len = value.len();
-        vbox.define_value(
-            activation.context.gc_context,
-            "length",
-            len.into(),
-            Attribute::empty(),
-        );
-        vbox.replace_value(activation.context.gc_context, value.into());
-    }
+    // Called from a constructor, populate `this`.
+    let vbox = Gc::new(activation.gc(), value.into());
+    this.set_native(activation.gc(), NativeObject::Value(vbox));
+
+    this.define_value(
+        activation.gc(),
+        "length",
+        value.len().into(),
+        Attribute::empty(),
+    );
 
     Ok(this.into())
 }
@@ -64,7 +65,7 @@ pub fn string_function<'gc>(
     let value = match args.get(0).cloned() {
         Some(Value::String(s)) => s,
         Some(v) => v.coerce_to_string(activation)?,
-        _ => AvmString::new_utf8(activation.context.gc_context, String::new()),
+        None => activation.strings().empty(),
     };
 
     Ok(value.into())
@@ -93,10 +94,9 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let string_proto = ValueObject::empty_box(context.gc_context, proto);
-    let object = string_proto.raw_script_object();
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    string_proto
+    let string_proto = ScriptObject::new(context.gc(), Some(proto));
+    define_properties_on(PROTO_DECLS, context, string_proto, fn_proto);
+    string_proto.into()
 }
 
 fn char_at<'gc>(
@@ -384,8 +384,8 @@ pub fn to_string_value_of<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(vbox) = this.as_value_object() {
-        if let Value::String(s) = vbox.unbox() {
+    if let NativeObject::Value(vbox) = this.native() {
+        if let Value::String(s) = *vbox {
             return Ok(s.into());
         }
     }
