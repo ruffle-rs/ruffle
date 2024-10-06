@@ -1,0 +1,8 @@
+<type name="null" isDynamic="false" isFinal="true" isStatic="false"/>
+<type name="void" isDynamic="false" isFinal="true" isStatic="false"/>
+null
+void
+null
+null
+<type name="null" isDynamic="false" isFinal="true" isStatic="false"/>
+TypeError: Error #1010: A term is undefined and has no properties.
