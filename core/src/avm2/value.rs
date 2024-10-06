@@ -883,6 +883,19 @@ impl<'gc> Value<'gc> {
         self.coerce_to_object(activation)
     }
 
+    #[inline(always)]
+    pub fn null_check(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        name: Option<&Multiname<'gc>>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        if matches!(self, Value::Null | Value::Undefined) {
+            return Err(error::make_null_or_undefined_error(activation, *self, name));
+        }
+
+        Ok(*self)
+    }
+
     pub fn as_object(&self) -> Option<Object<'gc>> {
         match self {
             Value::Object(o) => Some(*o),
@@ -993,7 +1006,11 @@ impl<'gc> Value<'gc> {
             return Ok(self.coerce_to_string(activation)?.into());
         }
 
-        if let Ok(object) = self.coerce_to_object(activation) {
+        if class == activation.avm2().class_defs().object {
+            return Ok(*self);
+        }
+
+        if let Some(object) = self.as_object() {
             if object.is_of_type(class) {
                 return Ok(*self);
             }
@@ -1064,32 +1081,62 @@ impl<'gc> Value<'gc> {
     /// considered instances of all numeric types that can represent them. For
     /// example, 5 is simultaneously an instance of `int`, `uint`, and
     /// `Number`.
-    pub fn is_of_type(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        type_object: Class<'gc>,
-    ) -> bool {
-        if type_object == activation.avm2().class_defs().number {
+    pub fn is_of_type(&self, activation: &mut Activation<'_, 'gc>, type_class: Class<'gc>) -> bool {
+        if type_class == activation.avm2().class_defs().number {
             return self.is_number();
         }
-        if type_object == activation.avm2().class_defs().uint {
+        if type_class == activation.avm2().class_defs().uint {
             return self.is_u32();
         }
-        if type_object == activation.avm2().class_defs().int {
+        if type_class == activation.avm2().class_defs().int {
             return self.is_i32();
         }
 
-        if let Value::Undefined = self {
-            if type_object == activation.avm2().class_defs().void {
-                return true;
-            }
+        if type_class == activation.avm2().class_defs().void {
+            return matches!(self, Value::Undefined);
         }
 
-        if let Ok(o) = self.coerce_to_object(activation) {
-            o.is_of_type(type_object)
+        if type_class == activation.avm2().class_defs().boolean {
+            return matches!(self, Value::Bool(_));
+        }
+
+        if type_class == activation.avm2().class_defs().string {
+            return matches!(self, Value::String(_));
+        }
+
+        if type_class == activation.avm2().class_defs().object {
+            return !matches!(self, Value::Undefined | Value::Null);
+        }
+
+        if let Some(o) = self.as_object() {
+            o.is_of_type(type_class)
         } else {
             false
         }
+    }
+
+    /// Get the class that this value is of, supporting primitives.
+    /// This function will panic if passed Value::Null or Value::Undefined to;
+    /// make sure to handle them with `null_check` or similar beforehand.
+    pub fn instance_class(&self, activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
+        let class_defs = activation.avm2().class_defs();
+
+        match self {
+            Value::Bool(_) => class_defs.boolean,
+            Value::Number(_) | Value::Integer(_) => class_defs.number,
+            Value::String(_) => class_defs.string,
+            Value::Object(obj) => obj.instance_class(),
+
+            Value::Undefined | Value::Null => {
+                unreachable!("Should not have Undefined or Null in `instance_class`")
+            }
+        }
+    }
+
+    pub fn instance_of_class_name(&self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
+        self.instance_class(activation)
+            .name()
+            .to_qualified_name(activation.gc())
     }
 
     /// Implements the strict-equality `===` check for AVM2.
