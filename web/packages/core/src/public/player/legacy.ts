@@ -181,7 +181,7 @@ export interface LegacyRuffleAPI {
      * @param isFull Whether to set to fullscreen or return to normal.
      * @deprecated Please use {@link PlayerElement.ruffle | ruffle()} to access a versioned API.
      * This method may be replaced by Flash and is not guaranteed to exist.
-     * A direct replacement is {@link PlayerV1.setFullscreen}
+     * A direct replacement is {@link PlayerV1.requestFullscreen} or {@link PlayerV1.exitFullscreen}.
      */
     setFullscreen(isFull: boolean): void;
 
@@ -192,7 +192,7 @@ export interface LegacyRuffleAPI {
      *
      * @deprecated Please use {@link PlayerElement.ruffle | ruffle()} to access a versioned API.
      * This method may be replaced by Flash and is not guaranteed to exist.
-     * A direct replacement is {@link PlayerV1.enterFullscreen}
+     * A direct replacement is {@link PlayerV1.requestFullscreen}
      */
     enterFullscreen(): void;
 
