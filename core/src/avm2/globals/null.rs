@@ -6,7 +6,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::QName;
 
-fn void_init<'gc>(
+fn null_init<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -17,9 +17,9 @@ fn void_init<'gc>(
 pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     let mc = activation.context.gc_context;
     let class = Class::custom_new(
-        QName::new(activation.avm2().namespaces.public_all(), "void"),
+        QName::new(activation.avm2().namespaces.public_all(), "null"),
         None,
-        Method::from_builtin(void_init, "", mc),
+        Method::from_builtin(null_init, "", mc),
         mc,
     );
     class.set_attributes(mc, ClassAttributes::FINAL | ClassAttributes::SEALED);
