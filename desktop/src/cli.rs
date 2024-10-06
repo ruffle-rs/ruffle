@@ -178,7 +178,7 @@ pub struct Opt {
     pub frame_rate: Option<f64>,
 
     /// The handling mode of links opening a new website.
-    #[clap(long, default_value = "allow")]
+    #[clap(long, default_value = "confirm")]
     pub open_url_mode: OpenURLMode,
 
     /// How to handle non-interactive filesystem access.
