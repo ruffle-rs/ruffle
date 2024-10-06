@@ -1,16 +1,15 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
-use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::object::NativeObject;
-use crate::avm1::{Object, TObject};
+use crate::avm1::{Object, ScriptObject, TObject};
 use crate::display_object::TDisplayObject;
 use crate::ecma_conversions::{
     f64_to_wrapping_i16, f64_to_wrapping_i32, f64_to_wrapping_u16, f64_to_wrapping_u32,
     f64_to_wrapping_u8,
 };
 use crate::string::{AvmAtom, AvmString, Integer, WStr};
-use gc_arena::Collect;
+use gc_arena::{Collect, Gc};
 use std::{borrow::Cow, io::Write, mem::size_of, num::Wrapping};
 
 use super::object_reference::MovieClipReference;
@@ -481,16 +480,40 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    pub fn coerce_to_object(&self, activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
-        if let Value::MovieClip(mcr) = self {
-            if let Some(obj) = mcr.coerce_to_object(activation) {
-                obj
-            } else {
-                ValueObject::boxed(activation, Value::Undefined)
+    pub fn coerce_to_object(self, activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
+        let (value, proto) = match self {
+            // If we're given an object, we return it directly.
+            Value::Object(obj) => return obj,
+            Value::MovieClip(mcr) => {
+                if let Some(obj) = mcr.coerce_to_object(activation) {
+                    return obj;
+                } else {
+                    (Value::Undefined, None)
+                }
             }
-        } else {
-            ValueObject::boxed(activation, self.to_owned())
-        }
+            // Else, select the correct prototype for it from the system prototypes list.
+            Value::Null | Value::Undefined => (self, None),
+            Value::Bool(_) => (self, Some(activation.context.avm1.prototypes().boolean)),
+            Value::Number(_) => (self, Some(activation.context.avm1.prototypes().number)),
+            Value::String(_) => (self, Some(activation.context.avm1.prototypes().string)),
+        };
+
+        let obj = ScriptObject::new(activation.gc(), proto).into();
+
+        // Constructor populates the boxed object with the value.
+        use crate::avm1::globals;
+        let _ = match value {
+            Value::Bool(_) => globals::boolean::constructor(activation, obj, &[value]),
+            Value::Number(_) => globals::number::number(activation, obj, &[value]),
+            Value::String(_) => globals::string::string(activation, obj, &[value]),
+            _ => {
+                let vbox = Gc::new(activation.gc(), Value::Undefined);
+                obj.set_native(activation.gc(), NativeObject::Value(vbox));
+                Ok(Value::Undefined)
+            }
+        };
+
+        obj
     }
 
     pub fn as_blend_mode(&self) -> Option<swf::BlendMode> {

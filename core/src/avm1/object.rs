@@ -21,7 +21,6 @@ use crate::avm1::globals::xml::Xml;
 use crate::avm1::globals::xml_socket::XmlSocket;
 use crate::avm1::object::array_object::ArrayObject;
 use crate::avm1::object::super_object::SuperObject;
-use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::{Activation, Attribute, Error, ScriptObject, StageObject, Value};
 use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use crate::display_object::DisplayObject;
@@ -40,12 +39,15 @@ mod custom_object;
 pub mod script_object;
 pub mod stage_object;
 pub mod super_object;
-pub mod value_object;
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub enum NativeObject<'gc> {
     None,
+    /// A boxed primitive.
+    ///
+    /// It is a logic error for a boxed value to be a `Value::Object`.
+    Value(Gc<'gc, Value<'gc>>),
     Date(Gc<'gc, Cell<Date>>),
     BlurFilter(BlurFilter<'gc>),
     BevelFilter(BevelFilter<'gc>),
@@ -82,7 +84,6 @@ pub enum NativeObject<'gc> {
         ArrayObject(ArrayObject<'gc>),
         StageObject(StageObject<'gc>),
         SuperObject(SuperObject<'gc>),
-        ValueObject(ValueObject<'gc>),
         FunctionObject(FunctionObject<'gc>),
     }
 )]
@@ -608,11 +609,6 @@ pub trait TObject<'gc>: 'gc + Collect + Into<Object<'gc>> + Clone + Copy {
             NativeObject::XmlNode(xml_node) => Some(xml_node),
             _ => None,
         }
-    }
-
-    /// Get the underlying `ValueObject`, if it exists.
-    fn as_value_object(&self) -> Option<ValueObject<'gc>> {
-        None
     }
 
     fn as_ptr(&self) -> *const ObjectPtr;

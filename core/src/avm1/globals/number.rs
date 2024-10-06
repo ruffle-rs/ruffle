@@ -1,12 +1,13 @@
 //! `Number` class impl
 
+use gc_arena::Gc;
+
 use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, TObject, Value};
+use crate::avm1::{NativeObject, Object, ScriptObject, TObject, Value};
 use crate::string::{AvmString, StringContext};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -36,10 +37,9 @@ pub fn number<'gc>(
         0.0
     };
 
-    // If called from a constructor, populate `this`.
-    if let Some(mut vbox) = this.as_value_object() {
-        vbox.replace_value(activation.context.gc_context, value.into());
-    }
+    // Called from a constructor, populate `this`.
+    let vbox = Gc::new(activation.gc(), value.into());
+    this.set_native(activation.gc(), NativeObject::Value(vbox));
 
     Ok(this.into())
 }
@@ -83,10 +83,9 @@ pub fn create_proto<'gc>(
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let number_proto = ValueObject::empty_box(context.gc_context, proto);
-    let object = number_proto.raw_script_object();
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    number_proto
+    let number_proto = ScriptObject::new(context.gc(), Some(proto));
+    define_properties_on(PROTO_DECLS, context, number_proto, fn_proto);
+    number_proto.into()
 }
 
 fn to_string<'gc>(
@@ -95,8 +94,8 @@ fn to_string<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Boxed value must be a number. No coercion.
-    let number = if let Some(vbox) = this.as_value_object() {
-        if let Value::Number(number) = vbox.unbox() {
+    let number = if let NativeObject::Value(vbox) = this.native() {
+        if let Value::Number(number) = *vbox {
             number
         } else {
             return Ok(Value::Undefined);
@@ -166,8 +165,8 @@ fn value_of<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(vbox) = this.as_value_object() {
-        if let Value::Number(n) = vbox.unbox() {
+    if let NativeObject::Value(vbox) = this.native() {
+        if let Value::Number(n) = *vbox {
             return Ok(n.into());
         }
     }
