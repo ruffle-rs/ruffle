@@ -35,7 +35,6 @@ use std::cell::{Cell, RefCell};
 use std::fmt::Debug;
 
 pub mod array_object;
-mod custom_object;
 pub mod script_object;
 pub mod stage_object;
 pub mod super_object;
