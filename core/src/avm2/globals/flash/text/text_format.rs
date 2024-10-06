@@ -537,14 +537,13 @@ pub fn set_tab_stops<'gc>(
     if let Some(mut text_format) = this.as_text_format_mut() {
         let value = args.get(0).unwrap_or(&Value::Undefined);
         text_format.tab_stops = match value {
-            Value::Undefined | Value::Null => None,
-            value => {
-                let object = value.coerce_to_object(activation)?;
-                let length = object.as_array_storage().map_or(0, |v| v.length());
+            Value::Null => None,
+            Value::Object(obj) => {
+                let length = obj.as_array_storage().map_or(0, |v| v.length());
 
                 let tab_stops: Result<Vec<_>, Error<'gc>> = (0..length)
                     .map(|i| {
-                        let element = object.get_public_property(
+                        let element = obj.get_public_property(
                             AvmString::new_utf8(activation.context.gc_context, i.to_string()),
                             activation,
                         )?;
@@ -553,6 +552,7 @@ pub fn set_tab_stops<'gc>(
                     .collect();
                 Some(tab_stops?)
             }
+            _ => unreachable!("Array-typed argument can only be Object or Null"),
         };
     }
 
