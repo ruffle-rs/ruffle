@@ -87,7 +87,7 @@ export interface PlayerV1 {
     /**
      * Checks if this player is allowed to be fullscreen by the browser.
      *
-     * @returns True if you may call {@link enterFullscreen}.
+     * @returns True if you may call {@link requestFullscreen}.
      */
     get fullscreenEnabled(): boolean;
 
@@ -99,19 +99,11 @@ export interface PlayerV1 {
     get isFullscreen(): boolean;
 
     /**
-     * Exported function that requests the browser to change the fullscreen state if
-     * it is allowed.
-     *
-     * @param isFull Whether to set to fullscreen or return to normal.
-     */
-    setFullscreen(isFull: boolean): void;
-
-    /**
      * Requests the browser to make this player fullscreen.
      *
      * This is not guaranteed to succeed, please check {@link fullscreenEnabled} first.
      */
-    enterFullscreen(): void;
+    requestFullscreen(): void;
 
     /**
      * Requests the browser to no longer make this player fullscreen.
