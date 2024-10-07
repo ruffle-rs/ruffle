@@ -129,7 +129,7 @@ if (browserstack) {
             "bstack:options": {
                 os: "Windows",
                 osVersion: "10",
-                browserVersion: "84.0",
+                browserVersion: "94.0",
                 ...bsOptions,
             },
         });
