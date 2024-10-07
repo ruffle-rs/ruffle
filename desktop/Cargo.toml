@@ -52,7 +52,6 @@ rand = "0.8.5"
 thiserror.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
-zbus = "4.4.0"
 ashpd = { git = "https://github.com/bilelmoussaoui/ashpd.git", rev = "34c0ab8f83cd16c3190ecc4cc51021daa531d89b" }
 
 [target.'cfg(windows)'.dependencies]
