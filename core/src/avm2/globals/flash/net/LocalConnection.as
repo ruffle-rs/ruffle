@@ -7,11 +7,8 @@ package flash.net {
 
     [Ruffle(InstanceAllocator)]
     public class LocalConnection extends EventDispatcher {
-
-        public var client: Object;
-
         public function LocalConnection() {
-            this.client = this;
+            super();
         }
 
         [API("667")]
@@ -26,6 +23,9 @@ package flash.net {
         public native function connect(connectionName:String):void;
 
         public native function send(connectionName: String, methodName: String, ... arguments):void;
+
+        public native function get client():Object;
+        public native function set client(client:Object):void;
 
         public function allowDomain(... domains): void {
             stub_method("flash.net.LocalConnection", "allowDomain");
