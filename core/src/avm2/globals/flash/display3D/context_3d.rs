@@ -298,14 +298,17 @@ pub fn set_program_constants_from_matrix<'gc>(
         if user_transposed_matrix {
             matrix = matrix
                 .call_public_property("clone", &[], activation)?
-                .coerce_to_object(activation)?;
+                .as_object()
+                .expect("Matrix3D.clone returns Object");
 
             matrix.call_public_property("transpose", &[], activation)?;
         }
 
         let matrix_raw_data = matrix
             .get_public_property("rawData", activation)?
-            .coerce_to_object(activation)?;
+            .as_object()
+            .expect("rawData cannot be null");
+
         let matrix_raw_data = matrix_raw_data
             .as_vector_storage()
             .unwrap()
