@@ -478,7 +478,7 @@ jobs:
         continue-on-error: true
         env:
           EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
-        uses: wdzeng/edge-addon@v1
+        uses: wdzeng/edge-addon@v2
         with:
           product-id: ${{ secrets.EDGE_PRODUCT_ID }}
           zip-path: ./web/packages/extension/dist/ruffle_extension.zip
