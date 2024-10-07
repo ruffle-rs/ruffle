@@ -90,7 +90,7 @@ impl DropShadowFilterData {
     }
 }
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
 #[repr(transparent)]
 pub struct DropShadowFilter<'gc>(GcCell<'gc, DropShadowFilterData>);

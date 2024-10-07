@@ -44,7 +44,7 @@ impl Default for ColorMatrixFilterData {
     }
 }
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
 #[repr(transparent)]
 pub struct ColorMatrixFilter<'gc>(GcCell<'gc, ColorMatrixFilterData>);

@@ -39,7 +39,7 @@ pub mod script_object;
 pub mod stage_object;
 pub mod super_object;
 
-#[derive(Clone, Collect)]
+#[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
 pub enum NativeObject<'gc> {
     None,

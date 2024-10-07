@@ -78,7 +78,7 @@ impl From<swf::GlowFilter> for GlowFilterData {
     }
 }
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
 #[repr(transparent)]
 pub struct GlowFilter<'gc>(GcCell<'gc, GlowFilterData>);

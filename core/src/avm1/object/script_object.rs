@@ -485,7 +485,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     fn native(&self) -> NativeObject<'gc> {
-        self.0.read().native.clone()
+        self.0.read().native
     }
 
     fn set_native(&self, gc_context: &Mutation<'gc>, native: NativeObject<'gc>) {
