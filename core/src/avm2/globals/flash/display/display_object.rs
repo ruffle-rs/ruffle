@@ -768,7 +768,15 @@ pub fn set_transform<'gc>(
     // FIXME - consider 3D matrix and pixel bounds
     let matrix = transform
         .get_public_property("matrix", activation)?
-        .coerce_to_object(activation)?;
+        .as_object();
+
+    let Some(matrix) = matrix else {
+        // FP seems to not do anything when setting to a Transform with a null matrix,
+        // but we don't actually support setting the matrix to null anyway
+        // (see the comment in `flash::geom::transform::set_matrix`)
+        return Ok(Value::Undefined);
+    };
+
     let color_transform = transform
         .get_public_property("colorTransform", activation)?
         .as_object()
