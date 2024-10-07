@@ -12,7 +12,7 @@ use crate::string::StringContext;
 use gc_arena::Collect;
 use swf::{Rectangle, Twips};
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub struct TransformObject<'gc> {
     clip: Option<MovieClipReference<'gc>>,

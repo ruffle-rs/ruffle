@@ -19,7 +19,7 @@ struct XmlSocketData {
     read_buffer: RefCell<Vec<u8>>,
 }
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub struct XmlSocket<'gc>(Gc<'gc, XmlSocketData>);
 

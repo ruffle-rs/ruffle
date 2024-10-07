@@ -162,7 +162,7 @@ impl BevelFilterData {
     }
 }
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
 #[repr(transparent)]
 pub struct BevelFilter<'gc>(GcCell<'gc, BevelFilterData>);

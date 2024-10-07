@@ -95,7 +95,7 @@ impl Default for ConvolutionFilterData {
     }
 }
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
 #[repr(transparent)]
 pub struct ConvolutionFilter<'gc>(GcCell<'gc, ConvolutionFilterData>);

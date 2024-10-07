@@ -102,7 +102,7 @@ impl GradientFilterData {
     }
 }
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
 #[repr(transparent)]
 pub struct GradientFilter<'gc>(GcCell<'gc, GradientFilterData>);

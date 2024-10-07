@@ -106,7 +106,7 @@ impl<'gc> From<ruffle_render::filters::DisplacementMapFilter> for DisplacementMa
     }
 }
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
 #[repr(transparent)]
 pub struct DisplacementMapFilter<'gc>(GcCell<'gc, DisplacementMapFilterData<'gc>>);
