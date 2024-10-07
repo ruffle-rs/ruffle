@@ -20,6 +20,6 @@ storage-backend-memory = Memoria
 recent-limit = Límite de recientes
 recent-clear = Borrar
 theme = Tema
-theme-system = Sistema
+theme-system = Predeterminado del sistema
 theme-light = Claro
 theme-dark = Oscuro
