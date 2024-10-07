@@ -170,6 +170,7 @@ pub struct SystemClasses<'gc> {
     pub dictionary: ClassObject<'gc>,
     pub id3info: ClassObject<'gc>,
     pub textrun: ClassObject<'gc>,
+    pub sharedobject: ClassObject<'gc>,
 }
 
 #[derive(Clone, Collect)]
@@ -327,6 +328,7 @@ impl<'gc> SystemClasses<'gc> {
             dictionary: object,
             id3info: object,
             textrun: object,
+            sharedobject: object,
         }
     }
 }
@@ -929,6 +931,7 @@ pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
             ("flash.net", "URLVariables", urlvariables),
             ("flash.net", "FileReference", filereference),
             ("flash.net", "FileFilter", filefilter),
+            ("flash.net", "SharedObject", sharedobject),
             ("flash.utils", "ByteArray", bytearray),
             ("flash.utils", "Dictionary", dictionary),
             ("flash.system", "ApplicationDomain", application_domain),
