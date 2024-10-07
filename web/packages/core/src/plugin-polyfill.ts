@@ -38,11 +38,13 @@ class RuffleMimeTypeArray implements MimeTypeArray {
      * @param mimeType The mime type to install
      */
     install(mimeType: MimeType): void {
+        const wrapper = new RuffleMimeType(mimeType);
+
         const index = this.__mimeTypes.length;
-        this.__mimeTypes.push(mimeType);
-        this.__namedMimeTypes[mimeType.type] = mimeType;
-        this[mimeType.type] = mimeType;
-        this[index] = mimeType;
+        this.__mimeTypes.push(wrapper);
+        this.__namedMimeTypes[mimeType.type] = wrapper;
+        this[wrapper.type] = wrapper;
+        this[index] = wrapper;
     }
 
     item(index: number): MimeType {
@@ -65,6 +67,43 @@ class RuffleMimeTypeArray implements MimeTypeArray {
 
     [Symbol.iterator](): IterableIterator<MimeType> {
         return this.__mimeTypes[Symbol.iterator]();
+    }
+
+    get [Symbol.toStringTag](): string {
+        return "MimeTypeArray";
+    }
+}
+
+/**
+ * Replacement object for the built-in MimeType object.
+ * This only exists, because the built-in type is not constructable and we
+ * need to spoof `window.MimeType`.
+ */
+class RuffleMimeType implements MimeType {
+    private readonly __mimeType: MimeType;
+
+    constructor(mimeType: MimeType) {
+        this.__mimeType = mimeType;
+    }
+
+    get type(): string {
+        return this.__mimeType.type;
+    }
+
+    get description(): string {
+        return this.__mimeType.description;
+    }
+
+    get suffixes(): string {
+        return this.__mimeType.suffixes;
+    }
+
+    get enabledPlugin(): Plugin {
+        return this.__mimeType.enabledPlugin;
+    }
+
+    get [Symbol.toStringTag](): string {
+        return "MimeType";
     }
 }
 
@@ -141,6 +180,10 @@ class RufflePluginArray implements PluginArray {
         return this.__plugins[Symbol.iterator]();
     }
 
+    get [Symbol.toStringTag](): string {
+        return "PluginArray";
+    }
+
     get length(): number {
         return this.__plugins.length;
     }
@@ -205,6 +248,9 @@ export function installPlugin(plugin: RufflePlugin): void {
         return;
     }
     if (!("install" in navigator.plugins) || !navigator.plugins["install"]) {
+        Object.defineProperty(window, "PluginArray", {
+            value: RufflePluginArray,
+        });
         Object.defineProperty(navigator, "plugins", {
             value: new RufflePluginArray(navigator.plugins),
             writable: false,
@@ -218,6 +264,12 @@ export function installPlugin(plugin: RufflePlugin): void {
         plugin.length > 0 &&
         (!("install" in navigator.mimeTypes) || !navigator.mimeTypes["install"])
     ) {
+        Object.defineProperty(window, "MimeTypeArray", {
+            value: RuffleMimeTypeArray,
+        });
+        Object.defineProperty(window, "MimeType", {
+            value: RuffleMimeType,
+        });
         Object.defineProperty(navigator, "mimeTypes", {
             value: new RuffleMimeTypeArray(navigator.mimeTypes),
             writable: false,
