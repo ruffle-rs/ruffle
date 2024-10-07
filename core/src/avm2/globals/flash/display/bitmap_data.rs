@@ -469,7 +469,7 @@ pub fn set_pixels<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let rectangle = args.get_object(activation, 0, "rect")?;
-    let bytearray = args.get_object(activation, 0, "inputByteArray")?;
+    let bytearray = args.get_object(activation, 1, "inputByteArray")?;
 
     if let Some(bitmap_data) = this.as_bitmap_data() {
         let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;

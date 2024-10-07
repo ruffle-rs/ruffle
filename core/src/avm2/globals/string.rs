@@ -290,7 +290,9 @@ fn match_s<'gc>(
         let string = pattern.coerce_to_string(activation)?;
         regexp_class.construct(activation, &[Value::String(string)])?
     } else {
-        pattern.coerce_to_object(activation)?
+        pattern
+            .as_object()
+            .expect("Regexp objects must be Value::Object")
     };
 
     if let Some(mut regexp) = pattern.as_regexp_mut(activation.context.gc_context) {
@@ -400,7 +402,9 @@ fn search<'gc>(
         let string = pattern.coerce_to_string(activation)?;
         regexp_class.construct(activation, &[Value::String(string)])?
     } else {
-        pattern.coerce_to_object(activation)?
+        pattern
+            .as_object()
+            .expect("Regexp objects must be Value::Object")
     };
 
     if let Some(mut regexp) = pattern.as_regexp_mut(activation.context.gc_context) {
