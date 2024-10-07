@@ -23,3 +23,10 @@ theme = テーマ
 theme-system = システムのデフォルト
 theme-light = ライト
 theme-dark = ダーク
+# See for context https://github.com/FeralInteractive/gamemode
+gamemode = ゲームモード
+gamemode-tooltip =
+    ゲームモードは、PCやRuffleに対し一時的な最適化を行う機能です。
+    Ruffleはムービー再生中のみゲームモードを使用します。
+gamemode-default = デフォルト
+gamemode-default-tooltip = ゲームモードは、電力設定が高に設定されている場合にのみ有効化されます。

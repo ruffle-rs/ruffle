@@ -52,6 +52,10 @@ scale-mode-noscale-tooltip =
     
     StageScaleMode.NO_SCALEに一致します。
 scale-mode-showall = ウィンドウに合わせる
+scale-mode-showall-tooltip =
+    アスペクト比を維持したまま、見切れない範囲でウィンドウに合わせ拡大します。
+    
+    StageScaleMode.SHOW_ALLに対応しています。
 scale-mode-exactfit = 引き伸ばす
 scale-mode-force = 強制
 scale-mode-force-tooltip = ムービーによるスケールモードの変更を抑制し、現在の設定を保持する。

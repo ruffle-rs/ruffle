@@ -23,3 +23,8 @@ theme = 主题
 theme-system = 系统默认
 theme-light = 浅色
 theme-dark = 深色
+# See for context https://github.com/FeralInteractive/gamemode
+gamemode = GameMode
+gamemode-tooltip = GameMode 会对你的电脑和/或 Ruffle 临时应用一系列优化。Ruffle 仅在播放影片时对 GameMode 进行请求。
+gamemode-default = 默认
+gamemode-default-tooltip = 只有当性能偏好被设置为高时，才会启用GameMode。
