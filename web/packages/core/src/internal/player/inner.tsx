@@ -1578,6 +1578,7 @@ export class InnerPlayer {
                             "menu-item": true,
                             disabled: enabled === false,
                         }}
+                        data-text={text}
                     >
                         {text}
                     </li>
