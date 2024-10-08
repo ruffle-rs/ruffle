@@ -2325,9 +2325,12 @@ impl Player {
         self.mutate_with_update_context(|context| context.avm1.has_mouse_listener())
     }
 
-    pub fn add_external_interface(&mut self, provider: Box<dyn ExternalInterfaceProvider>) {
+    pub fn set_external_interface_provider(
+        &mut self,
+        provider: Option<Box<dyn ExternalInterfaceProvider>>,
+    ) {
         self.mutate_with_update_context(|context| {
-            context.external_interface.add_provider(provider)
+            context.external_interface.set_provider(provider)
         });
     }
 
@@ -2424,7 +2427,7 @@ pub struct PlayerBuilder {
     quality: StageQuality,
     page_url: Option<String>,
     frame_rate: Option<f64>,
-    external_interface_providers: Vec<Box<dyn ExternalInterfaceProvider>>,
+    external_interface_provider: Option<Box<dyn ExternalInterfaceProvider>>,
     fs_command_provider: Box<dyn FsCommandProvider>,
     #[cfg(feature = "known_stubs")]
     stub_report_output: Option<std::path::PathBuf>,
@@ -2475,7 +2478,7 @@ impl PlayerBuilder {
             quality: StageQuality::High,
             page_url: None,
             frame_rate: None,
-            external_interface_providers: vec![],
+            external_interface_provider: None,
             fs_command_provider: Box::new(NullFsCommandProvider),
             #[cfg(feature = "known_stubs")]
             stub_report_output: None,
@@ -2660,7 +2663,7 @@ impl PlayerBuilder {
 
     /// Adds an External Interface provider for movies to communicate with
     pub fn with_external_interface(mut self, provider: Box<dyn ExternalInterfaceProvider>) -> Self {
-        self.external_interface_providers.push(provider);
+        self.external_interface_provider = Some(provider);
         self
     }
 
@@ -2694,7 +2697,7 @@ impl PlayerBuilder {
         player_runtime: PlayerRuntime,
         fullscreen: bool,
         fake_movie: Arc<SwfMovie>,
-        external_interface_providers: Vec<Box<dyn ExternalInterfaceProvider>>,
+        external_interface_provider: Option<Box<dyn ExternalInterfaceProvider>>,
         fs_command_provider: Box<dyn FsCommandProvider>,
     ) -> GcRoot<'gc> {
         let mut interner = AvmStringInterner::new(gc_context);
@@ -2718,7 +2721,7 @@ impl PlayerBuilder {
             current_context_menu: None,
             drag_object: None,
             external_interface: ExternalInterface::new(
-                external_interface_providers,
+                external_interface_provider,
                 fs_command_provider,
             ),
             library: Library::empty(),
@@ -2844,7 +2847,7 @@ impl PlayerBuilder {
                         self.player_runtime,
                         self.fullscreen,
                         fake_movie.clone(),
-                        self.external_interface_providers,
+                        self.external_interface_provider,
                         self.fs_command_provider,
                     )
                 }))),
