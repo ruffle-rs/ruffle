@@ -142,6 +142,10 @@ impl ThemeController {
             Theme::Dark => egui::Theme::Dark,
         });
         if let Some(window) = data.window.upgrade() {
+            // On Linux we decide on the theme and synchronize the window,
+            // on other OSes we rely on winit (see get_system_theme).
+            #[cfg(target_os = "linux")]
+            window.set_theme(Some(theme));
             window.request_redraw();
         }
     }
