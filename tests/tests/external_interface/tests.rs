@@ -25,7 +25,7 @@ pub fn external_interface_avm1(
         .player()
         .lock()
         .unwrap()
-        .add_external_interface(Box::new(ExternalInterfaceTestProvider::new()));
+        .set_external_interface_provider(Some(Box::new(ExternalInterfaceTestProvider::new())));
 
     let mut first = true;
 
@@ -93,7 +93,7 @@ pub fn external_interface_avm2(
         .player()
         .lock()
         .unwrap()
-        .add_external_interface(Box::new(ExternalInterfaceTestProvider::new()));
+        .set_external_interface_provider(Some(Box::new(ExternalInterfaceTestProvider::new())));
 
     let mut first = true;
 

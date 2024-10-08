@@ -340,6 +340,8 @@ pub trait ExternalInterfaceProvider {
     fn get_id(&self) -> Option<String>;
 }
 
+pub struct NullExternalInterfaceProvider;
+
 pub trait ExternalInterfaceMethod {
     fn call(&self, context: &mut UpdateContext<'_>, args: &[Value]) -> Value;
 }
@@ -357,7 +359,7 @@ where
 #[collect(no_drop)]
 pub struct ExternalInterface<'gc> {
     #[collect(require_static)]
-    providers: Vec<Box<dyn ExternalInterfaceProvider>>,
+    provider: Option<Box<dyn ExternalInterfaceProvider>>,
     callbacks: BTreeMap<String, Callback<'gc>>,
     #[collect(require_static)]
     fs_commands: Box<dyn FsCommandProvider>,
@@ -365,23 +367,23 @@ pub struct ExternalInterface<'gc> {
 
 impl<'gc> ExternalInterface<'gc> {
     pub fn new(
-        providers: Vec<Box<dyn ExternalInterfaceProvider>>,
+        provider: Option<Box<dyn ExternalInterfaceProvider>>,
         fs_commands: Box<dyn FsCommandProvider>,
     ) -> Self {
         Self {
-            providers,
+            provider,
             callbacks: Default::default(),
             fs_commands,
         }
     }
 
-    pub fn add_provider(&mut self, provider: Box<dyn ExternalInterfaceProvider>) {
-        self.providers.push(provider);
+    pub fn set_provider(&mut self, provider: Option<Box<dyn ExternalInterfaceProvider>>) {
+        self.provider = provider;
     }
 
     pub fn add_callback(&mut self, name: String, callback: Callback<'gc>) {
         self.callbacks.insert(name.clone(), callback);
-        for provider in &self.providers {
+        if let Some(provider) = &self.provider {
             provider.on_callback_available(&name);
         }
     }
@@ -391,7 +393,7 @@ impl<'gc> ExternalInterface<'gc> {
     }
 
     pub fn get_method_for(&self, name: &str) -> Option<Box<dyn ExternalInterfaceMethod>> {
-        for provider in &self.providers {
+        if let Some(provider) = &self.provider {
             if let Some(method) = provider.get_method(name) {
                 return Some(method);
             }
@@ -400,16 +402,11 @@ impl<'gc> ExternalInterface<'gc> {
     }
 
     pub fn available(&self) -> bool {
-        !self.providers.is_empty()
+        self.provider.is_some()
     }
 
     pub fn any_id(&self) -> Option<String> {
-        for provider in &self.providers {
-            if let Some(id) = provider.get_id() {
-                return Some(id);
-            }
-        }
-        None
+        self.provider.as_ref().and_then(|p| p.get_id())
     }
 
     pub fn invoke_fs_command(&self, command: &str, args: &str) -> bool {
