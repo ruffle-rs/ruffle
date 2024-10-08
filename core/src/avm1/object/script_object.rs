@@ -489,13 +489,15 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     fn set_native(&self, gc_context: &Mutation<'gc>, native: NativeObject<'gc>) {
-        // Native object should be introduced at most once.
-        debug_assert!(matches!(self.0.read().native, NativeObject::None));
+        assert!(!matches!(native, NativeObject::None));
 
-        // Native object must not be `None`.
-        debug_assert!(!matches!(native, NativeObject::None));
-
-        self.0.write(gc_context).native = native;
+        let old_native = self.0.read().native;
+        if matches!(old_native, NativeObject::None) {
+            self.0.write(gc_context).native = native;
+        } else {
+            // Trying to construct the same object twice (e.g. with `super()`) does nothing.
+            assert!(std::mem::discriminant(&old_native) == std::mem::discriminant(&native));
+        }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
