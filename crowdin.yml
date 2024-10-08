@@ -8,6 +8,7 @@ preserve_hierarchy: true # Keep the directory structure so that we know, for exa
 files:
   - source: /web/packages/extension/assets/_locales/en/messages.json
     translation: /web/packages/extension/assets/_locales/%two_letters_code%/messages.json
+    update_option: update_as_unapproved
 
     # The crowdin path doesn't actually matter, so let's make it slightly more intelligible than what we have
     dest: /web/extension.json
@@ -20,18 +21,22 @@ files:
     translation: /core/assets/texts/%locale%/%original_file_name%
     dest: /core/%original_file_name%
     type: ftl
+    update_option: update_as_unapproved
 
   - source: /desktop/assets/texts/en-US/*.ftl
     translation: /desktop/assets/texts/%locale%/%original_file_name%
     dest: /desktop/%original_file_name%
     type: ftl
+    update_option: update_as_unapproved
 
   - source: /web/packages/core/texts/en-US/*.ftl
     translation: /web/packages/core/texts/%locale%/%original_file_name%
     dest: /web/core/%original_file_name%
     type: ftl
+    update_option: update_as_unapproved
 
   - source: /desktop/packages/linux/locale/*.pot
     translation: /desktop/packages/linux/locale/%file_name%/%two_letters_code%.po
     dest: /desktop/linux/%original_file_name%
     type: gettext
+    update_option: update_as_unapproved
