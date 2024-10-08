@@ -51,7 +51,7 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 naga = { version = "22.1.0", features = ["wgsl-out"] }
 wgpu = "22.1.0"
 egui = "0.29.1"
-clap = { version = "4.5.18", features = ["derive"] }
+clap = { version = "4.5.20", features = ["derive"] }
 cpal = "0.15.3"
 anyhow = "1.0"
 slotmap = "1.0.7"
@@ -61,7 +61,7 @@ bytemuck = "1.18.0"
 chrono = { version = "0.4.38", default-features = false }
 enum-map = "2.7.3"
 flate2 = "1.0.34"
-futures = "0.3.30"
+futures = "0.3.31"
 image = { version = "0.25.2", default-features = false }
 js-sys = "0.3.70"
 web-sys = "0.3.70"

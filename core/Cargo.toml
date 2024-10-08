@@ -18,7 +18,7 @@ flate2 = { workspace = true }
 fnv = "1.0.7"
 gc-arena = { package = "ruffle_gc_arena", path = "../ruffle_gc_arena" }
 slotmap = { workspace = true }
-indexmap = "2.5.0"
+indexmap = "2.6.0"
 tracing = { workspace = true }
 ruffle_render = { path = "../render", features = ["tessellator"] }
 ruffle_video = { path = "../video" }
@@ -62,7 +62,7 @@ async-channel = { workspace = true }
 jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "71dbe614c02c30a2e9fd1e9e2e7c7a749abe2798", optional = true }
 image = { workspace = true, features = ["tiff"] }
 enum-map = { workspace = true }
-ttf-parser = "0.24"
+ttf-parser = "0.25"
 num-bigint = "0.4"
 unic-segment = "0.9.0"
 id3 = "1.14.0"
