@@ -110,6 +110,11 @@ if (browserstack) {
         "wdio:exclude": [
             "./test/integration_tests/keyboard_input/test.ts", // Doesn't work on iOS at time of writing
             "./test/polyfill/classic_frames_provided/test.ts", // Flaky on iOS
+            // Doesn't work on iOS at time of writing: possibly a browser bug.
+            "./test/integration_tests/programmatic_events/test.ts",
+            // Doesn't work on iOS at time of writing: random wdio bugs
+            // and clipboard permissions need special handling.
+            "./test/integration_tests/context_menu/test.ts",
         ],
     });
 
