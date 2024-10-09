@@ -389,7 +389,7 @@ impl MainWindow {
 }
 
 pub struct App {
-    main_window: MainWindow,
+    main_window: Option<MainWindow>,
     gilrs: Option<Gilrs>,
 }
 
@@ -473,7 +473,7 @@ impl App {
 
         Ok((
             Self {
-                main_window: MainWindow {
+                main_window: Some(MainWindow {
                     preferences,
                     gui,
                     player,
@@ -490,7 +490,7 @@ impl App {
                     time: Instant::now(),
                     next_frame_time: None,
                     event_loop_proxy,
-                },
+                }),
                 gilrs,
             },
             event_loop,
@@ -502,20 +502,22 @@ impl ApplicationHandler<RuffleEvent> for App {
     fn resumed(&mut self, _event_loop: &ActiveEventLoop) {}
 
     fn user_event(&mut self, event_loop: &ActiveEventLoop, event: RuffleEvent) {
-        match event {
-            RuffleEvent::TaskPoll => self.main_window.player.poll(),
+        match (&mut self.main_window, event) {
+            (Some(main_window), RuffleEvent::TaskPoll) => main_window.player.poll(),
 
-            RuffleEvent::OnMetadata(swf_header) => self.main_window.on_metadata(swf_header),
+            (Some(main_window), RuffleEvent::OnMetadata(swf_header)) => {
+                main_window.on_metadata(swf_header)
+            }
 
-            RuffleEvent::ContextMenuItemClicked(index) => {
-                if let Some(mut player) = self.main_window.player.get() {
+            (Some(main_window), RuffleEvent::ContextMenuItemClicked(index)) => {
+                if let Some(mut player) = main_window.player.get() {
                     player.run_context_menu_callback(index);
                 }
             }
 
-            RuffleEvent::BrowseAndOpen(options) => {
-                let event_loop = self.main_window.event_loop_proxy.clone();
-                let picker = self.main_window.gui.file_picker();
+            (Some(main_window), RuffleEvent::BrowseAndOpen(options)) => {
+                let event_loop = main_window.event_loop_proxy.clone();
+                let picker = main_window.gui.file_picker();
                 tokio::spawn(async move {
                     if let Some(url) = picker
                         .pick_ruffle_file(None)
@@ -527,40 +529,42 @@ impl ApplicationHandler<RuffleEvent> for App {
                 });
             }
 
-            RuffleEvent::Open(url, options) => {
-                self.main_window
+            (Some(main_window), RuffleEvent::Open(url, options)) => {
+                main_window
                     .gui
-                    .create_movie(&mut self.main_window.player, *options, url);
+                    .create_movie(&mut main_window.player, *options, url);
             }
 
-            RuffleEvent::OpenDialog(descriptor) => {
-                self.main_window.gui.open_dialog(descriptor);
+            (Some(main_window), RuffleEvent::OpenDialog(descriptor)) => {
+                main_window.gui.open_dialog(descriptor);
             }
 
-            RuffleEvent::CloseFile => {
-                self.main_window.gui.window().set_title("Ruffle"); // Reset title since file has been closed.
-                self.main_window.player.destroy();
+            (Some(main_window), RuffleEvent::CloseFile) => {
+                main_window.gui.window().set_title("Ruffle"); // Reset title since file has been closed.
+                main_window.player.destroy();
             }
 
-            RuffleEvent::EnterFullScreen => {
-                if let Some(mut player) = self.main_window.player.get() {
+            (Some(main_window), RuffleEvent::EnterFullScreen) => {
+                if let Some(mut player) = main_window.player.get() {
                     if player.is_playing() {
                         player.set_fullscreen(true);
                     }
                 }
             }
 
-            RuffleEvent::ExitFullScreen => {
-                if let Some(mut player) = self.main_window.player.get() {
+            (Some(main_window), RuffleEvent::ExitFullScreen) => {
+                if let Some(mut player) = main_window.player.get() {
                     if player.is_playing() {
                         player.set_fullscreen(false);
                     }
                 }
             }
 
-            RuffleEvent::ExitRequested => {
+            (_, RuffleEvent::ExitRequested) => {
                 event_loop.exit();
             }
+
+            _ => {}
         }
     }
 
@@ -570,26 +574,30 @@ impl ApplicationHandler<RuffleEvent> for App {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
-        self.main_window.window_event(event_loop, event);
+        if let Some(main_window) = &mut self.main_window {
+            main_window.window_event(event_loop, event);
+        }
     }
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
-        self.main_window.about_to_wait(self.gilrs.as_mut());
+        if let Some(main_window) = &mut self.main_window {
+            main_window.about_to_wait(self.gilrs.as_mut());
 
-        // The event loop is finished; let's find out how long we need to wait for
-        // (but don't change something that's already requesting a sooner update, or we'll delay it)
-        if let Some(next_frame_time) = self.main_window.next_frame_time {
-            match event_loop.control_flow() {
-                // A "Wait" has no time limit, set ours
-                ControlFlow::Wait => {
-                    event_loop.set_control_flow(ControlFlow::WaitUntil(next_frame_time))
+            // The event loop is finished; let's find out how long we need to wait for
+            // (but don't change something that's already requesting a sooner update, or we'll delay it)
+            if let Some(next_frame_time) = main_window.next_frame_time {
+                match event_loop.control_flow() {
+                    // A "Wait" has no time limit, set ours
+                    ControlFlow::Wait => {
+                        event_loop.set_control_flow(ControlFlow::WaitUntil(next_frame_time))
+                    }
+                    // If the existing "WaitUntil" is later than ours, update it
+                    ControlFlow::WaitUntil(next) if next > next_frame_time => {
+                        event_loop.set_control_flow(ControlFlow::WaitUntil(next_frame_time));
+                    }
+                    // It's sooner than ours, don't delay it
+                    _ => {}
                 }
-                // If the existing "WaitUntil" is later than ours, update it
-                ControlFlow::WaitUntil(next) if next > next_frame_time => {
-                    event_loop.set_control_flow(ControlFlow::WaitUntil(next_frame_time));
-                }
-                // It's sooner than ours, don't delay it
-                _ => {}
             }
         }
     }
