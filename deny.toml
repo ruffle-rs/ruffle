@@ -77,8 +77,6 @@ unknown-git = "deny"
 # github.com organizations to allow git sources for
 github = [
     "ruffle-rs",
-    # TODO: Remove once a release with https://github.com/bilelmoussaoui/ashpd/pull/234 in it is out.
-    "bilelmoussaoui",
 ]
 
 [advisories]
