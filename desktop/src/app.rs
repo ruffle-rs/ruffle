@@ -6,7 +6,7 @@ use crate::util::{
     get_screen_size, gilrs_button_to_gamepad_button, parse_url, plot_stats_in_tracy,
     winit_to_ruffle_key_code, winit_to_ruffle_text_control,
 };
-use anyhow::{Context, Error};
+use anyhow::Error;
 use gilrs::{Event, EventType, Gilrs};
 use ruffle_core::swf::HeaderExt;
 use ruffle_core::PlayerEvent;
@@ -16,7 +16,7 @@ use std::time::Instant;
 use url::Url;
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
-use winit::event::{ElementState, KeyEvent, Modifiers, WindowEvent};
+use winit::event::{ElementState, KeyEvent, Modifiers, StartCause, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop, EventLoopProxy};
 use winit::keyboard::{Key, NamedKey};
 use winit::window::{Fullscreen, Icon, WindowAttributes, WindowId};
@@ -391,78 +391,19 @@ impl MainWindow {
 pub struct App {
     main_window: Option<MainWindow>,
     gilrs: Option<Gilrs>,
+    event_loop_proxy: EventLoopProxy<RuffleEvent>,
+    preferences: GlobalPreferences,
+    font_database: fontdb::Database,
 }
 
 impl App {
     pub async fn new(
         preferences: GlobalPreferences,
     ) -> Result<(Self, EventLoop<RuffleEvent>), Error> {
-        let movie_url = preferences.cli.movie_url.clone();
-        let icon_bytes = include_bytes!("../assets/favicon-32.rgba");
-        let icon =
-            Icon::from_rgba(icon_bytes.to_vec(), 32, 32).context("Couldn't load app icon")?;
-
         let event_loop = EventLoop::with_user_event().build()?;
-
-        let no_gui = preferences.cli.no_gui;
-        let min_window_size = (16, if no_gui { 16 } else { MENU_HEIGHT + 16 }).into();
-        let preferred_width = preferences.cli.width;
-        let preferred_height = preferences.cli.height;
-        let start_fullscreen = preferences.cli.fullscreen;
-
-        let window_attributes = WindowAttributes::default()
-            .with_visible(false)
-            .with_title("Ruffle")
-            .with_window_icon(Some(icon))
-            .with_min_inner_size(min_window_size);
-
-        // TODO: Migrate to ActiveEventLoop::create_window, see:
-        // https://github.com/rust-windowing/winit/releases/tag/v0.30.0
-        #[allow(deprecated)]
-        let window = event_loop.create_window(window_attributes)?;
-        let max_window_size = get_screen_size(&window);
-        window.set_max_inner_size(Some(max_window_size));
-        let window = Arc::new(window);
 
         let mut font_database = fontdb::Database::default();
         font_database.load_system_fonts();
-
-        let mut gui = GuiController::new(
-            window.clone(),
-            &event_loop,
-            preferences.clone(),
-            &font_database,
-            movie_url.clone(),
-            no_gui,
-        )
-        .await?;
-
-        let mut player = PlayerController::new(
-            event_loop.create_proxy(),
-            window.clone(),
-            gui.descriptors().clone(),
-            font_database,
-            preferences.clone(),
-            gui.file_picker(),
-        );
-
-        if let Some(movie_url) = &movie_url {
-            gui.create_movie(
-                &mut player,
-                LaunchOptions::from(&preferences),
-                movie_url.clone(),
-            );
-        } else {
-            gui.show_open_dialog();
-        }
-
-        let mut loaded = LoadingState::Loading;
-
-        if movie_url.is_none() {
-            // No SWF provided on command line; show window with dummy movie immediately.
-            window.set_visible(true);
-            loaded = LoadingState::Loaded;
-        }
 
         let gilrs = Gilrs::new()
             .inspect_err(|err| {
@@ -473,25 +414,11 @@ impl App {
 
         Ok((
             Self {
-                main_window: Some(MainWindow {
-                    preferences,
-                    gui,
-                    player,
-                    min_window_size,
-                    max_window_size,
-                    no_gui,
-                    preferred_width,
-                    preferred_height,
-                    start_fullscreen,
-                    loaded,
-                    minimized: false,
-                    mouse_pos: PhysicalPosition::new(0.0, 0.0),
-                    modifiers: Modifiers::default(),
-                    time: Instant::now(),
-                    next_frame_time: None,
-                    event_loop_proxy,
-                }),
+                main_window: None,
                 gilrs,
+                event_loop_proxy,
+                font_database,
+                preferences,
             },
             event_loop,
         ))
@@ -499,6 +426,93 @@ impl App {
 }
 
 impl ApplicationHandler<RuffleEvent> for App {
+    fn new_events(&mut self, event_loop: &ActiveEventLoop, cause: StartCause) {
+        if cause == StartCause::Init {
+            let movie_url = self.preferences.cli.movie_url.clone();
+            let icon_bytes = include_bytes!("../assets/favicon-32.rgba");
+            let icon =
+                Icon::from_rgba(icon_bytes.to_vec(), 32, 32).expect("App icon should be correct");
+
+            let no_gui = self.preferences.cli.no_gui;
+            let min_window_size = (16, if no_gui { 16 } else { MENU_HEIGHT + 16 }).into();
+            let preferred_width = self.preferences.cli.width;
+            let preferred_height = self.preferences.cli.height;
+            let start_fullscreen = self.preferences.cli.fullscreen;
+
+            let window_attributes = WindowAttributes::default()
+                .with_visible(false)
+                .with_title("Ruffle")
+                .with_window_icon(Some(icon))
+                .with_min_inner_size(min_window_size);
+
+            let event_loop_proxy = self.event_loop_proxy.clone();
+            let preferences = self.preferences.clone();
+            let window = event_loop
+                .create_window(window_attributes)
+                .expect("Window should be created");
+            let max_window_size = get_screen_size(&window);
+            window.set_max_inner_size(Some(max_window_size));
+            let window = Arc::new(window);
+            let font_database = self.font_database.clone();
+
+            let mut gui = GuiController::new(
+                window.clone(),
+                event_loop_proxy.clone(),
+                preferences.clone(),
+                &font_database,
+                movie_url.clone(),
+                no_gui,
+            )
+            .expect("GUI controller should be created");
+
+            let mut player = PlayerController::new(
+                event_loop_proxy.clone(),
+                window.clone(),
+                gui.descriptors().clone(),
+                font_database,
+                preferences.clone(),
+                gui.file_picker(),
+            );
+
+            if let Some(movie_url) = &movie_url {
+                gui.create_movie(
+                    &mut player,
+                    LaunchOptions::from(&preferences),
+                    movie_url.clone(),
+                );
+            } else {
+                gui.show_open_dialog();
+            }
+
+            let mut loaded = LoadingState::Loading;
+
+            if movie_url.is_none() {
+                // No SWF provided on command line; show window with dummy movie immediately.
+                window.set_visible(true);
+                loaded = LoadingState::Loaded;
+            }
+
+            self.main_window = Some(MainWindow {
+                preferences,
+                gui,
+                player,
+                min_window_size,
+                max_window_size,
+                no_gui,
+                preferred_width,
+                preferred_height,
+                start_fullscreen,
+                loaded,
+                minimized: false,
+                mouse_pos: PhysicalPosition::new(0.0, 0.0),
+                modifiers: Modifiers::default(),
+                time: Instant::now(),
+                next_frame_time: None,
+                event_loop_proxy,
+            });
+        }
+    }
+
     fn resumed(&mut self, _event_loop: &ActiveEventLoop) {}
 
     fn user_event(&mut self, event_loop: &ActiveEventLoop, event: RuffleEvent) {
