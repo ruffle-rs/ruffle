@@ -1,5 +1,7 @@
 //! String type used by SWF files.
 
+use serde::Serialize;
+
 pub use encoding_rs::{Encoding, SHIFT_JIS, UTF_8, WINDOWS_1252};
 use std::{borrow::Cow, fmt};
 
@@ -12,7 +14,7 @@ use std::{borrow::Cow, fmt};
 ///   any conversions to std::String will be lossy for invalid data.
 ///
 /// To convert this to a standard Rust string, use [`SwfStr::to_str_lossy`].
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Serialize)]
 #[repr(transparent)]
 pub struct SwfStr {
     /// The string bytes.
