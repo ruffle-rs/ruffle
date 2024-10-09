@@ -40,6 +40,7 @@ Icon=rs.ruffle.Ruffle
 Exec=ruffle %u
 MimeType=application/x-shockwave-flash;application/vnd.adobe.flash.movie
 Categories=AudioVideo;Player;Graphics;Viewer;VectorGraphics;Game
+Keywords[ar]=الفلاش;swf;مشغل;محاكي;رَسْت
 Keywords[cs]=flash;swf;přehrávač;emulátor;rust
 Keywords[de]=flash;swf;spieler;emulator;rust
 Keywords[es]=flash;swf;reproductor;emulador;rust
