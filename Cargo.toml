@@ -72,7 +72,7 @@ serde = "1.0.210"
 thiserror = "1.0"
 url = "2.5.2"
 # Make sure to match wasm-bindgen-cli version to this everywhere.
-wasm-bindgen = "=0.2.93"
+wasm-bindgen = "=0.2.95"
 walkdir = "2.5.0"
 tokio = "1.40.0"
 rfd = "0.15.0"
