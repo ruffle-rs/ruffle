@@ -13,6 +13,7 @@ use crate::context::UpdateContext;
 use crate::string::AvmString;
 use gc_arena::Collect;
 use std::collections::BTreeMap;
+use std::rc::Rc;
 
 /// An intermediate format of representing shared data between ActionScript and elsewhere.
 ///
@@ -333,7 +334,7 @@ impl FsCommandProvider for NullFsCommandProvider {
 }
 
 pub trait ExternalInterfaceProvider {
-    fn get_method(&self, name: &str) -> Option<Box<dyn ExternalInterfaceMethod>>;
+    fn call_method(&self, context: &mut UpdateContext<'_>, name: &str, args: &[Value]) -> Value;
 
     fn on_callback_available(&self, name: &str);
 
@@ -342,24 +343,11 @@ pub trait ExternalInterfaceProvider {
 
 pub struct NullExternalInterfaceProvider;
 
-pub trait ExternalInterfaceMethod {
-    fn call(&self, context: &mut UpdateContext<'_>, args: &[Value]) -> Value;
-}
-
-impl<F> ExternalInterfaceMethod for F
-where
-    F: Fn(&mut UpdateContext<'_>, &[Value]) -> Value,
-{
-    fn call(&self, context: &mut UpdateContext<'_>, args: &[Value]) -> Value {
-        self(context, args)
-    }
-}
-
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct ExternalInterface<'gc> {
     #[collect(require_static)]
-    provider: Option<Box<dyn ExternalInterfaceProvider>>,
+    provider: Option<Rc<Box<dyn ExternalInterfaceProvider>>>,
     callbacks: BTreeMap<String, Callback<'gc>>,
     #[collect(require_static)]
     fs_commands: Box<dyn FsCommandProvider>,
@@ -371,14 +359,14 @@ impl<'gc> ExternalInterface<'gc> {
         fs_commands: Box<dyn FsCommandProvider>,
     ) -> Self {
         Self {
-            provider,
+            provider: provider.map(Rc::new),
             callbacks: Default::default(),
             fs_commands,
         }
     }
 
     pub fn set_provider(&mut self, provider: Option<Box<dyn ExternalInterfaceProvider>>) {
-        self.provider = provider;
+        self.provider = provider.map(Rc::new);
     }
 
     pub fn add_callback(&mut self, name: String, callback: Callback<'gc>) {
@@ -392,13 +380,13 @@ impl<'gc> ExternalInterface<'gc> {
         self.callbacks.get(name).cloned()
     }
 
-    pub fn get_method_for(&self, name: &str) -> Option<Box<dyn ExternalInterfaceMethod>> {
-        if let Some(provider) = &self.provider {
-            if let Some(method) = provider.get_method(name) {
-                return Some(method);
-            }
+    pub fn call_method(context: &mut UpdateContext<'gc>, name: &str, args: &[Value]) -> Value {
+        let provider = context.external_interface.provider.clone();
+        if let Some(provider) = &provider {
+            provider.call_method(context, name, args)
+        } else {
+            Value::Undefined
         }
-        None
     }
 
     pub fn available(&self) -> bool {
