@@ -10,8 +10,6 @@ use anyhow::{Context, Error};
 use gilrs::{Event, EventType, Gilrs};
 use ruffle_core::PlayerEvent;
 use ruffle_render::backend::ViewportDimensions;
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::Arc;
 use std::time::Instant;
 use url::Url;
@@ -25,7 +23,7 @@ use winit::window::{Fullscreen, Icon, Window, WindowAttributes, WindowId};
 pub struct App {
     preferences: GlobalPreferences,
     window: Arc<Window>,
-    gui: Rc<RefCell<GuiController>>,
+    gui: GuiController,
     player: PlayerController,
     min_window_size: LogicalSize<u32>,
     max_window_size: PhysicalSize<u32>,
@@ -125,7 +123,7 @@ impl App {
             Self {
                 preferences,
                 window,
-                gui: Rc::new(RefCell::new(gui)),
+                gui,
                 player,
                 min_window_size,
                 max_window_size,
@@ -148,8 +146,7 @@ impl App {
 
     fn check_redraw(&self) {
         let player = self.player.get();
-        let gui = self.gui.borrow_mut();
-        if player.map(|p| p.needs_render()).unwrap_or_default() || gui.needs_render() {
+        if player.map(|p| p.needs_render()).unwrap_or_default() || self.gui.needs_render() {
             self.window.request_redraw();
         }
     }
@@ -217,7 +214,7 @@ impl ApplicationHandler<RuffleEvent> for App {
 
                     if let Some(new_viewport_size) = self.window.request_inner_size(window_size) {
                         if new_viewport_size != viewport_size {
-                            self.gui.borrow_mut().resize(new_viewport_size);
+                            self.gui.resize(new_viewport_size);
                         } else {
                             tracing::warn!("Unable to resize window");
                             window_resize_denied = true;
@@ -265,7 +262,7 @@ impl ApplicationHandler<RuffleEvent> for App {
 
             RuffleEvent::BrowseAndOpen(options) => {
                 let event_loop = self.event_loop_proxy.clone();
-                let picker = self.gui.borrow().file_picker();
+                let picker = self.gui.file_picker();
                 tokio::spawn(async move {
                     if let Some(url) = picker
                         .pick_ruffle_file(None)
@@ -278,13 +275,11 @@ impl ApplicationHandler<RuffleEvent> for App {
             }
 
             RuffleEvent::Open(url, options) => {
-                self.gui
-                    .borrow_mut()
-                    .create_movie(&mut self.player, *options, url);
+                self.gui.create_movie(&mut self.player, *options, url);
             }
 
             RuffleEvent::OpenDialog(descriptor) => {
-                self.gui.borrow_mut().open_dialog(descriptor);
+                self.gui.open_dialog(descriptor);
             }
 
             RuffleEvent::CloseFile => {
@@ -326,11 +321,11 @@ impl ApplicationHandler<RuffleEvent> for App {
                 if let Some(mut player) = self.player.get() {
                     // Even if the movie is paused, user interaction with debug tools can change the render output
                     player.render();
-                    self.gui.borrow_mut().render(Some(player));
+                    self.gui.render(Some(player));
                 } else {
-                    self.gui.borrow_mut().render(None);
+                    self.gui.render(None);
                 }
-                plot_stats_in_tracy(&self.gui.borrow().descriptors().wgpu_instance);
+                plot_stats_in_tracy(&self.gui.descriptors().wgpu_instance);
             }
 
             // Important that we return here, or we'll get a feedback loop with egui
@@ -338,7 +333,7 @@ impl ApplicationHandler<RuffleEvent> for App {
             return;
         }
 
-        if self.gui.borrow_mut().handle_event(&event) {
+        if self.gui.handle_event(&event) {
             // Event consumed by GUI.
             return;
         }
@@ -369,7 +364,7 @@ impl ApplicationHandler<RuffleEvent> for App {
                 }
             }
             WindowEvent::CursorMoved { position, .. } => {
-                if self.gui.borrow_mut().is_context_menu_visible() {
+                if self.gui.is_context_menu_visible() {
                     return;
                 }
 
@@ -383,7 +378,7 @@ impl ApplicationHandler<RuffleEvent> for App {
             }
             WindowEvent::DroppedFile(file) => {
                 if let Ok(url) = parse_url(&file) {
-                    self.gui.borrow_mut().create_movie(
+                    self.gui.create_movie(
                         &mut self.player,
                         LaunchOptions::from(&self.preferences),
                         url,
@@ -397,7 +392,7 @@ impl ApplicationHandler<RuffleEvent> for App {
                 self.player.handle_event(PlayerEvent::FocusLost);
             }
             WindowEvent::MouseInput { button, state, .. } => {
-                if self.gui.borrow_mut().is_context_menu_visible() {
+                if self.gui.is_context_menu_visible() {
                     return;
                 }
 
@@ -436,15 +431,13 @@ impl ApplicationHandler<RuffleEvent> for App {
                             y,
                             button: RuffleMouseButton::Right,
                         };
-                        self.gui
-                            .borrow_mut()
-                            .show_context_menu(context_menu, close_event);
+                        self.gui.show_context_menu(context_menu, close_event);
                     }
                 }
                 self.check_redraw();
             }
             WindowEvent::MouseWheel { delta, .. } => {
-                if self.gui.borrow_mut().is_context_menu_visible() {
+                if self.gui.is_context_menu_visible() {
                     return;
                 }
 
@@ -477,7 +470,7 @@ impl ApplicationHandler<RuffleEvent> for App {
                 self.modifiers = new_modifiers;
             }
             WindowEvent::KeyboardInput { event, .. } => {
-                if self.gui.borrow_mut().is_context_menu_visible() {
+                if self.gui.is_context_menu_visible() {
                     return;
                 }
 
