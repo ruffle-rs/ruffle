@@ -111,9 +111,9 @@
         "message": "Activar permanentemente en este sitio"
     },
     "permissions_explanation": {
-        "message": "La extensión Ruffle trabaja mejor con la habilidad de acceder datos de todas las páginas. Esto le permite ser ejecutada cuando cualquier página primero carga, así permitiendo convencer paginas que hacen detección inmediata para que contenido Flash se ejecute. También le da la capacidad de cargar archivos SWF en su página de reproducción interna desde otras ubicaciones en la web y le permite cargar automáticamente enlaces SWF directos en esa página. Si no concede este permiso, tendrá que habilitar Ruffle manualmente en cada sitio web en el que desees utilizarlo haciendo clic en el icono de la extensión y permitiendo esa página."
+        "message": "La extensión Ruffle trabaja mejor con la habilidad de acceder datos de todas las páginas. Esto le permite estar ejecutada cuando cualquier página carga inicialmente, así permitiendo convencer paginas que hacen detección inmediata para que contenido Flash se ejecute. También le da la capacidad de cargar archivos SWF en su página de reproducción interna desde otras ubicaciones en la web y le permite cargar automáticamente enlaces SWF directos en esa página. Si no concede este permiso, tendrá que habilitar Ruffle manualmente en cada sitio web en el que desees utilizarlo haciendo clic en el icono de la extensión y permitiendo esa página."
     },
     "swf_player_permissions": {
-        "message": "Debes dar permiso a este origen URL para cargar SWF de este."
+        "message": "Tiene que dar permiso a este origen URL para cargar el contenido de los SWF de lo mismo."
     }
 }

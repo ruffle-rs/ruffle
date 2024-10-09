@@ -1,5 +1,5 @@
-preferences-dialog = Nastavení Ruffle
-preference-locked-by-cli = Pouze pro čtení (nastavené CLI)
+preferences-dialog = Předvolby Ruffle
+preference-locked-by-cli = Pouze pro čtení (nastaveno pomocí CLI)
 graphics-backend = Grafický backend
 graphics-backend-default = Výchozí
 graphics-power = Nastavení výkonu
@@ -23,3 +23,10 @@ theme = Téma
 theme-system = Výchozí systému
 theme-light = Světlá
 theme-dark = Tmavá
+# See for context https://github.com/FeralInteractive/gamemode
+gamemode = GameMode
+gamemode-tooltip =
+    GameMode dočasně aplikuje sadu optimalizací na váš počítač a/nebo Ruffle.
+    Ruffle požaduje GameMode pouze při přehrávání filmu.
+gamemode-default = Výchozí
+gamemode-default-tooltip = GameMode bude povolen pouze v případě, že je předvolba napájení nastavena na vysokou hodnotu.
