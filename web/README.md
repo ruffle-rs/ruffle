@@ -65,7 +65,7 @@ Note that npm 7 or newer is required. It should come bundled with Node.js 15 or 
 
 <!-- Be sure to also update the wasm-bindgen-cli version in `.github/workflows/*.yml` and `web/Cargo.toml`. -->
 
-This can be installed with `cargo install wasm-bindgen-cli --version 0.2.93`. Be sure to install this specific version of `wasm-bindgen-cli` to match the version used by Ruffle.
+This can be installed with `cargo install wasm-bindgen-cli --version 0.2.95`. Be sure to install this specific version of `wasm-bindgen-cli` to match the version used by Ruffle.
 
 #### Binaryen
 
