@@ -18,7 +18,8 @@
     <name xml:lang="zh-CN">Ruffle</name>
     <summary>Play Flash games &amp; movies</summary>
     <summary xml:lang="ar">شغِّل ألعاب وأفلام الفلاش</summary>
-    <summary xml:lang="es">Jugar juegos &amp; ver películas de Flash</summary>
+    <summary xml:lang="cs">Hrajte Flash hry a přehrajte filmy</summary>
+    <summary xml:lang="es">Jugar juegos y ver películas de Flash</summary>
     <summary xml:lang="fr">Jouez à des jeux et regardez des animations en Flash</summary>
     <summary xml:lang="ja">Flashゲームと動画を再生します</summary>
     <summary xml:lang="ko">플래시 게임 &amp; 영상 실행</summary>
@@ -41,7 +42,7 @@
         <name xml:lang="pt-PT">A Equipa do Ruffle</name>
         <name xml:lang="ru">Команда Ruffle</name>
         <name xml:lang="uk">Команда Ruffle</name>
-        <name xml:lang="zh-CN">The Ruffle Team</name>
+        <name xml:lang="zh-CN">Ruffle 项目组</name>
     </developer>
     <update_contact>ruffle@ruffle.rs</update_contact>
     <launchable type="desktop-id">rs.ruffle.Ruffle.desktop</launchable>
@@ -112,62 +113,86 @@
     <keywords>
         <keyword>flash</keyword>
         <keyword xml:lang="ar">الفلاش</keyword>
+        <keyword xml:lang="cs">flash</keyword>
+        <keyword xml:lang="de">flash</keyword>
         <keyword xml:lang="es">flash</keyword>
         <keyword xml:lang="fr">flash</keyword>
+        <keyword xml:lang="it">flash</keyword>
         <keyword xml:lang="ja">flash</keyword>
         <keyword xml:lang="ko">플래시</keyword>
         <keyword xml:lang="nl">flash</keyword>
         <keyword xml:lang="pl">flash</keyword>
         <keyword xml:lang="pt-PT">flash</keyword>
         <keyword xml:lang="ru">flash</keyword>
+        <keyword xml:lang="tr">flash</keyword>
         <keyword xml:lang="uk">flash</keyword>
         <keyword xml:lang="zh-CN">flash</keyword>
         <keyword>swf</keyword>
+        <keyword xml:lang="cs">swf</keyword>
+        <keyword xml:lang="de">swf</keyword>
         <keyword xml:lang="es">swf</keyword>
         <keyword xml:lang="fr">swf</keyword>
+        <keyword xml:lang="it">swf</keyword>
         <keyword xml:lang="ja">swf</keyword>
         <keyword xml:lang="ko">swf</keyword>
         <keyword xml:lang="nl">swf</keyword>
         <keyword xml:lang="pl">swf</keyword>
         <keyword xml:lang="pt-PT">swf</keyword>
         <keyword xml:lang="ru">swf</keyword>
+        <keyword xml:lang="tr">swf</keyword>
         <keyword xml:lang="uk">swf</keyword>
         <keyword xml:lang="zh-CN">swf</keyword>
         <keyword>player</keyword>
         <keyword xml:lang="ar">مشغل</keyword>
+        <keyword xml:lang="cs">přehrávač</keyword>
+        <keyword xml:lang="de">spieler</keyword>
         <keyword xml:lang="es">reproductor</keyword>
         <keyword xml:lang="fr">lecteur</keyword>
+        <keyword xml:lang="id">pemutar</keyword>
+        <keyword xml:lang="it">riproduttore</keyword>
         <keyword xml:lang="ja">プレイヤー</keyword>
         <keyword xml:lang="ko">플레이어</keyword>
         <keyword xml:lang="nl">speler</keyword>
         <keyword xml:lang="pl">odtwarzacz</keyword>
-        <keyword xml:lang="pt-PT">player</keyword>
-        <keyword xml:lang="ru">player</keyword>
-        <keyword xml:lang="uk">player</keyword>
+        <keyword xml:lang="pt-PT">reprodutor</keyword>
+        <keyword xml:lang="ru">прои́грыватель</keyword>
+        <keyword xml:lang="tr">oynatıcı</keyword>
+        <keyword xml:lang="uk">програвач</keyword>
         <keyword xml:lang="zh-CN">播放器</keyword>
         <keyword>emulator</keyword>
         <keyword xml:lang="ar">محاكي</keyword>
         <keyword xml:lang="cs">emulátor</keyword>
+        <keyword xml:lang="de">emulator</keyword>
         <keyword xml:lang="es">emulador</keyword>
         <keyword xml:lang="fr">émulateur</keyword>
+        <keyword xml:lang="he">אמולטור</keyword>
+        <keyword xml:lang="hu">emulátor</keyword>
+        <keyword xml:lang="it">emulatore</keyword>
         <keyword xml:lang="ja">エミュレーター</keyword>
         <keyword xml:lang="ko">에뮬레이터</keyword>
         <keyword xml:lang="nl">emulator</keyword>
         <keyword xml:lang="pl">emulator</keyword>
         <keyword xml:lang="pt-PT">emulador</keyword>
-        <keyword xml:lang="ru">emulator</keyword>
-        <keyword xml:lang="uk">emulator</keyword>
+        <keyword xml:lang="ru">эмуля́тор</keyword>
+        <keyword xml:lang="sv">emulator</keyword>
+        <keyword xml:lang="tr">öykünücü</keyword>
+        <keyword xml:lang="uk">емулятор</keyword>
         <keyword xml:lang="zh-CN">模拟器</keyword>
         <keyword>rust</keyword>
         <keyword xml:lang="ar">رَسْت</keyword>
+        <keyword xml:lang="cs">rust</keyword>
+        <keyword xml:lang="de">rust</keyword>
         <keyword xml:lang="es">rust</keyword>
         <keyword xml:lang="fr">rust</keyword>
+        <keyword xml:lang="he">ראסט</keyword>
+        <keyword xml:lang="it">rust</keyword>
         <keyword xml:lang="ja">rust</keyword>
         <keyword xml:lang="ko">rust</keyword>
         <keyword xml:lang="nl">rust</keyword>
         <keyword xml:lang="pl">rust</keyword>
         <keyword xml:lang="pt-PT">rust</keyword>
         <keyword xml:lang="ru">rust</keyword>
+        <keyword xml:lang="tr">rust</keyword>
         <keyword xml:lang="uk">rust</keyword>
         <keyword xml:lang="zh-CN">rust</keyword>
     </keywords>
