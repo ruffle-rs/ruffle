@@ -29,7 +29,7 @@ regex = "1.11.0"
 [dev-dependencies]
 ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug", "avm_debug", "audio", "mp3", "default_font", "test_only_as3"] }
 ruffle_test_framework = { path = "framework" }
-libtest-mimic = "0.7.3"
+libtest-mimic = "0.8.1"
 walkdir = { workspace = true }
 anyhow = { workspace = true }
 image = { workspace = true, features  = ["png"] }
