@@ -2,8 +2,7 @@ use crate::{JavascriptPlayer, CURRENT_CONTEXT};
 use js_sys::{Array, Object};
 use ruffle_core::context::UpdateContext;
 use ruffle_core::external::{
-    ExternalInterfaceMethod, ExternalInterfaceProvider, FsCommandProvider, Value as ExternalValue,
-    Value,
+    ExternalInterfaceProvider, FsCommandProvider, Value as ExternalValue, Value,
 };
 use std::collections::BTreeMap;
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -23,10 +22,14 @@ pub struct JavascriptInterface {
     js_player: JavascriptPlayer,
 }
 
-struct JavascriptMethod(String);
+impl JavascriptInterface {
+    pub fn new(js_player: JavascriptPlayer) -> Self {
+        Self { js_player }
+    }
+}
 
-impl ExternalInterfaceMethod for JavascriptMethod {
-    fn call(&self, context: &mut UpdateContext<'_>, args: &[ExternalValue]) -> ExternalValue {
+impl ExternalInterfaceProvider for JavascriptInterface {
+    fn call_method(&self, context: &mut UpdateContext<'_>, name: &str, args: &[Value]) -> Value {
         let old_context = CURRENT_CONTEXT.with(|v| {
             v.replace(Some(unsafe {
                 std::mem::transmute::<&mut UpdateContext, &mut UpdateContext<'static>>(context)
@@ -37,7 +40,7 @@ impl ExternalInterfaceMethod for JavascriptMethod {
             .cloned()
             .map(external_to_js_value)
             .collect::<Vec<_>>();
-        let result = if let Ok(result) = call_external_interface(&self.0, args.into_boxed_slice()) {
+        let result = if let Ok(result) = call_external_interface(name, args.into_boxed_slice()) {
             js_to_external_value(&result)
         } else {
             ExternalValue::Undefined
@@ -45,18 +48,6 @@ impl ExternalInterfaceMethod for JavascriptMethod {
 
         CURRENT_CONTEXT.with(|v| v.replace(old_context));
         result
-    }
-}
-
-impl JavascriptInterface {
-    pub fn new(js_player: JavascriptPlayer) -> Self {
-        Self { js_player }
-    }
-}
-
-impl ExternalInterfaceProvider for JavascriptInterface {
-    fn get_method(&self, name: &str) -> Option<Box<dyn ExternalInterfaceMethod>> {
-        Some(Box::new(JavascriptMethod(name.to_string())))
     }
 
     fn on_callback_available(&self, name: &str) {
