@@ -18,11 +18,10 @@ use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
 use winit::event::{ElementState, KeyEvent, Modifiers, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop, EventLoopProxy};
 use winit::keyboard::{Key, NamedKey};
-use winit::window::{Fullscreen, Icon, Window, WindowAttributes, WindowId};
+use winit::window::{Fullscreen, Icon, WindowAttributes, WindowId};
 
 pub struct App {
     preferences: GlobalPreferences,
-    window: Arc<Window>,
     gui: GuiController,
     player: PlayerController,
     min_window_size: LogicalSize<u32>,
@@ -122,7 +121,6 @@ impl App {
         Ok((
             Self {
                 preferences,
-                window,
                 gui,
                 player,
                 min_window_size,
@@ -147,7 +145,7 @@ impl App {
     fn check_redraw(&self) {
         let player = self.player.get();
         if player.map(|p| p.needs_render()).unwrap_or_default() || self.gui.needs_render() {
-            self.window.request_redraw();
+            self.gui.window().request_redraw();
         }
     }
 }
@@ -159,7 +157,7 @@ impl ApplicationHandler<RuffleEvent> for App {
         match event {
             RuffleEvent::TaskPoll => self.player.poll(),
             RuffleEvent::OnMetadata(swf_header) => {
-                let height_offset = if self.window.fullscreen().is_some() || self.no_gui {
+                let height_offset = if self.gui.window().fullscreen().is_some() || self.no_gui {
                     0.0
                 } else {
                     MENU_HEIGHT as f64
@@ -167,7 +165,7 @@ impl ApplicationHandler<RuffleEvent> for App {
 
                 // To prevent issues like waiting on resize indefinitely (#11364) or desyncing the window state on Windows,
                 // do not resize while window is maximized.
-                let should_resize = !self.window.is_maximized();
+                let should_resize = !self.gui.window().is_maximized();
 
                 let viewport_size = if should_resize {
                     let movie_width = swf_header.stage_size().width().to_pixels();
@@ -182,7 +180,7 @@ impl ApplicationHandler<RuffleEvent> for App {
                             let height = movie_height * scale;
                             PhysicalSize::new(
                                 width.max(1.0),
-                                height.max(1.0) + height_offset * self.window.scale_factor(),
+                                height.max(1.0) + height_offset * self.gui.window().scale_factor(),
                             )
                             .into()
                         }
@@ -191,13 +189,13 @@ impl ApplicationHandler<RuffleEvent> for App {
                             let width = movie_width * scale;
                             PhysicalSize::new(
                                 width.max(1.0),
-                                height.max(1.0) + height_offset * self.window.scale_factor(),
+                                height.max(1.0) + height_offset * self.gui.window().scale_factor(),
                             )
                             .into()
                         }
                         (Some(width), Some(height)) => PhysicalSize::new(
                             width.max(1.0),
-                            height.max(1.0) + height_offset * self.window.scale_factor(),
+                            height.max(1.0) + height_offset * self.gui.window().scale_factor(),
                         )
                         .into(),
                     };
@@ -206,13 +204,15 @@ impl ApplicationHandler<RuffleEvent> for App {
                         window_size,
                         self.min_window_size.into(),
                         self.max_window_size.into(),
-                        self.window.scale_factor(),
+                        self.gui.window().scale_factor(),
                     );
 
-                    let viewport_size = self.window.inner_size();
+                    let viewport_size = self.gui.window().inner_size();
                     let mut window_resize_denied = false;
 
-                    if let Some(new_viewport_size) = self.window.request_inner_size(window_size) {
+                    if let Some(new_viewport_size) =
+                        self.gui.window().request_inner_size(window_size)
+                    {
                         if new_viewport_size != viewport_size {
                             self.gui.resize(new_viewport_size);
                         } else {
@@ -221,7 +221,7 @@ impl ApplicationHandler<RuffleEvent> for App {
                         }
                     }
 
-                    let viewport_size = self.window.inner_size();
+                    let viewport_size = self.gui.window().inner_size();
 
                     // On X11 (and possibly other platforms), the window size is not updated immediately.
                     // On a successful resize request, wait for the window to be resized to the requested size
@@ -234,17 +234,17 @@ impl ApplicationHandler<RuffleEvent> for App {
 
                     viewport_size
                 } else {
-                    self.window.inner_size()
+                    self.gui.window().inner_size()
                 };
 
-                self.window.set_fullscreen(if self.start_fullscreen {
+                self.gui.window().set_fullscreen(if self.start_fullscreen {
                     Some(Fullscreen::Borderless(None))
                 } else {
                     None
                 });
-                self.window.set_visible(true);
+                self.gui.window().set_visible(true);
 
-                let viewport_scale_factor = self.window.scale_factor();
+                let viewport_scale_factor = self.gui.window().scale_factor();
                 if let Some(mut player) = self.player.get() {
                     player.set_viewport_dimensions(ViewportDimensions {
                         width: viewport_size.width,
@@ -283,7 +283,7 @@ impl ApplicationHandler<RuffleEvent> for App {
             }
 
             RuffleEvent::CloseFile => {
-                self.window.set_title("Ruffle"); // Reset title since file has been closed.
+                self.gui.window().set_title("Ruffle"); // Reset title since file has been closed.
                 self.player.destroy();
             }
 
@@ -337,10 +337,10 @@ impl ApplicationHandler<RuffleEvent> for App {
             // Event consumed by GUI.
             return;
         }
-        let height_offset = if self.window.fullscreen().is_some() || self.no_gui {
+        let height_offset = if self.gui.window().fullscreen().is_some() || self.no_gui {
             0.0
         } else {
-            MENU_HEIGHT as f64 * self.window.scale_factor()
+            MENU_HEIGHT as f64 * self.gui.window().scale_factor()
         };
         match event {
             WindowEvent::CloseRequested => {
@@ -351,14 +351,14 @@ impl ApplicationHandler<RuffleEvent> for App {
                 self.minimized = size.width == 0 && size.height == 0;
 
                 if let Some(mut player) = self.player.get() {
-                    let viewport_scale_factor = self.window.scale_factor();
+                    let viewport_scale_factor = self.gui.window().scale_factor();
                     player.set_viewport_dimensions(ViewportDimensions {
                         width: size.width,
                         height: size.height.saturating_sub(height_offset as u32),
                         scale_factor: viewport_scale_factor,
                     });
                 }
-                self.window.request_redraw();
+                self.gui.window().request_redraw();
                 if matches!(self.loaded, LoadingState::WaitingForResize) {
                     self.loaded = LoadingState::Loaded;
                 }
@@ -455,7 +455,7 @@ impl ApplicationHandler<RuffleEvent> for App {
                 if let Some(mut player) = self.player.get() {
                     player.set_mouse_in_stage(true);
                     if player.needs_render() {
-                        self.window.request_redraw();
+                        self.gui.window().request_redraw();
                     }
                 }
             }

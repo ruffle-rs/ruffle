@@ -161,6 +161,10 @@ impl GuiController {
         self.gui.dialogs.file_picker()
     }
 
+    pub fn window(&self) -> &Arc<Window> {
+        &self.window
+    }
+
     pub fn resize(&mut self, size: PhysicalSize<u32>) {
         if size.width > 0 && size.height > 0 {
             self.size = size;
