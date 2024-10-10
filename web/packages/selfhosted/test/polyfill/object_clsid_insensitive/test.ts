@@ -14,7 +14,9 @@ describe("Object with case-insensitive clsid", () => {
         await injectRuffleAndWait(browser);
         await browser.$("<ruffle-object />").waitForExist();
 
-        const actual = await browser.$("#test-container").getHTML(false);
+        const actual = await browser
+            .$("#test-container")
+            .getHTML({ includeSelectorTag: false, pierceShadowRoot: false });
         const expected = fs.readFileSync(
             `${import.meta.dirname}/expected.html`,
             "utf8",

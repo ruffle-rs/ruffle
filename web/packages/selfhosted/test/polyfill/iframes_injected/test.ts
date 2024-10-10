@@ -13,9 +13,28 @@ describe("Flash inside iframe with injected ruffle", () => {
     it("polyfills inside an iframe", async () => {
         await injectRuffleAndWait(browser);
         await browser.switchToFrame(await browser.$("#test-frame"));
-        await browser.$("<ruffle-object />").waitForExist();
+        // TODO: After https://github.com/webdriverio/webdriverio/issues/13218 is fixed, use browser.$("<ruffle-object />")
+        await browser
+            .$(
+                () =>
+                    (
+                        document.querySelector(
+                            "#test-frame",
+                        ) as HTMLIFrameElement
+                    ).contentDocument?.body.querySelector(
+                        "ruffle-object",
+                    ) as HTMLElement,
+            )
+            .waitForExist();
 
-        const actual = await browser.$("#test-container").getHTML(false);
+        // TODO: After https://github.com/webdriverio/webdriverio/issues/13218 is fixed
+        // use browser.$("#test-container").getHTML({ includeSelectorTag: false, pierceShadowRoot: false });
+        const actual = await browser.execute(() => {
+            const el = (
+                document.querySelector("#test-frame") as HTMLIFrameElement
+            ).contentDocument?.body.querySelector("#test-container");
+            return el?.innerHTML;
+        });
         const expected = fs.readFileSync(
             `${import.meta.dirname}/expected.html`,
             "utf8",
@@ -36,9 +55,28 @@ describe("Flash inside iframe with injected ruffle", () => {
         // And finally, check
         await browser.switchToFrame(null);
         await browser.switchToFrame(await browser.$("#test-frame"));
-        await browser.$("<ruffle-object />").waitForExist();
+        // TODO: After https://github.com/webdriverio/webdriverio/issues/13218 is fixed, use browser.$("<ruffle-object />")
+        await browser
+            .$(
+                () =>
+                    (
+                        document.querySelector(
+                            "#test-frame",
+                        ) as HTMLIFrameElement
+                    ).contentDocument?.body.querySelector(
+                        "ruffle-object",
+                    ) as HTMLElement,
+            )
+            .waitForExist();
 
-        const actual = await browser.$("#test-container").getHTML(false);
+        // TODO: After https://github.com/webdriverio/webdriverio/issues/13218 is fixed
+        // use browser.$("#test-container").getHTML({ includeSelectorTag: false, pierceShadowRoot: false });
+        const actual = await browser.execute(() => {
+            const el = (
+                document.querySelector("#test-frame") as HTMLIFrameElement
+            ).contentDocument?.body.querySelector("#test-container");
+            return el?.innerHTML;
+        });
         const expected = fs.readFileSync(
             `${import.meta.dirname}/expected.html`,
             "utf8",

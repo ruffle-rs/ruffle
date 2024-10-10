@@ -9,7 +9,7 @@ import chaiHtml from "chai-html";
 
 use(chaiHtml);
 
-async function focusElement(element: WebdriverIO.Element) {
+async function focusElement(element: ChainablePromiseElement) {
     await browser.execute((element) => {
         const el = element as unknown as HTMLElement;
         el.focus();
