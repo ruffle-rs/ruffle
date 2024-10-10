@@ -192,8 +192,8 @@ pub struct Opt {
     pub frame_rate: Option<f64>,
 
     /// The handling mode of links opening a new website.
-    #[clap(long, default_value = "allow")]
-    pub open_url_mode: OpenURLMode,
+    #[clap(long)]
+    pub open_url_mode: Option<OpenUrlMode>,
 
     /// How to handle non-interactive filesystem access.
     #[clap(long, default_value = "ask")]
@@ -338,6 +338,46 @@ impl FromStr for GameModePreference {
             "on" => Ok(GameModePreference::On),
             "off" => Ok(GameModePreference::Off),
             _ => Err(()),
+        }
+    }
+}
+
+#[derive(Default, Debug, Copy, Clone, PartialEq, Eq, clap::ValueEnum)]
+pub enum OpenUrlMode {
+    #[default]
+    Confirm,
+    Allow,
+    Deny,
+}
+
+impl OpenUrlMode {
+    pub fn as_str(&self) -> Option<&'static str> {
+        match self {
+            OpenUrlMode::Confirm => None,
+            OpenUrlMode::Allow => Some("allow"),
+            OpenUrlMode::Deny => Some("deny"),
+        }
+    }
+}
+
+impl FromStr for OpenUrlMode {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "allow" => Ok(OpenUrlMode::Allow),
+            "deny" => Ok(OpenUrlMode::Deny),
+            _ => Err(()),
+        }
+    }
+}
+
+impl From<OpenUrlMode> for OpenURLMode {
+    fn from(value: OpenUrlMode) -> Self {
+        match value {
+            OpenUrlMode::Confirm => OpenURLMode::Confirm,
+            OpenUrlMode::Allow => OpenURLMode::Allow,
+            OpenUrlMode::Deny => OpenURLMode::Deny,
         }
     }
 }
