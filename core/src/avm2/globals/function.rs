@@ -1,5 +1,7 @@
 //! Function builtin and prototype
 
+use gc_arena::Gc;
+
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::error::eval_error;
@@ -7,8 +9,8 @@ use crate::avm2::globals::array::resolve_array_hole;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{function_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::avm2::QName;
+use crate::avm2::{Error, Multiname};
 
 /// Implements `Function`'s instance initializer.
 pub fn instance_init<'gc>(
@@ -258,18 +260,27 @@ pub fn create_class<'gc>(
         AS3_INSTANCE_METHODS,
     );
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[
-        ("prototype", Some(prototype), Some(set_prototype)),
-        ("length", Some(length), None),
+    let public_instance_properties = &[
+        (
+            "prototype",
+            Some(prototype as _),
+            Some(set_prototype as _),
+            None,
+        ),
+        (
+            "length",
+            Some(length as _),
+            None,
+            Some(Gc::new(
+                gc_context,
+                Multiname::new(namespaces.public_all(), "int"),
+            )),
+        ),
     ];
     function_i_class.define_builtin_instance_properties(
         gc_context,
         namespaces.public_all(),
-        PUBLIC_INSTANCE_PROPERTIES,
+        public_instance_properties,
     );
 
     const CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];

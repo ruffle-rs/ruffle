@@ -1,5 +1,7 @@
 //! `String` impl
 
+use gc_arena::Gc;
+
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::error::make_error_1004;
@@ -7,9 +9,9 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
 use crate::avm2::regexp::{RegExp, RegExpFlags};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::avm2::QName;
 use crate::avm2::{ArrayObject, ArrayStorage};
+use crate::avm2::{Error, Multiname};
 use crate::string::{AvmString, WString};
 
 // All of these methods will be defined as both
@@ -690,15 +692,16 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
         Method::from_builtin(call_handler, "<String call handler>", mc),
     );
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[("length", Some(length), None)];
+    let public_instance_properties = &[(
+        "length",
+        Some(length as _),
+        None,
+        Some(Gc::new(mc, Multiname::new(namespaces.public_all(), "int"))),
+    )];
     class.define_builtin_instance_properties(
         mc,
         namespaces.public_all(),
-        PUBLIC_INSTANCE_PROPERTIES,
+        public_instance_properties,
     );
     class.define_builtin_instance_methods(mc, namespaces.as3, PUBLIC_INSTANCE_AND_PROTO_METHODS);
 
