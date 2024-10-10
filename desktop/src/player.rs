@@ -9,7 +9,7 @@ use crate::gui::{FilePicker, MovieView};
 use crate::preferences::GlobalPreferences;
 use crate::{CALLSTACK, RENDER_INFO, SWF_INFO};
 use anyhow::anyhow;
-use ruffle_core::backend::navigator::{OpenURLMode, SocketMode};
+use ruffle_core::backend::navigator::SocketMode;
 use ruffle_core::config::Letterbox;
 use ruffle_core::events::{GamepadButton, KeyCode};
 use ruffle_core::{DefaultFont, LoadBehavior, Player, PlayerBuilder, PlayerEvent};
@@ -48,7 +48,6 @@ pub struct LaunchOptions {
     pub fullscreen: bool,
     pub save_directory: PathBuf,
     pub cache_directory: PathBuf,
-    pub open_url_mode: OpenURLMode,
     pub filesystem_access_mode: FilesystemAccessMode,
     pub gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
     pub avm2_optimizer_enabled: bool,
@@ -97,7 +96,6 @@ impl From<&GlobalPreferences> for LaunchOptions {
             fullscreen: value.cli.fullscreen,
             save_directory: value.cli.save_directory.clone(),
             cache_directory: value.cli.cache_directory.clone(),
-            open_url_mode: value.cli.open_url_mode.unwrap_or_default().into(),
             filesystem_access_mode: value.cli.filesystem_access_mode,
             socket_allowed: HashSet::from_iter(value.cli.socket_allow.iter().cloned()),
             tcp_connections: value.cli.tcp_connections,
@@ -206,7 +204,6 @@ impl ActivePlayer {
                     fullscreen: opt.fullscreen,
                     save_directory: opt.save_directory.clone(),
                     cache_directory: opt.cache_directory.clone(),
-                    open_url_mode: opt.open_url_mode,
                     filesystem_access_mode: opt.filesystem_access_mode,
                     gamepad_button_mapping: opt.gamepad_button_mapping.clone(),
                     avm2_optimizer_enabled: opt.avm2_optimizer_enabled,
