@@ -55,6 +55,7 @@ mod regexp_object;
 mod responder_object;
 mod script_object;
 mod shader_data_object;
+mod shared_object_object;
 mod socket_object;
 mod sound_object;
 mod soundchannel_object;
@@ -127,6 +128,9 @@ pub use crate::avm2::object::script_object::{
 pub use crate::avm2::object::shader_data_object::{
     shader_data_allocator, ShaderDataObject, ShaderDataObjectWeak,
 };
+pub use crate::avm2::object::shared_object_object::{
+    shared_object_allocator, SharedObjectObject, SharedObjectObjectWeak,
+};
 pub use crate::avm2::object::socket_object::{socket_allocator, SocketObject, SocketObjectWeak};
 pub use crate::avm2::object::sound_object::{
     sound_allocator, QueuedPlay, SoundObject, SoundObjectWeak,
@@ -198,6 +202,7 @@ use crate::font::Font;
         FileReferenceObject(FileReferenceObject<'gc>),
         FontObject(FontObject<'gc>),
         LocalConnectionObject(LocalConnectionObject<'gc>),
+        SharedObjectObject(SharedObjectObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -1368,6 +1373,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn as_file_reference(&self) -> Option<FileReferenceObject<'gc>> {
         None
     }
+
+    fn as_shared_object(&self) -> Option<SharedObjectObject<'gc>> {
+        None
+    }
 }
 
 pub enum ObjectPtr {}
@@ -1419,6 +1428,7 @@ impl<'gc> Object<'gc> {
             Self::FileReferenceObject(o) => WeakObject::FileReferenceObject(FileReferenceObjectWeak(Gc::downgrade(o.0))),
             Self::FontObject(o) => WeakObject::FontObject(FontObjectWeak(Gc::downgrade(o.0))),
             Self::LocalConnectionObject(o) => WeakObject::LocalConnectionObject(LocalConnectionObjectWeak(Gc::downgrade(o.0))),
+            Self::SharedObjectObject(o) => WeakObject::SharedObjectObject(SharedObjectObjectWeak(Gc::downgrade(o.0))),
         }
     }
 }
@@ -1480,6 +1490,7 @@ pub enum WeakObject<'gc> {
     FileReferenceObject(FileReferenceObjectWeak<'gc>),
     FontObject(FontObjectWeak<'gc>),
     LocalConnectionObject(LocalConnectionObjectWeak<'gc>),
+    SharedObjectObject(SharedObjectObjectWeak<'gc>),
 }
 
 impl<'gc> WeakObject<'gc> {
@@ -1524,6 +1535,7 @@ impl<'gc> WeakObject<'gc> {
             Self::FileReferenceObject(o) => FileReferenceObject(o.0.upgrade(mc)?).into(),
             Self::FontObject(o) => FontObject(o.0.upgrade(mc)?).into(),
             Self::LocalConnectionObject(o) => LocalConnectionObject(o.0.upgrade(mc)?).into(),
+            Self::SharedObjectObject(o) => SharedObjectObject(o.0.upgrade(mc)?).into(),
         })
     }
 }

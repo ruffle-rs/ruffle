@@ -119,3 +119,33 @@ pub fn close<'gc>(
 
     Ok(Value::Undefined)
 }
+
+pub fn get_client<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(local_connection) = this.as_local_connection_object() {
+        Ok(local_connection.client().into())
+    } else {
+        Ok(Value::Undefined)
+    }
+}
+
+pub fn set_client<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(local_connection) = this.as_local_connection_object() {
+        let client_obj = args.try_get_object(activation, 0);
+
+        if let Some(client_obj) = client_obj {
+            local_connection.set_client(activation.gc(), client_obj);
+        } else {
+            return Err(make_error_2004(activation, Error2004Type::TypeError));
+        }
+    }
+
+    Ok(Value::Undefined)
+}

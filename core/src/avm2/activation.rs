@@ -761,21 +761,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let verified_info = method.verified_info.borrow();
         let exception_list = &verified_info.as_ref().unwrap().exceptions;
 
-        // Use `coerce_to_object` so that we handle primitives correctly.
-        let err_object = error.coerce_to_object(self);
         let last_ip = self.ip - 1;
         for e in exception_list {
             if last_ip >= e.from_offset as i32 && last_ip < e.to_offset as i32 {
-                let mut matches = false;
-                // A typeless catch block (e.g. `catch(er) { ... }`) will
-                // always match.
-                if e.target_class.is_none() {
-                    matches = true;
-                } else if let Ok(err_object) = err_object {
-                    let target_class = e.target_class.expect("Just confirmed to be non-None");
-
-                    matches = err_object.is_of_type(target_class);
-                }
+                let matches = if let Some(target_class) = e.target_class {
+                    // This ensures null and undefined don't match
+                    error.is_of_type(self, target_class)
+                } else {
+                    // A typeless catch block (i.e. `catch(err:*) { ... }`) will
+                    // always match.
+                    true
+                };
 
                 if matches {
                     #[cfg(feature = "avm_debug")]
@@ -1719,7 +1715,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_get_slot(&mut self, index: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
+        let object = self
+            .pop_stack()
+            .null_check(self, None)?
+            .as_object()
+            .expect("Cannot get_slot on primitive");
         let value = object.get_slot(index);
 
         self.push_stack(value);
@@ -1729,7 +1729,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_set_slot(&mut self, index: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack();
-        let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
+        let object = self
+            .pop_stack()
+            .null_check(self, None)?
+            .as_object()
+            .expect("Cannot set_slot on primitive");
 
         object.set_slot(index, value, self)?;
 
@@ -1738,7 +1742,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_set_slot_no_coerce(&mut self, index: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let value = self.pop_stack();
-        let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
+        let object = self
+            .pop_stack()
+            .null_check(self, None)?
+            .as_object()
+            .expect("Cannot set_slot on primitive");
 
         object.set_slot_no_coerce(index, value, self.context.gc_context);
 
@@ -1994,16 +2002,18 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_check_filter(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let xml = self.avm2().class_defs().xml;
         let xml_list = self.avm2().class_defs().xml_list;
-        let value = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
+        let value = self.pop_stack().null_check(self, None)?;
 
-        if value.is_of_type(xml) || value.is_of_type(xml_list) {
+        if value.is_of_type(self, xml) || value.is_of_type(self, xml_list) {
             self.push_stack(value);
         } else {
+            let class_name = value.instance_of_class_name(self);
+
             return Err(Error::AvmError(type_error(
                 self,
                 &format!(
                     "Error #1123: Filter operator not supported on type {}.",
-                    value.instance_of_class_name(self.context.gc_context)
+                    class_name
                 ),
                 1123,
             )?));
