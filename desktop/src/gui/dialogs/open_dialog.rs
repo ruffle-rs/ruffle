@@ -5,7 +5,7 @@ use crate::player::LaunchOptions;
 use egui::{
     emath, Align2, Button, Checkbox, ComboBox, Grid, Layout, Slider, TextEdit, Ui, Widget, Window,
 };
-use ruffle_core::backend::navigator::{OpenURLMode, SocketMode};
+use ruffle_core::backend::navigator::SocketMode;
 use ruffle_core::config::Letterbox;
 use ruffle_core::{LoadBehavior, PlayerRuntime, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
@@ -403,33 +403,6 @@ impl OpenDialog {
                 ui.label(text(locale, "tcp-connections"));
                 self.tcp_connections
                     .ui(ui, &mut self.options.tcp_connections, locale);
-                ui.end_row();
-
-                // TODO: This should probably be a global setting somewhere, not per load
-                ui.label(text(locale, "open-url-mode"));
-                ComboBox::from_id_salt("open-file-advanced-options-open-url-mode")
-                    .selected_text(match self.options.open_url_mode {
-                        OpenURLMode::Allow => text(locale, "open-url-mode-allow"),
-                        OpenURLMode::Confirm => text(locale, "open-url-mode-confirm"),
-                        OpenURLMode::Deny => text(locale, "open-url-mode-deny"),
-                    })
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(
-                            &mut self.options.open_url_mode,
-                            OpenURLMode::Allow,
-                            text(locale, "open-url-mode-allow"),
-                        );
-                        ui.selectable_value(
-                            &mut self.options.open_url_mode,
-                            OpenURLMode::Confirm,
-                            text(locale, "open-url-mode-confirm"),
-                        );
-                        ui.selectable_value(
-                            &mut self.options.open_url_mode,
-                            OpenURLMode::Deny,
-                            text(locale, "open-url-mode-deny"),
-                        );
-                    });
                 ui.end_row();
 
                 ui.label(text(locale, "load-behavior"));

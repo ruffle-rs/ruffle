@@ -2,7 +2,7 @@ use crate::preferences::storage::StorageBackend;
 use crate::RUFFLE_VERSION;
 use anyhow::{anyhow, Error};
 use clap::{Parser, ValueEnum};
-use ruffle_core::backend::navigator::{OpenURLMode, SocketMode};
+use ruffle_core::backend::navigator::SocketMode;
 use ruffle_core::config::Letterbox;
 use ruffle_core::events::{GamepadButton, KeyCode};
 use ruffle_core::{LoadBehavior, PlayerRuntime, StageAlign, StageScaleMode};
@@ -192,8 +192,8 @@ pub struct Opt {
     pub frame_rate: Option<f64>,
 
     /// The handling mode of links opening a new website.
-    #[clap(long, default_value = "allow")]
-    pub open_url_mode: OpenURLMode,
+    #[clap(long)]
+    pub open_url_mode: Option<OpenUrlMode>,
 
     /// How to handle non-interactive filesystem access.
     #[clap(long, default_value = "ask")]
@@ -337,6 +337,36 @@ impl FromStr for GameModePreference {
         match s {
             "on" => Ok(GameModePreference::On),
             "off" => Ok(GameModePreference::Off),
+            _ => Err(()),
+        }
+    }
+}
+
+#[derive(Default, Debug, Copy, Clone, PartialEq, Eq, clap::ValueEnum)]
+pub enum OpenUrlMode {
+    #[default]
+    Confirm,
+    Allow,
+    Deny,
+}
+
+impl OpenUrlMode {
+    pub fn as_str(&self) -> Option<&'static str> {
+        match self {
+            OpenUrlMode::Confirm => None,
+            OpenUrlMode::Allow => Some("allow"),
+            OpenUrlMode::Deny => Some("deny"),
+        }
+    }
+}
+
+impl FromStr for OpenUrlMode {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "allow" => Ok(OpenUrlMode::Allow),
+            "deny" => Ok(OpenUrlMode::Deny),
             _ => Err(()),
         }
     }

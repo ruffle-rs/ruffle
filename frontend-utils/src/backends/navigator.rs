@@ -9,7 +9,7 @@ use futures_lite::FutureExt;
 use reqwest::{cookie, header, Proxy};
 use ruffle_core::backend::navigator::{
     async_return, create_fetch_error, get_encoding, ErrorResponse, NavigationMethod,
-    NavigatorBackend, OpenURLMode, OwnedFuture, Request, SocketMode, SuccessResponse,
+    NavigatorBackend, OwnedFuture, Request, SocketMode, SuccessResponse,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
@@ -28,7 +28,7 @@ use tracing::warn;
 use url::{ParseError, Url};
 
 pub trait NavigatorInterface: Clone + Send + 'static {
-    fn navigate_to_website(&self, url: Url, ask: bool);
+    fn navigate_to_website(&self, url: Url);
 
     fn open_file(&self, path: &Path) -> impl std::future::Future<Output = io::Result<File>> + Send;
 
@@ -57,8 +57,6 @@ pub struct ExternalNavigatorBackend<F: FutureSpawner, I: NavigatorInterface> {
 
     upgrade_to_https: bool,
 
-    open_url_mode: OpenURLMode,
-
     content: Rc<PlayingContent>,
 
     interface: I,
@@ -74,7 +72,6 @@ impl<F: FutureSpawner, I: NavigatorInterface> ExternalNavigatorBackend<F, I> {
         future_spawner: F,
         proxy: Option<Url>,
         upgrade_to_https: bool,
-        open_url_mode: OpenURLMode,
         socket_allowed: HashSet<String>,
         socket_mode: SocketMode,
         content: Rc<PlayingContent>,
@@ -125,7 +122,6 @@ impl<F: FutureSpawner, I: NavigatorInterface> ExternalNavigatorBackend<F, I> {
             client,
             base_url,
             upgrade_to_https,
-            open_url_mode,
             socket_allowed,
             socket_mode,
             content,
@@ -182,13 +178,7 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
             return;
         }
 
-        if self.open_url_mode == OpenURLMode::Deny {
-            tracing::warn!("SWF tried to open a website, but opening a website is not allowed");
-            return;
-        }
-
-        let ask = self.open_url_mode == OpenURLMode::Confirm;
-        self.interface.navigate_to_website(modified_url, ask);
+        self.interface.navigate_to_website(modified_url);
     }
 
     fn fetch(&self, request: Request) -> OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse> {
@@ -485,7 +475,7 @@ mod tests {
     use super::*;
 
     impl NavigatorInterface for () {
-        fn navigate_to_website(&self, _url: Url, _ask: bool) {}
+        fn navigate_to_website(&self, _url: Url) {}
 
         async fn open_file(&self, path: &Path) -> io::Result<File> {
             File::open(path)
@@ -554,7 +544,6 @@ mod tests {
             TestFutureSpawner,
             None,
             false,
-            OpenURLMode::Allow,
             Default::default(),
             if socket_allow {
                 SocketMode::Allow
