@@ -43,7 +43,7 @@ ruffle_web_common = { path = "common" }
 ruffle_render = { path = "../render" }
 ruffle_render_webgl = { path = "../render/webgl", optional = true }
 ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
-ruffle_video_software = { path = "../video/software" }
+ruffle_video_external = { path = "../video/external", features = ["webcodecs"] }
 url = { workspace = true }
 wasm-bindgen = { workspace = true }
 wasm-bindgen-futures = "0.4.43"
