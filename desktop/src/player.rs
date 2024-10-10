@@ -97,7 +97,7 @@ impl From<&GlobalPreferences> for LaunchOptions {
             fullscreen: value.cli.fullscreen,
             save_directory: value.cli.save_directory.clone(),
             cache_directory: value.cli.cache_directory.clone(),
-            open_url_mode: value.cli.open_url_mode,
+            open_url_mode: value.cli.open_url_mode.unwrap_or_default().into(),
             filesystem_access_mode: value.cli.filesystem_access_mode,
             socket_allowed: HashSet::from_iter(value.cli.socket_allow.iter().cloned()),
             tcp_connections: value.cli.tcp_connections,
