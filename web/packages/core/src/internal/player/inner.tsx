@@ -362,6 +362,19 @@ export class InnerPlayer {
     }
 
     /**
+     * Get the content of the next render as a blob. Result is null if the
+     * ruffle player is not initialized.
+     *
+     */
+    public async contentToBlob(): Promise<Blob | null> {
+        if (this.instance) {
+            return this.instance.contentToBlob();
+        } else {
+            return Promise.resolve(null);
+        }
+    }
+
+    /**
      * Add the volume control texts, set the controls to the current settings and
      * add event listeners to update the settings and controls when being changed.
      *
