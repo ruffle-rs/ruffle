@@ -3,7 +3,7 @@ mod write;
 
 pub mod storage;
 
-use crate::cli::{GameModePreference, Opt};
+use crate::cli::{GameModePreference, OpenUrlMode, Opt};
 use crate::gui::ThemePreference;
 use crate::log::FilenamePattern;
 use crate::preferences::read::read_preferences;
@@ -269,6 +269,7 @@ pub struct SavedGlobalPreferences {
     pub log: LogPreferences,
     pub storage: StoragePreferences,
     pub theme_preference: ThemePreference,
+    pub open_url_mode: OpenUrlMode,
 }
 
 impl Default for SavedGlobalPreferences {
@@ -291,6 +292,7 @@ impl Default for SavedGlobalPreferences {
             log: Default::default(),
             storage: Default::default(),
             theme_preference: Default::default(),
+            open_url_mode: Default::default(),
         }
     }
 }
