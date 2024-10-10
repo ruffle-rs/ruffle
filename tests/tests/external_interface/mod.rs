@@ -3,8 +3,8 @@
 #![allow(clippy::needless_pass_by_ref_mut)]
 
 use ruffle_core::context::UpdateContext;
-use ruffle_core::external::Value as ExternalValue;
-use ruffle_core::external::{ExternalInterfaceMethod, ExternalInterfaceProvider};
+use ruffle_core::external::ExternalInterfaceProvider;
+use ruffle_core::external::{Value as ExternalValue, Value};
 
 pub mod tests;
 
@@ -41,12 +41,17 @@ fn do_reentry(context: &mut UpdateContext<'_>, _args: &[ExternalValue]) -> Exter
 }
 
 impl ExternalInterfaceProvider for ExternalInterfaceTestProvider {
-    fn get_method(&self, name: &str) -> Option<Box<dyn ExternalInterfaceMethod>> {
+    fn call_method(
+        &self,
+        context: &mut UpdateContext<'_>,
+        name: &str,
+        args: &[ExternalValue],
+    ) -> ExternalValue {
         match name {
-            "trace" => Some(Box::new(do_trace)),
-            "ping" => Some(Box::new(do_ping)),
-            "reentry" => Some(Box::new(do_reentry)),
-            _ => None,
+            "trace" => do_trace(context, args),
+            "ping" => do_ping(context, args),
+            "reentry" => do_reentry(context, args),
+            _ => Value::Null,
         }
     }
 
