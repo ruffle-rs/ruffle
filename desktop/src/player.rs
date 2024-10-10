@@ -227,7 +227,6 @@ impl ActivePlayer {
             future_spawner,
             opt.proxy.clone(),
             opt.player.upgrade_to_https.unwrap_or_default(),
-            opt.open_url_mode,
             opt.socket_allowed.clone(),
             opt.tcp_connections.unwrap_or(SocketMode::Ask),
             Rc::new(content),
@@ -235,6 +234,7 @@ impl ActivePlayer {
                 event_loop.clone(),
                 movie_url.to_file_path().ok(),
                 opt.filesystem_access_mode,
+                opt.open_url_mode,
             ),
         );
 
