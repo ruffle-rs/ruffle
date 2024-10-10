@@ -10,6 +10,7 @@ const firefox = process.argv.includes("--firefox");
 const edge = process.argv.includes("--edge");
 const browserstack = process.argv.includes("--browserstack");
 const oldVersions = process.argv.includes("--oldVersions");
+const maxInstances = process.argv.includes("--parallel") ? 4 : 1;
 
 let user: string | undefined = undefined;
 let key: string | undefined = undefined;
@@ -22,7 +23,7 @@ if (chrome) {
         args.push("--headless");
     }
     capabilities.push({
-        "wdio:maxInstances": 1,
+        "wdio:maxInstances": maxInstances,
         browserName: "chrome",
         "goog:chromeOptions": {
             args,
@@ -36,7 +37,7 @@ if (edge) {
         args.push("--headless");
     }
     capabilities.push({
-        "wdio:maxInstances": 1,
+        "wdio:maxInstances": maxInstances,
         browserName: "MicrosoftEdge",
         "ms:edgeOptions": {
             args,
@@ -50,7 +51,7 @@ if (firefox) {
         args.push("-headless");
     }
     capabilities.push({
-        "wdio:maxInstances": 1,
+        "wdio:maxInstances": maxInstances,
         browserName: "firefox",
         "moz:firefoxOptions": {
             args,
@@ -219,7 +220,7 @@ export const config: Options.Testrunner = {
         "./test/js_api/*.ts",
         "./test/integration_tests/**/test.ts",
     ],
-    maxInstances: 10,
+    maxInstances: maxInstances,
     capabilities,
     logLevel: "info",
     bail: 0,
