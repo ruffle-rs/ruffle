@@ -213,6 +213,15 @@ impl GlobalPreferences {
         self.watchers.theme_preference_watcher.subscribe()
     }
 
+    pub fn open_url_mode(&self) -> OpenUrlMode {
+        self.cli.open_url_mode.unwrap_or_else(|| {
+            self.preferences
+                .lock()
+                .expect("Non-poisoned preferences")
+                .open_url_mode
+        })
+    }
+
     pub fn recents<R>(&self, fun: impl FnOnce(&Recents) -> R) -> R {
         fun(&self.recents.lock().expect("Recents is not reentrant"))
     }
