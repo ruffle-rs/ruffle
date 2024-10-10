@@ -914,9 +914,10 @@ impl<'gc> EditText<'gc> {
         {
             return;
         }
+        let zero_twips: Twips = Twips::from_pixels(0.0);
 
         context.transform_stack.push(&Transform {
-            matrix: Matrix::translate(origin.x(), origin.y()),
+            matrix: Matrix::translate(zero_twips, zero_twips),
             ..Default::default()
         });
 
