@@ -231,10 +231,10 @@ impl ActivePlayer {
             opt.tcp_connections.unwrap_or(SocketMode::Ask),
             Rc::new(content),
             DesktopNavigatorInterface::new(
+                preferences.clone(),
                 event_loop.clone(),
                 movie_url.to_file_path().ok(),
                 opt.filesystem_access_mode,
-                opt.open_url_mode,
             ),
         );
 
