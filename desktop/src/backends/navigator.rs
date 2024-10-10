@@ -1,4 +1,5 @@
 use rfd::{MessageButtons, MessageDialog, MessageDialogResult, MessageLevel};
+use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_frontend_utils::backends::navigator::NavigatorInterface;
 use std::fs::File;
 use std::io;
@@ -79,6 +80,8 @@ pub struct DesktopNavigatorInterface {
 
     filesystem_access_mode: FilesystemAccessMode,
 
+    open_url_mode: OpenURLMode,
+
     allow_list: PathAllowList,
 }
 
@@ -87,11 +90,13 @@ impl DesktopNavigatorInterface {
         event_loop: EventLoopProxy<RuffleEvent>,
         movie_path: Option<PathBuf>,
         filesystem_access_mode: FilesystemAccessMode,
+        open_url_mode: OpenURLMode,
     ) -> Self {
         Self {
             event_loop: Arc::new(Mutex::new(event_loop)),
             allow_list: PathAllowList::new(movie_path),
             filesystem_access_mode,
+            open_url_mode,
         }
     }
 
@@ -114,8 +119,13 @@ impl DesktopNavigatorInterface {
 }
 
 impl NavigatorInterface for DesktopNavigatorInterface {
-    fn navigate_to_website(&self, url: Url, ask: bool) {
-        if !ask {
+    fn navigate_to_website(&self, url: Url) {
+        if self.open_url_mode == OpenURLMode::Deny {
+            tracing::warn!("SWF tried to open a website, but opening a website is not allowed");
+            return;
+        }
+
+        if self.open_url_mode == OpenURLMode::Allow {
             open_url(&url);
             return;
         }
