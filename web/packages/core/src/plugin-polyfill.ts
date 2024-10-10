@@ -180,15 +180,15 @@ FLASH_PLUGIN.install({
     enabledPlugin: FLASH_PLUGIN,
 });
 
-declare global {
-    interface PluginArray {
-        install?: (plugin: Plugin) => void;
-    }
-
-    interface MimeTypeArray {
-        install?: (mimeType: MimeType) => void;
-    }
-}
+// declare global {
+//     interface PluginArray {
+//         install?: (plugin: Plugin) => void;
+//     }
+//
+//     interface MimeTypeArray {
+//         install?: (mimeType: MimeType) => void;
+//     }
+// }
 
 /**
  * Install a fake plugin such that detectors will see it in `navigator.plugins`.
@@ -205,13 +205,45 @@ export function installPlugin(plugin: RufflePlugin): void {
         return;
     }
     if (!("install" in navigator.plugins) || !navigator.plugins["install"]) {
+        const plugins = new RufflePluginArray(navigator.plugins);
+
+        // bypass missing method
+        // @ts-expect-error: We're adding a method to the object
+        PluginArray.prototype.install = function (_) {};
+
+        const proto = Object.create(PluginArray.prototype);
+        Object.setPrototypeOf(plugins, proto);
+
         Object.defineProperty(navigator, "plugins", {
-            value: new RufflePluginArray(navigator.plugins),
+            value: plugins,
             writable: false,
+        });
+
+        // bypass TypeError on Firefox
+        Object.defineProperty(navigator.plugins, "namedItem", {
+            configurable: false,
+            enumerable: true,
+            value: function namedItem(str: string) {
+                return this[str] || null;
+            },
+        });
+
+        Object.defineProperty(navigator.plugins, "refresh", {
+            configurable: false,
+            enumerable: true,
+            value: function refresh() {},
+        });
+
+        Object.defineProperty(navigator.plugins, "item", {
+            configurable: false,
+            enumerable: true,
+            value: function item(index: number) {
+                return this[index] || null;
+            },
         });
     }
 
-    const plugins = navigator.plugins;
+    const plugins = navigator.plugins as RufflePluginArray;
     plugins.install!(plugin);
 
     if (
@@ -224,7 +256,7 @@ export function installPlugin(plugin: RufflePlugin): void {
         });
     }
 
-    const mimeTypes = navigator.mimeTypes;
+    const mimeTypes = navigator.mimeTypes as RuffleMimeTypeArray;
     for (let i = 0; i < plugin.length; i += 1) {
         mimeTypes.install!(plugin[i]!);
     }
