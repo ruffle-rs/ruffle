@@ -1,3 +1,4 @@
+use crate::cli::OpenUrlMode;
 use crate::custom_event::RuffleEvent;
 use crate::gui::dialogs::message_dialog::MessageDialogConfiguration;
 use crate::gui::{DialogDescriptor, FilePicker, LocalizableText};
@@ -9,7 +10,6 @@ use fontdb::Family;
 use rfd::{
     AsyncFileDialog, FileHandle, MessageButtons, MessageDialog, MessageDialogResult, MessageLevel,
 };
-use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_core::backend::ui::{
     DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter, FontDefinition,
     FullscreenError, LanguageIdentifier, MouseCursor, UiBackend,
@@ -123,7 +123,6 @@ pub struct DesktopUiBackend {
     clipboard: Clipboard,
     preferences: GlobalPreferences,
     preferred_cursor: MouseCursor,
-    open_url_mode: OpenURLMode,
     font_database: Rc<fontdb::Database>,
     file_picker: FilePicker,
 }
@@ -132,7 +131,6 @@ impl DesktopUiBackend {
     pub fn new(
         window: Arc<Window>,
         event_loop: EventLoopProxy<RuffleEvent>,
-        open_url_mode: OpenURLMode,
         font_database: Rc<fontdb::Database>,
         preferences: GlobalPreferences,
         file_picker: FilePicker,
@@ -153,7 +151,6 @@ impl DesktopUiBackend {
             clipboard,
             preferences,
             preferred_cursor: MouseCursor::Arrow,
-            open_url_mode,
             font_database,
             file_picker,
         })
@@ -235,7 +232,8 @@ impl UiBackend for DesktopUiBackend {
             return;
         }
 
-        if self.open_url_mode == OpenURLMode::Confirm {
+        let open_url_mode = self.preferences.open_url_mode();
+        if open_url_mode == OpenUrlMode::Confirm {
             let message = format!("The SWF file wants to open the website {}", url);
             // TODO: Add a checkbox with a GUI toolkit
             let confirm = MessageDialog::new()
@@ -249,7 +247,7 @@ impl UiBackend for DesktopUiBackend {
                 tracing::info!("SWF tried to open a website, but the user declined the request");
                 return;
             }
-        } else if self.open_url_mode == OpenURLMode::Deny {
+        } else if open_url_mode == OpenUrlMode::Deny {
             tracing::warn!("SWF tried to open a website, but opening a website is not allowed");
             return;
         }
