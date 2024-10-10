@@ -2,7 +2,7 @@ use crate::preferences::storage::StorageBackend;
 use crate::RUFFLE_VERSION;
 use anyhow::{anyhow, Error};
 use clap::{Parser, ValueEnum};
-use ruffle_core::backend::navigator::{OpenURLMode, SocketMode};
+use ruffle_core::backend::navigator::SocketMode;
 use ruffle_core::config::Letterbox;
 use ruffle_core::events::{GamepadButton, KeyCode};
 use ruffle_core::{LoadBehavior, PlayerRuntime, StageAlign, StageScaleMode};
@@ -368,16 +368,6 @@ impl FromStr for OpenUrlMode {
             "allow" => Ok(OpenUrlMode::Allow),
             "deny" => Ok(OpenUrlMode::Deny),
             _ => Err(()),
-        }
-    }
-}
-
-impl From<OpenUrlMode> for OpenURLMode {
-    fn from(value: OpenUrlMode) -> Self {
-        match value {
-            OpenUrlMode::Confirm => OpenURLMode::Confirm,
-            OpenUrlMode::Allow => OpenURLMode::Allow,
-            OpenUrlMode::Deny => OpenURLMode::Deny,
         }
     }
 }

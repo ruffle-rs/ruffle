@@ -7,7 +7,7 @@ use gloo_net::websocket::{futures::WebSocket, Message};
 use js_sys::{Array, Promise, Uint8Array};
 use ruffle_core::backend::navigator::{
     async_return, create_fetch_error, create_specific_fetch_error, get_encoding, ErrorResponse,
-    NavigationMethod, NavigatorBackend, OpenURLMode, OwnedFuture, Request, SuccessResponse,
+    NavigationMethod, NavigatorBackend, OwnedFuture, Request, SuccessResponse,
 };
 use ruffle_core::config::NetworkingAccessMode;
 use ruffle_core::indexmap::IndexMap;
@@ -32,13 +32,29 @@ use web_sys::{
     RequestCredentials, RequestInit, Response as WebResponse,
 };
 
+/// The handling mode of links opening a new website.
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+pub enum OpenUrlMode {
+    /// Allow all links to open a new website.
+    #[serde(rename = "allow")]
+    Allow,
+
+    /// A confirmation dialog opens with every link trying to open a new website.
+    #[serde(rename = "confirm")]
+    Confirm,
+
+    /// Deny all links to open a new website.
+    #[serde(rename = "deny")]
+    Deny,
+}
+
 pub struct WebNavigatorBackend {
     log_subscriber: Arc<Layered<WASMLayer, Registry>>,
     allow_script_access: bool,
     allow_networking: NetworkingAccessMode,
     upgrade_to_https: bool,
     base_url: Option<Url>,
-    open_url_mode: OpenURLMode,
+    open_url_mode: OpenUrlMode,
     socket_proxies: Vec<SocketProxy>,
     credential_allow_list: Vec<String>,
     player: Weak<Mutex<Player>>,
@@ -52,7 +68,7 @@ impl WebNavigatorBackend {
         upgrade_to_https: bool,
         base_url: Option<String>,
         log_subscriber: Arc<Layered<WASMLayer, Registry>>,
-        open_url_mode: OpenURLMode,
+        open_url_mode: OpenUrlMode,
         socket_proxies: Vec<SocketProxy>,
         credential_allow_list: Vec<String>,
     ) -> Self {
@@ -168,7 +184,7 @@ impl NavigatorBackend for WebNavigatorBackend {
         let window = window().expect("window()");
 
         if url.scheme() != "javascript" {
-            if self.open_url_mode == OpenURLMode::Confirm {
+            if self.open_url_mode == OpenUrlMode::Confirm {
                 let message = format!("The SWF file wants to open the website {}", &url);
                 // TODO: Add a checkbox with a GUI toolkit
                 let confirm = window
@@ -180,7 +196,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                     );
                     return;
                 }
-            } else if self.open_url_mode == OpenURLMode::Deny {
+            } else if self.open_url_mode == OpenUrlMode::Deny {
                 tracing::warn!("SWF tried to open a website, but opening a website is not allowed");
                 return;
             }
