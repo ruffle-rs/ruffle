@@ -264,17 +264,19 @@ impl ActivePlayer {
             }
         }
 
+        #[cfg_attr(not(target_os = "linux"), allow(unused))]
         let gamemode_enable = match preferences.gamemode_preference() {
             GameModePreference::Default => {
                 preferences.graphics_power_preference() == PowerPreference::High
             }
-            GameModePreference::On => true,
+            GameModePreference::On => {
+                if cfg!(not(target_os = "linux")) {
+                    tracing::warn!("Cannot enable GameMode, as it is supported only on Linux");
+                }
+                true
+            }
             GameModePreference::Off => false,
         };
-
-        if cfg!(not(target_os = "linux")) && gamemode_enable {
-            tracing::warn!("Cannot enable GameMode, as it is supported only on Linux");
-        }
 
         let renderer = WgpuRenderBackend::new(descriptors, movie_view)
             .map_err(|e| anyhow!(e.to_string()))
