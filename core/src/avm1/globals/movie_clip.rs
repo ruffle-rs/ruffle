@@ -400,12 +400,10 @@ fn line_style<'gc>(
             .with_is_pixel_hinted(is_pixel_hinted)
             .with_allow_close(false);
         movie_clip
-            .drawing(activation.context.gc_context)
+            .drawing_mut(activation.gc())
             .set_line_style(Some(line_style));
     } else {
-        movie_clip
-            .drawing(activation.context.gc_context)
-            .set_line_style(None);
+        movie_clip.drawing_mut(activation.gc()).set_line_style(None);
     }
     Ok(Value::Undefined)
 }
@@ -486,7 +484,7 @@ fn line_gradient_style<'gc>(
             },
         };
         movie_clip
-            .drawing(activation.context.gc_context)
+            .drawing_mut(activation.gc())
             .set_line_fill_style(style);
     }
     Ok(Value::Undefined)
@@ -579,12 +577,10 @@ fn begin_fill<'gc>(
             / 100.0
             * 255.0;
         movie_clip
-            .drawing(activation.context.gc_context)
+            .drawing_mut(activation.gc())
             .set_fill_style(Some(FillStyle::Color(Color::from_rgb(rgb, alpha as u8))));
     } else {
-        movie_clip
-            .drawing(activation.context.gc_context)
-            .set_fill_style(None);
+        movie_clip.drawing_mut(activation.gc()).set_fill_style(None);
     }
     Ok(Value::Undefined)
 }
@@ -604,9 +600,7 @@ fn begin_bitmap_fill<'gc>(
                 width: bitmap_data.width() as u16,
                 height: bitmap_data.height() as u16,
             };
-            let id = movie_clip
-                .drawing(activation.context.gc_context)
-                .add_bitmap(bitmap);
+            let id = movie_clip.drawing_mut(activation.gc()).add_bitmap(bitmap);
 
             let mut matrix = avm1::globals::matrix::object_to_matrix_or_default(
                 args.get(1)
@@ -640,7 +634,7 @@ fn begin_bitmap_fill<'gc>(
         None
     };
     movie_clip
-        .drawing(activation.context.gc_context)
+        .drawing_mut(activation.gc())
         .set_fill_style(fill_style);
     Ok(Value::Undefined)
 }
@@ -652,9 +646,7 @@ fn begin_gradient_fill<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if Value::Undefined == *args.get(0).unwrap_or(&Value::Undefined) {
         // The path has no fill if the first parameter is `undefined`, or if no parameters are passed.
-        movie_clip
-            .drawing(activation.context.gc_context)
-            .set_fill_style(None);
+        movie_clip.drawing_mut(activation.gc()).set_fill_style(None);
     } else if let (Some(gradient_type), Some(colors), Some(alphas), Some(ratios), Some(matrix)) = (
         args.get(0),
         args.get(1),
@@ -718,7 +710,7 @@ fn begin_gradient_fill<'gc>(
             },
         };
         movie_clip
-            .drawing(activation.context.gc_context)
+            .drawing_mut(activation.gc())
             .set_fill_style(Some(style));
     }
     Ok(Value::Undefined)
@@ -733,7 +725,7 @@ fn move_to<'gc>(
         let x = x.coerce_to_f64(activation)?;
         let y = y.coerce_to_f64(activation)?;
         movie_clip
-            .drawing(activation.context.gc_context)
+            .drawing_mut(activation.gc())
             .draw_command(DrawCommand::MoveTo(Point::from_pixels(x, y)));
     }
     Ok(Value::Undefined)
@@ -748,7 +740,7 @@ fn line_to<'gc>(
         let x = x.coerce_to_f64(activation)?;
         let y = y.coerce_to_f64(activation)?;
         movie_clip
-            .drawing(activation.context.gc_context)
+            .drawing_mut(activation.gc())
             .draw_command(DrawCommand::LineTo(Point::from_pixels(x, y)));
     }
     Ok(Value::Undefined)
@@ -765,7 +757,7 @@ fn curve_to<'gc>(
         let anchor_x = anchor_x.coerce_to_f64(activation)?;
         let anchor_y = anchor_y.coerce_to_f64(activation)?;
         movie_clip
-            .drawing(activation.context.gc_context)
+            .drawing_mut(activation.gc())
             .draw_command(DrawCommand::QuadraticCurveTo {
                 control: Point::from_pixels(control_x, control_y),
                 anchor: Point::from_pixels(anchor_x, anchor_y),
@@ -779,9 +771,7 @@ fn end_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    movie_clip
-        .drawing(activation.context.gc_context)
-        .set_fill_style(None);
+    movie_clip.drawing_mut(activation.gc()).set_fill_style(None);
     Ok(Value::Undefined)
 }
 
@@ -790,7 +780,7 @@ fn clear<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    movie_clip.drawing(activation.context.gc_context).clear();
+    movie_clip.drawing_mut(activation.gc()).clear();
     Ok(Value::Undefined)
 }
 
@@ -1011,7 +1001,7 @@ pub fn clone_sprite<'gc>(
 
     new_clip.set_clip_event_handlers(context.gc_context, movie_clip.clip_actions().to_vec());
 
-    *new_clip.drawing(context.gc_context) = movie_clip.drawing(context.gc_context).clone();
+    *new_clip.drawing_mut(context.gc()) = movie_clip.drawing().clone();
     // TODO: Any other properties we should copy...?
     // Definitely not ScriptObject properties.
 

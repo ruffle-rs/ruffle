@@ -102,7 +102,7 @@ impl<'gc> Graphic<'gc> {
         ))
     }
 
-    pub fn drawing(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, Drawing> {
+    pub fn drawing_mut(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, Drawing> {
         RefMut::map(self.0.write(gc_context), |w| {
             w.drawing.get_or_insert_with(Drawing::new)
         })
@@ -258,7 +258,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn as_drawing(&self, gc_context: &Mutation<'gc>) -> Option<RefMut<'_, Drawing>> {
-        Some(self.drawing(gc_context))
+        Some(self.drawing_mut(gc_context))
     }
 }
 
