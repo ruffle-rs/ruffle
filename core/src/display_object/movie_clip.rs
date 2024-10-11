@@ -160,8 +160,9 @@ pub struct MovieClipData<'gc> {
     frame_scripts: Vec<Option<Avm2Object<'gc>>>,
     #[collect(require_static)]
     flags: MovieClipFlags,
+    /// This is lazily allocated on demand, to make `MovieClipData` smaller in the common case.
     #[collect(require_static)]
-    drawing: Drawing,
+    drawing: Option<Box<Drawing>>,
     avm2_enabled: bool,
 
     /// Show a hand cursor when the clip is in button mode.
@@ -212,7 +213,7 @@ impl<'gc> MovieClip<'gc> {
                 clip_event_flags: ClipEventFlag::empty(),
                 frame_scripts: Vec::new(),
                 flags: MovieClipFlags::empty(),
-                drawing: Drawing::new(),
+                drawing: None,
                 avm2_enabled: true,
                 avm2_use_hand_cursor: true,
                 button_mode: false,
@@ -254,7 +255,7 @@ impl<'gc> MovieClip<'gc> {
                 clip_event_flags: ClipEventFlag::empty(),
                 frame_scripts: Vec::new(),
                 flags: MovieClipFlags::empty(),
-                drawing: Drawing::new(),
+                drawing: None,
                 avm2_enabled: true,
                 avm2_use_hand_cursor: true,
                 button_mode: false,
@@ -299,7 +300,7 @@ impl<'gc> MovieClip<'gc> {
                 clip_event_flags: ClipEventFlag::empty(),
                 frame_scripts: Vec::new(),
                 flags: MovieClipFlags::PLAYING,
-                drawing: Drawing::new(),
+                drawing: None,
                 avm2_enabled: true,
                 avm2_use_hand_cursor: true,
                 button_mode: false,
@@ -354,7 +355,7 @@ impl<'gc> MovieClip<'gc> {
                 clip_event_flags: ClipEventFlag::empty(),
                 frame_scripts: Vec::new(),
                 flags: MovieClipFlags::PLAYING,
-                drawing: Drawing::new(),
+                drawing: None,
                 avm2_enabled: true,
                 avm2_use_hand_cursor: true,
                 button_mode: false,
@@ -420,7 +421,7 @@ impl<'gc> MovieClip<'gc> {
                 clip_event_flags: ClipEventFlag::empty(),
                 frame_scripts: Vec::new(),
                 flags: MovieClipFlags::PLAYING,
-                drawing: Drawing::new(),
+                drawing: None,
                 avm2_enabled: true,
                 avm2_use_hand_cursor: true,
                 button_mode: false,
@@ -2353,11 +2354,14 @@ impl<'gc> MovieClip<'gc> {
     pub fn drawing_mut(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, Drawing> {
         // We're about to change graphics, so invalidate on the next frame
         self.invalidate_cached_bitmap(gc_context);
-        RefMut::map(self.0.write(gc_context), |s| &mut s.drawing)
+        RefMut::map(self.0.write(gc_context), |this| {
+            &mut **this.drawing.get_or_insert_with(Default::default)
+        })
     }
 
-    pub fn drawing(&self) -> Ref<'_, Drawing> {
-        Ref::map(self.0.read(), |s| &s.drawing)
+    pub fn drawing(&self) -> Option<Ref<'_, Drawing>> {
+        let read = Ref::map(self.0.read(), |s| &s.drawing);
+        Ref::filter_map(read, Option::as_deref).ok()
     }
 
     pub fn is_button_mode(&self, context: &mut UpdateContext<'gc>) -> bool {
@@ -2745,12 +2749,16 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
-        self.0.read().drawing.render(context);
+        if let Some(drawing) = self.drawing() {
+            drawing.render(context);
+        }
         self.render_children(context);
     }
 
     fn self_bounds(&self) -> Rectangle<Twips> {
-        self.0.read().drawing.self_bounds().clone()
+        self.drawing()
+            .map(|d| d.self_bounds().clone())
+            .unwrap_or_default()
     }
 
     fn hit_test_shape(
@@ -2801,8 +2809,10 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             }
 
             let point = local_matrix * point;
-            if self.0.read().drawing.hit_test(point, &local_matrix) {
-                return true;
+            if let Some(drawing) = self.drawing() {
+                if drawing.hit_test(point, &local_matrix) {
+                    return true;
+                }
             }
         }
 
@@ -3147,8 +3157,10 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             // Check drawing, because this selects the current clip, it must have mouse enabled
             if self.mouse_enabled() && check_non_interactive {
                 let point = local_matrix * point;
-                if self.0.read().drawing.hit_test(point, &local_matrix) {
-                    return Some(this);
+                if let Some(drawing) = self.drawing() {
+                    if drawing.hit_test(point, &local_matrix) {
+                        return Some(this);
+                    }
                 }
             }
         }
@@ -3288,12 +3300,14 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             if self.world_bounds().contains(point) {
                 let point = local_matrix * point;
 
-                if self.0.read().drawing.hit_test(point, &local_matrix) {
-                    return if self.mouse_enabled() {
-                        Avm2MousePick::Hit((*self).into())
-                    } else {
-                        Avm2MousePick::PropagateToParent
-                    };
+                if let Some(drawing) = self.drawing() {
+                    if drawing.hit_test(point, &local_matrix) {
+                        return if self.mouse_enabled() {
+                            Avm2MousePick::Hit((*self).into())
+                        } else {
+                            Avm2MousePick::PropagateToParent
+                        };
+                    }
                 }
             }
         }

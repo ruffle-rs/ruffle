@@ -34,8 +34,9 @@ pub struct GraphicData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: gc_arena::Gc<'gc, GraphicStatic>,
     avm2_object: Option<Avm2Object<'gc>>,
+    /// This is lazily allocated on demand, to make `GraphicData` smaller in the common case.
     #[collect(require_static)]
-    drawing: Option<Drawing>,
+    drawing: Option<Box<Drawing>>,
 }
 
 impl<'gc> Graphic<'gc> {
@@ -89,7 +90,6 @@ impl<'gc> Graphic<'gc> {
             },
             movie: context.swf.clone(),
         };
-        let drawing = Drawing::new();
 
         Graphic(GcCell::new(
             context.gc_context,
@@ -97,14 +97,14 @@ impl<'gc> Graphic<'gc> {
                 base: Default::default(),
                 static_data: gc_arena::Gc::new(context.gc_context, static_data),
                 avm2_object: None,
-                drawing: Some(drawing),
+                drawing: None,
             },
         ))
     }
 
     pub fn drawing_mut(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, Drawing> {
         RefMut::map(self.0.write(gc_context), |w| {
-            w.drawing.get_or_insert_with(Drawing::new)
+            &mut **w.drawing.get_or_insert_with(Default::default)
         })
     }
 }
