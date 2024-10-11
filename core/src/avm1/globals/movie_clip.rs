@@ -1001,7 +1001,9 @@ pub fn clone_sprite<'gc>(
 
     new_clip.set_clip_event_handlers(context.gc_context, movie_clip.clip_actions().to_vec());
 
-    *new_clip.drawing_mut(context.gc()) = movie_clip.drawing().clone();
+    if let Some(drawing) = movie_clip.drawing().as_deref().cloned() {
+        *new_clip.drawing_mut(context.gc()) = drawing;
+    }
     // TODO: Any other properties we should copy...?
     // Definitely not ScriptObject properties.
 
