@@ -315,6 +315,18 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
         receiver: Receiver<Vec<u8>>,
         sender: Sender<SocketAction>,
     ) {
+        /// Tries to send the given action properly handling failures.
+        ///
+        /// Returns `true` when the action has been sent properly,
+        /// `false` when the channel is closed.
+        async fn send_action(sender: &Sender<SocketAction>, action: SocketAction) -> bool {
+            sender
+                .send(action)
+                .await
+                .inspect_err(|err| tracing::warn!("Failed to send SocketAction: {}", err))
+                .is_ok()
+        }
+
         let addr = format!("{}:{}", host, port);
         let is_allowed = self.socket_allowed.contains(&addr);
         let socket_mode = self.socket_mode;
@@ -325,9 +337,8 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
                 (false, SocketMode::Allow) | (true, _) => {} // the process is allowed to continue. just dont do anything.
                 (false, SocketMode::Deny) => {
                     // Just fail the connection.
-                    sender
-                        .try_send(SocketAction::Connect(handle, ConnectionState::Failed))
-                        .expect("working channel send");
+                    let action = SocketAction::Connect(handle, ConnectionState::Failed);
+                    let _ = send_action(&sender, action).await;
 
                     tracing::warn!(
                         "SWF tried to open a socket, but opening a socket is not allowed"
@@ -340,10 +351,8 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
 
                     if !attempt_sandbox_connect {
                         // fail the connection.
-                        sender
-                            .try_send(SocketAction::Connect(handle, ConnectionState::Failed))
-                            .expect("working channel send");
-
+                        let action = SocketAction::Connect(handle, ConnectionState::Failed);
+                        let _ = send_action(&sender, action).await;
                         return;
                     }
                 }
@@ -359,23 +368,21 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
             let mut stream = match TcpStream::connect((host, port)).or(timeout).await {
                 Err(e) if e.kind() == ErrorKind::TimedOut => {
                     warn!("Connection to {}:{} timed out", host2, port);
-                    sender
-                        .try_send(SocketAction::Connect(handle, ConnectionState::TimedOut))
-                        .expect("working channel send");
+                    let action = SocketAction::Connect(handle, ConnectionState::TimedOut);
+                    let _ = send_action(&sender, action).await;
                     return;
                 }
                 Ok(stream) => {
-                    sender
-                        .try_send(SocketAction::Connect(handle, ConnectionState::Connected))
-                        .expect("working channel send");
-
+                    let action = SocketAction::Connect(handle, ConnectionState::Connected);
+                    if !send_action(&sender, action).await {
+                        return;
+                    }
                     stream
                 }
                 Err(err) => {
                     warn!("Failed to connect to {}:{}, error: {}", host2, port, err);
-                    sender
-                        .try_send(SocketAction::Connect(handle, ConnectionState::Failed))
-                        .expect("working channel send");
+                    let action = SocketAction::Connect(handle, ConnectionState::Failed);
+                    let _ = send_action(&sender, action).await;
                     return;
                 }
             };
@@ -392,17 +399,16 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
                     match read.read(&mut buffer).await {
                         Err(e) if e.kind() == ErrorKind::TimedOut => {} // try again later.
                         Err(_) | Ok(0) => {
-                            sender
-                                .try_send(SocketAction::Close(handle))
-                                .expect("working channel send");
+                            let _ = send_action(&sender, SocketAction::Close(handle)).await;
                             break;
                         }
                         Ok(read) => {
                             let buffer = buffer.into_iter().take(read).collect::<Vec<_>>();
 
-                            sender
-                                .try_send(SocketAction::Data(handle, buffer))
-                                .expect("working channel send");
+                            let action = SocketAction::Data(handle, buffer);
+                            if !send_action(&sender, action).await {
+                                return;
+                            }
                         }
                     };
                 }
@@ -431,9 +437,7 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
                         match write.write(&pending_write).await {
                             Err(e) if e.kind() == ErrorKind::TimedOut => {} // try again later.
                             Err(_) => {
-                                sender2
-                                    .try_send(SocketAction::Close(handle))
-                                    .expect("working channel send");
+                                let _ = send_action(&sender2, SocketAction::Close(handle)).await;
                                 return;
                             }
                             Ok(written) => {
