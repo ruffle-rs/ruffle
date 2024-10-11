@@ -2350,10 +2350,14 @@ impl<'gc> MovieClip<'gc> {
         self.0.write(context.gc_context).button_mode = button_mode;
     }
 
-    pub fn drawing(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, Drawing> {
+    pub fn drawing_mut(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, Drawing> {
         // We're about to change graphics, so invalidate on the next frame
         self.invalidate_cached_bitmap(gc_context);
         RefMut::map(self.0.write(gc_context), |s| &mut s.drawing)
+    }
+
+    pub fn drawing(&self) -> Ref<'_, Drawing> {
+        Ref::map(self.0.read(), |s| &s.drawing)
     }
 
     pub fn is_button_mode(&self, context: &mut UpdateContext<'gc>) -> bool {
@@ -2818,7 +2822,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn as_drawing(&self, gc_context: &Mutation<'gc>) -> Option<RefMut<'_, Drawing>> {
-        Some(self.drawing(gc_context))
+        Some(self.drawing_mut(gc_context))
     }
 
     fn post_instantiation(
