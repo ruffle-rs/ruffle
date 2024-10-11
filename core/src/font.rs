@@ -789,7 +789,7 @@ impl GlyphShape {
                 let mut glyph = glyph.borrow_mut();
                 Some(renderer.register_shape((&*glyph.shape()).into(), &NullBitmapSource))
             }
-            GlyphShape::Drawing(drawing) => Some(drawing.register_or_replace(renderer)),
+            GlyphShape::Drawing(drawing) => drawing.register_or_replace(renderer),
             GlyphShape::None => None,
         }
     }
