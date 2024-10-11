@@ -168,9 +168,12 @@ impl Drawing {
         self.bitmaps.clear();
         self.edge_bounds = Default::default();
         self.shape_bounds = Default::default();
-        self.dirty.set(true);
         self.cursor = Point::ZERO;
         self.fill_start = Point::ZERO;
+
+        // An empty drawing doesn't need to hold onto a `ShapeHandle`.
+        self.render_handle.take();
+        self.dirty.set(false);
     }
 
     pub fn set_line_style(&mut self, style: Option<LineStyle>) {
@@ -247,9 +250,9 @@ impl Drawing {
         id
     }
 
-    pub fn register_or_replace(&self, renderer: &mut dyn RenderBackend) -> ShapeHandle {
-        if self.dirty.get() || self.render_handle.borrow().is_none() {
-            self.dirty.set(false);
+    /// Obtain a `ShapeHandle` that represents this `Drawing`, or `None` if it is empty.
+    pub fn register_or_replace(&self, renderer: &mut dyn RenderBackend) -> Option<ShapeHandle> {
+        if self.dirty.get() {
             let mut paths = Vec::with_capacity(self.paths.len());
 
             for path in &self.paths {
@@ -309,28 +312,32 @@ impl Drawing {
                 })
             }
 
-            let shape = DistilledShape {
-                paths,
-                shape_bounds: self.shape_bounds.clone(),
-                edge_bounds: self.edge_bounds.clone(),
-                id: 0,
+            let handle = if paths.is_empty() {
+                None
+            } else {
+                let shape = DistilledShape {
+                    paths,
+                    shape_bounds: self.shape_bounds.clone(),
+                    edge_bounds: self.edge_bounds.clone(),
+                    id: 0,
+                };
+                Some(renderer.register_shape(shape, self))
             };
-            let handle = renderer.register_shape(shape, self);
-            self.render_handle.replace(Some(handle.clone()));
+
+            self.dirty.set(false);
+            self.render_handle.replace(handle.clone());
             handle
         } else {
-            self.render_handle
-                .borrow()
-                .to_owned()
-                .expect("Render handle cannot be empty here, we guarded on is_none")
+            self.render_handle.borrow().to_owned()
         }
     }
 
     pub fn render(&self, context: &mut RenderContext) {
-        let handle = self.register_or_replace(context.renderer);
-        context
-            .commands
-            .render_shape(handle, context.transform_stack.transform());
+        if let Some(handle) = self.register_or_replace(context.renderer) {
+            context
+                .commands
+                .render_shape(handle, context.transform_stack.transform());
+        }
     }
 
     pub fn self_bounds(&self) -> &Rectangle<Twips> {
