@@ -201,6 +201,9 @@ pub struct SystemClassDefs<'gc> {
     pub graphicssolidfill: Class<'gc>,
     pub graphicsshaderfill: Class<'gc>,
     pub graphicsstroke: Class<'gc>,
+
+    pub cubetexture: Class<'gc>,
+    pub rectangletexture: Class<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -357,6 +360,9 @@ impl<'gc> SystemClassDefs<'gc> {
             graphicssolidfill: object,
             graphicsshaderfill: object,
             graphicsstroke: object,
+
+            cubetexture: object,
+            rectangletexture: object,
         }
     }
 }
@@ -959,6 +965,12 @@ pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
             ),
             ("flash.display", "GraphicsSolidFill", graphicssolidfill),
             ("flash.display", "GraphicsStroke", graphicsstroke),
+            ("flash.display3D.textures", "CubeTexture", cubetexture),
+            (
+                "flash.display3D.textures",
+                "RectangleTexture",
+                rectangletexture
+            ),
         ]
     );
 }

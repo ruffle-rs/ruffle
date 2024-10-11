@@ -599,6 +599,34 @@ pub fn set_render_to_texture<'gc>(
     let surface_selector = args.get_u32(activation, 3)?;
     let color_output_index = args.get_u32(activation, 4)?;
 
+    let mut error = None;
+    if texture.instance_class() == activation.avm2().class_defs().cubetexture {
+        if surface_selector > 5 {
+            error = Some((
+                3772,
+                "Error #3772: Cube textures need to have surfaceSelector [0..5].",
+            ));
+        }
+    } else if texture.instance_class() == activation.avm2().class_defs().rectangletexture {
+        if surface_selector != 0 {
+            error = Some((
+                3773,
+                "Error #3773: Rectangle textures need to have surfaceSelector = 0.",
+            ));
+        }
+    } else {
+        // normal Texture or video texture (but the latter should probably not be supported here anyway)
+        if surface_selector != 0 {
+            error = Some((
+                3771,
+                "Error #3771: 2D textures need to have surfaceSelector = 0.",
+            ));
+        }
+    }
+    if let Some((code, message)) = error {
+        return Err(Error::AvmError(argument_error(activation, message, code)?));
+    }
+
     if anti_alias != 0 {
         avm2_stub_method!(
             activation,
