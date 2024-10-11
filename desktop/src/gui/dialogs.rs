@@ -106,6 +106,16 @@ impl Dialogs {
         self.picker.clone()
     }
 
+    /// Close all dialogs that have someone waiting for an answer.
+    ///
+    /// This method may be used when the original receiver is closed,
+    /// e.g. by loading a new movie or destroying the existing one.
+    pub fn close_dialogs_with_notifiers(&mut self) {
+        self.network_access_dialog_queue.clear();
+        self.filesystem_access_dialog = None;
+        self.filesystem_access_dialog_queue.clear();
+    }
+
     pub fn recreate_open_dialog(
         &mut self,
         opt: LaunchOptions,

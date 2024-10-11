@@ -227,12 +227,18 @@ impl GuiController {
         response.consumed
     }
 
+    pub fn close_movie(&mut self, player: &mut PlayerController) {
+        player.destroy();
+        self.gui.on_player_destroyed();
+    }
+
     pub fn create_movie(
         &mut self,
         player: &mut PlayerController,
         opt: LaunchOptions,
         movie_url: Url,
     ) {
+        self.close_movie(player);
         let movie_view = MovieView::new(
             self.movie_view_renderer.clone(),
             &self.descriptors.device,

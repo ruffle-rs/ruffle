@@ -213,6 +213,11 @@ impl RuffleGui {
         self.context_menu.is_some()
     }
 
+    /// Notifies the GUI that the player has been destroyed.
+    fn on_player_destroyed(&mut self) {
+        self.dialogs.close_dialogs_with_notifiers();
+    }
+
     /// Notifies the GUI that a new player was created.
     fn on_player_created(
         &mut self,

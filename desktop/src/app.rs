@@ -555,7 +555,7 @@ impl ApplicationHandler<RuffleEvent> for App {
 
             (Some(main_window), RuffleEvent::CloseFile) => {
                 main_window.gui.window().set_title("Ruffle"); // Reset title since file has been closed.
-                main_window.player.destroy();
+                main_window.gui.close_movie(&mut main_window.player);
             }
 
             (Some(main_window), RuffleEvent::EnterFullScreen) => {
