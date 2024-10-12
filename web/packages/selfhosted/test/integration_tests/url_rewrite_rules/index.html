@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>url_rewrite_rules</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <script>
+        window.RufflePlayer = window.RufflePlayer || {};
+        window.RufflePlayer.config = {
+            "urlRewriteRules": [
+                // Rewriting to a relative URL
+                [/^https?:\/\/(example.com)\/(.*)\.test1$/, "$2.swf?v=$1/$2"],
+                // Rewriting to an absolute URL
+                [/^(.*)\.test2$/, "$1.swf?v=$1"],
+                // Rewriting a string (not a regex, [...], $... will do nothing)
+                ["http://www.example.com/[test]site.html", "https://www.example.com/$1/$&"],
+            ],
+        };
+    </script>
+</head>
+
+<body>
+    <div>
+        <object type="application/x-shockwave-flash" data="test.swf" width="100" height="100" id="objectElement"></object>
+    </div>
+</body>
+
+</html>
