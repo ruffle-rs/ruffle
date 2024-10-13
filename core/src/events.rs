@@ -743,6 +743,26 @@ impl ButtonKeyCode {
         num_traits::FromPrimitive::from_u8(n)
     }
 
+    pub fn from_key_code(key_code: KeyCode) -> Option<Self> {
+        Some(match key_code {
+            KeyCode::LEFT => ButtonKeyCode::Left,
+            KeyCode::RIGHT => ButtonKeyCode::Right,
+            KeyCode::HOME => ButtonKeyCode::Home,
+            KeyCode::END => ButtonKeyCode::End,
+            KeyCode::INSERT => ButtonKeyCode::Insert,
+            KeyCode::DELETE => ButtonKeyCode::Delete,
+            KeyCode::BACKSPACE => ButtonKeyCode::Backspace,
+            KeyCode::RETURN => ButtonKeyCode::Return,
+            KeyCode::UP => ButtonKeyCode::Up,
+            KeyCode::DOWN => ButtonKeyCode::Down,
+            KeyCode::PG_UP => ButtonKeyCode::PgUp,
+            KeyCode::PG_DOWN => ButtonKeyCode::PgDown,
+            KeyCode::ESCAPE => ButtonKeyCode::Escape,
+            KeyCode::TAB => ButtonKeyCode::Tab,
+            _ => return None,
+        })
+    }
+
     pub fn from_player_event(event: PlayerEvent) -> Option<Self> {
         match event {
             // ASCII characters convert directly to keyPress button events.
@@ -753,9 +773,7 @@ impl ButtonKeyCode {
             }
 
             // Special keys have custom values for keyPress.
-            PlayerEvent::KeyDown { key_code, .. } => {
-                crate::events::key_code_to_button_key_code(key_code)
-            }
+            PlayerEvent::KeyDown { key_code, .. } => Self::from_key_code(key_code),
             _ => None,
         }
     }
@@ -763,27 +781,6 @@ impl ButtonKeyCode {
     pub fn to_u8(&self) -> u8 {
         num_traits::ToPrimitive::to_u8(self).unwrap_or_default()
     }
-}
-
-pub fn key_code_to_button_key_code(key_code: KeyCode) -> Option<ButtonKeyCode> {
-    let out = match key_code {
-        KeyCode::LEFT => ButtonKeyCode::Left,
-        KeyCode::RIGHT => ButtonKeyCode::Right,
-        KeyCode::HOME => ButtonKeyCode::Home,
-        KeyCode::END => ButtonKeyCode::End,
-        KeyCode::INSERT => ButtonKeyCode::Insert,
-        KeyCode::DELETE => ButtonKeyCode::Delete,
-        KeyCode::BACKSPACE => ButtonKeyCode::Backspace,
-        KeyCode::RETURN => ButtonKeyCode::Return,
-        KeyCode::UP => ButtonKeyCode::Up,
-        KeyCode::DOWN => ButtonKeyCode::Down,
-        KeyCode::PG_UP => ButtonKeyCode::PgUp,
-        KeyCode::PG_DOWN => ButtonKeyCode::PgDown,
-        KeyCode::ESCAPE => ButtonKeyCode::Escape,
-        KeyCode::TAB => ButtonKeyCode::Tab,
-        _ => return None,
-    };
-    Some(out)
 }
 
 #[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
