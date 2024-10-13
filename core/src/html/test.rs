@@ -775,7 +775,7 @@ fn formatspans_replace_text_inbounds() {
         ],
     );
 
-    fs.replace_text(3, 6, WStr::from_units(b"123"), None);
+    fs.replace_text(3, 6, WStr::from_units(b"123"));
 
     assert_eq!(WStr::from_units(b"abc123ghi"), fs.text());
 
@@ -803,7 +803,7 @@ fn formatspans_replace_text_edgebounds() {
         ],
     );
 
-    fs.replace_text(8, 35, WStr::from_units(b"123"), None);
+    fs.replace_text(8, 35, WStr::from_units(b"123"));
 
     assert_eq!(WStr::from_units(b"abcdefgh123"), fs.text());
 
@@ -832,7 +832,7 @@ fn formatspans_replace_text_oob() {
         ],
     );
 
-    fs.replace_text(24, 35, WStr::from_units(b"123"), None);
+    fs.replace_text(24, 35, WStr::from_units(b"123"));
 
     assert_eq!(WStr::from_units(b"abcdefghi123"), fs.text());
 
@@ -861,7 +861,7 @@ fn formatspans_replace_text_degenerate() {
         ],
     );
 
-    fs.replace_text(52, 35, WStr::from_units(b"123"), None);
+    fs.replace_text(52, 35, WStr::from_units(b"123"));
 
     assert_eq!(WStr::from_units(b"abcdefghi"), fs.text());
 
