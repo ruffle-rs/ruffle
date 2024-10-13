@@ -982,16 +982,19 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
 
     if let Some(original_commands) = original_commands {
         let sub_commands = std::mem::replace(&mut context.commands, original_commands);
-        let render_blend_mode = if let ExtendedBlendMode::Shader = blend_mode {
-            // Note - Flash appears to let you set `dobj.blendMode = BlendMode.SHADER` without
-            // having `dobj.blendShader` result, but the resulting rendered displayobject
-            // seems to be corrupted. For now, let's panic, and see if any swfs actually
-            // rely on this behavior.
-            RenderBlendMode::Shader(this.blend_shader().expect("Missing blend shader"))
-        } else {
-            RenderBlendMode::Builtin(blend_mode.try_into().unwrap())
-        };
-        context.commands.blend(sub_commands, render_blend_mode);
+        // If there's nothing to draw, throw away the blend entirely.
+        if !sub_commands.is_empty() {
+            let render_blend_mode = if let ExtendedBlendMode::Shader = blend_mode {
+                // Note - Flash appears to let you set `dobj.blendMode = BlendMode.SHADER` without
+                // having `dobj.blendShader` result, but the resulting rendered displayobject
+                // seems to be corrupted. For now, let's panic, and see if any swfs actually
+                // rely on this behavior.
+                RenderBlendMode::Shader(this.blend_shader().expect("Missing blend shader"))
+            } else {
+                RenderBlendMode::Builtin(blend_mode.try_into().unwrap())
+            };
+            context.commands.blend(sub_commands, render_blend_mode);
+        }
     }
 
     context.transform_stack.pop();

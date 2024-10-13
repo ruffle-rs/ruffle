@@ -52,6 +52,11 @@ impl CommandList {
         Self::default()
     }
 
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.commands.is_empty()
+    }
+
     pub fn execute(self, handler: &mut impl CommandHandler) {
         for command in self.commands {
             match command {
