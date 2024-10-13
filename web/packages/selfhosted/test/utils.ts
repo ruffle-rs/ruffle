@@ -208,3 +208,28 @@ export function loadJsAPI(swf?: string) {
         }
     });
 }
+
+export async function closeAllModals(
+    browser: WebdriverIO.Browser,
+    player: ChainablePromiseElement,
+) {
+    await browser.execute(
+        (modals) => {
+            for (const modal of modals) {
+                const m = modal as unknown as HTMLElement;
+                const cl = m.querySelector(".close-modal")! as HTMLElement;
+                cl.click();
+            }
+        },
+        await player.$$(".modal:not(.hidden)"),
+    );
+}
+
+export async function hideHardwareAccelerationModal(
+    browser: WebdriverIO.Browser,
+    player: ChainablePromiseElement,
+) {
+    // Trigger it if not triggered yet
+    await player.moveTo();
+    await closeAllModals(browser, player);
+}
