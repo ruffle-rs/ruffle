@@ -1091,26 +1091,8 @@ impl Player {
         }
 
         self.mutate_with_update_context(|context| {
-            let button_event = match event {
-                // ASCII characters convert directly to keyPress button events.
-                PlayerEvent::TextInput { codepoint }
-                    if codepoint as u32 >= 32 && codepoint as u32 <= 126 =>
-                {
-                    Some(ClipEvent::KeyPress {
-                        key_code: ButtonKeyCode::from_u8(codepoint as u8).unwrap(),
-                    })
-                }
-
-                // Special keys have custom values for keyPress.
-                PlayerEvent::KeyDown { key_code, .. } => {
-                    if let Some(key_code) = crate::events::key_code_to_button_key_code(key_code) {
-                        Some(ClipEvent::KeyPress { key_code })
-                    } else {
-                        None
-                    }
-                }
-                _ => None,
-            };
+            let button_event = ButtonKeyCode::from_player_event(event)
+                .map(|key_code| ClipEvent::KeyPress { key_code });
 
             if let PlayerEvent::KeyDown { key_code, key_char }
             | PlayerEvent::KeyUp { key_code, key_char } = event
