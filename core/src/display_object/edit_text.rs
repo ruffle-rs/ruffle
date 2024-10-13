@@ -909,9 +909,8 @@ impl<'gc> EditText<'gc> {
         layout: &Layout<'gc>,
     ) {
         if flags.contains(LayoutDebugBoxesFlag::CHAR) {
-            let text = &self.text();
-            for i in 0..text.len() {
-                if let Some(bounds) = layout.char_bounds(i, text) {
+            for i in 0..self.text().len() {
+                if let Some(bounds) = layout.char_bounds(i) {
                     context.draw_rect_outline(Color::MAGENTA, bounds, Twips::ONE);
                 }
             }
@@ -2030,13 +2029,7 @@ impl<'gc> EditText<'gc> {
 
     pub fn char_bounds(self, index: usize) -> Option<Rectangle<Twips>> {
         let edit_text = self.0.read();
-        let text = edit_text.text_spans.text();
-
-        if index >= text.len() {
-            return None;
-        }
-
-        let bounds = edit_text.layout.char_bounds(index, text)?;
+        let bounds = edit_text.layout.char_bounds(index)?;
         let padding = Twips::from_pixels(Self::INTERNAL_PADDING);
         let bounds = Matrix::translate(padding, padding) * bounds;
         Some(bounds)

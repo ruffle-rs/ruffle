@@ -2,7 +2,7 @@
 
 use crate::context::UpdateContext;
 use crate::drawing::Drawing;
-use crate::font::{EvalParameters, Font, FontType, Glyph};
+use crate::font::{EvalParameters, Font, FontType};
 use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
 use crate::string::{utils as string_utils, WStr};
@@ -823,10 +823,10 @@ impl<'gc> Layout<'gc> {
     }
 
     /// Returns char bounds of the given char relative to this layout.
-    pub fn char_bounds(&self, position: usize, text: &WStr) -> Option<Rectangle<Twips>> {
+    pub fn char_bounds(&self, position: usize) -> Option<Rectangle<Twips>> {
         let line_index = self.find_line_index_by_position(position)?;
         let line = self.lines.get(line_index)?;
-        line.char_bounds(position, text)
+        line.char_bounds(position)
     }
 }
 
@@ -923,13 +923,13 @@ impl<'gc> LayoutLine<'gc> {
     }
 
     /// Returns char bounds of the given char relative to the whole layout.
-    pub fn char_bounds(&self, position: usize, text: &WStr) -> Option<Rectangle<Twips>> {
+    pub fn char_bounds(&self, position: usize) -> Option<Rectangle<Twips>> {
         let box_index = self.find_box_index_by_position(position)?;
         let layout_box = self.boxes.get(box_index)?;
 
         let line_bounds = self.bounds();
         let origin_x = layout_box.bounds().origin().x();
-        let x_bounds = layout_box.char_x_bounds(position, text)?;
+        let x_bounds = layout_box.char_x_bounds(position)?;
 
         Some(Rectangle {
             x_min: origin_x + x_bounds.0,
@@ -1355,7 +1355,7 @@ impl<'gc> LayoutBox<'gc> {
     }
 
     /// Return x-axis char bounds of the given char relative to this layout box.
-    pub fn char_x_bounds(&self, position: usize, text: &WStr) -> Option<(Twips, Twips)> {
+    pub fn char_x_bounds(&self, position: usize) -> Option<(Twips, Twips)> {
         let relative_position = position.checked_sub(self.start())?;
 
         let LayoutContent::Text { char_end_pos, .. } = &self.content else {
