@@ -637,7 +637,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             let text_size = Size::from(font.measure(text, params));
             let box_origin = self.cursor - (Twips::ZERO, ascent).into();
 
-            let mut new_box = LayoutBox::from_text(start, end, font, span);
+            let mut new_box = LayoutBox::from_text(text, start, end, font, span);
             new_box.interior_bounds = BoxBounds::from_position_and_size(box_origin, text_size);
             new_box.bounds = BoxBounds::from_position_and_size(
                 box_origin,
@@ -999,6 +999,21 @@ pub enum LayoutContent<'gc> {
         /// The color to render the font with.
         #[collect(require_static)]
         color: swf::Color,
+
+        /// List of end positions (relative to this box) for each character.
+        ///
+        /// By having this here, we do not have to reevaluate the font
+        /// each time we want to get the position of a character,
+        /// and we can use this data along with layout box bounds to
+        /// calculate character bounds.
+        ///
+        /// For instance, for the text "hello", this field may contain:
+        ///
+        /// ```text
+        /// [100, 200, 250, 300, 400]
+        /// ```
+        #[collect(require_static)]
+        char_end_pos: Vec<Twips>,
     },
 
     /// A layout box containing a bullet.
@@ -1062,8 +1077,19 @@ impl<'gc> Debug for LayoutContent<'gc> {
 
 impl<'gc> LayoutBox<'gc> {
     /// Construct a text box for a text node.
-    pub fn from_text(start: usize, end: usize, font: Font<'gc>, span: &TextSpan) -> Self {
+    pub fn from_text(
+        text: &WStr,
+        start: usize,
+        end: usize,
+        font: Font<'gc>,
+        span: &TextSpan,
+    ) -> Self {
         let params = EvalParameters::from_span(span);
+        let mut char_end_pos = Vec::with_capacity(end - start);
+
+        font.evaluate(text, Default::default(), params, |_, _, _, advance, x| {
+            char_end_pos.push(x + advance);
+        });
 
         Self {
             interior_bounds: Default::default(),
@@ -1075,6 +1101,7 @@ impl<'gc> LayoutBox<'gc> {
                 font,
                 params,
                 color: span.font.color,
+                char_end_pos,
             },
         }
     }
@@ -1269,6 +1296,7 @@ impl<'gc> LayoutBox<'gc> {
                 font,
                 params,
                 color,
+                ..
             } => Some((
                 text.slice(*start..*end)?,
                 text_format,
