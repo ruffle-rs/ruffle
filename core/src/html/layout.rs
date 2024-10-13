@@ -1358,21 +1358,18 @@ impl<'gc> LayoutBox<'gc> {
     pub fn char_x_bounds(&self, position: usize, text: &WStr) -> Option<(Twips, Twips)> {
         let relative_position = position.checked_sub(self.start())?;
 
-        let mut x_bounds = None;
-        if let Some((text, _tf, font, params, _color)) = self.as_renderable_text(text) {
-            font.evaluate(
-                text,
-                Default::default(),
-                params,
-                |pos, _transform, _glyph: &Glyph, advance, x| {
-                    if pos == relative_position {
-                        x_bounds = Some((x, x + advance));
-                    }
-                },
-            );
-        }
+        let LayoutContent::Text { char_end_pos, .. } = &self.content else {
+            return None;
+        };
 
-        x_bounds
+        Some(if relative_position == 0 {
+            (Twips::ZERO, *char_end_pos.get(0)?)
+        } else {
+            (
+                *char_end_pos.get(relative_position - 1)?,
+                *char_end_pos.get(relative_position)?,
+            )
+        })
     }
 }
 
