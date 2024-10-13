@@ -162,6 +162,10 @@ pub struct EditTextData<'gc> {
     #[collect(require_static)]
     flags: EditTextFlag,
 
+    /// Flags specifying how layout debug boxes should be drawn.
+    #[collect(require_static)]
+    layout_debug_boxes_flags: LayoutDebugBoxesFlag,
+
     /// Whether this EditText represents an AVM2 TextLine.
     is_tlf: bool,
 
@@ -304,6 +308,7 @@ impl<'gc> EditText<'gc> {
                 is_tlf: false,
                 restrict: EditTextRestrict::allow_all(),
                 last_click: None,
+                layout_debug_boxes_flags: LayoutDebugBoxesFlag::empty(),
             },
         ));
 
@@ -625,18 +630,20 @@ impl<'gc> EditText<'gc> {
         self.0.write(gc_context).is_tlf = is_tlf;
     }
 
-    pub fn draw_layout_boxes(self) -> bool {
-        self.0
-            .read()
-            .flags
-            .contains(EditTextFlag::DRAW_LAYOUT_BOXES)
+    pub fn layout_debug_boxes_flag(self, flag: LayoutDebugBoxesFlag) -> bool {
+        self.0.read().layout_debug_boxes_flags.contains(flag)
     }
 
-    pub fn set_draw_layout_boxes(self, context: &mut UpdateContext<'gc>, value: bool) {
+    pub fn set_layout_debug_boxes_flag(
+        self,
+        context: &mut UpdateContext<'gc>,
+        flag: LayoutDebugBoxesFlag,
+        value: bool,
+    ) {
         self.0
             .write(context.gc())
-            .flags
-            .set(EditTextFlag::DRAW_LAYOUT_BOXES, value);
+            .layout_debug_boxes_flags
+            .set(flag, value);
     }
 
     pub fn replace_text(
@@ -892,6 +899,48 @@ impl<'gc> EditText<'gc> {
         } else {
             // all lines are visible
             lines.last().unwrap().index() + 1
+        }
+    }
+
+    fn render_debug_boxes(
+        self,
+        context: &mut RenderContext<'_, 'gc>,
+        flags: LayoutDebugBoxesFlag,
+        layout: &Layout<'gc>,
+    ) {
+        if flags.contains(LayoutDebugBoxesFlag::CHAR) {
+            let text = &self.text();
+            for i in 0..text.len() {
+                if let Some(bounds) = layout.char_bounds(i, text) {
+                    context.draw_rect_outline(Color::MAGENTA, bounds, Twips::ONE);
+                }
+            }
+        }
+        if flags.contains(LayoutDebugBoxesFlag::BOX_INTERIOR) {
+            for lbox in layout.boxes_iter() {
+                context.draw_rect_outline(Color::RED, lbox.interior_bounds().into(), Twips::ONE);
+            }
+        }
+        if flags.contains(LayoutDebugBoxesFlag::BOX) {
+            for lbox in layout.boxes_iter() {
+                context.draw_rect_outline(Color::RED, lbox.bounds().into(), Twips::ONE);
+            }
+        }
+        if flags.contains(LayoutDebugBoxesFlag::LINE_INTERIOR) {
+            for line in layout.lines() {
+                context.draw_rect_outline(Color::BLUE, line.interior_bounds().into(), Twips::ONE);
+            }
+        }
+        if flags.contains(LayoutDebugBoxesFlag::LINE) {
+            for line in layout.lines() {
+                context.draw_rect_outline(Color::BLUE, line.bounds().into(), Twips::ONE);
+            }
+        }
+        if flags.contains(LayoutDebugBoxesFlag::TEXT) {
+            context.draw_rect_outline(Color::GREEN, layout.bounds().into(), Twips::ONE);
+        }
+        if flags.contains(LayoutDebugBoxesFlag::TEXT_EXTERIOR) {
+            context.draw_rect_outline(Color::GREEN, layout.exterior_bounds().into(), Twips::ONE);
         }
     }
 
@@ -2328,34 +2377,15 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             ..Default::default()
         });
 
-        {
-            let draw_boxes = edit_text.flags.contains(EditTextFlag::DRAW_LAYOUT_BOXES);
-            if draw_boxes {
-                context.draw_rect_outline(
-                    Color::GREEN,
-                    edit_text.layout.exterior_bounds().into(),
-                    Twips::ONE,
-                );
-
-                let text = &self.text();
-                for i in 0..text.len() {
-                    if let Some(bounds) = edit_text.layout.char_bounds(i, text) {
-                        context.draw_rect_outline(Color::MAGENTA, bounds, Twips::ONE);
-                    }
-                }
-            }
-
-            for layout_box in edit_text.layout.boxes_iter() {
-                if draw_boxes {
-                    context.draw_rect_outline(
-                        Color::RED,
-                        layout_box.interior_bounds().into(),
-                        Twips::ONE,
-                    );
-                }
-                self.render_layout_box(context, layout_box);
-            }
+        for layout_box in edit_text.layout.boxes_iter() {
+            self.render_layout_box(context, layout_box);
         }
+
+        self.render_debug_boxes(
+            context,
+            edit_text.layout_debug_boxes_flags,
+            &edit_text.layout,
+        );
 
         context.transform_stack.pop();
 
@@ -2734,7 +2764,6 @@ bitflags::bitflags! {
     struct EditTextFlag: u16 {
         const FIRING_VARIABLE_BINDING = 1 << 0;
         const HAS_BACKGROUND = 1 << 1;
-        const DRAW_LAYOUT_BOXES = 1 << 2;
         const CONDENSE_WHITE = 1 << 13;
         const ALWAYS_SHOW_SELECTION = 1 << 14;
 
@@ -2750,6 +2779,19 @@ bitflags::bitflags! {
         const NO_SELECT = 1 << 12;
         const SWF_FLAGS = Self::READ_ONLY.bits() | Self::PASSWORD.bits() | Self::MULTILINE.bits() | Self::WORD_WRAP.bits() | Self::USE_OUTLINES.bits() |
                           Self::HTML.bits() | Self::WAS_STATIC.bits() | Self::BORDER.bits() | Self::NO_SELECT.bits();
+    }
+}
+
+bitflags::bitflags! {
+    #[derive(Clone, Copy)]
+    pub struct LayoutDebugBoxesFlag: u8 {
+        const TEXT_EXTERIOR = 1 << 1;
+        const TEXT = 1 << 2;
+        const LINE = 1 << 3;
+        const LINE_INTERIOR = 1 << 4;
+        const BOX = 1 << 5;
+        const BOX_INTERIOR = 1 << 6;
+        const CHAR = 1 << 7;
     }
 }
 

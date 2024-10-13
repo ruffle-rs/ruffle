@@ -10,8 +10,8 @@ use crate::debug_ui::handle::{AVM1ObjectHandle, AVM2ObjectHandle, DisplayObjectH
 use crate::debug_ui::movie::open_movie_button;
 use crate::debug_ui::Message;
 use crate::display_object::{
-    AutoSizeMode, Bitmap, DisplayObject, EditText, InteractiveObject, MovieClip, Stage,
-    TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
+    AutoSizeMode, Bitmap, DisplayObject, EditText, InteractiveObject, LayoutDebugBoxesFlag,
+    MovieClip, Stage, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
 };
 use crate::focus_tracker::Highlight;
 use egui::collapsing_header::CollapsingState;
@@ -464,12 +464,23 @@ impl DisplayObjectWindow {
                 }
                 ui.end_row();
 
-                ui.label("Draw Layout Boxes");
-                ui.horizontal(|ui| {
-                    let mut draw_layout_boxes = object.draw_layout_boxes();
-                    ui.checkbox(&mut draw_layout_boxes, "Enabled");
-                    if draw_layout_boxes != object.draw_layout_boxes() {
-                        object.set_draw_layout_boxes(context, draw_layout_boxes);
+                ui.label("Layout Debug Boxes");
+                ui.vertical(|ui| {
+                    for (name, flag) in [
+                        ("Text Exterior", LayoutDebugBoxesFlag::TEXT_EXTERIOR),
+                        ("Text", LayoutDebugBoxesFlag::TEXT),
+                        ("Line", LayoutDebugBoxesFlag::LINE),
+                        ("Line Interior", LayoutDebugBoxesFlag::LINE_INTERIOR),
+                        ("Box", LayoutDebugBoxesFlag::BOX),
+                        ("Box Interior", LayoutDebugBoxesFlag::BOX_INTERIOR),
+                        ("Character", LayoutDebugBoxesFlag::CHAR),
+                    ] {
+                        let old_value = object.layout_debug_boxes_flag(flag);
+                        let mut value = old_value;
+                        ui.checkbox(&mut value, name);
+                        if value != old_value {
+                            object.set_layout_debug_boxes_flag(context, flag, value);
+                        }
                     }
                 });
                 ui.end_row();
