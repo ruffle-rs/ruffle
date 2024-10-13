@@ -958,9 +958,9 @@ impl<'gc> EditText<'gc> {
         // If text's top is under the textbox's bottom, skip drawing.
         // TODO: FP actually skips drawing a line as soon as its bottom is under the textbox;
         //   Current logic is conservative for safety (and even of this I'm not 100% sure).
-        // TODO: we should also cull text that's above the textbox
-        //   (instead of culling, this can be implemented as having the loop start from `scrollY`th line)
         //   (maybe we could cull-before-render all glyphs, thus removing the need for masking?)
+        // [KJ] FP always displays the first visible line (sometimes masked, sometimes sticking out of bounds),
+        //      culls any other line which is not fully visible; masking is always used for left/right bounds
         // TODO: also cull text that's simply out of screen, just like we cull whole DOs in render_self().
         if origin.y() + Twips::from_pixels(Self::INTERNAL_PADDING)
             - edit_text.vertical_scroll_offset()
@@ -2376,7 +2376,9 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             ..Default::default()
         });
 
-        for line in edit_text.layout.lines() {
+        // Skip lines that are off-screen.
+        let lines_to_skip = self.scroll().saturating_sub(1);
+        for line in edit_text.layout.lines().iter().skip(lines_to_skip) {
             self.render_layout_line(context, line);
         }
 
