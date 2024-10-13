@@ -656,7 +656,7 @@ impl<'gc> EditText<'gc> {
         self.0
             .write(context.gc_context)
             .text_spans
-            .replace_text(from, to, text, None);
+            .replace_text(from, to, text);
         self.relayout(context);
     }
 

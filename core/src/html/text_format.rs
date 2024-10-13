@@ -1109,7 +1109,7 @@ impl FormatSpans {
     /// exact text range, you must first call `ensure_span_break_at` for both
     /// `from` and `to`.
     ///
-    /// The indexes returned from this function is not valid across calls which
+    /// The indexes returned from this function are not valid across calls which
     /// mutate spans.
     pub fn get_span_boundaries(&self, from: usize, to: usize) -> (usize, usize) {
         let start_pos = self.resolve_position_as_span(from).unwrap_or((0, 0)).0;
@@ -1152,7 +1152,7 @@ impl FormatSpans {
         }
         for &(from, to) in to_remove.iter().rev() {
             if from != to {
-                self.replace_text(from, to, WStr::empty(), None);
+                self.replace_text(from, to, WStr::empty());
             }
         }
     }
@@ -1300,13 +1300,7 @@ impl FormatSpans {
     ///
     /// (The text formatting behavior has been confirmed by manual testing with
     /// Flash Player 8.)
-    pub fn replace_text(
-        &mut self,
-        from: usize,
-        to: usize,
-        with: &WStr,
-        new_tf: Option<&TextFormat>,
-    ) {
+    pub fn replace_text(&mut self, from: usize, to: usize, with: &WStr) {
         if to < from {
             return;
         }
@@ -1316,20 +1310,20 @@ impl FormatSpans {
             self.ensure_span_break_at(to);
 
             let (start_pos, end_pos) = self.get_span_boundaries(from, to);
-            let new_tf = new_tf
-                .cloned()
-                .or_else(|| self.spans.get(end_pos).map(|span| span.get_text_format()))
-                .unwrap_or_else(|| self.default_format.clone());
+            let new_tf = self.spans.get(end_pos).map(|span| span.get_text_format());
 
             self.spans.drain(start_pos..end_pos);
             self.spans.insert(
                 start_pos,
-                TextSpan::with_length_and_format(with.len(), &new_tf),
+                TextSpan::with_length_and_format(
+                    with.len(),
+                    new_tf.as_ref().unwrap_or(&self.default_format),
+                ),
             );
         } else {
             self.spans.push(TextSpan::with_length_and_format(
                 with.len(),
-                new_tf.unwrap_or(&self.default_format),
+                &self.default_format,
             ));
         }
 
