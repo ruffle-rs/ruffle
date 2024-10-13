@@ -743,6 +743,23 @@ impl ButtonKeyCode {
         num_traits::FromPrimitive::from_u8(n)
     }
 
+    pub fn from_player_event(event: PlayerEvent) -> Option<Self> {
+        match event {
+            // ASCII characters convert directly to keyPress button events.
+            PlayerEvent::TextInput { codepoint }
+                if codepoint as u32 >= 32 && codepoint as u32 <= 126 =>
+            {
+                Some(ButtonKeyCode::from_u8(codepoint as u8).unwrap())
+            }
+
+            // Special keys have custom values for keyPress.
+            PlayerEvent::KeyDown { key_code, .. } => {
+                crate::events::key_code_to_button_key_code(key_code)
+            }
+            _ => None,
+        }
+    }
+
     pub fn to_u8(&self) -> u8 {
         num_traits::ToPrimitive::to_u8(self).unwrap_or_default()
     }
