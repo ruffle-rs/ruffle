@@ -943,6 +943,12 @@ impl<'gc> EditText<'gc> {
         }
     }
 
+    fn render_layout_line(self, context: &mut RenderContext<'_, 'gc>, line: &LayoutLine<'gc>) {
+        for layout_box in line.boxes_iter() {
+            self.render_layout_box(context, layout_box);
+        }
+    }
+
     /// Render a layout box, plus its children.
     fn render_layout_box(self, context: &mut RenderContext<'_, 'gc>, lbox: &LayoutBox<'gc>) {
         let origin = lbox.interior_bounds().origin();
@@ -2370,8 +2376,8 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             ..Default::default()
         });
 
-        for layout_box in edit_text.layout.boxes_iter() {
-            self.render_layout_box(context, layout_box);
+        for line in edit_text.layout.lines() {
+            self.render_layout_line(context, line);
         }
 
         self.render_debug_boxes(
