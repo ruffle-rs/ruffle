@@ -23,7 +23,7 @@
         "cross-env": "^7.0.3",
         "eslint": "^9.12.0",
         "eslint-config-prettier": "^9.1.0",
-        "eslint-plugin-jsdoc": "^50.3.2",
+        "eslint-plugin-jsdoc": "^50.4.1",
         "eslint-plugin-prettier": "^5.2.1",
         "eslint-plugin-react-hooks": "^5.1.0-rc.0",
         "eslint-plugin-react-refresh": "^0.4.12",
@@ -37,7 +37,7 @@
         "tsx": "^4.19.1",
         "typedoc-plugin-mdn-links": "^3.3.3",
         "typescript": "^5.6.3",
-        "typescript-eslint": "^8.8.1",
+        "typescript-eslint": "^8.9.0",
         "webdriverio": "^8.40.0",
         "webpack": "^5.95.0",
         "webpack-cli": "^5.1.4"
