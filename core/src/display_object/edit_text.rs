@@ -733,12 +733,6 @@ impl<'gc> EditText<'gc> {
         self.try_bind_text_field_variable(activation, true);
     }
 
-    /// Construct a base text transform for this `EditText`, to be used for
-    /// evaluating fonts.
-    ///
-    /// The `text_transform` constitutes the base transform that all text is
-    /// written into.
-
     /// Internal padding between the bounds of the EditText and the text.
     /// Applies to each side.
     const INTERNAL_PADDING: f64 = 2.0;
