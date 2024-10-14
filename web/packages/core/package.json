@@ -24,7 +24,7 @@
         "@fluent/bundle": "^0.18.0",
         "@fluent/langneg": "^0.7.0",
         "@tsconfig/strictest": "^2.0.5",
-        "@types/mocha": "^10.0.8",
+        "@types/mocha": "^10.0.9",
         "autoprefixer": "^10.4.20",
         "cssnano": "^7.0.6",
         "cssnano-preset-advanced": "^7.0.6",
@@ -34,8 +34,8 @@
         "replace-in-file": "^8.2.0",
         "tsx": "^4.19.1",
         "tsx-dom": "^3.0.1",
-        "typedoc": "^0.26.8",
-        "typescript": "^5.6.2"
+        "typedoc": "^0.26.9",
+        "typescript": "^5.6.3"
     },
     "sideEffects": false
 }

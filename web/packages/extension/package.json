@@ -25,10 +25,10 @@
         "archiver": "^7.0.1",
         "json5": "^2.2.3",
         "ts-loader": "^9.5.1",
-        "typescript": "^5.6.2",
+        "typescript": "^5.6.3",
         "webpack-cli": "^5.1.4",
         "axios": "^1.7.7",
-        "form-data": "^4.0.0",
+        "form-data": "^4.0.1",
         "jsonwebtoken": "^9.0.2",
         "tsx": "^4.19.1"
     }
