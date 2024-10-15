@@ -189,6 +189,7 @@ async function enable() {
                     "https://*.taobao.com/*",
                     "https://*.time4learning.com/*",
                     "https://*.edgenuity.com/*",
+                    "https://www.chewy.com/*",
                 ],
                 runAt: "document_start",
                 allFrames: true,
