@@ -21,6 +21,7 @@
                 "https://*.taobao.com/*",
                 "https://*.time4learning.com/*",
                 "https://*.edgenuity.com/*",
+                "https://www.chewy.com/*",
             ],
             "js": ["dist/content.js"],
             "all_frames": true,
