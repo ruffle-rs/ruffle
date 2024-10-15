@@ -4,14 +4,24 @@ import { ReadyState } from "../../internal/player/inner";
 
 export interface PlayerV1 {
     /**
-     * A movie can communicate with the hosting page using fscommand
-     * as long as script access is allowed.
+     * Adds a handler for arbitrary "fs commands" from a movie in this player.
      *
-     * @param command A string passed to the host application for any use.
-     * @param args A string passed to the host application for any use.
-     * @returns True if the command was handled.
+     * @remarks
+     * If script access is allowed, a movie may communicate to the page through the ActionScript method `fscommand(name, args)`.
+     *
+     * The exact commands and their arguments are more or less arbitrary and up to the movie.
+     * This is an incredibly deprecated way of communicating between Flash and JavaScript,
+     * and was deprecated in favor of `ExternalInterface` in Flash Player 8 (2005).
      */
-    onFSCommand: ((command: string, args: string) => boolean) | null;
+    addFSCommandHandler(
+        /**
+         * A command handler to receive `fscommand`s.
+         *
+         * @param command An arbitrary name of a command.
+         * @param args An arbitrary argument to the command.
+         */
+        handler: (command: string, args: string) => void,
+    ): void;
 
     /**
      * Any configuration that should apply to this specific player.

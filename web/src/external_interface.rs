@@ -62,7 +62,7 @@ impl ExternalInterfaceProvider for JavascriptInterface {
 impl FsCommandProvider for JavascriptInterface {
     fn on_fs_command(&self, command: &str, args: &str) -> bool {
         self.js_player
-            .on_fs_command(command, args)
+            .call_fs_command(command, args)
             .unwrap_or_default()
     }
 }
