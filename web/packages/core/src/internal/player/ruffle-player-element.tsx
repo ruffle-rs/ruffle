@@ -11,15 +11,15 @@ import { PlayerV1Impl } from "./impl_v1";
  */
 export class RufflePlayerElement extends HTMLElement implements PlayerElement {
     #inner: InnerPlayer;
+    #legacyFSCommandHandler: ((command: string, args: string) => void) | null =
+        null;
 
-    get onFSCommand(): ((command: string, args: string) => boolean) | null {
-        return this.#inner.onFSCommand;
+    get onFSCommand(): ((command: string, args: string) => void) | null {
+        return this.#legacyFSCommandHandler;
     }
 
-    set onFSCommand(
-        value: ((command: string, args: string) => boolean) | null,
-    ) {
-        this.#inner.onFSCommand = value;
+    set onFSCommand(value: ((command: string, args: string) => void) | null) {
+        this.#legacyFSCommandHandler = value;
     }
 
     get readyState(): ReadyState {
@@ -54,6 +54,9 @@ export class RufflePlayerElement extends HTMLElement implements PlayerElement {
                 }
             },
         );
+        this.#inner.addFSCommandHandler((command, args) => {
+            this.#legacyFSCommandHandler?.(command, args);
+        });
     }
 
     ruffle<V extends keyof APIVersions = 1>(version?: V): APIVersions[V] {

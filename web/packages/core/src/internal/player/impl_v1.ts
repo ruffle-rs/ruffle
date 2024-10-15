@@ -10,14 +10,8 @@ export class PlayerV1Impl implements PlayerV1 {
         this.#inner = inner;
     }
 
-    get onFSCommand(): ((command: string, args: string) => boolean) | null {
-        return this.#inner.onFSCommand;
-    }
-
-    set onFSCommand(
-        value: ((command: string, args: string) => boolean) | null,
-    ) {
-        this.#inner.onFSCommand = value;
+    addFSCommandHandler(handler: (command: string, args: string) => void) {
+        this.#inner.addFSCommandHandler(handler);
     }
 
     get readyState(): ReadyState {
