@@ -306,7 +306,7 @@ impl WString {
             }
         }
 
-        impl<'a> Drop for Guard<'a> {
+        impl Drop for Guard<'_> {
             fn drop(&mut self) {
                 // SAFETY: something has gone wrong, replace the buffer with an empty one and drop it.
                 unsafe {

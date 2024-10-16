@@ -270,7 +270,7 @@ pub struct DisplayObjectBase<'gc> {
     cache: Option<BitmapCache>,
 }
 
-impl<'gc> Default for DisplayObjectBase<'gc> {
+impl Default for DisplayObjectBase<'_> {
     fn default() -> Self {
         Self {
             parent: Default::default(),

@@ -527,7 +527,7 @@ impl<'gc> XmlNode<'gc> {
     }
 }
 
-impl<'gc> fmt::Debug for XmlNode<'gc> {
+impl fmt::Debug for XmlNode<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("XmlNodeData")
             .field("ptr", &self.0.as_ptr())

@@ -12,7 +12,7 @@ pub struct Iter<'a> {
     inner: Units<SliceIter<'a, u8>, SliceIter<'a, u16>>,
 }
 
-impl<'a> Iterator for Iter<'a> {
+impl Iterator for Iter<'_> {
     type Item = u16;
 
     #[inline]
@@ -24,7 +24,7 @@ impl<'a> Iterator for Iter<'a> {
     }
 }
 
-impl<'a> DoubleEndedIterator for Iter<'a> {
+impl DoubleEndedIterator for Iter<'_> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         match &mut self.inner {
@@ -41,7 +41,7 @@ pub struct CharIndices<'a> {
     start: usize,
 }
 
-impl<'a> Iterator for CharIndices<'a> {
+impl Iterator for CharIndices<'_> {
     type Item = (usize, Result<char, core::char::DecodeUtf16Error>);
 
     #[inline]

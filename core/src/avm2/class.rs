@@ -199,7 +199,7 @@ impl Hash for Class<'_> {
     }
 }
 
-impl<'gc> core::fmt::Debug for Class<'gc> {
+impl core::fmt::Debug for Class<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("Class").field("name", &self.name()).finish()
     }

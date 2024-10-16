@@ -90,7 +90,7 @@ struct GlyphToDrawing<'a>(&'a mut Drawing);
 /// Convert from a TTF outline, to a flash Drawing.
 ///
 /// Note that the Y axis is flipped. I do not know why, but Flash does this.
-impl<'a> ttf_parser::OutlineBuilder for GlyphToDrawing<'a> {
+impl ttf_parser::OutlineBuilder for GlyphToDrawing<'_> {
     fn move_to(&mut self, x: f32, y: f32) {
         self.0.draw_command(DrawCommand::MoveTo(Point::new(
             Twips::new(x as i32),

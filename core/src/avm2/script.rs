@@ -616,7 +616,7 @@ impl<'gc> Script<'gc> {
     }
 }
 
-impl<'gc> Debug for Script<'gc> {
+impl Debug for Script<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("Script")
             .field("ptr", &self.0.as_ptr())

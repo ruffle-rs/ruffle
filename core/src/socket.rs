@@ -70,7 +70,7 @@ pub struct Sockets<'gc> {
     sender: Sender<SocketAction>,
 }
 
-unsafe impl<'gc> Collect for Sockets<'gc> {
+unsafe impl Collect for Sockets<'_> {
     fn trace(&self, cc: &gc_arena::Collection) {
         for (_, socket) in self.sockets.iter() {
             socket.trace(cc)

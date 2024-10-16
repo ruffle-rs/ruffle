@@ -67,7 +67,7 @@ impl<'gc> TObject<'gc> for NetStreamObject<'gc> {
     }
 }
 
-impl<'gc> Debug for NetStreamObject<'gc> {
+impl Debug for NetStreamObject<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("NetStreamObject")
             .field("ptr", &Gc::as_ptr(self.0))

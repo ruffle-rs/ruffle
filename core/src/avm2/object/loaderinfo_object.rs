@@ -60,7 +60,7 @@ pub enum LoaderStream<'gc> {
     Swf(Arc<SwfMovie>, DisplayObject<'gc>),
 }
 
-impl<'gc> LoaderStream<'gc> {
+impl LoaderStream<'_> {
     pub fn movie(&self) -> &Arc<SwfMovie> {
         match self {
             LoaderStream::NotYetLoaded(movie, _, _) => movie,

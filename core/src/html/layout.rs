@@ -1055,7 +1055,7 @@ pub enum LayoutContent<'gc> {
     },
 }
 
-impl<'gc> Debug for LayoutContent<'gc> {
+impl Debug for LayoutContent<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             LayoutContent::Text { start, end, .. } => f

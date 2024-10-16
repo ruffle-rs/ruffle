@@ -859,10 +859,10 @@ impl<'gc> ChildContainer<'gc> {
             matching_render_children.sort_by_key(|&(depth, _child)| *depth);
 
             // First child will have the lowest depth
-            return matching_render_children
+            matching_render_children
                 .first()
                 .map(|&(_depth, child)| child)
-                .copied();
+                .copied()
         } else {
             // TODO: Make a HashMap from name -> child?
             // But need to handle conflicting names (lowest in depth order takes priority).
@@ -1157,4 +1157,4 @@ impl<'gc> DoubleEndedIterator for RenderIter<'gc> {
     }
 }
 
-impl<'gc> ExactSizeIterator for RenderIter<'gc> {}
+impl ExactSizeIterator for RenderIter<'_> {}

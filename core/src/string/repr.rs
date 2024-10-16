@@ -180,7 +180,7 @@ impl<'gc> AvmStringRepr<'gc> {
     }
 }
 
-impl<'gc> Drop for AvmStringRepr<'gc> {
+impl Drop for AvmStringRepr<'_> {
     fn drop(&mut self) {
         let cap = self.capacity.get().len32();
         if cap > 0 {
@@ -195,7 +195,7 @@ impl<'gc> Drop for AvmStringRepr<'gc> {
     }
 }
 
-impl<'gc> Deref for AvmStringRepr<'gc> {
+impl Deref for AvmStringRepr<'_> {
     type Target = WStr;
     #[inline]
     fn deref(&self) -> &WStr {
@@ -203,7 +203,7 @@ impl<'gc> Deref for AvmStringRepr<'gc> {
     }
 }
 
-impl<'gc> Default for AvmStringRepr<'gc> {
+impl Default for AvmStringRepr<'_> {
     #[inline]
     fn default() -> Self {
         Self::from_raw(WString::new(), false)

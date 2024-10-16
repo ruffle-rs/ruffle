@@ -50,7 +50,7 @@ impl<'gc> TObject<'gc> for FileReferenceObject<'gc> {
     }
 }
 
-impl<'gc> FileReferenceObject<'gc> {
+impl FileReferenceObject<'_> {
     pub fn init_from_dialog_result(&self, result: Box<dyn FileDialogResult>) -> FileReference {
         self.0
             .reference

@@ -311,7 +311,7 @@ pub enum ClipEvent<'gc> {
     },
 }
 
-impl<'gc> ClipEvent<'gc> {
+impl ClipEvent<'_> {
     /// Method names for button event handles.
     pub const BUTTON_EVENT_METHODS: [&'static str; 7] = [
         "onDragOver",

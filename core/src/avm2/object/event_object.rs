@@ -368,7 +368,7 @@ impl<'gc> TObject<'gc> for EventObject<'gc> {
     }
 }
 
-impl<'gc> Debug for EventObject<'gc> {
+impl Debug for EventObject<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("EventObject")
             .field("type", &self.0.event.borrow().event_type())

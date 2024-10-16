@@ -178,7 +178,7 @@ pub struct EditTextData<'gc> {
     last_click: Option<ClickEventData>,
 }
 
-impl<'gc> EditTextData<'gc> {
+impl EditTextData<'_> {
     fn vertical_scroll_offset(&self) -> Twips {
         if self.scroll > 1 {
             let lines = self.layout.lines();

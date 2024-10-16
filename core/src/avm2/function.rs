@@ -253,7 +253,7 @@ pub fn exec<'gc>(
     ret
 }
 
-impl<'gc> fmt::Debug for BoundMethod<'gc> {
+impl fmt::Debug for BoundMethod<'_> {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.method {
             Method::Bytecode(be) => fmt

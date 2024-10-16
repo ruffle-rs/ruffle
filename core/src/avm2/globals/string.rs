@@ -210,11 +210,10 @@ fn index_of<'gc>(
         Some(n) => n.coerce_to_i32(activation)?.max(0) as usize,
     };
 
-    return this
-        .slice(start_index..)
+    this.slice(start_index..)
         .and_then(|s| s.find(&pattern))
         .map(|i| Ok((i + start_index).into()))
-        .unwrap_or_else(|| Ok((-1).into())); // Out of range or not found
+        .unwrap_or_else(|| Ok((-1).into())) // Out of range or not found
 }
 
 /// Implements `String.lastIndexOf`
@@ -237,12 +236,11 @@ fn last_index_of<'gc>(
         },
     };
 
-    return this
-        .slice(..start_index)
+    this.slice(..start_index)
         .unwrap_or(&this)
         .rfind(&pattern)
         .map(|i| Ok(i.into()))
-        .unwrap_or_else(|| Ok((-1).into())); // Not found
+        .unwrap_or_else(|| Ok((-1).into())) // Not found
 }
 
 /// Implements String.localeCompare
@@ -273,7 +271,7 @@ fn locale_compare<'gc>(
         return Ok(Value::Integer(1));
     }
 
-    return Ok(Value::Integer(0));
+    Ok(Value::Integer(0))
 }
 
 /// Implements `String.match`
@@ -493,9 +491,9 @@ fn split<'gc>(
             .collect()
     };
 
-    return Ok(ArrayObject::from_storage(activation, storage)
+    Ok(ArrayObject::from_storage(activation, storage)
         .unwrap()
-        .into());
+        .into())
 }
 
 /// Implements `String.substr`

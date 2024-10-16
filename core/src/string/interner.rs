@@ -15,33 +15,33 @@ use crate::string::{AvmString, AvmStringRepr, WStr};
 #[collect(no_drop)]
 pub struct AvmAtom<'gc>(pub(super) Gc<'gc, AvmStringRepr<'gc>>);
 
-impl<'gc> PartialEq for AvmAtom<'gc> {
+impl PartialEq for AvmAtom<'_> {
     fn eq(&self, other: &Self) -> bool {
         Gc::ptr_eq(self.0, other.0)
     }
 }
 
-impl<'gc> Eq for AvmAtom<'gc> {}
+impl Eq for AvmAtom<'_> {}
 
-impl<'gc> Hash for AvmAtom<'gc> {
+impl Hash for AvmAtom<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         Gc::as_ptr(self.0).hash(state);
     }
 }
 
-impl<'gc> fmt::Debug for AvmAtom<'gc> {
+impl fmt::Debug for AvmAtom<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(self.as_wstr(), f)
     }
 }
 
-impl<'gc> fmt::Display for AvmAtom<'gc> {
+impl fmt::Display for AvmAtom<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(self.as_wstr(), f)
     }
 }
 
-impl<'gc> AvmAtom<'gc> {
+impl AvmAtom<'_> {
     pub fn as_wstr(&self) -> &WStr {
         &self.0
     }
@@ -252,7 +252,7 @@ impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
     }
 }
 
-unsafe impl<'gc, T> Collect for WeakSet<'gc, T> {
+unsafe impl<T> Collect for WeakSet<'_, T> {
     fn trace(&self, cc: &gc_arena::Collection) {
         // Prune entries known to be dead.
         // Safe, as we never pick up new GC pointers from outside this allocation.

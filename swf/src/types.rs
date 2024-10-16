@@ -1575,7 +1575,7 @@ impl<'a> EditText<'a> {
     }
 }
 
-impl<'a> Default for EditText<'a> {
+impl Default for EditText<'_> {
     fn default() -> Self {
         Self {
             id: Default::default(),

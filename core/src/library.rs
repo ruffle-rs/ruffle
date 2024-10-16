@@ -354,7 +354,7 @@ pub struct MovieLibrarySource<'a, 'gc> {
     pub library: &'a MovieLibrary<'gc>,
 }
 
-impl<'a, 'gc> ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'a, 'gc> {
+impl ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'_, '_> {
     fn bitmap_size(&self, id: u16) -> Option<ruffle_render::bitmap::BitmapSize> {
         if let Some(Character::Bitmap { compressed, .. }) = self.library.characters.get(&id) {
             Some(compressed.size())
@@ -424,7 +424,7 @@ pub struct Library<'gc> {
     avm2_class_registry: Avm2ClassRegistry<'gc>,
 }
 
-unsafe impl<'gc> gc_arena::Collect for Library<'gc> {
+unsafe impl gc_arena::Collect for Library<'_> {
     #[inline]
     fn trace(&self, cc: &gc_arena::Collection) {
         for (_, val) in self.movie_libraries.iter() {

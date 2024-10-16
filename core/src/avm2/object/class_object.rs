@@ -856,21 +856,21 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
     }
 }
 
-impl<'gc> PartialEq for ClassObject<'gc> {
+impl PartialEq for ClassObject<'_> {
     fn eq(&self, other: &Self) -> bool {
         Object::ptr_eq(*self, *other)
     }
 }
 
-impl<'gc> Eq for ClassObject<'gc> {}
+impl Eq for ClassObject<'_> {}
 
-impl<'gc> Hash for ClassObject<'gc> {
+impl Hash for ClassObject<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.as_ptr().hash(state);
     }
 }
 
-impl<'gc> Debug for ClassObject<'gc> {
+impl Debug for ClassObject<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("ClassObject")
             .field("name", &self.debug_class_name())

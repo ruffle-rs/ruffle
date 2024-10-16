@@ -67,7 +67,7 @@ impl<'gc> TObject<'gc> for NetConnectionObject<'gc> {
     }
 }
 
-impl<'gc> NetConnectionObject<'gc> {
+impl NetConnectionObject<'_> {
     pub fn handle(&self) -> Option<NetConnectionHandle> {
         self.0.handle.get()
     }
@@ -77,7 +77,7 @@ impl<'gc> NetConnectionObject<'gc> {
     }
 }
 
-impl<'gc> Debug for NetConnectionObject<'gc> {
+impl Debug for NetConnectionObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "NetConnectionObject")
     }

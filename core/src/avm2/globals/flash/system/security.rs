@@ -49,7 +49,7 @@ pub fn get_sandbox_type<'gc>(
         SandboxType::LocalTrusted => "localTrusted",
         SandboxType::Application => "application",
     };
-    return Ok(AvmString::new_utf8(activation.context.gc_context, sandbox_type).into());
+    Ok(AvmString::new_utf8(activation.context.gc_context, sandbox_type).into())
 }
 
 pub fn allow_domain<'gc>(

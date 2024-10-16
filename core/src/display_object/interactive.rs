@@ -96,7 +96,7 @@ pub struct InteractiveObjectBase<'gc> {
     focus_rect: Option<bool>,
 }
 
-impl<'gc> Default for InteractiveObjectBase<'gc> {
+impl Default for InteractiveObjectBase<'_> {
     fn default() -> Self {
         Self {
             base: Default::default(),
@@ -710,7 +710,7 @@ pub enum Avm2MousePick<'gc> {
     Miss,
 }
 
-impl<'gc> Debug for Avm2MousePick<'gc> {
+impl Debug for Avm2MousePick<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Avm2MousePick::Hit(target) => write!(f, "Hit({:?})", target.as_displayobject().name()),
@@ -781,10 +781,10 @@ impl<'gc> InteractiveObject<'gc> {
     }
 }
 
-impl<'gc> PartialEq for InteractiveObject<'gc> {
+impl PartialEq for InteractiveObject<'_> {
     fn eq(&self, other: &Self) -> bool {
         InteractiveObject::ptr_eq(*self, *other)
     }
 }
 
-impl<'gc> Eq for InteractiveObject<'gc> {}
+impl Eq for InteractiveObject<'_> {}

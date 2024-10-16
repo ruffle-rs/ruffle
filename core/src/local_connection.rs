@@ -229,7 +229,7 @@ impl<'gc> LocalConnections<'gc> {
             }
         } else {
             tracing::error!("LocalConnection: Unable to parse movie URL: {url}");
-            return Cow::Borrowed("unknown"); // this is surely an error but it'll hopefully highlight this case in issues for us
+            Cow::Borrowed("unknown") // this is surely an error but it'll hopefully highlight this case in issues for us
         }
     }
 

@@ -35,7 +35,7 @@ impl<'gc> Iterator for ChildIter<'gc> {
     }
 }
 
-impl<'gc> DoubleEndedIterator for ChildIter<'gc> {
+impl DoubleEndedIterator for ChildIter<'_> {
     fn next_back(&mut self) -> Option<Self::Item> {
         if self.index < self.back_index {
             self.back_index -= 1;
