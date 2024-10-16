@@ -52,6 +52,11 @@ jobs:
         run: |
           make apply
 
+      - name: Upload intermediate files
+        uses: actions/upload-artifact@v4
+        with:
+          path: desktop/packages/linux/locale
+
       - name: Commit
         run: |
           git config user.name "RuffleBuild"

@@ -26,6 +26,11 @@ jobs:
         run: |
           make update
 
+      - name: Upload intermediate files
+        uses: actions/upload-artifact@v4
+        with:
+          path: desktop/packages/linux/locale
+
       - name: Crowdin push
         uses: crowdin/github-action@v2
         with:
