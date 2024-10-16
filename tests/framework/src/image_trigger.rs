@@ -21,7 +21,7 @@ impl<'de> Deserialize<'de> for ImageTrigger {
 
 struct ImageTriggerVisitor;
 
-impl<'de> Visitor<'de> for ImageTriggerVisitor {
+impl Visitor<'_> for ImageTriggerVisitor {
     type Value = ImageTrigger;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

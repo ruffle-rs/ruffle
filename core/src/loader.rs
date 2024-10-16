@@ -240,7 +240,7 @@ impl From<crate::avm1::Error<'_>> for Error {
 /// Holds all in-progress loads for the player.
 pub struct LoadManager<'gc>(SlotMap<LoaderHandle, Loader<'gc>>);
 
-unsafe impl<'gc> Collect for LoadManager<'gc> {
+unsafe impl Collect for LoadManager<'_> {
     fn trace(&self, cc: &gc_arena::Collection) {
         for (_, loader) in self.0.iter() {
             loader.trace(cc)
@@ -719,7 +719,7 @@ impl<'gc> LoadManager<'gc> {
     }
 }
 
-impl<'gc> Default for LoadManager<'gc> {
+impl Default for LoadManager<'_> {
     fn default() -> Self {
         Self::new()
     }

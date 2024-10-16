@@ -75,7 +75,7 @@ pub enum NetConnectionObject<'gc> {
     Avm1(Avm1Object<'gc>),
 }
 
-impl<'gc> NetConnectionObject<'gc> {
+impl NetConnectionObject<'_> {
     pub fn set_handle(&self, handle: Option<NetConnectionHandle>) -> Option<NetConnectionHandle> {
         match self {
             NetConnectionObject::Avm2(object) => object.set_handle(handle),
@@ -107,7 +107,7 @@ pub struct NetConnections<'gc> {
     connections: SlotMap<NetConnectionHandle, NetConnection<'gc>>,
 }
 
-unsafe impl<'gc> Collect for NetConnections<'gc> {
+unsafe impl Collect for NetConnections<'_> {
     fn trace(&self, cc: &gc_arena::Collection) {
         for (_, connection) in self.connections.iter() {
             connection.trace(cc)
@@ -115,7 +115,7 @@ unsafe impl<'gc> Collect for NetConnections<'gc> {
     }
 }
 
-impl<'gc> Default for NetConnections<'gc> {
+impl Default for NetConnections<'_> {
     fn default() -> Self {
         Self {
             connections: SlotMap::with_key(),
@@ -344,7 +344,7 @@ pub struct NetConnection<'gc> {
     protocol: NetConnectionProtocol,
 }
 
-impl<'gc> NetConnection<'gc> {
+impl NetConnection<'_> {
     pub fn is_connected(&self) -> bool {
         match self.protocol {
             NetConnectionProtocol::Local => true,

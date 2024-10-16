@@ -79,7 +79,7 @@ pub struct StreamManager<'gc> {
     active_streams: Vec<NetStream<'gc>>,
 }
 
-impl<'gc> Default for StreamManager<'gc> {
+impl Default for StreamManager<'_> {
     fn default() -> Self {
         Self::new()
     }
@@ -151,13 +151,13 @@ impl<'gc> StreamManager<'gc> {
 #[collect(no_drop)]
 pub struct NetStream<'gc>(GcCell<'gc, NetStreamData<'gc>>);
 
-impl<'gc> PartialEq for NetStream<'gc> {
+impl PartialEq for NetStream<'_> {
     fn eq(&self, other: &Self) -> bool {
         self.0.as_ptr() == other.0.as_ptr()
     }
 }
 
-impl<'gc> Eq for NetStream<'gc> {}
+impl Eq for NetStream<'_> {}
 
 /// The current type of the data in the stream buffer.
 #[derive(Clone, Debug)]

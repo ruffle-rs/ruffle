@@ -767,7 +767,7 @@ impl<'gc> AudioManager<'gc> {
     }
 }
 
-impl<'gc> Default for AudioManager<'gc> {
+impl Default for AudioManager<'_> {
     fn default() -> Self {
         Self::new()
     }

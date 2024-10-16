@@ -23,14 +23,14 @@ pub struct QName<'gc> {
     name: AvmString<'gc>,
 }
 
-impl<'gc> PartialEq for QName<'gc> {
+impl PartialEq for QName<'_> {
     fn eq(&self, other: &Self) -> bool {
         // Implemented by hand to enforce order of comparisons for perf
         self.name == other.name && self.ns.exact_version_match(other.ns)
     }
 }
 
-impl<'gc> Eq for QName<'gc> {}
+impl Eq for QName<'_> {}
 
 impl<'gc> QName<'gc> {
     pub fn new(ns: Namespace<'gc>, name: impl Into<AvmString<'gc>>) -> Self {
@@ -175,7 +175,7 @@ impl<'gc> QName<'gc> {
     }
 }
 
-impl<'gc> Debug for QName<'gc> {
+impl Debug for QName<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self.to_qualified_name_no_mc() {
             Either::Left(name) => write!(f, "{name}"),

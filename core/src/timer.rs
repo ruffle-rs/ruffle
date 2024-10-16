@@ -304,7 +304,7 @@ impl Default for Timers<'_> {
     }
 }
 
-unsafe impl<'gc> Collect for Timers<'gc> {
+unsafe impl Collect for Timers<'_> {
     fn trace(&self, cc: &gc_arena::Collection) {
         for timer in &self.timers {
             timer.trace(cc);

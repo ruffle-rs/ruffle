@@ -130,7 +130,7 @@ impl<'gc> OptValue<'gc> {
     }
 }
 
-impl<'gc> std::fmt::Debug for OptValue<'gc> {
+impl std::fmt::Debug for OptValue<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("OptValue")
             .field("class", &self.class)

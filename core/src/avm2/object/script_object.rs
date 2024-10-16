@@ -243,12 +243,12 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         // as dynamic properties that have not yet been set, and yield
         // `undefined`
         if self.is_sealed() {
-            return Err(error::make_reference_error(
+            Err(error::make_reference_error(
                 activation,
                 error::ReferenceErrorCode::InvalidRead,
                 multiname,
                 self.instance_class(),
-            ));
+            ))
         } else {
             Ok(Value::Undefined)
         }
@@ -444,7 +444,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     }
 }
 
-impl<'gc> Debug for ScriptObject<'gc> {
+impl Debug for ScriptObject<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("ScriptObject")
             .field("name", &ScriptObjectWrapper(self.0).debug_class_name())

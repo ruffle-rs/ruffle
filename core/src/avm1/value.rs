@@ -47,13 +47,13 @@ impl<'gc> From<AvmAtom<'gc>> for Value<'gc> {
     }
 }
 
-impl<'gc> From<&'static str> for Value<'gc> {
+impl From<&'static str> for Value<'_> {
     fn from(string: &'static str) -> Self {
         Value::String(string.into())
     }
 }
 
-impl<'gc> From<bool> for Value<'gc> {
+impl From<bool> for Value<'_> {
     fn from(value: bool) -> Self {
         Value::Bool(value)
     }
@@ -68,61 +68,61 @@ where
     }
 }
 
-impl<'gc> From<f64> for Value<'gc> {
+impl From<f64> for Value<'_> {
     fn from(value: f64) -> Self {
         Value::Number(value)
     }
 }
 
-impl<'gc> From<f32> for Value<'gc> {
+impl From<f32> for Value<'_> {
     fn from(value: f32) -> Self {
         Value::Number(f64::from(value))
     }
 }
 
-impl<'gc> From<i8> for Value<'gc> {
+impl From<i8> for Value<'_> {
     fn from(value: i8) -> Self {
         Value::Number(f64::from(value))
     }
 }
 
-impl<'gc> From<u8> for Value<'gc> {
+impl From<u8> for Value<'_> {
     fn from(value: u8) -> Self {
         Value::Number(f64::from(value))
     }
 }
 
-impl<'gc> From<i16> for Value<'gc> {
+impl From<i16> for Value<'_> {
     fn from(value: i16) -> Self {
         Value::Number(f64::from(value))
     }
 }
 
-impl<'gc> From<u16> for Value<'gc> {
+impl From<u16> for Value<'_> {
     fn from(value: u16) -> Self {
         Value::Number(f64::from(value))
     }
 }
 
-impl<'gc> From<i32> for Value<'gc> {
+impl From<i32> for Value<'_> {
     fn from(value: i32) -> Self {
         Value::Number(f64::from(value))
     }
 }
 
-impl<'gc> From<u32> for Value<'gc> {
+impl From<u32> for Value<'_> {
     fn from(value: u32) -> Self {
         Value::Number(f64::from(value))
     }
 }
 
-impl<'gc> From<u64> for Value<'gc> {
+impl From<u64> for Value<'_> {
     fn from(value: u64) -> Self {
         Value::Number(value as f64)
     }
 }
 
-impl<'gc> From<usize> for Value<'gc> {
+impl From<usize> for Value<'_> {
     fn from(value: usize) -> Self {
         Value::Number(value as f64)
     }

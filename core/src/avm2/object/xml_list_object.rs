@@ -48,7 +48,7 @@ pub struct XmlListObject<'gc>(pub Gc<'gc, XmlListObjectData<'gc>>);
 #[collect(no_drop)]
 pub struct XmlListObjectWeak<'gc>(pub GcWeak<'gc, XmlListObjectData<'gc>>);
 
-impl<'gc> Debug for XmlListObject<'gc> {
+impl Debug for XmlListObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("XmlListObject")
             .field("ptr", &Gc::as_ptr(self.0))

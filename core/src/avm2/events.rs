@@ -303,7 +303,7 @@ impl<'gc> DispatchList<'gc> {
     }
 }
 
-impl<'gc> Default for DispatchList<'gc> {
+impl Default for DispatchList<'_> {
     fn default() -> Self {
         Self::new()
     }
@@ -331,15 +331,15 @@ impl<'gc> EventHandler<'gc> {
     }
 }
 
-impl<'gc> PartialEq for EventHandler<'gc> {
+impl PartialEq for EventHandler<'_> {
     fn eq(&self, rhs: &Self) -> bool {
         self.use_capture == rhs.use_capture && Object::ptr_eq(self.handler, rhs.handler)
     }
 }
 
-impl<'gc> Eq for EventHandler<'gc> {}
+impl Eq for EventHandler<'_> {}
 
-impl<'gc> Hash for EventHandler<'gc> {
+impl Hash for EventHandler<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.use_capture.hash(state);
         self.handler.as_ptr().hash(state);

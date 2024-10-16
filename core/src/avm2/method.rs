@@ -356,7 +356,7 @@ impl<'gc> NativeMethod<'gc> {
     }
 }
 
-impl<'gc> fmt::Debug for NativeMethod<'gc> {
+impl fmt::Debug for NativeMethod<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("NativeMethod")
             .field("method", &format!("{:p}", &self.method))

@@ -74,7 +74,7 @@ pub fn call_handler<'gc>(
             return Ok(arg);
         }
     }
-    return this_class.construct(activation, args).map(|o| o.into());
+    this_class.construct(activation, args).map(|o| o.into())
 }
 
 /// Implements `RegExp.dotall`

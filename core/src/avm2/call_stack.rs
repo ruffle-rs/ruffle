@@ -69,13 +69,13 @@ impl<'gc> CallStack<'gc> {
     }
 }
 
-impl<'gc> Default for CallStack<'gc> {
+impl Default for CallStack<'_> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<'gc> std::fmt::Display for CallStack<'gc> {
+impl std::fmt::Display for CallStack<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut output = WString::new();
         self.display(&mut output);

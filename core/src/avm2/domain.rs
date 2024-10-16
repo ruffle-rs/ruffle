@@ -427,10 +427,10 @@ impl<'gc> Domain<'gc> {
 
 pub enum DomainPtr {}
 
-impl<'gc> PartialEq for Domain<'gc> {
+impl PartialEq for Domain<'_> {
     fn eq(&self, other: &Self) -> bool {
         self.0.as_ptr() == other.0.as_ptr()
     }
 }
 
-impl<'gc> Eq for Domain<'gc> {}
+impl Eq for Domain<'_> {}

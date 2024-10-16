@@ -539,7 +539,7 @@ fn capture_and_compare_image(
 struct PrettyString<'a>(pub &'a str);
 
 /// Make diff to display string as multi-line string
-impl<'a> std::fmt::Debug for PrettyString<'a> {
+impl std::fmt::Debug for PrettyString<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         f.write_str(self.0)
     }

@@ -268,7 +268,7 @@ enum BorrowedOrOwnedTexture<'a> {
     Owned(wgpu::Texture),
 }
 
-impl<'a> std::ops::Deref for BorrowedOrOwnedTexture<'a> {
+impl std::ops::Deref for BorrowedOrOwnedTexture<'_> {
     type Target = wgpu::Texture;
 
     fn deref(&self) -> &Self::Target {

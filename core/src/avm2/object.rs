@@ -269,14 +269,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
             Some(Property::Virtual { get: Some(get), .. }) => {
                 self.call_method(get, &[], activation)
             }
-            Some(Property::Virtual { get: None, .. }) => {
-                return Err(error::make_reference_error(
-                    activation,
-                    error::ReferenceErrorCode::ReadFromWriteOnly,
-                    multiname,
-                    self.instance_class(),
-                ));
-            }
+            Some(Property::Virtual { get: None, .. }) => Err(error::make_reference_error(
+                activation,
+                error::ReferenceErrorCode::ReadFromWriteOnly,
+                multiname,
+                self.instance_class(),
+            )),
             None => self.get_property_local(multiname, activation),
         }
     }
@@ -362,23 +360,23 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                     return self.set_property_local(multiname, value, activation);
                 }
 
-                return Err(error::make_reference_error(
+                Err(error::make_reference_error(
                     activation,
                     error::ReferenceErrorCode::AssignToMethod,
                     multiname,
                     self.instance_class(),
-                ));
+                ))
             }
             Some(Property::Virtual { set: Some(set), .. }) => {
                 self.call_method(set, &[value], activation).map(|_| ())
             }
             Some(Property::ConstSlot { .. }) | Some(Property::Virtual { set: None, .. }) => {
-                return Err(error::make_reference_error(
+                Err(error::make_reference_error(
                     activation,
                     error::ReferenceErrorCode::WriteToReadOnly,
                     multiname,
                     self.instance_class(),
-                ));
+                ))
             }
             None => self.set_property_local(multiname, value, activation),
         }
@@ -437,25 +435,21 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
                 Ok(())
             }
-            Some(Property::Method { .. }) => {
-                return Err(error::make_reference_error(
-                    activation,
-                    error::ReferenceErrorCode::AssignToMethod,
-                    multiname,
-                    self.instance_class(),
-                ));
-            }
+            Some(Property::Method { .. }) => Err(error::make_reference_error(
+                activation,
+                error::ReferenceErrorCode::AssignToMethod,
+                multiname,
+                self.instance_class(),
+            )),
             Some(Property::Virtual { set: Some(set), .. }) => {
                 self.call_method(set, &[value], activation).map(|_| ())
             }
-            Some(Property::Virtual { set: None, .. }) => {
-                return Err(error::make_reference_error(
-                    activation,
-                    error::ReferenceErrorCode::WriteToReadOnly,
-                    multiname,
-                    self.instance_class(),
-                ));
-            }
+            Some(Property::Virtual { set: None, .. }) => Err(error::make_reference_error(
+                activation,
+                error::ReferenceErrorCode::WriteToReadOnly,
+                multiname,
+                self.instance_class(),
+            )),
             None => self.init_property_local(multiname, value, activation),
         }
     }
@@ -519,14 +513,12 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
                 obj.call(Value::from(self.into()), arguments, activation)
             }
-            Some(Property::Virtual { get: None, .. }) => {
-                return Err(error::make_reference_error(
-                    activation,
-                    error::ReferenceErrorCode::ReadFromWriteOnly,
-                    multiname,
-                    self.instance_class(),
-                ));
-            }
+            Some(Property::Virtual { get: None, .. }) => Err(error::make_reference_error(
+                activation,
+                error::ReferenceErrorCode::ReadFromWriteOnly,
+                multiname,
+                self.instance_class(),
+            )),
             None => self.call_property_local(multiname, arguments, activation),
         }
     }
@@ -1423,15 +1415,15 @@ impl<'gc> Object<'gc> {
     }
 }
 
-impl<'gc> PartialEq for Object<'gc> {
+impl PartialEq for Object<'_> {
     fn eq(&self, other: &Self) -> bool {
         Object::ptr_eq(*self, *other)
     }
 }
 
-impl<'gc> Eq for Object<'gc> {}
+impl Eq for Object<'_> {}
 
-impl<'gc> Hash for Object<'gc> {
+impl Hash for Object<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.as_ptr().hash(state);
     }

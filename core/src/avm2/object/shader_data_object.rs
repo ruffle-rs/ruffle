@@ -40,7 +40,7 @@ impl fmt::Debug for ShaderDataObject<'_> {
     }
 }
 
-impl<'gc> ShaderDataObject<'gc> {
+impl ShaderDataObject<'_> {
     pub fn pixel_bender_shader(&self) -> Option<PixelBenderShaderHandle> {
         let shader = &self.0.shader;
         let guard = scopeguard::guard(shader.take(), |stolen| shader.set(stolen));

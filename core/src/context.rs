@@ -508,7 +508,7 @@ impl<'gc> ActionQueue<'gc> {
     }
 }
 
-impl<'gc> Default for ActionQueue<'gc> {
+impl Default for ActionQueue<'_> {
     fn default() -> Self {
         Self::new()
     }
@@ -548,7 +548,7 @@ pub struct RenderContext<'a, 'gc> {
     pub stage: Stage<'gc>,
 }
 
-impl<'a, 'gc> RenderContext<'a, 'gc> {
+impl<'gc> RenderContext<'_, 'gc> {
     /// Convenience method to retrieve the current GC context. Note that explicitly writing
     /// `self.gc_context` can be sometimes necessary to satisfy the borrow checker.
     #[inline(always)]

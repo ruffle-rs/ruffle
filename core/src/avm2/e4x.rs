@@ -42,7 +42,7 @@ pub struct E4XNodeData<'gc> {
     notification: Option<FunctionObject<'gc>>,
 }
 
-impl<'gc> Debug for E4XNodeData<'gc> {
+impl Debug for E4XNodeData<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("E4XNodeData")
             // Don't print the actual parent, to avoid infinite recursion
@@ -1392,16 +1392,16 @@ impl<'gc> E4XNode<'gc> {
                     );
                 }
 
-                return to_xml_string(E4XOrXml::E4X(*self), activation);
+                to_xml_string(E4XOrXml::E4X(*self), activation)
             }
             E4XNodeKind::Comment(_) | E4XNodeKind::ProcessingInstruction(_) => {
-                return to_xml_string(E4XOrXml::E4X(*self), activation);
+                to_xml_string(E4XOrXml::E4X(*self), activation)
             }
         }
     }
 
     pub fn xml_to_xml_string(&self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
-        return to_xml_string(E4XOrXml::E4X(*self), activation);
+        to_xml_string(E4XOrXml::E4X(*self), activation)
     }
 
     pub fn kind(&self) -> Ref<'_, E4XNodeKind<'gc>> {

@@ -35,7 +35,7 @@ pub struct ShaderFilter<'a> {
     pub shader_args: Vec<PixelBenderShaderArgument<'a>>,
 }
 
-impl<'gc> PartialEq for ShaderFilter<'gc> {
+impl PartialEq for ShaderFilter<'_> {
     fn eq(&self, other: &Self) -> bool {
         self.bottom_extension == other.bottom_extension
             && self.left_extension == other.left_extension

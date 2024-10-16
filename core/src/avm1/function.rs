@@ -457,7 +457,7 @@ impl<'gc> Executable<'gc> {
     }
 }
 
-impl<'gc> From<NativeFunction> for Executable<'gc> {
+impl From<NativeFunction> for Executable<'_> {
     fn from(nf: NativeFunction) -> Self {
         Executable::Native(nf)
     }

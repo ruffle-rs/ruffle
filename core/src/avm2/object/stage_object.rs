@@ -129,7 +129,7 @@ impl<'gc> TObject<'gc> for StageObject<'gc> {
     }
 }
 
-impl<'gc> Debug for StageObject<'gc> {
+impl Debug for StageObject<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("StageObject")
             .field("name", &self.base().debug_class_name())

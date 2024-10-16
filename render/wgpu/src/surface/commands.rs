@@ -608,7 +608,7 @@ impl<'a> WgpuCommandHandler<'a> {
     }
 }
 
-impl<'a> CommandHandler for WgpuCommandHandler<'a> {
+impl CommandHandler for WgpuCommandHandler<'_> {
     fn blend(&mut self, commands: CommandList, blend_mode: RenderBlendMode) {
         let mut surface = Surface::new(
             self.descriptors,

@@ -119,7 +119,7 @@ pub const ZEROED_OUT_OF_RANGE_MODE_INDEX: u32 = 5;
 
 pub const TEXTURE_START_BIND_INDEX: u32 = 6;
 
-impl<'a> ShaderBuilder<'a> {
+impl ShaderBuilder<'_> {
     pub fn build(shader: &PixelBenderShader) -> Result<NagaModules> {
         let mut module = Module::default();
 

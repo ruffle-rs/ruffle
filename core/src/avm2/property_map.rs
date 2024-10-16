@@ -29,7 +29,7 @@ pub struct PropertyMap<'gc, V>(
     HashMap<AvmString<'gc>, SmallVec<[(Namespace<'gc>, V); 2]>, FnvBuildHasher>,
 );
 
-unsafe impl<'gc, V> Collect for PropertyMap<'gc, V>
+unsafe impl<V> Collect for PropertyMap<'_, V>
 where
     V: Collect,
 {
@@ -45,7 +45,7 @@ where
     }
 }
 
-impl<'gc, V> Default for PropertyMap<'gc, V> {
+impl<V> Default for PropertyMap<'_, V> {
     fn default() -> Self {
         Self::new()
     }

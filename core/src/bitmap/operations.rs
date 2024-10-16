@@ -27,7 +27,6 @@ use swf::{BlendMode, ColorTransform, Fixed8, Rectangle, Twips};
 /// This will allow us to be able to optimise the implementations and share the
 /// same code between VMs.
 #[allow(clippy::too_many_arguments)]
-
 pub fn fill_rect<'gc>(
     mc: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,

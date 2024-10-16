@@ -131,7 +131,7 @@ impl<'a> DecodeAvmUtf8<'a> {
     }
 }
 
-impl<'a> Iterator for DecodeAvmUtf8<'a> {
+impl Iterator for DecodeAvmUtf8<'_> {
     type Item = u32;
     fn next(&mut self) -> Option<Self::Item> {
         let first = *self.src.get(self.index)?;

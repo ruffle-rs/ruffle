@@ -1,6 +1,6 @@
 use swf::{Fixed16, Point, PointDelta, Rectangle, Twips};
 
-/// TODO: Consider using portable SIMD when it's stable (https://doc.rust-lang.org/std/simd/index.html).
+// TODO: Consider using portable SIMD when it's stable (https://doc.rust-lang.org/std/simd/index.html).
 
 /// The transformation matrix used by Flash display objects.
 #[derive(Copy, Clone, Debug, PartialEq)]

@@ -473,14 +473,14 @@ impl WStr {
     }
 }
 
-impl<'a> Default for &'a WStr {
+impl Default for &WStr {
     #[inline]
     fn default() -> Self {
         WStr::empty()
     }
 }
 
-impl<'a> Default for &'a mut WStr {
+impl Default for &mut WStr {
     #[inline]
     fn default() -> Self {
         WStr::empty_mut()

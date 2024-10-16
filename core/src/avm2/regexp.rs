@@ -28,7 +28,7 @@ pub struct RegExp<'gc> {
     cached_text: Option<CachedText<'gc>>,
 }
 
-impl<'gc> Clone for RegExp<'gc> {
+impl Clone for RegExp<'_> {
     fn clone(&self) -> Self {
         Self {
             source: self.source,

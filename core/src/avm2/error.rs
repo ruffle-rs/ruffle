@@ -22,7 +22,7 @@ pub enum Error<'gc> {
     RustError(Box<dyn std::error::Error>),
 }
 
-impl<'gc> Debug for Error<'gc> {
+impl Debug for Error<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Error::AvmError(error) = self {
             if let Some(error) = error.as_object().and_then(|obj| obj.as_error_object()) {
@@ -836,7 +836,7 @@ fn error_constructor<'gc>(
         .into())
 }
 
-impl<'gc> std::fmt::Display for Error<'gc> {
+impl std::fmt::Display for Error<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{self:?}")
     }

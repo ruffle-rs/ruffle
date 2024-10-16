@@ -346,7 +346,7 @@ pub enum Op<'gc> {
     URShift,
 }
 
-impl<'gc> Op<'gc> {
+impl Op<'_> {
     pub fn is_block_terminating(&self) -> bool {
         matches!(
             self,
