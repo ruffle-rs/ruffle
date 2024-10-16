@@ -3,6 +3,7 @@ name: Download translations from Crowdin
 on:
   schedule:
     - cron: '0 21 * * *'
+  workflow_dispatch:
 
 jobs:
   crowdin:
