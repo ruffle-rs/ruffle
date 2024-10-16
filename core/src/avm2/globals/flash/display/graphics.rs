@@ -416,58 +416,58 @@ pub fn draw_rect<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Length between two points on a unit circle that are 45 degrees apart from
-/// one another.
-///
-/// This constant is `H`, short for 'hypotenuse', because it is also the length
-/// of the hypotenuse formed from the control point triangle of any quadratic
-/// Bezier curve approximating a 45-degree unit circle arc.
-///
-/// The derivation of this constant - or a similar constant for any other arc
-/// angle hypotenuse - is as follows:
-///
-/// 1. Call the arc angle `alpha`. In this special case, `alpha` is 45 degrees,
-///    or one-quarter `PI`.
-/// 2. Consider the triangle formed by the center of the circle and the two
-///    points at the start and end of the arc. The two other angles will be
-///    equal, and it and `alpha` sum to 180 degrees. We'll call this angle
-///    `beta`, and it is equal to `alpha` minus 180 degrees, divided by 2.
-/// 3. Using the law of sines, we know that the sine of `alpha` divided by `H`
-///    is equal to the sine of `beta` divided by `r`, where `r` is the radius
-///    of the circle. We can solve for `H` to get the result. Note that since
-///    this is a unit circle, you won't see a radius term in this constant.
-//const H:f64 = (PI * 0.25).sin() / (PI * 0.375).sin();
+// /// Length between two points on a unit circle that are 45 degrees apart from
+// /// one another.
+// ///
+// /// This constant is `H`, short for 'hypotenuse', because it is also the length
+// /// of the hypotenuse formed from the control point triangle of any quadratic
+// /// Bezier curve approximating a 45-degree unit circle arc.
+// ///
+// /// The derivation of this constant - or a similar constant for any other arc
+// /// angle hypotenuse - is as follows:
+// ///
+// /// 1. Call the arc angle `alpha`. In this special case, `alpha` is 45 degrees,
+// ///    or one-quarter `PI`.
+// /// 2. Consider the triangle formed by the center of the circle and the two
+// ///    points at the start and end of the arc. The two other angles will be
+// ///    equal, and it and `alpha` sum to 180 degrees. We'll call this angle
+// ///    `beta`, and it is equal to `alpha` minus 180 degrees, divided by 2.
+// /// 3. Using the law of sines, we know that the sine of `alpha` divided by `H`
+// ///    is equal to the sine of `beta` divided by `r`, where `r` is the radius
+// ///    of the circle. We can solve for `H` to get the result. Note that since
+// ///    this is a unit circle, you won't see a radius term in this constant.
+// const H:f64 = (PI * 0.25).sin() / (PI * 0.375).sin();
 
-/// Length between two control points of a quadratic Bezier curve approximating
-/// a 45-degree arc of a unit circle.
-///
-/// This constant is critical to calculating the off-curve point of the control
-/// point triangle. We do so by taking the tangents at each on-curve point,
-/// which point in the direction of the off-curve points. Then, we scale one of
-/// those tangent vectors by `A_B` and add it to the on-curve point to get the
-/// off-curve point, constructing our Bezier.
-///
-/// The derivation of this constant - or a similar constant for any other arc
-/// angle Bezier - is as follows:
-///
-/// 1. Start with the value of `H` for the given arc angle `alpha`.
-/// 2. Consider the triangle formed by the three control points of our desired
-///    Bezier curve. We'll call the angle at the off-curve control point
-///    `delta`, and the two other angles of this triangle are `gamma`.
-/// 3. Because two of the lines of this triangle are tangent lines of the
-///    circle, they will form a right angle with the normal, which is the same
-///    as the line between the center of the circle and the point.
-///    Coincidentally, this right angle is shared between `beta`, meaning that
-///    we can subtract it from 90 degrees to obtain `gamma`. Or, after some
-///    elementary algebra, just take half of `alpha`.
-/// 4. We can then derive the value of `delta` by subtracting out the other two
-///    `gamma`s from 180 degrees. This, again, can be simplified to just
-///    180 degrees minus `alpha`.
-/// 5. By the law of sines, the sine of `delta` divided by `H` is equal to
-///    the sine of `gamma` divided by `A_B`. We can then rearrange this to get
-///    `H` times the sine of `gamma`, divided by the sine of `delta`; which is
-///    our `A_B` constant.
-//const A_B:f64 = H * (PI * 0.125).sin() / (PI * 0.75).sin();
+// /// Length between two control points of a quadratic Bezier curve approximating
+// /// a 45-degree arc of a unit circle.
+// ///
+// /// This constant is critical to calculating the off-curve point of the control
+// /// point triangle. We do so by taking the tangents at each on-curve point,
+// /// which point in the direction of the off-curve points. Then, we scale one of
+// /// those tangent vectors by `A_B` and add it to the on-curve point to get the
+// /// off-curve point, constructing our Bezier.
+// ///
+// /// The derivation of this constant - or a similar constant for any other arc
+// /// angle Bezier - is as follows:
+// ///
+// /// 1. Start with the value of `H` for the given arc angle `alpha`.
+// /// 2. Consider the triangle formed by the three control points of our desired
+// ///    Bezier curve. We'll call the angle at the off-curve control point
+// ///    `delta`, and the two other angles of this triangle are `gamma`.
+// /// 3. Because two of the lines of this triangle are tangent lines of the
+// ///    circle, they will form a right angle with the normal, which is the same
+// ///    as the line between the center of the circle and the point.
+// ///    Coincidentally, this right angle is shared between `beta`, meaning that
+// ///    we can subtract it from 90 degrees to obtain `gamma`. Or, after some
+// ///    elementary algebra, just take half of `alpha`.
+// /// 4. We can then derive the value of `delta` by subtracting out the other two
+// ///    `gamma`s from 180 degrees. This, again, can be simplified to just
+// ///    180 degrees minus `alpha`.
+// /// 5. By the law of sines, the sine of `delta` divided by `H` is equal to
+// ///    the sine of `gamma` divided by `A_B`. We can then rearrange this to get
+// ///    `H` times the sine of `gamma`, divided by the sine of `delta`; which is
+// ///    our `A_B` constant.
+// const A_B:f64 = H * (PI * 0.125).sin() / (PI * 0.75).sin();
 
 /// A list of five quadratic Bezier control points, intended to approximate the
 /// bottom-right quadrant of a unit circle.
