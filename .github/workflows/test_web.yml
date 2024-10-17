@@ -68,6 +68,9 @@ jobs:
       # Keep the version number in sync in all workflows,
       # and in the extension builder Dockerfile!
       - name: Install wasm-opt
+        # It runs for a long time, and the build is already slow on Windows,
+        # where it doesn't have much benefit anyway - most tests are run on Ubuntu.
+        if: matrix.os != 'windows-latest'
         uses: sigoden/install-binary@v1
         with:
           repo: WebAssembly/binaryen
@@ -86,6 +89,7 @@ jobs:
           npm run build
 
       - name: Check formatting
+        if: matrix.os == 'ubuntu-24.04'
         working-directory: web
         run: npm run lint
 
@@ -93,13 +97,100 @@ jobs:
         working-directory: web
         run: npm test
 
-      - name: Run browser-based tests
-        # Don't run browser tests on Windows because it's flaky for unknown reasons. :-(
-        if: runner.os == 'Linux'
-        working-directory: web
-        run: npm run wdio -- --headless --chrome --firefox --edge
+  build-for-browser-tests:
+    needs: changes
+    if: needs.changes.outputs.should_run == 'true'
+    name: Build for browser tests
+    runs-on: ubuntu-24.04
 
-  check-required:
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Cargo output
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "web"
+          save-if: false
+
+      # wasm-bindgen-cli version must match wasm-bindgen crate version.
+      # Be sure to update in release_nightly.yml, Cargo.toml, web/docker/Dockerfile,
+      # and web/README.md as well.
+      - name: Install wasm-bindgen
+        run: cargo install wasm-bindgen-cli --version 0.2.93
+
+      # No real need to install wasm-opt here
+
+      - name: Build selfhosted
+        env:
+          RUSTFLAGS: -D warnings
+          # Verify that all features build.
+          CARGO_FLAGS: --all-features
+        working-directory: web
+        shell: bash -l {0}
+        run: |
+          npm ci
+          npm run build --workspace=ruffle-core
+          npm run build --workspace=ruffle-selfhosted
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: selfhosted-dist
+          path: web/packages/selfhosted/dist
+
+
+  browser-tests:
+    needs: build-for-browser-tests
+    if: needs.changes.outputs.should_run == 'true'
+    name: Test in ${{ matrix.browser }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: ["chrome", "firefox", "edge"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: selfhosted-dist
+          path: web/packages/selfhosted/dist
+
+      - name: Run browser-based tests
+        working-directory: web
+        shell: bash -l {0}
+        run: |
+          npm ci
+          npm run wdio -- --headless --parallel --${{ matrix.browser }}
+
+  # The rest is needed only because otherwise the real jobs couldn't be made required for merging PRs,
+  # as they would fail the entire workflow run if skipped - this makes GitHub happy instead.
+  # See:
+  #  - https://github.com/orgs/community/discussions/13690
+  #  - https://github.com/orgs/community/discussions/44490
+
+  build-dummy:
     needs: changes
     if: needs.changes.outputs.should_run == 'false'
     name: Test Node.js ${{ matrix.node_version }} / ${{ matrix.os }}
@@ -108,6 +199,19 @@ jobs:
       matrix:
         node_version: ["20", "22"]
         os: [ubuntu-24.04, windows-latest]
+
+    steps:
+      - name: No-op
+        run: echo noop
+
+  browser-tests-dummy:
+    needs: changes
+    if: needs.changes.outputs.should_run == 'false'
+    name: Test in ${{ matrix.browser }}
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        browser: ["chrome", "firefox", "edge"]
 
     steps:
       - name: No-op
