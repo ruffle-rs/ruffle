@@ -1,7 +1,7 @@
 use crate::avm2::error::error;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, Value};
-use crate::external::{Callback, Value as ExternalValue};
+use crate::external::{Callback, ExternalInterface, Value as ExternalValue};
 use crate::string::AvmString;
 
 pub fn call<'gc>(
@@ -12,21 +12,14 @@ pub fn call<'gc>(
     let name = args.get_string(activation, 0)?;
     check_available(activation)?;
 
-    if let Some(method) = activation
-        .context
-        .external_interface
-        .get_method_for(&name.to_utf8_lossy())
-    {
-        let mut external_args = Vec::with_capacity(args.len() - 1);
-        for arg in &args[1..] {
-            external_args.push(ExternalValue::from_avm2(arg.to_owned()));
-        }
-        Ok(method
-            .call(activation.context, &external_args)
-            .into_avm2(activation))
-    } else {
-        Ok(Value::Null)
+    let mut external_args = Vec::with_capacity(args.len() - 1);
+    for arg in &args[1..] {
+        external_args.push(ExternalValue::from_avm2(arg.to_owned()));
     }
+    Ok(
+        ExternalInterface::call_method(activation.context, &name.to_utf8_lossy(), &external_args)
+            .into_avm2(activation),
+    )
 }
 
 fn check_available<'gc>(activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {

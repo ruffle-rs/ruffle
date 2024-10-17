@@ -13,6 +13,7 @@ use crate::context::UpdateContext;
 use crate::string::AvmString;
 use gc_arena::Collect;
 use std::collections::BTreeMap;
+use std::rc::Rc;
 
 /// An intermediate format of representing shared data between ActionScript and elsewhere.
 ///
@@ -333,31 +334,20 @@ impl FsCommandProvider for NullFsCommandProvider {
 }
 
 pub trait ExternalInterfaceProvider {
-    fn get_method(&self, name: &str) -> Option<Box<dyn ExternalInterfaceMethod>>;
+    fn call_method(&self, context: &mut UpdateContext<'_>, name: &str, args: &[Value]) -> Value;
 
     fn on_callback_available(&self, name: &str);
 
     fn get_id(&self) -> Option<String>;
 }
 
-pub trait ExternalInterfaceMethod {
-    fn call(&self, context: &mut UpdateContext<'_>, args: &[Value]) -> Value;
-}
-
-impl<F> ExternalInterfaceMethod for F
-where
-    F: Fn(&mut UpdateContext<'_>, &[Value]) -> Value,
-{
-    fn call(&self, context: &mut UpdateContext<'_>, args: &[Value]) -> Value {
-        self(context, args)
-    }
-}
+pub struct NullExternalInterfaceProvider;
 
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct ExternalInterface<'gc> {
     #[collect(require_static)]
-    providers: Vec<Box<dyn ExternalInterfaceProvider>>,
+    provider: Option<Rc<Box<dyn ExternalInterfaceProvider>>>,
     callbacks: BTreeMap<String, Callback<'gc>>,
     #[collect(require_static)]
     fs_commands: Box<dyn FsCommandProvider>,
@@ -365,23 +355,23 @@ pub struct ExternalInterface<'gc> {
 
 impl<'gc> ExternalInterface<'gc> {
     pub fn new(
-        providers: Vec<Box<dyn ExternalInterfaceProvider>>,
+        provider: Option<Box<dyn ExternalInterfaceProvider>>,
         fs_commands: Box<dyn FsCommandProvider>,
     ) -> Self {
         Self {
-            providers,
+            provider: provider.map(Rc::new),
             callbacks: Default::default(),
             fs_commands,
         }
     }
 
-    pub fn add_provider(&mut self, provider: Box<dyn ExternalInterfaceProvider>) {
-        self.providers.push(provider);
+    pub fn set_provider(&mut self, provider: Option<Box<dyn ExternalInterfaceProvider>>) {
+        self.provider = provider.map(Rc::new);
     }
 
     pub fn add_callback(&mut self, name: String, callback: Callback<'gc>) {
         self.callbacks.insert(name.clone(), callback);
-        for provider in &self.providers {
+        if let Some(provider) = &self.provider {
             provider.on_callback_available(&name);
         }
     }
@@ -390,26 +380,21 @@ impl<'gc> ExternalInterface<'gc> {
         self.callbacks.get(name).cloned()
     }
 
-    pub fn get_method_for(&self, name: &str) -> Option<Box<dyn ExternalInterfaceMethod>> {
-        for provider in &self.providers {
-            if let Some(method) = provider.get_method(name) {
-                return Some(method);
-            }
+    pub fn call_method(context: &mut UpdateContext<'gc>, name: &str, args: &[Value]) -> Value {
+        let provider = context.external_interface.provider.clone();
+        if let Some(provider) = &provider {
+            provider.call_method(context, name, args)
+        } else {
+            Value::Undefined
         }
-        None
     }
 
     pub fn available(&self) -> bool {
-        !self.providers.is_empty()
+        self.provider.is_some()
     }
 
     pub fn any_id(&self) -> Option<String> {
-        for provider in &self.providers {
-            if let Some(id) = provider.get_id() {
-                return Some(id);
-            }
-        }
-        None
+        self.provider.as_ref().and_then(|p| p.get_id())
     }
 
     pub fn invoke_fs_command(&self, command: &str, args: &str) -> bool {
