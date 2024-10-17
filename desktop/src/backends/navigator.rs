@@ -9,7 +9,7 @@ use tokio::sync::oneshot;
 use url::Url;
 use winit::event_loop::EventLoopProxy;
 
-use crate::cli::FilesystemAccessMode;
+use crate::cli::{FilesystemAccessMode, OpenUrlMode};
 use crate::custom_event::RuffleEvent;
 use crate::gui::dialogs::filesystem_access_dialog::{
     FilesystemAccessDialogConfiguration, FilesystemAccessDialogResult,
@@ -18,6 +18,7 @@ use crate::gui::dialogs::network_access_dialog::{
     NetworkAccessDialogConfiguration, NetworkAccessDialogResult,
 };
 use crate::gui::DialogDescriptor;
+use crate::preferences::GlobalPreferences;
 use crate::util::open_url;
 
 // TODO Make this more generic, maybe a manager?
@@ -74,6 +75,8 @@ impl PathAllowList {
 
 #[derive(Clone)]
 pub struct DesktopNavigatorInterface {
+    preferences: GlobalPreferences,
+
     // Arc + Mutex due to macOS
     event_loop: Arc<Mutex<EventLoopProxy<RuffleEvent>>>,
 
@@ -84,11 +87,13 @@ pub struct DesktopNavigatorInterface {
 
 impl DesktopNavigatorInterface {
     pub fn new(
+        preferences: GlobalPreferences,
         event_loop: EventLoopProxy<RuffleEvent>,
         movie_path: Option<PathBuf>,
         filesystem_access_mode: FilesystemAccessMode,
     ) -> Self {
         Self {
+            preferences,
             event_loop: Arc::new(Mutex::new(event_loop)),
             allow_list: PathAllowList::new(movie_path),
             filesystem_access_mode,
@@ -114,8 +119,14 @@ impl DesktopNavigatorInterface {
 }
 
 impl NavigatorInterface for DesktopNavigatorInterface {
-    fn navigate_to_website(&self, url: Url, ask: bool) {
-        if !ask {
+    fn navigate_to_website(&self, url: Url) {
+        let open_url_mode = self.preferences.open_url_mode();
+        if open_url_mode == OpenUrlMode::Deny {
+            tracing::warn!("SWF tried to open a website, but opening a website is not allowed");
+            return;
+        }
+
+        if open_url_mode == OpenUrlMode::Allow {
             open_url(&url);
             return;
         }

@@ -56,24 +56,6 @@ pub enum SocketMode {
     Ask,
 }
 
-/// The handling mode of links opening a new website.
-#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
-#[derive(Clone, Copy, Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum OpenURLMode {
-    /// Allow all links to open a new website.
-    #[cfg_attr(feature = "serde", serde(rename = "allow"))]
-    Allow,
-
-    /// A confirmation dialog opens with every link trying to open a new website.
-    #[cfg_attr(feature = "serde", serde(rename = "confirm"))]
-    Confirm,
-
-    /// Deny all links to open a new website.
-    #[cfg_attr(feature = "serde", serde(rename = "deny"))]
-    Deny,
-}
-
 impl NavigationMethod {
     /// Convert an SWF method enum into a NavigationMethod.
     pub fn from_send_vars_method(s: SendVarsMethod) -> Option<Self> {

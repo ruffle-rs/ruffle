@@ -1,4 +1,4 @@
-use crate::cli::GameModePreference;
+use crate::cli::{GameModePreference, OpenUrlMode};
 use crate::gui::ThemePreference;
 use crate::log::FilenamePattern;
 use crate::preferences::storage::StorageBackend;
@@ -118,6 +118,17 @@ impl<'a> PreferencesWriter<'a> {
                 toml_document.remove("gamemode");
             }
             values.gamemode_preference = gamemode_preference;
+        });
+    }
+
+    pub fn set_open_url_mode(&mut self, open_url_mode: OpenUrlMode) {
+        self.0.edit(|values, toml_document| {
+            if let Some(open_url_mode) = open_url_mode.as_str() {
+                toml_document["open_url_mode"] = value(open_url_mode);
+            } else {
+                toml_document.remove("open_url_mode");
+            }
+            values.open_url_mode = open_url_mode;
         });
     }
 }
@@ -299,6 +310,20 @@ mod tests {
         test(
             "gamemode = \"on\"",
             |writer| writer.set_gamemode_preference(GameModePreference::Default),
+            "",
+        );
+    }
+
+    #[test]
+    fn set_open_url_mode() {
+        test(
+            "open_url_mode = 6\n",
+            |writer| writer.set_open_url_mode(OpenUrlMode::Allow),
+            "open_url_mode = \"allow\"\n",
+        );
+        test(
+            "open_url_mode = \"deny\"",
+            |writer| writer.set_open_url_mode(OpenUrlMode::Confirm),
             "",
         );
     }
