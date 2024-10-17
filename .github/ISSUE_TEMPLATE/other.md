@@ -2,7 +2,7 @@
 name: Other
 about: File an issue that does not fit elsewhere
 title: ''
-labels:
+labels: ''
 assignees: ''
 
 ---
