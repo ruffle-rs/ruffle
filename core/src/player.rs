@@ -1437,6 +1437,18 @@ impl Player {
         }
     }
 
+    pub fn avm_output_json(&mut self, switch: i8) {
+        self.mutate_with_update_context(|context| {
+            context.avm1.output_json = switch;
+        });
+    }
+
+    pub fn avm_output_json_code(&mut self, opcode: u8) {
+        self.mutate_with_update_context(|context| {
+            context.avm1.output_json_code = opcode;
+        });
+    }
+
     /// Updates the hover state of buttons.
     fn update_mouse_state(
         &mut self,

@@ -453,6 +453,18 @@ impl RuffleHandle {
     pub fn is_wasm_simd_used() -> bool {
         cfg!(target_feature = "simd128")
     }
+
+    pub fn avm_output_json(&mut self, switch: i8) {
+        let _ = self.with_core_mut(|core| {
+            core.avm_output_json(switch);
+        });
+    }
+
+    pub fn avm_output_json_code(&mut self, opcode: u8) {
+        let _ = self.with_core_mut(|core| {
+            core.avm_output_json_code(opcode);
+        });
+    }
 }
 
 impl RuffleHandle {
