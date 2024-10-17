@@ -347,7 +347,7 @@ jobs:
       # Be sure to update in test_web.yml, Cargo.toml, web/docker/Dockerfile,
       # and web/README.md as well.
       - name: Install wasm-bindgen
-        run: cargo install wasm-bindgen-cli --version 0.2.93
+        run: cargo install wasm-bindgen-cli --version 0.2.95
 
       # Keep the version number in sync in all workflows,
       # and in the extension builder Dockerfile!
