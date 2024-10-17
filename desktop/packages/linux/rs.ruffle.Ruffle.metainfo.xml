@@ -117,6 +117,7 @@
         <keyword xml:lang="de">flash</keyword>
         <keyword xml:lang="es">flash</keyword>
         <keyword xml:lang="fr">flash</keyword>
+        <keyword xml:lang="he">הבזק</keyword>
         <keyword xml:lang="it">flash</keyword>
         <keyword xml:lang="ja">flash</keyword>
         <keyword xml:lang="ko">플래시</keyword>
@@ -148,7 +149,6 @@
         <keyword xml:lang="de">spieler</keyword>
         <keyword xml:lang="es">reproductor</keyword>
         <keyword xml:lang="fr">lecteur</keyword>
-        <keyword xml:lang="id">pemutar</keyword>
         <keyword xml:lang="it">riproduttore</keyword>
         <keyword xml:lang="ja">プレイヤー</keyword>
         <keyword xml:lang="ko">플레이어</keyword>
@@ -166,7 +166,6 @@
         <keyword xml:lang="es">emulador</keyword>
         <keyword xml:lang="fr">émulateur</keyword>
         <keyword xml:lang="he">אמולטור</keyword>
-        <keyword xml:lang="hu">emulátor</keyword>
         <keyword xml:lang="it">emulatore</keyword>
         <keyword xml:lang="ja">エミュレーター</keyword>
         <keyword xml:lang="ko">에뮬레이터</keyword>
