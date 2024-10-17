@@ -22,6 +22,7 @@
                 "https://*.time4learning.com/*",
                 "https://*.edgenuity.com/*",
                 "https://www.chewy.com/*",
+                "https://*.duosecurity.com/*",
             ],
             "js": ["dist/content.js"],
             "all_frames": true,

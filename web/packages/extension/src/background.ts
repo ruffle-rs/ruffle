@@ -190,6 +190,7 @@ async function enable() {
                     "https://*.time4learning.com/*",
                     "https://*.edgenuity.com/*",
                     "https://www.chewy.com/*",
+                    "https://*.duosecurity.com/*",
                 ],
                 runAt: "document_start",
                 allFrames: true,
