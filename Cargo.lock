@@ -4586,6 +4586,7 @@ version = "0.1.0"
 dependencies = [
  "bzip2",
  "hex",
+ "js-sys",
  "libloading",
  "reqwest",
  "ruffle_render",
@@ -4597,6 +4598,8 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tracing",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
@@ -4636,7 +4639,7 @@ dependencies = [
  "ruffle_render_canvas",
  "ruffle_render_webgl",
  "ruffle_render_wgpu",
- "ruffle_video_software",
+ "ruffle_video_external",
  "ruffle_web_common",
  "serde",
  "serde-wasm-bindgen",
