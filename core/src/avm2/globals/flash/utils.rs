@@ -1,6 +1,9 @@
 //! `flash.utils` namespace
 
+use crate::avm2::globals::avmplus::instance_class_describe_type;
+
 use crate::avm2::object::TObject;
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, Value};
 use crate::string::AvmString;
 use crate::string::WString;
@@ -189,24 +192,11 @@ pub fn get_qualified_class_name<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // This is a native method, which enforces the argument count.
-    let val = args[0];
-    match val {
-        Value::Null => return Ok("null".into()),
-        Value::Undefined => return Ok("void".into()),
-        _ => {}
-    }
-    let obj = val.coerce_to_object(activation)?;
+    let value = args.get_value(0);
+    let class = instance_class_describe_type(activation, value);
 
-    let class = match obj.as_class_object() {
-        Some(class) => class.inner_class_definition(),
-        None => obj.instance_class(),
-    };
-
-    Ok(class
-        .name()
-        .to_qualified_name(activation.context.gc_context)
-        .into())
+    let mc = activation.gc();
+    Ok(class.dollar_removed_name(mc).to_qualified_name(mc).into())
 }
 
 /// Implements `flash.utils.getQualifiedSuperclassName`
@@ -215,14 +205,11 @@ pub fn get_qualified_superclass_name<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let obj = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation)?;
+    let value = args.get_value(0);
 
-    let class = match obj.as_class_object() {
+    let class = match value.as_object().and_then(|o| o.as_class_object()) {
         Some(class) => class.inner_class_definition(),
-        None => obj.instance_class(),
+        None => instance_class_describe_type(activation, value),
     };
 
     if let Some(super_class) = class.super_class() {

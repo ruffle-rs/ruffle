@@ -131,9 +131,9 @@ pub fn set_vertex_buffer_at<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(context) = this.as_context_3d() {
         let index = args.get_u32(activation, 0)?;
-        let buffer = if matches!(args[1], Value::Null) {
-            None
-        } else {
+        let buffer = args.try_get_object(activation, 1);
+
+        let buffer = if let Some(buffer) = buffer {
             // Note - we only check the format string if the buffer is non-null
             let format = args.get_string(activation, 3)?;
 
@@ -155,14 +155,9 @@ pub fn set_vertex_buffer_at<'gc>(
                 )?));
             };
 
-            Some((
-                args.get(1)
-                    .unwrap_or(&Value::Undefined)
-                    .coerce_to_object(activation)?
-                    .as_vertex_buffer()
-                    .unwrap(),
-                format,
-            ))
+            Some((buffer.as_vertex_buffer().unwrap(), format))
+        } else {
+            None
         };
 
         let buffer_offset = args.get_u32(activation, 2)?;
@@ -204,9 +199,7 @@ pub fn draw_triangles<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(context) = this.as_context_3d() {
         let index_buffer = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)?
+            .get_object(activation, 0, "indexBuffer")?
             .as_index_buffer()
             .unwrap();
 
@@ -291,12 +284,9 @@ pub fn set_program_constants_from_matrix<'gc>(
 
         let first_register = args.get_u32(activation, 1)?;
 
-        let mut matrix = args
-            .get(2)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)?;
+        let mut matrix = args.get_object(activation, 2, "matrix")?;
 
-        let user_transposedMatrix = args.get(3).unwrap_or(&Value::Undefined).coerce_to_boolean();
+        let user_transposed_matrix = args.get_bool(3);
 
         // Hack - we store in column-major form, but we need it in row-major form
         // So, do the *opposite* of what the user pasess in`
@@ -305,17 +295,20 @@ pub fn set_program_constants_from_matrix<'gc>(
         // It seems like the documentation is wrong - we really copy to the registers
         // in column-major order.
         // See https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/display3D/Context3D.hx#L1532-L1550
-        if user_transposedMatrix {
+        if user_transposed_matrix {
             matrix = matrix
                 .call_public_property("clone", &[], activation)?
-                .coerce_to_object(activation)?;
+                .as_object()
+                .expect("Matrix3D.clone returns Object");
 
             matrix.call_public_property("transpose", &[], activation)?;
         }
 
         let matrix_raw_data = matrix
             .get_public_property("rawData", activation)?
-            .coerce_to_object(activation)?;
+            .as_object()
+            .expect("rawData cannot be null");
+
         let matrix_raw_data = matrix_raw_data
             .as_vector_storage()
             .unwrap()
@@ -346,11 +339,7 @@ pub fn set_program_constants_from_vector<'gc>(
 
         let first_register = args.get_u32(activation, 1)?;
 
-        let vector = args
-            .get(2)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)?;
-
+        let vector = args.get_object(activation, 2, "vector")?;
         let vector = vector.as_vector_storage().unwrap();
 
         let num_registers = args.get_i32(activation, 3)?;
@@ -503,19 +492,21 @@ pub fn set_texture_at<'gc>(
         // This is a native method, so all of the arguments have been checked and coerced for us
         let sampler = args[0].as_i32() as u32;
         let mut cube = false;
-        let texture = if matches!(args[1], Value::Null) {
-            None
-        } else {
-            let obj = args[1].coerce_to_object(activation)?;
-            cube = obj.is_of_type(
+        let texture_object = args.try_get_object(activation, 1);
+        let texture = if let Some(texture_object) = texture_object {
+            cube = texture_object.is_of_type(
                 activation
                     .avm2()
                     .classes()
                     .cubetexture
                     .inner_class_definition(),
             );
-            Some(obj.as_texture().unwrap().handle())
+
+            Some(texture_object.as_texture().unwrap().handle())
+        } else {
+            None
         };
+
         context.set_texture_at(sampler, texture, cube);
     }
     Ok(Value::Undefined)

@@ -4,7 +4,7 @@
 #![allow(clippy::doc_lazy_continuation)]
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{make_error_2004, make_error_2008, Error2004Type};
+use crate::avm2::error::{make_error_2004, make_error_2007, make_error_2008, Error2004Type};
 use crate::avm2::globals::flash::geom::transform::object_to_matrix;
 use crate::avm2::object::{Object, TObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
@@ -103,14 +103,18 @@ pub fn begin_gradient_fill<'gc>(
         let gradient_type = args.get_string(activation, 0)?;
         let gradient_type = parse_gradient_type(activation, gradient_type)?;
         let colors = args.get_object(activation, 1, "colors")?;
-        let alphas = args.get_object(activation, 2, "alphas")?;
-        let ratios = args.get_object(activation, 3, "ratios")?;
+        let alphas = args.try_get_object(activation, 2);
+        let ratios = args
+            .try_get_object(activation, 3)
+            .expect("Ratios should never be null");
+
         let records = build_gradient_records(
             activation,
             &colors.as_array_storage().expect("Guaranteed by AS"),
-            &alphas.as_array_storage().expect("Guaranteed by AS"),
+            alphas,
             &ratios.as_array_storage().expect("Guaranteed by AS"),
         )?;
+
         let matrix = if let Some(matrix) = args.try_get_object(activation, 4) {
             Matrix::from(object_to_matrix(matrix, activation)?)
         } else {
@@ -159,20 +163,32 @@ pub fn begin_gradient_fill<'gc>(
 fn build_gradient_records<'gc>(
     activation: &mut Activation<'_, 'gc>,
     colors: &ArrayStorage<'gc>,
-    alphas: &ArrayStorage<'gc>,
+    alphas: Option<Object<'gc>>,
     ratios: &ArrayStorage<'gc>,
 ) -> Result<Vec<GradientRecord>, Error<'gc>> {
-    let length = colors.length().min(alphas.length()).min(ratios.length());
+    let alphas = alphas.as_ref().map(|o| o.as_array_storage().unwrap());
+
+    let mut length = colors.length().min(ratios.length());
+    if let Some(ref alphas) = alphas {
+        length = length.min(alphas.length());
+    }
+
     let mut records = Vec::with_capacity(length);
     for i in 0..length {
         let color = colors
             .get(i)
             .expect("Length should be guaranteed")
             .coerce_to_u32(activation)?;
-        let alpha = alphas
-            .get(i)
-            .expect("Length should be guaranteed")
-            .coerce_to_number(activation)? as f32;
+
+        let alpha = if let Some(ref alphas) = alphas {
+            alphas
+                .get(i)
+                .expect("Length should be guaranteed")
+                .coerce_to_number(activation)? as f32
+        } else {
+            1.0
+        };
+
         let ratio = ratios
             .get(i)
             .expect("Length should be guaranteed")
@@ -833,12 +849,15 @@ pub fn line_gradient_style<'gc>(
         let gradient_type = args.get_string(activation, 0);
         let gradient_type = parse_gradient_type(activation, gradient_type?)?;
         let colors = args.get_object(activation, 1, "colors")?;
-        let alphas = args.get_object(activation, 2, "alphas")?;
-        let ratios = args.get_object(activation, 3, "ratios")?;
+        let alphas = args.try_get_object(activation, 2);
+        let ratios = args
+            .try_get_object(activation, 3)
+            .expect("Ratios should never be null");
+
         let records = build_gradient_records(
             activation,
             &colors.as_array_storage().expect("Guaranteed by AS"),
-            &alphas.as_array_storage().expect("Guaranteed by AS"),
+            alphas,
             &ratios.as_array_storage().expect("Guaranteed by AS"),
         )?;
         let matrix = if let Some(matrix) = args.try_get_object(activation, 4) {
@@ -1209,9 +1228,9 @@ pub fn draw_graphics_data<'gc>(
 
         if let Some(mut drawing) = this.as_drawing(activation.context.gc_context) {
             for elem in vector.iter() {
-                let obj = elem.coerce_to_object(activation)?;
-
-                handle_igraphics_data(activation, &mut drawing, &obj)?;
+                if let Some(obj) = elem.as_object() {
+                    handle_igraphics_data(activation, &mut drawing, &obj)?;
+                }
             }
         };
     }
@@ -1416,27 +1435,23 @@ fn handle_igraphics_data<'gc>(
         let style = handle_gradient_fill(activation, obj)?;
         drawing.set_fill_style(Some(style));
     } else if class == activation.avm2().class_defs().graphicspath {
-        let commands = obj
-            .get_public_property("commands", activation)?
-            .coerce_to_object(activation)?;
+        let commands = obj.get_public_property("commands", activation)?.as_object();
 
-        let data = obj
-            .get_public_property("data", activation)?
-            .coerce_to_object(activation)?;
+        let data = obj.get_public_property("data", activation)?.as_object();
 
         let winding = obj
             .get_public_property("winding", activation)?
             .coerce_to_string(activation)?;
 
-        process_commands(
-            activation,
-            drawing,
-            &commands
-                .as_vector_storage()
-                .expect("commands is not a Vector"),
-            &data.as_vector_storage().expect("data is not a Vector"),
-            winding,
-        )?;
+        if let (Some(commands), Some(data)) = (commands, data) {
+            process_commands(
+                activation,
+                drawing,
+                &commands.as_vector_storage().unwrap(),
+                &data.as_vector_storage().unwrap(),
+                winding,
+            )?;
+        }
     } else if class == activation.avm2().class_defs().graphicssolidfill {
         let style = handle_solid_fill(activation, obj)?;
         drawing.set_fill_style(Some(style));
@@ -1458,11 +1473,13 @@ fn handle_igraphics_data<'gc>(
                 caps_to_cap_style(caps.ok())
             };
             let fill = {
-                let fill = obj
-                    .get_public_property("fill", activation)?
-                    .coerce_to_object(activation)?;
+                let fill = obj.get_public_property("fill", activation)?.as_object();
 
-                handle_igraphics_fill(activation, drawing, &fill)?
+                if let Some(fill) = fill {
+                    handle_igraphics_fill(activation, drawing, &fill)?
+                } else {
+                    None
+                }
             };
 
             let joints = obj
@@ -1588,17 +1605,17 @@ fn handle_gradient_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
     obj: &Object<'gc>,
 ) -> Result<FillStyle, Error<'gc>> {
-    let alphas = obj
-        .get_public_property("alphas", activation)?
-        .coerce_to_object(activation)?;
+    let alphas = obj.get_public_property("alphas", activation)?.as_object();
 
     let colors = obj
         .get_public_property("colors", activation)?
-        .coerce_to_object(activation)?;
+        .as_object()
+        .ok_or_else(|| make_error_2007(activation, "colors"))?;
 
     let ratios = obj
         .get_public_property("ratios", activation)?
-        .coerce_to_object(activation)?;
+        .as_object()
+        .expect("Ratios should never be null");
 
     let gradient_type = {
         let gradient_type = obj
@@ -1610,15 +1627,12 @@ fn handle_gradient_fill<'gc>(
     let records = build_gradient_records(
         activation,
         &colors.as_array_storage().expect("Guaranteed by AS"),
-        &alphas.as_array_storage().expect("Guaranteed by AS"),
+        alphas,
         &ratios.as_array_storage().expect("Guaranteed by AS"),
     )?;
 
     let matrix = {
-        let matrix = obj
-            .get_public_property("matrix", activation)
-            .ok()
-            .and_then(|mat| mat.coerce_to_object(activation).ok());
+        let matrix = obj.get_public_property("matrix", activation)?.as_object();
 
         match matrix {
             Some(matrix) => Matrix::from(object_to_matrix(matrix, activation)?),
@@ -1680,18 +1694,18 @@ fn handle_bitmap_fill<'gc>(
 ) -> Result<FillStyle, Error<'gc>> {
     let bitmap_data = obj
         .get_public_property("bitmapData", activation)?
-        .coerce_to_object(activation)?
+        .as_object()
+        .ok_or_else(|| make_error_2007(activation, "bitmap"))?
         .as_bitmap_data()
         .expect("Bitmap argument is ensured to be a BitmapData from actionscript");
 
     let matrix = obj
-        .get_public_property("matrix", activation)
-        .and_then(|prop| {
-            let matrix = prop.coerce_to_object(activation)?;
+        .get_public_property("matrix", activation)?
+        .as_object()
+        .and_then(|matrix| {
+            let matrix = Matrix::from(object_to_matrix(matrix, activation).ok()?);
 
-            let matrix = Matrix::from(object_to_matrix(matrix, activation)?);
-
-            Ok(matrix)
+            Some(matrix)
         })
         .unwrap_or(Matrix::IDENTITY);
 

@@ -199,19 +199,15 @@ pub fn extract<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.media.Sound", "extract");
 
-    let bytearray = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation)?;
-    let length = args
-        .get(1)
-        .unwrap_or(&Value::Number(0.0))
-        .coerce_to_number(activation)?;
+    let bytearray = args.try_get_object(activation, 0);
+    let length = args.get_f64(activation, 1)?;
 
-    if let Some(mut bytearray) = bytearray.as_bytearray_mut() {
-        bytearray
-            .write_bytes(vec![0u8; length.ceil() as usize].as_slice())
-            .map_err(|e| e.to_avm(activation))?;
+    if let Some(bytearray) = bytearray {
+        if let Some(mut bytearray) = bytearray.as_bytearray_mut() {
+            bytearray
+                .write_bytes(vec![0u8; length.ceil() as usize].as_slice())
+                .map_err(|e| e.to_avm(activation))?;
+        }
     }
 
     Ok(Value::Undefined)
