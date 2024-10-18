@@ -393,7 +393,7 @@ impl<'gc> ExternalInterface<'gc> {
         self.provider.is_some()
     }
 
-    pub fn any_id(&self) -> Option<String> {
+    pub fn get_id(&self) -> Option<String> {
         self.provider.as_ref().and_then(|p| p.get_id())
     }
 
