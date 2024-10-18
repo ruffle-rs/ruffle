@@ -3,6 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::Object;
 use crate::avm2::object::TObject;
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2_stub_getter;
@@ -32,11 +33,7 @@ pub fn set_sound_transform<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let as3_st = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .coerce_to_object(activation)?;
+    let as3_st = args.get_object(activation, 0, "sndTransform")?;
     let dobj_st = SoundTransform::from_avm2_object(activation, as3_st)?;
 
     activation.context.set_global_sound_transform(dobj_st);
@@ -70,11 +67,7 @@ pub fn set_buffer_time<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let buffer_time = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .coerce_to_i32(activation)?;
+    let buffer_time = args.get_i32(activation, 0)?;
 
     activation
         .context
@@ -104,7 +97,7 @@ pub fn compute_spectrum<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let arg0 = args[0].as_object().unwrap();
+    let arg0 = args.get_object(activation, 0, "sound")?;
     let mut bytearray = arg0.as_bytearray_mut().unwrap();
     let mut hist = activation.context.audio.get_sample_history();
 

@@ -53,8 +53,11 @@ fn parse_data<'gc>(
         .classes()
         .urlvariables
         .inner_class_definition();
+
     if data.is_of_type(activation, urlvariables) {
-        let obj = data.coerce_to_object(activation)?;
+        let obj = data
+            .as_object()
+            .expect("URLVariables object should be Value::Object");
         vars = object_to_index_map(activation, &obj).unwrap_or_default();
     } else if *data != Value::Null {
         let str_data = data.coerce_to_string(activation)?.to_string();
@@ -63,6 +66,7 @@ fn parse_data<'gc>(
         }
         url.push_str(&str_data);
     }
+
     Ok((url, vars))
 }
 
@@ -72,15 +76,9 @@ pub fn navigate_to_url<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let request = args
-        .get(0)
-        .ok_or("navigateToURL: not enough arguments")?
-        .coerce_to_object(activation)?;
+    let request = args.get_object(activation, 0, "request")?;
 
-    let target = args
-        .get(1)
-        .ok_or("navigateToURL: not enough arguments")?
-        .coerce_to_string(activation)?;
+    let target = args.get_string(activation, 1)?;
 
     match request.get_public_property("url", activation)? {
         Value::Null => Err(make_error_2007(activation, "url")),

@@ -54,7 +54,10 @@ pub fn set_color_transform<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let ct = object_to_color_transform(args.get_object(activation, 0, "value")?, activation)?;
+    let ct = object_to_color_transform(
+        args.get_object(activation, 0, "colorTransform")?,
+        activation,
+    )?;
     let dobj = get_display_object(this, activation)?;
     dobj.set_color_transform(activation.context.gc_context, ct);
     if let Some(parent) = dobj.parent() {
@@ -77,6 +80,9 @@ pub fn set_matrix<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    // TODO: Despite what the docs say, FP accepts a null matrix here, and returns
+    // null when trying to get the matrix- but the DO's actual transform matrix will
+    // remain its previous non-null value.
     let matrix = object_to_matrix(args.get_object(activation, 0, "value")?, activation)?;
     let dobj = get_display_object(this, activation)?;
     dobj.set_matrix(activation.context.gc_context, matrix);

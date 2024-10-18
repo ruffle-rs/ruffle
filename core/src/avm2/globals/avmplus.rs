@@ -19,12 +19,9 @@ pub fn describe_type_json<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let flags = DescribeTypeFlags::from_bits(args.get_u32(activation, 1)?).expect("Invalid flags!");
-    if args[0] == Value::Null {
-        return describe_type_json_null(activation, flags);
-    }
 
-    let value = args[0].coerce_to_object(activation)?;
-    let class_def = value.instance_class();
+    let value = args[0];
+    let class_def = instance_class_describe_type(activation, value);
     let object = activation
         .avm2()
         .classes()
@@ -54,7 +51,11 @@ pub fn describe_type_json<'gc>(
     object.set_public_property("isFinal", used_class_def.is_final().into(), activation)?;
     object.set_public_property(
         "isStatic",
-        value.as_class_object().is_some().into(),
+        value
+            .as_object()
+            .and_then(|o| o.as_class_object())
+            .is_some()
+            .into(),
         activation,
     )?;
 
@@ -83,102 +84,6 @@ bitflags::bitflags! {
         const USE_ITRAITS             = 1 << 9;
         const HIDE_OBJECT             = 1 << 10;
     }
-}
-
-fn describe_type_json_null<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    flags: DescribeTypeFlags,
-) -> Result<Value<'gc>, Error<'gc>> {
-    if flags.contains(DescribeTypeFlags::USE_ITRAITS) {
-        return Ok(Value::Null);
-    }
-    let object = activation
-        .avm2()
-        .classes()
-        .object
-        .construct(activation, &[])?;
-
-    object.set_public_property("name", "null".into(), activation)?;
-    object.set_public_property("isDynamic", false.into(), activation)?;
-    object.set_public_property("isFinal", true.into(), activation)?;
-    object.set_public_property("isStatic", false.into(), activation)?;
-
-    let traits = activation
-        .avm2()
-        .classes()
-        .object
-        .construct(activation, &[])?;
-
-    if flags.contains(DescribeTypeFlags::INCLUDE_TRAITS) {
-        traits.set_public_property(
-            "bases",
-            if flags.contains(DescribeTypeFlags::INCLUDE_BASES) {
-                ArrayObject::empty(activation)?.into()
-            } else {
-                Value::Null
-            },
-            activation,
-        )?;
-        traits.set_public_property(
-            "interfaces",
-            if flags.contains(DescribeTypeFlags::INCLUDE_INTERFACES) {
-                ArrayObject::empty(activation)?.into()
-            } else {
-                Value::Null
-            },
-            activation,
-        )?;
-        traits.set_public_property(
-            "variables",
-            if flags.contains(DescribeTypeFlags::INCLUDE_VARIABLES) {
-                ArrayObject::empty(activation)?.into()
-            } else {
-                Value::Null
-            },
-            activation,
-        )?;
-        traits.set_public_property(
-            "accessors",
-            if flags.contains(DescribeTypeFlags::INCLUDE_ACCESSORS) {
-                ArrayObject::empty(activation)?.into()
-            } else {
-                Value::Null
-            },
-            activation,
-        )?;
-        traits.set_public_property(
-            "methods",
-            if flags.contains(DescribeTypeFlags::INCLUDE_METHODS) {
-                ArrayObject::empty(activation)?.into()
-            } else {
-                Value::Null
-            },
-            activation,
-        )?;
-        traits.set_public_property(
-            "metadata",
-            if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
-                ArrayObject::empty(activation)?.into()
-            } else {
-                Value::Null
-            },
-            activation,
-        )?;
-        traits.set_public_property(
-            "constructor",
-            if flags.contains(DescribeTypeFlags::INCLUDE_CONSTRUCTOR) {
-                ArrayObject::empty(activation)?.into()
-            } else {
-                Value::Null
-            },
-            activation,
-        )?;
-        object.set_public_property("traits", traits.into(), activation)?;
-    } else {
-        object.set_public_property("traits", Value::Null, activation)?;
-    }
-
-    Ok(object.into())
 }
 
 fn describe_internal_body<'gc>(
@@ -572,4 +477,22 @@ fn write_metadata<'gc>(
         metadata_array.push(single_trait.as_json_object(activation)?.into());
     }
     Ok(())
+}
+
+/// Like `Value::instance_class`, but supports Value::Null and Value::Undefined,
+/// and returns `int` for Value::Integer instead of `Number`.
+///
+/// Used for `describeType`, `getQualifiedClassName`, and `getQualifiedSuperClassName`.
+pub fn instance_class_describe_type<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+) -> Class<'gc> {
+    let class_defs = activation.avm2().class_defs();
+
+    match value {
+        Value::Null => class_defs.null,
+        Value::Undefined => class_defs.void,
+        Value::Integer(_) => class_defs.int,
+        _ => value.instance_class(activation),
+    }
 }

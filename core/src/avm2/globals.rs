@@ -31,6 +31,7 @@ mod int;
 mod json;
 mod math;
 mod namespace;
+mod null;
 mod number;
 mod object;
 mod q_name;
@@ -169,6 +170,7 @@ pub struct SystemClasses<'gc> {
     pub dictionary: ClassObject<'gc>,
     pub id3info: ClassObject<'gc>,
     pub textrun: ClassObject<'gc>,
+    pub sharedobject: ClassObject<'gc>,
 }
 
 #[derive(Clone, Collect)]
@@ -177,6 +179,7 @@ pub struct SystemClassDefs<'gc> {
     pub object: Class<'gc>,
     pub class: Class<'gc>,
     pub function: Class<'gc>,
+    pub null: Class<'gc>,
     pub void: Class<'gc>,
 
     pub array: Class<'gc>,
@@ -325,16 +328,24 @@ impl<'gc> SystemClasses<'gc> {
             dictionary: object,
             id3info: object,
             textrun: object,
+            sharedobject: object,
         }
     }
 }
 
 impl<'gc> SystemClassDefs<'gc> {
-    fn new(object: Class<'gc>, class: Class<'gc>, function: Class<'gc>, void: Class<'gc>) -> Self {
+    fn new(
+        object: Class<'gc>,
+        class: Class<'gc>,
+        function: Class<'gc>,
+        null: Class<'gc>,
+        void: Class<'gc>,
+    ) -> Self {
         SystemClassDefs {
             object,
             class,
             function,
+            null,
             void,
 
             // temporary initialization
@@ -531,10 +542,14 @@ pub fn load_player_globals<'gc>(
     // Function is more of a "normal" class than the other two, so we can create it normally.
     let fn_classdef = function::create_class(activation, object_i_class, class_i_class);
 
+    // This is a weird internal class in avmplus, but it allows for implementing
+    // `describeType(null)` in a cleaner way
+    let null_def = null::create_class(activation);
+
     // void doesn't have a ClassObject
     let void_def = void::create_class(activation);
 
-    // Register the classes in the domain, now (except for the global class)
+    // Register the classes in the domain, now (except for the global and null classes)
     domain.export_class(object_i_class.name(), object_i_class, mc);
     domain.export_class(class_i_class.name(), class_i_class, mc);
     domain.export_class(fn_classdef.name(), fn_classdef, mc);
@@ -544,6 +559,7 @@ pub fn load_player_globals<'gc>(
         object_i_class,
         class_i_class,
         fn_classdef,
+        null_def,
         void_def,
     ));
 
@@ -915,6 +931,7 @@ pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
             ("flash.net", "URLVariables", urlvariables),
             ("flash.net", "FileReference", filereference),
             ("flash.net", "FileFilter", filefilter),
+            ("flash.net", "SharedObject", sharedobject),
             ("flash.utils", "ByteArray", bytearray),
             ("flash.utils", "Dictionary", dictionary),
             ("flash.system", "ApplicationDomain", application_domain),
