@@ -3248,8 +3248,11 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                             Avm2MousePick::Miss
                         }
                     }
-                } else if child.as_interactive().is_none()
-                    && child.hit_test_shape(context, point, options)
+                } else if child.hit_test_shape(context, point, options)
+                    && child
+                        .masker()
+                        .map(|mask| mask.hit_test_shape(context, point, options))
+                        .unwrap_or(true)
                 {
                     if self.mouse_enabled() {
                         Avm2MousePick::Hit(this)
