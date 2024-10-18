@@ -12,10 +12,12 @@ pub fn call<'gc>(
     let name = args.get_string(activation, 0)?;
     check_available(activation)?;
 
-    let mut external_args = Vec::with_capacity(args.len() - 1);
-    for arg in &args[1..] {
-        external_args.push(ExternalValue::from_avm2(arg.to_owned()));
-    }
+    let external_args = args
+        .iter()
+        .skip(1)
+        .map(|arg| ExternalValue::from_avm2(arg.to_owned()))
+        .collect::<Vec<ExternalValue>>();
+
     Ok(
         ExternalInterface::call_method(activation.context, &name.to_utf8_lossy(), &external_args)
             .into_avm2(activation),
