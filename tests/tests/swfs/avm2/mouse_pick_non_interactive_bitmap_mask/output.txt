@@ -1,0 +1,4 @@
+mouseDown: target=[object MovieClip] Parent stageX=14 stageY=12
+mouseDown: target=[object Stage] null stageX=38 stageY=13
+mouseDown: target=[object Stage] null stageX=14 stageY=38
+mouseDown: target=[object Stage] null stageX=37 stageY=36
