@@ -493,9 +493,7 @@ impl DisplayObjectWindow {
                     .num_columns(7)
                     .striped(true)
                     .show(ui, |ui| {
-                        ui.label("Start");
-                        ui.label("End");
-                        ui.label("Length");
+                        ui.label("Span");
                         ui.label("URL");
                         ui.label("Font");
                         ui.label("Style");
@@ -503,12 +501,10 @@ impl DisplayObjectWindow {
                         ui.end_row();
 
                         for (start, end, text, format) in object.spans().iter_spans() {
-                            ui.label(start.to_string());
-                            ui.label(end.to_string());
+                            ui.label(format!("{}–{} ({})", start, end, format.span_length));
 
-                            ui.label(format.span_length.to_string());
                             ui.label(format.url.to_string());
-                            ui.label(format.font.face.to_string());
+                            ui.label(format!("{}, {}", format.font.face, format.font.size));
 
                             if format.style.bold && format.style.italic {
                                 ui.label("Bold Italic");
