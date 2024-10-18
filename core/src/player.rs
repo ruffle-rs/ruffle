@@ -497,22 +497,30 @@ impl Player {
 
             let max_frames_per_tick = self.max_frames_per_tick();
             let mut frame = 0;
+            let mut last_time_offset = self.time_offset;
 
             while frame < max_frames_per_tick && self.frame_accumulator >= frame_time {
                 let timer = Instant::now();
                 self.run_frame();
-                let elapsed = timer.elapsed().as_millis() as f64;
+                let elapsed = timer.elapsed().as_millis();
+                if elapsed == 0 {
+                    // To make sure that `getTimer()` never returns the same value between frames,
+                    // pretend that at least 1ms elapsed if we ran the frame too fast.
+                    self.time_offset += 1;
+                }
 
-                self.add_frame_timing(elapsed);
+                self.add_frame_timing(elapsed as f64);
 
                 self.frame_accumulator -= frame_time;
                 frame += 1;
-                // The script probably tried implementing an FPS limiter with a busy loop.
-                // We fooled the busy loop by pretending that more time has passed that actually did.
+
+                // We fooled the movie by pretending that more time has passed that actually did.
                 // Then we need to actually pass this time, by decreasing frame_accumulator
                 // to delay the future frame.
-                if self.time_offset > 0 {
-                    self.frame_accumulator -= self.time_offset as f64;
+                let delta_time_offset = self.time_offset - last_time_offset;
+                if delta_time_offset > 0 {
+                    self.frame_accumulator -= delta_time_offset as f64;
+                    last_time_offset = self.time_offset;
                 }
             }
 
