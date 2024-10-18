@@ -1,6 +1,7 @@
 //! Audio decoders.
 
 mod adpcm;
+mod g711;
 #[cfg(feature = "mp3")]
 mod mp3;
 #[cfg(feature = "nellymoser")]
@@ -8,6 +9,10 @@ mod nellymoser;
 mod pcm;
 
 pub use adpcm::AdpcmDecoder;
+
+pub use g711::G711ALawDecoder;
+pub use g711::G711MuLawDecoder;
+
 #[cfg(feature = "mp3")]
 pub use mp3::{mp3_metadata, Mp3Decoder};
 #[cfg(feature = "nellymoser")]
@@ -74,6 +79,8 @@ pub fn make_decoder<R: 'static + Read + Send + Sync>(
             format.is_stereo,
             format.sample_rate,
         )?),
+        AudioCompression::G711ALawPCM => Box::new(G711ALawDecoder::new(data)),
+        AudioCompression::G711MuLawPCM => Box::new(G711MuLawDecoder::new(data)),
         #[cfg(feature = "mp3")]
         AudioCompression::Mp3 => Box::new(Mp3Decoder::new(data)?),
         #[cfg(feature = "nellymoser")]
