@@ -65,7 +65,7 @@ pub fn get_object_id<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(id) = activation.context.external_interface.any_id() {
+    if let Some(id) = activation.context.external_interface.get_id() {
         Ok(AvmString::new_utf8(activation.gc(), id).into())
     } else {
         Ok(Value::Null)
