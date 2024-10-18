@@ -23,3 +23,8 @@ theme = Tema
 theme-system = Sistem Varsayılanı
 theme-light = Aydınlık
 theme-dark = Karanlık
+# See for context https://github.com/FeralInteractive/gamemode
+gamemode = GameMode
+gamemode-tooltip = GameMode, bilgisayarınıza ve/veya Ruffle'a geçici olarak bir dizi optimizasyon uygular. Ruffle, yalnızca bir film oynatıldığında GameMode'u talep eder.
+gamemode-default = Varsayılan
+gamemode-default-tooltip = GameMode yalnızca güç tercihi yüksek olarak ayarlandığında etkinleştirilecektir.
