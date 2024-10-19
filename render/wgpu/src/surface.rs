@@ -64,14 +64,14 @@ impl Surface {
 
     #[expect(clippy::too_many_arguments)]
     #[instrument(level = "debug", skip_all)]
-    pub fn draw_commands_and_copy_to<'frame, 'global: 'frame>(
+    pub fn draw_commands_and_copy_to<'encoder, 'global: 'encoder>(
         &self,
         frame_view: &wgpu::TextureView,
         render_target_mode: RenderTargetMode,
         descriptors: &'global Descriptors,
-        staging_belt: &'frame mut wgpu::util::StagingBelt,
+        staging_belt: &'encoder mut wgpu::util::StagingBelt,
         dynamic_transforms: &'global DynamicTransforms,
-        draw_encoder: &'frame mut wgpu::CommandEncoder,
+        draw_encoder: &'encoder mut wgpu::CommandEncoder,
         meshes: &'global Vec<Mesh>,
         commands: CommandList,
         layer: LayerRef,
@@ -103,7 +103,7 @@ impl Surface {
 
     #[expect(clippy::too_many_arguments)]
     #[instrument(level = "debug", skip_all)]
-    pub fn draw_commands<'frame, 'global: 'frame>(
+    pub fn draw_commands<'encoder, 'global: 'encoder>(
         &self,
         render_target_mode: RenderTargetMode,
         descriptors: &'global Descriptors,
@@ -111,8 +111,8 @@ impl Surface {
         commands: CommandList,
         staging_belt: &'global mut wgpu::util::StagingBelt,
         dynamic_transforms: &'global DynamicTransforms,
-        draw_encoder: &'frame mut wgpu::CommandEncoder,
-        nearest_layer: LayerRef<'frame>,
+        draw_encoder: &'encoder mut wgpu::CommandEncoder,
+        nearest_layer: LayerRef<'encoder>,
         texture_pool: &mut TexturePool,
     ) -> CommandTarget {
         let target = CommandTarget::new(
@@ -172,14 +172,13 @@ impl Surface {
                         &self.pipelines,
                         descriptors,
                         dynamic_transforms,
-                        render_pass,
                         num_masks,
                         mask_state,
                         needs_stencil,
                     );
 
                     for command in &chunk {
-                        renderer.execute(command);
+                        renderer.execute(&mut render_pass, command);
                     }
 
                     num_masks = renderer.num_masks();
@@ -324,16 +323,20 @@ impl Surface {
                                     ..Default::default()
                                 });
                             render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
-                            let mut renderer = CommandRenderer::new(
+                            let renderer = CommandRenderer::new(
                                 &self.pipelines,
                                 descriptors,
                                 dynamic_transforms,
-                                render_pass,
                                 num_masks,
                                 mask_state,
                                 needs_stencil,
                             );
-                            renderer.render_texture(transform_offset, &bind_group, blend_mode);
+                            renderer.render_texture(
+                                &mut render_pass,
+                                transform_offset,
+                                &bind_group,
+                                blend_mode,
+                            );
                         }
                         BlendType::Complex(blend_mode) => {
                             let parent_blend_buffer = parent_blend_buffer
