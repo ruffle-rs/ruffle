@@ -590,11 +590,16 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     entry.commands,
                     &mut self.active_frame.staging_belt,
                     &self.dynamic_transforms,
-                    &mut self.active_frame.command_encoder,
+                    &mut self
+                        .profiler
+                        .scope("Draw to CAB", &mut self.active_frame.command_encoder),
                     LayerRef::None,
                     &mut self.offscreen_texture_pool,
                 );
             } else {
+                let mut scope = self
+                    .profiler
+                    .scope("Filters", &mut self.active_frame.command_encoder);
                 // We're relying on there being no impotent filters here,
                 // so that we can safely start by using the actual CAB texture.
                 // It's guaranteed that at least one filter would have used it and moved the target to something else,
@@ -614,14 +619,14 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     entry.commands,
                     &mut self.active_frame.staging_belt,
                     &self.dynamic_transforms,
-                    &mut self.active_frame.command_encoder,
+                    &mut scope.scope("Draw to CAB"),
                     LayerRef::None,
                     &mut self.offscreen_texture_pool,
                 );
                 for filter in entry.filters {
                     target = self.descriptors.filters.apply(
                         &self.descriptors,
-                        &mut self.active_frame.command_encoder,
+                        &mut scope.scope(filter.name()),
                         &mut self.offscreen_texture_pool,
                         &mut self.active_frame.staging_belt,
                         FilterSource::for_entire_texture(target.color_texture()),
@@ -636,7 +641,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     target.whole_frame_bind_group(&self.descriptors),
                     target.globals(),
                     target.color_texture().sample_count(),
-                    &mut self.active_frame.command_encoder,
+                    &mut scope.scope("Copy filtered to CAB"),
                 );
             }
             // Periodically flush GPU work to prevent OOM when many cache entries
@@ -656,7 +661,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &self.descriptors,
             &mut self.active_frame.staging_belt,
             &self.dynamic_transforms,
-            &mut self.active_frame.command_encoder,
+            &mut self
+                .profiler
+                .scope("Frame commands", &mut self.active_frame.command_encoder),
             &self.meshes,
             commands,
             LayerRef::None,
@@ -818,7 +825,9 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             &self.descriptors,
             &mut self.active_frame.staging_belt,
             &self.dynamic_transforms,
-            &mut self.active_frame.command_encoder,
+            &mut self
+                .profiler
+                .scope("Offscreen commands", &mut self.active_frame.command_encoder),
             &self.meshes,
             commands,
             LayerRef::Current,
