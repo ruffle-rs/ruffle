@@ -37,6 +37,7 @@ use std::sync::Arc;
 use swf::Color;
 use tracing::instrument;
 use wgpu::SubmissionIndex;
+use wgpu_profiler::{GpuProfiler, GpuProfilerSettings};
 
 /// Creates a wgpu instance with Ruffle's required configuration.
 ///
@@ -81,6 +82,7 @@ pub struct WgpuRenderBackend<T: RenderTarget> {
     pub(crate) offscreen_buffer_pool: Arc<BufferPool<wgpu::Buffer, BufferDimensions>>,
     dynamic_transforms: DynamicTransforms,
     active_frame: ActiveFrame,
+    profiler: GpuProfiler,
 }
 
 impl WgpuRenderBackend<SwapChainTarget> {
@@ -250,6 +252,21 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         let transforms = DynamicTransforms::new(&descriptors);
         let active_frame = ActiveFrame::new(&descriptors);
 
+        let profiler_settings = GpuProfilerSettings {
+            enable_timer_queries: cfg!(feature = "profile-with-tracy"),
+            enable_debug_groups: cfg!(feature = "render_debug_labels"),
+            ..Default::default()
+        };
+        #[cfg(feature = "profile-with-tracy")]
+        let profiler = GpuProfiler::new_with_tracy_client(
+            profiler_settings,
+            descriptors.backend,
+            &descriptors.device,
+            &descriptors.queue,
+        )?;
+        #[cfg(not(feature = "profile-with-tracy"))]
+        let profiler = GpuProfiler::new(&descriptors.device, profiler_settings)?;
+
         Ok(Self {
             descriptors,
             target,
@@ -262,7 +279,16 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
             offscreen_buffer_pool: Arc::new(offscreen_buffer_pool),
             dynamic_transforms: transforms,
             active_frame,
+            profiler,
         })
+    }
+
+    pub fn profiler(&self) -> &GpuProfiler {
+        &self.profiler
+    }
+
+    pub fn profiler_mut(&mut self) -> &mut GpuProfiler {
+        &mut self.profiler
     }
 
     fn register_shape_internal(
@@ -1187,7 +1213,8 @@ async fn request_device(
 
     let optional_features = wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES
         | wgpu::Features::TEXTURE_COMPRESSION_BC
-        | wgpu::Features::FLOAT32_FILTERABLE;
+        | wgpu::Features::FLOAT32_FILTERABLE
+        | GpuProfiler::ALL_WGPU_TIMER_FEATURES;
 
     features |= optional_features & adapter.features();
 

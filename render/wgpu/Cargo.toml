@@ -27,6 +27,7 @@ lru = "0.18.2"
 naga = { workspace = true }
 indexmap = { workspace = true }
 smallvec = { workspace = true }
+wgpu-profiler = { workspace = true }
 
 # desktop
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
@@ -40,7 +41,7 @@ features = ["HtmlCanvasElement"]
 [features]
 render_debug_labels = []
 webgl = ["wgpu/webgl"]
-profile-with-tracy = ["profiling", "profiling/profile-with-tracy"]
+profile-with-tracy = ["profiling", "profiling/profile-with-tracy", "wgpu-profiler/tracy"]
 tracy_images = ["profile-with-tracy"]
 
 [package.metadata.cargo-machete]
