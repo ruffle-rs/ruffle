@@ -89,6 +89,7 @@ impl<'gc> FocusTracker<'gc> {
     /// Set the focus programmatically.
     pub fn set(&self, new: Option<InteractiveObject<'gc>>, context: &mut UpdateContext<'gc>) {
         self.set_internal(new, context, false);
+        self.update_edittext_selection(context);
     }
 
     /// Reset the focus programmatically.
@@ -137,6 +138,7 @@ impl<'gc> FocusTracker<'gc> {
         }
 
         self.set_internal(new, context, true);
+        self.update_edittext_selection(context);
     }
 
     fn set_internal(
@@ -195,16 +197,6 @@ impl<'gc> FocusTracker<'gc> {
             }
         }
 
-        // This applies even if the focused element hasn't changed.
-        if let Some(text_field) = self.get_as_edit_text() {
-            if text_field.is_editable() && !text_field.movie().is_action_script_3() {
-                // TODO This logic is inaccurate and addresses
-                //   only setting the focus programmatically.
-                let length = text_field.text_length();
-                text_field.set_selection(Some(TextSelection::for_range(0, length)), context.gc());
-            }
-        }
-
         self.update_virtual_keyboard(context);
     }
 
@@ -217,6 +209,23 @@ impl<'gc> FocusTracker<'gc> {
             }
         } else {
             context.ui.close_virtual_keyboard();
+        }
+    }
+
+    /// Update selection on the newly focused text field.
+    ///
+    /// This applies even if the focused element hasn't changed.
+    fn update_edittext_selection(&self, context: &mut UpdateContext<'gc>) {
+        // Only key and programmatic focus change should trigger this, because
+        // when focusing a text field with a mouse, a caret should be placed.
+        // Note that this may suggest we should reorder operations on the text field:
+        // first run this logic (and not care whether it's a mouse focus),
+        // and then handle placing the caret.
+        if let Some(text_field) = self.get_as_edit_text() {
+            if text_field.is_editable() && !text_field.movie().is_action_script_3() {
+                let length = text_field.text_length();
+                text_field.set_selection(Some(TextSelection::for_range(0, length)), context.gc());
+            }
         }
     }
 
