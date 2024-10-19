@@ -1,0 +1,11 @@
+[
+    { "type": "KeyDown", "key_code": 27 },
+    { "type": "MouseMove", "pos": [400, 10] },
+    { "type": "MouseDown", "pos": [400, 10], "btn": "Left" },
+    { "type": "MouseUp", "pos": [400, 10], "btn": "Left" },
+    { "type": "TextInput", "codepoint": "a" },
+    { "type": "TextInput", "codepoint": "s" },
+    { "type": "TextInput", "codepoint": "d" },
+    { "type": "TextInput", "codepoint": "f" },
+    { "type": "KeyDown", "key_code": 27 }
+]
