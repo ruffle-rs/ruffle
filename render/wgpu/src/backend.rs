@@ -1185,17 +1185,11 @@ async fn request_device(
 
     let mut features = Default::default();
 
-    let try_features = [
-        wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,
-        wgpu::Features::TEXTURE_COMPRESSION_BC,
-        wgpu::Features::FLOAT32_FILTERABLE,
-    ];
+    let optional_features = wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES
+        | wgpu::Features::TEXTURE_COMPRESSION_BC
+        | wgpu::Features::FLOAT32_FILTERABLE;
 
-    for feature in try_features {
-        if adapter.features().contains(feature) {
-            features |= feature;
-        }
-    }
+    features |= optional_features & adapter.features();
 
     adapter
         .request_device(&wgpu::DeviceDescriptor {
