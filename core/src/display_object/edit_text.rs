@@ -1327,8 +1327,8 @@ impl<'gc> EditText<'gc> {
     pub fn screen_position_to_index(self, position: Point<Twips>) -> Option<usize> {
         let text = self.0.read();
         let mut position = self.global_to_local(position)?;
-        position.x += Self::GUTTER + Twips::from_pixels(text.hscroll);
-        position.y += Self::GUTTER + text.vertical_scroll_offset();
+        position.x += Twips::from_pixels(text.hscroll) - Self::GUTTER;
+        position.y += text.vertical_scroll_offset() - Self::GUTTER;
 
         // TODO We can use binary search for both y and x here
 
