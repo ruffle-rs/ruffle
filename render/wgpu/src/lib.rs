@@ -23,6 +23,7 @@ use std::cell::{Cell, OnceCell};
 use std::sync::Arc;
 use swf::GradientSpread;
 pub use wgpu;
+pub use wgpu_profiler;
 
 type Error = Box<dyn std::error::Error>;
 
