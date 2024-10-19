@@ -202,9 +202,6 @@ impl<'encoder> CommandRenderer<'encoder> {
         blend_mode: TrivialBlend,
         render_stage3d: bool,
     ) {
-        if cfg!(feature = "render_debug_labels") {
-            render_pass.push_debug_group(&format!("render_bitmap {:?}", bitmap.0));
-        }
         let texture = as_texture(bitmap);
 
         let descriptors = self.descriptors;
@@ -225,9 +222,6 @@ impl<'encoder> CommandRenderer<'encoder> {
             self.descriptors.quad.indices.slice(..),
             6,
         );
-        if cfg!(feature = "render_debug_labels") {
-            render_pass.pop_debug_group();
-        }
     }
 
     pub fn render_texture(
@@ -237,9 +231,6 @@ impl<'encoder> CommandRenderer<'encoder> {
         bind_group: &'encoder wgpu::BindGroup,
         blend_mode: TrivialBlend,
     ) {
-        if cfg!(feature = "render_debug_labels") {
-            render_pass.push_debug_group("render_texture");
-        }
         self.prep_bitmap(render_pass, bind_group, blend_mode, false);
 
         render_pass.set_bind_group(1, &self.dynamic_transforms.bind_group, &[transform_buffer]);
@@ -250,9 +241,6 @@ impl<'encoder> CommandRenderer<'encoder> {
             self.descriptors.quad.indices.slice(..),
             6,
         );
-        if cfg!(feature = "render_debug_labels") {
-            render_pass.pop_debug_group();
-        }
     }
 
     pub fn render_shape(
@@ -261,10 +249,6 @@ impl<'encoder> CommandRenderer<'encoder> {
         shape: &'encoder ShapeHandle,
         transform_buffer: wgpu::DynamicOffset,
     ) {
-        if cfg!(feature = "render_debug_labels") {
-            render_pass.push_debug_group("render_shape");
-        }
-
         let mesh = as_mesh(shape);
         for draw in &mesh.draws {
             let num_indices = if self.mask_state != MaskState::DrawMaskStencil
@@ -298,9 +282,6 @@ impl<'encoder> CommandRenderer<'encoder> {
                 mesh.index_buffer.slice(draw.indices.clone()),
                 num_indices,
             );
-        }
-        if cfg!(feature = "render_debug_labels") {
-            render_pass.pop_debug_group();
         }
     }
 
@@ -337,9 +318,6 @@ impl<'encoder> CommandRenderer<'encoder> {
         render_pass: &mut wgpu::RenderPass<'encoder>,
         transform_buffer: wgpu::DynamicOffset,
     ) {
-        if cfg!(feature = "render_debug_labels") {
-            render_pass.push_debug_group("draw_rect");
-        }
         self.prep_color(render_pass);
 
         render_pass.set_bind_group(1, &self.dynamic_transforms.bind_group, &[transform_buffer]);
@@ -350,9 +328,6 @@ impl<'encoder> CommandRenderer<'encoder> {
             self.descriptors.quad.indices.slice(..),
             6,
         );
-        if cfg!(feature = "render_debug_labels") {
-            render_pass.pop_debug_group();
-        }
     }
 
     pub fn draw_lines<const RECT: bool>(
@@ -360,9 +335,6 @@ impl<'encoder> CommandRenderer<'encoder> {
         render_pass: &mut wgpu::RenderPass<'encoder>,
         transform_buffer: wgpu::DynamicOffset,
     ) {
-        if cfg!(feature = "render_debug_labels") {
-            render_pass.push_debug_group("draw_lines");
-        }
         self.prep_lines(render_pass);
 
         render_pass.set_bind_group(1, &self.dynamic_transforms.bind_group, &[transform_buffer]);
@@ -377,9 +349,6 @@ impl<'encoder> CommandRenderer<'encoder> {
             },
             if RECT { 5 } else { 2 },
         );
-        if cfg!(feature = "render_debug_labels") {
-            render_pass.pop_debug_group();
-        }
     }
 
     pub fn push_mask(&mut self, render_pass: &mut wgpu::RenderPass<'encoder>) {
@@ -468,6 +437,23 @@ pub enum DrawCommand {
     ActivateMask,
     DeactivateMask,
     PopMask,
+}
+
+impl DrawCommand {
+    pub fn name(&self) -> &'static str {
+        match self {
+            DrawCommand::RenderBitmap { .. } => "render bitmap",
+            DrawCommand::RenderShape { .. } => "render shape",
+            DrawCommand::DrawRect { .. } => "draw rect",
+            DrawCommand::DrawLine { .. } => "draw line",
+            DrawCommand::DrawLineRect { .. } => "draw line rect",
+            DrawCommand::PushMask => "push mask",
+            DrawCommand::ActivateMask => "activate mask",
+            DrawCommand::DeactivateMask => "deactivate mask",
+            DrawCommand::PopMask => "pop mask",
+            DrawCommand::RenderAlphaMask { .. } => "render alpha mask",
+        }
+    }
 }
 
 #[derive(Copy, Clone)]

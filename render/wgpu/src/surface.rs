@@ -148,17 +148,16 @@ impl Surface {
                     transforms,
                 } => {
                     transforms.copy_to(staging_belt, draw_encoder, &dynamic_transforms.buffer);
-                    let mut render_pass =
-                        draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                            label: create_debug_label!(
-                                "Chunked draw calls {}",
-                                if needs_stencil {
-                                    "(with stencil)"
-                                } else {
-                                    "(Stencilless)"
-                                }
-                            )
-                            .as_deref(),
+                    let mut render_pass = draw_encoder.scoped_render_pass(
+                        format!(
+                            "Chunked draw calls {}",
+                            if needs_stencil {
+                                "(with stencil)"
+                            } else {
+                                "(Stencilless)"
+                            }
+                        ),
+                        wgpu::RenderPassDescriptor {
                             color_attachments: &[target.color_attachments()],
                             depth_stencil_attachment: if needs_stencil {
                                 target.stencil_attachment(descriptors, texture_pool)
@@ -166,7 +165,8 @@ impl Surface {
                                 None
                             },
                             ..Default::default()
-                        });
+                        },
+                    );
                     render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
                     let mut renderer = CommandRenderer::new(
                         &self.pipelines,
@@ -178,7 +178,7 @@ impl Surface {
                     );
 
                     for command in &chunk {
-                        renderer.execute(&mut render_pass, command);
+                        renderer.execute(&mut render_pass.scope(command.name()), command);
                     }
 
                     num_masks = renderer.num_masks();
@@ -303,17 +303,16 @@ impl Surface {
                                         ],
                                         label: None,
                                     });
-                            let mut render_pass =
-                                draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                                    label: create_debug_label!(
-                                        "Apply trivial blend {blend_mode:?} {}",
-                                        if needs_stencil {
-                                            "(with stencil)"
-                                        } else {
-                                            "(Stencilless)"
-                                        }
-                                    )
-                                    .as_deref(),
+                            let mut render_pass = draw_encoder.scoped_render_pass(
+                                format!(
+                                    "Apply trivial blend {blend_mode:?} {}",
+                                    if needs_stencil {
+                                        "(with stencil)"
+                                    } else {
+                                        "(Stencilless)"
+                                    }
+                                ),
+                                wgpu::RenderPassDescriptor {
                                     color_attachments: &[target.color_attachments()],
                                     depth_stencil_attachment: if needs_stencil {
                                         target.stencil_attachment(descriptors, texture_pool)
@@ -321,7 +320,8 @@ impl Surface {
                                         None
                                     },
                                     ..Default::default()
-                                });
+                                },
+                            );
                             render_pass.set_bind_group(0, target.globals().bind_group(), &[]);
                             let renderer = CommandRenderer::new(
                                 &self.pipelines,
