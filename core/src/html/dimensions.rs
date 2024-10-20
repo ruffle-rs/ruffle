@@ -298,6 +298,15 @@ where
             extent_y: self.offset_y + new_size.height,
         }
     }
+
+    pub fn with_width(self, new_width: T) -> Self {
+        Self {
+            offset_x: self.offset_x,
+            extent_x: self.offset_x + new_width,
+            offset_y: self.offset_y,
+            extent_y: self.extent_y,
+        }
+    }
 }
 
 impl<T> Add for BoxBounds<T>
