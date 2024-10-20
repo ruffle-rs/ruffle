@@ -93,6 +93,7 @@ jpegxr = ["dep:jpegxr", "lzma"]
 default_font = []
 test_only_as3 = []
 serde = ["serde/derive"]
+error_backtrace = []
 
 [build-dependencies]
 build_playerglobal = { path = "build_playerglobal" }
