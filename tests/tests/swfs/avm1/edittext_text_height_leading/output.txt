@@ -1,0 +1,20 @@
+Field: _level0.text1
+  textHeight: 20
+Field: _level0.text2
+  textHeight: 30
+Field: _level0.text3
+  textHeight: 35
+Field: _level0.text4
+  textHeight: 40
+Field: _level0.text5
+  textHeight: 60
+Field: _level0.text6
+  textHeight: 65
+Field: _level0.text7
+  textHeight: 90
+Field: _level0.text8
+  textHeight: 100
+Field: _level0.text9
+  textHeight: 90
+Field: _level0.text10
+  textHeight: 100
