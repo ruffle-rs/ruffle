@@ -1,0 +1,19 @@
+num_ticks = 1
+
+[image_comparisons.output]
+tolerance = 128
+
+[player_options]
+with_renderer = { optional = false, sample_count = 4 }
+
+[fonts.gap0]
+family = "TestFontGap0"
+path = "TestFontGap0.ttf"
+bold = false
+italic = false
+
+[fonts.gap100]
+family = "TestFontGap100"
+path = "TestFontGap100.ttf"
+bold = false
+italic = false
