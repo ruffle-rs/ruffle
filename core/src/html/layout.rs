@@ -329,10 +329,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             self.append_bullet(context, &self.current_line_span.clone(), font_type);
         }
 
+        let baseline_adjustment = self.max_ascent;
+
         box_count = 0;
         for layout_box in self.boxes.iter_mut() {
-            let baseline_adjustment = self.max_ascent;
-
             if layout_box.is_text_box() {
                 let position = Position::from((
                     left_adjustment + align_adjustment + (interim_adjustment * box_count),
@@ -351,7 +351,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         self.append_underlines();
 
-        line_bounds += Position::from((left_adjustment + align_adjustment, Twips::ZERO));
+        line_bounds += Position::from((left_adjustment + align_adjustment, baseline_adjustment));
         line_bounds += Size::from((Twips::ZERO, font_leading_adjustment));
 
         self.flush_line(end);
