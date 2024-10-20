@@ -1,5 +1,7 @@
 //! `Vector` builtin/prototype
 
+use gc_arena::Gc;
+
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::error::{argument_error, type_error};
@@ -13,8 +15,8 @@ use crate::avm2::object::{
 };
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
-use crate::avm2::Error;
 use crate::avm2::QName;
+use crate::avm2::{Error, Multiname};
 use crate::string::AvmString;
 use std::cmp::{max, min, Ordering};
 
@@ -963,18 +965,27 @@ pub fn create_builtin_class<'gc>(
         Method::from_builtin(class_call, "<Vector.<T> call handler>", mc),
     );
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[
-        ("length", Some(length), Some(set_length)),
-        ("fixed", Some(fixed), Some(set_fixed)),
+    let public_instance_properties = &[
+        (
+            "length",
+            Some(length as _),
+            Some(set_length as _),
+            Some(Gc::new(mc, Multiname::new(namespaces.public_all(), "uint"))),
+        ),
+        (
+            "fixed",
+            Some(fixed as _),
+            Some(set_fixed as _),
+            Some(Gc::new(
+                mc,
+                Multiname::new(namespaces.public_all(), "Boolean"),
+            )),
+        ),
     ];
     class.define_builtin_instance_properties(
         mc,
         namespaces.public_all(),
-        PUBLIC_INSTANCE_PROPERTIES,
+        public_instance_properties,
     );
 
     const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] = &[

@@ -1146,6 +1146,7 @@ impl<'gc> Class<'gc> {
     }
 
     #[inline(never)]
+    #[allow(clippy::type_complexity)]
     pub fn define_builtin_instance_properties(
         self,
         mc: &Mutation<'gc>,
@@ -1154,15 +1155,23 @@ impl<'gc> Class<'gc> {
             &'static str,
             Option<NativeMethodImpl>,
             Option<NativeMethodImpl>,
+            Option<Gc<'gc, Multiname<'gc>>>,
         )],
     ) {
-        for &(name, getter, setter) in items {
+        for (name, getter, setter, prop_type) in items {
             if let Some(getter) = getter {
                 self.define_instance_trait(
                     mc,
                     Trait::from_getter(
-                        QName::new(namespace, name),
-                        Method::from_builtin(getter, name, mc),
+                        QName::new(namespace, *name),
+                        Method::from_builtin_and_params(
+                            *getter,
+                            name,
+                            vec![],
+                            *prop_type,
+                            false,
+                            mc,
+                        ),
                     ),
                 );
             }
@@ -1170,8 +1179,15 @@ impl<'gc> Class<'gc> {
                 self.define_instance_trait(
                     mc,
                     Trait::from_setter(
-                        QName::new(namespace, name),
-                        Method::from_builtin(setter, name, mc),
+                        QName::new(namespace, *name),
+                        Method::from_builtin_and_params(
+                            *setter,
+                            name,
+                            vec![ParamConfig::of_type("val", *prop_type)],
+                            Some(Gc::new(mc, QName::new(namespace, "void").into())),
+                            false,
+                            mc,
+                        ),
                     ),
                 );
             }
