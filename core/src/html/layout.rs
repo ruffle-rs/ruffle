@@ -407,36 +407,6 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         }
     }
 
-    /// Adjust the text layout cursor down to the next line in response to an
-    /// explicit newline.
-    ///
-    /// This function will also adjust any layout boxes on the current line to
-    /// their correct alignment and indentation.
-    ///
-    /// The `text`, `end`, and `span` parameters are for empty line insertion.
-    /// `text` should be the text we are laying out, while `end` and `span` are
-    /// the current positions into the text and format spans we are laying out.
-    fn explicit_newline(
-        &mut self,
-        context: &mut UpdateContext<'gc>,
-        end: usize,
-        span: &TextSpan,
-        font_type: FontType,
-    ) {
-        self.fixup_line(context, false, true, end, span, font_type);
-
-        self.cursor.set_x(Twips::ZERO);
-        self.cursor += (
-            Twips::ZERO,
-            self.max_font_size + self.line_leading_adjustment(),
-        )
-            .into();
-
-        self.is_first_line = true;
-        self.has_line_break = true;
-        self.max_font_size = Twips::from_pixels(self.current_line_span.font.size);
-    }
-
     /// Adjust the text layout cursor down to the next line.
     ///
     /// This function will also adjust any layout boxes on the current line to
@@ -445,14 +415,18 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// The `text`, `end`, and `span` parameters are for empty line insertion.
     /// `text` should be the text we are laying out, while `end` and `span` are
     /// the current positions into the text and format spans we are laying out.
+    ///
+    /// The parameter `end_of_para` specifies whether the line was the last line
+    /// of the current paragraph (i.e. it contained an explicit newline).
     fn newline(
         &mut self,
         context: &mut UpdateContext<'gc>,
         end: usize,
         span: &TextSpan,
         font_type: FontType,
+        end_of_para: bool,
     ) {
-        self.fixup_line(context, false, false, end, span, font_type);
+        self.fixup_line(context, false, end_of_para, end, span, font_type);
 
         self.cursor.set_x(Twips::ZERO);
         self.cursor += (
@@ -461,7 +435,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         )
             .into();
 
-        self.is_first_line = false;
+        self.is_first_line = end_of_para;
         self.has_line_break = true;
         self.max_font_size = Twips::from_pixels(self.current_line_span.font.size);
     }
@@ -1162,11 +1136,12 @@ pub fn lower_from_text_spans<'gc>(
                 };
 
                 match delimiter {
-                    Some(b'\n' | b'\r') => layout_context.explicit_newline(
+                    Some(b'\n' | b'\r') => layout_context.newline(
                         context,
                         span_start + slice_start - 1,
                         span,
                         font_type,
+                        true,
                     ),
                     Some(b'\t') => layout_context.tab(),
                     _ => {}
@@ -1204,6 +1179,7 @@ pub fn lower_from_text_spans<'gc>(
                                 start + next_breakpoint,
                                 span,
                                 font_type,
+                                false,
                             );
 
                             let next_dim = layout_context.wrap_dimensions(span);
@@ -1230,7 +1206,13 @@ pub fn lower_from_text_spans<'gc>(
                             break;
                         }
 
-                        layout_context.newline(context, start + next_breakpoint, span, font_type);
+                        layout_context.newline(
+                            context,
+                            start + next_breakpoint,
+                            span,
+                            font_type,
+                            false,
+                        );
                         let next_dim = layout_context.wrap_dimensions(span);
 
                         width = next_dim.0;
