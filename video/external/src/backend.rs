@@ -46,7 +46,13 @@ impl ExternalVideoBackend {
             return Ok(decoder);
         }
 
-        Err(Error::DecoderError("No OpenH264".into()))
+        #[cfg(feature = "webcodecs")]
+        {
+            return Ok(Box::new(crate::decoder::webcodecs::H264Decoder::new()));
+        }
+
+        #[allow(unreachable_code)]
+        Err(Error::DecoderError("No H.264 decoder available".into()))
     }
 
     pub fn new() -> Self {
