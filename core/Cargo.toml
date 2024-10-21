@@ -69,6 +69,7 @@ id3 = "1.14.0"
 either = "1.13.0"
 chardetng = "0.1.17"
 tracy-client = { version = "0.17.1", optional = true, default-features = false }
+web-sys = { version = "0.3.70", features = ["console"] }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 workspace = true
