@@ -308,17 +308,14 @@ pub fn set_filters<'gc>(
                     let mut filter_vec = Vec::with_capacity(filters_storage.length());
 
                     for filter in filters_storage.iter().flatten() {
-                        if matches!(filter, Value::Undefined | Value::Null) {
+                        if !filter.is_of_type(activation, filter_class) {
                             return build_argument_type_error(activation);
-                        } else {
-                            let filter_object = filter.coerce_to_object(activation)?;
-
-                            if !filter_object.is_of_type(filter_class) {
-                                return build_argument_type_error(activation);
-                            }
-
-                            filter_vec.push(Filter::from_avm2_object(activation, filter_object)?);
                         }
+
+                        let filter_object = filter
+                            .as_object()
+                            .expect("BitmapFilter value should be Object");
+                        filter_vec.push(Filter::from_avm2_object(activation, filter_object)?);
                     }
 
                     dobj.set_filters(activation.context.gc_context, filter_vec);
@@ -771,10 +768,19 @@ pub fn set_transform<'gc>(
     // FIXME - consider 3D matrix and pixel bounds
     let matrix = transform
         .get_public_property("matrix", activation)?
-        .coerce_to_object(activation)?;
+        .as_object();
+
+    let Some(matrix) = matrix else {
+        // FP seems to not do anything when setting to a Transform with a null matrix,
+        // but we don't actually support setting the matrix to null anyway
+        // (see the comment in `flash::geom::transform::set_matrix`)
+        return Ok(Value::Undefined);
+    };
+
     let color_transform = transform
         .get_public_property("colorTransform", activation)?
-        .coerce_to_object(activation)?;
+        .as_object()
+        .expect("colorTransform should be non-null");
 
     let matrix =
         crate::avm2::globals::flash::geom::transform::object_to_matrix(matrix, activation)?;
