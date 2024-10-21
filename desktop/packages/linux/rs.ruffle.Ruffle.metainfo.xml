@@ -17,6 +17,7 @@
     <name xml:lang="tr">Ruffle</name>
     <name xml:lang="uk">Ruffle</name>
     <name xml:lang="zh-CN">Ruffle</name>
+    <name xml:lang="zh-TW">Ruffle</name>
     <summary>Play Flash games &amp; movies</summary>
     <summary xml:lang="ar">شغِّل ألعاب وأفلام الفلاش</summary>
     <summary xml:lang="cs">Hrajte Flash hry a přehrajte filmy</summary>
@@ -30,6 +31,7 @@
     <summary xml:lang="ru">Проигрывайте Flash-игры и ролики</summary>
     <summary xml:lang="uk">Відтворюйте Flash ігри та фільми</summary>
     <summary xml:lang="zh-CN">播放 Flash 游戏和动画</summary>
+    <summary xml:lang="zh-TW">播放 Flash 遊戲和 &amp; 動畫</summary>
     <developer id="rs.ruffle">
         <name>The Ruffle Team</name>
         <name xml:lang="ar">فريق رَفل</name>
@@ -45,6 +47,7 @@
         <name xml:lang="tr">Ruffle ekibi</name>
         <name xml:lang="uk">Команда Ruffle</name>
         <name xml:lang="zh-CN">Ruffle 项目组</name>
+        <name xml:lang="zh-TW">Ruffle 團隊</name>
     </developer>
     <update_contact>ruffle@ruffle.rs</update_contact>
     <launchable type="desktop-id">rs.ruffle.Ruffle.desktop</launchable>
@@ -68,6 +71,7 @@
         <p xml:lang="tr">Ruffle, Rust ile yazılmış bir Flash Player emülatörüdür. Rust'ın güvenlik garantilerinden yararlanarak, Flash'ın ünlü olduğu tüm güvenlik açıklarından güvenle kaçınabiliyoruz. Ruffle, Flash'ı ait olduğu yere, web'e geri getiriyor!</p>
         <p xml:lang="uk">Ruffle це емулятор Flash Player, написаний на Rust. Використовуючи гарантії безпеки Rust, ми можемо впевнено уникнути всі підводні камені безпеки, якими славиться Flash. Ruffle повертає Flash в інтернет, де йому й місце!</p>
         <p xml:lang="zh-CN">Ruffle 是一个用 Rust 编写的 Flash Player 模拟器，借助 Rust 的安全性保证，我们确信可以避免 Flash 众所周知的各种安全漏洞。Ruffle 将 Flash 重新带回网络，它原本所在的地方！</p>
+        <p xml:lang="zh-TW">Ruffle 是用 Rust 寫成的 Flash Player 模擬器。利用 Rust 的安全保證，我們可以放心地避免 Flash 聲名狼藉的所有安全隱患。Ruffle 將 Flash 放回屬於它的網頁上！</p>
         <p>
             This application lets you run Flash content on your computer without a browser in-between,
             and take full advantage of your GPU and system resources to get those extra frames when playing intense games.
@@ -85,6 +89,7 @@
         <p xml:lang="tr">Bu uygulama, bilgisayarınızda tarayıcıya ihtiyaç duymadan Flash içerik çalıştırmanıza ve yoğun oyunlar oynarken ekstra kare hızları elde etmek için GPU'nuzu ve sistem kaynaklarınızı tam anlamıyla kullanmanıza olanak tanır.</p>
         <p xml:lang="uk">Цей застосунок дає змогу запускати Flash контент на вашому комп’ютері без проміжного браузера та повністю використовувати переваги вашого GPU та системних ресурсів, щоб отримати додаткові кадри під час відтворення інтенсивних ігор.</p>
         <p xml:lang="zh-CN">这款应用程序让您可以在电脑上直接运行 Flash 内容，无需浏览器作为中介，并充分利用您的 GPU 和系统资源，在游玩高负载游戏时获得更高的帧数。</p>
+        <p xml:lang="zh-TW">此應用程式可讓您在電腦上執行 Flash 內容，中間無需瀏覽器，並可充分利用 GPU 和系統資源，在玩激烈遊戲時獲得額外的畫面。</p>
         <p>
             Ruffle is an entirely open source project maintained by volunteers.
             We're all passionate about the preservation of internet history, and we were drawn to working on this
@@ -106,6 +111,7 @@
         <p xml:lang="tr">Ruffle, gönüllüler tarafından sürdürülen tamamen açık kaynaklı bir projedir. Hepimiz internet tarihinin korunmasına tutkuyla bağlıyız ve kullanıcıların artık resmi Flash Player'ı çalıştıramayacağı zaman erişilemeyecek olan birçok web sitesini ve içeriği korumaya yardımcı olmak için bu projede çalışmaya yöneldik. Bu projeye destek olmak isterseniz, her türlü katkıyı memnuniyetle karşılarız – eski oyunları oynayıp ne kadar iyi çalıştıklarını görmek bile katkı sayılır.</p>
         <p xml:lang="uk">Ruffle це проект з повністю відкритим кодом, який підтримується волонтерами. Ми всі захоплені збереженням історії інтернету, і ми залучені в роботу над цим проектом, щоб допомогти зберегти багато вебсайтів і велику кількість контенту, який більше не доступний, якщо користувачі більше не можуть запускати офіційний Flash Player. Якщо ви бажаєте допомогти підтримати цей проект, ми вітаємо будь-які внески, навіть якщо це просто гра в старі ігри та спостереження за тим, як добре вони працюють.</p>
         <p xml:lang="zh-CN">Ruffle 是一个完全开源的项目，由志愿者维护。我们热衷于保存互联网的历史，因此参与这个项目，以帮助保存将在官方的 Flash 播放器时无法运行后不可使用的众多网站和丰富内容。如果您想支持这个项目，我们欢迎任何形式的贡献——即使只是玩一些老游戏，看看它们的运行效果如何。</p>
+        <p xml:lang="zh-TW">Ruffle 是一個完全由志願者維護的開放原始碼專案。我們都熱衷於網際網路歷史的保存，我們被吸引參與這個專案，以幫助保存許多網站和大量的內容，當使用者無法再執行官方的 Flash Player 時，這些網站和內容就無法再被存取。如果您願意協助支持此專案，我們歡迎任何形式的貢獻 - 即使只是玩一些舊遊戲，看看它們運行得有多好。</p>
     </description>
     <categories>
         <category>AudioVideo</category>
@@ -132,6 +138,7 @@
         <keyword xml:lang="tr">flash</keyword>
         <keyword xml:lang="uk">flash</keyword>
         <keyword xml:lang="zh-CN">flash</keyword>
+        <keyword xml:lang="zh-TW">flash</keyword>
         <keyword>swf</keyword>
         <keyword xml:lang="cs">swf</keyword>
         <keyword xml:lang="de">swf</keyword>
@@ -147,6 +154,7 @@
         <keyword xml:lang="tr">swf</keyword>
         <keyword xml:lang="uk">swf</keyword>
         <keyword xml:lang="zh-CN">swf</keyword>
+        <keyword xml:lang="zh-TW">swf</keyword>
         <keyword>player</keyword>
         <keyword xml:lang="ar">مشغل</keyword>
         <keyword xml:lang="cs">přehrávač</keyword>
@@ -164,6 +172,7 @@
         <keyword xml:lang="tr">oynatıcı</keyword>
         <keyword xml:lang="uk">програвач</keyword>
         <keyword xml:lang="zh-CN">播放器</keyword>
+        <keyword xml:lang="zh-TW">播放器</keyword>
         <keyword>emulator</keyword>
         <keyword xml:lang="ar">محاكي</keyword>
         <keyword xml:lang="cs">emulátor</keyword>
@@ -183,6 +192,7 @@
         <keyword xml:lang="tr">öykünücü</keyword>
         <keyword xml:lang="uk">емулятор</keyword>
         <keyword xml:lang="zh-CN">模拟器</keyword>
+        <keyword xml:lang="zh-TW">模擬器</keyword>
         <keyword>rust</keyword>
         <keyword xml:lang="ar">رَسْت</keyword>
         <keyword xml:lang="cs">rust</keyword>
@@ -200,6 +210,7 @@
         <keyword xml:lang="tr">rust</keyword>
         <keyword xml:lang="uk">rust</keyword>
         <keyword xml:lang="zh-CN">rust</keyword>
+        <keyword xml:lang="zh-TW">rust</keyword>
     </keywords>
     <url type="homepage">https://ruffle.rs</url>
     <url type="bugtracker">https://github.com/ruffle-rs/ruffle/issues</url>
