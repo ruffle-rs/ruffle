@@ -47,10 +47,27 @@ align-bottom-right = 右下方
 align-force = 強制
 scale-mode = 縮放模式
 scale-mode-noscale = 未縮放 (100%)
+scale-mode-noscale-tooltip =
+    顯示影片的原始大小，没有任何缩放
+    
+    對位於 StageScaleMode.NO_SCALE
 scale-mode-showall = 縮放至適當比例
+scale-mode-showall-tooltip =
+    縮放動畫，儘可能填滿視窗而不裁切，並維持寬高比。
+    
+    對位於 StageScaleMode.SHOW_ALL
 scale-mode-exactfit = 伸長到適合
+scale-mode-exactfit-tooltip =
+    確保動畫填滿整個視窗，不考慮寬高比。
+    
+    對位於 StageScaleMode.EXACT_FIT
 scale-mode-noborder = 裁剪以適應寬高比
+scale-mode-noborder-tooltip =
+    填滿整個視窗，同時維持寬高比，必要時裁剪動畫。
+    
+    對位於 StageScaleMode.NO_BORDER
 scale-mode-force = 強制
+scale-mode-force-tooltip = 防止動畫改變縮放模式，將其鎖定在選取的設定上。
 player-version = 播放器版本
 player-runtime = 執行環境
 player-runtime-flash = Flash Player
