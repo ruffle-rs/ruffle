@@ -9,7 +9,7 @@ import {
     WindowMode,
     DEFAULT_CONFIG,
 } from "../../public/config";
-import type { MovieMetadata } from "../../public/player";
+import { MovieMetadata, ReadyState } from "../../public/player";
 import { ruffleShadowTemplate } from "../ui/shadow-template";
 import { text, textAsParagraphs } from "../i18n";
 import { swfFileName } from "../../swf-utils";
@@ -191,6 +191,8 @@ export class InnerPlayer {
     private volumeSettings: VolumeControls;
     private readonly debugPlayerInfo: () => string;
     protected readonly onCallbackAvailable: (name: string) => void;
+    private readonly onFSCommand: ((command: string, args: string) => void)[] =
+        [];
 
     public constructor(
         element: HTMLElement,
@@ -201,7 +203,10 @@ export class InnerPlayer {
         this.debugPlayerInfo = debugPlayerInfo;
         this.onCallbackAvailable = onCallbackAvailable;
 
-        this.shadow = this.element.attachShadow({ mode: "open", delegatesFocus: true });
+        this.shadow = this.element.attachShadow({
+            mode: "open",
+            delegatesFocus: true,
+        });
         this.shadow.appendChild(ruffleShadowTemplate.content.cloneNode(true));
 
         this.dynamicStyles = this.shadow.getElementById(
@@ -309,7 +314,6 @@ export class InnerPlayer {
 
         this.instance = null;
         this.newZipWriter = null;
-        this.onFSCommand = null;
 
         this._readyState = ReadyState.HaveNothing;
         this.metadata = null;
@@ -318,15 +322,19 @@ export class InnerPlayer {
         this.setupPauseOnTabHidden();
     }
 
-    /**
-     * A movie can communicate with the hosting page using fscommand
-     * as long as script access is allowed.
-     *
-     * @param command A string passed to the host application for any use.
-     * @param args A string passed to the host application for any use.
-     * @returns True if the command was handled.
-     */
-    onFSCommand: ((command: string, args: string) => boolean) | null;
+    addFSCommandHandler(handler: (command: string, args: string) => void) {
+        this.onFSCommand.push(handler);
+    }
+
+    public callFSCommand(command: string, args: string): boolean {
+        if (this.onFSCommand.length == 0) {
+            return false;
+        }
+        for (const handler of this.onFSCommand) {
+            handler(command, args);
+        }
+        return true;
+    }
 
     /**
      * Any configuration that should apply to this specific player.
@@ -2037,26 +2045,6 @@ export class InnerPlayer {
         // TODO: Move this to whatever function changes the ReadyState to Loaded when we have streaming support.
         this.element.dispatchEvent(new CustomEvent(InnerPlayer.LOADED_DATA));
     }
-}
-
-/**
- * Describes the loading state of an SWF movie.
- */
-export enum ReadyState {
-    /**
-     * No movie is loaded, or no information is yet available about the movie.
-     */
-    HaveNothing = 0,
-
-    /**
-     * The movie is still loading, but it has started playback, and metadata is available.
-     */
-    Loading = 1,
-
-    /**
-     * The movie has completely loaded.
-     */
-    Loaded = 2,
 }
 
 /**
