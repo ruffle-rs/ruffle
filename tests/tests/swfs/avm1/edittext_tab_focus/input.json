@@ -1,0 +1,13 @@
+[
+    { "type": "KeyDown", "key_code": 9 },
+    { "type": "KeyDown", "key_code": 27 },
+    { "type": "KeyDown", "key_code": 9 },
+    { "type": "TextControl", "code": "MoveRight" },
+    { "type": "KeyDown", "key_code": 27 },
+    { "type": "KeyDown", "key_code": 9 },
+    { "type": "KeyDown", "key_code": 27 },
+    { "type": "KeyDown", "key_code": 9 },
+    { "type": "TextControl", "code": "MoveRight" },
+    { "type": "KeyDown", "key_code": 9 },
+    { "type": "KeyDown", "key_code": 27 }
+]
