@@ -15,7 +15,8 @@ mod zip;
 use crate::builder::RuffleInstanceBuilder;
 use external_interface::{external_to_js_value, js_to_external_value};
 use input::{web_key_to_codepoint, web_to_ruffle_key_code, web_to_ruffle_text_control};
-use js_sys::{Error as JsError, Uint8Array};
+use js_sys::WebAssembly::RuntimeError;
+use js_sys::{Error as JsError, Promise, Uint8Array};
 use ruffle_core::context::UpdateContext;
 use ruffle_core::context_menu::ContextMenuCallback;
 use ruffle_core::events::{MouseButton, MouseWheelDelta, TextControlCode};
@@ -24,6 +25,7 @@ use ruffle_core::{Player, PlayerEvent, StaticCallstack, ViewportDimensions};
 use ruffle_web_common::JsResult;
 use serde::Serialize;
 use slotmap::{new_key_type, SlotMap};
+use std::mem;
 use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Once;
@@ -68,6 +70,11 @@ struct JsCallback<E> {
     name: &'static str,
     is_capture: bool,
     closure: Closure<dyn FnMut(E)>,
+}
+
+struct JsPromiseCallbacks {
+    resolve: js_sys::Function,
+    reject: js_sys::Function,
 }
 
 impl<E: FromWasmAbi + 'static> JsCallback<E> {
@@ -137,6 +144,7 @@ struct RuffleInstance {
     focusin_callback: Option<JsCallback<FocusEvent>>,
     focusout_callback: Option<JsCallback<FocusEvent>>,
     focus_on_press_callback: Option<JsCallback<PointerEvent>>,
+    screenshot_promise_callbacks: Vec<JsPromiseCallbacks>,
     has_focus: bool,
     trace_observer: Rc<RefCell<JsValue>>,
     log_subscriber: Arc<Layered<WASMLayer, Registry>>,
@@ -282,6 +290,21 @@ impl RuffleHandle {
         let _ = self.with_core_mut(|core| {
             core.set_is_playing(true);
         });
+    }
+
+    /// Schedules the next render to be captured as a promise resolving to a [web_sys::Blob].
+    #[wasm_bindgen(js_name = contentToBlob)]
+    pub fn content_to_blob(&self) -> Promise {
+        match self.with_instance_mut(|instance| {
+            Promise::new(&mut |resolve, reject| {
+                instance
+                    .screenshot_promise_callbacks
+                    .push(JsPromiseCallbacks { resolve, reject })
+            })
+        }) {
+            Ok(p) => p,
+            Err(err) => Promise::reject(&RuntimeError::new(&err.to_string())),
+        }
     }
 
     pub fn pause(&self) {
@@ -503,6 +526,7 @@ impl RuffleHandle {
             focusin_callback: None,
             focusout_callback: None,
             focus_on_press_callback: None,
+            screenshot_promise_callbacks: vec![],
             timestamp: None,
             has_focus: false,
             trace_observer: player.trace_observer,
@@ -1063,25 +1087,79 @@ impl RuffleHandle {
         });
 
         // Tick the Ruffle core.
-        let _ = self.with_core_mut(|core| {
-            if let Some((ref canvas, viewport_width, viewport_height, device_pixel_ratio)) =
-                new_dimensions
-            {
-                canvas.set_width(viewport_width);
-                canvas.set_height(viewport_height);
+        let did_render = self
+            .with_core_mut(|core| {
+                if let Some((ref canvas, viewport_width, viewport_height, device_pixel_ratio)) =
+                    new_dimensions
+                {
+                    canvas.set_width(viewport_width);
+                    canvas.set_height(viewport_height);
 
-                core.set_viewport_dimensions(ViewportDimensions {
-                    width: viewport_width,
-                    height: viewport_height,
-                    scale_factor: device_pixel_ratio,
-                });
+                    core.set_viewport_dimensions(ViewportDimensions {
+                        width: viewport_width,
+                        height: viewport_height,
+                        scale_factor: device_pixel_ratio,
+                    });
+                }
+
+                core.tick(dt);
+
+                // Render if the core signals a new frame, or if we resized.
+                if core.needs_render() || new_dimensions.is_some() {
+                    core.render();
+                    true
+                } else {
+                    false
+                }
+            })
+            .unwrap_or(false);
+
+        if did_render {
+            self.resolve_screenshot_requests();
+        }
+    }
+
+    /// To avoid capturing a blank canvas when in a WebGL context, this must be called
+    /// between the time that JS issues drawing commands to the WebGL context and when
+    /// the WebGl context submits the contents to the compositor.
+    ///
+    /// This means this should generally be called after [`Player::render`] but before
+    /// the `requestAnimationFrame` handler returns
+    ///
+    /// See (this stack overflow question)[https://stackoverflow.com/questions/12538193/why-does-my-canvas-go-blank-after-converting-to-image] for
+    /// more information about why this is necessary
+    fn resolve_screenshot_requests(&self) {
+        let _ = self.with_instance_mut(|instance| {
+            if instance.screenshot_promise_callbacks.is_empty() {
+                return;
             }
 
-            core.tick(dt);
+            let (instance_screenshot_promise_resolves, instance_screenshot_promise_rejects): (
+                Vec<js_sys::Function>,
+                Vec<js_sys::Function>,
+            ) = {
+                let promise_callbacks = mem::take(&mut instance.screenshot_promise_callbacks);
+                promise_callbacks
+                    .into_iter()
+                    .map(|JsPromiseCallbacks { resolve, reject }| (resolve, reject))
+                    .unzip()
+            };
 
-            // Render if the core signals a new frame, or if we resized.
-            if core.needs_render() || new_dimensions.is_some() {
-                core.render();
+            let cb = Closure::once_into_js(move |blob: JsValue| {
+                for resolve in instance_screenshot_promise_resolves {
+                    let ctx = JsValue::null();
+                    let _ = resolve.call1(&ctx, &blob);
+                }
+            });
+
+            // SAFETY: We just made this above as a Function
+            let cb_fn = JsCast::unchecked_into::<js_sys::Function>(cb);
+
+            if let Err(e) = instance.canvas.to_blob(&cb_fn) {
+                for reject in instance_screenshot_promise_rejects {
+                    let ctx = JsValue::null();
+                    let _ = reject.call1(&ctx, &e);
+                }
             }
         });
     }
