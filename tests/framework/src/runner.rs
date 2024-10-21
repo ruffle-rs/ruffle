@@ -5,7 +5,7 @@ use crate::image_trigger::ImageTrigger;
 use crate::options::{ImageComparison, TestOptions};
 use crate::test::Test;
 use crate::util::{read_bytes, write_image};
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Error, Result};
 use image::ImageFormat;
 use pretty_assertions::Comparison;
 use ruffle_core::backend::navigator::NullExecutor;
@@ -403,6 +403,14 @@ impl TestRunner {
         let expected_output = self.output_path.read_to_string()?.replace("\r\n", "\n");
 
         if let Some(approximations) = &self.options.approximations {
+            let add_comparison_to_err = |err: Error| -> Error {
+                let left_pretty = PrettyString(actual_output);
+                let right_pretty = PrettyString(&expected_output);
+                let comparison = Comparison::new(&left_pretty, &right_pretty);
+
+                anyhow!("{}\n\n{}\n", err, comparison)
+            };
+
             if actual_output.lines().count() != expected_output.lines().count() {
                 return Err(anyhow!(
                     "# of lines of output didn't match (expected {} from Flash, got {} from Ruffle",
@@ -420,7 +428,9 @@ impl TestRunner {
                         continue;
                     }
 
-                    approximations.compare(actual, expected)?;
+                    approximations
+                        .compare(actual, expected)
+                        .map_err(add_comparison_to_err)?;
                 } else {
                     let mut found = false;
 
@@ -455,7 +465,9 @@ impl TestRunner {
                                     .as_str()
                                     .parse::<f64>()
                                     .expect("Failed to parse 'expected' capture group as float");
-                                approximations.compare(actual_num, expected_num)?;
+                                approximations
+                                    .compare(actual_num, expected_num)
+                                    .map_err(add_comparison_to_err)?;
                             }
                             let modified_actual = pattern.replace_all(actual, "");
                             let modified_expected = pattern.replace_all(expected, "");
