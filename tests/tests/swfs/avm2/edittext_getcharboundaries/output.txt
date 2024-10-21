@@ -1,4 +1,4 @@
-Text: test\n
+Text: test
   text.getCharBoundaries(-5) = null
   text.getCharBoundaries(-1) = null
   text.getCharBoundaries(0) = (x=2, y=2, w=4.3, h=12)
@@ -6,7 +6,6 @@ Text: test\n
   text.getCharBoundaries(2) = (x=13.05, y=2, w=5.7, h=12)
   text.getCharBoundaries(3) = (x=18.75, y=2, w=4.3, h=12)
   text.getCharBoundaries(4) = null
-  text.getCharBoundaries(5) = null
 Text: ay .,\n
   text.getCharBoundaries(-5) = null
   text.getCharBoundaries(-1) = null
@@ -49,3 +48,56 @@ Text: l1\nl2\n
   text.getCharBoundaries(4) = (x=5.05, y=18, w=6.85, h=12)
   text.getCharBoundaries(5) = null
   text.getCharBoundaries(6) = null
+Text: <li>i</li><li>j</li>
+  text.getCharBoundaries(-5) = null
+  text.getCharBoundaries(-1) = null
+  text.getCharBoundaries(0) = (x=38, y=2, w=3.05, h=12)
+  text.getCharBoundaries(1) = null
+  text.getCharBoundaries(2) = (x=38, y=18, w=3.05, h=12)
+  text.getCharBoundaries(3) = null
+  text.getCharBoundaries(4) = null
+Text: 1\n2\n3\n4\n5
+  text.getCharBoundaries(-5) = null
+  text.getCharBoundaries(-1) = null
+  text.getCharBoundaries(0) = (x=2, y=2, w=6.85, h=12)
+  text.getCharBoundaries(1) = null
+  text.getCharBoundaries(2) = (x=2, y=18, w=6.85, h=12)
+  text.getCharBoundaries(3) = null
+  text.getCharBoundaries(4) = (x=2, y=34, w=6.85, h=12)
+  text.getCharBoundaries(5) = null
+  text.getCharBoundaries(6) = (x=2, y=50, w=6.85, h=12)
+  text.getCharBoundaries(7) = null
+  text.getCharBoundaries(8) = (x=2, y=66, w=6.85, h=12)
+  text.getCharBoundaries(9) = null
+Text: <p><font size='+2'>xyM</font></p><p><font size='+4'>xyM</font></p><p><font size='-2'>xyM</font></p>
+  text.getCharBoundaries(-5) = null
+  text.getCharBoundaries(-1) = null
+  text.getCharBoundaries(0) = (x=2, y=2, w=7.4, h=14.05)
+  text.getCharBoundaries(1) = (x=9.4, y=2, w=7.1, h=14.05)
+  text.getCharBoundaries(2) = (x=16.5, y=2, w=12.7, h=14.05)
+  text.getCharBoundaries(3) = null
+  text.getCharBoundaries(4) = (x=2, y=20.05, w=8.45, h=16.1)
+  text.getCharBoundaries(5) = (x=10.45, y=20.05, w=8.15, h=16.1)
+  text.getCharBoundaries(6) = (x=18.6, y=20.05, w=14.5, h=16.1)
+  text.getCharBoundaries(7) = null
+  text.getCharBoundaries(8) = (x=2, y=40.15, w=5.25, h=10.05)
+  text.getCharBoundaries(9) = (x=7.25, y=40.15, w=5.05, h=10.05)
+  text.getCharBoundaries(10) = (x=12.3, y=40.15, w=9.05, h=10.05)
+  text.getCharBoundaries(11) = null
+  text.getCharBoundaries(12) = null
+Text: <p><font size='+2'>xyM</font></p><p><font size='+4'>xyM</font></p><p><font size='-2'>xyM</font></p>
+  text.getCharBoundaries(-5) = null
+  text.getCharBoundaries(-1) = null
+  text.getCharBoundaries(0) = (x=2, y=2, w=7.4, h=14.05)
+  text.getCharBoundaries(1) = (x=9.4, y=2, w=7.1, h=14.05)
+  text.getCharBoundaries(2) = (x=16.5, y=2, w=12.7, h=14.05)
+  text.getCharBoundaries(3) = null
+  text.getCharBoundaries(4) = (x=2, y=16.05, w=8.45, h=16.1)
+  text.getCharBoundaries(5) = (x=10.45, y=16.05, w=8.15, h=16.1)
+  text.getCharBoundaries(6) = (x=18.6, y=16.05, w=14.5, h=16.1)
+  text.getCharBoundaries(7) = null
+  text.getCharBoundaries(8) = (x=2, y=32.15, w=5.25, h=10.05)
+  text.getCharBoundaries(9) = (x=7.25, y=32.15, w=5.05, h=10.05)
+  text.getCharBoundaries(10) = (x=12.3, y=32.15, w=9.05, h=10.05)
+  text.getCharBoundaries(11) = null
+  text.getCharBoundaries(12) = null
