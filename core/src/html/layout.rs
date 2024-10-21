@@ -75,6 +75,9 @@ pub struct LayoutContext<'a, 'gc> {
     /// The highest ascent observed within the current line.
     max_ascent: Twips,
 
+    /// The highest descent observed within the current line.
+    max_descent: Twips,
+
     /// The growing list of layout lines to return when layout has finished.
     lines: Vec<LayoutLine<'gc>>,
 
@@ -127,6 +130,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             text,
             max_font_size: Default::default(),
             max_ascent: Default::default(),
+            max_descent: Default::default(),
             lines: Vec::new(),
             current_line_index: 0,
             boxes: Vec::new(),
@@ -139,22 +143,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         }
     }
 
-    /// Calculate the font-provided leading present on this line.
-    fn font_leading_adjustment(&self) -> Twips {
-        // Flash appears to round up the font's leading to the nearest pixel
-        // and adds one. I'm not sure why.
-        self.font
-            .map(|f| f.get_leading_for_height(self.max_font_size))
-            .unwrap_or_default()
-    }
-
-    /// Calculate the line-to-line leading present on this line, including the
-    /// font-leading above.
+    /// Calculate the line-to-line leading present on this line.
     fn line_leading_adjustment(&self) -> Twips {
-        self.font
-            .map(|f| f.get_leading_for_height(self.max_font_size))
-            .unwrap_or_default()
-            + Twips::from_pixels(self.current_line_span.leading)
+        // Flash Player ignores font-provided leading.
+        Twips::from_pixels(self.current_line_span.leading)
     }
 
     /// Determine the effective alignment mode for the current line of text.
@@ -280,12 +272,15 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                 linebox.interior_bounds = linebox
                     .interior_bounds
                     .with_size(font.measure(text.trim_end(), params).into());
+                linebox.bounds = linebox
+                    .bounds
+                    .with_width(font.measure(text.trim_end(), params).0);
             }
 
             if let Some(line_bounds) = &mut line_bounds {
-                *line_bounds += linebox.interior_bounds;
+                *line_bounds += linebox.bounds;
             } else {
-                line_bounds = Some(linebox.interior_bounds);
+                line_bounds = Some(linebox.bounds);
             }
 
             box_count += 1;
@@ -323,16 +318,16 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         let font_leading_adjustment = if only_line {
             self.line_leading_adjustment()
         } else {
-            self.font_leading_adjustment()
+            Twips::ZERO
         };
         if self.current_line_span.bullet && self.is_first_line && box_count > 0 {
             self.append_bullet(context, &self.current_line_span.clone(), font_type);
         }
 
+        let baseline_adjustment = self.max_ascent;
+
         box_count = 0;
         for layout_box in self.boxes.iter_mut() {
-            let baseline_adjustment = self.max_ascent;
-
             if layout_box.is_text_box() {
                 let position = Position::from((
                     left_adjustment + align_adjustment + (interim_adjustment * box_count),
@@ -351,7 +346,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         self.append_underlines();
 
-        line_bounds += Position::from((left_adjustment + align_adjustment, Twips::ZERO));
+        line_bounds += Position::from((left_adjustment + align_adjustment, baseline_adjustment));
         line_bounds += Size::from((Twips::ZERO, font_leading_adjustment));
 
         self.flush_line(end);
@@ -407,36 +402,6 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         }
     }
 
-    /// Adjust the text layout cursor down to the next line in response to an
-    /// explicit newline.
-    ///
-    /// This function will also adjust any layout boxes on the current line to
-    /// their correct alignment and indentation.
-    ///
-    /// The `text`, `end`, and `span` parameters are for empty line insertion.
-    /// `text` should be the text we are laying out, while `end` and `span` are
-    /// the current positions into the text and format spans we are laying out.
-    fn explicit_newline(
-        &mut self,
-        context: &mut UpdateContext<'gc>,
-        end: usize,
-        span: &TextSpan,
-        font_type: FontType,
-    ) {
-        self.fixup_line(context, false, true, end, span, font_type);
-
-        self.cursor.set_x(Twips::ZERO);
-        self.cursor += (
-            Twips::ZERO,
-            self.max_font_size + self.line_leading_adjustment(),
-        )
-            .into();
-
-        self.is_first_line = true;
-        self.has_line_break = true;
-        self.max_font_size = Twips::from_pixels(self.current_line_span.font.size);
-    }
-
     /// Adjust the text layout cursor down to the next line.
     ///
     /// This function will also adjust any layout boxes on the current line to
@@ -445,25 +410,34 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// The `text`, `end`, and `span` parameters are for empty line insertion.
     /// `text` should be the text we are laying out, while `end` and `span` are
     /// the current positions into the text and format spans we are laying out.
+    ///
+    /// The parameter `end_of_para` specifies whether the line was the last line
+    /// of the current paragraph (i.e. it contained an explicit newline).
     fn newline(
         &mut self,
         context: &mut UpdateContext<'gc>,
         end: usize,
         span: &TextSpan,
         font_type: FontType,
+        end_of_para: bool,
     ) {
-        self.fixup_line(context, false, false, end, span, font_type);
+        self.fixup_line(context, false, end_of_para, end, span, font_type);
 
         self.cursor.set_x(Twips::ZERO);
         self.cursor += (
             Twips::ZERO,
-            self.max_font_size + self.line_leading_adjustment(),
+            self.max_ascent + self.max_descent + self.line_leading_adjustment(),
         )
             .into();
 
-        self.is_first_line = false;
+        self.is_first_line = end_of_para;
         self.has_line_break = true;
-        self.max_font_size = Twips::from_pixels(self.current_line_span.font.size);
+
+        let font_size = Twips::from_pixels(self.current_line_span.font.size);
+        let font = self.font.unwrap();
+        self.max_font_size = font_size;
+        self.max_ascent = font.get_baseline_for_height(font_size);
+        self.max_descent = font.get_descent_for_height(font_size);
     }
 
     /// Adjust the text layout cursor in response to a tab.
@@ -494,14 +468,18 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// Enter a new span.
     fn newspan(&mut self, first_span: &TextSpan) {
         let font_size = Twips::from_pixels(first_span.font.size);
-        let ascent = self.font.unwrap().get_baseline_for_height(font_size);
+        let font = self.font.unwrap();
+        let ascent = font.get_baseline_for_height(font_size);
+        let descent = font.get_descent_for_height(font_size);
         if self.is_start_of_line() {
             self.current_line_span = first_span.clone();
             self.max_font_size = font_size;
             self.max_ascent = ascent;
+            self.max_descent = descent;
         } else {
             self.max_font_size = self.max_font_size.max(font_size);
             self.max_ascent = self.max_ascent.max(ascent);
+            self.max_descent = self.max_descent.max(descent);
         }
     }
 
@@ -1162,11 +1140,12 @@ pub fn lower_from_text_spans<'gc>(
                 };
 
                 match delimiter {
-                    Some(b'\n' | b'\r') => layout_context.explicit_newline(
+                    Some(b'\n' | b'\r') => layout_context.newline(
                         context,
                         span_start + slice_start - 1,
                         span,
                         font_type,
+                        true,
                     ),
                     Some(b'\t') => layout_context.tab(),
                     _ => {}
@@ -1204,6 +1183,7 @@ pub fn lower_from_text_spans<'gc>(
                                 start + next_breakpoint,
                                 span,
                                 font_type,
+                                false,
                             );
 
                             let next_dim = layout_context.wrap_dimensions(span);
@@ -1230,7 +1210,13 @@ pub fn lower_from_text_spans<'gc>(
                             break;
                         }
 
-                        layout_context.newline(context, start + next_breakpoint, span, font_type);
+                        layout_context.newline(
+                            context,
+                            start + next_breakpoint,
+                            span,
+                            font_type,
+                            false,
+                        );
                         let next_dim = layout_context.wrap_dimensions(span);
 
                         width = next_dim.0;
