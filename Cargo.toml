@@ -62,7 +62,7 @@ chrono = { version = "0.4.38", default-features = false }
 enum-map = "2.7.3"
 flate2 = "1.0.34"
 futures = "0.3.31"
-image = { version = "0.25.2", default-features = false }
+image = { version = "0.25.4", default-features = false }
 js-sys = "0.3.70"
 web-sys = "0.3.70"
 log = "0.4"
