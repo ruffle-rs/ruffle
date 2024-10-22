@@ -71,7 +71,7 @@ use web_time::Instant;
 pub const NEWEST_PLAYER_VERSION: u8 = 32;
 
 #[cfg(feature = "default_font")]
-pub const FALLBACK_DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
+pub const FALLBACK_DEVICE_FONT: &[u8] = include_bytes!("../assets/notosans-regular.subset.ttf.gz");
 
 #[derive(Collect)]
 #[collect(no_drop)]
@@ -2907,12 +2907,23 @@ impl PlayerBuilder {
 
         #[cfg(feature = "default_font")]
         {
-            let mut font_reader = swf::read::Reader::new(FALLBACK_DEVICE_FONT_TAG, 8);
-            let font_tag = font_reader
-                .read_define_font_2(3)
-                .expect("Built-in font should compile");
-            player_lock
-                .register_device_font(FontDefinition::SwfTag(font_tag, font_reader.encoding()));
+            use flate2::read::DeflateDecoder;
+            use std::io::Read;
+
+            let mut data = Vec::new();
+            let mut decoder = DeflateDecoder::new(FALLBACK_DEVICE_FONT);
+            decoder
+                .read_to_end(&mut data)
+                .expect("default font decompression must succeed");
+
+            player_lock.register_device_font(FontDefinition::FontFile {
+                name: "Noto Sans".into(),
+                is_bold: false,
+                is_italic: false,
+                data,
+                index: 0,
+            });
+
             player_lock.set_default_font(DefaultFont::Sans, vec!["Noto Sans".to_string()]);
             player_lock.set_default_font(DefaultFont::Serif, vec!["Noto Sans".to_string()]);
             player_lock.set_default_font(DefaultFont::Typewriter, vec!["Noto Sans".to_string()]);
