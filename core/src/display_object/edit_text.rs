@@ -1961,6 +1961,21 @@ impl<'gc> EditText<'gc> {
         })
     }
 
+    pub fn line_metrics(self, line: usize) -> Option<LayoutMetrics> {
+        let layout = &self.0.read().layout;
+        let line = layout.lines().get(line)?;
+        let bounds = line.bounds();
+
+        Some(LayoutMetrics {
+            ascent: line.ascent(),
+            descent: line.descent(),
+            leading: line.leading(),
+            width: bounds.width(),
+            height: bounds.height() + line.leading(),
+            x: bounds.offset_x() + Twips::from_pixels(Self::INTERNAL_PADDING),
+        })
+    }
+
     pub fn line_length(self, line: usize) -> Option<usize> {
         Some(self.0.read().layout.lines().get(line)?.len())
     }
