@@ -78,6 +78,9 @@ pub struct LayoutContext<'a, 'gc> {
     /// The highest descent observed within the current line.
     max_descent: Twips,
 
+    /// The highest leading observed within the current line.
+    max_leading: Twips,
+
     /// The growing list of layout lines to return when layout has finished.
     lines: Vec<LayoutLine<'gc>>,
 
@@ -131,6 +134,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             max_font_size: Default::default(),
             max_ascent: Default::default(),
             max_descent: Default::default(),
+            max_leading: Default::default(),
             lines: Vec::new(),
             current_line_index: 0,
             boxes: Vec::new(),
@@ -438,6 +442,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         self.max_font_size = font_size;
         self.max_ascent = font.get_baseline_for_height(font_size);
         self.max_descent = font.get_descent_for_height(font_size);
+        self.max_leading = Twips::from_pixels(span.leading);
     }
 
     /// Adjust the text layout cursor in response to a tab.
@@ -471,15 +476,18 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         let font = self.font.unwrap();
         let ascent = font.get_baseline_for_height(font_size);
         let descent = font.get_descent_for_height(font_size);
+        let leading = Twips::from_pixels(first_span.leading);
         if self.is_start_of_line() {
             self.current_line_span = first_span.clone();
             self.max_font_size = font_size;
             self.max_ascent = ascent;
             self.max_descent = descent;
+            self.max_leading = leading;
         } else {
             self.max_font_size = self.max_font_size.max(font_size);
             self.max_ascent = self.max_ascent.max(ascent);
             self.max_descent = self.max_descent.max(descent);
+            self.max_leading = self.max_leading.max(leading);
         }
     }
 
