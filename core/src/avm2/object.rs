@@ -103,9 +103,7 @@ pub use crate::avm2::object::loaderinfo_object::{
 pub use crate::avm2::object::local_connection_object::{
     local_connection_allocator, LocalConnectionObject, LocalConnectionObjectWeak,
 };
-pub use crate::avm2::object::namespace_object::{
-    namespace_allocator, NamespaceObject, NamespaceObjectWeak,
-};
+pub use crate::avm2::object::namespace_object::{NamespaceObject, NamespaceObjectWeak};
 pub use crate::avm2::object::net_connection_object::{
     net_connection_allocator, NetConnectionObject, NetConnectionObjectWeak,
 };
