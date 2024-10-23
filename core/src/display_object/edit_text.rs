@@ -245,11 +245,6 @@ impl<'gc> EditText<'gc> {
             font_type,
         );
 
-        let mut base = InteractiveObjectBase::default();
-
-        base.base.matrix_mut().tx = swf_tag.bounds().x_min;
-        base.base.matrix_mut().ty = swf_tag.bounds().y_min;
-
         let variable = if !swf_tag.variable_name().is_empty() {
             Some(swf_tag.variable_name())
         } else {
@@ -275,7 +270,7 @@ impl<'gc> EditText<'gc> {
         let et = EditText(GcCell::new(
             context.gc_context,
             EditTextData {
-                base,
+                base: InteractiveObjectBase::default(),
                 text_spans,
                 static_data: Gc::new(
                     context.gc_context,
