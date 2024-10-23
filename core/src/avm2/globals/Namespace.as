@@ -1,5 +1,5 @@
 package {
-    [Ruffle(InstanceAllocator)]
+    [Ruffle(CustomConstructor)]
     [Ruffle(CallHandler)]
     public final class Namespace {
         prototype.toString = function():String {
@@ -15,10 +15,9 @@ package {
         prototype.setPropertyIsEnumerable("valueOf", false);
 
         public function Namespace(prefix:* = void 0, uri:* = void 0) {
-            this.init(arguments);
+            // The Namespace constructor is implemented natively:
+            // this AS-defined method does nothing
         }
-
-        private native function init(args:Array):void;
 
         public native function get prefix():*;
         public native function get uri():String;
