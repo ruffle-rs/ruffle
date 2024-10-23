@@ -3,33 +3,48 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::e4x::is_xml_name;
 use crate::avm2::error::make_error_1098;
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{NamespaceObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Namespace;
 
-pub use crate::avm2::object::namespace_allocator;
-
-/// Implements `Namespace`'s `init` method, which is called from the constructor.
-pub fn init<'gc>(
+/// Implements a custom constructor for `Namespace`.
+pub fn namespace_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let arguments_object = args[0].as_object().unwrap();
-    let arguments_list = arguments_object.as_array_storage().unwrap();
-    let arguments_list = arguments_list
-        .iter()
-        .map(|v| v.unwrap()) // Arguments should be array with no holes
-        .collect::<Vec<_>>();
-
-    let this = this.as_namespace_object().unwrap();
-
+) -> Result<Object<'gc>, Error<'gc>> {
     let api_version = activation.avm2().root_api_version;
     let namespaces = activation.avm2().namespaces;
 
-    let (prefix, namespace) = match arguments_list.as_slice() {
-        [prefix, uri] => {
+    let (prefix, namespace) = match args.len() {
+        0 => (Some(activation.strings().empty()), namespaces.public_all()),
+        1 => {
+            // These cases only activate with exactly one argument passed
+            match args[0] {
+                Value::Object(Object::QNameObject(qname)) => {
+                    let uri = qname.uri(activation.strings());
+                    let ns = uri.map_or_else(Namespace::any, |uri| {
+                        Namespace::package(uri, api_version, activation.strings())
+                    });
+                    let prefix = match uri {
+                        Some(name) if !name.is_empty() => None,
+                        _ => Some(activation.strings().empty()),
+                    };
+                    (prefix, ns)
+                }
+                Value::Object(Object::NamespaceObject(ns)) => (ns.prefix(), ns.namespace()),
+                val => {
+                    let name = val.coerce_to_string(activation)?;
+                    let ns = Namespace::package(name, api_version, activation.strings());
+                    let prefix = name.is_empty().then(|| activation.strings().empty());
+                    (prefix, ns)
+                }
+            }
+        }
+        2.. => {
+            let prefix = args[0];
+            let uri = args[1];
+
             let namespace_uri = if let Value::Object(Object::QNameObject(qname)) = uri {
                 qname
                     .uri(activation.strings())
@@ -55,31 +70,9 @@ pub fn init<'gc>(
             }
             (resulting_prefix, namespace)
         }
-        [Value::Object(Object::QNameObject(qname))] => {
-            let uri = qname.uri(activation.strings());
-            let ns = uri.map_or_else(Namespace::any, |uri| {
-                Namespace::package(uri, api_version, activation.strings())
-            });
-            let prefix = match uri {
-                Some(name) if !name.is_empty() => None,
-                _ => Some(activation.strings().empty()),
-            };
-            (prefix, ns)
-        }
-        [Value::Object(Object::NamespaceObject(ns))] => (ns.prefix(), ns.namespace()),
-        [val] => {
-            let name = val.coerce_to_string(activation)?;
-            let ns = Namespace::package(name, api_version, activation.strings());
-            let prefix = name.is_empty().then(|| activation.strings().empty());
-            (prefix, ns)
-        }
-        _ => (Some(activation.strings().empty()), namespaces.public_all()),
     };
 
-    this.init_namespace(activation.context.gc_context, namespace);
-    this.set_prefix(activation.context.gc_context, prefix);
-
-    Ok(Value::Undefined)
+    Ok(NamespaceObject::from_ns_and_prefix(activation, namespace, prefix).into())
 }
 
 pub fn call_handler<'gc>(
