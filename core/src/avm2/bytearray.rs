@@ -229,11 +229,13 @@ impl ByteArrayStorage {
         let mut buffer = Vec::new();
         let error: Option<Box<dyn std::error::Error>> = match algorithm {
             CompressionAlgorithm::Zlib => {
-                let mut encoder = ZlibEncoder::new(&*self.bytes, Compression::fast());
+                // Note: some content is sensitive to compression type
+                // (as it's visible in the header)
+                let mut encoder = ZlibEncoder::new(&*self.bytes, Compression::best());
                 encoder.read_to_end(&mut buffer).err().map(|e| e.into())
             }
             CompressionAlgorithm::Deflate => {
-                let mut encoder = DeflateEncoder::new(&*self.bytes, Compression::fast());
+                let mut encoder = DeflateEncoder::new(&*self.bytes, Compression::best());
                 encoder.read_to_end(&mut buffer).err().map(|e| e.into())
             }
             #[cfg(feature = "lzma")]
