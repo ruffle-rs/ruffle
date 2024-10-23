@@ -101,6 +101,20 @@ impl SwfMovie {
         }
     }
 
+    /// Construct an empty child movie.
+    pub fn empty_child(parent: &SwfMovie) -> Self {
+        Self {
+            header: HeaderExt::default_with_swf_version(parent.version()),
+            data: vec![],
+            url: "file:///".into(),
+            loader_url: Some(parent.url().into()),
+            parameters: Vec::new(),
+            encoding: swf::UTF_8,
+            compressed_len: 0,
+            is_movie: false,
+        }
+    }
+
     /// Construct an empty movie with a fake `compressed_len`.
     /// This is used by `Loader` when firing an initial `progress` event:
     /// `LoaderInfo.bytesTotal` is set to the actual value, but no data is available,
