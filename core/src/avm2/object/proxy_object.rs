@@ -70,7 +70,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         multiname: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let qname = QNameObject::from_name(activation, multiname.clone())?;
+        let qname = QNameObject::from_name(activation, multiname.clone());
         let prop = Multiname::new(activation.avm2().namespaces.proxy, "getProperty");
         self.call_property(&prop, &[qname.into()], activation)
     }
@@ -81,7 +81,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        let qname = QNameObject::from_name(activation, multiname.clone())?;
+        let qname = QNameObject::from_name(activation, multiname.clone());
         let prop = Multiname::new(activation.avm2().namespaces.proxy, "setProperty");
         self.call_property(&prop, &[qname.into(), value], activation)?;
 
@@ -94,7 +94,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let qname = QNameObject::from_name(activation, multiname.clone())?;
+        let qname = QNameObject::from_name(activation, multiname.clone());
         let prop = Multiname::new(activation.avm2().namespaces.proxy, "callProperty");
 
         let mut args = vec![qname.into()];
@@ -107,7 +107,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         multiname: &Multiname<'gc>,
     ) -> Result<bool, Error<'gc>> {
-        let qname = QNameObject::from_name(activation, multiname.clone())?;
+        let qname = QNameObject::from_name(activation, multiname.clone());
         let prop = Multiname::new(activation.avm2().namespaces.proxy, "deleteProperty");
 
         Ok(self

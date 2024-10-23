@@ -2,7 +2,7 @@
 
 use std::rc::Rc;
 
-use crate::avm2::class::AllocatorFn;
+use crate::avm2::class::{AllocatorFn, CustomConstructorFn};
 use crate::avm2::error::make_error_1107;
 use crate::avm2::globals::{
     init_builtin_system_classes, init_native_system_classes, SystemClassDefs, SystemClasses,
@@ -153,6 +153,9 @@ pub struct Avm2<'gc> {
     #[collect(require_static)]
     native_call_handler_table: &'static [Option<(&'static str, NativeMethodImpl)>],
 
+    #[collect(require_static)]
+    native_custom_constructor_table: &'static [Option<(&'static str, CustomConstructorFn)>],
+
     /// A list of objects which are capable of receiving broadcasts.
     ///
     /// Certain types of events are "broadcast events" that are emitted on all
@@ -222,6 +225,7 @@ impl<'gc> Avm2<'gc> {
             native_instance_allocator_table: Default::default(),
             native_super_initializer_table: Default::default(),
             native_call_handler_table: Default::default(),
+            native_custom_constructor_table: Default::default(),
             broadcast_list: Default::default(),
 
             orphan_objects: Default::default(),
