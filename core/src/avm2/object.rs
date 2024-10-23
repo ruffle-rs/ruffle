@@ -117,7 +117,7 @@ pub use crate::avm2::object::primitive_object::{
 };
 pub use crate::avm2::object::program_3d_object::{Program3DObject, Program3DObjectWeak};
 pub use crate::avm2::object::proxy_object::{proxy_allocator, ProxyObject, ProxyObjectWeak};
-pub use crate::avm2::object::qname_object::{q_name_allocator, QNameObject, QNameObjectWeak};
+pub use crate::avm2::object::qname_object::{QNameObject, QNameObjectWeak};
 pub use crate::avm2::object::regexp_object::{reg_exp_allocator, RegExpObject, RegExpObjectWeak};
 pub use crate::avm2::object::responder_object::{
     responder_allocator, ResponderObject, ResponderObjectWeak,

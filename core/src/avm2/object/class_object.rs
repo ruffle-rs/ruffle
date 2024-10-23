@@ -1,7 +1,7 @@
 //! Class object impl
 
 use crate::avm2::activation::Activation;
-use crate::avm2::class::{AllocatorFn, Class};
+use crate::avm2::class::{AllocatorFn, Class, CustomConstructorFn};
 use crate::avm2::error::{argument_error, make_error_1127, reference_error, type_error};
 use crate::avm2::function::exec;
 use crate::avm2::method::Method;
@@ -707,6 +707,12 @@ impl<'gc> ClassObject<'gc> {
         self.inner_class_definition().instance_allocator().0
     }
 
+    fn custom_constructor(self) -> Option<CustomConstructorFn> {
+        self.inner_class_definition()
+            .custom_constructor()
+            .map(|c| c.0)
+    }
+
     /// Attempts to obtain the name of this class.
     /// If we are unable to read from a necessary `GcCell`,
     /// the returned value will be some kind of error message.
@@ -789,13 +795,17 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         arguments: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
-        let instance_allocator = self.instance_allocator();
+        if let Some(custom_constructor) = self.custom_constructor() {
+            custom_constructor(activation, arguments)
+        } else {
+            let instance_allocator = self.instance_allocator();
 
-        let instance = instance_allocator(self, activation)?;
+            let instance = instance_allocator(self, activation)?;
 
-        self.call_init(instance.into(), arguments, activation)?;
+            self.call_init(instance.into(), arguments, activation)?;
 
-        Ok(instance)
+            Ok(instance)
+        }
     }
 
     fn as_class_object(&self) -> Option<ClassObject<'gc>> {
