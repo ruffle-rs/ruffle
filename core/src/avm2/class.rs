@@ -69,6 +69,16 @@ pub type AllocatorFn =
 #[derive(Clone, Copy)]
 pub struct Allocator(pub AllocatorFn);
 
+/// A function that can be used to both allocate and construct an instance of a class.
+///
+/// This function should be passed an Activation, and the arguments passed to the
+/// constructor, and will return an Object.
+pub type CustomConstructorFn =
+    for<'gc> fn(&mut Activation<'_, 'gc>, &[Value<'gc>]) -> Result<Object<'gc>, Error<'gc>>;
+
+#[derive(Clone, Copy)]
+pub struct CustomConstructor(pub CustomConstructorFn);
+
 impl fmt::Debug for Allocator {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("Allocator")
@@ -157,6 +167,12 @@ pub struct ClassData<'gc> {
     /// If None, a simple coercion is done.
     call_handler: Option<Method<'gc>>,
 
+    /// The custom constructor for this class, if it exists.
+    ///
+    /// This function will both allocate and initialize the class.
+    #[collect(require_static)]
+    custom_constructor: Option<CustomConstructor>,
+
     /// Whether or not this `Class` has loaded its traits or not.
     traits_loaded: bool,
 
@@ -244,6 +260,7 @@ impl<'gc> Class<'gc> {
                 traits: Vec::new(),
                 vtable: VTable::empty(mc),
                 call_handler: None,
+                custom_constructor: None,
                 traits_loaded: false,
                 is_system: true,
                 linked_class: ClassLink::Unlinked,
@@ -274,6 +291,7 @@ impl<'gc> Class<'gc> {
                 traits: Vec::new(),
                 vtable: VTable::empty(mc),
                 call_handler: None,
+                custom_constructor: None,
                 traits_loaded: false,
                 is_system: true,
                 linked_class: ClassLink::LinkToInstance(i_class),
@@ -311,6 +329,7 @@ impl<'gc> Class<'gc> {
                 traits: Vec::new(),
                 vtable: VTable::empty(mc),
                 call_handler: None,
+                custom_constructor: None,
                 traits_loaded: false,
                 is_system: true,
                 linked_class: ClassLink::Unlinked,
@@ -479,7 +498,6 @@ impl<'gc> Class<'gc> {
         let instance_init = unit.load_method(abc_instance.init_method, false, activation)?;
         let mut super_init = instance_init;
         let class_init = unit.load_method(abc_class.init_method, false, activation)?;
-        let mut native_call_handler = None;
 
         let mut attributes = ClassAttributes::empty();
         attributes.set(ClassAttributes::SEALED, abc_instance.is_sealed);
@@ -487,6 +505,8 @@ impl<'gc> Class<'gc> {
         attributes.set(ClassAttributes::INTERFACE, abc_instance.is_interface);
 
         let mut instance_allocator = None;
+        let mut call_handler = None;
+        let mut custom_constructor = None;
 
         // When loading a class from our playerglobal, grab the corresponding native
         // allocator function from the table (which may be `None`)
@@ -522,7 +542,14 @@ impl<'gc> Class<'gc> {
                     true,
                     activation.context.gc_context,
                 );
-                native_call_handler = Some(method);
+                call_handler = Some(method);
+            }
+
+            // We only store the `name` for consistency with the other tables
+            if let Some((_name, table_custom_constructor)) =
+                activation.avm2().native_custom_constructor_table[class_index as usize]
+            {
+                custom_constructor = Some(table_custom_constructor);
             }
         }
 
@@ -545,7 +572,8 @@ impl<'gc> Class<'gc> {
                 super_init,
                 traits: Vec::new(),
                 vtable: VTable::empty(activation.context.gc_context),
-                call_handler: native_call_handler,
+                call_handler,
+                custom_constructor: custom_constructor.map(CustomConstructor),
                 traits_loaded: false,
                 is_system: false,
                 linked_class: ClassLink::Unlinked,
@@ -579,6 +607,7 @@ impl<'gc> Class<'gc> {
                 traits: Vec::new(),
                 vtable: VTable::empty(activation.context.gc_context),
                 call_handler: None,
+                custom_constructor: None,
                 traits_loaded: false,
                 is_system: false,
                 linked_class: ClassLink::LinkToInstance(i_class),
@@ -840,6 +869,7 @@ impl<'gc> Class<'gc> {
                 traits,
                 vtable: VTable::empty(activation.context.gc_context),
                 call_handler: None,
+                custom_constructor: None,
                 traits_loaded: true,
                 is_system: false,
                 linked_class: ClassLink::Unlinked,
@@ -881,6 +911,7 @@ impl<'gc> Class<'gc> {
                 traits: Vec::new(),
                 vtable: VTable::empty(activation.context.gc_context),
                 call_handler: None,
+                custom_constructor: None,
                 traits_loaded: true,
                 is_system: false,
                 linked_class: ClassLink::LinkToInstance(i_class),
@@ -1235,6 +1266,18 @@ impl<'gc> Class<'gc> {
     /// Set this class's instance allocator.
     pub fn set_instance_allocator(self, mc: &Mutation<'gc>, alloc: AllocatorFn) {
         self.0.write(mc).instance_allocator = Allocator(alloc);
+    }
+
+    /// Get this class's custom constructor.
+    ///
+    /// If `None`, then this class should be constructed normally.
+    pub fn custom_constructor(self) -> Option<CustomConstructor> {
+        self.0.read().custom_constructor
+    }
+
+    /// Set this class's custom constructor.
+    pub fn set_custom_constructor(self, mc: &Mutation<'gc>, ctor: CustomConstructorFn) {
+        self.0.write(mc).custom_constructor = Some(CustomConstructor(ctor));
     }
 
     /// Get this class's instance initializer.
