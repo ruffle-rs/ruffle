@@ -395,6 +395,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             start,
             end,
             boxes,
+            ascent: self.max_ascent,
+            descent: self.max_descent,
+            leading: self.max_leading,
         });
         self.current_line_index += 1;
 
@@ -850,6 +853,18 @@ pub struct LayoutLine<'gc> {
     /// This position includes the line delimiter.
     end: usize,
 
+    /// The highest ascent observed within this line.
+    #[collect(require_static)]
+    ascent: Twips,
+
+    /// The highest descent observed within this line.
+    #[collect(require_static)]
+    descent: Twips,
+
+    /// The highest leading observed within this line.
+    #[collect(require_static)]
+    leading: Twips,
+
     /// Layout boxes contained within this line.
     boxes: Vec<LayoutBox<'gc>>,
 }
@@ -873,6 +888,18 @@ impl<'gc> LayoutLine<'gc> {
 
     pub fn end(&self) -> usize {
         self.end
+    }
+
+    pub fn ascent(&self) -> Twips {
+        self.ascent
+    }
+
+    pub fn descent(&self) -> Twips {
+        self.descent
+    }
+
+    pub fn leading(&self) -> Twips {
+        self.leading
     }
 
     pub fn len(&self) -> usize {
