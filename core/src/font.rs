@@ -509,7 +509,12 @@ impl<'gc> Font<'gc> {
     /// Returns a glyph entry by character.
     /// Used by `EditText` display objects.
     pub fn get_glyph_for_char(&self, c: char) -> Option<&Glyph> {
-        self.0.glyphs.get_by_code_point(c)
+        if let Some(g) = self.0.glyphs.get_by_code_point(c) {
+            Some(g)
+        } else {
+            tracing::warn!("Missing glyph for {c} {:X}", c as usize);
+            None
+        }
     }
 
     /// Determine if this font contains all the glyphs within a given string.
