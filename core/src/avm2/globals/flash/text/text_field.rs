@@ -1149,34 +1149,38 @@ pub fn get_line_metrics<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(this) = this
+    let Some(this) = this
         .as_display_object()
         .and_then(|this| this.as_edit_text())
-    {
-        let line_num = args.get_i32(activation, 0)?;
-        let metrics = this.layout_metrics(Some(line_num as usize));
+    else {
+        return Ok(Value::Undefined);
+    };
 
-        if let Some(metrics) = metrics {
-            let metrics_class = activation.avm2().classes().textlinemetrics;
-            return Ok(metrics_class
-                .construct(
-                    activation,
-                    &[
-                        metrics.x.to_pixels().into(),
-                        metrics.width.to_pixels().into(),
-                        metrics.height.to_pixels().into(),
-                        metrics.ascent.to_pixels().into(),
-                        metrics.descent.to_pixels().into(),
-                        metrics.leading.to_pixels().into(),
-                    ],
-                )?
-                .into());
-        } else {
-            return Err("RangeError".into());
-        }
+    let line_num = args.get_i32(activation, 0)?;
+    if line_num < 0 {
+        return Err(make_error_2006(activation));
     }
 
-    Ok(Value::Undefined)
+    let metrics = this.line_metrics(line_num as usize);
+
+    let Some(metrics) = metrics else {
+        return Err(make_error_2006(activation));
+    };
+
+    let metrics_class = activation.avm2().classes().textlinemetrics;
+    Ok(metrics_class
+        .construct(
+            activation,
+            &[
+                metrics.x.to_pixels().into(),
+                metrics.width.to_pixels().into(),
+                metrics.height.to_pixels().into(),
+                metrics.ascent.to_pixels().into(),
+                metrics.descent.to_pixels().into(),
+                metrics.leading.to_pixels().into(),
+            ],
+        )?
+        .into())
 }
 
 pub fn get_line_length<'gc>(
