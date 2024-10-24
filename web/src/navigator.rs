@@ -4,7 +4,7 @@ use async_channel::{Receiver, Sender};
 use futures_util::future::Either;
 use futures_util::{future, SinkExt, StreamExt};
 use gloo_net::websocket::{futures::WebSocket, Message};
-use js_sys::{Array, Promise, Uint8Array};
+use js_sys::{Array, Promise, RegExp, Uint8Array};
 use ruffle_core::backend::navigator::{
     async_return, create_fetch_error, create_specific_fetch_error, get_encoding, ErrorResponse,
     NavigationMethod, NavigatorBackend, OpenURLMode, OwnedFuture, Request, SuccessResponse,
@@ -37,6 +37,7 @@ pub struct WebNavigatorBackend {
     allow_script_access: bool,
     allow_networking: NetworkingAccessMode,
     upgrade_to_https: bool,
+    url_rewrite_rules: Vec<(RegExp, String)>,
     base_url: Option<Url>,
     open_url_mode: OpenURLMode,
     socket_proxies: Vec<SocketProxy>,
@@ -50,6 +51,7 @@ impl WebNavigatorBackend {
         allow_script_access: bool,
         allow_networking: NetworkingAccessMode,
         upgrade_to_https: bool,
+        url_rewrite_rules: Vec<(RegExp, String)>,
         base_url: Option<String>,
         log_subscriber: Arc<Layered<WASMLayer, Registry>>,
         open_url_mode: OpenURLMode,
@@ -93,6 +95,7 @@ impl WebNavigatorBackend {
             allow_script_access,
             allow_networking,
             upgrade_to_https,
+            url_rewrite_rules,
             base_url,
             log_subscriber,
             open_url_mode,
@@ -105,6 +108,56 @@ impl WebNavigatorBackend {
     /// We need to set the player after construction because the player is created after the navigator.
     pub fn set_player(&mut self, player: Weak<Mutex<Player>>) {
         self.player = player;
+    }
+
+    /// Try to rewrite the URL using URL rewrite rules.
+    fn rewrite_url(&self, url: &Url) -> Option<Url> {
+        let url_string: js_sys::JsString = url.to_string().into();
+        for (regexp, replacement) in &self.url_rewrite_rules {
+            if !url_string.search(regexp) >= 0 {
+                continue;
+            }
+
+            tracing::info!(
+                "URL rewrite rule triggered ({:?} -> {}) for URL {}",
+                regexp,
+                replacement,
+                url
+            );
+
+            let replaced = url_string.replace_by_pattern(regexp, replacement);
+            let replaced = replaced.as_string()?;
+            match Url::parse(&replaced) {
+                Ok(new_url) => {
+                    return Some(new_url);
+                }
+                // Handle relative rewrite URLs
+                Err(ParseError::RelativeUrlWithoutBase) if self.base_url.is_some() => {
+                    let base_url = self.base_url.as_ref().expect("condition");
+                    match base_url.join(&replaced) {
+                        Ok(new_url) => {
+                            return Some(new_url);
+                        }
+                        Err(err) => {
+                            tracing::error!(
+                                "Rewritten URL (relative) is not valid: {}, {}",
+                                replaced,
+                                err
+                            );
+                        }
+                    }
+                }
+                Err(err) => {
+                    tracing::error!(
+                        "Rewritten URL (absolute) is not valid: {}, {}",
+                        replaced,
+                        err
+                    );
+                }
+            }
+            break;
+        }
+        None
     }
 }
 
@@ -401,9 +454,14 @@ impl NavigatorBackend for WebNavigatorBackend {
     }
 
     fn pre_process_url(&self, mut url: Url) -> Url {
+        if let Some(rewritten_url) = self.rewrite_url(&url) {
+            url = rewritten_url;
+        }
+
         if self.upgrade_to_https && url.scheme() == "http" && url.set_scheme("https").is_err() {
             tracing::error!("Url::set_scheme failed on: {}", url);
         }
+
         url
     }
 
