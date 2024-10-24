@@ -1,7 +1,7 @@
 message-cant-embed =
-    目前Ruffle沒辦法執行嵌入式Flash。
-    你可以在新分頁中開啟來解決這個問題。
-panic-title = 完蛋，出問題了 :(
+    Ruffle 無法執行本頁面內嵌的 Flash。
+    您可以嘗試在單獨的標籤頁中開啟檔案，以避免此問題。
+panic-title = 發生了某些錯誤 :(
 more-info = 更多資訊
 run-anyway = 直接執行
 continue = 繼續
@@ -10,78 +10,76 @@ update-ruffle = 更新Ruffle
 ruffle-demo = 網頁展示
 ruffle-desktop = 桌面應用程式
 ruffle-wiki = 查看Ruffle Wiki
-enable-hardware-acceleration =
-    看起來你的硬體加速沒有開啟，雖然Ruffle還可以執行，但是你會感覺到會很慢。
-    你可以在下方連結找到如何開啟硬體加速。
+enable-hardware-acceleration = 看起來硬體加速已停用。雖然 Ruffle 可以運作，但速度可能很慢。您可以透過以下連結瞭解如何啟用硬體加速：
 enable-hardware-acceleration-link = FAQ - Chrome硬體加速
 view-error-details = 檢視錯誤詳細資料
 open-in-new-tab = 開啟新增分頁
 click-to-unmute = 點擊以取消靜音
-clipboard-message-title = 在Ruffle執行複製、貼上。
+clipboard-message-title = 在 Ruffle 中複製和貼上
 clipboard-message-description =
     { $variant ->
-       *[unsupported] 你的瀏覽器不支援完整剪貼簿使用,
-        [access-denied] 剪貼簿使用權被拒絕訪問,
-    } 你可以直接使用快捷鍵:
+       *[unsupported] 您的瀏覽器不支援完整的剪貼板存取、
+        [access-denied] 已拒絕存取剪貼簿、
+    } 但您可以使用這些捷徑來代替：
 clipboard-message-copy = { " " } 複製
 clipboard-message-cut = { " " } 剪下
 clipboard-message-paste = { " " } 貼上
 error-file-protocol =
-    看起來你想要用Ruffle來執行"file:"的協議。
-    因為瀏覽器禁了很多功能以資安的理由來講。
-    我們建議你建立本地伺服器或著直接使用網頁展示或桌面應用程式。
+    您似乎是在 「file: 」協定上執行 Ruffle。
+    這並不可行，因為瀏覽器基於安全理由會阻擋許多功能的運作。
+    相反，我們邀請您設定本機伺服器，或使用網頁示範或桌面應用程式。
 error-javascript-config =
-    目前Ruffle遇到不正確的JavaScript配置。
-    如果你是伺服器管理員，我們建議你檢查哪個環節出錯。
-    或著你可以查詢Ruffle wiki得到需求幫助。
+    由於 JavaScript 設定不正確，Ruffle 遇到了重大問題。
+    如果您是伺服器管理員，我們邀請您檢查錯誤細節，找出是哪個參數出了問題。
+    您也可以參考 Ruffle wiki 以獲得協助。
 error-wasm-not-found =
-    目前Ruffle找不到".wasm"檔案。
-    如果你是伺服器管理員，確保檔案是否放對位置。
-    如果還是有問題的話，你要用"publicPath"來設定: 或著查詢Ruffle wiki得到需求幫助。
+    Ruffle 未能載入所需的 「.wasm」 檔案元件。
+    如果您是伺服器管理員，請確認檔案已正確上傳。
+    如果問題仍然存在，您可能需要使用「publicPath」設定：請參閱 Ruffle wiki 以獲得協助。
 error-wasm-mime-type =
-    目前Ruffle初始化時遇到重大問題。
-    這網頁伺服器並沒有服務".wasm"檔案或正確的網際網路媒體類型。
-    如果你是伺服器管理員，請查詢Ruffle wiki得到需求幫助。
+    Ruffle 在嘗試初始化時遇到重大問題。
+    此 Web 伺服器無法提供 MIME 類型正確的 「.wasm 」檔案。
+    如果您是伺服器管理員，請參閱 Ruffle wiki 以獲得協助。
 error-invalid-swf =
-    目前Ruffle無法讀取Flash的SWF檔案。
-    很有可能要讀取的檔案並一個不是有效的SWF。
+    Ruffle 無法解析請求的檔案。
+    最可能的原因是請求的檔案不是有效的 SWF。
 error-swf-fetch =
-    目前Ruffle無法讀取Flash的SWF檔案。
-    很有可能要讀取的檔案不存在，所以Ruffle讀不到東西。
-    請嘗試溝通伺服器管理員得到需求幫助。
+    Ruffle 未能載入 Flash SWF 檔案。
+    最可能的原因是該檔案已不存在，因此 Ruffle 無法載入任何內容。
+    請嘗試聯絡網站管理員尋求協助。
 error-swf-cors =
-    目前Ruffle無法讀取Flash的SWF檔案。
-    看起來是使用權被跨來源資源共用機制被擋到了。
-    如果你是伺服器管理員，請查詢Ruffle wiki得到需求幫助。
+    Ruffle 未能載入 Flash SWF 檔案。
+    訪問 fetch 可能已被 CORS 策略封鎖。
+    如果您是伺服器管理員，請參閱 Ruffle wiki 以獲得協助。
 error-wasm-cors =
-    目前Ruffle無法讀取".wasm"檔案。
-    看起來是使用權被跨來源資源共用機制被擋到了。
-    如果你是伺服器管理員，請查詢Ruffle wiki得到需求幫助。
+    Ruffle 未能載入所需的 「.wasm」 檔案元件。
+    訪問 fetch 可能已被 CORS 策略封鎖。
+    如果您是伺服器管理員，請參閱 Ruffle wiki 以獲得協助。
 error-wasm-invalid =
-    目前Ruffle初始化時遇到重大問題。
-    看起來這網頁有缺失檔案導致Ruffle無法運行。
-    如果你是伺服器管理員，請查詢Ruffle wiki得到需求幫助。
+    Ruffle 在嘗試初始化時遇到重大問題。
+    此頁面似乎有遺失或無效的檔案，無法執行 Ruffle。
+    如果您是伺服器管理員，請參閱 Ruffle wiki 以獲得協助。
 error-wasm-download =
-    目前Ruffle初始化時遇到重大問題。
-    這可以你自己解決，你只要重新整理就好了。
-    否則，請嘗試溝通伺服器管理員得到需求幫助。
+    Ruffle 在嘗試初始化時遇到重大問題。
+    這通常可以自行解決，因此您可以嘗試重新載入頁面。
+    否則，請聯絡網站管理員。
 error-wasm-disabled-on-edge =
-    目前Ruffle無法讀取".wasm"檔案。
-    要修正的話，打開你的瀏覽器設定，點選"隱私權、搜尋與服務"，把"防止追蹤"給關掉。
-    這樣一來你的瀏覽器會讀取需要的".wasm"檔案。
-    如果問題一直還在的話，你必須要換瀏覽器了。
+    Ruffle 未能載入所需的「.wasm 」檔案元件。
+    要解決這個問題，請嘗試打開瀏覽器的設定，按一下「隱私、搜尋和服務」，向下捲動，然後關閉「加強您在網路上的安全性」。
+    這將允許您的瀏覽器載入所需的「.wasm 」檔案。
+    如果問題仍然存在，您可能必須使用其他瀏覽器。
 error-javascript-conflict =
-    目前Ruffle初始化時遇到重大問題。
-    看起來這網頁使用的JavaScript會跟Ruffle起衝突。
-    如果你是伺服器管理員，我們建議你開個空白頁來測試。
-error-javascript-conflict-outdated = 你也可以上傳最新版的Ruffle，說不定你要說的的問題已經不見了(現在使用的版本已經過時: { $buildDate })。
+    Ruffle 在嘗試初始化時遇到重大問題。
+    這個頁面似乎使用了與 Ruffle 相衝突的 JavaScript 程式碼。
+    如果您是伺服器管理員，請嘗試在空白頁面上載入檔案。
+error-javascript-conflict-outdated = 您也可以嘗試上傳較新版本的 Ruffle，可能會避免此問題 (目前的版本已過時：{ $buildDate })。
 error-csp-conflict =
-    目前Ruffle初始化時遇到重大問題。
-    這網頁伺服器被跨來源資源共用機制禁止讀取".wasm"檔案。
-    如果你是伺服器管理員，請查詢Ruffle wiki得到需求幫助。
+    Ruffle 在嘗試初始化時遇到重大問題。
+    此網頁伺服器的內容安全政策不允許執行所需的 「.wasm 」元件。
+    如果您是伺服器管理員，請參閱 Ruffle wiki 以取得協助。
 error-unknown =
-    目前Ruffle初始化要讀取Flash內容時遇到重大問題
+    Ruffle 在嘗試顯示此 Flash 內容時遇到了重大問題。
     { $outdated ->
-        [true] 如果你是伺服器管理員， 請上傳最新版的Ruffle(現在使用的版本已經過時: { $buildDate }).
-       *[false] 這不應該發生的，我們也很高興你告知bug!
+        [true]  如果您是伺服器管理員，請嘗試上傳較新版本的 Ruffle (目前的版本已經過時 { $buildDate })。
+       *[false] 這不應該發生，所以如果您能提出錯誤，我們會非常感激！
     }
