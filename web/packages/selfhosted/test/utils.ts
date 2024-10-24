@@ -30,10 +30,9 @@ export async function isRufflePlayerLoaded(
         (await browser.execute(
             (player) =>
                 // https://github.com/webdriverio/webdriverio/issues/6486
-                // TODO: How can we import ReadyState enum?
-                (player as unknown as Player.PlayerElement).readyState,
+                (player as unknown as Player.PlayerElement).ruffle().readyState,
             player,
-        )) === 2
+        )) === "loaded"
     );
 }
 
@@ -105,10 +104,10 @@ export async function setupAndPlay(
         // https://github.com/webdriverio/webdriverio/issues/6486
         const player = playerElement as unknown as Player.PlayerElement;
         player.__ruffle_log__ = "";
-        player.traceObserver = (msg) => {
+        player.ruffle().traceObserver = (msg) => {
             player.__ruffle_log__ += msg + "\n";
         };
-        player.play();
+        player.ruffle().resume();
     }, player);
 }
 
@@ -191,7 +190,9 @@ export function loadJsAPI(swf?: string) {
             await browser.execute(
                 async (player, swf) => {
                     // https://github.com/webdriverio/webdriverio/issues/6486
-                    await (player as unknown as Player.PlayerElement).load(swf);
+                    await (player as unknown as Player.PlayerElement)
+                        .ruffle()
+                        .load(swf);
                 },
                 player,
                 swf,
