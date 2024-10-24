@@ -1,6 +1,7 @@
 # Test adapted from Shumway at https://github.com/mozilla/shumway/tree/master/test/swfs/acid
 
 num_frames = 500
+is_slow = true
 
 [image_comparisons.output]
 tolerance = 11
