@@ -497,7 +497,7 @@ fn get_text_extent<'gc>(
 
     let result = ScriptObject::new(activation.gc(), None);
     let metrics = temp_edittext
-        .layout_metrics(None)
+        .layout_metrics()
         .expect("All text boxes should have at least one line at all times");
 
     result.set_data(
