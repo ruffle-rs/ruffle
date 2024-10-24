@@ -23,3 +23,4 @@ theme = Thema
 theme-system = Systeemstandaard
 theme-light = Licht
 theme-dark = Donker
+gamemode-default = Standaard
