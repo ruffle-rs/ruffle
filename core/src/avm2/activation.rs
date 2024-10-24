@@ -1044,7 +1044,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         value: Index<AbcNamespace>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let ns = self.pool_namespace(method, value)?;
-        let ns_object = NamespaceObject::from_namespace(self, ns)?;
+        let ns_object = NamespaceObject::from_namespace(self, ns);
 
         self.push_stack(ns_object);
         Ok(FrameControl::Continue)

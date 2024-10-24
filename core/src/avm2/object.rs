@@ -103,9 +103,7 @@ pub use crate::avm2::object::loaderinfo_object::{
 pub use crate::avm2::object::local_connection_object::{
     local_connection_allocator, LocalConnectionObject, LocalConnectionObjectWeak,
 };
-pub use crate::avm2::object::namespace_object::{
-    namespace_allocator, NamespaceObject, NamespaceObjectWeak,
-};
+pub use crate::avm2::object::namespace_object::{NamespaceObject, NamespaceObjectWeak};
 pub use crate::avm2::object::net_connection_object::{
     net_connection_allocator, NetConnectionObject, NetConnectionObjectWeak,
 };
@@ -117,7 +115,7 @@ pub use crate::avm2::object::primitive_object::{
 };
 pub use crate::avm2::object::program_3d_object::{Program3DObject, Program3DObjectWeak};
 pub use crate::avm2::object::proxy_object::{proxy_allocator, ProxyObject, ProxyObjectWeak};
-pub use crate::avm2::object::qname_object::{q_name_allocator, QNameObject, QNameObjectWeak};
+pub use crate::avm2::object::qname_object::{QNameObject, QNameObjectWeak};
 pub use crate::avm2::object::regexp_object::{reg_exp_allocator, RegExpObject, RegExpObjectWeak};
 pub use crate::avm2::object::responder_object::{
     responder_allocator, ResponderObject, ResponderObjectWeak,

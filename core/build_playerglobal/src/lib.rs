@@ -33,6 +33,9 @@ const METADATA_SUPER_INITIALIZER: &str = "SuperInitializer";
 /// Indicates that we should generate a reference to a class call handler
 /// method (used as a metadata key with `Ruffle` metadata)
 const METADATA_CALL_HANDLER: &str = "CallHandler";
+/// Indicates that we should generate a reference to a custom constructor
+/// method (used as a metadata key with `Ruffle` metadata)
+const METADATA_CUSTOM_CONSTRUCTOR: &str = "CustomConstructor";
 // The name for metadata for namespace versioning- the Flex SDK doesn't
 // strip versioning metadata, so we have to allow this metadata name
 const API_METADATA_NAME: &str = "API";
@@ -210,7 +213,7 @@ fn rust_method_name_and_path(
     parent: Option<Index<Multiname>>,
     prefix: &str,
     suffix: &str,
-) -> TokenStream {
+) -> (TokenStream, TokenStream) {
     let mut path = "crate::avm2::globals::".to_string();
 
     let trait_name = &abc.constant_pool.multinames[trait_.name.0 as usize - 1];
@@ -273,7 +276,10 @@ fn rust_method_name_and_path(
     // generate a reference to the function pointer that should exist
     // at that path in Rust code.
     let path_tokens = TokenStream::from_str(&path).unwrap();
-    quote! { Some((#flash_method_path, #path_tokens)) }
+    (
+        quote! { Some((#flash_method_path, #path_tokens)) },
+        quote! { Some(#path_tokens) },
+    )
 }
 
 fn strip_metadata(abc: &mut AbcFile) {
@@ -364,7 +370,8 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
     let mut rust_paths = vec![none_tokens.clone(); abc.methods.len()];
     let mut rust_instance_allocators = vec![none_tokens.clone(); abc.classes.len()];
     let mut rust_super_initializers = vec![none_tokens.clone(); abc.classes.len()];
-    let mut rust_call_handlers = vec![none_tokens; abc.classes.len()];
+    let mut rust_call_handlers = vec![none_tokens.clone(); abc.classes.len()];
+    let mut rust_custom_constructors = vec![none_tokens; abc.classes.len()];
 
     let mut check_trait = |trait_: &Trait, parent: Option<Index<Multiname>>| {
         let method_id = match trait_.kind {
@@ -396,7 +403,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
         };
 
         rust_paths[method_id.0 as usize] =
-            rust_method_name_and_path(&abc, trait_, parent, method_prefix, "");
+            rust_method_name_and_path(&abc, trait_, parent, method_prefix, "").0;
     };
 
     // Look for `[Ruffle(InstanceAllocator)]` metadata - if present,
@@ -419,6 +426,8 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
             "::".to_string() + &flash_to_rust_path(&class_name) + "_allocator";
         let super_init_method_name = "::super_init".to_string();
         let call_handler_method_name = "::call_handler".to_string();
+        let custom_constructor_method_name =
+            "::".to_string() + &flash_to_rust_path(&class_name) + "_constructor";
         for metadata_idx in &trait_.metadata {
             let metadata = &abc.metadata[metadata_idx.0 as usize];
             let name =
@@ -449,7 +458,8 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                             None,
                             "",
                             &instance_allocator_method_name,
-                        );
+                        )
+                        .0;
                     }
                     (None, METADATA_SUPER_INITIALIZER) if !is_versioning => {
                         rust_super_initializers[class_id as usize] = rust_method_name_and_path(
@@ -459,6 +469,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                             "",
                             &super_init_method_name,
                         )
+                        .0
                     }
                     (None, METADATA_CALL_HANDLER) if !is_versioning => {
                         rust_call_handlers[class_id as usize] = rust_method_name_and_path(
@@ -468,6 +479,17 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                             "",
                             &call_handler_method_name,
                         )
+                        .0
+                    }
+                    (None, METADATA_CUSTOM_CONSTRUCTOR) if !is_versioning => {
+                        rust_custom_constructors[class_id as usize] = rust_method_name_and_path(
+                            &abc,
+                            trait_,
+                            None,
+                            "",
+                            &custom_constructor_method_name,
+                        )
+                        .1
                     }
                     (None, _) if is_versioning => {}
                     _ => panic!("Unexpected metadata pair ({key:?}, {value})"),
@@ -537,11 +559,17 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
         ];
 
         // This is very similar to `NATIVE_SUPER_INITIALIZER_TABLE`.
-        // When an entry is `Some(fn_ptr)`, we use
-        // `fn_ptr` as the native call handler for the corresponding class when we
-        // load it into Ruffle.
+        // When an entry is `Some(fn_ptr)`, we use `fn_ptr` as the native call
+        // handler for the corresponding class when we load it into Ruffle.
         pub const NATIVE_CALL_HANDLER_TABLE: &[Option<(&'static str, crate::avm2::method::NativeMethodImpl)>] = &[
             #(#rust_call_handlers,)*
+        ];
+
+        // This is very similar to `NATIVE_SUPER_INITIALIZER_TABLE`.
+        // When an entry is `Some(fn_ptr)`, we use `fn_ptr` as the native custom
+        // constructor for the corresponding class when we load it into Ruffle.
+        pub const NATIVE_CUSTOM_CONSTRUCTOR_TABLE: &[Option<crate::avm2::class::CustomConstructorFn>] = &[
+            #(#rust_custom_constructors,)*
         ];
     }
     .to_string();

@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::AvmString;
 use crate::avm2::Error;
@@ -13,23 +13,6 @@ use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
 use std::cell::Ref;
-
-/// A class instance allocator that allocates QName objects.
-pub fn q_name_allocator<'gc>(
-    class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class);
-
-    Ok(QNameObject(Gc::new(
-        activation.context.gc_context,
-        QNameObjectData {
-            base,
-            name: RefLock::new(Multiname::any()),
-        },
-    ))
-    .into())
-}
 
 /// An Object which represents a boxed QName.
 #[derive(Collect, Clone, Copy)]
@@ -64,24 +47,30 @@ const _: () =
     assert!(std::mem::align_of::<QNameObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> QNameObject<'gc> {
+    pub fn new_empty(activation: &mut Activation<'_, 'gc>) -> Self {
+        let base = ScriptObjectData::new(activation.avm2().classes().qname);
+
+        QNameObject(Gc::new(
+            activation.gc(),
+            QNameObjectData {
+                base,
+                name: RefLock::new(Multiname::any()),
+            },
+        ))
+    }
+
     /// Box a Multiname into an object.
-    pub fn from_name(
-        activation: &mut Activation<'_, 'gc>,
-        name: Multiname<'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    pub fn from_name(activation: &mut Activation<'_, 'gc>, name: Multiname<'gc>) -> Self {
         let class = activation.avm2().classes().qname;
         let base = ScriptObjectData::new(class);
 
-        let this: Object<'gc> = QNameObject(Gc::new(
-            activation.context.gc_context,
+        QNameObject(Gc::new(
+            activation.gc(),
             QNameObjectData {
                 base,
                 name: RefLock::new(name),
             },
         ))
-        .into();
-
-        Ok(this)
     }
 
     pub fn name(&self) -> Ref<Multiname<'gc>> {
