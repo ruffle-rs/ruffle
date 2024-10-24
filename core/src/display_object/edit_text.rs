@@ -31,7 +31,6 @@ use crate::vminterface::{AvmObject, Instantiator};
 use chrono::DateTime;
 use chrono::Utc;
 use core::fmt;
-use either::Either;
 use gc_arena::{Collect, Gc, GcCell, Mutation};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::quality::StageQuality;
@@ -1912,19 +1911,15 @@ impl<'gc> EditText<'gc> {
         self.0.read().layout.lines().len()
     }
 
-    /// Calculate the layout metrics for a given line.
+    /// Calculate the layout metrics.
     ///
-    /// Returns `None` if the line does not exist or there is not enough data
-    /// about the line to calculate metrics with.
-    pub fn layout_metrics(self, line: Option<usize>) -> Option<LayoutMetrics> {
+    /// Returns `None` if there is not enough data
+    /// about the layout to calculate metrics with.
+    pub fn layout_metrics(self) -> Option<LayoutMetrics> {
         let layout = &self.0.read().layout;
-        let line = line.and_then(|line| layout.lines().get(line));
 
-        let (boxes, union_bounds) = if let Some(line) = line {
-            (Either::Left(line.boxes_iter()), line.interior_bounds())
-        } else {
-            (Either::Right(layout.boxes_iter()), layout.bounds())
-        };
+        let boxes = layout.boxes_iter();
+        let union_bounds = layout.bounds();
 
         let mut first_font = None;
         let mut first_format = None;
