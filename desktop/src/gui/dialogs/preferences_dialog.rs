@@ -1,4 +1,4 @@
-use crate::cli::GameModePreference;
+use crate::cli::{GameModePreference, OpenUrlMode};
 use crate::gui::{available_languages, optional_text, text, ThemePreference};
 use crate::log::FilenamePattern;
 use crate::preferences::{storage::StorageBackend, GlobalPreferences};
@@ -47,6 +47,10 @@ pub struct PreferencesDialog {
 
     theme_preference: ThemePreference,
     theme_preference_changed: bool,
+
+    open_url_mode: OpenUrlMode,
+    open_url_mode_readonly: bool,
+    open_url_mode_changed: bool,
 }
 
 impl PreferencesDialog {
@@ -101,6 +105,10 @@ impl PreferencesDialog {
             theme_preference: preferences.theme_preference(),
             theme_preference_changed: false,
 
+            open_url_mode: preferences.open_url_mode(),
+            open_url_mode_readonly: preferences.cli.open_url_mode.is_some(),
+            open_url_mode_changed: false,
+
             preferences,
         }
     }
@@ -126,6 +134,8 @@ impl PreferencesDialog {
                             if cfg!(target_os = "linux") {
                                 self.show_gamemode_preferences(locale, &locked_text, ui);
                             }
+
+                            self.show_open_url_mode_preferences(locale, &locked_text, ui);
 
                             self.show_language_preferences(locale, ui);
 
@@ -342,6 +352,44 @@ impl PreferencesDialog {
         ui.end_row();
     }
 
+    fn show_open_url_mode_preferences(
+        &mut self,
+        locale: &LanguageIdentifier,
+        locked_text: &str,
+        ui: &mut Ui,
+    ) {
+        ui.label(text(locale, "open-url-mode"));
+        if self.open_url_mode_readonly {
+            ui.label(open_url_mode_preference_name(locale, self.open_url_mode))
+                .on_hover_text(locked_text);
+        } else {
+            let previous: OpenUrlMode = self.open_url_mode;
+            ComboBox::from_id_salt("open-url-mode")
+                .selected_text(open_url_mode_preference_name(locale, self.open_url_mode))
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(
+                        &mut self.open_url_mode,
+                        OpenUrlMode::Confirm,
+                        open_url_mode_preference_name(locale, OpenUrlMode::Confirm),
+                    );
+                    ui.selectable_value(
+                        &mut self.open_url_mode,
+                        OpenUrlMode::Allow,
+                        open_url_mode_preference_name(locale, OpenUrlMode::Allow),
+                    );
+                    ui.selectable_value(
+                        &mut self.open_url_mode,
+                        OpenUrlMode::Deny,
+                        open_url_mode_preference_name(locale, OpenUrlMode::Deny),
+                    );
+                });
+            if self.open_url_mode != previous {
+                self.open_url_mode_changed = true;
+            }
+        }
+        ui.end_row();
+    }
+
     fn show_audio_preferences(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
         ui.label(text(locale, "audio-output-device"));
 
@@ -515,6 +563,9 @@ impl PreferencesDialog {
             if self.gamemode_preference_changed {
                 preferences.set_gamemode_preference(self.gamemode_preference);
             }
+            if self.open_url_mode_changed {
+                preferences.set_open_url_mode(self.open_url_mode);
+            }
         }) {
             // [NA] TODO: Better error handling... everywhere in desktop, really
             tracing::error!("Could not save preferences: {e}");
@@ -575,6 +626,17 @@ fn gamemode_preference_tooltip(
         GameModePreference::Default => text(locale, "gamemode-default-tooltip"),
         _ => return None,
     })
+}
+
+fn open_url_mode_preference_name(
+    locale: &LanguageIdentifier,
+    open_url_mode: OpenUrlMode,
+) -> Cow<str> {
+    match open_url_mode {
+        OpenUrlMode::Allow => text(locale, "open-url-mode-allow"),
+        OpenUrlMode::Confirm => text(locale, "open-url-mode-confirm"),
+        OpenUrlMode::Deny => text(locale, "open-url-mode-deny"),
+    }
 }
 
 fn filename_pattern_name(locale: &LanguageIdentifier, pattern: FilenamePattern) -> Cow<str> {
