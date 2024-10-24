@@ -509,7 +509,12 @@ impl<'gc> Font<'gc> {
     /// Returns a glyph entry by character.
     /// Used by `EditText` display objects.
     pub fn get_glyph_for_char(&self, c: char) -> Option<&Glyph> {
-        self.0.glyphs.get_by_code_point(c)
+        if let Some(g) = self.0.glyphs.get_by_code_point(c) {
+            Some(g)
+        } else {
+            tracing::warn!("Missing glyph for {c} {:X}", c as usize);
+            None
+        }
     }
 
     /// Determine if this font contains all the glyphs within a given string.
@@ -1090,35 +1095,31 @@ impl Default for TextRenderSettings {
 
 #[cfg(test)]
 mod tests {
-    use crate::font::{EvalParameters, Font, FontType};
+    use crate::font::{EvalParameters, Font, FontDescriptor, FontType};
     use crate::string::WStr;
+    use flate2::read::DeflateDecoder;
     use gc_arena::{rootless_arena, Mutation};
-    use ruffle_render::backend::{null::NullRenderer, ViewportDimensions};
+    use std::borrow::Cow;
+    use std::io::Read;
     use swf::Twips;
 
-    const DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
+    const DEVICE_FONT: &[u8] = include_bytes!("../assets/notosans-regular.subset.ttf.gz");
 
     fn with_device_font<F>(callback: F)
     where
         F: for<'gc> FnOnce(&Mutation<'gc>, Font<'gc>),
     {
         rootless_arena(|mc| {
-            let mut renderer = NullRenderer::new(ViewportDimensions {
-                width: 0,
-                height: 0,
-                scale_factor: 1.0,
-            });
-            let mut reader = swf::read::Reader::new(DEVICE_FONT_TAG, 8);
-            let device_font = Font::from_swf_tag(
-                mc,
-                &mut renderer,
-                reader
-                    .read_define_font_2(3)
-                    .expect("Built-in font should compile"),
-                reader.encoding(),
-                FontType::Device,
-            );
+            let mut data = Vec::new();
+            let mut decoder = DeflateDecoder::new(DEVICE_FONT);
+            decoder
+                .read_to_end(&mut data)
+                .expect("default font decompression must succeed");
 
+            let descriptor = FontDescriptor::from_parts("Noto Sans", false, false);
+            let device_font =
+                Font::from_font_file(mc, descriptor, Cow::Owned(data), 0, FontType::Device)
+                    .unwrap();
             callback(mc, device_font);
         })
     }
