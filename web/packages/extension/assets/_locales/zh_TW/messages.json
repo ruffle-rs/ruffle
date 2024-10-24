@@ -3,7 +3,7 @@
         "message": "使用 Ruffle 播放 Flash 内容"
     },
     "settings_ignore_optout": {
-        "message": "即便網站禁用了 Ruffle 也可以播放 Flash 内容"
+        "message": "即使在禁止 Ruffle 的網站上也能播放 Flash 內容"
     },
     "settings_show_swf_download": {
         "message": "顯示下載SWF檔案(右鍵選單)"
@@ -12,7 +12,7 @@
         "message": "自動播放Flash內容"
     },
     "settings_swf_takeover": {
-        "message": "在瀏覽器中直接播放SWF文件，而不是下載。"
+        "message": "在瀏覽器中播放 SWF 檔案，而非下載"
     },
     "settings_log_level": {
         "message": "日誌層級(用在於開發人員工具裡的主控台)"
@@ -45,40 +45,40 @@
         "message": "重設設定"
     },
     "settings_reset_confirm": {
-        "message": "你確定要把Ruffle設定復原成預設值嗎?"
+        "message": "您確定要將 Ruffle 設定還原為原始預設值？"
     },
     "status_init": {
-        "message": "正在讀取目前標籤頁……"
+        "message": "讀取目前的標籤..."
     },
     "status_no_tabs": {
-        "message": "沒有活動標籤頁。"
+        "message": "沒有活動標籤。"
     },
     "status_tabs_error": {
-        "message": "尋找目前標籤頁時發生錯誤。"
+        "message": "查詢目前的索引標籤時發生錯誤。"
     },
     "status_message_init": {
-        "message": "在此標籤頁上檢查 Ruffle 狀態…"
+        "message": "檢查目前標籤上的 Ruffle 狀態..."
     },
     "status_result_running": {
-        "message": "Ruffle 已加載並正在目前標籤頁播放 Flash 内容。"
+        "message": "Ruffle 已準備好在目前的索引標籤中執行 Flash 內容。"
     },
     "status_result_running_protected": {
-        "message": "Ruffle 已加載並正在播放 Flash 内容。"
+        "message": "Ruffle 已準備好執行您要求的 Flash 內容。"
     },
     "status_result_optout": {
-        "message": "Ruffle 未加載因為目前頁面標註自己不相容。"
+        "message": "Ruffle 無法載入，因為目前的網站將自己標示為不相容。"
     },
     "status_result_disabled": {
         "message": "Ruffle現在是關閉狀態。"
     },
     "status_result_error": {
-        "message": "Ruffle 在目前頁面排隊時發生錯誤。"
+        "message": "查詢目前頁面的 Ruffle 範例時發生錯誤。"
     },
     "status_result_protected": {
-        "message": "Ruffle 無法在被瀏覽器保護的頁面中加載。"
+        "message": "Ruffle 無法在受保護的瀏覽器頁面中載入。"
     },
     "action_reload": {
-        "message": "重新整理並套用此設定"
+        "message": "重新載入標籤以套用變更"
     },
     "open_player_page": {
         "message": "開啟 Flash 播放器"
@@ -90,7 +90,7 @@
         "message": "設定頁面"
     },
     "description": {
-        "message": "把 Flash 重新帶回現代瀏覽器。"
+        "message": "將 Flash 放回屬於它的網頁上。"
     },
     "save_settings": {
         "message": "儲存設定"
@@ -102,18 +102,18 @@
         "message": "引導頁面"
     },
     "permissions_grant": {
-        "message": "允許Ruffle在所有網站上所有數據"
+        "message": "授權 Ruffle 在所有網站存取我的資料"
     },
     "permissions_not_granted": {
-        "message": "如果你像要在每個網站執行Ruffle時 你需要點擊Ruffle圖示"
+        "message": "您需要在每個要使用 Ruffle 的網站點選 Ruffle 圖示。"
     },
     "grant_single_site_permission": {
         "message": "永久在此網站使用"
     },
     "permissions_explanation": {
-        "message": "Ruffle 擴展程序在能夠訪問所有網站的數據時效果最佳。這使得它可以在任何網站首次加載時運行，從而立即使進行 Flash Player 檢測的網站上的 Flash 內容運行。這也使得它能夠從網絡上的其他位置加載 SWF 文件到其內部播放器頁面。如果你不授予此權限，你將需要在每個想使用 Ruffle 的網站上手動啓用 Ruffle，方法是點擊擴展圖標併爲該網站啓用它。"
+        "message": "Ruffle 擴充套件在能夠存取所有網站資料的情況下運作得最好。這可讓它在任何網站首次載入時執行，因此可讓它說服進行 Flash Player 檢測的網站立即讓 Flash 內容執行。這也讓它有能力從網站上的其他位置載入 SWF 檔案到其內部播放器頁面，並允許它自動載入直接的 SWF 連結到該頁面。如果您未授予此權限，則需要在希望使用 Ruffle 的每個網站上手動啟用 Ruffle，方法是點擊擴展功能的圖示並在該網站上啟用。"
     },
     "swf_player_permissions": {
-        "message": "您必須授予此 URL 來源的權限才能從中載入 SWF。"
+        "message": "您必須授予此 URL 來源權限，才能從中載入 SWF。"
     }
 }
