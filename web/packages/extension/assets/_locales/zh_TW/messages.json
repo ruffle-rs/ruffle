@@ -48,10 +48,10 @@
         "message": "您確定要將 Ruffle 設定還原為原始預設值？"
     },
     "status_init": {
-        "message": "讀取目前的標籤..."
+        "message": "讀取目前的標籤頁…"
     },
     "status_no_tabs": {
-        "message": "沒有活動標籤。"
+        "message": "沒有活動標籤頁。"
     },
     "status_tabs_error": {
         "message": "查詢目前的索引標籤時發生錯誤。"
