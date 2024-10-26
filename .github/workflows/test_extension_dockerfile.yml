@@ -37,7 +37,7 @@ jobs:
         uses: sigoden/install-binary@v1
         with:
           repo: WebAssembly/binaryen
-          tag: version_119
+          tag: version_120
           name: wasm-opt
 
       - name: Install fclones
