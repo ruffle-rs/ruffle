@@ -188,18 +188,30 @@ impl<'gc> RegExp<'gc> {
                             continue;
                         }
                         let mut grp_index = d_u;
-                        if let Some(Ok(next_char)) = chars.peek() {
+                        let mut second_char = None;
+                        if let Some(&Ok(next_char)) = chars.peek() {
                             if let Some(d1) = next_char.to_digit(10) {
                                 let d1_u = usize::try_from(d1).unwrap_or(0);
                                 let two_digit_index = d_u * 10 + d1_u;
-                                if two_digit_index <= m.captures.len() {
+                                if two_digit_index <= m.captures.len() && two_digit_index != 0 {
                                     chars.next();
-                                    grp_index = two_digit_index
+                                    grp_index = two_digit_index;
+                                    second_char = Some(next_char);
                                 }
                             }
                         }
+                        if grp_index == 0 {
+                            ret.push_char('$');
+                            ret.push_char(n);
+                            continue;
+                        }
                         if let Some(Some(r)) = m.captures.get(grp_index - 1) {
                             ret.push_str(&text[r.start..r.end])
+                        }
+                        // two digit codes with a leading zero have the second digit appended after
+                        // the replacement text
+                        if let Some(c) = second_char.filter(|_| d_u == 0) {
+                            ret.push_char(c);
                         }
                         continue;
                     }
