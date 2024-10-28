@@ -18,7 +18,7 @@ ruffle_socket_format = { path = "../socket-format" }
 ruffle_video_software = { path = "../../video/software", optional = true }
 ruffle_video_external = { path = "../../video/external", features = ["openh264"], optional = true }
 image = { workspace = true, features  = ["png"] }
-regex = "1.11.0"
+regex = "1.11.1"
 url = { workspace = true }
 chrono = { workspace = true }
 approx = "0.5.1"

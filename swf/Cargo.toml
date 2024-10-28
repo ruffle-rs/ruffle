@@ -15,7 +15,7 @@ workspace = true
 bitflags = { workspace = true }
 bitstream-io = "2.5.3"
 byteorder = "1.5"
-encoding_rs = "0.8.34"
+encoding_rs = "0.8.35"
 num-derive = { workspace = true }
 num-traits = { workspace = true }
 log = { workspace = true }

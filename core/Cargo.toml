@@ -29,7 +29,7 @@ bitflags = { workspace = true }
 smallvec = { version = "1.13.2", features = ["union"] }
 num-traits = { workspace = true }
 num-derive = { workspace = true }
-quick-xml = "0.36.2"
+quick-xml = "0.37.0"
 downcast-rs = "1.2.1"
 url = { workspace = true }
 weak-table = "0.3.2"
@@ -37,7 +37,7 @@ percent-encoding = "2.3.1"
 thiserror = { workspace = true }
 chrono = { workspace = true, features = ["clock"] }
 web-time = "1.1.0"
-encoding_rs = "0.8.34"
+encoding_rs = "0.8.35"
 rand = { version = "0.8.5", features = ["std", "small_rng"], default-features = false }
 serde = { workspace = true }
 serde_json = { version = "1.0", features = ["preserve_order"] }
