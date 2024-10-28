@@ -1701,7 +1701,7 @@ impl<'a> FormatState<'a> {
         }
 
         let encoded = line.to_utf8_lossy();
-        let escaped = escape(&encoded);
+        let escaped = escape(&*encoded);
 
         if let Cow::Borrowed(_) = &encoded {
             // Optimization: if the utf8 conversion was a no-op, we know the text is ASCII;
