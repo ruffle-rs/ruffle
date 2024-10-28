@@ -475,7 +475,7 @@ impl Player {
         if self.recent_run_frame_timings.is_empty() {
             5
         } else {
-            let frame_time = 1000.0 / self.frame_rate;
+            let frame_time = self.frame_time(1000.0);
             let average_run_frame_time = self.recent_run_frame_timings.iter().sum::<f64>()
                 / self.recent_run_frame_timings.len() as f64;
             ((frame_time / average_run_frame_time) as u32).clamp(1, MAX_FRAMES_PER_TICK)
@@ -489,11 +489,19 @@ impl Player {
         }
     }
 
+    fn frame_time(&self, time_unit: f64) -> f64 {
+        let frame_rate = self.frame_rate;
+        if frame_rate == 0.0 || frame_rate.is_nan() {
+            0.0
+        } else {
+            time_unit / frame_rate
+        }
+    }
+
     pub fn tick(&mut self, dt: f64) {
         if self.is_playing() {
             self.frame_accumulator += dt;
-            let frame_rate = self.frame_rate;
-            let frame_time = 1000.0 / frame_rate;
+            let frame_time = self.frame_time(1000.0);
 
             let max_frames_per_tick = self.max_frames_per_tick();
             let mut frame = 0;
@@ -556,7 +564,7 @@ impl Player {
     /// Returns the approximate duration of time until the next frame is due to run.
     /// This is only an approximation to be used for sleep durations.
     pub fn time_til_next_frame(&self) -> std::time::Duration {
-        let frame_time = 1000.0 / self.frame_rate;
+        let frame_time = self.frame_time(1000.0);
         let mut dt = if self.frame_accumulator <= 0.0 {
             frame_time
         } else if self.frame_accumulator >= frame_time {
@@ -1874,7 +1882,8 @@ impl Player {
 
     #[instrument(level = "debug", skip_all)]
     pub fn run_frame(&mut self) {
-        let frame_time = Duration::from_nanos((750_000_000.0 / self.frame_rate) as u64);
+        let frame_time = self.frame_time(750_000_000.0);
+        let frame_time = Duration::from_nanos(frame_time as u64);
         let (mut execution_limit, may_execute_while_streaming) = match self.load_behavior {
             LoadBehavior::Streaming => (
                 ExecutionLimit::with_max_ops_and_time(10000, frame_time),
