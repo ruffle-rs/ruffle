@@ -17,7 +17,7 @@
     },
     "devDependencies": {
         "@tsconfig/strictest": "^2.0.5",
-        "@types/archiver": "^6.0.2",
+        "@types/archiver": "^6.0.3",
         "@types/chrome": "^0.0.279",
         "@types/common-tags": "^1.8.4",
         "@types/firefox-webext-browser": "^120.0.4",
@@ -30,6 +30,6 @@
         "axios": "^1.7.7",
         "form-data": "^4.0.1",
         "jsonwebtoken": "^9.0.2",
-        "tsx": "^4.19.1"
+        "tsx": "^4.19.2"
     }
 }
