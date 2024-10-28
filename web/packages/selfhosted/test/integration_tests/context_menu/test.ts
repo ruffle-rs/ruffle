@@ -21,7 +21,7 @@ async function supportsClipboardReadText(): Promise<boolean> {
     });
 }
 
-async function focusFlashInput(player: WebdriverIO.Element) {
+async function focusFlashInput(player: ChainablePromiseElement) {
     await player.click({ x: 10 - 200, y: 110 - 200 });
     expect(await getTraceOutput(browser, player)).to.equal(
         "onMouseDown()\nonMouseUp()\n",
@@ -35,16 +35,16 @@ async function focusHtmlInput() {
     });
 }
 
-async function openContextMenu(player: WebdriverIO.Element) {
+async function openContextMenu(player: ChainablePromiseElement) {
     await player.click({ x: 10 - 200, y: 10 - 200, button: "right" });
 }
 
-async function openContextMenuOnInput(player: WebdriverIO.Element) {
+async function openContextMenuOnInput(player: ChainablePromiseElement) {
     await player.click({ x: 10 - 200, y: 110 - 200, button: "right" });
 }
 
 async function clickContextMenuEntry(
-    player: WebdriverIO.Element,
+    player: ChainablePromiseElement,
     text: string,
     button: string = "left",
 ) {
