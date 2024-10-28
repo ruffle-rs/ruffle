@@ -952,7 +952,7 @@ impl<'gc> EditText<'gc> {
         // TODO: also cull text that's simply out of screen, just like we cull whole DOs in render_self().
         if origin.y() + Twips::from_pixels(Self::INTERNAL_PADDING)
             - edit_text.vertical_scroll_offset()
-            > edit_text.bounds.y_max
+            > edit_text.bounds.height()
         {
             return;
         }
