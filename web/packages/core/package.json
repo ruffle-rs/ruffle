@@ -30,9 +30,9 @@
         "cssnano-preset-advanced": "^7.0.6",
         "mocha": "^10.7.3",
         "postcss": "^8.4.47",
-        "postcss-nesting": "^13.0.0",
+        "postcss-nesting": "^13.0.1",
         "replace-in-file": "^8.2.0",
-        "tsx": "^4.19.1",
+        "tsx": "^4.19.2",
         "tsx-dom": "^3.0.1",
         "typedoc": "^0.26.10",
         "typescript": "^5.6.3"
