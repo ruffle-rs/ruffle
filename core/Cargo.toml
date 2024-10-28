@@ -37,7 +37,7 @@ percent-encoding = "2.3.1"
 thiserror = { workspace = true }
 chrono = { workspace = true, features = ["clock"] }
 web-time = "1.1.0"
-encoding_rs = "0.8.34"
+encoding_rs = "0.8.35"
 rand = { version = "0.8.5", features = ["std", "small_rng"], default-features = false }
 serde = { workspace = true }
 serde_json = { version = "1.0", features = ["preserve_order"] }
