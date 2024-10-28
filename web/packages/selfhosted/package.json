@@ -27,7 +27,7 @@
         "webpack-cli": "^5.1.4",
         "webpack-dev-server": "^5.1.0",
         "ts-node": "^10.9.2",
-        "@types/chai": "^5.0.0",
+        "@types/chai": "^5.0.1",
         "@types/chai-html": "^3.0.0"
     }
 }
