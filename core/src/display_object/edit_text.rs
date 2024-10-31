@@ -999,6 +999,7 @@ impl<'gc> EditText<'gc> {
 
     /// Render the visible text along with selection and the caret.
     fn render_text(self, context: &mut RenderContext<'_, 'gc>, edit_text: &EditTextData<'gc>) {
+        self.render_selection_background(context, edit_text);
         self.render_lines(context, &edit_text.layout, |context, line| {
             self.render_layout_line(context, line);
         });
@@ -1106,7 +1107,6 @@ impl<'gc> EditText<'gc> {
             ..Default::default()
         });
 
-        let focused = self.has_focus();
         let visible_selection = self.visible_selection(&edit_text);
 
         let caret = if let LayoutContent::Text { start, end, .. } = &lbox.content() {
@@ -1155,9 +1155,6 @@ impl<'gc> EditText<'gc> {
                     if let Some(glyph_shape_handle) = glyph.shape_handle(context.renderer) {
                         // If it's highlighted, override the color.
                         if matches!(visible_selection, Some(visible_selection) if visible_selection.contains(start + pos)) {
-                            // Draw selection rect
-                            self.render_selection(context, x, advance, caret_height, focused);
-
                             // Set text color to white
                             context.transform_stack.push(&Transform {
                                 matrix: transform.matrix,
@@ -1196,25 +1193,6 @@ impl<'gc> EditText<'gc> {
         }
 
         context.transform_stack.pop();
-    }
-
-    fn render_selection(
-        self,
-        context: &mut RenderContext<'_, 'gc>,
-        x: Twips,
-        width: Twips,
-        height: Twips,
-        focused: bool,
-    ) {
-        let color = if focused { Color::BLACK } else { Color::GRAY };
-        let selection_box = context.transform_stack.transform().matrix
-            * Matrix::create_box(
-                width.to_pixels() as f32,
-                height.to_pixels() as f32,
-                x,
-                Twips::ZERO,
-            );
-        context.commands.draw_rect(color, selection_box);
     }
 
     fn render_caret(
