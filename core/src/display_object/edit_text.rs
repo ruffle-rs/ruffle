@@ -983,6 +983,27 @@ impl<'gc> EditText<'gc> {
         }
     }
 
+    /// Render lines according to the given procedure.
+    ///
+    /// This skips invisible lines.
+    fn render_lines<F>(self, context: &mut RenderContext<'_, 'gc>, layout: &Layout<'gc>, f: F)
+    where
+        F: Fn(&mut RenderContext<'_, 'gc>, &LayoutLine<'gc>),
+    {
+        // Skip lines that are off-screen.
+        let lines_to_skip = self.scroll().saturating_sub(1);
+        for line in layout.lines().iter().skip(lines_to_skip) {
+            f(context, line);
+        }
+    }
+
+    /// Render the visible text along with selection and the caret.
+    fn render_text(self, context: &mut RenderContext<'_, 'gc>, edit_text: &EditTextData<'gc>) {
+        self.render_lines(context, &edit_text.layout, |context, line| {
+            self.render_layout_line(context, line);
+        });
+    }
+
     fn render_layout_line(self, context: &mut RenderContext<'_, 'gc>, line: &LayoutLine<'gc>) {
         for layout_box in line.boxes_iter() {
             self.render_layout_box(context, layout_box);
@@ -2391,11 +2412,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             ..Default::default()
         });
 
-        // Skip lines that are off-screen.
-        let lines_to_skip = self.scroll().saturating_sub(1);
-        for line in edit_text.layout.lines().iter().skip(lines_to_skip) {
-            self.render_layout_line(context, line);
-        }
+        self.render_text(context, &edit_text);
 
         self.render_debug_boxes(
             context,
