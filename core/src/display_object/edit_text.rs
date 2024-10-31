@@ -933,6 +933,25 @@ impl<'gc> EditText<'gc> {
         }
     }
 
+    /// Returns the selection, but takes into account whether the selection should be rendered.
+    fn visible_selection(self, edit_text: &EditTextData<'gc>) -> Option<TextSelection> {
+        let selection = edit_text.selection?;
+        #[allow(clippy::collapsible_else_if)]
+        if selection.is_caret() {
+            if self.has_focus() && !edit_text.flags.contains(EditTextFlag::READ_ONLY) {
+                Some(selection)
+            } else {
+                None
+            }
+        } else {
+            if self.has_focus() || self.always_show_selection() {
+                Some(selection)
+            } else {
+                None
+            }
+        }
+    }
+
     fn render_debug_boxes(
         self,
         context: &mut RenderContext<'_, 'gc>,
@@ -995,14 +1014,7 @@ impl<'gc> EditText<'gc> {
         });
 
         let focused = self.has_focus();
-        let visible_selection = if focused {
-            edit_text.selection
-        } else if self.always_show_selection() {
-            // Caret is not shown even if alwaysShowSelection is true
-            edit_text.selection.filter(|sel| !sel.is_caret())
-        } else {
-            None
-        };
+        let visible_selection = self.visible_selection(&edit_text);
 
         let caret = if let LayoutContent::Text { start, end, .. } = &lbox.content() {
             if let Some(visible_selection) = visible_selection {
