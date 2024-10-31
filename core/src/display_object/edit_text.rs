@@ -1004,6 +1004,78 @@ impl<'gc> EditText<'gc> {
         });
     }
 
+    /// Render the black selection background.
+    fn render_selection_background(
+        self,
+        context: &mut RenderContext<'_, 'gc>,
+        edit_text: &EditTextData<'gc>,
+    ) {
+        let Some(selection) = self.visible_selection(edit_text) else {
+            return;
+        };
+        if selection.is_caret() {
+            return;
+        }
+
+        let (start, end) = (selection.start(), selection.end());
+
+        self.render_lines(context, &edit_text.layout, |context, line| {
+            self.render_selection_background_for_line(context, line, start, end)
+        });
+    }
+
+    fn render_selection_background_for_line(
+        self,
+        context: &mut RenderContext<'_, 'gc>,
+        line: &LayoutLine<'gc>,
+        start: usize,
+        end: usize,
+    ) {
+        let local_start = start.clamp(line.start(), line.end());
+        let local_end = end.clamp(line.start(), line.end());
+
+        if local_start >= local_end {
+            // No selection in this line
+            return;
+        }
+
+        let line_bounds = line.bounds();
+
+        // If the selection ends within this line, the background
+        // is not drawn over leading.
+        let leading = if local_end == end {
+            Twips::ZERO
+        } else {
+            line.leading()
+        };
+
+        let x_start = line
+            .char_x_bounds(local_start)
+            .map(|b| b.0)
+            .unwrap_or_else(|| line_bounds.offset_x());
+        let x_end = line
+            .char_x_bounds(local_end - 1)
+            .map(|b| b.1)
+            .unwrap_or_else(|| line_bounds.extent_x());
+
+        let width = x_end - x_start;
+        let height = line_bounds.height() + leading;
+
+        let color = if self.has_focus() {
+            Color::BLACK
+        } else {
+            Color::GRAY
+        };
+        let selection_box = context.transform_stack.transform().matrix
+            * Matrix::create_box(
+                width.to_pixels() as f32,
+                height.to_pixels() as f32,
+                x_start,
+                line_bounds.origin().y(),
+            );
+        context.commands.draw_rect(color, selection_box);
+    }
+
     fn render_layout_line(self, context: &mut RenderContext<'_, 'gc>, line: &LayoutLine<'gc>) {
         for layout_box in line.boxes_iter() {
             self.render_layout_box(context, layout_box);
