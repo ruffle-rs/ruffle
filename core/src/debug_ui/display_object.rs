@@ -10,8 +10,9 @@ use crate::debug_ui::handle::{AVM1ObjectHandle, AVM2ObjectHandle, DisplayObjectH
 use crate::debug_ui::movie::open_movie_button;
 use crate::debug_ui::Message;
 use crate::display_object::{
-    AutoSizeMode, Bitmap, DisplayObject, EditText, InteractiveObject, LayoutDebugBoxesFlag,
-    MovieClip, Stage, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
+    AutoSizeMode, Avm2Button, Bitmap, ButtonState, DisplayObject, EditText, InteractiveObject,
+    LayoutDebugBoxesFlag, MovieClip, Stage, TDisplayObject, TDisplayObjectContainer,
+    TInteractiveObject,
 };
 use crate::focus_tracker::Highlight;
 use egui::collapsing_header::CollapsingState;
@@ -171,6 +172,8 @@ impl DisplayObjectWindow {
                             self.show_bitmap(ui, context, object)
                         } else if let DisplayObject::Stage(object) = object {
                             self.show_stage(ui, context, object, messages)
+                        } else if let DisplayObject::Avm2Button(object) = object {
+                            self.show_avm2_button(ui, context, object, messages)
                         }
                     }
                     Panel::Interactive => {
@@ -520,6 +523,78 @@ impl DisplayObjectWindow {
                             ui.end_row();
                         }
                     });
+            });
+    }
+
+    pub fn show_avm2_button<'gc>(
+        &mut self,
+        ui: &mut Ui,
+        context: &mut UpdateContext<'gc>,
+        object: Avm2Button<'gc>,
+        messages: &mut Vec<Message>,
+    ) {
+        Grid::new(ui.id().with("avm2_button"))
+            .num_columns(2)
+            .show(ui, |ui| {
+                ui.label("Enabled");
+                ui.horizontal(|ui| {
+                    let mut enabled = object.enabled();
+                    ui.checkbox(&mut enabled, "Enabled");
+                    if enabled != object.enabled() {
+                        object.set_enabled(context, enabled);
+                    }
+                });
+                ui.end_row();
+
+                ui.label("State");
+                ui.horizontal(|ui| {
+                    let original_state = object.state();
+                    let mut state = original_state;
+                    ComboBox::from_id_salt(ui.id().with("state"))
+                        .selected_text(format!("{:?}", state))
+                        .show_ui(ui, |ui| {
+                            for value in [ButtonState::Up, ButtonState::Over, ButtonState::Down] {
+                                ui.selectable_value(&mut state, value, format!("{:?}", value));
+                            }
+                        });
+                    if state != original_state {
+                        object.set_state(context, state);
+                    }
+                });
+                ui.end_row();
+
+                ui.label("Use Hand Cursor");
+                ui.horizontal(|ui| {
+                    let mut use_hand_cursor = object.use_hand_cursor();
+                    ui.checkbox(&mut use_hand_cursor, "Enabled");
+                    if use_hand_cursor != object.use_hand_cursor() {
+                        object.set_use_hand_cursor(use_hand_cursor);
+                    }
+                });
+                ui.end_row();
+
+                for (label, state) in [
+                    ("Hit Test", swf::ButtonState::HIT_TEST),
+                    ("Up State", swf::ButtonState::UP),
+                    ("Over State", swf::ButtonState::OVER),
+                    ("Down State", swf::ButtonState::DOWN),
+                ] {
+                    ui.label(label);
+                    ui.horizontal(|ui| {
+                        if let Some(state_child) = object.get_state_child(state) {
+                            open_display_object_button(
+                                ui,
+                                context,
+                                messages,
+                                state_child,
+                                &mut self.hovered_debug_rect,
+                            );
+                        } else {
+                            ui.label("None");
+                        }
+                    });
+                    ui.end_row();
+                }
             });
     }
 
@@ -1178,6 +1253,7 @@ fn has_type_specific_tab(object: DisplayObject) -> bool {
         object,
         DisplayObject::MovieClip(_)
             | DisplayObject::EditText(_)
+            | DisplayObject::Avm2Button(_)
             | DisplayObject::Bitmap(_)
             | DisplayObject::Stage(_)
     )
