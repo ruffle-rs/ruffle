@@ -1104,18 +1104,22 @@ impl<'gc> LayoutLine<'gc> {
         result.ok()
     }
 
-    /// Returns char bounds of the given char relative to the whole layout.
-    pub fn char_bounds(&self, position: usize) -> Option<Rectangle<Twips>> {
+    /// Returns x-axis char bounds of the given char relative to the whole layout.
+    pub fn char_x_bounds(&self, position: usize) -> Option<(Twips, Twips)> {
         let box_index = self.find_box_index_by_position(position)?;
         let layout_box = self.boxes.get(box_index)?;
-
-        let line_bounds = self.bounds();
         let origin_x = layout_box.bounds().origin().x();
-        let x_bounds = layout_box.char_x_bounds(position)?;
+        let (start, end) = layout_box.char_x_bounds(position)?;
+        Some((origin_x + start, origin_x + end))
+    }
 
+    /// Returns char bounds of the given char relative to the whole layout.
+    pub fn char_bounds(&self, position: usize) -> Option<Rectangle<Twips>> {
+        let (x_min, x_max) = self.char_x_bounds(position)?;
+        let line_bounds = self.bounds();
         Some(Rectangle {
-            x_min: origin_x + x_bounds.0,
-            x_max: origin_x + x_bounds.1,
+            x_min,
+            x_max,
             y_min: line_bounds.offset_y(),
             y_max: line_bounds.extent_y(),
         })
