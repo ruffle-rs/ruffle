@@ -77,47 +77,86 @@ impl<'gc> XmlObject<'gc> {
         ))
     }
 
+    fn get_child_list(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        name: &Multiname<'gc>,
+    ) -> XmlListObject<'gc> {
+        let matched_children = if let E4XNodeKind::Element {
+            children,
+            attributes,
+            ..
+        } = &*self.0.node.get().kind()
+        {
+            let search_children = if name.is_attribute() {
+                attributes
+            } else {
+                children
+            };
+
+            search_children
+                .iter()
+                .filter_map(|child| {
+                    if child.matches_name(name) {
+                        Some(E4XOrXml::E4X(*child))
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>()
+        } else {
+            Vec::new()
+        };
+
+        // NOTE: avmplus does set the target_dirty flag on the list object if there was at least one child
+        //       due to the way avmplus implemented this.
+        let list = XmlListObject::new_with_children(
+            activation,
+            matched_children,
+            Some(self.into()),
+            Some(name.clone()),
+        );
+
+        if list.length() > 0 {
+            list.set_dirty_flag();
+        }
+
+        list
+    }
+
+    // 13.4.4.6 XML.prototype.child ( propertyName )
     pub fn child(
         &self,
         name: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> XmlListObject<'gc> {
-        let children = if let E4XNodeKind::Element { children, .. } = &*self.node().kind() {
-            if let Some(local_name) = name.local_name() {
-                if let Ok(index) = local_name.parse::<usize>() {
-                    let children = if let Some(node) = children.get(index) {
+        // 1. If ToString(ToUint32(propertyName)) == propertyName
+        if let Some(local_name) = name.local_name() {
+            if let Ok(index) = local_name.parse::<usize>() {
+                let result = if let E4XNodeKind::Element { children, .. } = &*self.node().kind() {
+                    if let Some(node) = children.get(index) {
                         vec![E4XOrXml::E4X(*node)]
                     } else {
                         Vec::new()
-                    };
-
-                    let list = XmlListObject::new_with_children(activation, children, None, None);
-
-                    if list.length() > 0 {
-                        // NOTE: Since avmplus uses appendNode here, when the node exists, that implicitly sets the target_dirty flag.
-                        list.set_dirty_flag();
                     }
+                } else {
+                    Vec::new()
+                };
 
-                    return list;
+                let list = XmlListObject::new_with_children(activation, result, None, None);
+
+                if list.length() > 0 {
+                    // NOTE: Since avmplus uses appendNode here, when the node exists, that implicitly sets the target_dirty flag.
+                    list.set_dirty_flag();
                 }
+
+                return list;
             }
+        }
 
-            children
-                .iter()
-                .filter(|node| node.matches_name(name))
-                .map(|node| E4XOrXml::E4X(*node))
-                .collect()
-        } else {
-            Vec::new()
-        };
-
-        // FIXME: If name is not a number index, then we should call [[Get]] (get_property_local) with the name.
-        XmlListObject::new_with_children(
-            activation,
-            children,
-            Some(XmlOrXmlListObject::Xml(*self)),
-            Some(name.clone()),
-        )
+        // 2. Let temporary be the result of calling the [[Get]] method of x with argument propertyName
+        // 3. Return ToXMLList(temporary)
+        self.get_child_list(activation, name)
     }
 
     pub fn elements(
@@ -306,46 +345,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         }
 
         let name = handle_input_multiname(name.clone(), activation);
-
-        let matched_children = if let E4XNodeKind::Element {
-            children,
-            attributes,
-            ..
-        } = &*self.0.node.get().kind()
-        {
-            let search_children = if name.is_attribute() {
-                attributes
-            } else {
-                children
-            };
-
-            search_children
-                .iter()
-                .filter_map(|child| {
-                    if child.matches_name(&name) {
-                        Some(E4XOrXml::E4X(*child))
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<_>>()
-        } else {
-            Vec::new()
-        };
-
-        // NOTE: avmplus does set the target_dirty flag on the list object if there was at least one child
-        //       due to the way avmplus implemented this.
-        let list = XmlListObject::new_with_children(
-            activation,
-            matched_children,
-            Some(self.into()),
-            Some(name.clone()),
-        );
-
-        if list.length() > 0 {
-            list.set_dirty_flag();
-        }
-
+        let list = self.get_child_list(activation, &name);
         Ok(list.into())
     }
 
