@@ -6,34 +6,34 @@
 package flash.security
 {
 
-    public final class CertificateStatus
-    {
-        // The certificate is outside its valid period.
-        public static const EXPIRED:String = "expired";
+	public final class CertificateStatus
+	{
+		// The certificate is outside its valid period.
+		public static const EXPIRED:String = "expired";
 
-        // An invalid certificate.
-        public static const INVALID:String = "invalid";
+		// An invalid certificate.
+		public static const INVALID:String = "invalid";
 
-        // A root or intermediate certificate in this certificate's chain is invalid.
-        public static const INVALID_CHAIN:String = "invalidChain";
+		// A root or intermediate certificate in this certificate's chain is invalid.
+		public static const INVALID_CHAIN:String = "invalidChain";
 
-        // The certificate is not yet valid.
-        public static const NOT_YET_VALID:String = "notYetValid";
+		// The certificate is not yet valid.
+		public static const NOT_YET_VALID:String = "notYetValid";
 
-        // The certificate common name does not match the expected host name.
-        public static const PRINCIPAL_MISMATCH:String = "principalMismatch";
+		// The certificate common name does not match the expected host name.
+		public static const PRINCIPAL_MISMATCH:String = "principalMismatch";
 
-        // The certificate has been revoked.
-        public static const REVOKED:String = "revoked";
+		// The certificate has been revoked.
+		public static const REVOKED:String = "revoked";
 
-        // A valid, trusted certificate.
-        public static const TRUSTED:String = "trusted";
+		// A valid, trusted certificate.
+		public static const TRUSTED:String = "trusted";
 
-        // The validity of the certificate is not known.
-        public static const UNKNOWN:String = "unknown";
+		// The validity of the certificate is not known.
+		public static const UNKNOWN:String = "unknown";
 
-        // The certificate does not chain to a trusted root certificate.
-        public static const UNTRUSTED_SIGNERS:String = "untrustedSigners";
+		// The certificate does not chain to a trusted root certificate.
+		public static const UNTRUSTED_SIGNERS:String = "untrustedSigners";
 
-    }
+	}
 }

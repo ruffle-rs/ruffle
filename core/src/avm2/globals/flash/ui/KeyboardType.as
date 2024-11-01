@@ -6,16 +6,16 @@
 package flash.ui
 {
 
-    public final class KeyboardType
-    {
-        // A standard keyboard with a full set of numbers and letters.
-        public static const ALPHANUMERIC:String = "alphanumeric";
+	public final class KeyboardType
+	{
+		// A standard keyboard with a full set of numbers and letters.
+		public static const ALPHANUMERIC:String = "alphanumeric";
 
-        // A phone-style 12-button keypad.
-        public static const KEYPAD:String = "keypad";
+		// A phone-style 12-button keypad.
+		public static const KEYPAD:String = "keypad";
 
-        // No physical keyboard is supported.
-        public static const NONE:String = "none";
+		// No physical keyboard is supported.
+		public static const NONE:String = "none";
 
-    }
+	}
 }

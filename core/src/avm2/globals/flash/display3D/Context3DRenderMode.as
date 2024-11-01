@@ -6,14 +6,14 @@
 package flash.display3D
 {
 
-    [API("674")]
-    public final class Context3DRenderMode
-    {
-        // Automatically choose rendering engine.
-        public static const AUTO:String = "auto";
+	[API("674")]
+	public final class Context3DRenderMode
+	{
+		// Automatically choose rendering engine.
+		public static const AUTO:String = "auto";
 
-        // Use software 3D rendering.
-        public static const SOFTWARE:String = "software";
+		// Use software 3D rendering.
+		public static const SOFTWARE:String = "software";
 
-    }
+	}
 }

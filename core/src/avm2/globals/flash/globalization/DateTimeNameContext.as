@@ -6,13 +6,13 @@
 package flash.globalization
 {
 
-    public final class DateTimeNameContext
-    {
-        // Indicates that the date element name is used within a date format.
-        public static const FORMAT:String = "format";
+	public final class DateTimeNameContext
+	{
+		// Indicates that the date element name is used within a date format.
+		public static const FORMAT:String = "format";
 
-        // Indicates that the date element name is used in a "stand alone" context, independent of other formats.
-        public static const STANDALONE:String = "standalone";
+		// Indicates that the date element name is used in a "stand alone" context, independent of other formats.
+		public static const STANDALONE:String = "standalone";
 
-    }
+	}
 }

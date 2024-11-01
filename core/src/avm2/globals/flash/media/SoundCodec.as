@@ -6,19 +6,19 @@
 package flash.media
 {
 
-    public final class SoundCodec
-    {
-        // Specifies that the Nellymoser codec be used for compressing audio.
-        public static const NELLYMOSER:String = "NellyMoser";
+	public final class SoundCodec
+	{
+		// Specifies that the Nellymoser codec be used for compressing audio.
+		public static const NELLYMOSER:String = "NellyMoser";
 
-        // Specifies that the G711 A-law codec be used for compressing audio.
-        public static const PCMA:String = "pcma";
+		// Specifies that the G711 A-law codec be used for compressing audio.
+		public static const PCMA:String = "pcma";
 
-        // Specifies that the G711 u-law codec be used for compressing audio.
-        public static const PCMU:String = "pcmu";
+		// Specifies that the G711 u-law codec be used for compressing audio.
+		public static const PCMU:String = "pcmu";
 
-        // Specifies that the Speex codec be used for compressing audio.
-        public static const SPEEX:String = "Speex";
+		// Specifies that the Speex codec be used for compressing audio.
+		public static const SPEEX:String = "Speex";
 
-    }
+	}
 }

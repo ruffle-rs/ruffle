@@ -6,16 +6,16 @@
 package flash.system
 {
 
-    public final class TouchscreenType
-    {
-        // A touchscreen designed to respond to finger touches.
-        public static const FINGER:String = "finger";
+	public final class TouchscreenType
+	{
+		// A touchscreen designed to respond to finger touches.
+		public static const FINGER:String = "finger";
 
-        // The computer or device does not have a supported touchscreen.
-        public static const NONE:String = "none";
+		// The computer or device does not have a supported touchscreen.
+		public static const NONE:String = "none";
 
-        // A touchscreen designed for use with a stylus.
-        public static const STYLUS:String = "stylus";
+		// A touchscreen designed for use with a stylus.
+		public static const STYLUS:String = "stylus";
 
-    }
+	}
 }

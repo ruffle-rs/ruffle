@@ -6,17 +6,17 @@
 package flash.ui
 {
 
-    public final class MultitouchInputMode
-    {
-        // Specifies that TransformGestureEvent, PressAndTapGestureEvent, and GestureEvent events are dispatched for the related user interaction supported by the current environment, 
-        // and other touch events (such as a simple tap) are interpreted as mouse events.
-        public static const GESTURE:String = "gesture";
+	public final class MultitouchInputMode
+	{
+		// Specifies that TransformGestureEvent, PressAndTapGestureEvent, and GestureEvent events are dispatched for the related user interaction supported by the current environment,
+		// and other touch events (such as a simple tap) are interpreted as mouse events.
+		public static const GESTURE:String = "gesture";
 
-        // Specifies that all user contact with a touch-enabled device is interpreted as a type of mouse event.
-        public static const NONE:String = "none";
+		// Specifies that all user contact with a touch-enabled device is interpreted as a type of mouse event.
+		public static const NONE:String = "none";
 
-        // Specifies that events are dispatched only for basic touch events, such as a single finger tap.
-        public static const TOUCH_POINT:String = "touchPoint";
+		// Specifies that events are dispatched only for basic touch events, such as a single finger tap.
+		public static const TOUCH_POINT:String = "touchPoint";
 
-    }
+	}
 }

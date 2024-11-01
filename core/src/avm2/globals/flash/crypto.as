@@ -1,5 +1,6 @@
-package flash.crypto {
-    import flash.utils.ByteArray;
+package flash.crypto
+{
+	import flash.utils.ByteArray;
 
-    public native function generateRandomBytes(numberRandomBytes:uint):ByteArray;
+	public native function generateRandomBytes(numberRandomBytes:uint):ByteArray;
 }

@@ -6,14 +6,14 @@
 package flash.media
 {
 
-    [API("670")]
-    public final class StageVideoAvailability
-    {
-        // Stage video is currently available.
-        public static const AVAILABLE:String = "available";
+	[API("670")]
+	public final class StageVideoAvailability
+	{
+		// Stage video is currently available.
+		public static const AVAILABLE:String = "available";
 
-        // Stage video is not currently available.
-        public static const UNAVAILABLE:String = "unavailable";
+		// Stage video is not currently available.
+		public static const UNAVAILABLE:String = "unavailable";
 
-    }
+	}
 }

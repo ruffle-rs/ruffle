@@ -1,43 +1,52 @@
-package flash.desktop {
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_setter;
+package flash.desktop
+{
+	import __ruffle__.stub_getter;
+	import __ruffle__.stub_setter;
 
-    import flash.filesystem.File;
+	import flash.filesystem.File;
 
-    [API("668")]
-    public class NativeProcessStartupInfo {
-        public function NativeProcessStartupInfo() {
-            super();
-        }
+	[API("668")]
+	public class NativeProcessStartupInfo
+	{
+		public function NativeProcessStartupInfo()
+		{
+			super();
+		}
 
-        public function get arguments():Vector.<String> {
-            stub_getter("flash.desktop.NativeProcessStartupInfo", "arguments");
+		public function get arguments():Vector.<String>
+		{
+			stub_getter("flash.desktop.NativeProcessStartupInfo", "arguments");
 
-            return null;
-        }
+			return null;
+		}
 
-        public function set arguments(value:Vector.<String>):void {
-            stub_setter("flash.desktop.NativeProcessStartupInfo", "arguments");
-        }
+		public function set arguments(value:Vector.<String>):void
+		{
+			stub_setter("flash.desktop.NativeProcessStartupInfo", "arguments");
+		}
 
-        public function get executable():File {
-            stub_getter("flash.desktop.NativeProcessStartupInfo", "executable");
+		public function get executable():File
+		{
+			stub_getter("flash.desktop.NativeProcessStartupInfo", "executable");
 
-            return null;
-        }
+			return null;
+		}
 
-        public function set executable(value:File):void {
-            stub_setter("flash.desktop.NativeProcessStartupInfo", "executable");
-        }
+		public function set executable(value:File):void
+		{
+			stub_setter("flash.desktop.NativeProcessStartupInfo", "executable");
+		}
 
-        public function get workingDirectory():File {
-            stub_getter("flash.desktop.NativeProcessStartupInfo", "workingDirectory");
+		public function get workingDirectory():File
+		{
+			stub_getter("flash.desktop.NativeProcessStartupInfo", "workingDirectory");
 
-            return null;
-        }
+			return null;
+		}
 
-        public function set workingDirectory(value:File):void {
-            stub_setter("flash.desktop.NativeProcessStartupInfo", "workingDirectory");
-        }
-    }
+		public function set workingDirectory(value:File):void
+		{
+			stub_setter("flash.desktop.NativeProcessStartupInfo", "workingDirectory");
+		}
+	}
 }

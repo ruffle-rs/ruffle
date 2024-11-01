@@ -6,17 +6,17 @@
 package flash.system
 {
 
-    [API("682")]
-    public final class MessageChannelState
-    {
-        // This state indicates that the message channel has been closed and doesn't have any more messages to deliver.
-        public static const CLOSED:String = "closed";
+	[API("682")]
+	public final class MessageChannelState
+	{
+		// This state indicates that the message channel has been closed and doesn't have any more messages to deliver.
+		public static const CLOSED:String = "closed";
 
-        // This state indicates that the message channel has been instructed to close and is in the process of delivering the remaining messages on the channel.
-        public static const CLOSING:String = "closing";
+		// This state indicates that the message channel has been instructed to close and is in the process of delivering the remaining messages on the channel.
+		public static const CLOSING:String = "closing";
 
-        // This state indicates that the message channel is open and available for use.
-        public static const OPEN:String = "open";
+		// This state indicates that the message channel is open and available for use.
+		public static const OPEN:String = "open";
 
-    }
+	}
 }

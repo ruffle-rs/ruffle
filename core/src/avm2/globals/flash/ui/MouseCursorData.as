@@ -5,56 +5,56 @@
 
 package flash.ui
 {
-    import flash.geom.Point;
-    import flash.display.BitmapData;
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_setter;
+	import flash.geom.Point;
+	import flash.display.BitmapData;
+	import __ruffle__.stub_getter;
+	import __ruffle__.stub_setter;
 
-    public final class MouseCursorData
-    {
-        // A Vector of BitmapData objects containing the cursor image or images.
-        private var _data: Vector.<BitmapData>;
+	public final class MouseCursorData
+	{
+		// A Vector of BitmapData objects containing the cursor image or images.
+		private var _data:Vector.<BitmapData>;
 
-        // The frame rate for animating the cursor.
-        private var _frameRate: Number;
+		// The frame rate for animating the cursor.
+		private var _frameRate:Number;
 
-        // The hot spot of the cursor in pixels.
-        private var _hotSpot: Point = new Point(0,0);
+		// The hot spot of the cursor in pixels.
+		private var _hotSpot:Point = new Point(0, 0);
 
-        public function get data():Vector.<BitmapData>
-        {
-            stub_getter("flash.ui.MouseCursorData", "data");
-            return this._data;
-        }
+		public function get data():Vector.<BitmapData>
+		{
+			stub_getter("flash.ui.MouseCursorData", "data");
+			return this._data;
+		}
 
-        public function set data(value:Vector.<BitmapData>):void
-        {
-            stub_setter("flash.ui.MouseCursorData", "data");
-            this._data = value;
-        }
+		public function set data(value:Vector.<BitmapData>):void
+		{
+			stub_setter("flash.ui.MouseCursorData", "data");
+			this._data = value;
+		}
 
-        public function get frameRate():Number
-        {
-            stub_getter("flash.ui.MouseCursorData", "frameRate");
-            return this._frameRate;
-        }
+		public function get frameRate():Number
+		{
+			stub_getter("flash.ui.MouseCursorData", "frameRate");
+			return this._frameRate;
+		}
 
-        public function set frameRate(value:Number):void
-        {
-            stub_setter("flash.ui.MouseCursorData", "frameRate");
-            this._frameRate = value;
-        }
+		public function set frameRate(value:Number):void
+		{
+			stub_setter("flash.ui.MouseCursorData", "frameRate");
+			this._frameRate = value;
+		}
 
-        public function get hotSpot():Point
-        {
-            stub_getter("flash.ui.MouseCursorData", "hotSpot");
-            return this._hotSpot;
-        }
+		public function get hotSpot():Point
+		{
+			stub_getter("flash.ui.MouseCursorData", "hotSpot");
+			return this._hotSpot;
+		}
 
-        public function set hotSpot(value:Point):void
-        {
-            stub_setter("flash.ui.MouseCursorData", "hotSpot");
-            this._hotSpot = value;
-        }
-    }
+		public function set hotSpot(value:Point):void
+		{
+			stub_setter("flash.ui.MouseCursorData", "hotSpot");
+			this._hotSpot = value;
+		}
+	}
 }

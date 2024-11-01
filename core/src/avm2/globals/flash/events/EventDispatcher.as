@@ -1,10 +1,13 @@
 // This is a stub - the actual class is defined in `eventdispatcher.rs`
-package flash.events {
-	public class EventDispatcher implements IEventDispatcher {
+package flash.events
+{
+	public class EventDispatcher implements IEventDispatcher
+	{
 		internal var _target:IEventDispatcher;
 		internal var _dispatchList:Object;
 
-		public function EventDispatcher(target:IEventDispatcher = null) {
+		public function EventDispatcher(target:IEventDispatcher = null)
+		{
 			this._target = target;
 		}
 

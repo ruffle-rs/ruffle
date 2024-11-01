@@ -5,16 +5,14 @@
 
 package flash.text.engine
 {
-    
-    
-    public final class FontWeight
-    {
-        // Used to indicate bold font weight.
-        public static const BOLD:String = "bold";
-        
-        // Used to indicate normal font weight.
-        public static const NORMAL:String = "normal";
-        
-        
-    }
+
+	public final class FontWeight
+	{
+		// Used to indicate bold font weight.
+		public static const BOLD:String = "bold";
+
+		// Used to indicate normal font weight.
+		public static const NORMAL:String = "normal";
+
+	}
 }

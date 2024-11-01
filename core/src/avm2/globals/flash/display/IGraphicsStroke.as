@@ -1,4 +1,6 @@
-package flash.display {
-    public interface IGraphicsStroke {
-    }
+package flash.display
+{
+	public interface IGraphicsStroke
+	{
+	}
 }

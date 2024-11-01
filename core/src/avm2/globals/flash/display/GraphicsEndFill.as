@@ -1,6 +1,8 @@
-package flash.display {
+package flash.display
+{
 
-    public final class GraphicsEndFill implements IGraphicsFill, IGraphicsData {
-    }
+	public final class GraphicsEndFill implements IGraphicsFill, IGraphicsData
+	{
+	}
 
 }

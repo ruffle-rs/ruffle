@@ -1,14 +1,17 @@
-package flash.utils {
+package flash.utils
+{
 
 	import __ruffle__.stub_constructor;
 
 	[Ruffle(InstanceAllocator)]
-    public dynamic class Dictionary {
+	public dynamic class Dictionary
+	{
 		public function Dictionary(weakKeys:Boolean = false)
 		{
-			if (weakKeys) {
+			if (weakKeys)
+			{
 				stub_constructor("flash.utils.Dictionary", "with weak keys");
 			}
 		}
-    }
+	}
 }

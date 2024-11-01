@@ -6,13 +6,13 @@
 package flash.system
 {
 
-    public class SystemUpdaterType
-    {
-        // Updates the DRM module.
-        public static const DRM:String = "drm";
+	public class SystemUpdaterType
+	{
+		// Updates the DRM module.
+		public static const DRM:String = "drm";
 
-        // Updates the player runtime itself.
-        public static const SYSTEM:String = "system";
+		// Updates the player runtime itself.
+		public static const SYSTEM:String = "system";
 
-    }
+	}
 }

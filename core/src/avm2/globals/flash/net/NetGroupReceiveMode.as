@@ -6,13 +6,13 @@
 package flash.net
 {
 
-    public final class NetGroupReceiveMode
-    {
-        // Specifies that this node accepts local messages from neighbors only if the address the neighbor uses matches this node's address exactly.
-        public static const EXACT:String = "exact";
+	public final class NetGroupReceiveMode
+	{
+		// Specifies that this node accepts local messages from neighbors only if the address the neighbor uses matches this node's address exactly.
+		public static const EXACT:String = "exact";
 
-        // Specifies that this node accepts local messages from neighbors that send messages to group addresses that don't match this node's address exactly.
-        public static const NEAREST:String = "nearest";
+		// Specifies that this node accepts local messages from neighbors that send messages to group addresses that don't match this node's address exactly.
+		public static const NEAREST:String = "nearest";
 
-    }
+	}
 }

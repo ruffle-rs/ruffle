@@ -5,30 +5,30 @@
 
 package flash.media
 {
-    public class AVTagData
-    {
-        // Data in the tag.
-        private var _data: String;
+	public class AVTagData
+	{
+		// Data in the tag.
+		private var _data:String;
 
-        // The timestamp of the tag data
-        private var _localTime: Number;
+		// The timestamp of the tag data
+		private var _localTime:Number;
 
-        public function AVTagData(
-          init_data:String,
-          init_localTime:Number)
-        {
-            _data = init_data;
-            _localTime = init_localTime;
-        }
+		public function AVTagData(
+				init_data:String,
+				init_localTime:Number)
+		{
+			_data = init_data;
+			_localTime = init_localTime;
+		}
 
-        public function get data() : String
-        {
-            return this._data;
-        }
+		public function get data():String
+		{
+			return this._data;
+		}
 
-        public function get localTime() : Number
-        {
-            return this._localTime;
-        }
-    }
+		public function get localTime():Number
+		{
+			return this._localTime;
+		}
+	}
 }

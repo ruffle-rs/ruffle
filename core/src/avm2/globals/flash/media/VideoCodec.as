@@ -6,17 +6,17 @@
 package flash.media
 {
 
-    [API("674")]
-    public final class VideoCodec
-    {
-        // Constant value indicating that H.264/AVC codec is used for compressing video.
-        public static const H264AVC:String = "H264Avc";
+	[API("674")]
+	public final class VideoCodec
+	{
+		// Constant value indicating that H.264/AVC codec is used for compressing video.
+		public static const H264AVC:String = "H264Avc";
 
-        // Constant value indicating that Sorenson Spark codec is used for compressing video.
-        public static const SORENSON:String = "Sorenson";
+		// Constant value indicating that Sorenson Spark codec is used for compressing video.
+		public static const SORENSON:String = "Sorenson";
 
-        // Constant value indicating that On2Vp6 codec is used for compressing video.
-        public static const VP6:String = "VP6";
+		// Constant value indicating that On2Vp6 codec is used for compressing video.
+		public static const VP6:String = "VP6";
 
-    }
+	}
 }

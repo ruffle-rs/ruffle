@@ -1,8 +1,10 @@
-package flash.events {
+package flash.events
+{
 	[Ruffle(InstanceAllocator)]
-	public class Event {
+	public class Event
+	{
 		public static const ACTIVATE:String = "activate";
-      
+
 		public static const ADDED:String = "added";
 
 		public static const ADDED_TO_STAGE:String = "addedToStage";
@@ -100,7 +102,8 @@ package flash.events {
 		[API("682")]
 		public static const WORKER_STATE:String = "workerState";
 
-		public function Event(type:String, bubbles:Boolean = false, cancelable:Boolean = false) {
+		public function Event(type:String, bubbles:Boolean = false, cancelable:Boolean = false)
+		{
 			this.init(type, bubbles, cancelable);
 		}
 
@@ -113,28 +116,35 @@ package flash.events {
 		public native function get target():Object;
 		public native function get type():String;
 
-		public function clone():Event {
+		public function clone():Event
+		{
 			return new Event(this.type, this.bubbles, this.cancelable);
 		}
 
-		public function toString(): String {
- 			return this.formatToString("Event","type","bubbles","cancelable","eventPhase");
+		public function toString():String
+		{
+			return this.formatToString("Event", "type", "bubbles", "cancelable", "eventPhase");
 		}
 
-		public function formatToString(className:String, ... arguments):String {
+		public function formatToString(className:String, ...arguments):String
+		{
 			var fmt = "[" + className;
-			for each (var key: String in arguments) {
+			for each (var key:String in arguments)
+			{
 				var val = this[key];
-				if(val is String) {
+				if (val is String)
+				{
 					fmt += " " + key + "=\"" + val + "\"";
-				} else {
+				}
+				else
+				{
 					fmt += " " + key + "=" + val;
 				}
 			}
 			return fmt += "]";
 		}
 
-		public native function isDefaultPrevented(): Boolean;
+		public native function isDefaultPrevented():Boolean;
 		public native function preventDefault():void;
 		public native function stopPropagation():void;
 		public native function stopImmediatePropagation():void;
