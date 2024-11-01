@@ -811,6 +811,39 @@ impl<'gc> Layout<'gc> {
         result.ok()
     }
 
+    /// Returns the index of the line which is
+    /// positioned at the given y coordinate.
+    ///
+    /// If the coordinate is at line leading, the line above is returned.
+    /// If the coordinate is above all lines, [`Result::Err`] is returned
+    /// with the index of the first line.
+    /// If the coordinate is below all lines, [`Result::Err`] is returned
+    /// with the index of the last line.
+    pub fn find_line_index_by_y(&self, y: Twips) -> Result<usize, usize> {
+        let lines_len = self.lines.len();
+        if y < Twips::ZERO || lines_len == 0 {
+            return Err(0);
+        }
+
+        let result = self.lines.binary_search_by(|probe| {
+            let bounds = probe.bounds();
+            if bounds.extent_y() + probe.leading() <= y {
+                Ordering::Less
+            } else if y < bounds.offset_y() {
+                Ordering::Greater
+            } else {
+                Ordering::Equal
+            }
+        });
+        let line = result.unwrap_or_else(|i| i);
+        let max_line = lines_len.saturating_sub(1);
+        if line <= max_line {
+            Ok(line)
+        } else {
+            Err(max_line)
+        }
+    }
+
     /// Returns char bounds of the given char relative to this layout.
     pub fn char_bounds(&self, position: usize) -> Option<Rectangle<Twips>> {
         let line_index = self.find_line_index_by_position(position)?;
