@@ -1333,31 +1333,22 @@ impl<'gc> EditText<'gc> {
         // TODO We can use binary search for both y and x here
 
         // First determine which line of text is the closest match to the Y position...
-        let mut closest_line: Option<&LayoutLine> = None;
-        for line in text.layout.lines().iter() {
-            if let Some(closest_extent_y) = closest_line.map(|l| l.interior_bounds().extent_y()) {
-                if line.interior_bounds().extent_y() > closest_extent_y
-                    && position.y >= line.interior_bounds().offset_y()
-                {
-                    closest_line = Some(line);
-                }
-            } else {
-                closest_line = Some(line);
-            }
-        }
+        let line_index = text
+            .layout
+            .find_line_index_by_y(position.y)
+            .unwrap_or_else(|i| i);
+        let line = text.layout.lines().get(line_index)?;
 
         // ...then find the box within that line that is the closest match to the X position.
         let mut closest_layout_box: Option<&LayoutBox<'gc>> = None;
-        if let Some(line) = closest_line {
-            for layout_box in line.boxes_iter() {
-                if layout_box.is_text_box() {
-                    if position.x >= layout_box.interior_bounds().offset_x()
-                        || closest_layout_box.is_none()
-                    {
-                        closest_layout_box = Some(layout_box);
-                    } else {
-                        break;
-                    }
+        for layout_box in line.boxes_iter() {
+            if layout_box.is_text_box() {
+                if position.x >= layout_box.interior_bounds().offset_x()
+                    || closest_layout_box.is_none()
+                {
+                    closest_layout_box = Some(layout_box);
+                } else {
+                    break;
                 }
             }
         }
