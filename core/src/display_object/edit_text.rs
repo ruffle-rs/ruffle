@@ -1329,6 +1329,8 @@ impl<'gc> EditText<'gc> {
         let mut position = self.global_to_local(position)?;
         position.x += Twips::from_pixels(text.hscroll) - Self::GUTTER;
         position.y += text.vertical_scroll_offset() - Self::GUTTER;
+        position.x -= text.bounds.x_min;
+        position.y -= text.bounds.y_min;
 
         // TODO We can use binary search for both y and x here
 
