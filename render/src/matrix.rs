@@ -122,6 +122,15 @@ impl Matrix {
         }
     }
 
+    pub fn create_box_from_rectangle(rect: &Rectangle<Twips>) -> Self {
+        Self::create_box(
+            rect.width().to_pixels() as f32,
+            rect.height().to_pixels() as f32,
+            rect.x_min,
+            rect.y_min,
+        )
+    }
+
     pub fn create_gradient_box(
         width: f32,
         height: f32,

@@ -2330,12 +2330,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         }
 
         context.commands.push_mask();
-        let mask = Matrix::create_box(
-            edit_text.bounds.width().to_pixels() as f32,
-            edit_text.bounds.height().to_pixels() as f32,
-            edit_text.bounds.x_min,
-            edit_text.bounds.y_min,
-        );
+        let mask = Matrix::create_box_from_rectangle(&edit_text.bounds);
         context.commands.draw_rect(
             Color::WHITE,
             context.transform_stack.transform().matrix * mask,
