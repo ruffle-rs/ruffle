@@ -2329,23 +2329,23 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             }
         }
 
-        context.transform_stack.push(&Transform {
-            matrix: Matrix::translate(edit_text.bounds.x_min, edit_text.bounds.y_min),
-            ..Default::default()
-        });
-
         context.commands.push_mask();
         let mask = Matrix::create_box(
             edit_text.bounds.width().to_pixels() as f32,
             edit_text.bounds.height().to_pixels() as f32,
-            Twips::ZERO,
-            Twips::ZERO,
+            edit_text.bounds.x_min,
+            edit_text.bounds.y_min,
         );
         context.commands.draw_rect(
             Color::WHITE,
             context.transform_stack.transform().matrix * mask,
         );
         context.commands.activate_mask();
+
+        context.transform_stack.push(&Transform {
+            matrix: Matrix::translate(edit_text.bounds.x_min, edit_text.bounds.y_min),
+            ..Default::default()
+        });
 
         let scroll_offset = edit_text.vertical_scroll_offset();
         // TODO: Where does this come from? How is this different than INTERNAL_PADDING? Does this apply to y as well?
@@ -2372,14 +2372,14 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
         context.transform_stack.pop();
 
+        context.transform_stack.pop();
+
         context.commands.deactivate_mask();
         context.commands.draw_rect(
             Color::WHITE,
             context.transform_stack.transform().matrix * mask,
         );
         context.commands.pop_mask();
-
-        context.transform_stack.pop();
     }
 
     fn allow_as_mask(&self) -> bool {
