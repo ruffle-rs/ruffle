@@ -2357,18 +2357,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         context.commands.activate_mask();
 
         context.transform_stack.push(&Transform {
-            matrix: Matrix::translate(edit_text.bounds.x_min, edit_text.bounds.y_min),
-            ..Default::default()
-        });
-
-        let scroll_offset = edit_text.vertical_scroll_offset();
-        // TODO: Where does this come from? How is this different than INTERNAL_PADDING? Does this apply to y as well?
-        // If this is actually right, offset the border in `redraw_border` instead of doing an extra push.
-        context.transform_stack.push(&Transform {
-            matrix: Matrix::translate(
-                Self::GUTTER - Twips::from_pixels(edit_text.hscroll),
-                Self::GUTTER - scroll_offset,
-            ),
+            matrix: self.layout_to_local_matrix(&edit_text),
             ..Default::default()
         });
 
@@ -2383,8 +2372,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             edit_text.layout_debug_boxes_flags,
             &edit_text.layout,
         );
-
-        context.transform_stack.pop();
 
         context.transform_stack.pop();
 
