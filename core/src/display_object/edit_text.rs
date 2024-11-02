@@ -647,6 +647,28 @@ impl<'gc> EditText<'gc> {
             .set(flag, value);
     }
 
+    /// Returns the matrix for transforming from layout
+    /// coordinate space into this object's local space.
+    fn layout_to_local_matrix(self, data: &EditTextData) -> Matrix {
+        Matrix::translate(
+            data.bounds.x_min + Self::GUTTER - Twips::from_pixels(data.hscroll),
+            data.bounds.y_min + Self::GUTTER - data.vertical_scroll_offset(),
+        )
+    }
+
+    /// Returns the matrix for transforming from this object's
+    /// local space into its layout coordinate space.
+    fn local_to_layout_matrix(self, data: &EditTextData) -> Matrix {
+        // layout_to_local contains only a translation,
+        // no need to inverse the matrix generically.
+        let Matrix { tx, ty, .. } = self.layout_to_local_matrix(data);
+        Matrix::translate(-tx, -ty)
+    }
+
+    fn local_to_layout(&self, data: &EditTextData, local: Point<Twips>) -> Point<Twips> {
+        self.local_to_layout_matrix(data) * local
+    }
+
     pub fn replace_text(
         self,
         from: usize,
