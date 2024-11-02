@@ -969,15 +969,9 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                 true,
                 &context.stage.view_matrix(),
             );
-            context.commands.draw_rect(
-                background,
-                Matrix::create_box(
-                    bounds.width().to_pixels() as f32,
-                    bounds.height().to_pixels() as f32,
-                    bounds.x_min,
-                    bounds.y_min,
-                ),
-            );
+            context
+                .commands
+                .draw_rect(background, Matrix::create_box_from_rectangle(&bounds));
         }
         apply_standard_mask_and_scroll(this, context, |context| this.render_self(context));
     }
