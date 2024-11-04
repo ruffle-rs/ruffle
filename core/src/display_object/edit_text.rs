@@ -906,19 +906,9 @@ impl<'gc> EditText<'gc> {
                 }
             }
         }
-        if flags.contains(LayoutDebugBoxesFlag::BOX_INTERIOR) {
-            for lbox in layout.boxes_iter() {
-                context.draw_rect_outline(Color::RED, lbox.interior_bounds().into(), Twips::ONE);
-            }
-        }
         if flags.contains(LayoutDebugBoxesFlag::BOX) {
             for lbox in layout.boxes_iter() {
                 context.draw_rect_outline(Color::RED, lbox.bounds().into(), Twips::ONE);
-            }
-        }
-        if flags.contains(LayoutDebugBoxesFlag::LINE_INTERIOR) {
-            for line in layout.lines() {
-                context.draw_rect_outline(Color::BLUE, line.interior_bounds().into(), Twips::ONE);
             }
         }
         if flags.contains(LayoutDebugBoxesFlag::LINE) {
@@ -2781,9 +2771,7 @@ bitflags::bitflags! {
         const TEXT_EXTERIOR = 1 << 1;
         const TEXT = 1 << 2;
         const LINE = 1 << 3;
-        const LINE_INTERIOR = 1 << 4;
         const BOX = 1 << 5;
-        const BOX_INTERIOR = 1 << 6;
         const CHAR = 1 << 7;
     }
 }
