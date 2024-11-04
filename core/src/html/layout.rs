@@ -185,13 +185,12 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                         (starting_pos, underline_color)
                     {
                         if tf.underline.unwrap_or(false)
-                            && underline_baseline + linebox.interior_bounds().origin().y()
+                            && underline_baseline + linebox.bounds().origin().y()
                                 == starting_pos.y()
                             && underline_color == color
                         {
                             //Underline is at the same baseline, extend it
-                            current_width =
-                                Some(linebox.interior_bounds().extent_x() - starting_pos.x());
+                            current_width = Some(linebox.bounds().extent_x() - starting_pos.x());
 
                             line_extended = true;
                         }
@@ -213,10 +212,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
                         if tf.underline.unwrap_or(false) {
                             starting_pos = Some(
-                                linebox.interior_bounds().origin()
+                                linebox.bounds().origin()
                                     + Position::from((Twips::ZERO, underline_baseline)),
                             );
-                            current_width = Some(linebox.interior_bounds().width());
+                            current_width = Some(linebox.bounds().width());
                             underline_color = Some(color);
                         }
                     }
