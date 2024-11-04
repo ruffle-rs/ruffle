@@ -473,9 +473,7 @@ impl DisplayObjectWindow {
                         ("Text Exterior", LayoutDebugBoxesFlag::TEXT_EXTERIOR),
                         ("Text", LayoutDebugBoxesFlag::TEXT),
                         ("Line", LayoutDebugBoxesFlag::LINE),
-                        ("Line Interior", LayoutDebugBoxesFlag::LINE_INTERIOR),
                         ("Box", LayoutDebugBoxesFlag::BOX),
-                        ("Box Interior", LayoutDebugBoxesFlag::BOX_INTERIOR),
                         ("Character", LayoutDebugBoxesFlag::CHAR),
                     ] {
                         let old_value = object.layout_debug_boxes_flag(flag);

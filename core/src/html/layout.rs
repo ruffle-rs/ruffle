@@ -272,9 +272,6 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
             //Flash ignores trailing spaces when aligning lines, so should we
             if self.current_line_span.align != swf::TextAlign::Left {
-                linebox.interior_bounds = linebox
-                    .interior_bounds
-                    .with_size(font.measure(text.trim_end(), params).into());
                 linebox.bounds = linebox
                     .bounds
                     .with_width(font.measure(text.trim_end(), params).0);
@@ -336,11 +333,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                     left_adjustment + align_adjustment + (interim_adjustment * box_count),
                     baseline_adjustment,
                 ));
-                layout_box.interior_bounds += position;
                 layout_box.bounds += position;
             } else if layout_box.is_bullet() {
                 let position = Position::from((Twips::ZERO, baseline_adjustment));
-                layout_box.interior_bounds += position;
                 layout_box.bounds += position;
             }
 
@@ -369,12 +364,6 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         let boxes = mem::take(&mut self.boxes);
         let first_box = boxes.first().unwrap();
         let start = first_box.start();
-        let interior_bounds = boxes
-            .iter()
-            .filter(|b| b.is_text_box())
-            .fold(first_box.interior_bounds, |bounds, b| {
-                bounds + b.interior_bounds
-            });
         let bounds = boxes
             .iter()
             .filter(|b| b.is_text_box())
@@ -389,7 +378,6 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         self.lines.push(LayoutLine {
             index: self.current_line_index,
-            interior_bounds,
             bounds,
             start,
             end,
@@ -626,7 +614,6 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             let box_origin = self.cursor - (Twips::ZERO, ascent).into();
 
             let mut new_box = LayoutBox::from_text(text, start, end, font, span);
-            new_box.interior_bounds = BoxBounds::from_position_and_size(box_origin, text_size);
             new_box.bounds = BoxBounds::from_position_and_size(
                 box_origin,
                 Size::from((text_size.width(), ascent + descent)),
@@ -665,7 +652,6 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
             let pos = self.last_box_end_position();
             let mut new_bullet = LayoutBox::from_bullet(pos, bullet_font, span);
-            new_bullet.interior_bounds = BoxBounds::from_position_and_size(box_origin, text_size);
             new_bullet.bounds = BoxBounds::from_position_and_size(
                 box_origin,
                 Size::from((text_size.width(), ascent + descent)),
@@ -868,16 +854,6 @@ pub struct LayoutLine<'gc> {
     #[collect(require_static)]
     bounds: BoxBounds<Twips>,
 
-    /// Interior line bounds.
-    ///
-    /// It is a union of interior bounds of all layout
-    /// boxes contained within this line.
-    ///
-    /// TODO This probably shouldn't be used, we should
-    ///   always prefer bounds, not interior_bounds.
-    #[collect(require_static)]
-    interior_bounds: BoxBounds<Twips>,
-
     /// The start position of the line (inclusive).
     start: usize,
 
@@ -908,10 +884,6 @@ impl<'gc> LayoutLine<'gc> {
 
     pub fn bounds(&self) -> BoxBounds<Twips> {
         self.bounds
-    }
-
-    pub fn interior_bounds(&self) -> BoxBounds<Twips> {
-        self.interior_bounds
     }
 
     pub fn start(&self) -> usize {
@@ -999,14 +971,6 @@ pub struct LayoutBox<'gc> {
     /// TODO Currently, only text boxes have meaningful bounds.
     #[collect(require_static)]
     bounds: BoxBounds<Twips>,
-
-    /// The rectangle corresponding to the bounds of the rendered content,
-    /// i.e. the smallest rectangle that contains all glyphs.
-    ///
-    /// TODO Currently, only text boxes have meaningful bounds.
-    /// TODO [KJ] Can't we replace it with bounds?
-    #[collect(require_static)]
-    interior_bounds: BoxBounds<Twips>,
 
     /// What content is contained by the content box.
     content: LayoutContent<'gc>,
@@ -1137,7 +1101,6 @@ impl<'gc> LayoutBox<'gc> {
         });
 
         Self {
-            interior_bounds: Default::default(),
             bounds: Default::default(),
             content: LayoutContent::Text {
                 start,
@@ -1156,7 +1119,6 @@ impl<'gc> LayoutBox<'gc> {
         let params = EvalParameters::from_span(span);
 
         Self {
-            interior_bounds: Default::default(),
             bounds: Default::default(),
             content: LayoutContent::Bullet {
                 position,
@@ -1171,7 +1133,6 @@ impl<'gc> LayoutBox<'gc> {
     /// Construct a drawing.
     pub fn from_drawing(position: usize, drawing: Drawing) -> Self {
         Self {
-            interior_bounds: Default::default(),
             bounds: Default::default(),
             content: LayoutContent::Drawing { position, drawing },
         }
@@ -1311,10 +1272,6 @@ pub fn lower_from_text_spans<'gc>(
 impl<'gc> LayoutBox<'gc> {
     pub fn bounds(&self) -> BoxBounds<Twips> {
         self.bounds
-    }
-
-    pub fn interior_bounds(&self) -> BoxBounds<Twips> {
-        self.interior_bounds
     }
 
     pub fn content(&self) -> &LayoutContent<'gc> {
