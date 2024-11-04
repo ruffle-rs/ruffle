@@ -2037,6 +2037,18 @@ export class InnerPlayer {
         // TODO: Move this to whatever function changes the ReadyState to Loaded when we have streaming support.
         this.element.dispatchEvent(new CustomEvent(InnerPlayer.LOADED_DATA));
     }
+
+    avmOutputJson(switcher: number): void {
+        if (this.instance) {
+            this.instance.avm_output_json(switcher);
+        }
+    }
+
+    avmOutputJsonCode(code: number): void {
+        if (this.instance) {
+            this.instance.avm_output_json_code(code);
+        }
+    }
 }
 
 /**
