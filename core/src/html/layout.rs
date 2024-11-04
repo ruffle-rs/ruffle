@@ -944,11 +944,11 @@ impl<'gc> LayoutLine<'gc> {
     }
 
     pub fn offset_y(&self) -> Twips {
-        self.interior_bounds().offset_y()
+        self.bounds().offset_y()
     }
 
     pub fn extent_y(&self) -> Twips {
-        self.interior_bounds().extent_y()
+        self.bounds().extent_y()
     }
 
     pub fn boxes_iter(&self) -> Iter<'_, LayoutBox<'gc>> {
