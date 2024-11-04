@@ -403,9 +403,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         // Update layout bounds
         if let Some(lb) = &mut self.bounds {
-            *lb += interior_bounds;
+            *lb += bounds;
         } else {
-            self.bounds = Some(interior_bounds);
+            self.bounds = Some(bounds);
         }
     }
 
