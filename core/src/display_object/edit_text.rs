@@ -814,6 +814,11 @@ impl<'gc> EditText<'gc> {
 
         let layout_exterior_bounds = edit_text.layout.exterior_bounds();
 
+        // TODO [KJ] The code below that modifies bounds is certainly wrong.
+        //   We should take into account the order of operations performed on the field,
+        //   and that the field might have auto size enabled and disabled.
+        //   Auto size should not modify the state of edittext in such a way that
+        //   the original cannot be recovered.
         if autosize != AutoSizeMode::None {
             if !is_word_wrap {
                 // The edit text's bounds needs to have the padding baked in.
