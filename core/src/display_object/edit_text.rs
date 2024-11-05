@@ -762,7 +762,7 @@ impl<'gc> EditText<'gc> {
     /// the text, and no higher-level representation. Specifically, CSS should
     /// have already been calculated and applied to HTML trees lowered into the
     /// text-span representation.
-    fn relayout(self, context: &mut UpdateContext<'gc>) {
+    pub fn relayout(self, context: &mut UpdateContext<'gc>) {
         let mut edit_text = self.0.write(context.gc_context);
         let autosize = edit_text.autosize;
         let is_word_wrap = edit_text.flags.contains(EditTextFlag::WORD_WRAP);
