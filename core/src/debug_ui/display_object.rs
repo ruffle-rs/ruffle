@@ -485,6 +485,14 @@ impl DisplayObjectWindow {
                     }
                 });
                 ui.end_row();
+
+                ui.label("Actions");
+                ui.vertical(|ui| {
+                    if ui.button("Relayout").clicked() {
+                        object.relayout(context);
+                    }
+                });
+                ui.end_row();
             });
 
         CollapsingHeader::new("Span List")
