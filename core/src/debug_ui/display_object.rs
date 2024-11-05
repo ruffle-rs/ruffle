@@ -15,6 +15,7 @@ use crate::display_object::{
     TInteractiveObject,
 };
 use crate::focus_tracker::Highlight;
+use crate::html::TextFormat;
 use egui::collapsing_header::CollapsingState;
 use egui::{
     Button, Checkbox, CollapsingHeader, ComboBox, DragValue, Grid, Id, Label, Sense, TextEdit, Ui,
@@ -495,6 +496,12 @@ impl DisplayObjectWindow {
                 }
                 ui.end_row();
 
+                ui.label("Default Text Format");
+                ui.horizontal(|ui| {
+                    show_text_format(ui, object.spans().default_format());
+                });
+                ui.end_row();
+
                 ui.label("Layout Debug Boxes");
                 ui.vertical(|ui| {
                     for (name, flag) in [
@@ -531,27 +538,16 @@ impl DisplayObjectWindow {
                     .striped(true)
                     .show(ui, |ui| {
                         ui.label("Span");
-                        ui.label("URL");
-                        ui.label("Font");
-                        ui.label("Style");
+                        ui.label("Text Format");
                         ui.label("Text");
                         ui.end_row();
 
                         for (start, end, text, format) in object.spans().iter_spans() {
                             ui.label(format!("{}–{} ({})", start, end, format.span_length));
 
-                            ui.label(format.url.to_string());
-                            ui.label(format!("{}, {}", format.font.face, format.font.size));
-
-                            if format.style.bold && format.style.italic {
-                                ui.label("Bold Italic");
-                            } else if format.style.bold {
-                                ui.label("Bold");
-                            } else if format.style.italic {
-                                ui.label("Italic");
-                            } else {
-                                ui.label("Regular");
-                            }
+                            ui.horizontal(|ui| {
+                                show_text_format(ui, &format.get_text_format());
+                            });
 
                             ui.label(text.to_string());
                             ui.end_row();
@@ -1395,6 +1391,50 @@ fn bounds_label(ui: &mut Ui, bounds: Rectangle<Twips>, hover: &mut Option<Rectan
     } else {
         *hover = None;
     }
+}
+
+fn show_text_format(ui: &mut Ui, tf: &TextFormat) {
+    ui.weak("(hover)").on_hover_ui(|ui| {
+        ui.style_mut().interaction.selectable_labels = true;
+        Grid::new(ui.id().with("text_format_table"))
+            .num_columns(2)
+            .striped(true)
+            .show(ui, |ui| {
+                for (key, value) in [
+                    ("Font Face", tf.font.as_ref().map(|v| v.to_string())),
+                    ("Font Size", tf.size.map(|v| v.to_string())),
+                    ("Color", tf.color.map(|v| format!("{v:?}"))),
+                    ("Align", tf.align.map(|v| format!("{v:?}"))),
+                    ("Bold?", tf.bold.map(|v| v.to_string())),
+                    ("Italic?", tf.italic.map(|v| v.to_string())),
+                    ("Underline?", tf.underline.map(|v| v.to_string())),
+                    ("Left Margin", tf.left_margin.map(|v| v.to_string())),
+                    ("Right Margin", tf.right_margin.map(|v| v.to_string())),
+                    ("Indent", tf.indent.map(|v| v.to_string())),
+                    ("Block Indent", tf.block_indent.map(|v| v.to_string())),
+                    ("Kerning?", tf.kerning.map(|v| v.to_string())),
+                    ("Leading", tf.leading.map(|v| v.to_string())),
+                    ("Letter Spacing", tf.letter_spacing.map(|v| v.to_string())),
+                    ("Tab Stops", tf.tab_stops.as_ref().map(|v| format!("{v:?}"))),
+                    ("Bullet?", tf.bullet.map(|v| v.to_string())),
+                    ("URL", tf.url.as_ref().map(|v| v.to_string())),
+                    ("Target", tf.target.as_ref().map(|v| v.to_string())),
+                    ("Display", tf.display.map(|v| format!("{v:?}"))),
+                ] {
+                    ui.label(key);
+                    if let Some(value) = value {
+                        if !value.is_empty() {
+                            ui.label(value);
+                        } else {
+                            ui.weak("Empty");
+                        }
+                    } else {
+                        ui.weak("None");
+                    }
+                    ui.end_row();
+                }
+            });
+    });
 }
 
 pub fn open_display_object_button<'gc>(
