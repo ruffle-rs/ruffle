@@ -862,6 +862,23 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     }
 }
 
+/// Construct a new layout from text spans.
+pub fn lower_from_text_spans<'gc>(
+    fs: &FormatSpans,
+    context: &mut UpdateContext<'gc>,
+    movie: Arc<SwfMovie>,
+    bounds: Twips,
+    is_word_wrap: bool,
+    font_type: FontType,
+) -> Layout<'gc> {
+    let mut layout_context =
+        LayoutContext::new(movie, bounds, fs.displayed_text(), is_word_wrap, font_type);
+
+    layout_context.lay_out_spans(context, fs);
+
+    layout_context.end_layout(context, fs)
+}
+
 /// A `Layout` represents a fully laid-out text field.
 /// It consists of [`LayoutLine`]s.
 #[derive(Clone, Debug, Collect)]
@@ -1255,26 +1272,7 @@ impl<'gc> LayoutBox<'gc> {
             content: LayoutContent::Drawing { position, drawing },
         }
     }
-}
 
-/// Construct a new layout from text spans.
-pub fn lower_from_text_spans<'gc>(
-    fs: &FormatSpans,
-    context: &mut UpdateContext<'gc>,
-    movie: Arc<SwfMovie>,
-    bounds: Twips,
-    is_word_wrap: bool,
-    font_type: FontType,
-) -> Layout<'gc> {
-    let mut layout_context =
-        LayoutContext::new(movie, bounds, fs.displayed_text(), is_word_wrap, font_type);
-
-    layout_context.lay_out_spans(context, fs);
-
-    layout_context.end_layout(context, fs)
-}
-
-impl<'gc> LayoutBox<'gc> {
     pub fn bounds(&self) -> BoxBounds<Twips> {
         self.bounds
     }
