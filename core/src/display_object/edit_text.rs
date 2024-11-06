@@ -252,12 +252,19 @@ impl<'gc> EditText<'gc> {
             FontType::Device
         };
 
+        let is_word_wrap = swf_tag.is_word_wrap();
+        let content_width = if autosize == AutoSizeMode::None || is_word_wrap {
+            Some(swf_tag.bounds().width() - Self::GUTTER * 2)
+        } else {
+            None
+        };
+
         let layout = html::lower_from_text_spans(
             &text_spans,
             context,
             swf_movie.clone(),
-            swf_tag.bounds().width() - Self::GUTTER * 2,
-            swf_tag.is_word_wrap(),
+            content_width,
+            is_word_wrap,
             font_type,
         );
 
@@ -793,9 +800,9 @@ impl<'gc> EditText<'gc> {
 
         // Determine the internal width available for content layout.
         let content_width = if autosize == AutoSizeMode::None || is_word_wrap {
-            edit_text.requested_width - padding
+            Some(edit_text.requested_width - padding)
         } else {
-            edit_text.bounds.width() - padding
+            None
         };
 
         let new_layout = html::lower_from_text_spans(
