@@ -52,7 +52,7 @@ package flash.geom {
 			var toMat:Matrix3D = mat.clone();
 			toMat.pointAt(pos, at, up);
 
-			return Matrix3D.interpolate(thisMat, toMat, percent, correct);
+			return Matrix3D.interpolate(thisMat, toMat, percent);
 			//stub_method("flash.geom.Utils3D", "pointTowards");
 
 		}
