@@ -867,6 +867,36 @@ pub fn lower_from_text_spans<'gc>(
     fs: &FormatSpans,
     context: &mut UpdateContext<'gc>,
     movie: Arc<SwfMovie>,
+    requested_width: Option<Twips>,
+    is_word_wrap: bool,
+    font_type: FontType,
+) -> Layout<'gc> {
+    let requested_width = requested_width.unwrap_or_else(|| {
+        // When we don't know the width of the text field, we have to lay out
+        // text two times: the first time to calculate the proper width, and
+        // the second time to lay out text knowing the proper width.
+        let layout = lower_from_text_spans_known_width(
+            fs,
+            context,
+            movie.clone(),
+            Twips::ZERO,
+            false,
+            font_type,
+        );
+        let max_width = layout
+            .lines()
+            .iter()
+            .map(|line| line.bounds().width())
+            .max();
+        max_width.unwrap_or_default()
+    });
+    lower_from_text_spans_known_width(fs, context, movie, requested_width, is_word_wrap, font_type)
+}
+
+fn lower_from_text_spans_known_width<'gc>(
+    fs: &FormatSpans,
+    context: &mut UpdateContext<'gc>,
+    movie: Arc<SwfMovie>,
     bounds: Twips,
     is_word_wrap: bool,
     font_type: FontType,
