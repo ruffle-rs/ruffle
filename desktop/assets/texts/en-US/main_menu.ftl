@@ -20,6 +20,7 @@ file-menu-exit = Exit
 controls-menu = Controls
 controls-menu-suspend = Suspend
 controls-menu-resume = Resume
+controls-menu-step-once = Step Once
 controls-menu-volume = Volume controls
 
 help-menu = Help

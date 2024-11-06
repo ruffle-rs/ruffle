@@ -29,6 +29,7 @@ impl MenuBar {
     const SHORTCUT_OPEN_ADVANCED: KeyboardShortcut =
         KeyboardShortcut::new(Modifiers::COMMAND.plus(Modifiers::SHIFT), Key::O);
     const SHORTCUT_PAUSE: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::P);
+    const SHORTCUT_STEP: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::Space);
     const SHORTCUT_QUIT: KeyboardShortcut = KeyboardShortcut::new(Modifiers::COMMAND, Key::Q);
 
     pub fn new(
@@ -61,11 +62,18 @@ impl MenuBar {
         if egui_ctx.input_mut(|input| input.consume_shortcut(&Self::SHORTCUT_QUIT)) {
             self.request_exit();
         }
-        if egui_ctx.input_mut(|input| input.consume_shortcut(&Self::SHORTCUT_PAUSE)) {
-            if let Some(player) = &mut player {
-                player.set_is_playing(!player.is_playing());
+
+        if let Some(player) = &mut player {
+            let playing = player.is_playing();
+            if egui_ctx.input_mut(|input| input.consume_shortcut(&Self::SHORTCUT_PAUSE)) {
+                player.set_is_playing(!playing);
+            }
+            if !playing && egui_ctx.input_mut(|input| input.consume_shortcut(&Self::SHORTCUT_STEP))
+            {
+                player.suspend_after_next_frame();
             }
         }
+
         let mut fullscreen_pressed =
             egui_ctx.input_mut(|input| input.consume_shortcut(&Self::SHORTCUT_FULLSCREEN));
         if cfg!(windows) && !fullscreen_pressed {
@@ -92,22 +100,7 @@ impl MenuBar {
             menu::bar(ui, |ui| {
                 self.file_menu(locale, ui, dialogs, player.is_some());
                 self.view_menu(locale, ui, &mut player);
-
-                menu::menu_button(ui, text(locale, "controls-menu"), |ui| {
-                    ui.add_enabled_ui(player.is_some(), |ui| {
-                        let playing = player.as_ref().map(|p| p.is_playing()).unwrap_or_default();
-                        if Button::new(text(locale, if playing { "controls-menu-suspend" } else { "controls-menu-resume" })).shortcut_text(ui.ctx().format_shortcut(&Self::SHORTCUT_PAUSE)).ui(ui).clicked() {
-                            ui.close_menu();
-                            if let Some(player) = &mut player {
-                                player.set_is_playing(!player.is_playing());
-                            }
-                        }
-                    });
-                    if Button::new(text(locale, "controls-menu-volume")).ui(ui).clicked() {
-                        dialogs.open_volume_controls();
-                        ui.close_menu();
-                    }
-                });
+                self.controls_menu(locale, ui, dialogs, &mut player);
                 menu::menu_button(ui, text(locale, "bookmarks-menu"), |ui| {
                     if Button::new(text(locale, "bookmarks-menu-add")).ui(ui).clicked() {
                         ui.close_menu();
@@ -414,6 +407,55 @@ impl MenuBar {
                     }
                 });
             });
+        });
+    }
+
+    fn controls_menu(
+        &mut self,
+        locale: &LanguageIdentifier,
+        ui: &mut egui::Ui,
+        dialogs: &mut Dialogs,
+        player: &mut Option<&mut Player>,
+    ) {
+        menu::menu_button(ui, text(locale, "controls-menu"), |ui| {
+            ui.add_enabled_ui(player.is_some(), |ui| {
+                let playing = player.as_ref().map(|p| p.is_playing()).unwrap_or_default();
+                let btn_name = if playing {
+                    "controls-menu-suspend"
+                } else {
+                    "controls-menu-resume"
+                };
+                if Button::new(text(locale, btn_name))
+                    .shortcut_text(ui.ctx().format_shortcut(&Self::SHORTCUT_PAUSE))
+                    .ui(ui)
+                    .clicked()
+                {
+                    ui.close_menu();
+                    if let Some(player) = player {
+                        player.set_is_playing(!playing);
+                    }
+                }
+
+                ui.add_enabled_ui(!playing, |ui| {
+                    if Button::new(text(locale, "controls-menu-step-once"))
+                        .shortcut_text(ui.ctx().format_shortcut(&Self::SHORTCUT_STEP))
+                        .ui(ui)
+                        .clicked()
+                    {
+                        ui.close_menu();
+                        if let Some(player) = player {
+                            player.suspend_after_next_frame();
+                        }
+                    }
+                });
+            });
+            if Button::new(text(locale, "controls-menu-volume"))
+                .ui(ui)
+                .clicked()
+            {
+                dialogs.open_volume_controls();
+                ui.close_menu();
+            }
         });
     }
 
