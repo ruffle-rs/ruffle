@@ -161,6 +161,12 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         }
     }
 
+    fn lay_out_spans(&mut self, context: &mut UpdateContext<'gc>, fs: &'a FormatSpans) {
+        for (span_start, _end, span_text, span) in fs.iter_spans() {
+            self.lay_out_span(context, span_start, span_text, span);
+        }
+    }
+
     fn lay_out_span(
         &mut self,
         context: &mut UpdateContext<'gc>,
@@ -1263,9 +1269,7 @@ pub fn lower_from_text_spans<'gc>(
     let mut layout_context =
         LayoutContext::new(movie, bounds, fs.displayed_text(), is_word_wrap, font_type);
 
-    for (span_start, _end, span_text, span) in fs.iter_spans() {
-        layout_context.lay_out_span(context, span_start, span_text, span);
-    }
+    layout_context.lay_out_spans(context, fs);
 
     layout_context.end_layout(context, fs)
 }
