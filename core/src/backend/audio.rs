@@ -532,6 +532,26 @@ impl<'gc> AudioManager<'gc> {
         });
     }
 
+    /// Stops any sound associated with the given Display Object and its children. The DO must represent the parent.
+    /// Sounds associated with DOs are an AVM1/Timeline concept and should not be called from AVM2 scripts.
+    pub fn stop_sounds_on_parent_and_children(
+        &mut self,
+        audio: &mut dyn AudioBackend,
+        display_object: DisplayObject<'gc>,
+    ) {
+        self.sounds.retain(move |sound| {
+            let mut other = sound.display_object;
+            while let Some(other_do) = other {
+                if DisplayObject::ptr_eq(other_do, display_object) {
+                    audio.stop_sound(sound.instance);
+                    return false;
+                }
+                other = other_do.parent();
+            }
+            true
+        });
+    }
+
     pub fn stop_all_sounds(&mut self, audio: &mut dyn AudioBackend) {
         self.sounds.clear();
         audio.stop_all_sounds();
