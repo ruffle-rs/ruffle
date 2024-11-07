@@ -2925,9 +2925,11 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             mc.stop_audio_stream(context);
         }
 
-        context
-            .audio_manager
-            .stop_sounds_with_display_object(context.audio, (*self).into());
+        if self.is_root() {
+            context
+                .audio_manager
+                .stop_sounds_on_parent_and_children(context.audio, (*self).into());
+        }
 
         // If this clip is currently pending removal, then it unload event will have already been dispatched
         if !self.avm1_pending_removal() {

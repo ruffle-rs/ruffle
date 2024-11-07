@@ -404,9 +404,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         } else if let Some(node) = self.masker() {
             node.set_maskee(context.gc(), None, true);
         }
-        context
-            .audio_manager
-            .stop_sounds_with_display_object(context.audio, (*self).into());
+
         self.set_avm1_removed(context.gc(), true);
     }
 }
