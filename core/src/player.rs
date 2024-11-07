@@ -273,6 +273,13 @@ type Log = Box<dyn LogBackend>;
 type Ui = Box<dyn UiBackend>;
 type Video = Box<dyn VideoBackend>;
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+enum RunState {
+    Playing,
+    Suspended,
+    Stepping,
+}
+
 pub struct Player {
     /// The version of the player we're emulating.
     ///
@@ -293,7 +300,7 @@ pub struct Player {
 
     swf: Arc<SwfMovie>,
 
-    is_playing: bool,
+    run_state: RunState,
     needs_render: bool,
 
     renderer: Renderer,
@@ -522,6 +529,12 @@ impl Player {
                 if self.time_offset > 0 {
                     self.frame_accumulator -= self.time_offset as f64;
                 }
+
+                // If we are stepping a single frame, immediately suspend ourselves.
+                if self.run_state == RunState::Stepping {
+                    self.set_run_state(RunState::Suspended);
+                    break;
+                }
             }
 
             // Now that we're done running code,
@@ -583,7 +596,10 @@ impl Player {
     }
 
     pub fn is_playing(&self) -> bool {
-        self.is_playing
+        match self.run_state {
+            RunState::Playing | RunState::Stepping => true,
+            RunState::Suspended => false,
+        }
     }
 
     pub fn mouse_in_stage(&self) -> bool {
@@ -850,14 +866,35 @@ impl Player {
         }
     }
 
-    pub fn set_is_playing(&mut self, v: bool) {
-        if v {
+    fn set_run_state(&mut self, state: RunState) {
+        let play_audio = match state {
+            RunState::Playing => true,
+            RunState::Suspended => false,
+            // Do not run audio when stepping frame-by-frame,
+            // to avoid unpleasant short bursts of sound.
+            RunState::Stepping => false,
+        };
+
+        if play_audio {
             // Allow auto-play after user gesture for web backends.
             self.audio.play();
         } else {
             self.audio.pause();
         }
-        self.is_playing = v;
+
+        self.run_state = state;
+    }
+
+    pub fn set_is_playing(&mut self, v: bool) {
+        self.set_run_state(if v {
+            RunState::Playing
+        } else {
+            RunState::Suspended
+        });
+    }
+
+    pub fn suspend_after_next_frame(&mut self) {
+        self.set_run_state(RunState::Stepping);
     }
 
     pub fn needs_render(&self) -> bool {
@@ -2838,7 +2875,11 @@ impl PlayerBuilder {
                 instance_counter: 0,
                 player_version,
                 player_runtime: self.player_runtime,
-                is_playing: self.autoplay,
+                run_state: if self.autoplay {
+                    RunState::Playing
+                } else {
+                    RunState::Suspended
+                },
                 needs_render: true,
                 self_reference: self_ref.clone(),
                 load_behavior: self.load_behavior,
