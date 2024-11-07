@@ -1005,61 +1005,24 @@ export class InnerPlayer {
         this.instance?.set_fullscreen(this.isFullscreen);
     }
 
-    /**
-     * Prompt the user to download a file.
-     *
-     * @param blob The content to download.
-     * @param name The name to give the file.
-     */
-    private saveFile(blob: Blob, name: string): void {
-        const blobURL = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = blobURL;
-        link.download = name;
-        link.click();
-        URL.revokeObjectURL(blobURL);
-    }
-
     private checkIfTouch(event: PointerEvent): void {
         this.isTouch =
             event.pointerType === "touch" || event.pointerType === "pen";
     }
 
-    private base64ToArray(bytesBase64: string): Uint8Array {
-        const byteString = atob(bytesBase64);
-        const ia = new Uint8Array(byteString.length);
-        for (let i = 0; i < byteString.length; i++) {
-            ia[i] = byteString.charCodeAt(i);
-        }
-        return ia;
-    }
-
-    private base64ToBlob(bytesBase64: string, mimeString: string): Blob {
-        const ab = this.base64ToArray(bytesBase64);
-        const blob = new Blob([ab], { type: mimeString });
-        return blob;
-    }
-
     /**
-     * @returns If the string represent a base-64 encoded SOL file
-     * Check if string is a base-64 encoded SOL file
-     * @param solData The base-64 encoded SOL string
+     * Confirm reload or delete of save file.
+     *
+     * @param solKey The key of the SOL file.
+     * @param b64SolData The base-64 encoded SOL string.
+     * @param replace Whether to replace or delete the save file.
      */
-    private isB64SOL(solData: string): boolean {
-        try {
-            const decodedData = atob(solData);
-            return decodedData.slice(6, 10) === "TCSO";
-        } catch (e) {
-            return false;
-        }
-    }
-
     private confirmReloadSave(
         solKey: string,
         b64SolData: string,
         replace: boolean,
-    ) {
-        if (this.isB64SOL(b64SolData)) {
+    ): void {
+        if (isB64SOL(b64SolData)) {
             if (localStorage[solKey]) {
                 if (!replace) {
                     const confirmDelete = confirm(text("save-delete-prompt"));
@@ -1098,11 +1061,12 @@ export class InnerPlayer {
         }
     }
 
+
     /**
      * Replace save from SOL file.
      *
-     * @param event The change event fired
-     * @param solKey The localStorage save file key
+     * @param event The change event fired.
+     * @param solKey The localStorage save file key.
      */
     private replaceSOL(event: Event, solKey: string): void {
         const fileInput = event.target as HTMLInputElement;
@@ -1143,20 +1107,38 @@ export class InnerPlayer {
         return Object.keys(localStorage).some((key) => {
             const solName = key.split("/").pop();
             const solData = localStorage.getItem(key);
-            return solName && solData && this.isB64SOL(solData);
+            return solName && solData && isB64SOL(solData);
         });
     }
 
     /**
      * Delete local save.
      *
-     * @param key The key to remove from local storage
+     * @param key The key to remove from local storage.
      */
     private deleteSave(key: string): void {
         const b64SolData = localStorage.getItem(key);
         if (b64SolData) {
             this.confirmReloadSave(key, b64SolData, false);
         }
+    }
+
+    private SaveRow = ({rowKey, solName, solData}: {rowKey: string, solName: string, solData: string}) => {
+        return (
+            <tr>
+                <td title={ rowKey }>{ solName }</td>
+                <td>
+                    <span class="save-option" id="download-save" title={ text("save-download") } onClick={() => saveFile(base64ToBlob(solData, "application/octet-stream"), solName + ".sol")}></span>
+                </td>
+                <td>
+                    <input type="file" accept=".sol" class="replace-save" id={ "replace-save-" + rowKey } onChange={(ev) => this.replaceSOL(ev, rowKey)} />
+                    <label for={ "replace-save-" + rowKey } class="save-option" id="replace-save" title={ text("save-replace") }></label>
+                </td>
+                <td>
+                    <span class="save-option" id="delete-save" title={ text("save-delete") } onClick={() => this.deleteSave(rowKey)}></span>
+                </td>
+            </tr>
+        );
     }
 
     /**
@@ -1171,58 +1153,8 @@ export class InnerPlayer {
         Object.keys(localStorage).forEach((key) => {
             const solName = key.split("/").pop();
             const solData = localStorage.getItem(key);
-            if (solName && solData && this.isB64SOL(solData)) {
-                const row = document.createElement("TR");
-                const keyCol = document.createElement("TD");
-                keyCol.textContent = solName;
-                keyCol.title = key;
-                const downloadCol = document.createElement("TD");
-                const downloadSpan = document.createElement("SPAN");
-                downloadSpan.className = "save-option";
-                downloadSpan.id = "download-save";
-                downloadSpan.title = text("save-download");
-                downloadSpan.addEventListener("click", () => {
-                    const blob = this.base64ToBlob(
-                        solData,
-                        "application/octet-stream",
-                    );
-                    this.saveFile(blob, solName + ".sol");
-                });
-                downloadCol.appendChild(downloadSpan);
-                const replaceCol = document.createElement("TD");
-                const replaceInput = document.createElement(
-                    "INPUT",
-                ) as HTMLInputElement;
-                replaceInput.type = "file";
-                replaceInput.accept = ".sol";
-                replaceInput.className = "replace-save";
-                replaceInput.id = "replace-save-" + key;
-                const replaceLabel = document.createElement(
-                    "LABEL",
-                ) as HTMLLabelElement;
-                replaceLabel.htmlFor = "replace-save-" + key;
-                replaceLabel.className = "save-option";
-                replaceLabel.id = "replace-save";
-                replaceLabel.title = text("save-replace");
-                replaceInput.addEventListener("change", (event) =>
-                    this.replaceSOL(event, key),
-                );
-                replaceCol.appendChild(replaceInput);
-                replaceCol.appendChild(replaceLabel);
-                const deleteCol = document.createElement("TD");
-                const deleteSpan = document.createElement("SPAN");
-                deleteSpan.className = "save-option";
-                deleteSpan.id = "delete-save";
-                deleteSpan.title = text("save-delete");
-                deleteSpan.addEventListener("click", () =>
-                    this.deleteSave(key),
-                );
-                deleteCol.appendChild(deleteSpan);
-                row.appendChild(keyCol);
-                row.appendChild(downloadCol);
-                row.appendChild(replaceCol);
-                row.appendChild(deleteCol);
-                saveTable.appendChild(row);
+            if (solName && solData && isB64SOL(solData)) {
+                saveTable.appendChild(<this.SaveRow rowKey={key} solName={solName} solData={solData} />);
             }
         });
     }
@@ -1236,8 +1168,8 @@ export class InnerPlayer {
         Object.keys(localStorage).forEach((key) => {
             let solName = String(key.split("/").pop());
             const solData = localStorage.getItem(key);
-            if (solData && this.isB64SOL(solData)) {
-                const array = this.base64ToArray(solData);
+            if (solData && isB64SOL(solData)) {
+                const array = base64ToArray(solData);
                 const duplicate = duplicateNames.filter(
                     (value) => value === solName,
                 ).length;
@@ -1249,7 +1181,7 @@ export class InnerPlayer {
             }
         });
         const blob = new Blob([zip.save()], { type: "application/zip" });
-        this.saveFile(blob, "saves.zip");
+        saveFile(blob, "saves.zip");
     }
 
     /**
@@ -1287,7 +1219,7 @@ export class InnerPlayer {
                     return;
                 }
                 const blob = await response.blob();
-                this.saveFile(blob, swfFileName(this.swfUrl));
+                saveFile(blob, swfFileName(this.swfUrl));
             } else {
                 console.error("SWF download failed");
             }
@@ -2231,6 +2163,100 @@ export function isFallbackElement(elem: Element): boolean {
         parent = parent.parentElement;
     }
     return false;
+}
+
+/**
+ * Prompt the user to download a file.
+ *
+ * @param blob The content to download.
+ * @param name The name to give the file.
+ */
+function saveFile(blob: Blob, name: string): void {
+    const blobURL = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = blobURL;
+    link.download = name;
+    link.click();
+    URL.revokeObjectURL(blobURL);
+}
+
+/**
+ * Create a new Uint8Array object from a base64-encoded string.
+ *
+ * @param bytesBase64 The base64-encoded string.
+ * @returns The new Uint8Array.
+ */
+function base64ToArray(bytesBase64: string): Uint8Array {
+    const byteString = atob(bytesBase64);
+    return Uint8Array.from(byteString, char => char.charCodeAt(0));
+}
+
+/**
+ * Create a new Blob of the given type from a base64-encoded string.
+ *
+ * @param bytesBase64 The base64-encoded string..
+ * @returns The new Blob.
+ */
+function base64ToBlob(bytesBase64: string, mimeString: string): Blob {
+    const ab = base64ToArray(bytesBase64);
+    const blob = new Blob([ab], { type: mimeString });
+    return blob;
+}
+
+/**
+ * Check if string is a base-64 encoded SOL file.
+ *
+ * @param solData The base-64 encoded SOL string.
+ * @returns If the string represent a base-64 encoded SOL file.
+ */
+function isB64SOL(solData: string): boolean {
+    try {
+        const decodedData = atob(solData);
+        return isSolData(decodedData);
+    } catch (e) {
+        return false;
+    }
+}
+
+/**
+ * Check if string is structured like SOL data.
+ * See https://www.sans.org/blog/local-shared-objects-aka-flash-cookies/.
+ *
+ * @param data The SOL string.
+ * @returns If the string seemingly represents an SOL file.
+ */
+function isSolData(data: string): boolean {
+    // Every check for proper file structure is inverted and if any are true we return false
+
+    // Two bytes magic value (should be 0x00 0xbf)
+    if (data.charCodeAt(0) !== 0x00 || data.charCodeAt(1) !== 0xbf) return false;
+
+    // Four bytes length of LSO file excluding the length and magic value (6).
+    // First byte code * 256^3 + second byte code * 256^2 + third byte code * 256^1 + fourth byte code * 256^0 (1) + 6
+    const solLength = [0, 1, 2, 3].reduce((acc, i) => acc + data.charCodeAt(i + 2) * (256 ** (3 - i)), 6);
+    // The length of the file should be the length specified in the header
+    if (solLength !== data.length) return false;
+
+    // Four bytes magic value (ASCII value of TCSO)
+    if (data.slice(6, 10) !== "TCSO") return false;
+
+    // Six bytes of padding, always 0x00 0x04 0x00 0x00 0x00 0x00
+    const markers = [0x00, 0x04, 0x00, 0x00, 0x00, 0x00];
+    for (let i = 0; i < markers.length; i++) {
+        if (data.charCodeAt(10 + i) !== markers[i]) return false;
+    }
+
+    // Two bytes length of the object name
+    // First byte code * 256 + second byte code
+    const nameLength = data.charCodeAt(16) * 256 + data.charCodeAt(17);
+
+    // Three bytes of padding after the object name, always 0x00 0x00 0x00
+    if (data.slice(18 + nameLength, 18 + nameLength + 3) !== "\x00\x00\x00") {
+        return false;
+    }
+
+    // The structure makes this look like an SOL file up until the data
+    return true;
 }
 
 /**
