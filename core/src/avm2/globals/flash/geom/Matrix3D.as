@@ -88,7 +88,9 @@ package flash.geom {
 		}
 
 		public function set rawData(value:Vector.<Number>):void {
-			this._rawData = value.AS3::concat();
+			if (value != null) {
+				this._rawData = value.AS3::concat();
+			}
 		}
 
 		public function Matrix3D(v:Vector.<Number> = null) {
