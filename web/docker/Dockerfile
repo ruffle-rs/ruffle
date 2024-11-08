@@ -11,7 +11,7 @@ RUN wget --progress=:giga https://github.com/WebAssembly/binaryen/releases/downl
     mv wasm-opt /usr/local/bin
 
 # Installing Rust using rustup:
-RUN wget 'https://sh.rustup.rs' --quiet -O- | sh -s -- -y --profile minimal --target wasm32-unknown-unknown
+RUN wget 'https://sh.rustup.rs' --quiet -O- | sh -s -- -y --profile minimal --target wasm32-unknown-unknown --component rust-src
 ENV PATH="/root/.cargo/bin:$PATH"
 # wasm-bindgen-cli version must match wasm-bindgen crate version.
 # Be sure to update in test_web.yml, release_nightly.yml, Cargo.toml, and web/README.md as well.

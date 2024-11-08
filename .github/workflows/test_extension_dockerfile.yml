@@ -21,6 +21,7 @@ jobs:
         with:
           toolchain: stable
           targets: wasm32-unknown-unknown
+          components: rust-src
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
