@@ -393,7 +393,12 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
     }
 
     fn avm1_unload(&self, context: &mut UpdateContext<'gc>) {
+        for child in self.iter_render_list() {
+            child.avm1_unload(context);
+        }
+
         self.drop_focus(context);
+
         if let Some(node) = self.maskee() {
             node.set_masker(context.gc(), None, true);
         } else if let Some(node) = self.masker() {
