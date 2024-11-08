@@ -73,6 +73,9 @@ pub struct DisplayObjectWindow {
     hovered_debug_rect: Option<DisplayObjectHandle>,
     hovered_bounds: Option<Rectangle<Twips>>,
     search: String,
+
+    /// A buffer for editing EditText
+    html_text: String,
 }
 
 impl Default for DisplayObjectWindow {
@@ -89,6 +92,7 @@ impl Default for DisplayObjectWindow {
             hovered_debug_rect: None,
             hovered_bounds: None,
             search: Default::default(),
+            html_text: Default::default(),
         }
     }
 }
@@ -554,6 +558,26 @@ impl DisplayObjectWindow {
                         }
                     });
             });
+
+        let html_text_response = CollapsingHeader::new("HTML Text")
+            .id_salt(ui.id().with("html-text"))
+            .show(ui, |ui| {
+                ui.add_sized(
+                    ui.available_size(),
+                    TextEdit::multiline(&mut self.html_text),
+                );
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if ui.button("Set").clicked() {
+                        object.set_html_text(&WString::from_utf8(&self.html_text), context);
+                    }
+                    if ui.button("Reset").clicked() {
+                        self.html_text = object.html_text().to_string();
+                    }
+                });
+            });
+        if html_text_response.fully_closed() {
+            self.html_text = object.html_text().to_string();
+        }
     }
 
     pub fn show_avm2_button<'gc>(
