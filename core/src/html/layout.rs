@@ -274,7 +274,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             if self.current_line_span.align != swf::TextAlign::Left {
                 linebox.bounds = linebox
                     .bounds
-                    .with_width(font.measure(text.trim_end(), params).0);
+                    .with_width(font.measure(text.trim_end(), params));
             }
 
             if let Some(line_bounds) = &mut line_bounds {
@@ -610,16 +610,16 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             let params = EvalParameters::from_span(span);
             let ascent = font.get_baseline_for_height(params.height());
             let descent = font.get_descent_for_height(params.height());
-            let text_size = Size::from(font.measure(text, params));
+            let text_width = font.measure(text, params);
             let box_origin = self.cursor - (Twips::ZERO, ascent).into();
 
             let mut new_box = LayoutBox::from_text(text, start, end, font, span);
             new_box.bounds = BoxBounds::from_position_and_size(
                 box_origin,
-                Size::from((text_size.width(), ascent + descent)),
+                Size::from((text_width, ascent + descent)),
             );
 
-            self.cursor += (text_size.width(), Twips::ZERO).into();
+            self.cursor += (text_width, Twips::ZERO).into();
             self.append_box(new_box);
         }
     }
@@ -647,14 +647,14 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             let ascent = bullet_font.get_baseline_for_height(params.height());
             let descent = bullet_font.get_descent_for_height(params.height());
             let bullet = WStr::from_units(&[0x2022u16]);
-            let text_size = Size::from(bullet_font.measure(bullet, params));
+            let text_width = bullet_font.measure(bullet, params);
             let box_origin = bullet_cursor - (Twips::ZERO, ascent).into();
 
             let pos = self.last_box_end_position();
             let mut new_bullet = LayoutBox::from_bullet(pos, bullet_font, span);
             new_bullet.bounds = BoxBounds::from_position_and_size(
                 box_origin,
-                Size::from((text_size.width(), ascent + descent)),
+                Size::from((text_width, ascent + descent)),
             );
 
             self.append_box(new_bullet);
