@@ -42,12 +42,25 @@ function cargoBuild({
     profile,
     features,
     rustFlags,
+    extensions,
 }: {
     profile?: string;
     features?: string[];
     rustFlags?: string[];
+    extensions?: boolean;
 }) {
-    let args = ["build", "--locked", "--target", "wasm32-unknown-unknown"];
+    let args =
+        !extensions && process.env["BUILD_WASM_MVP"]
+            ? [
+                  "+nightly",
+                  "build",
+                  "--locked",
+                  "-Z",
+                  "build-std=std,panic_abort",
+                  "--target",
+                  "wasm32-unknown-unknown",
+              ]
+            : ["build", "--locked", "--target", "wasm32-unknown-unknown"];
     if (profile) {
         args.push("--profile", profile);
     }
@@ -99,9 +112,13 @@ function buildWasm(
     let originalWasmPath;
     if (wasmSource === "cargo" || wasmSource === "cargo_and_store") {
         console.log(`Building ${flavor} with cargo...`);
+        if (process.env["BUILD_WASM_MVP"]) {
+            rustFlags.push("-C", "target-cpu=mvp");
+        }
         cargoBuild({
             profile,
             rustFlags,
+            extensions,
         });
         originalWasmPath = `../../../target/wasm32-unknown-unknown/${profile}/ruffle_web.wasm`;
         if (wasmSource === "cargo_and_store") {
