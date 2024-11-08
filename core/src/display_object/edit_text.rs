@@ -191,6 +191,16 @@ impl EditTextData<'_> {
             Twips::ZERO
         }
     }
+
+    fn font_type(&self) -> FontType {
+        if !self.flags.contains(EditTextFlag::USE_OUTLINES) {
+            FontType::Device
+        } else if self.is_tlf {
+            FontType::EmbeddedCFF
+        } else {
+            FontType::Embedded
+        }
+    }
 }
 
 impl<'gc> EditText<'gc> {
@@ -612,6 +622,10 @@ impl<'gc> EditText<'gc> {
         self.relayout(context);
     }
 
+    pub fn font_type(self) -> FontType {
+        self.0.read().font_type()
+    }
+
     pub fn is_html(self) -> bool {
         self.0.read().flags.contains(EditTextFlag::HTML)
     }
@@ -784,21 +798,13 @@ impl<'gc> EditText<'gc> {
             edit_text.bounds.width() - padding
         };
 
-        let font_type = if !edit_text.flags.contains(EditTextFlag::USE_OUTLINES) {
-            FontType::Device
-        } else if edit_text.is_tlf {
-            FontType::EmbeddedCFF
-        } else {
-            FontType::Embedded
-        };
-
         let new_layout = html::lower_from_text_spans(
             &edit_text.text_spans,
             context,
             movie,
             content_width,
             is_word_wrap,
-            font_type,
+            edit_text.font_type(),
         );
 
         edit_text.layout = new_layout;

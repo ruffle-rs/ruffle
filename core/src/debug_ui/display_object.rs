@@ -335,6 +335,10 @@ impl DisplayObjectWindow {
                 });
                 ui.end_row();
 
+                ui.label("Font Type");
+                ui.label(format!("{:?}", object.font_type()));
+                ui.end_row();
+
                 ui.label("Editable");
                 ui.horizontal(|ui| {
                     let mut editable = object.is_editable();
@@ -391,6 +395,26 @@ impl DisplayObjectWindow {
                     ui.checkbox(&mut is_password, "Enabled");
                     if is_password != object.is_password() {
                         object.set_password(is_password, context);
+                    }
+                });
+                ui.end_row();
+
+                ui.label("Always Show Selection");
+                ui.horizontal(|ui| {
+                    let mut always_show_selection = object.always_show_selection();
+                    ui.checkbox(&mut always_show_selection, "Enabled");
+                    if always_show_selection != object.always_show_selection() {
+                        object.set_always_show_selection(context, always_show_selection);
+                    }
+                });
+                ui.end_row();
+
+                ui.label("Condense White");
+                ui.horizontal(|ui| {
+                    let mut condense_white = object.condense_white();
+                    ui.checkbox(&mut condense_white, "Enabled");
+                    if condense_white != object.condense_white() {
+                        object.set_condense_white(context, condense_white);
                     }
                 });
                 ui.end_row();
