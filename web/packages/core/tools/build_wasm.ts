@@ -42,12 +42,19 @@ function cargoBuild({
     profile,
     features,
     rustFlags,
+    extensions,
 }: {
     profile?: string;
     features?: string[];
     rustFlags?: string[];
+    extensions?: boolean;
 }) {
     let args = ["build", "--locked", "--target", "wasm32-unknown-unknown"];
+    if (!extensions) {
+        args.push("-Z");
+        args.push("build-std=std,panic_abort");
+    }
+
     if (profile) {
         args.push("--profile", profile);
     }
@@ -73,6 +80,7 @@ function cargoBuild({
     execFileSync("cargo", args, {
         env: Object.assign(Object.assign({}, process.env), {
             RUSTFLAGS: totalRustFlags,
+            RUSTC_BOOTSTRAP: extensions ? "0" : "1",
         }),
         stdio: "inherit",
     });
@@ -95,6 +103,8 @@ function buildWasm(
         );
         wasmBindgenFlags.push("--reference-types");
         wasmOptFlags.push("--enable-reference-types");
+    } else {
+        rustFlags.push("-C", "target-cpu=mvp");
     }
     let originalWasmPath;
     if (wasmSource === "cargo" || wasmSource === "cargo_and_store") {
@@ -102,6 +112,7 @@ function buildWasm(
         cargoBuild({
             profile,
             rustFlags,
+            extensions,
         });
         originalWasmPath = `../../../target/wasm32-unknown-unknown/${profile}/ruffle_web.wasm`;
         if (wasmSource === "cargo_and_store") {
