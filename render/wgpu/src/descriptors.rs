@@ -98,13 +98,13 @@ impl Descriptors {
                             layout: Some(copy_texture_pipeline_layout),
                             vertex: wgpu::VertexState {
                                 module: &self.shaders.copy_srgb_shader,
-                                entry_point: "main_vertex",
+                                entry_point: Some("main_vertex"),
                                 buffers: &VERTEX_BUFFERS_DESCRIPTION_POS,
                                 compilation_options: Default::default(),
                             },
                             fragment: Some(wgpu::FragmentState {
                                 module: &self.shaders.copy_srgb_shader,
-                                entry_point: "main_fragment",
+                                entry_point: Some("main_fragment"),
                                 targets: &[Some(wgpu::ColorTargetState {
                                     format,
                                     // All of our blending has been done by now, so we want
@@ -168,13 +168,13 @@ impl Descriptors {
                             layout: Some(copy_texture_pipeline_layout),
                             vertex: wgpu::VertexState {
                                 module: &self.shaders.copy_shader,
-                                entry_point: "main_vertex",
+                                entry_point: Some("main_vertex"),
                                 buffers: &VERTEX_BUFFERS_DESCRIPTION_POS,
                                 compilation_options: Default::default(),
                             },
                             fragment: Some(wgpu::FragmentState {
                                 module: &self.shaders.copy_shader,
-                                entry_point: "main_fragment",
+                                entry_point: Some("main_fragment"),
                                 targets: &[Some(wgpu::ColorTargetState {
                                     format,
                                     // All of our blending has been done by now, so we want

@@ -77,6 +77,9 @@ unknown-git = "deny"
 # github.com organizations to allow git sources for
 github = [
     "ruffle-rs",
+    # TODO: Remove once a release with https://github.com/emilk/egui/pull/5330
+    # (the wgpu bump to 23.0.0) in it is out.
+    "emilk",
 ]
 
 [advisories]
