@@ -29,7 +29,7 @@
         "cssnano": "^7.0.6",
         "cssnano-preset-advanced": "^7.0.6",
         "mocha": "^10.8.2",
-        "postcss": "^8.4.48",
+        "postcss": "^8.4.49",
         "postcss-nesting": "^13.0.1",
         "replace-in-file": "^8.2.0",
         "tsx": "^4.19.2",
