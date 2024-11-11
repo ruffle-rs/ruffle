@@ -58,7 +58,7 @@ ashpd = "0.9.2"
 winapi = "0.3.9"
 
 [build-dependencies]
-embed-resource = "2"
+embed-resource = "3"
 vergen = { version = "8.3.2", features = ["build", "git", "gitcl", "cargo"] }
 
 [features]
