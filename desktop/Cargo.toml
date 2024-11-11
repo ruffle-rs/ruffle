@@ -37,7 +37,7 @@ anyhow = { workspace = true }
 bytemuck = { workspace = true }
 os_info = { version = "3", default-features = false }
 unic-langid = "0.9.5"
-sys-locale = "0.3.1"
+sys-locale = "0.3.2"
 wgpu = { workspace = true }
 futures = { workspace = true }
 chrono = { workspace = true }

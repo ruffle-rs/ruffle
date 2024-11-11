@@ -13,7 +13,7 @@ workspace = true
 [dependencies]
 linkme = { version = "0.3", optional = true }
 byteorder = "1.5"
-bitstream-io = "2.5.3"
+bitstream-io = "2.6.0"
 flate2 = { workspace = true }
 fnv = "1.0.7"
 gc-arena = { package = "ruffle_gc_arena", path = "../ruffle_gc_arena" }
