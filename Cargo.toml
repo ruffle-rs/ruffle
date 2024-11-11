@@ -48,9 +48,9 @@ version = "0.1.0"
 [workspace.dependencies]
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-naga = { version = "22.1.0", features = ["wgsl-out"] }
-wgpu = "22.1.0"
-egui = "0.29.1"
+naga = { version = "23.0.0", features = ["wgsl-out"] }
+wgpu = "23.0.0"
+egui = { git = "https://github.com/emilk/egui.git", branch = "master" }
 clap = { version = "4.5.20", features = ["derive"] }
 cpal = "0.15.3"
 anyhow = "1.0"
