@@ -13,7 +13,7 @@ workspace = true
 
 [dependencies]
 bitflags = { workspace = true }
-bitstream-io = "2.5.3"
+bitstream-io = "2.6.0"
 byteorder = "1.5"
 encoding_rs = "0.8.35"
 num-derive = { workspace = true }
