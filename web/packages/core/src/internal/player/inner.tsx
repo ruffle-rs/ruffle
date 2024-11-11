@@ -2246,16 +2246,7 @@ function isSolData(data: string): boolean {
         if (data.charCodeAt(10 + i) !== markers[i]) return false;
     }
 
-    // Two bytes length of the object name
-    // First byte code * 256 + second byte code
-    const nameLength = data.charCodeAt(16) * 256 + data.charCodeAt(17);
-
-    // Three bytes of padding after the object name, always 0x00 0x00 0x00
-    if (data.slice(18 + nameLength, 18 + nameLength + 3) !== "\x00\x00\x00") {
-        return false;
-    }
-
-    // The structure makes this look like an SOL file up until the data
+    // This looks like an SOL file up until the end of the header
     return true;
 }
 
