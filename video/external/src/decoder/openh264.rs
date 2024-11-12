@@ -43,7 +43,7 @@ pub struct OpenH264Codec {
 }
 
 impl OpenH264Codec {
-    const VERSION: OpenH264Version = OpenH264Version(2, 4, 1);
+    const VERSION: OpenH264Version = OpenH264Version(2, 6, 0);
 
     /// Returns the OpenH264 library data for the current platform.
     fn get_data() -> Result<OpenH264Data, Box<dyn std::error::Error>> {
@@ -51,44 +51,48 @@ impl OpenH264Codec {
         const ARCH: &str = std::env::consts::ARCH;
 
         let local_filenames = match OS {
-            "linux" => ["libopenh264.so.7", "libopenh264.so.2.4.1", "libopenh264.so"].as_slice(),
+            "linux" => ["libopenh264.so.8", "libopenh264.so.2.6.0", "libopenh264.so"].as_slice(),
             // TODO: investigate other OSes
             _ => [].as_slice(),
         };
 
-        // Source: https://github.com/cisco/openh264/releases/tag/v2.4.1
+        // Source: https://github.com/cisco/openh264/releases/tag/v2.6.0
         let (download_filename, download_sha256) = match (OS, ARCH) {
             ("linux", "x86") => (
-                "libopenh264-2.4.1-linux32.7.so",
-                "b7cf0e407f99056d90cbf62787a34820a7595b2129b165319d50766e00a66704",
+                "libopenh264-2.6.0-linux32.8.so",
+                "a46589ccc95df7565ff8b1722d3dead29c0809be28322dc763767e0aa35a6443",
             ),
             ("linux", "x86_64") => (
-                "libopenh264-2.4.1-linux64.7.so",
-                "1392d21466bc638e68151b716d5b2086d54cd812afd43253f1adb5b6e0185f51",
+                "libopenh264-2.6.0-linux64.8.so",
+                "2f0cde7c6a6abcf5cae76942894ea42897fa677bce4ed6c91a24dd1b041d5f04",
             ),
             ("linux", "arm") => (
-                "libopenh264-2.4.1-linux-arm.7.so",
-                "fd1dfb27d30bb72e903c9d2b4c650104a4369d2e7ffe8a4a533e8db2e7e9b19e",
+                "libopenh264-2.6.0-linux-arm.8.so",
+                "df91866de0e93773019e30a8f2bdee8b15de4abe2bf89a228ae9f064ff1e85bb",
             ),
             ("linux", "aarch64") => (
-                "libopenh264-2.4.1-linux-arm64.7.so",
-                "e8ea7e42855ceb4a90e7bd0b3abeba0c58b5f97166e8b0a30eefd58e099557a4",
+                "libopenh264-2.6.0-linux-arm64.8.so",
+                "12e7b33623667cdab0e575170c147b1b36eadb77d0d2aa7ceb5afd3e58902140",
             ),
             ("macos", "x86_64") => (
-                "libopenh264-2.4.1-mac-x64.dylib",
-                "cc0ba518a63791c37571f3c851f0aa03a4fbda5410acc214ecd4f24f8d1c478e",
+                "libopenh264-2.6.0-mac-x64.dylib",
+                "e3dc8bc01fe69363f61fd3c02fd27798537a585eadd38cd808f303d1ee505a19",
             ),
             ("macos", "aarch64") => (
-                "libopenh264-2.4.1-mac-arm64.dylib",
-                "213ff93831cfa3dd6d7ad0c3a3403a6ceedf4ac1341e1278b5b869d42fefb496",
+                "libopenh264-2.6.0-mac-arm64.dylib",
+                "052e98bfcf7a9167d22f3bbb3f5988ef79065591f36af8b52924b22b13624551",
             ),
             ("windows", "x86") => (
-                "openh264-2.4.1-win32.dll",
-                "83270149640469c994a62cc32a6d8c0413cd7b802b7f1f2f532159f5bdc1cedd",
+                "openh264-2.6.0-win32.dll",
+                "b0098db6acbd290a1fe13997d61d461e7327e39b42bf868db41faf498b7621a2",
             ),
             ("windows", "x86_64") => (
-                "openh264-2.4.1-win64.dll",
-                "081b0c081480d177cbfddfbc90b1613640e702f875897b30d8de195cde73dd34",
+                "openh264-2.6.0-win64.dll",
+                "2076cb5675ec6c1a4c70e7a2a322552f547b6eeed649d6dfcd9e02a543b24691",
+            ),
+            ("windows", "aarch64") => (
+                "openh264-2.6.0-win-arm64.dll",
+                "fb75103938f4f47d119b983e06334df41a803bc72fb5c46e3623f6fea5782732",
             ),
             (os, arch) => return Err(format!("Unsupported OS/arch: {os}/{arch}").into()),
         };
