@@ -2219,35 +2219,24 @@ function isB64SOL(solData: string): boolean {
 }
 
 /**
- * Check if string is structured like SOL data.
+ * Check if string is structured like SOL data up until the end of the header.
  * See https://www.sans.org/blog/local-shared-objects-aka-flash-cookies/.
  *
  * @param data The SOL string.
  * @returns If the string seemingly represents an SOL file.
  */
 function isSolData(data: string): boolean {
-    // Every check for proper file structure is inverted and if any are true we return false
-
-    // Two bytes magic value (should be 0x00 0xbf)
-    if (data.charCodeAt(0) !== 0x00 || data.charCodeAt(1) !== 0xbf) return false;
-
-    // Four bytes length of LSO file excluding the length and magic value (6).
-    // First byte code * 256^3 + second byte code * 256^2 + third byte code * 256^1 + fourth byte code * 256^0 (1) + 6
-    const solLength = [0, 1, 2, 3].reduce((acc, i) => acc + data.charCodeAt(i + 2) * (256 ** (3 - i)), 6);
-    // The length of the file should be the length specified in the header
-    if (solLength !== data.length) return false;
-
-    // Four bytes magic value (ASCII value of TCSO)
-    if (data.slice(6, 10) !== "TCSO") return false;
-
-    // Six bytes of padding, always 0x00 0x04 0x00 0x00 0x00 0x00
-    const markers = [0x00, 0x04, 0x00, 0x00, 0x00, 0x00];
-    for (let i = 0; i < markers.length; i++) {
-        if (data.charCodeAt(10 + i) !== markers[i]) return false;
-    }
-
-    // This looks like an SOL file up until the end of the header
-    return true;
+    return (
+       // First two bytes are a magic value (0x00 0xbf)
+       data.charCodeAt(0) === 0x00 && data.charCodeAt(1) === 0xbf &&
+       // Next four bytes give the length of the LSO file excluding the first six bytes.
+       // First byte code * 256^3 + second byte code * 256^2 + third byte code * 256^1 + fourth byte code * 256^0 (1) + 6
+       [0, 1, 2, 3].reduce((acc, i) => acc + data.charCodeAt(i + 2) * (256 ** (3 - i)), 6) === data.length &&
+       // Next four bytes are another magic value (ASCII value of TCSO)
+       data.slice(6, 10) === "TCSO" &&
+       // Next six bytes are padding (0x00 0x04 0x00 0x00 0x00 0x00)
+       [0x00, 0x04, 0x00, 0x00, 0x00, 0x00].every((v, i) => data.charCodeAt(10 + i) === v)
+    );
 }
 
 /**
