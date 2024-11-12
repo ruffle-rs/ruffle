@@ -5,7 +5,7 @@ use std::fs::File;
 use std::io::copy;
 use std::path::{Path, PathBuf};
 use std::ptr;
-use std::sync::Arc;
+use std::rc::Rc;
 
 use crate::decoder::openh264_sys::{self, videoFormatI420, ISVCDecoder, OpenH264};
 use crate::decoder::VideoDecoder;
@@ -39,7 +39,7 @@ pub enum OpenH264Error {
 
 /// OpenH264 codec representation.
 pub struct OpenH264Codec {
-    openh264: Arc<OpenH264>,
+    openh264: Rc<OpenH264>,
 }
 
 impl OpenH264Codec {
@@ -163,7 +163,7 @@ impl OpenH264Codec {
         }
 
         Ok(Self {
-            openh264: Arc::new(openh264),
+            openh264: Rc::new(openh264),
         })
     }
 
@@ -197,7 +197,7 @@ pub struct H264Decoder {
     /// How many bytes are used to store the length of the NALU (1, 2, 3, or 4).
     length_size: u8,
 
-    openh264: Arc<OpenH264>,
+    openh264: Rc<OpenH264>,
     decoder: *mut ISVCDecoder,
 }
 
