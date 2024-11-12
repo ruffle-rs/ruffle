@@ -1,5 +1,6 @@
+// cargo install bindgen-cli
 // bindgen ../openh264/codec/api/wels/codec_api.h --no-prepend-enum-name \
-//         --dynamic-loading OpenH264 -o openh264_sys.rs
+//         --no-layout-tests --dynamic-loading OpenH264 -o openh264_sys.rs
 #[cfg(feature = "openh264")]
 #[allow(non_upper_case_globals)]
 #[allow(non_camel_case_types)]
