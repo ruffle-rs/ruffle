@@ -15,8 +15,8 @@ pub fn call<'gc>(
     let external_args = args
         .iter()
         .skip(1)
-        .map(|arg| ExternalValue::from_avm2(arg.to_owned()))
-        .collect::<Vec<ExternalValue>>();
+        .map(|arg| ExternalValue::from_avm2(activation, arg.to_owned()))
+        .collect::<Result<Vec<ExternalValue>, Error>>()?;
 
     Ok(
         ExternalInterface::call_method(activation.context, &name.to_utf8_lossy(), &external_args)

@@ -6,6 +6,7 @@ use crate::avm1::{
     ScriptObject as Avm1ScriptObject,
 };
 use crate::avm2::activation::Activation as Avm2Activation;
+use crate::avm2::error::Error as Avm2Error;
 use crate::avm2::object::TObject as _;
 use crate::avm2::Value as Avm2Value;
 use crate::avm2::{ArrayObject as Avm2ArrayObject, Object as Avm2Object};
@@ -191,31 +192,54 @@ impl Value {
         }
     }
 
-    pub fn from_avm2(value: Avm2Value) -> Value {
-        match value {
+    pub fn from_avm2<'gc>(
+        activation: &mut Avm2Activation<'_, 'gc>,
+        value: Avm2Value<'gc>,
+    ) -> Result<Value, Avm2Error<'gc>> {
+        Ok(match value {
             Avm2Value::Undefined => Value::Undefined,
             Avm2Value::Null => Value::Null,
             Avm2Value::Bool(value) => value.into(),
             Avm2Value::Number(value) => value.into(),
             Avm2Value::Integer(value) => value.into(),
             Avm2Value::String(value) => Value::String(value.to_string()),
-            Avm2Value::Object(object) => {
-                if let Some(array) = object.as_array_storage() {
+            Avm2Value::Object(obj) => {
+                if let Some(array) = obj.as_array_storage() {
                     let length = array.length();
                     let values = (0..length)
                         .map(|i| {
                             // FIXME - is this right?
                             let element = array.get(i).unwrap_or(Avm2Value::Null);
-                            Value::from_avm2(element)
+                            Value::from_avm2(activation, element)
                         })
-                        .collect();
+                        .collect::<Result<Vec<Value>, Avm2Error>>()?;
                     Value::List(values)
+                } else if matches!(obj, Avm2Object::ScriptObject(_)) {
+                    let mut values = BTreeMap::new();
+
+                    let mut last_index = obj.get_next_enumerant(0, activation)?;
+                    while let Some(index) = last_index {
+                        if index == 0 {
+                            break;
+                        }
+
+                        let name = obj
+                            .get_enumerant_name(index, activation)?
+                            .coerce_to_string(activation)?;
+                        let value = obj.get_enumerant_value(index, activation)?;
+
+                        values.insert(name.to_string(), Value::from_avm2(activation, value)?);
+
+                        last_index = obj.get_next_enumerant(index, activation)?;
+                    }
+
+                    Value::Object(values)
                 } else {
                     tracing::warn!("from_avm2 needs to be implemented for Avm2Value::Object");
                     Value::Null
                 }
             }
-        }
+        })
     }
 
     pub fn into_avm2<'gc>(self, activation: &mut Avm2Activation<'_, 'gc>) -> Avm2Value<'gc> {
@@ -306,8 +330,11 @@ impl<'gc> Callback<'gc> {
                     .into_iter()
                     .map(|v| v.into_avm2(&mut activation))
                     .collect();
-                match method.call(Avm2Value::Null, &args, &mut activation) {
-                    Ok(result) => Value::from_avm2(result),
+                match method
+                    .call(Avm2Value::Null, &args, &mut activation)
+                    .and_then(|value| Value::from_avm2(&mut activation, value))
+                {
+                    Ok(result) => result,
                     Err(e) => {
                         tracing::error!(
                             "Unhandled error in External Interface callback {name}: {:?}",
