@@ -54,6 +54,21 @@ Hello World!
 
 /// parrot() end
 After calling `parrot` with a string: String("Hello World!")
+/// parrot() start
+// this
+[object Target]
+
+// this == thisTarget
+true
+
+// arguments.length
+1
+
+// arguments[0]
+[object Object]
+
+/// parrot() end
+After calling `parrot` with an object: Object({"a": Number(100.0), "b": String("string")})
 /// freestanding() start
 // this
 [object global]
