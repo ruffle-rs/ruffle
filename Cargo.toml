@@ -51,7 +51,7 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 naga = { version = "22.1.0", features = ["wgsl-out"] }
 wgpu = "22.1.0"
 egui = "0.29.1"
-clap = { version = "4.5.20", features = ["derive"] }
+clap = { version = "4.5.21", features = ["derive"] }
 cpal = "0.15.3"
 anyhow = "1.0"
 slotmap = "1.0.7"
@@ -68,9 +68,9 @@ web-sys = "0.3.72"
 log = "0.4"
 num-derive = "0.4.2"
 num-traits = "0.2.19"
-serde = "1.0.214"
+serde = "1.0.215"
 thiserror = "1.0"
-url = "2.5.2"
+url = "2.5.3"
 # Make sure to match wasm-bindgen-cli version to this everywhere.
 wasm-bindgen = "=0.2.95"
 walkdir = "2.5.0"
