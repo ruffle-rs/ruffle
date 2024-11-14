@@ -584,10 +584,16 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// The text given may or may not be separated into fragments, depending on
     /// what the layout calls for.
     fn append_text(&mut self, text: &'a WStr, start: usize, end: usize, span: &TextSpan) {
-        if self.effective_alignment() == swf::TextAlign::Justify {
+        let empty = start == end;
+        if !empty && self.effective_alignment() == swf::TextAlign::Justify {
             for word in text.split(b' ') {
                 let word_start = word.offset_in(text).unwrap();
                 let word_end = min(word_start + word.len() + 1, text.len());
+
+                if word_start == word_end {
+                    // Do not append empty boxes
+                    continue;
+                }
 
                 self.append_text_fragment(
                     &text[word_start..word_end],
