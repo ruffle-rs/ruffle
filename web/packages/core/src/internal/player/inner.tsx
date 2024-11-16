@@ -2229,10 +2229,7 @@ function isSolData(data: string): boolean {
     return (
        // First two bytes are a magic value (0x00 0xbf)
        data.charCodeAt(0) === 0x00 && data.charCodeAt(1) === 0xbf &&
-       // Next four bytes give the length of the LSO file excluding the first six bytes.
-       // First byte code * 256^3 + second byte code * 256^2 + third byte code * 256^1 + fourth byte code * 256^0 (1) + 6
-       [0, 1, 2, 3].reduce((acc, i) => acc + data.charCodeAt(i + 2) * (256 ** (3 - i)), 6) === data.length &&
-       // Next four bytes are another magic value (ASCII value of TCSO)
+       // Seventh through tenth bytes are another magic value (ASCII value of TCSO)
        data.slice(6, 10) === "TCSO" &&
        // Next six bytes are padding (0x00 0x04 0x00 0x00 0x00 0x00)
        [0x00, 0x04, 0x00, 0x00, 0x00, 0x00].every((v, i) => data.charCodeAt(10 + i) === v)
