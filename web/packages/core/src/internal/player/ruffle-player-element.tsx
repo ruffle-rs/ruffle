@@ -1,6 +1,6 @@
 import type { DataLoadOptions, URLLoadOptions } from "../../public/config";
-import type { MovieMetadata, PlayerElement } from "../../public/player";
-import { InnerPlayer, ReadyState } from "./inner";
+import { MovieMetadata, PlayerElement, ReadyState } from "../../public/player";
+import { InnerPlayer } from "./inner";
 import { APIVersions } from "../../public/player";
 import { PlayerV1Impl } from "./impl_v1";
 

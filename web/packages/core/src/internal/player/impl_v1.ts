@@ -1,5 +1,5 @@
-import { PlayerV1 } from "../../public/player";
-import { InnerPlayer, ReadyState } from "./inner";
+import { PlayerV1, ReadyState } from "../../public/player";
+import { InnerPlayer } from "./inner";
 import type { DataLoadOptions, URLLoadOptions } from "../../public/config";
 import type { MovieMetadata } from "../../public/player";
 
