@@ -52,7 +52,9 @@ rand = "0.8.5"
 thiserror.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
-ashpd = "0.9.2"
+# The `tokio` and `async-std` features are mutually exclusive, and `ashpd` itself enables `tokio`
+# by default, while `rfd` enables `async-std` for it by default. So we need to disable `tokio` here.
+ashpd = { version = "0.10.2", default-features = false }
 
 [target.'cfg(windows)'.dependencies]
 winapi = "0.3.9"
