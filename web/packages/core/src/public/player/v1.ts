@@ -1,6 +1,7 @@
 import { MovieMetadata } from "./movie-metadata";
 import { DataLoadOptions, URLLoadOptions } from "../config";
-import { ReadyState } from "../../internal/player/inner";
+
+import { ReadyState } from "./index";
 
 export interface PlayerV1 {
     /**

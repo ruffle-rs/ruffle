@@ -3,13 +3,13 @@ import {
     AutoPlay,
     ContextMenu,
     DataLoadOptions,
+    DEFAULT_CONFIG,
     NetworkingAccessMode,
     UnmuteOverlay,
     URLLoadOptions,
     WindowMode,
-    DEFAULT_CONFIG,
 } from "../../public/config";
-import type { MovieMetadata } from "../../public/player";
+import { MovieMetadata, ReadyState } from "../../public/player";
 import { ruffleShadowTemplate } from "../ui/shadow-template";
 import { text, textAsParagraphs } from "../i18n";
 import { swfFileName } from "../../swf-utils";
@@ -2045,26 +2045,6 @@ export class InnerPlayer {
         // TODO: Move this to whatever function changes the ReadyState to Loaded when we have streaming support.
         this.element.dispatchEvent(new CustomEvent(InnerPlayer.LOADED_DATA));
     }
-}
-
-/**
- * Describes the loading state of an SWF movie.
- */
-export enum ReadyState {
-    /**
-     * No movie is loaded, or no information is yet available about the movie.
-     */
-    HaveNothing = 0,
-
-    /**
-     * The movie is still loading, but it has started playback, and metadata is available.
-     */
-    Loading = 1,
-
-    /**
-     * The movie has completely loaded.
-     */
-    Loaded = 2,
 }
 
 /**
