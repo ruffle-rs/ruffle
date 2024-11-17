@@ -1,7 +1,7 @@
 // Test made with JPEXS Free Flash Decompiler.
 
-function createMC(name, x, y) {
-	var mc = _root.createEmptyMovieClip(name, _root.getNextHighestDepth());
+function createMC(name, x, y, parent) {
+	var mc = parent.createEmptyMovieClip(name, parent.getNextHighestDepth());
 	mc._x = x;
 	mc._y = y;
 	mc.beginFill(0xFF0000);
@@ -28,5 +28,14 @@ function setFunctions(mc) {
 	};
 }
 
-createMC("square", 0, 0);
-setFunctions(_root);
+if(this === _level0) {
+	createMC("square", 0, 0, this);
+	setFunctions(this);
+	// Issue #18610.
+	this.createEmptyMovieClip("mc2", this.getNextHighestDepth());
+	loadMovie("test.swf", "mc2");
+} else {
+	this._lockroot = true;
+	createMC("square", 100, 100, this);
+	setFunctions(this);
+}

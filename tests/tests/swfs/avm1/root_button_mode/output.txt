@@ -1,4 +1,10 @@
+_level0.mc2.onMouseDown
 _level0.onMouseDown
+_level0.mc2.onMouseUp
 _level0.onMouseUp
+_level0.mc2.onMouseDown
 _level0.onMouseDown
+_level0.mc2.onPress
+_level0.mc2.onMouseUp
 _level0.onMouseUp
+_level0.mc2.onRelease
