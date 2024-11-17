@@ -925,7 +925,7 @@ impl DisplayObjectWindow {
 
                 ui.label("AVM2 Root");
                 if let Some(other) = object.avm2_root() {
-                    if object.as_ptr() != object.as_ptr() {
+                    if other.as_ptr() != object.as_ptr() {
                         open_display_object_button(
                             ui,
                             context,
