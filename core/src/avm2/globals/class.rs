@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::method::{Method, NativeMethodImpl};
+use crate::avm2::method::Method;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -79,15 +79,11 @@ pub fn create_i_class<'gc>(
         ),
     );
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[("prototype", Some(prototype), None)];
+    let public_instance_properties = &[("prototype", Some(prototype as _), None, None)];
     class_i_class.define_builtin_instance_properties(
         gc_context,
         namespaces.public_all(),
-        PUBLIC_INSTANCE_PROPERTIES,
+        public_instance_properties,
     );
 
     class_i_class.mark_traits_loaded(activation.context.gc_context);

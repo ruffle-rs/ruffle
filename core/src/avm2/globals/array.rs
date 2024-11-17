@@ -7,10 +7,11 @@ use crate::avm2::error::range_error;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{array_allocator, ArrayObject, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::avm2::QName;
+use crate::avm2::{Error, Multiname};
 use crate::string::AvmString;
 use bitflags::bitflags;
+use gc_arena::Gc;
 use std::cmp::{min, Ordering};
 use std::mem::swap;
 
@@ -1346,15 +1347,19 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
         Method::from_builtin(class_call, "<Array call handler>", mc),
     );
 
-    const PUBLIC_INSTANCE_PROPERTIES: &[(
-        &str,
-        Option<NativeMethodImpl>,
-        Option<NativeMethodImpl>,
-    )] = &[("length", Some(length), Some(set_length))];
+    let public_instance_properties = &[(
+        "length",
+        Some(length as _),
+        Some(set_length as _),
+        Some(Gc::new(
+            mc,
+            Multiname::new(activation.avm2().namespaces.public_all(), "uint"),
+        )),
+    )];
     class.define_builtin_instance_properties(
         mc,
         activation.avm2().namespaces.public_all(),
-        PUBLIC_INSTANCE_PROPERTIES,
+        public_instance_properties,
     );
 
     class.define_builtin_instance_methods(
