@@ -348,6 +348,8 @@ impl<'gc> Avm2<'gc> {
     /// behavior. This should not be called manually - `movie_clip` will
     /// call it when necessary.
     pub fn add_orphan_obj(&mut self, dobj: DisplayObject<'gc>) {
+        // Note: comparing pointers is correct because GcWeak keeps its allocation alive,
+        // so the pointers can't overlap by accident.
         if self
             .orphan_objects
             .iter()
@@ -487,10 +489,10 @@ impl<'gc> Avm2<'gc> {
         let bucket = context.avm2.broadcast_list.entry(event_name).or_default();
 
         for entry in bucket.iter() {
-            if let Some(obj) = entry.upgrade(context.gc_context) {
-                if Object::ptr_eq(obj, object) {
-                    return;
-                }
+            // Note: comparing pointers is correct because GcWeak keeps its allocation alive,
+            // so the pointers can't overlap by accident.
+            if entry.as_ptr() == object.as_ptr() {
+                return;
             }
         }
 

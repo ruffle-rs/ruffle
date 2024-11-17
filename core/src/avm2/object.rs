@@ -21,7 +21,7 @@ use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
 use crate::streams::NetStream;
 use crate::string::{AvmString, StringContext};
-use gc_arena::{Collect, Gc, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
@@ -1484,6 +1484,51 @@ pub enum WeakObject<'gc> {
 }
 
 impl<'gc> WeakObject<'gc> {
+    pub fn as_ptr(self) -> *const ObjectPtr {
+        match self {
+            Self::ScriptObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::FunctionObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::PrimitiveObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::NamespaceObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::ArrayObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::StageObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::DomainObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::EventObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::DispatchObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::XmlObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::XmlListObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::RegExpObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::ByteArrayObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::LoaderInfoObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::ClassObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::VectorObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::SoundObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::SoundChannelObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::BitmapDataObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::DateObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::DictionaryObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::QNameObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::TextFormatObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::ProxyObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::ErrorObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::Stage3DObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::Context3DObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::IndexBuffer3DObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::VertexBuffer3DObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::TextureObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::Program3DObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::NetStreamObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::NetConnectionObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::ResponderObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::ShaderDataObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::SocketObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::FileReferenceObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::FontObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::LocalConnectionObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::SharedObjectObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+        }
+    }
+
     pub fn upgrade(self, mc: &Mutation<'gc>) -> Option<Object<'gc>> {
         Some(match self {
             Self::ScriptObject(o) => ScriptObject(o.0.upgrade(mc)?).into(),
