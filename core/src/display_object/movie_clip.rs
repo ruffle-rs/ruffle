@@ -2373,7 +2373,7 @@ impl<'gc> MovieClip<'gc> {
                 .intersects(ClipEvent::BUTTON_EVENT_FLAGS)
         {
             true
-        } else if self.is_root() {
+        } else if self.avm1_parent().is_none() {
             false
         } else {
             let object = self.object();
