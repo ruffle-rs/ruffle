@@ -444,7 +444,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
 
         let instance_allocator_method_name =
             "::".to_string() + &flash_to_rust_path(&class_name) + "_allocator";
-        let init_method_name = "::init".to_string();
+        let init_method_name = "::".to_string() + &flash_to_rust_path(&class_name) + "_initializer";
         let call_handler_method_name = "::call_handler".to_string();
         let custom_constructor_method_name =
             "::".to_string() + &flash_to_rust_path(&class_name) + "_constructor";
