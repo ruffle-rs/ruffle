@@ -96,7 +96,7 @@ impl<'gc> SoundChannelObject<'gc> {
             },
         ));
 
-        class.call_super_init(Value::Object(sound_object.into()), &[], activation)?;
+        class.call_init(Value::Object(sound_object.into()), &[], activation)?;
 
         Ok(sound_object)
     }

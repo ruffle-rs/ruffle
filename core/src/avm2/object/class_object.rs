@@ -355,32 +355,7 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let scope = self.0.instance_scope.get();
-        let method = self.constructor();
-        exec(
-            method,
-            scope,
-            receiver.coerce_to_object(activation)?,
-            self.superclass_object(),
-            Some(self.inner_class_definition()),
-            arguments,
-            activation,
-            self.into(),
-        )
-    }
-
-    /// Call the instance's native initializer.
-    ///
-    /// The native initializer is called when native code needs to construct an
-    /// object, or when supercalling into a parent constructor (as there are
-    /// classes that cannot be constructed but can be supercalled).
-    pub fn call_super_init(
-        self,
-        receiver: Value<'gc>,
-        arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        let scope = self.0.instance_scope.get();
-        let method = self.super_constructor();
+        let method = self.init_method();
         exec(
             method,
             scope,
@@ -660,19 +635,15 @@ impl<'gc> ClassObject<'gc> {
     }
 
     pub fn translation_unit(self) -> Option<TranslationUnit<'gc>> {
-        if let Method::Bytecode(bc) = self.constructor() {
+        if let Method::Bytecode(bc) = self.init_method() {
             Some(bc.txunit)
         } else {
             None
         }
     }
 
-    pub fn constructor(self) -> Method<'gc> {
+    pub fn init_method(self) -> Method<'gc> {
         self.inner_class_definition().instance_init()
-    }
-
-    pub fn super_constructor(self) -> Method<'gc> {
-        self.inner_class_definition().super_init()
     }
 
     pub fn call_handler(self) -> Option<Method<'gc>> {

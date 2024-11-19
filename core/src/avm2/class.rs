@@ -139,21 +139,6 @@ pub struct ClassData<'gc> {
     /// Must be called each time a new class instance is constructed.
     instance_init: Method<'gc>,
 
-    /// The super initializer for this class, called when super() is called for
-    /// a subclass.
-    ///
-    /// This may be provided to allow natively-constructed classes to
-    /// initialize themselves in a different manner from user-constructed ones.
-    /// For example, the user-accessible constructor may error out (as it's not
-    /// a valid class to construct for users), but native code may still call
-    /// its constructor stack.
-    ///
-    /// By default, a class's `super_init` will be initialized to the
-    /// same method as the regular one. You must specify a separate super
-    /// initializer to change initialization behavior based on what code is
-    /// constructing the class.
-    super_init: Method<'gc>,
-
     /// Traits for a given class.
     ///
     /// These are accessed as normal instance properties; they should not be
@@ -238,8 +223,6 @@ impl<'gc> Class<'gc> {
         class_i_class: Class<'gc>,
         mc: &Mutation<'gc>,
     ) -> Self {
-        let super_init = instance_init;
-
         let instance_allocator = super_class
             .map(|c| c.instance_allocator())
             .unwrap_or(Allocator(scriptobject_allocator));
@@ -256,7 +239,6 @@ impl<'gc> Class<'gc> {
                 all_interfaces: Vec::new(),
                 instance_allocator,
                 instance_init,
-                super_init,
                 traits: Vec::new(),
                 vtable: VTable::empty(mc),
                 call_handler: None,
@@ -287,7 +269,6 @@ impl<'gc> Class<'gc> {
                 all_interfaces: Vec::new(),
                 instance_allocator: Allocator(scriptobject_allocator),
                 instance_init: class_init,
-                super_init: class_init,
                 traits: Vec::new(),
                 vtable: VTable::empty(mc),
                 call_handler: None,
@@ -311,8 +292,6 @@ impl<'gc> Class<'gc> {
         instance_init: Method<'gc>,
         mc: &Mutation<'gc>,
     ) -> Self {
-        let super_init = instance_init;
-
         Class(GcCell::new(
             mc,
             ClassData {
@@ -325,7 +304,6 @@ impl<'gc> Class<'gc> {
                 all_interfaces: Vec::new(),
                 instance_allocator: Allocator(scriptobject_allocator),
                 instance_init,
-                super_init,
                 traits: Vec::new(),
                 vtable: VTable::empty(mc),
                 call_handler: None,
@@ -554,7 +532,6 @@ impl<'gc> Class<'gc> {
                 all_interfaces: Vec::new(),
                 instance_allocator,
                 instance_init,
-                super_init: instance_init,
                 traits: Vec::new(),
                 vtable: VTable::empty(activation.context.gc_context),
                 call_handler,
@@ -588,7 +565,6 @@ impl<'gc> Class<'gc> {
                 all_interfaces: Vec::new(),
                 instance_allocator: Allocator(scriptobject_allocator),
                 instance_init: class_init,
-                super_init: class_init,
                 traits: Vec::new(),
                 vtable: VTable::empty(activation.context.gc_context),
                 call_handler: None,
@@ -846,11 +822,6 @@ impl<'gc> Class<'gc> {
                     "<Activation object constructor>",
                     activation.context.gc_context,
                 ),
-                super_init: Method::from_builtin(
-                    |_, _, _| Ok(Value::Undefined),
-                    "<Activation object constructor>",
-                    activation.context.gc_context,
-                ),
                 traits,
                 vtable: VTable::empty(activation.context.gc_context),
                 call_handler: None,
@@ -884,11 +855,6 @@ impl<'gc> Class<'gc> {
                 all_interfaces: Vec::new(),
                 instance_allocator: Allocator(scriptobject_allocator),
                 instance_init: Method::from_builtin(
-                    |_, _, _| Ok(Value::Undefined),
-                    "<Activation object class constructor>",
-                    activation.context.gc_context,
-                ),
-                super_init: Method::from_builtin(
                     |_, _, _| Ok(Value::Undefined),
                     "<Activation object class constructor>",
                     activation.context.gc_context,
@@ -1268,16 +1234,6 @@ impl<'gc> Class<'gc> {
     /// Get this class's instance initializer.
     pub fn instance_init(self) -> Method<'gc> {
         self.0.read().instance_init
-    }
-
-    /// Get this class's super() initializer.
-    pub fn super_init(self) -> Method<'gc> {
-        self.0.read().super_init
-    }
-
-    /// Set a super() initializer for this class.
-    pub fn set_super_init(self, mc: &Mutation<'gc>, new_super_init: Method<'gc>) {
-        self.0.write(mc).super_init = new_super_init;
     }
 
     /// Set a call handler for this class.

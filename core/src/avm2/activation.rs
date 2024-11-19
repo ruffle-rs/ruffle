@@ -552,7 +552,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .bound_superclass_object
             .expect("Superclass object is required to run super_init");
 
-        bound_superclass_object.call_super_init(receiver.into(), args, self)
+        bound_superclass_object.call_init(receiver.into(), args, self)
     }
 
     /// Retrieve a local register.
