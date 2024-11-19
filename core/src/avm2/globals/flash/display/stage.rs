@@ -14,17 +14,6 @@ use crate::display_object::{
 use crate::string::{AvmString, WString};
 use swf::Color;
 
-/// Implements `flash.display.Stage`'s native instance constructor.
-pub fn super_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    activation.super_init(this, args)?;
-
-    Ok(Value::Undefined)
-}
-
 /// Implement `align`'s getter
 pub fn get_align<'gc>(
     activation: &mut Activation<'_, 'gc>,

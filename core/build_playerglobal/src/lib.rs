@@ -36,6 +36,11 @@ const METADATA_CALL_HANDLER: &str = "CallHandler";
 /// Indicates that we should generate a reference to a custom constructor
 /// method (used as a metadata key with `Ruffle` metadata)
 const METADATA_CUSTOM_CONSTRUCTOR: &str = "CustomConstructor";
+/// Indicates that the class can't be directly instantiated (but its child classes might be).
+/// Binds to an always-throwing allocator.
+/// (This can also be used on final non-abstract classes that you just want to disable `new` for.
+///  We just didn't find a better name for this concept than "abstract")
+const METADATA_ABSTRACT: &str = "Abstract";
 // The name for metadata for namespace versioning- the Flex SDK doesn't
 // strip versioning metadata, so we have to allow this metadata name
 const API_METADATA_NAME: &str = "API";
@@ -403,28 +408,70 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
             rust_method_name_and_path(&abc, trait_, parent, method_prefix, "");
     };
 
-    // Look for `[Ruffle(InstanceAllocator)]` metadata - if present,
-    // generate a reference to an allocator function in the native instance
+    // We support four kinds of native methods:
+    // instance methods, class methods, script methods ("freestanding") and initializers.
+    // We're going to insert them into an array indexed by `MethodId`,
+    // so it doesn't matter what order we visit them in.
+    for (i, instance) in abc.instances.iter().enumerate() {
+        // Look for native instance methods
+        for trait_ in &instance.traits {
+            check_trait(trait_, Some(instance.name));
+        }
+        // Look for native class methods (in the corresponding
+        // `Class` definition)
+        for trait_ in &abc.classes[i].traits {
+            check_trait(trait_, Some(instance.name));
+        }
+    }
+    // Look for freestanding methods
+    for script in &abc.scripts {
+        for trait_ in &script.traits {
+            check_trait(trait_, None);
+        }
+    }
+
+    // Look for `[Ruffle(InstanceAllocator)]` and similar metadata - if present,
+    // generate a reference to a function in the native instance
     // allocators table.
-    let mut check_instance_allocator = |trait_: &Trait| {
+    let mut check_class = |trait_: &Trait| {
         let class_id = if let TraitKind::Class { class, .. } = trait_.kind {
             class.0
         } else {
             return;
         };
 
-        let class_name_idx = abc.instances[class_id as usize].name.0;
+        let class_name_idx = abc.instances[class_id as usize].name;
         let class_name = resolve_multiname_name(
             &abc,
-            &abc.constant_pool.multinames[class_name_idx as usize - 1],
+            &abc.constant_pool.multinames[class_name_idx.0 as usize - 1],
         );
 
         let instance_allocator_method_name =
             "::".to_string() + &flash_to_rust_path(&class_name) + "_allocator";
         let super_init_method_name = "::super_init".to_string();
+        let init_method_name = "::init".to_string();
         let call_handler_method_name = "::call_handler".to_string();
         let custom_constructor_method_name =
             "::".to_string() + &flash_to_rust_path(&class_name) + "_constructor";
+
+        // Also support instance initializer - let's pretend it's a trait.
+        let init_method_idx = abc.instances[class_id as usize].init_method;
+        let init_method = &abc.methods[init_method_idx.0 as usize];
+        if init_method.flags.contains(MethodFlags::NATIVE) {
+            let init_trait = Trait {
+                name: class_name_idx,
+                kind: TraitKind::Method {
+                    disp_id: 0, // unused
+                    method: abc.classes[class_id as usize].init_method,
+                },
+                metadata: vec![],   // unused
+                is_final: true,     // unused
+                is_override: false, // unused
+            };
+            rust_paths[init_method_idx.0 as usize] =
+                rust_method_name_and_path(&abc, &init_trait, None, "", &init_method_name);
+        }
+
         for metadata_idx in &trait_.metadata {
             let metadata = &abc.metadata[metadata_idx.0 as usize];
             let name =
@@ -484,6 +531,14 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                             &custom_constructor_method_name,
                         );
                     }
+                    (None, METADATA_ABSTRACT) if !is_versioning => {
+                        rust_instance_allocators[class_id as usize] = {
+                            let path = "crate::avm2::globals::class::abstract_class_allocator";
+                            let path_tokens = TokenStream::from_str(path).unwrap();
+                            let flash_method_path = "unused".to_string();
+                            quote! { Some((#flash_method_path, #path_tokens)) }
+                        };
+                    }
                     (None, _) if is_versioning => {}
                     _ => panic!("Unexpected metadata pair ({key:?}, {value})"),
                 }
@@ -491,27 +546,10 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
         }
     };
 
-    // We support three kinds of native methods:
-    // instance methods, class methods, and freestanding functions.
-    // We're going to insert them into an array indexed by `MethodId`,
-    // so it doesn't matter what order we visit them in.
-    for (i, instance) in abc.instances.iter().enumerate() {
-        // Look for native instance methods
-        for trait_ in &instance.traits {
-            check_trait(trait_, Some(instance.name));
-        }
-        // Look for native class methods (in the corresponding
-        // `Class` definition)
-        for trait_ in &abc.classes[i].traits {
-            check_trait(trait_, Some(instance.name));
-        }
-    }
-
-    // Look for freestanding methods
+    // Handle classes
     for script in &abc.scripts {
         for trait_ in &script.traits {
-            check_trait(trait_, None);
-            check_instance_allocator(trait_);
+            check_class(trait_);
         }
     }
     // Finally, generate the actual code.

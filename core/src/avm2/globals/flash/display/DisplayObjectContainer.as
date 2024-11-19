@@ -9,13 +9,8 @@ package flash.display {
     import flash.display.InteractiveObject;
     import flash.text.TextSnapshot;
 
-    [Ruffle(SuperInitializer)]
+    [Ruffle(Abstract)]
     public class DisplayObjectContainer extends InteractiveObject {
-
-        public function DisplayObjectContainer() {
-            throw new Error("You cannot construct DisplayObjectContainer directly.");
-        }
-
         public native function get numChildren():int;
         public native function get mouseChildren():Boolean;
         public native function set mouseChildren(value:Boolean):void;

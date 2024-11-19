@@ -10,14 +10,11 @@ package flash.display {
     import flash.geom.Point;
     import flash.events.EventDispatcher;
 
-    [Ruffle(InstanceAllocator)]
-    [Ruffle(SuperInitializer)]
+    [Ruffle(Abstract)]
     public class DisplayObject extends EventDispatcher implements IBitmapDrawable {
         private var _accessibilityProperties:AccessibilityProperties;
 
-        public function DisplayObject() {
-            throw new Error("Cannot instantiate abstract DisplayObject class");
-        }
+        public native function DisplayObject();
         
         public function get accessibilityProperties():AccessibilityProperties {
             return this._accessibilityProperties;

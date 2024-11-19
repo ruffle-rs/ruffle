@@ -4,13 +4,8 @@ package flash.display {
     import flash.utils.ByteArray;
     import flash.events.UncaughtErrorEvents;
 
-    [Ruffle(InstanceAllocator)]
-    [Ruffle(SuperInitializer)]
+    [Ruffle(Abstract)]
     public class LoaderInfo extends EventDispatcher {
-        public function LoaderInfo() {
-            throw new Error("LoaderInfo cannot be constructed");
-        }
-
         public native function get actionScriptVersion():uint;
         public native function get applicationDomain():ApplicationDomain;
         public native function get bytesLoaded():uint;
