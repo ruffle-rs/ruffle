@@ -1,9 +1,7 @@
 //! `flash.display.DisplayObject` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{
-    argument_error, illegal_operation_error, make_error_2007, make_error_2008,
-};
+use crate::avm2::error::{illegal_operation_error, make_error_2007, make_error_2008};
 use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::parameters::ParametersExt;
@@ -20,19 +18,6 @@ use crate::{avm2_stub_getter, avm2_stub_setter};
 use ruffle_render::blend::ExtendedBlendMode;
 use ruffle_render::filters::Filter;
 use std::str::FromStr;
-
-pub fn display_object_allocator<'gc>(
-    class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-) -> Result<Object<'gc>, Error<'gc>> {
-    let class_name = class.inner_class_definition().name().local_name();
-
-    return Err(Error::AvmError(argument_error(
-        activation,
-        &format!("Error #2012: {class_name}$ class cannot be instantiated."),
-        2012,
-    )?));
-}
 
 /// Initializes a DisplayObject created from ActionScript.
 /// This should be called from the AVM2 class's native allocator
@@ -63,7 +48,7 @@ pub fn initialize_for_allocator<'gc>(
 }
 
 /// Implements `flash.display.DisplayObject`'s native instance constructor.
-pub fn super_init<'gc>(
+pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],

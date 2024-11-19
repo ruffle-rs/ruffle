@@ -98,7 +98,7 @@ pub use crate::avm2::object::index_buffer_3d_object::{
     IndexBuffer3DObject, IndexBuffer3DObjectWeak,
 };
 pub use crate::avm2::object::loaderinfo_object::{
-    loader_info_allocator, LoaderInfoObject, LoaderInfoObjectWeak, LoaderStream,
+    LoaderInfoObject, LoaderInfoObjectWeak, LoaderStream,
 };
 pub use crate::avm2::object::local_connection_object::{
     local_connection_allocator, LocalConnectionObject, LocalConnectionObjectWeak,

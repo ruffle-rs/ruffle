@@ -2,11 +2,27 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
+use crate::avm2::error::argument_error;
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::QName;
+
+/// Implements a custom allocator for classes that are not constructible.
+/// (but their derived classes can be)
+pub fn abstract_class_allocator<'gc>(
+    class: ClassObject<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<Object<'gc>, Error<'gc>> {
+    let class_name = class.instance_class().name().local_name();
+
+    return Err(Error::AvmError(argument_error(
+        activation,
+        &format!("Error #2012: {class_name} class cannot be instantiated."),
+        2012,
+    )?));
+}
 
 /// Implements `Class`'s instance initializer.
 ///

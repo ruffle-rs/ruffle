@@ -5,15 +5,11 @@ package flash.display {
     import flash.geom.Rectangle;
     import flash.ui.ContextMenu;
 
-    [Ruffle(SuperInitializer)]
+    [Ruffle(Abstract)]
     public class InteractiveObject extends DisplayObject {
         private var _accessibilityImpl:AccessibilityImplementation = null;
         private var _needsSoftKeyboard:Boolean = false;
         private var _softKeyboardInputAreaOfInterest:Rectangle = new Rectangle();
-
-        public function InteractiveObject() {
-            throw new Error("You cannot directly construct InteractiveObject.")
-        }
 
         public function get accessibilityImplementation():AccessibilityImplementation {
             return this._accessibilityImpl;

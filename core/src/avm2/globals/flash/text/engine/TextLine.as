@@ -12,7 +12,7 @@ package flash.text.engine {
     // the TextLine class in Ruffle, despite the methods working fine in FP-
     // however, it's unlikely that SWFs will actually attempt to add children
     // to a TextLine.
-    [Ruffle(SuperInitializer)]
+    [Ruffle(Abstract)]
     public final class TextLine extends DisplayObjectContainer {
         internal var _specifiedWidth:Number = 0.0;
         internal var _textBlock:TextBlock = null;
@@ -22,10 +22,6 @@ package flash.text.engine {
         public static const MAX_LINE_WIDTH:int = 1000000;
 
         public var userData;
-
-        public function TextLine() {
-            throw new ArgumentError("Error #2012: TextLine$ class cannot be instantiated.", 2012);
-        }
 
         public function get rawTextLength():int {
             return this._rawTextLength;
