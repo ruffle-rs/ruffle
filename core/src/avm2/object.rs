@@ -1574,3 +1574,18 @@ impl<'gc> WeakObject<'gc> {
         })
     }
 }
+
+/// Implements a custom allocator for classes that are not constructible.
+/// (but their derived classes can be)
+pub fn abstract_class_allocator<'gc>(
+    class: ClassObject<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<Object<'gc>, Error<'gc>> {
+    let class_name = class.instance_class().name().local_name();
+
+    return Err(Error::AvmError(error::argument_error(
+        activation,
+        &format!("Error #2012: {class_name} class cannot be instantiated."),
+        2012,
+    )?));
+}

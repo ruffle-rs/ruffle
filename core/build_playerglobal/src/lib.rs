@@ -519,7 +519,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                     }
                     (None, METADATA_ABSTRACT) if !is_versioning => {
                         rust_instance_allocators[class_id as usize] = {
-                            let path = "crate::avm2::globals::class::abstract_class_allocator";
+                            let path = "crate::avm2::object::abstract_class_allocator";
                             let path_tokens = TokenStream::from_str(path).unwrap();
                             let flash_method_path = "unused".to_string();
                             quote! { Some((#flash_method_path, #path_tokens)) }
