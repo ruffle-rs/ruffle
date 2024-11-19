@@ -37,7 +37,7 @@ impl<'gc> Program3DObject<'gc> {
         ))
         .into();
 
-        class.call_super_init(this.into(), &[], activation)?;
+        class.call_init(this.into(), &[], activation)?;
 
         Ok(this)
     }
