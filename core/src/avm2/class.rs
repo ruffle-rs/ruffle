@@ -496,7 +496,6 @@ impl<'gc> Class<'gc> {
         }
 
         let instance_init = unit.load_method(abc_instance.init_method, false, activation)?;
-        let mut super_init = instance_init;
         let class_init = unit.load_method(abc_class.init_method, false, activation)?;
 
         let mut attributes = ClassAttributes::empty();
@@ -514,20 +513,6 @@ impl<'gc> Class<'gc> {
             instance_allocator = activation.avm2().native_instance_allocator_table
                 [class_index as usize]
                 .map(|(_name, ptr)| Allocator(ptr));
-
-            if let Some((name, table_native_init)) =
-                activation.avm2().native_super_initializer_table[class_index as usize]
-            {
-                let method = Method::from_builtin_and_params(
-                    table_native_init,
-                    name,
-                    instance_init.signature().to_vec(),
-                    instance_init.return_type(),
-                    instance_init.is_variadic(),
-                    activation.context.gc_context,
-                );
-                super_init = method;
-            }
 
             if let Some((name, table_native_call_handler)) =
                 activation.avm2().native_call_handler_table[class_index as usize]
@@ -569,7 +554,7 @@ impl<'gc> Class<'gc> {
                 all_interfaces: Vec::new(),
                 instance_allocator,
                 instance_init,
-                super_init,
+                super_init: instance_init,
                 traits: Vec::new(),
                 vtable: VTable::empty(activation.context.gc_context),
                 call_handler,
