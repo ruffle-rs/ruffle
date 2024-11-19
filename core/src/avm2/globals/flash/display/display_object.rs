@@ -48,7 +48,7 @@ pub fn initialize_for_allocator<'gc>(
 }
 
 /// Implements `flash.display.DisplayObject`'s native instance constructor.
-pub fn init<'gc>(
+pub fn display_object_initializer<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
