@@ -5,19 +5,17 @@
 
 package flash.text.engine
 {
-    
-    
-    public final class DigitCase
-    {
-        // Used to specify default digit case.
-        public static const DEFAULT:String = "default";
-        
-        // Used to specify lining digit case.
-        public static const LINING:String = "lining";
-        
-        // Used to specify old style digit case.
-        public static const OLD_STYLE:String = "oldStyle";
-        
-        
-    }
+
+	public final class DigitCase
+	{
+		// Used to specify default digit case.
+		public static const DEFAULT:String = "default";
+
+		// Used to specify lining digit case.
+		public static const LINING:String = "lining";
+
+		// Used to specify old style digit case.
+		public static const OLD_STYLE:String = "oldStyle";
+
+	}
 }

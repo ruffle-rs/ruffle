@@ -5,14 +5,16 @@
 
 package flash.desktop
 {
-  import flash.events.EventDispatcher;
-  [API("661")]
-  public class Icon extends EventDispatcher
-  {
+	import flash.events.EventDispatcher;
+	[API("661")]
+	public class Icon extends EventDispatcher
+	{
 
-    // The icon image as an array of BitmapData objects of different sizes.
-    public var bitmaps:Array;
+		// The icon image as an array of BitmapData objects of different sizes.
+		public var bitmaps:Array;
 
-    function Icon() {}
-  }
+		function Icon()
+		{
+		}
+	}
 }

@@ -5,22 +5,20 @@
 
 package flash.text.engine
 {
-    
-    
-    public final class TabAlignment
-    {
-        // Positions the center of the tabbed text at the tab stop.
-        public static const CENTER:String = "center";
-        
-        // Positions the alignment token of the tabbed text at the tab stop.
-        public static const DECIMAL:String = "decimal";
-        
-        // Positions the end of the tabbed text at the tab stop.
-        public static const END:String = "end";
-        
-        // Positions the start of the tabbed text at the tab stop.
-        public static const START:String = "start";
-        
-        
-    }
+
+	public final class TabAlignment
+	{
+		// Positions the center of the tabbed text at the tab stop.
+		public static const CENTER:String = "center";
+
+		// Positions the alignment token of the tabbed text at the tab stop.
+		public static const DECIMAL:String = "decimal";
+
+		// Positions the end of the tabbed text at the tab stop.
+		public static const END:String = "end";
+
+		// Positions the start of the tabbed text at the tab stop.
+		public static const START:String = "start";
+
+	}
 }

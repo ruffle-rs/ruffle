@@ -5,23 +5,21 @@
 
 package flash.text.engine
 {
-    
-    
-    public final class LineJustification
-    {
-        // Justify all but the last line.
-        public static const ALL_BUT_LAST:String = "allButLast";
-        
-        // Justify all but the last line and lines ending in mandatory breaks.
-        [API("674")]
-        public static const ALL_BUT_MANDATORY_BREAK:String = "allButMandatoryBreak";
-        
-        // Justify all lines.
-        public static const ALL_INCLUDING_LAST:String = "allIncludingLast";
-        
-        // Do not justify lines.
-        public static const UNJUSTIFIED:String = "unjustified";
-        
-        
-    }
+
+	public final class LineJustification
+	{
+		// Justify all but the last line.
+		public static const ALL_BUT_LAST:String = "allButLast";
+
+		// Justify all but the last line and lines ending in mandatory breaks.
+		[API("674")]
+		public static const ALL_BUT_MANDATORY_BREAK:String = "allButMandatoryBreak";
+
+		// Justify all lines.
+		public static const ALL_INCLUDING_LAST:String = "allIncludingLast";
+
+		// Do not justify lines.
+		public static const UNJUSTIFIED:String = "unjustified";
+
+	}
 }

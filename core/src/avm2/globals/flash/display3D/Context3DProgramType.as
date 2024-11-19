@@ -5,16 +5,15 @@
 
 package flash.display3D
 {
-    
-    [API("674")]
-    public final class Context3DProgramType
-    {
-        // A fragment (or pixel) program.
-        public static const FRAGMENT:String = "fragment";
-        
-        // A vertex program.
-        public static const VERTEX:String = "vertex";
-        
-        
-    }
+
+	[API("674")]
+	public final class Context3DProgramType
+	{
+		// A fragment (or pixel) program.
+		public static const FRAGMENT:String = "fragment";
+
+		// A vertex program.
+		public static const VERTEX:String = "vertex";
+
+	}
 }

@@ -6,13 +6,13 @@
 package flash.globalization
 {
 
-    public final class CollatorMode
-    {
-        // Initializes a Collator object so that the compare method is optimized for determining whether two strings are equivalent.
-        public static const MATCHING:String = "matching";
+	public final class CollatorMode
+	{
+		// Initializes a Collator object so that the compare method is optimized for determining whether two strings are equivalent.
+		public static const MATCHING:String = "matching";
 
-        // Initializes a Collator object so that the compare method is optimized for sorting a list of text strings to be displayed to an end user.
-        public static const SORTING:String = "sorting";
+		// Initializes a Collator object so that the compare method is optimized for sorting a list of text strings to be displayed to an end user.
+		public static const SORTING:String = "sorting";
 
-    }
+	}
 }

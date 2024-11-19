@@ -5,22 +5,20 @@
 
 package flash.text.engine
 {
-    
-    
-    public final class TextLineValidity
-    {
-        // Specifies that the line is invalid.
-        public static const INVALID:String = "invalid";
-        
-        // Specifies that the text line is possibly invalid.
-        public static const POSSIBLY_INVALID:String = "possiblyInvalid";
-        
-        // Specifies that the line is static, and that the connection between the line and the text block has been severed.
-        public static const STATIC:String = "static";
-        
-        // Specifies that the text line is valid.
-        public static const VALID:String = "valid";
-        
-        
-    }
+
+	public final class TextLineValidity
+	{
+		// Specifies that the line is invalid.
+		public static const INVALID:String = "invalid";
+
+		// Specifies that the text line is possibly invalid.
+		public static const POSSIBLY_INVALID:String = "possiblyInvalid";
+
+		// Specifies that the line is static, and that the connection between the line and the text block has been severed.
+		public static const STATIC:String = "static";
+
+		// Specifies that the text line is valid.
+		public static const VALID:String = "valid";
+
+	}
 }

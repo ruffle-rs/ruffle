@@ -5,16 +5,16 @@
 
 package
 {
-    public dynamic class VerifyError extends Error
-    {
-        prototype.name = "VerifyError";
+	public dynamic class VerifyError extends Error
+	{
+		prototype.name = "VerifyError";
 
-        public function VerifyError(message:String = "", id:int = 0)
-        {
-            super(message, id);
-            this.name = prototype.name;
-        }
+		public function VerifyError(message:String = "", id:int = 0)
+		{
+			super(message, id);
+			this.name = prototype.name;
+		}
 
-        public static const length:int = 1;
-    }
+		public static const length:int = 1;
+	}
 }

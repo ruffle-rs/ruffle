@@ -6,23 +6,24 @@
 package flash.media
 {
 
-    [API("688")] // the docs say 670, that's wrong
-    public final class StageVideoAvailabilityReason
-    {
-        // Stage video is not currently available, the driver is too old or black listed
-        public static const DRIVER_TOO_OLD:String = "driverTooOld";
+	[API("688")]
+	// the docs say 670, that's wrong
+	public final class StageVideoAvailabilityReason
+	{
+		// Stage video is not currently available, the driver is too old or black listed
+		public static const DRIVER_TOO_OLD:String = "driverTooOld";
 
-        // Stage video is currently available, no errors occurred
-        public static const NO_ERROR:String = "noError";
+		// Stage video is currently available, no errors occurred
+		public static const NO_ERROR:String = "noError";
 
-        // Stage video is not currently available, no hardware was available
-        public static const UNAVAILABLE:String = "unavailable";
+		// Stage video is not currently available, no hardware was available
+		public static const UNAVAILABLE:String = "unavailable";
 
-        // Stage video is not currently available, the user disabled HW acceleration
-        public static const USER_DISABLED:String = "userDisabled";
+		// Stage video is not currently available, the user disabled HW acceleration
+		public static const USER_DISABLED:String = "userDisabled";
 
-        // Stage video is not currently available, the wmode doesn't support Stage video.
-        public static const WMODE_INCOMPATIBLE:String = "wModeIncompatible";
+		// Stage video is not currently available, the wmode doesn't support Stage video.
+		public static const WMODE_INCOMPATIBLE:String = "wModeIncompatible";
 
-    }
+	}
 }

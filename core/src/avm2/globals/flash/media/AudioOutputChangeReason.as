@@ -6,14 +6,14 @@
 package flash.media
 {
 
-    // TODO: [API("724")]
-    public final class AudioOutputChangeReason
-    {
-        // Audio Output is changed because system device has been added or removed.
-        public static const DEVICE_CHANGE:String = "deviceChange";
+	// TODO: [API("724")]
+	public final class AudioOutputChangeReason
+	{
+		// Audio Output is changed because system device has been added or removed.
+		public static const DEVICE_CHANGE:String = "deviceChange";
 
-        // Audio Output is changed by user selecting a different device.
-        public static const USER_SELECTION:String = "userSelection";
+		// Audio Output is changed by user selecting a different device.
+		public static const USER_SELECTION:String = "userSelection";
 
-    }
+	}
 }

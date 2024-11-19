@@ -6,17 +6,17 @@
 package flash.system
 {
 
-    [API("682")]
-    public final class WorkerState
-    {
-        // This state indicates that an object that represents the new worker has been created, but the worker is not executing code.
-        public static const NEW:String = "new";
+	[API("682")]
+	public final class WorkerState
+	{
+		// This state indicates that an object that represents the new worker has been created, but the worker is not executing code.
+		public static const NEW:String = "new";
 
-        // This state indicates that the worker has begun executing application code and it has not been instructed to stop execution.
-        public static const RUNNING:String = "running";
+		// This state indicates that the worker has begun executing application code and it has not been instructed to stop execution.
+		public static const RUNNING:String = "running";
 
-        // This state indicates that the worker has been stopped by code in another worker calling this Worker object's terminate() method.
-        public static const TERMINATED:String = "terminated";
+		// This state indicates that the worker has been stopped by code in another worker calling this Worker object's terminate() method.
+		public static const TERMINATED:String = "terminated";
 
-    }
+	}
 }

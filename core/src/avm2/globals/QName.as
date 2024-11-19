@@ -1,28 +1,33 @@
-package {
-    [Ruffle(InstanceAllocator)]
-    [Ruffle(CallHandler)]
-    public final class QName {
-        public static const length:* = 2;
+package
+{
+	[Ruffle(InstanceAllocator)]
+	[Ruffle(CallHandler)]
+	public final class QName
+	{
+		public static const length:* = 2;
 
-        public function QName(uri:* = void 0, localName:* = void 0) {
-            this.init(arguments);
-        }
+		public function QName(uri:* = void 0, localName:* = void 0)
+		{
+			this.init(arguments);
+		}
 
-        private native function init(args:Array):void;
+		private native function init(args:Array):void;
 
-        public native function get localName():String;
-        public native function get uri():String;
+		public native function get localName():String;
+		public native function get uri():String;
 
-        AS3 native function toString():String;
-        AS3 function valueOf():QName {
-            return this;
-        }
+		AS3 native function toString():String;
+		AS3 function valueOf():QName
+		{
+			return this;
+		}
 
-        prototype.toString = function():String {
-            var self:QName = this;
-            return self.AS3::toString();
-        }
+		prototype.toString = function():String
+		{
+			var self:QName = this;
+			return self.AS3::toString();
+		};
 
-        prototype.setPropertyIsEnumerable("toString", false);
-    }
+		prototype.setPropertyIsEnumerable("toString", false);
+	}
 }

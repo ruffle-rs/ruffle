@@ -5,26 +5,26 @@
 
 package flash.net
 {
-    import flash.events.EventDispatcher;
+	import flash.events.EventDispatcher;
 
-    public dynamic class NetStreamPlayOptions extends EventDispatcher
-    {
-        // The duration of playback, in seconds, for the stream specified in streamName.
-        public var len: Number = -1;
+	public dynamic class NetStreamPlayOptions extends EventDispatcher
+	{
+		// The duration of playback, in seconds, for the stream specified in streamName.
+		public var len:Number = -1;
 
-        // The absolute stream time at which the server switches between streams of different bitrates for Flash Media Server dynamic streaming.
-        public var offset: Number = -1;
+		// The absolute stream time at which the server switches between streams of different bitrates for Flash Media Server dynamic streaming.
+		public var offset:Number = -1;
 
-        // The name of the old stream or the stream to transition from.
-        public var oldStreamName: String;
+		// The name of the old stream or the stream to transition from.
+		public var oldStreamName:String;
 
-        // The start time, in seconds, for streamName.
-        public var start: Number = -2;
+		// The start time, in seconds, for streamName.
+		public var start:Number = -2;
 
-        // The name of the new stream to transition to or to play.
-        public var streamName: String;
+		// The name of the new stream to transition to or to play.
+		public var streamName:String;
 
-        // The mode in which streamName is played or transitioned to.
-        public var transition: String;
-    }
+		// The mode in which streamName is played or transitioned to.
+		public var transition:String;
+	}
 }

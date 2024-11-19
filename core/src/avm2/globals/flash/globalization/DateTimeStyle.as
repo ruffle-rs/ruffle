@@ -6,22 +6,22 @@
 package flash.globalization
 {
 
-    public final class DateTimeStyle
-    {
-        // Specifies that a custom pattern string is used to specify the date or time style.
-        public static const CUSTOM:String = "custom";
+	public final class DateTimeStyle
+	{
+		// Specifies that a custom pattern string is used to specify the date or time style.
+		public static const CUSTOM:String = "custom";
 
-        // Specifies the long style of a date or time.
-        public static const LONG:String = "long";
+		// Specifies the long style of a date or time.
+		public static const LONG:String = "long";
 
-        // Specifies the medium style of a date or time.
-        public static const MEDIUM:String = "medium";
+		// Specifies the medium style of a date or time.
+		public static const MEDIUM:String = "medium";
 
-        // Specifies that the date or time should not be included in the formatted string.
-        public static const NONE:String = "none";
+		// Specifies that the date or time should not be included in the formatted string.
+		public static const NONE:String = "none";
 
-        // Specifies the short style of a date or time.
-        public static const SHORT:String = "short";
+		// Specifies the short style of a date or time.
+		public static const SHORT:String = "short";
 
-    }
+	}
 }

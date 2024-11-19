@@ -1,12 +1,16 @@
-package flash.utils {
+package flash.utils
+{
 	[Ruffle(InstanceAllocator)]
-	public class ByteArray implements IDataInput2, IDataOutput2 {
+	public class ByteArray implements IDataInput2, IDataOutput2
+	{
 		private static var _defaultObjectEncoding:uint = 3;
-		public static function get defaultObjectEncoding():uint {
+		public static function get defaultObjectEncoding():uint
+		{
 			return _defaultObjectEncoding;
 		}
 
-		public static function set defaultObjectEncoding(encoding:uint):void {
+		public static function set defaultObjectEncoding(encoding:uint):void
+		{
 			_defaultObjectEncoding = encoding;
 		}
 
@@ -24,23 +28,26 @@ package flash.utils {
 		public native function get position():uint;
 		public native function set position(value:uint):void;
 
-		public function ByteArray() {
+		public function ByteArray()
+		{
 			this.objectEncoding = _defaultObjectEncoding;
 		}
 
 		public native function clear():void;
 
-		public function deflate(): void {
+		public function deflate():void
+		{
 			this.compress("deflate");
 		}
 
-		public native function compress(algorithm: String = CompressionAlgorithm.ZLIB): void;
+		public native function compress(algorithm:String = CompressionAlgorithm.ZLIB):void;
 
-		public function inflate(): void {
+		public function inflate():void
+		{
 			this.uncompress("deflate");
 		}
 
-		public native function uncompress(algorithm: String = CompressionAlgorithm.ZLIB): void;
+		public native function uncompress(algorithm:String = CompressionAlgorithm.ZLIB):void;
 
 		public native function toString():String;
 
@@ -71,10 +78,11 @@ package flash.utils {
 		public native function writeUTF(value:String):void;
 		public native function writeUTFBytes(value:String):void;
 		public native function writeObject(object:*):void;
-		
-		prototype.toJSON = function(k:String):* {
+
+		prototype.toJSON = function(k:String):*
+		{
 			return "ByteArray";
-		}
+		};
 		prototype.setPropertyIsEnumerable("toJSON", false);
 	}
 }

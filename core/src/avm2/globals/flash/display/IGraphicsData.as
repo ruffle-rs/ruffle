@@ -1,4 +1,6 @@
-package flash.display {
-    public interface IGraphicsData {
-    }
+package flash.display
+{
+	public interface IGraphicsData
+	{
+	}
 }

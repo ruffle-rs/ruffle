@@ -5,16 +5,14 @@
 
 package flash.text.engine
 {
-    
-    
-    public final class FontPosture
-    {
-        // Used to indicate italic font posture.
-        public static const ITALIC:String = "italic";
-        
-        // Used to indicate normal font posture.
-        public static const NORMAL:String = "normal";
-        
-        
-    }
+
+	public final class FontPosture
+	{
+		// Used to indicate italic font posture.
+		public static const ITALIC:String = "italic";
+
+		// Used to indicate normal font posture.
+		public static const NORMAL:String = "normal";
+
+	}
 }

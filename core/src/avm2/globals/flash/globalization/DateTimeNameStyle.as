@@ -6,16 +6,16 @@
 package flash.globalization
 {
 
-    public final class DateTimeNameStyle
-    {
-        // Specifies the full form or full name style for month names and weekday names.
-        public static const FULL:String = "full";
+	public final class DateTimeNameStyle
+	{
+		// Specifies the full form or full name style for month names and weekday names.
+		public static const FULL:String = "full";
 
-        // Specifies the long abbreviation style for month names and weekday names.
-        public static const LONG_ABBREVIATION:String = "longAbbreviation";
+		// Specifies the long abbreviation style for month names and weekday names.
+		public static const LONG_ABBREVIATION:String = "longAbbreviation";
 
-        // Specifies the short abbreviation style for month names and weekday names.
-        public static const SHORT_ABBREVIATION:String = "shortAbbreviation";
+		// Specifies the short abbreviation style for month names and weekday names.
+		public static const SHORT_ABBREVIATION:String = "shortAbbreviation";
 
-    }
+	}
 }
