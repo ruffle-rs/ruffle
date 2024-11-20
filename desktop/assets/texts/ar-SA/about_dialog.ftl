@@ -1,4 +1,4 @@
-about-ruffle = عن Ruffle
+about-ruffle = عن رَفل
 about-ruffle-version = الإصدار
 about-ruffle-channel = القناة
 about-ruffle-build-time = وقت التحديث
