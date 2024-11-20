@@ -1,26 +1,18 @@
-use crate::backend::RenderTargetMode;
 use crate::blend::TrivialBlend;
-use crate::blend::{BlendType, ComplexBlend};
 use crate::buffer_builder::BufferBuilder;
-use crate::buffer_pool::TexturePool;
 use crate::dynamic_transforms::DynamicTransforms;
-use crate::mesh::{as_mesh, DrawType, Mesh};
+use crate::mesh::{as_mesh, DrawType};
 use crate::surface::target::CommandTarget;
-use crate::surface::Surface;
 use crate::{as_texture, Descriptors, MaskState, Pipelines, Transforms};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::{BitmapHandle, PixelSnapping};
 use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::lines::{emulate_line, emulate_line_rect};
 use ruffle_render::matrix::Matrix;
-use ruffle_render::pixel_bender::PixelBenderShaderHandle;
-use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
 use std::mem;
-use swf::{BlendMode, Color, ColorTransform, Twips};
+use swf::{Color, ColorTransform, Twips};
 use wgpu::Backend;
-
-use super::target::PoolOrArcTexture;
 
 pub struct CommandRenderer<'pass, 'frame: 'pass, 'global: 'frame> {
     pipelines: &'frame Pipelines,
@@ -84,12 +76,6 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 *blend_mode,
                 *render_stage3d,
             ),
-            DrawCommand::RenderTexture {
-                _texture,
-                binds,
-                transform_buffer,
-                blend_mode,
-            } => self.render_texture(*transform_buffer, binds, *blend_mode),
             DrawCommand::RenderShape {
                 shape,
                 transform_buffer,
@@ -387,15 +373,10 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
     }
 }
 
+#[derive(Debug)]
 pub enum Chunk {
     Draw(Vec<DrawCommand>, bool, BufferBuilder),
-    Blend(PoolOrArcTexture, ChunkBlendMode, bool),
-}
-
-#[derive(Debug)]
-pub enum ChunkBlendMode {
-    Complex(ComplexBlend),
-    Shader(PixelBenderShaderHandle),
+    Blend(CommandList, bool, RenderBlendMode),
 }
 
 #[derive(Debug)]
@@ -406,12 +387,6 @@ pub enum DrawCommand {
         smoothing: bool,
         blend_mode: TrivialBlend,
         render_stage3d: bool,
-    },
-    RenderTexture {
-        _texture: PoolOrArcTexture,
-        binds: wgpu::BindGroup,
-        transform_buffer: wgpu::DynamicOffset,
-        blend_mode: TrivialBlend,
     },
     RenderShape {
         shape: ShapeHandle,
@@ -439,48 +414,20 @@ pub enum LayerRef<'a> {
     Parent(&'a CommandTarget),
 }
 
-/// Replaces every blend with a RenderBitmap, with the subcommands rendered out to a temporary texture
-/// Every complex blend will be its own item, but every other draw will be chunked together
+/// Separates the command list into things that can be batched into the same render pass.
+/// Every blend will be its own item, but every other draw will be chunked together
 #[allow(clippy::too_many_arguments)]
 pub fn chunk_blends<'a>(
     commands: CommandList,
     descriptors: &'a Descriptors,
-    staging_belt: &'a mut wgpu::util::StagingBelt,
     dynamic_transforms: &'a DynamicTransforms,
-    draw_encoder: &mut wgpu::CommandEncoder,
-    meshes: &'a Vec<Mesh>,
-    quality: StageQuality,
-    width: u32,
-    height: u32,
-    nearest_layer: LayerRef,
-    texture_pool: &mut TexturePool,
 ) -> Vec<Chunk> {
-    WgpuCommandHandler::new(
-        descriptors,
-        staging_belt,
-        dynamic_transforms,
-        draw_encoder,
-        meshes,
-        quality,
-        width,
-        height,
-        nearest_layer,
-        texture_pool,
-    )
-    .chunk_blends(commands)
+    WgpuCommandHandler::new(descriptors, dynamic_transforms).chunk_blends(commands)
 }
 
 struct WgpuCommandHandler<'a> {
     descriptors: &'a Descriptors,
-    quality: StageQuality,
-    width: u32,
-    height: u32,
-    nearest_layer: LayerRef<'a>,
-    meshes: &'a Vec<Mesh>,
-    staging_belt: &'a mut wgpu::util::StagingBelt,
     dynamic_transforms: &'a DynamicTransforms,
-    draw_encoder: &'a mut wgpu::CommandEncoder,
-    texture_pool: &'a mut TexturePool,
     emulate_lines: bool,
 
     result: Vec<Chunk>,
@@ -492,18 +439,7 @@ struct WgpuCommandHandler<'a> {
 
 impl<'a> WgpuCommandHandler<'a> {
     #[allow(clippy::too_many_arguments)]
-    fn new(
-        descriptors: &'a Descriptors,
-        staging_belt: &'a mut wgpu::util::StagingBelt,
-        dynamic_transforms: &'a DynamicTransforms,
-        draw_encoder: &'a mut wgpu::CommandEncoder,
-        meshes: &'a Vec<Mesh>,
-        quality: StageQuality,
-        width: u32,
-        height: u32,
-        nearest_layer: LayerRef<'a>,
-        texture_pool: &'a mut TexturePool,
-    ) -> Self {
+    fn new(descriptors: &'a Descriptors, dynamic_transforms: &'a DynamicTransforms) -> Self {
         let transforms = Self::new_transforms(descriptors, dynamic_transforms);
 
         // DirectX does support drawing lines, but it's very inconsistent.
@@ -513,15 +449,7 @@ impl<'a> WgpuCommandHandler<'a> {
 
         Self {
             descriptors,
-            quality,
-            width,
-            height,
-            nearest_layer,
-            meshes,
-            staging_belt,
             dynamic_transforms,
-            draw_encoder,
-            texture_pool,
             emulate_lines,
 
             result: vec![],
@@ -610,104 +538,21 @@ impl<'a> WgpuCommandHandler<'a> {
 
 impl CommandHandler for WgpuCommandHandler<'_> {
     fn blend(&mut self, commands: CommandList, blend_mode: RenderBlendMode) {
-        let mut surface = Surface::new(
-            self.descriptors,
-            self.quality,
-            self.width,
-            self.height,
-            wgpu::TextureFormat::Rgba8Unorm,
-        );
-        let target_layer = if let RenderBlendMode::Builtin(BlendMode::Layer) = &blend_mode {
-            LayerRef::Current
-        } else {
-            self.nearest_layer
-        };
-        let blend_type = BlendType::from(blend_mode);
-        let clear_color = blend_type.default_color();
-        let target = surface.draw_commands(
-            RenderTargetMode::FreshWithColor(clear_color),
-            self.descriptors,
-            self.meshes,
-            commands,
-            self.staging_belt,
-            self.dynamic_transforms,
-            self.draw_encoder,
-            target_layer,
-            self.texture_pool,
-        );
-        target.ensure_cleared(self.draw_encoder);
-
-        match blend_type {
-            BlendType::Trivial(blend_mode) => {
-                let transform = Transform {
-                    matrix: Matrix::scale(target.width() as f32, target.height() as f32),
-                    color_transform: Default::default(),
-                };
-                let texture = target.take_color_texture();
-                let bind_group =
-                    self.descriptors
-                        .device
-                        .create_bind_group(&wgpu::BindGroupDescriptor {
-                            layout: &self.descriptors.bind_layouts.bitmap,
-                            entries: &[
-                                wgpu::BindGroupEntry {
-                                    binding: 0,
-                                    resource: self
-                                        .descriptors
-                                        .quad
-                                        .texture_transforms
-                                        .as_entire_binding(),
-                                },
-                                wgpu::BindGroupEntry {
-                                    binding: 1,
-                                    resource: wgpu::BindingResource::TextureView(texture.view()),
-                                },
-                                wgpu::BindGroupEntry {
-                                    binding: 2,
-                                    resource: wgpu::BindingResource::Sampler(
-                                        self.descriptors.bitmap_samplers.get_sampler(false, false),
-                                    ),
-                                },
-                            ],
-                            label: None,
-                        });
-                self.add_to_current(
-                    transform.matrix,
-                    transform.color_transform,
-                    |transform_buffer| DrawCommand::RenderTexture {
-                        _texture: texture,
-                        binds: bind_group,
-                        transform_buffer,
-                        blend_mode,
-                    },
-                );
-            }
-            blend_type => {
-                if !self.current.is_empty() {
-                    self.result.push(Chunk::Draw(
-                        mem::take(&mut self.current),
-                        self.needs_stencil,
-                        mem::replace(
-                            &mut self.transforms,
-                            BufferBuilder::new_for_uniform(&self.descriptors.limits),
-                        ),
-                    ));
-                }
-                self.transforms
-                    .set_buffer_limit(self.dynamic_transforms.buffer.size());
-                let chunk_blend_mode = match blend_type {
-                    BlendType::Complex(complex) => ChunkBlendMode::Complex(complex),
-                    BlendType::Shader(shader) => ChunkBlendMode::Shader(shader),
-                    _ => unreachable!(),
-                };
-                self.result.push(Chunk::Blend(
-                    target.take_color_texture(),
-                    chunk_blend_mode,
-                    self.num_masks > 0,
-                ));
-                self.needs_stencil = self.num_masks > 0;
-            }
+        if !self.current.is_empty() {
+            self.result.push(Chunk::Draw(
+                mem::take(&mut self.current),
+                self.needs_stencil,
+                mem::replace(
+                    &mut self.transforms,
+                    BufferBuilder::new_for_uniform(&self.descriptors.limits),
+                ),
+            ));
+            self.transforms
+                .set_buffer_limit(self.dynamic_transforms.buffer.size());
         }
+        self.result
+            .push(Chunk::Blend(commands, self.num_masks > 0, blend_mode));
+        self.needs_stencil = self.num_masks > 0;
     }
 
     fn render_bitmap(
