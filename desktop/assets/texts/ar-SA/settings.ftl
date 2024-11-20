@@ -44,14 +44,14 @@ align-top-left = إلى فوق-يسار
 align-bottom-left = إلى أسفل-يسار
 align-top-right = إلى فوق-يمين
 align-bottom-right = إلى أسفل-يمين
-align-force = إجبار
+align-force = أجبر
 scale-mode = وضع المقياس
 scale-mode-noscale = غير مكبرة (100%)
 scale-mode-noscale-tooltip =
     يعرض الفيلم بحجمه الأصلي، دون أي تكبير/تصغير.
     
     يتوافق مع StageScaleMode.NO_SCALE
-scale-mode-showall = تكبير/تصغير للإحتواء
+scale-mode-showall = كبر/صغر للإحتواء
 scale-mode-showall-tooltip =
     يكبر الفيلم ليملأ النافذة قدر الإمكان دون إقتصاص، مع الحفاظ على نسبة طول والعرض.
     
@@ -61,7 +61,7 @@ scale-mode-exactfit-tooltip =
     يضمن أن الفيلم يملأ النافذة بأكملها، بغض النظر عن نسبة الطول والعرض.
     
     يتوافق مع StageScaleMode.EXACT_FIT
-scale-mode-noborder = الإقتصاص للإحتواء
+scale-mode-noborder = إقتص للإحتواء
 scale-mode-noborder-tooltip =
     يملأ النافذة بأكملها مع الحفاظ على نسبة الطول والعرض، مع اقتصاص الفيلم إذا لزم الأمر.
     

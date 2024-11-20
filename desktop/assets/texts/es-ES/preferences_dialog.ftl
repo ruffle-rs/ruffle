@@ -23,3 +23,6 @@ theme = Tema
 theme-system = Predeterminado del sistema
 theme-light = Claro
 theme-dark = Oscuro
+# See for context https://github.com/FeralInteractive/gamemode
+gamemode = GameMode
+gamemode-default = Por defecto

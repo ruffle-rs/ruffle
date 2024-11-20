@@ -11,6 +11,7 @@ ruffle-demo = Demo Web
 ruffle-desktop = Aplicativo de Desktop
 ruffle-wiki = Ver Wiki do Ruffle
 enable-hardware-acceleration = Parece que a aceleração de hardware está desabilitada. Embora o Ruffle possa funcionar, ele pode ser muito lento. Você pode descobrir como habilitar a aceleração de hardware seguindo o link abaixo:
+enable-hardware-acceleration-link = FAQ - Aceleração de hardware do Chrome
 view-error-details = Ver detalhes do erro
 open-in-new-tab = Abrir em uma nova guia
 click-to-unmute = Clique para ativar o som
