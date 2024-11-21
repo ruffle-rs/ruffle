@@ -99,6 +99,7 @@ fn set_size<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.size = match value {
         Value::Undefined | Value::Null => None,
+        value if activation.swf_version() < 8 => Some(value.coerce_to_i32(activation)?.into()),
         value => Some(round_to_even(value.coerce_to_f64(activation)?).into()),
     };
     Ok(())
@@ -267,6 +268,9 @@ fn set_left_margin<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.left_margin = match value {
         Value::Undefined | Value::Null => None,
+        value if activation.swf_version() < 8 => {
+            Some(value.coerce_to_i32(activation)?.max(0).into())
+        }
         value => Some(round_to_even(value.coerce_to_f64(activation)?.max(0.0)).into()),
     };
     Ok(())
@@ -289,6 +293,9 @@ fn set_right_margin<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.right_margin = match value {
         Value::Undefined | Value::Null => None,
+        value if activation.swf_version() < 8 => {
+            Some(value.coerce_to_i32(activation)?.max(0).into())
+        }
         value => Some(round_to_even(value.coerce_to_f64(activation)?.max(0.0)).into()),
     };
     Ok(())
@@ -308,6 +315,9 @@ fn set_indent<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.indent = match value {
         Value::Undefined | Value::Null => None,
+        value if activation.swf_version() < 8 => {
+            Some(value.coerce_to_i32(activation)?.max(0).into())
+        }
         value => Some(round_to_even(value.coerce_to_f64(activation)?).into()),
     };
     Ok(())
@@ -327,6 +337,9 @@ fn set_leading<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.leading = match value {
         Value::Undefined | Value::Null => None,
+        value if activation.swf_version() < 8 => {
+            Some(value.coerce_to_i32(activation)?.max(0).into())
+        }
         value => Some(round_to_even(value.coerce_to_f64(activation)?).into()),
     };
     Ok(())
@@ -349,6 +362,9 @@ fn set_block_indent<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.block_indent = match value {
         Value::Undefined | Value::Null => None,
+        value if activation.swf_version() < 8 => {
+            Some(value.coerce_to_i32(activation)?.max(0).into())
+        }
         value => Some(round_to_even(value.coerce_to_f64(activation)?).into()),
     };
     Ok(())
