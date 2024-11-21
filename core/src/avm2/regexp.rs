@@ -245,7 +245,7 @@ impl<'gc> RegExp<'gc> {
                 .chain(std::iter::once(m.range.start.into()))
                 .chain(std::iter::once((*txt).into()))
                 .collect::<Vec<_>>();
-            let r = f.call(Value::Null, &args, activation)?;
+            let r = f.call(activation, Value::Null, &args)?;
             return Ok(Cow::Owned(WString::from(
                 r.coerce_to_string(activation)?.as_wstr(),
             )));

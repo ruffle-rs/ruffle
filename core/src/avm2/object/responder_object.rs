@@ -86,7 +86,7 @@ impl<'gc> ResponderObject<'gc> {
         if let Some(function) = function {
             let mut activation = Activation::from_nothing(context);
             let value = crate::avm2::amf::deserialize_value(&mut activation, message)?;
-            function.call((*self).into(), &[value], &mut activation)?;
+            function.call(&mut activation, (*self).into(), &[value])?;
         }
 
         Ok(())

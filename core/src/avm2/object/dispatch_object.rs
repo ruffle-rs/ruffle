@@ -4,9 +4,6 @@ use crate::avm2::activation::Activation;
 use crate::avm2::events::DispatchList;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ObjectPtr, TObject};
-use crate::avm2::value::Value;
-use crate::avm2::Error;
-use crate::string::StringContext;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
@@ -95,18 +92,6 @@ impl<'gc> TObject<'gc> for DispatchObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn construct(
-        self,
-        _activation: &mut Activation<'_, 'gc>,
-        _args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        Err("Cannot construct internal event dispatcher structures.".into())
-    }
-
-    fn value_of(&self, _context: &mut StringContext<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Err("Cannot subclass internal event dispatcher structures.".into())
     }
 
     /// Unwrap this object as a list of event handlers.

@@ -5,9 +5,7 @@ use crate::avm1::SystemProperties;
 use crate::avm1::VariableDumper;
 use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm1::{TObject, Value};
-use crate::avm2::{
-    object::TObject as _, Activation as Avm2Activation, Avm2, CallStack, Object as Avm2Object,
-};
+use crate::avm2::{Activation as Avm2Activation, Avm2, CallStack, Object as Avm2Object};
 use crate::backend::ui::FontDefinition;
 use crate::backend::{
     audio::{AudioBackend, AudioManager},

@@ -320,6 +320,8 @@ impl<'gc> Callback<'gc> {
                 Value::Null
             }
             Callback::Avm2 { method } => {
+                let method = Avm2Value::from(*method);
+
                 let domain = context
                     .library
                     .library_for_movie(context.swf.clone())
@@ -331,7 +333,7 @@ impl<'gc> Callback<'gc> {
                     .map(|v| v.into_avm2(&mut activation))
                     .collect();
                 match method
-                    .call(Avm2Value::Null, &args, &mut activation)
+                    .call(&mut activation, Avm2Value::Null, &args)
                     .and_then(|value| Value::from_avm2(&mut activation, value))
                 {
                     Ok(result) => result,

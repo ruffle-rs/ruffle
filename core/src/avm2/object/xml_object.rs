@@ -383,9 +383,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             }
         }
 
-        return method
-            .as_callable(activation, Some(multiname), Some(self.into()), false)?
-            .call(self.into(), arguments, activation);
+        method.call(activation, self.into(), arguments)
     }
 
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {

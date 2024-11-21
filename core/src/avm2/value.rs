@@ -903,64 +903,52 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    /// Unwrap the value's object, if present, and otherwise report an error
-    /// if the value is not a callable object (class or function).
-    ///
-    /// This is also suitable for constructors (with the exception of
-    /// `DispatchObject`, which user code shouldn't be able to access).
+    /// Unwrap the value's object, if present, and report an error
+    /// if the value is not a callable object (class or function). Otherwise,
+    /// call the ClassObject or FunctionObject.
     ///
     /// The `name` parameter allows inclusion of the name used to look up the
     /// callable in the resulting error, if provided.
-    ///
-    /// The `receiver` parameter allows inclusion of the type of the receiver
-    /// in the error message, if provided.
-    pub fn as_callable(
+    pub fn call(
         &self,
         activation: &mut Activation<'_, 'gc>,
-        name: Option<&Multiname<'gc>>,
-        receiver: Option<Value<'gc>>,
-        as_constructor: bool,
+        receiver: Value<'gc>,
+        args: &[Value<'gc>],
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        match self.as_object() {
+            Some(Object::ClassObject(class_object)) => class_object.call(activation, args),
+            Some(Object::FunctionObject(function_object)) => {
+                function_object.call(activation, receiver, args)
+            }
+            _ => Err(Error::AvmError(type_error(
+                activation,
+                "Error #1006: value is not a function.",
+                1006,
+            )?)),
+        }
+    }
+
+    pub fn construct(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        args: &[Value<'gc>],
     ) -> Result<Object<'gc>, Error<'gc>> {
         match self.as_object() {
-            Some(o) if o.as_class_object().is_some() || o.as_executable().is_some() => Ok(o),
+            Some(Object::ClassObject(class_object)) => class_object.construct(activation, args),
+            Some(Object::FunctionObject(function_object)) => {
+                function_object.construct(activation, args)
+            }
             _ => {
-                // Undefined function
-                let name = if let Some(name) = name {
-                    name.to_qualified_name(activation.context.gc_context)
-                } else {
-                    "value".into()
-                };
-                let error = if as_constructor {
-                    if activation.context.swf.version() < 11 {
-                        type_error(
-                            activation,
-                            &format!("Error #1115: {} is not a constructor.", name),
-                            1115,
-                        )
-                    } else {
-                        type_error(
-                            activation,
-                            "Error #1007: Instantiation attempted on a non-constructor.",
-                            1007,
-                        )
-                    }
-                } else if let Some(Value::Object(receiver)) = receiver {
-                    type_error(
-                        activation,
-                        &format!(
-                            "Error #1006: {} is not a function of class {}.",
-                            name,
-                            receiver.instance_of_class_name(activation.context.gc_context)
-                        ),
-                        1006,
-                    )
+                let error = if activation.context.swf.version() < 11 {
+                    type_error(activation, "Error #1115: value is not a constructor.", 1115)
                 } else {
                     type_error(
                         activation,
-                        &format!("Error #1006: {} is not a function.", name),
-                        1006,
+                        "Error #1007: Instantiation attempted on a non-constructor.",
+                        1007,
                     )
                 };
+
                 Err(Error::AvmError(error?))
             }
         }

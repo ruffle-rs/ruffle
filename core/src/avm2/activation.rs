@@ -1120,10 +1120,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_call(&mut self, arg_count: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
         let receiver = self.pop_stack();
-        let function = self
-            .pop_stack()
-            .as_callable(self, None, Some(receiver), false)?;
-        let value = function.call(receiver, &args, self)?;
+        let function = self.pop_stack();
+
+        let value = function.call(self, receiver, &args)?;
 
         self.push_stack(value);
 
@@ -1183,13 +1182,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let receiver = self
             .pop_stack()
             .coerce_to_object_or_typeerror(self, Some(&multiname))?;
-        let function = receiver.get_property(&multiname, self)?.as_callable(
-            self,
-            Some(&multiname),
-            Some(receiver.into()),
-            false,
-        )?;
-        let value = function.call(Value::Null, &args, self)?;
+        let function = receiver.get_property(&multiname, self)?;
+        let value = function.call(self, Value::Null, &args)?;
 
         self.push_stack(value);
 
@@ -1224,7 +1218,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // TODO: What scope should the function be executed with?
         let scope = self.create_scopechain();
         let function = FunctionObject::from_method(self, method, scope, None, None, None);
-        let value = function.call(receiver, &args, self)?;
+        let value = function.call(self, receiver, &args)?;
 
         self.push_stack(value);
 
@@ -1775,7 +1769,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_construct(&mut self, arg_count: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
-        let ctor = self.pop_stack().as_callable(self, None, None, true)?;
+        let ctor = self.pop_stack();
 
         let object = ctor.construct(self, &args)?;
 

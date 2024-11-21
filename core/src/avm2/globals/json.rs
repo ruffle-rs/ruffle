@@ -18,7 +18,7 @@ use std::ops::Deref;
 fn deserialize_json_inner<'gc>(
     activation: &mut Activation<'_, 'gc>,
     json: JsonValue,
-    reviver: Option<Object<'gc>>,
+    reviver: Option<FunctionObject<'gc>>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(match json {
         JsonValue::Null => Value::Null,
@@ -40,7 +40,7 @@ fn deserialize_json_inner<'gc>(
                 let val = deserialize_json_inner(activation, entry.1.clone(), reviver)?;
                 let mapped_val = match reviver {
                     None => val,
-                    Some(reviver) => reviver.call(Value::Null, &[key.into(), val], activation)?,
+                    Some(reviver) => reviver.call(activation, Value::Null, &[key.into(), val])?,
                 };
                 if matches!(mapped_val, Value::Undefined) {
                     obj.delete_public_property(activation, key)?;
@@ -56,7 +56,7 @@ fn deserialize_json_inner<'gc>(
                 let val = deserialize_json_inner(activation, val.clone(), reviver)?;
                 let mapped_val = match reviver {
                     None => val,
-                    Some(reviver) => reviver.call(Value::Null, &[key.into(), val], activation)?,
+                    Some(reviver) => reviver.call(activation, Value::Null, &[key.into(), val])?,
                 };
                 arr.push(Some(mapped_val));
             }
@@ -70,14 +70,14 @@ fn deserialize_json_inner<'gc>(
 fn deserialize_json<'gc>(
     activation: &mut Activation<'_, 'gc>,
     json: JsonValue,
-    reviver: Option<Object<'gc>>,
+    reviver: Option<FunctionObject<'gc>>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let val = deserialize_json_inner(activation, json, reviver)?;
     match reviver {
         None => Ok(val),
         Some(reviver) => {
             let args = [activation.strings().empty().into(), val];
-            reviver.call(Value::Null, &args, activation)
+            reviver.call(activation, Value::Null, &args)
         }
     }
 }
@@ -134,9 +134,9 @@ impl<'gc> AvmSerializer<'gc> {
         };
         if let Some(Replacer::Function(replacer)) = self.replacer {
             replacer.call(
+                activation,
                 Value::Null,
                 &[eval_key.unwrap_or_else(key).into(), value],
-                activation,
             )
         } else {
             Ok(value)
@@ -271,7 +271,9 @@ pub fn parse<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let input = args.get_string(activation, 0)?;
-    let reviver = args.try_get_object(activation, 1);
+    let reviver = args
+        .try_get_object(activation, 1)
+        .map(|o| o.as_function_object().unwrap());
 
     let parsed = if let Ok(parsed) = serde_json::from_str(&input.to_utf8_lossy()) {
         parsed

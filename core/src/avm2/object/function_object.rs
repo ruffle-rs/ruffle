@@ -153,6 +153,45 @@ impl<'gc> FunctionObject<'gc> {
         ))
     }
 
+    pub fn call(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        receiver: Value<'gc>,
+        arguments: &[Value<'gc>],
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        // NOTE: Cloning an executable does not allocate new memory
+        let exec = self.0.exec.borrow().clone();
+
+        exec.exec(receiver, arguments, activation, self.into())
+    }
+
+    pub fn construct(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        arguments: &[Value<'gc>],
+    ) -> Result<Object<'gc>, Error<'gc>> {
+        let object_class = activation.avm2().classes().object;
+
+        let prototype = if let Some(proto) = self.prototype() {
+            proto
+        } else {
+            let proto = object_class.prototype();
+            self.set_prototype(Some(proto), activation.gc());
+            proto
+        };
+
+        let instance = ScriptObject::custom_object(
+            activation.context.gc_context,
+            object_class.inner_class_definition(),
+            Some(prototype),
+            object_class.instance_vtable(),
+        );
+
+        self.call(activation, instance.into(), arguments)?;
+
+        Ok(instance)
+    }
+
     pub fn prototype(&self) -> Option<Object<'gc>> {
         self.0.prototype.get()
     }
@@ -192,44 +231,5 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn as_function_object(&self) -> Option<FunctionObject<'gc>> {
         Some(*self)
-    }
-
-    fn call(
-        self,
-        receiver: Value<'gc>,
-        arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        // NOTE: Cloning an executable does not allocate new memory
-        let exec = self.0.exec.borrow().clone();
-
-        exec.exec(receiver, arguments, activation, self.into())
-    }
-
-    fn construct(
-        self,
-        activation: &mut Activation<'_, 'gc>,
-        arguments: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        let object_class = activation.avm2().classes().object;
-
-        let prototype = if let Some(proto) = self.prototype() {
-            proto
-        } else {
-            let proto = object_class.prototype();
-            self.set_prototype(Some(proto), activation.gc());
-            proto
-        };
-
-        let instance = ScriptObject::custom_object(
-            activation.context.gc_context,
-            object_class.inner_class_definition(),
-            Some(prototype),
-            object_class.instance_vtable(),
-        );
-
-        self.call(instance.into(), arguments, activation)?;
-
-        Ok(instance)
     }
 }

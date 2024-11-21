@@ -572,8 +572,8 @@ impl<'gc> Avm2<'gc> {
         context: &mut UpdateContext<'gc>,
     ) -> Result<(), String> {
         let mut evt_activation = Activation::from_domain(context, domain);
-        callable
-            .call(receiver, args, &mut evt_activation)
+        Value::from(callable)
+            .call(&mut evt_activation, receiver, args)
             .map_err(|e| format!("{e:?}"))?;
 
         Ok(())

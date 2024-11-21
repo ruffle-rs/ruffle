@@ -8,7 +8,6 @@ use crate::avm1::ExecutionReason;
 use crate::avm1::{
     Activation, ActivationIdentifier, Object as Avm1Object, TObject as _, Value as Avm1Value,
 };
-use crate::avm2::object::TObject;
 use crate::avm2::{Activation as Avm2Activation, Object as Avm2Object, Value as Avm2Value};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
@@ -142,7 +141,11 @@ impl<'gc> Timers<'gc> {
                 TimerCallback::Avm2Callback { closure, params } => {
                     let domain = context.avm2.stage_domain();
                     let mut avm2_activation = Avm2Activation::from_domain(context, domain);
-                    match closure.call(Avm2Value::Null, &params, &mut avm2_activation) {
+                    match Avm2Value::from(closure).call(
+                        &mut avm2_activation,
+                        Avm2Value::Null,
+                        &params,
+                    ) {
                         Ok(v) => v.coerce_to_boolean(),
                         Err(e) => {
                             tracing::error!("Unhandled AVM2 error in timer callback: {e:?}",);
