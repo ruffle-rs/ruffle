@@ -118,10 +118,7 @@ impl<'gc> AvmSerializer<'gc> {
         key: impl Fn() -> AvmString<'gc>,
         value: Value<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let (eval_key, value) = if value.is_primitive() {
-            (None, value)
-        } else {
-            let obj = value.as_object().unwrap();
+        let (eval_key, value) = if let Some(obj) = value.as_object() {
             if obj.has_public_property("toJSON", activation) {
                 let key = key();
                 (
@@ -131,7 +128,10 @@ impl<'gc> AvmSerializer<'gc> {
             } else {
                 (None, value)
             }
+        } else {
+            (None, value)
         };
+
         if let Some(Replacer::Function(replacer)) = self.replacer {
             replacer.call(
                 activation,
