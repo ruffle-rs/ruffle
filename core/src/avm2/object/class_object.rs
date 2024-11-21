@@ -342,7 +342,7 @@ impl<'gc> ClassObject<'gc> {
             Some(c_class),
         );
 
-        class_init_fn.call(object.into(), &[], activation)?;
+        class_init_fn.call(activation, object.into(), &[])?;
 
         Ok(())
     }
@@ -434,7 +434,7 @@ impl<'gc> ClassObject<'gc> {
                 Some(class),
             );
 
-            callee.call(receiver.into(), arguments, activation)
+            callee.call(activation, receiver.into(), arguments)
         } else {
             receiver.call_property(multiname, arguments, activation)
         }
@@ -497,7 +497,7 @@ impl<'gc> ClassObject<'gc> {
 
                 // We call getters, but return the actual function object for normal methods
                 if matches!(property, Some(Property::Virtual { .. })) {
-                    callee.call(receiver.into(), &[], activation)
+                    callee.call(activation, receiver.into(), &[])
                 } else {
                     Ok(callee.into())
                 }
@@ -573,7 +573,7 @@ impl<'gc> ClassObject<'gc> {
                 let callee =
                     FunctionObject::from_method(activation, method, scope.expect("Scope should exist here"), Some(receiver), super_class_obj, Some(class));
 
-                callee.call(receiver.into(), &[value], activation)?;
+                callee.call(activation, receiver.into(), &[value])?;
                 Ok(())
             }
             Some(Property::Slot { .. }) => {
@@ -632,6 +632,55 @@ impl<'gc> ClassObject<'gc> {
         .insert(class_param, class_object);
 
         Ok(class_object)
+    }
+
+    pub fn call(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        arguments: &[Value<'gc>],
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        if let Some(call_handler) = self.call_handler() {
+            let scope = self.0.class_scope;
+            exec(
+                call_handler,
+                scope,
+                self.into(),
+                self.superclass_object(),
+                Some(self.inner_class_definition()),
+                arguments,
+                activation,
+                self.into(),
+            )
+        } else if arguments.len() == 1 {
+            arguments[0].coerce_to_type(activation, self.inner_class_definition())
+        } else {
+            Err(Error::AvmError(argument_error(
+                activation,
+                &format!(
+                    "Error #1112: Argument count mismatch on class coercion.  Expected 1, got {}.",
+                    arguments.len()
+                ),
+                1112,
+            )?))
+        }
+    }
+
+    pub fn construct(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        arguments: &[Value<'gc>],
+    ) -> Result<Object<'gc>, Error<'gc>> {
+        if let Some(custom_constructor) = self.custom_constructor() {
+            custom_constructor(activation, arguments)
+        } else {
+            let instance_allocator = self.instance_allocator();
+
+            let instance = instance_allocator(self, activation)?;
+
+            self.call_init(instance.into(), arguments, activation)?;
+
+            Ok(instance)
+        }
     }
 
     pub fn translation_unit(self) -> Option<TranslationUnit<'gc>> {
@@ -727,56 +776,6 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         self.to_string(activation)
-    }
-
-    fn call(
-        self,
-        _receiver: Value<'gc>,
-        arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        if let Some(call_handler) = self.call_handler() {
-            let scope = self.0.class_scope;
-            exec(
-                call_handler,
-                scope,
-                self.into(),
-                self.superclass_object(),
-                Some(self.inner_class_definition()),
-                arguments,
-                activation,
-                self.into(),
-            )
-        } else if arguments.len() == 1 {
-            arguments[0].coerce_to_type(activation, self.inner_class_definition())
-        } else {
-            Err(Error::AvmError(argument_error(
-                activation,
-                &format!(
-                    "Error #1112: Argument count mismatch on class coercion.  Expected 1, got {}.",
-                    arguments.len()
-                ),
-                1112,
-            )?))
-        }
-    }
-
-    fn construct(
-        self,
-        activation: &mut Activation<'_, 'gc>,
-        arguments: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        if let Some(custom_constructor) = self.custom_constructor() {
-            custom_constructor(activation, arguments)
-        } else {
-            let instance_allocator = self.instance_allocator();
-
-            let instance = instance_allocator(self, activation)?;
-
-            self.call_init(instance.into(), arguments, activation)?;
-
-            Ok(instance)
-        }
     }
 
     fn as_class_object(&self) -> Option<ClassObject<'gc>> {

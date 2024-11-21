@@ -137,9 +137,9 @@ fn call<'gc>(
     let this = args.get(0).copied().unwrap_or(Value::Null);
 
     if args.len() > 1 {
-        Ok(func.call(this, &args[1..], activation)?)
+        Ok(Value::from(func).call(activation, this, &args[1..])?)
     } else {
-        Ok(func.call(this, &[], activation)?)
+        Ok(Value::from(func).call(activation, this, &[])?)
     }
 }
 
@@ -170,7 +170,7 @@ fn apply<'gc>(
         Vec::new()
     };
 
-    func.call(this, &resolved_args, activation)
+    Value::from(func).call(activation, this, &resolved_args)
 }
 
 /// Implements `Function.prototype.toString` and `Function.prototype.toLocaleString`

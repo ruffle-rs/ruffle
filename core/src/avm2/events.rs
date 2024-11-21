@@ -401,7 +401,7 @@ fn dispatch_event_to_target<'gc>(
 
     let handlers: Vec<Object<'gc>> = dispatch_list
         .as_dispatch_mut(activation.context.gc_context)
-        .ok_or_else(|| Error::from("Internal dispatch list is missing during dispatch!"))?
+        .expect("Internal dispatch list is missing during dispatch!")
         .iter_event_handlers(name, use_capture)
         .collect();
 
@@ -428,7 +428,7 @@ fn dispatch_event_to_target<'gc>(
 
         let global = activation.context.avm2.toplevel_global_object().unwrap();
 
-        if let Err(err) = handler.call(global.into(), &[event.into()], activation) {
+        if let Err(err) = Value::from(*handler).call(activation, global.into(), &[event.into()]) {
             tracing::error!(
                 "Error dispatching event {:?} to handler {:?} : {:?}",
                 event,

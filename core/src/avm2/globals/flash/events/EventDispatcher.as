@@ -14,6 +14,8 @@ package flash.events {
 		public native function hasEventListener(type:String):Boolean;
 		public native function willTrigger(type:String):Boolean;
 
-		public native function toString():String;
+		public function toString():String {
+            return Object.prototype.toString.call(this);
+        }
 	}
 }
