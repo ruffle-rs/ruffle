@@ -1452,15 +1452,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
             let name_value = self.context.avm2.peek(0);
             let object = self.context.avm2.peek(1);
-            if !name_value.is_primitive() {
+            if let Some(name_object) = name_value.as_object() {
                 let object = object.coerce_to_object_or_typeerror(self, None)?;
                 if let Some(dictionary) = object.as_dictionary_object() {
                     let _ = self.pop_stack();
                     let _ = self.pop_stack();
-                    dictionary.delete_property_by_object(
-                        name_value.as_object().unwrap(),
-                        self.context.gc_context,
-                    );
+                    dictionary.delete_property_by_object(name_object, self.context.gc_context);
 
                     self.push_raw(true);
                     return Ok(FrameControl::Continue);
@@ -1531,9 +1528,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let name_value = self.pop_stack();
 
         if let Some(dictionary) = obj.as_dictionary_object() {
-            if !name_value.is_primitive() {
-                let obj_key = name_value.as_object().unwrap();
-                self.push_raw(dictionary.has_property_by_object(obj_key));
+            if let Some(name_object) = name_value.as_object() {
+                self.push_raw(dictionary.has_property_by_object(name_object));
 
                 return Ok(FrameControl::Continue);
             }
