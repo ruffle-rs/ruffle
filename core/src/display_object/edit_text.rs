@@ -819,7 +819,7 @@ impl<'gc> EditText<'gc> {
         edit_text.hscroll = 0.0;
         edit_text.scroll = 1;
 
-        let layout_exterior_bounds = edit_text.layout.exterior_bounds();
+        let text_size = edit_text.layout.text_size();
 
         // TODO [KJ] The code below that modifies bounds is certainly wrong.
         //   We should take into account the order of operations performed on the field,
@@ -829,7 +829,7 @@ impl<'gc> EditText<'gc> {
         if autosize != AutoSizeMode::None {
             if !is_word_wrap {
                 // The edit text's bounds needs to have the padding baked in.
-                let width = layout_exterior_bounds.width() + padding;
+                let width = text_size.width() + padding;
                 let new_x = match autosize {
                     AutoSizeMode::Left => edit_text.bounds.x_min,
                     AutoSizeMode::Center => {
@@ -844,7 +844,7 @@ impl<'gc> EditText<'gc> {
                 let width = edit_text.requested_width;
                 edit_text.bounds.set_width(width);
             }
-            let height = layout_exterior_bounds.height() + padding;
+            let height = text_size.height() + padding;
             edit_text.bounds.set_height(height);
         } else {
             let width = edit_text.requested_width;
@@ -860,8 +860,8 @@ impl<'gc> EditText<'gc> {
     ///
     /// The returned tuple should be interpreted as width, then height.
     pub fn measure_text(self, _context: &mut UpdateContext<'gc>) -> (Twips, Twips) {
-        let exterior_bounds = self.0.read().layout.exterior_bounds();
-        (exterior_bounds.width(), exterior_bounds.height())
+        let text_size = self.0.read().layout.text_size();
+        (text_size.width(), text_size.height())
     }
 
     /// How far the text can be scrolled right, in pixels.
@@ -873,7 +873,7 @@ impl<'gc> EditText<'gc> {
             return 0.0;
         }
 
-        let base = (edit_text.layout.exterior_bounds().width() - edit_text.bounds.width())
+        let base = (edit_text.layout.text_size().width() - edit_text.bounds.width())
             .trunc_to_pixel()
             .to_pixels()
             .max(0.0);

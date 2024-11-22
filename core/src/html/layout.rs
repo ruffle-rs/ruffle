@@ -104,13 +104,12 @@ pub struct LayoutContext<'a, 'gc> {
     /// should be used.
     bounds: Option<BoxBounds<Twips>>,
 
-    /// The exterior bounds of all laid-out text, including left and right
-    /// margins.
+    /// Bounds used to calculate text metrics, i.e. its width and height.
     ///
     /// None indicates that no bounds have yet to be calculated. If the layout
     /// ends without a line having been generated, the default bounding box
     /// should be used.
-    exterior_bounds: Option<BoxBounds<Twips>>,
+    text_size_bounds: Option<BoxBounds<Twips>>,
 
     /// Whether we are laying out the first line of a paragraph.
     is_first_line: bool,
@@ -151,7 +150,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             current_line_index: 0,
             boxes: Vec::new(),
             bounds: None,
-            exterior_bounds: None,
+            text_size_bounds: None,
             is_first_line: true,
             has_line_break: false,
             current_line_span: Default::default(),
@@ -389,7 +388,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         end: usize,
         span: &TextSpan,
     ) {
-        let mut line_bounds = None;
+        let mut line_size_bounds = None;
         let mut box_count: i32 = 0;
         for linebox in self.boxes.iter_mut() {
             let (text, _tf, font, params, _color) =
@@ -402,10 +401,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                     .with_width(font.measure(text.trim_end(), params));
             }
 
-            if let Some(line_bounds) = &mut line_bounds {
-                *line_bounds += linebox.bounds;
+            if let Some(line_size_bounds) = &mut line_size_bounds {
+                *line_size_bounds += linebox.bounds;
             } else {
-                line_bounds = Some(linebox.bounds);
+                line_size_bounds = Some(linebox.bounds);
             }
 
             box_count += 1;
@@ -415,14 +414,14 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             self.append_text(WStr::empty(), end, end, span);
         }
 
-        let mut line_bounds = line_bounds.unwrap_or_default();
+        let mut line_size_bounds = line_size_bounds.unwrap_or_default();
 
         let left_adjustment =
             Self::left_alignment_offset(&self.current_line_span, self.is_first_line);
         let right_adjustment = Twips::from_pixels(self.current_line_span.right_margin);
 
         let misalignment =
-            self.max_bounds - left_adjustment - right_adjustment - line_bounds.width();
+            self.max_bounds - left_adjustment - right_adjustment - line_size_bounds.width();
         let align_adjustment = max(
             match self.effective_alignment() {
                 swf::TextAlign::Left | swf::TextAlign::Justify => Default::default(),
@@ -469,12 +468,13 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         self.append_underlines();
 
-        line_bounds += Position::from((left_adjustment + align_adjustment, baseline_adjustment));
-        line_bounds += Size::from((Twips::ZERO, font_leading_adjustment));
+        line_size_bounds +=
+            Position::from((left_adjustment + align_adjustment, baseline_adjustment));
+        line_size_bounds += Size::from((Twips::ZERO, font_leading_adjustment));
 
         self.flush_line(end);
 
-        Self::extend_bounds(&mut self.exterior_bounds, line_bounds);
+        Self::extend_bounds(&mut self.text_size_bounds, line_size_bounds);
     }
 
     fn flush_line(&mut self, end: usize) {
@@ -850,9 +850,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             last_span,
         );
 
+        let text_size = self.text_size_bounds.unwrap_or_default();
         Layout {
             bounds: self.bounds.unwrap_or_default(),
-            exterior_bounds: self.exterior_bounds.unwrap_or_default(),
+            text_size: Size::from((text_size.width(), text_size.height())),
             lines: self.lines,
         }
     }
@@ -918,7 +919,7 @@ pub struct Layout<'gc> {
     bounds: BoxBounds<Twips>,
 
     #[collect(require_static)]
-    exterior_bounds: BoxBounds<Twips>,
+    text_size: Size<Twips>,
 
     lines: Vec<LayoutLine<'gc>>,
 }
@@ -929,12 +930,9 @@ impl<'gc> Layout<'gc> {
         self.bounds
     }
 
-    /// Exterior bounds of this layout.
-    ///
-    /// The returned bounds will include the text bounds itself,
-    /// as well as left and right margins on any of the lines.
-    pub fn exterior_bounds(&self) -> BoxBounds<Twips> {
-        self.exterior_bounds
+    /// Text size of this layout.
+    pub fn text_size(&self) -> Size<Twips> {
+        self.text_size
     }
 
     pub fn lines(&self) -> &Vec<LayoutLine<'gc>> {
