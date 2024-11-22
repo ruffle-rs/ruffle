@@ -474,11 +474,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         self.flush_line(end);
 
-        if let Some(eb) = &mut self.exterior_bounds {
-            *eb += line_bounds;
-        } else {
-            self.exterior_bounds = Some(line_bounds);
-        }
+        Self::extend_bounds(&mut self.exterior_bounds, line_bounds);
     }
 
     fn flush_line(&mut self, end: usize) {
@@ -514,10 +510,14 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         self.current_line_index += 1;
 
         // Update layout bounds
-        if let Some(lb) = &mut self.bounds {
-            *lb += bounds;
+        Self::extend_bounds(&mut self.bounds, bounds);
+    }
+
+    fn extend_bounds(bounds: &mut Option<BoxBounds<Twips>>, to_extend: BoxBounds<Twips>) {
+        if let Some(b) = bounds {
+            *b += to_extend;
         } else {
-            self.bounds = Some(bounds);
+            *bounds = Some(to_extend);
         }
     }
 
