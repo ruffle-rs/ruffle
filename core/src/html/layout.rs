@@ -383,11 +383,16 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     fn fixup_line(
         &mut self,
         context: &mut UpdateContext<'gc>,
-        only_line: bool,
+        last_line: bool,
         final_line_of_para: bool,
         end: usize,
         span: &TextSpan,
     ) {
+        if self.boxes.is_empty() {
+            self.append_text(WStr::empty(), end, end, span);
+        }
+        let is_line_empty = self.boxes.first().unwrap().start() == end;
+
         let mut line_size_bounds = None;
         let mut box_count: i32 = 0;
         for linebox in self.boxes.iter_mut() {
@@ -408,10 +413,6 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             }
 
             box_count += 1;
-        }
-
-        if self.boxes.is_empty() {
-            self.append_text(WStr::empty(), end, end, span);
         }
 
         let mut line_size_bounds = line_size_bounds.unwrap_or_default();
@@ -439,11 +440,6 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             Twips::ZERO,
         );
 
-        let font_leading_adjustment = if only_line {
-            self.line_leading_adjustment()
-        } else {
-            Twips::ZERO
-        };
         if self.current_line_span.bullet && self.is_first_line && box_count > 0 {
             self.append_bullet(context, &self.current_line_span.clone());
         }
@@ -470,11 +466,19 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         line_size_bounds +=
             Position::from((left_adjustment + align_adjustment, baseline_adjustment));
-        line_size_bounds += Size::from((Twips::ZERO, font_leading_adjustment));
+
+        if self.current_line_index == 0 {
+            // The very first line always gets the leading.
+            line_size_bounds += Size::from((Twips::ZERO, self.max_leading));
+        }
+
+        if is_line_empty && last_line {
+            // Skip the last line if it's empty.
+        } else {
+            Self::extend_bounds(&mut self.text_size_bounds, line_size_bounds);
+        }
 
         self.flush_line(end);
-
-        Self::extend_bounds(&mut self.text_size_bounds, line_size_bounds);
     }
 
     fn flush_line(&mut self, end: usize) {
@@ -842,13 +846,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// Destroy the layout context, returning the newly constructed layout list.
     fn end_layout(mut self, context: &mut UpdateContext<'gc>, fs: &'a FormatSpans) -> Layout<'gc> {
         let last_span = fs.last_span().expect("At least one span should be present");
-        self.fixup_line(
-            context,
-            !self.has_line_break,
-            true,
-            fs.displayed_text().len(),
-            last_span,
-        );
+        self.fixup_line(context, true, true, fs.displayed_text().len(), last_span);
 
         let text_size = self.text_size_bounds.unwrap_or_default();
         Layout {
