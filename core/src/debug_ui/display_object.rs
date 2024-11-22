@@ -502,10 +502,17 @@ impl DisplayObjectWindow {
                 });
                 ui.end_row();
 
+                ui.label("Text Width");
+                ui.label(format!("{}", object.measure_text(context).0.to_pixels()));
+                ui.end_row();
+
+                ui.label("Text Height");
+                ui.label(format!("{}", object.measure_text(context).1.to_pixels()));
+                ui.end_row();
+
                 ui.label("Layout Debug Boxes");
                 ui.vertical(|ui| {
                     for (name, flag) in [
-                        ("Text Exterior", LayoutDebugBoxesFlag::TEXT_EXTERIOR),
                         ("Text", LayoutDebugBoxesFlag::TEXT),
                         ("Line", LayoutDebugBoxesFlag::LINE),
                         ("Box", LayoutDebugBoxesFlag::BOX),

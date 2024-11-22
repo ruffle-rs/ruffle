@@ -978,9 +978,6 @@ impl<'gc> EditText<'gc> {
         if flags.contains(LayoutDebugBoxesFlag::TEXT) {
             context.draw_rect_outline(Color::GREEN, layout.bounds().into(), Twips::ONE);
         }
-        if flags.contains(LayoutDebugBoxesFlag::TEXT_EXTERIOR) {
-            context.draw_rect_outline(Color::GREEN, layout.exterior_bounds().into(), Twips::ONE);
-        }
     }
 
     /// Render lines according to the given procedure.
@@ -2862,7 +2859,6 @@ bitflags::bitflags! {
 bitflags::bitflags! {
     #[derive(Clone, Copy)]
     pub struct LayoutDebugBoxesFlag: u8 {
-        const TEXT_EXTERIOR = 1 << 1;
         const TEXT = 1 << 2;
         const LINE = 1 << 3;
         const BOX = 1 << 5;
