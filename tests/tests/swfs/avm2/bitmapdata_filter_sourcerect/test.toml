@@ -1,0 +1,9 @@
+num_ticks = 1
+
+# FIXME We're way off here compared to FP
+[image_comparisons.output]
+tolerance = 5
+max_outliers = 1700
+
+[player_options]
+with_renderer = { optional = false, sample_count = 4 }
