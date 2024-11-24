@@ -300,7 +300,6 @@ impl<'gc> EditText<'gc> {
                     EditTextStatic {
                         swf: swf_movie,
                         id: swf_tag.id(),
-                        layout: swf_tag.layout().cloned(),
                         initial_text: swf_tag
                             .initial_text()
                             .map(|s| s.decode(encoding).into_owned()),
@@ -720,21 +719,6 @@ impl<'gc> EditText<'gc> {
         transform.matrix.ty = baseline_adjustment;
 
         transform
-    }
-
-    pub fn line_width(self) -> Twips {
-        let edit_text = self.0.read();
-        let static_data = &edit_text.static_data;
-
-        let mut base_width = Twips::from_pixels(self.width());
-
-        if let Some(layout) = &static_data.layout {
-            base_width -= layout.left_margin;
-            base_width -= layout.indent;
-            base_width -= layout.right_margin;
-        }
-
-        base_width
     }
 
     /// Returns the variable that this text field is bound to.
@@ -2872,7 +2856,6 @@ bitflags::bitflags! {
 struct EditTextStatic {
     swf: Arc<SwfMovie>,
     id: CharacterId,
-    layout: Option<swf::TextLayout>,
     initial_text: Option<WString>,
 }
 
