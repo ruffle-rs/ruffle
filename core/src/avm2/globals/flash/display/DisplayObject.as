@@ -1,5 +1,7 @@
 package flash.display {
-    
+
+    import __ruffle__.stub_method;
+
     import flash.accessibility.AccessibilityProperties;
     import flash.geom.Rectangle;
     import flash.geom.Transform;
@@ -8,6 +10,7 @@ package flash.display {
     import flash.display.LoaderInfo;
     import flash.display.Stage;
     import flash.geom.Point;
+    import flash.geom.Vector3D;
     import flash.events.EventDispatcher;
 
     [Ruffle(Abstract)]
@@ -15,7 +18,7 @@ package flash.display {
         private var _accessibilityProperties:AccessibilityProperties;
 
         public native function DisplayObject();
-        
+
         public function get accessibilityProperties():AccessibilityProperties {
             return this._accessibilityProperties;
         }
@@ -126,6 +129,18 @@ package flash.display {
         public native function localToGlobal(point:Point):Point;
 
         public native function globalToLocal(point:Point):Point;
+
+        [API("662")]
+        public function local3DToGlobal(point3d:Vector3D):Point {
+            stub_method("flash.display.DisplayObject", "local3DToGlobal");
+            return new Point(0, 0);
+        }
+
+        [API("662")]
+        public function globalToLocal3D(point:Point):Vector3D {
+            stub_method("flash.display.DisplayObject", "globalToLocal3D");
+            return new Vector3D(0, 0, 0);
+        }
 
         public native function getBounds(targetCoordinateSpace:DisplayObject):Rectangle;
 
