@@ -2,10 +2,14 @@ package flash.utils {
 	import flash.events.EventDispatcher;
 	import flash.events.TimerEvent;
 	public class Timer extends EventDispatcher {
-		internal var _currentCount: int;
-		internal var _delay: Number;
-		internal var _repeatCount: int;
-		internal var _timerId: int = -1;
+		private var _currentCount: int;
+		private var _repeatCount: int;
+
+		[Ruffle(InternalSlot)]
+		private var _delay: Number;
+
+		[Ruffle(InternalSlot)]
+		private var _timerId: int = -1;
 
 		private function checkDelay(delay:Number): void {
 			if (!isFinite(delay) || delay < 0) {
