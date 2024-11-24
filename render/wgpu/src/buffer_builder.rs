@@ -3,7 +3,6 @@ use std::ops::Range;
 use wgpu::util::DeviceExt;
 use wgpu::BufferAddress;
 
-#[derive(Debug)]
 pub struct BufferBuilder {
     inner: Vec<u8>,
     align_mask: usize,
