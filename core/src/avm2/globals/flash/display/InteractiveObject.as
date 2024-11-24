@@ -1,4 +1,5 @@
 package flash.display {
+    import __ruffle__.stub_method;
     import __ruffle__.stub_setter;
 
     import flash.accessibility.AccessibilityImplementation;
@@ -30,6 +31,12 @@ package flash.display {
         public function set needsSoftKeyboard(value:Boolean):void {
             stub_setter("flash.display.InteractiveObject", "needsSoftKeyboard");
             this._needsSoftKeyboard = value;
+        }
+
+        [API("670")]
+        public function requestSoftKeyboard():Boolean {
+            stub_method("flash.display.InteractiveObject", "requestSoftKeyboard");
+            return false;
         }
 
         [API("670")]
