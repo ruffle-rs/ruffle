@@ -1,6 +1,7 @@
 //! `flash.utils.Timer` native methods
 
 use crate::avm2::activation::Activation;
+use crate::avm2::globals::slots::*;
 use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
 use crate::avm2::Multiname;
@@ -13,23 +14,13 @@ pub fn stop<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let namespaces = activation.avm2().namespaces;
-
     let id = this
-        .get_property(
-            &Multiname::new(namespaces.flash_utils_internal, "_timerId"),
-            activation,
-        )
-        .unwrap()
+        .get_slot(FLASH_UTILS_TIMER__TIMER_ID_SLOT)
         .coerce_to_i32(activation)?;
 
     if id != -1 {
         activation.context.timers.remove(id);
-        this.set_property(
-            &Multiname::new(namespaces.flash_utils_internal, "_timerId"),
-            (-1).into(),
-            activation,
-        )?;
+        this.set_slot(FLASH_UTILS_TIMER__TIMER_ID_SLOT, (-1).into(), activation)?;
     }
 
     Ok(Value::Undefined)
@@ -44,19 +35,11 @@ pub fn start<'gc>(
     let namespaces = activation.avm2().namespaces;
 
     let id = this
-        .get_property(
-            &Multiname::new(namespaces.flash_utils_internal, "_timerId"),
-            activation,
-        )
-        .unwrap()
+        .get_slot(FLASH_UTILS_TIMER__TIMER_ID_SLOT)
         .coerce_to_i32(activation)?;
 
     let delay = this
-        .get_property(
-            &Multiname::new(namespaces.flash_utils_internal, "_delay"),
-            activation,
-        )
-        .unwrap()
+        .get_slot(FLASH_UTILS_TIMER__DELAY_SLOT)
         .coerce_to_number(activation)?;
 
     if id == -1 {
@@ -79,11 +62,7 @@ pub fn start<'gc>(
             delay as _,
             false,
         );
-        this.set_property(
-            &Multiname::new(namespaces.flash_utils_internal, "_timerId"),
-            id.into(),
-            activation,
-        )?;
+        this.set_slot(FLASH_UTILS_TIMER__TIMER_ID_SLOT, id.into(), activation)?;
     }
     Ok(Value::Undefined)
 }
@@ -94,22 +73,12 @@ pub fn update_delay<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let namespaces = activation.avm2().namespaces;
-
     let id = this
-        .get_property(
-            &Multiname::new(namespaces.flash_utils_internal, "_timerId"),
-            activation,
-        )
-        .unwrap()
+        .get_slot(FLASH_UTILS_TIMER__TIMER_ID_SLOT)
         .coerce_to_i32(activation)?;
 
     let delay = this
-        .get_property(
-            &Multiname::new(namespaces.flash_utils_internal, "_delay"),
-            activation,
-        )
-        .unwrap()
+        .get_slot(FLASH_UTILS_TIMER__DELAY_SLOT)
         .coerce_to_i32(activation)?;
 
     if id != -1 {
