@@ -1251,8 +1251,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         // (fast) side path for dictionary/array-likes
-        // NOTE: FP behaves differently here when the public namespace isn't
-        // included in the multiname's namespace set
         if multiname.has_lazy_name() && !multiname.has_lazy_ns() {
             // `MultinameL` is the only form of multiname that allows fast-path
             // or alternate-path lookups based on the local name *value*,
@@ -1264,12 +1262,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             if let Value::Object(object) = object_value {
                 match name_value {
                     Value::Integer(name_int) if name_int >= 0 => {
-                        if let Some(value) = object.get_index_property(name_int as usize) {
-                            let _ = self.pop_stack();
-                            let _ = self.pop_stack();
-                            self.push_stack(value);
+                        // Note that this path doesn't activate when the
+                        // public namespace isn't included in the multiname's
+                        // namespace set
+                        if multiname.contains_public_namespace() {
+                            if let Some(value) = object.get_index_property(name_int as usize) {
+                                let _ = self.pop_stack();
+                                let _ = self.pop_stack();
+                                self.push_stack(value);
 
-                            return Ok(());
+                                return Ok(());
+                            }
                         }
                     }
                     Value::Object(name_object) => {
@@ -1308,9 +1311,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Ok(());
         }
 
-        // side path for dictionary/arrays (TODO)
-        // NOTE: FP behaves differently here when the public namespace isn't
-        // included in the multiname's namespace set
+        // side path for dictionary/arrays
         if multiname.has_lazy_name() && !multiname.has_lazy_ns() {
             // `MultinameL` is the only form of multiname that allows fast-path
             // or alternate-path lookups based on the local name *value*,
@@ -1322,12 +1323,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             if let Value::Object(object) = object_value {
                 match name_value {
                     Value::Integer(name_int) if name_int >= 0 => {
-                        if let Some(mut array) = object.as_array_storage_mut(self.gc()) {
-                            let _ = self.pop_stack();
-                            let _ = self.pop_stack();
-                            array.set(name_int as usize, value);
+                        // Note that this path doesn't activate when the
+                        // public namespace isn't included in the multiname's
+                        // namespace set
+                        if multiname.contains_public_namespace() {
+                            if let Some(mut array) = object.as_array_storage_mut(self.gc()) {
+                                let _ = self.pop_stack();
+                                let _ = self.pop_stack();
+                                array.set(name_int as usize, value);
 
-                            return Ok(());
+                                return Ok(());
+                            }
                         }
                     }
                     Value::Object(name_object) => {
