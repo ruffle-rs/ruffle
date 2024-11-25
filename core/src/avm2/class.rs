@@ -1,7 +1,7 @@
 //! AVM2 classes
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::make_error_1014;
+use crate::avm2::error::{make_error_1014, Error1014Type};
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{scriptobject_allocator, ClassObject, Object};
 use crate::avm2::script::TranslationUnit;
@@ -448,7 +448,11 @@ impl<'gc> Class<'gc> {
                     .domain()
                     .get_class(activation.context, &multiname)
                     .ok_or_else(|| {
-                        make_error_1014(activation, multiname.to_qualified_name(activation.gc()))
+                        make_error_1014(
+                            activation,
+                            Error1014Type::VerifyError,
+                            multiname.to_qualified_name(activation.gc()),
+                        )
                     })?,
             )
         };
@@ -468,7 +472,11 @@ impl<'gc> Class<'gc> {
                     .domain()
                     .get_class(activation.context, &multiname)
                     .ok_or_else(|| {
-                        make_error_1014(activation, multiname.to_qualified_name(activation.gc()))
+                        make_error_1014(
+                            activation,
+                            Error1014Type::VerifyError,
+                            multiname.to_qualified_name(activation.gc()),
+                        )
                     })?,
             );
         }

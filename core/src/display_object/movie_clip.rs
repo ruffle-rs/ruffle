@@ -1351,6 +1351,10 @@ impl<'gc> MovieClip<'gc> {
             / self.total_bytes() as f64) as u32
     }
 
+    pub fn avm2_class(self) -> Option<Avm2ClassObject<'gc>> {
+        *self.0.read().static_data.avm2_class.read()
+    }
+
     pub fn set_avm2_class(self, gc_context: &Mutation<'gc>, constr: Option<Avm2ClassObject<'gc>>) {
         *self.0.read().static_data.avm2_class.write(gc_context) = constr;
     }
@@ -4525,26 +4529,18 @@ impl<'gc, 'a> MovieClip<'gc> {
             .write(context.gc_context)
             .remove(&current_frame)
         {
-            let movie = self.movie();
             let mut activation = Avm2Activation::from_nothing(context);
-            for (name, id) in symbols {
-                let library = activation
-                    .context
-                    .library
-                    .library_for_movie_mut(movie.clone());
-                let domain = library.avm2_domain();
-                let class_object = domain
-                    .get_defined_value(&mut activation, name)
-                    .and_then(|v| {
-                        v.as_object()
-                            .and_then(|o| o.as_class_object())
-                            .ok_or_else(|| {
-                                format!("Attempted to assign a non-class {name:?} in SymbolClass",)
-                                    .into()
-                            })
-                    });
 
-                match class_object {
+            let movie = self.movie();
+
+            let library = activation
+                .context
+                .library
+                .library_for_movie_mut(movie.clone());
+            let domain = library.avm2_domain();
+
+            for (name, id) in symbols {
+                match Avm2::lookup_class_for_character(&mut activation, self, domain, name, id) {
                     Ok(class_object) => {
                         activation
                             .context
@@ -4596,12 +4592,12 @@ impl<'gc, 'a> MovieClip<'gc> {
                                     *avm2_bitmapdata_class.write(activation.context.gc_context) =
                                         bitmap_class;
                                 } else {
-                                    tracing::error!("Associated class {:?} for symbol {} must extend flash.display.Bitmap or BitmapData, does neither", class_object.inner_class_definition().name(), self.id());
+                                    tracing::error!("Associated class {:?} for symbol {} must extend flash.display.Bitmap or BitmapData, does neither", class_object.inner_class_definition().name(), id);
                                 }
                             }
                             None => {
                                 // Most SWFs use id 0 here, but some obfuscated SWFs can use other invalid IDs.
-                                if self.0.read().static_data.avm2_class.read().is_none() {
+                                if self.avm2_class().is_none() {
                                     self.set_avm2_class(
                                         activation.context.gc_context,
                                         Some(class_object),
@@ -4616,7 +4612,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                         }
                     }
                     Err(e) => tracing::error!(
-                        "Got AVM2 error {e:?} when attempting to assign symbol class {name:?}",
+                        "Got AVM2 error when attempting to lookup symbol class: {e:?}",
                     ),
                 }
             }

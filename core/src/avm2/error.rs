@@ -193,18 +193,23 @@ pub fn make_error_1010<'gc>(
     }
 }
 
+pub enum Error1014Type {
+    ReferenceError,
+    VerifyError,
+}
+
 #[inline(never)]
 #[cold]
 pub fn make_error_1014<'gc>(
     activation: &mut Activation<'_, 'gc>,
+    kind: Error1014Type,
     class_name: AvmString<'gc>,
 ) -> Error<'gc> {
-    let err = verify_error(
-        activation,
-        &format!("Error #1014: Class {} could not be found.", class_name),
-        1014,
-    );
-
+    let message = &format!("Error #1014: Class {} could not be found.", class_name);
+    let err = match kind {
+        Error1014Type::ReferenceError => reference_error(activation, message, 1014),
+        Error1014Type::VerifyError => verify_error(activation, message, 1014),
+    };
     match err {
         Ok(err) => Error::AvmError(err),
         Err(err) => err,
@@ -505,11 +510,10 @@ pub fn make_error_2004<'gc>(
     kind: Error2004Type,
 ) -> Error<'gc> {
     let message = "Error #2004: One of the parameters is invalid.";
-    let code = 2004;
     let err = match kind {
-        Error2004Type::Error => error(activation, message, code),
-        Error2004Type::ArgumentError => argument_error(activation, message, code),
-        Error2004Type::TypeError => type_error(activation, message, code),
+        Error2004Type::Error => error(activation, message, 2004),
+        Error2004Type::ArgumentError => argument_error(activation, message, 2004),
+        Error2004Type::TypeError => type_error(activation, message, 2004),
     };
     match err {
         Ok(err) => Error::AvmError(err),
