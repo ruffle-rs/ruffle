@@ -345,7 +345,6 @@ pub struct CommonNamespaces<'gc> {
 
     // These are required to facilitate shared access between Rust and AS.
     pub(super) flash_utils_internal: Namespace<'gc>,
-    pub(super) flash_geom_internal: Namespace<'gc>,
     pub(super) flash_events_internal: Namespace<'gc>,
     pub(super) flash_text_engine_internal: Namespace<'gc>,
     pub(super) flash_net_internal: Namespace<'gc>,
@@ -375,7 +374,6 @@ impl<'gc> CommonNamespaces<'gc> {
                 context,
             ),
             flash_utils_internal: Namespace::internal("flash.utils", context),
-            flash_geom_internal: Namespace::internal("flash.geom", context),
             flash_events_internal: Namespace::internal("flash.events", context),
             flash_text_engine_internal: Namespace::internal("flash.text.engine", context),
             flash_net_internal: Namespace::internal("flash.net", context),
