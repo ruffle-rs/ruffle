@@ -9,6 +9,8 @@ package flash.geom {
 	public class Transform {
 		internal var _displayObject:DisplayObject;
 
+		private var _matrix3D:Matrix3D = null;
+
 		function Transform(object:DisplayObject) {
 			this.init(object);
 		}
@@ -25,11 +27,12 @@ package flash.geom {
 
 		public function get matrix3D():Matrix3D {
 			stub_getter("flash.geom.Transform", "matrix3D");
-			return new Matrix3D();
+			return this._matrix3D;
 		}
 
 		public function set matrix3D(m:Matrix3D):void {
 			stub_setter("flash.geom.Transform", "matrix3D");
+			this._matrix3D = m;
 		}
 
 		public function get perspectiveProjection():PerspectiveProjection {
