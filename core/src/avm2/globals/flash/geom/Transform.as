@@ -10,6 +10,7 @@ package flash.geom {
 		internal var _displayObject:DisplayObject;
 
 		private var _matrix3D:Matrix3D = null;
+		private var _perspectiveProjection:PerspectiveProjection = null;
 
 		function Transform(object:DisplayObject) {
 			this.init(object);
@@ -37,11 +38,12 @@ package flash.geom {
 
 		public function get perspectiveProjection():PerspectiveProjection {
 			stub_getter("flash.geom.Transform", "perspectiveProjection");
-			return new PerspectiveProjection();
+			return this._perspectiveProjection;
 		}
 
 		public function set perspectiveProjection(val: PerspectiveProjection):void {
 			stub_setter("flash.geom.Transform", "perspectiveProjection");
+			this._perspectiveProjection = val;
 		}
 
 		public function getRelativeMatrix3D(relativeTo:DisplayObject):Matrix3D {
