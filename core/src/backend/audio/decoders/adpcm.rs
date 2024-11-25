@@ -1,6 +1,8 @@
-use super::{Decoder, SeekableDecoder};
+use super::{Decoder, SeekableDecoder, SoundStreamInfo, Substream, SubstreamTagReader};
+use crate::buffer::SliceCursor;
 use bitstream_io::{BigEndian, BitRead, BitReader};
 use std::io::{Cursor, Read};
+use swf::SoundFormat;
 use thiserror::Error;
 
 const INDEX_TABLE: [&[i16]; 4] = [
@@ -174,5 +176,71 @@ impl<R: AsRef<[u8]> + Default + Send + Sync> SeekableDecoder for AdpcmDecoder<Cu
         cursor.set_position(0);
         *self = AdpcmDecoder::new(cursor, self.num_channels() == 2, self.sample_rate())
             .expect("Existing valid decoder should be valid when recreated");
+    }
+}
+
+/// ADPCM substream decoder.
+///
+/// Stream sounds encoded with ADPCM have an ADPCM header in each `SoundStreamBlock` tag, unlike
+/// other compression formats that remain the same as if they were a single sound clip.
+/// Therefore, we must recreate the decoder with each `SoundStreamBlock` to parse the additional
+/// headers.
+pub struct AdpcmSubstreamDecoder {
+    format: SoundFormat,
+    tag_reader: SubstreamTagReader,
+    decoder: AdpcmDecoder<SliceCursor>,
+}
+
+impl AdpcmSubstreamDecoder {
+    pub fn new(stream_info: &SoundStreamInfo, data_stream: Substream) -> Result<Self, Error> {
+        let empty_buffer = data_stream.buffer().to_empty_slice();
+        let mut tag_reader = SubstreamTagReader::new(stream_info, data_stream);
+        let audio_data = tag_reader.next().unwrap_or(empty_buffer);
+        let decoder = AdpcmDecoder::new(
+            audio_data.as_cursor(),
+            stream_info.stream_format.is_stereo,
+            stream_info.stream_format.sample_rate,
+        )?;
+        Ok(Self {
+            format: stream_info.stream_format.clone(),
+            tag_reader,
+            decoder,
+        })
+    }
+}
+
+impl Decoder for AdpcmSubstreamDecoder {
+    fn num_channels(&self) -> u8 {
+        self.decoder.num_channels()
+    }
+    fn sample_rate(&self) -> u16 {
+        self.decoder.sample_rate()
+    }
+}
+
+impl Iterator for AdpcmSubstreamDecoder {
+    type Item = [i16; 2];
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(sample_frame) = self.decoder.next() {
+            // Return sample frames until the decoder has exhausted
+            // the SoundStreamBlock tag.
+            Some(sample_frame)
+        } else if let Some(audio_data) = self.tag_reader.next() {
+            // We've reached the end of the sound stream block tag, so
+            // read the next one and recreate the decoder.
+            // `AdpcmDecoder` read the ADPCM header when it is created.
+            self.decoder = AdpcmDecoder::new(
+                audio_data.as_cursor(),
+                self.format.is_stereo,
+                self.format.sample_rate,
+            )
+            .ok()?;
+            self.decoder.next()
+        } else {
+            // No more SoundStreamBlock tags.
+            None
+        }
     }
 }
