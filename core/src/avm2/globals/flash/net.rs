@@ -1,6 +1,6 @@
 //! `flash.net` namespace
 
-use crate::avm2::error::{make_error_2007, reference_error};
+use crate::avm2::error::{make_error_1014, make_error_2007, Error1014Type};
 use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, Value};
@@ -125,13 +125,10 @@ pub fn get_class_by_alias<'gc>(
     if let Some(class_object) = activation.avm2().get_class_by_alias(name) {
         Ok(class_object.into())
     } else {
-        // can't create error 1014 normally,
-        // as this is one place where it's a ReferenceError for some reason
-        let error = reference_error(
+        Err(make_error_1014(
             activation,
-            &format!("Error #1014: Class {} could not be found.", name),
-            1014,
-        )?;
-        Err(Error::AvmError(error))
+            Error1014Type::ReferenceError,
+            name,
+        ))
     }
 }

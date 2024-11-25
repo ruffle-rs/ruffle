@@ -1,7 +1,7 @@
 use crate::avm2::class::Class;
 use crate::avm2::error::{
     make_error_1014, make_error_1021, make_error_1025, make_error_1032, make_error_1054,
-    make_error_1107, verify_error,
+    make_error_1107, verify_error, Error1014Type,
 };
 use crate::avm2::method::{BytecodeMethod, ParamConfig, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
@@ -375,7 +375,11 @@ pub fn verify_method<'gc>(
 
                     if multiname.has_lazy_component() {
                         // This matches FP's error message
-                        return Err(make_error_1014(activation, "[]".into()));
+                        return Err(make_error_1014(
+                            activation,
+                            Error1014Type::VerifyError,
+                            "[]".into(),
+                        ));
                     }
 
                     activation
@@ -384,7 +388,8 @@ pub fn verify_method<'gc>(
                         .ok_or_else(|| {
                             make_error_1014(
                                 activation,
-                                multiname.to_qualified_name(activation.context.gc_context),
+                                Error1014Type::VerifyError,
+                                multiname.to_qualified_name(activation.gc()),
                             )
                         })?;
                 }
@@ -424,7 +429,11 @@ pub fn verify_method<'gc>(
 
             if pooled_type_name.has_lazy_component() {
                 // This matches FP's error message
-                return Err(make_error_1014(activation, "[]".into()));
+                return Err(make_error_1014(
+                    activation,
+                    Error1014Type::VerifyError,
+                    "[]".into(),
+                ));
             }
 
             let resolved_type = activation
@@ -433,6 +442,7 @@ pub fn verify_method<'gc>(
                 .ok_or_else(|| {
                     make_error_1014(
                         activation,
+                        Error1014Type::VerifyError,
                         pooled_type_name.to_qualified_name(activation.context.gc_context),
                     )
                 })?;
@@ -675,7 +685,11 @@ pub fn resolve_param_config<'gc>(
     for param in param_config {
         let resolved_class = if let Some(param_type_name) = param.param_type_name {
             if param_type_name.has_lazy_component() {
-                return Err(make_error_1014(activation, "[]".into()));
+                return Err(make_error_1014(
+                    activation,
+                    Error1014Type::VerifyError,
+                    "[]".into(),
+                ));
             }
 
             Some(
@@ -685,6 +699,7 @@ pub fn resolve_param_config<'gc>(
                     .ok_or_else(|| {
                         make_error_1014(
                             activation,
+                            Error1014Type::VerifyError,
                             param_type_name.to_qualified_name(activation.gc()),
                         )
                     })?,
@@ -709,7 +724,11 @@ fn resolve_return_type<'gc>(
 ) -> Result<Option<Class<'gc>>, Error<'gc>> {
     if let Some(return_type) = return_type {
         if return_type.has_lazy_component() {
-            return Err(make_error_1014(activation, "[]".into()));
+            return Err(make_error_1014(
+                activation,
+                Error1014Type::VerifyError,
+                "[]".into(),
+            ));
         }
 
         Ok(Some(
@@ -717,7 +736,11 @@ fn resolve_return_type<'gc>(
                 .domain()
                 .get_class(activation.context, &return_type)
                 .ok_or_else(|| {
-                    make_error_1014(activation, return_type.to_qualified_name(activation.gc()))
+                    make_error_1014(
+                        activation,
+                        Error1014Type::VerifyError,
+                        return_type.to_qualified_name(activation.gc()),
+                    )
                 })?,
         ))
     } else {
