@@ -1,11 +1,13 @@
-// This is a stub - the actual class is defined in `eventdispatcher.rs`
 package flash.events {
     public class EventDispatcher implements IEventDispatcher {
-        internal var _target:IEventDispatcher;
-        internal var _dispatchList:Object;
+        [Ruffle(InternalSlot)]
+        private var target:IEventDispatcher;
+
+        [Ruffle(InternalSlot)]
+        private var dispatchList:Object;
 
         public function EventDispatcher(target:IEventDispatcher = null) {
-            this._target = target;
+            this.target = target;
         }
 
         public native function addEventListener(type:String, listener:Function, useCapture:Boolean = false, priority:int = 0, useWeakReference:Boolean = false):void;
