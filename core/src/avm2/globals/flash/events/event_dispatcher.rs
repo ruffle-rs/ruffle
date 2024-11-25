@@ -2,10 +2,10 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::events::{dispatch_event as dispatch_event_internal, parent_of};
+use crate::avm2::globals::slots::*;
 use crate::avm2::object::{DispatchObject, Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Multiname;
 use crate::avm2::{Avm2, Error};
 
 /// Get an object's dispatch list, lazily initializing it if necessary.
@@ -13,17 +13,12 @@ fn dispatch_list<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let namespaces = activation.avm2().namespaces;
-
-    match this.get_property(
-        &Multiname::new(namespaces.flash_events_internal, "_dispatchList"),
-        activation,
-    )? {
+    match this.get_slot(FLASH_EVENTS_EVENT_DISPATCHER__DISPATCH_LIST_SLOT) {
         Value::Object(o) => Ok(o),
         _ => {
             let dispatch_list = DispatchObject::empty_list(activation);
-            this.init_property(
-                &Multiname::new(namespaces.flash_events_internal, "_dispatchList"),
+            this.set_slot(
+                FLASH_EVENTS_EVENT_DISPATCHER__DISPATCH_LIST_SLOT,
                 dispatch_list.into(),
                 activation,
             )?;
@@ -86,7 +81,7 @@ pub fn has_event_listener<'gc>(
 
     let does_have = dispatch_list
         .as_dispatch_mut(activation.context.gc_context)
-        .ok_or_else(|| Error::from("Internal properties should have what I put in them"))?
+        .expect("Internal properties should have what I put in them")
         .has_event_listener(event_type)
         .into();
 
@@ -99,24 +94,19 @@ pub fn will_trigger<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let namespaces = activation.avm2().namespaces;
-
     let dispatch_list = dispatch_list(activation, this)?;
     let event_type = args.get_string(activation, 0)?;
 
     if dispatch_list
         .as_dispatch_mut(activation.context.gc_context)
-        .ok_or_else(|| Error::from("Internal properties should have what I put in them"))?
+        .expect("Internal properties should have what I put in them")
         .has_event_listener(event_type)
     {
         return Ok(true.into());
     }
 
     let target = this
-        .get_property(
-            &Multiname::new(namespaces.flash_events_internal, "_target"),
-            activation,
-        )?
+        .get_slot(FLASH_EVENTS_EVENT_DISPATCHER__TARGET_SLOT)
         .as_object()
         .unwrap_or(this);
 
