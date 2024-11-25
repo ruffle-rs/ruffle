@@ -1,7 +1,6 @@
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Multiname;
 use crate::avm2::{Activation, Error, Object, TObject, Value};
-use crate::avm2_stub_getter;
 use crate::display_object::TDisplayObject;
 use crate::prelude::{DisplayObject, Matrix, Twips};
 use ruffle_render::quality::StageQuality;
@@ -131,19 +130,6 @@ pub fn get_concatenated_matrix<'gc>(
 
         matrix_to_object(mat, activation)
     }
-}
-
-pub fn get_concatenated_color_transform<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(
-        activation,
-        "flash.geom.Transform",
-        "concatenatedColorTransform"
-    );
-    Ok(Value::Undefined)
 }
 
 // FIXME - handle clamping. We're throwing away precision here in converting to an integer:
