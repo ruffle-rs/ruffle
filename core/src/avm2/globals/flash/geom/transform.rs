@@ -1,5 +1,5 @@
+use crate::avm2::globals::slots::*;
 use crate::avm2::parameters::ParametersExt;
-use crate::avm2::Multiname;
 use crate::avm2::{Activation, Error, Object, TObject, Value};
 use crate::display_object::TDisplayObject;
 use crate::prelude::{DisplayObject, Matrix, Twips};
@@ -8,34 +8,14 @@ use swf::{ColorTransform, Fixed8, Rectangle};
 
 fn get_display_object<'gc>(
     this: Object<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
 ) -> Result<DisplayObject<'gc>, Error<'gc>> {
-    let namespaces = activation.avm2().namespaces;
-
     Ok(this
-        .get_property(
-            &Multiname::new(namespaces.flash_geom_internal, "_displayObject"),
-            activation,
-        )?
+        .get_slot(FLASH_GEOM_TRANSFORM__DISPLAY_OBJECT_SLOT)
         .as_object()
         .unwrap()
         .as_display_object()
         .unwrap())
-}
-
-pub fn init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let namespaces = activation.avm2().namespaces;
-
-    this.set_property(
-        &Multiname::new(namespaces.flash_geom_internal, "_displayObject"),
-        args.get_value(0),
-        activation,
-    )?;
-    Ok(Value::Undefined)
 }
 
 pub fn get_color_transform<'gc>(

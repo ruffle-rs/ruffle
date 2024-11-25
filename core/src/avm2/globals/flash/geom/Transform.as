@@ -7,15 +7,15 @@ package flash.geom {
 	import __ruffle__.stub_setter;
 
 	public class Transform {
-		internal var _displayObject:DisplayObject;
+	    [Ruffle(InternalSlot)]
+		private var displayObject:DisplayObject;
 
 		private var _matrix3D:Matrix3D = null;
 		private var _perspectiveProjection:PerspectiveProjection = null;
 
 		function Transform(object:DisplayObject) {
-			this.init(object);
+			this.displayObject = object;
 		}
-		native function init(object:DisplayObject):void;
 
 		public native function get colorTransform():ColorTransform;
 		public native function set colorTransform(value:ColorTransform):void;
