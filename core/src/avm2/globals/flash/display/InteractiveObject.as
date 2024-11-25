@@ -10,7 +10,7 @@ package flash.display {
     public class InteractiveObject extends DisplayObject {
         private var _accessibilityImpl:AccessibilityImplementation = null;
         private var _needsSoftKeyboard:Boolean = false;
-        private var _softKeyboardInputAreaOfInterest:Rectangle = new Rectangle();
+        private var _softKeyboardInputAreaOfInterest:Rectangle = null;
 
         public function get accessibilityImplementation():AccessibilityImplementation {
             return this._accessibilityImpl;
