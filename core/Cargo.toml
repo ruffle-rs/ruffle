@@ -66,6 +66,7 @@ ttf-parser = "0.25"
 num-bigint = "0.4"
 unic-segment = "0.9.0"
 id3 = "1.14.0"
+mp4parse = "0.17.0"
 either = "1.13.0"
 chardetng = "0.1.17"
 tracy-client = { version = "0.17.1", optional = true, default-features = false }

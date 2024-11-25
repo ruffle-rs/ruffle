@@ -33,6 +33,7 @@ use ruffle_video::frame::EncodedFrame;
 use ruffle_video::VideoStreamHandle;
 use std::cmp::max;
 use std::io::{Seek, SeekFrom};
+use std::sync::Arc;
 use swf::{AudioCompression, SoundFormat, VideoCodec, VideoDeblocking};
 use thiserror::Error;
 use url::Url;
@@ -176,6 +177,14 @@ pub enum NetStreamType {
         /// onto a table of data buffers like `Video` does, so we must maintain
         /// frame IDs ourselves for various API related purposes.
         frame_id: u32,
+    },
+    F4v {
+        context: Arc<mp4parse::MediaContext>,
+
+        /// The currently playing video track's stream instance.
+        video_stream: Option<VideoStreamHandle>,
+
+        frame_id: Option<u32>,
     },
 }
 
@@ -528,6 +537,10 @@ impl<'gc> NetStream<'gc> {
                 .expect("FLV reader stream position") as usize;
         }
 
+        if matches!(write.stream_type, Some(NetStreamType::F4v { .. })) {
+            todo!("Seeking in F4V streams");
+        }
+
         drop(write);
 
         if let Some(AvmObject::Avm2(_)) = self.0.read().avm_object {
@@ -812,8 +825,9 @@ impl<'gc> NetStream<'gc> {
             return false;
         }
 
-        match buffer.get(0..3) {
-            Some([0x46, 0x4C, 0x56]) => {
+        match buffer.get(0..8) {
+            // Only version 1 is valid.
+            Some([b'F', b'L', b'V', 1, _, _, _, _]) => {
                 let mut reader = FlvReader::from_parts(&buffer, write.offset);
                 match FlvHeader::parse(&mut reader) {
                     Ok(header) => {
@@ -830,10 +844,31 @@ impl<'gc> NetStream<'gc> {
                     Err(e) => {
                         //TODO: Fire an error event to AS & stop playing too
                         tracing::error!("FLV header parsing failed: {}", e);
-                        write.preload_offset = 3;
+                        write.preload_offset = 8; // ???
                         false
                     }
                 }
+            }
+            // Video File Format Specification Version 10, page 32
+            // Flash Player expects a valid F4V file to begin with the one of the following top-level boxes:
+            //  - ftyp (see “ftyp box” on page 18)
+            //  - moov (see “moov box” on page 19)
+            //  - mdat (see “mdat box” on page 32)
+            // And the first 4 bytes are the length of the first box.
+            Some([_, _, _, _, b'f', b't', b'y', b'p'])
+            | Some([_, _, _, _, b'm', b'o', b'o', b'v'])
+            | Some([_, _, _, _, b'm', b'd', b'a', b't']) => {
+                println!("F4V");
+
+                let mut cursor = slice.as_cursor();
+                let context = mp4parse::read_mp4(&mut cursor).unwrap();
+                println!("{:#?}", context);
+                write.stream_type = Some(NetStreamType::F4v {
+                    context: Arc::new(context),
+                    video_stream: None,
+                    frame_id: None,
+                });
+                true
             }
             Some(magic) => {
                 //Unrecognized signature
@@ -1234,6 +1269,168 @@ impl<'gc> NetStream<'gc> {
                         as usize;
                     write.preload_offset = max(write.offset, write.preload_offset);
                 }
+            }
+        }
+
+        if let Some(NetStreamType::F4v {
+            context: media_context,
+            frame_id,
+            video_stream,
+        }) = &mut write.stream_type
+        {
+            println!("frame id: {:?}, end_time: {}", frame_id, max_time);
+
+            let should_do_frame;
+            let sample_id;
+
+            match frame_id {
+                Some(frame) => {
+                    should_do_frame = max_time > *frame as f64 * 1000.0 / 30.0;
+
+                    if should_do_frame {
+                        *frame_id = Some(*frame + 1);
+                        sample_id = frame_id.unwrap();
+                    } else {
+                        sample_id = 0;
+                    }
+                }
+                None => {
+                    should_do_frame = true;
+                    sample_id = 0;
+                    *frame_id = Some(0);
+                }
+            }
+
+            if should_do_frame {
+                let sample_sizes = &media_context
+                    .tracks
+                    .get(1)
+                    .unwrap()
+                    .stsz
+                    .as_ref()
+                    .unwrap()
+                    .sample_sizes;
+                let chunk_runs = &media_context
+                    .tracks
+                    .get(1)
+                    .unwrap()
+                    .stsc
+                    .as_ref()
+                    .unwrap()
+                    .samples;
+
+                let get_samples_in_chunk = |chunk: u32| -> u32 {
+                    let mut result = 0;
+                    for cr in chunk_runs {
+                        if (cr.first_chunk - 1) > chunk {
+                            break;
+                        }
+                        result = cr.samples_per_chunk;
+                    }
+                    result
+                };
+
+                let chunk_of_sample = |sample: u32| -> (u32, u32) {
+                    let mut sample_accum = 0;
+                    for chunk in 0.. {
+                        let samples_in_chunk = get_samples_in_chunk(chunk);
+                        if sample_accum + samples_in_chunk > sample {
+                            return (chunk, sample_accum);
+                        }
+                        sample_accum += samples_in_chunk;
+                    }
+                    (0, 0)
+                };
+
+                let (chunk, first_sample_in_chunk) = chunk_of_sample(sample_id);
+                let chunk_offsets = &media_context
+                    .tracks
+                    .get(1)
+                    .unwrap()
+                    .stco
+                    .as_ref()
+                    .unwrap()
+                    .offsets;
+
+                let mut offs = chunk_offsets[chunk as usize] as usize;
+
+                for sam in first_sample_in_chunk..sample_id {
+                    offs += sample_sizes[sam as usize] as usize;
+                }
+
+                let siz = sample_sizes[sample_id as usize] as usize;
+
+                println!("offs: {}, siz: {}", offs, siz);
+                let s = buffer;
+
+                let encoded_frame = EncodedFrame {
+                    codec: VideoCodec::H263, // TODO
+                    data: s[offs..offs + siz].as_ref(),
+                    frame_id: frame_id.unwrap(),
+                };
+
+                let video_handle: VideoStreamHandle = match video_stream {
+                    Some(stream) => *stream,
+                    None => {
+                        match context.video.register_video_stream(
+                            1,
+                            (8, 8),
+                            VideoCodec::H263, // TODO
+                            VideoDeblocking::UseVideoPacketValue,
+                        ) {
+                            Ok(new_handle) => {
+                                *video_stream = Some(new_handle);
+
+                                new_handle
+                            }
+                            Err(e) => {
+                                tracing::error!(
+                                    "Got error when registring FLV video stream: {}",
+                                    e
+                                );
+                                return; //TODO: This originally breaks and halts tag processing
+                            }
+                        }
+                    }
+                };
+
+                let mdct = media_context.clone();
+                let trk = mdct.tracks.get(1).unwrap();
+                let stsd = trk.stsd.as_ref().unwrap();
+                let descs = stsd.descriptions.get(0).unwrap();
+
+                match descs {
+                    mp4parse::SampleEntry::Video(video) => match &video.codec_specific {
+                        mp4parse::VideoCodecSpecific::AVCConfig(avcconf) => {
+                            let prel_frame = EncodedFrame {
+                                codec: VideoCodec::H263, // TODO: H264
+                                data: avcconf.as_slice(),
+                                frame_id: frame_id.unwrap(),
+                            };
+                            if *frame_id == Some(0) {
+                                println!("preloading avc config");
+                                // TODO: this is a misuse of the API, should add/use a dedicated
+                                // configuration method for this
+                                let _ = context
+                                    .video
+                                    .preload_video_stream_frame(video_handle, prel_frame);
+                            }
+                        }
+                        mp4parse::VideoCodecSpecific::VPxConfig(_) => todo!(),
+                        mp4parse::VideoCodecSpecific::AV1Config(_) => todo!(),
+                        mp4parse::VideoCodecSpecific::ESDSConfig(_) => todo!(),
+                        mp4parse::VideoCodecSpecific::H263Config(_) => todo!(),
+                    },
+                    mp4parse::SampleEntry::Audio(_) => todo!(),
+                    mp4parse::SampleEntry::Unknown => todo!(),
+                }
+
+                write.last_decoded_bitmap = Some(
+                    context
+                        .video
+                        .decode_video_stream_frame(video_handle, encoded_frame, context.renderer)
+                        .unwrap(),
+                );
             }
         }
 
