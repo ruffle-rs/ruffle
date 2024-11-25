@@ -5,13 +5,13 @@ use indexmap::IndexMap;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2007;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
+use crate::avm2::globals::slots::*;
 use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;
 use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::ClassObject;
-use crate::avm2::Multiname;
 use crate::avm2::{Error, Object};
 use crate::avm2_stub_method;
 use crate::backend::navigator::{NavigationMethod, Request};
@@ -26,8 +26,6 @@ pub fn loader_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let namespaces = activation.avm2().namespaces;
-
     // Loader does not have an associated `Character` variant, and can never be
     // instantiated from the timeline.
     let display_object = LoaderDisplay::empty(activation, activation.context.swf.clone()).into();
@@ -47,8 +45,8 @@ pub fn loader_allocator<'gc>(
         None,
         false,
     )?;
-    loader.set_property(
-        &Multiname::new(namespaces.flash_display_internal, "_contentLoaderInfo"),
+    loader.set_slot(
+        FLASH_DISPLAY_LOADER__CONTENT_LOADER_INFO_SLOT,
         loader_info.into(),
         activation,
     )?;
@@ -60,16 +58,11 @@ pub fn load<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let namespaces = activation.avm2().namespaces;
-
     let url_request = args.get_object(activation, 0, "request")?;
     let context = args.try_get_object(activation, 1);
 
     let loader_info = this
-        .get_property(
-            &Multiname::new(namespaces.flash_display_internal, "_contentLoaderInfo"),
-            activation,
-        )?
+        .get_slot(FLASH_DISPLAY_LOADER__CONTENT_LOADER_INFO_SLOT)
         .as_object()
         .unwrap();
 
@@ -224,17 +217,12 @@ pub fn load_bytes<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let namespaces = activation.avm2().namespaces;
-
     let arg0 = args.get_object(activation, 0, "data")?;
     let bytes = arg0.as_bytearray().unwrap().bytes().to_vec();
     let context = args.try_get_object(activation, 1);
 
     let loader_info = this
-        .get_property(
-            &Multiname::new(namespaces.flash_display_internal, "_contentLoaderInfo"),
-            activation,
-        )?
+        .get_slot(FLASH_DISPLAY_LOADER__CONTENT_LOADER_INFO_SLOT)
         .as_object()
         .unwrap();
 
@@ -287,16 +275,11 @@ pub fn unload<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let namespaces = activation.avm2().namespaces;
-
     // TODO: Broadcast an "unload" event on the LoaderInfo
     avm2_stub_method!(activation, "flash.display.Loader", "unload");
 
     let loader_info = this
-        .get_property(
-            &Multiname::new(namespaces.flash_display_internal, "_contentLoaderInfo"),
-            activation,
-        )?
+        .get_slot(FLASH_DISPLAY_LOADER__CONTENT_LOADER_INFO_SLOT)
         .as_object()
         .unwrap();
 
