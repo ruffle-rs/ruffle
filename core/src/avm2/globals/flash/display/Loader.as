@@ -11,7 +11,8 @@ package flash.display {
 		import flash.events.UncaughtErrorEvents;
    		import __ruffle__.stub_method;
 
-		internal var _contentLoaderInfo: LoaderInfo;
+        [Ruffle(InternalSlot)]
+		private var _contentLoaderInfo: LoaderInfo;
 
 		public function get contentLoaderInfo():LoaderInfo {
 			return this._contentLoaderInfo;
