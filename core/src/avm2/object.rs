@@ -16,7 +16,7 @@ use crate::avm2::vtable::{ClassBoundMethod, VTable};
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
-use crate::bitmap::bitmap_data::BitmapDataWrapper;
+use crate::bitmap::bitmap_data::BitmapData;
 use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
 use crate::streams::NetStream;
@@ -1259,7 +1259,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         None
     }
 
-    fn as_bitmap_data(&self) -> Option<BitmapDataWrapper<'gc>> {
+    fn as_bitmap_data(&self) -> Option<BitmapData<'gc>> {
         None
     }
 
@@ -1273,7 +1273,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// This should only be called to initialize the association between an AVM
     /// object and it's associated bitmap data. This association should not be
     /// reinitialized later.
-    fn init_bitmap_data(&self, _mc: &Mutation<'gc>, _new_bitmap: BitmapDataWrapper<'gc>) {}
+    fn init_bitmap_data(&self, _mc: &Mutation<'gc>, _new_bitmap: BitmapData<'gc>) {}
 
     /// Get this objects `DateObject`, if it has one.
     fn as_date_object(&self) -> Option<DateObject<'gc>> {

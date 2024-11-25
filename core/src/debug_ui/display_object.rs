@@ -654,7 +654,8 @@ impl DisplayObjectWindow {
         context: &mut UpdateContext<'gc>,
         object: Bitmap<'gc>,
     ) {
-        let bitmap_data = object.bitmap_data(context.renderer);
+        let bitmap_data = object.bitmap_data();
+        let bitmap_data = bitmap_data.sync(context.renderer);
         let bitmap_data = bitmap_data.read();
         let mut egui_texture = bitmap_data.egui_texture.borrow_mut();
         let texture = egui_texture.get_or_insert_with(|| {

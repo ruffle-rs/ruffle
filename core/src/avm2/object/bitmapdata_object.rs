@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
 use crate::avm2::Error;
-use crate::bitmap::bitmap_data::BitmapDataWrapper;
+use crate::bitmap::bitmap_data::BitmapData;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
@@ -20,12 +20,10 @@ pub fn bitmap_data_allocator<'gc>(
         activation.context.gc_context,
         BitmapDataObjectData {
             base,
-            // This always starts out as a dummy (invalid) BitmapDataWrapper, so
+            // This always starts out as a dummy (invalid) BitmapData, so
             // that custom subclasses see a disposed BitmapData before they call super().
-            // The real BitmapDataWrapper is set by BitmapData.init()
-            bitmap_data: Lock::new(Some(BitmapDataWrapper::dummy(
-                activation.context.gc_context,
-            ))),
+            // The real BitmapData is set by BitmapData.init()
+            bitmap_data: Lock::new(Some(BitmapData::dummy(activation.context.gc_context))),
         },
     ))
     .into())
@@ -54,7 +52,7 @@ pub struct BitmapDataObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
 
-    bitmap_data: Lock<Option<BitmapDataWrapper<'gc>>>,
+    bitmap_data: Lock<Option<BitmapData<'gc>>>,
 }
 
 const _: () = assert!(std::mem::offset_of!(BitmapDataObjectData, base) == 0);
@@ -63,7 +61,7 @@ const _: () = assert!(
 );
 
 impl<'gc> BitmapDataObject<'gc> {
-    // Constructs a BitmapData object from a BitmapDataWrapper.
+    // Constructs a BitmapData object from a BitmapData.
     // This is *not* used when explicitly constructing a BitmapData
     // instance from ActionScript (e.g. `new BitmapData(100, 100)`,
     // or `new MyBitmapDataSubclass(100, 100)`).
@@ -74,7 +72,7 @@ impl<'gc> BitmapDataObject<'gc> {
     // like `clone()`
     pub fn from_bitmap_data_internal(
         activation: &mut Activation<'_, 'gc>,
-        bitmap_data: BitmapDataWrapper<'gc>,
+        bitmap_data: BitmapData<'gc>,
         class: ClassObject<'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let instance: Object<'gc> = Self(Gc::new(
@@ -114,13 +112,13 @@ impl<'gc> TObject<'gc> for BitmapDataObject<'gc> {
         Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
-    fn as_bitmap_data(&self) -> Option<BitmapDataWrapper<'gc>> {
+    fn as_bitmap_data(&self) -> Option<BitmapData<'gc>> {
         self.0.bitmap_data.get()
     }
 
     /// Initialize the bitmap data in this object, if it's capable of
     /// supporting said data
-    fn init_bitmap_data(&self, mc: &Mutation<'gc>, new_bitmap: BitmapDataWrapper<'gc>) {
+    fn init_bitmap_data(&self, mc: &Mutation<'gc>, new_bitmap: BitmapData<'gc>) {
         unlock!(Gc::write(mc, self.0), BitmapDataObjectData, bitmap_data).set(Some(new_bitmap));
     }
 }

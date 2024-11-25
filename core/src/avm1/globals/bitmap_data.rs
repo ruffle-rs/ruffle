@@ -7,7 +7,7 @@ use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Attribute, Error, Object, ScriptObject, TObject, Value};
-use crate::bitmap::bitmap_data::{BitmapData, BitmapDataWrapper};
+use crate::bitmap::bitmap_data::BitmapData;
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::bitmap_data::{ChannelOptions, ThresholdOperation};
 use crate::bitmap::{is_size_valid, operations};
@@ -16,7 +16,7 @@ use crate::display_object::DisplayObject;
 use crate::string::StringContext;
 use crate::swf::BlendMode;
 use crate::{avm1_stub, avm_error};
-use gc_arena::{GcCell, Mutation};
+use gc_arena::Mutation;
 use ruffle_render::transform::Transform;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -70,10 +70,7 @@ fn new_bitmap_data<'gc>(
             Attribute::DONT_ENUM | Attribute::DONT_DELETE,
         );
     }
-    object.set_native(
-        gc_context,
-        NativeObject::BitmapData(BitmapDataWrapper::new(GcCell::new(gc_context, bitmap_data))),
-    );
+    object.set_native(gc_context, NativeObject::BitmapData(bitmap_data));
     object
 }
 
@@ -103,13 +100,16 @@ fn constructor<'gc>(
         return Ok(Value::Undefined);
     }
 
-    let bitmap_data = BitmapData::new(width, height, transparency, fill_color);
+    let bitmap_data = BitmapData::new(
+        activation.context.gc_context,
+        width,
+        height,
+        transparency,
+        fill_color,
+    );
     this.set_native(
         activation.context.gc_context,
-        NativeObject::BitmapData(BitmapDataWrapper::new(GcCell::new(
-            activation.context.gc_context,
-            bitmap_data,
-        ))),
+        NativeObject::BitmapData(bitmap_data),
     );
     Ok(this.into())
 }
@@ -405,7 +405,7 @@ fn clone<'gc>(
             return Ok(new_bitmap_data(
                 activation.context.gc_context,
                 this.get_local_stored("__proto__", activation, false),
-                bitmap_data.clone_data(activation.context.renderer),
+                bitmap_data.clone_data(activation.context.gc_context, activation.context.renderer),
             )
             .into());
         }
@@ -1464,6 +1464,7 @@ fn compare<'gc>(
     }
 
     match operations::compare(
+        activation.context.gc_context,
         activation.context.renderer,
         this_bitmap_data,
         other_bitmap_data,
@@ -1505,6 +1506,7 @@ fn load_bitmap<'gc>(
 
     let transparency = true;
     let bitmap_data = BitmapData::new_with_pixels(
+        activation.context.gc_context,
         bitmap.width(),
         bitmap.height(),
         transparency,
