@@ -1704,11 +1704,11 @@ dependencies = [
 [[package]]
 name = "flash-lso"
 version = "0.6.0"
-source = "git+https://github.com/ruffle-rs/rust-flash-lso?rev=cbd18e1a79cf902f8ff1d2bf551801c4021b3be6#cbd18e1a79cf902f8ff1d2bf551801c4021b3be6"
+source = "git+https://github.com/ruffle-rs/rust-flash-lso?rev=a5e938d9bb1909095f2340c2435867f6aae930b0#a5e938d9bb1909095f2340c2435867f6aae930b0"
 dependencies = [
  "enumset",
  "nom",
- "thiserror 1.0.69",
+ "thiserror 2.0.4",
 ]
 
 [[package]]
@@ -2268,18 +2268,18 @@ dependencies = [
 [[package]]
 name = "h263-rs"
 version = "0.1.0"
-source = "git+https://github.com/ruffle-rs/h263-rs?rev=f0fa94c366a1d0383df99aa835add175658d6bad#f0fa94c366a1d0383df99aa835add175658d6bad"
+source = "git+https://github.com/ruffle-rs/h263-rs?rev=07468962d9c57c0780f3e9abf046186f5be58a26#07468962d9c57c0780f3e9abf046186f5be58a26"
 dependencies = [
  "bitflags 2.6.0",
  "lazy_static",
  "num-traits",
- "thiserror 1.0.69",
+ "thiserror 2.0.4",
 ]
 
 [[package]]
 name = "h263-rs-deblock"
 version = "0.1.0"
-source = "git+https://github.com/ruffle-rs/h263-rs?rev=f0fa94c366a1d0383df99aa835add175658d6bad#f0fa94c366a1d0383df99aa835add175658d6bad"
+source = "git+https://github.com/ruffle-rs/h263-rs?rev=07468962d9c57c0780f3e9abf046186f5be58a26#07468962d9c57c0780f3e9abf046186f5be58a26"
 dependencies = [
  "itertools",
  "wide",
@@ -2288,7 +2288,7 @@ dependencies = [
 [[package]]
 name = "h263-rs-yuv"
 version = "0.1.0"
-source = "git+https://github.com/ruffle-rs/h263-rs?rev=f0fa94c366a1d0383df99aa835add175658d6bad#f0fa94c366a1d0383df99aa835add175658d6bad"
+source = "git+https://github.com/ruffle-rs/h263-rs?rev=07468962d9c57c0780f3e9abf046186f5be58a26#07468962d9c57c0780f3e9abf046186f5be58a26"
 dependencies = [
  "bytemuck",
  "wide",
@@ -2691,12 +2691,12 @@ checksum = "f5d4a7da358eff58addd2877a45865158f0d78c911d43a5784ceb7bbf52833b0"
 [[package]]
 name = "jpegxr"
 version = "0.3.1"
-source = "git+https://github.com/ruffle-rs/jpegxr?rev=71dbe614c02c30a2e9fd1e9e2e7c7a749abe2798#71dbe614c02c30a2e9fd1e9e2e7c7a749abe2798"
+source = "git+https://github.com/ruffle-rs/jpegxr?rev=2a429b0d71ab416e10b73d4dbdcf34cfe2900395#2a429b0d71ab416e10b73d4dbdcf34cfe2900395"
 dependencies = [
  "bindgen",
  "cc",
  "libc",
- "thiserror 1.0.69",
+ "thiserror 2.0.4",
 ]
 
 [[package]]

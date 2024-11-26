@@ -26,7 +26,7 @@ wasm-bindgen = { workspace = true, optional = true }
 enum-map = { workspace = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 clap = { workspace = true, optional = true }
-h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "f0fa94c366a1d0383df99aa835add175658d6bad"}
+h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "07468962d9c57c0780f3e9abf046186f5be58a26"}
 num-traits = { workspace = true }
 num-derive = { workspace = true }
 byteorder = "1.5"
