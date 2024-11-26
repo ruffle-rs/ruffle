@@ -264,6 +264,7 @@ impl<'gc> EditText<'gc> {
             context,
             swf_movie.clone(),
             content_width,
+            !swf_tag.is_read_only(),
             is_word_wrap,
             font_type,
         );
@@ -794,6 +795,7 @@ impl<'gc> EditText<'gc> {
             context,
             movie,
             content_width,
+            !edit_text.flags.contains(EditTextFlag::READ_ONLY),
             is_word_wrap,
             edit_text.font_type(),
         );
@@ -813,7 +815,12 @@ impl<'gc> EditText<'gc> {
         if autosize != AutoSizeMode::None {
             if !is_word_wrap {
                 // The edit text's bounds needs to have the padding baked in.
-                let width = text_size.width() + padding;
+                let mut width = text_size.width() + padding;
+                if !edit_text.flags.contains(EditTextFlag::READ_ONLY) {
+                    // When the field is editable, FP adds 2.5px to add some
+                    // space to place the caret.
+                    width += Twips::from_pixels(2.5);
+                }
                 let new_x = match autosize {
                     AutoSizeMode::Left => edit_text.bounds.x_min,
                     AutoSizeMode::Center => {
