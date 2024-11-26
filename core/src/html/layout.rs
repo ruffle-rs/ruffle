@@ -53,6 +53,9 @@ pub struct LayoutContext<'a, 'gc> {
     /// The movie this layout context is pulling fonts from.
     movie: Arc<SwfMovie>,
 
+    /// Whether user input is allowed.
+    is_input: bool,
+
     /// Whether word wrap is enabled.
     is_word_wrap: bool,
 
@@ -134,6 +137,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         movie: Arc<SwfMovie>,
         max_bounds: Twips,
         text: &'a WStr,
+        is_input: bool,
         is_word_wrap: bool,
         font_type: FontType,
     ) -> Self {
@@ -155,6 +159,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             has_line_break: false,
             current_line_span: Default::default(),
             max_bounds,
+            is_input,
             is_word_wrap,
             font_type,
         }
@@ -472,8 +477,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             line_size_bounds += Size::from((Twips::ZERO, self.max_leading));
         }
 
-        if is_line_empty && last_line {
-            // Skip the last line if it's empty.
+        if !self.is_input && is_line_empty && last_line {
+            // For non-input fields, skip the last line if it's empty.
+            // For input fields, we have to take the empty line into account,
+            // otherwise it wouldn't be possible to click there to input text.
         } else {
             Self::extend_bounds(&mut self.text_size_bounds, line_size_bounds);
         }
@@ -867,6 +874,7 @@ pub fn lower_from_text_spans<'gc>(
     context: &mut UpdateContext<'gc>,
     movie: Arc<SwfMovie>,
     requested_width: Option<Twips>,
+    is_input: bool,
     is_word_wrap: bool,
     font_type: FontType,
 ) -> Layout<'gc> {
@@ -879,6 +887,7 @@ pub fn lower_from_text_spans<'gc>(
             context,
             movie.clone(),
             Twips::ZERO,
+            is_input,
             false,
             font_type,
         );
@@ -889,7 +898,15 @@ pub fn lower_from_text_spans<'gc>(
             .max();
         max_width.unwrap_or_default()
     });
-    lower_from_text_spans_known_width(fs, context, movie, requested_width, is_word_wrap, font_type)
+    lower_from_text_spans_known_width(
+        fs,
+        context,
+        movie,
+        requested_width,
+        is_input,
+        is_word_wrap,
+        font_type,
+    )
 }
 
 fn lower_from_text_spans_known_width<'gc>(
@@ -897,11 +914,18 @@ fn lower_from_text_spans_known_width<'gc>(
     context: &mut UpdateContext<'gc>,
     movie: Arc<SwfMovie>,
     bounds: Twips,
+    is_input: bool,
     is_word_wrap: bool,
     font_type: FontType,
 ) -> Layout<'gc> {
-    let mut layout_context =
-        LayoutContext::new(movie, bounds, fs.displayed_text(), is_word_wrap, font_type);
+    let mut layout_context = LayoutContext::new(
+        movie,
+        bounds,
+        fs.displayed_text(),
+        is_input,
+        is_word_wrap,
+        font_type,
+    );
 
     layout_context.lay_out_spans(context, fs);
 
