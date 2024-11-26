@@ -4564,6 +4564,9 @@ impl<'gc, 'a> MovieClip<'gc> {
                         match library.character_by_id(id) {
                             Some(Character::EditText(edit_text)) => edit_text
                                 .set_avm2_class(activation.context.gc_context, class_object),
+                            Some(Character::Graphic(graphic)) => {
+                                graphic.set_avm2_class(activation.context.gc_context, class_object)
+                            }
                             Some(Character::MovieClip(mc)) => {
                                 mc.set_avm2_class(activation.context.gc_context, Some(class_object))
                             }

@@ -1,6 +1,7 @@
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::{
-    Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
+    Activation as Avm2Activation, ClassObject as Avm2ClassObject, Object as Avm2Object,
+    StageObject as Avm2StageObject,
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
@@ -33,6 +34,7 @@ impl fmt::Debug for Graphic<'_> {
 pub struct GraphicData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: gc_arena::Gc<'gc, GraphicStatic>,
+    class: Option<Avm2ClassObject<'gc>>,
     avm2_object: Option<Avm2Object<'gc>>,
     /// This is lazily allocated on demand, to make `GraphicData` smaller in the common case.
     #[collect(require_static)]
@@ -64,6 +66,7 @@ impl<'gc> Graphic<'gc> {
             GraphicData {
                 base: Default::default(),
                 static_data: gc_arena::Gc::new(context.gc_context, static_data),
+                class: None,
                 avm2_object: None,
                 drawing: None,
             },
@@ -96,6 +99,7 @@ impl<'gc> Graphic<'gc> {
             GraphicData {
                 base: Default::default(),
                 static_data: gc_arena::Gc::new(context.gc_context, static_data),
+                class: None,
                 avm2_object: None,
                 drawing: None,
             },
@@ -106,6 +110,10 @@ impl<'gc> Graphic<'gc> {
         RefMut::map(self.0.write(gc_context), |w| {
             &mut **w.drawing.get_or_insert_with(Default::default)
         })
+    }
+
+    pub fn set_avm2_class(self, mc: &Mutation<'gc>, class: Avm2ClassObject<'gc>) {
+        self.0.write(mc).class = Some(class);
     }
 }
 
@@ -140,19 +148,24 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 
     fn construct_frame(&self, context: &mut UpdateContext<'gc>) {
         if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
-            let shape_constr = context.avm2.classes().shape;
+            let class_object = self
+                .0
+                .read()
+                .class
+                .unwrap_or_else(|| context.avm2.classes().shape);
+
             let mut activation = Avm2Activation::from_nothing(context);
 
             match Avm2StageObject::for_display_object_childless(
                 &mut activation,
                 (*self).into(),
-                shape_constr,
+                class_object,
             ) {
                 Ok(object) => {
                     self.0.write(activation.context.gc_context).avm2_object = Some(object.into())
                 }
                 Err(e) => {
-                    tracing::error!("Got {} when constructing AVM2 side of display object", e)
+                    tracing::error!("Got error when constructing AVM2 side of shape: {}", e)
                 }
             }
 
