@@ -21,7 +21,6 @@ extern crate num_derive;
 #[macro_use]
 mod avm1;
 mod avm2;
-mod binary_data;
 pub mod bitmap;
 pub mod buffer;
 mod character;
