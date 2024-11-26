@@ -1818,7 +1818,7 @@ name = "flv-rs"
 version = "0.1.0"
 dependencies = [
  "bitflags 2.6.0",
- "thiserror 1.0.69",
+ "thiserror 2.0.4",
 ]
 
 [[package]]
@@ -4247,7 +4247,7 @@ dependencies = [
  "smallvec",
  "swf",
  "symphonia",
- "thiserror 1.0.69",
+ "thiserror 2.0.4",
  "tracing",
  "tracy-client",
  "ttf-parser",
@@ -4289,7 +4289,7 @@ dependencies = [
  "ruffle_video_external",
  "ruffle_video_software",
  "sys-locale",
- "thiserror 1.0.69",
+ "thiserror 2.0.4",
  "tokio",
  "toml_edit",
  "tracing",
@@ -4320,7 +4320,7 @@ dependencies = [
  "ruffle_render",
  "slotmap",
  "tempfile",
- "thiserror 1.0.69",
+ "thiserror 2.0.4",
  "tokio",
  "toml_edit",
  "tracing",
@@ -4377,7 +4377,7 @@ dependencies = [
  "serde",
  "smallvec",
  "swf",
- "thiserror 1.0.69",
+ "thiserror 2.0.4",
  "tracing",
  "wasm-bindgen",
  "wgpu",
@@ -4406,7 +4406,7 @@ dependencies = [
  "ruffle_render",
  "ruffle_web_common",
  "swf",
- "thiserror 1.0.69",
+ "thiserror 2.0.4",
  "wasm-bindgen",
  "web-sys",
 ]
@@ -4491,7 +4491,7 @@ dependencies = [
  "ruffle_render",
  "slotmap",
  "swf",
- "thiserror 1.0.69",
+ "thiserror 2.0.4",
 ]
 
 [[package]]
@@ -4509,7 +4509,7 @@ dependencies = [
  "slotmap",
  "swf",
  "tempfile",
- "thiserror 1.0.69",
+ "thiserror 2.0.4",
  "tracing",
 ]
 
@@ -4528,7 +4528,7 @@ dependencies = [
  "ruffle_video",
  "slotmap",
  "swf",
- "thiserror 1.0.69",
+ "thiserror 2.0.4",
 ]
 
 [[package]]
@@ -4555,7 +4555,7 @@ dependencies = [
  "serde",
  "serde-wasm-bindgen",
  "slotmap",
- "thiserror 1.0.69",
+ "thiserror 2.0.4",
  "tracing",
  "tracing-log",
  "tracing-subscriber",
@@ -5248,11 +5248,11 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "2.0.3"
+version = "2.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c006c85c7651b3cf2ada4584faa36773bd07bac24acfb39f3c431b36d7e667aa"
+checksum = "2f49a1853cf82743e3b7950f77e0f4d622ca36cf4317cba00c767838bac8d490"
 dependencies = [
- "thiserror-impl 2.0.3",
+ "thiserror-impl 2.0.4",
 ]
 
 [[package]]
@@ -5268,9 +5268,9 @@ dependencies = [
 
 [[package]]
 name = "thiserror-impl"
-version = "2.0.3"
+version = "2.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f077553d607adc1caf65430528a576c757a71ed73944b66ebb58ef2bbd243568"
+checksum = "8381894bb3efe0c4acac3ded651301ceee58a15d47c2e34885ed1908ad667061"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -6883,7 +6883,7 @@ dependencies = [
  "flate2",
  "indexmap",
  "memchr",
- "thiserror 2.0.3",
+ "thiserror 2.0.4",
  "zopfli",
 ]
 
