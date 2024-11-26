@@ -1,0 +1,8 @@
+MyText constructor
+my text:
+Testing
+Main constructor
+constructing child:
+MyText constructor
+my text:
+
