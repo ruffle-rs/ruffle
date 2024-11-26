@@ -17,39 +17,11 @@ pub fn text_field_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let textfield_cls = activation
-        .avm2()
-        .classes()
-        .textfield
-        .inner_class_definition();
+    // Creating a TextField from AS ignores SymbolClass linkage.
+    let movie = activation.caller_movie_or_root();
+    let display_object = EditText::new(activation.context, movie, 0.0, 0.0, 100.0, 100.0).into();
 
-    let mut class_def = Some(class.inner_class_definition());
-    let orig_class = class;
-    while let Some(class) = class_def {
-        if class == textfield_cls {
-            let movie = activation.caller_movie_or_root();
-            let display_object =
-                EditText::new(activation.context, movie, 0.0, 0.0, 100.0, 100.0).into();
-            return initialize_for_allocator(activation, display_object, orig_class);
-        }
-
-        if let Some((movie, symbol)) = activation
-            .context
-            .library
-            .avm2_class_registry()
-            .class_symbol(class)
-        {
-            let child = activation
-                .context
-                .library
-                .library_for_movie_mut(movie)
-                .instantiate_by_id(symbol, activation.context.gc_context)?;
-
-            return initialize_for_allocator(activation, child, orig_class);
-        }
-        class_def = class.super_class();
-    }
-    unreachable!("A TextField subclass should have TextField in superclass chain");
+    initialize_for_allocator(activation, display_object, class)
 }
 
 pub fn get_always_show_selection<'gc>(

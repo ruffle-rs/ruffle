@@ -4562,6 +4562,8 @@ impl<'gc, 'a> MovieClip<'gc> {
                             .library_for_movie_mut(movie.clone());
 
                         match library.character_by_id(id) {
+                            Some(Character::EditText(edit_text)) => edit_text
+                                .set_avm2_class(activation.context.gc_context, class_object),
                             Some(Character::MovieClip(mc)) => {
                                 mc.set_avm2_class(activation.context.gc_context, Some(class_object))
                             }

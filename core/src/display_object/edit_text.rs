@@ -9,8 +9,8 @@ use crate::avm1::{
 };
 use crate::avm2::Avm2;
 use crate::avm2::{
-    Activation as Avm2Activation, EventObject as Avm2EventObject, Object as Avm2Object,
-    StageObject as Avm2StageObject, TObject as _,
+    Activation as Avm2Activation, ClassObject as Avm2ClassObject, EventObject as Avm2EventObject,
+    Object as Avm2Object, StageObject as Avm2StageObject, TObject as _,
 };
 use crate::backend::ui::MouseCursor;
 use crate::context::{RenderContext, UpdateContext};
@@ -129,6 +129,9 @@ pub struct EditTextData<'gc> {
 
     /// The display object that the variable binding is bound to.
     bound_stage_object: Option<Avm1StageObject<'gc>>,
+
+    /// The AVM2 class of this button. If None, it is flash.text.TextField.
+    class: Option<Avm2ClassObject<'gc>>,
 
     /// The selected portion of the text, or None if the text is not selected.
     /// Note: Selections work differently in AVM1, AVM2, and Ruffle.
@@ -317,6 +320,7 @@ impl<'gc> EditText<'gc> {
                 requested_height: swf_tag.bounds().height(),
                 variable: variable.map(|s| s.to_string_lossy(encoding)),
                 bound_stage_object: None,
+                class: None,
                 selection,
                 render_settings: Default::default(),
                 hscroll: 0.0,
@@ -1988,20 +1992,26 @@ impl<'gc> EditText<'gc> {
         context: &mut UpdateContext<'gc>,
         display_object: DisplayObject<'gc>,
     ) {
-        let textfield_constr = context.avm2.classes().textfield;
+        let class_object = self
+            .0
+            .read()
+            .class
+            .unwrap_or_else(|| context.avm2.classes().textfield);
+
         let mut activation = Avm2Activation::from_nothing(context);
 
         match Avm2StageObject::for_display_object_childless(
             &mut activation,
             display_object,
-            textfield_constr,
+            class_object,
         ) {
             Ok(object) => {
                 let object: Avm2Object<'gc> = object.into();
-                self.0.write(activation.context.gc_context).object = Some(object.into())
+
+                self.0.write(activation.gc()).object = Some(object.into());
             }
             Err(e) => tracing::error!(
-                "Got {} when constructing AVM2 side of dynamic text field",
+                "Got error when constructing AVM2 side of dynamic text field: {}",
                 e
             ),
         }
@@ -2266,6 +2276,10 @@ impl<'gc> EditText<'gc> {
         let current_selection = self.calculate_selection_at(position, selection_mode);
         let new_selection = TextSelection::span_across(first_selection, current_selection);
         self.set_selection(Some(new_selection), context.gc());
+    }
+
+    pub fn set_avm2_class(self, mc: &Mutation<'gc>, class: Avm2ClassObject<'gc>) {
+        self.0.write(mc).class = Some(class);
     }
 }
 
