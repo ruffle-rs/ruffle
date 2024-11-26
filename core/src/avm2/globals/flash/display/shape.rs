@@ -12,33 +12,9 @@ pub fn shape_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let shape_cls = activation.avm2().classes().shape.inner_class_definition();
+    let display_object = Graphic::empty(activation.context).into();
 
-    let mut class_def = Some(class.inner_class_definition());
-    let orig_class = class;
-    while let Some(class) = class_def {
-        if class == shape_cls {
-            let display_object = Graphic::empty(activation.context).into();
-            return initialize_for_allocator(activation, display_object, orig_class);
-        }
-
-        if let Some((movie, symbol)) = activation
-            .context
-            .library
-            .avm2_class_registry()
-            .class_symbol(class)
-        {
-            let child = activation
-                .context
-                .library
-                .library_for_movie_mut(movie)
-                .instantiate_by_id(symbol, activation.context.gc_context)?;
-
-            return initialize_for_allocator(activation, child, orig_class);
-        }
-        class_def = class.super_class();
-    }
-    unreachable!("A Shape subclass should have Shape in superclass chain");
+    initialize_for_allocator(activation, display_object, class)
 }
 
 /// Implements `graphics`.
