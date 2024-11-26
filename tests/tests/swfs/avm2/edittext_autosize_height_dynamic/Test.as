@@ -77,6 +77,7 @@ public class Test extends Sprite {
         text.htmlText = htmlText;
         text.autoSize = autosize;
         trace("(w, h) = (" + text.textWidth + ", " + text.textHeight + ")");
+        trace("(x, y, w, h) = (" + text.x + ", " + text.y + ", " + text.width + ", " + text.height + ")");
         addChild(text);
     }
 }
