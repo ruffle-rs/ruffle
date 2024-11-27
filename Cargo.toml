@@ -46,7 +46,7 @@ repository = "https://github.com/ruffle-rs/ruffle"
 version = "0.1.0"
 
 [workspace.dependencies]
-tracing = "0.1.40"
+tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 naga = { version = "23.0.0", features = ["wgsl-out"] }
 wgpu = "23.0.1"
