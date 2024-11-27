@@ -864,17 +864,18 @@ impl<'gc> EditText<'gc> {
             return 0.0;
         }
 
-        let base = (edit_text.layout.text_size().width() - edit_text.bounds.width())
+        let mut text_width = edit_text.layout.text_size().width();
+        let window_width = (edit_text.bounds.width() - Self::GUTTER * 2).max(Twips::ZERO);
+
+        if !edit_text.flags.contains(EditTextFlag::READ_ONLY) {
+            // input fields get extra space at the end
+            text_width += window_width / 4;
+        }
+
+        (text_width - window_width)
             .trunc_to_pixel()
             .to_pixels()
-            .max(0.0);
-
-        // input text boxes get extra space at the end
-        if !edit_text.flags.contains(EditTextFlag::READ_ONLY) {
-            base + 41.0
-        } else {
-            base
-        }
+            .max(0.0)
     }
 
     /// How many lines the text can be scrolled down
