@@ -2744,7 +2744,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4979f22fdb869068da03c9f7528f8297c6fd2606bc3a4affe42e6a823fdb8da4"
 dependencies = [
  "cfg-if",
- "windows-targets 0.52.6",
+ "windows-targets 0.48.5",
 ]
 
 [[package]]
@@ -5569,9 +5569,9 @@ dependencies = [
 
 [[package]]
 name = "tracy-client"
-version = "0.17.1"
+version = "0.17.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63de1e1d4115534008d8fd5788b39324d6f58fc707849090533828619351d855"
+checksum = "746b078c6a09ebfd5594609049e07116735c304671eaab06ce749854d23435bc"
 dependencies = [
  "loom",
  "once_cell",
@@ -5581,11 +5581,12 @@ dependencies = [
 
 [[package]]
 name = "tracy-client-sys"
-version = "0.23.0"
+version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "98b98232a2447ce0a58f9a0bfb5f5e39647b5c597c994b63945fcccd1306fafb"
+checksum = "3637e734239e12ab152cd269302500bd063f37624ee210cd04b4936ed671f3b1"
 dependencies = [
  "cc",
+ "windows-targets 0.48.5",
 ]
 
 [[package]]
