@@ -4008,7 +4008,7 @@ impl<'gc, 'a> MovieClipData<'gc> {
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
         let sound = reader.read_define_sound()?;
-        if let Ok(handle) = context.audio.register_sound(&sound) {
+        if let Ok(handle) = context.audio.register_sound(self.movie(), &sound) {
             context
                 .library
                 .library_for_movie_mut(self.movie())

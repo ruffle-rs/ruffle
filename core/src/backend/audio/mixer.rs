@@ -2,7 +2,7 @@ use super::decoders::{self, AdpcmDecoder, Decoder, PcmDecoder, SeekableDecoder};
 use super::{SoundHandle, SoundInstanceHandle, SoundStreamInfo, SoundTransform};
 use crate::backend::audio::{DecodeError, RegisterError};
 use crate::buffer::Substream;
-use crate::tag_utils::SwfSlice;
+use crate::tag_utils::{SwfMovie, SwfSlice};
 use slotmap::SlotMap;
 use std::io::Cursor;
 use std::sync::{Arc, Mutex, RwLock};
@@ -137,6 +137,37 @@ impl<D: Decoder> dasp::signal::Signal for DecoderStream<D> {
     }
 }
 
+#[derive(Clone)]
+enum SoundData {
+    Owned(Arc<[u8]>),
+    Movie(SwfSlice),
+}
+
+impl SoundData {
+    pub fn len(&self) -> usize {
+        match self {
+            Self::Owned(data) => data.len(),
+            Self::Movie(data) => data.len(),
+        }
+    }
+}
+
+impl AsRef<[u8]> for SoundData {
+    #[inline]
+    fn as_ref(&self) -> &[u8] {
+        match self {
+            Self::Owned(data) => &data,
+            Self::Movie(data) => data.as_ref(),
+        }
+    }
+}
+
+// Needed for `AdpcmDecoder<std::io::Cursor<mixer::SoundData>>: SeekableDecoder` :(
+impl Default for SoundData {
+    fn default() -> Self {
+        Self::Owned(Arc::new([]))
+    }
+}
 /// Contains the data and metadata for a sound in an SWF file.
 ///
 /// A sound is defined by the `DefineSound` SWF tags and contains the audio data for the sound.
@@ -147,7 +178,7 @@ struct Sound {
     /// The audio data of this sound.
     ///
     /// This will be compressed in the format indicated by `format.compression`.
-    data: Arc<[u8]>,
+    data: SoundData,
 
     /// Number of samples in this audio.
     /// This does not include `skip_sample_frames`.
@@ -295,7 +326,7 @@ impl AudioMixer {
     ///  * ActionScript sounds that may have a custom start and loop setting
     fn make_seekable_decoder(
         format: &swf::SoundFormat,
-        data: Cursor<ArcAsRef>,
+        data: Cursor<SoundData>,
     ) -> Result<Box<dyn SeekableDecoder>, decoders::Error> {
         let decoder: Box<dyn SeekableDecoder> = match format.compression {
             AudioCompression::UncompressedUnknownEndian => {
@@ -354,7 +385,7 @@ impl AudioMixer {
         &self,
         sound: &Sound,
         settings: &swf::SoundInfo,
-        data: Cursor<ArcAsRef>,
+        data: Cursor<SoundData>,
     ) -> Result<Box<dyn Stream>, DecodeError> {
         // Instantiate a decoder for the compression that the sound data uses.
         let decoder = Self::make_seekable_decoder(&sound.format, data)?;
@@ -505,7 +536,7 @@ impl AudioMixer {
     }
 
     /// Registers an embedded SWF sound with the audio mixer.
-    pub fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, RegisterError> {
+    pub fn register_sound(&mut self, movie: Arc<SwfMovie>, swf_sound: &swf::Sound) -> Result<SoundHandle, RegisterError> {
         // Slice off latency seek for MP3 data.
         let (skip_sample_frames, data) = if swf_sound.format.compression == AudioCompression::Mp3 {
             if swf_sound.data.len() < 2 {
@@ -519,7 +550,7 @@ impl AudioMixer {
 
         let sound = Sound {
             format: swf_sound.format.clone(),
-            data: Arc::from(data),
+            data: SoundData::Movie(SwfSlice::new(movie, data)),
             num_sample_frames: swf_sound.num_samples,
             skip_sample_frames,
         };
@@ -539,7 +570,7 @@ impl AudioMixer {
                 is_stereo: true,
                 is_16_bit: true,
             },
-            data,
+            data: SoundData::Owned(data),
             num_sample_frames: metadata.num_sample_frames,
             skip_sample_frames: 0,
         };
@@ -579,7 +610,7 @@ impl AudioMixer {
         settings: &swf::SoundInfo,
     ) -> Result<SoundInstanceHandle, DecodeError> {
         let sound = &self.sounds[sound_handle];
-        let data = Cursor::new(ArcAsRef(Arc::clone(&sound.data)));
+        let data = Cursor::new(sound.data.clone());
         // Create a stream that decodes and resamples the sound.
         let stream = if sound.skip_sample_frames == 0
             && settings.in_sample.is_none()
@@ -757,23 +788,6 @@ impl AudioMixerProxy {
             output_buffer,
             &mut output_memory,
         )
-    }
-}
-
-/// A dummy wrapper struct to implement `AsRef<[u8]>` for `Arc<Vec<u8>>`.
-/// Not having this trait causes problems when trying to use `Cursor<Vec<u8>>`.
-struct ArcAsRef(Arc<[u8]>);
-
-impl AsRef<[u8]> for ArcAsRef {
-    #[inline]
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
-}
-
-impl Default for ArcAsRef {
-    fn default() -> Self {
-        ArcAsRef(Arc::new([]))
     }
 }
 
@@ -1069,8 +1083,8 @@ impl dasp::signal::Signal for EnvelopeSignal {
 macro_rules! impl_audio_mixer_backend {
     ($mixer:ident) => {
         #[inline]
-        fn register_sound(&mut self, swf_sound: &swf::Sound) -> Result<SoundHandle, RegisterError> {
-            self.$mixer.register_sound(swf_sound)
+        fn register_sound(&mut self, movie: std::sync::Arc<$crate::tag_utils::SwfMovie>, swf_sound: &swf::Sound) -> Result<SoundHandle, RegisterError> {
+            self.$mixer.register_sound(movie, swf_sound)
         }
 
         #[inline]
