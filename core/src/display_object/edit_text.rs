@@ -879,6 +879,9 @@ impl<'gc> EditText<'gc> {
 
     /// How many lines the text can be scrolled down
     pub fn maxscroll(self) -> usize {
+        // FIXME [KJ] The following logic is yet inaccurate
+        //   for some input fields and negative leading.
+        //   Might be related to text height calculation.
         let edit_text = self.0.read();
 
         let lines = edit_text.layout.lines();
@@ -887,11 +890,16 @@ impl<'gc> EditText<'gc> {
             return 1;
         }
 
-        let target = lines.last().unwrap().extent_y() - edit_text.bounds.height();
+        let text_height = edit_text.layout.text_size().height();
+        let window_height = edit_text.bounds.height() - Self::GUTTER * 2;
 
-        // minimum line n such that n.offset > max.extent - bounds.height()
-        let max_line = lines.iter().find(|&l| target < l.offset_y());
-        if let Some(line) = max_line {
+        // That's the y coordinate where the fully scrolled window begins.
+        // We have to find a line that's below this coordinate.
+        let target = text_height - window_height;
+
+        // TODO Use binary search here
+        let line = lines.iter().find(|&l| l.offset_y() >= target);
+        if let Some(line) = line {
             line.index() + 1
         } else {
             // I don't know how this could happen, so return the limit
