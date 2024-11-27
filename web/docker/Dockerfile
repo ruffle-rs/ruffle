@@ -2,7 +2,7 @@
 # rm -rf web/docker/docker_builds/packages/*
 # docker build --tag ruffle-web-docker -f web/docker/Dockerfile .
 # docker cp $(docker create ruffle-web-docker:latest):/ruffle/web/packages web/docker/docker_builds/packages
-FROM node:20
+FROM node:22
 
 # Installing wasm-opt from GitHub:
 # Keep the version number in sync with the ones in the Actions workflows!
