@@ -763,7 +763,7 @@ fn parse_sign(s: &mut &WStr) -> bool {
 /// * `strict == false` ignores trailing garbage (like `parseFloat()`).
 pub fn parse_float_impl(mut s: &WStr, strict: bool) -> f64 {
     fn is_ascii_digit(c: u16) -> bool {
-        u8::try_from(c).map_or(false, |c| c.is_ascii_digit())
+        u8::try_from(c).is_ok_and(|c| c.is_ascii_digit())
     }
 
     // Allow leading whitespace.
