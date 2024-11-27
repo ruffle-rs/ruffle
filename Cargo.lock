@@ -1818,7 +1818,7 @@ name = "flv-rs"
 version = "0.1.0"
 dependencies = [
  "bitflags 2.6.0",
- "thiserror 1.0.69",
+ "thiserror 2.0.3",
 ]
 
 [[package]]
@@ -4247,7 +4247,7 @@ dependencies = [
  "smallvec",
  "swf",
  "symphonia",
- "thiserror 1.0.69",
+ "thiserror 2.0.3",
  "tracing",
  "tracy-client",
  "ttf-parser",
@@ -4289,7 +4289,7 @@ dependencies = [
  "ruffle_video_external",
  "ruffle_video_software",
  "sys-locale",
- "thiserror 1.0.69",
+ "thiserror 2.0.3",
  "tokio",
  "toml_edit",
  "tracing",
@@ -4320,7 +4320,7 @@ dependencies = [
  "ruffle_render",
  "slotmap",
  "tempfile",
- "thiserror 1.0.69",
+ "thiserror 2.0.3",
  "tokio",
  "toml_edit",
  "tracing",
@@ -4377,7 +4377,7 @@ dependencies = [
  "serde",
  "smallvec",
  "swf",
- "thiserror 1.0.69",
+ "thiserror 2.0.3",
  "tracing",
  "wasm-bindgen",
  "wgpu",
@@ -4406,7 +4406,7 @@ dependencies = [
  "ruffle_render",
  "ruffle_web_common",
  "swf",
- "thiserror 1.0.69",
+ "thiserror 2.0.3",
  "wasm-bindgen",
  "web-sys",
 ]
@@ -4491,7 +4491,7 @@ dependencies = [
  "ruffle_render",
  "slotmap",
  "swf",
- "thiserror 1.0.69",
+ "thiserror 2.0.3",
 ]
 
 [[package]]
@@ -4509,7 +4509,7 @@ dependencies = [
  "slotmap",
  "swf",
  "tempfile",
- "thiserror 1.0.69",
+ "thiserror 2.0.3",
  "tracing",
 ]
 
@@ -4528,7 +4528,7 @@ dependencies = [
  "ruffle_video",
  "slotmap",
  "swf",
- "thiserror 1.0.69",
+ "thiserror 2.0.3",
 ]
 
 [[package]]
@@ -4555,7 +4555,7 @@ dependencies = [
  "serde",
  "serde-wasm-bindgen",
  "slotmap",
- "thiserror 1.0.69",
+ "thiserror 2.0.3",
  "tracing",
  "tracing-log",
  "tracing-subscriber",
