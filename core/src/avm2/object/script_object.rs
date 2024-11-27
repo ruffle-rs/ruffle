@@ -384,7 +384,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         self.values()
             .as_hashmap()
             .get(&key)
-            .map_or(false, |prop| prop.enumerable)
+            .is_some_and(|prop| prop.enumerable)
     }
 
     pub fn set_local_property_is_enumerable(

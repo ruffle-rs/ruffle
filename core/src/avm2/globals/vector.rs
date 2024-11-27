@@ -251,9 +251,7 @@ pub fn concat<'gc>(
 
     let original_length = new_vector_storage.length();
 
-    let use_swf10_behavior = activation
-        .caller_movie()
-        .map_or(false, |m| m.version() < 11);
+    let use_swf10_behavior = activation.caller_movie().is_some_and(|m| m.version() < 11);
 
     let val_class = new_vector_storage.value_type_for_coercion(activation);
 

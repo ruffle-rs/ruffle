@@ -589,7 +589,7 @@ pub fn optimize<'gc>(
         loop {
             let last_op_was_block_terminating = if i != 0 {
                 code.get(i as usize - 1)
-                    .map_or(false, |o| o.is_block_terminating())
+                    .is_some_and(|o| o.is_block_terminating())
             } else {
                 false
             };

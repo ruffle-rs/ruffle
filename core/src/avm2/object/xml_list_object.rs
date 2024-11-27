@@ -737,9 +737,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                             _ if value
                                 .as_object()
                                 .and_then(|x| x.as_xml_object())
-                                .map_or(false, |x| {
-                                    x.node().is_text() || x.node().is_attribute()
-                                }) =>
+                                .is_some_and(|x| x.node().is_text() || x.node().is_attribute()) =>
                             {
                                 E4XNode::text(activation.gc(), activation.strings().empty(), r)
                             }
@@ -934,7 +932,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                     // 2.g. Else if (Type(V) is XML) or (x[i].[[Class]] ∈ {"text", "comment", "processing-instruction"})
                     } else if value
                         .as_object()
-                        .map_or(false, |x| x.as_xml_object().is_some())
+                        .is_some_and(|x| x.as_xml_object().is_some())
                         || matches!(
                             *child.kind(),
                             E4XNodeKind::Text(_)

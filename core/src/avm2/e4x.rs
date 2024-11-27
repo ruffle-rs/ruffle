@@ -1754,9 +1754,10 @@ pub fn maybe_escape_child<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     // NOTE: This depends on root SWF version, not caller movie version.
     if activation.context.swf.version() <= 9 {
-        if child.as_object().map_or(false, |x| {
-            x.as_xml_object().is_some() || x.as_xml_list_object().is_some()
-        }) {
+        if child
+            .as_object()
+            .is_some_and(|x| x.as_xml_object().is_some() || x.as_xml_list_object().is_some())
+        {
             return Ok(child);
         } else {
             let string = child.coerce_to_string(activation)?;

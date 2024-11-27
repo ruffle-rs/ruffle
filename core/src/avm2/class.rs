@@ -655,7 +655,7 @@ impl<'gc> Class<'gc> {
 
         if let Some(superclass) = superclass {
             for instance_trait in read.traits.iter() {
-                let is_protected = read.protected_namespace.map_or(false, |prot| {
+                let is_protected = read.protected_namespace.is_some_and(|prot| {
                     prot.exact_version_match(instance_trait.name().namespace())
                 });
 
@@ -672,11 +672,9 @@ impl<'gc> Class<'gc> {
                         let names_match = super_name.local_name() == my_name.local_name()
                             && (super_name.namespace().matches_ns(my_name.namespace())
                                 || (is_protected
-                                    && superclass_def
-                                        .protected_namespace()
-                                        .map_or(false, |prot| {
-                                            prot.exact_version_match(super_name.namespace())
-                                        })));
+                                    && superclass_def.protected_namespace().is_some_and(|prot| {
+                                        prot.exact_version_match(super_name.namespace())
+                                    })));
                         if names_match {
                             match (supertrait.kind(), instance_trait.kind()) {
                                 //Getter/setter pairs do NOT override one another

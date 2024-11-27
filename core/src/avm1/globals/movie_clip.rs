@@ -353,7 +353,7 @@ fn line_style<'gc>(
         };
         let is_pixel_hinted = args
             .get(3)
-            .map_or(false, |v| v.as_bool(activation.swf_version()));
+            .is_some_and(|v| v.as_bool(activation.swf_version()));
         let (allow_scale_x, allow_scale_y) = match args
             .get(4)
             .and_then(|v| v.coerce_to_string(activation).ok())

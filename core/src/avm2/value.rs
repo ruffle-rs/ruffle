@@ -279,7 +279,7 @@ pub fn string_to_int(mut s: &WStr, mut radix: i32, strict: bool) -> f64 {
 /// * `strict == false` ignores trailing garbage, but fails on blank strings.
 pub fn string_to_f64(mut s: &WStr, swf_version: u8, strict: bool) -> Option<f64> {
     fn is_ascii_digit(c: u16) -> bool {
-        u8::try_from(c).map_or(false, |c| c.is_ascii_digit())
+        u8::try_from(c).is_ok_and(|c| c.is_ascii_digit())
     }
 
     fn to_decimal_digit(c: u16) -> Option<u32> {
@@ -1034,7 +1034,7 @@ impl<'gc> Value<'gc> {
         match self {
             Value::Number(_) => true,
             Value::Integer(_) => true,
-            Value::Object(o) => o.as_primitive().map_or(false, |p| p.is_number()),
+            Value::Object(o) => o.as_primitive().is_some_and(|p| p.is_number()),
             _ => false,
         }
     }
@@ -1046,7 +1046,7 @@ impl<'gc> Value<'gc> {
         match self {
             Value::Number(n) => *n == (*n as u32 as f64),
             Value::Integer(i) => *i >= 0,
-            Value::Object(o) => o.as_primitive().map_or(false, |p| p.is_u32()),
+            Value::Object(o) => o.as_primitive().is_some_and(|p| p.is_u32()),
             _ => false,
         }
     }
@@ -1058,7 +1058,7 @@ impl<'gc> Value<'gc> {
         match self {
             Value::Number(n) => *n == (*n as i32 as f64),
             Value::Integer(_) => true,
-            Value::Object(o) => o.as_primitive().map_or(false, |p| p.is_i32()),
+            Value::Object(o) => o.as_primitive().is_some_and(|p| p.is_i32()),
             _ => false,
         }
     }
