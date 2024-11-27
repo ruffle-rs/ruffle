@@ -57,8 +57,7 @@ license-files = [
 multiple-versions = "warn"
 
 deny = [
-    # We are manually pinning `tracing-tracy` to match the version used by
-    # `profiling`, but this can get stale easily.
+    # Multiple version of this will conflict
     { name = "tracy-client", deny-multiple-versions = true },
     # Having multiple versions of this can silently cause images (such as
     # the logo in the about dialog) in egui to not appear.
