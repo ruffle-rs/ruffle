@@ -920,12 +920,13 @@ impl<'gc> EditText<'gc> {
         let scroll_offset = lines
             .get(edit_text.scroll - 1)
             .map_or(Twips::ZERO, |l| l.offset_y());
-        let target = edit_text.bounds.height() + scroll_offset;
+        let target = edit_text.bounds.height() + scroll_offset - Self::GUTTER * 2;
 
+        // TODO Use binary search here
         // Line before first line with extent greater than bounds.height() + line "scroll"'s offset
         let too_far = lines.iter().find(|&l| l.extent_y() > target);
         if let Some(line) = too_far {
-            line.index()
+            line.index().max(1)
         } else {
             // all lines are visible
             lines.last().unwrap().index() + 1
