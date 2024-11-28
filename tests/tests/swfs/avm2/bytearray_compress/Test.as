@@ -1,11 +1,12 @@
 // compiled with mxmlc
 
 package {
+    import flash.display.MovieClip;
     import flash.utils.ByteArray;
     import flash.utils.Endian;
     import flash.utils.CompressionAlgorithm;
 
-    public class Test {
+    public class Test extends MovieClip {
         public function Test() {
             var ba = createByteArray();
 
