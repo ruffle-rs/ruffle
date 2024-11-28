@@ -121,7 +121,7 @@ pub fn name<'gc>(
         let namespace = xml.namespace_object(activation, &[])?.namespace();
         let mut multiname = Multiname::new(namespace, local_name);
         multiname.set_is_attribute(xml.node().is_attribute());
-        Ok(QNameObject::from_name(activation, multiname)?.into())
+        Ok(QNameObject::from_name(activation, multiname).into())
     } else {
         Ok(Value::Null)
     }

@@ -71,7 +71,7 @@ impl<'gc> StageObject<'gc> {
     ) -> Result<Self, Error<'gc>> {
         let this = Self::for_display_object(activation, display_object, class)?;
 
-        class.call_super_init(this.into(), &[], activation)?;
+        class.call_init(this.into(), &[], activation)?;
 
         Ok(this)
     }
@@ -86,7 +86,7 @@ impl<'gc> StageObject<'gc> {
     ) -> Result<Self, Error<'gc>> {
         let this = Self::for_display_object(activation, display_object, class)?;
 
-        class.call_super_init(this.into(), args, activation)?;
+        class.call_init(this.into(), args, activation)?;
 
         Ok(this)
     }

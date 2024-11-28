@@ -842,7 +842,7 @@ impl<'gc> ChildContainer<'gc> {
             let mut matching_render_children = if case_sensitive {
                 self.depth_list
                     .iter()
-                    .filter(|(_, child)| child.name_optional().map_or(false, |n| n == name))
+                    .filter(|(_, child)| child.name_optional().is_some_and(|n| n == name))
                     .collect::<Vec<_>>()
             } else {
                 self.depth_list
@@ -850,7 +850,7 @@ impl<'gc> ChildContainer<'gc> {
                     .filter(|(_, child)| {
                         child
                             .name_optional()
-                            .map_or(false, |n| n.eq_ignore_case(name))
+                            .is_some_and(|n| n.eq_ignore_case(name))
                     })
                     .collect::<Vec<_>>()
             };
@@ -870,12 +870,12 @@ impl<'gc> ChildContainer<'gc> {
                 self.render_list
                     .iter()
                     .copied()
-                    .find(|child| child.name_optional().map_or(false, |n| n == name))
+                    .find(|child| child.name_optional().is_some_and(|n| n == name))
             } else {
                 self.render_list.iter().copied().find(|child| {
                     child
                         .name_optional()
-                        .map_or(false, |n| n.eq_ignore_case(name))
+                        .is_some_and(|n| n.eq_ignore_case(name))
                 })
             }
         }

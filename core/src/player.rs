@@ -5,9 +5,7 @@ use crate::avm1::SystemProperties;
 use crate::avm1::VariableDumper;
 use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm1::{TObject, Value};
-use crate::avm2::{
-    object::TObject as _, Activation as Avm2Activation, Avm2, CallStack, Object as Avm2Object,
-};
+use crate::avm2::{Activation as Avm2Activation, Avm2, CallStack, Object as Avm2Object};
 use crate::backend::ui::FontDefinition;
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
@@ -73,7 +71,7 @@ use web_time::Instant;
 pub const NEWEST_PLAYER_VERSION: u8 = 32;
 
 #[cfg(feature = "default_font")]
-pub const FALLBACK_DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
+pub const FALLBACK_DEVICE_FONT: &[u8] = include_bytes!("../assets/notosans-regular.subset.ttf.gz");
 
 #[derive(Collect)]
 #[collect(no_drop)]
@@ -273,6 +271,13 @@ type Log = Box<dyn LogBackend>;
 type Ui = Box<dyn UiBackend>;
 type Video = Box<dyn VideoBackend>;
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+enum RunState {
+    Playing,
+    Suspended,
+    Stepping,
+}
+
 pub struct Player {
     /// The version of the player we're emulating.
     ///
@@ -293,7 +298,7 @@ pub struct Player {
 
     swf: Arc<SwfMovie>,
 
-    is_playing: bool,
+    run_state: RunState,
     needs_render: bool,
 
     renderer: Renderer,
@@ -475,7 +480,7 @@ impl Player {
         if self.recent_run_frame_timings.is_empty() {
             5
         } else {
-            let frame_time = 1000.0 / self.frame_rate;
+            let frame_time = self.frame_time(1000.0);
             let average_run_frame_time = self.recent_run_frame_timings.iter().sum::<f64>()
                 / self.recent_run_frame_timings.len() as f64;
             ((frame_time / average_run_frame_time) as u32).clamp(1, MAX_FRAMES_PER_TICK)
@@ -489,11 +494,19 @@ impl Player {
         }
     }
 
+    fn frame_time(&self, time_unit: f64) -> f64 {
+        let frame_rate = self.frame_rate;
+        if frame_rate == 0.0 || frame_rate.is_nan() {
+            0.0
+        } else {
+            time_unit / frame_rate
+        }
+    }
+
     pub fn tick(&mut self, dt: f64) {
         if self.is_playing() {
             self.frame_accumulator += dt;
-            let frame_rate = self.frame_rate;
-            let frame_time = 1000.0 / frame_rate;
+            let frame_time = self.frame_time(1000.0);
 
             let max_frames_per_tick = self.max_frames_per_tick();
             let mut frame = 0;
@@ -513,6 +526,12 @@ impl Player {
                 // to delay the future frame.
                 if self.time_offset > 0 {
                     self.frame_accumulator -= self.time_offset as f64;
+                }
+
+                // If we are stepping a single frame, immediately suspend ourselves.
+                if self.run_state == RunState::Stepping {
+                    self.set_run_state(RunState::Suspended);
+                    break;
                 }
             }
 
@@ -556,7 +575,7 @@ impl Player {
     /// Returns the approximate duration of time until the next frame is due to run.
     /// This is only an approximation to be used for sleep durations.
     pub fn time_til_next_frame(&self) -> std::time::Duration {
-        let frame_time = 1000.0 / self.frame_rate;
+        let frame_time = self.frame_time(1000.0);
         let mut dt = if self.frame_accumulator <= 0.0 {
             frame_time
         } else if self.frame_accumulator >= frame_time {
@@ -575,7 +594,10 @@ impl Player {
     }
 
     pub fn is_playing(&self) -> bool {
-        self.is_playing
+        match self.run_state {
+            RunState::Playing | RunState::Stepping => true,
+            RunState::Suspended => false,
+        }
     }
 
     pub fn mouse_in_stage(&self) -> bool {
@@ -842,14 +864,35 @@ impl Player {
         }
     }
 
-    pub fn set_is_playing(&mut self, v: bool) {
-        if v {
+    fn set_run_state(&mut self, state: RunState) {
+        let play_audio = match state {
+            RunState::Playing => true,
+            RunState::Suspended => false,
+            // Do not run audio when stepping frame-by-frame,
+            // to avoid unpleasant short bursts of sound.
+            RunState::Stepping => false,
+        };
+
+        if play_audio {
             // Allow auto-play after user gesture for web backends.
             self.audio.play();
         } else {
             self.audio.pause();
         }
-        self.is_playing = v;
+
+        self.run_state = state;
+    }
+
+    pub fn set_is_playing(&mut self, v: bool) {
+        self.set_run_state(if v {
+            RunState::Playing
+        } else {
+            RunState::Suspended
+        });
+    }
+
+    pub fn suspend_after_next_frame(&mut self) {
+        self.set_run_state(RunState::Stepping);
     }
 
     pub fn needs_render(&self) -> bool {
@@ -1874,7 +1917,8 @@ impl Player {
 
     #[instrument(level = "debug", skip_all)]
     pub fn run_frame(&mut self) {
-        let frame_time = Duration::from_nanos((750_000_000.0 / self.frame_rate) as u64);
+        let frame_time = self.frame_time(750_000_000.0);
+        let frame_time = Duration::from_nanos(frame_time as u64);
         let (mut execution_limit, may_execute_while_streaming) = match self.load_behavior {
             LoadBehavior::Streaming => (
                 ExecutionLimit::with_max_ops_and_time(10000, frame_time),
@@ -2829,7 +2873,11 @@ impl PlayerBuilder {
                 instance_counter: 0,
                 player_version,
                 player_runtime: self.player_runtime,
-                is_playing: self.autoplay,
+                run_state: if self.autoplay {
+                    RunState::Playing
+                } else {
+                    RunState::Suspended
+                },
                 needs_render: true,
                 self_reference: self_ref.clone(),
                 load_behavior: self.load_behavior,
@@ -2859,12 +2907,23 @@ impl PlayerBuilder {
 
         #[cfg(feature = "default_font")]
         {
-            let mut font_reader = swf::read::Reader::new(FALLBACK_DEVICE_FONT_TAG, 8);
-            let font_tag = font_reader
-                .read_define_font_2(3)
-                .expect("Built-in font should compile");
-            player_lock
-                .register_device_font(FontDefinition::SwfTag(font_tag, font_reader.encoding()));
+            use flate2::read::DeflateDecoder;
+            use std::io::Read;
+
+            let mut data = Vec::new();
+            let mut decoder = DeflateDecoder::new(FALLBACK_DEVICE_FONT);
+            decoder
+                .read_to_end(&mut data)
+                .expect("default font decompression must succeed");
+
+            player_lock.register_device_font(FontDefinition::FontFile {
+                name: "Noto Sans".into(),
+                is_bold: false,
+                is_italic: false,
+                data,
+                index: 0,
+            });
+
             player_lock.set_default_font(DefaultFont::Sans, vec!["Noto Sans".to_string()]);
             player_lock.set_default_font(DefaultFont::Serif, vec!["Noto Sans".to_string()]);
             player_lock.set_default_font(DefaultFont::Typewriter, vec!["Noto Sans".to_string()]);

@@ -41,16 +41,14 @@ pub fn add_event_listener<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let dispatch_list = dispatch_list(activation, this)?;
     let event_type = args.get_string(activation, 0)?;
-    let listener = args
-        .get_value(1)
-        .as_callable(activation, None, None, false)?;
+    let listener = args.get_object(activation, 1, "listener")?;
     let use_capture = args.get_bool(2);
     let priority = args.get_i32(activation, 3)?;
 
     //TODO: If we ever get weak GC references, we should respect `useWeakReference`.
     dispatch_list
         .as_dispatch_mut(activation.context.gc_context)
-        .ok_or_else(|| Error::from("Internal properties should have what I put in them"))?
+        .expect("Internal properties should have what I put in them")
         .add_event_listener(event_type, priority, listener, use_capture);
 
     Avm2::register_broadcast_listener(activation.context, this, event_type);
@@ -66,14 +64,12 @@ pub fn remove_event_listener<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let dispatch_list = dispatch_list(activation, this)?;
     let event_type = args.get_string(activation, 0)?;
-    let listener = args
-        .get_value(1)
-        .as_callable(activation, None, None, false)?;
+    let listener = args.get_object(activation, 1, "listener")?;
     let use_capture = args.get_bool(2);
 
     dispatch_list
         .as_dispatch_mut(activation.context.gc_context)
-        .ok_or_else(|| Error::from("Internal properties should have what I put in them"))?
+        .expect("Internal properties should have what I put in them")
         .remove_event_listener(event_type, listener, use_capture);
 
     Ok(Value::Undefined)
@@ -146,22 +142,4 @@ pub fn dispatch_event<'gc>(
     dispatch_event_internal(activation, this, event, false)?;
     let not_canceled = !event.as_event().unwrap().is_cancelled();
     Ok(not_canceled.into())
-}
-
-/// Implements `EventDispatcher.toString`.
-///
-/// This is an undocumented function, but MX will VerifyError if this isn't
-/// present.
-pub fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let object_proto = activation.avm2().classes().object.prototype();
-    let name = Multiname::new(activation.avm2().namespaces.public_all(), "toString");
-
-    object_proto
-        .get_property(&name, activation)?
-        .as_callable(activation, Some(&name), Some(object_proto.into()), false)?
-        .call(this.into(), args, activation)
 }

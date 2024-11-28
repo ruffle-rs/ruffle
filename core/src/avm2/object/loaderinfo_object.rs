@@ -1,9 +1,8 @@
 //! Loader-info object
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::argument_error;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, StageObject, TObject};
+use crate::avm2::object::{Object, ObjectPtr, StageObject, TObject};
 use crate::avm2::Avm2;
 use crate::avm2::Error;
 use crate::avm2::EventObject;
@@ -19,20 +18,6 @@ use gc_arena::{
 };
 use std::cell::{Cell, Ref};
 use std::sync::Arc;
-
-/// ActionScript cannot construct a LoaderInfo. Note that LoaderInfo isn't a final class.
-pub fn loader_info_allocator<'gc>(
-    class: ClassObject<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-) -> Result<Object<'gc>, Error<'gc>> {
-    let class_name = class.inner_class_definition().name().local_name();
-
-    Err(Error::AvmError(argument_error(
-        activation,
-        &format!("Error #2012: {class_name}$ class cannot be instantiated."),
-        2012,
-    )?))
-}
 
 /// Represents a thing which can be loaded by a loader.
 #[derive(Collect, Clone)]
@@ -166,7 +151,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         ))
         .into();
 
-        class.call_super_init(this.into(), &[], activation)?;
+        class.call_init(this.into(), &[], activation)?;
 
         Ok(this)
     }
@@ -213,7 +198,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         ))
         .into();
 
-        class.call_super_init(this.into(), &[], activation)?;
+        class.call_init(this.into(), &[], activation)?;
 
         Ok(this)
     }
@@ -360,7 +345,7 @@ impl<'gc> LoaderInfoObject<'gc> {
                 .expect("for_display_object cannot return Err");
 
             class_object
-                .call_super_init(object.into(), &[], activation)
+                .call_init(object.into(), &[], activation)
                 .expect("Native init should succeed");
 
             unlock!(

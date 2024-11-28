@@ -552,7 +552,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .bound_superclass_object
             .expect("Superclass object is required to run super_init");
 
-        bound_superclass_object.call_super_init(receiver.into(), args, self)
+        bound_superclass_object.call_init(receiver.into(), args, self)
     }
 
     /// Retrieve a local register.
@@ -1044,7 +1044,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         value: Index<AbcNamespace>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let ns = self.pool_namespace(method, value)?;
-        let ns_object = NamespaceObject::from_namespace(self, ns)?;
+        let ns_object = NamespaceObject::from_namespace(self, ns);
 
         self.push_stack(ns_object);
         Ok(FrameControl::Continue)
@@ -1120,10 +1120,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_call(&mut self, arg_count: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
         let receiver = self.pop_stack();
-        let function = self
-            .pop_stack()
-            .as_callable(self, None, Some(receiver), false)?;
-        let value = function.call(receiver, &args, self)?;
+        let function = self.pop_stack();
+
+        let value = function.call(self, receiver, &args)?;
 
         self.push_stack(value);
 
@@ -1183,13 +1182,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let receiver = self
             .pop_stack()
             .coerce_to_object_or_typeerror(self, Some(&multiname))?;
-        let function = receiver.get_property(&multiname, self)?.as_callable(
-            self,
-            Some(&multiname),
-            Some(receiver.into()),
-            false,
-        )?;
-        let value = function.call(Value::Null, &args, self)?;
+        let function = receiver.get_property(&multiname, self)?;
+        let value = function.call(self, Value::Null, &args)?;
 
         self.push_stack(value);
 
@@ -1224,7 +1218,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // TODO: What scope should the function be executed with?
         let scope = self.create_scopechain();
         let function = FunctionObject::from_method(self, method, scope, None, None, None);
-        let value = function.call(receiver, &args, self)?;
+        let value = function.call(self, receiver, &args)?;
 
         self.push_stack(value);
 
@@ -1458,15 +1452,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
             let name_value = self.context.avm2.peek(0);
             let object = self.context.avm2.peek(1);
-            if !name_value.is_primitive() {
+            if let Some(name_object) = name_value.as_object() {
                 let object = object.coerce_to_object_or_typeerror(self, None)?;
                 if let Some(dictionary) = object.as_dictionary_object() {
                     let _ = self.pop_stack();
                     let _ = self.pop_stack();
-                    dictionary.delete_property_by_object(
-                        name_value.as_object().unwrap(),
-                        self.context.gc_context,
-                    );
+                    dictionary.delete_property_by_object(name_object, self.context.gc_context);
 
                     self.push_raw(true);
                     return Ok(FrameControl::Continue);
@@ -1537,9 +1528,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let name_value = self.pop_stack();
 
         if let Some(dictionary) = obj.as_dictionary_object() {
-            if !name_value.is_primitive() {
-                let obj_key = name_value.as_object().unwrap();
-                self.push_raw(dictionary.has_property_by_object(obj_key));
+            if let Some(name_object) = name_value.as_object() {
+                self.push_raw(dictionary.has_property_by_object(name_object));
 
                 return Ok(FrameControl::Continue);
             }
@@ -1775,7 +1765,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_construct(&mut self, arg_count: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
         let args = self.pop_stack_args(arg_count);
-        let ctor = self.pop_stack().as_callable(self, None, None, true)?;
+        let ctor = self.pop_stack();
 
         let object = ctor.construct(self, &args)?;
 

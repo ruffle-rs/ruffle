@@ -104,15 +104,13 @@ pub fn begin_gradient_fill<'gc>(
         let gradient_type = parse_gradient_type(activation, gradient_type)?;
         let colors = args.get_object(activation, 1, "colors")?;
         let alphas = args.try_get_object(activation, 2);
-        let ratios = args
-            .try_get_object(activation, 3)
-            .expect("Ratios should never be null");
+        let ratios = args.try_get_object(activation, 3);
 
         let records = build_gradient_records(
             activation,
             &colors.as_array_storage().expect("Guaranteed by AS"),
             alphas,
-            &ratios.as_array_storage().expect("Guaranteed by AS"),
+            ratios,
         )?;
 
         let matrix = if let Some(matrix) = args.try_get_object(activation, 4) {
@@ -164,13 +162,17 @@ fn build_gradient_records<'gc>(
     activation: &mut Activation<'_, 'gc>,
     colors: &ArrayStorage<'gc>,
     alphas: Option<Object<'gc>>,
-    ratios: &ArrayStorage<'gc>,
+    ratios: Option<Object<'gc>>,
 ) -> Result<Vec<GradientRecord>, Error<'gc>> {
     let alphas = alphas.as_ref().map(|o| o.as_array_storage().unwrap());
+    let ratios = ratios.as_ref().map(|o| o.as_array_storage().unwrap());
 
-    let mut length = colors.length().min(ratios.length());
+    let mut length = colors.length();
     if let Some(ref alphas) = alphas {
         length = length.min(alphas.length());
+    }
+    if let Some(ref ratios) = ratios {
+        length = length.min(ratios.length());
     }
 
     let mut records = Vec::with_capacity(length);
@@ -189,12 +191,19 @@ fn build_gradient_records<'gc>(
             1.0
         };
 
-        let ratio = ratios
-            .get(i)
-            .expect("Length should be guaranteed")
-            .coerce_to_u32(activation)?;
+        let ratio = if let Some(ref ratios) = ratios {
+            let ratio = ratios
+                .get(i)
+                .expect("Length should be guaranteed")
+                .coerce_to_u32(activation)?;
+            ratio.clamp(0, 255) as u8
+        } else {
+            // For example, with length=3: 0/2, 1/2, 2/2.
+            ((i * 255) / (length - 1)) as u8
+        };
+
         records.push(GradientRecord {
-            ratio: ratio.clamp(0, 255) as u8,
+            ratio,
             color: Color::from_rgb(color, (alpha * 255.0) as u8),
         })
     }
@@ -850,18 +859,13 @@ pub fn line_gradient_style<'gc>(
         let gradient_type = parse_gradient_type(activation, gradient_type?)?;
         let colors = args.get_object(activation, 1, "colors")?;
         let alphas = args.try_get_object(activation, 2);
-
-        // FP permits null ratios, but I don't understand the logic behind how it renders them.
-        // Panic here so we can get an error report if any game actually tries to pass null.
-        let ratios = args
-            .try_get_object(activation, 3)
-            .expect("Ratios should never be null");
+        let ratios = args.try_get_object(activation, 3);
 
         let records = build_gradient_records(
             activation,
             &colors.as_array_storage().expect("Guaranteed by AS"),
             alphas,
-            &ratios.as_array_storage().expect("Guaranteed by AS"),
+            ratios,
         )?;
         let matrix = if let Some(matrix) = args.try_get_object(activation, 4) {
             Matrix::from(object_to_matrix(matrix, activation)?)
@@ -1609,17 +1613,12 @@ fn handle_gradient_fill<'gc>(
     obj: &Object<'gc>,
 ) -> Result<FillStyle, Error<'gc>> {
     let alphas = obj.get_public_property("alphas", activation)?.as_object();
+    let ratios = obj.get_public_property("ratios", activation)?.as_object();
 
     let colors = obj
         .get_public_property("colors", activation)?
         .as_object()
         .ok_or_else(|| make_error_2007(activation, "colors"))?;
-
-    // See the comment in the `line_gradient_style` function.
-    let ratios = obj
-        .get_public_property("ratios", activation)?
-        .as_object()
-        .expect("Ratios should never be null");
 
     let gradient_type = {
         let gradient_type = obj
@@ -1632,7 +1631,7 @@ fn handle_gradient_fill<'gc>(
         activation,
         &colors.as_array_storage().expect("Guaranteed by AS"),
         alphas,
-        &ratios.as_array_storage().expect("Guaranteed by AS"),
+        ratios,
     )?;
 
     let matrix = {

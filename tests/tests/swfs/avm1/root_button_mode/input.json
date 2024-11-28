@@ -3,6 +3,9 @@
         "type": "Wait"
     },
     {
+        "type": "Wait"
+    },
+    {
         "type": "MouseMove",
         "pos": [60.0, 60.0]
     },
@@ -59,9 +62,6 @@
         "type": "MouseUp",
         "pos": [150.0, 150.0],
         "btn": "Left"
-    },
-    {
-        "type": "Wait"
     },
     {
         "type": "Wait"

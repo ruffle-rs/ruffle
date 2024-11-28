@@ -2,10 +2,10 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
+use crate::avm2::globals::slots::*;
 use crate::avm2::object::{ClassObject, Object, StageObject, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::Multiname;
 use crate::display_object::Graphic;
 
 pub fn shape_allocator<'gc>(
@@ -47,21 +47,12 @@ pub fn get_graphics<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let namespaces = activation.avm2().namespaces;
-
     if let Some(dobj) = this.as_display_object() {
         // Lazily initialize the `Graphics` object in a hidden property.
-        let graphics = match this.get_property(
-            &Multiname::new(namespaces.flash_display_internal, "_graphics"),
-            activation,
-        )? {
+        let graphics = match this.get_slot(FLASH_DISPLAY_SHAPE__GRAPHICS_SLOT) {
             Value::Undefined | Value::Null => {
                 let graphics = Value::from(StageObject::graphics(activation, dobj)?);
-                this.set_property(
-                    &Multiname::new(namespaces.flash_display_internal, "_graphics"),
-                    graphics,
-                    activation,
-                )?;
+                this.set_slot(FLASH_DISPLAY_SHAPE__GRAPHICS_SLOT, graphics, activation)?;
                 graphics
             }
             graphics => graphics,

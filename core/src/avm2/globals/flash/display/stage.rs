@@ -14,17 +14,6 @@ use crate::display_object::{
 use crate::string::{AvmString, WString};
 use swf::Color;
 
-/// Implements `flash.display.Stage`'s native instance constructor.
-pub fn super_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    activation.super_init(this, args)?;
-
-    Ok(Value::Undefined)
-}
-
 /// Implement `align`'s getter
 pub fn get_align<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -218,7 +207,12 @@ pub fn get_frame_rate<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok((*activation.context.frame_rate).into())
+    let mut frame_rate = *activation.context.frame_rate;
+    if frame_rate < 0.0 {
+        // Uncommon frame rate from the SWF header.
+        frame_rate = frame_rate.rem_euclid(256.0);
+    }
+    Ok(frame_rate.into())
 }
 
 /// Implement `frameRate`'s setter
@@ -228,7 +222,7 @@ pub fn set_frame_rate<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if !activation.context.forced_frame_rate {
-        let new_frame_rate = args.get_f64(activation, 0)?;
+        let new_frame_rate = args.get_f64(activation, 0)?.clamp(0.01, 1000.0);
         *activation.context.frame_rate = new_frame_rate;
     }
 

@@ -1,6 +1,8 @@
 import type { DataLoadOptions, URLLoadOptions } from "../../public/config";
-import type { MovieMetadata, PlayerElement } from "../../public/player";
-import { InnerPlayer, ReadyState } from "./inner";
+import { MovieMetadata, PlayerElement, ReadyState } from "../../public/player";
+import { InnerPlayer } from "./inner";
+import { APIVersions } from "../../public/player";
+import { PlayerV1Impl } from "./impl_v1";
 
 /**
  * The ruffle player element that should be inserted onto the page.
@@ -9,15 +11,15 @@ import { InnerPlayer, ReadyState } from "./inner";
  */
 export class RufflePlayerElement extends HTMLElement implements PlayerElement {
     #inner: InnerPlayer;
+    #legacyFSCommandHandler: ((command: string, args: string) => void) | null =
+        null;
 
-    get onFSCommand(): ((command: string, args: string) => boolean) | null {
-        return this.#inner.onFSCommand;
+    get onFSCommand(): ((command: string, args: string) => void) | null {
+        return this.#legacyFSCommandHandler;
     }
 
-    set onFSCommand(
-        value: ((command: string, args: string) => boolean) | null,
-    ) {
-        this.#inner.onFSCommand = value;
+    set onFSCommand(value: ((command: string, args: string) => void) | null) {
+        this.#legacyFSCommandHandler = value;
     }
 
     get readyState(): ReadyState {
@@ -52,6 +54,17 @@ export class RufflePlayerElement extends HTMLElement implements PlayerElement {
                 }
             },
         );
+        this.#inner.addFSCommandHandler((command, args) => {
+            this.#legacyFSCommandHandler?.(command, args);
+        });
+    }
+
+    ruffle<V extends keyof APIVersions = 1>(version?: V): APIVersions[V] {
+        const v = version ?? 1;
+        if (v === 1) {
+            return new PlayerV1Impl(this.#inner) as APIVersions[V];
+        }
+        throw new Error(`Version ${version} not supported.`);
     }
 
     get loadedConfig(): URLLoadOptions | DataLoadOptions | null {
@@ -145,7 +158,7 @@ export class RufflePlayerElement extends HTMLElement implements PlayerElement {
 
     public PercentLoaded(): number {
         // [NA] This is a stub - we need to research how this is actually implemented (is it just base swf loadedBytes?)
-        if (this.readyState === ReadyState.Loaded) {
+        if (this.#inner._readyState === ReadyState.Loaded) {
             return 100;
         } else {
             return 0;

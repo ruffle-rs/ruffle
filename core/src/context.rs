@@ -287,6 +287,11 @@ impl<'gc> UpdateContext<'gc> {
             .stop_sounds_with_display_object(self.audio, display_object)
     }
 
+    pub fn stop_sounds_on_parent_and_children(&mut self, display_object: DisplayObject<'gc>) {
+        self.audio_manager
+            .stop_sounds_on_parent_and_children(self.audio, display_object)
+    }
+
     pub fn stop_all_sounds(&mut self) {
         self.audio_manager.stop_all_sounds(self.audio)
     }

@@ -383,9 +383,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             }
         }
 
-        return method
-            .as_callable(activation, Some(multiname), Some(self.into()), false)?
-            .call(self.into(), arguments, activation);
+        method.call(activation, self.into(), arguments)
     }
 
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {
@@ -531,9 +529,10 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         }
 
         // 10. Let primitiveAssign = (Type(c) ∉ {XML, XMLList}) and (n.localName is not equal to the string "*")
-        let primitive_assign = !value.as_object().map_or(false, |x| {
-            x.as_xml_list_object().is_some() || x.as_xml_object().is_some()
-        }) && !name.is_any_name();
+        let primitive_assign = !value
+            .as_object()
+            .is_some_and(|x| x.as_xml_list_object().is_some() || x.as_xml_object().is_some())
+            && !name.is_any_name();
 
         let self_node = self.node();
 

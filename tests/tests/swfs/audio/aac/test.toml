@@ -1,0 +1,4 @@
+num_ticks = 400
+
+[player_options]
+with_audio = true

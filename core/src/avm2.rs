@@ -2,7 +2,7 @@
 
 use std::rc::Rc;
 
-use crate::avm2::class::AllocatorFn;
+use crate::avm2::class::{AllocatorFn, CustomConstructorFn};
 use crate::avm2::error::make_error_1107;
 use crate::avm2::globals::{
     init_builtin_system_classes, init_native_system_classes, SystemClassDefs, SystemClasses,
@@ -148,10 +148,10 @@ pub struct Avm2<'gc> {
     native_instance_allocator_table: &'static [Option<(&'static str, AllocatorFn)>],
 
     #[collect(require_static)]
-    native_super_initializer_table: &'static [Option<(&'static str, NativeMethodImpl)>],
+    native_call_handler_table: &'static [Option<(&'static str, NativeMethodImpl)>],
 
     #[collect(require_static)]
-    native_call_handler_table: &'static [Option<(&'static str, NativeMethodImpl)>],
+    native_custom_constructor_table: &'static [Option<(&'static str, CustomConstructorFn)>],
 
     /// A list of objects which are capable of receiving broadcasts.
     ///
@@ -220,8 +220,8 @@ impl<'gc> Avm2<'gc> {
 
             native_method_table: Default::default(),
             native_instance_allocator_table: Default::default(),
-            native_super_initializer_table: Default::default(),
             native_call_handler_table: Default::default(),
+            native_custom_constructor_table: Default::default(),
             broadcast_list: Default::default(),
 
             orphan_objects: Default::default(),
@@ -344,6 +344,8 @@ impl<'gc> Avm2<'gc> {
     /// behavior. This should not be called manually - `movie_clip` will
     /// call it when necessary.
     pub fn add_orphan_obj(&mut self, dobj: DisplayObject<'gc>) {
+        // Note: comparing pointers is correct because GcWeak keeps its allocation alive,
+        // so the pointers can't overlap by accident.
         if self
             .orphan_objects
             .iter()
@@ -483,10 +485,10 @@ impl<'gc> Avm2<'gc> {
         let bucket = context.avm2.broadcast_list.entry(event_name).or_default();
 
         for entry in bucket.iter() {
-            if let Some(obj) = entry.upgrade(context.gc_context) {
-                if Object::ptr_eq(obj, object) {
-                    return;
-                }
+            // Note: comparing pointers is correct because GcWeak keeps its allocation alive,
+            // so the pointers can't overlap by accident.
+            if entry.as_ptr() == object.as_ptr() {
+                return;
             }
         }
 
@@ -570,8 +572,8 @@ impl<'gc> Avm2<'gc> {
         context: &mut UpdateContext<'gc>,
     ) -> Result<(), String> {
         let mut evt_activation = Activation::from_domain(context, domain);
-        callable
-            .call(receiver, args, &mut evt_activation)
+        Value::from(callable)
+            .call(&mut evt_activation, receiver, args)
             .map_err(|e| format!("{e:?}"))?;
 
         Ok(())

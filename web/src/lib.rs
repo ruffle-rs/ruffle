@@ -153,8 +153,9 @@ extern "C" {
     #[wasm_bindgen(method, js_name = "getObjectId")]
     fn get_object_id(this: &JavascriptPlayer) -> Option<String>;
 
-    #[wasm_bindgen(method, catch, js_name = "onFSCommand")]
-    fn on_fs_command(this: &JavascriptPlayer, command: &str, args: &str) -> Result<bool, JsValue>;
+    #[wasm_bindgen(method, catch, js_name = "callFSCommand")]
+    fn call_fs_command(this: &JavascriptPlayer, command: &str, args: &str)
+        -> Result<bool, JsValue>;
 
     #[wasm_bindgen(method)]
     fn panic(this: &JavascriptPlayer, error: &JsError);

@@ -15,17 +15,6 @@ use crate::display_object::HitTestOptions;
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use std::cmp::min;
 
-/// Implements `flash.display.DisplayObjectContainer`'s native instance constructor.
-pub fn super_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    activation.super_init(this, &[])?;
-
-    Ok(Value::Undefined)
-}
-
 /// Validate if we can add a child to a parent at a given index.
 ///
 /// There are several conditions which should cause an add operation to fail:

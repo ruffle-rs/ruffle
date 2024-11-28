@@ -2,12 +2,10 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::api_version::ApiVersion;
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{Object, QNameObject, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Namespace;
-
-pub use crate::avm2::object::q_name_allocator;
 
 pub fn call_handler<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -36,23 +34,16 @@ pub fn call_handler<'gc>(
         .into())
 }
 
-/// Implements `QName`'s `init` method, which is called from the constructor.
-pub fn init<'gc>(
+/// Implements a custom constructor for `QName`.
+pub fn q_name_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
     args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let arguments_object = args[0].as_object().unwrap();
-    let arguments_list = arguments_object.as_array_storage().unwrap();
-    let arguments_list = arguments_list
-        .iter()
-        .map(|v| v.unwrap()) // Arguments should be array with no holes
-        .collect::<Vec<_>>();
+) -> Result<Object<'gc>, Error<'gc>> {
+    let this = QNameObject::new_empty(activation);
 
-    let this = this.as_qname_object().unwrap();
-    let namespace = if arguments_list.get(1).is_some() {
-        let ns_arg = arguments_list[0];
-        let mut local_arg = arguments_list[1];
+    let namespace = if args.len() >= 2 {
+        let ns_arg = args[0];
+        let mut local_arg = args[1];
 
         if matches!(local_arg, Value::Undefined) {
             local_arg = activation.strings().empty().into();
@@ -85,10 +76,10 @@ pub fn init<'gc>(
 
         namespace
     } else {
-        let qname_arg = arguments_list.get(0).copied().unwrap_or(Value::Undefined);
+        let qname_arg = args.get(0).copied().unwrap_or(Value::Undefined);
         if let Value::Object(Object::QNameObject(qname_obj)) = qname_arg {
             this.init_name(activation.context.gc_context, qname_obj.name().clone());
-            return Ok(Value::Undefined);
+            return Ok(this.into());
         }
 
         let local = if qname_arg == Value::Undefined {
@@ -110,7 +101,7 @@ pub fn init<'gc>(
         this.set_is_qname(activation.context.gc_context, true);
     }
 
-    Ok(Value::Undefined)
+    Ok(this.into())
 }
 
 /// Implements `QName.localName`'s getter

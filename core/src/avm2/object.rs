@@ -21,7 +21,7 @@ use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
 use crate::streams::NetStream;
 use crate::string::{AvmString, StringContext};
-use gc_arena::{Collect, Gc, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
@@ -98,14 +98,12 @@ pub use crate::avm2::object::index_buffer_3d_object::{
     IndexBuffer3DObject, IndexBuffer3DObjectWeak,
 };
 pub use crate::avm2::object::loaderinfo_object::{
-    loader_info_allocator, LoaderInfoObject, LoaderInfoObjectWeak, LoaderStream,
+    LoaderInfoObject, LoaderInfoObjectWeak, LoaderStream,
 };
 pub use crate::avm2::object::local_connection_object::{
     local_connection_allocator, LocalConnectionObject, LocalConnectionObjectWeak,
 };
-pub use crate::avm2::object::namespace_object::{
-    namespace_allocator, NamespaceObject, NamespaceObjectWeak,
-};
+pub use crate::avm2::object::namespace_object::{NamespaceObject, NamespaceObjectWeak};
 pub use crate::avm2::object::net_connection_object::{
     net_connection_allocator, NetConnectionObject, NetConnectionObjectWeak,
 };
@@ -117,7 +115,7 @@ pub use crate::avm2::object::primitive_object::{
 };
 pub use crate::avm2::object::program_3d_object::{Program3DObject, Program3DObjectWeak};
 pub use crate::avm2::object::proxy_object::{proxy_allocator, ProxyObject, ProxyObjectWeak};
-pub use crate::avm2::object::qname_object::{q_name_allocator, QNameObject, QNameObjectWeak};
+pub use crate::avm2::object::qname_object::{QNameObject, QNameObjectWeak};
 pub use crate::avm2::object::regexp_object::{reg_exp_allocator, RegExpObject, RegExpObjectWeak};
 pub use crate::avm2::object::responder_object::{
     responder_allocator, ResponderObject, ResponderObjectWeak,
@@ -475,12 +473,9 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         // but because calling into ScriptObjectData borrows it for entire duration,
         // we run a risk of a double borrow if the inner call borrows again.
         let self_val: Value<'gc> = Value::from(self.into());
-        let result = self
-            .base()
-            .get_property_local(multiname, activation)?
-            .as_callable(activation, Some(multiname), Some(self_val), false)?;
+        let result = self.base().get_property_local(multiname, activation)?;
 
-        result.call(self_val, arguments, activation)
+        result.call(activation, self_val, arguments)
     }
 
     /// Call a named property on the object.
@@ -498,25 +493,15 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<Value<'gc>, Error<'gc>> {
         match self.vtable().get_trait(multiname) {
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
-                let obj = self.base().get_slot(slot_id).as_callable(
-                    activation,
-                    Some(multiname),
-                    Some(Value::from(self.into())),
-                    false,
-                )?;
+                let obj = self.base().get_slot(slot_id);
 
-                obj.call(Value::from(self.into()), arguments, activation)
+                obj.call(activation, Value::from(self.into()), arguments)
             }
             Some(Property::Method { disp_id }) => self.call_method(disp_id, arguments, activation),
             Some(Property::Virtual { get: Some(get), .. }) => {
-                let obj = self.call_method(get, &[], activation)?.as_callable(
-                    activation,
-                    Some(multiname),
-                    Some(Value::from(self.into())),
-                    false,
-                )?;
+                let obj = self.call_method(get, &[], activation)?;
 
-                obj.call(Value::from(self.into()), arguments, activation)
+                obj.call(activation, Value::from(self.into()), arguments)
             }
             Some(Property::Virtual { get: None, .. }) => Err(error::make_reference_error(
                 activation,
@@ -586,7 +571,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(bound_method) = self.get_bound_method(id) {
-            return bound_method.call(Value::from(self.into()), arguments, activation);
+            return bound_method.call(activation, Value::from(self.into()), arguments);
         }
 
         let full_method = self
@@ -619,7 +604,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
 
         self.install_bound_method(activation.context.gc_context, id, bound_method);
 
-        bound_method.call(Value::from(self.into()), arguments, activation)
+        bound_method.call(activation, Value::from(self.into()), arguments)
     }
 
     /// Implements the `in` opcode and AS3 operator.
@@ -857,40 +842,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         base.install_bound_method(mc, disp_id, function)
     }
 
-    /// Call the object.
-    fn call(
-        self,
-        _receiver: Value<'gc>,
-        _arguments: &[Value<'gc>],
-        _activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        Err("Object is not callable".into())
-    }
-
-    /// Construct a Class or Function and return an instance of it.
-    ///
-    /// As the first step in object construction, the `construct` method is
-    /// called on the class object to produce an instance of that class. The
-    /// constructor is then expected to perform the following steps, in order:
-    ///
-    /// 1. Allocate the instance object. For ES4 classes, the class's instance
-    /// allocator is used to allocate the object. ES3-style classes use the
-    /// prototype to derive instances.
-    /// 2. Associate the instance object with the class's explicit `prototype`.
-    /// 3. If the class has instance traits, install them at this time.
-    /// 4. Call the constructor method with the newly-allocated object as
-    /// receiver. For ES3 classes, this is just the function's associated
-    /// method.
-    /// 5. Yield the allocated object. (The return values of constructors are
-    /// ignored.)
-    fn construct(
-        self,
-        _activation: &mut Activation<'_, 'gc>,
-        _args: &[Value<'gc>],
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        Err("Object is not constructable".into())
-    }
-
     /// Construct a property of this object by Multiname lookup.
     ///
     /// This corresponds directly to the AVM2 operation `constructprop`.
@@ -901,12 +852,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         args: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        let ctor = self.get_property(multiname, activation)?.as_callable(
-            activation,
-            Some(multiname),
-            Some(Value::from(self.into())),
-            true,
-        )?;
+        let ctor = self.get_property(multiname, activation)?;
 
         ctor.construct(activation, args)
     }
@@ -1486,6 +1432,51 @@ pub enum WeakObject<'gc> {
 }
 
 impl<'gc> WeakObject<'gc> {
+    pub fn as_ptr(self) -> *const ObjectPtr {
+        match self {
+            Self::ScriptObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::FunctionObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::PrimitiveObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::NamespaceObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::ArrayObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::StageObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::DomainObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::EventObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::DispatchObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::XmlObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::XmlListObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::RegExpObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::ByteArrayObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::LoaderInfoObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::ClassObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::VectorObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::SoundObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::SoundChannelObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::BitmapDataObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::DateObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::DictionaryObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::QNameObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::TextFormatObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::ProxyObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::ErrorObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::Stage3DObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::Context3DObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::IndexBuffer3DObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::VertexBuffer3DObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::TextureObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::Program3DObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::NetStreamObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::NetConnectionObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::ResponderObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::ShaderDataObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::SocketObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::FileReferenceObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::FontObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::LocalConnectionObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::SharedObjectObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+        }
+    }
+
     pub fn upgrade(self, mc: &Mutation<'gc>) -> Option<Object<'gc>> {
         Some(match self {
             Self::ScriptObject(o) => ScriptObject(o.0.upgrade(mc)?).into(),
@@ -1530,4 +1521,19 @@ impl<'gc> WeakObject<'gc> {
             Self::SharedObjectObject(o) => SharedObjectObject(o.0.upgrade(mc)?).into(),
         })
     }
+}
+
+/// Implements a custom allocator for classes that are not constructible.
+/// (but their derived classes can be)
+pub fn abstract_class_allocator<'gc>(
+    class: ClassObject<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<Object<'gc>, Error<'gc>> {
+    let class_name = class.instance_class().name().local_name();
+
+    return Err(Error::AvmError(error::argument_error(
+        activation,
+        &format!("Error #2012: {class_name} class cannot be instantiated."),
+        2012,
+    )?));
 }

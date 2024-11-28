@@ -531,7 +531,7 @@ fn load_system_fonts(
     tracing::info!("loaded cjk fallback font \"{}\"", name);
 
     let mut fd = egui::FontDefinitions::default();
-    fd.font_data.insert(name.clone(), fontdata);
+    fd.font_data.insert(name.clone(), fontdata.into());
     fd.families
         .get_mut(&egui::FontFamily::Proportional)
         .expect("font family not found")

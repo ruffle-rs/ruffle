@@ -25,9 +25,17 @@ axaxfg
 axfgfg
 // $1
 a<b>c
+// capture group 0 not recognized
+a<$0>c
+// capture group 00 not recognized
+a<$00>c
+// leading 0 capture group number
+a<b1>c
 // not enough groups
 a<$2>c
 // two-digit capture group number, but not enough groups
+a<$20>c
+// two-digit capture group number, but not enough groups with prefix as a valid group
 a<b0>c
 // Two-digit capture group number
 <b>#bbc

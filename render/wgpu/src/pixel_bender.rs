@@ -63,13 +63,13 @@ impl PixelBenderWgpuShader {
                             layout: Some(&self.pipeline_layout),
                             vertex: VertexState {
                                 module: &self.vertex_shader,
-                                entry_point: naga_pixelbender::VERTEX_SHADER_ENTRYPOINT,
+                                entry_point: Some(naga_pixelbender::VERTEX_SHADER_ENTRYPOINT),
                                 buffers: &VERTEX_BUFFERS_DESCRIPTION_FILTERS,
                                 compilation_options: Default::default(),
                             },
                             fragment: Some(wgpu::FragmentState {
                                 module: &self.fragment_shader,
-                                entry_point: naga_pixelbender::FRAGMENT_SHADER_ENTRYPOINT,
+                                entry_point: Some(naga_pixelbender::FRAGMENT_SHADER_ENTRYPOINT),
                                 targets: &[Some(ColorTargetState {
                                     format,
                                     // FIXME - what should this be?

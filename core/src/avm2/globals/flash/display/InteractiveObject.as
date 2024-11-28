@@ -1,19 +1,16 @@
 package flash.display {
+    import __ruffle__.stub_method;
     import __ruffle__.stub_setter;
 
     import flash.accessibility.AccessibilityImplementation;
     import flash.geom.Rectangle;
     import flash.ui.ContextMenu;
 
-    [Ruffle(SuperInitializer)]
+    [Ruffle(Abstract)]
     public class InteractiveObject extends DisplayObject {
         private var _accessibilityImpl:AccessibilityImplementation = null;
         private var _needsSoftKeyboard:Boolean = false;
-        private var _softKeyboardInputAreaOfInterest:Rectangle = new Rectangle();
-
-        public function InteractiveObject() {
-            throw new Error("You cannot directly construct InteractiveObject.")
-        }
+        private var _softKeyboardInputAreaOfInterest:Rectangle = null;
 
         public function get accessibilityImplementation():AccessibilityImplementation {
             return this._accessibilityImpl;
@@ -34,6 +31,12 @@ package flash.display {
         public function set needsSoftKeyboard(value:Boolean):void {
             stub_setter("flash.display.InteractiveObject", "needsSoftKeyboard");
             this._needsSoftKeyboard = value;
+        }
+
+        [API("670")]
+        public function requestSoftKeyboard():Boolean {
+            stub_method("flash.display.InteractiveObject", "requestSoftKeyboard");
+            return false;
         }
 
         [API("670")]

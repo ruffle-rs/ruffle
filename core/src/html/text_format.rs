@@ -20,10 +20,8 @@ const HTML_SPACE: u16 = b' ' as u16;
 ///
 /// Unknown entities will be ignored.
 fn process_html_entity(src: &WStr) -> Option<WString> {
-    let amp_index = match src.find(b'&') {
-        Some(i) => i,
-        None => return None, // No entities.
-    };
+    // Returning right away if no entities are found.
+    let amp_index = src.find(b'&')?;
 
     // Contains entities; copy and replace.
     let mut result_str = WString::with_capacity(src.len(), src.is_wide());

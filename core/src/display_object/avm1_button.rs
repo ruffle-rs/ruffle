@@ -393,15 +393,18 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
     }
 
     fn avm1_unload(&self, context: &mut UpdateContext<'gc>) {
+        for child in self.iter_render_list() {
+            child.avm1_unload(context);
+        }
+
         self.drop_focus(context);
+
         if let Some(node) = self.maskee() {
             node.set_masker(context.gc(), None, true);
         } else if let Some(node) = self.masker() {
             node.set_maskee(context.gc(), None, true);
         }
-        context
-            .audio_manager
-            .stop_sounds_with_display_object(context.audio, (*self).into());
+
         self.set_avm1_removed(context.gc(), true);
     }
 }

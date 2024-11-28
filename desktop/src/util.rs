@@ -254,27 +254,10 @@ pub fn plot_stats_in_tracy(instance: &wgpu::Instance) {
         .generate_report()
         .expect("reports should be available on desktop");
 
-    #[allow(unused_mut)]
-    let mut backend = None;
-    #[cfg(not(any(target_os = "macos", target_os = "ios")))]
-    {
-        backend = backend.or(report.vulkan).or(report.gl);
-    }
-    #[cfg(windows)]
-    {
-        backend = backend.or(report.dx12);
-    }
-    #[cfg(any(target_os = "macos", target_os = "ios"))]
-    {
-        backend = backend.or(report.metal);
-    }
-
-    if let Some(stats) = backend {
-        tracy.plot(BIND_GROUPS, stats.bind_groups.num_allocated as f64);
-        tracy.plot(BUFFERS, stats.buffers.num_allocated as f64);
-        tracy.plot(TEXTURES, stats.textures.num_allocated as f64);
-        tracy.plot(TEXTURE_VIEWS, stats.texture_views.num_allocated as f64);
-    }
+    tracy.plot(BIND_GROUPS, report.hub.bind_groups.num_allocated as f64);
+    tracy.plot(BUFFERS, report.hub.buffers.num_allocated as f64);
+    tracy.plot(TEXTURES, report.hub.textures.num_allocated as f64);
+    tracy.plot(TEXTURE_VIEWS, report.hub.texture_views.num_allocated as f64);
 
     tracy.frame_mark();
 }

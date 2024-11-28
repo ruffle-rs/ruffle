@@ -10,16 +10,12 @@ package flash.display {
     import flash.text.TextSnapshot;
     import flash.ui.ContextMenu;
 
-    [Ruffle(SuperInitializer)]
+    [Ruffle(Abstract)]
     public class Stage extends DisplayObjectContainer {
         private var _colorCorrection:String = ColorCorrection.DEFAULT;
         private var _mouseLock:Boolean = false;
         private var _nativeWindow:NativeWindow;
         private var _fullScreenSourceRect:Rectangle;
-
-        public function Stage() {
-            throw new Error("You cannot construct new instances of the Stage.");
-        }
 
         override public function set accessibilityProperties(value:AccessibilityProperties):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);

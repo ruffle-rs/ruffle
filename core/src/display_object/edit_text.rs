@@ -191,6 +191,16 @@ impl EditTextData<'_> {
             Twips::ZERO
         }
     }
+
+    fn font_type(&self) -> FontType {
+        if !self.flags.contains(EditTextFlag::USE_OUTLINES) {
+            FontType::Device
+        } else if self.is_tlf {
+            FontType::EmbeddedCFF
+        } else {
+            FontType::Embedded
+        }
+    }
 }
 
 impl<'gc> EditText<'gc> {
@@ -242,12 +252,20 @@ impl<'gc> EditText<'gc> {
             FontType::Device
         };
 
+        let is_word_wrap = swf_tag.is_word_wrap();
+        let content_width = if autosize == AutoSizeMode::None || is_word_wrap {
+            Some(swf_tag.bounds().width() - Self::GUTTER * 2)
+        } else {
+            None
+        };
+
         let layout = html::lower_from_text_spans(
             &text_spans,
             context,
             swf_movie.clone(),
-            swf_tag.bounds().width() - Self::GUTTER * 2,
-            swf_tag.is_word_wrap(),
+            content_width,
+            !swf_tag.is_read_only(),
+            is_word_wrap,
             font_type,
         );
 
@@ -283,7 +301,6 @@ impl<'gc> EditText<'gc> {
                     EditTextStatic {
                         swf: swf_movie,
                         id: swf_tag.id(),
-                        layout: swf_tag.layout().cloned(),
                         initial_text: swf_tag
                             .initial_text()
                             .map(|s| s.decode(encoding).into_owned()),
@@ -612,6 +629,10 @@ impl<'gc> EditText<'gc> {
         self.relayout(context);
     }
 
+    pub fn font_type(self) -> FontType {
+        self.0.read().font_type()
+    }
+
     pub fn is_html(self) -> bool {
         self.0.read().flags.contains(EditTextFlag::HTML)
     }
@@ -647,6 +668,28 @@ impl<'gc> EditText<'gc> {
             .set(flag, value);
     }
 
+    /// Returns the matrix for transforming from layout
+    /// coordinate space into this object's local space.
+    fn layout_to_local_matrix(self, data: &EditTextData) -> Matrix {
+        Matrix::translate(
+            data.bounds.x_min + Self::GUTTER - Twips::from_pixels(data.hscroll),
+            data.bounds.y_min + Self::GUTTER - data.vertical_scroll_offset(),
+        )
+    }
+
+    /// Returns the matrix for transforming from this object's
+    /// local space into its layout coordinate space.
+    fn local_to_layout_matrix(self, data: &EditTextData) -> Matrix {
+        // layout_to_local contains only a translation,
+        // no need to inverse the matrix generically.
+        let Matrix { tx, ty, .. } = self.layout_to_local_matrix(data);
+        Matrix::translate(-tx, -ty)
+    }
+
+    fn local_to_layout(&self, data: &EditTextData, local: Point<Twips>) -> Point<Twips> {
+        self.local_to_layout_matrix(data) * local
+    }
+
     pub fn replace_text(
         self,
         from: usize,
@@ -677,21 +720,6 @@ impl<'gc> EditText<'gc> {
         transform.matrix.ty = baseline_adjustment;
 
         transform
-    }
-
-    pub fn line_width(self) -> Twips {
-        let edit_text = self.0.read();
-        let static_data = &edit_text.static_data;
-
-        let mut base_width = Twips::from_pixels(self.width());
-
-        if let Some(layout) = &static_data.layout {
-            base_width -= layout.left_margin;
-            base_width -= layout.indent;
-            base_width -= layout.right_margin;
-        }
-
-        base_width
     }
 
     /// Returns the variable that this text field is bound to.
@@ -740,7 +768,7 @@ impl<'gc> EditText<'gc> {
     /// the text, and no higher-level representation. Specifically, CSS should
     /// have already been calculated and applied to HTML trees lowered into the
     /// text-span representation.
-    fn relayout(self, context: &mut UpdateContext<'gc>) {
+    pub fn relayout(self, context: &mut UpdateContext<'gc>) {
         let mut edit_text = self.0.write(context.gc_context);
         let autosize = edit_text.autosize;
         let is_word_wrap = edit_text.flags.contains(EditTextFlag::WORD_WRAP);
@@ -757,17 +785,9 @@ impl<'gc> EditText<'gc> {
 
         // Determine the internal width available for content layout.
         let content_width = if autosize == AutoSizeMode::None || is_word_wrap {
-            edit_text.requested_width - padding
+            Some(edit_text.requested_width - padding)
         } else {
-            edit_text.bounds.width() - padding
-        };
-
-        let font_type = if !edit_text.flags.contains(EditTextFlag::USE_OUTLINES) {
-            FontType::Device
-        } else if edit_text.is_tlf {
-            FontType::EmbeddedCFF
-        } else {
-            FontType::Embedded
+            None
         };
 
         let new_layout = html::lower_from_text_spans(
@@ -775,8 +795,9 @@ impl<'gc> EditText<'gc> {
             context,
             movie,
             content_width,
+            !edit_text.flags.contains(EditTextFlag::READ_ONLY),
             is_word_wrap,
-            font_type,
+            edit_text.font_type(),
         );
 
         edit_text.layout = new_layout;
@@ -784,12 +805,22 @@ impl<'gc> EditText<'gc> {
         edit_text.hscroll = 0.0;
         edit_text.scroll = 1;
 
-        let layout_exterior_bounds = edit_text.layout.exterior_bounds();
+        let text_size = edit_text.layout.text_size();
 
+        // TODO [KJ] The code below that modifies bounds is certainly wrong.
+        //   We should take into account the order of operations performed on the field,
+        //   and that the field might have auto size enabled and disabled.
+        //   Auto size should not modify the state of edittext in such a way that
+        //   the original cannot be recovered.
         if autosize != AutoSizeMode::None {
             if !is_word_wrap {
                 // The edit text's bounds needs to have the padding baked in.
-                let width = layout_exterior_bounds.width() + padding;
+                let mut width = text_size.width() + padding;
+                if !edit_text.flags.contains(EditTextFlag::READ_ONLY) {
+                    // When the field is editable, FP adds 2.5px to add some
+                    // space to place the caret.
+                    width += Twips::from_pixels(2.5);
+                }
                 let new_x = match autosize {
                     AutoSizeMode::Left => edit_text.bounds.x_min,
                     AutoSizeMode::Center => {
@@ -804,7 +835,7 @@ impl<'gc> EditText<'gc> {
                 let width = edit_text.requested_width;
                 edit_text.bounds.set_width(width);
             }
-            let height = layout_exterior_bounds.height() + padding;
+            let height = text_size.height() + padding;
             edit_text.bounds.set_height(height);
         } else {
             let width = edit_text.requested_width;
@@ -820,8 +851,8 @@ impl<'gc> EditText<'gc> {
     ///
     /// The returned tuple should be interpreted as width, then height.
     pub fn measure_text(self, _context: &mut UpdateContext<'gc>) -> (Twips, Twips) {
-        let exterior_bounds = self.0.read().layout.exterior_bounds();
-        (exterior_bounds.width(), exterior_bounds.height())
+        let text_size = self.0.read().layout.text_size();
+        (text_size.width(), text_size.height())
     }
 
     /// How far the text can be scrolled right, in pixels.
@@ -833,21 +864,25 @@ impl<'gc> EditText<'gc> {
             return 0.0;
         }
 
-        let base = (edit_text.layout.exterior_bounds().width() - edit_text.bounds.width())
+        let mut text_width = edit_text.layout.text_size().width();
+        let window_width = (edit_text.bounds.width() - Self::GUTTER * 2).max(Twips::ZERO);
+
+        if !edit_text.flags.contains(EditTextFlag::READ_ONLY) {
+            // input fields get extra space at the end
+            text_width += window_width / 4;
+        }
+
+        (text_width - window_width)
             .trunc_to_pixel()
             .to_pixels()
-            .max(0.0);
-
-        // input text boxes get extra space at the end
-        if !edit_text.flags.contains(EditTextFlag::READ_ONLY) {
-            base + 41.0
-        } else {
-            base
-        }
+            .max(0.0)
     }
 
     /// How many lines the text can be scrolled down
     pub fn maxscroll(self) -> usize {
+        // FIXME [KJ] The following logic is yet inaccurate
+        //   for some input fields and negative leading.
+        //   Might be related to text height calculation.
         let edit_text = self.0.read();
 
         let lines = edit_text.layout.lines();
@@ -856,11 +891,16 @@ impl<'gc> EditText<'gc> {
             return 1;
         }
 
-        let target = lines.last().unwrap().extent_y() - edit_text.bounds.height();
+        let text_height = edit_text.layout.text_size().height();
+        let window_height = edit_text.bounds.height() - Self::GUTTER * 2;
 
-        // minimum line n such that n.offset > max.extent - bounds.height()
-        let max_line = lines.iter().find(|&l| target < l.offset_y());
-        if let Some(line) = max_line {
+        // That's the y coordinate where the fully scrolled window begins.
+        // We have to find a line that's below this coordinate.
+        let target = text_height - window_height;
+
+        // TODO Use binary search here
+        let line = lines.iter().find(|&l| l.offset_y() >= target);
+        if let Some(line) = line {
             line.index() + 1
         } else {
             // I don't know how this could happen, so return the limit
@@ -881,15 +921,35 @@ impl<'gc> EditText<'gc> {
         let scroll_offset = lines
             .get(edit_text.scroll - 1)
             .map_or(Twips::ZERO, |l| l.offset_y());
-        let target = edit_text.bounds.height() + scroll_offset;
+        let target = edit_text.bounds.height() + scroll_offset - Self::GUTTER * 2;
 
+        // TODO Use binary search here
         // Line before first line with extent greater than bounds.height() + line "scroll"'s offset
         let too_far = lines.iter().find(|&l| l.extent_y() > target);
         if let Some(line) = too_far {
-            line.index()
+            line.index().max(1)
         } else {
             // all lines are visible
             lines.last().unwrap().index() + 1
+        }
+    }
+
+    /// Returns the selection, but takes into account whether the selection should be rendered.
+    fn visible_selection(self, edit_text: &EditTextData<'gc>) -> Option<TextSelection> {
+        let selection = edit_text.selection?;
+        #[allow(clippy::collapsible_else_if)]
+        if selection.is_caret() {
+            if self.has_focus() && !edit_text.flags.contains(EditTextFlag::READ_ONLY) {
+                Some(selection)
+            } else {
+                None
+            }
+        } else {
+            if self.has_focus() || self.always_show_selection() {
+                Some(selection)
+            } else {
+                None
+            }
         }
     }
 
@@ -919,9 +979,100 @@ impl<'gc> EditText<'gc> {
         if flags.contains(LayoutDebugBoxesFlag::TEXT) {
             context.draw_rect_outline(Color::GREEN, layout.bounds().into(), Twips::ONE);
         }
-        if flags.contains(LayoutDebugBoxesFlag::TEXT_EXTERIOR) {
-            context.draw_rect_outline(Color::GREEN, layout.exterior_bounds().into(), Twips::ONE);
+    }
+
+    /// Render lines according to the given procedure.
+    ///
+    /// This skips invisible lines.
+    fn render_lines<F>(self, context: &mut RenderContext<'_, 'gc>, layout: &Layout<'gc>, f: F)
+    where
+        F: Fn(&mut RenderContext<'_, 'gc>, &LayoutLine<'gc>),
+    {
+        // Skip lines that are off-screen.
+        let lines_to_skip = self.scroll().saturating_sub(1);
+        for line in layout.lines().iter().skip(lines_to_skip) {
+            f(context, line);
         }
+    }
+
+    /// Render the visible text along with selection and the caret.
+    fn render_text(self, context: &mut RenderContext<'_, 'gc>, edit_text: &EditTextData<'gc>) {
+        self.render_selection_background(context, edit_text);
+        self.render_lines(context, &edit_text.layout, |context, line| {
+            self.render_layout_line(context, line);
+        });
+    }
+
+    /// Render the black selection background.
+    fn render_selection_background(
+        self,
+        context: &mut RenderContext<'_, 'gc>,
+        edit_text: &EditTextData<'gc>,
+    ) {
+        let Some(selection) = self.visible_selection(edit_text) else {
+            return;
+        };
+        if selection.is_caret() {
+            return;
+        }
+
+        let (start, end) = (selection.start(), selection.end());
+
+        self.render_lines(context, &edit_text.layout, |context, line| {
+            self.render_selection_background_for_line(context, line, start, end)
+        });
+    }
+
+    fn render_selection_background_for_line(
+        self,
+        context: &mut RenderContext<'_, 'gc>,
+        line: &LayoutLine<'gc>,
+        start: usize,
+        end: usize,
+    ) {
+        let local_start = start.clamp(line.start(), line.end());
+        let local_end = end.clamp(line.start(), line.end());
+
+        if local_start >= local_end {
+            // No selection in this line
+            return;
+        }
+
+        let line_bounds = line.bounds();
+
+        // If the selection ends within this line, the background
+        // is not drawn over leading.
+        let leading = if local_end == end {
+            Twips::ZERO
+        } else {
+            line.leading()
+        };
+
+        let x_start = line
+            .char_x_bounds(local_start)
+            .map(|b| b.0)
+            .unwrap_or_else(|| line_bounds.offset_x());
+        let x_end = line
+            .char_x_bounds(local_end - 1)
+            .map(|b| b.1)
+            .unwrap_or_else(|| line_bounds.extent_x());
+
+        let width = x_end - x_start;
+        let height = line_bounds.height() + leading;
+
+        let color = if self.has_focus() {
+            Color::BLACK
+        } else {
+            Color::GRAY
+        };
+        let selection_box = context.transform_stack.transform().matrix
+            * Matrix::create_box(
+                width.to_pixels() as f32,
+                height.to_pixels() as f32,
+                x_start,
+                line_bounds.origin().y(),
+            );
+        context.commands.draw_rect(color, selection_box);
     }
 
     fn render_layout_line(self, context: &mut RenderContext<'_, 'gc>, line: &LayoutLine<'gc>) {
@@ -954,15 +1105,7 @@ impl<'gc> EditText<'gc> {
             ..Default::default()
         });
 
-        let focused = self.has_focus();
-        let visible_selection = if focused {
-            edit_text.selection
-        } else if self.always_show_selection() {
-            // Caret is not shown even if alwaysShowSelection is true
-            edit_text.selection.filter(|sel| !sel.is_caret())
-        } else {
-            None
-        };
+        let visible_selection = self.visible_selection(&edit_text);
 
         let caret = if let LayoutContent::Text { start, end, .. } = &lbox.content() {
             if let Some(visible_selection) = visible_selection {
@@ -1010,9 +1153,6 @@ impl<'gc> EditText<'gc> {
                     if let Some(glyph_shape_handle) = glyph.shape_handle(context.renderer) {
                         // If it's highlighted, override the color.
                         if matches!(visible_selection, Some(visible_selection) if visible_selection.contains(start + pos)) {
-                            // Draw selection rect
-                            self.render_selection(context, x, advance, caret_height, focused);
-
                             // Set text color to white
                             context.transform_stack.push(&Transform {
                                 matrix: transform.matrix,
@@ -1051,25 +1191,6 @@ impl<'gc> EditText<'gc> {
         }
 
         context.transform_stack.pop();
-    }
-
-    fn render_selection(
-        self,
-        context: &mut RenderContext<'_, 'gc>,
-        x: Twips,
-        width: Twips,
-        height: Twips,
-        focused: bool,
-    ) {
-        let color = if focused { Color::BLACK } else { Color::GRAY };
-        let selection_box = context.transform_stack.transform().matrix
-            * Matrix::create_box(
-                width.to_pixels() as f32,
-                height.to_pixels() as f32,
-                x,
-                Twips::ZERO,
-            );
-        context.commands.draw_rect(color, selection_box);
     }
 
     fn render_caret(
@@ -1316,11 +1437,8 @@ impl<'gc> EditText<'gc> {
 
     pub fn screen_position_to_index(self, position: Point<Twips>) -> Option<usize> {
         let text = self.0.read();
-        let mut position = self.global_to_local(position)?;
-        position.x += Twips::from_pixels(text.hscroll) - Self::GUTTER;
-        position.y += text.vertical_scroll_offset() - Self::GUTTER;
-        position.x -= text.bounds.x_min;
-        position.y -= text.bounds.y_min;
+        let position = self.global_to_local(position)?;
+        let position = self.local_to_layout(&text, position);
 
         // TODO We can use binary search for both y and x here
 
@@ -2329,40 +2447,20 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             }
         }
 
-        context.transform_stack.push(&Transform {
-            matrix: Matrix::translate(edit_text.bounds.x_min, edit_text.bounds.y_min),
-            ..Default::default()
-        });
-
         context.commands.push_mask();
-        let mask = Matrix::create_box(
-            edit_text.bounds.width().to_pixels() as f32,
-            edit_text.bounds.height().to_pixels() as f32,
-            Twips::ZERO,
-            Twips::ZERO,
-        );
+        let mask = Matrix::create_box_from_rectangle(&edit_text.bounds);
         context.commands.draw_rect(
             Color::WHITE,
             context.transform_stack.transform().matrix * mask,
         );
         context.commands.activate_mask();
 
-        let scroll_offset = edit_text.vertical_scroll_offset();
-        // TODO: Where does this come from? How is this different than INTERNAL_PADDING? Does this apply to y as well?
-        // If this is actually right, offset the border in `redraw_border` instead of doing an extra push.
         context.transform_stack.push(&Transform {
-            matrix: Matrix::translate(
-                Self::GUTTER - Twips::from_pixels(edit_text.hscroll),
-                Self::GUTTER - scroll_offset,
-            ),
+            matrix: self.layout_to_local_matrix(&edit_text),
             ..Default::default()
         });
 
-        // Skip lines that are off-screen.
-        let lines_to_skip = self.scroll().saturating_sub(1);
-        for line in edit_text.layout.lines().iter().skip(lines_to_skip) {
-            self.render_layout_line(context, line);
-        }
+        self.render_text(context, &edit_text);
 
         self.render_debug_boxes(
             context,
@@ -2378,8 +2476,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             context.transform_stack.transform().matrix * mask,
         );
         context.commands.pop_mask();
-
-        context.transform_stack.pop();
     }
 
     fn allow_as_mask(&self) -> bool {
@@ -2411,10 +2507,6 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
                 .unbound_text_fields
                 .retain(|&text_field| !DisplayObject::ptr_eq(text_field.into(), (*self).into()));
         }
-
-        context
-            .audio_manager
-            .stop_sounds_with_display_object(context.audio, (*self).into());
 
         self.set_avm1_removed(context.gc_context, true);
     }
@@ -2768,7 +2860,6 @@ bitflags::bitflags! {
 bitflags::bitflags! {
     #[derive(Clone, Copy)]
     pub struct LayoutDebugBoxesFlag: u8 {
-        const TEXT_EXTERIOR = 1 << 1;
         const TEXT = 1 << 2;
         const LINE = 1 << 3;
         const BOX = 1 << 5;
@@ -2782,7 +2873,6 @@ bitflags::bitflags! {
 struct EditTextStatic {
     swf: Arc<SwfMovie>,
     id: CharacterId,
-    layout: Option<swf::TextLayout>,
     initial_text: Option<WString>,
 }
 

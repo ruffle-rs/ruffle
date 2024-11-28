@@ -6,7 +6,7 @@
         "message": "Reproduzir conteúdo em Flash até em sites que não permitem o Ruffle"
     },
     "settings_show_swf_download": {
-        "message": "Permitir o download de SWFs pelo menu de contexto"
+        "message": "Permitir descarregar SWFs pelo menu de contexto"
     },
     "settings_autostart": {
         "message": "Reproduzir automaticamente sem ecrã inicial (depois clique para ativar o som)"
@@ -30,7 +30,7 @@
         "message": "Duração máxima permitida para execução de ActionScript (em segundos)"
     },
     "settings_player_version": {
-        "message": "Versão do Flash Player para emular (entre 1-32)"
+        "message": "Versão do Flash Player a emular (entre 1 e 32)"
     },
     "settings_preferred_renderer": {
         "message": "Renderizador preferido"

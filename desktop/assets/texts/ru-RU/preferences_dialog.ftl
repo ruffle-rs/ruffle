@@ -23,3 +23,8 @@ theme = Тема
 theme-system = Как в системе
 theme-light = Светлая
 theme-dark = Тёмная
+# See for context https://github.com/FeralInteractive/gamemode
+gamemode = GameMode
+gamemode-tooltip = GameMode темпоральною добавит сети оптимизации в твоем компьютере и/или в Ruffle. Ruffle просит GameMode только когда фильм играет.
+gamemode-default = По умолчанию
+gamemode-default-tooltip = GameMode будет включено только когда предпочтение власти ставлено на высокий.

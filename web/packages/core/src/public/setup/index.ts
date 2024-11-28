@@ -9,7 +9,7 @@
  * make the `ruffle-core` library register itself as a version of Ruffle on the page.
  *
  * Multiple sources of Ruffle may exist - for example, the Ruffle browser extension also installs itself on page load.
- * For this reason, you are required to call `window.RufflePlayer.latest()` (for example) to grab the latest {@link SourceAPI},
+ * For this reason, you are required to call `window.RufflePlayer.newest()` (for example) to grab the latest {@link SourceAPI},
  * from which you can create a {@link PlayerElement} via {@link SourceAPI.createPlayer}.
  *
  * @module

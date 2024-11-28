@@ -267,13 +267,13 @@ fn create_pipeline_descriptor<'a>(
         layout: Some(pipeline_layout),
         vertex: wgpu::VertexState {
             module: vertex_shader,
-            entry_point: "main_vertex",
+            entry_point: Some("main_vertex"),
             buffers: vertex_buffer_layout,
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: fragment_shader,
-            entry_point: "main_fragment",
+            entry_point: Some("main_fragment"),
             targets: color_target_state,
             compilation_options: wgpu::PipelineCompilationOptions {
                 constants: fragment_constants,

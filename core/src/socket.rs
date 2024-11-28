@@ -3,10 +3,7 @@ use crate::{
         globals::xml_socket::XmlSocket, Activation as Avm1Activation, ActivationIdentifier,
         ExecutionReason, Object as Avm1Object, TObject as Avm1TObject,
     },
-    avm2::{
-        object::SocketObject, Activation as Avm2Activation, Avm2, EventObject,
-        TObject as Avm2TObject,
-    },
+    avm2::{object::SocketObject, Activation as Avm2Activation, Avm2, EventObject},
     backend::navigator::NavigatorBackend,
     context::UpdateContext,
     string::AvmString,

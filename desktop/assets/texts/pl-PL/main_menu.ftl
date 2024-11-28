@@ -20,6 +20,7 @@ file-menu-exit = Wyjdź
 controls-menu = Sterowanie
 controls-menu-suspend = Wstrzymaj
 controls-menu-resume = Wznów
+controls-menu-step-once = Klatka po klatce
 controls-menu-volume = Sterowanie głośnością
 help-menu = Pomoc
 help-menu-join-discord = Dołącz do Discorda

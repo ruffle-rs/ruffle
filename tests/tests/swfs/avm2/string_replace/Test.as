@@ -50,10 +50,22 @@ trace("axbfg".replace(/b/,"$'"))
 trace("// $1")
 trace("abc".replace(/(b)/, "<$1>"))
 
+trace("// capture group 0 not recognized")
+trace("abc".replace(/(b)/, "<$0>"))
+
+trace("// capture group 00 not recognized")
+trace("abc".replace(/(b)/, "<$00>"))
+
+trace("// leading 0 capture group number")
+trace("abc".replace(/(b)/, "<$01>"))
+
 trace("// not enough groups")
 trace("abc".replace(/(b)/, "<$2>"))
 
 trace("// two-digit capture group number, but not enough groups")
+trace("abc".replace(/(b)/, "<$20>"))
+
+trace("// two-digit capture group number, but not enough groups with prefix as a valid group")
 trace("abc".replace(/(b)/, "<$10>"))
 
 trace("// Two-digit capture group number")

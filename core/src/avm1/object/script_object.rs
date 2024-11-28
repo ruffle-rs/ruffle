@@ -426,7 +426,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .read()
             .properties
             .get(name, activation.is_case_sensitive())
-            .map_or(false, |property| {
+            .is_some_and(|property| {
                 property.is_virtual() && property.allow_swf_version(activation.swf_version())
             })
     }
@@ -441,7 +441,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .read()
             .properties
             .get(name, activation.is_case_sensitive())
-            .map_or(false, |property| property.is_enumerable())
+            .is_some_and(|property| property.is_enumerable())
     }
 
     /// Enumerate the object.

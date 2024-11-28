@@ -37,6 +37,8 @@ describe("Exposed RufflePlayer methods/properties", () => {
             "traceObserver",
             "downloadSwf",
             "displayMessage",
+            // PlayerElement
+            "ruffle",
             // RufflePlayerElement
             "attributeChangedCallback",
             "connectedCallback",

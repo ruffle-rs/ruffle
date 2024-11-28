@@ -4,15 +4,6 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::display_object::TDisplayObject;
 
-pub fn super_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    activation.super_init(this, &[])?;
-    Ok(Value::Undefined)
-}
-
 pub fn get_text_width<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,

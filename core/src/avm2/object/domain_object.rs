@@ -83,7 +83,7 @@ impl<'gc> DomainObject<'gc> {
         class
             .superclass_object()
             .unwrap()
-            .call_super_init(this.into(), &[], activation)?;
+            .call_init(this.into(), &[], activation)?;
         Ok(this)
     }
 }

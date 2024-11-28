@@ -29,17 +29,6 @@ fn instance_init<'gc>(
     Ok(Value::Undefined)
 }
 
-/// Implements `Boolean`'s native instance initializer.
-fn super_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    activation.super_init(this, args)?;
-
-    Ok(Value::Undefined)
-}
-
 /// Implements `Boolean`'s class initializer.
 fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -147,10 +136,6 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
 
     class.set_attributes(mc, ClassAttributes::FINAL | ClassAttributes::SEALED);
     class.set_instance_allocator(mc, primitive_allocator);
-    class.set_super_init(
-        mc,
-        Method::from_builtin(super_init, "<Boolean native instance initializer>", mc),
-    );
     class.set_call_handler(
         mc,
         Method::from_builtin(call_handler, "<Boolean call handler>", mc),

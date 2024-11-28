@@ -10,13 +10,13 @@ pub mod source;
 
 #[derive(Debug, thiserror::Error)]
 pub enum BundleError {
-    #[error("Invalid ruffle-bundle.toml")]
+    #[error("Invalid ruffle-bundle.toml: {0}")]
     InvalidBundleInformation(#[from] BundleInformationParseError),
 
     #[error("Missing or corrupt ruffle-bundle.toml")]
     MissingBundleInformation,
 
-    #[error("Invalid bundle source")]
+    #[error("Invalid bundle source: {0}")]
     InvalidSource(#[from] source::BundleSourceError),
 
     #[error("Bundle does not exist")]

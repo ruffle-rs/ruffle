@@ -20,6 +20,7 @@ file-menu-exit = Sair
 controls-menu = Controlos
 controls-menu-suspend = Suspender
 controls-menu-resume = Continuar
+controls-menu-step-once = Passo a Passo
 controls-menu-volume = Controlos de Volume
 help-menu = Ajuda
 help-menu-join-discord = Entrar no Discord

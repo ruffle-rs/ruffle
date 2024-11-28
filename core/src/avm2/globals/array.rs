@@ -409,18 +409,14 @@ pub fn for_each<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let callback = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None, false)?;
+    let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some(r) = iter.next(activation) {
         let (i, item) = r?;
 
-        callback.call(receiver, &[item, i.into(), this.into()], activation)?;
+        callback.call(activation, receiver, &[item, i.into(), this.into()])?;
     }
 
     Ok(Value::Undefined)
@@ -432,18 +428,14 @@ pub fn map<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let callback = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None, false)?;
+    let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut new_array = ArrayStorage::new(0);
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some(r) = iter.next(activation) {
         let (i, item) = r?;
-        let new_item = callback.call(receiver, &[item, i.into(), this.into()], activation)?;
+        let new_item = callback.call(activation, receiver, &[item, i.into(), this.into()])?;
 
         new_array.push(new_item);
     }
@@ -457,11 +449,7 @@ pub fn filter<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let callback = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None, false)?;
+    let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut new_array = ArrayStorage::new(0);
     let mut iter = ArrayIter::new(activation, this)?;
@@ -469,7 +457,7 @@ pub fn filter<'gc>(
     while let Some(r) = iter.next(activation) {
         let (i, item) = r?;
         let is_allowed = callback
-            .call(receiver, &[item, i.into(), this.into()], activation)?
+            .call(activation, receiver, &[item, i.into(), this.into()])?
             .coerce_to_boolean();
 
         if is_allowed {
@@ -486,11 +474,7 @@ pub fn every<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let callback = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None, false)?;
+    let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
 
@@ -498,7 +482,7 @@ pub fn every<'gc>(
         let (i, item) = r?;
 
         let result = callback
-            .call(receiver, &[item, i.into(), this.into()], activation)?
+            .call(activation, receiver, &[item, i.into(), this.into()])?
             .coerce_to_boolean();
 
         if !result {
@@ -515,11 +499,7 @@ pub fn some<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let callback = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None, false)?;
+    let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
 
@@ -527,7 +507,7 @@ pub fn some<'gc>(
         let (i, item) = r?;
 
         let result = callback
-            .call(receiver, &[item, i.into(), this.into()], activation)?
+            .call(activation, receiver, &[item, i.into(), this.into()])?
             .coerce_to_boolean();
 
         if result {
@@ -1104,12 +1084,7 @@ pub fn sort<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let (compare_fnc, options) = if args.len() > 1 {
         (
-            Some(
-                args.get(0)
-                    .cloned()
-                    .unwrap_or(Value::Undefined)
-                    .as_callable(activation, None, None, false)?,
-            ),
+            Some(args.get(0).cloned().unwrap_or(Value::Undefined)),
             SortOptions::from_bits_truncate(
                 args.get(1)
                     .cloned()
@@ -1119,8 +1094,11 @@ pub fn sort<'gc>(
         )
     } else {
         let arg = args.get(0).cloned().unwrap_or(Value::Undefined);
-        if let Ok(callable) = arg.as_callable(activation, None, None, false) {
-            (Some(callable), SortOptions::empty())
+        if let Some(callable) = arg
+            .as_object()
+            .filter(|o| o.as_class_object().is_some() || o.as_function_object().is_some())
+        {
+            (Some(callable.into()), SortOptions::empty())
         } else {
             (
                 None,
@@ -1146,7 +1124,7 @@ pub fn sort<'gc>(
             options,
             constrain(|activation, a, b| {
                 let order = v
-                    .call(this.into(), &[a, b], activation)?
+                    .call(activation, this.into(), &[a, b])?
                     .coerce_to_number(activation)?;
 
                 if order > 0.0 {

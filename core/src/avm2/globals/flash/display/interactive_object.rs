@@ -8,17 +8,6 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::display_object::{TDisplayObject, TInteractiveObject};
 
-/// Implements `flash.display.InteractiveObject`'s native instance constructor.
-pub fn super_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    activation.super_init(this, &[])?;
-
-    Ok(Value::Undefined)
-}
-
 /// Implements `InteractiveObject.mouseEnabled`'s getter.
 pub fn get_mouse_enabled<'gc>(
     _activation: &mut Activation<'_, 'gc>,

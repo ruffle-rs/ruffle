@@ -46,35 +46,35 @@ repository = "https://github.com/ruffle-rs/ruffle"
 version = "0.1.0"
 
 [workspace.dependencies]
-tracing = "0.1.40"
+tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-naga = { version = "22.1.0", features = ["wgsl-out"] }
-wgpu = "22.1.0"
-egui = "0.29.1"
-clap = { version = "4.5.20", features = ["derive"] }
+naga = { version = "23.0.0", features = ["wgsl-out"] }
+wgpu = "23.0.1"
+egui = { git = "https://github.com/emilk/egui.git", branch = "master" }
+clap = { version = "4.5.21", features = ["derive"] }
 cpal = "0.15.3"
 anyhow = "1.0"
 slotmap = "1.0.7"
 async-channel = "2.3.1"
 bitflags = "2.6.0"
-bytemuck = "1.19.0"
+bytemuck = "1.20.0"
 chrono = { version = "0.4.38", default-features = false }
 enum-map = "2.7.3"
-flate2 = "1.0.34"
+flate2 = "1.0.35"
 futures = "0.3.31"
-image = { version = "0.25.4", default-features = false }
+image = { version = "0.25.5", default-features = false }
 js-sys = "0.3.72"
 web-sys = "0.3.72"
 log = "0.4"
 num-derive = "0.4.2"
 num-traits = "0.2.19"
-serde = "1.0.214"
+serde = "1.0.215"
 thiserror = "1.0"
 url = "2.5.2"
 # Make sure to match wasm-bindgen-cli version to this everywhere.
 wasm-bindgen = "=0.2.95"
 walkdir = "2.5.0"
-tokio = "1.41.0"
+tokio = "1.41.1"
 rfd = "0.15.0"
 
 [workspace.lints.rust]
@@ -82,10 +82,12 @@ rfd = "0.15.0"
 # Don't warn about these new lints on stable.
 renamed_and_removed_lints = "allow"
 unknown_lints = "allow"
+# TODO: Remove when https://github.com/rustwasm/wasm-bindgen/issues/4283 is resolved.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(wasm_bindgen_unstable_test_coverage)'] }
 
 [workspace.lints.clippy]
 # LONG-TERM: These lints are unhelpful.
-manual_map = "allow"             # Less readable: Suggests `opt.map(..)` instsead of `if let Some(opt) { .. }`
+manual_map = "allow"             # Less readable: Suggests `opt.map(..)` instead of `if let Some(opt) { .. }`
 manual_range_contains = "allow"  # Less readable: Suggests `(a..b).contains(n)` instead of `n >= a && n < b`
 assigning_clones = "allow"       # Sometimes useful, but more often than not it doesn't do anything as
                                  # we overwrite an empty item. And sometimes it can even be a footgun

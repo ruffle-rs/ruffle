@@ -372,7 +372,7 @@ fn replace<'gc>(
         // Replacement is either a function or treatable as string.
         if let Some(f) = replacement.as_object().and_then(|o| o.as_function_object()) {
             let args = [pattern.into(), position.into(), this.into()];
-            let v = f.call(Value::Null, &args, activation)?;
+            let v = f.call(activation, Value::Null, &args)?;
             ret.push_str(v.coerce_to_string(activation)?.as_wstr());
         } else {
             let replacement = replacement.coerce_to_string(activation)?;

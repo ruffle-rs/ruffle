@@ -1,5 +1,7 @@
 //! Audio decoders.
 
+#[cfg(feature = "aac")]
+mod aac;
 mod adpcm;
 #[cfg(feature = "mp3")]
 mod mp3;
@@ -15,7 +17,7 @@ pub use nellymoser::NellymoserDecoder;
 pub use pcm::PcmDecoder;
 
 use crate::backend::audio::{SoundStreamInfo, SoundStreamWrapping};
-use crate::buffer::{Slice, SliceCursor, Substream, SubstreamChunksIter};
+use crate::buffer::{Slice, Substream, SubstreamChunksIter};
 use crate::tag_utils::{ControlFlow, SwfSlice};
 use std::io::{Cursor, Read};
 use swf::{AudioCompression, SoundFormat, TagCode};
@@ -26,6 +28,10 @@ pub enum Error {
     #[cfg(feature = "mp3")]
     #[error("Couldn't decode MP3: {0}")]
     InvalidMp3(#[from] mp3::Error),
+
+    #[cfg(feature = "aac")]
+    #[error("Couldn't decode AAC: {0}")]
+    InvalidAac(#[from] symphonia::core::errors::Error),
 
     #[error("Couldn't decode ADPCM: {0}")]
     InvalidAdpcm(#[from] adpcm::Error),
@@ -496,12 +502,14 @@ pub fn make_substream_decoder(
     stream_info: &SoundStreamInfo,
     data_stream: Substream,
 ) -> Result<Box<dyn Decoder + Send>, Error> {
-    let decoder: Box<dyn Decoder + Send> =
-        if stream_info.stream_format.compression == AudioCompression::Adpcm {
-            Box::new(AdpcmSubstreamDecoder::new(stream_info, data_stream)?)
-        } else {
-            Box::new(StandardSubstreamDecoder::new(stream_info, data_stream)?)
-        };
+    let decoder: Box<dyn Decoder + Send> = match stream_info.stream_format.compression {
+        #[cfg(feature = "aac")]
+        AudioCompression::Aac => Box::new(aac::AacSubstreamDecoder::new(stream_info, data_stream)?),
+        AudioCompression::Adpcm => {
+            Box::new(adpcm::AdpcmSubstreamDecoder::new(stream_info, data_stream)?)
+        }
+        _ => Box::new(StandardSubstreamDecoder::new(stream_info, data_stream)?),
+    };
     Ok(decoder)
 }
 
@@ -539,71 +547,5 @@ impl Iterator for StandardSubstreamDecoder {
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         self.decoder.next()
-    }
-}
-
-/// ADPCM substream decoder.
-///
-/// Stream sounds encoded with ADPCM have an ADPCM header in each `SoundStreamBlock` tag, unlike
-/// other compression formats that remain the same as if they were a single sound clip.
-/// Therefore, we must recreate the decoder with each `SoundStreamBlock` to parse the additional
-/// headers.
-pub struct AdpcmSubstreamDecoder {
-    format: SoundFormat,
-    tag_reader: SubstreamTagReader,
-    decoder: AdpcmDecoder<SliceCursor>,
-}
-
-impl AdpcmSubstreamDecoder {
-    fn new(stream_info: &SoundStreamInfo, data_stream: Substream) -> Result<Self, Error> {
-        let empty_buffer = data_stream.buffer().to_empty_slice();
-        let mut tag_reader = SubstreamTagReader::new(stream_info, data_stream);
-        let audio_data = tag_reader.next().unwrap_or(empty_buffer);
-        let decoder = AdpcmDecoder::new(
-            audio_data.as_cursor(),
-            stream_info.stream_format.is_stereo,
-            stream_info.stream_format.sample_rate,
-        )?;
-        Ok(Self {
-            format: stream_info.stream_format.clone(),
-            tag_reader,
-            decoder,
-        })
-    }
-}
-
-impl Decoder for AdpcmSubstreamDecoder {
-    fn num_channels(&self) -> u8 {
-        self.decoder.num_channels()
-    }
-    fn sample_rate(&self) -> u16 {
-        self.decoder.sample_rate()
-    }
-}
-
-impl Iterator for AdpcmSubstreamDecoder {
-    type Item = [i16; 2];
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        if let Some(sample_frame) = self.decoder.next() {
-            // Return sample frames until the decoder has exhausted
-            // the SoundStreamBlock tag.
-            Some(sample_frame)
-        } else if let Some(audio_data) = self.tag_reader.next() {
-            // We've reached the end of the sound stream block tag, so
-            // read the next one and recreate the decoder.
-            // `AdpcmDecoder` read the ADPCM header when it is created.
-            self.decoder = AdpcmDecoder::new(
-                audio_data.as_cursor(),
-                self.format.is_stereo,
-                self.format.sample_rate,
-            )
-            .ok()?;
-            self.decoder.next()
-        } else {
-            // No more SoundStreamBlock tags.
-            None
-        }
     }
 }

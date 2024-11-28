@@ -50,7 +50,7 @@ scale-mode-noscale = 无缩放 (100%)
 scale-mode-noscale-tooltip =
     显示影片的原始大小，没有任何缩放。
     
-    对应于 StageScaleMode.NO_SCALE
+    对应 StageScaleMode.NO_SCALE
 scale-mode-showall = 缩放以适应
 scale-mode-showall-tooltip =
     将影片放大以尽可能填满窗口，同时不进行裁剪，保持长宽比。

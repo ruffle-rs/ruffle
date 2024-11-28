@@ -2,28 +2,27 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
+use crate::avm2::error::type_error;
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::QName;
 
-/// Implements `Class`'s instance initializer.
-///
-/// Notably, you cannot construct new classes this way, so this returns an
-/// error.
-pub fn instance_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Err("Classes cannot be constructed.".into())
+pub fn class_allocator<'gc>(
+    _class: ClassObject<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<Object<'gc>, Error<'gc>> {
+    Err(Error::AvmError(type_error(
+        activation,
+        "Error #1115: Class$ is not a constructor.",
+        1115,
+    )?))
 }
 
-/// Implements `Class`'s native instance initializer.
-///
-/// This exists so that super() calls in class initializers will work.
-fn super_init<'gc>(
+/// Implements `Class`'s instance initializer.
+/// This can only be called by subclasses (if at all), so in practice it's a noop.
+pub fn instance_init<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -70,14 +69,7 @@ pub fn create_i_class<'gc>(
     // throws a VerifyError
     class_i_class.set_attributes(gc_context, ClassAttributes::FINAL);
 
-    class_i_class.set_super_init(
-        gc_context,
-        Method::from_builtin(
-            super_init,
-            "<Class native instance initializer>",
-            gc_context,
-        ),
-    );
+    class_i_class.set_instance_allocator(gc_context, class_allocator);
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,

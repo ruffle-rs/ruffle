@@ -136,7 +136,12 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
         frame_rate,
         num_frames,
     };
-    let data = reader.get_ref().to_vec();
+    let offset = reader.as_slice().as_ptr() as usize - data.as_ptr() as usize;
+    // Remove the header.
+    // As an alternative we could return the entire original buffer with header length,
+    // but that's a nontrivial API change, probably not worth the effort.
+    data.drain(..offset);
+    let mut reader = Reader::new(&data, version);
 
     // Parse the first two tags, searching for the FileAttributes and SetBackgroundColor tags.
     // This metadata is useful, so we want to return it along with the header.

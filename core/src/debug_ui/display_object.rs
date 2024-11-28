@@ -15,6 +15,7 @@ use crate::display_object::{
     TInteractiveObject,
 };
 use crate::focus_tracker::Highlight;
+use crate::html::TextFormat;
 use egui::collapsing_header::CollapsingState;
 use egui::{
     Button, Checkbox, CollapsingHeader, ComboBox, DragValue, Grid, Id, Label, Sense, TextEdit, Ui,
@@ -73,6 +74,9 @@ pub struct DisplayObjectWindow {
     hovered_debug_rect: Option<DisplayObjectHandle>,
     hovered_bounds: Option<Rectangle<Twips>>,
     search: String,
+
+    /// A buffer for editing EditText
+    html_text: String,
 }
 
 impl Default for DisplayObjectWindow {
@@ -89,6 +93,7 @@ impl Default for DisplayObjectWindow {
             hovered_debug_rect: None,
             hovered_bounds: None,
             search: Default::default(),
+            html_text: Default::default(),
         }
     }
 }
@@ -335,6 +340,10 @@ impl DisplayObjectWindow {
                 });
                 ui.end_row();
 
+                ui.label("Font Type");
+                ui.label(format!("{:?}", object.font_type()));
+                ui.end_row();
+
                 ui.label("Editable");
                 ui.horizontal(|ui| {
                     let mut editable = object.is_editable();
@@ -391,6 +400,26 @@ impl DisplayObjectWindow {
                     ui.checkbox(&mut is_password, "Enabled");
                     if is_password != object.is_password() {
                         object.set_password(is_password, context);
+                    }
+                });
+                ui.end_row();
+
+                ui.label("Always Show Selection");
+                ui.horizontal(|ui| {
+                    let mut always_show_selection = object.always_show_selection();
+                    ui.checkbox(&mut always_show_selection, "Enabled");
+                    if always_show_selection != object.always_show_selection() {
+                        object.set_always_show_selection(context, always_show_selection);
+                    }
+                });
+                ui.end_row();
+
+                ui.label("Condense White");
+                ui.horizontal(|ui| {
+                    let mut condense_white = object.condense_white();
+                    ui.checkbox(&mut condense_white, "Enabled");
+                    if condense_white != object.condense_white() {
+                        object.set_condense_white(context, condense_white);
                     }
                 });
                 ui.end_row();
@@ -467,10 +496,23 @@ impl DisplayObjectWindow {
                 }
                 ui.end_row();
 
+                ui.label("Default Text Format");
+                ui.horizontal(|ui| {
+                    show_text_format(ui, object.spans().default_format());
+                });
+                ui.end_row();
+
+                ui.label("Text Width");
+                ui.label(format!("{}", object.measure_text(context).0.to_pixels()));
+                ui.end_row();
+
+                ui.label("Text Height");
+                ui.label(format!("{}", object.measure_text(context).1.to_pixels()));
+                ui.end_row();
+
                 ui.label("Layout Debug Boxes");
                 ui.vertical(|ui| {
                     for (name, flag) in [
-                        ("Text Exterior", LayoutDebugBoxesFlag::TEXT_EXTERIOR),
                         ("Text", LayoutDebugBoxesFlag::TEXT),
                         ("Line", LayoutDebugBoxesFlag::LINE),
                         ("Box", LayoutDebugBoxesFlag::BOX),
@@ -485,6 +527,14 @@ impl DisplayObjectWindow {
                     }
                 });
                 ui.end_row();
+
+                ui.label("Actions");
+                ui.vertical(|ui| {
+                    if ui.button("Relayout").clicked() {
+                        object.relayout(context);
+                    }
+                });
+                ui.end_row();
             });
 
         CollapsingHeader::new("Span List")
@@ -495,33 +545,42 @@ impl DisplayObjectWindow {
                     .striped(true)
                     .show(ui, |ui| {
                         ui.label("Span");
-                        ui.label("URL");
-                        ui.label("Font");
-                        ui.label("Style");
+                        ui.label("Text Format");
                         ui.label("Text");
                         ui.end_row();
 
                         for (start, end, text, format) in object.spans().iter_spans() {
                             ui.label(format!("{}–{} ({})", start, end, format.span_length));
 
-                            ui.label(format.url.to_string());
-                            ui.label(format!("{}, {}", format.font.face, format.font.size));
-
-                            if format.style.bold && format.style.italic {
-                                ui.label("Bold Italic");
-                            } else if format.style.bold {
-                                ui.label("Bold");
-                            } else if format.style.italic {
-                                ui.label("Italic");
-                            } else {
-                                ui.label("Regular");
-                            }
+                            ui.horizontal(|ui| {
+                                show_text_format(ui, &format.get_text_format());
+                            });
 
                             ui.label(text.to_string());
                             ui.end_row();
                         }
                     });
             });
+
+        let html_text_response = CollapsingHeader::new("HTML Text")
+            .id_salt(ui.id().with("html-text"))
+            .show(ui, |ui| {
+                ui.add_sized(
+                    ui.available_size(),
+                    TextEdit::multiline(&mut self.html_text),
+                );
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if ui.button("Set").clicked() {
+                        object.set_html_text(&WString::from_utf8(&self.html_text), context);
+                    }
+                    if ui.button("Reset").clicked() {
+                        self.html_text = object.html_text().to_string();
+                    }
+                });
+            });
+        if html_text_response.fully_closed() {
+            self.html_text = object.html_text().to_string();
+        }
     }
 
     pub fn show_avm2_button<'gc>(
@@ -873,7 +932,7 @@ impl DisplayObjectWindow {
 
                 ui.label("AVM2 Root");
                 if let Some(other) = object.avm2_root() {
-                    if object.as_ptr() != object.as_ptr() {
+                    if other.as_ptr() != object.as_ptr() {
                         open_display_object_button(
                             ui,
                             context,
@@ -1339,6 +1398,50 @@ fn bounds_label(ui: &mut Ui, bounds: Rectangle<Twips>, hover: &mut Option<Rectan
     } else {
         *hover = None;
     }
+}
+
+fn show_text_format(ui: &mut Ui, tf: &TextFormat) {
+    ui.weak("(hover)").on_hover_ui(|ui| {
+        ui.style_mut().interaction.selectable_labels = true;
+        Grid::new(ui.id().with("text_format_table"))
+            .num_columns(2)
+            .striped(true)
+            .show(ui, |ui| {
+                for (key, value) in [
+                    ("Font Face", tf.font.as_ref().map(|v| v.to_string())),
+                    ("Font Size", tf.size.map(|v| v.to_string())),
+                    ("Color", tf.color.map(|v| format!("{v:?}"))),
+                    ("Align", tf.align.map(|v| format!("{v:?}"))),
+                    ("Bold?", tf.bold.map(|v| v.to_string())),
+                    ("Italic?", tf.italic.map(|v| v.to_string())),
+                    ("Underline?", tf.underline.map(|v| v.to_string())),
+                    ("Left Margin", tf.left_margin.map(|v| v.to_string())),
+                    ("Right Margin", tf.right_margin.map(|v| v.to_string())),
+                    ("Indent", tf.indent.map(|v| v.to_string())),
+                    ("Block Indent", tf.block_indent.map(|v| v.to_string())),
+                    ("Kerning?", tf.kerning.map(|v| v.to_string())),
+                    ("Leading", tf.leading.map(|v| v.to_string())),
+                    ("Letter Spacing", tf.letter_spacing.map(|v| v.to_string())),
+                    ("Tab Stops", tf.tab_stops.as_ref().map(|v| format!("{v:?}"))),
+                    ("Bullet?", tf.bullet.map(|v| v.to_string())),
+                    ("URL", tf.url.as_ref().map(|v| v.to_string())),
+                    ("Target", tf.target.as_ref().map(|v| v.to_string())),
+                    ("Display", tf.display.map(|v| format!("{v:?}"))),
+                ] {
+                    ui.label(key);
+                    if let Some(value) = value {
+                        if !value.is_empty() {
+                            ui.label(value);
+                        } else {
+                            ui.weak("Empty");
+                        }
+                    } else {
+                        ui.weak("None");
+                    }
+                    ui.end_row();
+                }
+            });
+    });
 }
 
 pub fn open_display_object_button<'gc>(

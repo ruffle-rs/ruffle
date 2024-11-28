@@ -69,6 +69,16 @@ pub type AllocatorFn =
 #[derive(Clone, Copy)]
 pub struct Allocator(pub AllocatorFn);
 
+/// A function that can be used to both allocate and construct an instance of a class.
+///
+/// This function should be passed an Activation, and the arguments passed to the
+/// constructor, and will return an Object.
+pub type CustomConstructorFn =
+    for<'gc> fn(&mut Activation<'_, 'gc>, &[Value<'gc>]) -> Result<Object<'gc>, Error<'gc>>;
+
+#[derive(Clone, Copy)]
+pub struct CustomConstructor(pub CustomConstructorFn);
+
 impl fmt::Debug for Allocator {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("Allocator")
@@ -129,21 +139,6 @@ pub struct ClassData<'gc> {
     /// Must be called each time a new class instance is constructed.
     instance_init: Method<'gc>,
 
-    /// The super initializer for this class, called when super() is called for
-    /// a subclass.
-    ///
-    /// This may be provided to allow natively-constructed classes to
-    /// initialize themselves in a different manner from user-constructed ones.
-    /// For example, the user-accessible constructor may error out (as it's not
-    /// a valid class to construct for users), but native code may still call
-    /// its constructor stack.
-    ///
-    /// By default, a class's `super_init` will be initialized to the
-    /// same method as the regular one. You must specify a separate super
-    /// initializer to change initialization behavior based on what code is
-    /// constructing the class.
-    super_init: Method<'gc>,
-
     /// Traits for a given class.
     ///
     /// These are accessed as normal instance properties; they should not be
@@ -156,6 +151,12 @@ pub struct ClassData<'gc> {
     /// The customization point for `Class(args...)` without `new`
     /// If None, a simple coercion is done.
     call_handler: Option<Method<'gc>>,
+
+    /// The custom constructor for this class, if it exists.
+    ///
+    /// This function will both allocate and initialize the class.
+    #[collect(require_static)]
+    custom_constructor: Option<CustomConstructor>,
 
     /// Whether or not this `Class` has loaded its traits or not.
     traits_loaded: bool,
@@ -222,8 +223,6 @@ impl<'gc> Class<'gc> {
         class_i_class: Class<'gc>,
         mc: &Mutation<'gc>,
     ) -> Self {
-        let super_init = instance_init;
-
         let instance_allocator = super_class
             .map(|c| c.instance_allocator())
             .unwrap_or(Allocator(scriptobject_allocator));
@@ -240,10 +239,10 @@ impl<'gc> Class<'gc> {
                 all_interfaces: Vec::new(),
                 instance_allocator,
                 instance_init,
-                super_init,
                 traits: Vec::new(),
                 vtable: VTable::empty(mc),
                 call_handler: None,
+                custom_constructor: None,
                 traits_loaded: false,
                 is_system: true,
                 linked_class: ClassLink::Unlinked,
@@ -270,10 +269,10 @@ impl<'gc> Class<'gc> {
                 all_interfaces: Vec::new(),
                 instance_allocator: Allocator(scriptobject_allocator),
                 instance_init: class_init,
-                super_init: class_init,
                 traits: Vec::new(),
                 vtable: VTable::empty(mc),
                 call_handler: None,
+                custom_constructor: None,
                 traits_loaded: false,
                 is_system: true,
                 linked_class: ClassLink::LinkToInstance(i_class),
@@ -293,8 +292,6 @@ impl<'gc> Class<'gc> {
         instance_init: Method<'gc>,
         mc: &Mutation<'gc>,
     ) -> Self {
-        let super_init = instance_init;
-
         Class(GcCell::new(
             mc,
             ClassData {
@@ -307,10 +304,10 @@ impl<'gc> Class<'gc> {
                 all_interfaces: Vec::new(),
                 instance_allocator: Allocator(scriptobject_allocator),
                 instance_init,
-                super_init,
                 traits: Vec::new(),
                 vtable: VTable::empty(mc),
                 call_handler: None,
+                custom_constructor: None,
                 traits_loaded: false,
                 is_system: true,
                 linked_class: ClassLink::Unlinked,
@@ -477,9 +474,7 @@ impl<'gc> Class<'gc> {
         }
 
         let instance_init = unit.load_method(abc_instance.init_method, false, activation)?;
-        let mut super_init = instance_init;
         let class_init = unit.load_method(abc_class.init_method, false, activation)?;
-        let mut native_call_handler = None;
 
         let mut attributes = ClassAttributes::empty();
         attributes.set(ClassAttributes::SEALED, abc_instance.is_sealed);
@@ -487,6 +482,8 @@ impl<'gc> Class<'gc> {
         attributes.set(ClassAttributes::INTERFACE, abc_instance.is_interface);
 
         let mut instance_allocator = None;
+        let mut call_handler = None;
+        let mut custom_constructor = None;
 
         // When loading a class from our playerglobal, grab the corresponding native
         // allocator function from the table (which may be `None`)
@@ -494,20 +491,6 @@ impl<'gc> Class<'gc> {
             instance_allocator = activation.avm2().native_instance_allocator_table
                 [class_index as usize]
                 .map(|(_name, ptr)| Allocator(ptr));
-
-            if let Some((name, table_native_init)) =
-                activation.avm2().native_super_initializer_table[class_index as usize]
-            {
-                let method = Method::from_builtin_and_params(
-                    table_native_init,
-                    name,
-                    instance_init.signature().to_vec(),
-                    instance_init.return_type(),
-                    instance_init.is_variadic(),
-                    activation.context.gc_context,
-                );
-                super_init = method;
-            }
 
             if let Some((name, table_native_call_handler)) =
                 activation.avm2().native_call_handler_table[class_index as usize]
@@ -522,7 +505,14 @@ impl<'gc> Class<'gc> {
                     true,
                     activation.context.gc_context,
                 );
-                native_call_handler = Some(method);
+                call_handler = Some(method);
+            }
+
+            // We only store the `name` for consistency with the other tables
+            if let Some((_name, table_custom_constructor)) =
+                activation.avm2().native_custom_constructor_table[class_index as usize]
+            {
+                custom_constructor = Some(table_custom_constructor);
             }
         }
 
@@ -542,10 +532,10 @@ impl<'gc> Class<'gc> {
                 all_interfaces: Vec::new(),
                 instance_allocator,
                 instance_init,
-                super_init,
                 traits: Vec::new(),
                 vtable: VTable::empty(activation.context.gc_context),
-                call_handler: native_call_handler,
+                call_handler,
+                custom_constructor: custom_constructor.map(CustomConstructor),
                 traits_loaded: false,
                 is_system: false,
                 linked_class: ClassLink::Unlinked,
@@ -575,10 +565,10 @@ impl<'gc> Class<'gc> {
                 all_interfaces: Vec::new(),
                 instance_allocator: Allocator(scriptobject_allocator),
                 instance_init: class_init,
-                super_init: class_init,
                 traits: Vec::new(),
                 vtable: VTable::empty(activation.context.gc_context),
                 call_handler: None,
+                custom_constructor: None,
                 traits_loaded: false,
                 is_system: false,
                 linked_class: ClassLink::LinkToInstance(i_class),
@@ -665,7 +655,7 @@ impl<'gc> Class<'gc> {
 
         if let Some(superclass) = superclass {
             for instance_trait in read.traits.iter() {
-                let is_protected = read.protected_namespace.map_or(false, |prot| {
+                let is_protected = read.protected_namespace.is_some_and(|prot| {
                     prot.exact_version_match(instance_trait.name().namespace())
                 });
 
@@ -682,11 +672,9 @@ impl<'gc> Class<'gc> {
                         let names_match = super_name.local_name() == my_name.local_name()
                             && (super_name.namespace().matches_ns(my_name.namespace())
                                 || (is_protected
-                                    && superclass_def
-                                        .protected_namespace()
-                                        .map_or(false, |prot| {
-                                            prot.exact_version_match(super_name.namespace())
-                                        })));
+                                    && superclass_def.protected_namespace().is_some_and(|prot| {
+                                        prot.exact_version_match(super_name.namespace())
+                                    })));
                         if names_match {
                             match (supertrait.kind(), instance_trait.kind()) {
                                 //Getter/setter pairs do NOT override one another
@@ -832,14 +820,10 @@ impl<'gc> Class<'gc> {
                     "<Activation object constructor>",
                     activation.context.gc_context,
                 ),
-                super_init: Method::from_builtin(
-                    |_, _, _| Ok(Value::Undefined),
-                    "<Activation object constructor>",
-                    activation.context.gc_context,
-                ),
                 traits,
                 vtable: VTable::empty(activation.context.gc_context),
                 call_handler: None,
+                custom_constructor: None,
                 traits_loaded: true,
                 is_system: false,
                 linked_class: ClassLink::Unlinked,
@@ -873,14 +857,10 @@ impl<'gc> Class<'gc> {
                     "<Activation object class constructor>",
                     activation.context.gc_context,
                 ),
-                super_init: Method::from_builtin(
-                    |_, _, _| Ok(Value::Undefined),
-                    "<Activation object class constructor>",
-                    activation.context.gc_context,
-                ),
                 traits: Vec::new(),
                 vtable: VTable::empty(activation.context.gc_context),
                 call_handler: None,
+                custom_constructor: None,
                 traits_loaded: true,
                 is_system: false,
                 linked_class: ClassLink::LinkToInstance(i_class),
@@ -1237,19 +1217,21 @@ impl<'gc> Class<'gc> {
         self.0.write(mc).instance_allocator = Allocator(alloc);
     }
 
+    /// Get this class's custom constructor.
+    ///
+    /// If `None`, then this class should be constructed normally.
+    pub fn custom_constructor(self) -> Option<CustomConstructor> {
+        self.0.read().custom_constructor
+    }
+
+    /// Set this class's custom constructor.
+    pub fn set_custom_constructor(self, mc: &Mutation<'gc>, ctor: CustomConstructorFn) {
+        self.0.write(mc).custom_constructor = Some(CustomConstructor(ctor));
+    }
+
     /// Get this class's instance initializer.
     pub fn instance_init(self) -> Method<'gc> {
         self.0.read().instance_init
-    }
-
-    /// Get this class's super() initializer.
-    pub fn super_init(self) -> Method<'gc> {
-        self.0.read().super_init
-    }
-
-    /// Set a super() initializer for this class.
-    pub fn set_super_init(self, mc: &Mutation<'gc>, new_super_init: Method<'gc>) {
-        self.0.write(mc).super_init = new_super_init;
     }
 
     /// Set a call handler for this class.

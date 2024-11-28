@@ -78,7 +78,7 @@ impl MovieViewRenderer {
             label: None,
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
                 module: &module,
                 buffers: &[wgpu::VertexBufferLayout {
                     array_stride: 4 * 4,
@@ -107,11 +107,11 @@ impl MovieViewRenderer {
 
             fragment: Some(wgpu::FragmentState {
                 module: &module,
-                entry_point: if surface_format.is_srgb() {
+                entry_point: Some(if surface_format.is_srgb() {
                     "fs_main_srgb_framebuffer"
                 } else {
                     "fs_main_linear_framebuffer"
-                },
+                }),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: surface_format,
                     blend: Some(wgpu::BlendState::REPLACE),

@@ -99,6 +99,7 @@ fn set_size<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.size = match value {
         Value::Undefined | Value::Null => None,
+        value if activation.swf_version() < 8 => Some(value.coerce_to_i32(activation)?.into()),
         value => Some(round_to_even(value.coerce_to_f64(activation)?).into()),
     };
     Ok(())
@@ -234,7 +235,6 @@ fn set_align<'gc>(
     value: &Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if matches!(value, Value::Undefined | Value::Null) {
-        text_format.align = None;
         return Ok(());
     }
 
@@ -268,6 +268,9 @@ fn set_left_margin<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.left_margin = match value {
         Value::Undefined | Value::Null => None,
+        value if activation.swf_version() < 8 => {
+            Some(value.coerce_to_i32(activation)?.max(0).into())
+        }
         value => Some(round_to_even(value.coerce_to_f64(activation)?.max(0.0)).into()),
     };
     Ok(())
@@ -290,6 +293,9 @@ fn set_right_margin<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.right_margin = match value {
         Value::Undefined | Value::Null => None,
+        value if activation.swf_version() < 8 => {
+            Some(value.coerce_to_i32(activation)?.max(0).into())
+        }
         value => Some(round_to_even(value.coerce_to_f64(activation)?.max(0.0)).into()),
     };
     Ok(())
@@ -309,6 +315,9 @@ fn set_indent<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.indent = match value {
         Value::Undefined | Value::Null => None,
+        value if activation.swf_version() < 8 => {
+            Some(value.coerce_to_i32(activation)?.max(0).into())
+        }
         value => Some(round_to_even(value.coerce_to_f64(activation)?).into()),
     };
     Ok(())
@@ -328,6 +337,9 @@ fn set_leading<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.leading = match value {
         Value::Undefined | Value::Null => None,
+        value if activation.swf_version() < 8 => {
+            Some(value.coerce_to_i32(activation)?.max(0).into())
+        }
         value => Some(round_to_even(value.coerce_to_f64(activation)?).into()),
     };
     Ok(())
@@ -350,6 +362,9 @@ fn set_block_indent<'gc>(
 ) -> Result<(), Error<'gc>> {
     text_format.block_indent = match value {
         Value::Undefined | Value::Null => None,
+        value if activation.swf_version() < 8 => {
+            Some(value.coerce_to_i32(activation)?.max(0).into())
+        }
         value => Some(round_to_even(value.coerce_to_f64(activation)?).into()),
     };
     Ok(())
@@ -536,17 +551,23 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mut text_format = Default::default();
+    fn get_arg_as_i32<'gc>(
+        activation: &mut Activation<'_, 'gc>,
+        arg: Option<&Value<'gc>>,
+    ) -> Result<Option<f64>, Error<'gc>> {
+        Ok(match arg.unwrap_or(&Value::Undefined) {
+            Value::Undefined | Value::Null => None,
+            value => Some(value.coerce_to_i32(activation)?.into()),
+        })
+    }
+
+    let mut text_format: TextFormat = Default::default();
     set_font(
         activation,
         &mut text_format,
         args.get(0).unwrap_or(&Value::Undefined),
     )?;
-    set_size(
-        activation,
-        &mut text_format,
-        args.get(1).unwrap_or(&Value::Undefined),
-    )?;
+    text_format.size = get_arg_as_i32(activation, args.get(1))?;
     set_color(
         activation,
         &mut text_format,
@@ -582,26 +603,10 @@ pub fn constructor<'gc>(
         &mut text_format,
         args.get(8).unwrap_or(&Value::Undefined),
     )?;
-    set_left_margin(
-        activation,
-        &mut text_format,
-        args.get(9).unwrap_or(&Value::Undefined),
-    )?;
-    set_right_margin(
-        activation,
-        &mut text_format,
-        args.get(10).unwrap_or(&Value::Undefined),
-    )?;
-    set_indent(
-        activation,
-        &mut text_format,
-        args.get(11).unwrap_or(&Value::Undefined),
-    )?;
-    set_leading(
-        activation,
-        &mut text_format,
-        args.get(12).unwrap_or(&Value::Undefined),
-    )?;
+    text_format.left_margin = get_arg_as_i32(activation, args.get(9))?;
+    text_format.right_margin = get_arg_as_i32(activation, args.get(10))?;
+    text_format.indent = get_arg_as_i32(activation, args.get(11))?;
+    text_format.leading = get_arg_as_i32(activation, args.get(12))?;
     this.set_native(
         activation.gc(),
         NativeObject::TextFormat(Gc::new(activation.gc(), text_format.into())),

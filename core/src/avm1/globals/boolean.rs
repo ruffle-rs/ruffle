@@ -22,7 +22,7 @@ pub fn constructor<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let value = args
         .get(0)
-        .map_or(false, |value| value.as_bool(activation.swf_version()));
+        .is_some_and(|value| value.as_bool(activation.swf_version()));
     // Called from a constructor, populate `this`.
     let vbox = Gc::new(activation.gc(), value.into());
     this.set_native(activation.gc(), NativeObject::Value(vbox));

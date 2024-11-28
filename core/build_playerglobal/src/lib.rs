@@ -27,12 +27,20 @@ const RUFFLE_METADATA_NAME: &str = "Ruffle";
 // Indicates that we should generate a reference to an instance allocator
 // method (used as a metadata key with `Ruffle` metadata)
 const METADATA_INSTANCE_ALLOCATOR: &str = "InstanceAllocator";
-// Indicates that we should generate a reference to a native initializer
-// method (used as a metadata key with `Ruffle` metadata)
-const METADATA_SUPER_INITIALIZER: &str = "SuperInitializer";
 /// Indicates that we should generate a reference to a class call handler
 /// method (used as a metadata key with `Ruffle` metadata)
 const METADATA_CALL_HANDLER: &str = "CallHandler";
+/// Indicates that we should generate a reference to a custom constructor
+/// method (used as a metadata key with `Ruffle` metadata)
+const METADATA_CUSTOM_CONSTRUCTOR: &str = "CustomConstructor";
+/// Indicates that the class can't be directly instantiated (but its child classes might be).
+/// Binds to an always-throwing allocator.
+/// (This can also be used on final non-abstract classes that you just want to disable `new` for.
+///  We just didn't find a better name for this concept than "abstract")
+const METADATA_ABSTRACT: &str = "Abstract";
+/// A slot defined by an AS3 `const` or `var` but that should have its slot ID
+/// recorded so that it can be directly accessed by native code.
+const METADATA_INTERNAL_SLOT: &str = "InternalSlot";
 // The name for metadata for namespace versioning- the Flex SDK doesn't
 // strip versioning metadata, so we have to allow this metadata name
 const API_METADATA_NAME: &str = "API";
@@ -174,7 +182,13 @@ fn resolve_multiname_ns<'a>(abc: &'a AbcFile, multiname: &Multiname) -> Cow<'a, 
     strip_version_mark(String::from_utf8_lossy(namespace))
 }
 
-fn flash_to_rust_path(path: &str) -> String {
+fn flash_to_rust_string(path: &str, uppercase: bool, separator: &str) -> String {
+    let new_case = if uppercase {
+        Case::UpperSnake
+    } else {
+        Case::Snake
+    };
+
     // Convert each component of the path to snake-case.
     // This correctly handles sequences of upper-case letters,
     // so 'URLLoader' becomes 'url_loader'
@@ -197,11 +211,12 @@ fn flash_to_rust_path(path: &str) -> String {
             component
                 .from_case(Case::Camel)
                 .without_boundaries(&without_boundaries)
-                .to_case(Case::Snake)
+                .to_case(new_case)
         })
         .collect::<Vec<_>>();
-    // Form a Rust path from the snake-case components
-    components.join("::")
+
+    // Form a Rust path from the components
+    components.join(separator)
 }
 
 fn rust_method_name_and_path(
@@ -225,7 +240,7 @@ fn rust_method_name_and_path(
         // For example, a namespace of "flash.system" and a name of "Security"
         // turns into the path "flash::system::security"
         let multiname = &abc.constant_pool.multinames[parent.0 as usize - 1];
-        let ns = flash_to_rust_path(&resolve_multiname_ns(abc, multiname));
+        let ns = flash_to_rust_string(&resolve_multiname_ns(abc, multiname), false, "::");
         if !ns.is_empty() {
             path += &ns;
             path += "::";
@@ -234,7 +249,7 @@ fn rust_method_name_and_path(
             flash_method_path += "::";
         }
         let name = resolve_multiname_name(abc, multiname);
-        path += &flash_to_rust_path(&name);
+        path += &flash_to_rust_string(&name, false, "::");
         path += "::";
 
         flash_method_path += &*name;
@@ -245,7 +260,7 @@ fn rust_method_name_and_path(
         // has a namespace of "flash.utils", which turns into the path
         // "flash::utils"
         let name = resolve_multiname_ns(abc, trait_name);
-        let ns = &flash_to_rust_path(&name);
+        let ns = &flash_to_rust_string(&name, false, "::");
         path += ns;
         flash_method_path += &name;
         if !ns.is_empty() {
@@ -260,7 +275,7 @@ fn rust_method_name_and_path(
 
     let name = resolve_multiname_name(abc, trait_name).to_string();
 
-    path += &flash_to_rust_path(&name);
+    path += &flash_to_rust_string(&name, false, "::");
     flash_method_path += &name;
 
     path += suffix;
@@ -274,6 +289,49 @@ fn rust_method_name_and_path(
     // at that path in Rust code.
     let path_tokens = TokenStream::from_str(&path).unwrap();
     quote! { Some((#flash_method_path, #path_tokens)) }
+}
+
+fn rust_slot_name(abc: &AbcFile, trait_: &Trait, parent: Option<Index<Multiname>>) -> TokenStream {
+    let mut path = String::new();
+
+    let trait_name = &abc.constant_pool.multinames[trait_.name.0 as usize - 1];
+
+    if let Some(parent) = parent {
+        // This is a method defined inside the class. Append the class namespace
+        // (the package) and the class name.
+        // For example, a namespace of "flash.system" and a name of "Security"
+        // turns into the path "flash::system::security"
+        let multiname = &abc.constant_pool.multinames[parent.0 as usize - 1];
+        let ns = flash_to_rust_string(&resolve_multiname_ns(abc, multiname), true, "_");
+        if !ns.is_empty() {
+            path += &ns;
+            path += "_";
+        }
+        let name = resolve_multiname_name(abc, multiname);
+
+        path += &flash_to_rust_string(&name, true, "_");
+        path += "__";
+    } else {
+        // This is a freestanding Slot or Const. Append its namespace (the package).
+        let name = resolve_multiname_ns(abc, trait_name);
+
+        let ns = &flash_to_rust_string(&name, true, "_");
+        path += ns;
+        if !ns.is_empty() {
+            path += "__";
+        }
+    }
+
+    let name = resolve_multiname_name(abc, trait_name).to_string();
+
+    // If the name starts with '_' (e.g. '_timerId'), remove it so that there
+    // aren't two underscores next to each other
+    let name = name.strip_prefix('_').unwrap_or(&name);
+
+    path += &flash_to_rust_string(name, true, "_");
+    path += "_SLOT";
+
+    TokenStream::from_str(&path).unwrap()
 }
 
 fn strip_metadata(abc: &mut AbcFile) {
@@ -337,6 +395,37 @@ fn check_weird_namespace_lookup(abc: &AbcFile) -> Result<(), Box<dyn std::error:
     Ok(())
 }
 
+/// Checks if a trait has a certain metadata on it.
+fn trait_has_metadata(abc: &AbcFile, trait_: &Trait, metadata_value: &str) -> bool {
+    for metadata_idx in &trait_.metadata {
+        let metadata = &abc.metadata[metadata_idx.0 as usize];
+        let name =
+            String::from_utf8_lossy(&abc.constant_pool.strings[metadata.name.0 as usize - 1]);
+
+        let is_versioning = match &*name {
+            RUFFLE_METADATA_NAME => false,
+            API_METADATA_NAME => true,
+            _ => panic!("Unexpected class metadata {name:?}"),
+        };
+
+        for item in &metadata.items {
+            let key = if item.key.0 != 0 {
+                Some(&abc.constant_pool.strings[item.key.0 as usize - 1])
+            } else {
+                None
+            };
+            let value =
+                String::from_utf8_lossy(&abc.constant_pool.strings[item.value.0 as usize - 1]);
+
+            if key.is_none() && &*value == metadata_value && !is_versioning {
+                return true;
+            }
+        }
+    }
+
+    false
+}
+
 /// Handles native functions defined in our `playerglobal`
 ///
 /// The high-level idea is to generate code (specifically, a `TokenStream`)
@@ -363,62 +452,126 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
     let none_tokens = quote! { None };
     let mut rust_paths = vec![none_tokens.clone(); abc.methods.len()];
     let mut rust_instance_allocators = vec![none_tokens.clone(); abc.classes.len()];
-    let mut rust_super_initializers = vec![none_tokens.clone(); abc.classes.len()];
-    let mut rust_call_handlers = vec![none_tokens; abc.classes.len()];
+    let mut rust_call_handlers = vec![none_tokens.clone(); abc.classes.len()];
+    let mut rust_custom_constructors = vec![none_tokens; abc.classes.len()];
+
+    let mut rust_accessible_slots = Vec::new();
 
     let mut check_trait = |trait_: &Trait, parent: Option<Index<Multiname>>| {
-        let method_id = match trait_.kind {
+        match trait_.kind {
+            TraitKind::Slot { slot_id, .. } | TraitKind::Const { slot_id, .. } => {
+                if trait_has_metadata(&abc, trait_, METADATA_INTERNAL_SLOT) {
+                    if slot_id == 0 {
+                        panic!("ASC should calculate slot ids for all slots; cannot apply InternalSlot to a slot without a compiler-calculated slot id")
+                    } else {
+                        // Slots are 1-indexed!
+                        let slot_id = slot_id - 1;
+
+                        let const_name = rust_slot_name(&abc, trait_, parent);
+
+                        // Declare a const with the slot name set to the slot id.
+                        rust_accessible_slots.push(quote! {
+                            pub const #const_name: u32 = #slot_id;
+                        });
+                    }
+                }
+            }
             TraitKind::Method { method, .. }
             | TraitKind::Getter { method, .. }
             | TraitKind::Setter { method, .. } => {
-                let abc_method = &abc.methods[method.0 as usize];
+                let method_id = method.0;
+
+                let abc_method = &abc.methods[method_id as usize];
                 // We only want to process native methods
                 if !abc_method.flags.contains(MethodFlags::NATIVE) {
                     return;
                 }
-                method
+
+                // Note - technically, this could conflict with
+                // a method with a name starting with `get_` or `set_`.
+                // However, all Flash methods are named with lowerCamelCase,
+                // so we'll never actually need to implement a native method that
+                // would cause such a conflict.
+                let method_prefix = match trait_.kind {
+                    TraitKind::Getter { .. } => "get_",
+                    TraitKind::Setter { .. } => "set_",
+                    _ => "",
+                };
+
+                rust_paths[method_id as usize] =
+                    rust_method_name_and_path(&abc, trait_, parent, method_prefix, "");
             }
             TraitKind::Function { .. } => {
                 panic!("TraitKind::Function is not supported: {trait_:?}")
             }
-            _ => return,
-        };
-
-        // Note - technically, this could conflict with
-        // a method with a name starting with `get_` or `set_`.
-        // However, all Flash methods are named with lowerCamelCase,
-        // so we'll never actually need to implement a native method that
-        // would cause such a conflict.
-        let method_prefix = match trait_.kind {
-            TraitKind::Getter { .. } => "get_",
-            TraitKind::Setter { .. } => "set_",
-            _ => "",
-        };
-
-        rust_paths[method_id.0 as usize] =
-            rust_method_name_and_path(&abc, trait_, parent, method_prefix, "");
+            _ => {}
+        }
     };
 
-    // Look for `[Ruffle(InstanceAllocator)]` metadata - if present,
-    // generate a reference to an allocator function in the native instance
+    // We support four kinds of native methods:
+    // instance methods, class methods, script methods ("freestanding") and initializers.
+    // We're going to insert them into an array indexed by `MethodId`,
+    // so it doesn't matter what order we visit them in.
+    for (i, instance) in abc.instances.iter().enumerate() {
+        // Look for native instance methods
+        for trait_ in &instance.traits {
+            check_trait(trait_, Some(instance.name));
+        }
+        // Look for native class methods (in the corresponding
+        // `Class` definition)
+        for trait_ in &abc.classes[i].traits {
+            check_trait(trait_, Some(instance.name));
+        }
+    }
+    // Look for freestanding methods
+    for script in &abc.scripts {
+        for trait_ in &script.traits {
+            check_trait(trait_, None);
+        }
+    }
+
+    // Look for `[Ruffle(InstanceAllocator)]` and similar metadata - if present,
+    // generate a reference to a function in the native instance
     // allocators table.
-    let mut check_instance_allocator = |trait_: &Trait| {
+    let mut check_class = |trait_: &Trait| {
         let class_id = if let TraitKind::Class { class, .. } = trait_.kind {
             class.0
         } else {
             return;
         };
 
-        let class_name_idx = abc.instances[class_id as usize].name.0;
+        let class_name_idx = abc.instances[class_id as usize].name;
         let class_name = resolve_multiname_name(
             &abc,
-            &abc.constant_pool.multinames[class_name_idx as usize - 1],
+            &abc.constant_pool.multinames[class_name_idx.0 as usize - 1],
         );
 
         let instance_allocator_method_name =
-            "::".to_string() + &flash_to_rust_path(&class_name) + "_allocator";
-        let super_init_method_name = "::super_init".to_string();
+            "::".to_string() + &flash_to_rust_string(&class_name, false, "::") + "_allocator";
+        let init_method_name =
+            "::".to_string() + &flash_to_rust_string(&class_name, false, "::") + "_initializer";
         let call_handler_method_name = "::call_handler".to_string();
+        let custom_constructor_method_name =
+            "::".to_string() + &flash_to_rust_string(&class_name, false, "::") + "_constructor";
+
+        // Also support instance initializer - let's pretend it's a trait.
+        let init_method_idx = abc.instances[class_id as usize].init_method;
+        let init_method = &abc.methods[init_method_idx.0 as usize];
+        if init_method.flags.contains(MethodFlags::NATIVE) {
+            let init_trait = Trait {
+                name: class_name_idx,
+                kind: TraitKind::Method {
+                    disp_id: 0, // unused
+                    method: abc.classes[class_id as usize].init_method,
+                },
+                metadata: vec![],   // unused
+                is_final: true,     // unused
+                is_override: false, // unused
+            };
+            rust_paths[init_method_idx.0 as usize] =
+                rust_method_name_and_path(&abc, &init_trait, None, "", &init_method_name);
+        }
+
         for metadata_idx in &trait_.metadata {
             let metadata = &abc.metadata[metadata_idx.0 as usize];
             let name =
@@ -451,15 +604,6 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                             &instance_allocator_method_name,
                         );
                     }
-                    (None, METADATA_SUPER_INITIALIZER) if !is_versioning => {
-                        rust_super_initializers[class_id as usize] = rust_method_name_and_path(
-                            &abc,
-                            trait_,
-                            None,
-                            "",
-                            &super_init_method_name,
-                        )
-                    }
                     (None, METADATA_CALL_HANDLER) if !is_versioning => {
                         rust_call_handlers[class_id as usize] = rust_method_name_and_path(
                             &abc,
@@ -467,7 +611,24 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                             None,
                             "",
                             &call_handler_method_name,
-                        )
+                        );
+                    }
+                    (None, METADATA_CUSTOM_CONSTRUCTOR) if !is_versioning => {
+                        rust_custom_constructors[class_id as usize] = rust_method_name_and_path(
+                            &abc,
+                            trait_,
+                            None,
+                            "",
+                            &custom_constructor_method_name,
+                        );
+                    }
+                    (None, METADATA_ABSTRACT) if !is_versioning => {
+                        rust_instance_allocators[class_id as usize] = {
+                            let path = "crate::avm2::object::abstract_class_allocator";
+                            let path_tokens = TokenStream::from_str(path).unwrap();
+                            let flash_method_path = "unused".to_string();
+                            quote! { Some((#flash_method_path, #path_tokens)) }
+                        };
                     }
                     (None, _) if is_versioning => {}
                     _ => panic!("Unexpected metadata pair ({key:?}, {value})"),
@@ -476,27 +637,10 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
         }
     };
 
-    // We support three kinds of native methods:
-    // instance methods, class methods, and freestanding functions.
-    // We're going to insert them into an array indexed by `MethodId`,
-    // so it doesn't matter what order we visit them in.
-    for (i, instance) in abc.instances.iter().enumerate() {
-        // Look for native instance methods
-        for trait_ in &instance.traits {
-            check_trait(trait_, Some(instance.name));
-        }
-        // Look for native class methods (in the corresponding
-        // `Class` definition)
-        for trait_ in &abc.classes[i].traits {
-            check_trait(trait_, Some(instance.name));
-        }
-    }
-
-    // Look for freestanding methods
+    // Handle classes
     for script in &abc.scripts {
         for trait_ in &script.traits {
-            check_trait(trait_, None);
-            check_instance_allocator(trait_);
+            check_class(trait_);
         }
     }
     // Finally, generate the actual code.
@@ -528,27 +672,33 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
             #(#rust_instance_allocators,)*
         ];
 
-        // This is very similar to `NATIVE_METHOD_TABLE`, but we have one entry per
-        // class, rather than per method. When an entry is `Some(fn_ptr)`, we use
-        // `fn_ptr` as the super initializer for the corresponding class when we
-        // load it into Ruffle.
-        pub const NATIVE_SUPER_INITIALIZER_TABLE: &[Option<(&'static str, crate::avm2::method::NativeMethodImpl)>] = &[
-            #(#rust_super_initializers,)*
-        ];
-
-        // This is very similar to `NATIVE_SUPER_INITIALIZER_TABLE`.
-        // When an entry is `Some(fn_ptr)`, we use
-        // `fn_ptr` as the native call handler for the corresponding class when we
-        // load it into Ruffle.
+        // This is very similar to `NATIVE_INSTANCE_ALLOCATOR_TABLE`.
+        // When an entry is `Some(fn_ptr)`, we use `fn_ptr` as the native call
+        // handler for the corresponding class when we load it into Ruffle.
         pub const NATIVE_CALL_HANDLER_TABLE: &[Option<(&'static str, crate::avm2::method::NativeMethodImpl)>] = &[
             #(#rust_call_handlers,)*
         ];
+
+        // This is very similar to `NATIVE_INSTANCE_ALLOCATOR_TABLE`.
+        // When an entry is `Some(fn_ptr)`, we use `fn_ptr` as the native custom
+        // constructor for the corresponding class when we load it into Ruffle.
+        pub const NATIVE_CUSTOM_CONSTRUCTOR_TABLE: &[Option<(&'static str, crate::avm2::class::CustomConstructorFn)>] = &[
+            #(#rust_custom_constructors,)*
+        ];
+
+        pub mod slots {
+            #(#rust_accessible_slots)*
+        }
     }
     .to_string();
 
     // Each table entry ends with ') ,' - insert a newline so that
     // each entry is on its own line. This makes error messages more readable.
-    let make_native_table = make_native_table.replace(") ,", ") ,\n");
+    // Also, internal slot definitions end with '; const'. Insert a newline
+    // for them too.
+    let make_native_table = make_native_table
+        .replace(") ,", ") ,\n")
+        .replace("; const", ";\nconst");
 
     let mut native_table_file = File::create(out_dir.join("native_table.rs"))?;
     native_table_file.write_all(make_native_table.as_bytes())?;

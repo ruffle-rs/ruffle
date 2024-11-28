@@ -1,0 +1,30 @@
+[class Stage]
+ArgumentError: Error #2012: Stage$ class cannot be instantiated.
+	at Test()
+[class DisplayObject]
+ArgumentError: Error #2012: DisplayObject$ class cannot be instantiated.
+	at Test()
+[class DisplayObjectContainer]
+ArgumentError: Error #2012: DisplayObjectContainer$ class cannot be instantiated.
+	at Test()
+[class InteractiveObject]
+ArgumentError: Error #2012: InteractiveObject$ class cannot be instantiated.
+	at Test()
+[class LoaderInfo]
+ArgumentError: Error #2012: LoaderInfo$ class cannot be instantiated.
+	at Test()
+[class TextLine]
+ArgumentError: Error #2012: TextLine$ class cannot be instantiated.
+	at Test()
+[class Class]
+TypeError: Error #1115: Class$ is not a constructor.
+	at Test()
+[class Math]
+TypeError: Error #1076: Math is not a constructor.
+	at Test()
+[class MorphShape]
+ArgumentError: Error #2012: MorphShape$ class cannot be instantiated.
+	at Test()
+[class Worker]
+ArgumentError: Error #2012: Worker$ class cannot be instantiated.
+	at Test()

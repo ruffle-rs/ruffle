@@ -11,21 +11,8 @@ use crate::loader::ContentType;
 use crate::{avm2_stub_getter, avm2_stub_method};
 use swf::{write_swf, Compression};
 
-pub use crate::avm2::object::loader_info_allocator;
-
 const INSUFFICIENT: &str =
     "Error #2099: The loading object is not sufficiently loaded to provide this information.";
-
-/// Implements `flash.display.LoaderInfo`'s native instance constructor.
-pub fn super_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    activation.super_init(this, &[])?;
-
-    Ok(Value::Undefined)
-}
 
 /// `actionScriptVersion` getter
 pub fn get_action_script_version<'gc>(
