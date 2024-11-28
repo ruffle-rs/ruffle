@@ -626,6 +626,8 @@ impl<'gc> BitmapData<'gc> {
             let bitmap_handle = renderer.register_bitmap(bitmap);
             if let Err(e) = &bitmap_handle {
                 tracing::warn!("Failed to register raw bitmap for BitmapData: {:?}", e);
+            } else {
+                self.dirty_state = DirtyState::Clean;
             }
             self.bitmap_handle = bitmap_handle.ok();
         }
