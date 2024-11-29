@@ -13,16 +13,13 @@ use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
 use crate::avm2_stub_method;
-use crate::bitmap::bitmap_data::{
-    BitmapData, BitmapDataWrapper, ChannelOptions, ThresholdOperation,
-};
+use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, ThresholdOperation};
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::{is_size_valid, operations};
 use crate::character::{Character, CompressedBitmap};
 use crate::display_object::TDisplayObject;
 use crate::ecma_conversions::round_to_even;
 use crate::swf::BlendMode;
-use gc_arena::GcCell;
 use ruffle_render::filters::Filter;
 use ruffle_render::transform::Transform;
 use std::str::FromStr;
@@ -69,21 +66,18 @@ fn get_rectangle_x_y_width_height<'gc>(
 pub fn fill_bitmap_data_from_symbol<'gc>(
     activation: &mut Activation<'_, 'gc>,
     bd: &CompressedBitmap,
-) -> BitmapDataWrapper<'gc> {
+) -> BitmapData<'gc> {
     let bitmap = bd.decode().expect("Failed to decode BitmapData");
-    let new_bitmap_data = GcCell::new(
+    BitmapData::new_with_pixels(
         activation.context.gc_context,
-        BitmapData::new_with_pixels(
-            bitmap.width(),
-            bitmap.height(),
-            true,
-            bitmap
-                .as_colors()
-                .map(crate::bitmap::bitmap_data::Color::from)
-                .collect(),
-        ),
-    );
-    BitmapDataWrapper::new(new_bitmap_data)
+        bitmap.width(),
+        bitmap.height(),
+        true,
+        bitmap
+            .as_colors()
+            .map(crate::bitmap::bitmap_data::Color::from)
+            .collect(),
+    )
 }
 
 /// Implements `flash.display.BitmapData`'s 'init' method (invoked from the AS3 constructor)
@@ -92,7 +86,7 @@ pub fn init<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // We set the underlying BitmapData instance - we start out with a dummy BitmapDataWrapper,
+    // We set the underlying BitmapData instance - we start out with a dummy BitmapData,
     // which makes custom classes see a disposed BitmapData before they call super()
     let name = this.instance_class().name();
     let character = activation
@@ -140,8 +134,13 @@ pub fn init<'gc>(
             )?));
         }
 
-        let new_bitmap_data = BitmapData::new(width, height, transparency, fill_color);
-        BitmapDataWrapper::new(GcCell::new(activation.context.gc_context, new_bitmap_data))
+        BitmapData::new(
+            activation.context.gc_context,
+            width,
+            height,
+            transparency,
+            fill_color,
+        )
     };
 
     new_bitmap_data.init_object2(activation.context.gc_context, this);
@@ -842,7 +841,7 @@ pub fn hit_test<'gc>(
                 .as_display_object()
                 .and_then(|dobj| dobj.as_bitmap())
             {
-                let other_bmd = bitmap.bitmap_data_wrapper();
+                let other_bmd = bitmap.bitmap_data();
                 other_bmd.check_valid(activation)?;
                 let second_point = args.get_object(activation, 3, "secondBitmapDataPoint")?;
                 let second_point = (
@@ -1192,14 +1191,12 @@ pub fn clone<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap_data) = this.as_bitmap_data() {
         if !bitmap_data.disposed() {
-            let new_bitmap_data = bitmap_data.clone_data(activation.context.renderer);
+            let new_bitmap_data =
+                bitmap_data.clone_data(activation.context.gc_context, activation.context.renderer);
 
             let class = activation.avm2().classes().bitmapdata;
-            let new_bitmap_data_object = BitmapDataObject::from_bitmap_data_internal(
-                activation,
-                BitmapDataWrapper::new(GcCell::new(activation.context.gc_context, new_bitmap_data)),
-                class,
-            )?;
+            let new_bitmap_data_object =
+                BitmapDataObject::from_bitmap_data_internal(activation, new_bitmap_data, class)?;
 
             return Ok(new_bitmap_data_object.into());
         }
@@ -1457,18 +1454,14 @@ pub fn compare<'gc>(
     }
 
     match operations::compare(
+        activation.context.gc_context,
         activation.context.renderer,
         this_bitmap_data,
         other_bitmap_data,
     ) {
         Some(bitmap_data) => {
             let class = activation.avm2().classes().bitmapdata;
-            Ok(BitmapDataObject::from_bitmap_data_internal(
-                activation,
-                BitmapDataWrapper::new(GcCell::new(activation.context.gc_context, bitmap_data)),
-                class,
-            )?
-            .into())
+            Ok(BitmapDataObject::from_bitmap_data_internal(activation, bitmap_data, class)?.into())
         }
         None => Ok(EQUIVALENT.into()),
     }

@@ -5,7 +5,7 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
-use crate::bitmap::bitmap_data::BitmapDataWrapper;
+use crate::bitmap::bitmap_data::BitmapData;
 use crate::context::UpdateContext;
 use crate::string::{AvmString, FromWStr, StringContext, WStr};
 use gc_arena::{Collect, GcCell, Mutation};
@@ -77,7 +77,7 @@ impl From<Mode> for DisplacementMapFilterMode {
 #[derive(Clone, Collect, Debug, Default)]
 #[collect(no_drop)]
 struct DisplacementMapFilterData<'gc> {
-    map_bitmap: Option<BitmapDataWrapper<'gc>>,
+    map_bitmap: Option<BitmapData<'gc>>,
     #[collect(require_static)]
     map_point: Point<i32>,
     component_x: i32,
