@@ -10,7 +10,7 @@ use crate::avm2::{ArrayObject, ArrayStorage, Error};
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
 use crate::html::TextFormat;
 use crate::string::AvmString;
-use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
+use crate::{avm2_stub_getter, avm2_stub_setter};
 use swf::{Color, Point};
 
 pub fn text_field_allocator<'gc>(
@@ -1652,19 +1652,6 @@ pub fn get_char_index_at_point<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    // TODO This currently uses screen_position_to_index, which is inaccurate, because:
-    //   1. getCharIndexAtPoint should return -1 when clicked outside of a character,
-    //   2. screen_position_to_index returns caret index, not clicked character index.
-    //   Currently, it is difficult to prove accuracy of this method, as at the time
-    //   of writing this comment, text layout behaves differently compared to Flash.
-    //   However, the current implementation is good enough to make some SWFs work.
-    avm2_stub_method!(
-        activation,
-        "flash.text.TextField",
-        "getCharIndexAtPoint",
-        "inaccurate char index detection"
-    );
-
     let Some(this) = this
         .as_display_object()
         .and_then(|this| this.as_edit_text())
@@ -1672,10 +1659,11 @@ pub fn get_char_index_at_point<'gc>(
         return Ok(Value::Undefined);
     };
 
-    let x = args.get_f64(activation, 0)?;
+    // No idea why FP does this weird 1px translation...
+    let x = args.get_f64(activation, 0)? + 1.0;
     let y = args.get_f64(activation, 1)?;
 
-    if let Some(index) = this.screen_position_to_index(Point::from_pixels(x, y)) {
+    if let Some(index) = this.char_index_at_point(Point::from_pixels(x, y)) {
         Ok(index.into())
     } else {
         Ok(Value::Number(-1f64))

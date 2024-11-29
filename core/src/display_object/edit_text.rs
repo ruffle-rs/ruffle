@@ -2174,6 +2174,49 @@ impl<'gc> EditText<'gc> {
         )
     }
 
+    /// Returns the index of the character that is at the given position.
+    ///
+    /// It returns `None` when there's no character at the given position.
+    /// It takes into account various quirks of Flash Player:
+    ///  1. It will return the index of the newline when `x`
+    ///     is zero and the line is empty.
+    ///  2. It assumes (exclusive, inclusive) bounds.
+    ///  3. Positions with `y` below the last line will behave
+    ///     the same way as at the last line.
+    pub fn char_index_at_point(self, position: Point<Twips>) -> Option<usize> {
+        let line_index = self.line_index_at_point(position)?;
+
+        let edit_text = self.0.read();
+        let line = &edit_text.layout.lines()[line_index];
+
+        // KJ: It's a bug in FP, it doesn't take into account horizontal
+        // scroll, but it does take into account vertical scroll.
+        // See https://github.com/airsdk/Adobe-Runtime-Support/issues/2315
+        // I guess we'll have to take scrollH into account here when
+        // we start supporting Harman runtimes.
+        let x = position.x - Self::GUTTER;
+
+        // Yes, this will return the index of the newline when the line is empty.
+        // Yes, that's how Flash Player does it.
+        if x == Twips::ZERO {
+            return Some(line.start());
+        }
+
+        // TODO Use binary search here when possible
+        for ch in line.start()..line.end() {
+            let bounds = line.char_x_bounds(ch);
+            let Some((a, b)) = bounds else {
+                continue;
+            };
+
+            if a < x && x <= b {
+                return Some(ch);
+            }
+        }
+
+        None
+    }
+
     pub fn line_index_of_char(self, index: usize) -> Option<usize> {
         self.0.read().layout.find_line_index_by_position(index)
     }
