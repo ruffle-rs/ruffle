@@ -396,7 +396,11 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         if self.boxes.is_empty() {
             self.append_text(WStr::empty(), end, end, span);
         }
-        let is_line_empty = self.boxes.first().unwrap().start() == end;
+        let first_box = self
+            .boxes
+            .first()
+            .expect("each line must have at least one box");
+        let is_line_empty = first_box.start() == end;
 
         let mut line_size_bounds = None;
         let mut box_count: i32 = 0;
@@ -404,18 +408,15 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             let (text, _tf, font, params, _color) =
                 linebox.as_renderable_text(self.text).expect("text");
 
-            //Flash ignores trailing spaces when aligning lines, so should we
+            // Flash ignores trailing spaces when aligning lines, so should we
+            // TODO This behavior is dependent on SWF version
             if self.current_line_span.align != swf::TextAlign::Left {
                 linebox.bounds = linebox
                     .bounds
                     .with_width(font.measure(text.trim_end(), params));
             }
 
-            if let Some(line_size_bounds) = &mut line_size_bounds {
-                *line_size_bounds += linebox.bounds;
-            } else {
-                line_size_bounds = Some(linebox.bounds);
-            }
+            Self::extend_bounds(&mut line_size_bounds, linebox.bounds);
 
             box_count += 1;
         }
