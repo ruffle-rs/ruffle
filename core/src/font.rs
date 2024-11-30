@@ -478,19 +478,37 @@ impl<'gc> Font<'gc> {
                 FontType::EmbeddedCFF,
             )
         } else {
-            Ok(Font(Gc::new(
+            Ok(Self::empty_font(
                 gc_context,
-                FontData {
-                    scale: 1.0,
-                    ascent: 0,
-                    descent: 0,
-                    leading: 0,
-                    glyphs: GlyphSource::Empty,
-                    descriptor,
-                    font_type: FontType::EmbeddedCFF,
-                },
-            )))
+                &name,
+                tag.is_bold,
+                tag.is_italic,
+                FontType::EmbeddedCFF,
+            ))
         }
+    }
+
+    pub fn empty_font(
+        gc_context: &Mutation<'gc>,
+        name: &str,
+        is_bold: bool,
+        is_italic: bool,
+        font_type: FontType,
+    ) -> Font<'gc> {
+        let descriptor = FontDescriptor::from_parts(name, is_bold, is_italic);
+
+        Font(Gc::new(
+            gc_context,
+            FontData {
+                scale: 1.0,
+                ascent: 0,
+                descent: 0,
+                leading: 0,
+                glyphs: GlyphSource::Empty,
+                descriptor,
+                font_type,
+            },
+        ))
     }
 
     /// Returns whether this font contains glyph shapes.
