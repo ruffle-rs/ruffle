@@ -178,101 +178,100 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         span_text: &'a WStr,
         span: &TextSpan,
     ) {
-        if let Some(font) = self.resolve_font(context, span) {
-            self.font = Some(font);
-            self.newspan(span);
+        let font = self.resolve_font(context, span);
+        self.font = Some(font);
+        self.newspan(span);
 
-            let params = EvalParameters::from_span(span);
+        let params = EvalParameters::from_span(span);
 
-            for text in span_text.split(&[b'\n', b'\r', b'\t'][..]) {
-                let slice_start = text.offset_in(span_text).unwrap();
-                let delimiter = if slice_start > 0 {
-                    span_text
-                        .get(slice_start - 1)
-                        .and_then(|c| u8::try_from(c).ok())
-                } else {
-                    None
-                };
+        for text in span_text.split(&[b'\n', b'\r', b'\t'][..]) {
+            let slice_start = text.offset_in(span_text).unwrap();
+            let delimiter = if slice_start > 0 {
+                span_text
+                    .get(slice_start - 1)
+                    .and_then(|c| u8::try_from(c).ok())
+            } else {
+                None
+            };
 
-                match delimiter {
-                    Some(b'\n' | b'\r') => {
-                        self.newline(context, span_start + slice_start - 1, span, true)
-                    }
-                    Some(b'\t') => self.tab(),
-                    _ => {}
+            match delimiter {
+                Some(b'\n' | b'\r') => {
+                    self.newline(context, span_start + slice_start - 1, span, true)
                 }
+                Some(b'\t') => self.tab(),
+                _ => {}
+            }
 
-                let start = span_start + slice_start;
+            let start = span_start + slice_start;
 
-                let mut last_breakpoint = 0;
+            let mut last_breakpoint = 0;
 
-                if self.is_word_wrap {
-                    let (mut width, mut offset) = self.wrap_dimensions(span);
+            if self.is_word_wrap {
+                let (mut width, mut offset) = self.wrap_dimensions(span);
 
-                    while let Some(breakpoint) = font.wrap_line(
-                        &text[last_breakpoint..],
-                        params,
-                        width,
-                        offset,
-                        self.is_start_of_line(),
-                    ) {
-                        // This ensures that the space causing the line break
-                        // is included in the line it broke.
-                        let next_breakpoint =
-                            string_utils::next_char_boundary(text, last_breakpoint + breakpoint);
+                while let Some(breakpoint) = font.wrap_line(
+                    &text[last_breakpoint..],
+                    params,
+                    width,
+                    offset,
+                    self.is_start_of_line(),
+                ) {
+                    // This ensures that the space causing the line break
+                    // is included in the line it broke.
+                    let next_breakpoint =
+                        string_utils::next_char_boundary(text, last_breakpoint + breakpoint);
 
-                        // If text doesn't fit at the start of a line, it
-                        // won't fit on the next either, abort and put the
-                        // whole text on the line (will be cut-off). This
-                        // can happen for small text fields with single
-                        // characters.
-                        if breakpoint == 0 && self.is_start_of_line() {
-                            break;
-                        } else if breakpoint == 0 {
-                            self.newline(context, start + next_breakpoint, span, false);
-
-                            let next_dim = self.wrap_dimensions(span);
-
-                            width = next_dim.0;
-                            offset = next_dim.1;
-
-                            if last_breakpoint >= text.len() {
-                                break;
-                            } else {
-                                continue;
-                            }
-                        }
-
-                        self.append_text(
-                            &text[last_breakpoint..next_breakpoint],
-                            start + last_breakpoint,
-                            start + next_breakpoint,
-                            span,
-                        );
-
-                        last_breakpoint = next_breakpoint;
-                        if last_breakpoint >= text.len() {
-                            break;
-                        }
-
+                    // If text doesn't fit at the start of a line, it
+                    // won't fit on the next either, abort and put the
+                    // whole text on the line (will be cut-off). This
+                    // can happen for small text fields with single
+                    // characters.
+                    if breakpoint == 0 && self.is_start_of_line() {
+                        break;
+                    } else if breakpoint == 0 {
                         self.newline(context, start + next_breakpoint, span, false);
+
                         let next_dim = self.wrap_dimensions(span);
 
                         width = next_dim.0;
                         offset = next_dim.1;
+
+                        if last_breakpoint >= text.len() {
+                            break;
+                        } else {
+                            continue;
+                        }
                     }
-                }
 
-                let span_end = text.len();
-
-                if last_breakpoint < span_end {
                     self.append_text(
-                        &text[last_breakpoint..span_end],
+                        &text[last_breakpoint..next_breakpoint],
                         start + last_breakpoint,
-                        start + span_end,
+                        start + next_breakpoint,
                         span,
                     );
+
+                    last_breakpoint = next_breakpoint;
+                    if last_breakpoint >= text.len() {
+                        break;
+                    }
+
+                    self.newline(context, start + next_breakpoint, span, false);
+                    let next_dim = self.wrap_dimensions(span);
+
+                    width = next_dim.0;
+                    offset = next_dim.1;
                 }
+            }
+
+            let span_end = text.len();
+
+            if last_breakpoint < span_end {
+                self.append_text(
+                    &text[last_breakpoint..span_end],
+                    start + last_breakpoint,
+                    start + span_end,
+                    span,
+                );
             }
         }
     }
@@ -617,11 +616,32 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         }
     }
 
-    fn resolve_font(
-        &mut self,
-        context: &mut UpdateContext<'gc>,
-        span: &TextSpan,
-    ) -> Option<Font<'gc>> {
+    fn resolve_font(&mut self, context: &mut UpdateContext<'gc>, span: &TextSpan) -> Font<'gc> {
+        fn new_empty_font<'gc>(
+            context: &mut UpdateContext<'gc>,
+            span: &TextSpan,
+            font_type: FontType,
+        ) -> Font<'gc> {
+            Font::empty_font(
+                context.gc(),
+                &span.font.face.to_utf8_lossy(),
+                span.style.bold,
+                span.style.italic,
+                font_type,
+            )
+        }
+
+        fn describe_font(span: &TextSpan) -> String {
+            let bold_suffix = if span.style.bold { ", bold" } else { "" };
+            let italic_suffix = if span.style.italic { ", italic" } else { "" };
+            format!(
+                "{}{}{}",
+                span.font.face.to_utf8_lossy(),
+                bold_suffix,
+                italic_suffix
+            )
+        }
+
         let font_name = span.font.face.to_utf8_lossy();
 
         // Note that the SWF can still contain a DefineFont tag with no glyphs/layout info in this case (see #451).
@@ -638,12 +658,12 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                 )
                 .filter(|f| f.has_glyphs())
             {
-                return Some(font);
+                return font;
             }
             // TODO: If set to use embedded fonts and we couldn't find any matching font, show nothing
             // However - at time of writing, we don't support DefineFont4. If we matched this behaviour,
             // then a bunch of SWFs would just show no text suddenly.
-            // return None;
+            // return new_empty_font(context, span, self.font_type);
         }
 
         // Check if the font name is one of the known default fonts.
@@ -656,7 +676,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             "_明朝" => Some(DefaultFont::JapaneseMincho),
             _ => None,
         } {
-            return context
+            if let Some(&font) = context
                 .library
                 .default_font(
                     default_font,
@@ -667,7 +687,15 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                     context.gc_context,
                 )
                 .first()
-                .copied();
+            {
+                return font;
+            } else {
+                let font_desc = describe_font(span);
+                tracing::error!(
+                    "Known default device font not found: {font_desc}, text will be missing"
+                );
+                return new_empty_font(context, span, self.font_type);
+            }
         }
 
         if let Some(font) = context.library.get_or_load_device_font(
@@ -678,7 +706,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             context.renderer,
             context.gc_context,
         ) {
-            return Some(font);
+            return font;
         }
 
         // TODO: handle multiple fonts for a definition, each covering different sets of glyphs
@@ -700,7 +728,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                 }
             }
         };
-        context
+
+        if let Some(&font) = context
             .library
             .default_font(
                 default_font,
@@ -711,7 +740,15 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                 context.gc_context,
             )
             .first()
-            .copied()
+        {
+            font
+        } else {
+            let font_desc = describe_font(span);
+            tracing::error!(
+                "Fallback font not found ({default_font:?}) for: {font_desc}, text will be missing"
+            );
+            new_empty_font(context, span, self.font_type)
+        }
     }
 
     /// Append text to the current line of the ongoing layout operation.
@@ -747,22 +784,21 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// This function bypasses the text fragmentation necessary for justify to
     /// work, and it should only be called internally.
     fn append_text_fragment(&mut self, text: &'a WStr, start: usize, end: usize, span: &TextSpan) {
-        if let Some(font) = self.font {
-            let params = EvalParameters::from_span(span);
-            let ascent = font.get_baseline_for_height(params.height());
-            let descent = font.get_descent_for_height(params.height());
-            let text_width = font.measure(text, params);
-            let box_origin = self.cursor - (Twips::ZERO, ascent).into();
+        let font = self.font.expect("text fragment requires a font");
+        let params = EvalParameters::from_span(span);
+        let ascent = font.get_baseline_for_height(params.height());
+        let descent = font.get_descent_for_height(params.height());
+        let text_width = font.measure(text, params);
+        let box_origin = self.cursor - (Twips::ZERO, ascent).into();
 
-            let mut new_box = LayoutBox::from_text(text, start, end, font, span);
-            new_box.bounds = BoxBounds::from_position_and_size(
-                box_origin,
-                Size::from((text_width, ascent + descent)),
-            );
+        let mut new_box = LayoutBox::from_text(text, start, end, font, span);
+        new_box.bounds = BoxBounds::from_position_and_size(
+            box_origin,
+            Size::from((text_width, ascent + descent)),
+        );
 
-            self.cursor += (text_width, Twips::ZERO).into();
-            self.append_box(new_box);
-        }
+        self.cursor += (text_width, Twips::ZERO).into();
+        self.append_box(new_box);
     }
 
     /// Append a bullet to the start of the current line.
@@ -771,30 +807,29 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// should be appended after line fixup has completed, but before the text
     /// cursor is moved down.
     fn append_bullet(&mut self, context: &mut UpdateContext<'gc>, span: &TextSpan) {
-        if let Some(bullet_font) = self.resolve_font(context, span).or(self.font) {
-            let mut bullet_cursor = self.cursor;
+        let bullet_font = self.resolve_font(context, span);
+        let mut bullet_cursor = self.cursor;
 
-            bullet_cursor.set_x(
-                Twips::from_pixels(18.0)
-                    + Self::left_alignment_offset_without_bullet(span, self.is_first_line),
-            );
+        bullet_cursor.set_x(
+            Twips::from_pixels(18.0)
+                + Self::left_alignment_offset_without_bullet(span, self.is_first_line),
+        );
 
-            let params = EvalParameters::from_span(span);
-            let ascent = bullet_font.get_baseline_for_height(params.height());
-            let descent = bullet_font.get_descent_for_height(params.height());
-            let bullet = WStr::from_units(&[0x2022u16]);
-            let text_width = bullet_font.measure(bullet, params);
-            let box_origin = bullet_cursor - (Twips::ZERO, ascent).into();
+        let params = EvalParameters::from_span(span);
+        let ascent = bullet_font.get_baseline_for_height(params.height());
+        let descent = bullet_font.get_descent_for_height(params.height());
+        let bullet = WStr::from_units(&[0x2022u16]);
+        let text_width = bullet_font.measure(bullet, params);
+        let box_origin = bullet_cursor - (Twips::ZERO, ascent).into();
 
-            let pos = self.last_box_end_position();
-            let mut new_bullet = LayoutBox::from_bullet(pos, bullet_font, span);
-            new_bullet.bounds = BoxBounds::from_position_and_size(
-                box_origin,
-                Size::from((text_width, ascent + descent)),
-            );
+        let pos = self.last_box_end_position();
+        let mut new_bullet = LayoutBox::from_bullet(pos, bullet_font, span);
+        new_bullet.bounds = BoxBounds::from_position_and_size(
+            box_origin,
+            Size::from((text_width, ascent + descent)),
+        );
 
-            self.append_box(new_bullet);
-        }
+        self.append_box(new_bullet);
     }
 
     fn last_box_end_position(&self) -> usize {
