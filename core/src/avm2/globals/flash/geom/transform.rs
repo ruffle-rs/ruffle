@@ -223,7 +223,8 @@ pub fn object_to_matrix3d<'gc>(
 ) -> Result<Matrix3D, Error<'gc>> {
     let raw_data = object
         .get_public_property("rawData", activation)?
-        .coerce_to_object(activation)?;
+        .as_object()
+        .expect("rawData cannot be null");
     let raw_data = raw_data
         .as_vector_storage()
         .expect("rawData is not a Vector");
