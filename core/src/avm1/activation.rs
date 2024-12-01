@@ -2818,7 +2818,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // Finally! It's a plain old variable name.
         // Resolve using scope chain, as normal.
-        self.resolve(path)
+        match self.resolve(path)? {
+            CallableValue::UnCallable(Value::Undefined) => {
+                let obj = self.target_clip_or_root().object().coerce_to_object(self);
+                if obj.has_property(self, path) {
+                    obj.get(path, self).map(|v| CallableValue::Callable(obj, v))
+                } else {
+                    Ok(CallableValue::UnCallable(Value::Undefined))
+                }
+            }
+            val => Ok(val),
+        }
     }
 
     /// Sets the value referenced by a target path string.
