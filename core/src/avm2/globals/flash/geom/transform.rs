@@ -3,6 +3,7 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, TObject, Value};
 use crate::display_object::TDisplayObject;
 use crate::prelude::{DisplayObject, Matrix, Matrix3D, Twips};
+use crate::{avm2_stub_getter, avm2_stub_setter};
 use ruffle_render::quality::StageQuality;
 use swf::{ColorTransform, Fixed8, Rectangle};
 
@@ -51,8 +52,10 @@ pub fn get_matrix_3d<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // FIXME: This Matrix3D is generated from the 2D Matrix.
-    // It does not work when the 2D matrix contains any transformation in 3D.
+    // It does not work when the matrix contains any transformation in 3D.
     // Support native Matrix3D.
+    avm2_stub_getter!(activation, "flash.geom.Transform", "matrix3D");
+
     let matrix = *get_display_object(this, activation)?.base().matrix();
     let matrix3d = Matrix3D::from(matrix);
     matrix3d_to_object(matrix3d, activation)
@@ -65,6 +68,8 @@ pub fn set_matrix_3d<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     // FIXME: This sets 2D Matrix generated from the given Matrix3D, ignoring 3D parameters.
     // Support native Matrix3D.
+    avm2_stub_setter!(activation, "flash.geom.Transform", "matrix3D");
+
     let matrix3d = object_to_matrix3d(args.get_object(activation, 0, "value")?, activation)?;
     let matrix = Matrix::from(matrix3d);
     let matrix = matrix_to_object(matrix, activation)?;
