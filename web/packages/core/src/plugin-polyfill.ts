@@ -231,9 +231,6 @@ declare global {
     interface MimeTypeArray {
         install?: (mimeType: MimeType) => void;
     }
-    interface AudioSession {
-        type?: string;
-    }
 }
 
 /**
@@ -247,11 +244,6 @@ declare global {
  * @param plugin The plugin to install
  */
 export function installPlugin(plugin: RufflePlugin): void {
-    // This code is not polyfill related, but while messing with the navigator API,
-    // we can specify https://www.w3.org/TR/audio-session/#audio-session-types
-    if ("audioSession" in navigator) {
-        (navigator.audioSession as AudioSession).type = "playback";
-    }
     if (navigator.plugins.namedItem("Shockwave Flash")) {
         return;
     }

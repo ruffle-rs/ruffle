@@ -51,6 +51,9 @@ declare global {
          */
         webkitRequestFullScreen?: (options: unknown) => unknown;
     }
+    interface AudioSession {
+        type?: string;
+    }
 }
 
 /**
@@ -1629,49 +1632,54 @@ export class InnerPlayer {
             isAudioContextUnmuted = true;
             return;
         }
+        if ("audioSession" in navigator) {
+            // On browsers which support it (Safari 16.4+), we can specify https://www.w3.org/TR/audio-session/#audio-session-types
+            (navigator.audioSession as AudioSession).type = "playback";
+        } else {
+            // This is a workaround for iOS versions without audioSession support
+            this.container.addEventListener(
+                "click",
+                () => {
+                    if (isAudioContextUnmuted) {
+                        return;
+                    }
 
-        this.container.addEventListener(
-            "click",
-            () => {
-                if (isAudioContextUnmuted) {
-                    return;
-                }
+                    const audioContext = this.instance?.audio_context();
+                    if (!audioContext) {
+                        return;
+                    }
 
-                const audioContext = this.instance?.audio_context();
-                if (!audioContext) {
-                    return;
-                }
+                    const audio = new Audio();
+                    audio.src = (() => {
+                        // Returns a seven samples long 8 bit mono WAVE file.
+                        // This is required to prevent the AudioContext from desyncing and crashing.
+                        const arrayBuffer = new ArrayBuffer(10);
+                        const dataView = new DataView(arrayBuffer);
+                        const sampleRate = audioContext.sampleRate;
+                        dataView.setUint32(0, sampleRate, true);
+                        dataView.setUint32(4, sampleRate, true);
+                        dataView.setUint16(8, 1, true);
+                        const missingCharacters = window
+                            .btoa(
+                                String.fromCharCode(...new Uint8Array(arrayBuffer)),
+                            )
+                            .slice(0, 13);
+                        return `data:audio/wav;base64,UklGRisAAABXQVZFZm10IBAAAAABAAEA${missingCharacters}AgAZGF0YQcAAACAgICAgICAAAA=`;
+                    })();
 
-                const audio = new Audio();
-                audio.src = (() => {
-                    // Returns a seven samples long 8 bit mono WAVE file.
-                    // This is required to prevent the AudioContext from desyncing and crashing.
-                    const arrayBuffer = new ArrayBuffer(10);
-                    const dataView = new DataView(arrayBuffer);
-                    const sampleRate = audioContext.sampleRate;
-                    dataView.setUint32(0, sampleRate, true);
-                    dataView.setUint32(4, sampleRate, true);
-                    dataView.setUint16(8, 1, true);
-                    const missingCharacters = window
-                        .btoa(
-                            String.fromCharCode(...new Uint8Array(arrayBuffer)),
-                        )
-                        .slice(0, 13);
-                    return `data:audio/wav;base64,UklGRisAAABXQVZFZm10IBAAAAABAAEA${missingCharacters}AgAZGF0YQcAAACAgICAgICAAAA=`;
-                })();
-
-                audio.load();
-                audio
-                    .play()
-                    .then(() => {
-                        isAudioContextUnmuted = true;
-                    })
-                    .catch((err) => {
-                        console.warn(`Failed to play dummy sound: ${err}`);
-                    });
-            },
-            { once: true },
-        );
+                    audio.load();
+                    audio
+                        .play()
+                        .then(() => {
+                            isAudioContextUnmuted = true;
+                        })
+                        .catch((err) => {
+                            console.warn(`Failed to play dummy sound: ${err}`);
+                        });
+                },
+                { once: true },
+            );
+        }
     }
 
     /**
