@@ -6,6 +6,7 @@
     <name>Ruffle</name>
     <name xml:lang="ar">رَفل</name>
     <name xml:lang="cs">Ruffle</name>
+    <name xml:lang="de">Ruffle</name>
     <name xml:lang="es">Ruffle</name>
     <name xml:lang="fr">Ruffle</name>
     <name xml:lang="ja">Ruffle</name>
@@ -84,6 +85,7 @@
         </p>
         <p xml:lang="ar">يتيح لك هذا التطبيق تشغيل محتوى الفلاش على كمبيوترك دون الحاجة إلى متصفح بينها، والإستفادة الكاملة من وحدة معالجة الرسومات وموارد النظام للحصول على إطارات إضافية عند ممارسة الألعاب.</p>
         <p xml:lang="cs">Tato aplikace vám umožňuje spouštět obsah Flash na vašem počítači bez použití prohlížeče a plně využívat vaše GPU a systémové prostředky k získání těchto snímků navíc při hraní intenzivních her.</p>
+        <p xml:lang="de">Diese Anwendung ermöglicht es Ihnen Flash-Inhalte auf Ihrem Computer ausführen, ohne dass ein Browser vonnöten ist. Dadurch können Sie die volle Leistung Ihrer GPU und Systemressourcen nutzen, um zusätzliche Bilder bei anspruchsvollen Spielen zu erhalten.</p>
         <p xml:lang="es">Este programa te permite ejecutar contenido de Flash en tu computadora sin un navegador de web como intermediario, y aprovecha completamente tu procesador de gráficos (GPU) y los recursos del sistema para obtener el mejor rendimiento posible con juegos exigentes en poder.</p>
         <p xml:lang="fr">Cette application vous permet d'exécuter du contenu Flash sur votre ordinateur sans passer par un navigateur. Elle tire également pleinement parti de votre GPU et des ressources système pour garantir des performances élevées, même pour les jeux exigeants.</p>
         <p xml:lang="ja">このアプリケーションを使用すると、コンピュータ上でFlashコンテンツを実行することができます。これにより、負荷の高いゲームなどもGPUなどのシステムリソースを最大限に活用し、快適にプレイすることができます。</p>
@@ -107,6 +109,7 @@
         </p>
         <p xml:lang="ar">إن رَفل هو مشروع مفتوح المصدر بالكامل يديرونه متطوعون. نحن جميعًا متحمسون للحفاظ على تاريخ الإنترنت، وقد إنجذبنا للعمل على هذا المشروع للمساعدة في الحفاظ على العديد من المواقع الإلكترونية والمحتوى الوفير الذي لن يكون متاحًا بعد الآن عندما لا يستطيع المستخدمون تشغيل مشغل الفلاش الرسمي. إذا كنت ترغب في المساعدة في دعم هذا المشروع، فنحن نرحب بجميع المساهمات من أي نوع - حتى لو كانت مجرد لعب بعض الألعاب القديمة ورؤية مدى جودة تشغيلها.</p>
         <p xml:lang="cs">Ruffle je zcela open source projekt spravovaný dobrovolníky. Všichni jsme nadšení z uchovávání historie internetu a přilákalo nás pracovat na tomto projektu, abychom pomohli zachovat mnoho webových stránek a nepřeberné množství obsahu, který již nebude přístupný, až uživatelé nebudou moci spouštět oficiální přehrávač Flash Player. Pokud byste chtěli pomoci podpořit tento projekt, uvítáme všechny příspěvky jakéhokoli druhu – i když jde jen o hraní starých her a sledování, jak dobře fungují.</p>
+        <p xml:lang="de">Ruffle ist ein vollständiges Open-Source-Projekt, das von Freiwilligen betrieben wird. Wir alle teilen die Leidenschaft für den Erhalt der Geschichte des Internets und haben uns diesem Projekt angeschlossen, um die zahlreichen Websites und Inhalte zu bewahren, die nicht mehr zugänglich sein werden, sobald der offizielle Flash Player nicht mehr genutzt werden kann. Wenn Sie dieses Projekt unterstützen möchten, freuen wir uns über jede Art von Beitrag – selbst wenn es nur darum geht, einige alte Spiele zu spielen und zu testen, wie gut sie laufen.</p>
         <p xml:lang="es">Ruffle es un proyecto completamente de codigo abierto mantenido por voluntarios. Nos encanta contribuir a la tarea enorme de preservar la historia del internet, y nos motiva trabajar en este proyecto para ayudar a preservar muchas páginas web, y muchísimo contenido que no sera accesible cuando los usuarios ya no puedan ejecutar Adobe Flash Player. Si te gustaría ayudar a apoyar este proyecto, todas las contribuciones son bienvenidas, incluso si solo estas jugando algunos juegos viejos y viendo que tan bien se ejecutan.</p>
         <p xml:lang="fr">Ruffle est un projet entièrement open source maintenu par des bénévoles. Nous sommes tous passionnés par la préservation de l'histoire d'Internet. En travaillant sur ce projet, nous voulons participer à la sauvegarde des nombreux sites web et autres contenus qui ne sont plus accessibles depuis que les utilisateurs ne peuvent plus exécuter le lecteur Flash officiel. Si vous souhaitez soutenir ce projet, toutes les contributions sont les bienvenues, même s'il ne s'agit que de tester quelques anciens jeux et voir comment ils fonctionnent.</p>
         <p xml:lang="ja">Ruffleは皆様の貢献によって維持されている完全にオープンソースのプロジェクトです。Ruffleチームはインターネットの歴史を保管することに情熱を注いでおり、ユーザーが公式Flashプレイヤーを実行できなくなることで失われる多くのWebサイトやコンテンツを今後も残していくために、このプロジェクトに取り組んでいます。もし、このプロジェクトをサポートしたいと考えているなら、古いゲームをプレイし、動作状況を報告していただくなど、どのような貢献も歓迎します!</p>
