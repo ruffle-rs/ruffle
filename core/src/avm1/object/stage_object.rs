@@ -658,7 +658,7 @@ fn frames_loaded<'gc>(
     this: DisplayObject<'gc>,
 ) -> Value<'gc> {
     this.as_movie_clip()
-        .map(MovieClip::frames_loaded)
+        .map(MovieClip::frames_loaded_for_avm)
         .map_or(Value::Undefined, Value::from)
 }
 
