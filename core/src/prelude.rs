@@ -3,7 +3,6 @@ pub use crate::display_object::{
     DisplayObject, DisplayObjectContainer, HitTestOptions, TDisplayObject, TDisplayObjectContainer,
 };
 pub use ruffle_render::matrix::Matrix;
-pub use ruffle_render::matrix3d::Matrix3D;
 pub use std::ops::RangeBounds;
 pub use swf::{CharacterId, Color, Point, Rectangle, Twips};
 pub use tracing::{error, info, warn};

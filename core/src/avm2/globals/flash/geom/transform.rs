@@ -2,8 +2,9 @@ use crate::avm2::globals::slots::*;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, TObject, Value};
 use crate::display_object::TDisplayObject;
-use crate::prelude::{DisplayObject, Matrix, Matrix3D, Twips};
+use crate::prelude::{DisplayObject, Matrix, Twips};
 use crate::{avm2_stub_getter, avm2_stub_setter};
+use ruffle_render::matrix3d::Matrix3D;
 use ruffle_render::quality::StageQuality;
 use swf::{ColorTransform, Fixed8, Rectangle};
 
