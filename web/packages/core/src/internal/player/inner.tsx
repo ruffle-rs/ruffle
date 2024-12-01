@@ -1628,6 +1628,7 @@ export class InnerPlayer {
         }
 
         // TODO: Use `navigator.userAgentData` to detect the platform when support improves?
+        // Edit (danielhjacobs): Probably not an option since it's only available in secure contexts
         if (navigator.maxTouchPoints < 1) {
             isAudioContextUnmuted = true;
             return;
