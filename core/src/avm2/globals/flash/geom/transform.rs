@@ -1,4 +1,4 @@
-use crate::avm2::globals::slots::*;
+use crate::avm2::globals::slots::flash_geom_transform as slots;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, TObject, Value};
 use crate::display_object::TDisplayObject;
@@ -11,7 +11,7 @@ fn get_display_object<'gc>(
     _activation: &mut Activation<'_, 'gc>,
 ) -> Result<DisplayObject<'gc>, Error<'gc>> {
     Ok(this
-        .get_slot(FLASH_GEOM_TRANSFORM__DISPLAY_OBJECT_SLOT)
+        .get_slot(slots::DISPLAY_OBJECT)
         .as_object()
         .unwrap()
         .as_display_object()

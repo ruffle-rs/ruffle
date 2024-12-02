@@ -6,6 +6,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use regex::RegexBuilder;
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs;
 use std::fs::File;
@@ -291,7 +292,11 @@ fn rust_method_name_and_path(
     quote! { Some((#flash_method_path, #path_tokens)) }
 }
 
-fn rust_slot_name(abc: &AbcFile, trait_: &Trait, parent: Option<Index<Multiname>>) -> TokenStream {
+fn rust_trait_and_slot_name(
+    abc: &AbcFile,
+    trait_: &Trait,
+    parent: Option<Index<Multiname>>,
+) -> (String, String) {
     let mut path = String::new();
 
     let trait_name = &abc.constant_pool.multinames[trait_.name.0 as usize - 1];
@@ -300,38 +305,31 @@ fn rust_slot_name(abc: &AbcFile, trait_: &Trait, parent: Option<Index<Multiname>
         // This is a method defined inside the class. Append the class namespace
         // (the package) and the class name.
         // For example, a namespace of "flash.system" and a name of "Security"
-        // turns into the path "flash::system::security"
+        // turns into the path "flash_system_security"
         let multiname = &abc.constant_pool.multinames[parent.0 as usize - 1];
-        let ns = flash_to_rust_string(&resolve_multiname_ns(abc, multiname), true, "_");
+        let ns = flash_to_rust_string(&resolve_multiname_ns(abc, multiname), false, "_");
         if !ns.is_empty() {
             path += &ns;
             path += "_";
         }
         let name = resolve_multiname_name(abc, multiname);
 
-        path += &flash_to_rust_string(&name, true, "_");
-        path += "__";
+        path += &flash_to_rust_string(&name, false, "_");
     } else {
         // This is a freestanding Slot or Const. Append its namespace (the package).
         let name = resolve_multiname_ns(abc, trait_name);
 
-        let ns = &flash_to_rust_string(&name, true, "_");
+        let ns = &flash_to_rust_string(&name, false, "_");
         path += ns;
-        if !ns.is_empty() {
+        if path.is_empty() {
             path += "__";
         }
     }
 
-    let name = resolve_multiname_name(abc, trait_name).to_string();
+    let name = resolve_multiname_name(abc, trait_name);
+    let name = flash_to_rust_string(&name, true, "_");
 
-    // If the name starts with '_' (e.g. '_timerId'), remove it so that there
-    // aren't two underscores next to each other
-    let name = name.strip_prefix('_').unwrap_or(&name);
-
-    path += &flash_to_rust_string(name, true, "_");
-    path += "_SLOT";
-
-    TokenStream::from_str(&path).unwrap()
+    (path, name)
 }
 
 fn strip_metadata(abc: &mut AbcFile) {
@@ -455,7 +453,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
     let mut rust_call_handlers = vec![none_tokens.clone(); abc.classes.len()];
     let mut rust_custom_constructors = vec![none_tokens; abc.classes.len()];
 
-    let mut rust_accessible_slots = Vec::new();
+    let mut rust_accessible_slots: HashMap<String, Vec<_>> = HashMap::new();
 
     let mut check_trait = |trait_: &Trait, parent: Option<Index<Multiname>>| {
         match trait_.kind {
@@ -467,12 +465,17 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                         // Slots are 1-indexed!
                         let slot_id = slot_id - 1;
 
-                        let const_name = rust_slot_name(&abc, trait_, parent);
+                        let (trait_name, const_name) =
+                            rust_trait_and_slot_name(&abc, trait_, parent);
+                        let const_name = quote::format_ident!("{}", const_name);
 
                         // Declare a const with the slot name set to the slot id.
-                        rust_accessible_slots.push(quote! {
-                            pub const #const_name: u32 = #slot_id;
-                        });
+                        rust_accessible_slots
+                            .entry(trait_name)
+                            .or_default()
+                            .push(quote! {
+                                pub const #const_name: u32 = #slot_id;
+                            });
                     }
                 }
             }
@@ -643,7 +646,16 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
             check_class(trait_);
         }
     }
+
     // Finally, generate the actual code.
+    let rust_accessible_slots = rust_accessible_slots.into_iter().map(|(mod_name, consts)| {
+        let mod_name = quote::format_ident!("{}", mod_name);
+        quote! {
+            pub mod #mod_name {
+                #(#consts)*
+            }
+        }
+    });
     let make_native_table = quote! {
         // This is a Rust array -
         // the entry at index `i` is the method name and Rust function pointer for the native

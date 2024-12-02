@@ -5,7 +5,7 @@ use indexmap::IndexMap;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2007;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
-use crate::avm2::globals::slots::*;
+use crate::avm2::globals::slots::flash_display_loader as slots;
 use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;
 use crate::avm2::object::TObject;
@@ -45,11 +45,7 @@ pub fn loader_allocator<'gc>(
         None,
         false,
     )?;
-    loader.set_slot(
-        FLASH_DISPLAY_LOADER__CONTENT_LOADER_INFO_SLOT,
-        loader_info.into(),
-        activation,
-    )?;
+    loader.set_slot(slots::_CONTENT_LOADER_INFO, loader_info.into(), activation)?;
     Ok(loader)
 }
 
@@ -62,7 +58,7 @@ pub fn load<'gc>(
     let context = args.try_get_object(activation, 1);
 
     let loader_info = this
-        .get_slot(FLASH_DISPLAY_LOADER__CONTENT_LOADER_INFO_SLOT)
+        .get_slot(slots::_CONTENT_LOADER_INFO)
         .as_object()
         .unwrap();
 
@@ -222,7 +218,7 @@ pub fn load_bytes<'gc>(
     let context = args.try_get_object(activation, 1);
 
     let loader_info = this
-        .get_slot(FLASH_DISPLAY_LOADER__CONTENT_LOADER_INFO_SLOT)
+        .get_slot(slots::_CONTENT_LOADER_INFO)
         .as_object()
         .unwrap();
 
@@ -279,7 +275,7 @@ pub fn unload<'gc>(
     avm2_stub_method!(activation, "flash.display.Loader", "unload");
 
     let loader_info = this
-        .get_slot(FLASH_DISPLAY_LOADER__CONTENT_LOADER_INFO_SLOT)
+        .get_slot(slots::_CONTENT_LOADER_INFO)
         .as_object()
         .unwrap();
 

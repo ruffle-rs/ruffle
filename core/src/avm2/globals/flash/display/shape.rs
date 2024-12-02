@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
-use crate::avm2::globals::slots::*;
+use crate::avm2::globals::slots::flash_display_shape as slots;
 use crate::avm2::object::{ClassObject, Object, StageObject, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -25,10 +25,10 @@ pub fn get_graphics<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.as_display_object() {
         // Lazily initialize the `Graphics` object in a hidden property.
-        let graphics = match this.get_slot(FLASH_DISPLAY_SHAPE__GRAPHICS_SLOT) {
+        let graphics = match this.get_slot(slots::_GRAPHICS) {
             Value::Undefined | Value::Null => {
                 let graphics = Value::from(StageObject::graphics(activation, dobj)?);
-                this.set_slot(FLASH_DISPLAY_SHAPE__GRAPHICS_SLOT, graphics, activation)?;
+                this.set_slot(slots::_GRAPHICS, graphics, activation)?;
                 graphics
             }
             graphics => graphics,

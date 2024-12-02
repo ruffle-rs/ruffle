@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2007;
-use crate::avm2::globals::slots::*;
+use crate::avm2::globals::slots::flash_events_event_dispatcher as slots;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -383,9 +383,7 @@ fn dispatch_event_to_target<'gc>(
         event.as_event().unwrap().event_type(),
     );
 
-    let dispatch_list = dispatcher
-        .get_slot(FLASH_EVENTS_EVENT_DISPATCHER__DISPATCH_LIST_SLOT)
-        .as_object();
+    let dispatch_list = dispatcher.get_slot(slots::DISPATCH_LIST).as_object();
 
     if dispatch_list.is_none() {
         // Objects with no dispatch list act as if they had an empty one
@@ -446,10 +444,7 @@ pub fn dispatch_event<'gc>(
     event: Object<'gc>,
     simulate_dispatch: bool,
 ) -> Result<bool, Error<'gc>> {
-    let target = this
-        .get_slot(FLASH_EVENTS_EVENT_DISPATCHER__TARGET_SLOT)
-        .as_object()
-        .unwrap_or(this);
+    let target = this.get_slot(slots::TARGET).as_object().unwrap_or(this);
 
     let mut ancestor_list = Vec::new();
     // Edge case - during button construction, we fire bubbling events for objects
