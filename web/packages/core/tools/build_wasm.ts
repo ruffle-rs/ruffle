@@ -52,7 +52,9 @@ function cargoBuild({
     let args =
         !extensions && process.env["BUILD_WASM_MVP"]
             ? [
-                  "+nightly",
+                  process.env["NIGHTLY_VERSION"]
+                      ? `+nightly-${process.env["NIGHTLY_VERSION"]}`
+                      : "+nightly",
                   "build",
                   "--locked",
                   "-Z",
