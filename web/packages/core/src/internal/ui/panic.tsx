@@ -308,6 +308,19 @@ function createPanicError(error: Error | null): {
             };
         }
 
+        if (message === "necessary webassembly extensions unsupported") {
+            // Self hosted: User has a browser without support for necessary WebAssembly extensions
+            return {
+                body: textAsParagraphs("error-wasm-unsupported-browser"),
+                actions: [
+                    CommonActions.openWiki(
+                        "#web",
+                    ),
+                    CommonActions.ShowDetails,
+                ],
+            };
+        }
+
         // Self hosted: Cannot load `.wasm` file - file not found
         return {
             body: textAsParagraphs("error-wasm-not-found"),
