@@ -25,7 +25,7 @@ naga-pixelbender = { path = "../naga-pixelbender" }
 profiling = { version = "1.0", default-features = false, optional = true }
 lru = "0.12.5"
 naga = { workspace = true }
-indexmap = "2.6.0"
+indexmap = "2.7.0"
 
 # desktop
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
