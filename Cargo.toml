@@ -82,8 +82,6 @@ rfd = "0.15.0"
 # Don't warn about these new lints on stable.
 renamed_and_removed_lints = "allow"
 unknown_lints = "allow"
-# TODO: Remove when https://github.com/rustwasm/wasm-bindgen/issues/4283 is resolved.
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(wasm_bindgen_unstable_test_coverage)'] }
 
 [workspace.lints.clippy]
 # LONG-TERM: These lints are unhelpful.
