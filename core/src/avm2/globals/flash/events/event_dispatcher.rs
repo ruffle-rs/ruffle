@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::events::{dispatch_event as dispatch_event_internal, parent_of};
-use crate::avm2::globals::slots::*;
+use crate::avm2::globals::slots::flash_events_event_dispatcher as slots;
 use crate::avm2::object::{DispatchObject, Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -13,15 +13,11 @@ fn dispatch_list<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    match this.get_slot(FLASH_EVENTS_EVENT_DISPATCHER__DISPATCH_LIST_SLOT) {
+    match this.get_slot(slots::DISPATCH_LIST) {
         Value::Object(o) => Ok(o),
         _ => {
             let dispatch_list = DispatchObject::empty_list(activation);
-            this.set_slot(
-                FLASH_EVENTS_EVENT_DISPATCHER__DISPATCH_LIST_SLOT,
-                dispatch_list.into(),
-                activation,
-            )?;
+            this.set_slot(slots::DISPATCH_LIST, dispatch_list.into(), activation)?;
 
             Ok(dispatch_list)
         }
@@ -105,10 +101,7 @@ pub fn will_trigger<'gc>(
         return Ok(true.into());
     }
 
-    let target = this
-        .get_slot(FLASH_EVENTS_EVENT_DISPATCHER__TARGET_SLOT)
-        .as_object()
-        .unwrap_or(this);
+    let target = this.get_slot(slots::TARGET).as_object().unwrap_or(this);
 
     if let Some(parent) = parent_of(target) {
         return will_trigger(activation, parent, args);
