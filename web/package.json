@@ -28,7 +28,7 @@
         "eslint-plugin-react-hooks": "^5.1.0-rc.1",
         "eslint-plugin-react-refresh": "^0.4.16",
         "globals": "^15.13.0",
-        "mocha": "^10.8.2",
+        "mocha": "^11.0.1",
         "prettier": "^3.4.1",
         "stylelint": "^16.11.0",
         "stylelint-config-standard": "^36.0.1",
