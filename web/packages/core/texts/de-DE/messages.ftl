@@ -10,6 +10,7 @@ update-ruffle = Ruffle aktuallisieren
 ruffle-demo = Web-Demo
 ruffle-desktop = Desktop-Anwendung
 ruffle-wiki = Ruffle-Wiki anzeigen
+enable-hardware-acceleration = Es sieht so aus, als ob die Hardwarebeschleunigung deaktiviert ist. Ruffle kann zwar funktionieren, könnte aber sehr langsam sein. Wie Sie die Hardwarebeschleunigung aktivieren können, erfahren Sie unter dem folgenden Link:
 enable-hardware-acceleration-link = FAQ - Chrome Hardwarebeschleunigung
 view-error-details = Fehlerdetails anzeigen
 open-in-new-tab = In einem neuen Tab öffnen

@@ -97,5 +97,23 @@
     },
     "settings_saved": {
         "message": "Einstellungen wurden gespeichert"
+    },
+    "onboarding_page": {
+        "message": "Einführungsseite"
+    },
+    "permissions_grant": {
+        "message": "Erteile Ruffle die Berechtigung, auf meine Daten auf allen Websites zuzugreifen"
+    },
+    "permissions_not_granted": {
+        "message": "Sie müssen auf das Ruffle-Symbol auf jeder Website klicken, auf der Sie Ruffle verwenden möchten"
+    },
+    "grant_single_site_permission": {
+        "message": "Permanent auf dieser Seite aktivieren"
+    },
+    "permissions_explanation": {
+        "message": "Die Ruffle-Erweiterung funktioniert am besten, wenn sie Zugriff auf Daten aller Websites hat. Dadurch kann sie direkt beim Laden einer Website aktiv werden und Websites, die Flash Player erkennen, überzeugen, Flash-Inhalte sofort auszuführen. Sie ermöglicht es außerdem das Laden von SWF-Dateien aus anderen Quellen im Web in die interne Player-Seite und das automatische öffnen direkter SWF-Links in dieser Seite. Wenn Sie diese Berechtigung nicht erteilen, müssen Sie Ruffle auf jeder Website, auf der Sie es verwenden möchten, manuell aktivieren, indem Sie auf das Symbol der Erweiterung klicken und sie für die jeweilige Website freischalten."
+    },
+    "swf_player_permissions": {
+        "message": "Sie müssen diesem URL-Ursprung die Berechtigung erteilen, SWFs von ihm zu laden."
     }
 }

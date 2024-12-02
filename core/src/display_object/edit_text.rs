@@ -2090,6 +2090,25 @@ impl<'gc> EditText<'gc> {
         Some(first_box.start())
     }
 
+    pub fn line_index_at_point(self, position: Point<Twips>) -> Option<usize> {
+        let edit_text = self.0.read();
+
+        // Check bounds
+        let bounds = edit_text.bounds.clone().grow(-Self::GUTTER);
+        if !bounds.contains(position) {
+            return None;
+        }
+
+        let position = self.local_to_layout(&edit_text, position);
+
+        Some(
+            edit_text
+                .layout
+                .find_line_index_by_y(position.y)
+                .unwrap_or_else(|i| i),
+        )
+    }
+
     pub fn line_index_of_char(self, index: usize) -> Option<usize> {
         self.0.read().layout.find_line_index_by_position(index)
     }
