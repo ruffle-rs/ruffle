@@ -674,7 +674,7 @@ fn qsort<'gc>(
         return Ok(());
     }
 
-    // Stack for storing subarray boundaries (start and end).
+    // Stack for storing inclusive subarray boundaries (start and end).
     let mut stack: Vec<(usize, usize)> = Vec::new();
 
     stack.push((0, elements.len() - 1));
