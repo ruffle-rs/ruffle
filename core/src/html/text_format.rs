@@ -726,6 +726,8 @@ impl FormatSpans {
                                     format.align = Some(swf::TextAlign::Center)
                                 } else if align == WStr::from_units(b"right") {
                                     format.align = Some(swf::TextAlign::Right)
+                                } else if align == WStr::from_units(b"justify") {
+                                    format.align = Some(swf::TextAlign::Justify)
                                 }
                             }
                         }
