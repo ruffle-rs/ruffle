@@ -42,6 +42,9 @@ public class Test extends Sprite {
         text.defaultTextFormat = tf;
 
         testHtml("<p><font size='+2'>xyM</font></p><p><font size='+4'>xyM</font></p><p><font size='-2'>xyM</font></p>", 0);
+
+        text.wordWrap = true;
+        testHtml("<p align='justify'>xxxx y zzzz xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</p>", 0);
     }
 
     private function testHtml(htmlText:String, xPrecision:int = 0):void {
