@@ -1128,9 +1128,22 @@ impl<'gc> LayoutLine<'gc> {
     pub fn char_x_bounds(&self, position: usize) -> Option<(Twips, Twips)> {
         let box_index = self.find_box_index_by_position(position)?;
         let layout_box = self.boxes.get(box_index)?;
-        let origin_x = layout_box.bounds().origin().x();
-        let (start, end) = layout_box.char_x_bounds(position)?;
-        Some((origin_x + start, origin_x + end))
+        let (start, mut end) = layout_box.char_x_bounds(position)?;
+
+        // If we're getting bounds of a space in justified text,
+        // we have to take into account that the character is stretched,
+        // and its bounds will end where the next character starts.
+        // If it's not a space or the text is not justified, it won't change the value.
+        // TODO [KJ] We need to test this behavior with letter spacing or kerning enabled.
+        if layout_box.end() == position + 1 {
+            if let Some(next_box) = self.boxes.get(box_index + 1) {
+                if let Some(next_start) = next_box.char_x_bounds(position + 1).map(|(s, _)| s) {
+                    end = next_start;
+                }
+            }
+        }
+
+        Some((start, end))
     }
 
     /// Returns char bounds of the given char relative to the whole layout.
@@ -1421,7 +1434,7 @@ impl<'gc> LayoutBox<'gc> {
         }
     }
 
-    /// Return x-axis char bounds of the given char relative to this layout box.
+    /// Return x-axis char bounds of the given char relative to the whole layout.
     pub fn char_x_bounds(&self, position: usize) -> Option<(Twips, Twips)> {
         let relative_position = position.checked_sub(self.start())?;
 
@@ -1429,12 +1442,14 @@ impl<'gc> LayoutBox<'gc> {
             return None;
         };
 
+        let origin_x = self.bounds().origin().x();
+
         Some(if relative_position == 0 {
-            (Twips::ZERO, *char_end_pos.get(0)?)
+            (origin_x, origin_x + *char_end_pos.get(0)?)
         } else {
             (
-                *char_end_pos.get(relative_position - 1)?,
-                *char_end_pos.get(relative_position)?,
+                origin_x + *char_end_pos.get(relative_position - 1)?,
+                origin_x + *char_end_pos.get(relative_position)?,
             )
         })
     }
