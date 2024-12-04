@@ -1,0 +1,17 @@
+{
+  "name": "Rust and TypeScript Dev Container",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/rust:1": {
+      "version": "latest"
+    },
+    "ghcr.io/lee-orr/rusty-dev-containers/cargo-nextest:0": {},
+    "ghcr.io/lee-orr/rusty-dev-containers/cargo-deny:0": {},
+    "ghcr.io/devcontainers-extra/features/typescript:2": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["rust-lang.rust-analyzer", "esbenp.prettier-vscode"]
+    }
+  }
+}
