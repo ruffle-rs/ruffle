@@ -674,70 +674,61 @@ fn qsort<'gc>(
         return Ok(());
     }
 
-    // Fast-path for 2 elements.
-    if let [(_, a), (_, b)] = &elements {
-        if compare_fn(activation, a, b, options)?.is_gt() {
-            elements.swap(0, 1);
+    // Stack for storing inclusive subarray boundaries (start and end).
+    let mut stack: Vec<(usize, usize)> = Vec::new();
+
+    stack.push((0, elements.len() - 1));
+
+    while let Some((low, high)) = stack.pop() {
+        if low >= high {
+            continue;
         }
-        return Ok(());
-    }
 
-    // Flash always chooses the leftmost element as the pivot.
-    let (_, pivot) = elements[0];
+        // Flash always chooses the leftmost element as the pivot.
+        let pivot = elements[low].1;
 
-    // Order the elements (excluding the pivot) such that all elements lower
-    // than the pivot come before all elements greater than the pivot.
-    //
-    // This is done by iterating from both ends, swapping greater elements with
-    // lower ones along the way.
-    let mut left = 1;
-    let mut right = elements.len() - 1;
-    loop {
-        // Find an element greater than the pivot from the left.
-        while left < elements.len() - 1 {
-            let (_, item) = &elements[left];
-            if compare_fn(activation, &pivot, item, options)?.is_le() {
+        let mut left = low + 1;
+        let mut right = high;
+
+        loop {
+            // Find an element greater than the pivot from the left.
+            while left <= high {
+                let (_, item) = &elements[left];
+                if compare_fn(activation, &pivot, item, options)?.is_le() {
+                    break;
+                }
+                left += 1;
+            }
+
+            // Find an element lower than the pivot from the right.
+            while right > low {
+                let (_, item) = &elements[right];
+                if compare_fn(activation, &pivot, item, options)?.is_gt() {
+                    break;
+                }
+                right -= 1;
+            }
+
+            // When left and right cross, then no element greater than
+            // the pivot comes before an element lower than the pivot.
+            if left >= right {
                 break;
             }
-            left += 1;
+
+            // Otherwise, swap left and right, and keep going.
+            elements.swap(left, right);
         }
 
-        // Find an element lower than the pivot from the right.
-        while right > 0 {
-            let (_, item) = &elements[right];
-            if compare_fn(activation, &pivot, item, options)?.is_gt() {
-                break;
-            }
-            right -= 1;
-        }
+        // Move the pivot element to its position between the partitions.
+        elements.swap(low, right);
 
-        // When left and right cross, then no element greater than
-        // the pivot comes before an element lower than the pivot.
-        if left >= right {
-            break;
+        // Push subarrays onto the stack for further sorting.
+        if right > 0 {
+            stack.push((low, right - 1));
         }
-
-        // Otherwise, swap left and right, and keep going.
-        elements.swap(left, right);
+        stack.push((right + 1, high));
     }
 
-    // The elements are now ordered as follows:
-    // [0]: pivot
-    // [1..=right]: lower partition (empty if right == 0)
-    // [right + 1..]: higher partition
-
-    // Swap the pivot with the last element in the lower partition,
-    // moving it in between the lower and higher partitions.
-    elements.swap(0, right);
-
-    // The elements are now ordered as follows:
-    // [..right]: lower partition
-    // [right]: pivot
-    // [right + 1..]: higher partition
-
-    // Recursively sort the lower and higher partitions.
-    qsort(activation, &mut elements[..right], compare_fn, options)?;
-    qsort(activation, &mut elements[right + 1..], compare_fn, options)?;
     Ok(())
 }
 
