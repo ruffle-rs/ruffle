@@ -1,0 +1,63 @@
+Text: <font face='TestFont'>x y</font>
+  text.getCharBoundaries(-5) = null
+  text.getCharBoundaries(-1) = null
+  text.getCharBoundaries(0) = null
+  text.getCharBoundaries(1) = null
+  text.getCharBoundaries(2) = null
+  text.getCharBoundaries(3) = null
+Text: <font face='TestFont'>abcd ab</font>
+  text.getCharBoundaries(-5) = null
+  text.getCharBoundaries(-1) = null
+  text.getCharBoundaries(0) = (x=2, y=2, w=9.6, h=12)
+  text.getCharBoundaries(1) = (x=11.6, y=2, w=9.6, h=12)
+  text.getCharBoundaries(2) = null
+  text.getCharBoundaries(3) = null
+  text.getCharBoundaries(4) = null
+  text.getCharBoundaries(5) = (x=21.2, y=2, w=9.6, h=12)
+  text.getCharBoundaries(6) = (x=30.8, y=2, w=9.6, h=12)
+  text.getCharBoundaries(7) = null
+Text: <p align='justify'><font size='30' face='TestFont'>ab ab abababababa</font></p>
+  text.getCharBoundaries(-5) = null
+  text.getCharBoundaries(-1) = null
+  text.getCharBoundaries(0) = (x=2, y=2, w=24, h=30)
+  text.getCharBoundaries(1) = (x=26, y=2, w=24, h=30)
+  text.getCharBoundaries(2) = null
+  text.getCharBoundaries(3) = (x=50, y=2, w=24, h=30)
+  text.getCharBoundaries(4) = (x=74, y=2, w=24, h=30)
+  text.getCharBoundaries(5) = null
+  text.getCharBoundaries(6) = (x=98, y=2, w=24, h=30)
+  text.getCharBoundaries(7) = (x=122, y=2, w=24, h=30)
+  text.getCharBoundaries(8) = (x=146, y=2, w=24, h=30)
+  text.getCharBoundaries(9) = (x=170, y=2, w=24, h=30)
+  text.getCharBoundaries(10) = (x=194, y=2, w=24, h=30)
+  text.getCharBoundaries(11) = (x=218, y=2, w=24, h=30)
+  text.getCharBoundaries(12) = (x=242, y=2, w=24, h=30)
+  text.getCharBoundaries(13) = (x=266, y=2, w=24, h=30)
+  text.getCharBoundaries(14) = (x=290, y=2, w=24, h=30)
+  text.getCharBoundaries(15) = (x=314, y=2, w=24, h=30)
+  text.getCharBoundaries(16) = (x=338, y=2, w=24, h=30)
+  text.getCharBoundaries(17) = null
+  text.getCharBoundaries(18) = null
+Text: <p align='justify'><font size='30' face='TestFont'>ab ab abababababab</font></p>
+  text.getCharBoundaries(-5) = null
+  text.getCharBoundaries(-1) = null
+  text.getCharBoundaries(0) = (x=2, y=2, w=24, h=30)
+  text.getCharBoundaries(1) = (x=26, y=2, w=24, h=30)
+  text.getCharBoundaries(2) = (x=50, y=2, w=280, h=30)
+  text.getCharBoundaries(3) = (x=330, y=2, w=24, h=30)
+  text.getCharBoundaries(4) = (x=354, y=2, w=24, h=30)
+  text.getCharBoundaries(5) = null
+  text.getCharBoundaries(6) = (x=2, y=32, w=24, h=30)
+  text.getCharBoundaries(7) = (x=26, y=32, w=24, h=30)
+  text.getCharBoundaries(8) = (x=50, y=32, w=24, h=30)
+  text.getCharBoundaries(9) = (x=74, y=32, w=24, h=30)
+  text.getCharBoundaries(10) = (x=98, y=32, w=24, h=30)
+  text.getCharBoundaries(11) = (x=122, y=32, w=24, h=30)
+  text.getCharBoundaries(12) = (x=146, y=32, w=24, h=30)
+  text.getCharBoundaries(13) = (x=170, y=32, w=24, h=30)
+  text.getCharBoundaries(14) = (x=194, y=32, w=24, h=30)
+  text.getCharBoundaries(15) = (x=218, y=32, w=24, h=30)
+  text.getCharBoundaries(16) = (x=242, y=32, w=24, h=30)
+  text.getCharBoundaries(17) = (x=266, y=32, w=24, h=30)
+  text.getCharBoundaries(18) = null
+  text.getCharBoundaries(19) = null
