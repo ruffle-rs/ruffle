@@ -109,19 +109,20 @@ pub struct EditTextData<'gc> {
     /// apply.
     autosize: AutoSizeMode,
 
-    // Values set by set_width and set_height.
-    #[collect(require_static)]
-    requested_width: Twips,
-
-    #[collect(require_static)]
-    requested_height: Twips,
-
     /// The calculated layout.
     layout: Layout<'gc>,
 
     /// The current intrinsic bounds of the text field.
     #[collect(require_static)]
     bounds: RefCell<Rectangle<Twips>>,
+
+    /// Lazily calculated autosize bounds.
+    ///
+    /// When `None`, no new bounds should be applied.
+    /// When `Some`, new bounds resulting from autosize are
+    /// waiting to be applied, see [`EditText::apply_autosize_bounds`].
+    #[collect(require_static)]
+    autosize_lazy_bounds: RefCell<Option<Rectangle<Twips>>>,
 
     /// The AVM1 object handle
     object: Option<AvmObject<'gc>>,
@@ -353,9 +354,8 @@ impl<'gc> EditText<'gc> {
                 object: None,
                 layout,
                 bounds: RefCell::new(swf_tag.bounds().clone()),
+                autosize_lazy_bounds: RefCell::new(None),
                 autosize,
-                requested_width: swf_tag.bounds().width(),
-                requested_height: swf_tag.bounds().height(),
                 variable: variable.map(|s| s.to_string_lossy(encoding)),
                 bound_stage_object: None,
                 class: None,
@@ -863,7 +863,7 @@ impl<'gc> EditText<'gc> {
 
         // Determine the internal width available for content layout.
         let content_width = if autosize == AutoSizeMode::None || is_word_wrap {
-            Some(edit_text.requested_width - padding)
+            Some(edit_text.bounds.borrow().width() - padding)
         } else {
             None
         };
@@ -885,11 +885,7 @@ impl<'gc> EditText<'gc> {
 
         let text_size = edit_text.layout.text_size();
 
-        // TODO [KJ] The code below that modifies bounds is certainly wrong.
-        //   We should take into account the order of operations performed on the field,
-        //   and that the field might have auto size enabled and disabled.
-        //   Auto size should not modify the state of edittext in such a way that
-        //   the original cannot be recovered.
+        let mut autosize_bounds = edit_text.bounds.borrow().clone();
         if autosize != AutoSizeMode::None {
             if !is_word_wrap {
                 // The edit text's bounds needs to have the padding baked in.
@@ -900,30 +896,53 @@ impl<'gc> EditText<'gc> {
                     width += Twips::from_pixels(2.5);
                 }
                 let new_x = match autosize {
-                    AutoSizeMode::Left => edit_text.bounds.borrow().x_min,
+                    AutoSizeMode::Left => autosize_bounds.x_min,
                     AutoSizeMode::Center => {
-                        (edit_text.bounds.borrow().x_min + edit_text.bounds.borrow().x_max - width)
-                            / 2
+                        (autosize_bounds.x_min + autosize_bounds.x_max - width) / 2
                     }
-                    AutoSizeMode::Right => edit_text.bounds.borrow().x_max - width,
+                    AutoSizeMode::Right => autosize_bounds.x_max - width,
                     AutoSizeMode::None => unreachable!(),
                 };
-                edit_text.bounds.borrow_mut().x_min = new_x;
-                edit_text.bounds.borrow_mut().set_width(width);
-            } else {
-                let width = edit_text.requested_width;
-                edit_text.bounds.borrow_mut().set_width(width);
+                autosize_bounds.x_min = new_x;
+                autosize_bounds.set_width(width);
             }
             let height = text_size.height() + padding;
-            edit_text.bounds.borrow_mut().set_height(height);
-        } else {
-            let width = edit_text.requested_width;
-            edit_text.bounds.borrow_mut().set_width(width);
-            let height = edit_text.requested_height;
-            edit_text.bounds.borrow_mut().set_height(height);
+            autosize_bounds.set_height(height);
         }
+        *edit_text.autosize_lazy_bounds.borrow_mut() = Some(autosize_bounds);
         drop(edit_text);
         self.invalidate_cached_bitmap(context.gc());
+    }
+
+    /// Apply lazily calculated autosize bounds.
+    ///
+    /// They should be applied only in specific places, as they influence
+    /// the behavior of other actions performed on the text field.
+    ///
+    /// For instance, consider the following code.
+    ///
+    /// ```as3
+    /// var text = new TextField();
+    /// text.text = "Hello World";
+    ///
+    /// text.autoSize = "left";
+    /// // The autosize bounds cannot be applied here, as otherwise
+    /// // the following wordWrap and autoSize would not work.
+    /// text.wordWrap = true;
+    /// text.autoSize = "right";
+    ///
+    /// // The autosize bounds have to be applied here, as we're
+    /// // accessing x and othrwise we would have read a wrong value.
+    /// trace(text.x);
+    /// ```
+    pub fn apply_autosize_bounds(self) {
+        let edit_text: Ref<'_, EditTextData<'gc>> = self.0.read();
+        if let Some(bounds) = edit_text.autosize_lazy_bounds.take() {
+            *edit_text.bounds.borrow_mut() = bounds;
+            // Note: We do not have to invalidate cache here.
+            //   Cache has already been invalidated on relayout, and
+            //   we will apply this anyway before render.
+        }
     }
 
     /// Measure the width and height of the `EditText`'s current text load.
@@ -2477,17 +2496,34 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn self_bounds(&self) -> Rectangle<Twips> {
+        self.apply_autosize_bounds();
+
         self.0.read().bounds.borrow().clone()
+    }
+
+    fn pixel_bounds(&self) -> Rectangle<Twips> {
+        // For pixel bounds we can't apply lazy autosize bounds.
+        // It's a bit hacky, but it seems that pixelBounds are
+        // an exception to the rule that lazy autosize bounds
+        // are applied when reading anything related to bounds.
+        let old = self.0.read().autosize_lazy_bounds.take();
+        let bounds = self.world_bounds();
+        *self.0.read().autosize_lazy_bounds.borrow_mut() = old;
+        bounds
     }
 
     // The returned position x and y of a text field is offset by the text bounds.
     fn x(&self) -> Twips {
+        self.apply_autosize_bounds();
+
         let edit_text = self.0.read();
         let offset = edit_text.bounds.borrow().x_min;
         edit_text.base.base.x() + offset
     }
 
     fn set_x(&self, gc_context: &Mutation<'gc>, x: Twips) {
+        self.apply_autosize_bounds();
+
         let mut edit_text = self.0.write(gc_context);
         let offset = edit_text.bounds.borrow().x_min;
         edit_text.base.base.set_x(x - offset);
@@ -2496,12 +2532,16 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn y(&self) -> Twips {
+        self.apply_autosize_bounds();
+
         let edit_text = self.0.read();
         let offset = edit_text.bounds.borrow().y_min;
         edit_text.base.base.y() + offset
     }
 
     fn set_y(&self, gc_context: &Mutation<'gc>, y: Twips) {
+        self.apply_autosize_bounds();
+
         let mut edit_text = self.0.write(gc_context);
         let offset = edit_text.bounds.borrow().y_min;
         edit_text.base.base.set_y(y - offset);
@@ -2510,6 +2550,8 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn width(&self) -> f64 {
+        self.apply_autosize_bounds();
+
         let edit_text = self.0.read();
         let bounds = edit_text.bounds.borrow();
         (edit_text.base.base.transform.matrix * bounds.clone())
@@ -2518,14 +2560,21 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn set_width(&self, context: &mut UpdateContext<'gc>, value: f64) {
+        self.apply_autosize_bounds();
+
         let mut edit_text = self.0.write(context.gc());
-        edit_text.requested_width = Twips::from_pixels(value);
+        edit_text
+            .bounds
+            .borrow_mut()
+            .set_width(Twips::from_pixels(value));
         edit_text.base.base.set_transformed_by_script(true);
         drop(edit_text);
         self.relayout(context);
     }
 
     fn height(&self) -> f64 {
+        self.apply_autosize_bounds();
+
         let edit_text = self.0.read();
         let bounds = edit_text.bounds.borrow();
         (edit_text.base.base.transform.matrix * bounds.clone())
@@ -2534,8 +2583,13 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn set_height(&self, context: &mut UpdateContext<'gc>, value: f64) {
+        self.apply_autosize_bounds();
+
         let mut edit_text = self.0.write(context.gc());
-        edit_text.requested_height = Twips::from_pixels(value);
+        edit_text
+            .bounds
+            .borrow_mut()
+            .set_height(Twips::from_pixels(value));
         edit_text.base.base.set_transformed_by_script(true);
         drop(edit_text);
         self.relayout(context);
@@ -2547,6 +2601,8 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
+        self.apply_autosize_bounds();
+
         if !context.is_offscreen && !self.world_bounds().intersects(&context.stage.view_bounds()) {
             // Off-screen; culled
             return;
