@@ -2,7 +2,9 @@ use crate::avm2::globals::slots::flash_geom_color_transform as ct_slots;
 use crate::avm2::globals::slots::flash_geom_matrix as matrix_slots;
 use crate::avm2::globals::slots::flash_geom_matrix_3d as matrix3d_slots;
 use crate::avm2::globals::slots::flash_geom_transform as transform_slots;
+use crate::avm2::object::VectorObject;
 use crate::avm2::parameters::ParametersExt;
+use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Activation, Error, Object, TObject, Value};
 use crate::display_object::TDisplayObject;
 use crate::prelude::{DisplayObject, Matrix, Twips};
@@ -204,13 +206,18 @@ fn matrix3d_to_object<'gc>(
     matrix: Matrix3D,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let args = matrix.raw_data.map(Into::into);
+    let number = activation.avm2().class_defs().number;
+    let mut raw_data_storage = VectorStorage::new(16, true, Some(number), activation);
+    for (i, data) in matrix.raw_data.iter().enumerate() {
+        raw_data_storage.set(i, Value::Number(*data), activation)?;
+    }
+    let vector = VectorObject::from_vector(raw_data_storage, activation)?.into();
     let object = activation
         .avm2()
         .classes()
         .matrix3d
-        .construct(activation, &args)?;
-    Ok(object.into())
+        .construct(activation, &[vector])?;
+    Ok(object)
 }
 
 fn object_to_matrix3d<'gc>(
