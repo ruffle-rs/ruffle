@@ -1,0 +1,21 @@
+// sprite2D: new Sprite has null matrix3D and valid matrix
+sprite2D.transform.matrix (a=1, b=0, c=0, d=1, tx=0, ty=0)
+sprite2D.transform.matrix3D null
+// sprite2D: set identity matrix
+sprite2D.transform.matrix (a=1, b=0, c=0, d=1, tx=0, ty=0)
+sprite2D.transform.matrix3D null
+mat2D (a=1, b=0, c=0, d=1, tx=0, ty=0)
+// sprite2D: set x = 30, y = 50
+sprite2D.transform.matrix (a=1, b=0, c=0, d=1, tx=30, ty=50)
+sprite2D.transform.matrix3D null
+mat2D (a=1, b=0, c=0, d=1, tx=0, ty=0)
+// sprite3D: set identity matrix3D
+sprite3D.transform.matrix null
+sprite3D.transform.matrix3D [object Matrix3D]
+sprite3D.transform.matrix3D.rawData 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1
+mat3D.rawData 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1
+// sprite3D: set x = 30, y = 50
+sprite3D.transform.matrix null
+sprite3D.transform.matrix3D [object Matrix3D]
+sprite3D.transform.matrix3D.rawData 1,0,0,0,0,1,0,0,0,0,1,0,30,50,0,1
+mat3D.rawData 1,0,0,0,0,1,0,0,0,0,1,0,30,50,0,1
