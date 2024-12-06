@@ -4,6 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::{illegal_operation_error, make_error_2007, make_error_2008};
 use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::globals::flash::geom::transform::color_transform_from_transform_object;
+use crate::avm2::globals::flash::geom::transform::has_matrix3d_from_transform_object;
 use crate::avm2::globals::flash::geom::transform::matrix_from_transform_object;
 use crate::avm2::globals::slots::flash_display_shader as shader_slots;
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
@@ -827,14 +828,15 @@ pub fn set_transform<'gc>(
 
     let transform = args.get_object(activation, 0, "transform")?;
 
-    // FIXME - consider 3D matrix and pixel bounds
+    // FIXME - consider pixel bounds
     let matrix = matrix_from_transform_object(transform);
-
+    let has_matrix3d = has_matrix3d_from_transform_object(transform);
     let color_transform = color_transform_from_transform_object(transform);
 
     let dobj = this.as_display_object().unwrap();
     let mut write = dobj.base_mut(activation.gc());
     write.set_matrix(matrix);
+    write.set_has_matrix3d_stub(has_matrix3d);
     write.set_color_transform(color_transform);
     drop(write);
     if let Some(parent) = dobj.parent() {
