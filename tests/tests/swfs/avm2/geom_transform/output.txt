@@ -22,3 +22,11 @@ sprite1.transform.matrix3D null
 sprite2.transform.matrix (a=1, b=2, c=3, d=4, tx=5, ty=6)
 sprite2.transform.matrix3D null
 
+// Copy3D
+sprite1.transform.matrix null
+sprite1.transform.matrix3D [object Matrix3D]
+sprite1.transform.matrix3D.rawData 1.9996954202651978,0.05235721915960312,0,0,-0.03490481153130531,2.9995431900024414,0,0,0,0,1,0,5,6,0,1
+sprite2.transform.matrix null
+sprite2.transform.matrix3D [object Matrix3D]
+sprite2.transform.matrix3D.rawData 1.9996954202651978,0.05235721915960312,0,0,-0.03490481153130531,2.9995431900024414,0,0,0,0,1,0,5,6,0,1
+

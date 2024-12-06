@@ -17,9 +17,8 @@ package {
             testCopy2D();
             trace("");
 
-            //// FIXME: transformation copy is unsupported now.
-            // testCopy3D();
-            // trace("");
+            testCopy3D();
+            trace("");
 
             testImageComparison();
         }
@@ -83,26 +82,24 @@ package {
             trace("sprite2.transform.matrix3D", sprite2.transform.matrix3D);
         }
 
-        //// FIXME
-        // private function testCopy3D() : void {
-        //     var sprite1 : Sprite = new Sprite();
-        //     var sprite2 : Sprite = new Sprite();
-        //
-        //     trace("// Copy3D");
-        //     var mat3D : Matrix3D = new Matrix3D();
-        //     mat3D.appendRotation(1, Vector3D.Z_AXIS);
-        //     mat3D.appendScale(2, 3, 4);
-        //     mat3D.appendTranslation(5, 6, 7);
-        //     sprite1.transform.matrix3D = mat3D;
-        //     sprite2.transform = sprite1.transform;
-        //     trace("sprite1.transform.matrix", sprite1.transform.matrix);
-        //     trace("sprite1.transform.matrix3D", sprite1.transform.matrix3D);
-        //     trace("sprite1.transform.matrix3D.rawData", sprite1.transform.matrix3D.rawData);
-        //     trace("sprite2.transform.matrix", sprite2.transform.matrix);
-        //     trace("sprite2.transform.matrix3D", sprite2.transform.matrix3D);
-        //     trace("sprite2.transform.matrix3D.rawData", sprite2.transform.matrix3D.rawData);
-        // }
+        private function testCopy3D() : void {
+            var sprite1 : Sprite = new Sprite();
+            var sprite2 : Sprite = new Sprite();
 
+            trace("// Copy3D");
+            var mat3D : Matrix3D = new Matrix3D();
+            mat3D.appendRotation(1, Vector3D.Z_AXIS);
+            mat3D.appendScale(2, 3, 1);          // FIXME: zScale shouldn't be one (1) for test coverage. Unsupported now.
+            mat3D.appendTranslation(5, 6, 0);    // FIXME: z shouldn't be zero (0) for test coverage. Unsupported now.
+            sprite1.transform.matrix3D = mat3D;
+            sprite2.transform = sprite1.transform;
+            trace("sprite1.transform.matrix", sprite1.transform.matrix);
+            trace("sprite1.transform.matrix3D", sprite1.transform.matrix3D);
+            trace("sprite1.transform.matrix3D.rawData", sprite1.transform.matrix3D.rawData);
+            trace("sprite2.transform.matrix", sprite2.transform.matrix);
+            trace("sprite2.transform.matrix3D", sprite2.transform.matrix3D);
+            trace("sprite2.transform.matrix3D.rawData", sprite2.transform.matrix3D.rawData);
+        }
 
         private function testImageComparison() : void {
             var m : Matrix3D = new Matrix3D();

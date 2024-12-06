@@ -750,25 +750,37 @@ pub fn set_transform<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let transform = args.get_object(activation, 0, "transform")?;
 
-    // FIXME - consider 3D matrix and pixel bounds
-    let matrix = transform
-        .get_public_property("matrix", activation)?
-        .as_object();
-
-    let Some(matrix) = matrix else {
-        // FP seems to not do anything when setting to a Transform with a null matrix,
-        // but we don't actually support setting the matrix to null anyway
-        // (see the comment in `flash::geom::transform::set_matrix`)
-        return Ok(Value::Undefined);
+    // FIXME - consider pixel bounds
+    let (matrix, mode_3d) = {
+        if let Some(matrix3d) = transform
+            .get_public_property("matrix3D", activation)?
+            .as_object()
+        {
+            let matrix3d = crate::avm2::globals::flash::geom::transform::object_to_matrix3d(
+                matrix3d, activation,
+            )?;
+            // FIXME: 3D transformation is unsupported now.
+            let matrix = Matrix::from(matrix3d);
+            (matrix, true)
+        } else if let Some(matrix) = transform
+            .get_public_property("matrix", activation)?
+            .as_object()
+        {
+            let matrix =
+                crate::avm2::globals::flash::geom::transform::object_to_matrix(matrix, activation)?;
+            (matrix, false)
+        } else {
+            // FP seems to not do anything when setting to a Transform with a null matrix,
+            // but we don't actually support setting the matrix to null anyway
+            // (see the comment in `flash::geom::transform::set_matrix`)
+            return Ok(Value::Undefined);
+        }
     };
 
     let color_transform = transform
         .get_public_property("colorTransform", activation)?
         .as_object()
         .expect("colorTransform should be non-null");
-
-    let matrix =
-        crate::avm2::globals::flash::geom::transform::object_to_matrix(matrix, activation)?;
     let color_transform = crate::avm2::globals::flash::geom::transform::object_to_color_transform(
         color_transform,
         activation,
@@ -778,6 +790,7 @@ pub fn set_transform<'gc>(
     let mut write = dobj.base_mut(activation.context.gc_context);
     write.set_matrix(matrix);
     write.set_color_transform(color_transform);
+    write.set_mode_3d(mode_3d);
     drop(write);
     if let Some(parent) = dobj.parent() {
         // Self-transform changes are automatically handled,
