@@ -59,7 +59,11 @@ pub fn get_matrix_3d<'gc>(
     // Support native Matrix3D.
     avm2_stub_getter!(activation, "flash.geom.Transform", "matrix3D");
 
-    let matrix = *get_display_object(this, activation)?.base().matrix();
+    let dobj = get_display_object(this, activation)?;
+    if !dobj.base().mode_3d() {
+        return Ok(Value::Null);
+    }
+    let matrix = *dobj.base().matrix();
     let matrix3d = Matrix3D::from(matrix);
     matrix3d_to_object(matrix3d, activation)
 }
@@ -75,8 +79,16 @@ pub fn set_matrix_3d<'gc>(
 
     let matrix3d = object_to_matrix3d(args.get_object(activation, 0, "value")?, activation)?;
     let matrix = Matrix::from(matrix3d);
-    let matrix = matrix_to_object(matrix, activation)?;
-    set_matrix(activation, this, &[matrix])
+
+    let dobj = get_display_object(this, activation)?;
+    dobj.set_matrix(activation.context.gc_context, matrix);
+    if let Some(parent) = dobj.parent() {
+        // Self-transform changes are automatically handled,
+        // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+        parent.invalidate_cached_bitmap(activation.context.gc_context);
+    }
+    dobj.set_mode_3d(activation.context.gc_context, true);
+    Ok(Value::Undefined)
 }
 
 pub fn get_matrix<'gc>(
@@ -84,7 +96,11 @@ pub fn get_matrix<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let matrix = *get_display_object(this, activation)?.base().matrix();
+    let dobj = get_display_object(this, activation)?;
+    if dobj.base().mode_3d() {
+        return Ok(Value::Null);
+    }
+    let matrix = *dobj.base().matrix();
     matrix_to_object(matrix, activation)
 }
 
@@ -97,6 +113,7 @@ pub fn set_matrix<'gc>(
     // null when trying to get the matrix- but the DO's actual transform matrix will
     // remain its previous non-null value.
     let matrix = object_to_matrix(args.get_object(activation, 0, "value")?, activation)?;
+
     let dobj = get_display_object(this, activation)?;
     dobj.set_matrix(activation.context.gc_context, matrix);
     if let Some(parent) = dobj.parent() {
@@ -104,6 +121,7 @@ pub fn set_matrix<'gc>(
         // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
         parent.invalidate_cached_bitmap(activation.context.gc_context);
     }
+    dobj.set_mode_3d(activation.context.gc_context, false);
     Ok(Value::Undefined)
 }
 

@@ -5,6 +5,7 @@ use swf::ColorTransform;
 /// This includes both the transformation matrix and the color transform.
 #[derive(Clone, Debug, Default)]
 pub struct Transform {
+    pub mode_3d: bool, // Indicate whether the latest set matrix is 3D or not.
     pub matrix: Matrix,
     pub color_transform: ColorTransform,
 }
@@ -23,6 +24,7 @@ impl TransformStack {
         self.0.push(Transform {
             matrix,
             color_transform,
+            ..Default::default()
         });
     }
 
