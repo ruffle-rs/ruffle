@@ -203,7 +203,7 @@ fn matrix3d_to_object<'gc>(
     Ok(object.into())
 }
 
-fn object_to_matrix3d<'gc>(
+pub fn object_to_matrix3d<'gc>(
     object: Object<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Matrix3D, Error<'gc>> {
