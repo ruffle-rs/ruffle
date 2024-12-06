@@ -130,6 +130,12 @@ pub fn get_concatenated_matrix<'gc>(
     }
 }
 
+pub fn has_matrix3d_from_transform_object(transform_object: Object<'_>) -> bool {
+    get_display_object(transform_object)
+        .base()
+        .has_matrix3d_stub()
+}
+
 pub fn matrix_from_transform_object(transform_object: Object<'_>) -> Matrix {
     *get_display_object(transform_object).base().matrix()
 }
