@@ -1161,6 +1161,7 @@ impl<'gc> EditText<'gc> {
                             context.transform_stack.push(&Transform {
                                 matrix: transform.matrix,
                                 color_transform: ColorTransform::IDENTITY,
+                                mode_3d: Default::default(),
                             });
                         } else {
                             context.transform_stack.push(transform);

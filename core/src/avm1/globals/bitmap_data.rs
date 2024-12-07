@@ -568,6 +568,7 @@ fn draw<'gc>(
                 Transform {
                     matrix,
                     color_transform,
+                    mode_3d: Default::default(),
                 },
                 smoothing,
                 blend_mode,

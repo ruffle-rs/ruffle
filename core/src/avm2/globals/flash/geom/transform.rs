@@ -1,8 +1,12 @@
 use crate::avm2::globals::slots::*;
+use crate::avm2::object::VectorObject;
 use crate::avm2::parameters::ParametersExt;
+use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Activation, Error, Object, TObject, Value};
 use crate::display_object::TDisplayObject;
 use crate::prelude::{DisplayObject, Matrix, Twips};
+use crate::{avm2_stub_getter, avm2_stub_setter};
+use ruffle_render::matrix3d::Matrix3D;
 use ruffle_render::quality::StageQuality;
 use swf::{ColorTransform, Fixed8, Rectangle};
 
@@ -45,12 +49,58 @@ pub fn set_color_transform<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn get_matrix_3d<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    // FIXME: This Matrix3D is generated from the 2D Matrix.
+    // It does not work when the matrix contains any transformation in 3D.
+    // Support native Matrix3D.
+    avm2_stub_getter!(activation, "flash.geom.Transform", "matrix3D");
+
+    let dobj = get_display_object(this, activation)?;
+    if !dobj.base().mode_3d() {
+        return Ok(Value::Null);
+    }
+    let matrix = *dobj.base().matrix();
+    let matrix3d = Matrix3D::from(matrix);
+    matrix3d_to_object(matrix3d, activation)
+}
+
+pub fn set_matrix_3d<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    // FIXME: This sets 2D Matrix generated from the given Matrix3D, ignoring 3D parameters.
+    // Support native Matrix3D.
+    avm2_stub_setter!(activation, "flash.geom.Transform", "matrix3D");
+
+    let matrix3d = object_to_matrix3d(args.get_object(activation, 0, "value")?, activation)?;
+    let matrix = Matrix::from(matrix3d);
+
+    let dobj = get_display_object(this, activation)?;
+    dobj.set_matrix(activation.context.gc_context, matrix);
+    if let Some(parent) = dobj.parent() {
+        // Self-transform changes are automatically handled,
+        // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+        parent.invalidate_cached_bitmap(activation.context.gc_context);
+    }
+    dobj.set_mode_3d(activation.context.gc_context, true);
+    Ok(Value::Undefined)
+}
+
 pub fn get_matrix<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let matrix = *get_display_object(this, activation)?.base().matrix();
+    let dobj = get_display_object(this, activation)?;
+    if dobj.base().mode_3d() {
+        return Ok(Value::Null);
+    }
+    let matrix = *dobj.base().matrix();
     matrix_to_object(matrix, activation)
 }
 
@@ -63,6 +113,7 @@ pub fn set_matrix<'gc>(
     // null when trying to get the matrix- but the DO's actual transform matrix will
     // remain its previous non-null value.
     let matrix = object_to_matrix(args.get_object(activation, 0, "value")?, activation)?;
+
     let dobj = get_display_object(this, activation)?;
     dobj.set_matrix(activation.context.gc_context, matrix);
     if let Some(parent) = dobj.parent() {
@@ -70,6 +121,7 @@ pub fn set_matrix<'gc>(
         // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
         parent.invalidate_cached_bitmap(activation.context.gc_context);
     }
+    dobj.set_mode_3d(activation.context.gc_context, false);
     Ok(Value::Undefined)
 }
 
@@ -171,6 +223,47 @@ pub fn color_transform_to_object<'gc>(
     let ct_class = activation.avm2().classes().colortransform;
     let object = ct_class.construct(activation, &args)?;
     Ok(object.into())
+}
+
+fn matrix3d_to_object<'gc>(
+    matrix: Matrix3D,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let number = activation.avm2().class_defs().number;
+    let mut raw_data_storage = VectorStorage::new(16, true, Some(number), activation);
+    for (i, data) in matrix.raw_data.iter().enumerate() {
+        raw_data_storage.set(i, Value::Number(*data), activation)?;
+    }
+    let vector = VectorObject::from_vector(raw_data_storage, activation)?.into();
+    let object = activation
+        .avm2()
+        .classes()
+        .matrix3d
+        .construct(activation, &[vector])?;
+    Ok(object.into())
+}
+
+pub fn object_to_matrix3d<'gc>(
+    object: Object<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Result<Matrix3D, Error<'gc>> {
+    let raw_data = object
+        .get_public_property("rawData", activation)?
+        .as_object()
+        .expect("rawData cannot be null");
+    let raw_data = raw_data
+        .as_vector_storage()
+        .expect("rawData is not a Vector");
+    let raw_data: Vec<f64> = (0..16)
+        .map(|i| -> Result<f64, Error<'gc>> {
+            raw_data.get(i, activation)?.coerce_to_number(activation)
+        })
+        .collect::<Result<Vec<f64>, _>>()?;
+    let raw_data = raw_data
+        .as_slice()
+        .try_into()
+        .expect("rawData size must be 16");
+    Ok(Matrix3D { raw_data })
 }
 
 pub fn matrix_to_object<'gc>(

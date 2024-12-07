@@ -642,6 +642,7 @@ impl CommandHandler for WgpuCommandHandler<'_> {
                 let transform = Transform {
                     matrix: Matrix::scale(target.width() as f32, target.height() as f32),
                     color_transform: Default::default(),
+                    mode_3d: Default::default(),
                 };
                 let texture = target.take_color_texture();
                 let bind_group =

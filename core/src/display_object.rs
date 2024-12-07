@@ -328,6 +328,14 @@ impl<'gc> DisplayObjectBase<'gc> {
         &self.transform
     }
 
+    pub fn mode_3d(&self) -> bool {
+        self.transform.mode_3d
+    }
+
+    pub fn set_mode_3d(&mut self, mode_3d: bool) {
+        self.transform.mode_3d = mode_3d;
+    }
+
     pub fn matrix(&self) -> &Matrix {
         &self.transform.matrix
     }
@@ -917,12 +925,13 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         if cache_info.dirty {
             let mut transform_stack = TransformStack::new();
             transform_stack.push(&Transform {
-                color_transform: Default::default(),
                 matrix: Matrix {
                     tx: -offset_x,
                     ty: -offset_y,
                     ..cache_info.base_transform.matrix
                 },
+                color_transform: Default::default(),
+                mode_3d: Default::default(),
             });
             let mut offscreen_context = RenderContext {
                 renderer: context.renderer,
@@ -955,6 +964,7 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                         ..Default::default()
                     },
                     color_transform: cache_info.base_transform.color_transform,
+                    mode_3d: Default::default(),
                 },
                 true,
                 PixelSnapping::Always, // cacheAsBitmap forces pixel snapping
@@ -1027,6 +1037,7 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
         context.transform_stack.push(&Transform {
             matrix: Matrix::translate(-rect.x_min, -rect.y_min),
             color_transform: Default::default(),
+            mode_3d: Default::default(),
         });
     }
 
@@ -1231,6 +1242,10 @@ pub trait TDisplayObject<'gc>:
     /// It is the callers responsibility to do so.
     fn set_matrix(&self, gc_context: &Mutation<'gc>, matrix: Matrix) {
         self.base_mut(gc_context).set_matrix(matrix);
+    }
+
+    fn set_mode_3d(&self, gc_context: &Mutation<'gc>, mode_3d: bool) {
+        self.base_mut(gc_context).set_mode_3d(mode_3d);
     }
 
     /// Sets the color transform of this object.
