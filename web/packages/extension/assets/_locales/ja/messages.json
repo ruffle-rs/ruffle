@@ -98,6 +98,9 @@
     "settings_saved": {
         "message": "設定を保存しました"
     },
+    "onboarding_page": {
+        "message": "オンボーディング ページ"
+    },
     "permissions_grant": {
         "message": "RuffleにすべてのページでRuffleのデータにアクセスすることを許可します。"
     },
