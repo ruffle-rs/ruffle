@@ -57,6 +57,7 @@ scale-mode-showall-tooltip =
     
     StageScaleMode.SHOW_ALLに対応しています。
 scale-mode-exactfit = 引き伸ばす
+scale-mode-noborder = 画面に一致するよう切り取る
 scale-mode-force = 強制
 scale-mode-force-tooltip = ムービーによるスケールモードの変更を抑制し、現在の設定を保持する。
 player-version = プレイヤーのバージョン

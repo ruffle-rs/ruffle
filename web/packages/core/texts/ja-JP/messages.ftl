@@ -16,6 +16,14 @@ view-error-details = エラーの詳細を表示
 open-in-new-tab = 新しいタブで開く
 click-to-unmute = クリックでミュートを解除
 clipboard-message-title = コピーしてRuffleに貼り付け
+clipboard-message-description =
+    { $variant ->
+       *[unsupported] お使いのブラウザはクリップボードへのフルアクセスをサポートしていません。
+        [access-denied] クリップボードへのアクセスが拒否されました。
+    } ですが、以下のショートカットを利用できます:
+clipboard-message-copy = { " " } からコピー
+clipboard-message-cut = { " " } : 切り取り
+clipboard-message-paste = { " " } : 貼り付け
 error-file-protocol =
     Ruffleを"file:"プロトコルで使用しているようです。
     ブラウザはセキュリティ上の理由から殆どの機能を制限しているため、正しく動作しません。
