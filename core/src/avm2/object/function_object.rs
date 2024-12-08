@@ -104,28 +104,8 @@ impl<'gc> FunctionObject<'gc> {
     /// Construct a function from an ABC method and the current closure scope.
     ///
     /// This associated constructor will also create and initialize an empty
-    /// `Object` prototype for the function.
-    pub fn from_function(
-        activation: &mut Activation<'_, 'gc>,
-        method: Method<'gc>,
-        scope: ScopeChain<'gc>,
-    ) -> Result<FunctionObject<'gc>, Error<'gc>> {
-        let this = Self::from_method(activation, method, scope, None, None, None);
-        let es3_proto = activation
-            .avm2()
-            .classes()
-            .object
-            .construct(activation, &[])?;
-
-        this.set_prototype(Some(es3_proto), activation.gc());
-
-        Ok(this)
-    }
-
-    /// Construct a method from an ABC method and the current closure scope.
-    ///
-    /// The given `receiver`, if supplied, will override any user-specified
-    /// `this` parameter.
+    /// `Object` prototype for the function. The given `receiver`, if supplied,
+    /// will override any user-specified `this` parameter.
     pub fn from_method(
         activation: &mut Activation<'_, 'gc>,
         method: Method<'gc>,
@@ -143,12 +123,19 @@ impl<'gc> FunctionObject<'gc> {
             bound_class,
         );
 
+        let es3_proto = activation
+            .avm2()
+            .classes()
+            .object
+            .construct(activation, &[])
+            .expect("Object should construct");
+
         FunctionObject(Gc::new(
             activation.context.gc_context,
             FunctionObjectData {
                 base: ScriptObjectData::new(fn_class),
                 exec: RefLock::new(exec),
-                prototype: Lock::new(None),
+                prototype: Lock::new(Some(es3_proto)),
             },
         ))
     }
