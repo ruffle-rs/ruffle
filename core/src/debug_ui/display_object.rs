@@ -1143,14 +1143,6 @@ impl DisplayObjectWindow {
                 ui.label(object.clip_depth().to_string());
                 ui.end_row();
 
-                ui.label("World Bounds");
-                bounds_label(ui, object.world_bounds(), &mut self.hovered_bounds);
-                ui.end_row();
-
-                ui.label("Local Bounds");
-                bounds_label(ui, object.local_bounds(), &mut None);
-                ui.end_row();
-
                 ui.label("Self Bounds");
                 bounds_label(ui, object.self_bounds(), &mut None);
                 ui.end_row();
@@ -1162,20 +1154,54 @@ impl DisplayObjectWindow {
                     ui.label("None");
                 }
                 ui.end_row();
+            });
 
-                let matrix = *object.base().matrix();
-                ui.label("Local Position");
+        self.show_matrix_properties(
+            ui,
+            "World Matrix",
+            object,
+            &object.local_to_global_matrix(),
+            true,
+        );
+        self.show_matrix_properties(ui, "Local Matrix", object, object.base().matrix(), false);
+    }
+
+    fn show_matrix_properties(
+        &mut self,
+        ui: &mut Ui,
+        name: &str,
+        object: DisplayObject<'_>,
+        matrix: &ruffle_render::matrix::Matrix,
+        hoverable_bounds: bool,
+    ) {
+        ui.collapsing(name, |ui| {
+            Grid::new(ui.id().with(name)).num_columns(2).show(ui, |ui| {
+                ui.label("Bounds");
+                let no_hover = &mut None;
+                bounds_label(
+                    ui,
+                    object.bounds_with_transform(matrix),
+                    if hoverable_bounds {
+                        &mut self.hovered_bounds
+                    } else {
+                        no_hover
+                    },
+                );
+                ui.end_row();
+
+                ui.label("Position");
                 ui.label(format!("{:.2}, {:.2}", matrix.tx, matrix.ty));
                 ui.end_row();
 
-                ui.label("Local Rotation");
+                ui.label("Rotation");
                 ui.label(format!("{}, {}", matrix.b, matrix.c));
                 ui.end_row();
 
-                ui.label("Local Scale");
+                ui.label("Scale");
                 ui.label(format!("{}, {}", matrix.a, matrix.d));
                 ui.end_row();
             });
+        });
     }
 
     pub fn show_children<'gc>(
