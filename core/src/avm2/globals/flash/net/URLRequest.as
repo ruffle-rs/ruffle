@@ -7,18 +7,34 @@ package flash.net {
 		// NOTE - when implementing properties (e.g. `contentType`, `data`, etc.)
 		// be sure to also check for them in `URLLoader`
 
-		// FIXME - this should be a getter/setter for consistency with Flash
-		public var url:String;
+        [Ruffle(InternalSlot)]
+		private var _url:String;
+
+        [Ruffle(InternalSlot)]
 		private var _contentType: String = "application/x-www-form-urlencoded"; // ignored
+
+        [Ruffle(InternalSlot)]
 		private var _requestHeaders: Array = []; 
 
-		public var digest:String;
+		private var _digest:String;
+
+        [Ruffle(InternalSlot)]
 		private var _method:String = URLRequestMethod.GET;
+
+        [Ruffle(InternalSlot)]
 		private var _data:Object;
 
 		public function URLRequest(url:String = null) {
-			this.url = url;
+			this._url = url;
 		}
+
+        public function get url():String {
+            return this._url;
+        }
+
+        public function set url(url:String):void {
+            this._url = url;
+        }
 
 		public function get method():String {
 			return this._method;
@@ -51,12 +67,20 @@ package flash.net {
 		}
 
 		public function get requestHeaders():Array {
-			return _requestHeaders;
+			return this._requestHeaders;
 		}
 
 		public function set requestHeaders(headers:Array):void {
-			_requestHeaders = headers;
+			this._requestHeaders = headers;
 		}
+
+        public function get digest():String {
+            return this._digest;
+        }
+
+        public function set digest(value:String):void {
+            this._digest = value;
+        }
 
 	}
 }
