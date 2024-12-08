@@ -286,3 +286,47 @@ pub fn set_matrix_3d<'gc>(
         .set_has_matrix3d_stub(set);
     Ok(Value::Undefined)
 }
+
+pub fn get_perspective_projection<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.geom.Transform", "perspectiveProjection");
+
+    let display_object = get_display_object(this, activation)?;
+    let has_perspective_projection = if display_object.is_root() {
+        true
+    } else {
+        display_object.base().has_perspective_projection_stub()
+    };
+
+    if has_perspective_projection {
+        let object = activation
+            .avm2()
+            .classes()
+            .perspectiveprojection
+            .construct(activation, &[])?;
+        Ok(object.into())
+    } else {
+        Ok(Value::Null)
+    }
+}
+
+pub fn set_perspective_projection<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_setter!(activation, "flash.geom.Transform", "perspectiveProjection");
+
+    let set = args
+        .get(0)
+        .map(|arg| arg.as_object().is_some())
+        .unwrap_or_default();
+    let display_object = get_display_object(this, activation)?;
+    display_object
+        .base_mut(activation.gc())
+        .set_has_perspective_projection_stub(set);
+    Ok(Value::Undefined)
+}
