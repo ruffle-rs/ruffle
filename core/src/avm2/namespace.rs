@@ -344,7 +344,6 @@ pub struct CommonNamespaces<'gc> {
     pub(super) proxy: Namespace<'gc>,
 
     // These are required to facilitate shared access between Rust and AS.
-    pub(super) flash_utils_internal: Namespace<'gc>,
     pub(super) flash_text_engine_internal: Namespace<'gc>,
 
     pub(super) __ruffle__: Namespace<'gc>,
@@ -371,7 +370,6 @@ impl<'gc> CommonNamespaces<'gc> {
                 ApiVersion::AllVersions,
                 context,
             ),
-            flash_utils_internal: Namespace::internal("flash.utils", context),
             flash_text_engine_internal: Namespace::internal("flash.text.engine", context),
 
             __ruffle__: Namespace::package("__ruffle__", ApiVersion::AllVersions, context),
