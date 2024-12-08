@@ -29,4 +29,4 @@ gamemode-tooltip =
     GameMode aplica temporalmente un set de optimizaciones a tu computadora y/o a Ruffle.
     Ruffle solicita GameMode solo cuando se está reproduciendo una película.
 gamemode-default = Por defecto
-gamemode-default-tooltip = GameMode solo será habilitado cuando la preferencia de poder esté en alto.
+gamemode-default-tooltip = GameMode solo estará habilitado cuando la preferencia de poder esté en alto.
