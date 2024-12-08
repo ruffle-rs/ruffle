@@ -258,8 +258,6 @@ pub fn plot_stats_in_tracy(instance: &wgpu::Instance) {
     tracy.plot(BUFFERS, report.hub.buffers.num_allocated as f64);
     tracy.plot(TEXTURES, report.hub.textures.num_allocated as f64);
     tracy.plot(TEXTURE_VIEWS, report.hub.texture_views.num_allocated as f64);
-
-    tracy.frame_mark();
 }
 
 pub fn open_url(url: &Url) {

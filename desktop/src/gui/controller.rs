@@ -43,6 +43,8 @@ pub struct GuiController {
     /// If this is set, we should not render the main menu.
     no_gui: bool,
     theme_controller: ThemeController,
+    #[cfg(feature = "tracy")]
+    tracy_frame_captures: crate::tracy::FrameCapturesHolder,
 }
 
 impl GuiController {
@@ -134,6 +136,9 @@ impl GuiController {
 
         egui_extras::install_image_loaders(egui_winit.egui_ctx());
 
+        #[cfg(feature = "tracy")]
+        let tracy_frame_captures = crate::tracy::FrameCapturesHolder::new(&descriptors.device);
+
         Ok(Self {
             descriptors,
             egui_winit,
@@ -148,6 +153,8 @@ impl GuiController {
             size,
             no_gui,
             theme_controller,
+            #[cfg(feature = "tracy")]
+            tracy_frame_captures,
         })
     }
 
@@ -244,6 +251,8 @@ impl GuiController {
             &self.descriptors.device,
             self.size.width,
             self.size.height,
+            #[cfg(feature = "tracy")]
+            self.tracy_frame_captures.clone(),
         );
         player.create(&opt, &movie_url, movie_view);
         self.gui.on_player_created(
@@ -283,6 +292,12 @@ impl GuiController {
                 panic!("wgpu: Out of memory: no more memory left to allocate a new frame");
             }
         };
+
+        #[cfg(feature = "tracy")]
+        if player.is_none() {
+            self.tracy_frame_captures
+                .set_target(&self.descriptors.device, None);
+        }
 
         let raw_input = self.egui_winit.take_egui_input(&self.window);
         let show_menu = self.window.fullscreen().is_none() && !self.no_gui;
@@ -386,6 +401,13 @@ impl GuiController {
 
             self.egui_renderer
                 .render(&mut render_pass, &clipped_primitives, &screen_descriptor);
+
+            #[cfg(feature = "tracy")]
+            {
+                drop(render_pass);
+                self.tracy_frame_captures
+                    .capture_frame(&self.descriptors.device, &mut encoder);
+            }
         }
 
         for id in &full_output.textures_delta.free {
@@ -395,6 +417,8 @@ impl GuiController {
         command_buffers.push(encoder.finish());
         self.descriptors.queue.submit(command_buffers);
         surface_texture.present();
+        #[cfg(feature = "tracy")]
+        self.tracy_frame_captures.finish_frame();
     }
 
     pub fn show_context_menu(
