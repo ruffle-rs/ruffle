@@ -5,10 +5,16 @@ package flash.display {
     import flash.events.EventDispatcher;
 
     public class ShaderJob extends EventDispatcher {
-
+        [Ruffle(InternalSlot)]
         private var _shader:Shader;
+
+        [Ruffle(InternalSlot)]
         private var _target:Object;
+
+        [Ruffle(InternalSlot)]
         private var _width:int;
+
+        [Ruffle(InternalSlot)]
         private var _height:int;
         
         public function ShaderJob(shader:Shader = null, target:Object = null, width:int = 0, height:int = 0) {
