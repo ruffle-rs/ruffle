@@ -10,7 +10,6 @@ package flash.geom {
 	    [Ruffle(InternalSlot)]
 		private var displayObject:DisplayObject;
 
-		private var _matrix3D:Matrix3D = null;
 		private var _perspectiveProjection:PerspectiveProjection = null;
 
 		function Transform(object:DisplayObject) {
@@ -30,15 +29,8 @@ package flash.geom {
 		public native function get concatenatedMatrix():Matrix;
 		public native function get pixelBounds():Rectangle;
 
-		public function get matrix3D():Matrix3D {
-			stub_getter("flash.geom.Transform", "matrix3D");
-			return this._matrix3D;
-		}
-
-		public function set matrix3D(m:Matrix3D):void {
-			stub_setter("flash.geom.Transform", "matrix3D");
-			this._matrix3D = m;
-		}
+		public native function get matrix3D():Matrix3D;
+		public native function set matrix3D(m:Matrix3D):void;
 
 		public function get perspectiveProjection():PerspectiveProjection {
 			stub_getter("flash.geom.Transform", "perspectiveProjection");

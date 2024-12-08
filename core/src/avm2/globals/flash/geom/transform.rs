@@ -3,6 +3,7 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, TObject, Value};
 use crate::display_object::TDisplayObject;
 use crate::prelude::{DisplayObject, Matrix, Twips};
+use crate::{avm2_stub_getter, avm2_stub_setter};
 use ruffle_render::quality::StageQuality;
 use swf::{ColorTransform, Fixed8, Rectangle};
 
@@ -246,4 +247,42 @@ fn rectangle_to_object<'gc>(
         ],
     )?;
     Ok(object.into())
+}
+
+pub fn get_matrix_3d<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.geom.Transform", "matrix3D");
+
+    let display_object = get_display_object(this, activation)?;
+    if display_object.base().has_matrix3d_stub() {
+        let object = activation
+            .avm2()
+            .classes()
+            .matrix3d
+            .construct(activation, &[])?;
+        Ok(object.into())
+    } else {
+        Ok(Value::Null)
+    }
+}
+
+pub fn set_matrix_3d<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_setter!(activation, "flash.geom.Transform", "matrix3D");
+
+    let set = args
+        .get(0)
+        .map(|arg| arg.as_object().is_some())
+        .unwrap_or_default();
+    let display_object = get_display_object(this, activation)?;
+    display_object
+        .base_mut(activation.gc())
+        .set_has_matrix3d_stub(set);
+    Ok(Value::Undefined)
 }
