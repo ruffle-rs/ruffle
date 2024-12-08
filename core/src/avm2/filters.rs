@@ -10,6 +10,7 @@ use swf::{
 };
 
 use crate::avm2::error::{make_error_2008, type_error};
+use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::{Activation, ArrayObject, ClassObject, Error, Object, TObject, Value};
 
 use super::globals::flash::display::shader_job::get_shader_args;
@@ -459,10 +460,10 @@ fn avm2_to_displacement_map_filter<'gc>(
         if let Value::Object(point) = object.get_public_property("mapPoint", activation)? {
             (
                 point
-                    .get_public_property("x", activation)?
+                    .get_slot(point_slots::X)
                     .coerce_to_i32(activation)?,
                 point
-                    .get_public_property("y", activation)?
+                    .get_slot(point_slots::Y)
                     .coerce_to_i32(activation)?,
             )
         } else {

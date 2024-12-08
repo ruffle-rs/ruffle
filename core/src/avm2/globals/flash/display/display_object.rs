@@ -3,6 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{illegal_operation_error, make_error_2007, make_error_2008};
 use crate::avm2::filters::FilterAvm2Ext;
+use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -908,10 +909,10 @@ pub fn local_to_global<'gc>(
     if let Some(dobj) = this.as_display_object() {
         let point = args.get_object(activation, 0, "point")?;
         let x = point
-            .get_public_property("x", activation)?
+            .get_slot(point_slots::X)
             .coerce_to_number(activation)?;
         let y = point
-            .get_public_property("y", activation)?
+            .get_slot(point_slots::Y)
             .coerce_to_number(activation)?;
 
         let local = Point::from_pixels(x, y);
@@ -938,10 +939,10 @@ pub fn global_to_local<'gc>(
     if let Some(dobj) = this.as_display_object() {
         let point = args.get_object(activation, 0, "point")?;
         let x = point
-            .get_public_property("x", activation)?
+            .get_slot(point_slots::X)
             .coerce_to_number(activation)?;
         let y = point
-            .get_public_property("y", activation)?
+            .get_slot(point_slots::Y)
             .coerce_to_number(activation)?;
 
         let global = Point::from_pixels(x, y);
