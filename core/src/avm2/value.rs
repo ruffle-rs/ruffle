@@ -1103,9 +1103,9 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    /// Get the class that this value is of, supporting primitives.
-    /// This function will panic if passed Value::Null or Value::Undefined to;
-    /// make sure to handle them with `null_check` or similar beforehand.
+    /// Get the class that this Value is of.
+    ///
+    /// This function will panic if called on null or undefined.
     pub fn instance_class(&self, activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
         let class_defs = activation.avm2().class_defs();
 
@@ -1121,10 +1121,65 @@ impl<'gc> Value<'gc> {
         }
     }
 
+    /// Get the prototype object corresponding to this Value's type.
+    ///
+    /// This function will panic if called on null or undefined.
+    pub fn proto(&self, activation: &mut Activation<'_, 'gc>) -> Option<Object<'gc>> {
+        let classes = activation.avm2().classes();
+
+        match self {
+            Value::Bool(_) => Some(classes.boolean.prototype()),
+            Value::Number(_) | Value::Integer(_) => Some(classes.number.prototype()),
+            Value::String(_) => Some(classes.string.prototype()),
+            Value::Object(obj) => obj.proto(),
+
+            Value::Undefined | Value::Null => {
+                unreachable!("Should not have Undefined or Null in `proto`")
+            }
+        }
+    }
+
     pub fn instance_of_class_name(&self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
         self.instance_class(activation)
             .name()
             .to_qualified_name(activation.gc())
+    }
+
+    /// Determine if this value is an instance of a given type.
+    ///
+    /// This uses the ES3 definition of instance, which walks the prototype
+    /// chain. For the ES4 definition of instance, use `is_of_type`, which uses
+    /// the class object chain and accounts for interfaces.
+    ///
+    /// The given object should be the class object for the given type we are
+    /// checking against this object. Its prototype will be extracted and
+    /// searched in the prototype chain of this object.
+    ///
+    /// This function will panic if called on null or undefined.
+    pub fn is_instance_of(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        class_or_function_object: Object<'gc>,
+    ) -> bool {
+        let type_proto = match class_or_function_object {
+            Object::ClassObject(class_object) => Some(class_object.prototype()),
+            Object::FunctionObject(function_object) => function_object.prototype(),
+            _ => panic!("Object must be either ClassObject or FunctionObject"),
+        };
+
+        if let Some(type_proto) = type_proto {
+            let mut my_proto = self.proto(activation);
+
+            while let Some(proto) = my_proto {
+                if Object::ptr_eq(proto, type_proto) {
+                    return true;
+                }
+
+                my_proto = proto.proto();
+            }
+        }
+
+        false
     }
 
     /// Implements the strict-equality `===` check for AVM2.

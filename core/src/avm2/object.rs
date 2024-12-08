@@ -937,32 +937,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         Ok(Value::Object((*self).into()))
     }
 
-    /// Determine if this object is an instance of a given type.
-    ///
-    /// This uses the ES3 definition of instance, which walks the prototype
-    /// chain. For the ES4 definition of instance, use `is_of_type`, which uses
-    /// the class object chain and accounts for interfaces.
-    ///
-    /// The given object should be the class object for the given type we are
-    /// checking against this object. Its prototype will be extracted and
-    /// searched in the prototype chain of this object.
-    #[no_dynamic]
-    fn is_instance_of(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        class: Object<'gc>,
-    ) -> Result<bool, Error<'gc>> {
-        let type_proto = class
-            .get_public_property("prototype", activation)?
-            .as_object();
-
-        if let Some(type_proto) = type_proto {
-            self.has_prototype_in_chain(type_proto)
-        } else {
-            Ok(false)
-        }
-    }
-
     /// Returns all public properties from this object's vtable, together with their values.
     /// This includes normal fields, const fields, and getter methods
     /// This is used for JSON serialization.
@@ -988,26 +962,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
 
         Ok(values)
-    }
-
-    /// Determine if this object has a given prototype in its prototype chain.
-    ///
-    /// The given object `type_proto` should be the prototype we are checking
-    /// against this object.
-    #[no_dynamic]
-    fn has_prototype_in_chain(&self, type_proto: Object<'gc>) -> Result<bool, Error<'gc>> {
-        let mut my_proto = self.proto();
-
-        //TODO: Is it a verification error to do `obj instanceof bare_object`?
-        while let Some(proto) = my_proto {
-            if Object::ptr_eq(proto, type_proto) {
-                return Ok(true);
-            }
-
-            my_proto = proto.proto()
-        }
-
-        Ok(false)
     }
 
     /// Determine if this object is an instance of a given type.
