@@ -41,6 +41,7 @@ features = ["HtmlCanvasElement"]
 render_debug_labels = []
 webgl = ["wgpu/webgl"]
 profile-with-tracy = ["profiling", "profiling/profile-with-tracy"]
+tracy_images = ["profile-with-tracy"]
 
 [package.metadata.cargo-machete]
 ignored = [
