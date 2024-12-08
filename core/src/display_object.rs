@@ -797,6 +797,14 @@ impl<'gc> DisplayObjectBase<'gc> {
     fn set_meta_data(&mut self, value: Avm2Object<'gc>) {
         self.meta_data = Some(value);
     }
+
+    pub fn has_matrix3d_stub(&self) -> bool {
+        self.flags.contains(DisplayObjectFlags::HAS_MATRIX3D_STUB)
+    }
+
+    pub fn set_has_matrix3d_stub(&mut self, value: bool) {
+        self.flags.set(DisplayObjectFlags::HAS_MATRIX3D_STUB, value)
+    }
 }
 
 struct DrawCacheInfo {
@@ -2606,6 +2614,9 @@ bitflags! {
 
         /// If this AVM1 object is pending removal (will be removed on the next frame).
         const AVM1_PENDING_REMOVAL     = 1 << 13;
+
+        /// Whether this object has matrix3D (used for stubbing).
+        const HAS_MATRIX3D_STUB        = 1 << 14;
     }
 }
 
