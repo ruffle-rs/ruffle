@@ -2,7 +2,9 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
-use crate::avm2::globals::slots::flash_display_sprite as slots;
+use crate::avm2::globals::slots::{
+    flash_display_sprite as sprite_slots, flash_geom_rectangle as rectangle_slots,
+};
 use crate::avm2::object::{Object, StageObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -69,10 +71,10 @@ pub fn get_graphics<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.as_display_object() {
         // Lazily initialize the `Graphics` object in a hidden property.
-        let graphics = match this.get_slot(slots::_GRAPHICS) {
+        let graphics = match this.get_slot(sprite_slots::_GRAPHICS) {
             Value::Undefined | Value::Null => {
                 let graphics = Value::from(StageObject::graphics(activation, dobj)?);
-                this.set_slot(slots::_GRAPHICS, graphics, activation)?;
+                this.set_slot(sprite_slots::_GRAPHICS, graphics, activation)?;
                 graphics
             }
             graphics => graphics,
@@ -154,19 +156,19 @@ pub fn start_drag<'gc>(
         let rectangle = args.try_get_object(activation, 1);
         let constraint = if let Some(rectangle) = rectangle {
             let x = rectangle
-                .get_public_property("x", activation)?
+                .get_slot(rectangle_slots::X)
                 .coerce_to_number(activation)?;
 
             let y = rectangle
-                .get_public_property("y", activation)?
+                .get_slot(rectangle_slots::Y)
                 .coerce_to_number(activation)?;
 
             let width = rectangle
-                .get_public_property("width", activation)?
+                .get_slot(rectangle_slots::WIDTH)
                 .coerce_to_number(activation)?;
 
             let height = rectangle
-                .get_public_property("height", activation)?
+                .get_slot(rectangle_slots::HEIGHT)
                 .coerce_to_number(activation)?;
 
             // Normalize the bounds.

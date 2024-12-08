@@ -1,19 +1,19 @@
-use ruffle_render::{
-    backend::{PixelBenderOutput, PixelBenderTarget},
-    bitmap::PixelRegion,
-    pixel_bender::{
-        ImageInputTexture, PixelBenderParam, PixelBenderParamQualifier, PixelBenderShaderArgument,
-        PixelBenderShaderHandle, PixelBenderType, OUT_COORD_NAME,
-    },
+use crate::avm2::bytearray::Endian;
+use crate::avm2::globals::slots::{
+    flash_display_shader as shader_slots, flash_display_shader_job as shader_job_slots,
 };
+use crate::avm2::parameters::ParametersExt;
+use crate::avm2::{Activation, Error, Object, TObject, Value};
+use crate::pixel_bender::PixelBenderTypeExt;
+use crate::string::AvmString;
 
-use crate::{
-    avm2::{
-        bytearray::Endian, parameters::ParametersExt, string::AvmString, Activation, Error, Object,
-        TObject, Value,
-    },
-    avm2_stub_method,
-    pixel_bender::PixelBenderTypeExt,
+use crate::avm2_stub_method;
+
+use ruffle_render::backend::{PixelBenderOutput, PixelBenderTarget};
+use ruffle_render::bitmap::PixelRegion;
+use ruffle_render::pixel_bender::{
+    ImageInputTexture, PixelBenderParam, PixelBenderParamQualifier, PixelBenderShaderArgument,
+    PixelBenderShaderHandle, PixelBenderType, OUT_COORD_NAME,
 };
 
 pub fn get_shader_args<'gc>(
@@ -29,7 +29,7 @@ pub fn get_shader_args<'gc>(
     // FIXME - determine what errors Flash Player throws here
     // instead of using `expect`
     let shader_data = shader_obj
-        .get_public_property("data", activation)?
+        .get_slot(shader_slots::_DATA)
         .as_object()
         .expect("Missing ShaderData object")
         .as_shader_data()
@@ -190,20 +190,20 @@ pub fn start<'gc>(
         );
     }
     let shader = this
-        .get_public_property("shader", activation)?
+        .get_slot(shader_job_slots::_SHADER)
         .as_object()
         .expect("Missing Shader object");
 
     let (shader_handle, arguments) = get_shader_args(shader, activation)?;
 
     let target = this
-        .get_public_property("target", activation)?
+        .get_slot(shader_job_slots::_TARGET)
         .as_object()
         .expect("ShaderJob.target is not an object");
 
-    let output_width = this.get_public_property("width", activation)?.as_u32();
+    let output_width = this.get_slot(shader_job_slots::_WIDTH).as_u32();
 
-    let output_height = this.get_public_property("height", activation)?.as_u32();
+    let output_height = this.get_slot(shader_job_slots::_HEIGHT).as_u32();
 
     let pixel_bender_target = if let Some(bitmap) = target.as_bitmap_data() {
         let target_bitmap = bitmap.sync(activation.context.renderer);

@@ -6,7 +6,9 @@ use crate::avm2::error::{
     argument_error, make_error_2004, make_error_2007, make_error_2008, range_error, Error2004Type,
 };
 use crate::avm2::filters::FilterAvm2Ext;
-use crate::avm2::globals::slots::flash_geom_point as point_slots;
+use crate::avm2::globals::slots::{
+    flash_geom_point as point_slots, flash_geom_rectangle as rectangle_slots,
+};
 pub use crate::avm2::object::bitmap_data_allocator;
 use crate::avm2::object::{BitmapDataObject, ByteArrayObject, Object, TObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
@@ -39,16 +41,16 @@ fn get_rectangle_x_y_width_height<'gc>(
     rectangle: Object<'gc>,
 ) -> Result<(i32, i32, i32, i32), Error<'gc>> {
     let x = rectangle
-        .get_public_property("x", activation)?
+        .get_slot(rectangle_slots::X)
         .coerce_to_number(activation)?;
     let y = rectangle
-        .get_public_property("y", activation)?
+        .get_slot(rectangle_slots::Y)
         .coerce_to_number(activation)?;
     let width = rectangle
-        .get_public_property("width", activation)?
+        .get_slot(rectangle_slots::WIDTH)
         .coerce_to_number(activation)?;
     let height = rectangle
-        .get_public_property("height", activation)?
+        .get_slot(rectangle_slots::HEIGHT)
         .coerce_to_number(activation)?;
 
     let x_max = round_to_even(x + width);
@@ -506,16 +508,16 @@ pub fn set_vector<'gc>(
     let vec = args.get_object(activation, 1, "imputVector")?;
     if let Some(bitmap_data) = this.as_bitmap_data() {
         let x = rectangle
-            .get_public_property("x", activation)?
+            .get_slot(rectangle_slots::X)
             .coerce_to_number(activation)?;
         let y = rectangle
-            .get_public_property("y", activation)?
+            .get_slot(rectangle_slots::Y)
             .coerce_to_number(activation)?;
         let width = rectangle
-            .get_public_property("width", activation)?
+            .get_slot(rectangle_slots::WIDTH)
             .coerce_to_number(activation)?;
         let height = rectangle
-            .get_public_property("height", activation)?
+            .get_slot(rectangle_slots::HEIGHT)
             .coerce_to_number(activation)?;
 
         // Clamp to bitmap rect.
@@ -793,20 +795,20 @@ pub fn hit_test<'gc>(
             } else if compare_object.is_of_type(rectangle_class) {
                 let test_point = (
                     compare_object
-                        .get_public_property("x", activation)?
+                        .get_slot(rectangle_slots::X)
                         .coerce_to_i32(activation)?
                         - top_left.0,
                     compare_object
-                        .get_public_property("y", activation)?
+                        .get_slot(rectangle_slots::Y)
                         .coerce_to_i32(activation)?
                         - top_left.1,
                 );
                 let size = (
                     compare_object
-                        .get_public_property("width", activation)?
+                        .get_slot(rectangle_slots::WIDTH)
                         .coerce_to_i32(activation)?,
                     compare_object
-                        .get_public_property("height", activation)?
+                        .get_slot(rectangle_slots::HEIGHT)
                         .coerce_to_i32(activation)?,
                 );
                 return Ok(Value::Bool(operations::hit_test_rectangle(
@@ -1114,7 +1116,8 @@ pub fn apply_filter<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dest_bitmap) = this.as_bitmap_data() {
-        let source_bitmap = args.get_object(activation, 0, "sourceBitmapData")?
+        let source_bitmap = args
+            .get_object(activation, 0, "sourceBitmapData")?
             .as_bitmap_data()
             .unwrap();
         let source_rect = args.get_object(activation, 1, "sourceRect")?;

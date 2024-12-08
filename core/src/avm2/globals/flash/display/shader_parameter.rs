@@ -35,7 +35,7 @@ pub fn make_shader_parameter<'gc>(
                 obj.set_public_property(name, value, activation)?;
 
                 if &*name == b"defaultValue" {
-                    obj.set_public_property("value", value, activation)?;
+                    obj.set_slot(parameter_slots::_VALUE, value, activation)?;
                 }
             }
             obj.set_public_property(
