@@ -5,6 +5,7 @@ use swf::Twips;
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{argument_error, make_error_2025, range_error};
+use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -29,7 +30,7 @@ fn validate_add_operation<'gc>(
 ) -> Result<(), Error<'gc>> {
     let ctr = new_parent
         .as_container()
-        .ok_or("ArgumentError: Parent is not a DisplayObjectContainer")?;
+        .expect("Parent must be a DisplayObjectContainer");
 
     if let DisplayObject::Stage(_) = proposed_child {
         return Err(Error::AvmError(argument_error(
@@ -93,7 +94,7 @@ fn validate_remove_operation<'gc>(
 ) -> Result<(), Error<'gc>> {
     let old_ctr = old_parent
         .as_container()
-        .ok_or("ArgumentError: Parent is not a DisplayObjectContainer")?;
+        .expect("Parent must be a DisplayObjectContainer");
 
     for child in old_ctr.iter_render_list() {
         if DisplayObject::ptr_eq(child, proposed_child) {
@@ -185,7 +186,7 @@ pub fn add_child<'gc>(
             let child = args
                 .get_object(activation, 0, "child")?
                 .as_display_object()
-                .ok_or("ArgumentError: Child not a valid display object")?;
+                .expect("Child must be a display object");
 
             let target_index = ctr.num_children();
 
@@ -209,7 +210,7 @@ pub fn add_child_at<'gc>(
         let child = args
             .get_object(activation, 0, "child")?
             .as_display_object()
-            .ok_or("ArgumentError: Child not a valid display object")?;
+            .expect("Child must be a display object");
         let target_index = args.get_u32(activation, 1)? as usize;
 
         validate_add_operation(activation, parent, child, target_index)?;
@@ -231,7 +232,7 @@ pub fn remove_child<'gc>(
         let child = args
             .get_object(activation, 0, "child")?
             .as_display_object()
-            .ok_or("ArgumentError: Child not a valid display object")?;
+            .expect("Child must be a display object");
 
         validate_remove_operation(activation, parent, child)?;
         remove_child_from_displaylist(activation.context, child);
@@ -410,7 +411,7 @@ pub fn set_child_index<'gc>(
         let child = args
             .get_object(activation, 0, "child")?
             .as_display_object()
-            .ok_or("ArgumentError: Child not a valid display object")?;
+            .expect("Child must be a display object");
         let target_index = args.get_u32(activation, 1)? as usize;
 
         let child_parent = child.parent();
@@ -481,11 +482,11 @@ pub fn swap_children<'gc>(
             let child0 = args
                 .get_object(activation, 0, "child")?
                 .as_display_object()
-                .ok_or("ArgumentError: Child is not a display object")?;
+                .expect("Child must be a display object");
             let child1 = args
                 .get_object(activation, 1, "child")?
                 .as_display_object()
-                .ok_or("ArgumentError: Child is not a display object")?;
+                .expect("Child must be a display object");
 
             let index0 = ctr
                 .iter_render_list()
@@ -547,10 +548,10 @@ pub fn get_objects_under_point<'gc>(
 
     let point = args.get_object(activation, 0, "point")?;
     let x = point
-        .get_public_property("x", activation)?
+        .get_slot(point_slots::X)
         .coerce_to_number(activation)?;
     let y = point
-        .get_public_property("y", activation)?
+        .get_slot(point_slots::Y)
         .coerce_to_number(activation)?;
 
     let point = Point {

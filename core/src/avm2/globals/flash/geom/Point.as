@@ -1,6 +1,9 @@
 package flash.geom {
 	public class Point {
+	    [Ruffle(InternalSlot)]
 		public var x:Number;
+
+	    [Ruffle(InternalSlot)]
 		public var y:Number;
 
 		public function Point(x:Number = 0, y:Number = 0) {
