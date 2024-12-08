@@ -155,11 +155,14 @@ fn class_init<'gc>(
     for (pubname, func) in PUBLIC_PROTOTYPE_METHODS {
         proto.set_string_property_local(
             *pubname,
-            FunctionObject::from_function(
+            FunctionObject::from_method(
                 activation,
                 Method::from_builtin(*func, pubname, activation.context.gc_context),
                 scope,
-            )?
+                None,
+                None,
+                None,
+            )
             .into(),
             activation,
         )?;
