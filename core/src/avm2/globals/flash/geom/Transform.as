@@ -4,13 +4,10 @@ package flash.geom {
 	import flash.geom.PerspectiveProjection;
 	import __ruffle__.stub_getter;
 	import __ruffle__.stub_method;
-	import __ruffle__.stub_setter;
 
 	public class Transform {
 	    [Ruffle(InternalSlot)]
 		private var displayObject:DisplayObject;
-
-		private var _perspectiveProjection:PerspectiveProjection = null;
 
 		function Transform(object:DisplayObject) {
 			this.displayObject = object;
@@ -32,15 +29,8 @@ package flash.geom {
 		public native function get matrix3D():Matrix3D;
 		public native function set matrix3D(m:Matrix3D):void;
 
-		public function get perspectiveProjection():PerspectiveProjection {
-			stub_getter("flash.geom.Transform", "perspectiveProjection");
-			return this._perspectiveProjection;
-		}
-
-		public function set perspectiveProjection(val: PerspectiveProjection):void {
-			stub_setter("flash.geom.Transform", "perspectiveProjection");
-			this._perspectiveProjection = val;
-		}
+		public native function get perspectiveProjection():PerspectiveProjection;
+		public native function set perspectiveProjection(val: PerspectiveProjection):void;
 
 		public function getRelativeMatrix3D(relativeTo:DisplayObject):Matrix3D {
 			stub_method("flash.geom.Transform", "getRelativeMatrix3D");
