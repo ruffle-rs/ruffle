@@ -3,8 +3,8 @@ use crate::gui::{GuiController, MENU_HEIGHT};
 use crate::player::{LaunchOptions, PlayerController};
 use crate::preferences::GlobalPreferences;
 use crate::util::{
-    get_screen_size, gilrs_button_to_gamepad_button, mark_tracy_frame,
-    winit_input_to_ruffle_key_descriptor, winit_to_ruffle_text_control,
+    get_screen_size, gilrs_button_to_gamepad_button, winit_input_to_ruffle_key_descriptor,
+    winit_to_ruffle_text_control,
 };
 use anyhow::Error;
 use gilrs::{Event, EventType, Gilrs};
@@ -59,7 +59,6 @@ impl MainWindow {
                 }
 
                 self.gui.render(player);
-                mark_tracy_frame();
             }
 
             // Important that we return here, or we'll get a feedback loop with egui

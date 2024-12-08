@@ -393,17 +393,6 @@ pub fn parse_url(path: &Path) -> Result<Url, Error> {
     }
 }
 
-#[cfg(not(feature = "tracy"))]
-pub fn mark_tracy_frame() {}
-
-#[cfg(feature = "tracy")]
-pub fn mark_tracy_frame() {
-    use tracing_tracy::client::*;
-
-    let tracy = Client::running().expect("tracy client must be running");
-    tracy.frame_mark();
-}
-
 pub fn open_url(url: &Url) {
     // TODO: This opens local files in the browser while flash opens them
     // in the default program for the respective filetype.
