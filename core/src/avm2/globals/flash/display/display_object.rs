@@ -3,7 +3,9 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{illegal_operation_error, make_error_2007, make_error_2008};
 use crate::avm2::filters::FilterAvm2Ext;
-use crate::avm2::globals::slots::flash_geom_point as point_slots;
+use crate::avm2::globals::slots::{
+    flash_geom_point as point_slots, flash_geom_rectangle as rectangle_slots,
+};
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -857,13 +859,18 @@ pub fn object_to_rectangle<'gc>(
     activation: &mut Activation<'_, 'gc>,
     object: Object<'gc>,
 ) -> Result<Rectangle<Twips>, Error<'gc>> {
-    const NAMES: &[&str] = &["x", "y", "width", "height"];
+    const SLOTS: &[u32] = &[
+        rectangle_slots::X,
+        rectangle_slots::Y,
+        rectangle_slots::WIDTH,
+        rectangle_slots::HEIGHT,
+    ];
+
     let mut values = [0.0; 4];
-    for (&name, value) in NAMES.iter().zip(&mut values) {
-        *value = object
-            .get_public_property(name, activation)?
-            .coerce_to_number(activation)?;
+    for (slot, value) in SLOTS.iter().zip(&mut values) {
+        *value = object.get_slot(*slot).coerce_to_number(activation)?;
     }
+
     let [x, y, width, height] = values;
     Ok(Rectangle {
         x_min: Twips::from_pixels_i32(round_to_even(x)),
