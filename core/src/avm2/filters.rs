@@ -459,12 +459,8 @@ fn avm2_to_displacement_map_filter<'gc>(
     let map_point =
         if let Value::Object(point) = object.get_public_property("mapPoint", activation)? {
             (
-                point
-                    .get_slot(point_slots::X)
-                    .coerce_to_i32(activation)?,
-                point
-                    .get_slot(point_slots::Y)
-                    .coerce_to_i32(activation)?,
+                point.get_slot(point_slots::X).coerce_to_i32(activation)?,
+                point.get_slot(point_slots::Y).coerce_to_i32(activation)?,
             )
         } else {
             (0, 0)

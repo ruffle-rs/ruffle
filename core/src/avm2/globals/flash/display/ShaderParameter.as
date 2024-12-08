@@ -6,6 +6,7 @@ package flash.display {
         [Ruffle(InternalSlot)]
         private var _type:String;
 
+        [Ruffle(InternalSlot)]
         private var _value:Array;
 
         public function get index():int {

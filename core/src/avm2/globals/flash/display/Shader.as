@@ -4,7 +4,9 @@ package flash.display {
     import flash.utils.ByteArray;
 
     public class Shader {
+        [Ruffle(InternalSlot)]
         private var _data:ShaderData;
+
         private var _precisionHint:String = ShaderPrecision.FULL;
 
         public function Shader(bytecode:ByteArray = null) {

@@ -1,4 +1,5 @@
 use crate::avm2::error::{argument_error, error, make_error_2008};
+use crate::avm2::globals::slots::flash_geom_rectangle as rectangle_slots;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Activation;
 use crate::avm2::TObject;
@@ -711,16 +712,16 @@ pub fn set_scissor_rectangle<'gc>(
     let rectangle = args.try_get_object(activation, 0);
     let rectangle = if let Some(rectangle) = rectangle {
         let x = rectangle
-            .get_public_property("x", activation)?
+            .get_slot(rectangle_slots::X)
             .coerce_to_number(activation)?;
         let y = rectangle
-            .get_public_property("y", activation)?
+            .get_slot(rectangle_slots::Y)
             .coerce_to_number(activation)?;
         let width = rectangle
-            .get_public_property("width", activation)?
+            .get_slot(rectangle_slots::WIDTH)
             .coerce_to_number(activation)?;
         let height = rectangle
-            .get_public_property("height", activation)?
+            .get_slot(rectangle_slots::HEIGHT)
             .coerce_to_number(activation)?;
         Some(Rectangle {
             x_min: Twips::from_pixels(x),
