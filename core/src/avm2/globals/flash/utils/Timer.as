@@ -11,6 +11,10 @@ package flash.utils {
         [Ruffle(InternalSlot)]
         private var _timerId: int = -1;
 
+        // Returns 'true' if we should cancel the underlying Ruffle native timer
+        [Ruffle(InternalSlot)]
+        private var _onUpdateClosure:Function;
+
         private function checkDelay(delay:Number): void {
             if (!isFinite(delay) || delay < 0) {
                 throw new RangeError("Timer delay out of range", 2066);
@@ -22,6 +26,22 @@ package flash.utils {
             this._currentCount = 0;
             this._delay = delay;
             this._repeatCount = repeatCount;
+
+            // We need this closure so we can access it by slot from native code
+            // (rather than making it an instance method, which would force us
+            // to access it as a bound method)
+            var self:Timer = this;
+            this._onUpdateClosure = function():Boolean {
+                self._currentCount += 1;
+                self.dispatchEvent(new TimerEvent(TimerEvent.TIMER, false, false));
+                if (self.repeatCount != 0 && self._currentCount >= self._repeatCount) {
+                    // This will make 'running' return false in a TIMER_COMPLETE event handler
+                    self._timerId = -1;
+                    self.dispatchEvent(new TimerEvent(TimerEvent.TIMER_COMPLETE, false, false));
+                    return true;
+                }
+                return false;
+            }
         }
 
         public function get currentCount(): int {
@@ -64,18 +84,5 @@ package flash.utils {
 
         public native function stop():void;
         public native function start():void;
-
-        // Returns 'true' if we should cancel the underlying Ruffle native timer
-        internal function onUpdate():Boolean {
-            this._currentCount += 1;
-            this.dispatchEvent(new TimerEvent(TimerEvent.TIMER, false, false));
-            if (this.repeatCount != 0 && this._currentCount >= this._repeatCount) {
-                // This will make 'running' return false in a TIMER_COMPLETE event handler
-                this._timerId = -1;
-                this.dispatchEvent(new TimerEvent(TimerEvent.TIMER_COMPLETE, false, false));
-                return true;
-            }
-            return false;
-        }
     }
 }
