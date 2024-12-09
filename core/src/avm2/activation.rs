@@ -1819,7 +1819,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let value = self.pop_stack();
             let name = self.pop_stack();
 
-            object.set_public_property(name.coerce_to_string(self)?, value, self)?;
+            object.set_string_property_local(name.coerce_to_string(self)?, value, self)?;
         }
 
         self.push_stack(object);
