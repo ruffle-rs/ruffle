@@ -1,38 +1,38 @@
 package flash.net {
-	import flash.events.EventDispatcher;
-	import flash.net.URLRequest;
-	import __ruffle__.stub_method;
+    import flash.events.EventDispatcher;
+    import flash.net.URLRequest;
+    import __ruffle__.stub_method;
 
-	public class URLLoader extends EventDispatcher {
-	    [Ruffle(InternalSlot)]
-		public var data: *;
+    public class URLLoader extends EventDispatcher {
+        [Ruffle(InternalSlot)]
+        public var data: *;
 
-	    [Ruffle(InternalSlot)]
-		public var dataFormat: String = "text";
+        [Ruffle(InternalSlot)]
+        public var dataFormat: String = "text";
 
-		public function URLLoader(request:URLRequest = null) {
-			if (request != null) {
-				this.load(request);
-			}
-		}
+        public function URLLoader(request:URLRequest = null) {
+            if (request != null) {
+                this.load(request);
+            }
+        }
 
-		// FIXME - this should be a normal property for consistency with Flash
-		public function get bytesTotal():uint {
-			if (this.data) {
-				return this.data.length;
-			}
-			return 0;
-		}
+        // FIXME - this should be a normal property for consistency with Flash
+        public function get bytesTotal():uint {
+            if (this.data) {
+                return this.data.length;
+            }
+            return 0;
+        }
 
-		// FIXME - this should be a normal property for consistency with Flash
-		public function get bytesLoaded():uint {
-			// TODO - update this as the download progresses
-			return this.bytesTotal
-		}
-		public native function load(request:URLRequest):void;
+        // FIXME - this should be a normal property for consistency with Flash
+        public function get bytesLoaded():uint {
+            // TODO - update this as the download progresses
+            return this.bytesTotal
+        }
+        public native function load(request:URLRequest):void;
 
-		public function close():void {
-			stub_method("flash.net.URLLoader", "close");
-		}
-	}
+        public function close():void {
+            stub_method("flash.net.URLLoader", "close");
+        }
+    }
 }
