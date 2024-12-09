@@ -106,7 +106,11 @@ package {
         public static var ignoreComments:Boolean = true;
         public static var ignoreProcessingInstructions:Boolean = true;
         public static var ignoreWhitespace:Boolean = true;
+
+        [Ruffle(InternalSlot)]
         public static var prettyPrinting:Boolean = true;
+
+        [Ruffle(InternalSlot)]
         public static var prettyIndent:int = 2;
 
         prototype.hasComplexContent = function():Boolean {
