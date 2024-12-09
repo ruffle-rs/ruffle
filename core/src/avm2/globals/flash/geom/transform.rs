@@ -9,16 +9,12 @@ use crate::{avm2_stub_getter, avm2_stub_setter};
 use ruffle_render::quality::StageQuality;
 use swf::{ColorTransform, Fixed8, Rectangle};
 
-fn get_display_object<'gc>(
-    this: Object<'gc>,
-    _activation: &mut Activation<'_, 'gc>,
-) -> Result<DisplayObject<'gc>, Error<'gc>> {
-    Ok(this
-        .get_slot(transform_slots::DISPLAY_OBJECT)
+fn get_display_object(this: Object<'_>) -> DisplayObject<'_> {
+    this.get_slot(transform_slots::DISPLAY_OBJECT)
         .as_object()
         .unwrap()
         .as_display_object()
-        .unwrap())
+        .unwrap()
 }
 
 pub fn get_color_transform<'gc>(
@@ -26,7 +22,7 @@ pub fn get_color_transform<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let display_object = get_display_object(this, activation)?;
+    let display_object = get_display_object(this);
     let display_object = display_object.base();
     color_transform_to_object(display_object.color_transform(), activation)
 }
@@ -40,7 +36,7 @@ pub fn set_color_transform<'gc>(
         args.get_object(activation, 0, "colorTransform")?,
         activation,
     )?;
-    let dobj = get_display_object(this, activation)?;
+    let dobj = get_display_object(this);
     dobj.set_color_transform(activation.context.gc_context, ct);
     if let Some(parent) = dobj.parent() {
         parent.invalidate_cached_bitmap(activation.context.gc_context);
@@ -53,7 +49,7 @@ pub fn get_matrix<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let matrix = *get_display_object(this, activation)?.base().matrix();
+    let matrix = *get_display_object(this).base().matrix();
     matrix_to_object(matrix, activation)
 }
 
@@ -66,7 +62,7 @@ pub fn set_matrix<'gc>(
     // null when trying to get the matrix- but the DO's actual transform matrix will
     // remain its previous non-null value.
     let matrix = object_to_matrix(args.get_object(activation, 0, "value")?, activation)?;
-    let dobj = get_display_object(this, activation)?;
+    let dobj = get_display_object(this);
     dobj.set_matrix(activation.context.gc_context, matrix);
     if let Some(parent) = dobj.parent() {
         // Self-transform changes are automatically handled,
@@ -81,7 +77,7 @@ pub fn get_concatenated_matrix<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let dobj = get_display_object(this, activation)?;
+    let dobj = get_display_object(this);
     let mut node = Some(dobj);
     while let Some(obj) = node {
         if obj.as_stage().is_some() {
@@ -92,8 +88,7 @@ pub fn get_concatenated_matrix<'gc>(
 
     // We're a child of the Stage, and not the stage itself
     if node.is_some() && dobj.as_stage().is_none() {
-        let matrix =
-            get_display_object(this, activation)?.local_to_global_matrix_without_own_scroll_rect();
+        let matrix = get_display_object(this).local_to_global_matrix_without_own_scroll_rect();
         matrix_to_object(matrix, activation)
     } else {
         // If this object is the Stage itself, or an object
@@ -232,7 +227,7 @@ pub fn get_pixel_bounds<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let display_object = get_display_object(this, activation)?;
+    let display_object = get_display_object(this);
     rectangle_to_object(display_object.world_bounds(), activation)
 }
 
@@ -259,7 +254,7 @@ pub fn get_matrix_3d<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.geom.Transform", "matrix3D");
 
-    let display_object = get_display_object(this, activation)?;
+    let display_object = get_display_object(this);
     if display_object.base().has_matrix3d_stub() {
         let object = activation
             .avm2()
@@ -283,7 +278,7 @@ pub fn set_matrix_3d<'gc>(
         .get(0)
         .map(|arg| arg.as_object().is_some())
         .unwrap_or_default();
-    let display_object = get_display_object(this, activation)?;
+    let display_object = get_display_object(this);
     display_object
         .base_mut(activation.gc())
         .set_has_matrix3d_stub(set);
@@ -297,7 +292,7 @@ pub fn get_perspective_projection<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.geom.Transform", "perspectiveProjection");
 
-    let display_object = get_display_object(this, activation)?;
+    let display_object = get_display_object(this);
     let has_perspective_projection = if display_object.is_root() {
         true
     } else {
@@ -327,7 +322,7 @@ pub fn set_perspective_projection<'gc>(
         .get(0)
         .map(|arg| arg.as_object().is_some())
         .unwrap_or_default();
-    let display_object = get_display_object(this, activation)?;
+    let display_object = get_display_object(this);
     display_object
         .base_mut(activation.gc())
         .set_has_perspective_projection_stub(set);
