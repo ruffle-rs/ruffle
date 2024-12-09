@@ -13,7 +13,7 @@ export interface PlayerAttributes {
 }
 
 export class Player extends React.Component<PlayerAttributes> {
-    private readonly container: React.RefObject<HTMLDivElement>;
+    private readonly container: React.RefObject<HTMLDivElement | null>;
     private player: RufflePlayer.PlayerElement | null = null;
 
     // [NA] Ruffle has a bug where if you load a swf whilst it's already loading another swf, it breaks

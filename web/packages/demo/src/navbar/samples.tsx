@@ -25,7 +25,7 @@ export interface DemoSwf {
 }
 
 interface SampleSelectionProperties {
-    sampleSelectionInput: RefObject<HTMLSelectElement>;
+    sampleSelectionInput: RefObject<HTMLSelectElement | null>;
     selectedSample: DemoSwf | null;
     setSelectedSample: (value: DemoSwf | null) => void;
     setSelectedFilename: (name: string | null) => void;
