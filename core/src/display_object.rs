@@ -1166,6 +1166,11 @@ pub trait TDisplayObject<'gc>:
         self.bounds_with_transform(&self.local_to_global_matrix())
     }
 
+    /// The world bounding box of this object, as reported by `Transform.pixelBounds`.
+    fn pixel_bounds(&self) -> Rectangle<Twips> {
+        self.world_bounds()
+    }
+
     /// Bounds used for drawing debug rects and picking objects.
     fn debug_rect_bounds(&self) -> Rectangle<Twips> {
         // Make the rect at least as big as highlight bounds to ensure that anything

@@ -230,7 +230,7 @@ pub fn get_pixel_bounds<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let display_object = get_display_object(this, activation)?;
-    rectangle_to_object(display_object.world_bounds(), activation)
+    rectangle_to_object(display_object.pixel_bounds(), activation)
 }
 
 fn rectangle_to_object<'gc>(
