@@ -34,7 +34,7 @@ pub fn set_sound_transform<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let as3_st = args.get_object(activation, 0, "sndTransform")?;
-    let dobj_st = SoundTransform::from_avm2_object(activation, as3_st)?;
+    let dobj_st = SoundTransform::from_avm2_object(as3_st);
 
     activation.context.set_global_sound_transform(dobj_st);
 

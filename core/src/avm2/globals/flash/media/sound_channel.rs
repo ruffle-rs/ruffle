@@ -80,7 +80,7 @@ pub fn set_sound_transform<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(sound_channel) = this.as_sound_channel() {
         let as3_st = args.get_object(activation, 0, "soundChannel")?;
-        let dobj_st = SoundTransform::from_avm2_object(activation, as3_st)?;
+        let dobj_st = SoundTransform::from_avm2_object(as3_st);
 
         sound_channel.set_sound_transform(activation, dobj_st);
     }
