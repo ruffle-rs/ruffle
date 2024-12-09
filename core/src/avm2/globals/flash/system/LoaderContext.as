@@ -3,7 +3,10 @@ package flash.system {
 
     public class LoaderContext {
         public var allowCodeImport : Boolean;
+
+        [Ruffle(InternalSlot)]
         public var applicationDomain : ApplicationDomain;
+
         public var checkPolicyFile : Boolean;
         [API("674")]
         public var imageDecodingPolicy : String;
