@@ -1,10 +1,21 @@
 package flash.geom {
 	public class Matrix {
+	    [Ruffle(InternalSlot)]
 		public var a:Number;
+
+	    [Ruffle(InternalSlot)]
 		public var b:Number;
+
+	    [Ruffle(InternalSlot)]
 		public var c:Number;
+
+	    [Ruffle(InternalSlot)]
 		public var d:Number;
+
+	    [Ruffle(InternalSlot)]
 		public var tx:Number;
+
+	    [Ruffle(InternalSlot)]
 		public var ty:Number;
 
 		public function Matrix(a:Number = 1, b:Number = 0, c:Number = 0, d:Number = 1, tx:Number = 0, ty:Number = 0) {

@@ -1,4 +1,6 @@
-use crate::avm2::globals::slots::flash_geom_transform as slots;
+use crate::avm2::globals::slots::flash_geom_color_transform as ct_slots;
+use crate::avm2::globals::slots::flash_geom_matrix as matrix_slots;
+use crate::avm2::globals::slots::flash_geom_transform as transform_slots;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, TObject, Value};
 use crate::display_object::TDisplayObject;
@@ -12,7 +14,7 @@ fn get_display_object<'gc>(
     _activation: &mut Activation<'_, 'gc>,
 ) -> Result<DisplayObject<'gc>, Error<'gc>> {
     Ok(this
-        .get_slot(slots::DISPLAY_OBJECT)
+        .get_slot(transform_slots::DISPLAY_OBJECT)
         .as_object()
         .unwrap()
         .as_display_object()
@@ -120,29 +122,30 @@ pub fn object_to_color_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<ColorTransform, Error<'gc>> {
     let red_multiplier = object
-        .get_public_property("redMultiplier", activation)?
+        .get_slot(ct_slots::RED_MULTIPLIER)
         .coerce_to_number(activation)?;
     let green_multiplier = object
-        .get_public_property("greenMultiplier", activation)?
+        .get_slot(ct_slots::GREEN_MULTIPLIER)
         .coerce_to_number(activation)?;
     let blue_multiplier = object
-        .get_public_property("blueMultiplier", activation)?
+        .get_slot(ct_slots::BLUE_MULTIPLIER)
         .coerce_to_number(activation)?;
     let alpha_multiplier = object
-        .get_public_property("alphaMultiplier", activation)?
+        .get_slot(ct_slots::ALPHA_MULTIPLIER)
         .coerce_to_number(activation)?;
     let red_offset = object
-        .get_public_property("redOffset", activation)?
+        .get_slot(ct_slots::RED_OFFSET)
         .coerce_to_number(activation)?;
     let green_offset = object
-        .get_public_property("greenOffset", activation)?
+        .get_slot(ct_slots::GREEN_OFFSET)
         .coerce_to_number(activation)?;
     let blue_offset = object
-        .get_public_property("blueOffset", activation)?
+        .get_slot(ct_slots::BLUE_OFFSET)
         .coerce_to_number(activation)?;
     let alpha_offset = object
-        .get_public_property("alphaOffset", activation)?
+        .get_slot(ct_slots::ALPHA_OFFSET)
         .coerce_to_number(activation)?;
+
     Ok(ColorTransform {
         r_multiply: Fixed8::from_f64(red_multiplier),
         g_multiply: Fixed8::from_f64(green_multiplier),
@@ -199,25 +202,25 @@ pub fn object_to_matrix<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Matrix, Error<'gc>> {
     let a = object
-        .get_public_property("a", activation)?
+        .get_slot(matrix_slots::A)
         .coerce_to_number(activation)? as f32;
     let b = object
-        .get_public_property("b", activation)?
+        .get_slot(matrix_slots::B)
         .coerce_to_number(activation)? as f32;
     let c = object
-        .get_public_property("c", activation)?
+        .get_slot(matrix_slots::C)
         .coerce_to_number(activation)? as f32;
     let d = object
-        .get_public_property("d", activation)?
+        .get_slot(matrix_slots::D)
         .coerce_to_number(activation)? as f32;
     let tx = Twips::from_pixels(
         object
-            .get_public_property("tx", activation)?
+            .get_slot(matrix_slots::TX)
             .coerce_to_number(activation)?,
     );
     let ty = Twips::from_pixels(
         object
-            .get_public_property("ty", activation)?
+            .get_slot(matrix_slots::TY)
             .coerce_to_number(activation)?,
     );
 
