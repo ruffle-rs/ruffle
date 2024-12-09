@@ -21,7 +21,7 @@ fn avm2_object_from_flv_variables<'gc>(
         let property_name = value.name;
 
         info_object
-            .set_public_property(
+            .set_string_property_local(
                 AvmString::new_utf8_bytes(activation.context.gc_context, property_name),
                 value.data.to_avm2_value(activation),
                 activation,

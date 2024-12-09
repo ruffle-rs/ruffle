@@ -43,9 +43,9 @@ fn deserialize_json_inner<'gc>(
                     Some(reviver) => reviver.call(activation, Value::Null, &[key.into(), val])?,
                 };
                 if matches!(mapped_val, Value::Undefined) {
-                    obj.delete_public_property(activation, key)?;
+                    obj.delete_string_property_local(key, activation)?;
                 } else {
-                    obj.set_public_property(key, mapped_val, activation)?;
+                    obj.set_string_property_local(key, mapped_val, activation)?;
                 }
             }
             obj.into()

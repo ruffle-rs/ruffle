@@ -315,7 +315,7 @@ pub fn deserialize_value_impl<'gc>(
 
             // Now let's add each element as a property
             for element in elements {
-                array.set_public_property(
+                array.set_string_property_local(
                     AvmString::new_utf8(activation.context.gc_context, element.name()),
                     deserialize_value_impl(activation, element.value(), object_map)?,
                     activation,
@@ -473,7 +473,7 @@ pub fn deserialize_value_impl<'gc>(
                     dict_obj.set_property_by_object(key, value, activation.context.gc_context);
                 } else {
                     let key_string = key.coerce_to_string(activation)?;
-                    dict_obj.set_public_property(key_string, value, activation)?;
+                    dict_obj.set_string_property_local(key_string, value, activation)?;
                 }
             }
             dict_obj.into()
@@ -514,7 +514,7 @@ pub fn deserialize_lso<'gc>(
         .construct(activation, &[])?;
 
     for child in &lso.body {
-        obj.set_public_property(
+        obj.set_string_property_local(
             AvmString::new_utf8(activation.context.gc_context, &child.name),
             deserialize_value(activation, child.value())?,
             activation,
