@@ -56,7 +56,7 @@ scopeguard = "1.2.0"
 fluent-templates = "0.11.0"
 egui = { workspace = true, optional = true }
 egui_extras = { git = "https://github.com/emilk/egui.git", branch = "master", default-features = false, optional = true }
-png = { version = "0.17.14", optional = true }
+png = { version = "0.17.15", optional = true }
 flv-rs = { path = "../flv" }
 async-channel = { workspace = true }
 jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "2a429b0d71ab416e10b73d4dbdcf34cfe2900395", optional = true }
@@ -68,7 +68,7 @@ unic-segment = "0.9.0"
 id3 = "1.16.0"
 either = "1.13.0"
 chardetng = "0.1.17"
-tracy-client = { version = "0.17.1", optional = true, default-features = false }
+tracy-client = { version = "0.17.5", optional = true, default-features = false }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 workspace = true
