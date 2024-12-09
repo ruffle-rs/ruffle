@@ -62,6 +62,14 @@ deny = [
     # Having multiple versions of this can silently cause images (such as
     # the logo in the about dialog) in egui to not appear.
     { name = "image", deny-multiple-versions = true },
+    # Force using the 1.0.x series, with no actual IDNA support. We don't
+    # need it (Flash Player didn't support it), so it would just add bloat.
+    # See: https://crates.io/crates/idna_adapter/
+    "idna_adapter:>=1.1",
+    # Would be used by the 1.1 series of idna_adapter.
+    "unicode-normalization",
+    # Would be used by the 1.2 series of idna_adapter.
+    "icu_normalizer",
 ]
 
 [sources]
