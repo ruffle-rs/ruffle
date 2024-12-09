@@ -156,6 +156,8 @@ pub struct MovieView {
     renderer: Arc<MovieViewRenderer>,
     texture: wgpu::Texture,
     bind_group: wgpu::BindGroup,
+    #[cfg(feature = "tracy")]
+    tracy_frame_captures: crate::tracy::FrameCapturesHolder,
 }
 
 impl MovieView {
@@ -164,6 +166,7 @@ impl MovieView {
         device: &wgpu::Device,
         width: u32,
         height: u32,
+        #[cfg(feature = "tracy")] tracy_frame_captures: crate::tracy::FrameCapturesHolder,
     ) -> Self {
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: None,
@@ -194,10 +197,14 @@ impl MovieView {
                 },
             ],
         });
+        #[cfg(feature = "tracy")]
+        tracy_frame_captures.set_target(device, Some(&texture));
         Self {
             renderer,
             texture,
             bind_group,
+            #[cfg(feature = "tracy")]
+            tracy_frame_captures,
         }
     }
 
@@ -217,7 +224,14 @@ impl RenderTarget for MovieView {
     type Frame = MovieViewFrame;
 
     fn resize(&mut self, device: &wgpu::Device, width: u32, height: u32) {
-        *self = MovieView::new(self.renderer.clone(), device, width, height);
+        *self = MovieView::new(
+            self.renderer.clone(),
+            device,
+            width,
+            height,
+            #[cfg(feature = "tracy")]
+            self.tracy_frame_captures.clone(),
+        );
     }
 
     fn format(&self) -> wgpu::TextureFormat {
