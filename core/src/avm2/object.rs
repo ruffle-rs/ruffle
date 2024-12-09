@@ -59,6 +59,7 @@ mod shared_object_object;
 mod socket_object;
 mod sound_object;
 mod soundchannel_object;
+mod soundtransform_object;
 mod stage3d_object;
 mod stage_object;
 mod textformat_object;
@@ -136,6 +137,9 @@ pub use crate::avm2::object::sound_object::{
 pub use crate::avm2::object::soundchannel_object::{
     sound_channel_allocator, SoundChannelObject, SoundChannelObjectWeak,
 };
+pub use crate::avm2::object::soundtransform_object::{
+    sound_transform_allocator, SoundTransformObject, SoundTransformObjectWeak,
+};
 pub use crate::avm2::object::stage3d_object::{
     stage_3d_allocator, Stage3DObject, Stage3DObjectWeak,
 };
@@ -201,6 +205,7 @@ use crate::font::Font;
         FontObject(FontObject<'gc>),
         LocalConnectionObject(LocalConnectionObject<'gc>),
         SharedObjectObject(SharedObjectObject<'gc>),
+        SoundTransformObject(SoundTransformObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -1268,6 +1273,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn as_shared_object(&self) -> Option<SharedObjectObject<'gc>> {
         None
     }
+
+    fn as_sound_transform(&self) -> Option<SoundTransformObject<'gc>> {
+        None
+    }
 }
 
 pub enum ObjectPtr {}
@@ -1320,6 +1329,7 @@ impl<'gc> Object<'gc> {
             Self::FontObject(o) => WeakObject::FontObject(FontObjectWeak(Gc::downgrade(o.0))),
             Self::LocalConnectionObject(o) => WeakObject::LocalConnectionObject(LocalConnectionObjectWeak(Gc::downgrade(o.0))),
             Self::SharedObjectObject(o) => WeakObject::SharedObjectObject(SharedObjectObjectWeak(Gc::downgrade(o.0))),
+            Self::SoundTransformObject(o) => WeakObject::SoundTransformObject(SoundTransformObjectWeak(Gc::downgrade(o.0))),
         }
     }
 }
@@ -1382,6 +1392,7 @@ pub enum WeakObject<'gc> {
     FontObject(FontObjectWeak<'gc>),
     LocalConnectionObject(LocalConnectionObjectWeak<'gc>),
     SharedObjectObject(SharedObjectObjectWeak<'gc>),
+    SoundTransformObject(SoundTransformObjectWeak<'gc>),
 }
 
 impl<'gc> WeakObject<'gc> {
@@ -1427,6 +1438,7 @@ impl<'gc> WeakObject<'gc> {
             Self::FontObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
             Self::LocalConnectionObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
             Self::SharedObjectObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::SoundTransformObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
         }
     }
 
@@ -1472,6 +1484,7 @@ impl<'gc> WeakObject<'gc> {
             Self::FontObject(o) => FontObject(o.0.upgrade(mc)?).into(),
             Self::LocalConnectionObject(o) => LocalConnectionObject(o.0.upgrade(mc)?).into(),
             Self::SharedObjectObject(o) => SharedObjectObject(o.0.upgrade(mc)?).into(),
+            Self::SoundTransformObject(o) => SoundTransformObject(o.0.upgrade(mc)?).into(),
         })
     }
 }

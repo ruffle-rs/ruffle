@@ -107,8 +107,8 @@ pub fn set_sound_transform<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.as_display_object() {
-        let as3_st = args.get_object(activation, 0, "value")?;
-        let dobj_st = SoundTransform::from_avm2_object(activation, as3_st)?;
+        let as3_st = args.get_object(activation, 0, "soundTransform")?;
+        let dobj_st = SoundTransform::from_avm2_object(as3_st);
 
         dobj.set_sound_transform(activation.context, dobj_st);
     }
