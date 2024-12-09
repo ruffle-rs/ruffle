@@ -1,9 +1,12 @@
-use std::{
-    cell::{Ref, RefMut},
-    fmt::{self, Debug},
-};
+use crate::avm2::error::{make_error_1010, make_error_1085, make_error_1118, type_error};
+use crate::avm2::globals::slots::xml as xml_class_slots;
+use crate::avm2::object::{E4XOrXml, FunctionObject, NamespaceObject};
+use crate::avm2::{Activation, Error, Multiname, TObject, Value};
+use crate::string::{AvmString, WStr, WString};
+use crate::xml::custom_unescape;
 
 use gc_arena::{Collect, GcCell, Mutation};
+
 use quick_xml::{
     errors::{IllFormedError, SyntaxError as XmlSyntaxError},
     events::{attributes::AttrError as XmlAttrError, BytesStart, Event},
@@ -11,15 +14,8 @@ use quick_xml::{
     Error as XmlError, NsReader,
 };
 
-use crate::{avm2::TObject, xml::custom_unescape};
-
-use super::{
-    error::{make_error_1010, make_error_1085, make_error_1118, type_error},
-    object::{E4XOrXml, FunctionObject, NamespaceObject},
-    string::AvmString,
-    Activation, Error, Multiname, Value,
-};
-use crate::string::{WStr, WString};
+use std::cell::{Ref, RefMut};
+use std::fmt::{self, Debug};
 
 mod is_xml_name;
 mod iterators;
@@ -1664,16 +1660,15 @@ pub fn to_xml_string<'gc>(
         .avm2()
         .classes()
         .xml
-        .get_public_property("prettyPrinting", activation)
-        .expect("prettyPrinting should be set")
+        .get_slot(xml_class_slots::PRETTY_PRINTING)
         .coerce_to_boolean();
+
     let pretty = if pretty_printing {
         let pretty_indent = activation
             .avm2()
             .classes()
             .xml
-            .get_public_property("prettyIndent", activation)
-            .expect("prettyIndent should be set")
+            .get_slot(xml_class_slots::PRETTY_INDENT)
             .coerce_to_i32(activation)
             .expect("shouldn't error");
 
