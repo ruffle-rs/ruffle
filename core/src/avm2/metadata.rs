@@ -82,7 +82,7 @@ impl<'gc> Metadata<'gc> {
             .classes()
             .object
             .construct(activation, &[])?;
-        object.set_public_property("name", self.name.into(), activation)?;
+        object.set_string_property_local("name", self.name.into(), activation)?;
 
         let values = self
             .items
@@ -93,15 +93,15 @@ impl<'gc> Metadata<'gc> {
                     .classes()
                     .object
                     .construct(activation, &[])?;
-                value_object.set_public_property("key", item.key.into(), activation)?;
-                value_object.set_public_property("value", item.value.into(), activation)?;
+                value_object.set_string_property_local("key", item.key.into(), activation)?;
+                value_object.set_string_property_local("value", item.value.into(), activation)?;
                 Ok(Some(value_object.into()))
             })
             .collect::<Result<Vec<Option<Value<'gc>>>, Error<'gc>>>()?;
 
         let values_array =
             ArrayObject::from_storage(activation, ArrayStorage::from_storage(values))?;
-        object.set_public_property("value", values_array.into(), activation)?;
+        object.set_string_property_local("value", values_array.into(), activation)?;
         Ok(object)
     }
 }
