@@ -165,10 +165,7 @@ pub fn play<'gc>(
         };
 
         let sound_transform = if let Some(sound_transform) = sound_transform {
-            Some(SoundTransform::from_avm2_object(
-                activation,
-                sound_transform,
-            )?)
+            Some(SoundTransform::from_avm2_object(sound_transform))
         } else {
             None
         };

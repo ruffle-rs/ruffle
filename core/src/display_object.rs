@@ -2723,32 +2723,18 @@ impl SoundTransform {
         self.right_to_left = 0;
     }
 
-    pub fn from_avm2_object<'gc>(
-        activation: &mut Avm2Activation<'_, 'gc>,
-        as3_st: Avm2Object<'gc>,
-    ) -> Result<Self, Avm2Error<'gc>> {
-        Ok(SoundTransform {
-            left_to_left: (as3_st
-                .get_public_property("leftToLeft", activation)?
-                .coerce_to_number(activation)?
-                * 100.0) as i32,
-            left_to_right: (as3_st
-                .get_public_property("leftToRight", activation)?
-                .coerce_to_number(activation)?
-                * 100.0) as i32,
-            right_to_left: (as3_st
-                .get_public_property("rightToLeft", activation)?
-                .coerce_to_number(activation)?
-                * 100.0) as i32,
-            right_to_right: (as3_st
-                .get_public_property("rightToRight", activation)?
-                .coerce_to_number(activation)?
-                * 100.0) as i32,
-            volume: (as3_st
-                .get_public_property("volume", activation)?
-                .coerce_to_number(activation)?
-                * 100.0) as i32,
-        })
+    pub fn from_avm2_object(as3_st: Avm2Object<'_>) -> Self {
+        let sound_transform = as3_st
+            .as_sound_transform()
+            .expect("Should pass SoundTransform");
+
+        SoundTransform {
+            left_to_left: (sound_transform.left_to_left() * 100.0) as i32,
+            left_to_right: (sound_transform.left_to_right() * 100.0) as i32,
+            right_to_left: (sound_transform.right_to_left() * 100.0) as i32,
+            right_to_right: (sound_transform.right_to_right() * 100.0) as i32,
+            volume: (sound_transform.volume() * 100.0) as i32,
+        }
     }
 
     pub fn into_avm2_object<'gc>(
@@ -2759,31 +2745,17 @@ impl SoundTransform {
             .avm2()
             .classes()
             .soundtransform
-            .construct(activation, &[])?;
+            .construct(activation, &[])?
+            .as_sound_transform()
+            .unwrap();
 
-        as3_st.set_public_property(
-            "leftToLeft",
-            (self.left_to_left as f64 / 100.0).into(),
-            activation,
-        )?;
-        as3_st.set_public_property(
-            "leftToRight",
-            (self.left_to_right as f64 / 100.0).into(),
-            activation,
-        )?;
-        as3_st.set_public_property(
-            "rightToLeft",
-            (self.right_to_left as f64 / 100.0).into(),
-            activation,
-        )?;
-        as3_st.set_public_property(
-            "rightToRight",
-            (self.right_to_right as f64 / 100.0).into(),
-            activation,
-        )?;
-        as3_st.set_public_property("volume", (self.volume as f64 / 100.0).into(), activation)?;
+        as3_st.set_left_to_left(self.left_to_left as f64 / 100.0);
+        as3_st.set_left_to_right(self.left_to_right as f64 / 100.0);
+        as3_st.set_right_to_left(self.right_to_left as f64 / 100.0);
+        as3_st.set_right_to_right(self.right_to_right as f64 / 100.0);
+        as3_st.set_volume(self.volume as f64 / 100.0);
 
-        Ok(as3_st)
+        Ok(as3_st.into())
     }
 }
 
