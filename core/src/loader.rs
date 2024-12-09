@@ -1570,9 +1570,10 @@ impl<'gc> Loader<'gc> {
                     activation: &mut Avm2Activation<'a, 'gc>,
                     target: Avm2Object<'gc>,
                 ) {
+                    use crate::avm2::globals::slots::flash_net_url_loader as url_loader_slots;
+
                     let data_format = target
-                        .get_public_property("dataFormat", activation)
-                        .expect("The dataFormat field exists on URLLoaders")
+                        .get_slot(url_loader_slots::DATA_FORMAT)
                         .coerce_to_string(activation)
                         .expect("The dataFormat field is typed String");
 
@@ -1605,7 +1606,7 @@ impl<'gc> Loader<'gc> {
 
                     if let Some(data_object) = data_object {
                         target
-                            .set_public_property("data", data_object, activation)
+                            .set_slot(url_loader_slots::DATA, data_object, activation)
                             .unwrap();
                     }
                 }
