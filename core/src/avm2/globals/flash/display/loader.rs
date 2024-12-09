@@ -67,9 +67,9 @@ pub fn load<'gc>(
         .as_object()
         .unwrap();
 
-    let loader_info_object = loader_info.as_loader_info_object().unwrap();
+    let loader_info = loader_info.as_loader_info_object().unwrap();
 
-    if loader_info_object.init_event_fired() {
+    if loader_info.init_event_fired() {
         // FIXME: When calling load/loadBytes, then calling load/loadBytes again
         // before the `init` event is fired, the first load is cancelled.
         avm2_stub_method!(
@@ -81,7 +81,7 @@ pub fn load<'gc>(
     }
 
     // Unload the loader, in case something was already loaded.
-    loader_info_object.unload(activation);
+    loader_info.unload(activation);
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
     let content = MovieClip::new(
@@ -90,17 +90,14 @@ pub fn load<'gc>(
     );
 
     // Update the LoaderStream - we still have a fake SwfMovie, but we now have the real target clip.
-    loader_info
-        .as_loader_info_object()
-        .unwrap()
-        .set_loader_stream(
-            LoaderStream::NotYetLoaded(
-                Arc::new(SwfMovie::empty(activation.context.swf.version())),
-                Some(content.into()),
-                false,
-            ),
-            activation.context.gc_context,
-        );
+    loader_info.set_loader_stream(
+        LoaderStream::NotYetLoaded(
+            Arc::new(SwfMovie::empty(activation.context.swf.version())),
+            Some(content.into()),
+            false,
+        ),
+        activation.context.gc_context,
+    );
 
     let request = request_from_url_request(activation, url_request)?;
 
@@ -111,7 +108,7 @@ pub fn load<'gc>(
         request,
         Some(url),
         MovieLoaderVMData::Avm2 {
-            loader_info,
+            loader_info: *loader_info,
             context,
             default_domain: activation
                 .caller_domain()
@@ -227,9 +224,9 @@ pub fn load_bytes<'gc>(
         .as_object()
         .unwrap();
 
-    let loader_info_object = loader_info.as_loader_info_object().unwrap();
+    let loader_info = loader_info.as_loader_info_object().unwrap();
 
-    if loader_info_object.init_event_fired() {
+    if loader_info.init_event_fired() {
         // FIXME: When calling load/loadBytes, then calling load/loadBytes again
         // before the `init` event is fired, the first load is cancelled.
         avm2_stub_method!(
@@ -241,7 +238,7 @@ pub fn load_bytes<'gc>(
     }
 
     // Unload the loader, in case something was already loaded.
-    loader_info_object.unload(activation);
+    loader_info.unload(activation);
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
     let content = MovieClip::new(
@@ -258,7 +255,7 @@ pub fn load_bytes<'gc>(
         content.into(),
         bytes,
         MovieLoaderVMData::Avm2 {
-            loader_info,
+            loader_info: *loader_info,
             context,
             default_domain,
         },
@@ -284,9 +281,9 @@ pub fn unload<'gc>(
         .as_object()
         .unwrap();
 
-    let loader_info_object = loader_info.as_loader_info_object().unwrap();
+    let loader_info = loader_info.as_loader_info_object().unwrap();
 
-    loader_info_object.unload(activation);
+    loader_info.unload(activation);
 
     Ok(Value::Undefined)
 }
