@@ -1,6 +1,7 @@
 //! `flash.net` namespace
 
 use crate::avm2::error::{make_error_1014, make_error_2007, Error1014Type};
+use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, Value};
@@ -80,21 +81,23 @@ pub fn navigate_to_url<'gc>(
 
     let target = args.get_string(activation, 1)?;
 
-    match request.get_public_property("url", activation)? {
+    match request.get_slot(url_request_slots::_URL) {
         Value::Null => Err(make_error_2007(activation, "url")),
         url => {
             let url = url.coerce_to_string(activation)?.to_string();
             let method = request
-                .get_public_property("method", activation)?
+                .get_slot(url_request_slots::_METHOD)
                 .coerce_to_string(activation)?;
             let method = NavigationMethod::from_method_str(&method).unwrap();
-            let data: Value<'gc> = request.get_public_property("data", activation)?;
+            let data = request.get_slot(url_request_slots::_DATA);
             let (url, vars) = parse_data(activation, &url, &data)?;
+
             activation.context.navigator.navigate_to_url(
                 &url,
                 &target.to_utf8_lossy(),
                 Some((method, vars)),
             );
+
             Ok(Value::Undefined)
         }
     }
