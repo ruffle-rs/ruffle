@@ -481,9 +481,8 @@ pub fn index_of<'gc>(
         .coerce_to_i32(activation)?;
 
     let from_index = if from_index < 0 {
-        let length = this
-            .get_public_property("length", activation)?
-            .coerce_to_i32(activation)?;
+        let length = this.as_vector_storage().unwrap().length() as i32;
+
         max(length + from_index, 0) as u32
     } else {
         from_index as u32
@@ -516,9 +515,8 @@ pub fn last_index_of<'gc>(
         .coerce_to_i32(activation)?;
 
     let from_index = if from_index < 0 {
-        let length = this
-            .get_public_property("length", activation)?
-            .coerce_to_i32(activation)?;
+        let length = this.as_vector_storage().unwrap().length() as i32;
+
         max(length + from_index, 0) as u32
     } else {
         from_index as u32
