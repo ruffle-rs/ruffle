@@ -1,6 +1,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2008;
 use crate::avm2::object::{ArrayObject, Object, TObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::ecma_conversions::round_to_even;
@@ -535,24 +536,22 @@ pub fn set_tab_stops<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mut text_format) = this.as_text_format_mut() {
-        let value = args.get(0).unwrap_or(&Value::Undefined);
+        let value = args.try_get_object(activation, 0);
         text_format.tab_stops = match value {
-            Value::Null => None,
-            Value::Object(obj) => {
-                let length = obj.as_array_storage().map_or(0, |v| v.length());
+            Some(obj) => {
+                let array_storage = obj.as_array_storage().unwrap();
+                let length = array_storage.length();
 
                 let tab_stops: Result<Vec<_>, Error<'gc>> = (0..length)
                     .map(|i| {
-                        let element = obj.get_public_property(
-                            AvmString::new_utf8(activation.context.gc_context, i.to_string()),
-                            activation,
-                        )?;
-                        Ok(round_to_even(element.coerce_to_number(activation)?).into())
+                        let value = array_storage.get(i).unwrap_or(Value::Number(0.0));
+
+                        Ok(round_to_even(value.coerce_to_number(activation)?).into())
                     })
                     .collect();
                 Some(tab_stops?)
             }
-            _ => unreachable!("Array-typed argument can only be Object or Null"),
+            None => None,
         };
     }
 

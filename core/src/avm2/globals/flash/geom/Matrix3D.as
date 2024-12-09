@@ -4,9 +4,9 @@ package flash.geom {
     import __ruffle__.stub_method;
 
     public class Matrix3D {
-
         // The 4x4 matrix data, stored in column-major order
         // This is never null.
+        [Ruffle(InternalSlot)]
         private var _rawData:Vector.<Number>;
 
         public function get rawData():Vector.<Number> {
@@ -30,11 +30,11 @@ package flash.geom {
         public function identity():void {
             // Note that every 4 elements is a *column*, not a row
             this._rawData = new <Number>[
-                    1, 0, 0, 0,
-                    0, 1, 0, 0,
-                    0, 0, 1, 0,
-                    0, 0, 0, 1
-                ];
+                1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1
+            ];
         }
 
         public function appendTranslation(x:Number, y:Number, z:Number):void {

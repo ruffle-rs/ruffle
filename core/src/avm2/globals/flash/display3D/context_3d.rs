@@ -1,4 +1,5 @@
 use crate::avm2::error::{argument_error, error, make_error_2008};
+use crate::avm2::globals::slots::flash_geom_matrix3d as matrix3d_slots;
 use crate::avm2::globals::slots::flash_geom_rectangle as rectangle_slots;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Activation;
@@ -306,7 +307,7 @@ pub fn set_program_constants_from_matrix<'gc>(
         }
 
         let matrix_raw_data = matrix
-            .get_public_property("rawData", activation)?
+            .get_slot(matrix3d_slots::_RAW_DATA)
             .as_object()
             .expect("rawData cannot be null");
 
