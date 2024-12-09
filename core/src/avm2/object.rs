@@ -682,6 +682,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         Ok(base.delete_property_local(activation.gc(), name))
     }
 
+    /// Same as delete_property_local, but constructs a public Multiname for you.
+    fn delete_string_property_local(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<bool, Error<'gc>> {
+        let name = Multiname::new(activation.avm2().namespaces.public_vm_internal(), name);
+        self.delete_property_local(activation, &name)
+    }
+
     /// Delete a named property from the object.
     ///
     /// Returns false if the property cannot be deleted.
@@ -718,17 +728,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 Ok(false)
             }
         }
-    }
-
-    /// Same as delete_property, but constructs a public Multiname for you.
-    #[no_dynamic]
-    fn delete_public_property(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        name: impl Into<AvmString<'gc>>,
-    ) -> Result<bool, Error<'gc>> {
-        let name = Multiname::new(activation.avm2().namespaces.public_all(), name);
-        self.delete_property(activation, &name)
     }
 
     /// Retrieve the `__proto__` of a given object.

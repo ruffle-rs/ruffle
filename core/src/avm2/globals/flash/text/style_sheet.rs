@@ -24,13 +24,13 @@ pub fn inner_parse_css<'gc>(
                 .object
                 .construct(activation, &[])?;
             for (key, value) in properties.into_iter() {
-                object.set_public_property(
+                object.set_string_property_local(
                     AvmString::new(activation.gc(), transform_dashes_to_camel_case(key)),
                     Value::String(AvmString::new(activation.gc(), value)),
                     activation,
                 )?;
             }
-            result.set_public_property(
+            result.set_string_property_local(
                 AvmString::new(activation.gc(), selector),
                 Value::Object(object),
                 activation,
