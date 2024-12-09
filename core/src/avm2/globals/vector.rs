@@ -120,15 +120,7 @@ fn class_init<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let proto = this
-        .get_public_property("prototype", activation)?
-        .as_object()
-        .ok_or_else(|| {
-            format!(
-                "Specialization {} has a prototype of null or undefined",
-                this.instance_of_class_name(activation.context.gc_context)
-            )
-        })?;
+    let proto = this.as_class_object().unwrap().prototype();
     let scope = activation.create_scopechain();
 
     const PUBLIC_PROTOTYPE_METHODS: &[(&str, NativeMethodImpl)] = &[
