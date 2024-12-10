@@ -38,7 +38,7 @@ pub fn make_shader_parameter<'gc>(
                     obj.set_slot(parameter_slots::_VALUE, value, activation)?;
                 }
             }
-            obj.set_public_property(
+            obj.set_string_property_local(
                 "name",
                 AvmString::new_utf8(activation.context.gc_context, name).into(),
                 activation,
@@ -53,7 +53,7 @@ pub fn make_shader_parameter<'gc>(
                 .construct(activation, &[])?;
             obj.set_slot(input_slots::_CHANNELS, (*channels).into(), activation)?;
             obj.set_slot(input_slots::_INDEX, index.into(), activation)?;
-            obj.set_public_property(
+            obj.set_string_property_local(
                 "name",
                 AvmString::new_utf8(activation.context.gc_context, name).into(),
                 activation,
