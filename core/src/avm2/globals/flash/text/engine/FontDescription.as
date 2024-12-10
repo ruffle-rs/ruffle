@@ -2,12 +2,16 @@ package flash.text.engine {
     import __ruffle__.stub_method;
 
     public final class FontDescription {
+        [Ruffle(InternalSlot)]
         private var _fontName:String;
 
+        [Ruffle(InternalSlot)]
         private var _fontWeight:String;
 
+        [Ruffle(InternalSlot)]
         private var _fontPosture:String;
 
+        [Ruffle(InternalSlot)]
         private var _fontLookup:String;
 
         private var _renderingMode:String;
