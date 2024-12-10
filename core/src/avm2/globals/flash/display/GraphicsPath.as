@@ -1,14 +1,31 @@
 package flash.display {
 
     public final class GraphicsPath implements IGraphicsPath, IGraphicsData {
+        [Ruffle(InternalSlot)]
         public var commands : Vector.<int>;
+
+        [Ruffle(InternalSlot)]
         public var data : Vector.<Number>;
-        public var winding : String;
+
+        [Ruffle(InternalSlot)]
+        private var _winding : String;
 
         public function GraphicsPath(commands:Vector.<int> = null, data:Vector.<Number> = null, winding:String = "evenOdd") {
             this.commands = commands;
             this.data = data;
             this.winding = winding;
+        }
+
+        public function get winding():String {
+            return this._winding;
+        }
+
+        public function set winding(value:String):void {
+            if (value != "evenOdd" && value != "nonZero") {
+                throw new ArgumentError("Error #2008: Parameter winding must be one of the accepted values.", 2008);
+            } else {
+                this._winding = value;
+            }
         }
 
         [API("674")] // The online docs say 694, but that's a lie. This is the correct number from playerglobal.swc.
