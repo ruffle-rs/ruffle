@@ -8,6 +8,7 @@ package flash.text.engine {
 
         private var _breakOpportunity:String;
 
+        [Ruffle(InternalSlot)]
         private var _color:uint;
 
         private var _digitCase:String;
@@ -16,8 +17,10 @@ package flash.text.engine {
 
         private var _dominantBaseline:String;
 
+        [Ruffle(InternalSlot)]
         private var _fontDescription:FontDescription;
 
+        [Ruffle(InternalSlot)]
         private var _fontSize:Number;
 
         private var _kerning:String;
