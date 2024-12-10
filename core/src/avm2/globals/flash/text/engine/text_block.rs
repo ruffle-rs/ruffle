@@ -2,6 +2,8 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::Error;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::globals::slots::flash_text_engine_content_element as element_slots;
+use crate::avm2::globals::slots::flash_text_engine_element_format as format_slots;
+use crate::avm2::globals::slots::flash_text_engine_font_description as font_desc_slots;
 use crate::avm2::globals::slots::flash_text_engine_text_block as block_slots;
 use crate::avm2::globals::slots::flash_text_engine_text_line as line_slots;
 use crate::avm2::object::{Object, TObject};
@@ -105,37 +107,37 @@ fn apply_format<'gc>(
     if let Some(element_format) = element_format {
         // TODO: Support more ElementFormat properties
         let color = element_format
-            .get_public_property("color", activation)?
+            .get_slot(format_slots::_COLOR)
             .coerce_to_u32(activation)?;
         let size = element_format
-            .get_public_property("fontSize", activation)?
+            .get_slot(format_slots::_FONT_SIZE)
             .coerce_to_number(activation)?;
 
         let (font, bold, italic, is_device_font) = if let Value::Object(font_description) =
-            element_format.get_public_property("fontDescription", activation)?
+            element_format.get_slot(format_slots::_FONT_DESCRIPTION)
         {
             (
                 Some(
                     font_description
-                        .get_public_property("fontName", activation)?
+                        .get_slot(font_desc_slots::_FONT_NAME)
                         .coerce_to_string(activation)?
                         .as_wstr()
                         .into(),
                 ),
                 Some(
                     &font_description
-                        .get_public_property("fontWeight", activation)?
+                        .get_slot(font_desc_slots::_FONT_WEIGHT)
                         .coerce_to_string(activation)?
                         == b"bold",
                 ),
                 Some(
                     &font_description
-                        .get_public_property("fontPosture", activation)?
+                        .get_slot(font_desc_slots::_FONT_POSTURE)
                         .coerce_to_string(activation)?
                         == b"italic",
                 ),
                 &font_description
-                    .get_public_property("fontLookup", activation)?
+                    .get_slot(font_desc_slots::_FONT_LOOKUP)
                     .coerce_to_string(activation)?
                     == b"device",
             )
