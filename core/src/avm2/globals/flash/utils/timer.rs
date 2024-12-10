@@ -4,7 +4,6 @@ use crate::avm2::activation::Activation;
 use crate::avm2::globals::slots::flash_utils_timer as slots;
 use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
-use crate::avm2::Multiname;
 use crate::avm2::{Error, Object};
 use crate::timer::TimerCallback;
 
@@ -30,18 +29,13 @@ pub fn start<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let namespaces = activation.avm2().namespaces;
-
     let id = this.get_slot(slots::_TIMER_ID).coerce_to_i32(activation)?;
 
-    let delay = this.get_slot(slots::_DELAY).coerce_to_number(activation)?;
+    let delay = this.get_slot(slots::_DELAY).coerce_to_i32(activation)?;
 
     if id == -1 {
         let on_update = this
-            .get_property(
-                &Multiname::new(namespaces.flash_utils_internal, "onUpdate"),
-                activation,
-            )?
+            .get_slot(slots::_ON_UPDATE_CLOSURE)
             .as_object()
             .expect("Internal function is object");
 
@@ -53,7 +47,7 @@ pub fn start<'gc>(
                 closure: on_update,
                 params: vec![],
             },
-            delay as _,
+            delay,
             false,
         );
         this.set_slot(slots::_TIMER_ID, id.into(), activation)?;

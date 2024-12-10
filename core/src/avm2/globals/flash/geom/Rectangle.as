@@ -1,8 +1,15 @@
 package flash.geom {
     public class Rectangle {
+        [Ruffle(InternalSlot)]
         public var x: Number;
+
+        [Ruffle(InternalSlot)]
         public var y: Number;
+
+        [Ruffle(InternalSlot)]
         public var width: Number;
+
+        [Ruffle(InternalSlot)]
         public var height: Number;
 
         public function Rectangle(x: Number = 0, y: Number = 0, width: Number = 0, height: Number = 0) {

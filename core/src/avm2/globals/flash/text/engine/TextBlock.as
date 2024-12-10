@@ -12,10 +12,15 @@ package flash.text.engine {
         private var _lineRotation:String;
         private var _tabStops:Vector.<TabStop>;
         private var _textJustifier:TextJustifier;
+
+        [Ruffle(InternalSlot)]
         private var _content:ContentElement;
 
-        internal var _textLineCreationResult:String = null;
-        internal var _firstLine:TextLine = null;
+        [Ruffle(InternalSlot)]
+        private var _textLineCreationResult:String = null;
+
+        [Ruffle(InternalSlot)]
+        private var _firstLine:TextLine = null;
 
 
         public function TextBlock(content:ContentElement = null,

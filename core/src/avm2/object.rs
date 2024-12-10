@@ -59,6 +59,7 @@ mod shared_object_object;
 mod socket_object;
 mod sound_object;
 mod soundchannel_object;
+mod soundtransform_object;
 mod stage3d_object;
 mod stage_object;
 mod textformat_object;
@@ -136,6 +137,9 @@ pub use crate::avm2::object::sound_object::{
 pub use crate::avm2::object::soundchannel_object::{
     sound_channel_allocator, SoundChannelObject, SoundChannelObjectWeak,
 };
+pub use crate::avm2::object::soundtransform_object::{
+    sound_transform_allocator, SoundTransformObject, SoundTransformObjectWeak,
+};
 pub use crate::avm2::object::stage3d_object::{
     stage_3d_allocator, Stage3DObject, Stage3DObjectWeak,
 };
@@ -201,6 +205,7 @@ use crate::font::Font;
         FontObject(FontObject<'gc>),
         LocalConnectionObject(LocalConnectionObject<'gc>),
         SharedObjectObject(SharedObjectObject<'gc>),
+        SoundTransformObject(SoundTransformObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -227,6 +232,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         self.base().get_property_local(name, activation)
+    }
+
+    /// Same as get_property_local, but constructs a public Multiname for you.
+    fn get_string_property_local(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        let name = Multiname::new(activation.avm2().namespaces.public_vm_internal(), name);
+        self.get_property_local(&name, activation)
     }
 
     /// Retrieve a property by Multiname lookup.
@@ -316,7 +331,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         base.set_property_local(name, value, activation)
     }
 
-    /// Same as get_property_local, but constructs a public Multiname for you.
+    /// Same as set_property_local, but constructs a public Multiname for you.
     /// TODO: this feels upside down, as in: we shouldn't need multinames/namespaces
     /// by the time we reach dynamic properties.
     /// But for now, this function is a smaller change to the core than a full refactor.
@@ -682,6 +697,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         Ok(base.delete_property_local(activation.gc(), name))
     }
 
+    /// Same as delete_property_local, but constructs a public Multiname for you.
+    fn delete_string_property_local(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<bool, Error<'gc>> {
+        let name = Multiname::new(activation.avm2().namespaces.public_vm_internal(), name);
+        self.delete_property_local(activation, &name)
+    }
+
     /// Delete a named property from the object.
     ///
     /// Returns false if the property cannot be deleted.
@@ -718,17 +743,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
                 Ok(false)
             }
         }
-    }
-
-    /// Same as delete_property, but constructs a public Multiname for you.
-    #[no_dynamic]
-    fn delete_public_property(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        name: impl Into<AvmString<'gc>>,
-    ) -> Result<bool, Error<'gc>> {
-        let name = Multiname::new(activation.avm2().namespaces.public_all(), name);
-        self.delete_property(activation, &name)
     }
 
     /// Retrieve the `__proto__` of a given object.
@@ -937,32 +951,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         Ok(Value::Object((*self).into()))
     }
 
-    /// Determine if this object is an instance of a given type.
-    ///
-    /// This uses the ES3 definition of instance, which walks the prototype
-    /// chain. For the ES4 definition of instance, use `is_of_type`, which uses
-    /// the class object chain and accounts for interfaces.
-    ///
-    /// The given object should be the class object for the given type we are
-    /// checking against this object. Its prototype will be extracted and
-    /// searched in the prototype chain of this object.
-    #[no_dynamic]
-    fn is_instance_of(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        class: Object<'gc>,
-    ) -> Result<bool, Error<'gc>> {
-        let type_proto = class
-            .get_public_property("prototype", activation)?
-            .as_object();
-
-        if let Some(type_proto) = type_proto {
-            self.has_prototype_in_chain(type_proto)
-        } else {
-            Ok(false)
-        }
-    }
-
     /// Returns all public properties from this object's vtable, together with their values.
     /// This includes normal fields, const fields, and getter methods
     /// This is used for JSON serialization.
@@ -988,26 +976,6 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         }
 
         Ok(values)
-    }
-
-    /// Determine if this object has a given prototype in its prototype chain.
-    ///
-    /// The given object `type_proto` should be the prototype we are checking
-    /// against this object.
-    #[no_dynamic]
-    fn has_prototype_in_chain(&self, type_proto: Object<'gc>) -> Result<bool, Error<'gc>> {
-        let mut my_proto = self.proto();
-
-        //TODO: Is it a verification error to do `obj instanceof bare_object`?
-        while let Some(proto) = my_proto {
-            if Object::ptr_eq(proto, type_proto) {
-                return Ok(true);
-            }
-
-            my_proto = proto.proto()
-        }
-
-        Ok(false)
     }
 
     /// Determine if this object is an instance of a given type.
@@ -1315,6 +1283,10 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     fn as_shared_object(&self) -> Option<SharedObjectObject<'gc>> {
         None
     }
+
+    fn as_sound_transform(&self) -> Option<SoundTransformObject<'gc>> {
+        None
+    }
 }
 
 pub enum ObjectPtr {}
@@ -1367,6 +1339,7 @@ impl<'gc> Object<'gc> {
             Self::FontObject(o) => WeakObject::FontObject(FontObjectWeak(Gc::downgrade(o.0))),
             Self::LocalConnectionObject(o) => WeakObject::LocalConnectionObject(LocalConnectionObjectWeak(Gc::downgrade(o.0))),
             Self::SharedObjectObject(o) => WeakObject::SharedObjectObject(SharedObjectObjectWeak(Gc::downgrade(o.0))),
+            Self::SoundTransformObject(o) => WeakObject::SoundTransformObject(SoundTransformObjectWeak(Gc::downgrade(o.0))),
         }
     }
 }
@@ -1429,6 +1402,7 @@ pub enum WeakObject<'gc> {
     FontObject(FontObjectWeak<'gc>),
     LocalConnectionObject(LocalConnectionObjectWeak<'gc>),
     SharedObjectObject(SharedObjectObjectWeak<'gc>),
+    SoundTransformObject(SoundTransformObjectWeak<'gc>),
 }
 
 impl<'gc> WeakObject<'gc> {
@@ -1474,6 +1448,7 @@ impl<'gc> WeakObject<'gc> {
             Self::FontObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
             Self::LocalConnectionObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
             Self::SharedObjectObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+            Self::SoundTransformObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
         }
     }
 
@@ -1519,6 +1494,7 @@ impl<'gc> WeakObject<'gc> {
             Self::FontObject(o) => FontObject(o.0.upgrade(mc)?).into(),
             Self::LocalConnectionObject(o) => LocalConnectionObject(o.0.upgrade(mc)?).into(),
             Self::SharedObjectObject(o) => SharedObjectObject(o.0.upgrade(mc)?).into(),
+            Self::SoundTransformObject(o) => SoundTransformObject(o.0.upgrade(mc)?).into(),
         })
     }
 }

@@ -14,9 +14,15 @@ package flash.text.engine {
     // to a TextLine.
     [Ruffle(Abstract)]
     public final class TextLine extends DisplayObjectContainer {
-        internal var _specifiedWidth:Number = 0.0;
+        [Ruffle(InternalSlot)]
+        private var _specifiedWidth:Number = 0.0;
+
+        [Ruffle(InternalSlot)]
         internal var _textBlock:TextBlock = null;
-        internal var _rawTextLength:int = 0;
+
+        [Ruffle(InternalSlot)]
+        private var _rawTextLength:int = 0;
+
         internal var _validity:String = "valid";
 
         public static const MAX_LINE_WIDTH:int = 1000000;

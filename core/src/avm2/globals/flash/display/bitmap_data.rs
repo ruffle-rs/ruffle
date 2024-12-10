@@ -6,6 +6,9 @@ use crate::avm2::error::{
     argument_error, make_error_2004, make_error_2007, make_error_2008, range_error, Error2004Type,
 };
 use crate::avm2::filters::FilterAvm2Ext;
+use crate::avm2::globals::slots::{
+    flash_geom_point as point_slots, flash_geom_rectangle as rectangle_slots,
+};
 pub use crate::avm2::object::bitmap_data_allocator;
 use crate::avm2::object::{BitmapDataObject, ByteArrayObject, Object, TObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
@@ -38,16 +41,16 @@ fn get_rectangle_x_y_width_height<'gc>(
     rectangle: Object<'gc>,
 ) -> Result<(i32, i32, i32, i32), Error<'gc>> {
     let x = rectangle
-        .get_public_property("x", activation)?
+        .get_slot(rectangle_slots::X)
         .coerce_to_number(activation)?;
     let y = rectangle
-        .get_public_property("y", activation)?
+        .get_slot(rectangle_slots::Y)
         .coerce_to_number(activation)?;
     let width = rectangle
-        .get_public_property("width", activation)?
+        .get_slot(rectangle_slots::WIDTH)
         .coerce_to_number(activation)?;
     let height = rectangle
-        .get_public_property("height", activation)?
+        .get_slot(rectangle_slots::HEIGHT)
         .coerce_to_number(activation)?;
 
     let x_max = round_to_even(x + width);
@@ -233,10 +236,10 @@ pub fn copy_pixels<'gc>(
         let dest_point = args.get_object(activation, 2, "destPoint")?;
 
         let dest_x = dest_point
-            .get_public_property("x", activation)?
+            .get_slot(point_slots::X)
             .coerce_to_i32(activation)?;
         let dest_y = dest_point
-            .get_public_property("y", activation)?
+            .get_slot(point_slots::Y)
             .coerce_to_i32(activation)?;
 
         if let Some(src_bitmap) = source_bitmap.as_bitmap_data() {
@@ -257,10 +260,10 @@ pub fn copy_pixels<'gc>(
 
                     if let Some(alpha_point) = args.try_get_object(activation, 4) {
                         x = alpha_point
-                            .get_public_property("x", activation)?
+                            .get_slot(point_slots::X)
                             .coerce_to_i32(activation)?;
                         y = alpha_point
-                            .get_public_property("y", activation)?
+                            .get_slot(point_slots::Y)
                             .coerce_to_i32(activation)?;
                     }
 
@@ -505,16 +508,16 @@ pub fn set_vector<'gc>(
     let vec = args.get_object(activation, 1, "imputVector")?;
     if let Some(bitmap_data) = this.as_bitmap_data() {
         let x = rectangle
-            .get_public_property("x", activation)?
+            .get_slot(rectangle_slots::X)
             .coerce_to_number(activation)?;
         let y = rectangle
-            .get_public_property("y", activation)?
+            .get_slot(rectangle_slots::Y)
             .coerce_to_number(activation)?;
         let width = rectangle
-            .get_public_property("width", activation)?
+            .get_slot(rectangle_slots::WIDTH)
             .coerce_to_number(activation)?;
         let height = rectangle
-            .get_public_property("height", activation)?
+            .get_slot(rectangle_slots::HEIGHT)
             .coerce_to_number(activation)?;
 
         // Clamp to bitmap rect.
@@ -562,10 +565,10 @@ pub fn copy_channel<'gc>(
         let dest_point = args.get_object(activation, 2, "destPoint")?;
 
         let dest_x = dest_point
-            .get_public_property("x", activation)?
+            .get_slot(point_slots::X)
             .coerce_to_i32(activation)?;
         let dest_y = dest_point
-            .get_public_property("y", activation)?
+            .get_slot(point_slots::Y)
             .coerce_to_i32(activation)?;
 
         let source_channel = args.get_i32(activation, 3)?;
@@ -757,10 +760,10 @@ pub fn hit_test<'gc>(
             let first_point = args.get_object(activation, 0, "firstPoint")?;
             let top_left = (
                 first_point
-                    .get_public_property("x", activation)?
+                    .get_slot(point_slots::X)
                     .coerce_to_i32(activation)?,
                 first_point
-                    .get_public_property("y", activation)?
+                    .get_slot(point_slots::Y)
                     .coerce_to_i32(activation)?,
             );
             let source_threshold = args.get_u32(activation, 1)?.clamp(0, u8::MAX.into()) as u8;
@@ -775,11 +778,11 @@ pub fn hit_test<'gc>(
             if compare_object.is_of_type(point_class) {
                 let test_point = (
                     compare_object
-                        .get_public_property("x", activation)?
+                        .get_slot(point_slots::X)
                         .coerce_to_i32(activation)?
                         - top_left.0,
                     compare_object
-                        .get_public_property("y", activation)?
+                        .get_slot(point_slots::Y)
                         .coerce_to_i32(activation)?
                         - top_left.1,
                 );
@@ -792,20 +795,20 @@ pub fn hit_test<'gc>(
             } else if compare_object.is_of_type(rectangle_class) {
                 let test_point = (
                     compare_object
-                        .get_public_property("x", activation)?
+                        .get_slot(rectangle_slots::X)
                         .coerce_to_i32(activation)?
                         - top_left.0,
                     compare_object
-                        .get_public_property("y", activation)?
+                        .get_slot(rectangle_slots::Y)
                         .coerce_to_i32(activation)?
                         - top_left.1,
                 );
                 let size = (
                     compare_object
-                        .get_public_property("width", activation)?
+                        .get_slot(rectangle_slots::WIDTH)
                         .coerce_to_i32(activation)?,
                     compare_object
-                        .get_public_property("height", activation)?
+                        .get_slot(rectangle_slots::HEIGHT)
                         .coerce_to_i32(activation)?,
                 );
                 return Ok(Value::Bool(operations::hit_test_rectangle(
@@ -820,10 +823,10 @@ pub fn hit_test<'gc>(
                 let second_point = args.get_object(activation, 3, "secondBitmapDataPoint")?;
                 let second_point = (
                     second_point
-                        .get_public_property("x", activation)?
+                        .get_slot(point_slots::X)
                         .coerce_to_i32(activation)?,
                     second_point
-                        .get_public_property("y", activation)?
+                        .get_slot(point_slots::Y)
                         .coerce_to_i32(activation)?,
                 );
                 let second_threshold = args.get_u32(activation, 4)?.clamp(0, u8::MAX.into()) as u8;
@@ -847,10 +850,10 @@ pub fn hit_test<'gc>(
                 let second_point = args.get_object(activation, 3, "secondBitmapDataPoint")?;
                 let second_point = (
                     second_point
-                        .get_public_property("x", activation)?
+                        .get_slot(point_slots::X)
                         .coerce_to_i32(activation)?,
                     second_point
-                        .get_public_property("y", activation)?
+                        .get_slot(point_slots::Y)
                         .coerce_to_i32(activation)?,
                 );
                 let second_threshold = args.get_u32(activation, 4)?.clamp(0, u8::MAX.into()) as u8;
@@ -1113,11 +1116,10 @@ pub fn apply_filter<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dest_bitmap) = this.as_bitmap_data() {
-        let source_bitmap = args.get_object(activation, 0, "sourceBitmapData")?
+        let source_bitmap = args
+            .get_object(activation, 0, "sourceBitmapData")?
             .as_bitmap_data()
-            .ok_or_else(|| {
-                Error::from(format!("TypeError: Error #1034: Type Coercion failed: cannot convert {} to flash.display.BitmapData.", args[0].coerce_to_string(activation).unwrap_or_default()))
-            })?;
+            .unwrap();
         let source_rect = args.get_object(activation, 1, "sourceRect")?;
         let mut source_rect = super::display_object::object_to_rectangle(activation, source_rect)?;
         let filter = args.get_object(activation, 3, "filter")?;
@@ -1164,10 +1166,10 @@ pub fn apply_filter<'gc>(
         let dest_point = args.get_object(activation, 2, "destPoint")?;
         let dest_point = (
             dest_point
-                .get_public_property("x", activation)?
+                .get_slot(point_slots::X)
                 .coerce_to_u32(activation)?,
             dest_point
-                .get_public_property("y", activation)?
+                .get_slot(point_slots::Y)
                 .coerce_to_u32(activation)?,
         );
 
@@ -1233,10 +1235,10 @@ pub fn palette_map<'gc>(
         let dest_point = args.get_object(activation, 2, "destPoint")?;
         let dest_point = (
             dest_point
-                .get_public_property("x", activation)?
+                .get_slot(point_slots::X)
                 .coerce_to_i32(activation)?,
             dest_point
-                .get_public_property("x", activation)?
+                .get_slot(point_slots::Y)
                 .coerce_to_i32(activation)?,
         );
 
@@ -1294,18 +1296,25 @@ pub fn perlin_noise<'gc>(
             let grayscale = args.get_bool(7);
             let offsets = args.try_get_object(activation, 8);
 
+            let point_class = activation.avm2().classes().point.inner_class_definition();
+
             let octave_offsets: Result<Vec<_>, Error<'gc>> = (0..num_octaves)
                 .map(|i| {
                     if let Some(offsets) = offsets {
                         if let Some(offsets) = offsets.as_array_storage() {
-                            if let Some(Value::Object(e)) = offsets.get(i) {
-                                let x = e
-                                    .get_public_property("x", activation)?
-                                    .coerce_to_number(activation)?;
-                                let y = e
-                                    .get_public_property("y", activation)?
-                                    .coerce_to_number(activation)?;
-                                Ok((x, y))
+                            if let Some(Value::Object(point)) = offsets.get(i) {
+                                if point.is_of_type(point_class) {
+                                    let x = point
+                                        .get_slot(point_slots::X)
+                                        .coerce_to_number(activation)?;
+                                    let y = point
+                                        .get_slot(point_slots::Y)
+                                        .coerce_to_number(activation)?;
+
+                                    Ok((x, y))
+                                } else {
+                                    Ok((0.0, 0.0))
+                                }
                             } else {
                                 Ok((0.0, 0.0))
                             }
@@ -1350,10 +1359,10 @@ pub fn threshold<'gc>(
             let dest_point = args.get_object(activation, 2, "destPoint")?;
             let dest_point = (
                 dest_point
-                    .get_public_property("x", activation)?
+                    .get_slot(point_slots::X)
                     .coerce_to_i32(activation)?,
                 dest_point
-                    .get_public_property("y", activation)?
+                    .get_slot(point_slots::Y)
                     .coerce_to_i32(activation)?,
             );
             let operation = args.try_get_string(activation, 3)?;
@@ -1493,10 +1502,10 @@ pub fn pixel_dissolve<'gc>(
         let dest_point = args.get_object(activation, 2, "destPoint")?;
         let dest_point = (
             dest_point
-                .get_public_property("x", activation)?
+                .get_slot(point_slots::X)
                 .coerce_to_i32(activation)?,
             dest_point
-                .get_public_property("y", activation)?
+                .get_slot(point_slots::Y)
                 .coerce_to_i32(activation)?,
         );
 
@@ -1554,11 +1563,11 @@ pub fn merge<'gc>(
                 let dest_point = args.get_object(activation, 2, "destPoint")?;
 
                 let x = dest_point
-                    .get_public_property("x", activation)?
+                    .get_slot(point_slots::X)
                     .coerce_to_i32(activation)?;
 
                 let y = dest_point
-                    .get_public_property("y", activation)?
+                    .get_slot(point_slots::Y)
                     .coerce_to_i32(activation)?;
 
                 (x, y)

@@ -120,15 +120,7 @@ fn class_init<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let proto = this
-        .get_public_property("prototype", activation)?
-        .as_object()
-        .ok_or_else(|| {
-            format!(
-                "Specialization {} has a prototype of null or undefined",
-                this.instance_of_class_name(activation.context.gc_context)
-            )
-        })?;
+    let proto = this.as_class_object().unwrap().prototype();
     let scope = activation.create_scopechain();
 
     const PUBLIC_PROTOTYPE_METHODS: &[(&str, NativeMethodImpl)] = &[
@@ -155,11 +147,14 @@ fn class_init<'gc>(
     for (pubname, func) in PUBLIC_PROTOTYPE_METHODS {
         proto.set_string_property_local(
             *pubname,
-            FunctionObject::from_function(
+            FunctionObject::from_method(
                 activation,
                 Method::from_builtin(*func, pubname, activation.context.gc_context),
                 scope,
-            )?
+                None,
+                None,
+                None,
+            )
             .into(),
             activation,
         )?;
@@ -486,9 +481,8 @@ pub fn index_of<'gc>(
         .coerce_to_i32(activation)?;
 
     let from_index = if from_index < 0 {
-        let length = this
-            .get_public_property("length", activation)?
-            .coerce_to_i32(activation)?;
+        let length = this.as_vector_storage().unwrap().length() as i32;
+
         max(length + from_index, 0) as u32
     } else {
         from_index as u32
@@ -521,9 +515,8 @@ pub fn last_index_of<'gc>(
         .coerce_to_i32(activation)?;
 
     let from_index = if from_index < 0 {
-        let length = this
-            .get_public_property("length", activation)?
-            .coerce_to_i32(activation)?;
+        let length = this.as_vector_storage().unwrap().length() as i32;
+
         max(length + from_index, 0) as u32
     } else {
         from_index as u32

@@ -1,29 +1,12 @@
 use crate::avm2::activation::Activation;
+use crate::avm2::globals::slots::flash_display_native_menu_item as native_item_slots;
+use crate::avm2::globals::slots::flash_ui_context_menu as menu_slots;
+use crate::avm2::globals::slots::flash_ui_context_menu_built_in_items as builtins_slots;
+use crate::avm2::globals::slots::flash_ui_context_menu_item as item_slots;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::context_menu;
 use crate::display_object::DisplayObject;
-
-pub fn hide_built_in_items<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let Value::Object(items) = this.get_public_property("builtInItems", activation)? {
-        // items is a ContextMenuBuiltInItems
-        items.set_public_property("forwardAndBack", Value::Bool(false), activation)?;
-        items.set_public_property("loop", Value::Bool(false), activation)?;
-        items.set_public_property("play", Value::Bool(false), activation)?;
-        items.set_public_property("print", Value::Bool(false), activation)?;
-        items.set_public_property("quality", Value::Bool(false), activation)?;
-        items.set_public_property("rewind", Value::Bool(false), activation)?;
-        items.set_public_property("save", Value::Bool(false), activation)?;
-        items.set_public_property("zoom", Value::Bool(false), activation)?;
-    }
-
-    Ok(Value::Undefined)
-}
 
 pub fn make_context_menu_state<'gc>(
     menu: Option<Object<'gc>>,
@@ -35,36 +18,33 @@ pub fn make_context_menu_state<'gc>(
     result.set_display_object(object);
 
     macro_rules! check_bool {
-        ( $obj:expr, $name:expr, $value:expr ) => {
-            matches!(
-                $obj.get_public_property($name, activation),
-                Ok(Value::Bool($value))
-            )
+        ( $obj:expr, $slot:expr, $value:expr ) => {
+            matches!($obj.get_slot($slot), Value::Bool($value))
         };
     }
 
     let mut builtin_items = context_menu::BuiltInItemFlags::for_stage(activation.context.stage);
     if let Some(menu) = menu {
-        if let Ok(Value::Object(builtins)) = menu.get_public_property("builtInItems", activation) {
-            if check_bool!(builtins, "zoom", false) {
+        if let Some(builtins) = menu.get_slot(menu_slots::_BUILT_IN_ITEMS).as_object() {
+            if check_bool!(builtins, builtins_slots::_ZOOM, false) {
                 builtin_items.zoom = false;
             }
-            if check_bool!(builtins, "quality", false) {
+            if check_bool!(builtins, builtins_slots::_QUALITY, false) {
                 builtin_items.quality = false;
             }
-            if check_bool!(builtins, "play", false) {
+            if check_bool!(builtins, builtins_slots::_PLAY, false) {
                 builtin_items.play = false;
             }
-            if check_bool!(builtins, "loop", false) {
+            if check_bool!(builtins, builtins_slots::_LOOP, false) {
                 builtin_items.loop_ = false;
             }
-            if check_bool!(builtins, "rewind", false) {
+            if check_bool!(builtins, builtins_slots::_REWIND, false) {
                 builtin_items.rewind = false;
             }
-            if check_bool!(builtins, "forwardAndBack", false) {
+            if check_bool!(builtins, builtins_slots::_FORWARD_AND_BACK, false) {
                 builtin_items.forward_and_back = false;
             }
-            if check_bool!(builtins, "print", false) {
+            if check_bool!(builtins, builtins_slots::_PRINT, false) {
                 builtin_items.print = false;
             }
         }
@@ -73,39 +53,43 @@ pub fn make_context_menu_state<'gc>(
     result.build_builtin_items(builtin_items, activation.context);
 
     if let Some(menu) = menu {
-        if let Ok(Value::Object(custom_items)) = menu.get_public_property("customItems", activation)
-        {
+        if let Value::Object(custom_items) = menu.get_slot(menu_slots::_CUSTOM_ITEMS) {
             // note: this borrows the array, but it shouldn't be possible for
             // AS to get invoked here and cause BorrowMutError
             if let Some(array) = custom_items.as_array_storage() {
+                let context_menu_item_class = activation.avm2().class_defs().contextmenuitem;
+
                 for (i, item) in array.iter().enumerate() {
                     // TODO: Non-CustomMenuItem Object-s shouldn't count
 
                     if let Some(Value::Object(item)) = item {
-                        let caption = if let Ok(Value::String(s)) =
-                            item.get_public_property("caption", activation)
-                        {
-                            s
-                        } else {
-                            continue;
-                        };
-                        let enabled = check_bool!(item, "enabled", true);
-                        let visible = check_bool!(item, "visible", true);
-                        let separator_before = check_bool!(item, "separatorBefore", true);
+                        if item.is_of_type(context_menu_item_class) {
+                            let caption =
+                                if let Value::String(s) = item.get_slot(item_slots::CAPTION) {
+                                    s
+                                } else {
+                                    continue;
+                                };
 
-                        if !visible {
-                            continue;
+                            let enabled = check_bool!(item, native_item_slots::ENABLED, true);
+                            let visible = check_bool!(item, item_slots::VISIBLE, true);
+                            let separator_before =
+                                check_bool!(item, item_slots::SEPARATOR_BEFORE, true);
+
+                            if !visible {
+                                continue;
+                            }
+
+                            result.push(
+                                context_menu::ContextMenuItem {
+                                    enabled,
+                                    separator_before: separator_before || i == 0,
+                                    caption: caption.to_string(),
+                                    checked: false,
+                                },
+                                context_menu::ContextMenuCallback::Avm2 { item },
+                            );
                         }
-
-                        result.push(
-                            context_menu::ContextMenuItem {
-                                enabled,
-                                separator_before: separator_before || i == 0,
-                                caption: caption.to_string(),
-                                checked: false,
-                            },
-                            context_menu::ContextMenuCallback::Avm2 { item },
-                        );
                     }
                 }
             }

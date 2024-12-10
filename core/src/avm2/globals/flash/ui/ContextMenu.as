@@ -1,18 +1,22 @@
-package flash.ui
-{
+package flash.ui {
     import flash.display.NativeMenu;
     import __ruffle__.stub_getter;
 
-    public final class ContextMenu extends NativeMenu
-    {
-        public function ContextMenu()
-        {
+    public final class ContextMenu extends NativeMenu {
+        [Ruffle(InternalSlot)]
+        private var _customItems:Array;
+
+        private var _clipboardMenu:Boolean;
+
+        [Ruffle(InternalSlot)]
+        private var _builtInItems: ContextMenuBuiltInItems = new ContextMenuBuiltInItems();
+
+        private var _clipboardItems: ContextMenuClipboardItems = new ContextMenuClipboardItems();
+
+        public function ContextMenu() {
             super();
             this.customItems = new Array();
         }
-
-        private var _customItems:Array;
-        private var _clipboardMenu:Boolean;
         
         public function get customItems():Array {
             return this._customItems;
@@ -22,10 +26,18 @@ package flash.ui
             this._customItems = value;
         }
 
-        public native function hideBuiltInItems(): void;
-
-        private var _builtInItems: ContextMenuBuiltInItems = new ContextMenuBuiltInItems();
-        private var _clipboardItems: ContextMenuClipboardItems = new ContextMenuClipboardItems();
+        public function hideBuiltInItems():void {
+            if (this._builtInItems) {
+                this._builtInItems.forwardAndBack = false;
+                this._builtInItems.loop = false;
+                this._builtInItems.play = false;
+                this._builtInItems.print = false;
+                this._builtInItems.quality = false;
+                this._builtInItems.rewind = false;
+                this._builtInItems.save = false;
+                this._builtInItems.zoom = false;
+            }
+        }
 
         public function get builtInItems(): ContextMenuBuiltInItems {
             return this._builtInItems;
@@ -44,11 +56,11 @@ package flash.ui
         }
 
         public function get clipboardMenu():Boolean {
-            return _clipboardMenu;
+            return this._clipboardMenu;
         }
 
         public function set clipboardMenu(value:Boolean):void {
-            _clipboardMenu = value;
+            this._clipboardMenu = value;
         }
 
         public static function get isSupported():Boolean {
