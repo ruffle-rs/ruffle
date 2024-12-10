@@ -28,9 +28,9 @@ pub fn init<'gc>(
         // Top-level metadata appears to turn `TInt` into a plain integer value,
         // rather than a single-element array.
         let value = meta.value.as_avm2_value(activation, true)?;
-        this.set_public_property(name, value, activation)?;
+        this.set_string_property_local(name, value, activation)?;
     }
-    this.set_public_property(
+    this.set_string_property_local(
         "name",
         AvmString::new_utf8(activation.context.gc_context, &shader.name).into(),
         activation,
@@ -62,7 +62,7 @@ pub fn init<'gc>(
 
         let name = AvmString::new_utf8(activation.context.gc_context, name);
         let param_obj = make_shader_parameter(activation, param, index)?;
-        this.set_public_property(name, param_obj, activation)?;
+        this.set_string_property_local(name, param_obj, activation)?;
     }
 
     let shader_handle = activation
