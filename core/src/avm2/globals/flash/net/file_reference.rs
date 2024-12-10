@@ -1,10 +1,12 @@
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::error::{argument_error, error, make_error_2037, make_error_2097};
-pub use crate::avm2::object::file_reference_allocator;
+use crate::avm2::globals::slots::flash_net_file_filter as file_filter_slots;
 use crate::avm2::object::{ByteArrayObject, DateObject, FileReference};
 use crate::avm2::{Activation, Avm2, Error, EventObject, Object, TObject, Value};
 use crate::backend::ui::FileFilter;
 use crate::string::AvmString;
+
+pub use crate::avm2::object::file_reference_allocator;
 
 pub fn get_creation_date<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -140,9 +142,9 @@ pub fn browse<'gc>(
                         return Err(make_error_2097(activation));
                     }
 
-                    let description = obj.get_public_property("description", activation)?;
-                    let extension = obj.get_public_property("extension", activation)?;
-                    let mac_type = obj.get_public_property("macType", activation)?;
+                    let description = obj.get_slot(file_filter_slots::_DESCRIPTION);
+                    let extension = obj.get_slot(file_filter_slots::_EXTENSION);
+                    let mac_type = obj.get_slot(file_filter_slots::_MAC_TYPE);
 
                     // The description and extension must be non-empty strings.
                     match (description, extension) {
