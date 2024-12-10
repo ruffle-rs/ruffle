@@ -307,7 +307,7 @@ impl TextFormat {
     /// Properties defined in both will resolve to the one defined in `self`.
     pub fn mix_with(self, rhs: TextFormat) -> Self {
         Self {
-            font: self.font.or(rhs.font),
+            font: self.font.filter(|f| !f.is_empty()).or(rhs.font),
             size: self.size.or(rhs.size),
             color: self.color.or(rhs.color),
             align: self.align.or(rhs.align),
@@ -424,7 +424,7 @@ impl TextSpanFont {
     }
 
     fn set_text_format(&mut self, tf: &TextFormat) {
-        if let Some(font) = &tf.font {
+        if let Some(font) = tf.font.as_ref().filter(|f| !f.is_empty()) {
             self.face = font.clone();
         }
 
