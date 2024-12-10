@@ -1,6 +1,8 @@
 use crate::avm2::bytearray::Endian;
 use crate::avm2::globals::slots::{
-    flash_display_shader as shader_slots, flash_display_shader_job as shader_job_slots,
+    flash_display_shader as shader_slots, flash_display_shader_input as shader_input_slots,
+    flash_display_shader_job as shader_job_slots,
+    flash_display_shader_parameter as shader_parameter_slots,
 };
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, TObject, Value};
@@ -65,7 +67,7 @@ pub fn get_shader_args<'gc>(
                         });
                     }
                     let shader_param = shader_data
-                        .get_public_property(
+                        .get_string_property_local(
                             AvmString::new_utf8(activation.context.gc_context, name),
                             activation,
                         )
@@ -75,9 +77,18 @@ pub fn get_shader_args<'gc>(
                         .as_object()
                         .expect("Shader property is not an object");
 
-                    let value = shader_param
-                        .get_public_property("value", activation)
-                        .expect("Missing value property");
+                    if !shader_param.is_of_type(
+                        activation
+                            .avm2()
+                            .classes()
+                            .shaderparameter
+                            .inner_class_definition(),
+                    ) {
+                        panic!("Expected shader parameter to be of class ShaderParameter");
+                    }
+
+                    let value = shader_param.get_slot(shader_parameter_slots::_VALUE);
+
                     let pb_val = PixelBenderType::from_avm2_value(activation, value, param_type)
                         .expect("Failed to convert AVM2 value to PixelBenderType");
 
@@ -92,7 +103,7 @@ pub fn get_shader_args<'gc>(
                     name,
                 } => {
                     let shader_input = shader_data
-                        .get_public_property(
+                        .get_string_property_local(
                             AvmString::new_utf8(activation.context.gc_context, name),
                             activation,
                         )
@@ -100,33 +111,28 @@ pub fn get_shader_args<'gc>(
                         .as_object()
                         .expect("Shader input is not an object");
 
-                    let input = shader_input
-                        .get_public_property("input", activation)
-                        .expect("Missing input property");
+                    if !shader_input.is_of_type(
+                        activation
+                            .avm2()
+                            .classes()
+                            .shaderinput
+                            .inner_class_definition(),
+                    ) {
+                        panic!("Expected shader input to be of class ShaderInput");
+                    }
 
-                    let width = shader_input
-                        .get_public_property("width", activation)
-                        .unwrap()
-                        .as_u32();
-                    let height = shader_input
-                        .get_public_property("height", activation)
-                        .unwrap()
-                        .as_u32();
+                    let input = shader_input.get_slot(shader_input_slots::_INPUT);
+
+                    let width = shader_input.get_slot(shader_input_slots::_WIDTH).as_u32();
+                    let height = shader_input.get_slot(shader_input_slots::_HEIGHT).as_u32();
 
                     let input_channels = shader_input
-                        .get_public_property("channels", activation)
-                        .unwrap()
+                        .get_slot(shader_input_slots::_CHANNELS)
                         .as_u32();
 
                     assert_eq!(*channels as u32, input_channels);
 
-                    let texture = if let Value::Null = input {
-                        None
-                    } else {
-                        let input = input
-                            .as_object()
-                            .expect("ShaderInput.input is not an object");
-
+                    let texture = if let Some(input) = input.as_object() {
                         let input_texture = if let Some(bitmap) = input.as_bitmap_data() {
                             ImageInputTexture::Bitmap(bitmap.bitmap_handle(
                                 activation.context.gc_context,
@@ -159,6 +165,9 @@ pub fn get_shader_args<'gc>(
                             panic!("Unexpected input object {input:?}");
                         };
                         Some(input_texture)
+                    } else {
+                        // Null input
+                        None
                     };
 
                     Some(PixelBenderShaderArgument::ImageInput {
