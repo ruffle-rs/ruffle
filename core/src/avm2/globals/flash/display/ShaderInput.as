@@ -3,12 +3,16 @@ package flash.display {
         [Ruffle(InternalSlot)]
         private var _channels: int;
 
+        [Ruffle(InternalSlot)]
         private var _height: int;
 
         [Ruffle(InternalSlot)]
         private var _index: int;
 
-        private var _object: Object;
+        [Ruffle(InternalSlot)]
+        private var _input: Object;
+
+        [Ruffle(InternalSlot)]
         private var _width: int;
 
         public function get channels():int {
@@ -36,12 +40,12 @@ package flash.display {
         }
 
         public function get input():Object {
-            return _object;
+            return this._input;
         }
 
         public function set input(value:Object):void {
             // FIXME - validate
-            _object = value;
+            this._input = value;
         }
     }
 }
