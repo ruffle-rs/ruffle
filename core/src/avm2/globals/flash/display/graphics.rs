@@ -6,6 +6,12 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{make_error_2004, make_error_2007, make_error_2008, Error2004Type};
 use crate::avm2::globals::flash::geom::transform::object_to_matrix;
+use crate::avm2::globals::slots::flash_display_graphics_bitmap_fill as graphics_bitmap_fill_slots;
+use crate::avm2::globals::slots::flash_display_graphics_gradient_fill as graphics_gradient_fill_slots;
+use crate::avm2::globals::slots::flash_display_graphics_path as graphics_path_slots;
+use crate::avm2::globals::slots::flash_display_graphics_solid_fill as graphics_solid_fill_slots;
+use crate::avm2::globals::slots::flash_display_graphics_stroke as graphics_stroke_slots;
+use crate::avm2::globals::slots::flash_display_graphics_triangle_path as graphics_triangle_path_slots;
 use crate::avm2::object::{Object, TObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -66,8 +72,7 @@ pub fn begin_bitmap_fill<'gc>(
         let is_repeating = args.get_bool(2);
         let is_smoothed = args.get_bool(3);
 
-        let handle =
-            bitmap.bitmap_handle(activation.context.gc_context, activation.context.renderer);
+        let handle = bitmap.bitmap_handle(activation.gc(), activation.context.renderer);
 
         let bitmap = ruffle_render::bitmap::BitmapInfo {
             handle,
@@ -79,7 +84,7 @@ pub fn begin_bitmap_fill<'gc>(
             (Twips::TWIPS_PER_PIXEL as i16).into(),
         );
 
-        if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
+        if let Some(mut draw) = this.as_drawing(activation.gc()) {
             let id = draw.add_bitmap(bitmap);
             draw.set_fill_style(Some(FillStyle::Bitmap {
                 id,
@@ -975,6 +980,14 @@ pub fn draw_path<'gc>(
     let data = args.get_object(activation, 1, "data")?;
     let winding = args.get_string(activation, 2)?;
 
+    let fill_rule = if winding == WStr::from_units(b"nonZero") {
+        FillRule::NonZero
+    } else if winding == WStr::from_units(b"evenOdd") {
+        FillRule::EvenOdd
+    } else {
+        return Err(make_error_2008(activation, "winding"));
+    };
+
     // FIXME - implement fill behavior described in the Flash docs
     // (which is different from just running each command sequentially on `Graphics`)
     avm2_stub_method!(
@@ -989,7 +1002,7 @@ pub fn draw_path<'gc>(
         .expect("commands is not a Vector");
     let data = data.as_vector_storage().expect("data is not a Vector");
 
-    process_commands(activation, &mut drawing, &commands, &data, winding)?;
+    process_commands(activation, &mut drawing, &commands, &data, fill_rule)?;
 
     Ok(Value::Undefined)
 }
@@ -1326,7 +1339,7 @@ fn process_commands<'gc>(
     drawing: &mut Drawing,
     commands: &VectorStorage<'gc>,
     data: &VectorStorage<'gc>,
-    winding: AvmString,
+    fill_rule: FillRule,
 ) -> Result<(), Error<'gc>> {
     // Flash special cases this, and doesn't throw an error,
     // even if data has odd number of coordinates.
@@ -1340,15 +1353,7 @@ fn process_commands<'gc>(
         return Err(make_error_2004(activation, Error2004Type::ArgumentError));
     }
 
-    let rule = if winding == WStr::from_units(b"nonZero") {
-        FillRule::NonZero
-    } else if winding == WStr::from_units(b"evenOdd") {
-        FillRule::EvenOdd
-    } else {
-        return Err(make_error_2008(activation, "winding"));
-    };
-
-    drawing.set_fill_rule(Some(rule));
+    drawing.set_fill_rule(Some(fill_rule));
 
     fn process_command<'gc>(
         activation: &mut Activation<'_, 'gc>,
@@ -1442,13 +1447,21 @@ fn handle_igraphics_data<'gc>(
         let style = handle_gradient_fill(activation, obj)?;
         drawing.set_fill_style(Some(style));
     } else if class == activation.avm2().class_defs().graphicspath {
-        let commands = obj.get_public_property("commands", activation)?.as_object();
+        let commands = obj.get_slot(graphics_path_slots::COMMANDS).as_object();
 
-        let data = obj.get_public_property("data", activation)?.as_object();
+        let data = obj.get_slot(graphics_path_slots::DATA).as_object();
 
         let winding = obj
-            .get_public_property("winding", activation)?
+            .get_slot(graphics_path_slots::_WINDING)
             .coerce_to_string(activation)?;
+
+        let fill_rule = if winding == WStr::from_units(b"nonZero") {
+            FillRule::NonZero
+        } else if winding == WStr::from_units(b"evenOdd") {
+            FillRule::EvenOdd
+        } else {
+            unreachable!("AS3 setter guarantees value of winding");
+        };
 
         if let (Some(commands), Some(data)) = (commands, data) {
             process_commands(
@@ -1456,7 +1469,7 @@ fn handle_igraphics_data<'gc>(
                 drawing,
                 &commands.as_vector_storage().unwrap(),
                 &data.as_vector_storage().unwrap(),
-                winding,
+                fill_rule,
             )?;
         }
     } else if class == activation.avm2().class_defs().graphicssolidfill {
@@ -1467,7 +1480,7 @@ fn handle_igraphics_data<'gc>(
         drawing.set_fill_style(None);
     } else if class == activation.avm2().class_defs().graphicsstroke {
         let thickness = obj
-            .get_public_property("thickness", activation)?
+            .get_slot(graphics_stroke_slots::THICKNESS)
             .coerce_to_number(activation)?;
 
         if thickness.is_nan() {
@@ -1475,12 +1488,12 @@ fn handle_igraphics_data<'gc>(
         } else {
             let caps = {
                 let caps = obj
-                    .get_public_property("caps", activation)?
+                    .get_slot(graphics_stroke_slots::CAPS)
                     .coerce_to_string(activation);
                 caps_to_cap_style(caps.ok())
             };
             let fill = {
-                let fill = obj.get_public_property("fill", activation)?.as_object();
+                let fill = obj.get_slot(graphics_stroke_slots::FILL).as_object();
 
                 if let Some(fill) = fill {
                     handle_igraphics_fill(activation, drawing, &fill)?
@@ -1490,17 +1503,17 @@ fn handle_igraphics_data<'gc>(
             };
 
             let joints = obj
-                .get_public_property("joints", activation)?
+                .get_slot(graphics_stroke_slots::JOINTS)
                 .coerce_to_string(activation)
                 .ok();
             let miter_limit = obj
-                .get_public_property("miterLimit", activation)?
+                .get_slot(graphics_stroke_slots::MITER_LIMIT)
                 .coerce_to_number(activation)?;
             let pixel_hinting = obj
-                .get_public_property("pixelHinting", activation)?
+                .get_slot(graphics_stroke_slots::PIXEL_HINTING)
                 .coerce_to_boolean();
             let scale_mode = obj
-                .get_public_property("scaleMode", activation)?
+                .get_slot(graphics_stroke_slots::SCALE_MODE)
                 .coerce_to_string(activation)?;
 
             let width = Twips::from_pixels(thickness.clamp(0.0, 255.0));
@@ -1539,16 +1552,22 @@ fn handle_graphics_triangle_path<'gc>(
 ) -> Result<(), Error<'gc>> {
     let culling = {
         let culling = obj
-            .get_public_property("culling", activation)?
+            .get_slot(graphics_triangle_path_slots::CULLING)
             .coerce_to_string(activation)?;
 
         TriangleCulling::from_string(culling)
             .ok_or_else(|| make_error_2008(activation, "culling"))?
     };
 
-    let vertices = obj.get_public_property("vertices", activation)?.as_object();
-    let indices = obj.get_public_property("indices", activation)?.as_object();
-    let uvt_data = obj.get_public_property("uvtData", activation)?.as_object();
+    let vertices = obj
+        .get_slot(graphics_triangle_path_slots::VERTICES)
+        .as_object();
+    let indices = obj
+        .get_slot(graphics_triangle_path_slots::INDICES)
+        .as_object();
+    let uvt_data = obj
+        .get_slot(graphics_triangle_path_slots::UVT_DATA)
+        .as_object();
 
     if let Some(vertices) = vertices {
         draw_triangles_internal(
@@ -1596,12 +1615,12 @@ fn handle_solid_fill<'gc>(
     obj: &Object<'gc>,
 ) -> Result<FillStyle, Error<'gc>> {
     let alpha = obj
-        .get_public_property("alpha", activation)?
+        .get_slot(graphics_solid_fill_slots::ALPHA)
         .coerce_to_number(activation)
         .unwrap_or(1.0);
 
     let color = obj
-        .get_public_property("color", activation)?
+        .get_slot(graphics_solid_fill_slots::COLOR)
         .coerce_to_u32(activation)
         .unwrap_or(0);
 
@@ -1612,18 +1631,23 @@ fn handle_gradient_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
     obj: &Object<'gc>,
 ) -> Result<FillStyle, Error<'gc>> {
-    let alphas = obj.get_public_property("alphas", activation)?.as_object();
-    let ratios = obj.get_public_property("ratios", activation)?.as_object();
+    let alphas = obj
+        .get_slot(graphics_gradient_fill_slots::ALPHAS)
+        .as_object();
+    let ratios = obj
+        .get_slot(graphics_gradient_fill_slots::RATIOS)
+        .as_object();
 
     let colors = obj
-        .get_public_property("colors", activation)?
+        .get_slot(graphics_gradient_fill_slots::COLORS)
         .as_object()
         .ok_or_else(|| make_error_2007(activation, "colors"))?;
 
     let gradient_type = {
         let gradient_type = obj
-            .get_public_property("type", activation)?
+            .get_slot(graphics_gradient_fill_slots::TYPE)
             .coerce_to_string(activation)?;
+
         parse_gradient_type(activation, gradient_type)?
     };
 
@@ -1635,7 +1659,9 @@ fn handle_gradient_fill<'gc>(
     )?;
 
     let matrix = {
-        let matrix = obj.get_public_property("matrix", activation)?.as_object();
+        let matrix = obj
+            .get_slot(graphics_gradient_fill_slots::MATRIX)
+            .as_object();
 
         match matrix {
             Some(matrix) => Matrix::from(object_to_matrix(matrix, activation)?),
@@ -1645,7 +1671,7 @@ fn handle_gradient_fill<'gc>(
 
     let spread = {
         let spread_method = obj
-            .get_public_property("spreadMethod", activation)?
+            .get_slot(graphics_gradient_fill_slots::SPREAD_METHOD)
             .coerce_to_string(activation)?;
 
         parse_spread_method(spread_method)
@@ -1653,14 +1679,14 @@ fn handle_gradient_fill<'gc>(
 
     let interpolation = {
         let interpolation_method = obj
-            .get_public_property("interpolationMethod", activation)?
+            .get_slot(graphics_gradient_fill_slots::INTERPOLATION_METHOD)
             .coerce_to_string(activation)?;
 
         parse_interpolation_method(interpolation_method)
     };
 
     let focal_point = obj
-        .get_public_property("focalPointRatio", activation)?
+        .get_slot(graphics_gradient_fill_slots::FOCAL_POINT_RATIO)
         .coerce_to_number(activation)?;
 
     let fill = match gradient_type {
@@ -1696,14 +1722,14 @@ fn handle_bitmap_fill<'gc>(
     obj: &Object<'gc>,
 ) -> Result<FillStyle, Error<'gc>> {
     let bitmap_data = obj
-        .get_public_property("bitmapData", activation)?
+        .get_slot(graphics_bitmap_fill_slots::BITMAP_DATA)
         .as_object()
         .ok_or_else(|| make_error_2007(activation, "bitmap"))?
         .as_bitmap_data()
         .expect("Bitmap argument is ensured to be a BitmapData from actionscript");
 
     let matrix = obj
-        .get_public_property("matrix", activation)?
+        .get_slot(graphics_bitmap_fill_slots::MATRIX)
         .as_object()
         .and_then(|matrix| {
             let matrix = Matrix::from(object_to_matrix(matrix, activation).ok()?);
@@ -1713,11 +1739,11 @@ fn handle_bitmap_fill<'gc>(
         .unwrap_or(Matrix::IDENTITY);
 
     let is_repeating = obj
-        .get_public_property("repeat", activation)?
+        .get_slot(graphics_bitmap_fill_slots::REPEAT)
         .coerce_to_boolean();
 
     let is_smoothed = obj
-        .get_public_property("smooth", activation)?
+        .get_slot(graphics_bitmap_fill_slots::SMOOTH)
         .coerce_to_boolean();
 
     let handle =
