@@ -1,7 +1,12 @@
 package flash.net {
     public final class FileFilter {
+        [Ruffle(InternalSlot)]
         private var _description:String;
+
+        [Ruffle(InternalSlot)]
         private var _extension:String;
+
+        [Ruffle(InternalSlot)]
         private var _macType:String;
         
         public function FileFilter(description:String, extension:String, macType:String = null) {
