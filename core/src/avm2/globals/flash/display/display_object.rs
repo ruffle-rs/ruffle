@@ -3,9 +3,11 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{illegal_operation_error, make_error_2007, make_error_2008};
 use crate::avm2::filters::FilterAvm2Ext;
-use crate::avm2::globals::slots::{
-    flash_geom_point as point_slots, flash_geom_rectangle as rectangle_slots,
-};
+use crate::avm2::globals::flash::geom::transform::color_transform_from_transform_object;
+use crate::avm2::globals::flash::geom::transform::matrix_from_transform_object;
+use crate::avm2::globals::slots::flash_display_shader as shader_slots;
+use crate::avm2::globals::slots::flash_geom_point as point_slots;
+use crate::avm2::globals::slots::flash_geom_rectangle as rectangle_slots;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -754,28 +756,9 @@ pub fn set_transform<'gc>(
     let transform = args.get_object(activation, 0, "transform")?;
 
     // FIXME - consider 3D matrix and pixel bounds
-    let matrix = transform
-        .get_public_property("matrix", activation)?
-        .as_object();
+    let matrix = matrix_from_transform_object(transform);
 
-    let Some(matrix) = matrix else {
-        // FP seems to not do anything when setting to a Transform with a null matrix,
-        // but we don't actually support setting the matrix to null anyway
-        // (see the comment in `flash::geom::transform::set_matrix`)
-        return Ok(Value::Undefined);
-    };
-
-    let color_transform = transform
-        .get_public_property("colorTransform", activation)?
-        .as_object()
-        .expect("colorTransform should be non-null");
-
-    let matrix =
-        crate::avm2::globals::flash::geom::transform::object_to_matrix(matrix, activation)?;
-    let color_transform = crate::avm2::globals::flash::geom::transform::object_to_color_transform(
-        color_transform,
-        activation,
-    )?;
+    let color_transform = color_transform_from_transform_object(transform);
 
     let dobj = this.as_display_object().unwrap();
     let mut write = dobj.base_mut(activation.context.gc_context);
@@ -1108,7 +1091,7 @@ pub fn set_blend_shader<'gc>(
     if let Some(dobj) = this.as_display_object() {
         let Some(shader_data) = args
             .get_object(activation, 0, "shader")?
-            .get_public_property("data", activation)?
+            .get_slot(shader_slots::_DATA)
             .as_object()
         else {
             return Err(make_error_2007(activation, "data"));

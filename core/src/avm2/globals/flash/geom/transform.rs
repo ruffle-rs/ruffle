@@ -22,9 +22,8 @@ pub fn get_color_transform<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let display_object = get_display_object(this);
-    let display_object = display_object.base();
-    color_transform_to_object(display_object.color_transform(), activation)
+    let color_transform = color_transform_from_transform_object(this);
+    color_transform_to_object(&color_transform, activation)
 }
 
 pub fn set_color_transform<'gc>(
@@ -49,7 +48,7 @@ pub fn get_matrix<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let matrix = *get_display_object(this).base().matrix();
+    let matrix = matrix_from_transform_object(this);
     matrix_to_object(matrix, activation)
 }
 
@@ -108,6 +107,16 @@ pub fn get_concatenated_matrix<'gc>(
 
         matrix_to_object(mat, activation)
     }
+}
+
+pub fn matrix_from_transform_object(transform_object: Object<'_>) -> Matrix {
+    *get_display_object(transform_object).base().matrix()
+}
+
+pub fn color_transform_from_transform_object(transform_object: Object<'_>) -> ColorTransform {
+    *get_display_object(transform_object)
+        .base()
+        .color_transform()
 }
 
 // FIXME - handle clamping. We're throwing away precision here in converting to an integer:
