@@ -234,6 +234,16 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self.base().get_property_local(name, activation)
     }
 
+    /// Same as get_property_local, but constructs a public Multiname for you.
+    fn get_string_property_local(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        let name = Multiname::new(activation.avm2().namespaces.public_vm_internal(), name);
+        self.get_property_local(&name, activation)
+    }
+
     /// Retrieve a property by Multiname lookup.
     ///
     /// This method should not be overridden.
@@ -321,7 +331,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         base.set_property_local(name, value, activation)
     }
 
-    /// Same as get_property_local, but constructs a public Multiname for you.
+    /// Same as set_property_local, but constructs a public Multiname for you.
     /// TODO: this feels upside down, as in: we shouldn't need multinames/namespaces
     /// by the time we reach dynamic properties.
     /// But for now, this function is a smaller change to the core than a full refactor.
