@@ -2718,9 +2718,8 @@ impl<'gc> Loader<'gc> {
                     // In this loading state, the URL is the URL of the parent movie / doesn't change.
 
                     let current_movie = mc.movie();
-                    let current_version = current_movie.version();
                     let current_url = current_movie.url();
-                    let mut initial_loading_movie = SwfMovie::empty(current_version);
+                    let mut initial_loading_movie = SwfMovie::empty_child(&current_movie);
                     initial_loading_movie.set_url(current_url.to_string());
 
                     mc.replace_with_movie(uc, Some(Arc::new(initial_loading_movie)), true, None);
