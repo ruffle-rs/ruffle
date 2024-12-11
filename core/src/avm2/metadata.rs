@@ -1,11 +1,11 @@
+use crate::avm2::array::ArrayStorage;
+use crate::avm2::object::{ArrayObject, Object, ScriptObject, TObject};
 use crate::avm2::script::TranslationUnit;
-use crate::avm2::{Activation, Error};
+use crate::avm2::{Activation, Error, Value};
 use crate::string::AvmString;
 
 use gc_arena::Collect;
 use swf::avm2::types::{Index as AbcIndex, Metadata as AbcMetadata};
-
-use super::{ArrayObject, ArrayStorage, Object, TObject, Value};
 
 // Represents a single key-value pair for a trait metadata.
 #[derive(Clone, Collect, Debug, Eq, PartialEq)]
@@ -77,31 +77,23 @@ impl<'gc> Metadata<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        let object = activation
-            .avm2()
-            .classes()
-            .object
-            .construct(activation, &[])?;
-        object.set_public_property("name", self.name.into(), activation)?;
+        let object = ScriptObject::new_object(activation);
+        object.set_string_property_local("name", self.name.into(), activation)?;
 
         let values = self
             .items
             .iter()
             .map(|item| {
-                let value_object = activation
-                    .avm2()
-                    .classes()
-                    .object
-                    .construct(activation, &[])?;
-                value_object.set_public_property("key", item.key.into(), activation)?;
-                value_object.set_public_property("value", item.value.into(), activation)?;
+                let value_object = ScriptObject::new_object(activation);
+                value_object.set_string_property_local("key", item.key.into(), activation)?;
+                value_object.set_string_property_local("value", item.value.into(), activation)?;
                 Ok(Some(value_object.into()))
             })
             .collect::<Result<Vec<Option<Value<'gc>>>, Error<'gc>>>()?;
 
         let values_array =
             ArrayObject::from_storage(activation, ArrayStorage::from_storage(values))?;
-        object.set_public_property("value", values_array.into(), activation)?;
+        object.set_string_property_local("value", values_array.into(), activation)?;
         Ok(object)
     }
 }

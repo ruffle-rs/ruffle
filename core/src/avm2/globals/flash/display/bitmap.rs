@@ -58,11 +58,11 @@ pub fn bitmap_allocator<'gc>(
                 let new_bitmap_data = fill_bitmap_data_from_symbol(activation, &compressed);
                 let bitmap_data_obj = BitmapDataObject::from_bitmap_data_internal(
                     activation,
-                    BitmapDataWrapper::dummy(activation.context.gc_context),
+                    BitmapDataWrapper::dummy(activation.gc()),
                     bitmapdata_cls,
                 )?;
-                bitmap_data_obj.init_bitmap_data(activation.context.gc_context, new_bitmap_data);
-                new_bitmap_data.init_object2(activation.context.gc_context, bitmap_data_obj);
+                bitmap_data_obj.init_bitmap_data(activation.gc(), new_bitmap_data);
+                new_bitmap_data.init_object2(activation.gc(), bitmap_data_obj);
 
                 let child = Bitmap::new_with_bitmap_data(
                     activation.context.gc_context,
@@ -72,9 +72,7 @@ pub fn bitmap_allocator<'gc>(
                     &activation.caller_movie_or_root(),
                 );
 
-                let obj = initialize_for_allocator(activation, child.into(), orig_class)?;
-                obj.set_public_property("bitmapData", bitmap_data_obj.into(), activation)?;
-                return Ok(obj);
+                return initialize_for_allocator(activation, child.into(), orig_class);
             }
         }
         class_def = class.super_class();

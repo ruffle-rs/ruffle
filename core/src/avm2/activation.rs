@@ -1559,7 +1559,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             ScriptObject::catch_scope(self, &vname)
         } else {
             // for `finally` scopes, FP just creates a normal object.
-            self.avm2().classes().object.construct(self, &[])?
+            ScriptObject::new_object(self)
         };
 
         self.push_stack(so);
@@ -1813,13 +1813,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_new_object(&mut self, num_args: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let object = self.context.avm2.classes().object.construct(self, &[])?;
+        let object = ScriptObject::new_object(self);
 
         for _ in 0..num_args {
             let value = self.pop_stack();
             let name = self.pop_stack();
 
-            object.set_public_property(name.coerce_to_string(self)?, value, self)?;
+            object.set_string_property_local(name.coerce_to_string(self)?, value, self)?;
         }
 
         self.push_stack(object);
@@ -1835,7 +1835,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let method_entry = self.table_method(method, index, true)?;
         let scope = self.create_scopechain();
 
-        let new_fn = FunctionObject::from_function(self, method_entry, scope)?;
+        let new_fn = FunctionObject::from_method(self, method_entry, scope, None, None, None);
 
         self.push_stack(new_fn);
 
@@ -2527,13 +2527,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let object = self.pop_stack();
         if matches!(object, Value::Undefined | Value::Null) {
             self.push_raw(0.0);
+        } else if let Some(next_index) = object
+            .as_object()
+            .map(|o| o.get_next_enumerant(cur_index, self))
+            .transpose()?
+            .flatten()
+        {
+            self.push_raw(next_index);
         } else {
-            let object = object.coerce_to_object(self)?;
-            if let Some(next_index) = object.get_next_enumerant(cur_index, self)? {
-                self.push_raw(next_index);
-            } else {
-                self.push_raw(0.0);
-            }
+            self.push_raw(0.0);
         }
 
         Ok(FrameControl::Continue)
@@ -2689,16 +2691,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let value = self.pop_stack();
 
-        if let Ok(value) = value.coerce_to_object(self) {
-            let is_instance_of = value.is_instance_of(self, type_object)?;
+        match value {
+            Value::Undefined => return Err(make_null_or_undefined_error(self, value, None)),
+            Value::Null => self.push_raw(false),
+            value => {
+                let is_instance_of = value.is_instance_of(self, type_object);
 
-            self.push_raw(is_instance_of);
-        } else if matches!(value, Value::Undefined) {
-            // undefined
-            return Err(make_null_or_undefined_error(self, value, None));
-        } else {
-            // null
-            self.push_raw(false);
+                self.push_raw(is_instance_of);
+            }
         }
 
         Ok(FrameControl::Continue)

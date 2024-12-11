@@ -1,6 +1,7 @@
 //! `flash.media.Sound` builtin/prototype
 
 use crate::avm2::activation::Activation;
+use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::object::{Object, QueuedPlay, SoundChannelObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -164,10 +165,7 @@ pub fn play<'gc>(
         };
 
         let sound_transform = if let Some(sound_transform) = sound_transform {
-            Some(SoundTransform::from_avm2_object(
-                activation,
-                sound_transform,
-            )?)
+            Some(SoundTransform::from_avm2_object(sound_transform))
         } else {
             None
         };
@@ -237,7 +235,7 @@ pub fn load<'gc>(
     };
 
     let url = url_request
-        .get_public_property("url", activation)?
+        .get_slot(url_request_slots::_URL)
         .coerce_to_string(activation)?;
 
     // TODO: context parameter currently unused.

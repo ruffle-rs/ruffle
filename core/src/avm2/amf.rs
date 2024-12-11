@@ -4,7 +4,7 @@ use std::rc::Rc;
 use super::property::Property;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::class::Class;
-use crate::avm2::object::{ByteArrayObject, ClassObject, TObject, VectorObject};
+use crate::avm2::object::{ByteArrayObject, ClassObject, ScriptObject, TObject, VectorObject};
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::ArrayObject;
 use crate::avm2::ArrayStorage;
@@ -315,7 +315,7 @@ pub fn deserialize_value_impl<'gc>(
 
             // Now let's add each element as a property
             for element in elements {
-                array.set_public_property(
+                array.set_string_property_local(
                     AvmString::new_utf8(activation.context.gc_context, element.name()),
                     deserialize_value_impl(activation, element.value(), object_map)?,
                     activation,
@@ -473,7 +473,7 @@ pub fn deserialize_value_impl<'gc>(
                     dict_obj.set_property_by_object(key, value, activation.context.gc_context);
                 } else {
                     let key_string = key.coerce_to_string(activation)?;
-                    dict_obj.set_public_property(key_string, value, activation)?;
+                    dict_obj.set_string_property_local(key_string, value, activation)?;
                 }
             }
             dict_obj.into()
@@ -507,14 +507,10 @@ pub fn deserialize_lso<'gc>(
     activation: &mut Activation<'_, 'gc>,
     lso: &Lso,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let obj = activation
-        .avm2()
-        .classes()
-        .object
-        .construct(activation, &[])?;
+    let obj = ScriptObject::new_object(activation);
 
     for child in &lso.body {
-        obj.set_public_property(
+        obj.set_string_property_local(
             AvmString::new_utf8(activation.context.gc_context, &child.name),
             deserialize_value(activation, child.value())?,
             activation,

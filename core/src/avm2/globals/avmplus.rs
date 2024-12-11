@@ -2,7 +2,7 @@ use crate::avm2::class::Class;
 pub use crate::avm2::globals::flash::utils::get_qualified_class_name;
 use crate::avm2::metadata::Metadata;
 use crate::avm2::method::Method;
-use crate::avm2::object::{ArrayObject, TObject};
+use crate::avm2::object::{ArrayObject, ScriptObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::property::Property;
 use crate::avm2::{Activation, Error, Multiname, Namespace, Object, Value};
@@ -22,11 +22,7 @@ pub fn describe_type_json<'gc>(
 
     let value = args[0];
     let class_def = instance_class_describe_type(activation, value);
-    let object = activation
-        .avm2()
-        .classes()
-        .object
-        .construct(activation, &[])?;
+    let object = ScriptObject::new_object(activation);
 
     let mut used_class_def = class_def;
     if flags.contains(DescribeTypeFlags::USE_ITRAITS) {
@@ -41,15 +37,15 @@ pub fn describe_type_json<'gc>(
         .dollar_removed_name(activation.context.gc_context)
         .to_qualified_name(activation.context.gc_context);
 
-    object.set_public_property("name", qualified_name.into(), activation)?;
+    object.set_string_property_local("name", qualified_name.into(), activation)?;
 
-    object.set_public_property(
+    object.set_string_property_local(
         "isDynamic",
         (!used_class_def.is_sealed()).into(),
         activation,
     )?;
-    object.set_public_property("isFinal", used_class_def.is_final().into(), activation)?;
-    object.set_public_property(
+    object.set_string_property_local("isFinal", used_class_def.is_final().into(), activation)?;
+    object.set_string_property_local(
         "isStatic",
         value
             .as_object()
@@ -61,9 +57,9 @@ pub fn describe_type_json<'gc>(
 
     let traits = describe_internal_body(activation, used_class_def, flags)?;
     if flags.contains(DescribeTypeFlags::INCLUDE_TRAITS) {
-        object.set_public_property("traits", traits.into(), activation)?;
+        object.set_string_property_local("traits", traits.into(), activation)?;
     } else {
-        object.set_public_property("traits", Value::Null, activation)?;
+        object.set_string_property_local("traits", Value::Null, activation)?;
     }
 
     Ok(object.into())
@@ -93,11 +89,7 @@ fn describe_internal_body<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let mc = activation.gc();
 
-    let traits = activation
-        .avm2()
-        .classes()
-        .object
-        .construct(activation, &[])?;
+    let traits = ScriptObject::new_object(activation);
 
     let bases = ArrayObject::empty(activation)?.as_array_object().unwrap();
     let interfaces = ArrayObject::empty(activation)?.as_array_object().unwrap();
@@ -106,33 +98,33 @@ fn describe_internal_body<'gc>(
     let methods = ArrayObject::empty(activation)?.as_array_object().unwrap();
 
     if flags.contains(DescribeTypeFlags::INCLUDE_BASES) {
-        traits.set_public_property("bases", bases.into(), activation)?;
+        traits.set_string_property_local("bases", bases.into(), activation)?;
     } else {
-        traits.set_public_property("bases", Value::Null, activation)?;
+        traits.set_string_property_local("bases", Value::Null, activation)?;
     }
 
     if flags.contains(DescribeTypeFlags::INCLUDE_INTERFACES) {
-        traits.set_public_property("interfaces", interfaces.into(), activation)?;
+        traits.set_string_property_local("interfaces", interfaces.into(), activation)?;
     } else {
-        traits.set_public_property("interfaces", Value::Null, activation)?;
+        traits.set_string_property_local("interfaces", Value::Null, activation)?;
     }
 
     if flags.contains(DescribeTypeFlags::INCLUDE_VARIABLES) {
-        traits.set_public_property("variables", variables.into(), activation)?;
+        traits.set_string_property_local("variables", variables.into(), activation)?;
     } else {
-        traits.set_public_property("variables", Value::Null, activation)?;
+        traits.set_string_property_local("variables", Value::Null, activation)?;
     }
 
     if flags.contains(DescribeTypeFlags::INCLUDE_ACCESSORS) {
-        traits.set_public_property("accessors", accessors.into(), activation)?;
+        traits.set_string_property_local("accessors", accessors.into(), activation)?;
     } else {
-        traits.set_public_property("accessors", Value::Null, activation)?;
+        traits.set_string_property_local("accessors", Value::Null, activation)?;
     }
 
     if flags.contains(DescribeTypeFlags::INCLUDE_METHODS) {
-        traits.set_public_property("methods", methods.into(), activation)?;
+        traits.set_string_property_local("methods", methods.into(), activation)?;
     } else {
-        traits.set_public_property("methods", Value::Null, activation)?;
+        traits.set_string_property_local("methods", Value::Null, activation)?;
     }
 
     let mut bases_array = bases.as_array_storage_mut(mc).unwrap();
@@ -216,28 +208,28 @@ fn describe_internal_body<'gc>(
 
                 let trait_metadata = vtable.get_metadata_for_slot(slot_id);
 
-                let variable = activation
-                    .avm2()
-                    .classes()
-                    .object
-                    .construct(activation, &[])?;
-                variable.set_public_property("name", prop_name.into(), activation)?;
-                variable.set_public_property("type", prop_class_name.into(), activation)?;
-                variable.set_public_property("access", access.into(), activation)?;
-                variable.set_public_property(
+                let variable = ScriptObject::new_object(activation);
+                variable.set_string_property_local("name", prop_name.into(), activation)?;
+                variable.set_string_property_local("type", prop_class_name.into(), activation)?;
+                variable.set_string_property_local("access", access.into(), activation)?;
+                variable.set_string_property_local(
                     "uri",
                     uri.map_or(Value::Null, |u| u.into()),
                     activation,
                 )?;
 
-                variable.set_public_property("metadata", Value::Null, activation)?;
+                variable.set_string_property_local("metadata", Value::Null, activation)?;
 
                 if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
                     let metadata_object = ArrayObject::empty(activation)?;
                     if let Some(metadata) = trait_metadata {
                         write_metadata(metadata_object, &metadata, activation)?;
                     }
-                    variable.set_public_property("metadata", metadata_object.into(), activation)?;
+                    variable.set_string_property_local(
+                        "metadata",
+                        metadata_object.into(),
+                        activation,
+                    )?;
                 }
 
                 variables_array.push(variable.into());
@@ -274,41 +266,37 @@ fn describe_internal_body<'gc>(
 
                 let trait_metadata = vtable.get_metadata_for_disp(disp_id);
 
-                let method_obj = activation
-                    .avm2()
-                    .classes()
-                    .object
-                    .construct(activation, &[])?;
+                let method_obj = ScriptObject::new_object(activation);
 
-                method_obj.set_public_property("name", prop_name.into(), activation)?;
-                method_obj.set_public_property(
+                method_obj.set_string_property_local("name", prop_name.into(), activation)?;
+                method_obj.set_string_property_local(
                     "returnType",
                     return_type_name.into(),
                     activation,
                 )?;
-                method_obj.set_public_property(
+                method_obj.set_string_property_local(
                     "declaredBy",
                     declared_by_name.into(),
                     activation,
                 )?;
 
-                method_obj.set_public_property(
+                method_obj.set_string_property_local(
                     "uri",
                     uri.map_or(Value::Null, |u| u.into()),
                     activation,
                 )?;
 
                 let params = write_params(&method.method, activation)?;
-                method_obj.set_public_property("parameters", params.into(), activation)?;
+                method_obj.set_string_property_local("parameters", params.into(), activation)?;
 
-                method_obj.set_public_property("metadata", Value::Null, activation)?;
+                method_obj.set_string_property_local("metadata", Value::Null, activation)?;
 
                 if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
                     let metadata_object = ArrayObject::empty(activation)?;
                     if let Some(metadata) = trait_metadata {
                         write_metadata(metadata_object, &metadata, activation)?;
                     }
-                    method_obj.set_public_property(
+                    method_obj.set_string_property_local(
                         "metadata",
                         metadata_object.into(),
                         activation,
@@ -356,16 +344,16 @@ fn describe_internal_body<'gc>(
                 let accessor_type = display_name(activation.strings(), method_type);
                 let declared_by = defining_class.dollar_removed_name(mc).to_qualified_name(mc);
 
-                let accessor_obj = activation
-                    .avm2()
-                    .classes()
-                    .object
-                    .construct(activation, &[])?;
-                accessor_obj.set_public_property("name", prop_name.into(), activation)?;
-                accessor_obj.set_public_property("access", access.into(), activation)?;
-                accessor_obj.set_public_property("type", accessor_type.into(), activation)?;
-                accessor_obj.set_public_property("declaredBy", declared_by.into(), activation)?;
-                accessor_obj.set_public_property(
+                let accessor_obj = ScriptObject::new_object(activation);
+                accessor_obj.set_string_property_local("name", prop_name.into(), activation)?;
+                accessor_obj.set_string_property_local("access", access.into(), activation)?;
+                accessor_obj.set_string_property_local("type", accessor_type.into(), activation)?;
+                accessor_obj.set_string_property_local(
+                    "declaredBy",
+                    declared_by.into(),
+                    activation,
+                )?;
+                accessor_obj.set_string_property_local(
                     "uri",
                     uri.map_or(Value::Null, |u| u.into()),
                     activation,
@@ -388,13 +376,13 @@ fn describe_internal_body<'gc>(
                 if flags.contains(DescribeTypeFlags::INCLUDE_METADATA)
                     && metadata_object.as_array_storage().unwrap().length() > 0
                 {
-                    accessor_obj.set_public_property(
+                    accessor_obj.set_string_property_local(
                         "metadata",
                         metadata_object.into(),
                         activation,
                     )?;
                 } else {
-                    accessor_obj.set_public_property("metadata", Value::Null, activation)?;
+                    accessor_obj.set_string_property_local("metadata", Value::Null, activation)?;
                 }
 
                 accessors_array.push(accessor_obj.into());
@@ -407,10 +395,10 @@ fn describe_internal_body<'gc>(
     if flags.contains(DescribeTypeFlags::INCLUDE_CONSTRUCTOR) && !constructor.signature().is_empty()
     {
         let params = write_params(&constructor, activation)?;
-        traits.set_public_property("constructor", params.into(), activation)?;
+        traits.set_string_property_local("constructor", params.into(), activation)?;
     } else {
         // This is needed to override the normal 'constructor' property
-        traits.set_public_property("constructor", Value::Null, activation)?;
+        traits.set_string_property_local("constructor", Value::Null, activation)?;
     }
 
     if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
@@ -422,9 +410,9 @@ fn describe_internal_body<'gc>(
         );
 
         let metadata_object = ArrayObject::empty(activation)?;
-        traits.set_public_property("metadata", metadata_object.into(), activation)?;
+        traits.set_string_property_local("metadata", metadata_object.into(), activation)?;
     } else {
-        traits.set_public_property("metadata", Value::Null, activation)?;
+        traits.set_string_property_local("metadata", Value::Null, activation)?;
     }
 
     Ok(traits)
@@ -452,13 +440,9 @@ fn write_params<'gc>(
     for param in method.signature() {
         let param_type_name = display_name(activation.strings(), param.param_type_name);
         let optional = param.default_value.is_some();
-        let param_obj = activation
-            .avm2()
-            .classes()
-            .object
-            .construct(activation, &[])?;
-        param_obj.set_public_property("type", param_type_name.into(), activation)?;
-        param_obj.set_public_property("optional", optional.into(), activation)?;
+        let param_obj = ScriptObject::new_object(activation);
+        param_obj.set_string_property_local("type", param_type_name.into(), activation)?;
+        param_obj.set_string_property_local("optional", optional.into(), activation)?;
         params_array.push(param_obj.into());
     }
     Ok(params)

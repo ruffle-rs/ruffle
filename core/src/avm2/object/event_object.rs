@@ -259,7 +259,7 @@ impl<'gc> EventObject<'gc> {
             .unwrap();
         for (key, value) in info {
             info_object
-                .set_public_property(key.into(), Value::String(value.into()), activation)
+                .set_string_property_local(key.into(), Value::String(value.into()), activation)
                 .unwrap();
         }
 
