@@ -86,18 +86,30 @@ fn maybe_int_property(name: AvmString<'_>) -> DynamicKey<'_> {
 }
 
 impl<'gc> ScriptObject<'gc> {
+    /// Creates an instance of the Object class, exactly as if `new Object()`
+    /// were called, but without going through any construction or call
+    /// machinery (since it's unnecessary for the Object class).
+    pub fn new_object(activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
+        let object_class = activation.avm2().classes().object;
+
+        ScriptObject(Gc::new(
+            activation.gc(),
+            ScriptObjectData::new(object_class),
+        ))
+        .into()
+    }
+
     /// Construct an instance with a possibly-none class and proto chain.
     /// NOTE: this is a low-level function.
     /// This should *not* be used unless you really need
     /// to do something low-level, weird or lazily initialize the object.
     /// You shouldn't let scripts observe this weirdness.
     ///
-    /// The "everyday" way to create a normal empty ScriptObject (AS "Object") is to call
-    /// `avm2.classes().object.construct(self, &[])`.
-    /// This is equivalent to AS3 `new Object()`.
+    /// The proper way to create a normal empty ScriptObject (AS "Object") is to call
+    /// `ScriptObject::new_object(activation)`.
     ///
-    /// (calling `custom_object(mc, object_class, object_class.prototype()`)
-    /// is technically also equivalent and faster, but not recommended outside lower-level Core code)
+    /// Calling `custom_object(mc, object_class, object_class.prototype()` is
+    /// technically also equivalent, but not recommended outside VM initialization code
     pub fn custom_object(
         mc: &Mutation<'gc>,
         class: Class<'gc>,

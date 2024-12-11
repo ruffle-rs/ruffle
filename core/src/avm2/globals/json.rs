@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::error::{syntax_error, type_error};
 use crate::avm2::globals::array::ArrayIter;
-use crate::avm2::object::{ArrayObject, FunctionObject, Object, TObject};
+use crate::avm2::object::{ArrayObject, FunctionObject, Object, ScriptObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -33,8 +33,7 @@ fn deserialize_json_inner<'gc>(
             }
         }
         JsonValue::Object(js_obj) => {
-            let obj_class = activation.avm2().classes().object;
-            let obj = obj_class.construct(activation, &[])?;
+            let obj = ScriptObject::new_object(activation);
             for entry in js_obj.iter() {
                 let key = AvmString::new_utf8(activation.context.gc_context, entry.0);
                 let val = deserialize_json_inner(activation, entry.1.clone(), reviver)?;

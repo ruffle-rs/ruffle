@@ -123,12 +123,7 @@ impl<'gc> FunctionObject<'gc> {
             bound_class,
         );
 
-        let es3_proto = activation
-            .avm2()
-            .classes()
-            .object
-            .construct(activation, &[])
-            .expect("Object should construct");
+        let es3_proto = ScriptObject::new_object(activation);
 
         FunctionObject(Gc::new(
             activation.context.gc_context,
