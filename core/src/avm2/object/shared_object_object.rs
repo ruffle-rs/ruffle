@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::argument_error;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, ObjectPtr, ScriptObject, TObject};
 use crate::avm2::Error;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::Lock, Collect, Gc, GcWeak};
@@ -73,12 +73,8 @@ impl<'gc> SharedObjectObject<'gc> {
         self.0.data.get()
     }
 
-    pub fn reset_data(&self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
-        let empty_data = activation
-            .avm2()
-            .classes()
-            .object
-            .construct(activation, &[])?;
+    pub fn reset_data(&self, activation: &mut Activation<'_, 'gc>) {
+        let empty_data = ScriptObject::new_object(activation);
 
         unlock!(
             Gc::write(activation.gc(), self.0),
@@ -86,8 +82,6 @@ impl<'gc> SharedObjectObject<'gc> {
             data
         )
         .set(empty_data);
-
-        Ok(())
     }
 
     pub fn name(&self) -> &String {

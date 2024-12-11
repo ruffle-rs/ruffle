@@ -4,7 +4,7 @@ use std::rc::Rc;
 use super::property::Property;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::class::Class;
-use crate::avm2::object::{ByteArrayObject, ClassObject, TObject, VectorObject};
+use crate::avm2::object::{ByteArrayObject, ClassObject, ScriptObject, TObject, VectorObject};
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::ArrayObject;
 use crate::avm2::ArrayStorage;
@@ -507,11 +507,7 @@ pub fn deserialize_lso<'gc>(
     activation: &mut Activation<'_, 'gc>,
     lso: &Lso,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let obj = activation
-        .avm2()
-        .classes()
-        .object
-        .construct(activation, &[])?;
+    let obj = ScriptObject::new_object(activation);
 
     for child in &lso.body {
         obj.set_string_property_local(

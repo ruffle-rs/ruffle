@@ -253,7 +253,7 @@ pub fn clear<'gc>(
     let shared_object = this.as_shared_object().unwrap();
 
     // Clear the local data object.
-    shared_object.reset_data(activation)?;
+    shared_object.reset_data(activation);
 
     // Delete data from storage backend.
     let name = shared_object.name();
