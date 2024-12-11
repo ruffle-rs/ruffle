@@ -357,6 +357,15 @@ impl AsRef<[u8]> for SwfSlice {
 }
 
 impl SwfSlice {
+    /// Construct a new SwfSlice from a movie and slice to its data.
+    ///
+    /// This function panics if the slice is not fully contained by the movie.
+    pub fn new(movie: Arc<SwfMovie>, slice: &[u8]) -> Self {
+        let ret = Self::from(movie).to_subslice(slice);
+        assert!(ret.len() == slice.len());
+        ret
+    }
+
     /// Creates an empty SwfSlice.
     #[inline]
     pub fn empty(movie: Arc<SwfMovie>) -> Self {
