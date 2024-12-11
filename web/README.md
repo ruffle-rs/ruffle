@@ -106,6 +106,7 @@ In this project, you may run the following commands to build all packages:
     -   There is `npm run build:dual-wasm` as well, to build a second WebAssembly module that makes use of some WebAssembly extensions,
         potentially resulting in better performance in browsers that support them, at the expense of longer build time.
     -   `npm run build:repro` enables reproducible builds. Note that this also requires a `version_seal.json`, which is not provided in the normal Git repository - only specially-marked reproducible source archives. Running this without a version seal will generate one based on the current state of your environment.
+    -   With either of the prior two commands, you can set the environment variable `BUILD_WASM_MVP=1`. This will build the vanilla WASM module using nightly Rust and disable all WebAssembly features that Rust enables by default. You will first need to run the command `rustup target add wasm32-unknown-unknown --toolchain nightly` so nightly Rust can also output WebAssembly.
 
 From here, you may follow the instructions to [use Ruffle on your website](packages/selfhosted/README.md),
 run a demo locally with `npm run demo`, or [install the extension in your browser](https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#browser-extension).
