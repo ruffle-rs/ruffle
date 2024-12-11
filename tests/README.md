@@ -24,6 +24,7 @@ ignore = false # If true, ignore this test. Please comment why, ideally link to 
 known_failure = false # If true, this test is known to fail and the result will be inverted. When the test passes in the future, it'll fail and alert that it now passes.
 output_path = "output.txt" # Path (relative to the directory containing test.toml) to the expected output
 log_fetch = false # If true, all network requests will be included in the output.
+is_slow = false # If true, the test is marked as taking significantly longer to execute compared to others. Used for improving performance of the test suite.
 
 # Sometimes floating point math doesn't exactly 100% match between flash and rust.
 # If you encounter this in a test, the following section will change the output testing from "exact" to "approximate"
