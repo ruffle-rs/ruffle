@@ -235,6 +235,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Same as get_property_local, but constructs a public Multiname for you.
+    #[no_dynamic]
     fn get_string_property_local(
         self,
         name: impl Into<AvmString<'gc>>,
@@ -335,6 +336,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     /// TODO: this feels upside down, as in: we shouldn't need multinames/namespaces
     /// by the time we reach dynamic properties.
     /// But for now, this function is a smaller change to the core than a full refactor.
+    #[no_dynamic]
     fn set_string_property_local(
         self,
         name: impl Into<AvmString<'gc>>,
@@ -635,6 +637,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Indicates whether or not a property exists on an object.
+    #[no_dynamic]
     fn has_property(self, name: &Multiname<'gc>) -> bool {
         if self.has_own_property(name) {
             true
@@ -646,6 +649,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Same as has_property, but constructs a public Multiname for you.
+    #[no_dynamic]
     fn has_public_property(
         self,
         name: impl Into<AvmString<'gc>>,
@@ -698,6 +702,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     }
 
     /// Same as delete_property_local, but constructs a public Multiname for you.
+    #[no_dynamic]
     fn delete_string_property_local(
         self,
         name: impl Into<AvmString<'gc>>,
