@@ -2,7 +2,7 @@ use crate::avm2::class::Class;
 pub use crate::avm2::globals::flash::utils::get_qualified_class_name;
 use crate::avm2::metadata::Metadata;
 use crate::avm2::method::Method;
-use crate::avm2::object::{ArrayObject, TObject};
+use crate::avm2::object::{ArrayObject, ScriptObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::property::Property;
 use crate::avm2::{Activation, Error, Multiname, Namespace, Object, Value};
@@ -22,11 +22,7 @@ pub fn describe_type_json<'gc>(
 
     let value = args[0];
     let class_def = instance_class_describe_type(activation, value);
-    let object = activation
-        .avm2()
-        .classes()
-        .object
-        .construct(activation, &[])?;
+    let object = ScriptObject::new_object(activation);
 
     let mut used_class_def = class_def;
     if flags.contains(DescribeTypeFlags::USE_ITRAITS) {
@@ -93,11 +89,7 @@ fn describe_internal_body<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let mc = activation.gc();
 
-    let traits = activation
-        .avm2()
-        .classes()
-        .object
-        .construct(activation, &[])?;
+    let traits = ScriptObject::new_object(activation);
 
     let bases = ArrayObject::empty(activation)?.as_array_object().unwrap();
     let interfaces = ArrayObject::empty(activation)?.as_array_object().unwrap();
@@ -216,11 +208,7 @@ fn describe_internal_body<'gc>(
 
                 let trait_metadata = vtable.get_metadata_for_slot(slot_id);
 
-                let variable = activation
-                    .avm2()
-                    .classes()
-                    .object
-                    .construct(activation, &[])?;
+                let variable = ScriptObject::new_object(activation);
                 variable.set_string_property_local("name", prop_name.into(), activation)?;
                 variable.set_string_property_local("type", prop_class_name.into(), activation)?;
                 variable.set_string_property_local("access", access.into(), activation)?;
@@ -278,11 +266,7 @@ fn describe_internal_body<'gc>(
 
                 let trait_metadata = vtable.get_metadata_for_disp(disp_id);
 
-                let method_obj = activation
-                    .avm2()
-                    .classes()
-                    .object
-                    .construct(activation, &[])?;
+                let method_obj = ScriptObject::new_object(activation);
 
                 method_obj.set_string_property_local("name", prop_name.into(), activation)?;
                 method_obj.set_string_property_local(
@@ -360,11 +344,7 @@ fn describe_internal_body<'gc>(
                 let accessor_type = display_name(activation.strings(), method_type);
                 let declared_by = defining_class.dollar_removed_name(mc).to_qualified_name(mc);
 
-                let accessor_obj = activation
-                    .avm2()
-                    .classes()
-                    .object
-                    .construct(activation, &[])?;
+                let accessor_obj = ScriptObject::new_object(activation);
                 accessor_obj.set_string_property_local("name", prop_name.into(), activation)?;
                 accessor_obj.set_string_property_local("access", access.into(), activation)?;
                 accessor_obj.set_string_property_local("type", accessor_type.into(), activation)?;
@@ -460,11 +440,7 @@ fn write_params<'gc>(
     for param in method.signature() {
         let param_type_name = display_name(activation.strings(), param.param_type_name);
         let optional = param.default_value.is_some();
-        let param_obj = activation
-            .avm2()
-            .classes()
-            .object
-            .construct(activation, &[])?;
+        let param_obj = ScriptObject::new_object(activation);
         param_obj.set_string_property_local("type", param_type_name.into(), activation)?;
         param_obj.set_string_property_local("optional", optional.into(), activation)?;
         params_array.push(param_obj.into());

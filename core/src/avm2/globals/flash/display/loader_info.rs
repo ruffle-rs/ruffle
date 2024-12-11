@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::Endian;
 use crate::avm2::error::error;
-use crate::avm2::object::{DomainObject, LoaderStream, Object, TObject};
+use crate::avm2::object::{DomainObject, LoaderStream, Object, ScriptObject, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{AvmString, Error};
 use crate::display_object::TDisplayObject;
@@ -506,11 +506,7 @@ pub fn get_parameters<'gc>(
             LoaderStream::Swf(root, _) => root,
         };
 
-        let params_obj = activation
-            .avm2()
-            .classes()
-            .object
-            .construct(activation, &[])?;
+        let params_obj = ScriptObject::new_object(activation);
         let parameters = root.parameters();
 
         for (k, v) in parameters.iter() {

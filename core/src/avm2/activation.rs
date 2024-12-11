@@ -1559,7 +1559,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             ScriptObject::catch_scope(self, &vname)
         } else {
             // for `finally` scopes, FP just creates a normal object.
-            self.avm2().classes().object.construct(self, &[])?
+            ScriptObject::new_object(self)
         };
 
         self.push_stack(so);
@@ -1813,7 +1813,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_new_object(&mut self, num_args: u32) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let object = self.context.avm2.classes().object.construct(self, &[])?;
+        let object = ScriptObject::new_object(self);
 
         for _ in 0..num_args {
             let value = self.pop_stack();
