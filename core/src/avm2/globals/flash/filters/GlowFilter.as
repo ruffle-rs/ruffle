@@ -1,12 +1,27 @@
 ﻿package flash.filters {
 	public final class GlowFilter extends BitmapFilter {
+	    [Ruffle(InternalSlot)]
 		public var alpha: Number;
+
+	    [Ruffle(InternalSlot)]
 		public var blurX: Number;
+
+	    [Ruffle(InternalSlot)]
 		public var blurY: Number;
+
+	    [Ruffle(InternalSlot)]
 		public var color: uint;
+
+	    [Ruffle(InternalSlot)]
 		public var inner: Boolean;
+
+	    [Ruffle(InternalSlot)]
 		public var knockout: Boolean;
+
+	    [Ruffle(InternalSlot)]
 		public var quality: int;
+
+	    [Ruffle(InternalSlot)]
 		public var strength: Number;
 
 		public function GlowFilter(color: uint = 0xFF0000, 
