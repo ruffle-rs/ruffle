@@ -2,6 +2,7 @@ use crate::avm2::error::{make_error_2008, type_error};
 use crate::avm2::globals::flash::display::shader_job::get_shader_args;
 use crate::avm2::globals::slots::flash_filters_bevel_filter as bevel_filter_slots;
 use crate::avm2::globals::slots::flash_filters_blur_filter as blur_filter_slots;
+use crate::avm2::globals::slots::flash_filters_color_matrix_filter as color_matrix_filter_slots;
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::object::{ArrayObject, ClassObject, Object, TObject};
 use crate::avm2::{Activation, Error, Value};
@@ -324,7 +325,7 @@ fn avm2_to_color_matrix_filter<'gc>(
 ) -> Result<Filter, Error<'gc>> {
     let mut matrix = [0.0; 20];
     if let Some(matrix_object) = object
-        .get_public_property("matrix", activation)?
+        .get_slot(color_matrix_filter_slots::_MATRIX)
         .as_object()
     {
         if let Some(array) = matrix_object.as_array_storage() {
