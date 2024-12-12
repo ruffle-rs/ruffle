@@ -2155,6 +2155,11 @@ impl<'gc> EditText<'gc> {
         Some(first_box.start())
     }
 
+    /// Returns the index of the line that is at the given position.
+    ///
+    /// It returns `None` when there's no line at the given position,
+    /// with the exception that positions below the last line will
+    /// return the index of the last line.
     pub fn line_index_at_point(self, position: Point<Twips>) -> Option<usize> {
         let edit_text = self.0.read();
 
