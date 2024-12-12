@@ -5,6 +5,7 @@ use crate::avm2::globals::slots::flash_filters_blur_filter as blur_filter_slots;
 use crate::avm2::globals::slots::flash_filters_color_matrix_filter as color_matrix_filter_slots;
 use crate::avm2::globals::slots::flash_filters_convolution_filter as convolution_filter_slots;
 use crate::avm2::globals::slots::flash_filters_displacement_map_filter as displacement_map_filter_slots;
+use crate::avm2::globals::slots::flash_filters_drop_shadow_filter as drop_shadow_filter_slots;
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::object::{ArrayObject, ClassObject, Object, TObject};
 use crate::avm2::{Activation, Error, Value};
@@ -558,37 +559,37 @@ fn avm2_to_drop_shadow_filter<'gc>(
     object: Object<'gc>,
 ) -> Result<Filter, Error<'gc>> {
     let alpha = object
-        .get_public_property("alpha", activation)?
+        .get_slot(drop_shadow_filter_slots::ALPHA)
         .coerce_to_number(activation)?;
     let angle = object
-        .get_public_property("angle", activation)?
+        .get_slot(drop_shadow_filter_slots::ANGLE)
         .coerce_to_number(activation)?;
     let blur_x = object
-        .get_public_property("blurX", activation)?
+        .get_slot(drop_shadow_filter_slots::BLUR_X)
         .coerce_to_number(activation)?;
     let blur_y = object
-        .get_public_property("blurY", activation)?
+        .get_slot(drop_shadow_filter_slots::BLUR_Y)
         .coerce_to_number(activation)?;
     let color = object
-        .get_public_property("color", activation)?
+        .get_slot(drop_shadow_filter_slots::COLOR)
         .coerce_to_u32(activation)?;
     let distance = object
-        .get_public_property("distance", activation)?
+        .get_slot(drop_shadow_filter_slots::DISTANCE)
         .coerce_to_number(activation)?;
     let hide_object = object
-        .get_public_property("hideObject", activation)?
+        .get_slot(drop_shadow_filter_slots::HIDE_OBJECT)
         .coerce_to_boolean();
     let inner = object
-        .get_public_property("inner", activation)?
+        .get_slot(drop_shadow_filter_slots::INNER)
         .coerce_to_boolean();
     let knockout = object
-        .get_public_property("knockout", activation)?
+        .get_slot(drop_shadow_filter_slots::KNOCKOUT)
         .coerce_to_boolean();
     let quality = object
-        .get_public_property("quality", activation)?
+        .get_slot(drop_shadow_filter_slots::QUALITY)
         .coerce_to_u32(activation)?;
     let strength = object
-        .get_public_property("strength", activation)?
+        .get_slot(drop_shadow_filter_slots::STRENGTH)
         .coerce_to_number(activation)?;
     let mut flags = DropShadowFilterFlags::empty();
     if !hide_object {

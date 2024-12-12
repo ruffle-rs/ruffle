@@ -1,15 +1,36 @@
 package flash.filters {
 	public final class DropShadowFilter extends BitmapFilter {
+	    [Ruffle(InternalSlot)]
 		public var alpha: Number;
+
+	    [Ruffle(InternalSlot)]
 		public var angle: Number;
+
+	    [Ruffle(InternalSlot)]
 		public var blurX: Number;
+
+	    [Ruffle(InternalSlot)]
 		public var blurY: Number;
+
+	    [Ruffle(InternalSlot)]
 		public var color: uint;
+
+	    [Ruffle(InternalSlot)]
 		public var distance: Number;
+
+	    [Ruffle(InternalSlot)]
 		public var hideObject: Boolean;
+
+	    [Ruffle(InternalSlot)]
 		public var inner: Boolean;
+
+	    [Ruffle(InternalSlot)]
 		public var knockout: Boolean;
+
+	    [Ruffle(InternalSlot)]
 		public var quality: int;
+
+	    [Ruffle(InternalSlot)]
 		public var strength: Number;
 
 		public function DropShadowFilter(distance:Number = 4.0,
