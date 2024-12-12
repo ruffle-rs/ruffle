@@ -1,3 +1,10 @@
+use crate::avm2::error::{make_error_2008, type_error};
+use crate::avm2::globals::flash::display::shader_job::get_shader_args;
+use crate::avm2::globals::slots::flash_filters_bevel_filter as bevel_filter_slots;
+use crate::avm2::globals::slots::flash_geom_point as point_slots;
+use crate::avm2::object::{ArrayObject, ClassObject, Object, TObject};
+use crate::avm2::{Activation, Error, Value};
+
 use gc_arena::{Collect, DynamicRoot, Rootable};
 use ruffle_render::filters::{
     DisplacementMapFilter, DisplacementMapFilterMode, Filter, ShaderFilter, ShaderObject,
@@ -8,12 +15,6 @@ use swf::{
     ConvolutionFilter, ConvolutionFilterFlags, DropShadowFilter, DropShadowFilterFlags, Fixed16,
     Fixed8, GlowFilter, GlowFilterFlags, GradientFilter, GradientFilterFlags, GradientRecord,
 };
-
-use crate::avm2::error::{make_error_2008, type_error};
-use crate::avm2::globals::slots::flash_geom_point as point_slots;
-use crate::avm2::{Activation, ArrayObject, ClassObject, Error, Object, TObject, Value};
-
-use super::globals::flash::display::shader_job::get_shader_args;
 
 pub trait FilterAvm2Ext {
     fn from_avm2_object<'gc>(
@@ -197,40 +198,40 @@ fn avm2_to_bevel_filter<'gc>(
     object: Object<'gc>,
 ) -> Result<Filter, Error<'gc>> {
     let angle = object
-        .get_public_property("angle", activation)?
+        .get_slot(bevel_filter_slots::ANGLE)
         .coerce_to_number(activation)?;
     let blur_x = object
-        .get_public_property("blurX", activation)?
+        .get_slot(bevel_filter_slots::BLUR_X)
         .coerce_to_number(activation)?;
     let blur_y = object
-        .get_public_property("blurY", activation)?
+        .get_slot(bevel_filter_slots::BLUR_Y)
         .coerce_to_number(activation)?;
     let distance = object
-        .get_public_property("distance", activation)?
+        .get_slot(bevel_filter_slots::DISTANCE)
         .coerce_to_number(activation)?;
     let highlight_alpha = object
-        .get_public_property("highlightAlpha", activation)?
+        .get_slot(bevel_filter_slots::HIGHLIGHT_ALPHA)
         .coerce_to_number(activation)?;
     let highlight_color = object
-        .get_public_property("highlightColor", activation)?
+        .get_slot(bevel_filter_slots::HIGHLIGHT_COLOR)
         .coerce_to_u32(activation)?;
     let knockout = object
-        .get_public_property("knockout", activation)?
+        .get_slot(bevel_filter_slots::KNOCKOUT)
         .coerce_to_boolean();
     let quality = object
-        .get_public_property("quality", activation)?
+        .get_slot(bevel_filter_slots::QUALITY)
         .coerce_to_u32(activation)?;
     let shadow_alpha = object
-        .get_public_property("shadowAlpha", activation)?
+        .get_slot(bevel_filter_slots::SHADOW_ALPHA)
         .coerce_to_number(activation)?;
     let shadow_color = object
-        .get_public_property("shadowColor", activation)?
+        .get_slot(bevel_filter_slots::SHADOW_COLOR)
         .coerce_to_u32(activation)?;
     let strength = object
-        .get_public_property("strength", activation)?
+        .get_slot(bevel_filter_slots::STRENGTH)
         .coerce_to_number(activation)?;
     let bevel_type = object
-        .get_public_property("type", activation)?
+        .get_slot(bevel_filter_slots::TYPE)
         .coerce_to_string(activation)?;
     let mut flags = BevelFilterFlags::COMPOSITE_SOURCE;
     if &bevel_type == b"inner" {
