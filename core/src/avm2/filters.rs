@@ -4,6 +4,7 @@ use crate::avm2::globals::slots::flash_filters_bevel_filter as bevel_filter_slot
 use crate::avm2::globals::slots::flash_filters_blur_filter as blur_filter_slots;
 use crate::avm2::globals::slots::flash_filters_color_matrix_filter as color_matrix_filter_slots;
 use crate::avm2::globals::slots::flash_filters_convolution_filter as convolution_filter_slots;
+use crate::avm2::globals::slots::flash_filters_displacement_map_filter as displacement_map_filter_slots;
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::object::{ArrayObject, ClassObject, Object, TObject};
 use crate::avm2::{Activation, Error, Value};
@@ -449,19 +450,19 @@ fn avm2_to_displacement_map_filter<'gc>(
     object: Object<'gc>,
 ) -> Result<Filter, Error<'gc>> {
     let alpha = object
-        .get_public_property("alpha", activation)?
+        .get_slot(displacement_map_filter_slots::ALPHA)
         .coerce_to_number(activation)?;
     let color = object
-        .get_public_property("color", activation)?
+        .get_slot(displacement_map_filter_slots::COLOR)
         .coerce_to_u32(activation)?;
     let component_x = object
-        .get_public_property("componentX", activation)?
+        .get_slot(displacement_map_filter_slots::COMPONENT_X)
         .coerce_to_u32(activation)?;
     let component_y = object
-        .get_public_property("componentY", activation)?
+        .get_slot(displacement_map_filter_slots::COMPONENT_Y)
         .coerce_to_u32(activation)?;
     let map_point =
-        if let Value::Object(point) = object.get_public_property("mapPoint", activation)? {
+        if let Value::Object(point) = object.get_slot(displacement_map_filter_slots::MAP_POINT) {
             (
                 point.get_slot(point_slots::X).coerce_to_i32(activation)?,
                 point.get_slot(point_slots::Y).coerce_to_i32(activation)?,
@@ -469,7 +470,7 @@ fn avm2_to_displacement_map_filter<'gc>(
         } else {
             (0, 0)
         };
-    let mode = if let Value::String(mode) = object.get_public_property("mode", activation)? {
+    let mode = if let Value::String(mode) = object.get_slot(displacement_map_filter_slots::MODE) {
         if &mode == b"clamp" {
             DisplacementMapFilterMode::Clamp
         } else if &mode == b"ignore" {
@@ -485,16 +486,16 @@ fn avm2_to_displacement_map_filter<'gc>(
         DisplacementMapFilterMode::Wrap
     };
     let scale_x = object
-        .get_public_property("scaleX", activation)?
+        .get_slot(displacement_map_filter_slots::SCALE_X)
         .coerce_to_number(activation)?;
     let scale_y = object
-        .get_public_property("scaleY", activation)?
+        .get_slot(displacement_map_filter_slots::SCALE_Y)
         .coerce_to_number(activation)?;
     let map_bitmap = if let Value::Object(bitmap) =
-        object.get_public_property("mapBitmap", activation)?
+        object.get_slot(displacement_map_filter_slots::MAP_BITMAP)
     {
         if let Some(bitmap) = bitmap.as_bitmap_data() {
-            Some(bitmap.bitmap_handle(activation.context.gc_context, activation.context.renderer))
+            Some(bitmap.bitmap_handle(activation.gc(), activation.context.renderer))
         } else {
             return Err(Error::AvmError(type_error(
                 activation,
