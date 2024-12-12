@@ -1,22 +1,22 @@
 ﻿package flash.filters {
-	public final class BlurFilter extends BitmapFilter {
-	    [Ruffle(InternalSlot)]
-		public var blurX: Number;
+    public final class BlurFilter extends BitmapFilter {
+        [Ruffle(InternalSlot)]
+        public var blurX: Number;
 
-	    [Ruffle(InternalSlot)]
-		public var blurY: Number;
+        [Ruffle(InternalSlot)]
+        public var blurY: Number;
 
-	    [Ruffle(InternalSlot)]
-		public var quality: int;
+        [Ruffle(InternalSlot)]
+        public var quality: int;
 
-		public function BlurFilter(blurX: Number = 4.0, blurY: Number = 4.0, quality: int = 1) {
-			this.blurX = blurX;
-			this.blurY = blurY;
-			this.quality = quality;
-		}
+        public function BlurFilter(blurX: Number = 4.0, blurY: Number = 4.0, quality: int = 1) {
+            this.blurX = blurX;
+            this.blurY = blurY;
+            this.quality = quality;
+        }
 
-		override public function clone(): BitmapFilter {
-			return new BlurFilter(this.blurX, this.blurY, this.quality);
-		}
-	}
+        override public function clone(): BitmapFilter {
+            return new BlurFilter(this.blurX, this.blurY, this.quality);
+        }
+    }
 }

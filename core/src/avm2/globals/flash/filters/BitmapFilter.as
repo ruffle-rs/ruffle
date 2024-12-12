@@ -1,7 +1,7 @@
 ﻿package flash.filters {
-	public class BitmapFilter {
-		public function clone(): BitmapFilter {
-			return null;
-		}
-	}
+    public class BitmapFilter {
+        public function clone(): BitmapFilter {
+            return null;
+        }
+    }
 }
