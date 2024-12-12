@@ -1,7 +1,9 @@
+use std::fmt::{Debug, Formatter};
+
 /// An RGBA (red, green, blue, alpha) color.
 ///
 /// All components are stored as [`u8`] and have a color range of 0-255.
-#[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Default, Eq, PartialEq, Hash)]
 pub struct Color {
     /// The red component value.
     pub r: u8,
@@ -14,6 +16,16 @@ pub struct Color {
 
     /// The alpha component value.
     pub a: u8,
+}
+
+impl Debug for Color {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Color(0x{:02x}{:02x}{:02x}{:02x})",
+            self.r, self.g, self.b, self.a,
+        )
+    }
 }
 
 impl Color {
