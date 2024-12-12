@@ -3,14 +3,33 @@
 	import flash.geom.Point;
 
 	public final class DisplacementMapFilter extends BitmapFilter {
+	    // FIXME these should all be getters/setters to match Flash
+
+	    [Ruffle(InternalSlot)]
 		public var alpha: Number;
+
+	    [Ruffle(InternalSlot)]
 		public var color: uint;
+
+	    [Ruffle(InternalSlot)]
 		public var componentX: uint;
+
+	    [Ruffle(InternalSlot)]
 		public var componentY: uint;
+
+	    [Ruffle(InternalSlot)]
 		public var mapBitmap: BitmapData;
+
+	    [Ruffle(InternalSlot)]
 		public var mapPoint: Point;
+
+	    [Ruffle(InternalSlot)]
 		public var mode: String;
+
+	    [Ruffle(InternalSlot)]
 		public var scaleX: Number;
+
+	    [Ruffle(InternalSlot)]
 		public var scaleY: Number;
 
 		public function DisplacementMapFilter(mapBitmap:BitmapData = null,
