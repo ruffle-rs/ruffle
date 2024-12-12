@@ -7,6 +7,8 @@ use crate::avm2::globals::slots::flash_filters_convolution_filter as convolution
 use crate::avm2::globals::slots::flash_filters_displacement_map_filter as displacement_map_filter_slots;
 use crate::avm2::globals::slots::flash_filters_drop_shadow_filter as drop_shadow_filter_slots;
 use crate::avm2::globals::slots::flash_filters_glow_filter as glow_filter_slots;
+use crate::avm2::globals::slots::flash_filters_gradient_bevel_filter as gradient_bevel_filter_slots;
+use crate::avm2::globals::slots::flash_filters_gradient_glow_filter as gradient_glow_filter_slots;
 use crate::avm2::globals::slots::flash_filters_shader_filter as shader_filter_slots;
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::object::{ArrayObject, ClassObject, Object, TObject};
@@ -697,29 +699,45 @@ fn avm2_to_gradient_filter<'gc>(
     activation: &mut Activation<'_, 'gc>,
     object: Object<'gc>,
 ) -> Result<GradientFilter, Error<'gc>> {
+    #[allow(clippy::assertions_on_constants)]
+    {
+        assert!(gradient_bevel_filter_slots::ANGLE == gradient_glow_filter_slots::ANGLE);
+        assert!(gradient_bevel_filter_slots::BLUR_X == gradient_glow_filter_slots::BLUR_X);
+        assert!(gradient_bevel_filter_slots::BLUR_Y == gradient_glow_filter_slots::BLUR_Y);
+        assert!(gradient_bevel_filter_slots::DISTANCE == gradient_glow_filter_slots::DISTANCE);
+        assert!(gradient_bevel_filter_slots::KNOCKOUT == gradient_glow_filter_slots::KNOCKOUT);
+        assert!(gradient_bevel_filter_slots::QUALITY == gradient_glow_filter_slots::QUALITY);
+        assert!(gradient_bevel_filter_slots::STRENGTH == gradient_glow_filter_slots::STRENGTH);
+        assert!(gradient_bevel_filter_slots::TYPE == gradient_glow_filter_slots::TYPE);
+
+        assert!(gradient_bevel_filter_slots::COLORS == gradient_glow_filter_slots::COLORS);
+        assert!(gradient_bevel_filter_slots::ALPHAS == gradient_glow_filter_slots::ALPHAS);
+        assert!(gradient_bevel_filter_slots::RATIOS == gradient_glow_filter_slots::RATIOS);
+    }
+
     let angle = object
-        .get_public_property("angle", activation)?
+        .get_slot(gradient_bevel_filter_slots::ANGLE)
         .coerce_to_number(activation)?;
     let blur_x = object
-        .get_public_property("blurX", activation)?
+        .get_slot(gradient_bevel_filter_slots::BLUR_X)
         .coerce_to_number(activation)?;
     let blur_y = object
-        .get_public_property("blurY", activation)?
+        .get_slot(gradient_bevel_filter_slots::BLUR_Y)
         .coerce_to_number(activation)?;
     let distance = object
-        .get_public_property("distance", activation)?
+        .get_slot(gradient_bevel_filter_slots::DISTANCE)
         .coerce_to_number(activation)?;
     let knockout = object
-        .get_public_property("knockout", activation)?
+        .get_slot(gradient_bevel_filter_slots::KNOCKOUT)
         .coerce_to_boolean();
     let quality = object
-        .get_public_property("quality", activation)?
+        .get_slot(gradient_bevel_filter_slots::QUALITY)
         .coerce_to_u32(activation)?;
     let strength = object
-        .get_public_property("strength", activation)?
+        .get_slot(gradient_bevel_filter_slots::STRENGTH)
         .coerce_to_number(activation)?;
     let bevel_type = object
-        .get_public_property("type", activation)?
+        .get_slot(gradient_bevel_filter_slots::TYPE)
         .coerce_to_string(activation)?;
     let colors = get_gradient_colors(activation, object)?;
     let mut flags = GradientFilterFlags::COMPOSITE_SOURCE;
@@ -857,17 +875,17 @@ fn get_gradient_colors<'gc>(
 ) -> Result<Vec<GradientRecord>, Error<'gc>> {
     let mut colors = vec![];
     if let Some(colors_object) = object
-        .get_public_property("colors", activation)?
+        .get_slot(gradient_bevel_filter_slots::COLORS)
         .as_object()
     {
         if let Some(colors_array) = colors_object.as_array_storage() {
             if let Some(alphas_object) = object
-                .get_public_property("alphas", activation)?
+                .get_slot(gradient_bevel_filter_slots::ALPHAS)
                 .as_object()
             {
                 if let Some(alphas_array) = alphas_object.as_array_storage() {
                     if let Some(ratios_object) = object
-                        .get_public_property("ratios", activation)?
+                        .get_slot(gradient_bevel_filter_slots::RATIOS)
                         .as_object()
                     {
                         if let Some(ratios_array) = ratios_object.as_array_storage() {

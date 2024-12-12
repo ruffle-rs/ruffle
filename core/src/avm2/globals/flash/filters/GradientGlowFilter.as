@@ -1,16 +1,43 @@
 ﻿package flash.filters {
 	public final class GradientGlowFilter extends BitmapFilter {
-		public var alphas : Array;
-		public var angle : Number;
-		public var blurX : Number;
-		public var blurY : Number;
-		public var colors : Array;
-		public var distance : Number;
-		public var knockout : Boolean;
-		public var quality : int;
-		public var ratios : Array;
-		public var strength : Number;
-		public var type : String;
+	    // NOTE if reordering these fields, make sure to use the same order in
+	    // GradientBevelFilter; filter code assumes the slot layouts are identical
+	    // (these aren't annotated with [Ruffle(InternalSlot)] because we use the
+	    // slots from GradientBevelFilter to access them)
+
+        // FIXME these should all be getters/setters to match Flash
+        [Ruffle(InternalSlot)]
+        public var alphas : Array;
+
+        [Ruffle(InternalSlot)]
+        public var angle : Number;
+
+        [Ruffle(InternalSlot)]
+        public var blurX : Number;
+
+        [Ruffle(InternalSlot)]
+        public var blurY : Number;
+
+        [Ruffle(InternalSlot)]
+        public var colors : Array;
+
+        [Ruffle(InternalSlot)]
+        public var distance : Number;
+
+        [Ruffle(InternalSlot)]
+        public var knockout : Boolean;
+
+        [Ruffle(InternalSlot)]
+        public var quality : int;
+
+        [Ruffle(InternalSlot)]
+        public var ratios : Array;
+
+        [Ruffle(InternalSlot)]
+        public var strength : Number;
+
+        [Ruffle(InternalSlot)]
+        public var type : String;
 
 		public function GradientGlowFilter(
 			distance:Number = 4.0,
