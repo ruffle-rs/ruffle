@@ -1,6 +1,7 @@
 use crate::avm2::error::{make_error_2008, type_error};
 use crate::avm2::globals::flash::display::shader_job::get_shader_args;
 use crate::avm2::globals::slots::flash_filters_bevel_filter as bevel_filter_slots;
+use crate::avm2::globals::slots::flash_filters_blur_filter as blur_filter_slots;
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::object::{ArrayObject, ClassObject, Object, TObject};
 use crate::avm2::{Activation, Error, Value};
@@ -288,13 +289,13 @@ fn avm2_to_blur_filter<'gc>(
     object: Object<'gc>,
 ) -> Result<Filter, Error<'gc>> {
     let blur_x = object
-        .get_public_property("blurX", activation)?
+        .get_slot(blur_filter_slots::BLUR_X)
         .coerce_to_number(activation)?;
     let blur_y = object
-        .get_public_property("blurY", activation)?
+        .get_slot(blur_filter_slots::BLUR_Y)
         .coerce_to_number(activation)?;
     let quality = object
-        .get_public_property("quality", activation)?
+        .get_slot(blur_filter_slots::QUALITY)
         .coerce_to_u32(activation)?;
     Ok(Filter::BlurFilter(BlurFilter {
         blur_x: Fixed16::from_f64(blur_x.max(0.0)),

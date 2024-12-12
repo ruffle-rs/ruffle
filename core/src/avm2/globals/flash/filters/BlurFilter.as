@@ -1,7 +1,12 @@
 ﻿package flash.filters {
 	public final class BlurFilter extends BitmapFilter {
+	    [Ruffle(InternalSlot)]
 		public var blurX: Number;
+
+	    [Ruffle(InternalSlot)]
 		public var blurY: Number;
+
+	    [Ruffle(InternalSlot)]
 		public var quality: int;
 
 		public function BlurFilter(blurX: Number = 4.0, blurY: Number = 4.0, quality: int = 1) {
