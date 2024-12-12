@@ -1,13 +1,30 @@
 ﻿package flash.filters {
 	public final class ConvolutionFilter extends BitmapFilter {
+	    [Ruffle(InternalSlot)]
 		public var alpha : Number;
+
+	    [Ruffle(InternalSlot)]
 		public var bias : Number;
+
+	    [Ruffle(InternalSlot)]
 		public var clamp : Boolean;
+
+	    [Ruffle(InternalSlot)]
 		public var color : uint;
+
+	    [Ruffle(InternalSlot)]
 		public var divisor : Number;
+
+	    [Ruffle(InternalSlot)]
 		public var matrix : Array;
+
+	    [Ruffle(InternalSlot)]
 		public var matrixX : Number;
+
+	    [Ruffle(InternalSlot)]
 		public var matrixY : Number;
+
+	    [Ruffle(InternalSlot)]
 		public var preserveAlpha : Boolean;
 
 		public function ConvolutionFilter(

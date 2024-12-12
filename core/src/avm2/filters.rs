@@ -3,6 +3,7 @@ use crate::avm2::globals::flash::display::shader_job::get_shader_args;
 use crate::avm2::globals::slots::flash_filters_bevel_filter as bevel_filter_slots;
 use crate::avm2::globals::slots::flash_filters_blur_filter as blur_filter_slots;
 use crate::avm2::globals::slots::flash_filters_color_matrix_filter as color_matrix_filter_slots;
+use crate::avm2::globals::slots::flash_filters_convolution_filter as convolution_filter_slots;
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::object::{ArrayObject, ClassObject, Object, TObject};
 use crate::avm2::{Activation, Error, Value};
@@ -361,7 +362,7 @@ fn avm2_to_convolution_filter<'gc>(
 ) -> Result<Filter, Error<'gc>> {
     let mut matrix = vec![];
     if let Some(matrix_object) = object
-        .get_public_property("matrix", activation)?
+        .get_slot(convolution_filter_slots::MATRIX)
         .as_object()
     {
         if let Some(array) = matrix_object.as_array_storage() {
@@ -375,28 +376,28 @@ fn avm2_to_convolution_filter<'gc>(
         }
     }
     let alpha = object
-        .get_public_property("alpha", activation)?
+        .get_slot(convolution_filter_slots::ALPHA)
         .coerce_to_number(activation)?;
     let bias = object
-        .get_public_property("bias", activation)?
+        .get_slot(convolution_filter_slots::BIAS)
         .coerce_to_number(activation)?;
     let clamp = object
-        .get_public_property("clamp", activation)?
+        .get_slot(convolution_filter_slots::CLAMP)
         .coerce_to_boolean();
     let color = object
-        .get_public_property("color", activation)?
+        .get_slot(convolution_filter_slots::COLOR)
         .coerce_to_u32(activation)?;
     let divisor = object
-        .get_public_property("divisor", activation)?
+        .get_slot(convolution_filter_slots::DIVISOR)
         .coerce_to_number(activation)?;
     let matrix_x = object
-        .get_public_property("matrixX", activation)?
+        .get_slot(convolution_filter_slots::MATRIX_X)
         .coerce_to_u32(activation)?;
     let matrix_y = object
-        .get_public_property("matrixY", activation)?
+        .get_slot(convolution_filter_slots::MATRIX_Y)
         .coerce_to_u32(activation)?;
     let preserve_alpha = object
-        .get_public_property("preserveAlpha", activation)?
+        .get_slot(convolution_filter_slots::PRESERVE_ALPHA)
         .coerce_to_boolean();
     let mut flags = ConvolutionFilterFlags::empty();
     flags.set(ConvolutionFilterFlags::CLAMP, clamp);
