@@ -1,4 +1,5 @@
 use gc_arena::Collect;
+use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use swf::{CharacterId, Fixed8, HeaderExt, Rectangle, TagCode, Twips};
 use thiserror::Error;
@@ -44,7 +45,7 @@ pub type SwfStream<'a> = swf::read::Reader<'a>;
 
 /// An open, fully parsed SWF movie ready to play back, either in a Player or a
 /// MovieClip.
-#[derive(Debug, Clone, Collect)]
+#[derive(Clone, Collect)]
 #[collect(require_static)]
 pub struct SwfMovie {
     /// The SWF header parsed from the data stream.
@@ -325,6 +326,22 @@ impl SwfMovie {
 
     pub fn sandbox_type(&self) -> SandboxType {
         self.sandbox_type
+    }
+}
+
+impl Debug for SwfMovie {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SwfMovie")
+            .field("header", &self.header)
+            .field("data", &self.data.len())
+            .field("url", &self.url)
+            .field("loader_url", &self.loader_url)
+            .field("parameters", &self.parameters)
+            .field("encoding", &self.encoding)
+            .field("compressed_len", &self.compressed_len)
+            .field("is_movie", &self.is_movie)
+            .field("sandbox_type", &self.sandbox_type)
+            .finish()
     }
 }
 
