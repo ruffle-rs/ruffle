@@ -1506,6 +1506,11 @@ impl<'gc> EditText<'gc> {
         self.0.write(context.gc()).max_chars = value;
     }
 
+    /// Map the position on the screen to caret index.
+    ///
+    /// This method is used exclusively for placing a caret inside text.
+    /// It implements the Flash Player's behavior of placing a caret.
+    /// Characters are divided in half, the last line is extended, etc.
     pub fn screen_position_to_index(self, position: Point<Twips>) -> Option<usize> {
         let text = self.0.read();
         let position = self.global_to_local(position)?;
