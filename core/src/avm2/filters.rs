@@ -7,6 +7,7 @@ use crate::avm2::globals::slots::flash_filters_convolution_filter as convolution
 use crate::avm2::globals::slots::flash_filters_displacement_map_filter as displacement_map_filter_slots;
 use crate::avm2::globals::slots::flash_filters_drop_shadow_filter as drop_shadow_filter_slots;
 use crate::avm2::globals::slots::flash_filters_glow_filter as glow_filter_slots;
+use crate::avm2::globals::slots::flash_filters_shader_filter as shader_filter_slots;
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::object::{ArrayObject, ClassObject, Object, TObject};
 use crate::avm2::{Activation, Error, Value};
@@ -795,23 +796,23 @@ fn avm2_to_shader_filter<'gc>(
     object: Object<'gc>,
 ) -> Result<ShaderFilter<'static>, Error<'gc>> {
     let bottom_extension = object
-        .get_public_property("bottomExtension", activation)?
+        .get_slot(shader_filter_slots::_BOTTOM_EXTENSION)
         .coerce_to_i32(activation)?;
 
     let left_extension = object
-        .get_public_property("leftExtension", activation)?
+        .get_slot(shader_filter_slots::_LEFT_EXTENSION)
         .coerce_to_i32(activation)?;
 
     let right_extension = object
-        .get_public_property("rightExtension", activation)?
+        .get_slot(shader_filter_slots::_RIGHT_EXTENSION)
         .coerce_to_i32(activation)?;
 
     let top_extension = object
-        .get_public_property("topExtension", activation)?
+        .get_slot(shader_filter_slots::_TOP_EXTENSION)
         .coerce_to_i32(activation)?;
 
     let shader_obj = object
-        .get_public_property("shader", activation)?
+        .get_slot(shader_filter_slots::_SHADER)
         .as_object()
         .unwrap();
 
