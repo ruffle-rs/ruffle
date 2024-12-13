@@ -248,6 +248,44 @@ package {
             return self.AS3::normalize();
         }
 
+        prototype.setPropertyIsEnumerable("hasComplexContent", false);
+        prototype.setPropertyIsEnumerable("hasSimpleContent", false);
+        prototype.setPropertyIsEnumerable("length", false);
+        prototype.setPropertyIsEnumerable("child", false);
+        prototype.setPropertyIsEnumerable("children", false);
+        prototype.setPropertyIsEnumerable("contains", false);
+        prototype.setPropertyIsEnumerable("copy", false);
+        prototype.setPropertyIsEnumerable("attribute", false);
+        prototype.setPropertyIsEnumerable("attributes", false);
+        prototype.setPropertyIsEnumerable("toString", false);
+        prototype.setPropertyIsEnumerable("toXMLString", false);
+        prototype.setPropertyIsEnumerable("addNamespace", false);
+        prototype.setPropertyIsEnumerable("appendChild", false);
+        prototype.setPropertyIsEnumerable("childIndex", false);
+        prototype.setPropertyIsEnumerable("inScopeNamespaces", false);
+        prototype.setPropertyIsEnumerable("insertChildAfter", false);
+        prototype.setPropertyIsEnumerable("insertChildBefore", false);
+        prototype.setPropertyIsEnumerable("localName", false);
+        prototype.setPropertyIsEnumerable("name", false);
+        prototype.setPropertyIsEnumerable("namespace", false);
+        prototype.setPropertyIsEnumerable("namespaceDeclarations", false);
+        prototype.setPropertyIsEnumerable("nodeKind", false);
+        prototype.setPropertyIsEnumerable("prependChild", false);
+        prototype.setPropertyIsEnumerable("removeNamespace", false);
+        prototype.setPropertyIsEnumerable("replace", false);
+        prototype.setPropertyIsEnumerable("setChildren", false);
+        prototype.setPropertyIsEnumerable("setLocalName", false);
+        prototype.setPropertyIsEnumerable("setName", false);
+        prototype.setPropertyIsEnumerable("setNamespace", false);
+        prototype.setPropertyIsEnumerable("descendants", false);
+        prototype.setPropertyIsEnumerable("text", false);
+        prototype.setPropertyIsEnumerable("comments", false);
+        prototype.setPropertyIsEnumerable("parent", false);
+        prototype.setPropertyIsEnumerable("toJSON", false);
+        prototype.setPropertyIsEnumerable("processingInstructions", false);
+        prototype.setPropertyIsEnumerable("elements", false);
+        prototype.setPropertyIsEnumerable("normalize", false);
+
         public static const length:* = 1;
     }
 }

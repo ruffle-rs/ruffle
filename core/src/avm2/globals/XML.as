@@ -304,6 +304,44 @@ package {
             self.AS3::setLocalName(name);
         }
 
+        prototype.setPropertyIsEnumerable("hasComplexContent", false);
+        prototype.setPropertyIsEnumerable("hasSimpleContent", false);
+        prototype.setPropertyIsEnumerable("name", false);
+        prototype.setPropertyIsEnumerable("setName", false);
+        prototype.setPropertyIsEnumerable("namespace", false);
+        prototype.setPropertyIsEnumerable("addNamespace", false);
+        prototype.setPropertyIsEnumerable("setNamespace", false);
+        prototype.setPropertyIsEnumerable("removeNamespace", false);
+        prototype.setPropertyIsEnumerable("namespaceDeclarations", false);
+        prototype.setPropertyIsEnumerable("inScopeNamespaces", false);
+        prototype.setPropertyIsEnumerable("localName", false);
+        prototype.setPropertyIsEnumerable("toXMLString", false);
+        prototype.setPropertyIsEnumerable("child", false);
+        prototype.setPropertyIsEnumerable("childIndex", false);
+        prototype.setPropertyIsEnumerable("children", false);
+        prototype.setPropertyIsEnumerable("contains", false);
+        prototype.setPropertyIsEnumerable("copy", false);
+        prototype.setPropertyIsEnumerable("parent", false);
+        prototype.setPropertyIsEnumerable("elements", false);
+        prototype.setPropertyIsEnumerable("toString", false);
+        prototype.setPropertyIsEnumerable("attributes", false);
+        prototype.setPropertyIsEnumerable("attribute", false);
+        prototype.setPropertyIsEnumerable("nodeKind", false);
+        prototype.setPropertyIsEnumerable("appendChild", false);
+        prototype.setPropertyIsEnumerable("prependChild", false);
+        prototype.setPropertyIsEnumerable("descendants", false);
+        prototype.setPropertyIsEnumerable("text", false);
+        prototype.setPropertyIsEnumerable("normalize", false);
+        prototype.setPropertyIsEnumerable("length", false);
+        prototype.setPropertyIsEnumerable("toJSON", false);
+        prototype.setPropertyIsEnumerable("comments", false);
+        prototype.setPropertyIsEnumerable("processingInstructions", false);
+        prototype.setPropertyIsEnumerable("insertChildAfter", false);
+        prototype.setPropertyIsEnumerable("insertChildBefore", false);
+        prototype.setPropertyIsEnumerable("replace", false);
+        prototype.setPropertyIsEnumerable("setChildren", false);
+        prototype.setPropertyIsEnumerable("setLocalName", false);
+
         XML.settings = function() {
             return XML.AS3::settings();
         }
