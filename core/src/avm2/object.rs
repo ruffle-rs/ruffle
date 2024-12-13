@@ -789,7 +789,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
         self,
         last_index: u32,
         _activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Option<u32>, Error<'gc>> {
+    ) -> Result<u32, Error<'gc>> {
         let base = self.base();
 
         Ok(base.get_next_enumerant(last_index))
@@ -808,7 +808,7 @@ pub trait TObject<'gc>: 'gc + Collect + Debug + Into<Object<'gc>> + Clone + Copy
     ) -> Result<Value<'gc>, Error<'gc>> {
         let base = self.base();
 
-        Ok(base.get_enumerant_name(index).unwrap_or(Value::Undefined))
+        Ok(base.get_enumerant_name(index).unwrap_or(Value::Null))
     }
 
     /// Retrieve a given enumerable value by index.

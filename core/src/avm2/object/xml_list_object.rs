@@ -1031,14 +1031,12 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         self,
         last_index: u32,
         _activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Option<u32>, Error<'gc>> {
+    ) -> Result<u32, Error<'gc>> {
         if (last_index as usize) < self.0.children.borrow().len() {
-            return Ok(Some(last_index + 1));
+            return Ok(last_index + 1);
         }
-        // Return `Some(0)` instead of `None`, as we do *not* want to
-        // fall back to the prototype chain. XMLList is special, and enumeration
-        // *only* ever considers the XML children.
-        Ok(Some(0))
+
+        Ok(0)
     }
 
     fn get_enumerant_value(
@@ -1075,12 +1073,12 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
             Ok(index
                 .checked_sub(1)
                 .map(|index| index.into())
-                .unwrap_or(Value::Undefined))
+                .unwrap_or(Value::Null))
         } else {
             Ok(self
                 .base()
                 .get_enumerant_name(index - children_len)
-                .unwrap_or(Value::Undefined))
+                .unwrap_or(Value::Null))
         }
     }
 

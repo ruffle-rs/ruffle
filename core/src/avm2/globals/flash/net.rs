@@ -25,9 +25,9 @@ fn object_to_index_map<'gc>(
 ) -> Result<IndexMap<String, String>, Error<'gc>> {
     let mut map = IndexMap::new();
     let mut last_index = obj.get_next_enumerant(0, activation)?;
-    while let Some(index) = last_index {
+    while last_index != 0 {
         let name = obj
-            .get_enumerant_name(index, activation)?
+            .get_enumerant_name(last_index, activation)?
             .coerce_to_string(activation)?;
         let value = obj
             .get_public_property(name, activation)?
@@ -37,7 +37,7 @@ fn object_to_index_map<'gc>(
 
         let name = name.to_utf8_lossy().to_string();
         map.insert(name, value);
-        last_index = obj.get_next_enumerant(index, activation)?;
+        last_index = obj.get_next_enumerant(last_index, activation)?;
     }
     Ok(map)
 }

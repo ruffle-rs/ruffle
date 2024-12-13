@@ -175,7 +175,7 @@ impl<'gc> AvmSerializer<'gc> {
             }
             for i in 1.. {
                 match obj.get_enumerant_name(i, activation)? {
-                    Value::Undefined => break,
+                    Value::Null => break,
                     name_val => {
                         let name = name_val.coerce_to_string(activation)?;
                         let value = obj.get_public_property(name, activation)?;

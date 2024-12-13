@@ -218,19 +218,15 @@ impl Value {
                     let mut values = BTreeMap::new();
 
                     let mut last_index = obj.get_next_enumerant(0, activation)?;
-                    while let Some(index) = last_index {
-                        if index == 0 {
-                            break;
-                        }
-
+                    while last_index != 0 {
                         let name = obj
-                            .get_enumerant_name(index, activation)?
+                            .get_enumerant_name(last_index, activation)?
                             .coerce_to_string(activation)?;
-                        let value = obj.get_enumerant_value(index, activation)?;
+                        let value = obj.get_enumerant_value(last_index, activation)?;
 
                         values.insert(name.to_string(), Value::from_avm2(activation, value)?);
 
-                        last_index = obj.get_next_enumerant(index, activation)?;
+                        last_index = obj.get_next_enumerant(last_index, activation)?;
                     }
 
                     Value::Object(values)

@@ -148,12 +148,8 @@ impl<'gc> TObject<'gc> for QNameObject<'gc> {
         self,
         last_index: u32,
         _activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Option<u32>, Error<'gc>> {
-        Ok(if last_index < 2 {
-            Some(last_index + 1)
-        } else {
-            Some(0)
-        })
+    ) -> Result<u32, Error<'gc>> {
+        Ok(if last_index < 2 { last_index + 1 } else { 0 })
     }
 
     fn get_enumerant_value(
@@ -181,7 +177,7 @@ impl<'gc> TObject<'gc> for QNameObject<'gc> {
         Ok(match index {
             1 => "uri".into(),
             2 => "localName".into(),
-            _ => Value::Undefined,
+            _ => Value::Null,
         })
     }
 }

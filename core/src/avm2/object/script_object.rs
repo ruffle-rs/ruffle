@@ -377,10 +377,11 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         unlock!(Gc::write(mc, self.0), ScriptObjectData, proto).set(Some(proto));
     }
 
-    pub fn get_next_enumerant(&self, last_index: u32) -> Option<u32> {
+    pub fn get_next_enumerant(&self, last_index: u32) -> u32 {
         self.values()
             .next(last_index as usize)
             .map(|val| val as u32)
+            .unwrap_or(0)
     }
 
     pub fn get_enumerant_name(&self, index: u32) -> Option<Value<'gc>> {

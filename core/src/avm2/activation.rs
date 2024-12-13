@@ -2522,20 +2522,28 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_has_next(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let cur_index = self.pop_stack().coerce_to_u32(self)?;
+        let cur_index = self.pop_stack().coerce_to_i32(self)?;
 
-        let object = self.pop_stack();
-        if matches!(object, Value::Undefined | Value::Null) {
-            self.push_raw(0.0);
-        } else if let Some(next_index) = object
-            .as_object()
-            .map(|o| o.get_next_enumerant(cur_index, self))
-            .transpose()?
-            .flatten()
-        {
+        if cur_index < 0 {
+            self.push_raw(false);
+
+            return Ok(FrameControl::Continue);
+        }
+
+        let value = self.pop_stack();
+
+        let object = match value {
+            Value::Undefined | Value::Null => None,
+            Value::Object(obj) => Some(obj),
+            _ => value.proto(self),
+        };
+
+        if let Some(object) = object {
+            let next_index = object.get_next_enumerant(cur_index as u32, self)?;
+
             self.push_raw(next_index);
         } else {
-            self.push_raw(0.0);
+            self.push_raw(0);
         }
 
         Ok(FrameControl::Continue)
@@ -2545,58 +2553,103 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         object_register: u32,
         index_register: u32,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let mut cur_index = self.local_register(index_register).coerce_to_u32(self)?;
+        let cur_index = self.local_register(index_register).coerce_to_i32(self)?;
 
-        let object = self.local_register(object_register);
+        if cur_index < 0 {
+            self.push_raw(false);
 
-        let mut object = if matches!(object, Value::Undefined | Value::Null) {
-            None
-        } else {
-            Some(object.coerce_to_object(self)?)
-        };
-
-        while let Some(cur_object) = object {
-            if let Some(index) = cur_object.get_next_enumerant(cur_index, self)? {
-                cur_index = index;
-                break;
-            } else {
-                cur_index = 0;
-                object = cur_object.proto();
-            }
+            return Ok(FrameControl::Continue);
         }
 
-        if object.is_none() {
-            cur_index = 0;
+        let mut cur_index = cur_index as u32;
+
+        let object_reg = self.local_register(object_register);
+        let mut result_value = object_reg;
+        let mut object = None;
+
+        match object_reg {
+            Value::Undefined | Value::Null => {
+                cur_index = 0;
+            }
+            Value::Object(obj) => {
+                object = obj.proto();
+                cur_index = obj.get_next_enumerant(cur_index, self)?;
+            }
+            value => {
+                let proto = value.proto(self);
+                if let Some(proto) = proto {
+                    object = proto.proto();
+                    cur_index = proto.get_next_enumerant(cur_index, self)?;
+                }
+            }
+        };
+
+        while let (Some(cur_object), 0) = (object, cur_index) {
+            cur_index = cur_object.get_next_enumerant(cur_index, self)?;
+            result_value = cur_object.into();
+
+            object = cur_object.proto();
+        }
+
+        if cur_index == 0 {
+            result_value = Value::Null;
         }
 
         self.push_raw(cur_index != 0);
         self.set_local_register(index_register, cur_index);
-        self.set_local_register(
-            object_register,
-            object.map(|v| v.into()).unwrap_or(Value::Null),
-        );
+        self.set_local_register(object_register, result_value);
 
         Ok(FrameControl::Continue)
     }
 
     fn op_next_name(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let cur_index = self.pop_stack().coerce_to_number(self)?;
-        let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
+        let cur_index = self.pop_stack().coerce_to_i32(self)?;
 
-        let name = object.get_enumerant_name(cur_index as u32, self)?;
+        if cur_index <= 0 {
+            self.push_stack(Value::Null);
 
-        self.push_stack(name);
+            return Ok(FrameControl::Continue);
+        }
+
+        let value = self.pop_stack();
+        let object = match value.null_check(self, None)? {
+            Value::Object(obj) => Some(obj),
+            value => value.proto(self),
+        };
+
+        if let Some(object) = object {
+            let name = object.get_enumerant_name(cur_index as u32, self)?;
+
+            self.push_stack(name);
+        } else {
+            self.push_stack(Value::Undefined);
+        }
 
         Ok(FrameControl::Continue)
     }
 
     fn op_next_value(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let cur_index = self.pop_stack().coerce_to_number(self)?;
-        let object = self.pop_stack().coerce_to_object_or_typeerror(self, None)?;
+        let cur_index = self.pop_stack().coerce_to_i32(self)?;
 
-        let value = object.get_enumerant_value(cur_index as u32, self)?;
+        if cur_index <= 0 {
+            self.push_stack(Value::Undefined);
 
-        self.push_stack(value);
+            return Ok(FrameControl::Continue);
+        }
+
+        let value = self.pop_stack();
+        let object = match value.null_check(self, None)? {
+            Value::Object(obj) => Some(obj),
+            value => value.proto(self),
+        };
+
+        if let Some(object) = object {
+            let value = object.get_enumerant_value(cur_index as u32, self)?;
+
+            self.push_stack(value);
+        } else {
+            self.push_stack(Value::Undefined);
+        }
 
         Ok(FrameControl::Continue)
     }
