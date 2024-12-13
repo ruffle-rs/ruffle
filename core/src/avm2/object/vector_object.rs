@@ -216,11 +216,11 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         self,
         last_index: u32,
         _activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Option<u32>, Error<'gc>> {
+    ) -> Result<u32, Error<'gc>> {
         if last_index < self.0.vector.borrow().length() as u32 {
-            Ok(Some(last_index.saturating_add(1)))
+            Ok(last_index.saturating_add(1))
         } else {
-            Ok(None)
+            Ok(0)
         }
     }
 
@@ -233,9 +233,9 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
             Ok(index
                 .checked_sub(1)
                 .map(|index| index.into())
-                .unwrap_or(Value::Undefined))
+                .unwrap_or(Value::Null))
         } else {
-            Ok(Value::Undefined)
+            Ok(Value::Null)
         }
     }
 

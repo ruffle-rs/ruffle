@@ -604,8 +604,8 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         self,
         last_index: u32,
         _activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Option<u32>, Error<'gc>> {
-        Ok(Some(if last_index == 0 { 1 } else { 0 }))
+    ) -> Result<u32, Error<'gc>> {
+        Ok(if last_index == 0 { 1 } else { 0 })
     }
 
     fn get_enumerant_value(
@@ -628,7 +628,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         if index == 1 {
             Ok(0.into())
         } else {
-            Ok(Value::Undefined)
+            Ok(Value::Null)
         }
     }
 

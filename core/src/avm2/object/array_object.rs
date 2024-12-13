@@ -212,14 +212,14 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         self,
         mut last_index: u32,
         _activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Option<u32>, Error<'gc>> {
+    ) -> Result<u32, Error<'gc>> {
         let array = self.0.array.borrow();
 
         let array_length = array.length() as u32;
 
         // Array enumeration skips over holes.
         if let Some(index) = array.get_next_enumerant(last_index as usize) {
-            return Ok(Some(index as u32));
+            return Ok(index as u32);
         }
 
         last_index = std::cmp::max(last_index, array_length);
@@ -229,10 +229,12 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         // After enumerating all of the 'normal' array entries,
         // we enumerate all of the local properties stored on the
         // ScriptObject.
-        if let Some(index) = self.base().get_next_enumerant(last_index - array_length) {
-            return Ok(Some(index + array_length));
+        let index = self.base().get_next_enumerant(last_index - array_length);
+        if index != 0 {
+            return Ok(index + array_length);
         }
-        Ok(None)
+
+        Ok(0)
     }
 
     fn get_enumerant_name(
@@ -245,12 +247,12 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             Ok(index
                 .checked_sub(1)
                 .map(|index| index.into())
-                .unwrap_or(Value::Undefined))
+                .unwrap_or(Value::Null))
         } else {
             Ok(self
                 .base()
                 .get_enumerant_name(index - arr_len)
-                .unwrap_or(Value::Undefined))
+                .unwrap_or(Value::Null))
         }
     }
 
