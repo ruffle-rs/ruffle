@@ -1,0 +1,4 @@
+Focus changed: obj1 -> obj2
+Focus changed: obj2 -> obj3
+Focus changed: obj3 -> obj1
+Focus changed: obj1 -> obj2

@@ -1,13 +1,13 @@
 use crate::avm1::Avm1;
 use crate::avm1::Value;
 use crate::avm2::{Activation, Avm2, EventObject};
+use crate::compat_flags::CompatFlag;
 use crate::context::{RenderContext, UpdateContext};
 pub use crate::display_object::{
     DisplayObject, TDisplayObject, TDisplayObjectContainer, TextSelection,
 };
 use crate::display_object::{EditText, InteractiveObject, TInteractiveObject};
 use crate::events::{ClipEvent, KeyCode};
-use crate::compat_flags::CompatFlag;
 use crate::prelude::Avm2Value;
 use crate::Player;
 use either::Either;
