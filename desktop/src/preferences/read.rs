@@ -71,6 +71,10 @@ pub fn read_preferences(input: &str) -> ParseDetails<SavedGlobalPreferences> {
         result.open_url_mode = value;
     }
 
+    if let Some(value) = document.parse_from_str(&mut cx, "flags") {
+        result.flags = value;
+    }
+
     document.get_table_like(&mut cx, "log", |cx, log| {
         if let Some(value) = log.parse_from_str(cx, "filename_pattern") {
             result.log.filename_pattern = value;
