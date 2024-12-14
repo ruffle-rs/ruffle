@@ -4142,6 +4142,7 @@ dependencies = [
  "image",
  "indexmap",
  "jpegxr",
+ "lazy_static",
  "linkme",
  "lzma-rs",
  "nellymoser-rs",
