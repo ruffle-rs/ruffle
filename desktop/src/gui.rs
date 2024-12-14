@@ -240,7 +240,7 @@ impl RuffleGui {
         player.set_volume(self.volume_controls.get_volume());
     }
 
-    pub fn set_taking_screenshot(&mut self, bool state) {
+    pub fn set_taking_screenshot(&mut self, state: bool) {
         self.taking_screenshot = state;
     }
 
