@@ -5,6 +5,7 @@ use clap::{Parser, ValueEnum};
 use ruffle_core::backend::navigator::SocketMode;
 use ruffle_core::config::Letterbox;
 use ruffle_core::events::{GamepadButton, KeyCode};
+use ruffle_core::flags::CompatibilityFlags;
 use ruffle_core::{LoadBehavior, PlayerRuntime, StageAlign, StageScaleMode};
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
@@ -243,6 +244,13 @@ pub struct Opt {
     /// (like inlining constant pool entries) can't be disabled.
     #[clap(long)]
     pub no_avm2_optimizer: bool,
+
+    /// Configure compatibility flags.
+    ///
+    /// Flags are comma separated, optionally prefixed
+    /// with a "-" to disable a flag, and with a "+" to enable it.
+    #[clap(long, value_parser(parse_flags), default_value = "")]
+    pub flags: CompatibilityFlags,
 }
 
 fn parse_movie_file_or_url(path: &str) -> Result<Url, Error> {
@@ -293,6 +301,12 @@ fn parse_gamepad_button(mapping: &str) -> Result<(GamepadButton, KeyCode), Error
         )
     })?;
     Ok((button, KeyCode::from_code(key_code as u32)))
+}
+
+fn parse_flags(value: &str) -> Result<CompatibilityFlags, Error> {
+    value
+        .parse::<CompatibilityFlags>()
+        .map_err(|flag| anyhow!("Unknown flag: {}", flag))
 }
 
 impl Opt {
