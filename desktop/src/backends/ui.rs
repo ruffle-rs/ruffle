@@ -14,6 +14,7 @@ use ruffle_core::backend::ui::{
     DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter, FontDefinition,
     FullscreenError, LanguageIdentifier, MouseCursor, UiBackend,
 };
+use ruffle_core::flags::CompatibilityFlag;
 use std::rc::Rc;
 use std::sync::Arc;
 use tracing::error;
@@ -373,4 +374,8 @@ impl UiBackend for DesktopUiBackend {
     }
 
     fn close_file_dialog(&mut self) {}
+
+    fn flag_enabled(&self, flag: CompatibilityFlag) -> bool {
+        self.preferences.flag_enabled(flag)
+    }
 }
