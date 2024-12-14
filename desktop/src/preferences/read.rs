@@ -1,4 +1,5 @@
 use crate::preferences::SavedGlobalPreferences;
+use ruffle_core::flags::CompatibilityFlags;
 use ruffle_frontend_utils::parse::{
     DocumentHolder, ParseContext, ParseDetails, ParseWarning, ReadExt,
 };
@@ -71,6 +72,12 @@ pub fn read_preferences(input: &str) -> ParseDetails<SavedGlobalPreferences> {
         result.open_url_mode = value;
     }
 
+    if let Some(value) = document.parse_from_str::<String>(&mut cx, "compatibility_flags") {
+        // Make sure we're ignoring unknown flags here.
+        // Otherwise we would ignore known flags too.
+        result.compatibility_flags = CompatibilityFlags::parse_ignore_unknown(&value);
+    }
+
     document.get_table_like(&mut cx, "log", |cx, log| {
         if let Some(value) = log.parse_from_str(cx, "filename_pattern") {
             result.log.filename_pattern = value;
@@ -95,12 +102,15 @@ pub fn read_preferences(input: &str) -> ParseDetails<SavedGlobalPreferences> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use super::*;
     use crate::cli::{GameModePreference, OpenUrlMode};
     use crate::gui::ThemePreference;
     use crate::log::FilenamePattern;
     use crate::preferences::{storage::StorageBackend, LogPreferences, StoragePreferences};
     use fluent_templates::loader::langid;
+    use ruffle_core::flags::CompatibilityFlag;
     use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 
     #[test]
@@ -760,5 +770,31 @@ mod tests {
             }],
             result.warnings
         );
+    }
+
+    #[test]
+    fn compatibility_flags() {
+        let result = read_preferences("compatibility_flags = \"A,B\"");
+        assert_eq!(
+            &SavedGlobalPreferences {
+                compatibility_flags: CompatibilityFlags::empty(),
+                ..Default::default()
+            },
+            result.values()
+        );
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
+
+        let result = read_preferences("compatibility_flags = \"TabSkip,B\"");
+        assert_eq!(
+            &SavedGlobalPreferences {
+                compatibility_flags: CompatibilityFlags::new(HashMap::from([(
+                    CompatibilityFlag::TabSkip,
+                    true
+                )])),
+                ..Default::default()
+            },
+            result.values()
+        );
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
     }
 }

@@ -10,6 +10,7 @@ use crate::preferences::read::read_preferences;
 use crate::preferences::write::PreferencesWriter;
 use anyhow::{Context, Error};
 use ruffle_core::backend::ui::US_ENGLISH;
+use ruffle_core::flags::{CompatibilityFlag, CompatibilityFlags};
 use ruffle_frontend_utils::bookmarks::{read_bookmarks, Bookmarks, BookmarksWriter};
 use ruffle_frontend_utils::parse::DocumentHolder;
 use ruffle_frontend_utils::recents::{read_recents, Recents, RecentsWriter};
@@ -229,6 +230,30 @@ impl GlobalPreferences {
             .ime_enabled
     }
 
+    pub fn flags(&self) -> CompatibilityFlags {
+        let mut flags = self
+            .preferences
+            .lock()
+            .expect("Non-poisoned preferences")
+            .compatibility_flags
+            .clone();
+        flags.override_with(&self.cli.compatibility_flags);
+        flags
+    }
+
+    pub fn flag_enabled(&self, flag: CompatibilityFlag) -> bool {
+        if let Ok(value) = self.cli.compatibility_flags.enabled(flag) {
+            return value;
+        }
+
+        self.preferences
+            .lock()
+            .expect("Non-poisoned preferences")
+            .compatibility_flags
+            .enabled(flag)
+            .unwrap_or_else(|default| default)
+    }
+
     pub fn recents<R>(&self, fun: impl FnOnce(&Recents) -> R) -> R {
         fun(&self.recents.lock().expect("Recents is not reentrant"))
     }
@@ -287,6 +312,7 @@ pub struct SavedGlobalPreferences {
     pub theme_preference: ThemePreference,
     pub open_url_mode: OpenUrlMode,
     pub ime_enabled: Option<bool>,
+    pub compatibility_flags: CompatibilityFlags,
 }
 
 impl Default for SavedGlobalPreferences {
@@ -311,6 +337,7 @@ impl Default for SavedGlobalPreferences {
             theme_preference: Default::default(),
             open_url_mode: Default::default(),
             ime_enabled: None,
+            compatibility_flags: CompatibilityFlags::empty(),
         }
     }
 }

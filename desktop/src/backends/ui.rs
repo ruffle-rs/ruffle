@@ -14,6 +14,7 @@ use ruffle_core::backend::ui::{
     DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter, FontDefinition,
     FullscreenError, LanguageIdentifier, MouseCursor, UiBackend,
 };
+use ruffle_core::flags::CompatibilityFlag;
 use ruffle_core::FontQuery;
 use std::path::Path;
 use std::rc::Rc;
@@ -394,6 +395,10 @@ impl UiBackend for DesktopUiBackend {
     }
 
     fn close_file_dialog(&mut self) {}
+
+    fn flag_enabled(&self, flag: CompatibilityFlag) -> bool {
+        self.preferences.flag_enabled(flag)
+    }
 }
 
 fn load_font_from_file(
