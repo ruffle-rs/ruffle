@@ -9,6 +9,7 @@ use anyhow::{anyhow, Error, Result};
 use image::ImageFormat;
 use pretty_assertions::Comparison;
 use ruffle_core::backend::navigator::NullExecutor;
+use ruffle_core::compat_flags::CompatFlags;
 use ruffle_core::events::{
     ImeEvent, KeyDescriptor, KeyLocation, LogicalKey, NamedKey, PhysicalKey,
     TextControlCode as RuffleTextControlCode,
@@ -60,6 +61,7 @@ impl TestRunner {
         socket_events: Option<Vec<SocketEvent>>,
         renderer: Option<(Box<dyn RenderInterface>, Box<dyn RenderBackend>)>,
         viewport_dimensions: ViewportDimensions,
+        compat_flags: CompatFlags,
     ) -> Result<Self> {
         if test.options.num_frames.is_none() && test.options.num_ticks.is_none() {
             return Err(anyhow!(
@@ -90,7 +92,7 @@ impl TestRunner {
             .with_navigator(navigator)
             .with_max_execution_duration(Duration::from_secs(300))
             .with_fs_commands(Box::new(fs_command_provider))
-            .with_ui(TestUiBackend::new(test.fonts()?))
+            .with_ui(TestUiBackend::new(test.fonts()?, compat_flags))
             .with_viewport_dimensions(
                 viewport_dimensions.width,
                 viewport_dimensions.height,
