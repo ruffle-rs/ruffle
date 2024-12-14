@@ -13,6 +13,12 @@ use slotmap::SlotMap;
 
 use swf::{VideoCodec, VideoDeblocking};
 
+// Just to avoid the several conditional imports.
+#[cfg(feature = "webcodecs")]
+type LogSubscriberArc = std::sync::Arc<
+    tracing_subscriber::layer::Layered<tracing_wasm::WASMLayer, tracing_subscriber::Registry>,
+>;
+
 enum ProxyOrStream {
     /// These streams are passed through to the wrapped software
     /// backend, accessed using the stored ("inner") handle,
@@ -29,6 +35,9 @@ pub struct ExternalVideoBackend {
     streams: SlotMap<VideoStreamHandle, ProxyOrStream>,
     #[cfg(feature = "openh264")]
     openh264_codec: Option<OpenH264Codec>,
+    // Needed for the callbacks in the `webcodecs` backend.
+    #[cfg(feature = "webcodecs")]
+    log_subscriber: Option<LogSubscriberArc>,
     software: SoftwareVideoBackend,
 }
 
@@ -46,14 +55,28 @@ impl ExternalVideoBackend {
             return Ok(decoder);
         }
 
-        Err(Error::DecoderError("No OpenH264".into()))
+        #[cfg(feature = "webcodecs")]
+        {
+            let log_subscriber = self
+                .log_subscriber
+                .clone()
+                .ok_or(Error::DecoderError("log subscriber not set".into()))?;
+            let decoder = crate::decoder::webcodecs::H264Decoder::new(log_subscriber);
+            return decoder.map(|decoder| Box::new(decoder) as Box<dyn VideoDecoder>);
+        }
+
+        #[allow(unreachable_code)]
+        Err(Error::DecoderError("No H.264 decoder available".into()))
     }
 
+    // Neither the `openh264` nor the `webcodecs` backend will be available.
     pub fn new() -> Self {
         Self {
             streams: SlotMap::with_key(),
             #[cfg(feature = "openh264")]
             openh264_codec: None,
+            #[cfg(feature = "webcodecs")]
+            log_subscriber: None,
             software: SoftwareVideoBackend::new(),
         }
     }
@@ -63,6 +86,20 @@ impl ExternalVideoBackend {
         Self {
             streams: SlotMap::with_key(),
             openh264_codec: Some(openh264_codec),
+            #[cfg(feature = "webcodecs")]
+            log_subscriber: None,
+            software: SoftwareVideoBackend::new(),
+        }
+    }
+
+    // Using this is necessary for the `webcodecs` backend to actually work.
+    #[cfg(feature = "webcodecs")]
+    pub fn new_with_log_subscriber(log_subscriber: LogSubscriberArc) -> Self {
+        Self {
+            streams: SlotMap::with_key(),
+            #[cfg(feature = "openh264")]
+            openh264_codec: None,
+            log_subscriber: Some(log_subscriber),
             software: SoftwareVideoBackend::new(),
         }
     }
