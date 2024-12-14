@@ -3,6 +3,7 @@ use crate::gui::ThemePreference;
 use crate::log::FilenamePattern;
 use crate::preferences::storage::StorageBackend;
 use crate::preferences::{GlobalPreferencesWatchers, SavedGlobalPreferences};
+use ruffle_core::compat_flags::CompatFlags;
 use ruffle_frontend_utils::parse::DocumentHolder;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use toml_edit::value;
@@ -141,6 +142,19 @@ impl<'a> PreferencesWriter<'a> {
             }
             values.ime_enabled = ime_enabled;
         });
+    }
+
+    pub fn set_compat_flags(&mut self, flags: CompatFlags) {
+        self.0
+            .edit(|values: &mut SavedGlobalPreferences, toml_document| {
+                let flags_string = flags.to_string();
+                if !flags_string.is_empty() {
+                    toml_document["compat_flags"] = value(flags_string);
+                } else {
+                    toml_document.remove("compat_flags");
+                }
+                values.compat_flags = flags;
+            });
     }
 }
 
@@ -355,6 +369,41 @@ mod tests {
             "ime.enabled = false",
             |writer| writer.set_ime_enabled(None),
             "",
+        );
+    }
+
+    #[test]
+    #[allow(clippy::unwrap_used)]
+    fn set_compat_flags() {
+        test(
+            "compat_flags = 6\n",
+            |writer| writer.set_compat_flags(CompatFlags::empty()),
+            "",
+        );
+        test(
+            "compat_flags = 6\n",
+            |writer| writer.set_compat_flags(CompatFlags::parse("TabSkip")),
+            "compat_flags = \"TabSkip\"\n",
+        );
+        test(
+            "compat_flags = \"TabSkip\"",
+            |writer| writer.set_compat_flags(CompatFlags::parse("-TabSkip")),
+            "compat_flags = \"-TabSkip\"\n",
+        );
+        test(
+            "compat_flags = \"TabSkip\"",
+            |writer| writer.set_compat_flags(CompatFlags::parse("A,-B")),
+            "compat_flags = \"A,-B\"\n",
+        );
+        test(
+            "compat_flags = 6\n",
+            |writer| writer.set_compat_flags(CompatFlags::empty()),
+            "",
+        );
+        test(
+            "compat_flags = \"TabSkip,UnknownFlag\"",
+            |writer| writer.set_compat_flags(CompatFlags::parse("-TabSkip")),
+            "compat_flags = \"-TabSkip\"\n",
         );
     }
 }
