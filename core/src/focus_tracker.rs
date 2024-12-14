@@ -7,6 +7,7 @@ pub use crate::display_object::{
 };
 use crate::display_object::{EditText, InteractiveObject, TInteractiveObject};
 use crate::events::{ClipEvent, KeyCode};
+use crate::compat_flags::CompatFlag;
 use crate::prelude::Avm2Value;
 use crate::Player;
 use either::Either;
@@ -286,7 +287,7 @@ impl<'gc> FocusTracker<'gc> {
 
     pub fn tab_order(&self, context: &mut UpdateContext<'gc>) -> TabOrder<'gc> {
         let mut tab_order = TabOrder::fill(context);
-        tab_order.sort();
+        tab_order.sort(context.ui.compat_flag_enabled(CompatFlag::TabSkip));
         tab_order
     }
 
@@ -432,15 +433,15 @@ impl<'gc> TabOrder<'gc> {
         }
     }
 
-    fn sort(&mut self) {
+    fn sort(&mut self, allow_ignoring_duplicates: bool) {
         if self.is_custom() {
-            self.sort_with(CustomTabOrdering);
+            self.sort_with(CustomTabOrdering, allow_ignoring_duplicates);
         } else {
-            self.sort_with(AutomaticTabOrdering);
+            self.sort_with(AutomaticTabOrdering, allow_ignoring_duplicates);
         }
     }
 
-    fn sort_with(&mut self, ordering: impl TabOrdering) {
+    fn sort_with(&mut self, ordering: impl TabOrdering, allow_ignoring_duplicates: bool) {
         self.objects.sort_by_cached_key(|&o| ordering.key(o));
 
         let to_skip = self
@@ -450,7 +451,7 @@ impl<'gc> TabOrder<'gc> {
             .count();
         self.objects.drain(..to_skip);
 
-        if ordering.ignore_duplicates() {
+        if allow_ignoring_duplicates && ordering.ignore_duplicates() {
             self.objects.dedup_by_key(|&mut o| ordering.key(o));
         }
     }
