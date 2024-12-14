@@ -344,7 +344,7 @@ impl<'gc> RegExp<'gc> {
                     AvmString::new(activation.context.gc_context, WString::from_char(c)).into(),
                 );
             }
-            return ArrayObject::from_storage(activation, storage);
+            return Ok(ArrayObject::from_storage(activation, storage));
         }
 
         let mut start = 0;
@@ -370,10 +370,12 @@ impl<'gc> RegExp<'gc> {
 
             start = m.range.end;
         }
+
         if storage.length() < limit {
             storage.push(AvmString::new(activation.context.gc_context, &text[start..]).into());
         }
-        ArrayObject::from_storage(activation, storage)
+
+        Ok(ArrayObject::from_storage(activation, storage))
     }
 
     pub fn find_utf16_match(

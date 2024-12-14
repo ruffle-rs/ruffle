@@ -574,7 +574,7 @@ pub fn get_objects_under_point<'gc>(
         }
     }
 
-    Ok(ArrayObject::from_storage(activation, ArrayStorage::from_storage(under_point))?.into())
+    Ok(ArrayObject::from_storage(activation, ArrayStorage::from_storage(under_point)).into())
 }
 
 pub fn are_inaccessible_objects_under_point<'gc>(

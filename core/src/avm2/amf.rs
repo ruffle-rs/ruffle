@@ -296,7 +296,7 @@ pub fn deserialize_value_impl<'gc>(
         }
         AmfValue::ECMAArray(id, values, elements, _) => {
             let empty_storage = ArrayStorage::new(0);
-            let array = ArrayObject::from_storage(activation, empty_storage)?;
+            let array = ArrayObject::from_storage(activation, empty_storage);
             object_map.insert(*id, array);
 
             // First let's create an array out of `values` (dense portion), then we add the elements onto it.
@@ -321,7 +321,7 @@ pub fn deserialize_value_impl<'gc>(
         }
         AmfValue::StrictArray(id, values) => {
             let empty_storage = ArrayStorage::new(0);
-            let array = ArrayObject::from_storage(activation, empty_storage)?;
+            let array = ArrayObject::from_storage(activation, empty_storage);
             object_map.insert(*id, array);
 
             let mut arr: Vec<Option<Value<'gc>>> = Vec::with_capacity(values.len());

@@ -92,7 +92,7 @@ impl<'gc> Metadata<'gc> {
             .collect::<Result<Vec<Option<Value<'gc>>>, Error<'gc>>>()?;
 
         let values_array =
-            ArrayObject::from_storage(activation, ArrayStorage::from_storage(values))?;
+            ArrayObject::from_storage(activation, ArrayStorage::from_storage(values));
         object.set_string_property_local("value", values_array.into(), activation)?;
         Ok(object)
     }

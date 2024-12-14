@@ -117,7 +117,7 @@ pub fn enumerate_fonts<'gc>(
         }
     }
 
-    Ok(ArrayObject::from_storage(activation, storage)?.into())
+    Ok(ArrayObject::from_storage(activation, storage).into())
 }
 
 /// `Font.registerFont`

@@ -267,9 +267,9 @@ pub fn get_filters<'gc>(
             .into_iter()
             .map(|f| f.as_avm2_object(activation))
             .collect::<Result<ArrayStorage<'gc>, Error<'gc>>>()?;
-        return Ok(ArrayObject::from_storage(activation, array)?.into());
+        return Ok(ArrayObject::from_storage(activation, array).into());
     }
-    Ok(ArrayObject::empty(activation)?.into())
+    Ok(ArrayObject::empty(activation).into())
 }
 
 fn build_argument_type_error<'gc>(
