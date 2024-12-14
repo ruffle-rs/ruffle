@@ -1,0 +1,46 @@
+Running test "Just function" with AMF0
+Printing ByteArray:
+6
+read back: void
+undefined
+Done with test!
+Running test "Just function" with AMF3
+Printing ByteArray:
+0
+read back: void
+undefined
+Done with test!
+Running test "Function vector" with AMF3
+Printing ByteArray:
+16, 7, 0, 1, 0, 0, 0
+read back: __AS3__.vec::Vector.<Object>
+Was vector, length 3. Elements:
+0th element: null
+1th element: null
+2th element: null
+null,null,null
+Done with test!
+Running test "Function vector with null element" with AMF3
+Printing ByteArray:
+16, 5, 0, 1, 1, 0
+read back: __AS3__.vec::Vector.<Object>
+Was vector, length 2. Elements:
+0th element: null
+1th element: null
+null,null
+Done with test!
+Running test "Empty function vector" with AMF3
+Printing ByteArray:
+16, 1, 0, 1
+read back: __AS3__.vec::Vector.<Object>
+Was vector, length 0. Elements:
+
+Done with test!
+Running test "Array with two function elements" with AMF3
+Printing ByteArray:
+9, 1, 1
+read back: Array
+Was array, length 0. Elements:
+
+Done with test!
+should be undefined: undefined

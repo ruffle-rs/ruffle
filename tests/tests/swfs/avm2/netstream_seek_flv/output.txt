@@ -7,43 +7,43 @@ level: status
 netStatusOnMetaData
 //ns.seek(0.5);
 netStatus
+code: NetStream.SeekStart.Notify
 description: Start Seeking 500
 level: status
-code: NetStream.SeekStart.Notify
 netStatus
 code: NetStream.Seek.Notify
 level: status
 netStatus
+code: NetStream.Seek.Complete
 description: Seek Complete -1
 level: status
-code: NetStream.Seek.Complete
 //ns.seek(1.5);
 netStatus
+code: NetStream.SeekStart.Notify
 description: Start Seeking 1500
 level: status
-code: NetStream.SeekStart.Notify
 netStatus
 code: NetStream.Seek.Notify
 level: status
 netStatus
+code: NetStream.Seek.Complete
 description: Seek Complete -1
 level: status
-code: NetStream.Seek.Complete
 //ns.pause();
 netStatus
+code: NetStream.Pause.Notify
 description: Pausing
 level: status
-code: NetStream.Pause.Notify
 undefined
 //ns.seek(0.5);
 netStatus
+code: NetStream.SeekStart.Notify
 description: Start Seeking 500
 level: status
-code: NetStream.SeekStart.Notify
 netStatus
 code: NetStream.Seek.Notify
 level: status
 netStatus
+code: NetStream.Seek.Complete
 description: Seek Complete -1
 level: status
-code: NetStream.Seek.Complete

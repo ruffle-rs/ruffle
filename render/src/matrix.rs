@@ -1,5 +1,7 @@
 use swf::{Fixed16, Point, PointDelta, Rectangle, Twips};
 
+// TODO: Consider using portable SIMD when it's stable (https://doc.rust-lang.org/std/simd/index.html).
+
 /// The transformation matrix used by Flash display objects.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Matrix {
@@ -92,32 +94,41 @@ impl Matrix {
         }
     }
 
-    pub fn create_box(
+    pub fn create_box(scale_x: f32, scale_y: f32, translate_x: Twips, translate_y: Twips) -> Self {
+        Self {
+            a: scale_x,
+            c: 0.0,
+            tx: translate_x,
+            b: 0.0,
+            d: scale_y,
+            ty: translate_y,
+        }
+    }
+
+    pub fn create_box_with_rotation(
         scale_x: f32,
         scale_y: f32,
         rotation: f32,
         translate_x: Twips,
         translate_y: Twips,
     ) -> Self {
-        if rotation != 0.0 {
-            Self {
-                a: rotation.cos() * scale_x,
-                c: -rotation.sin() * scale_x,
-                tx: translate_x,
-                b: rotation.sin() * scale_y,
-                d: rotation.cos() * scale_y,
-                ty: translate_y,
-            }
-        } else {
-            Self {
-                a: scale_x,
-                c: 0.0,
-                tx: translate_x,
-                b: 0.0,
-                d: scale_y,
-                ty: translate_y,
-            }
+        Self {
+            a: rotation.cos() * scale_x,
+            c: -rotation.sin() * scale_x,
+            tx: translate_x,
+            b: rotation.sin() * scale_y,
+            d: rotation.cos() * scale_y,
+            ty: translate_y,
         }
+    }
+
+    pub fn create_box_from_rectangle(rect: &Rectangle<Twips>) -> Self {
+        Self::create_box(
+            rect.width().to_pixels() as f32,
+            rect.height().to_pixels() as f32,
+            rect.x_min,
+            rect.y_min,
+        )
     }
 
     pub fn create_gradient_box(
@@ -127,7 +138,7 @@ impl Matrix {
         translate_x: Twips,
         translate_y: Twips,
     ) -> Self {
-        Self::create_box(
+        Self::create_box_with_rotation(
             width / 1638.4,
             height / 1638.4,
             rotation,
@@ -254,6 +265,50 @@ impl std::ops::MulAssign for Matrix {
             tx: Twips::new(out_tx),
             ty: Twips::new(out_ty),
         }
+    }
+}
+
+impl From<swf::Matrix> for Matrix {
+    fn from(matrix: swf::Matrix) -> Self {
+        Self {
+            a: matrix.a.to_f32(),
+            b: matrix.b.to_f32(),
+            c: matrix.c.to_f32(),
+            d: matrix.d.to_f32(),
+            tx: matrix.tx,
+            ty: matrix.ty,
+        }
+    }
+}
+
+impl From<Matrix> for swf::Matrix {
+    fn from(matrix: Matrix) -> Self {
+        Self {
+            a: Fixed16::from_f32(matrix.a),
+            b: Fixed16::from_f32(matrix.b),
+            c: Fixed16::from_f32(matrix.c),
+            d: Fixed16::from_f32(matrix.d),
+            tx: matrix.tx,
+            ty: matrix.ty,
+        }
+    }
+}
+
+/// Implements the IEEE-754 "Round to nearest, ties to even" rounding rule.
+/// (e.g., both 1.5 and 2.5 will round to 2).
+/// This is the rounding method used by Flash for the above transforms.
+/// This also clamps out-of-range values and NaN to `i32::MIN`.
+fn round_to_i32(f: f32) -> i32 {
+    if f.is_finite() {
+        if f < 2_147_483_648.0_f32 {
+            f.round_ties_even() as i32
+        } else {
+            // Out-of-range clamps to MIN.
+            i32::MIN
+        }
+    } else {
+        // NaN/Infinity goes to 0.
+        0
     }
 }
 
@@ -906,55 +961,36 @@ mod tests {
             PointDelta::new(Twips::new(141), Twips::new(-7)),
         ),
     );
-}
 
-impl From<swf::Matrix> for Matrix {
-    fn from(matrix: swf::Matrix) -> Self {
-        Self {
-            a: matrix.a.to_f32(),
-            b: matrix.b.to_f32(),
-            c: matrix.c.to_f32(),
-            d: matrix.d.to_f32(),
-            tx: matrix.tx,
-            ty: matrix.ty,
-        }
-    }
-}
-
-impl From<Matrix> for swf::Matrix {
-    fn from(matrix: Matrix) -> Self {
-        Self {
-            a: Fixed16::from_f32(matrix.a),
-            b: Fixed16::from_f32(matrix.b),
-            c: Fixed16::from_f32(matrix.c),
-            d: Fixed16::from_f32(matrix.d),
-            tx: matrix.tx,
-            ty: matrix.ty,
-        }
-    }
-}
-
-/// Implements the IEEE-754 "Round to nearest, ties to even" rounding rule.
-/// (e.g., both 1.5 and 2.5 will round to 2).
-/// This is the rounding method used by Flash for the above transforms.
-/// Although this is easy to do on most architectures, Rust provides no standard
-/// way to round in this manner (`f32::round` always rounds away from zero).
-/// For more info and the below code snippet, see: https://github.com/rust-lang/rust/issues/55107
-/// This also clamps out-of-range values and NaN to `i32::MIN`.
-/// TODO: Investigate using SSE/wasm intrinsics for this.
-fn round_to_i32(f: f32) -> i32 {
-    if f.is_finite() {
-        let a = f.abs();
-        if f < 2_147_483_648.0_f32 {
-            let k = 1.0 / f32::EPSILON;
-            let out = if a < k { ((a + k) - k).copysign(f) } else { f };
-            out as i32
-        } else {
-            // Out-of-range clamps to MIN.
-            i32::MIN
-        }
-    } else {
-        // NaN/Infinity goes to 0.
-        0
+    #[test]
+    fn test_round_to_i32() {
+        assert_eq!(round_to_i32(0.0), 0);
+        assert_eq!(round_to_i32(2.0), 2);
+        assert_eq!(round_to_i32(2.1), 2);
+        assert_eq!(round_to_i32(2.5), 2);
+        assert_eq!(round_to_i32(2.9), 3);
+        assert_eq!(round_to_i32(3.0), 3);
+        assert_eq!(round_to_i32(3.1), 3);
+        assert_eq!(round_to_i32(3.5), 4);
+        assert_eq!(round_to_i32(3.9), 4);
+        assert_eq!(round_to_i32(4.0), 4);
+        assert_eq!(round_to_i32(-2.0), -2);
+        assert_eq!(round_to_i32(-2.1), -2);
+        assert_eq!(round_to_i32(-2.5), -2);
+        assert_eq!(round_to_i32(-2.9), -3);
+        assert_eq!(round_to_i32(-3.0), -3);
+        assert_eq!(round_to_i32(-3.1), -3);
+        assert_eq!(round_to_i32(-3.5), -4);
+        assert_eq!(round_to_i32(-3.9), -4);
+        assert_eq!(round_to_i32(-4.0), -4);
+        assert_eq!(round_to_i32(f32::NAN), 0);
+        assert_eq!(round_to_i32(f32::INFINITY), 0);
+        assert_eq!(round_to_i32(f32::NEG_INFINITY), 0);
+        assert_eq!(round_to_i32(-2147483520f32), -2147483520);
+        assert_eq!(round_to_i32(-2147483648f32), i32::MIN);
+        assert_eq!(round_to_i32(-2147483904f32), i32::MIN);
+        assert_eq!(round_to_i32(2147483520f32), 2147483520);
+        assert_eq!(round_to_i32(2147483648f32), i32::MIN);
+        assert_eq!(round_to_i32(2147483904f32), i32::MIN);
     }
 }

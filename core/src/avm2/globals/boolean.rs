@@ -2,13 +2,12 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
+use crate::avm2::error::make_error_1004;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::Multiname;
 use crate::avm2::QName;
-use gc_arena::GcCell;
 
 /// Implements `Boolean`'s instance initializer.
 fn instance_init<'gc>(
@@ -26,17 +25,6 @@ fn instance_init<'gc>(
                 .into();
         }
     }
-
-    Ok(Value::Undefined)
-}
-
-/// Implements `Boolean`'s native instance initializer.
-fn native_instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    activation.super_init(this, args)?;
 
     Ok(Value::Undefined)
 }
@@ -59,7 +47,8 @@ fn class_init<'gc>(
             Method::from_builtin(to_string, "toString", gc_context),
             scope,
             None,
-            Some(this_class),
+            None,
+            None,
         )
         .into(),
         activation,
@@ -71,7 +60,8 @@ fn class_init<'gc>(
             Method::from_builtin(value_of, "valueOf", gc_context),
             scope,
             None,
-            Some(this_class),
+            None,
+            None,
         )
         .into(),
         activation,
@@ -95,9 +85,9 @@ pub fn call_handler<'gc>(
         .into())
 }
 
-/// Implements `Boolean.toString`
+/// Implements `Boolean.prototype.toString`
 fn to_string<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -109,7 +99,12 @@ fn to_string<'gc>(
         };
     }
 
-    Ok("false".into())
+    let boolean_proto = activation.avm2().classes().boolean.prototype();
+    if Object::ptr_eq(boolean_proto, this) {
+        return Ok("false".into());
+    }
+
+    Err(make_error_1004(activation, "Boolean.prototype.toString"))
 }
 
 /// Implements `Boolean.valueOf`
@@ -126,44 +121,44 @@ fn value_of<'gc>(
 }
 
 /// Construct `Boolean`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
-    let mc = activation.context.gc_context;
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
+    let mc = activation.gc();
+    let namespaces = activation.avm2().namespaces;
+
     let class = Class::new(
-        QName::new(activation.avm2().public_namespace, "Boolean"),
-        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
+        QName::new(namespaces.public_all(), "Boolean"),
+        Some(activation.avm2().class_defs().object),
         Method::from_builtin(instance_init, "<Boolean instance initializer>", mc),
         Method::from_builtin(class_init, "<Boolean class initializer>", mc),
+        activation.avm2().class_defs().class,
         mc,
     );
 
-    let mut write = class.write(mc);
-    write.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
-    write.set_instance_allocator(primitive_allocator);
-    write.set_native_instance_init(Method::from_builtin(
-        native_instance_init,
-        "<Boolean native instance initializer>",
+    class.set_attributes(mc, ClassAttributes::FINAL | ClassAttributes::SEALED);
+    class.set_instance_allocator(mc, primitive_allocator);
+    class.set_call_handler(
         mc,
-    ));
-    write.set_call_handler(Method::from_builtin(
-        call_handler,
-        "<Boolean call handler>",
-        mc,
-    ));
+        Method::from_builtin(call_handler, "<Boolean call handler>", mc),
+    );
 
     const AS3_INSTANCE_METHODS: &[(&str, NativeMethodImpl)] =
         &[("toString", to_string), ("valueOf", value_of)];
-    write.define_builtin_instance_methods(
-        mc,
-        activation.avm2().as3_namespace,
-        AS3_INSTANCE_METHODS,
-    );
+    class.define_builtin_instance_methods(mc, namespaces.as3, AS3_INSTANCE_METHODS);
 
     const CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
-    write.define_constant_int_class_traits(
-        activation.avm2().public_namespace,
-        CONSTANTS_INT,
-        activation,
-    );
+    class.define_constant_int_class_traits(namespaces.public_all(), CONSTANTS_INT, activation);
+
+    class.mark_traits_loaded(activation.context.gc_context);
+    class
+        .init_vtable(activation.context)
+        .expect("Native class's vtable should initialize");
+
+    let c_class = class.c_class().expect("Class::new returns an i_class");
+
+    c_class.mark_traits_loaded(activation.context.gc_context);
+    c_class
+        .init_vtable(activation.context)
+        .expect("Native class's vtable should initialize");
 
     class
 }

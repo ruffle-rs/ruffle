@@ -1,0 +1,43 @@
+// var fonts = enumerateFonts(false)
+// fonts.length
+1
+
+// fonts[0].fontName
+Source Code Pro
+
+// fonts[0].fontStyle
+bold
+
+// fonts[0].fontType
+embedded
+
+// fonts[0] is Font1
+false
+
+
+// new Font1().fontName
+Source Code Pro
+
+// new Font1().fontStyle
+bold
+
+// new Font1().fontType
+embedded
+
+// new Font1() is Font1
+true
+
+
+// new Font().fontName
+null
+
+// new Font().fontStyle
+null
+
+// new Font().fontType
+null
+
+// new Font() is Font1
+false
+
+

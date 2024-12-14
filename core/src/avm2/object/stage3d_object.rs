@@ -3,13 +3,12 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
-use crate::avm2::value::Value;
 use crate::avm2::Error;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::lock::{Lock, RefLock};
+use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
-use std::cell::{Cell, Ref, RefMut};
+use std::cell::Cell;
 
 /// A class instance allocator that allocates Stage3D objects.
 pub fn stage_3d_allocator<'gc>(
@@ -19,7 +18,7 @@ pub fn stage_3d_allocator<'gc>(
     Ok(Stage3DObject(Gc::new(
         activation.gc(),
         Stage3DObjectData {
-            base: RefLock::new(ScriptObjectData::new(class)),
+            base: ScriptObjectData::new(class),
             context3d: Lock::new(None),
             visible: Cell::new(true),
         },
@@ -48,8 +47,8 @@ impl<'gc> Stage3DObject<'gc> {
         self.0.context3d.get()
     }
 
-    pub fn set_context3d(self, context3d: Object<'gc>, mc: &Mutation<'gc>) {
-        unlock!(Gc::write(mc, self.0), Stage3DObjectData, context3d).set(Some(context3d))
+    pub fn set_context3d(self, context3d: Option<Object<'gc>>, mc: &Mutation<'gc>) {
+        unlock!(Gc::write(mc, self.0), Stage3DObjectData, context3d).set(context3d)
     }
 
     pub fn visible(self) -> bool {
@@ -63,9 +62,10 @@ impl<'gc> Stage3DObject<'gc> {
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct Stage3DObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     /// The context3D object associated with this Stage3D object,
     /// if it's been created with `requestContext3D`
@@ -73,21 +73,21 @@ pub struct Stage3DObjectData<'gc> {
     visible: Cell<bool>,
 }
 
-impl<'gc> TObject<'gc> for Stage3DObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+const _: () = assert!(std::mem::offset_of!(Stage3DObjectData, base) == 0);
+const _: () =
+    assert!(std::mem::align_of::<Stage3DObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), Stage3DObjectData, base).borrow_mut()
+impl<'gc> TObject<'gc> for Stage3DObject<'gc> {
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
+
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Object(Object::from(*self)))
     }
 
     fn as_stage_3d(&self) -> Option<Stage3DObject<'gc>> {

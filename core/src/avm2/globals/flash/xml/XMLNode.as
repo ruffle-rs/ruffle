@@ -40,20 +40,50 @@ package flash.xml
             return _children;
         }
 
-        public function hasChildNodes() : Boolean
-        {
+        public function hasChildNodes(): Boolean {
             return _children.length > 0;
         }
 
-        public function cloneNode() : XMLNode
-        {
-            stub_method("flash.xml.XMLNode", "cloneNode");
-            return null;
+        public function cloneNode(deep: Boolean): XMLNode {
+            var clone = new XMLNode(nodeType, nodeType == XMLNodeType.ELEMENT_NODE
+                                              ? nodeName : nodeValue);
+            for (var key in attributes) {
+                clone.attributes[key] = attributes[key];
+            }
+
+            if (deep) {
+                for (var i = 0; i < childNodes.length; i++) {
+                    clone.appendChild(childNodes[i].cloneNode(true));
+                }
+            }
+
+            return clone;
         }
 
-        public function removeNode() : void
-        {
-            stub_method("flash.xml.XMLNode", "removeNode");
+        public function removeNode(): void {
+            if (parentNode) {
+                if (parentNode.firstChild === this) {
+                    parentNode.firstChild = nextSibling;
+                }
+                if (parentNode.lastChild === this) {
+                    parentNode.lastChild = previousSibling;
+                }
+                var index = parentNode.childNodes.indexOf(this);
+                if (index > -1) {
+                    parentNode.childNodes.removeAt(index);
+                }
+            }
+
+            if (previousSibling) {
+                previousSibling.nextSibling = nextSibling;
+            }
+            if (nextSibling) {
+                nextSibling.previousSibling = previousSibling;
+            }
+
+            parentNode = null;
+            previousSibling = null;
+            nextSibling = null;
         }
 
         public function insertBefore(node: XMLNode, before: XMLNode = null): void {
@@ -102,13 +132,37 @@ package flash.xml
         }
 
         public function getNamespaceForPrefix(prefix: String): String {
-            stub_method("flash.xml.XMLNode", "getNamespaceForPrefix");
-            return "";
+            for (var attr in attributes) {
+                if (attr.indexOf("xmlns:") != 0) {
+                    continue;
+                }
+                if (attr.substring(6) == prefix) {
+                    return attributes[attr];
+                }
+            }
+
+            if (parentNode) {
+                return parentNode.getNamespaceForPrefix(prefix);
+            }
+
+            return null;
         }
 
         public function getPrefixForNamespace(ns: String): String {
-            stub_method("flash.xml.XMLNode", "getPrefixForNamespace");
-            return "";
+            for (var attr in attributes) {
+                if (attr.indexOf("xmlns:") != 0) {
+                    continue;
+                }
+                if (attributes[attr] == ns) {
+                    return attr.substring(6);
+                }
+            }
+
+            if (parentNode) {
+                return parentNode.getPrefixForNamespace(ns);
+            }
+
+            return null;
         }
 
         public function get localName(): String {
@@ -136,7 +190,19 @@ package flash.xml
         }
 
         public function get namespaceURI(): String {
-            stub_getter("flash.xml.XMLNode", "namespaceURI");
+            if (prefix) {
+                return getNamespaceForPrefix(prefix);
+            }
+
+            var node: XMLNode = this;
+            do {
+                if (node.attributes.xmlns) {
+                    return node.attributes.xmlns;
+                }
+
+                node = node.parentNode;
+            } while (node);
+
             return null;
         }
 

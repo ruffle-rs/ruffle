@@ -1,0 +1,10 @@
+[
+    { "type": "TextInput", "codepoint": "a" },
+    { "type": "TextControl", "code": "Enter" },
+    { "type": "TextInput", "codepoint": "a" },
+    { "type": "KeyDown", "key_code": 27 },
+    { "type": "TextInput", "codepoint": "a" },
+    { "type": "TextControl", "code": "Enter" },
+    { "type": "TextInput", "codepoint": "a" },
+    { "type": "KeyDown", "key_code": 27 }
+]

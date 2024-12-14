@@ -9,3 +9,4 @@ context-menu-about-ruffle =
 context-menu-hide = Sembunyikan Menu ini
 context-menu-exit-fullscreen = Keluar dari layar penuh
 context-menu-enter-fullscreen = Masuk mode layar penuh
+context-menu-volume-controls = Pengaturan Volume

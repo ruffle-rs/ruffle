@@ -6,6 +6,7 @@
 package flash.media
 {
 
+    [API("672")]
     public final class MicrophoneEnhancedMode
     {
         // Use this mode to allow both parties to talk at the same time.

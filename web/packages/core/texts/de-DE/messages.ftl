@@ -10,15 +10,26 @@ update-ruffle = Ruffle aktuallisieren
 ruffle-demo = Web-Demo
 ruffle-desktop = Desktop-Anwendung
 ruffle-wiki = Ruffle-Wiki anzeigen
+enable-hardware-acceleration = Es sieht so aus, als ob die Hardwarebeschleunigung deaktiviert ist. Ruffle kann zwar funktionieren, könnte aber sehr langsam sein. Wie Sie die Hardwarebeschleunigung aktivieren können, erfahren Sie unter dem folgenden Link:
+enable-hardware-acceleration-link = FAQ - Chrome Hardwarebeschleunigung
 view-error-details = Fehlerdetails anzeigen
 open-in-new-tab = In einem neuen Tab öffnen
 click-to-unmute = Klicke zum Entmuten
+clipboard-message-title = Kopieren und Einfügen in Ruffle
+clipboard-message-description =
+    { $variant ->
+       *[unsupported] Dein Browser unterstützt keinen vollständigen Zugriff auf die Zwischenablage,
+        [access-denied] Zugriff auf die Zwischenablage wurde verweigert,
+    } aber du kannst stattdessen auch diese Tastenkombinationen verwenden:
+clipboard-message-copy = { " " } zum Kopieren
+clipboard-message-cut = { " " } zum Ausschneiden
+clipboard-message-paste = { " " } zum Einfügen
 error-file-protocol =
     Es scheint, dass Sie Ruffle auf dem "file:"-Protokoll ausführen.
-    Dies funktioniert nicht so, als Browser viele Funktionen aus Sicherheitsgründen blockieren.
-    Stattdessen laden wir Sie ein, einen lokalen Server einzurichten oder entweder die Webdemo oder die Desktop-Anwendung zu verwenden.
+    Jedoch werden aus Sicherheitsgründen viele Funktionen vom Browser blockiert, weswegen die Datei nicht geladen werden kann.
+    Setzen Sie stattdessen einen lokalen Server auf, verwenden Sie die Webdemo oder die Desktop-Anwendung.
 error-javascript-config =
-    Ruffle ist aufgrund einer falschen JavaScript-Konfiguration auf ein großes Problem gestoßen.
+    Ruffle ist aufgrund einer falschen JavaScript-Konfiguration auf ein Problem gestoßen.
     Wenn du der Server-Administrator bist, laden wir dich ein, die Fehlerdetails zu überprüfen, um herauszufinden, welcher Parameter fehlerhaft ist.
     Sie können auch das Ruffle-Wiki für Hilfe konsultieren.
 error-wasm-not-found =
@@ -26,9 +37,12 @@ error-wasm-not-found =
     Wenn Sie der Server-Administrator sind, stellen Sie bitte sicher, dass die Datei korrekt hochgeladen wurde.
     Wenn das Problem weiterhin besteht, müssen Sie unter Umständen die "publicPath"-Einstellung verwenden: Bitte konsultieren Sie das Ruffle-Wiki für Hilfe.
 error-wasm-mime-type =
-    Ruffle ist auf ein großes Problem beim Initialisieren gestoßen.
+    Ruffle ist auf ein Fehler beim Initialisieren gestoßen.
     Dieser Webserver dient nicht ". asm"-Dateien mit dem korrekten MIME-Typ.
     Wenn Sie der Server-Administrator sind, konsultieren Sie bitte das Ruffle-Wiki für Hilfe.
+error-invalid-swf =
+    Ruffle konnte die angegebene Datei nicht lesen.
+    Am wahrscheinlichsten ist die angegebene Datei keine gültige SWF.
 error-swf-fetch =
     Ruffle konnte die Flash-SWF-Datei nicht laden.
     Der wahrscheinlichste Grund ist, dass die Datei nicht mehr existiert, so dass Ruffle nicht geladen werden kann.
@@ -42,11 +56,11 @@ error-wasm-cors =
     Der Zugriff auf den Abruf wurde wahrscheinlich durch die CORS-Richtlinie blockiert.
     Wenn Sie der Server-Administrator sind, konsultieren Sie bitte das Ruffle-Wiki für Hilfe.
 error-wasm-invalid =
-    Ruffle ist auf ein großes Problem beim Initialisieren gestoßen.
+    Ruffle ist auf ein Fehler beim Initialisieren gestoßen.
     Dieser Webserver dient nicht ". asm"-Dateien mit dem korrekten MIME-Typ.
     Wenn Sie der Server-Administrator sind, konsultieren Sie bitte das Ruffle-Wiki für Hilfe.
 error-wasm-download =
-    Ruffle ist auf ein großes Problem gestoßen, während er versucht hat zu initialisieren.
+    Ruffle ist auf ein Fehler beim Initialisieren gestoßen.
     Dies kann sich oft selbst beheben, so dass Sie versuchen können, die Seite neu zu laden.
     Andernfalls kontaktieren Sie bitte den Website-Administrator.
 error-wasm-disabled-on-edge =
@@ -55,12 +69,12 @@ error-wasm-disabled-on-edge =
     Dies erlaubt Ihrem Browser die erforderlichen ".wasm"-Dateien zu laden.
     Wenn das Problem weiterhin besteht, müssen Sie möglicherweise einen anderen Browser verwenden.
 error-javascript-conflict =
-    Ruffle ist auf ein großes Problem beim Initialisieren gestoßen.
+    Ruffle ist auf ein Fehler beim Initialisieren gestoßen.
     Es scheint, als ob diese Seite JavaScript-Code verwendet, der mit Ruffle kollidiert.
     Wenn Sie der Server-Administrator sind, laden wir Sie ein, die Datei auf einer leeren Seite zu laden.
 error-javascript-conflict-outdated = Du kannst auch versuchen, eine neuere Version von Ruffle hochzuladen, die das Problem umgehen könnte (aktuelle Version ist veraltet: { $buildDate }).
 error-csp-conflict =
-    Ruffle ist auf ein großes Problem beim Initialisieren gestoßen.
+    Ruffle ist auf ein Fehler beim Initialisieren gestoßen.
     Dieser Webserver dient nicht ". asm"-Dateien mit dem korrekten MIME-Typ.
     Wenn Sie der Server-Administrator sind, konsultieren Sie bitte das Ruffle-Wiki für Hilfe.
 error-unknown =

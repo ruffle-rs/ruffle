@@ -1,0 +1,34 @@
+// fileref.browse([])
+false
+// fileref.browse([{ description: '' }])
+false
+// fileref.browse([{ extension: '' }])
+false
+// fileref.download()
+false
+// fileref.download('@')
+false
+// fileref.download('baddomain')
+false
+// fileref.download success
+true
+// onSelect
+C:undefined
+N:debug-success.txt
+T:.txt
+-----
+// onOpen
+C:undefined
+N:debug-success.txt
+T:.txt
+-----
+// onProgress
+C:undefined
+N:debug-success.txt
+T:.txt
+-----
+// onComplete
+C:undefined
+N:debug-success.txt
+T:.txt
+-----

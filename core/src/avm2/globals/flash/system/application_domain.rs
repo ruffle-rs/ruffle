@@ -17,7 +17,7 @@ pub fn init<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let parent_domain = if matches!(args[0], Value::Null) {
-        activation.avm2().stage_domain()
+        activation.avm2().playerglobals_domain()
     } else {
         args.get_object(activation, 0, "parentDomain")?
             .as_application_domain()
@@ -50,7 +50,7 @@ pub fn get_parent_domain<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(appdomain) = this.as_application_domain() {
         if let Some(parent_domain) = appdomain.parent_domain() {
-            if parent_domain.is_playerglobals_domain(activation) {
+            if parent_domain.is_playerglobals_domain(activation.avm2()) {
                 return Ok(Value::Null);
             }
             return Ok(DomainObject::from_domain(activation, parent_domain)?.into());
@@ -67,11 +67,10 @@ pub fn get_definition<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(appdomain) = this.as_application_domain() {
-        let name = args
-            .get(0)
-            .cloned()
-            .unwrap_or_else(|| "".into())
-            .coerce_to_string(activation)?;
+        let name = match args.get(0) {
+            Some(arg) => arg.coerce_to_string(activation)?,
+            None => activation.strings().empty(),
+        };
         return appdomain.get_defined_value_handling_vector(activation, name);
     }
 
@@ -85,11 +84,10 @@ pub fn has_definition<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(appdomain) = this.as_application_domain() {
-        let name = args
-            .get(0)
-            .cloned()
-            .unwrap_or_else(|| "".into())
-            .coerce_to_string(activation)?;
+        let name = match args.get(0) {
+            Some(arg) => arg.coerce_to_string(activation)?,
+            None => activation.strings().empty(),
+        };
 
         return Ok(appdomain
             .get_defined_value_handling_vector(activation, name)
@@ -123,7 +121,7 @@ pub fn get_qualified_definition_names<'gc>(
                 .map(|name| Value::String(name.to_qualified_name(activation.context.gc_context)))
                 .collect(),
             false,
-            Some(activation.avm2().classes().string),
+            Some(activation.avm2().class_defs().string),
         );
 
         let name_vector = VectorObject::from_vector(storage, activation)?;

@@ -1,0 +1,51 @@
+loader.content = null
+loader.contentLoaderInfo.content = null
+loader.contentLoaderInfo.bytesLoaded = 0
+loader.contentLoaderInfo.bytesTotal = 0
+loader.contentLoaderInfo.bytes?.length = null
+loader.contentLoaderInfo.url = null
+loader.contentLoaderInfo.parameters = [object Object]
+Event [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=0 bytesTotal=503316]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 0, loader.contentLoaderInfo.bytesTotal = 503316, loader.contentLoaderInfo.bytes.length = 0, loader.contentLoaderInfo.url = null
+Event [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=503316 bytesTotal=503316]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 503316, loader.contentLoaderInfo.bytesTotal = 503316, loader.contentLoaderInfo.bytes.length = 505316, loader.contentLoaderInfo.url = null
+Directly after load:
+loader.content = null
+loader.contentLoaderInfo.content = null
+loader.contentLoaderInfo.bytesLoaded = 503316
+loader.contentLoaderInfo.bytesTotal = 503316
+loader.contentLoaderInfo.bytes?.length = 505316
+loader.contentLoaderInfo.url = null
+loader.contentLoaderInfo.parameters = [object Object]
+Calling super() in Main()
+Called super() in Main()
+exitFrame in Test
+Calling super() in LargeSWF()
+Called super() in LargeSWF()
+Loading ../nested_load/test.swf from bytes
+LargeSWF loader.content = null
+LargeSWF loader.contentLoaderInfo.content = null
+LargeSWF loader.contentLoaderInfo.bytesLoaded = 0
+LargeSWF loader.contentLoaderInfo.bytesTotal = 0
+LargeSWF loader.contentLoaderInfo.bytes?.length = null
+LargeSWF loader.contentLoaderInfo.url = null
+LargeSWF loader.contentLoaderInfo.parameters = [object Object]
+LargeSWF Event [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=0 bytesTotal=424]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 0, loader.contentLoaderInfo.bytesTotal = 424, loader.contentLoaderInfo.bytes.length = 0, loader.contentLoaderInfo.url = null
+LargeSWF Event [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=424 bytesTotal=424]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 424, loader.contentLoaderInfo.bytesTotal = 424, loader.contentLoaderInfo.bytes.length = 541, loader.contentLoaderInfo.url = null
+LargeSWF: Directly after load:
+LargeSWF loader.content = null
+LargeSWF loader.contentLoaderInfo.content = null
+LargeSWF loader.contentLoaderInfo.bytesLoaded = 424
+LargeSWF loader.contentLoaderInfo.bytesTotal = 424
+LargeSWF loader.contentLoaderInfo.bytes?.length = 541
+LargeSWF loader.contentLoaderInfo.url = null
+LargeSWF loader.contentLoaderInfo.parameters = [object Object]
+exitFrame in Test
+loader.contentLoaderInfo === loader.content.loaderInfo : true
+loader.contentLoaderInfo.content === loader.content : true
+Event [Event type="init" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object LargeSWF], loader.contentLoaderInfo.bytesLoaded = 503316, loader.contentLoaderInfo.bytesTotal = 503316, loader.contentLoaderInfo.bytes.length = 505316, loader.contentLoaderInfo.url = file:///
+Event [Event type="complete" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object LargeSWF], loader.contentLoaderInfo.bytesLoaded = 503316, loader.contentLoaderInfo.bytesTotal = 503316, loader.contentLoaderInfo.bytes.length = 505316, loader.contentLoaderInfo.url = file:///
+Constucted nested_load/test.swf
+exitFrame in Test
+LargeSWF loader.contentLoaderInfo === loader.content.loaderInfo : true
+LargeSWF loader.contentLoaderInfo.content === loader.content : true
+LargeSWF Event [Event type="init" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object Test], loader.contentLoaderInfo.bytesLoaded = 424, loader.contentLoaderInfo.bytesTotal = 424, loader.contentLoaderInfo.bytes.length = 541, loader.contentLoaderInfo.url = file:///
+LargeSWF Event [Event type="complete" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object Test], loader.contentLoaderInfo.bytesLoaded = 424, loader.contentLoaderInfo.bytesTotal = 424, loader.contentLoaderInfo.bytes.length = 541, loader.contentLoaderInfo.url = file:///

@@ -45,6 +45,7 @@ package flash.net {
             stub_method("flash.net.NetStream", "close");
         }
 
+        [API("674")]
         public function dispose() {
             stub_method("flash.net.NetStream", "dispose");
         }
@@ -57,6 +58,7 @@ package flash.net {
             stub_method("flash.net.NetStream", "play2");
         }
 
+        [API("663")]
         public function preloadEmbeddedData(param:NetStreamPlayOptions) {
             stub_method("flash.net.NetStream", "preloadEmbeddedData");
         }
@@ -77,6 +79,7 @@ package flash.net {
             stub_method("flash.net.NetStream", "receiveVideoFPS");
         }
 
+        [API("690")]
         public static function resetDRMVouchers() {
             stub_method("flash.net.NetStream", "resetDRMVouchers");
         }
@@ -89,6 +92,7 @@ package flash.net {
             stub_method("flash.net.NetStream", "send");
         }
 
+        [API("661")]
         public function setDRMAuthenticationCredentials(userName:String, password:String, type:String) {
             stub_method("flash.net.NetStream", "setDRMAuthenticationCredentials");
         }
@@ -320,11 +324,13 @@ package flash.net {
             stub_setter("flash.net.NetStream", "useHardwareDecoder");
         };
 
+        [API("680")]
         public function get useJitterBuffer(): Boolean {
             stub_getter("flash.net.NetStream", "useJitterBuffer");
             return false;
         };
 
+        [API("680")]
         public function set useJitterBuffer(jbuf:Boolean) {
             stub_setter("flash.net.NetStream", "useJitterBuffer");
         };
@@ -347,11 +353,13 @@ package flash.net {
             stub_setter("flash.net.NetStream", "videoSampleAccess");
         };
 
+        [API("674")]
         public function get videoStreamSettings(): VideoStreamSettings {
             stub_getter("flash.net.NetStream", "videoStreamSettings");
             return null;
         };
 
+        [API("674")]
         public function set videoStreamSettings(settings: VideoStreamSettings) {
             stub_setter("flash.net.NetStream", "videoStreamSettings");
         };

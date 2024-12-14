@@ -2,7 +2,7 @@ use crate::as_texture;
 use crate::backend::RenderTargetMode;
 use crate::buffer_pool::TexturePool;
 use crate::descriptors::Descriptors;
-use crate::filters::{FilterSource, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
+use crate::filters::{FilterSource, FilterVertex, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
 use crate::surface::target::CommandTarget;
 use crate::utils::SampleCountMap;
 use bytemuck::{Pod, Zeroable};
@@ -10,7 +10,7 @@ use ruffle_render::filters::{
     DisplacementMapFilter as DisplacementMapFilterArgs, DisplacementMapFilterMode,
 };
 use std::sync::OnceLock;
-use wgpu::util::DeviceExt;
+use wgpu::util::StagingBelt;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable, PartialEq)]
@@ -33,11 +33,16 @@ struct DisplacementMapUniform {
 pub struct DisplacementMapFilter {
     bind_group_layout: wgpu::BindGroupLayout,
     pipeline_layout: wgpu::PipelineLayout,
+    vertex_buffer: wgpu::Buffer,
+    uniform_buffer: wgpu::Buffer,
+    vertices_size: wgpu::BufferSize,
+    uniform_size: wgpu::BufferSize,
     pipelines: SampleCountMap<OnceLock<wgpu::RenderPipeline>>,
 }
 
 impl DisplacementMapFilter {
     pub fn new(device: &wgpu::Device) -> Self {
+        let uniform_size = std::mem::size_of::<DisplacementMapUniform>() as u64;
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[
                 wgpu::BindGroupLayoutEntry {
@@ -78,14 +83,20 @@ impl DisplacementMapFilter {
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new(std::mem::size_of::<
-                            DisplacementMapUniform,
-                        >() as u64),
+                        min_binding_size: wgpu::BufferSize::new(uniform_size),
                     },
                     count: None,
                 },
             ],
             label: create_debug_label!("Displacement map filter binds").as_deref(),
+        });
+
+        let vertices_size = std::mem::size_of::<[FilterVertex; 4]>() as u64;
+        let vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: vertices_size,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
         });
 
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -94,10 +105,21 @@ impl DisplacementMapFilter {
             push_constant_ranges: &[],
         });
 
+        let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: uniform_size,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
         Self {
             pipelines: Default::default(),
             pipeline_layout,
+            vertex_buffer,
+            uniform_buffer,
             bind_group_layout,
+            vertices_size: wgpu::BufferSize::new(vertices_size).expect("Definitely not zero."),
+            uniform_size: wgpu::BufferSize::new(uniform_size).expect("Definitely not zero."),
         }
     }
 
@@ -111,8 +133,9 @@ impl DisplacementMapFilter {
                     layout: Some(&self.pipeline_layout),
                     vertex: wgpu::VertexState {
                         module: &descriptors.shaders.displacement_map_filter,
-                        entry_point: "main_vertex",
+                        entry_point: Some("main_vertex"),
                         buffers: &VERTEX_BUFFERS_DESCRIPTION_FILTERS,
+                        compilation_options: Default::default(),
                     },
                     primitive: wgpu::PrimitiveState {
                         topology: wgpu::PrimitiveTopology::TriangleList,
@@ -131,10 +154,12 @@ impl DisplacementMapFilter {
                     },
                     fragment: Some(wgpu::FragmentState {
                         module: &descriptors.shaders.displacement_map_filter,
-                        entry_point: "main_fragment",
+                        entry_point: Some("main_fragment"),
                         targets: &[Some(wgpu::TextureFormat::Rgba8Unorm.into())],
+                        compilation_options: Default::default(),
                     }),
                     multiview: None,
+                    cache: None,
                 })
         })
     }
@@ -144,6 +169,7 @@ impl DisplacementMapFilter {
         descriptors: &Descriptors,
         texture_pool: &mut TexturePool,
         draw_encoder: &mut wgpu::CommandEncoder,
+        staging_belt: &mut StagingBelt,
         source: &FilterSource,
         filter: &DisplacementMapFilterArgs,
     ) -> Option<CommandTarget> {
@@ -168,38 +194,48 @@ impl DisplacementMapFilter {
         let map_handle = filter.map_bitmap.clone()?;
         let map_texture = as_texture(&map_handle);
         let map_view = map_texture.texture.create_view(&Default::default());
-        let buffer = descriptors
-            .device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: create_debug_label!("Filter arguments").as_deref(),
-                contents: bytemuck::cast_slice(&[DisplacementMapUniform {
-                    color: [
-                        f32::from(filter.color.r) / 255.0,
-                        f32::from(filter.color.g) / 255.0,
-                        f32::from(filter.color.b) / 255.0,
-                        f32::from(filter.color.a) / 255.0,
-                    ],
-                    components: ((filter.component_x as u32) << 8) | (filter.component_y as u32),
-                    mode: match filter.mode {
-                        DisplacementMapFilterMode::Wrap => 0,
-                        DisplacementMapFilterMode::Clamp => 1,
-                        DisplacementMapFilterMode::Ignore => 2,
-                        DisplacementMapFilterMode::Color => 3,
-                    },
-                    scale_x: filter.scale_x,
-                    scale_y: filter.scale_y,
-                    source_width: source.texture.width() as f32,
-                    source_height: source.texture.height() as f32,
-                    map_width: map_texture.texture.width() as f32,
-                    map_height: map_texture.texture.height() as f32,
-                    offset_x: filter.map_point.0 as f32,
-                    offset_y: filter.map_point.1 as f32,
-                    viewscale_x: filter.viewscale_x,
-                    viewscale_y: filter.viewscale_y,
-                }]),
-                usage: wgpu::BufferUsages::UNIFORM,
-            });
-        let vertices = source.vertices(&descriptors.device);
+        staging_belt
+            .write_buffer(
+                draw_encoder,
+                &self.uniform_buffer,
+                0,
+                self.uniform_size,
+                &descriptors.device,
+            )
+            .copy_from_slice(bytemuck::cast_slice(&[DisplacementMapUniform {
+                color: [
+                    f32::from(filter.color.r) / 255.0,
+                    f32::from(filter.color.g) / 255.0,
+                    f32::from(filter.color.b) / 255.0,
+                    f32::from(filter.color.a) / 255.0,
+                ],
+                components: ((filter.component_x as u32) << 8) | (filter.component_y as u32),
+                mode: match filter.mode {
+                    DisplacementMapFilterMode::Wrap => 0,
+                    DisplacementMapFilterMode::Clamp => 1,
+                    DisplacementMapFilterMode::Ignore => 2,
+                    DisplacementMapFilterMode::Color => 3,
+                },
+                scale_x: filter.scale_x,
+                scale_y: filter.scale_y,
+                source_width: source.texture.width() as f32,
+                source_height: source.texture.height() as f32,
+                map_width: map_texture.texture.width() as f32,
+                map_height: map_texture.texture.height() as f32,
+                offset_x: filter.map_point.0 as f32,
+                offset_y: filter.map_point.1 as f32,
+                viewscale_x: filter.viewscale_x,
+                viewscale_y: filter.viewscale_y,
+            }]));
+        staging_belt
+            .write_buffer(
+                draw_encoder,
+                &self.vertex_buffer,
+                0,
+                self.vertices_size,
+                &descriptors.device,
+            )
+            .copy_from_slice(bytemuck::cast_slice(&[source.vertices()]));
         let filter_group = descriptors
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {
@@ -228,20 +264,20 @@ impl DisplacementMapFilter {
                     },
                     wgpu::BindGroupEntry {
                         binding: 4,
-                        resource: buffer.as_entire_binding(),
+                        resource: self.uniform_buffer.as_entire_binding(),
                     },
                 ],
             });
         let mut render_pass = draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: create_debug_label!("Displacement map filter").as_deref(),
             color_attachments: &[target.color_attachments()],
-            depth_stencil_attachment: None,
+            ..Default::default()
         });
         render_pass.set_pipeline(pipeline);
 
         render_pass.set_bind_group(0, &filter_group, &[]);
 
-        render_pass.set_vertex_buffer(0, vertices.slice(..));
+        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_index_buffer(
             descriptors.quad.indices.slice(..),
             wgpu::IndexFormat::Uint32,

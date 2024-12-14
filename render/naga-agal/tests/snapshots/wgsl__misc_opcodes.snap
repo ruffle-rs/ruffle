@@ -33,13 +33,13 @@ fn main(@location(0) param: vec4<f32>) -> VertexOutput {
     let _e21: vec4<f32> = temporary5_;
     let _e27: vec4<f32> = constant_registers[0u];
     let _e29: vec3<f32> = (transpose(mat3x3<f32>(_e15.xyz, _e18.xyz, _e21.xyz)) * _e27.xyz);
-    temporary4_ = vec4<f32>(_e29.x, _e29.y, _e29.z, 1.0);
+    temporary4_ = vec4<f32>(_e29.x, _e29.y, _e29.z, 1f);
     let _e35: vec4<f32> = temporary3_;
     let _e36: vec4<f32> = temporary4_;
     let _e37: vec4<f32> = temporary5_;
     let _e42: vec4<f32> = constant_registers[2u];
     let _e43: vec3<f32> = (transpose(mat3x4<f32>(_e35, _e36, _e37)) * _e42);
-    temporary5_ = vec4<f32>(_e43.x, _e43.y, _e43.z, 1.0);
+    temporary5_ = vec4<f32>(_e43.x, _e43.y, _e43.z, 1f);
     let _e49: vec4<f32> = temporary5_;
     let _e50: vec4<f32> = temporary4_;
     temporary6_ = min(_e49, _e50);

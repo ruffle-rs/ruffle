@@ -1,13 +1,16 @@
+use crate::drawing::Drawing;
 use crate::html::TextSpan;
 use crate::prelude::*;
 use crate::string::WStr;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
+use ruffle_render::shape_utils::{DrawCommand, FillRule};
 use ruffle_render::transform::Transform;
-use std::cell::RefCell;
-use std::cmp::max;
+use std::borrow::Cow;
+use std::cell::{OnceCell, RefCell};
 use std::hash::{Hash, Hasher};
+use swf::FillStyle;
 
 pub use swf::TextGridFit;
 
@@ -21,11 +24,19 @@ pub enum DefaultFont {
 
     /// `_typewriter`, a Monospace font (similar to Courier)
     Typewriter,
+
+    /// `_ゴシック`, a Japanese Gothic font
+    JapaneseGothic,
+
+    /// `_等幅`, a Japanese Gothic Mono font
+    JapaneseGothicMono,
+
+    /// `_明朝`, a Japanese Mincho font
+    JapaneseMincho,
 }
 
-/// Certain Flash routines measure text by rounding down to the nearest whole pixel.
-pub fn round_down_to_pixel(t: Twips) -> Twips {
-    Twips::from_pixels(t.to_pixels().floor())
+fn round_to_pixel(t: Twips) -> Twips {
+    Twips::from_pixels(t.to_pixels().round())
 }
 
 /// Parameters necessary to evaluate a font.
@@ -38,7 +49,7 @@ pub struct EvalParameters {
     /// after normal or kerned glyph advances are applied.
     letter_spacing: Twips,
 
-    /// Whether or not to allow use of font-provided kerning metrics.
+    /// Whether to allow use of font-provided kerning metrics.
     ///
     /// Fonts can optionally add or remove additional spacing between specific
     /// pairs of letters, separate from the ordinary width between glyphs. This
@@ -61,15 +72,181 @@ impl EvalParameters {
     /// parameters.
     pub fn from_span(span: &TextSpan) -> Self {
         Self {
-            height: Twips::from_pixels(span.size),
-            letter_spacing: Twips::from_pixels(span.letter_spacing),
-            kerning: span.kerning,
+            height: Twips::from_pixels(span.font.size),
+            letter_spacing: Twips::from_pixels(span.font.letter_spacing),
+            kerning: span.font.kerning,
         }
     }
 
     /// Get the height that the font would be evaluated at.
     pub fn height(&self) -> Twips {
         self.height
+    }
+}
+
+struct GlyphToDrawing<'a>(&'a mut Drawing);
+
+/// Convert from a TTF outline, to a flash Drawing.
+///
+/// Note that the Y axis is flipped. I do not know why, but Flash does this.
+impl ttf_parser::OutlineBuilder for GlyphToDrawing<'_> {
+    fn move_to(&mut self, x: f32, y: f32) {
+        self.0.draw_command(DrawCommand::MoveTo(Point::new(
+            Twips::new(x as i32),
+            Twips::new(-y as i32),
+        )));
+    }
+
+    fn line_to(&mut self, x: f32, y: f32) {
+        self.0.draw_command(DrawCommand::LineTo(Point::new(
+            Twips::new(x as i32),
+            Twips::new(-y as i32),
+        )));
+    }
+
+    fn quad_to(&mut self, x1: f32, y1: f32, x: f32, y: f32) {
+        self.0.draw_command(DrawCommand::QuadraticCurveTo {
+            control: Point::new(Twips::new(x1 as i32), Twips::new(-y1 as i32)),
+            anchor: Point::new(Twips::new(x as i32), Twips::new(-y as i32)),
+        });
+    }
+
+    fn curve_to(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, x: f32, y: f32) {
+        self.0.draw_command(DrawCommand::CubicCurveTo {
+            control_a: Point::new(Twips::new(x1 as i32), Twips::new(-y1 as i32)),
+            control_b: Point::new(Twips::new(x2 as i32), Twips::new(-y2 as i32)),
+            anchor: Point::new(Twips::new(x as i32), Twips::new(-y as i32)),
+        });
+    }
+
+    fn close(&mut self) {
+        self.0.close_path();
+    }
+}
+
+/// Represents a raw font file (ie .ttf).
+/// This should be shared and reused where possible, and it's reparsed every time a new glyph is required.
+///
+/// Parsing of a font is near-free (according to [ttf_parser::Face::parse]), but the storage isn't.
+///
+/// Font files may contain multiple individual font faces, but those font faces may reuse the same
+/// Glyph from the same file. For this reason, glyphs are reused where possible.
+#[derive(Debug)]
+pub struct FontFace {
+    bytes: Cow<'static, [u8]>,
+    glyphs: Vec<OnceCell<Option<Glyph>>>,
+    font_index: u32,
+
+    ascender: i32,
+    descender: i32,
+    leading: i16,
+    scale: f32,
+    might_have_kerning: bool,
+}
+
+impl FontFace {
+    pub fn new(
+        bytes: Cow<'static, [u8]>,
+        font_index: u32,
+    ) -> Result<Self, ttf_parser::FaceParsingError> {
+        // TODO: Support font collections
+
+        // We validate that the font is good here, so we can just `.expect()` it later
+        let face = ttf_parser::Face::parse(&bytes, font_index)?;
+
+        let ascender = face.ascender() as i32;
+        let descender = -face.descender() as i32;
+        let leading = face.line_gap();
+        let scale = face.units_per_em() as f32;
+        let glyphs = vec![OnceCell::new(); face.number_of_glyphs() as usize];
+
+        // [NA] TODO: This is technically correct for just Kerning, but in practice kerning comes in many forms.
+        // We need to support GPOS to do better at this, but that's a bigger change to font rendering as a whole.
+        let might_have_kerning = face
+            .tables()
+            .kern
+            .map(|k| {
+                k.subtables
+                    .into_iter()
+                    .any(|sub| sub.horizontal && !sub.has_state_machine)
+            })
+            .unwrap_or_default();
+
+        Ok(Self {
+            bytes,
+            font_index,
+            glyphs,
+            ascender,
+            descender,
+            leading,
+            scale,
+            might_have_kerning,
+        })
+    }
+
+    pub fn get_glyph(&self, character: char) -> Option<&Glyph> {
+        let face = ttf_parser::Face::parse(&self.bytes, self.font_index)
+            .expect("Font was already checked to be valid");
+        if let Some(glyph_id) = face.glyph_index(character) {
+            return self.glyphs[glyph_id.0 as usize]
+                .get_or_init(|| {
+                    let mut drawing = Drawing::new();
+                    // TTF uses NonZero
+                    drawing.new_fill(
+                        Some(FillStyle::Color(Color::WHITE)),
+                        Some(FillRule::NonZero),
+                    );
+                    if face
+                        .outline_glyph(glyph_id, &mut GlyphToDrawing(&mut drawing))
+                        .is_some()
+                    {
+                        let advance = face.glyph_hor_advance(glyph_id).map_or_else(
+                            || drawing.self_bounds().width(),
+                            |a| Twips::new(a as i32),
+                        );
+                        Some(Glyph {
+                            shape_handle: Default::default(),
+                            shape: GlyphShape::Drawing(drawing),
+                            advance,
+                        })
+                    } else {
+                        let advance = Twips::new(face.glyph_hor_advance(glyph_id)? as i32);
+                        // If we have advance, then this is either an image, SVG or simply missing (ie whitespace)
+                        Some(Glyph {
+                            shape_handle: Default::default(),
+                            shape: GlyphShape::None,
+                            advance,
+                        })
+                    }
+                })
+                .as_ref();
+        }
+        None
+    }
+
+    pub fn has_kerning_info(&self) -> bool {
+        self.might_have_kerning
+    }
+
+    pub fn get_kerning_offset(&self, left: char, right: char) -> Twips {
+        let face = ttf_parser::Face::parse(&self.bytes, self.font_index)
+            .expect("Font was already checked to be valid");
+
+        if let (Some(left_glyph), Some(right_glyph)) =
+            (face.glyph_index(left), face.glyph_index(right))
+        {
+            if let Some(kern) = face.tables().kern {
+                for subtable in kern.subtables {
+                    if subtable.horizontal {
+                        if let Some(value) = subtable.glyphs_kerning(left_glyph, right_glyph) {
+                            return Twips::new(value as i32);
+                        }
+                    }
+                }
+            }
+        }
+
+        Twips::ZERO
     }
 }
 
@@ -84,10 +261,11 @@ pub enum GlyphSource {
         /// Used by `DefineEditText` tags.
         code_point_to_glyph: fnv::FnvHashMap<u16, usize>,
 
-        /// Kerning infomration.
+        /// Kerning information.
         /// Maps from a pair of unicode code points to horizontal offset value.
         kerning_pairs: fnv::FnvHashMap<(u16, u16), Twips>,
     },
+    FontFace(FontFace),
     Empty,
 }
 
@@ -95,6 +273,7 @@ impl GlyphSource {
     pub fn get_by_index(&self, index: usize) -> Option<&Glyph> {
         match self {
             GlyphSource::Memory { glyphs, .. } => glyphs.get(index),
+            GlyphSource::FontFace(_) => None, // Unsupported.
             GlyphSource::Empty => None,
         }
     }
@@ -114,6 +293,7 @@ impl GlyphSource {
                     None
                 }
             }
+            GlyphSource::FontFace(face) => face.get_glyph(code_point),
             GlyphSource::Empty => None,
         }
     }
@@ -121,6 +301,7 @@ impl GlyphSource {
     pub fn has_kerning_info(&self) -> bool {
         match self {
             GlyphSource::Memory { kerning_pairs, .. } => !kerning_pairs.is_empty(),
+            GlyphSource::FontFace(face) => face.has_kerning_info(),
             GlyphSource::Empty => false,
         }
     }
@@ -136,9 +317,18 @@ impl GlyphSource {
                     .cloned()
                     .unwrap_or_default()
             }
+            GlyphSource::FontFace(face) => face.get_kerning_offset(left, right),
             GlyphSource::Empty => Twips::ZERO,
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Collect, Hash)]
+#[collect(require_static)]
+pub enum FontType {
+    Embedded,
+    EmbeddedCFF,
+    Device,
 }
 
 #[derive(Debug, Clone, Collect, Copy)]
@@ -156,11 +346,11 @@ struct FontData {
 
     /// The distance from the top of each glyph to the baseline of the font, in
     /// EM-square coordinates.
-    ascent: i16,
+    ascent: i32,
 
     /// The distance from the baseline of the font to the bottom of each glyph,
     /// in EM-square coordinates.
-    descent: i16,
+    descent: i32,
 
     /// The distance between the bottom of any one glyph and the top of
     /// another, in EM-square coordinates.
@@ -169,20 +359,46 @@ struct FontData {
     /// The identity of the font.
     #[collect(require_static)]
     descriptor: FontDescriptor,
+
+    font_type: FontType,
 }
 
 impl<'gc> Font<'gc> {
+    pub fn from_font_file(
+        gc_context: &Mutation<'gc>,
+        descriptor: FontDescriptor,
+        bytes: Cow<'static, [u8]>,
+        font_index: u32,
+        font_type: FontType,
+    ) -> Result<Font<'gc>, ttf_parser::FaceParsingError> {
+        let face = FontFace::new(bytes, font_index)?;
+
+        Ok(Font(Gc::new(
+            gc_context,
+            FontData {
+                scale: face.scale,
+                ascent: face.ascender,
+                descent: face.descender,
+                leading: face.leading,
+                glyphs: GlyphSource::FontFace(face),
+                descriptor,
+                font_type,
+            },
+        )))
+    }
+
     pub fn from_swf_tag(
         gc_context: &Mutation<'gc>,
         renderer: &mut dyn RenderBackend,
         tag: swf::Font,
         encoding: &'static swf::Encoding,
+        font_type: FontType,
     ) -> Font<'gc> {
         let mut code_point_to_glyph = fnv::FnvHashMap::default();
 
         let descriptor = FontDescriptor::from_swf_tag(&tag, encoding);
         let (ascent, descent, leading) = if let Some(layout) = &tag.layout {
-            (layout.ascent as i16, layout.descent as i16, layout.leading)
+            (layout.ascent as i32, layout.descent as i32, layout.leading)
         } else {
             (0, 0, 0)
         };
@@ -240,6 +456,57 @@ impl<'gc> Font<'gc> {
                 descent,
                 leading,
                 descriptor,
+                font_type,
+            },
+        ))
+    }
+
+    pub fn from_font4_tag(
+        gc_context: &Mutation<'gc>,
+        tag: swf::Font4,
+        encoding: &'static swf::Encoding,
+    ) -> Result<Font<'gc>, ttf_parser::FaceParsingError> {
+        let name = tag.name.to_str_lossy(encoding);
+        let descriptor = FontDescriptor::from_parts(&name, tag.is_bold, tag.is_italic);
+
+        if let Some(bytes) = tag.data {
+            Font::from_font_file(
+                gc_context,
+                descriptor,
+                Cow::Owned(bytes.to_vec()),
+                0,
+                FontType::EmbeddedCFF,
+            )
+        } else {
+            Ok(Self::empty_font(
+                gc_context,
+                &name,
+                tag.is_bold,
+                tag.is_italic,
+                FontType::EmbeddedCFF,
+            ))
+        }
+    }
+
+    pub fn empty_font(
+        gc_context: &Mutation<'gc>,
+        name: &str,
+        is_bold: bool,
+        is_italic: bool,
+        font_type: FontType,
+    ) -> Font<'gc> {
+        let descriptor = FontDescriptor::from_parts(name, is_bold, is_italic);
+
+        Font(Gc::new(
+            gc_context,
+            FontData {
+                scale: 1.0,
+                ascent: 0,
+                descent: 0,
+                leading: 0,
+                glyphs: GlyphSource::Empty,
+                descriptor,
+                font_type,
             },
         ))
     }
@@ -345,8 +612,19 @@ impl<'gc> Font<'gc> {
                     let next_char = next_char.unwrap_or(char::REPLACEMENT_CHARACTER);
                     advance += self.get_kerning_offset(c, next_char);
                 }
-                let twips_advance =
-                    Twips::new((advance.get() as f32 * scale) as i32) + params.letter_spacing;
+                let twips_advance = if self.font_type() == FontType::Device {
+                    let unspaced_advance =
+                        round_to_pixel(Twips::new((advance.get() as f32 * scale) as i32));
+                    let spaced_advance =
+                        unspaced_advance + params.letter_spacing.round_to_pixel_ties_even();
+                    if spaced_advance > Twips::ZERO {
+                        spaced_advance
+                    } else {
+                        unspaced_advance
+                    }
+                } else {
+                    Twips::new((advance.get() as f32 * scale) as i32) + params.letter_spacing
+                };
 
                 glyph_func(pos, &transform, glyph, twips_advance, x);
 
@@ -357,37 +635,20 @@ impl<'gc> Font<'gc> {
         }
     }
 
-    /// Measure a particular string's metrics (width and height).
-    ///
-    /// The `round` flag causes the returned coordinates to be rounded down to
-    /// the nearest pixel.
-    pub fn measure(&self, text: &WStr, params: EvalParameters, round: bool) -> (Twips, Twips) {
+    /// Measure a particular string's width.
+    pub fn measure(&self, text: &WStr, params: EvalParameters) -> Twips {
         let mut width = Twips::ZERO;
-        let mut height = Twips::ZERO;
 
         self.evaluate(
             text,
             Default::default(),
             params,
-            |_pos, transform, _glyph, advance, _x| {
-                let tx = transform.matrix.tx;
-                let ty = transform.matrix.ty;
-
-                if round {
-                    width = width.max(round_down_to_pixel(tx + advance));
-                    height = height.max(round_down_to_pixel(ty));
-                } else {
-                    width = width.max(tx + advance);
-                    height = height.max(ty);
-                }
+            |_pos, _transform, _glyph, advance, x| {
+                width = width.max(x + advance);
             },
         );
 
-        if text.is_empty() {
-            height = max(height, params.height);
-        }
-
-        (width, height)
+        width
     }
 
     /// Given a line of text, find the first breakpoint within the text.
@@ -429,12 +690,11 @@ impl<'gc> Font<'gc> {
                 // +1 is fine because ' ' is 1 unit
                 text.slice(word_start..word_end + 1).unwrap_or(word),
                 params,
-                false,
             );
 
-            if is_start_of_line && measure.0 > remaining_width {
+            if is_start_of_line && measure > remaining_width {
                 //Failsafe for if we get a word wider than the field.
-                let mut last_passing_breakpoint = (Twips::ZERO, Twips::ZERO);
+                let mut last_passing_breakpoint = Twips::ZERO;
 
                 let cur_slice = &text[word_start..];
                 let mut char_iter = cur_slice.char_indices();
@@ -442,12 +702,11 @@ impl<'gc> Font<'gc> {
                 let mut prev_frag_end = 0;
 
                 char_iter.next(); // No need to check cur_slice[0..0]
-                while last_passing_breakpoint.0 < remaining_width {
+                while last_passing_breakpoint < remaining_width {
                     prev_char_index = word_start + prev_frag_end;
 
                     if let Some((frag_end, _)) = char_iter.next() {
-                        last_passing_breakpoint =
-                            self.measure(&cur_slice[..frag_end], params, false);
+                        last_passing_breakpoint = self.measure(&cur_slice[..frag_end], params);
 
                         prev_frag_end = frag_end;
                     } else {
@@ -456,7 +715,7 @@ impl<'gc> Font<'gc> {
                 }
 
                 return Some(prev_char_index);
-            } else if measure.0 > remaining_width {
+            } else if measure > remaining_width {
                 //The word is wider than our remaining width, return the end of
                 //the line.
                 return Some(line_end);
@@ -467,7 +726,7 @@ impl<'gc> Font<'gc> {
 
                 //If the additional space were to cause an overflow, then
                 //return now.
-                remaining_width -= measure.0;
+                remaining_width -= measure;
                 if remaining_width < Twips::from_pixels(0.0) {
                     return Some(word_end);
                 }
@@ -479,6 +738,10 @@ impl<'gc> Font<'gc> {
 
     pub fn descriptor(&self) -> &FontDescriptor {
         &self.0.descriptor
+    }
+
+    pub fn font_type(&self) -> FontType {
+        self.0.font_type
     }
 }
 
@@ -504,6 +767,8 @@ impl SwfGlyphOrShape {
 #[derive(Debug, Clone)]
 enum GlyphShape {
     Swf(RefCell<SwfGlyphOrShape>),
+    Drawing(Drawing),
+    None,
 }
 
 impl GlyphShape {
@@ -515,6 +780,8 @@ impl GlyphShape {
                 shape.shape_bounds.contains(point)
                     && ruffle_render::shape_utils::shape_hit_test(shape, point, local_matrix)
             }
+            GlyphShape::Drawing(drawing) => drawing.hit_test(point, local_matrix),
+            GlyphShape::None => false,
         }
     }
 
@@ -524,6 +791,8 @@ impl GlyphShape {
                 let mut glyph = glyph.borrow_mut();
                 Some(renderer.register_shape((&*glyph.shape()).into(), &NullBitmapSource))
             }
+            GlyphShape::Drawing(drawing) => drawing.register_or_replace(renderer),
+            GlyphShape::None => None,
         }
     }
 }
@@ -625,6 +894,11 @@ impl FontDescriptor {
         &self.name
     }
 
+    // Get the lowercase name.
+    pub fn lowercase_name(&self) -> &str {
+        &self.lowercase_name
+    }
+
     /// Get the boldness of the described font.
     pub fn bold(&self) -> bool {
         self.is_bold
@@ -638,7 +912,7 @@ impl FontDescriptor {
 
 /// The text rendering engine that a text field should use.
 /// This is controlled by the "Anti-alias" setting in the Flash IDE.
-/// Using "Anti-alias for readibility" switches to the "Advanced" text
+/// Using "Anti-alias for readability" switches to the "Advanced" text
 /// rendering engine.
 #[derive(Debug, PartialEq, Clone)]
 pub enum TextRenderSettings {
@@ -655,7 +929,7 @@ pub enum TextRenderSettings {
     },
 
     /// This text should render with the advanced rendering engine.
-    /// Set via "Anti-alias for readibility" in the Flash IDE.
+    /// Set via "Anti-alias for readability" in the Flash IDE.
     /// The parameters are set via the CSMTextSettings SWF tag.
     /// Ruffle does not support this currently, but this also affects
     /// hit-testing behavior.
@@ -818,34 +1092,31 @@ impl Default for TextRenderSettings {
 
 #[cfg(test)]
 mod tests {
-    use crate::font::{EvalParameters, Font};
+    use crate::font::{EvalParameters, Font, FontDescriptor, FontType};
     use crate::string::WStr;
+    use flate2::read::DeflateDecoder;
     use gc_arena::{rootless_arena, Mutation};
-    use ruffle_render::backend::{null::NullRenderer, ViewportDimensions};
+    use std::borrow::Cow;
+    use std::io::Read;
     use swf::Twips;
 
-    const DEVICE_FONT_TAG: &[u8] = include_bytes!("../assets/noto-sans-definefont3.bin");
+    const DEVICE_FONT: &[u8] = include_bytes!("../assets/notosans-regular.subset.ttf.gz");
 
     fn with_device_font<F>(callback: F)
     where
         F: for<'gc> FnOnce(&Mutation<'gc>, Font<'gc>),
     {
         rootless_arena(|mc| {
-            let mut renderer = NullRenderer::new(ViewportDimensions {
-                width: 0,
-                height: 0,
-                scale_factor: 1.0,
-            });
-            let mut reader = swf::read::Reader::new(DEVICE_FONT_TAG, 8);
-            let device_font = Font::from_swf_tag(
-                mc,
-                &mut renderer,
-                reader
-                    .read_define_font_2(3)
-                    .expect("Built-in font should compile"),
-                reader.encoding(),
-            );
+            let mut data = Vec::new();
+            let mut decoder = DeflateDecoder::new(DEVICE_FONT);
+            decoder
+                .read_to_end(&mut data)
+                .expect("default font decompression must succeed");
 
+            let descriptor = FontDescriptor::from_parts("Noto Sans", false, false);
+            let device_font =
+                Font::from_font_file(mc, descriptor, Cow::Owned(data), 0, FontType::Device)
+                    .unwrap();
             callback(mc, device_font);
         })
     }

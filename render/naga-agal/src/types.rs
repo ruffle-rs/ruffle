@@ -186,10 +186,20 @@ pub struct SamplerField {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct SamplerOverride {
+pub struct SamplerConfig {
     pub wrapping: Wrapping,
     pub filter: Filter,
     pub mipmap: Mipmap,
+}
+
+impl Default for SamplerConfig {
+    fn default() -> Self {
+        SamplerConfig {
+            wrapping: Wrapping::Clamp,
+            filter: Filter::Nearest,
+            mipmap: Mipmap::Disable,
+        }
+    }
 }
 
 impl SamplerField {

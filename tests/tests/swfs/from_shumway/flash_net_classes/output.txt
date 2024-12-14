@@ -1,0 +1,22 @@
+Simple test (no registration)
+dump: 0a1b010361040501
+is Test1: false
+a: 5
+aliastest thrown: true
+Simple test
+dump: 0a1b13616c696173746573740361040501
+is Test1: true
+a: 5
+aliastest: true
+Test with Test1/Test2 array
+dump: 090d010a1b13616c6961737465737403610405010a01040503620407010a020a1315616c69617374657374320404060a040a06
+length: 6
+[0] == [2]: true
+[0] != [1]: false
+[1] == [4]: true
+[3] == [5]: true
+[0] is Test1: true
+[5] is Test2: true
+[2].a: 5
+[4].b: 7
+[5].b: 6

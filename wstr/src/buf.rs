@@ -9,7 +9,7 @@ use core::ptr::NonNull;
 use super::utils::{encode_raw_utf16, split_ascii_prefix, split_ascii_prefix_bytes, DecodeAvmUtf8};
 use super::{ptr, Units, WStr, WStrMetadata};
 
-/// An owned, extensible UCS2 string, analoguous to `String`.
+/// An owned, extensible UCS2 string, analogous to `String`.
 pub struct WString {
     data: NonNull<()>,
     meta: WStrMetadata,
@@ -306,7 +306,7 @@ impl WString {
             }
         }
 
-        impl<'a> Drop for Guard<'a> {
+        impl Drop for Guard<'_> {
             fn drop(&mut self) {
                 // SAFETY: something has gone wrong, replace the buffer with an empty one and drop it.
                 unsafe {

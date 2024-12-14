@@ -1,5 +1,7 @@
 //! Application Domains
 
+use std::cell::Ref;
+
 use crate::avm2::activation::Activation;
 use crate::avm2::object::{ByteArrayObject, TObject};
 use crate::avm2::property_map::PropertyMap;
@@ -8,18 +10,24 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::QName;
-use gc_arena::{Collect, GcCell, Mutation};
+use crate::context::UpdateContext;
+use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
 use ruffle_wstr::WStr;
 
 use super::class::Class;
 use super::error::error;
 use super::string::AvmString;
+use super::Avm2;
 
 /// Represents a set of scripts and movies that share traits across different
 /// script-global scopes.
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
 pub struct Domain<'gc>(GcCell<'gc, DomainData<'gc>>);
+
+#[derive(Copy, Clone, Collect)]
+#[collect(no_drop)]
+pub struct DomainWeak<'gc>(GcWeakCell<'gc, DomainData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
@@ -29,7 +37,7 @@ struct DomainData<'gc> {
 
     /// A map of all Clasess defined in this domain. Used by ClassObject
     /// to perform early interface resolution.
-    classes: PropertyMap<'gc, GcCell<'gc, Class<'gc>>>,
+    classes: PropertyMap<'gc, Class<'gc>>,
 
     /// The parent domain.
     parent: Option<Domain<'gc>>,
@@ -43,6 +51,10 @@ struct DomainData<'gc> {
     pub domain_memory: Option<ByteArrayObject<'gc>>,
 
     pub default_domain_memory: Option<ByteArrayObject<'gc>>,
+
+    /// All children of this domain. This is intended exclusively for
+    /// use with `debug_ui`
+    children: Vec<DomainWeak<'gc>>,
 }
 
 const MIN_DOMAIN_MEMORY_LENGTH: usize = 1024;
@@ -57,7 +69,7 @@ impl<'gc> Domain<'gc> {
     /// You must initialize domain memory later on after the ByteArray class is
     /// instantiated but before user code runs.
     pub fn uninitialized_domain(mc: &Mutation<'gc>, parent: Option<Domain<'gc>>) -> Domain<'gc> {
-        Self(GcCell::new(
+        let domain = Self(GcCell::new(
             mc,
             DomainData {
                 defs: PropertyMap::new(),
@@ -65,12 +77,39 @@ impl<'gc> Domain<'gc> {
                 parent,
                 domain_memory: None,
                 default_domain_memory: None,
+                children: Vec::new(),
             },
-        ))
+        ));
+        if let Some(parent) = parent {
+            parent
+                .0
+                .write(mc)
+                .children
+                .push(DomainWeak(GcCell::downgrade(domain.0)));
+        }
+        domain
     }
 
-    pub fn is_playerglobals_domain(&self, activation: &mut Activation<'_, 'gc>) -> bool {
-        activation.avm2().playerglobals_domain.0.as_ptr() == self.0.as_ptr()
+    pub fn classes(&self) -> Ref<'_, PropertyMap<'gc, Class<'gc>>> {
+        Ref::map(self.0.read(), |r| &r.classes)
+    }
+
+    pub fn is_playerglobals_domain(&self, avm2: &Avm2<'gc>) -> bool {
+        avm2.playerglobals_domain.0.as_ptr() == self.0.as_ptr()
+    }
+
+    pub fn children(&self, mc: &Mutation<'gc>) -> Vec<Domain<'gc>> {
+        // Take this opportunity to clean up dead children.
+        let mut output = Vec::new();
+        self.0.write(mc).children.retain(|child| {
+            if let Some(child_cell) = GcWeakCell::upgrade(&child.0, mc) {
+                output.push(Domain(child_cell));
+                true
+            } else {
+                false
+            }
+        });
+        output
     }
 
     /// Create a new domain with a given parent.
@@ -86,10 +125,17 @@ impl<'gc> Domain<'gc> {
                 parent: Some(parent),
                 domain_memory: None,
                 default_domain_memory: None,
+                children: Vec::new(),
             },
         ));
 
         this.init_default_domain_memory(activation).unwrap();
+
+        parent
+            .0
+            .write(activation.context.gc_context)
+            .children
+            .push(DomainWeak(GcCell::downgrade(this.0)));
 
         this
     }
@@ -153,46 +199,39 @@ impl<'gc> Domain<'gc> {
         Ok(None)
     }
 
-    fn get_class_inner(
-        self,
-        multiname: &Multiname<'gc>,
-    ) -> Result<Option<GcCell<'gc, Class<'gc>>>, Error<'gc>> {
+    fn get_class_inner(self, multiname: &Multiname<'gc>) -> Option<Class<'gc>> {
         let read = self.0.read();
         if let Some(class) = read.classes.get_for_multiname(multiname).copied() {
-            return Ok(Some(class));
+            return Some(class);
         }
 
         if let Some(parent) = read.parent {
             return parent.get_class_inner(multiname);
         }
 
-        Ok(None)
+        None
     }
 
     pub fn get_class(
         self,
+        context: &mut UpdateContext<'gc>,
         multiname: &Multiname<'gc>,
-        mc: &Mutation<'gc>,
-    ) -> Result<Option<GcCell<'gc, Class<'gc>>>, Error<'gc>> {
-        let class = self.get_class_inner(multiname)?;
+    ) -> Option<Class<'gc>> {
+        let class = self.get_class_inner(multiname);
 
         if let Some(class) = class {
             if let Some(param) = multiname.param() {
-                if !param.is_any_name() {
-                    if let Some(resolved_param) = self.get_class(&param, mc)? {
-                        return Ok(Some(Class::with_type_param(
-                            class,
-                            Some(resolved_param),
-                            mc,
-                        )));
+                if let Some(param) = param {
+                    if let Some(resolved_param) = self.get_class(context, &param) {
+                        return Some(Class::with_type_param(context, class, Some(resolved_param)));
                     }
-                    return Ok(None);
+                    return None;
                 } else {
-                    return Ok(Some(Class::with_type_param(class, None, mc)));
+                    return Some(Class::with_type_param(context, class, None));
                 }
             }
         }
-        Ok(class)
+        class
     }
 
     /// Resolve a Multiname and return the script that provided it.
@@ -224,8 +263,8 @@ impl<'gc> Domain<'gc> {
         activation: &mut Activation<'_, 'gc>,
         name: QName<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let (name, mut script) = self.find_defining_script(activation, &name.into())?;
-        let globals = script.globals(&mut activation.context)?;
+        let (name, script) = self.find_defining_script(activation, &name.into())?;
+        let globals = script.globals(activation.context)?;
 
         globals.get_property(&name.into(), activation)
     }
@@ -252,13 +291,14 @@ impl<'gc> Domain<'gc> {
             ));
             name = "__AS3__.vec::Vector".into();
         }
-        let name = QName::from_qualified_name(name, activation);
+        // FIXME - is this the correct api version?
+        let api_version = activation.avm2().root_api_version;
+        let name = QName::from_qualified_name(name, api_version, activation.context);
 
         let res = self.get_defined_value(activation, name);
 
         if let Some(type_name) = type_name {
-            let type_qname = QName::from_qualified_name(type_name, activation);
-            let type_class = self.get_defined_value(activation, type_qname)?;
+            let type_class = self.get_defined_value_handling_vector(activation, type_name)?;
             if let Ok(res) = res {
                 let class = res.as_object().ok_or_else(|| {
                     Error::RustError(format!("Vector type {:?} was not an object", res).into())
@@ -292,11 +332,15 @@ impl<'gc> Domain<'gc> {
     /// Export a class into the current application domain.
     ///
     /// This does nothing if the definition already exists in this domain or a parent.
-    pub fn export_class(&self, class: GcCell<'gc, Class<'gc>>, mc: &Mutation<'gc>) {
-        if self.has_class(class.read().name()) {
+    pub fn export_class(&self, export_name: QName<'gc>, class: Class<'gc>, mc: &Mutation<'gc>) {
+        if self.has_class(export_name) {
             return;
         }
-        self.0.write(mc).classes.insert(class.read().name(), class);
+        self.0.write(mc).classes.insert(export_name, class);
+    }
+
+    pub fn defs(&self) -> Ref<PropertyMap<'gc, Script<'gc>>> {
+        Ref::map(self.0.read(), |this| &this.defs)
     }
 
     pub fn is_default_domain_memory(&self) -> bool {
@@ -353,7 +397,7 @@ impl<'gc> Domain<'gc> {
 
         let domain_memory = bytearray_class.construct(activation, &[])?;
         domain_memory
-            .as_bytearray_mut(activation.context.gc_context)
+            .as_bytearray_mut()
             .unwrap()
             .set_length(MIN_DOMAIN_MEMORY_LENGTH);
 
@@ -375,12 +419,18 @@ impl<'gc> Domain<'gc> {
 
         Ok(())
     }
+
+    pub fn as_ptr(self) -> *const DomainPtr {
+        self.0.as_ptr() as _
+    }
 }
 
-impl<'gc> PartialEq for Domain<'gc> {
+pub enum DomainPtr {}
+
+impl PartialEq for Domain<'_> {
     fn eq(&self, other: &Self) -> bool {
         self.0.as_ptr() == other.0.as_ptr()
     }
 }
 
-impl<'gc> Eq for Domain<'gc> {}
+impl Eq for Domain<'_> {}

@@ -1,14 +1,13 @@
 package {
-    [Ruffle(InstanceAllocator)]
+    [Ruffle(CustomConstructor)]
     [Ruffle(CallHandler)]
     public final class QName {
-        public static const length = 2;
-        
-        public function QName(uri:* = undefined, localName:*=undefined) {
-            this.init(uri, localName)
-        }
+        public static const length:* = 2;
 
-        private native function init(uri:*, localName:*):void;
+        public function QName(uri:* = void 0, localName:* = void 0) {
+            // The QName constructor is implemented natively:
+            // this AS-defined method does nothing
+        }
 
         public native function get localName():String;
         public native function get uri():String;

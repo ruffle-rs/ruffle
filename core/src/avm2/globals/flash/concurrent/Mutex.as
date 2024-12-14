@@ -1,4 +1,5 @@
 package flash.concurrent {
+    [API("684")]
     public final class Mutex {
         public static const isSupported: Boolean = false;
         

@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::error::{syntax_error, type_error};
 use crate::avm2::globals::array::ArrayIter;
-use crate::avm2::object::{ArrayObject, FunctionObject, Object, TObject};
+use crate::avm2::object::{ArrayObject, FunctionObject, Object, ScriptObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -18,7 +18,7 @@ use std::ops::Deref;
 fn deserialize_json_inner<'gc>(
     activation: &mut Activation<'_, 'gc>,
     json: JsonValue,
-    reviver: Option<Object<'gc>>,
+    reviver: Option<FunctionObject<'gc>>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(match json {
         JsonValue::Null => Value::Null,
@@ -33,19 +33,18 @@ fn deserialize_json_inner<'gc>(
             }
         }
         JsonValue::Object(js_obj) => {
-            let obj_class = activation.avm2().classes().object;
-            let obj = obj_class.construct(activation, &[])?;
+            let obj = ScriptObject::new_object(activation);
             for entry in js_obj.iter() {
                 let key = AvmString::new_utf8(activation.context.gc_context, entry.0);
                 let val = deserialize_json_inner(activation, entry.1.clone(), reviver)?;
                 let mapped_val = match reviver {
                     None => val,
-                    Some(reviver) => reviver.call(Value::Null, &[key.into(), val], activation)?,
+                    Some(reviver) => reviver.call(activation, Value::Null, &[key.into(), val])?,
                 };
                 if matches!(mapped_val, Value::Undefined) {
-                    obj.delete_public_property(activation, key)?;
+                    obj.delete_string_property_local(key, activation)?;
                 } else {
-                    obj.set_public_property(key, mapped_val, activation)?;
+                    obj.set_string_property_local(key, mapped_val, activation)?;
                 }
             }
             obj.into()
@@ -56,7 +55,7 @@ fn deserialize_json_inner<'gc>(
                 let val = deserialize_json_inner(activation, val.clone(), reviver)?;
                 let mapped_val = match reviver {
                     None => val,
-                    Some(reviver) => reviver.call(Value::Null, &[key.into(), val], activation)?,
+                    Some(reviver) => reviver.call(activation, Value::Null, &[key.into(), val])?,
                 };
                 arr.push(Some(mapped_val));
             }
@@ -70,12 +69,15 @@ fn deserialize_json_inner<'gc>(
 fn deserialize_json<'gc>(
     activation: &mut Activation<'_, 'gc>,
     json: JsonValue,
-    reviver: Option<Object<'gc>>,
+    reviver: Option<FunctionObject<'gc>>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let val = deserialize_json_inner(activation, json, reviver)?;
     match reviver {
         None => Ok(val),
-        Some(reviver) => reviver.call(Value::Null, &["".into(), val], activation),
+        Some(reviver) => {
+            let args = [activation.strings().empty().into(), val];
+            reviver.call(activation, Value::Null, &args)
+        }
     }
 }
 
@@ -115,10 +117,7 @@ impl<'gc> AvmSerializer<'gc> {
         key: impl Fn() -> AvmString<'gc>,
         value: Value<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let (eval_key, value) = if value.is_primitive() {
-            (None, value)
-        } else {
-            let obj = value.as_object().unwrap();
+        let (eval_key, value) = if let Some(obj) = value.as_object() {
             if obj.has_public_property("toJSON", activation) {
                 let key = key();
                 (
@@ -128,12 +127,15 @@ impl<'gc> AvmSerializer<'gc> {
             } else {
                 (None, value)
             }
+        } else {
+            (None, value)
         };
+
         if let Some(Replacer::Function(replacer)) = self.replacer {
             replacer.call(
+                activation,
                 Value::Null,
                 &[eval_key.unwrap_or_else(key).into(), value],
-                activation,
             )
         } else {
             Ok(value)
@@ -235,10 +237,7 @@ impl<'gc> AvmSerializer<'gc> {
                     )?));
                 }
                 self.obj_stack.push(obj);
-                let value = if obj.is_of_type(
-                    activation.avm2().classes().array.inner_class_definition(),
-                    &mut activation.context,
-                ) {
+                let value = if obj.is_of_type(activation.avm2().class_defs().array) {
                     // TODO: Vectors
                     self.serialize_iterable(activation, obj)?
                 } else {
@@ -258,7 +257,8 @@ impl<'gc> AvmSerializer<'gc> {
         activation: &mut Activation<'_, 'gc>,
         value: Value<'gc>,
     ) -> Result<JsonValue, Error<'gc>> {
-        let mapped = self.map_value(activation, || "".into(), value)?;
+        let empty = activation.strings().empty();
+        let mapped = self.map_value(activation, || empty, value)?;
         self.serialize_value(activation, mapped)
     }
 }
@@ -270,7 +270,9 @@ pub fn parse<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let input = args.get_string(activation, 0)?;
-    let reviver = args.try_get_object(activation, 1);
+    let reviver = args
+        .try_get_object(activation, 1)
+        .map(|o| o.as_function_object().unwrap());
 
     let parsed = if let Ok(parsed) = serde_json::from_str(&input.to_utf8_lossy()) {
         parsed
@@ -331,16 +333,15 @@ pub fn stringify<'gc>(
             };
             Some(indent_bytes)
         }
-    } else {
-        let indent_size = spaces
-            .as_number(activation.context.gc_context)
-            .unwrap_or(0.0)
-            .clamp(0.0, 10.0) as u16;
+    } else if spaces.is_number() {
+        let indent_size = spaces.as_f64().clamp(0.0, 10.0) as u16;
         if indent_size == 0 {
             None
         } else {
             Some(Cow::Owned(b" ".repeat(indent_size.into())))
         }
+    } else {
+        None
     };
 
     let mut serializer = AvmSerializer::new(replacer);

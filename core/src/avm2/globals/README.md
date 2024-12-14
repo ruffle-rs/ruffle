@@ -32,6 +32,20 @@ In addition to potential copyright issues around redistributing Flash's `playerg
 many of its classes rely on specific 'native' methods being provided
 by the Flash VM, which Ruffle does not implement.
 
+## Calling AS3 methods
+
+Under some circumstances, it may be necessarily to call a method with an explicitly-qualified AS3 namespace:
+
+```
+var xml = <accessor />;
+xml.AS3::appendChild(elem);
+```
+
+In order for this to generate efficient bytecode, you must have `namespace AS3 = "http://adobe.com/AS3/2006/builtin";` inside
+your package declaration (see `GroupElement.as` for an example). If you forget to do this, you'll get an error at compile-time:
+
+Found getlex of "AS3" in method body. Make sure you have `namespace AS3 = "http://adobe.com/AS3/2006/builtin";` in your `package` block
+
 ## Native methods
 
 We support defining native methods (instance methods, class methods, and freestanding functions)
@@ -39,7 +53,7 @@ in ActionScript classes in playerglobal. During the build process, we automatica
 generate a reference to a Rust function at the corresponding path in Ruffle.
 
 For example, the native method function `flash.system.Security.allowDomain`
-expects a Rust function to be defined at `crate::avm2::globals::flash::system::security::allowDomain`.
+expects a Rust function to be defined at `crate::avm2::globals::flash::system::security::allow_domain`.
 
 This function is cast to a `NativeMethodImpl` function pointer, exactly like
 functions defined on a pure-Rust class definition.
@@ -62,6 +76,28 @@ a class in Rust. This allocator will automatically be registered when the corres
 class is loaded.
 
 See `flash/events/Event.as` for an example
+
+## API Versioning
+
+Ruffle supports Flash's API versioning, which hides newer playerglobal definitions
+(including methods/properties) from SWFs compiled with older API versions.
+For example, see `Event.WORKER_STATE`
+
+To add versioning to an API:
+
+1. Determine the first version where it was added. This can be seen in the Flash Documentation (e.g. "Runtime Versions: Flash Player 11.4, AIR 3.4")
+2. Convert the Flash Player version to an SWF version number using [this chart](https://github.com/ruffle-rs/ruffle/wiki/SWF-version-chart)
+2. Determine the corresponding asc.jar version code for the SWF version. This can be found in avmplus in https://github.com/adobe/avmplus/blob/master/core/api-versions.as
+3. Add an `[API("VersionCode")]` metadata to the definition. In the `Event.WORKER_STATE` example,
+   this looks like:
+
+   ```actionscript
+   [API("682")]
+   public static const WORKER_STATE:String = "workerState";
+   ```
+
+   WORKER_STATE was added in Flash Player 11.4, which corresponds to SWF version 17. Looking at the avmplus file, this corresponds
+   to a version code of "682".
 
 ## Compiling
 

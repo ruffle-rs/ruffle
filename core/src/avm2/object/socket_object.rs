@@ -1,13 +1,11 @@
 use crate::avm2::bytearray::{ByteArrayError, Endian, ObjectEncoding};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
-use crate::avm2::value::Value;
 use crate::avm2::{Activation, Error};
 use crate::socket::SocketHandle;
-use gc_arena::barrier::unlock;
-use gc_arena::{lock::RefLock, Collect, Gc};
-use gc_arena::{GcWeak, Mutation};
-use std::cell::{Cell, Ref, RefCell, RefMut};
+use gc_arena::GcWeak;
+use gc_arena::{Collect, Gc};
+use std::cell::{Cell, RefCell, RefMut};
 use std::fmt;
 
 /// A class instance allocator that allocates ShaderData objects.
@@ -15,7 +13,7 @@ pub fn socket_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class).into();
+    let base = ScriptObjectData::new(class);
 
     Ok(SocketObject(Gc::new(
         activation.context.gc(),
@@ -42,20 +40,16 @@ pub struct SocketObject<'gc>(pub Gc<'gc, SocketObjectData<'gc>>);
 pub struct SocketObjectWeak<'gc>(pub GcWeak<'gc, SocketObjectData<'gc>>);
 
 impl<'gc> TObject<'gc> for SocketObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), SocketObjectData, base).borrow_mut()
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Object(Object::from(*self)))
     }
 
     fn as_socket(&self) -> Option<SocketObject<'gc>> {
@@ -199,10 +193,11 @@ impl_read!(read_float 4; f32, read_double 8; f64, read_int 4; i32, read_unsigned
 
 #[derive(Collect)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct SocketObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
-    #[collect(require_static)]
+    base: ScriptObjectData<'gc>,
+
     handle: Cell<Option<SocketHandle>>,
 
     endian: Cell<Endian>,
@@ -213,6 +208,10 @@ pub struct SocketObjectData<'gc> {
     read_buffer: RefCell<Vec<u8>>,
     write_buffer: RefCell<Vec<u8>>,
 }
+
+const _: () = assert!(std::mem::offset_of!(SocketObjectData, base) == 0);
+const _: () =
+    assert!(std::mem::align_of::<SocketObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl fmt::Debug for SocketObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

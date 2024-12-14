@@ -10,28 +10,32 @@
         "dist/"
     ],
     "scripts": {
-        "prebuild": "node tools/build_wasm.js",
+        "prebuild": "tsx tools/build_wasm.ts",
         "build": "tsc --build --force",
-        "postbuild": "node tools/set_version.js && node tools/bundle_texts.js",
+        "postbuild": "tsx tools/set_version.ts && tsx tools/bundle_texts.ts && tsx tools/bundle_css.ts",
         "docs": "typedoc",
-        "test": "cross-env TS_NODE_COMPILER_OPTIONS={\\\"module\\\":\\\"commonjs\\\",\\\"verbatimModuleSyntax\\\":false} mocha"
+        "test": "mocha",
+        "checkTypes": "tsc --noemit && tsc --noemit -p tools"
     },
     "dependencies": {
-        "jszip": "^3.10.1",
-        "wasm-feature-detect": "^1.5.1"
+        "wasm-feature-detect": "^1.8.0"
     },
     "devDependencies": {
         "@fluent/bundle": "^0.18.0",
         "@fluent/langneg": "^0.7.0",
-        "@tsconfig/strictest": "^2.0.2",
-        "@types/mocha": "^10.0.2",
-        "eslint": "^8.50.0",
-        "eslint-plugin-jsdoc": "^46.8.2",
-        "mocha": "^10.2.0",
-        "replace-in-file": "^7.0.1",
-        "ts-node": "^10.9.1",
-        "typedoc": "^0.25.1",
-        "typescript": "^5.2.2"
+        "@tsconfig/strictest": "^2.0.5",
+        "@types/mocha": "^10.0.10",
+        "autoprefixer": "^10.4.20",
+        "cssnano": "^7.0.6",
+        "cssnano-preset-advanced": "^7.0.6",
+        "mocha": "^11.0.1",
+        "postcss": "^8.4.49",
+        "postcss-nesting": "^13.0.1",
+        "replace-in-file": "^8.2.0",
+        "tsx": "^4.19.2",
+        "tsx-dom": "^3.0.1",
+        "typedoc": "^0.27.4",
+        "typescript": "^5.7.2"
     },
     "sideEffects": false
 }

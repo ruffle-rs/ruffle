@@ -78,7 +78,7 @@ Test 3
 http://localhost:8000
 
 // request.data
-aaa=bbb&cccc=true
+cccc=true&aaa=bbb
 
 // request.method
 POST
@@ -96,7 +96,7 @@ MyHeader4: MyVal4
 ANewHeader: MyVal4
 SomeHeader: MyVal4
   Mime-Type: application/x-www-form-urlencoded
-  Body: aaa=bbb&cccc=true
+  Body: cccc=true&aaa=bbb
 
 Test 4
 // request.url

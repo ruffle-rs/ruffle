@@ -1,0 +1,9 @@
+These fonts are licensed under the Apache License, Version 2.0. 
+- tinos.ttf
+- tinos-bold.ttf
+
+Source: fonts.google.com/specimen/Tinos/
+
+Subset via `pyftsubset tinos.ttf --unicodes=0A-7E`
+
+

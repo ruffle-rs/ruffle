@@ -2,7 +2,7 @@ use crate::avm2::{
     Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
 };
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
+use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
 use crate::font::TextRenderSettings;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
@@ -38,7 +38,7 @@ pub struct TextData<'gc> {
 
 impl<'gc> Text<'gc> {
     pub fn from_swf_tag(
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         swf: Arc<SwfMovie>,
         tag: &swf::Text,
     ) -> Self {
@@ -93,7 +93,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         self.0.read().static_data.swf.clone()
     }
 
-    fn replace_with(&self, context: &mut UpdateContext<'_, 'gc>, id: CharacterId) {
+    fn replace_with(&self, context: &mut UpdateContext<'gc>, id: CharacterId) {
         if let Some(new_text) = context
             .library
             .library_for_movie_mut(self.movie())
@@ -171,7 +171,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
 
     fn hit_test_shape(
         &self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         mut point: Point<Twips>,
         options: HitTestOptions,
     ) -> bool {
@@ -238,18 +238,18 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
 
     fn post_instantiation(
         &self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         _init_object: Option<crate::avm1::Object<'gc>>,
         _instantiated_by: Instantiator,
         _run_frame: bool,
     ) {
-        if context.is_action_script_3() {
+        if self.movie().is_action_script_3() {
             let domain = context
                 .library
                 .library_for_movie(self.movie())
                 .unwrap()
                 .avm2_domain();
-            let mut activation = Avm2Activation::from_domain(context.reborrow(), domain);
+            let mut activation = Avm2Activation::from_domain(context, domain);
             let statictext = activation.avm2().classes().statictext;
             match Avm2StageObject::for_display_object_childless(
                 &mut activation,
@@ -274,7 +274,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(&self, context: &mut UpdateContext<'_, 'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
         self.0.write(context.gc_context).avm2_object = Some(to);
     }
 }

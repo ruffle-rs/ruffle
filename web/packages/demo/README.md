@@ -17,7 +17,7 @@ After [building ruffle-web](https://github.com/ruffle-rs/ruffle/blob/master/web/
 you can run `npm run demo` in the `web` folder to launch the demo.
 
 It will start a local web server and print the address in the console.
-Navigate to that website (usually [http://localhost:8080](http://localhost:8080)) in your browser.
+Navigate to that website (usually [http://localhost:4173](http://localhost:4173)) in your browser.
 
 ### Configuring the demo
 

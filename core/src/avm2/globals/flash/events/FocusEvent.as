@@ -31,6 +31,7 @@ package flash.events
         public var keyCode: uint;
 
         // Specifies direction of focus for a focusIn event.
+        [API("661")]
         public var direction: String;
 
         // If true, the relatedObject property is set to null for reasons related to security sandboxes.

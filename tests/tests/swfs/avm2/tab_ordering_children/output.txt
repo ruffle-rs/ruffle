@@ -1,0 +1,116 @@
+Tab pressed
+Focus changed at text2: text1 -> text2
+Tab pressed
+Focus changed at text3: text2 -> text3
+Focus changed at clipOuter: text2 -> text3
+Tab pressed
+Focus changed at text4: text3 -> text4
+Focus changed at clipOuter: text3 -> text4
+Tab pressed
+Focus changed at text5: text4 -> text5
+Focus changed at clipInner: text4 -> text5
+Focus changed at clipOuter: text4 -> text5
+Tab pressed
+Focus changed at text6: text5 -> text6
+Focus changed at clipInner: text5 -> text6
+Focus changed at clipOuter: text5 -> text6
+Tab pressed
+Focus changed at text1: text6 -> text1
+===== Escape pressed, moving to stage 1
+Tab pressed
+Focus changed at text2: text1 -> text2
+Tab pressed
+Focus changed at text3: text2 -> text3
+Focus changed at clipOuter: text2 -> text3
+Tab pressed
+Focus changed at text4: text3 -> text4
+Focus changed at clipOuter: text3 -> text4
+Tab pressed
+Focus changed at text5: text4 -> text5
+Focus changed at clipInner: text4 -> text5
+Focus changed at clipOuter: text4 -> text5
+Tab pressed
+Focus changed at text6: text5 -> text6
+Focus changed at clipInner: text5 -> text6
+Focus changed at clipOuter: text5 -> text6
+Tab pressed
+Focus changed at text1: text6 -> text1
+===== Escape pressed, moving to stage 2
+Tab pressed
+Focus changed at text2: text1 -> text2
+Tab pressed
+Focus changed at text1: text2 -> text1
+Tab pressed
+Focus changed at text2: text1 -> text2
+Tab pressed
+Focus changed at text1: text2 -> text1
+Tab pressed
+Focus changed at text2: text1 -> text2
+Tab pressed
+Focus changed at text1: text2 -> text1
+===== Escape pressed, moving to stage 3
+Tab pressed
+Focus changed at text2: text1 -> text2
+Tab pressed
+Focus changed at text3: text2 -> text3
+Focus changed at clipOuter: text2 -> text3
+Tab pressed
+Focus changed at text4: text3 -> text4
+Focus changed at clipOuter: text3 -> text4
+Tab pressed
+Focus changed at text1: text4 -> text1
+Tab pressed
+Focus changed at text2: text1 -> text2
+Tab pressed
+Focus changed at text3: text2 -> text3
+Focus changed at clipOuter: text2 -> text3
+===== Escape pressed, moving to stage 4
+Tab pressed
+Focus changed at text1: text3 -> text1
+Tab pressed
+Focus changed at text2: text1 -> text2
+Tab pressed
+Focus changed at text1: text2 -> text1
+Tab pressed
+Focus changed at text2: text1 -> text2
+Tab pressed
+Focus changed at text1: text2 -> text1
+Tab pressed
+Focus changed at text2: text1 -> text2
+===== Escape pressed, moving to stage 5
+Tab pressed
+Focus changed at clipOuter: text2 -> clipOuter
+Tab pressed
+Focus changed at text1: clipOuter -> text1
+Tab pressed
+Focus changed at text2: text1 -> text2
+Tab pressed
+Focus changed at clipOuter: text2 -> clipOuter
+Tab pressed
+Focus changed at text1: clipOuter -> text1
+Tab pressed
+Focus changed at text2: text1 -> text2
+===== Escape pressed, moving to stage 6
+Tab pressed
+Focus changed at text1: text2 -> text1
+Tab pressed
+Tab pressed
+Tab pressed
+Tab pressed
+Tab pressed
+===== Escape pressed, moving to stage 7
+Tab pressed
+Focus changed at text3: text1 -> text3
+Focus changed at clipOuter: text1 -> text3
+Tab pressed
+Focus changed at text1: text3 -> text1
+Tab pressed
+Focus changed at text3: text1 -> text3
+Focus changed at clipOuter: text1 -> text3
+Tab pressed
+Focus changed at text1: text3 -> text1
+Tab pressed
+Focus changed at text3: text1 -> text3
+Focus changed at clipOuter: text1 -> text3
+Tab pressed
+Focus changed at text1: text3 -> text1

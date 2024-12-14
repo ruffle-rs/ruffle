@@ -7,9 +7,8 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, Value};
-use crate::context::GcContext;
 use crate::display_object::StageDisplayState;
-use crate::string::{AvmString, WStr, WString};
+use crate::string::{AvmString, StringContext, WStr, WString};
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "align" => property(align, set_align);
@@ -21,7 +20,7 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
 };
 
 pub fn create_stage_object<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     array_proto: Object<'gc>,
     fn_proto: Object<'gc>,
@@ -75,7 +74,7 @@ fn set_align<'gc>(
     activation
         .context
         .stage
-        .set_align(&mut activation.context, align);
+        .set_align(activation.context, align);
     Ok(Value::Undefined)
 }
 
@@ -113,7 +112,7 @@ fn set_scale_mode<'gc>(
     activation
         .context
         .stage
-        .set_scale_mode(&mut activation.context, scale_mode);
+        .set_scale_mode(activation.context, scale_mode, true);
     Ok(Value::Undefined)
 }
 
@@ -143,12 +142,12 @@ fn set_display_state<'gc>(
         activation
             .context
             .stage
-            .set_display_state(&mut activation.context, StageDisplayState::FullScreen);
+            .set_display_state(activation.context, StageDisplayState::FullScreen);
     } else if display_state.eq_ignore_case(WStr::from_units(b"normal")) {
         activation
             .context
             .stage
-            .set_display_state(&mut activation.context, StageDisplayState::Normal);
+            .set_display_state(activation.context, StageDisplayState::Normal);
     }
 
     Ok(Value::Undefined)
@@ -175,7 +174,7 @@ fn set_show_menu<'gc>(
     activation
         .context
         .stage
-        .set_show_menu(&mut activation.context, show_menu);
+        .set_show_menu(activation.context, show_menu);
     Ok(Value::Undefined)
 }
 

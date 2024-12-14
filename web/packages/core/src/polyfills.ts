@@ -1,8 +1,8 @@
-import { RuffleObject } from "./ruffle-object";
-import { RuffleEmbed } from "./ruffle-embed";
+import { RuffleObjectElement } from "./internal/player/ruffle-object-element";
+import { RuffleEmbedElement } from "./internal/player/ruffle-embed-element";
 import { installPlugin, FLASH_PLUGIN } from "./plugin-polyfill";
 import { publicPath } from "./public-path";
-import type { DataLoadOptions, URLLoadOptions } from "./load-options";
+import type { DataLoadOptions, URLLoadOptions } from "./public/config";
 import { isExtension } from "./current-script";
 
 const globalConfig: DataLoadOptions | URLLoadOptions | object =
@@ -30,7 +30,7 @@ function isFlashEnabledBrowser(): boolean {
     if ("favorFlash" in globalConfig && globalConfig["favorFlash"] === false) {
         return false;
     }
-    // Otherwise, check for pre-exisiting Flash support.
+    // Otherwise, check for pre-existing Flash support.
     return (
         (navigator.plugins.namedItem("Shockwave Flash")?.filename ??
             "ruffle.js") !== "ruffle.js"
@@ -48,14 +48,16 @@ function polyfillFlashInstances(): void {
 
         // Replace <object> first, because <object> often wraps <embed>.
         for (const elem of Array.from(objects)) {
-            if (RuffleObject.isInterdictable(elem)) {
-                const ruffleObject = RuffleObject.fromNativeObjectElement(elem);
+            if (RuffleObjectElement.isInterdictable(elem)) {
+                const ruffleObject =
+                    RuffleObjectElement.fromNativeObjectElement(elem);
                 elem.replaceWith(ruffleObject);
             }
         }
         for (const elem of Array.from(embeds)) {
-            if (RuffleEmbed.isInterdictable(elem)) {
-                const ruffleEmbed = RuffleEmbed.fromNativeEmbedElement(elem);
+            if (RuffleEmbedElement.isInterdictable(elem)) {
+                const ruffleEmbed =
+                    RuffleEmbedElement.fromNativeEmbedElement(elem);
                 elem.replaceWith(ruffleEmbed);
             }
         }
@@ -211,9 +213,7 @@ function initMutationObserver(): void {
  * Polyfills the detection of Flash plugins in the browser.
  */
 export function pluginPolyfill(): void {
-    if (!isFlashEnabledBrowser()) {
-        installPlugin(FLASH_PLUGIN);
-    }
+    installPlugin(FLASH_PLUGIN);
 }
 
 /**

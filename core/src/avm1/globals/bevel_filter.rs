@@ -4,8 +4,7 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
-use crate::context::GcContext;
-use crate::string::{AvmString, WStr};
+use crate::string::{AvmString, StringContext, WStr};
 use gc_arena::{Collect, GcCell, Mutation};
 use std::ops::Deref;
 use swf::{BevelFilterFlags, Color, Fixed16, Fixed8, GradientFilterFlags};
@@ -163,7 +162,7 @@ impl BevelFilterData {
     }
 }
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
 #[repr(transparent)]
 pub struct BevelFilter<'gc>(GcCell<'gc, BevelFilterData>);
@@ -239,8 +238,9 @@ impl<'gc> BevelFilter<'gc> {
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
-            let color = Color::from_rgb(value.coerce_to_u32(activation)?, 0);
-            self.0.write(activation.context.gc_context).highlight = color;
+            let value = value.coerce_to_u32(activation)?;
+            let mut write = self.0.write(activation.context.gc_context);
+            write.highlight = Color::from_rgb(value, write.highlight.a);
         }
         Ok(())
     }
@@ -271,8 +271,9 @@ impl<'gc> BevelFilter<'gc> {
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
-            let color = Color::from_rgb(value.coerce_to_u32(activation)?, 0);
-            self.0.write(activation.context.gc_context).shadow = color;
+            let value = value.coerce_to_u32(activation)?;
+            let mut write = self.0.write(activation.context.gc_context);
+            write.shadow = Color::from_rgb(value, write.shadow.a);
         }
         Ok(())
     }
@@ -531,7 +532,7 @@ fn method<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
@@ -541,7 +542,7 @@ pub fn create_proto<'gc>(
 }
 
 pub fn create_constructor<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

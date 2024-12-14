@@ -62,9 +62,11 @@ pub fn do_copy<'gc>(
             return Ok(());
         }
     };
-    texture
-        .context3d()
-        .copy_bitmapdata_to_texture(bitmap_data.sync(), texture.handle(), side);
+    texture.context3d().copy_bitmapdata_to_texture(
+        bitmap_data.sync(activation.context.renderer),
+        texture.handle(),
+        side,
+    );
     Ok(())
 }
 
@@ -90,7 +92,7 @@ pub fn upload_compressed_texture_from_byte_array_internal<'gc>(
         return Ok(Value::Undefined);
     }
 
-    do_compressed_upload(texture, data, byte_array_offset, false)?;
+    do_compressed_upload(activation, texture, data, byte_array_offset, false)?;
 
     Ok(Value::Undefined)
 }
@@ -115,12 +117,16 @@ pub fn upload_from_bitmap_data<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(texture) = this.as_texture() {
-        if let Some(source) = args[0].coerce_to_object(activation)?.as_bitmap_data() {
+        let source_obj = args.get_object(activation, 0, "source")?;
+
+        if let Some(source) = source_obj.as_bitmap_data() {
             let mip_level = args[1].coerce_to_u32(activation)?;
             if mip_level == 0 {
-                texture
-                    .context3d()
-                    .copy_bitmapdata_to_texture(source.sync(), texture.handle(), 0);
+                texture.context3d().copy_bitmapdata_to_texture(
+                    source.sync(activation.context.renderer),
+                    texture.handle(),
+                    0,
+                );
             } else {
                 avm2_stub_method!(
                     activation,

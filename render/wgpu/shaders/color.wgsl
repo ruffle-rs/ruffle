@@ -1,6 +1,6 @@
 /// Shader used for drawing solid color fills.
 
-#import common
+// NOTE: The `common.wgsl` source is prepended to this before compilation.
 
 struct VertexInput {
     @location(0) position: vec2<f32>,
@@ -12,21 +12,12 @@ struct VertexOutput {
     @location(0) color: vec4<f32>,
 };
 
-#if use_push_constants == true
-    var<push_constant> pc: common::PushConstants;
-#else
-    @group(1) @binding(0) var<uniform> transforms: common::Transforms;
-    @group(2) @binding(0) var<uniform> colorTransforms: common::ColorTransforms;
-#endif
+@group(1) @binding(0) var<uniform> transforms: common__Transforms;
 
 @vertex
 fn main_vertex(in: VertexInput) -> VertexOutput {
-    #if use_push_constants == true
-        var transforms = pc.transforms;
-        var colorTransforms = pc.colorTransforms;
-    #endif
-    let pos = common::globals.view_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
-    let color = saturate(in.color * colorTransforms.mult_color + colorTransforms.add_color);
+    let pos = common__globals.view_matrix * transforms.world_matrix * vec4<f32>(in.position.x, in.position.y, 0.0, 1.0);
+    let color = saturate(in.color * transforms.mult_color + transforms.add_color);
     return VertexOutput(pos, vec4<f32>(color.rgb * color.a, color.a));
 }
 

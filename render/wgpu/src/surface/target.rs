@@ -288,7 +288,6 @@ impl CommandTarget {
                     descriptors,
                     format,
                     format,
-                    size,
                     frame_buffer.texture.view(),
                     &texture.create_view(&Default::default()),
                     get_whole_frame_bind_group(&whole_frame_bind_group, descriptors, size),
@@ -338,7 +337,7 @@ impl CommandTarget {
             encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: create_debug_label!("Clearing command target").as_deref(),
                 color_attachments: &[self.color_attachments()],
-                depth_stencil_attachment: None,
+                ..Default::default()
             });
         }
     }
@@ -367,7 +366,10 @@ impl CommandTarget {
         Some(wgpu::RenderPassColorAttachment {
             view: self.frame_buffer.view(),
             resolve_target: self.resolve_buffer.as_ref().map(|b| b.view()),
-            ops: wgpu::Operations { load, store: true },
+            ops: wgpu::Operations {
+                load,
+                store: wgpu::StoreOp::Store,
+            },
         })
     }
 
@@ -393,7 +395,7 @@ impl CommandTarget {
                 } else {
                     wgpu::LoadOp::Load
                 },
-                store: true,
+                store: wgpu::StoreOp::Store,
             }),
         })
     }
@@ -467,6 +469,8 @@ fn get_whole_frame_bind_group<'a>(
                     [0.0, 0.0, 1.0, 0.0],
                     [0.0, 0.0, 0.0, 1.0],
                 ],
+                mult_color: [1.0, 1.0, 1.0, 1.0],
+                add_color: [0.0, 0.0, 0.0, 0.0],
             };
             let transforms_buffer = create_buffer_with_data(
                 &descriptors.device,

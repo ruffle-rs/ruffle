@@ -1,12 +1,15 @@
 package flash.events
 {
+    [API("667")]
     public class PressAndTapGestureEvent extends GestureEvent
     {
         public static const GESTURE_PRESS_AND_TAP : String = "gesturePressAndTap";
 
+        [Ruffle(InternalSlot)]
         private var _tapLocalX: Number;
-        private var _tapLocalY: Number;
 
+        [Ruffle(InternalSlot)]
+        private var _tapLocalY: Number;
 
         public function PressAndTapGestureEvent(type:String, bubbles:Boolean = true, cancelable:Boolean = false, phase:String = null,
                                                 localX:Number = 0, localY:Number = 0, tapLocalX:Number = 0, tapLocalY:Number = 0,

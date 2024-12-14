@@ -18,7 +18,7 @@ pub fn init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mut regexp) = this.as_regexp_mut(activation.context.gc_context) {
         let source: AvmString<'gc> = match args.get(0) {
-            Some(Value::Undefined) => "".into(),
+            Some(Value::Undefined) => activation.strings().empty(),
             Some(Value::Object(Object::RegExpObject(o))) => {
                 if !matches!(args.get(1), Some(Value::Undefined)) {
                     return Err(Error::AvmError(type_error(
@@ -32,18 +32,15 @@ pub fn init<'gc>(
                 regexp.set_flags(other.flags());
                 return Ok(Value::Undefined);
             }
-            arg => arg
-                .unwrap_or(&Value::String("".into()))
-                .coerce_to_string(activation)?,
+            Some(arg) => arg.coerce_to_string(activation)?,
+            None => activation.strings().empty(),
         };
 
         regexp.set_source(source);
 
         let flag_chars = match args.get(1) {
-            Some(Value::Undefined) => "".into(),
-            arg => arg
-                .unwrap_or(&Value::String("".into()))
-                .coerce_to_string(activation)?,
+            None | Some(Value::Undefined) => activation.strings().empty(),
+            Some(arg) => arg.coerce_to_string(activation)?,
         };
 
         let mut flags = RegExpFlags::empty();
@@ -69,7 +66,7 @@ pub fn call_handler<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this_class = activation.subclass_object().unwrap();
+    let this_class = activation.avm2().classes().regexp;
 
     if args.len() == 1 {
         let arg = args.get(0).cloned().unwrap();
@@ -77,7 +74,7 @@ pub fn call_handler<'gc>(
             return Ok(arg);
         }
     }
-    return this_class.construct(activation, args).map(|o| o.into());
+    this_class.construct(activation, args).map(|o| o.into())
 }
 
 /// Implements `RegExp.dotall`

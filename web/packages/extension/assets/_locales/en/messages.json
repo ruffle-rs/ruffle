@@ -9,7 +9,10 @@
         "message": "Show SWF download in context menu"
     },
     "settings_autostart": {
-        "message": "Play automatically without splash screen (then click to unmute)"
+        "message": "Autoplay Flash content (click to unmute)"
+    },
+    "settings_swf_takeover": {
+        "message": "Play SWF files in browser instead of downloading"
     },
     "settings_log_level": {
         "message": "Log level"
@@ -57,25 +60,25 @@
         "message": "Checking Ruffle status on current tab…"
     },
     "status_result_running": {
-        "message": "Ruffle is loaded and ready to run Flash content on the current tab."
+        "message": "Ruffle is ready to run Flash content in the current tab."
     },
     "status_result_running_protected": {
-        "message": "Ruffle is loaded and running the Flash content that you requested."
+        "message": "Ruffle is ready to run the Flash content that you request."
     },
     "status_result_optout": {
-        "message": "Ruffle is not loaded because the current page has marked itself as incompatible."
+        "message": "Ruffle cannot load because the current website marked itself as incompatible."
     },
     "status_result_disabled": {
-        "message": "Ruffle is not loaded because it is disabled."
+        "message": "Ruffle is disabled."
     },
     "status_result_error": {
-        "message": "An error occurred when querying the current tab's instance of Ruffle."
+        "message": "An error occurred while querying the current page's Ruffle instance."
     },
     "status_result_protected": {
-        "message": "Ruffle cannot load on protected browser pages."
+        "message": "Ruffle cannot load in protected browser pages."
     },
     "action_reload": {
-        "message": "Reload tab to apply changes"
+        "message": "Reload Tab to Apply Changes"
     },
     "open_player_page": {
         "message": "Open SWF Player"
@@ -94,5 +97,23 @@
     },
     "settings_saved": {
         "message": "Settings Saved"
+    },
+    "onboarding_page": {
+        "message": "Onboarding Page"
+    },
+    "permissions_grant": {
+        "message": "Grant Ruffle permission to access my data on all sites"
+    },
+    "permissions_not_granted": {
+        "message": "You will need to click the Ruffle icon on every site on which you want to use Ruffle"
+    },
+    "grant_single_site_permission": {
+        "message": "Permanently enable for this site"
+    },
+    "permissions_explanation": {
+        "message": "The Ruffle extension works best with the ability to access data on all websites. This allows it to run when any website first loads, therefore allowing it to convince websites that do Flash Player detection immediately to let the Flash content run. It also gives it the ability to load SWF files into its internal player page from other locations on the web and allows it to automatically load direct SWF links into that page. If you do not grant this permission, you will need to enable Ruffle manually on every website on which you wish to use it by clicking the icon for the extension and enabling it for that website."
+    },
+    "swf_player_permissions": {
+        "message": "You must grant permission to this URL origin to load SWFs from it."
     }
 }

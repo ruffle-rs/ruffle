@@ -9,8 +9,6 @@
 
 #[cfg(feature = "flate2")]
 extern crate flate2;
-#[cfg(feature = "libflate")]
-extern crate libflate;
 #[macro_use]
 extern crate num_derive;
 extern crate num_traits;

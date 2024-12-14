@@ -1,0 +1,48 @@
+Calling Main super()
+Called Main super()
+Main frame constructed: [Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Running goto
+Calling MyContainer super: this.getChildAt(0) = null
+Calling MyChild myOtherChild super()
+Called MyChild myOtherChild super()
+Calling MyChild otherChild super()
+Called MyChild otherChild super()
+Main frame constructed: [Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+MyContainer frameConstructed: this.myButton = undefined button = [object MyChild] button.visible = true
+Root framescript 2: this.getChildAt(0)["myButton"] = [object MyButton]
+Root framescript 2: this.getChildAt(0)["otherChild"] = [object MyChild]
+Root framescript 2: this.getChildAt(0)["myOtherButton"] = undefined
+Root framescript 2: this.getChildAt(0)["myOtherChild"] = [object MyChild]
+Root framescript 2: this.getChildAt(0)["dumbButton"] = undefined
+Running MyContainer framescript: this.myButton = [object MyButton] this.otherChild = [object MyChild] this.myOtherButton = undefined this.myOtherChild = [object MyChild] this.dumbButton = undefined
+Child framescript 1: myField = 0
+Child After set: myField = 2
+Child framescript 1: myField = 0
+Child After set: myField = 2
+Main exit frame: [Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Calling MyButton myButton super(): this.parent["myButton"] = [object MyButton]
+Called MyButton myButton super(): this.parent["myButton"] = [object MyButton]
+Main frame constructed: [Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+MyContainer frameConstructed: this.myButton = undefined button = [object MyChild] button.visible = true
+Main exit frame: [Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Calling MyButton myOtherButton super(): this.parent["myButton"] = [object MyButton]
+Called MyButton myOtherButton super(): this.parent["myButton"] = [object MyButton]
+Called MyContainer super: this.getChildAt(0) = [object MyChild] this.myButton = [object MyButton]
+Main frame constructed: [Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+MyContainer frameConstructed: this.myButton = undefined button = [object MyChild] button.visible = true
+Main exit frame: [Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Main exit frame: [Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Main enter frame: [Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+Main frame constructed: [Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+MyContainer frameConstructed: this.myButton = undefined button = [object MyChild] button.visible = true
+Child framescript 2
+Child framescript 2
+Main exit frame: [Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Main enter frame: [Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+Main frame constructed: [Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+MyContainer frameConstructed: this.myButton = undefined button = [object MyChild] button.visible = true
+Child framescript 1: myField = 2
+Child After set: myField = 2
+Child framescript 1: myField = 2
+Child After set: myField = 2
+Main exit frame: [Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]

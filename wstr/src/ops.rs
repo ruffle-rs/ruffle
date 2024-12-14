@@ -12,7 +12,7 @@ pub struct Iter<'a> {
     inner: Units<SliceIter<'a, u8>, SliceIter<'a, u16>>,
 }
 
-impl<'a> Iterator for Iter<'a> {
+impl Iterator for Iter<'_> {
     type Item = u16;
 
     #[inline]
@@ -24,7 +24,7 @@ impl<'a> Iterator for Iter<'a> {
     }
 }
 
-impl<'a> DoubleEndedIterator for Iter<'a> {
+impl DoubleEndedIterator for Iter<'_> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         match &mut self.inner {
@@ -41,7 +41,7 @@ pub struct CharIndices<'a> {
     start: usize,
 }
 
-impl<'a> Iterator for CharIndices<'a> {
+impl Iterator for CharIndices<'_> {
     type Item = (usize, Result<char, core::char::DecodeUtf16Error>);
 
     #[inline]
@@ -209,6 +209,23 @@ pub fn str_make_ascii_lowercase(s: &mut WStr) {
             for c in us {
                 if let Ok(b) = u8::try_from(*c) {
                     *c = b.to_ascii_lowercase().into();
+                }
+            }
+        }
+    }
+}
+
+pub fn str_to_ascii_uppercase(s: &WStr) -> WString {
+    map_latin1_chars(s, |c| c.to_ascii_uppercase())
+}
+
+pub fn str_make_ascii_uppercase(s: &mut WStr) {
+    match s.units_mut() {
+        Units::Bytes(us) => us.make_ascii_uppercase(),
+        Units::Wide(us) => {
+            for c in us {
+                if let Ok(b) = u8::try_from(*c) {
+                    *c = b.to_ascii_uppercase().into();
                 }
             }
         }
@@ -460,6 +477,47 @@ impl<'a> WStrToUtf8<'a> {
             write!(out, "{}", self.tail).unwrap();
             Cow::Owned(out)
         }
+    }
+
+    /// Map the given UTF-16 code unit index to its corresponding UTF-8 code unit index.
+    pub fn utf8_index(&self, utf16_index: usize) -> Option<usize> {
+        self.translate_index(utf16_index, false)
+            .map(|(utf8_index, _)| utf8_index)
+    }
+
+    /// Map the given UTF-8 code unit index to its corresponding UTF-16 code unit index.
+    pub fn utf16_index(&self, utf8_index: usize) -> Option<usize> {
+        self.translate_index(utf8_index, true)
+            .map(|(_, utf16_index)| utf16_index)
+    }
+
+    fn translate_index(&self, index: usize, is_utf8: bool) -> Option<(usize, usize)> {
+        let ascii_prefix_len = self.head.len();
+        if index <= ascii_prefix_len {
+            return Some((index, index));
+        }
+
+        if self.tail.is_empty() {
+            return None;
+        }
+
+        let mut utf8_tail_pos = 0;
+        let mut utf16_tail_pos = 0;
+
+        while if is_utf8 {
+            utf8_tail_pos + ascii_prefix_len < index
+        } else {
+            utf16_tail_pos + ascii_prefix_len < index
+        } {
+            let c = self.tail[utf16_tail_pos..].chars().next()?.ok()?;
+            utf8_tail_pos += c.len_utf8();
+            utf16_tail_pos += c.len_utf16();
+        }
+
+        Some((
+            ascii_prefix_len + utf8_tail_pos,
+            ascii_prefix_len + utf16_tail_pos,
+        ))
     }
 
     #[inline]

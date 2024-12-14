@@ -1,0 +1,25 @@
+button.onKeyDown: 13
+Enter pressed
+keyPress 2 enter
+button.onKeyUp: 13
+button.onKeyDown: 32
+Space pressed
+press 1
+button.onPress: 32
+release 1
+button.onRelease: 32
+button.onKeyUp: 32
+button.onKeyDown: 9
+Tab pressed
+button2.onKeyUp: 9
+button2.onKeyDown: 13
+Enter pressed
+keyPress 2 enter
+button2.onKeyUp: 13
+button2.onKeyDown: 32
+Space pressed
+press 2
+button2.onPress: 32
+release 2
+button2.onRelease: 32
+button2.onKeyUp: 32

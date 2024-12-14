@@ -13,13 +13,13 @@ package flash.ui
     public final class MouseCursorData
     {
         // A Vector of BitmapData objects containing the cursor image or images.
-        public var _data: Vector.<BitmapData>;
+        private var _data: Vector.<BitmapData>;
 
         // The frame rate for animating the cursor.
-        public var _frameRate: Number;
+        private var _frameRate: Number;
 
         // The hot spot of the cursor in pixels.
-        public var _hotSpot: Point = new Point(0,0);
+        private var _hotSpot: Point = new Point(0,0);
 
         public function get data():Vector.<BitmapData>
         {

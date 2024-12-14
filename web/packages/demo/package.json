@@ -4,16 +4,24 @@
     "description": "Demo of Ruffle Flash emulator",
     "license": "(MIT OR Apache-2.0)",
     "private": true,
+    "type": "module",
     "scripts": {
-        "build": "webpack",
-        "start": "webpack serve"
+        "dev": "vite",
+        "build": "tsc && vite build",
+        "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+        "preview": "vite preview",
+        "checkTypes": "tsc --noemit"
     },
     "dependencies": {
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
         "ruffle-core": "^0.1.0"
     },
     "devDependencies": {
-        "css-loader": "^6.8.1",
-        "style-loader": "^3.3.3",
-        "webpack-cli": "^5.1.4"
+        "@types/react": "^19.0.1",
+        "@types/react-dom": "^19.0.2",
+        "@vitejs/plugin-react": "^4.3.4",
+        "typescript": "^5.7.2",
+        "vite": "^6.0.3"
     }
 }

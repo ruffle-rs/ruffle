@@ -1,0 +1,7 @@
+New
+before gotoAndStop
+Test is inaccessible in frame 1: ReferenceError: Error #1065: Variable Test is not defined.
+C
+Z
+B
+after gotoAndStop

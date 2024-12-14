@@ -1,38 +1,20 @@
+use crate::avm2::globals::slots::flash_geom_color_transform as ct_slots;
+use crate::avm2::globals::slots::flash_geom_matrix as matrix_slots;
+use crate::avm2::globals::slots::flash_geom_transform as transform_slots;
 use crate::avm2::parameters::ParametersExt;
-use crate::avm2::Multiname;
 use crate::avm2::{Activation, Error, Object, TObject, Value};
-use crate::avm2_stub_getter;
 use crate::display_object::TDisplayObject;
 use crate::prelude::{DisplayObject, Matrix, Twips};
+use crate::{avm2_stub_getter, avm2_stub_setter};
 use ruffle_render::quality::StageQuality;
 use swf::{ColorTransform, Fixed8, Rectangle};
 
-fn get_display_object<'gc>(
-    this: Object<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-) -> Result<DisplayObject<'gc>, Error<'gc>> {
-    Ok(this
-        .get_property(
-            &Multiname::new(activation.avm2().flash_geom_internal, "_displayObject"),
-            activation,
-        )?
+fn get_display_object(this: Object<'_>) -> DisplayObject<'_> {
+    this.get_slot(transform_slots::DISPLAY_OBJECT)
         .as_object()
         .unwrap()
         .as_display_object()
-        .unwrap())
-}
-
-pub fn init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    this.set_property(
-        &Multiname::new(activation.avm2().flash_geom_internal, "_displayObject"),
-        args.get_value(0),
-        activation,
-    )?;
-    Ok(Value::Undefined)
+        .unwrap()
 }
 
 pub fn get_color_transform<'gc>(
@@ -40,9 +22,8 @@ pub fn get_color_transform<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let display_object = get_display_object(this, activation)?;
-    let display_object = display_object.base();
-    color_transform_to_object(display_object.color_transform(), activation)
+    let color_transform = color_transform_from_transform_object(this);
+    color_transform_to_object(&color_transform, activation)
 }
 
 pub fn set_color_transform<'gc>(
@@ -50,8 +31,11 @@ pub fn set_color_transform<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let ct = object_to_color_transform(args.get_object(activation, 0, "value")?, activation)?;
-    let dobj = get_display_object(this, activation)?;
+    let ct = object_to_color_transform(
+        args.get_object(activation, 0, "colorTransform")?,
+        activation,
+    )?;
+    let dobj = get_display_object(this);
     dobj.set_color_transform(activation.context.gc_context, ct);
     if let Some(parent) = dobj.parent() {
         parent.invalidate_cached_bitmap(activation.context.gc_context);
@@ -64,7 +48,7 @@ pub fn get_matrix<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let matrix = *get_display_object(this, activation)?.base().matrix();
+    let matrix = matrix_from_transform_object(this);
     matrix_to_object(matrix, activation)
 }
 
@@ -73,8 +57,11 @@ pub fn set_matrix<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    // TODO: Despite what the docs say, FP accepts a null matrix here, and returns
+    // null when trying to get the matrix- but the DO's actual transform matrix will
+    // remain its previous non-null value.
     let matrix = object_to_matrix(args.get_object(activation, 0, "value")?, activation)?;
-    let dobj = get_display_object(this, activation)?;
+    let dobj = get_display_object(this);
     dobj.set_matrix(activation.context.gc_context, matrix);
     if let Some(parent) = dobj.parent() {
         // Self-transform changes are automatically handled,
@@ -89,7 +76,7 @@ pub fn get_concatenated_matrix<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let dobj = get_display_object(this, activation)?;
+    let dobj = get_display_object(this);
     let mut node = Some(dobj);
     while let Some(obj) = node {
         if obj.as_stage().is_some() {
@@ -100,8 +87,7 @@ pub fn get_concatenated_matrix<'gc>(
 
     // We're a child of the Stage, and not the stage itself
     if node.is_some() && dobj.as_stage().is_none() {
-        let matrix =
-            get_display_object(this, activation)?.local_to_global_matrix_without_own_scroll_rect();
+        let matrix = get_display_object(this).local_to_global_matrix_without_own_scroll_rect();
         matrix_to_object(matrix, activation)
     } else {
         // If this object is the Stage itself, or an object
@@ -123,17 +109,14 @@ pub fn get_concatenated_matrix<'gc>(
     }
 }
 
-pub fn get_concatenated_color_transform<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(
-        activation,
-        "flash.geom.Transform",
-        "concatenatedColorTransform"
-    );
-    Ok(Value::Undefined)
+pub fn matrix_from_transform_object(transform_object: Object<'_>) -> Matrix {
+    *get_display_object(transform_object).base().matrix()
+}
+
+pub fn color_transform_from_transform_object(transform_object: Object<'_>) -> ColorTransform {
+    *get_display_object(transform_object)
+        .base()
+        .color_transform()
 }
 
 // FIXME - handle clamping. We're throwing away precision here in converting to an integer:
@@ -143,29 +126,30 @@ pub fn object_to_color_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<ColorTransform, Error<'gc>> {
     let red_multiplier = object
-        .get_public_property("redMultiplier", activation)?
+        .get_slot(ct_slots::RED_MULTIPLIER)
         .coerce_to_number(activation)?;
     let green_multiplier = object
-        .get_public_property("greenMultiplier", activation)?
+        .get_slot(ct_slots::GREEN_MULTIPLIER)
         .coerce_to_number(activation)?;
     let blue_multiplier = object
-        .get_public_property("blueMultiplier", activation)?
+        .get_slot(ct_slots::BLUE_MULTIPLIER)
         .coerce_to_number(activation)?;
     let alpha_multiplier = object
-        .get_public_property("alphaMultiplier", activation)?
+        .get_slot(ct_slots::ALPHA_MULTIPLIER)
         .coerce_to_number(activation)?;
     let red_offset = object
-        .get_public_property("redOffset", activation)?
+        .get_slot(ct_slots::RED_OFFSET)
         .coerce_to_number(activation)?;
     let green_offset = object
-        .get_public_property("greenOffset", activation)?
+        .get_slot(ct_slots::GREEN_OFFSET)
         .coerce_to_number(activation)?;
     let blue_offset = object
-        .get_public_property("blueOffset", activation)?
+        .get_slot(ct_slots::BLUE_OFFSET)
         .coerce_to_number(activation)?;
     let alpha_offset = object
-        .get_public_property("alphaOffset", activation)?
+        .get_slot(ct_slots::ALPHA_OFFSET)
         .coerce_to_number(activation)?;
+
     Ok(ColorTransform {
         r_multiply: Fixed8::from_f64(red_multiplier),
         g_multiply: Fixed8::from_f64(green_multiplier),
@@ -222,25 +206,25 @@ pub fn object_to_matrix<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Matrix, Error<'gc>> {
     let a = object
-        .get_public_property("a", activation)?
+        .get_slot(matrix_slots::A)
         .coerce_to_number(activation)? as f32;
     let b = object
-        .get_public_property("b", activation)?
+        .get_slot(matrix_slots::B)
         .coerce_to_number(activation)? as f32;
     let c = object
-        .get_public_property("c", activation)?
+        .get_slot(matrix_slots::C)
         .coerce_to_number(activation)? as f32;
     let d = object
-        .get_public_property("d", activation)?
+        .get_slot(matrix_slots::D)
         .coerce_to_number(activation)? as f32;
     let tx = Twips::from_pixels(
         object
-            .get_public_property("tx", activation)?
+            .get_slot(matrix_slots::TX)
             .coerce_to_number(activation)?,
     );
     let ty = Twips::from_pixels(
         object
-            .get_public_property("ty", activation)?
+            .get_slot(matrix_slots::TY)
             .coerce_to_number(activation)?,
     );
 
@@ -252,7 +236,7 @@ pub fn get_pixel_bounds<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let display_object = get_display_object(this, activation)?;
+    let display_object = get_display_object(this);
     rectangle_to_object(display_object.world_bounds(), activation)
 }
 
@@ -270,4 +254,86 @@ fn rectangle_to_object<'gc>(
         ],
     )?;
     Ok(object.into())
+}
+
+pub fn get_matrix_3d<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.geom.Transform", "matrix3D");
+
+    let display_object = get_display_object(this);
+    if display_object.base().has_matrix3d_stub() {
+        let object = activation
+            .avm2()
+            .classes()
+            .matrix3d
+            .construct(activation, &[])?;
+        Ok(object.into())
+    } else {
+        Ok(Value::Null)
+    }
+}
+
+pub fn set_matrix_3d<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_setter!(activation, "flash.geom.Transform", "matrix3D");
+
+    let set = args
+        .get(0)
+        .map(|arg| arg.as_object().is_some())
+        .unwrap_or_default();
+    let display_object = get_display_object(this);
+    display_object
+        .base_mut(activation.gc())
+        .set_has_matrix3d_stub(set);
+    Ok(Value::Undefined)
+}
+
+pub fn get_perspective_projection<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_getter!(activation, "flash.geom.Transform", "perspectiveProjection");
+
+    let display_object = get_display_object(this);
+    let has_perspective_projection = if display_object.is_root() {
+        true
+    } else {
+        display_object.base().has_perspective_projection_stub()
+    };
+
+    if has_perspective_projection {
+        let object = activation
+            .avm2()
+            .classes()
+            .perspectiveprojection
+            .construct(activation, &[])?;
+        Ok(object.into())
+    } else {
+        Ok(Value::Null)
+    }
+}
+
+pub fn set_perspective_projection<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_setter!(activation, "flash.geom.Transform", "perspectiveProjection");
+
+    let set = args
+        .get(0)
+        .map(|arg| arg.as_object().is_some())
+        .unwrap_or_default();
+    let display_object = get_display_object(this);
+    display_object
+        .base_mut(activation.gc())
+        .set_has_perspective_projection_stub(set);
+    Ok(Value::Undefined)
 }

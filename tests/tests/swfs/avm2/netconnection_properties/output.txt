@@ -1,0 +1,79 @@
+connection.client = connection
+connection.connected = false
+connection.connectedProxyType = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.farID = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.farNonce = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.maxPeerConnections = 8
+connection.nearID = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.nearNonce = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.objectEncoding = 3
+connection.protocol = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.proxyType = "none"
+connection.unconnectedPeerStreams = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.uri = null
+connection.usingTLS = ArgumentError: Error #2126: NetConnection object must be connected.
+
+/// connection.connect(null)
+connection.client = connection
+connection.connected = true
+connection.connectedProxyType = "none"
+connection.farID = ""
+connection.farNonce = "0000000000000000000000000000000000000000000000000000000000000000"
+connection.maxPeerConnections = 8
+connection.nearID = ""
+connection.nearNonce = "0000000000000000000000000000000000000000000000000000000000000000"
+connection.objectEncoding = 3
+connection.protocol = "rtmp"
+connection.proxyType = "none"
+connection.unconnectedPeerStreams = []
+connection.uri = "null"
+connection.usingTLS = false
+
+/// connection.connect("http://example.org")
+connection.client = connection
+connection.connected = false
+connection.connectedProxyType = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.farID = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.farNonce = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.maxPeerConnections = 8
+connection.nearID = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.nearNonce = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.objectEncoding = 3
+connection.protocol = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.proxyType = "none"
+connection.unconnectedPeerStreams = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.uri = "http://example.org"
+connection.usingTLS = ArgumentError: Error #2126: NetConnection object must be connected.
+
+/// connection.close()
+connection.client = connection
+connection.connected = false
+connection.connectedProxyType = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.farID = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.farNonce = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.maxPeerConnections = 8
+connection.nearID = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.nearNonce = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.objectEncoding = 3
+connection.protocol = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.proxyType = "none"
+connection.unconnectedPeerStreams = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.uri = null
+connection.usingTLS = ArgumentError: Error #2126: NetConnection object must be connected.
+
+/// connection.connect("https://example.org")
+connection.client = connection
+connection.connected = false
+connection.connectedProxyType = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.farID = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.farNonce = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.maxPeerConnections = 8
+connection.nearID = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.nearNonce = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.objectEncoding = 3
+connection.protocol = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.proxyType = "none"
+connection.unconnectedPeerStreams = ArgumentError: Error #2126: NetConnection object must be connected.
+connection.uri = "https://example.org"
+connection.usingTLS = ArgumentError: Error #2126: NetConnection object must be connected.
+

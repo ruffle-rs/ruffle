@@ -1,7 +1,12 @@
 context-menu-play = Abspielen
 context-menu-rewind = Zurückspulen
-context-menu-forward = Weiterleiten
+context-menu-forward = Vorspulen
 context-menu-back = Zurück
 context-menu-quality-low = Qualität: Niedrig
 context-menu-quality-medium = Qualität: Mittel
 context-menu-quality-high = Qualität: Hoch
+context-menu-cut = Ausschneiden
+context-menu-copy = Kopieren
+context-menu-paste = Einfügen
+context-menu-delete = Löschen
+context-menu-select-all = Alles auswählen

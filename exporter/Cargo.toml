@@ -7,20 +7,21 @@ license.workspace = true
 repository.workspace = true
 version.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
-clap = { version = "4.4.6", features = ["derive"] }
-futures = "0.3"
+clap = { workspace = true }
+futures = { workspace = true }
 ruffle_core = { path = "../core", features = ["deterministic", "default_font"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
-image = { version = "0.24.7", default-features = false, features = ["png"] }
-log = "0.4"
-walkdir = "2.4.0"
+image = { workspace = true, features = ["png"] }
+walkdir = { workspace = true }
 indicatif = "0.17"
-anyhow = "1.0"
-rayon = "1.8.0"
+rayon = "1.10.0"
+anyhow = { workspace = true }
 
 [features]
 avm_debug = ["ruffle_core/avm_debug"]
 render_debug_labels = ["ruffle_render_wgpu/render_debug_labels"]
-render_trace = ["ruffle_render_wgpu/render_trace"]
 lzma = ["ruffle_core/lzma"]

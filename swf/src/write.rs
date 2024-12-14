@@ -91,16 +91,7 @@ fn write_zlib_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
     Ok(())
 }
 
-#[cfg(all(feature = "libflate", not(feature = "flate2")))]
-fn write_zlib_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
-    use libflate::zlib::Encoder;
-    let mut encoder = Encoder::new(&mut output)?;
-    encoder.write_all(&swf_body)?;
-    encoder.finish().into_result()?;
-    Ok(())
-}
-
-#[cfg(not(any(feature = "flate2", feature = "libflate")))]
+#[cfg(not(feature = "flate2"))]
 fn write_zlib_swf<W: Write>(_output: W, _swf_body: &[u8]) -> Result<()> {
     Err(Error::unsupported(
         "Support for Zlib compressed SWFs is not enabled.",
@@ -562,7 +553,7 @@ impl<W: Write> Writer<W> {
                 if let BitmapFormat::ColorMap8 { num_colors } = tag.format {
                     self.write_u8(num_colors)?;
                 }
-                self.output.write_all(tag.data)?;
+                self.output.write_all(&tag.data)?;
             }
 
             Tag::DefineButton(ref button) => self.write_define_button(button)?,
@@ -713,7 +704,8 @@ impl<W: Write> Writer<W> {
             Tag::DefineShape(ref shape) => self.write_define_shape(shape)?,
             Tag::DefineSound(ref sound) => self.write_define_sound(sound)?,
             Tag::DefineSprite(ref sprite) => self.write_define_sprite(sprite)?,
-            Tag::DefineText(ref text) => self.write_define_text(text)?,
+            Tag::DefineText(ref text) => self.write_define_text(text, 1)?,
+            Tag::DefineText2(ref text) => self.write_define_text(text, 2)?,
             Tag::DefineVideoStream(ref video) => self.write_define_video_stream(video)?,
             Tag::DoAbc(data) => {
                 self.write_tag_header(TagCode::DoAbc, data.len() as u32)?;
@@ -973,7 +965,14 @@ impl<W: Write> Writer<W> {
                 }
                 writer_2.write_u8(0)?; // End button records
             }
-            writer.write_u16(record_data.len() as u16 + 2)?;
+
+            // Write action offset, this is explicitly 0 when there are no actions.
+            if button.actions.is_empty() {
+                writer.write_u16(0)?;
+            } else {
+                writer.write_u16(record_data.len() as u16 + 2)?;
+            }
+
             writer.output.write_all(&record_data)?;
 
             let mut iter = button.actions.iter().peekable();
@@ -984,12 +983,7 @@ impl<W: Write> Writer<W> {
                 } else {
                     writer.write_u16(0)?;
                 }
-                let mut flags = action.conditions.bits();
-                if action.conditions.contains(ButtonActionCondition::KEY_PRESS) {
-                    if let Some(key_code) = action.key_code {
-                        flags |= (key_code as u16) << 9;
-                    }
-                }
+                let flags = action.conditions.bits();
                 writer.write_u16(flags)?;
                 writer.output.write_all(action.action_data)?;
             }
@@ -1814,8 +1808,9 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_bevel_filter(&mut self, filter: &BevelFilter) -> Result<()> {
-        self.write_rgba(&filter.shadow_color)?;
+        // Note that the color order is wrong in the spec, it's highlight then shadow.
         self.write_rgba(&filter.highlight_color)?;
+        self.write_rgba(&filter.shadow_color)?;
         self.write_fixed16(filter.blur_x)?;
         self.write_fixed16(filter.blur_y)?;
         self.write_fixed16(filter.angle)?;
@@ -1845,10 +1840,10 @@ impl<W: Write> Writer<W> {
     fn write_convolution_filter(&mut self, filter: &ConvolutionFilter) -> Result<()> {
         self.write_u8(filter.num_matrix_cols)?;
         self.write_u8(filter.num_matrix_rows)?;
-        self.write_fixed16(filter.divisor)?;
-        self.write_fixed16(filter.bias)?;
+        self.write_f32(filter.divisor)?;
+        self.write_f32(filter.bias)?;
         for val in &filter.matrix {
-            self.write_fixed16(*val)?;
+            self.write_f32(*val)?;
         }
         self.write_rgba(&filter.default_color)?;
         self.write_u8(filter.flags.bits())?;
@@ -2161,7 +2156,9 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_define_font_info(&mut self, font_info: &FontInfo) -> Result<()> {
-        let use_wide_codes = self.version >= 6 || font_info.version >= 2;
+        let use_wide_codes = self.version >= 6
+            || font_info.version >= 2
+            || font_info.flags.contains(FontInfoFlag::HAS_WIDE_CODES);
 
         let len = font_info.name.len()
             + if use_wide_codes { 2 } else { 1 } * font_info.code_table.len()
@@ -2222,7 +2219,7 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_define_text(&mut self, text: &Text) -> Result<()> {
+    fn write_define_text(&mut self, text: &Text, version: u8) -> Result<()> {
         let mut buf = Vec::new();
         {
             let mut writer = Writer::new(&mut buf, self.version);
@@ -2255,7 +2252,11 @@ impl<W: Write> Writer<W> {
                     writer.write_character_id(id)?;
                 }
                 if let Some(ref color) = record.color {
-                    writer.write_rgb(color)?;
+                    if version == 1 {
+                        writer.write_rgb(color)?;
+                    } else {
+                        writer.write_rgba(color)?;
+                    }
                 }
                 if let Some(x) = record.x_offset {
                     writer.write_i16(x.get() as i16)?; // TODO(Herschel): Handle overflow.
@@ -2275,7 +2276,11 @@ impl<W: Write> Writer<W> {
             }
             writer.write_u8(0)?; // End of text records.
         }
-        self.write_tag_header(TagCode::DefineText, buf.len() as u32)?;
+        if version == 1 {
+            self.write_tag_header(TagCode::DefineText, buf.len() as u32)?;
+        } else {
+            self.write_tag_header(TagCode::DefineText2, buf.len() as u32)?;
+        }
         self.output.write_all(&buf)?;
         Ok(())
     }
@@ -2420,7 +2425,6 @@ fn count_fbits(n: Fixed16) -> u32 {
 #[cfg(test)]
 #[allow(clippy::unusual_byte_groupings)]
 mod tests {
-    use super::Writer;
     use super::*;
     use crate::test_data;
 
@@ -2796,5 +2800,253 @@ mod tests {
         let tag = reader.read_tag().unwrap();
 
         assert_eq!(tag, Tag::DefineFont2(Box::new(font)));
+    }
+
+    #[test]
+    fn write_define_button_2() {
+        use crate::read::Reader;
+
+        let button = Button {
+            id: 3,
+            is_track_as_menu: false,
+            records: vec![ButtonRecord {
+                states: ButtonState::UP
+                    | ButtonState::OVER
+                    | ButtonState::DOWN
+                    | ButtonState::HIT_TEST,
+                id: 2,
+                depth: 1,
+                matrix: Matrix::translate(Twips::from_pixels(2.0), Twips::from_pixels(3.0)),
+                color_transform: ColorTransform::default(),
+                filters: vec![],
+                blend_mode: BlendMode::Normal,
+            }],
+            actions: vec![],
+        };
+
+        let mut buf = Vec::new();
+        let mut writer = Writer::new(&mut buf, 15);
+        writer.write_define_button_2(&button).unwrap();
+
+        let mut reader = Reader::new(&buf, 15);
+        let tag = reader.read_tag().unwrap();
+
+        assert_eq!(tag, Tag::DefineButton2(Box::new(button)));
+    }
+
+    #[test]
+    fn write_define_button_2_with_keycode() {
+        use crate::read::Reader;
+
+        let button = Button {
+            id: 3,
+            is_track_as_menu: false,
+            records: vec![ButtonRecord {
+                states: ButtonState::UP
+                    | ButtonState::OVER
+                    | ButtonState::DOWN
+                    | ButtonState::HIT_TEST,
+                id: 2,
+                depth: 1,
+                matrix: Matrix::translate(Twips::from_pixels(2.0), Twips::from_pixels(3.0)),
+                color_transform: ColorTransform::default(),
+                filters: vec![],
+                blend_mode: BlendMode::Normal,
+            }],
+            actions: vec![ButtonAction {
+                conditions: ButtonActionCondition::from_key_code(18),
+                action_data: &[
+                    150, 15, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 116, 104, 105, 115, 0, 28, 150, 12,
+                    0, 0, 116, 97, 98, 72, 97, 110, 100, 108, 101, 114, 0, 82, 23, 0,
+                ],
+            }],
+        };
+
+        let mut buf = Vec::new();
+        let mut writer = Writer::new(&mut buf, 15);
+        writer.write_define_button_2(&button).unwrap();
+
+        let mut reader = Reader::new(&buf, 15);
+        let tag = reader.read_tag().unwrap();
+
+        assert_eq!(tag, Tag::DefineButton2(Box::new(button)));
+    }
+
+    #[test]
+    fn write_bevel_filter() {
+        use crate::read::Reader;
+
+        let filter = Filter::BevelFilter(Box::new(BevelFilter {
+            shadow_color: Color {
+                r: 111,
+                g: 222,
+                b: 33,
+                a: 4,
+            },
+            highlight_color: Color {
+                r: 10,
+                g: 20,
+                b: 30,
+                a: 40,
+            },
+            blur_x: Fixed16::from_f32(3.1),
+            blur_y: Fixed16::from_f32(5.5),
+            angle: Fixed16::from_f32(180.0),
+            distance: Fixed16::from_f32(10.8),
+            strength: Fixed8::from_f32(3.1),
+            flags: BevelFilterFlags::COMPOSITE_SOURCE
+                | BevelFilterFlags::ON_TOP
+                | BevelFilterFlags::from_passes(2),
+        }));
+
+        let mut buf = Vec::new();
+        let mut writer = Writer::new(&mut buf, 15);
+        writer.write_filter(&filter).unwrap();
+
+        let mut reader = Reader::new(&buf, 15);
+        let reread = reader.read_filter().unwrap();
+
+        assert_eq!(reread, filter);
+    }
+
+    #[test]
+    fn write_define_text_2() {
+        use crate::read::Reader;
+
+        let text = Text {
+            id: 60,
+            bounds: Rectangle {
+                x_min: Twips::new(2),
+                x_max: Twips::new(559),
+                y_min: Twips::new(-4),
+                y_max: Twips::new(76),
+            },
+            matrix: Matrix {
+                a: Fixed16::ONE,
+                b: Fixed16::ZERO,
+                c: Fixed16::ZERO,
+                d: Fixed16::ONE,
+                tx: Twips::ZERO,
+                ty: Twips::ZERO,
+            },
+            records: vec![TextRecord {
+                font_id: Some(57),
+                color: Some(Color {
+                    r: 112,
+                    g: 103,
+                    b: 5,
+                    a: 69,
+                }),
+                x_offset: None,
+                y_offset: Some(Twips::new(76)),
+                height: Some(Twips::new(100)),
+                glyphs: vec![
+                    GlyphEntry {
+                        index: 13,
+                        advance: 32,
+                    },
+                    GlyphEntry {
+                        index: 2,
+                        advance: 38,
+                    },
+                    GlyphEntry {
+                        index: 8,
+                        advance: 41,
+                    },
+                    GlyphEntry {
+                        index: 6,
+                        advance: 18,
+                    },
+                    GlyphEntry {
+                        index: 7,
+                        advance: 33,
+                    },
+                    GlyphEntry {
+                        index: 7,
+                        advance: 33,
+                    },
+                    GlyphEntry {
+                        index: 2,
+                        advance: 38,
+                    },
+                    GlyphEntry {
+                        index: 0,
+                        advance: 19,
+                    },
+                    GlyphEntry {
+                        index: 6,
+                        advance: 18,
+                    },
+                    GlyphEntry {
+                        index: 3,
+                        advance: 35,
+                    },
+                    GlyphEntry {
+                        index: 4,
+                        advance: 37,
+                    },
+                    GlyphEntry {
+                        index: 0,
+                        advance: 19,
+                    },
+                    GlyphEntry {
+                        index: 1,
+                        advance: 23,
+                    },
+                    GlyphEntry {
+                        index: 0,
+                        advance: 19,
+                    },
+                    GlyphEntry {
+                        index: 7,
+                        advance: 33,
+                    },
+                    GlyphEntry {
+                        index: 5,
+                        advance: 39,
+                    },
+                    GlyphEntry {
+                        index: 10,
+                        advance: 40,
+                    },
+                ],
+            }],
+        };
+
+        let mut buf = Vec::new();
+        let mut writer = Writer::new(&mut buf, 4);
+        writer.write_define_text(&text, 2).unwrap();
+
+        let mut reader = Reader::new(&buf, 4);
+        let reread = reader.read_tag().unwrap();
+
+        assert_eq!(reread, Tag::DefineText2(Box::new(text)));
+    }
+
+    #[test]
+    fn write_define_font_info() {
+        use crate::read::Reader;
+
+        let font_info = FontInfo {
+            id: 1,
+            version: 1,
+            name: SwfStr::from_bytes(b"Schauer"),
+            flags: FontInfoFlag::HAS_WIDE_CODES | FontInfoFlag::IS_BOLD,
+            language: Language::Unknown,
+            code_table: vec![
+                80, 108, 97, 121, 32, 109, 111, 118, 105, 101, 53, 48, 54, 75, 103, 115, 116, 74,
+                65, 67, 83, 86, 71, 84, 89, 76, 69, 42, 104, 46, 73, 100, 87, 107, 110, 102, 117,
+                99, 114, 63, 79, 39, 119, 44, 112, 33, 120, 72, 122, 58, 77, 45, 98, 40, 41, 70,
+            ],
+        };
+
+        let mut buf = Vec::new();
+        let mut writer = Writer::new(&mut buf, 4);
+        writer.write_define_font_info(&font_info).unwrap();
+
+        let mut reader = Reader::new(&buf, 4);
+        let reread = reader.read_tag().unwrap();
+
+        assert_eq!(reread, Tag::DefineFontInfo(Box::new(font_info)));
     }
 }

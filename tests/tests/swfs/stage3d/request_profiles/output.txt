@@ -1,0 +1,16 @@
+Requesting profile: standardExtended
+Got profile: standardExtended
+After dispose: null
+Requesting profile: standard
+Got profile: standard
+After dispose: null
+Requesting profile: standardConstrained
+Got profile: standardConstrained
+After dispose: null
+Requesting profile: baselineExtended
+Got profile: baselineExtended
+After dispose: null
+Requesting profile: baseline
+Got profile: baseline
+After dispose: null
+Requesting profile: baselineConstrained

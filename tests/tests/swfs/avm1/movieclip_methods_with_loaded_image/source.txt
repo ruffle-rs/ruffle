@@ -8,7 +8,7 @@ _root.onEnterFrame = function() {
       trace("ruffle.getBytesLoaded(): " + bytesLoaded);
       trace("ruffle.getSWFVersion(): " + ruffle.getSWFVersion());
       _root.url = unescape(ruffle._url).split("/");
-      url = url[url.length - 2] + "/" + url[url.length - 1];
+      url = url[url.length - 1];
       trace("ruffle._url (unescaped & split): " + url);
       delete onEnterFrame;
    }

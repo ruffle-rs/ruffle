@@ -1,9 +1,10 @@
 package flash.net {
-    import __ruffle__.stub_constructor;
-    
+[Ruffle(InstanceAllocator)]
     public class Responder {
         public function Responder(result:Function, status:Function = null) {
-            stub_constructor("flash.net.Responder");
+            init(result, status);
         }
+
+        private native function init(result:Function, status:Function = null):void;
     }
 }

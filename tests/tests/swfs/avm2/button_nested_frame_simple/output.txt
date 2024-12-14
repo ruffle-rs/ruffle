@@ -1,0 +1,27 @@
+Calling Main super()
+Called Main super()
+Main frame constructed: [Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Running goto
+Calling MyContainer super: this.getChildAt(0) = null Main.INSTANCE.mainSideChild = undefined
+Calling MyChild myOtherChild super()
+Called MyChild myOtherChild super()
+Calling MyChild otherChild super()
+Called MyChild otherChild super()
+Main frame constructed: [Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Root framescript 2: this.getChildAt(0)["otherChild"] = [object MyChild]
+Root framescript 2: this.getChildAt(0)["myOtherChild"] = [object MyChild]
+Root framescript 2: this.getChildAt(0)["dumbButton1"] = [object SimpleButton]
+Root framescript 2: this.getChildAt(0)["dumbButton2"] = undefined
+Running MyContainer framescript: this.otherChild = [object MyChild] this.myOtherChild = [object MyChild] this.dumbButton1 = [object SimpleButton] this.dumbButton2 = undefined this.dumbChild = undefined
+Child framescript 1: myField = 0
+Child After set: myField = 2
+Child framescript 1: myField = 0
+Child After set: myField = 2
+Main exit frame: [Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Main frame constructed: [Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Main exit frame: [Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Called MyContainer super: this.getChildAt(0) = [object MyChild] this.dumbButton1 = [object SimpleButton] this.dumbButton2 = [object SimpleButton] Main.INSTANCE.mainSideChild = [object MovieClip]
+Dumb child: [object MovieClip]
+Main frame constructed: [Event type="frameConstructed" bubbles=false cancelable=false eventPhase=2]
+Main exit frame: [Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]
+Main exit frame: [Event type="exitFrame" bubbles=false cancelable=false eventPhase=2]

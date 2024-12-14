@@ -1,5 +1,9 @@
-﻿package {
-	public class Test {
+﻿// compiled with mxmlc
+package {
+	import flash.display.MovieClip;
+	public class Test extends MovieClip {
+		public function Test() {
+		}
 	}
 }
 
@@ -52,6 +56,21 @@ function test_holes(a) {
 	
 	trace("//Array.prototype[3] = item4;");
 	Array.prototype[3] = item4;
+}
+
+function test_bad_args() {
+	trace("//(Note: for these tests, we currently don't reproduce exact results.")
+	trace("// The test only ensures that the calls don't fail.)")
+
+	var a = [1, 2, 3, 4, 5];
+
+	trace("//a.sortOn([]).length");
+	trace(a.sortOn([]).length);
+
+	var a = [1, 2, 3, 4, 5];
+
+	trace("//a.sortOn(function).length");
+	trace(a.sortOn(function(){ trace("called") }).length);
 }
 
 trace("//var item1 = {\"numprop\": 3, \"strprop\": \"Abc\", \"numprop2\": 3}");
@@ -216,3 +235,5 @@ a = fresh_array_a();
 
 trace("//a.sortOn([\"strprop\", \"numprop\"], [Array.NUMERIC, Array.UNIQUESORT]) === 0");
 trace(a.sortOn(["strprop", "numprop"], [Array.NUMERIC, Array.UNIQUESORT]) === 0);
+
+test_bad_args();

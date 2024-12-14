@@ -1,18 +1,16 @@
-// This is a new lint with false positives, see https://github.com/rust-lang/rust-clippy/issues/10318
-#![allow(clippy::extra_unused_type_parameters)]
 // Remove this when we decide on how to handle multithreaded rendering (especially on wasm)
 #![allow(clippy::arc_with_non_send_sync)]
 // This lint is helpful, but right now we have too many instances of it.
 // TODO: Remove this once all instances are fixed.
 #![allow(clippy::needless_pass_by_ref_mut)]
 
+use crate::backend::ActiveFrame;
 use crate::bitmaps::BitmapSamplers;
 use crate::buffer_pool::{BufferPool, PoolEntry};
 use crate::descriptors::Quad;
 use crate::mesh::BitmapBinds;
 use crate::pipelines::Pipelines;
 use crate::target::{RenderTarget, SwapChainTarget};
-use crate::uniform_buffer::UniformBuffer;
 use crate::utils::{
     capture_image, create_buffer_with_data, format_list, get_backend_names, BufferDimensions,
 };
@@ -20,7 +18,7 @@ use bytemuck::{Pod, Zeroable};
 use descriptors::Descriptors;
 use enum_map::Enum;
 use ruffle_render::backend::RawTexture;
-use ruffle_render::bitmap::{BitmapHandle, BitmapHandleImpl, PixelRegion, RgbaBufRead, SyncHandle};
+use ruffle_render::bitmap::{BitmapHandle, BitmapHandleImpl, PixelRegion, SyncHandle};
 use ruffle_render::shape_utils::GradientType;
 use ruffle_render::tessellator::{Gradient as TessGradient, Vertex as TessVertex};
 use std::cell::{Cell, OnceCell};
@@ -39,7 +37,6 @@ mod globals;
 mod pipelines;
 mod pixel_bender;
 pub mod target;
-mod uniform_buffer;
 
 pub mod backend;
 mod blend;
@@ -48,6 +45,7 @@ mod buffer_pool;
 #[cfg(feature = "clap")]
 pub mod clap;
 pub mod descriptors;
+mod dynamic_transforms;
 mod filters;
 mod layouts;
 mod mesh;
@@ -74,42 +72,16 @@ pub enum MaskState {
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
-pub struct PushConstants {
-    transforms: Transforms,
-    colors: ColorAdjustments,
-}
-
-#[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable)]
 pub struct Transforms {
     world_matrix: [[f32; 4]; 4],
+    mult_color: [f32; 4],
+    add_color: [f32; 4],
 }
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Pod, Zeroable)]
 struct TextureTransforms {
     u_matrix: [[f32; 4]; 4],
-}
-
-#[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable, PartialEq)]
-pub struct ColorAdjustments {
-    mult_color: [f32; 4],
-    add_color: [f32; 4],
-}
-
-pub const DEFAULT_COLOR_ADJUSTMENTS: ColorAdjustments = ColorAdjustments {
-    mult_color: [1.0, 1.0, 1.0, 1.0],
-    add_color: [0.0, 0.0, 0.0, 0.0],
-};
-
-impl From<&swf::ColorTransform> for ColorAdjustments {
-    fn from(transform: &swf::ColorTransform) -> Self {
-        Self {
-            mult_color: transform.mult_rgba_normalized(),
-            add_color: transform.add_rgba_normalized(),
-        }
-    }
 }
 
 #[repr(C)]
@@ -178,7 +150,7 @@ impl From<TessGradient> for GradientUniforms {
 #[derive(Debug)]
 pub enum QueueSyncHandle {
     AlreadyCopied {
-        index: wgpu::SubmissionIndex,
+        index: Option<wgpu::SubmissionIndex>,
         buffer: PoolEntry<wgpu::Buffer, BufferDimensions>,
         copy_dimensions: BufferDimensions,
         descriptors: Arc<Descriptors>,
@@ -191,18 +163,14 @@ pub enum QueueSyncHandle {
     },
 }
 
-impl SyncHandle for QueueSyncHandle {
-    fn retrieve_offscreen_texture(
-        self: Box<Self>,
-        with_rgba: RgbaBufRead,
-    ) -> Result<(), ruffle_render::error::Error> {
-        self.capture(with_rgba);
-        Ok(())
-    }
-}
+impl SyncHandle for QueueSyncHandle {}
 
 impl QueueSyncHandle {
-    pub fn capture<R, F: FnOnce(&[u8], u32) -> R>(self, with_rgba: F) -> R {
+    pub fn capture<R, F: FnOnce(&[u8], u32) -> R>(
+        self,
+        with_rgba: F,
+        frame: &mut ActiveFrame,
+    ) -> R {
         match self {
             QueueSyncHandle::AlreadyCopied {
                 index,
@@ -213,7 +181,7 @@ impl QueueSyncHandle {
                 &descriptors.device,
                 &buffer,
                 &copy_dimensions,
-                Some(index),
+                index,
                 with_rgba,
             ),
             QueueSyncHandle::NotCopied {
@@ -224,17 +192,14 @@ impl QueueSyncHandle {
             } => {
                 let texture = as_texture(&handle);
 
-                let buffer_dimensions =
-                    BufferDimensions::new(copy_area.width() as usize, copy_area.height() as usize);
+                let buffer_dimensions = BufferDimensions::new(
+                    copy_area.width() as usize,
+                    copy_area.height() as usize,
+                    texture.texture.format(),
+                );
+
                 let buffer = pool.take(&descriptors, buffer_dimensions.clone());
-                let label = create_debug_label!("Render target transfer encoder");
-                let mut encoder =
-                    descriptors
-                        .device
-                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                            label: label.as_deref(),
-                        });
-                encoder.copy_texture_to_buffer(
+                frame.command_encoder.copy_texture_to_buffer(
                     wgpu::ImageCopyTexture {
                         texture: &texture.texture,
                         mip_level: 0,
@@ -259,7 +224,7 @@ impl QueueSyncHandle {
                         depth_or_array_layers: 1,
                     },
                 );
-                let index = descriptors.queue.submit(Some(encoder.finish()));
+                let index = frame.submit_direct(&descriptors);
 
                 let image = capture_image(
                     &descriptors.device,

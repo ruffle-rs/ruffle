@@ -25,4 +25,11 @@ impl SocketEvent {
 
         Ok(from_reader(file)?)
     }
+
+    pub fn from_reader<R>(reader: R) -> Result<Vec<Self>, io::Error>
+    where
+        R: io::Read,
+    {
+        Ok(from_reader(reader)?)
+    }
 }

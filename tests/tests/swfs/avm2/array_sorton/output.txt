@@ -537,3 +537,9 @@ boo
 //a[4] = item5;
 //a.sortOn(["strprop", "numprop"], [Array.NUMERIC, Array.UNIQUESORT]) === 0
 false
+//(Note: for these tests, we currently don't reproduce exact results.
+// The test only ensures that the calls don't fail.)
+//a.sortOn([]).length
+5
+//a.sortOn(function).length
+5

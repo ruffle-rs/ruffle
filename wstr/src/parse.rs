@@ -106,6 +106,11 @@ mod int_parse {
             None => return None,
         };
 
+        // "-", "+"
+        if digits.is_empty() {
+            return None;
+        }
+
         if is_neg && !T::SIGNED {
             return None;
         }

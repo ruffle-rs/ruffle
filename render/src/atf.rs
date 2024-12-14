@@ -25,6 +25,12 @@ pub enum ATFTextureData {
         jpegxr_bgr: Vec<u8>,
         dxt5_rgb_compressed: Vec<u8>,
     },
+    CompressedRawAlpha {
+        dxt5: Vec<u8>,
+        pvrtc: Vec<u8>,
+        etc1: Vec<u8>,
+        etc2: Vec<u8>,
+    },
 }
 
 #[derive(FromPrimitive, Debug)]
@@ -132,6 +138,30 @@ impl ATFTexture {
                             dxt1_alpha_compressed,
                             jpegxr_bgr: bgr_jpegxr,
                             dxt5_rgb_compressed,
+                        });
+                    }
+                    ATFFormat::RawCompressedAlpha => {
+                        let dxt5_len = read_len(bytes)? as usize;
+                        let mut dxt5 = vec![0; dxt5_len];
+                        bytes.read_exact(&mut dxt5)?;
+
+                        let pvrtc_len = read_len(bytes)? as usize;
+                        let mut pvrtc = vec![0; pvrtc_len];
+                        bytes.read_exact(&mut pvrtc)?;
+
+                        let etc1_len = read_len(bytes)? as usize;
+                        let mut etc1 = vec![0; etc1_len];
+                        bytes.read_exact(&mut etc1)?;
+
+                        let etc2_len = read_len(bytes)? as usize;
+                        let mut etc2 = vec![0; etc2_len];
+                        bytes.read_exact(&mut etc2)?;
+
+                        face_mip_data[face].push(ATFTextureData::CompressedRawAlpha {
+                            dxt5,
+                            pvrtc,
+                            etc1,
+                            etc2,
                         });
                     }
                     _ => {

@@ -1,0 +1,12 @@
+Initialized Older with parent: null Event = workerState
+Caught error (truncated): ArgumentError: Error #2109:
+Calling childPublicMethod on [object Older]
+Older.childPublicMethod: Calling parentPublicMethod() on [object Test]
+Called Test.parentPublicMethod
+Older.olderPublicMethod: Called parentPublicMethod() on [object Test]
+Called childPublicMethod
+Calling childAS3Method on [object Older]
+Older.childAS3Method: Calling parentAS3Method() on [object Test]
+Called Test.parentAS3Method()
+Older.childAS3Method: Called parentAS3Method() on [object Test]
+Called childAS3Method

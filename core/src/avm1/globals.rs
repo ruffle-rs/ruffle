@@ -4,9 +4,8 @@ use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
-use crate::context::GcContext;
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
-use crate::string::{AvmString, WStr, WString};
+use crate::string::{AvmString, StringContext, WStr, WString};
 use gc_arena::Collect;
 use std::str;
 
@@ -30,17 +29,19 @@ pub(crate) mod displacement_map_filter;
 pub(crate) mod drop_shadow_filter;
 pub(crate) mod error;
 mod external_interface;
+pub(crate) mod file_reference;
 mod function;
 pub(crate) mod glow_filter;
 pub(crate) mod gradient_filter;
 mod key;
 mod load_vars;
-mod local_connection;
+pub(crate) mod local_connection;
 mod math;
 mod matrix;
 pub(crate) mod mouse;
 pub(crate) mod movie_clip;
 mod movie_clip_loader;
+pub(crate) mod netconnection;
 pub(crate) mod netstream;
 pub(crate) mod number;
 mod object;
@@ -51,6 +52,7 @@ pub(crate) mod shared_object;
 pub(crate) mod sound;
 mod stage;
 pub(crate) mod string;
+pub(crate) mod style_sheet;
 pub(crate) mod system;
 pub(crate) mod system_capabilities;
 pub(crate) mod system_ime;
@@ -515,7 +517,7 @@ pub struct SystemPrototypes<'gc> {
 
 /// Initialize default global scope and builtins for an AVM1 instance.
 pub fn create_globals<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
 ) -> (
     SystemPrototypes<'gc>,
     Object<'gc>,
@@ -534,6 +536,7 @@ pub fn create_globals<'gc>(
 
     let sound_proto = sound::create_proto(context, object_proto, function_proto);
 
+    let style_sheet_proto = style_sheet::create_proto(context, object_proto, function_proto);
     let text_field_proto = text_field::create_proto(context, object_proto, function_proto);
     let text_format_proto = text_format::create_proto(context, object_proto, function_proto);
 
@@ -580,6 +583,7 @@ pub fn create_globals<'gc>(
 
     let video_proto = video::create_proto(context, object_proto, function_proto);
     let netstream_proto = netstream::create_proto(context, object_proto, function_proto);
+    let netconnection_proto = netconnection::create_proto(context, object_proto, function_proto);
     let xml_socket_proto = xml_socket::create_proto(context, object_proto, function_proto);
 
     //TODO: These need to be constructors and should also set `.prototype` on each one
@@ -646,6 +650,13 @@ pub fn create_globals<'gc>(
         function_proto,
         sound_proto,
     );
+    let style_sheet = FunctionObject::constructor(
+        gc_context,
+        Executable::Native(style_sheet::constructor),
+        constructor_to_fn!(style_sheet::constructor),
+        function_proto,
+        style_sheet_proto,
+    );
     let text_field = FunctionObject::constructor(
         gc_context,
         Executable::Native(text_field::constructor),
@@ -674,6 +685,7 @@ pub fn create_globals<'gc>(
     let boolean = boolean::create_boolean_object(context, boolean_proto, function_proto);
     let date = date::create_constructor(context, object_proto, function_proto);
     let netstream = netstream::create_class(context, netstream_proto, function_proto);
+    let netconnection = netconnection::create_class(context, netconnection_proto, function_proto);
     let xml_socket = xml_socket::create_class(context, xml_socket_proto, function_proto);
 
     let flash = ScriptObject::new(gc_context, Some(object_proto));
@@ -681,6 +693,7 @@ pub fn create_globals<'gc>(
     let geom = ScriptObject::new(gc_context, Some(object_proto));
     let filters = ScriptObject::new(gc_context, Some(object_proto));
     let display = ScriptObject::new(gc_context, Some(object_proto));
+    let net = ScriptObject::new(gc_context, Some(object_proto));
 
     let matrix = matrix::create_matrix_object(context, matrix_proto, function_proto);
     let point = point::create_point_object(context, point_proto, function_proto);
@@ -866,6 +879,23 @@ pub fn create_globals<'gc>(
         Attribute::empty(),
     );
 
+    flash.define_value(gc_context, "net", net.into(), Attribute::empty());
+
+    let file_reference_obj = file_reference::create_constructor(
+        context,
+        object_proto,
+        function_proto,
+        array_proto,
+        broadcaster_functions,
+    );
+
+    net.define_value(
+        gc_context,
+        "FileReference",
+        file_reference_obj.into(),
+        Attribute::empty(),
+    );
+
     let globals = ScriptObject::new(gc_context, None);
     globals.define_value(
         gc_context,
@@ -915,6 +945,12 @@ pub fn create_globals<'gc>(
         "TextField",
         text_field.into(),
         Attribute::DONT_ENUM,
+    );
+    text_field.define_value(
+        gc_context,
+        "StyleSheet",
+        style_sheet.into(),
+        Attribute::DONT_ENUM | Attribute::VERSION_7,
     );
     globals.define_value(
         gc_context,
@@ -1059,6 +1095,12 @@ pub fn create_globals<'gc>(
     );
     globals.define_value(
         gc_context,
+        "NetConnection",
+        netconnection.into(),
+        Attribute::DONT_ENUM,
+    );
+    globals.define_value(
+        gc_context,
         "XMLSocket",
         xml_socket.into(),
         Attribute::DONT_ENUM,
@@ -1153,7 +1195,7 @@ pub fn remove_display_object<'gc>(this: DisplayObject<'gc>, activation: &mut Act
     if depth >= AVM_DEPTH_BIAS && depth < AVM_MAX_REMOVE_DEPTH && !this.avm1_removed() {
         // Need a parent to remove from.
         if let Some(mut parent) = this.avm1_parent().and_then(|o| o.as_movie_clip()) {
-            parent.remove_child(&mut activation.context, this);
+            parent.remove_child(activation.context, this);
         }
     }
 }
@@ -1164,7 +1206,7 @@ mod tests {
     use super::*;
 
     fn setup<'gc>(activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
-        create_globals(&mut activation.context.borrow_gc()).1
+        create_globals(activation.strings()).1
     }
 
     test_method!(boolean_function, "Boolean", setup,

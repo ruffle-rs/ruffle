@@ -13,6 +13,7 @@ package flash.text.engine
         public static const ALL_BUT_LAST:String = "allButLast";
         
         // Justify all but the last line and lines ending in mandatory breaks.
+        [API("674")]
         public static const ALL_BUT_MANDATORY_BREAK:String = "allButMandatoryBreak";
         
         // Justify all lines.

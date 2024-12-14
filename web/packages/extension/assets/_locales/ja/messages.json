@@ -9,7 +9,10 @@
         "message": "SWFのダウンロードをコンテキストメニューに表示する"
     },
     "settings_autostart": {
-        "message": "スプラッシュ画面なしで自動再生(クリックでミュートを解除)"
+        "message": "Flashを自動再生(クリックでミュートを解除)"
+    },
+    "settings_swf_takeover": {
+        "message": "SWFをダウンロードせずにブラウザで再生する"
     },
     "settings_log_level": {
         "message": "ログレベル"
@@ -60,19 +63,19 @@
         "message": "RuffleでFlashを実行する準備が整いました。"
     },
     "status_result_running_protected": {
-        "message": "RuffleはリクエストされたFlashコンテンツをロードし、実行しています。"
+        "message": "RuffleはリクエストされたFlashコンテンツを実行する準備ができています。"
     },
     "status_result_optout": {
-        "message": "Ruffleは現在のページと互換性がないため、読み込まれません。"
+        "message": "現在のサイトは互換性がないため、Ruffleをロードできません。"
     },
     "status_result_disabled": {
-        "message": "Ruffleは無効化されているため、読み込まれません。"
+        "message": "Ruffleは無効化されています。"
     },
     "status_result_error": {
-        "message": "現在のタブでRuffleのインスタンスを照会する際にエラーが発生しました。"
+        "message": "現在のページでRuffleインスタンスの照会中にエラーが発生しました。"
     },
     "status_result_protected": {
-        "message": "Ruffleは保護されたブラウザのページのため、読み込まれません。"
+        "message": "Ruffleはブラウザの保護されたページのため、読み込まれません。"
     },
     "action_reload": {
         "message": "タブをリロードして変更を適用する"
@@ -87,12 +90,27 @@
         "message": "設定"
     },
     "description": {
-        "message": "Flashを今までの場所に戻します。"
+        "message": "Flashを元の場所に戻します。"
     },
     "save_settings": {
         "message": "設定を保存"
     },
     "settings_saved": {
         "message": "設定を保存しました"
+    },
+    "permissions_grant": {
+        "message": "RuffleにすべてのページでRuffleのデータにアクセスすることを許可します。"
+    },
+    "permissions_not_granted": {
+        "message": "Ruffleを使用したいサイトでRuffle拡張機能のアイコンをクリックする必要があります"
+    },
+    "grant_single_site_permission": {
+        "message": "このサイトに対して永続的に有効化する"
+    },
+    "permissions_explanation": {
+        "message": "Ruffle拡張機能を最適に動作させるには、すべてのWebサイトへのアクセス権を付与する必要があります。これにより、サイトの読み込み時にRuffleが実行され、Flashコンテンツを即座に実行することができます。また、URLで直接SWFファイルを指定してRuffleの組み込みプレーヤーで実行することが可能になります。アクセス権を付与しない場合は、Ruffleを使用したいWebサイトで拡張機能アイコンより手動でアクセス権の付与が必要になります。"
+    },
+    "swf_player_permissions": {
+        "message": "SWFを読み込むにはURLオリジンにアクセス許可を与える必要があります。"
     }
 }

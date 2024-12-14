@@ -1,0 +1,3 @@
+# NOTE - test.swf was manually edited to remove the single (empty) frame,
+# so that it actually has zero frames.
+num_ticks = 3

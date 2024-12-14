@@ -1,5 +1,6 @@
 node_modules/
 dist/
+*.tsbuildinfo
 
 _cacache/
 _logs/

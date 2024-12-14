@@ -7,36 +7,39 @@ license.workspace = true
 repository.workspace = true
 version.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf"}
 tracing = { workspace = true }
-gif = "0.12.0"
-png = "0.17.10"
-flate2 = "1.0.28"
-smallvec = { version = "1.11.1", features = ["union"] }
-downcast-rs = "1.2.0"
+gif = "0.13.1"
+png = "0.17.15"
+flate2 = { workspace = true }
+smallvec = { version = "1.13.2", features = ["union"] }
+downcast-rs = "1.2.1"
 lyon = { version = "1.0.1", optional = true }
-lyon_geom = "1.0.4"
-thiserror = "1.0"
-wasm-bindgen = { version = "=0.2.87", optional = true }
-enum-map = "2.7.0"
-serde = { version = "1.0.189", features = ["derive"] }
-clap = { version = "4.4.6", features = ["derive"], optional = true }
-h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "16700664e2b3334f0a930f99af86011aebee14cc"}
-lru = "0.12.0"
-num-traits = "0.2"
-num-derive = "0.4"
+lyon_geom = "1.0.6"
+thiserror = { workspace = true }
+wasm-bindgen = { workspace = true, optional = true }
+enum-map = { workspace = true }
+serde = { workspace = true, features = ["derive"], optional = true }
+clap = { workspace = true, optional = true }
+h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "07468962d9c57c0780f3e9abf046186f5be58a26"}
+num-traits = { workspace = true }
+num-derive = { workspace = true }
 byteorder = "1.5"
 wgpu = { workspace = true, optional = true }
+indexmap = "2.7.0"
 
 # This crate has a `compile_error!` on apple platforms
 [target.'cfg(not(target_vendor = "apple"))'.dependencies.renderdoc]
-version = "0.11.0"
+version = "0.12.1"
 optional = true
 
 [dependencies.jpeg-decoder]
-version = "0.3.0"
+version = "0.3.1"
 default-features = false # can't use rayon on web
 
 [dev-dependencies]
@@ -47,3 +50,4 @@ default = []
 tessellator = ["lyon"]
 web = ["wasm-bindgen"]
 wgpu = ["dep:wgpu"]
+serde = ["dep:serde"]

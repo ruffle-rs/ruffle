@@ -1,9 +1,10 @@
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::{
-    Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
+    Activation as Avm2Activation, ClassObject as Avm2ClassObject, Object as Avm2Object,
+    StageObject as Avm2StageObject,
 };
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
+use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
 use crate::drawing::Drawing;
 use crate::library::MovieLibrarySource;
 use crate::prelude::*;
@@ -33,15 +34,17 @@ impl fmt::Debug for Graphic<'_> {
 pub struct GraphicData<'gc> {
     base: DisplayObjectBase<'gc>,
     static_data: gc_arena::Gc<'gc, GraphicStatic>,
+    class: Option<Avm2ClassObject<'gc>>,
     avm2_object: Option<Avm2Object<'gc>>,
+    /// This is lazily allocated on demand, to make `GraphicData` smaller in the common case.
     #[collect(require_static)]
-    drawing: Option<Drawing>,
+    drawing: Option<Box<Drawing>>,
 }
 
 impl<'gc> Graphic<'gc> {
     /// Construct a `Graphic` from it's associated `Shape` tag.
     pub fn from_swf_tag(
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         swf_shape: swf::Shape,
         movie: Arc<SwfMovie>,
     ) -> Self {
@@ -49,13 +52,11 @@ impl<'gc> Graphic<'gc> {
         let static_data = GraphicStatic {
             id: swf_shape.id,
             bounds: swf_shape.shape_bounds.clone(),
-            render_handle: Some(context.renderer.register_shape(
-                (&swf_shape).into(),
-                &MovieLibrarySource {
-                    library,
-                    gc_context: context.gc_context,
-                },
-            )),
+            render_handle: Some(
+                context
+                    .renderer
+                    .register_shape((&swf_shape).into(), &MovieLibrarySource { library }),
+            ),
             shape: swf_shape,
             movie,
         };
@@ -65,6 +66,7 @@ impl<'gc> Graphic<'gc> {
             GraphicData {
                 base: Default::default(),
                 static_data: gc_arena::Gc::new(context.gc_context, static_data),
+                class: None,
                 avm2_object: None,
                 drawing: None,
             },
@@ -72,7 +74,7 @@ impl<'gc> Graphic<'gc> {
     }
 
     /// Construct an empty `Graphic`.
-    pub fn empty(context: &mut UpdateContext<'_, 'gc>) -> Self {
+    pub fn empty(context: &mut UpdateContext<'gc>) -> Self {
         let static_data = GraphicStatic {
             id: 0,
             bounds: Default::default(),
@@ -91,23 +93,27 @@ impl<'gc> Graphic<'gc> {
             },
             movie: context.swf.clone(),
         };
-        let drawing = Drawing::new();
 
         Graphic(GcCell::new(
             context.gc_context,
             GraphicData {
                 base: Default::default(),
                 static_data: gc_arena::Gc::new(context.gc_context, static_data),
+                class: None,
                 avm2_object: None,
-                drawing: Some(drawing),
+                drawing: None,
             },
         ))
     }
 
-    pub fn drawing(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, Drawing> {
+    pub fn drawing_mut(&self, gc_context: &Mutation<'gc>) -> RefMut<'_, Drawing> {
         RefMut::map(self.0.write(gc_context), |w| {
-            w.drawing.get_or_insert_with(Drawing::new)
+            &mut **w.drawing.get_or_insert_with(Default::default)
         })
+    }
+
+    pub fn set_avm2_class(self, mc: &Mutation<'gc>, class: Avm2ClassObject<'gc>) {
+        self.0.write(mc).class = Some(class);
     }
 }
 
@@ -140,21 +146,26 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         }
     }
 
-    fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
-        if context.is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
-            let shape_constr = context.avm2.classes().shape;
-            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+    fn construct_frame(&self, context: &mut UpdateContext<'gc>) {
+        if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
+            let class_object = self
+                .0
+                .read()
+                .class
+                .unwrap_or_else(|| context.avm2.classes().shape);
+
+            let mut activation = Avm2Activation::from_nothing(context);
 
             match Avm2StageObject::for_display_object_childless(
                 &mut activation,
                 (*self).into(),
-                shape_constr,
+                class_object,
             ) {
                 Ok(object) => {
                     self.0.write(activation.context.gc_context).avm2_object = Some(object.into())
                 }
                 Err(e) => {
-                    tracing::error!("Got {} when constructing AVM2 side of display object", e)
+                    tracing::error!("Got error when constructing AVM2 side of shape: {}", e)
                 }
             }
 
@@ -162,7 +173,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         }
     }
 
-    fn replace_with(&self, context: &mut UpdateContext<'_, 'gc>, id: CharacterId) {
+    fn replace_with(&self, context: &mut UpdateContext<'gc>, id: CharacterId) {
         // Static assets like Graphics can replace themselves via a PlaceObject tag with PlaceObjectAction::Replace.
         // This does not create a new instance, but instead swaps out the underlying static data to point to the new art.
         if let Some(new_graphic) = context
@@ -198,7 +209,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 
     fn hit_test_shape(
         &self,
-        _context: &mut UpdateContext<'_, 'gc>,
+        _context: &mut UpdateContext<'gc>,
         point: Point<Twips>,
         options: HitTestOptions,
     ) -> bool {
@@ -225,12 +236,12 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 
     fn post_instantiation(
         &self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
         run_frame: bool,
     ) {
-        if context.is_action_script_3() {
+        if self.movie().is_action_script_3() {
             self.set_default_instance_name(context);
         } else {
             context
@@ -255,12 +266,12 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(&self, context: &mut UpdateContext<'_, 'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
         self.0.write(context.gc_context).avm2_object = Some(to);
     }
 
     fn as_drawing(&self, gc_context: &Mutation<'gc>) -> Option<RefMut<'_, Drawing>> {
-        Some(self.drawing(gc_context))
+        Some(self.drawing_mut(gc_context))
     }
 }
 

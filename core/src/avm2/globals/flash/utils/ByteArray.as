@@ -1,6 +1,6 @@
 package flash.utils {
 	[Ruffle(InstanceAllocator)]
-	public class ByteArray implements IDataInput, IDataOutput {
+	public class ByteArray implements IDataInput2, IDataOutput2 {
 		private static var _defaultObjectEncoding:uint = 3;
 		public static function get defaultObjectEncoding():uint {
 			return _defaultObjectEncoding;

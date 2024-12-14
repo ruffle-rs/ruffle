@@ -1,0 +1,14 @@
+Starting load...
+_global access in DoInitAction: 
+[type Object]
+root depth:
+-77824
+hello from avm1!
+Root depth: -77824
+_root == _level0: false
+[object AVM1Movie]
+[object ApplicationDomain]
+Load complete!
+2180
+ArgumentError
+onmousedown at 10, 10!

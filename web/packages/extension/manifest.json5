@@ -1,0 +1,65 @@
+{
+    "manifest_version": 3,
+    "name": "Ruffle - Flash Emulator",
+    "short_name": "Ruffle",
+    "version": null, // Filled by Webpack.
+    "default_locale": "en",
+    "description": "__MSG_description__",
+    "homepage_url": "https://ruffle.rs/",
+
+    "action": {
+        "default_popup": "popup.html"
+    },
+    "content_scripts": [
+        {
+            "matches": ["<all_urls>"],
+            "exclude_matches": [
+                "https://sso.godaddy.com/*", // See https://github.com/ruffle-rs/ruffle/pull/7146
+                "https://authentication.td.com/*", // See https://github.com/ruffle-rs/ruffle/issues/2158
+                "https://*.twitch.tv/*", // See https://github.com/ruffle-rs/ruffle/pull/8150
+                "https://www.tuxedocomputers.com/*", // See https://github.com/ruffle-rs/ruffle/issues/11906
+                "https://*.taobao.com/*", // See https://github.com/ruffle-rs/ruffle/pull/12650
+                "https://*.time4learning.com/*", // See https://github.com/ruffle-rs/ruffle/pull/16186
+                "https://*.edgenuity.com/*", // See https://github.com/ruffle-rs/ruffle/pull/16186
+                "https://www.chewy.com/*", // See https://github.com/ruffle-rs/ruffle/issues/18265
+                "https://*.duosecurity.com/*", // See https://github.com/ruffle-rs/ruffle/pull/18299
+            ],
+            "js": ["dist/content.js"],
+            "all_frames": true,
+            "run_at": "document_start",
+        },
+    ],
+
+    "content_security_policy": {
+        extension_pages: "default-src 'self'; script-src 'wasm-unsafe-eval' 'self'; style-src 'unsafe-inline'; connect-src *; media-src *; img-src data:;"
+    },
+
+    "icons": {
+        "16": "images/icon16.png",
+        "32": "images/icon32.png",
+        "48": "images/icon48.png",
+        "128": "images/icon128.png",
+        "180": "images/icon180.png",
+    },
+    "options_ui": {
+        "page": "options.html",
+        "open_in_tab": true,
+    },
+    "host_permissions": ["<all_urls>"], // To allow script injecting + the internal player to bypass CORS + SWF takeover
+    "permissions": [
+        "storage",
+        "scripting",
+        "declarativeNetRequestWithHostAccess",
+    ],
+    "web_accessible_resources": [{
+        "resources": ["*"],
+        "matches": ["<all_urls>"],
+    }],
+    "declarative_net_request": {
+        "rule_resources": [{
+            "id": "4399_rules",
+            "enabled": true,
+            "path": "dist/4399_rules.json"
+        }]
+    },
+}

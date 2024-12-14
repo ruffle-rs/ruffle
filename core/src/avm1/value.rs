@@ -1,16 +1,15 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
-use crate::avm1::object::value_object::ValueObject;
 use crate::avm1::object::NativeObject;
-use crate::avm1::{Object, TObject};
+use crate::avm1::{Object, ScriptObject, TObject};
 use crate::display_object::TDisplayObject;
 use crate::ecma_conversions::{
     f64_to_wrapping_i16, f64_to_wrapping_i32, f64_to_wrapping_u16, f64_to_wrapping_u32,
     f64_to_wrapping_u8,
 };
 use crate::string::{AvmAtom, AvmString, Integer, WStr};
-use gc_arena::Collect;
+use gc_arena::{Collect, Gc};
 use std::{borrow::Cow, io::Write, mem::size_of, num::Wrapping};
 
 use super::object_reference::MovieClipReference;
@@ -48,13 +47,13 @@ impl<'gc> From<AvmAtom<'gc>> for Value<'gc> {
     }
 }
 
-impl<'gc> From<&'static str> for Value<'gc> {
+impl From<&'static str> for Value<'_> {
     fn from(string: &'static str) -> Self {
         Value::String(string.into())
     }
 }
 
-impl<'gc> From<bool> for Value<'gc> {
+impl From<bool> for Value<'_> {
     fn from(value: bool) -> Self {
         Value::Bool(value)
     }
@@ -69,55 +68,61 @@ where
     }
 }
 
-impl<'gc> From<f64> for Value<'gc> {
+impl From<f64> for Value<'_> {
     fn from(value: f64) -> Self {
         Value::Number(value)
     }
 }
 
-impl<'gc> From<f32> for Value<'gc> {
+impl From<f32> for Value<'_> {
     fn from(value: f32) -> Self {
         Value::Number(f64::from(value))
     }
 }
 
-impl<'gc> From<i8> for Value<'gc> {
+impl From<i8> for Value<'_> {
     fn from(value: i8) -> Self {
         Value::Number(f64::from(value))
     }
 }
 
-impl<'gc> From<u8> for Value<'gc> {
+impl From<u8> for Value<'_> {
     fn from(value: u8) -> Self {
         Value::Number(f64::from(value))
     }
 }
 
-impl<'gc> From<i16> for Value<'gc> {
+impl From<i16> for Value<'_> {
     fn from(value: i16) -> Self {
         Value::Number(f64::from(value))
     }
 }
 
-impl<'gc> From<u16> for Value<'gc> {
+impl From<u16> for Value<'_> {
     fn from(value: u16) -> Self {
         Value::Number(f64::from(value))
     }
 }
 
-impl<'gc> From<i32> for Value<'gc> {
+impl From<i32> for Value<'_> {
     fn from(value: i32) -> Self {
         Value::Number(f64::from(value))
     }
 }
 
-impl<'gc> From<u32> for Value<'gc> {
+impl From<u32> for Value<'_> {
     fn from(value: u32) -> Self {
         Value::Number(f64::from(value))
     }
 }
 
-impl<'gc> From<usize> for Value<'gc> {
+impl From<u64> for Value<'_> {
+    fn from(value: u64) -> Self {
+        Value::Number(value as f64)
+    }
+}
+
+impl From<usize> for Value<'_> {
     fn from(value: usize) -> Self {
         Value::Number(value as f64)
     }
@@ -154,10 +159,10 @@ impl<'gc> Value<'gc> {
     /// we are aware, version-gated:
     ///
     /// * In SWF6 and lower, `undefined` is coerced to `0.0` (like `false`)
-    /// rather than `NaN` as required by spec.
+    ///   rather than `NaN` as required by spec.
     /// * In SWF5 and lower, hexadecimal is unsupported.
     /// * In SWF4 and lower, `0.0` is returned rather than `NaN` if a string cannot
-    /// be converted to a number.
+    ///   be converted to a number.
     fn primitive_as_number(&self, activation: &mut Activation<'_, 'gc>) -> f64 {
         match self {
             Value::Undefined if activation.swf_version() < 7 => 0.0,
@@ -404,7 +409,7 @@ impl<'gc> Value<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
         Ok(match self {
-            Value::Undefined if activation.swf_version() < 7 => "".into(),
+            Value::Undefined if activation.swf_version() < 7 => activation.strings().empty(),
             Value::Bool(true) if activation.swf_version() < 5 => "1".into(),
             Value::Bool(false) if activation.swf_version() < 5 => "0".into(),
             Value::Object(object) => {
@@ -475,16 +480,40 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    pub fn coerce_to_object(&self, activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
-        if let Value::MovieClip(mcr) = self {
-            if let Some(obj) = mcr.coerce_to_object(activation) {
-                obj
-            } else {
-                ValueObject::boxed(activation, Value::Undefined)
+    pub fn coerce_to_object(self, activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
+        let (value, proto) = match self {
+            // If we're given an object, we return it directly.
+            Value::Object(obj) => return obj,
+            Value::MovieClip(mcr) => {
+                if let Some(obj) = mcr.coerce_to_object(activation) {
+                    return obj;
+                } else {
+                    (Value::Undefined, None)
+                }
             }
-        } else {
-            ValueObject::boxed(activation, self.to_owned())
-        }
+            // Else, select the correct prototype for it from the system prototypes list.
+            Value::Null | Value::Undefined => (self, None),
+            Value::Bool(_) => (self, Some(activation.context.avm1.prototypes().boolean)),
+            Value::Number(_) => (self, Some(activation.context.avm1.prototypes().number)),
+            Value::String(_) => (self, Some(activation.context.avm1.prototypes().string)),
+        };
+
+        let obj = ScriptObject::new(activation.gc(), proto).into();
+
+        // Constructor populates the boxed object with the value.
+        use crate::avm1::globals;
+        let _ = match value {
+            Value::Bool(_) => globals::boolean::constructor(activation, obj, &[value]),
+            Value::Number(_) => globals::number::number(activation, obj, &[value]),
+            Value::String(_) => globals::string::string(activation, obj, &[value]),
+            _ => {
+                let vbox = Gc::new(activation.gc(), Value::Undefined);
+                obj.set_native(activation.gc(), NativeObject::Value(vbox));
+                Ok(Value::Undefined)
+            }
+        };
+
+        obj
     }
 
     pub fn as_blend_mode(&self) -> Option<swf::BlendMode> {
@@ -734,7 +763,7 @@ fn parse_sign(s: &mut &WStr) -> bool {
 /// * `strict == false` ignores trailing garbage (like `parseFloat()`).
 pub fn parse_float_impl(mut s: &WStr, strict: bool) -> f64 {
     fn is_ascii_digit(c: u16) -> bool {
-        u8::try_from(c).map_or(false, |c| c.is_ascii_digit())
+        u8::try_from(c).is_ok_and(|c| c.is_ascii_digit())
     }
 
     // Allow leading whitespace.
@@ -908,7 +937,7 @@ mod test {
             );
             assert_eq!(null.to_primitive_num(activation).unwrap(), null);
 
-            let (protos, global, _) = create_globals(&mut activation.context.borrow_gc());
+            let (protos, global, _) = create_globals(activation.strings());
             let vglobal = Value::Object(global);
 
             assert_eq!(vglobal.to_primitive_num(activation).unwrap(), undefined);

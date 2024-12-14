@@ -1,4 +1,0 @@
-env:
-  node: true
-parserOptions:
-  ecmaVersion: 2022 # Needed for top-level-await.

@@ -9,3 +9,4 @@ context-menu-about-ruffle =
 context-menu-hide = Esconder este menu
 context-menu-exit-fullscreen = Sair da tela cheia
 context-menu-enter-fullscreen = Entrar em tela cheia
+context-menu-volume-controls = Controles de volume

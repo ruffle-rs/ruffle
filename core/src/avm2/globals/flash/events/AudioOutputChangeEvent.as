@@ -4,6 +4,7 @@
 // It won't be regenerated in the future, so feel free to edit and/or fix
 package flash.events
 {
+    // TODO: [API("724")]
     public class AudioOutputChangeEvent extends Event
     {
         public static const AUDIO_OUTPUT_CHANGE:String = "audioOutputChange"; // Defines the value of the type property of a AudioOutputChangeEvent event object.

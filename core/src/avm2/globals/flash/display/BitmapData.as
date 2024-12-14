@@ -10,9 +10,7 @@ package flash.display {
 
     [Ruffle(InstanceAllocator)]
     public class BitmapData implements IBitmapDrawable {
-        // FIXME - the first two arguments should not be defaulted, but it's currently
-        // nedded for BitmapData to be contructed internally
-        public function BitmapData(width:int=0, height:int=0, transparent:Boolean = true, fillColor:uint = 0xFFFFFFFF) {
+        public function BitmapData(width:int, height:int, transparent:Boolean = true, fillColor:uint = 0xFFFFFFFF) {
             this.init(width, height, transparent, fillColor);
         }
 
@@ -24,6 +22,7 @@ package flash.display {
         public native function get transparent():Boolean;
 
         public native function getPixels(rect:Rectangle):ByteArray;
+        [API("682")]
         public native function copyPixelsToByteArray(rect:Rectangle, data:ByteArray):void;
         public native function getVector(rect:Rectangle):Vector.<uint>;
         public native function getPixel(x:int, y:int):uint;
@@ -40,6 +39,31 @@ package flash.display {
         public native function scroll(x:int, y:int):void;
         public native function lock():void;
         public native function hitTest(firstPoint:Point, firstAlphaThreshold:uint, secondObject:Object, secondBitmapDataPoint:Point = null, secondAlphaThreshold:uint = 1):Boolean;
+        public function histogram(rect:Rectangle = null): Vector.<Vector.<Number>> {
+            if (!rect) {
+                rect = this.rect;
+            }
+
+            var a = new Vector.<Number>(256);
+            var r = new Vector.<Number>(256);
+            var g = new Vector.<Number>(256);
+            var b = new Vector.<Number>(256);
+
+            var pixels = getPixels(rect);
+            for (var i = 0; i < pixels.length; i += 4) {
+                a[pixels[i]]++;
+                r[pixels[i + 1]]++;
+                g[pixels[i + 2]]++;
+                b[pixels[i + 3]]++;
+            }
+
+            var result = new Vector.<Vector.<Number>>(4);
+            result[0] = r;
+            result[1] = g;
+            result[2] = b;
+            result[3] = a;
+            return result;
+        }
         public native function unlock(changeRect:Rectangle = null):void;
         public native function copyPixels(
             sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, alphaBitmapData:BitmapData = null, alphaPoint:Point = null, mergeAlpha:Boolean = false
@@ -47,6 +71,7 @@ package flash.display {
         public native function draw(
             source:IBitmapDrawable, matrix:Matrix = null, colorTransform:ColorTransform = null, blendMode:String = null, clipRect:Rectangle = null, smoothing:Boolean = false
         ):void;
+        [API("680")]
         public native function drawWithQuality(
             source:IBitmapDrawable, matrix:Matrix = null, colorTransform:ColorTransform = null, blendMode:String = null, clipRect:Rectangle = null, smoothing:Boolean = false, quality:String = null
         ):void;

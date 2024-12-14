@@ -4,8 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{NativeObject, Object, ScriptObject, TObject, Value};
-use crate::context::GcContext;
-use crate::string::{AvmString, WStr};
+use crate::string::{AvmString, StringContext, WStr};
 use crate::xml::{XmlNode, TEXT_NODE};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
@@ -38,15 +37,16 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let mc = activation.gc();
     let mut node = if let [node_type, value, ..] = args {
         let node_type = node_type.coerce_to_u8(activation)?;
         let node_value = value.coerce_to_string(activation)?;
-        XmlNode::new(activation.context.gc_context, node_type, Some(node_value))
+        XmlNode::new(mc, node_type, Some(node_value))
     } else {
-        XmlNode::new(activation.context.gc_context, TEXT_NODE, Some("".into()))
+        XmlNode::new(mc, TEXT_NODE, Some(activation.strings().empty()))
     };
-    node.introduce_script_object(activation.context.gc_context, this);
-    this.set_native(activation.context.gc_context, NativeObject::XmlNode(node));
+    node.introduce_script_object(mc, this);
+    this.set_native(mc, NativeObject::XmlNode(node));
 
     Ok(this.into())
 }
@@ -146,7 +146,7 @@ fn get_prefix_for_namespace<'gc>(
                         if let Some(prefix) = prefix.strip_prefix(b':') {
                             return Ok(AvmString::new(activation.context.gc_context, prefix).into());
                         } else {
-                            return Ok("".into());
+                            return Ok(activation.strings().empty().into());
                         }
                     }
                 }
@@ -195,7 +195,7 @@ fn to_string<'gc>(
         return Ok(AvmString::new(activation.context.gc_context, string).into());
     }
 
-    Ok("".into())
+    Ok(activation.strings().empty().into())
 }
 
 fn local_name<'gc>(
@@ -271,7 +271,7 @@ fn prefix<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(this
         .as_xml_node()
-        .and_then(|n| n.prefix(activation.context.gc_context))
+        .and_then(|n| n.prefix(activation.strings()))
         .map_or(Value::Null, Value::from))
 }
 
@@ -382,10 +382,10 @@ fn namespace_uri<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(node) = this.as_xml_node() {
-        if let Some(prefix) = node.prefix(activation.context.gc_context) {
+        if let Some(prefix) = node.prefix(activation.strings()) {
             return Ok(node
                 .lookup_namespace_uri(&prefix)
-                .unwrap_or_else(|| "".into()));
+                .unwrap_or_else(|| activation.strings().empty().into()));
         }
 
         return Ok(Value::Null);
@@ -396,7 +396,7 @@ fn namespace_uri<'gc>(
 
 /// Construct the prototype for `XMLNode`.
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

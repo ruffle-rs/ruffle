@@ -2,7 +2,7 @@ use crate::avm2::{
     Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
 };
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, TDisplayObject};
+use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
 use crate::library::{Library, MovieLibrarySource};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
@@ -12,7 +12,7 @@ use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
 use std::cell::{Ref, RefCell, RefMut};
 use std::sync::Arc;
-use swf::{Fixed16, Fixed8, PointDelta, Twips};
+use swf::{Fixed16, Fixed8};
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
@@ -89,7 +89,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         Some(*self)
     }
 
-    fn replace_with(&self, context: &mut UpdateContext<'_, 'gc>, id: CharacterId) {
+    fn replace_with(&self, context: &mut UpdateContext<'gc>, id: CharacterId) {
         if let Some(new_morph_shape) = context
             .library
             .library_for_movie_mut(self.movie())
@@ -114,15 +114,15 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
             .unwrap_or(Avm2Value::Null)
     }
 
-    fn set_object2(&self, context: &mut UpdateContext<'_, 'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
         self.0.write(context.gc_context).object = Some(to);
     }
 
     /// Construct objects placed on this frame.
-    fn construct_frame(&self, context: &mut UpdateContext<'_, 'gc>) {
-        if context.is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
+    fn construct_frame(&self, context: &mut UpdateContext<'gc>) {
+        if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
             let class = context.avm2.classes().morphshape;
-            let mut activation = Avm2Activation::from_nothing(context.reborrow());
+            let mut activation = Avm2Activation::from_nothing(context);
             match Avm2StageObject::for_display_object_childless(
                 &mut activation,
                 (*self).into(),
@@ -155,7 +155,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
 
     fn hit_test_shape(
         &self,
-        _context: &mut UpdateContext<'_, 'gc>,
+        _context: &mut UpdateContext<'gc>,
         point: Point<Twips>,
         options: HitTestOptions,
     ) -> bool {
@@ -215,7 +215,7 @@ impl MorphShapeStatic {
     }
 
     /// Retrieves the `Frame` for the given ratio.
-    /// Lazily intializes the frame if it does not yet exist.
+    /// Lazily initializes the frame if it does not yet exist.
     fn get_frame(&self, ratio: u16) -> RefMut<'_, Frame> {
         let frames = self.frames.borrow_mut();
         RefMut::map(frames, |frames| {
@@ -226,7 +226,7 @@ impl MorphShapeStatic {
     }
 
     /// Retrieves the `ShapeHandle` for the given ratio.
-    /// Lazily intializes and tessellates the shape if it does not yet exist.
+    /// Lazily initializes and tessellates the shape if it does not yet exist.
     fn get_shape<'gc>(
         &self,
         context: &mut RenderContext<'_, 'gc>,
@@ -238,13 +238,9 @@ impl MorphShapeStatic {
             handle
         } else {
             let library = library.library_for_movie(self.movie.clone()).unwrap();
-            let handle = context.renderer.register_shape(
-                (&frame.shape).into(),
-                &MovieLibrarySource {
-                    library,
-                    gc_context: context.gc_context,
-                },
-            );
+            let handle = context
+                .renderer
+                .register_shape((&frame.shape).into(), &MovieLibrarySource { library });
             frame.shape_handle = Some(handle.clone());
             handle
         }
@@ -343,7 +339,14 @@ impl MorphShapeStatic {
                     continue;
                 }
                 _ => {
-                    shape.push(lerp_edges(s, e, a, b));
+                    shape.push(lerp_edges(
+                        Point::new(start_x, start_y),
+                        Point::new(end_x, end_y),
+                        s,
+                        e,
+                        a,
+                        b,
+                    ));
                     Self::update_pos(&mut start_x, &mut start_y, s);
                     Self::update_pos(&mut end_x, &mut end_y, e);
                     start = start_iter.next();
@@ -415,7 +418,14 @@ fn lerp_color(start: &Color, end: &Color, a: f32, b: f32) -> Color {
 }
 
 fn lerp_twips(start: Twips, end: Twips, a: f32, b: f32) -> Twips {
-    Twips::new((start.get() as f32 * a + end.get() as f32 * b) as i32)
+    Twips::new((start.get() as f32 * a + end.get() as f32 * b).round() as i32)
+}
+
+fn lerp_point_twips(start: Point<Twips>, end: Point<Twips>, a: f32, b: f32) -> Point<Twips> {
+    Point::new(
+        lerp_twips(start.x, end.x, a, b),
+        lerp_twips(start.y, end.y, a, b),
+    )
 }
 
 fn lerp_fill(start: &swf::FillStyle, end: &swf::FillStyle, a: f32, b: f32) -> swf::FillStyle {
@@ -483,81 +493,96 @@ fn lerp_fill(start: &swf::FillStyle, end: &swf::FillStyle, a: f32, b: f32) -> sw
 }
 
 fn lerp_edges(
+    start_pen: Point<Twips>,
+    end_pen: Point<Twips>,
     start: &swf::ShapeRecord,
     end: &swf::ShapeRecord,
     a: f32,
     b: f32,
 ) -> swf::ShapeRecord {
     use swf::ShapeRecord;
+    let pen = lerp_point_twips(start_pen, end_pen, a, b);
     match (start, end) {
-        (ShapeRecord::StraightEdge { delta: start }, ShapeRecord::StraightEdge { delta: end }) => {
+        (
+            ShapeRecord::StraightEdge { delta: start_delta },
+            ShapeRecord::StraightEdge { delta: end_delta },
+        ) => {
+            let start_anchor = start_pen + *start_delta;
+            let end_anchor = end_pen + *end_delta;
+
+            let anchor = lerp_point_twips(start_anchor, end_anchor, a, b);
+
             ShapeRecord::StraightEdge {
-                delta: PointDelta::new(
-                    lerp_twips(start.dx, end.dx, a, b),
-                    lerp_twips(start.dy, end.dy, a, b),
-                ),
+                delta: anchor - pen,
             }
         }
 
         (
             ShapeRecord::CurvedEdge {
-                control_delta: start_control,
-                anchor_delta: start_anchor,
+                control_delta: start_control_delta,
+                anchor_delta: start_anchor_delta,
             },
             ShapeRecord::CurvedEdge {
-                control_delta: end_control,
-                anchor_delta: end_anchor,
-            },
-        ) => ShapeRecord::CurvedEdge {
-            control_delta: PointDelta::new(
-                lerp_twips(start_control.dx, end_control.dx, a, b),
-                lerp_twips(start_control.dy, end_control.dy, a, b),
-            ),
-            anchor_delta: PointDelta::new(
-                lerp_twips(start_anchor.dx, end_anchor.dx, a, b),
-                lerp_twips(start_anchor.dy, end_anchor.dy, a, b),
-            ),
-        },
-
-        (
-            ShapeRecord::StraightEdge { delta: start },
-            ShapeRecord::CurvedEdge {
-                control_delta: end_control,
-                anchor_delta: end_anchor,
+                control_delta: end_control_delta,
+                anchor_delta: end_anchor_delta,
             },
         ) => {
-            let start_control = *start / 2;
-            let start_anchor = start_control;
+            let start_control = start_pen + *start_control_delta;
+            let start_anchor = start_control + *start_anchor_delta;
+
+            let end_control = end_pen + *end_control_delta;
+            let end_anchor = end_control + *end_anchor_delta;
+
+            let control = lerp_point_twips(start_control, end_control, a, b);
+            let anchor = lerp_point_twips(start_anchor, end_anchor, a, b);
+
             ShapeRecord::CurvedEdge {
-                control_delta: PointDelta::new(
-                    lerp_twips(start_control.dx, end_control.dx, a, b),
-                    lerp_twips(start_control.dy, end_control.dy, a, b),
-                ),
-                anchor_delta: PointDelta::new(
-                    lerp_twips(start_anchor.dx, end_anchor.dx, a, b),
-                    lerp_twips(start_anchor.dy, end_anchor.dy, a, b),
-                ),
+                control_delta: control - pen,
+                anchor_delta: anchor - control,
+            }
+        }
+
+        (
+            ShapeRecord::StraightEdge { delta: start_delta },
+            ShapeRecord::CurvedEdge {
+                control_delta: end_control_delta,
+                anchor_delta: end_anchor_delta,
+            },
+        ) => {
+            let start_control = start_pen + *start_delta / 2;
+            let start_anchor = start_pen + *start_delta;
+
+            let end_control = end_pen + *end_control_delta;
+            let end_anchor = end_control + *end_anchor_delta;
+
+            let control = lerp_point_twips(start_control, end_control, a, b);
+            let anchor = lerp_point_twips(start_anchor, end_anchor, a, b);
+
+            ShapeRecord::CurvedEdge {
+                control_delta: control - pen,
+                anchor_delta: anchor - control,
             }
         }
 
         (
             ShapeRecord::CurvedEdge {
-                control_delta: start_control,
-                anchor_delta: start_anchor,
+                control_delta: start_control_delta,
+                anchor_delta: start_anchor_delta,
             },
-            ShapeRecord::StraightEdge { delta: end },
+            ShapeRecord::StraightEdge { delta: end_delta },
         ) => {
-            let end_control = *end / 2;
-            let end_anchor = end_control;
+            let start_control = start_pen + *start_control_delta;
+            let start_anchor = start_control + *start_anchor_delta;
+
+            let end_control = end_pen + *end_delta / 2;
+            let end_anchor = end_pen + *end_delta;
+
+            let control = lerp_point_twips(start_control, end_control, a, b);
+            let anchor = lerp_point_twips(start_anchor, end_anchor, a, b);
+
             ShapeRecord::CurvedEdge {
-                control_delta: PointDelta::new(
-                    lerp_twips(start_control.dx, end_control.dx, a, b),
-                    lerp_twips(start_control.dy, end_control.dy, a, b),
-                ),
-                anchor_delta: PointDelta::new(
-                    lerp_twips(start_anchor.dx, end_anchor.dx, a, b),
-                    lerp_twips(start_anchor.dy, end_anchor.dy, a, b),
-                ),
+                control_delta: control - pen,
+                anchor_delta: anchor - control,
             }
         }
         _ => unreachable!("{:?} {:?}", start, end),
@@ -598,5 +623,23 @@ fn lerp_gradient(start: &swf::Gradient, end: &swf::Gradient, a: f32, b: f32) -> 
         spread: start.spread,
         interpolation: start.interpolation,
         records,
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    // Regression test for #14074
+    #[test]
+    fn test_lerp_rounding() {
+        let ratio: u16 = 17246;
+        let b = f32::from(ratio) / 65535.0;
+        let a = 1.0 - b;
+
+        assert_eq!(
+            lerp_twips(Twips::new(-7), Twips::new(-7), a, b),
+            Twips::new(-7)
+        );
     }
 }

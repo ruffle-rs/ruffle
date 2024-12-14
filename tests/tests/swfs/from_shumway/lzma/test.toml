@@ -1,0 +1,4 @@
+num_frames = 1
+
+[required_features]
+lzma = true

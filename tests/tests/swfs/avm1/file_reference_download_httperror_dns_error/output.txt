@@ -1,0 +1,13 @@
+// fileref.download (http error)
+true
+// onSelect
+C:undefined
+N:debug-success.txt
+T:.txt
+-----
+Error opening URL 'http://invalid-domain.domain/test?debug-error-dns'
+// onIoError
+C:undefined
+N:debug-success.txt
+T:.txt
+-----

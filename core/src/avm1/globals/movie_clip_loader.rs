@@ -9,9 +9,9 @@ use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{ArrayObject, Object, Value};
 use crate::backend::navigator::Request;
-use crate::context::GcContext;
-use crate::display_object::{TDisplayObject, TDisplayObjectContainer};
+use crate::display_object::TDisplayObject;
 use crate::loader::MovieLoaderVMData;
+use crate::string::StringContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "loadClip" => method(load_clip; DONT_ENUM | DONT_DELETE);
@@ -95,7 +95,7 @@ fn unload_clip<'gc>(
             Value::Number(level_id) => {
                 // Levels are rounded down.
                 // TODO: What happens with negative levels?
-                activation.context.stage.child_by_depth(*level_id as i32)
+                activation.get_level(*level_id as i32)
             }
             Value::Object(object) => object.as_display_object(),
             Value::MovieClip(_) => target.coerce_to_object(activation).as_display_object(),
@@ -106,9 +106,9 @@ fn unload_clip<'gc>(
             // does Flash also wait a frame to execute avm1_unload? Is avm1_unload_movie
             // the correct call?
             if let Some(mc) = target.as_movie_clip() {
-                mc.avm1_unload_movie(&mut activation.context);
+                mc.avm1_unload_movie(activation.context);
             } else {
-                target.avm1_unload(&mut activation.context);
+                target.avm1_unload(activation.context);
             }
             return Ok(true.into());
         }
@@ -133,7 +133,7 @@ fn get_progress<'gc>(
             Value::Number(level_id) => {
                 // Levels are rounded down.
                 // TODO: What happens with negative levels?
-                activation.context.stage.child_by_depth(*level_id as i32)
+                activation.get_level(*level_id as i32)
             }
             Value::Object(object) if object.as_display_object().is_some() => {
                 object.as_display_object()
@@ -163,7 +163,7 @@ fn get_progress<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
     array_proto: Object<'gc>,

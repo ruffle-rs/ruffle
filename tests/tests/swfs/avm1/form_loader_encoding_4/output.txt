@@ -1,0 +1,3 @@
+UTF8: ÄÖÜ ß - 片仮名
+Iso Latin-1: Ŗڠݠ- Valid UTF-8 again - Ŗڠݠ- Valid again - Ŗڠ
+Shift Jis: Љ¼¼ - Valid UTF-8 again - Љ¼¼ - Valid again - Љ¼¼

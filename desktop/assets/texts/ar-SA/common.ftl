@@ -1,2 +1,8 @@
+language-name = العربية
 start = إبدأ
-browse = استعراض
+browse = إستعرض
+save = حفظ
+cancel = ألغِ
+remove = أزِل
+enable = فعِّل
+disable = عطِّل

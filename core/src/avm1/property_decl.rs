@@ -1,15 +1,17 @@
 //! Declarative macro for defining AVM1 properties.
 
+use std::borrow::Cow;
+
 use crate::avm1::function::{Executable, FunctionObject, NativeFunction};
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, ScriptObject, TObject, Value};
-use crate::context::GcContext;
+use crate::string::{AvmAtom, StringContext};
 
 /// Defines a list of properties on a [`ScriptObject`].
 #[inline(never)]
 pub fn define_properties_on<'gc>(
     decls: &[Declaration],
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     this: ScriptObject<'gc>,
     fn_proto: Object<'gc>,
 ) {
@@ -61,15 +63,20 @@ impl Declaration {
     /// defined a property.
     pub fn define_on<'gc>(
         &self,
-        context: &mut GcContext<'_, 'gc>,
+        context: &mut StringContext<'gc>,
         this: ScriptObject<'gc>,
         fn_proto: Object<'gc>,
     ) -> Value<'gc> {
         let mc = context.gc_context;
 
-        let name = ruffle_wstr::from_utf8(self.name);
-        let name = context.interner.intern_wstr(mc, name);
+        let mut intern_utf8 = |s: &'static str| -> AvmAtom<'gc> {
+            match ruffle_wstr::from_utf8(s) {
+                Cow::Borrowed(s) => context.intern_static(s),
+                Cow::Owned(s) => context.intern_wstr(s),
+            }
+        };
 
+        let name = intern_utf8(self.name);
         let value = match self.kind {
             DeclKind::Property { getter, setter } => {
                 let getter =
@@ -87,10 +94,7 @@ impl Declaration {
             DeclKind::Function(func) => {
                 FunctionObject::function(mc, Executable::Native(func), fn_proto, fn_proto).into()
             }
-            DeclKind::String(s) => {
-                let s = ruffle_wstr::from_utf8(s);
-                context.interner.intern_wstr(mc, s).into()
-            }
+            DeclKind::String(s) => intern_utf8(s).into(),
             DeclKind::Bool(b) => b.into(),
             DeclKind::Int(i) => i.into(),
             DeclKind::Float(f) => f.into(),

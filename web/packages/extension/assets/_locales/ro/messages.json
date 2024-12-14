@@ -9,7 +9,7 @@
         "message": "Afișează descărcarea de SWF-uri în meniul contextual"
     },
     "settings_autostart": {
-        "message": "Redă automat fără ecranul de pornire (apoi dă click pentru a dezmuți)"
+        "message": "Redă automat conținut Flash (dă clic pentru a dezmuți)"
     },
     "settings_log_level": {
         "message": "Nivel pentru jurnale"
@@ -24,10 +24,10 @@
         "message": "Informații"
     },
     "settings_max_execution_duration": {
-        "message": "Durata maximă permisă de execuție a ActionScript (în secunde)"
+        "message": "Durată maximă permisă de execuție pentru ActionScript (în secunde)"
     },
     "settings_player_version": {
-        "message": "Numărul versiunii player-ului Flash de emulat (interval 1-32)"
+        "message": "Numărul versiunii Flash Player de emulat (interval 1-32)"
     },
     "settings_preferred_renderer": {
         "message": "Renderer preferat"
@@ -37,6 +37,12 @@
     },
     "settings_advanced_options": {
         "message": "Opțiuni avansate"
+    },
+    "settings_reset": {
+        "message": "Resetează setările"
+    },
+    "settings_reset_confirm": {
+        "message": "Sigur vrei să restaurezi setările Ruffle la valorile implicite inițiale?"
     },
     "status_init": {
         "message": "Se citește fila actuală…"
@@ -51,16 +57,16 @@
         "message": "Se verifică starea Ruffle în fila actuală…"
     },
     "status_result_running": {
-        "message": "Ruffle este încărcat şi gata să ruleze conţinutul Flash din fila curentă."
+        "message": "Ruffle este pregătit să ruleze conținut Flash în fila actuală."
     },
     "status_result_optout": {
-        "message": "Ruffle nu este încărcat, deoarece pagina actuală s-a marcat ca fiind incompatibilă."
+        "message": "Ruffle nu se poate încărca deoarece pagina actuală s-a marcat ca fiind incompatibilă."
     },
     "status_result_disabled": {
-        "message": "Ruffle nu este încărcat deoarece este dezactivat."
+        "message": "Ruffle este dezactivat."
     },
     "status_result_error": {
-        "message": "A apărut o eroare la interogarea instanței Ruffle în fila actuală."
+        "message": "A apărut o eroare la interogarea instanței Ruffle din fila actuală."
     },
     "status_result_protected": {
         "message": "Ruffle nu se poate încărca pe paginile protejate ale browserului."

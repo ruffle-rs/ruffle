@@ -21,7 +21,7 @@ use crate::filters::shader::ShaderFilter;
 use crate::surface::target::CommandTarget;
 use bytemuck::{Pod, Zeroable};
 use ruffle_render::filters::Filter;
-use wgpu::util::DeviceExt;
+use wgpu::util::StagingBelt;
 use wgpu::vertex_attr_array;
 
 #[derive(Debug)]
@@ -40,165 +40,148 @@ impl<'a> FilterSource<'a> {
         }
     }
 
-    pub fn vertices(&self, device: &wgpu::Device) -> wgpu::Buffer {
+    pub fn vertices(&self) -> [FilterVertex; 4] {
         let source_width = self.texture.width() as f32;
         let source_height = self.texture.height() as f32;
         let left = self.point.0;
         let top = self.point.1;
         let right = left + self.size.0;
         let bottom = top + self.size.1;
-        device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: create_debug_label!("Filter vertices").as_deref(),
-            contents: bytemuck::cast_slice(&[
-                FilterVertex {
-                    position: [0.0, 0.0],
-                    uv: [left as f32 / source_width, top as f32 / source_height],
-                },
-                FilterVertex {
-                    position: [1.0, 0.0],
-                    uv: [right as f32 / source_width, top as f32 / source_height],
-                },
-                FilterVertex {
-                    position: [1.0, 1.0],
-                    uv: [right as f32 / source_width, bottom as f32 / source_height],
-                },
-                FilterVertex {
-                    position: [0.0, 1.0],
-                    uv: [left as f32 / source_width, bottom as f32 / source_height],
-                },
-            ]),
-            usage: wgpu::BufferUsages::VERTEX,
-        })
+        [
+            FilterVertex {
+                position: [0.0, 0.0],
+                uv: [left as f32 / source_width, top as f32 / source_height],
+            },
+            FilterVertex {
+                position: [1.0, 0.0],
+                uv: [right as f32 / source_width, top as f32 / source_height],
+            },
+            FilterVertex {
+                position: [1.0, 1.0],
+                uv: [right as f32 / source_width, bottom as f32 / source_height],
+            },
+            FilterVertex {
+                position: [0.0, 1.0],
+                uv: [left as f32 / source_width, bottom as f32 / source_height],
+            },
+        ]
     }
 
-    pub fn vertices_with_blur_offset(
-        &self,
-        device: &wgpu::Device,
-        blur_offset: (f32, f32),
-    ) -> wgpu::Buffer {
+    pub fn vertices_with_blur_offset(&self, blur_offset: (f32, f32)) -> [FilterVertexWithBlur; 4] {
         let source_width = self.texture.width() as f32;
         let source_height = self.texture.height() as f32;
         let source_left = self.point.0;
         let source_top = self.point.1;
         let source_right = source_left + self.size.0;
         let source_bottom = source_top + self.size.1;
-        device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: create_debug_label!("Filter vertices").as_deref(),
-            contents: bytemuck::cast_slice(&[
-                FilterVertexWithBlur {
-                    position: [0.0, 0.0],
-                    source_uv: [
-                        source_left as f32 / source_width,
-                        source_top as f32 / source_height,
-                    ],
-                    blur_uv: [
-                        (source_left as f32 + blur_offset.0) / source_width,
-                        (source_top as f32 + blur_offset.1) / source_height,
-                    ],
-                },
-                FilterVertexWithBlur {
-                    position: [1.0, 0.0],
-                    source_uv: [
-                        source_right as f32 / source_width,
-                        source_top as f32 / source_height,
-                    ],
-                    blur_uv: [
-                        (source_right as f32 + blur_offset.0) / source_width,
-                        (source_top as f32 + blur_offset.1) / source_height,
-                    ],
-                },
-                FilterVertexWithBlur {
-                    position: [1.0, 1.0],
-                    source_uv: [
-                        source_right as f32 / source_width,
-                        source_bottom as f32 / source_height,
-                    ],
-                    blur_uv: [
-                        (source_right as f32 + blur_offset.0) / source_width,
-                        (source_bottom as f32 + blur_offset.1) / source_height,
-                    ],
-                },
-                FilterVertexWithBlur {
-                    position: [0.0, 1.0],
-                    source_uv: [
-                        source_left as f32 / source_width,
-                        source_bottom as f32 / source_height,
-                    ],
-                    blur_uv: [
-                        (source_left as f32 + blur_offset.0) / source_width,
-                        (source_bottom as f32 + blur_offset.1) / source_height,
-                    ],
-                },
-            ]),
-            usage: wgpu::BufferUsages::VERTEX,
-        })
+        [
+            FilterVertexWithBlur {
+                position: [0.0, 0.0],
+                source_uv: [
+                    source_left as f32 / source_width,
+                    source_top as f32 / source_height,
+                ],
+                blur_uv: [
+                    (source_left as f32 + blur_offset.0) / source_width,
+                    (source_top as f32 + blur_offset.1) / source_height,
+                ],
+            },
+            FilterVertexWithBlur {
+                position: [1.0, 0.0],
+                source_uv: [
+                    source_right as f32 / source_width,
+                    source_top as f32 / source_height,
+                ],
+                blur_uv: [
+                    (source_right as f32 + blur_offset.0) / source_width,
+                    (source_top as f32 + blur_offset.1) / source_height,
+                ],
+            },
+            FilterVertexWithBlur {
+                position: [1.0, 1.0],
+                source_uv: [
+                    source_right as f32 / source_width,
+                    source_bottom as f32 / source_height,
+                ],
+                blur_uv: [
+                    (source_right as f32 + blur_offset.0) / source_width,
+                    (source_bottom as f32 + blur_offset.1) / source_height,
+                ],
+            },
+            FilterVertexWithBlur {
+                position: [0.0, 1.0],
+                source_uv: [
+                    source_left as f32 / source_width,
+                    source_bottom as f32 / source_height,
+                ],
+                blur_uv: [
+                    (source_left as f32 + blur_offset.0) / source_width,
+                    (source_bottom as f32 + blur_offset.1) / source_height,
+                ],
+            },
+        ]
     }
 
     pub fn vertices_with_highlight_and_shadow(
         &self,
-        device: &wgpu::Device,
         blur_offset: (f32, f32),
-    ) -> wgpu::Buffer {
+    ) -> [FilterVertexWithDoubleBlur; 4] {
         let source_width = self.texture.width() as f32;
         let source_height = self.texture.height() as f32;
         let source_left = self.point.0 as f32;
         let source_top = self.point.1 as f32;
         let source_right = (self.point.0 + self.size.0) as f32;
         let source_bottom = (self.point.1 + self.size.1) as f32;
-        device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: create_debug_label!("Filter vertices").as_deref(),
-            contents: bytemuck::cast_slice(&[
-                FilterVertexWithDoubleBlur {
-                    position: [0.0, 0.0],
-                    source_uv: [source_left / source_width, source_top / source_height],
-                    blur_uv_left: [
-                        (source_left + blur_offset.0) / source_width,
-                        (source_top + blur_offset.1) / source_height,
-                    ],
-                    blur_uv_right: [
-                        (source_left - blur_offset.0) / source_width,
-                        (source_top - blur_offset.1) / source_height,
-                    ],
-                },
-                FilterVertexWithDoubleBlur {
-                    position: [1.0, 0.0],
-                    source_uv: [source_right / source_width, source_top / source_height],
-                    blur_uv_left: [
-                        (source_right + blur_offset.0) / source_width,
-                        (source_top + blur_offset.1) / source_height,
-                    ],
-                    blur_uv_right: [
-                        (source_right - blur_offset.0) / source_width,
-                        (source_top - blur_offset.1) / source_height,
-                    ],
-                },
-                FilterVertexWithDoubleBlur {
-                    position: [1.0, 1.0],
-                    source_uv: [source_right / source_width, source_bottom / source_height],
-                    blur_uv_left: [
-                        (source_right + blur_offset.0) / source_width,
-                        (source_bottom + blur_offset.1) / source_height,
-                    ],
-                    blur_uv_right: [
-                        (source_right - blur_offset.0) / source_width,
-                        (source_bottom - blur_offset.1) / source_height,
-                    ],
-                },
-                FilterVertexWithDoubleBlur {
-                    position: [0.0, 1.0],
-                    source_uv: [source_left / source_width, source_bottom / source_height],
-                    blur_uv_left: [
-                        (source_left + blur_offset.0) / source_width,
-                        (source_bottom + blur_offset.1) / source_height,
-                    ],
-                    blur_uv_right: [
-                        (source_left - blur_offset.0) / source_width,
-                        (source_bottom - blur_offset.1) / source_height,
-                    ],
-                },
-            ]),
-            usage: wgpu::BufferUsages::VERTEX,
-        })
+        [
+            FilterVertexWithDoubleBlur {
+                position: [0.0, 0.0],
+                source_uv: [source_left / source_width, source_top / source_height],
+                blur_uv_left: [
+                    (source_left + blur_offset.0) / source_width,
+                    (source_top + blur_offset.1) / source_height,
+                ],
+                blur_uv_right: [
+                    (source_left - blur_offset.0) / source_width,
+                    (source_top - blur_offset.1) / source_height,
+                ],
+            },
+            FilterVertexWithDoubleBlur {
+                position: [1.0, 0.0],
+                source_uv: [source_right / source_width, source_top / source_height],
+                blur_uv_left: [
+                    (source_right + blur_offset.0) / source_width,
+                    (source_top + blur_offset.1) / source_height,
+                ],
+                blur_uv_right: [
+                    (source_right - blur_offset.0) / source_width,
+                    (source_top - blur_offset.1) / source_height,
+                ],
+            },
+            FilterVertexWithDoubleBlur {
+                position: [1.0, 1.0],
+                source_uv: [source_right / source_width, source_bottom / source_height],
+                blur_uv_left: [
+                    (source_right + blur_offset.0) / source_width,
+                    (source_bottom + blur_offset.1) / source_height,
+                ],
+                blur_uv_right: [
+                    (source_right - blur_offset.0) / source_width,
+                    (source_bottom - blur_offset.1) / source_height,
+                ],
+            },
+            FilterVertexWithDoubleBlur {
+                position: [0.0, 1.0],
+                source_uv: [source_left / source_width, source_bottom / source_height],
+                blur_uv_left: [
+                    (source_left + blur_offset.0) / source_width,
+                    (source_bottom + blur_offset.1) / source_height,
+                ],
+                blur_uv_right: [
+                    (source_left - blur_offset.0) / source_width,
+                    (source_bottom - blur_offset.1) / source_height,
+                ],
+            },
+        ]
     }
 }
 
@@ -228,88 +211,97 @@ impl Filters {
         descriptors: &Descriptors,
         draw_encoder: &mut wgpu::CommandEncoder,
         texture_pool: &mut TexturePool,
+        staging_belt: &mut StagingBelt,
         source: FilterSource,
         filter: Filter,
     ) -> CommandTarget {
-        let target =
-            match filter {
-                Filter::ColorMatrixFilter(filter) => Some(descriptors.filters.color_matrix.apply(
-                    descriptors,
-                    texture_pool,
-                    draw_encoder,
-                    &source,
-                    &filter,
-                )),
-                Filter::BlurFilter(filter) => descriptors.filters.blur.apply(
-                    descriptors,
-                    texture_pool,
-                    draw_encoder,
-                    &source,
-                    &filter,
-                ),
-                Filter::ShaderFilter(shader) => Some(descriptors.filters.shader.apply(
-                    descriptors,
-                    texture_pool,
-                    draw_encoder,
-                    &source,
-                    shader,
-                )),
-                Filter::GlowFilter(filter) => Some(descriptors.filters.glow.apply(
-                    descriptors,
-                    texture_pool,
-                    draw_encoder,
-                    &source,
-                    &filter,
-                    &self.blur,
-                    (0.0, 0.0),
-                )),
-                Filter::DropShadowFilter(filter) => Some(DropShadowFilter::apply(
-                    descriptors,
-                    texture_pool,
-                    draw_encoder,
-                    &source,
-                    &filter,
-                    &self.blur,
-                    &self.glow,
-                )),
-                Filter::BevelFilter(filter) => Some(descriptors.filters.bevel.apply(
-                    descriptors,
-                    texture_pool,
-                    draw_encoder,
-                    &source,
-                    &filter,
-                    &self.blur,
-                )),
-                Filter::DisplacementMapFilter(filter) => descriptors
-                    .filters
-                    .displacement_map
-                    .apply(descriptors, texture_pool, draw_encoder, &source, &filter),
-                filter => {
-                    static WARNED_FILTERS: OnceLock<Mutex<HashSet<&'static str>>> = OnceLock::new();
-                    let name = match filter {
-                        Filter::GradientGlowFilter(_) => "GradientGlowFilter",
-                        Filter::GradientBevelFilter(_) => "GradientBevelFilter",
-                        Filter::ConvolutionFilter(_) => "ConvolutionFilter",
-                        Filter::ColorMatrixFilter(_)
-                        | Filter::BlurFilter(_)
-                        | Filter::GlowFilter(_)
-                        | Filter::DropShadowFilter(_)
-                        | Filter::BevelFilter(_)
-                        | Filter::DisplacementMapFilter(_)
-                        | Filter::ShaderFilter(_) => unreachable!(),
-                    };
-                    // Only warn once per filter type
-                    if WARNED_FILTERS
-                        .get_or_init(Default::default)
-                        .lock()
-                        .unwrap()
-                        .insert(name)
-                    {
-                        tracing::warn!("Unsupported filter {filter:?}");
-                    }
-                    None
+        let target = match filter {
+            Filter::ColorMatrixFilter(filter) => Some(descriptors.filters.color_matrix.apply(
+                descriptors,
+                texture_pool,
+                draw_encoder,
+                staging_belt,
+                &source,
+                &filter,
+            )),
+            Filter::BlurFilter(filter) => descriptors.filters.blur.apply(
+                descriptors,
+                texture_pool,
+                draw_encoder,
+                staging_belt,
+                &source,
+                &filter,
+            ),
+            Filter::ShaderFilter(shader) => Some(descriptors.filters.shader.apply(
+                descriptors,
+                texture_pool,
+                draw_encoder,
+                &source,
+                shader,
+            )),
+            Filter::GlowFilter(filter) => Some(descriptors.filters.glow.apply(
+                descriptors,
+                texture_pool,
+                draw_encoder,
+                staging_belt,
+                &source,
+                &filter,
+                &self.blur,
+                (0.0, 0.0),
+            )),
+            Filter::DropShadowFilter(filter) => Some(DropShadowFilter::apply(
+                descriptors,
+                texture_pool,
+                draw_encoder,
+                staging_belt,
+                &source,
+                &filter,
+                &self.blur,
+                &self.glow,
+            )),
+            Filter::BevelFilter(filter) => Some(descriptors.filters.bevel.apply(
+                descriptors,
+                texture_pool,
+                draw_encoder,
+                staging_belt,
+                &source,
+                &filter,
+                &self.blur,
+            )),
+            Filter::DisplacementMapFilter(filter) => descriptors.filters.displacement_map.apply(
+                descriptors,
+                texture_pool,
+                draw_encoder,
+                staging_belt,
+                &source,
+                &filter,
+            ),
+            filter => {
+                static WARNED_FILTERS: OnceLock<Mutex<HashSet<&'static str>>> = OnceLock::new();
+                let name = match filter {
+                    Filter::GradientGlowFilter(_) => "GradientGlowFilter",
+                    Filter::GradientBevelFilter(_) => "GradientBevelFilter",
+                    Filter::ConvolutionFilter(_) => "ConvolutionFilter",
+                    Filter::ColorMatrixFilter(_)
+                    | Filter::BlurFilter(_)
+                    | Filter::GlowFilter(_)
+                    | Filter::DropShadowFilter(_)
+                    | Filter::BevelFilter(_)
+                    | Filter::DisplacementMapFilter(_)
+                    | Filter::ShaderFilter(_) => unreachable!(),
+                };
+                // Only warn once per filter type
+                if WARNED_FILTERS
+                    .get_or_init(Default::default)
+                    .lock()
+                    .unwrap()
+                    .insert(name)
+                {
+                    tracing::warn!("Unsupported filter {filter:?}");
                 }
-            };
+                None
+            }
+        };
 
         let target = target.unwrap_or_else(|| {
             // Apply a default color matrix - it's essentially a blit
@@ -318,6 +310,7 @@ impl Filters {
                 descriptors,
                 texture_pool,
                 draw_encoder,
+                staging_belt,
                 &source,
                 &Default::default(),
             )

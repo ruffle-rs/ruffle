@@ -22,9 +22,9 @@ pub fn to_wgsl(module: &Module) -> String {
 // Making this a macro gives us a better span in 'inta'
 macro_rules! test_shader {
     ($shader:expr, $attrs:expr, $shader_type:expr $(,)?) => {
-        let module = agal_to_naga(&$shader, $attrs, &[None; 8]).unwrap();
+        let module = agal_to_naga(&$shader, $attrs, &[Default::default(); 8]).unwrap();
         let output = to_wgsl(&module);
-        insta::assert_display_snapshot!(output);
+        insta::assert_snapshot!(output);
     };
 }
 

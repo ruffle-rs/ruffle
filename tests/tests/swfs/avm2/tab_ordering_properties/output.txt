@@ -1,0 +1,732 @@
+===== stage =====
+  default
+    tabEnabled = false
+    tabIndex = -1
+    tabChildren = true
+    set tabEnabled
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+    set tabIndex
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+    set tabChildren
+  after set 1
+    tabEnabled = false
+    tabIndex = -1
+    tabChildren = true
+    set tabEnabled
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+    set tabIndex
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+    set tabChildren
+  after set 2
+    tabEnabled = false
+    tabIndex = -1
+    tabChildren = true
+    set tabEnabled
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+    set tabIndex
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+    set tabChildren
+  after set 3
+    tabEnabled = false
+    tabIndex = -1
+    tabChildren = true
+    set tabEnabled
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+    set tabIndex
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+    set tabChildren
+  after set 4
+    tabEnabled = false
+    tabIndex = -1
+    tabChildren = true
+    set tabEnabled
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+    set tabIndex
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+    set tabChildren
+  after set 5
+    tabEnabled = false
+    tabIndex = -1
+    tabChildren = true
+    set tabEnabled
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+    set tabIndex
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+    set tabChildren
+  after set 6
+    tabEnabled = false
+    tabIndex = -1
+    tabChildren = true
+    set tabEnabled
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+    set tabIndex
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+    set tabChildren
+  after set 7
+    tabEnabled = false
+    tabIndex = -1
+    tabChildren = true
+    set tabEnabled
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+    set tabIndex
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+    set tabChildren
+  after set 8
+    tabEnabled = false
+    tabIndex = -1
+    tabChildren = true
+    set tabEnabled
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+    set tabIndex
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+    set tabChildren
+  after set 9
+    tabEnabled = false
+    tabIndex = -1
+    tabChildren = true
+    set tabEnabled
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+    set tabIndex
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+    set tabChildren
+  after set 10
+    tabEnabled = false
+    tabIndex = -1
+    tabChildren = true
+    set tabEnabled
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+    set tabIndex
+    Error: Error: Error #2071: The Stage class does not implement this property or method.
+    set tabChildren
+  after set 11
+    tabEnabled = false
+    tabIndex = -1
+    tabChildren = true
+===== text =====
+  default
+    tabEnabled = false
+    tabIndex = -1
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.text.TextField.
+  after set 1
+    tabEnabled = true
+    tabIndex = 0
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.text.TextField.
+  after set 2
+    tabEnabled = false
+    tabIndex = 4
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.text.TextField.
+  after set 3
+    tabEnabled = false
+    tabIndex = 0
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+    set tabEnabled
+    set tabIndex
+    Error: RangeError: Error #2027: Parameter tabIndex must be a non-negative number; got -4.
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.text.TextField.
+  after set 4
+    tabEnabled = true
+    tabIndex = 0
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.text.TextField.
+  after set 5
+    tabEnabled = true
+    tabIndex = 2147483647
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+    set tabEnabled
+    set tabIndex
+    Error: RangeError: Error #2027: Parameter tabIndex must be a non-negative number; got -2147483648.
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.text.TextField.
+  after set 6
+    tabEnabled = true
+    tabIndex = 2147483647
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.text.TextField.
+  after set 7
+    tabEnabled = true
+    tabIndex = 0
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+    set tabEnabled
+    set tabIndex
+    Error: RangeError: Error #2027: Parameter tabIndex must be a non-negative number; got -2147483648.
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.text.TextField.
+  after set 8
+    tabEnabled = true
+    tabIndex = 0
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.text.TextField.
+  after set 9
+    tabEnabled = true
+    tabIndex = 0
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.text.TextField.
+  after set 10
+    tabEnabled = true
+    tabIndex = 1
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.text.TextField.
+  after set 11
+    tabEnabled = true
+    tabIndex = -1
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+===== text type input =====
+  default
+    tabEnabled = true
+    tabIndex = -1
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.text.TextField.
+  after set 1
+    tabEnabled = true
+    tabIndex = 0
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.text.TextField.
+  after set 2
+    tabEnabled = false
+    tabIndex = 4
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.text.TextField.
+  after set 3
+    tabEnabled = false
+    tabIndex = 0
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+    set tabEnabled
+    set tabIndex
+    Error: RangeError: Error #2027: Parameter tabIndex must be a non-negative number; got -4.
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.text.TextField.
+  after set 4
+    tabEnabled = true
+    tabIndex = 0
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.text.TextField.
+  after set 5
+    tabEnabled = true
+    tabIndex = 2147483647
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+    set tabEnabled
+    set tabIndex
+    Error: RangeError: Error #2027: Parameter tabIndex must be a non-negative number; got -2147483648.
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.text.TextField.
+  after set 6
+    tabEnabled = true
+    tabIndex = 2147483647
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.text.TextField.
+  after set 7
+    tabEnabled = true
+    tabIndex = 0
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+    set tabEnabled
+    set tabIndex
+    Error: RangeError: Error #2027: Parameter tabIndex must be a non-negative number; got -2147483648.
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.text.TextField.
+  after set 8
+    tabEnabled = true
+    tabIndex = 0
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.text.TextField.
+  after set 9
+    tabEnabled = true
+    tabIndex = 0
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.text.TextField.
+  after set 10
+    tabEnabled = true
+    tabIndex = 1
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.text.TextField.
+  after set 11
+    tabEnabled = true
+    tabIndex = -1
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.text.TextField and there is no default value.
+===== button =====
+  default
+    tabEnabled = true
+    tabIndex = -1
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.display.SimpleButton and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.display.SimpleButton.
+  after set 1
+    tabEnabled = true
+    tabIndex = 0
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.display.SimpleButton and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.display.SimpleButton.
+  after set 2
+    tabEnabled = false
+    tabIndex = 4
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.display.SimpleButton and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.display.SimpleButton.
+  after set 3
+    tabEnabled = false
+    tabIndex = 0
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.display.SimpleButton and there is no default value.
+    set tabEnabled
+    set tabIndex
+    Error: RangeError: Error #2027: Parameter tabIndex must be a non-negative number; got -4.
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.display.SimpleButton.
+  after set 4
+    tabEnabled = true
+    tabIndex = 0
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.display.SimpleButton and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.display.SimpleButton.
+  after set 5
+    tabEnabled = true
+    tabIndex = 2147483647
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.display.SimpleButton and there is no default value.
+    set tabEnabled
+    set tabIndex
+    Error: RangeError: Error #2027: Parameter tabIndex must be a non-negative number; got -2147483648.
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.display.SimpleButton.
+  after set 6
+    tabEnabled = true
+    tabIndex = 2147483647
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.display.SimpleButton and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.display.SimpleButton.
+  after set 7
+    tabEnabled = true
+    tabIndex = 0
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.display.SimpleButton and there is no default value.
+    set tabEnabled
+    set tabIndex
+    Error: RangeError: Error #2027: Parameter tabIndex must be a non-negative number; got -2147483648.
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.display.SimpleButton.
+  after set 8
+    tabEnabled = true
+    tabIndex = 0
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.display.SimpleButton and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.display.SimpleButton.
+  after set 9
+    tabEnabled = true
+    tabIndex = 0
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.display.SimpleButton and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.display.SimpleButton.
+  after set 10
+    tabEnabled = true
+    tabIndex = 1
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.display.SimpleButton and there is no default value.
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+    Error: ReferenceError: Error #1056: Cannot create property tabChildren on flash.display.SimpleButton.
+  after set 11
+    tabEnabled = true
+    tabIndex = -1
+    Error: ReferenceError: Error #1069: Property tabChildren not found on flash.display.SimpleButton and there is no default value.
+===== movie clip =====
+  default
+    tabEnabled = false
+    tabIndex = -1
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 1
+    tabEnabled = true
+    tabIndex = 0
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 2
+    tabEnabled = false
+    tabIndex = 4
+    tabChildren = false
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 3
+    tabEnabled = false
+    tabIndex = 0
+    tabChildren = false
+    set tabEnabled
+    set tabIndex
+    Error: RangeError: Error #2027: Parameter tabIndex must be a non-negative number; got -4.
+    set tabChildren
+  after set 4
+    tabEnabled = true
+    tabIndex = 0
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 5
+    tabEnabled = true
+    tabIndex = 2147483647
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    Error: RangeError: Error #2027: Parameter tabIndex must be a non-negative number; got -2147483648.
+    set tabChildren
+  after set 6
+    tabEnabled = true
+    tabIndex = 2147483647
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 7
+    tabEnabled = true
+    tabIndex = 0
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    Error: RangeError: Error #2027: Parameter tabIndex must be a non-negative number; got -2147483648.
+    set tabChildren
+  after set 8
+    tabEnabled = true
+    tabIndex = 0
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 9
+    tabEnabled = true
+    tabIndex = 0
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 10
+    tabEnabled = true
+    tabIndex = 1
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 11
+    tabEnabled = true
+    tabIndex = -1
+    tabChildren = true
+===== movie clip button mode true =====
+  default
+    tabEnabled = true
+    tabIndex = -1
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 1
+    tabEnabled = true
+    tabIndex = 0
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 2
+    tabEnabled = false
+    tabIndex = 4
+    tabChildren = false
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 3
+    tabEnabled = false
+    tabIndex = 0
+    tabChildren = false
+    set tabEnabled
+    set tabIndex
+    Error: RangeError: Error #2027: Parameter tabIndex must be a non-negative number; got -4.
+    set tabChildren
+  after set 4
+    tabEnabled = true
+    tabIndex = 0
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 5
+    tabEnabled = true
+    tabIndex = 2147483647
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    Error: RangeError: Error #2027: Parameter tabIndex must be a non-negative number; got -2147483648.
+    set tabChildren
+  after set 6
+    tabEnabled = true
+    tabIndex = 2147483647
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 7
+    tabEnabled = true
+    tabIndex = 0
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    Error: RangeError: Error #2027: Parameter tabIndex must be a non-negative number; got -2147483648.
+    set tabChildren
+  after set 8
+    tabEnabled = true
+    tabIndex = 0
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 9
+    tabEnabled = true
+    tabIndex = 0
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 10
+    tabEnabled = true
+    tabIndex = 1
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 11
+    tabEnabled = true
+    tabIndex = -1
+    tabChildren = true
+===== movie clip with index =====
+  default
+    tabEnabled = false
+    tabIndex = 4
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 1
+    tabEnabled = true
+    tabIndex = 0
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 2
+    tabEnabled = false
+    tabIndex = 4
+    tabChildren = false
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 3
+    tabEnabled = false
+    tabIndex = 0
+    tabChildren = false
+    set tabEnabled
+    set tabIndex
+    Error: RangeError: Error #2027: Parameter tabIndex must be a non-negative number; got -4.
+    set tabChildren
+  after set 4
+    tabEnabled = true
+    tabIndex = 0
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 5
+    tabEnabled = true
+    tabIndex = 2147483647
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    Error: RangeError: Error #2027: Parameter tabIndex must be a non-negative number; got -2147483648.
+    set tabChildren
+  after set 6
+    tabEnabled = true
+    tabIndex = 2147483647
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 7
+    tabEnabled = true
+    tabIndex = 0
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    Error: RangeError: Error #2027: Parameter tabIndex must be a non-negative number; got -2147483648.
+    set tabChildren
+  after set 8
+    tabEnabled = true
+    tabIndex = 0
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 9
+    tabEnabled = true
+    tabIndex = 0
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 10
+    tabEnabled = true
+    tabIndex = 1
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 11
+    tabEnabled = true
+    tabIndex = -1
+    tabChildren = true
+===== sprite =====
+  default
+    tabEnabled = false
+    tabIndex = -1
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 1
+    tabEnabled = true
+    tabIndex = 0
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 2
+    tabEnabled = false
+    tabIndex = 4
+    tabChildren = false
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 3
+    tabEnabled = false
+    tabIndex = 0
+    tabChildren = false
+    set tabEnabled
+    set tabIndex
+    Error: RangeError: Error #2027: Parameter tabIndex must be a non-negative number; got -4.
+    set tabChildren
+  after set 4
+    tabEnabled = true
+    tabIndex = 0
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 5
+    tabEnabled = true
+    tabIndex = 2147483647
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    Error: RangeError: Error #2027: Parameter tabIndex must be a non-negative number; got -2147483648.
+    set tabChildren
+  after set 6
+    tabEnabled = true
+    tabIndex = 2147483647
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 7
+    tabEnabled = true
+    tabIndex = 0
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    Error: RangeError: Error #2027: Parameter tabIndex must be a non-negative number; got -2147483648.
+    set tabChildren
+  after set 8
+    tabEnabled = true
+    tabIndex = 0
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 9
+    tabEnabled = true
+    tabIndex = 0
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 10
+    tabEnabled = true
+    tabIndex = 1
+    tabChildren = true
+    set tabEnabled
+    set tabIndex
+    set tabChildren
+  after set 11
+    tabEnabled = true
+    tabIndex = -1
+    tabChildren = true

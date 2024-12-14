@@ -4,55 +4,43 @@ package {
 }
 
 import flash.xml.XMLDocument;
+import flash.xml.XMLNode;
 
-var doc:XMLDocument = new XMLDocument('<xml:a/><foo xml:bar="hello"/><a xmlns:example="http://example.org"><b/><example:c/></a>');
+var documents = [
+  new XMLDocument('<root/>'),
+  new XMLDocument('<root xmlns="http://example.org"><foo hello="world" /></root>'),
+  new XMLDocument('<root xmlns="http://example.org" xmlns:ns1="http://ns1.invalid"><ns1:foo hello="world"><bar ns1:attr="hey" /></ns1:foo></root>'),
+  new XMLDocument('<ns1:root xmlns:ns1="http://ns1.invalid" />'),
+  // TODO
+  // new XMLDocument('<xml:root xml:foo="bar" />'),
+];
 
-trace("/// doc.childNodes[0].toString()");
-trace(doc.childNodes[0].toString());
-trace("/// doc.childNodes[0].prefix");
-trace(doc.childNodes[0].prefix);
-trace("/// doc.childNodes[0].localName");
-trace(doc.childNodes[0].localName);
-trace("/// doc.childNodes[0].namespaceURI");
-trace(doc.childNodes[0].namespaceURI);
+function dump(node: XMLNode): * {
+  trace("// node.toString()");
+  trace(node.toString());
+  trace("// node.prefix");
+  trace(node.prefix);
+  trace("// node.localName");
+  trace(node.localName);
+  trace("// node.namespaceURI");
+  trace(node.namespaceURI);
+  trace("// attributes");
+  for (var attr in node.attributes) {
+    trace(attr + " = " + node.attributes[attr]);
+  }
+  trace("// node.getNamespaceForPrefix('ns1')")
+  trace(node.getNamespaceForPrefix('ns1'));
+  trace("// node.getPrefixForNamespace('http://ns1.invalid')")
+  trace(node.getPrefixForNamespace('http://ns1.invalid'));
 
-trace("/// doc.childNodes[1].toString()");
-trace(doc.childNodes[1].toString());
-trace("/// doc.childNodes[1].prefix");
-trace(doc.childNodes[1].prefix);
-trace("/// doc.childNodes[1].localName");
-trace(doc.childNodes[1].localName);
-trace("/// doc.childNodes[1].namespaceURI");
-trace(doc.childNodes[1].namespaceURI);
+  for each (var child in node.childNodes) {
+    dump(child);
+  }
+}
 
-trace("/// doc.childNodes[2].toString()");
-trace(doc.childNodes[2].toString());
-trace("/// doc.childNodes[2].prefix");
-trace(doc.childNodes[2].prefix);
-trace("/// doc.childNodes[2].localName");
-trace(doc.childNodes[2].localName);
-trace("/// doc.childNodes[2].namespaceURI");
-trace(doc.childNodes[2].namespaceURI);
+for each (var doc in documents) {
+  trace("\n// doc.toString()");
+  trace(doc.toString());
 
-trace("/// doc.childNodes[2].childNodes[0].toString()");
-trace(doc.childNodes[2].childNodes[0].toString());
-trace("/// doc.childNodes[2].childNodes[0].prefix");
-trace(doc.childNodes[2].childNodes[0].prefix);
-trace("/// doc.childNodes[2].childNodes[0].localName");
-trace(doc.childNodes[2].childNodes[0].localName);
-trace("/// doc.childNodes[2].childNodes[0].namespaceURI");
-trace(doc.childNodes[2].childNodes[0].namespaceURI);
-
-trace("/// doc.childNodes[2].childNodes[1].toString()");
-trace(doc.childNodes[2].childNodes[1].toString());
-trace("/// doc.childNodes[2].childNodes[1].prefix");
-trace(doc.childNodes[2].childNodes[1].prefix);
-trace("/// doc.childNodes[2].childNodes[1].localName");
-trace(doc.childNodes[2].childNodes[1].localName);
-trace("/// doc.childNodes[2].childNodes[1].namespaceURI");
-trace(doc.childNodes[2].childNodes[1].namespaceURI);
-
-for (var name in doc.childNodes[1].attributes) {
-  trace("/// attribute name");
-  trace(name);
+  dump(doc.childNodes[0]);
 }

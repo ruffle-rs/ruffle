@@ -1,6 +1,6 @@
 [package]
 name = "swf"
-version = "0.2.0"
+version = "0.2.1"
 description = "Read and write the Adobe Flash SWF file format."
 authors.workspace = true
 edition.workspace = true
@@ -8,18 +8,20 @@ homepage.workspace = true
 license.workspace = true
 repository.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
-bitflags = "2.4.1"
-bitstream-io = "1.7.0"
+bitflags = { workspace = true }
+bitstream-io = "2.6.0"
 byteorder = "1.5"
-encoding_rs = "0.8.33"
-num-derive = "0.4"
-num-traits = "0.2"
-libflate = {version = "2.0", optional = true}
-log = "0.4"
-flate2 = {version = "1.0", optional = true}
+encoding_rs = "0.8.35"
+num-derive = { workspace = true }
+num-traits = { workspace = true }
+log = { workspace = true }
+flate2 = { workspace = true, optional = true}
 lzma-rs = {version = "0.3.0", optional = true }
-enum-map = "2.7.0"
+enum-map = { workspace = true }
 simple_asn1 = "0.6.2"
 
 [features]

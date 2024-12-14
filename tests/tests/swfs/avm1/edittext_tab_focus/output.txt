@@ -1,0 +1,13 @@
+Tab pressed
+Focus: _level0.text
+Selection: test -> |
+Tab pressed
+Focus: _level0.text
+Selection: text -> text|
+Tab pressed
+Focus: _level0.text
+Selection: text -> |
+Tab pressed
+Tab pressed
+Focus: _level0.text
+Selection: text -> |

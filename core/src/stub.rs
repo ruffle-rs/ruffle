@@ -31,6 +31,9 @@ pub enum Stub {
         method: &'static str,
         specifics: Option<&'static str>,
     },
+    Avm1Constructor {
+        class: &'static str,
+    },
     Avm2Method {
         class: Cow<'static, str>,
         method: Cow<'static, str>,
@@ -51,6 +54,18 @@ pub enum Stub {
     Other(Cow<'static, str>),
 }
 
+impl Stub {
+    pub fn avm2_class(&self) -> Option<Cow<'static, str>> {
+        match self {
+            Stub::Avm2Method { class, .. } => Some(class.clone()),
+            Stub::Avm2Getter { class, .. } => Some(class.clone()),
+            Stub::Avm2Setter { class, .. } => Some(class.clone()),
+            Stub::Avm2Constructor { class, .. } => Some(class.clone()),
+            _ => None,
+        }
+    }
+}
+
 impl Display for Stub {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -60,6 +75,9 @@ impl Display for Stub {
                 specifics: None,
             } => {
                 write!(f, "AVM1 {class}.{method}()")
+            }
+            Stub::Avm1Constructor { class } => {
+                write!(f, "AVM1 {class}() constructor")
             }
             Stub::Avm1Method {
                 class,
@@ -131,4 +149,17 @@ impl StubCollection {
     pub fn iter(&self) -> Iter<Stub> {
         self.inner.iter()
     }
+}
+
+#[macro_export]
+macro_rules! context_stub {
+    ($context: ident, $message: literal) => {
+        #[cfg_attr(
+            feature = "known_stubs",
+            linkme::distributed_slice($crate::stub::KNOWN_STUBS)
+        )]
+        static STUB: $crate::stub::Stub =
+            $crate::stub::Stub::Other(std::borrow::Cow::Borrowed($message));
+        $context.stub_tracker.encounter(&STUB);
+    };
 }

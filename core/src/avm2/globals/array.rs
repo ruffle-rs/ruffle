@@ -8,11 +8,9 @@ use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::{array_allocator, ArrayObject, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::avm2::Multiname;
 use crate::avm2::QName;
 use crate::string::AvmString;
 use bitflags::bitflags;
-use gc_arena::GcCell;
 use std::cmp::{min, Ordering};
 use std::mem::swap;
 
@@ -75,10 +73,7 @@ pub fn instance_init<'gc>(
 
     if let Some(mut array) = this.as_array_storage_mut(activation.context.gc_context) {
         if args.len() == 1 {
-            if let Some(expected_len) = args
-                .get(0)
-                .and_then(|v| v.as_number(activation.context.gc_context).ok())
-            {
+            if let Some(expected_len) = args.get(0).filter(|v| v.is_number()).map(|v| v.as_f64()) {
                 if expected_len < 0.0 || expected_len.is_nan() || expected_len.fract() != 0.0 {
                     return Err(Error::AvmError(range_error(
                         activation,
@@ -87,12 +82,6 @@ pub fn instance_init<'gc>(
                         ),
                         1005,
                     )?));
-                }
-
-                // [NA] temporarily limit this. It may not be correct but it's better than 100GB arrays.
-                // TODO: sparse array support
-                if expected_len > (1 << 28) as f64 {
-                    return Err("Ruffle does not support sparse arrays yet.".into());
                 }
 
                 array.set_length(expected_len as usize);
@@ -141,7 +130,8 @@ pub fn class_init<'gc>(
                 Method::from_builtin(*method, name, gc_context),
                 scope,
                 None,
-                Some(this_class),
+                None,
+                None,
             )
             .into(),
             activation,
@@ -260,7 +250,7 @@ where
             let item = resolve_array_hole(activation, this, i, item)?;
 
             if matches!(item, Value::Undefined) || matches!(item, Value::Null) {
-                accum.push("".into());
+                accum.push(activation.strings().empty());
             } else {
                 accum.push(conv(item, activation)?.coerce_to_string(activation)?);
             }
@@ -419,18 +409,14 @@ pub fn for_each<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let callback = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None, false)?;
+    let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some(r) = iter.next(activation) {
         let (i, item) = r?;
 
-        callback.call(receiver, &[item, i.into(), this.into()], activation)?;
+        callback.call(activation, receiver, &[item, i.into(), this.into()])?;
     }
 
     Ok(Value::Undefined)
@@ -442,18 +428,14 @@ pub fn map<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let callback = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None, false)?;
+    let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut new_array = ArrayStorage::new(0);
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some(r) = iter.next(activation) {
         let (i, item) = r?;
-        let new_item = callback.call(receiver, &[item, i.into(), this.into()], activation)?;
+        let new_item = callback.call(activation, receiver, &[item, i.into(), this.into()])?;
 
         new_array.push(new_item);
     }
@@ -467,11 +449,7 @@ pub fn filter<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let callback = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None, false)?;
+    let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut new_array = ArrayStorage::new(0);
     let mut iter = ArrayIter::new(activation, this)?;
@@ -479,7 +457,7 @@ pub fn filter<'gc>(
     while let Some(r) = iter.next(activation) {
         let (i, item) = r?;
         let is_allowed = callback
-            .call(receiver, &[item, i.into(), this.into()], activation)?
+            .call(activation, receiver, &[item, i.into(), this.into()])?
             .coerce_to_boolean();
 
         if is_allowed {
@@ -496,11 +474,7 @@ pub fn every<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let callback = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None, false)?;
+    let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
 
@@ -508,7 +482,7 @@ pub fn every<'gc>(
         let (i, item) = r?;
 
         let result = callback
-            .call(receiver, &[item, i.into(), this.into()], activation)?
+            .call(activation, receiver, &[item, i.into(), this.into()])?
             .coerce_to_boolean();
 
         if !result {
@@ -525,11 +499,7 @@ pub fn some<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let callback = args
-        .get(0)
-        .cloned()
-        .unwrap_or(Value::Undefined)
-        .as_callable(activation, None, None, false)?;
+    let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
 
@@ -537,7 +507,7 @@ pub fn some<'gc>(
         let (i, item) = r?;
 
         let result = callback
-            .call(receiver, &[item, i.into(), this.into()], activation)?
+            .call(activation, receiver, &[item, i.into(), this.into()])?
             .coerce_to_boolean();
 
         if result {
@@ -873,38 +843,127 @@ where
     C: FnMut(&mut Activation<'a, 'gc>, Value<'gc>, Value<'gc>) -> Result<Ordering, Error<'gc>>,
 {
     let mut unique_sort_satisfied = true;
-    let mut error_signal = Ok(());
 
-    values.sort_unstable_by(|(_a_index, a), (_b_index, b)| {
+    qsort(values, &mut |(_, a), (_, b)| {
         let unresolved_a = *a;
         let unresolved_b = *b;
 
         if matches!(unresolved_a, Value::Undefined) && matches!(unresolved_b, Value::Undefined) {
             unique_sort_satisfied = false;
-            return Ordering::Equal;
+            return Ok(Ordering::Equal);
         } else if matches!(unresolved_a, Value::Undefined) {
-            return Ordering::Greater;
+            return Ok(Ordering::Greater);
         } else if matches!(unresolved_b, Value::Undefined) {
-            return Ordering::Less;
+            return Ok(Ordering::Less);
         }
 
-        match sort_func(activation, *a, *b) {
-            Ok(Ordering::Equal) => {
+        sort_func(activation, *a, *b).map(|cmp| {
+            if cmp == Ordering::Equal {
                 unique_sort_satisfied = false;
                 Ordering::Equal
+            } else if options.contains(SortOptions::DESCENDING) {
+                cmp.reverse()
+            } else {
+                cmp
             }
-            Ok(v) if options.contains(SortOptions::DESCENDING) => v.reverse(),
-            Ok(v) => v,
-            Err(e) => {
-                error_signal = Err(e);
-                Ordering::Less
-            }
-        }
-    });
-
-    error_signal?;
+        })
+    })?;
 
     Ok(!options.contains(SortOptions::UNIQUE_SORT) || unique_sort_satisfied)
+}
+
+/// A port of the avmplus QuickSort implementation.
+///
+/// This differs from Rust's `slice::sort` in the following way:
+/// - the comparison function is faillible and can return an error, short-circuiting the sort;
+/// - the comparison function isn't required to define a valid total order: in such cases, the sort
+///   will permute the slice arbitrarily, but won't return an error.
+///
+/// Original code: https://github.com/adobe/avmplus/blob/master/core/ArrayClass.cpp#L637
+///
+/// NOTE: this is `pub(super)` so it can be called by `vector::sort`.
+pub(super) fn qsort<T, E>(
+    slice: &mut [T],
+    cmp: &mut impl FnMut(&T, &T) -> Result<Ordering, E>,
+) -> Result<(), E> {
+    match slice {
+        // Empty and one-element slices are trivially sorted.
+        [] | [_] => return Ok(()),
+        // Fast-path for two elements.
+        [a, b] => {
+            if cmp(a, b)?.is_gt() {
+                swap(a, b);
+            }
+            return Ok(());
+        }
+        // Fast-path for three elements.
+        [a, b, c] => {
+            if cmp(a, b)?.is_gt() {
+                swap(a, b);
+            }
+            if cmp(b, c)?.is_gt() {
+                swap(b, c);
+                if cmp(a, b)?.is_gt() {
+                    swap(a, b);
+                }
+            }
+            return Ok(());
+        }
+        _ => (),
+    }
+
+    // Select the middle element of the slice as the pivot, and put it at the beginning.
+    slice.swap(0, slice.len() / 2);
+
+    // Order the elements (excluding the pivot) such that all elements lower
+    // than the pivot come before all elements greater than the pivot.
+    //
+    // This is done by iterating from both ends, swapping greater elements with
+    // lower ones along the way.
+    let mut left = 0;
+    let mut right = slice.len();
+    loop {
+        // Find an element greater than the pivot from the left.
+        loop {
+            left += 1;
+            if left >= slice.len() || cmp(&slice[left], &slice[0])?.is_gt() {
+                break;
+            }
+        }
+
+        // Find an element lower than the pivot from the right.
+        loop {
+            right -= 1;
+            if right == 0 || cmp(&slice[right], &slice[0])?.is_lt() {
+                break;
+            }
+        }
+
+        // Nothing left to swap, we are done.
+        if right < left {
+            break;
+        }
+
+        // Otherwise, swap left and right, and keep going.
+        slice.swap(left, right);
+    }
+
+    // Put the pivot in its final position.
+    slice.swap(0, right);
+
+    // The elements are now ordered as follows:
+    // [..right]: lower partition
+    // [right..left]: middle partition (equal to pivot)
+    // [left..]: higher partition
+
+    // Recurse into both higher and lower partitions, with the smallest first.
+    let (mut fst, mut snd) = slice.split_at_mut(left);
+    fst = &mut fst[..right];
+    if fst.len() >= snd.len() {
+        swap(&mut fst, &mut snd);
+    }
+    qsort(fst, cmp)?;
+    qsort(snd, cmp)
 }
 
 pub fn compare_string_case_sensitive<'gc>(
@@ -1025,12 +1084,7 @@ pub fn sort<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let (compare_fnc, options) = if args.len() > 1 {
         (
-            Some(
-                args.get(0)
-                    .cloned()
-                    .unwrap_or(Value::Undefined)
-                    .as_callable(activation, None, None, false)?,
-            ),
+            Some(args.get(0).cloned().unwrap_or(Value::Undefined)),
             SortOptions::from_bits_truncate(
                 args.get(1)
                     .cloned()
@@ -1040,8 +1094,11 @@ pub fn sort<'gc>(
         )
     } else {
         let arg = args.get(0).cloned().unwrap_or(Value::Undefined);
-        if let Ok(callable) = arg.as_callable(activation, None, None, false) {
-            (Some(callable), SortOptions::empty())
+        if let Some(callable) = arg
+            .as_object()
+            .filter(|o| o.as_class_object().is_some() || o.as_function_object().is_some())
+        {
+            (Some(callable.into()), SortOptions::empty())
         } else {
             (
                 None,
@@ -1067,7 +1124,7 @@ pub fn sort<'gc>(
             options,
             constrain(|activation, a, b| {
                 let order = v
-                    .call(this.into(), &[a, b], activation)?
+                    .call(activation, this.into(), &[a, b])?
                     .coerce_to_number(activation)?;
 
                 if order > 0.0 {
@@ -1112,23 +1169,24 @@ fn extract_maybe_array_values<'gc>(
     Ok(extract_array_values(activation, value)?.unwrap_or_else(|| vec![value]))
 }
 
-/// Given a value, extract its array values and coerce them to strings.
-///
-/// If the value is not an array, it will be returned as if it was present in a
-/// one-element array containing itself. This is intended for use with parsing
-/// parameters which are optionally arrays. The returned value will still be
-/// coerced into a string in this case.
-fn extract_maybe_array_strings<'gc>(
+/// If called with sortOn(Array), yields vec of stringified elements.
+/// If called with sortOn(String), yields this one string.
+/// Otherwise, yields an empty vec.
+fn extract_field_names<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<Vec<AvmString<'gc>>, Error<'gc>> {
-    let values = extract_maybe_array_values(activation, value)?;
-
-    let mut out = Vec::with_capacity(values.len());
-    for value in values {
-        out.push(value.coerce_to_string(activation)?);
+    if let Some(values) = extract_array_values(activation, value)? {
+        let mut out = Vec::with_capacity(values.len());
+        for value in values {
+            out.push(value.coerce_to_string(activation)?);
+        }
+        Ok(out)
+    } else if let Value::String(s) = value {
+        Ok(vec![s])
+    } else {
+        Ok(vec![])
     }
-    Ok(out)
 }
 
 /// Given a value, extract its array values and coerce them to SortOptions.
@@ -1159,7 +1217,7 @@ pub fn sort_on<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(field_names_value) = args.get(0).cloned() {
-        let field_names = extract_maybe_array_strings(activation, field_names_value)?;
+        let field_names = extract_field_names(activation, field_names_value)?;
         let mut options = extract_maybe_array_sort_options(
             activation,
             args.get(1).cloned().unwrap_or_else(|| 0.into()),
@@ -1249,35 +1307,37 @@ pub fn remove_at<'gc>(
 }
 
 /// Construct `Array`'s class.
-pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Class<'gc>> {
+pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     let mc = activation.context.gc_context;
     let class = Class::new(
-        QName::new(activation.avm2().public_namespace, "Array"),
-        Some(Multiname::new(activation.avm2().public_namespace, "Object")),
+        QName::new(activation.avm2().namespaces.public_all(), "Array"),
+        Some(activation.avm2().class_defs().object),
         Method::from_builtin(instance_init, "<Array instance initializer>", mc),
         Method::from_builtin(class_init, "<Array class initializer>", mc),
+        activation.avm2().class_defs().class,
         mc,
     );
 
-    let mut write = class.write(mc);
-
-    write.set_instance_allocator(array_allocator);
-    write.set_call_handler(Method::from_builtin(class_call, "<Array call handler>", mc));
+    class.set_instance_allocator(mc, array_allocator);
+    class.set_call_handler(
+        mc,
+        Method::from_builtin(class_call, "<Array call handler>", mc),
+    );
 
     const PUBLIC_INSTANCE_PROPERTIES: &[(
         &str,
         Option<NativeMethodImpl>,
         Option<NativeMethodImpl>,
     )] = &[("length", Some(length), Some(set_length))];
-    write.define_builtin_instance_properties(
+    class.define_builtin_instance_properties(
         mc,
-        activation.avm2().public_namespace,
+        activation.avm2().namespaces.public_all(),
         PUBLIC_INSTANCE_PROPERTIES,
     );
 
-    write.define_builtin_instance_methods(
+    class.define_builtin_instance_methods(
         mc,
-        activation.avm2().as3_namespace,
+        activation.avm2().namespaces.as3,
         PUBLIC_AS3_INSTANCE_METHODS,
     );
 
@@ -1294,18 +1354,30 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> GcCell<'gc, Cl
         ),
         ("UNIQUESORT", SortOptions::UNIQUE_SORT.bits() as u32),
     ];
-    write.define_constant_uint_class_traits(
-        activation.avm2().public_namespace,
+    class.define_constant_uint_class_traits(
+        activation.avm2().namespaces.public_all(),
         CONSTANTS_UINT,
         activation,
     );
 
     const CONSTANTS_INT: &[(&str, i32)] = &[("length", 1)];
-    write.define_constant_int_class_traits(
-        activation.avm2().public_namespace,
+    class.define_constant_int_class_traits(
+        activation.avm2().namespaces.public_all(),
         CONSTANTS_INT,
         activation,
     );
+
+    class.mark_traits_loaded(activation.context.gc_context);
+    class
+        .init_vtable(activation.context)
+        .expect("Native class's vtable should initialize");
+
+    let c_class = class.c_class().expect("Class::new returns an i_class");
+
+    c_class.mark_traits_loaded(activation.context.gc_context);
+    c_class
+        .init_vtable(activation.context)
+        .expect("Native class's vtable should initialize");
 
     class
 }

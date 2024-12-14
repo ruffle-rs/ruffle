@@ -10,9 +10,12 @@ update-ruffle = Ruffleを更新
 ruffle-demo = Webデモ
 ruffle-desktop = デスクトップアプリケーション
 ruffle-wiki = Ruffle Wikiを表示
+enable-hardware-acceleration = ハードウェア アクセラレーションが無効になっているようです。Ruffle は動作するかもしれませんが、非常に遅くなる可能性があります。ハードウェア アクセラレーションを有効にする方法については、以下のリンクを参照してください。
+enable-hardware-acceleration-link = よくある質問 - Chromeのハードウェア アクセラレーション
 view-error-details = エラーの詳細を表示
 open-in-new-tab = 新しいタブで開く
 click-to-unmute = クリックでミュートを解除
+clipboard-message-title = コピーしてRuffleに貼り付け
 error-file-protocol =
     Ruffleを"file:"プロトコルで使用しているようです。
     ブラウザはセキュリティ上の理由から殆どの機能を制限しているため、正しく動作しません。
@@ -29,6 +32,9 @@ error-wasm-mime-type =
     Ruffleの初期化に失敗する大きな問題が発生しました。
     このWebサーバーは正しいMIMEタイプの「.wasm」ファイルを提供していません。
     サーバーの管理者は、Ruffleのwikiを参照してください。
+error-invalid-swf =
+    Ruffle は要求されたファイルを解析できません。
+    最も考えられる原因は、要求されたファイルが有効な SWF でないことです。
 error-swf-fetch =
     RuffleがFlash SWFファイルの読み込みに失敗しました。
     最も考えられる原因は、SWFファイルが既に存在しない事でRuffleが読み込みに失敗するという問題です。

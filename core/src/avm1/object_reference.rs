@@ -60,7 +60,7 @@ struct MovieClipReferenceData<'gc> {
     path: MovieClipPath<'gc>,
 
     /// A weak reference to the target stage object that `path` points to
-    /// This is used for fast-path resvoling when possible, as well as for re-generating `path` (in the case the the target object is renamed)
+    /// This is used for fast-path resvoling when possible, as well as for re-generating `path` (in the case the target object is renamed)
     /// If this is `None` then we have previously missed the cache, due to the target object being removed and re-created, causing us to fallback to the slow path resolution
     cached_stage_object: Lock<Option<GcWeakCell<'gc, StageObjectData<'gc>>>>,
 }
@@ -188,7 +188,7 @@ impl<'gc> MovieClipReference<'gc> {
     pub fn coerce_to_string(&self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
         match self.resolve_reference(activation) {
             // Couldn't find the reference
-            None => "".into(),
+            None => activation.strings().empty(),
             // Found the reference, cached, we can't re-use `self.path` sadly, it would be quicker if we could
             // But if the clip has been re-named, since being created then `mc.path() != path`
             Some((true, _, dobj)) => AvmString::new(activation.gc(), dobj.path()),

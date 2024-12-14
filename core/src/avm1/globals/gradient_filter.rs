@@ -6,14 +6,12 @@ use crate::avm1::globals::bevel_filter::BevelFilterType;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, ArrayObject, Error, Object, ScriptObject, TObject, Value};
-use crate::context::{GcContext, UpdateContext};
-use crate::string::{AvmString, WStr};
+use crate::context::UpdateContext;
+use crate::string::{AvmString, StringContext, WStr};
 use gc_arena::{Collect, GcCell, Mutation};
 use std::ops::Deref;
-use swf::{Color, Fixed16, Fixed8, GradientFilterFlags};
+use swf::{Color, Fixed16, Fixed8, GradientFilterFlags, GradientRecord};
 
-// [NA] Why the max? Why is colors limited but ratios isn't?
-// TODO: Make it all vec maybe?
 const MAX_COLORS: usize = 16;
 
 #[derive(Clone, Debug, Collect)]
@@ -22,9 +20,8 @@ struct GradientFilterData {
     distance: f64,
     // TODO: Introduce `Angle<Radians>` struct.
     angle: f64,
-    colors: [Color; MAX_COLORS],
+    colors: [GradientRecord; MAX_COLORS],
     num_colors: usize,
-    ratios: Vec<u8>,
     blur_x: f64,
     blur_y: f64,
     // TODO: Introduce unsigned `Fixed8`?
@@ -41,15 +38,7 @@ impl From<&GradientFilterData> for swf::GradientFilter {
         flags |= filter.type_.as_gradient_flags();
         flags.set(GradientFilterFlags::KNOCKOUT, filter.knockout);
         swf::GradientFilter {
-            colors: filter
-                .colors
-                .iter()
-                .zip(filter.ratios.iter())
-                .map(|(color, ratio)| swf::GradientRecord {
-                    color: *color,
-                    ratio: *ratio,
-                })
-                .collect(),
+            colors: filter.colors.into_iter().take(filter.num_colors).collect(),
             blur_x: Fixed16::from_f64(filter.blur_x),
             blur_y: Fixed16::from_f64(filter.blur_y),
             angle: Fixed16::from_f64(filter.angle),
@@ -62,26 +51,25 @@ impl From<&GradientFilterData> for swf::GradientFilter {
 
 impl From<swf::GradientFilter> for GradientFilterData {
     fn from(filter: swf::GradientFilter) -> GradientFilterData {
-        let mut colors = [Color::WHITE; MAX_COLORS];
-        let mut ratios = vec![];
+        let mut colors = [GradientRecord::default(); MAX_COLORS];
+        let num_colors = filter.colors.len().min(MAX_COLORS);
+        for (i, slot) in colors[..num_colors].iter_mut().enumerate() {
+            *slot = filter.colors[i];
+        }
+
         let quality = filter.num_passes().into();
         let knockout = filter.is_knockout();
-        for (i, record) in filter.colors.into_iter().take(MAX_COLORS).enumerate() {
-            colors[i] = record.color;
-            ratios.push(record.ratio);
-        }
         Self {
             distance: filter.distance.into(),
             angle: filter.angle.into(),
             colors,
-            num_colors: ratios.len(),
+            num_colors,
             quality,
             strength: (filter.strength.to_f64() * 256.0) as u16,
             knockout,
             blur_x: filter.blur_x.into(),
             blur_y: filter.blur_y.into(),
             type_: filter.flags.into(),
-            ratios,
         }
     }
 }
@@ -94,7 +82,6 @@ impl Default for GradientFilterData {
             angle: 0.785398163, // ~45 degrees
             colors: Default::default(),
             num_colors: 0,
-            ratios: vec![],
             blur_x: 4.0,
             blur_y: 4.0,
             strength: 1 << 8,
@@ -115,7 +102,7 @@ impl GradientFilterData {
     }
 }
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
 #[repr(transparent)]
 pub struct GradientFilter<'gc>(GcCell<'gc, GradientFilterData>);
@@ -180,14 +167,14 @@ impl<'gc> GradientFilter<'gc> {
         Ok(())
     }
 
-    fn colors(&self, context: &mut UpdateContext<'_, 'gc>) -> ArrayObject<'gc> {
+    fn colors(&self, context: &mut UpdateContext<'gc>) -> ArrayObject<'gc> {
         let read = self.0.read();
         ArrayObject::new(
             context.gc_context,
             context.avm1.prototypes().array,
             read.colors[..read.num_colors]
                 .iter()
-                .map(|c| c.to_rgb().into()),
+                .map(|r| r.color.to_rgb().into()),
         )
     }
 
@@ -196,28 +183,36 @@ impl<'gc> GradientFilter<'gc> {
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
-        if let Some(Value::Object(object)) = value {
-            let num_colors = (object.length(activation)? as usize).min(MAX_COLORS);
-            self.0.write(activation.context.gc_context).num_colors = num_colors;
-            for i in 0..num_colors {
-                let rgb = object
-                    .get_element(activation, i as i32)
-                    .coerce_to_u32(activation)?;
-                let alpha = self.0.read().colors[i].a;
-                self.0.write(activation.context.gc_context).colors[i] = Color::from_rgb(rgb, alpha);
-            }
+        let Some(value) = value else { return Ok(()) };
+
+        // FP 11 and FP 32 behave differently here: in FP 11, only "true" objects resize
+        // the matrix, but in FP 32 strings will too (and so fill the matrix with `NaN`
+        // values, as they have a `length` but no actual elements).
+        let object = value.coerce_to_object(activation);
+        let length = usize::try_from(object.length(activation)?).unwrap_or_default();
+        let num_colors = length.min(MAX_COLORS);
+
+        self.0.write(activation.gc()).num_colors = num_colors;
+
+        for i in 0..num_colors {
+            let rgb = object
+                .get_element(activation, i as i32)
+                .coerce_to_i32(activation)? as u32;
+            let mut write = self.0.write(activation.gc());
+            let alpha = write.colors[i].color.a;
+            write.colors[i].color = Color::from_rgb(rgb, alpha);
         }
         Ok(())
     }
 
-    fn alphas(&self, context: &mut UpdateContext<'_, 'gc>) -> ArrayObject<'gc> {
+    fn alphas(&self, context: &mut UpdateContext<'gc>) -> ArrayObject<'gc> {
         let read = self.0.read();
         ArrayObject::new(
             context.gc_context,
             context.avm1.prototypes().array,
             read.colors[..read.num_colors]
                 .iter()
-                .map(|c| (f64::from(c.a) / 255.0).into()),
+                .map(|r| (f64::from(r.color.a) / 255.0).into()),
         )
     }
 
@@ -227,9 +222,12 @@ impl<'gc> GradientFilter<'gc> {
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(Value::Object(object)) = value {
+            // Note that unlike `colors` and `ratios`, setting `alphas` doesn't change
+            // the number of colors in the gradient.
             let num_colors = self.0.read().num_colors;
+            let length = usize::try_from(object.length(activation)?).unwrap_or_default();
             for i in 0..num_colors {
-                let alpha = if i < object.length(activation)? as usize {
+                let alpha = if i < length {
                     let alpha = object
                         .get_element(activation, i as i32)
                         .coerce_to_f64(activation)?;
@@ -241,17 +239,20 @@ impl<'gc> GradientFilter<'gc> {
                 } else {
                     u8::MAX
                 };
-                self.0.write(activation.context.gc_context).colors[i].a = alpha;
+                self.0.write(activation.gc()).colors[i].color.a = alpha;
             }
         }
         Ok(())
     }
 
-    fn ratios(&self, context: &mut UpdateContext<'_, 'gc>) -> ArrayObject<'gc> {
+    fn ratios(&self, context: &mut UpdateContext<'gc>) -> ArrayObject<'gc> {
+        let read = self.0.read();
         ArrayObject::new(
             context.gc_context,
             context.avm1.prototypes().array,
-            self.0.read().ratios.iter().map(|&x| x.into()),
+            read.colors[..read.num_colors]
+                .iter()
+                .map(|r| r.ratio.into()),
         )
     }
 
@@ -261,21 +262,20 @@ impl<'gc> GradientFilter<'gc> {
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(Value::Object(object)) = value {
-            let num_colors = self
-                .0
-                .read()
-                .num_colors
-                .min(object.length(activation)? as usize);
-            self.0.write(activation.context.gc_context).num_colors = num_colors;
-            let ratios: Result<Vec<_>, Error<'gc>> = (0..num_colors)
-                .map(|i| {
-                    Ok(object
-                        .get_element(activation, i as i32)
-                        .coerce_to_i32(activation)?
-                        .clamp(0, u8::MAX.into()) as u8)
-                })
-                .collect();
-            self.0.write(activation.context.gc_context).ratios = ratios?;
+            let num_colors = usize::try_from(object.length(activation)?).unwrap_or_default();
+            let mut write = self.0.write(activation.context.gc_context);
+            // Modifying `ratios` can only reduce the number of colors, never increase it.
+            let num_colors = num_colors.min(write.num_colors);
+            write.num_colors = num_colors;
+            drop(write);
+
+            for i in 0..num_colors {
+                let ratio = object
+                    .get_element(activation, i as i32)
+                    .coerce_to_i32(activation)?
+                    .clamp(0, u8::MAX.into()) as u8;
+                self.0.write(activation.context.gc_context).colors[i].ratio = ratio;
+            }
         }
         Ok(())
     }
@@ -467,17 +467,17 @@ fn method<'gc>(
             this.set_angle(activation, args.get(0))?;
             Value::Undefined
         }
-        GET_COLORS => this.colors(&mut activation.context).into(),
+        GET_COLORS => this.colors(activation.context).into(),
         SET_COLORS => {
             this.set_colors(activation, args.get(0))?;
             Value::Undefined
         }
-        GET_ALPHAS => this.alphas(&mut activation.context).into(),
+        GET_ALPHAS => this.alphas(activation.context).into(),
         SET_ALPHAS => {
             this.set_alphas(activation, args.get(0))?;
             Value::Undefined
         }
-        GET_RATIOS => this.ratios(&mut activation.context).into(),
+        GET_RATIOS => this.ratios(activation.context).into(),
         SET_RATIOS => {
             this.set_ratios(activation, args.get(0))?;
             Value::Undefined
@@ -520,7 +520,7 @@ fn method<'gc>(
 }
 
 pub fn create_bevel_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
@@ -530,7 +530,7 @@ pub fn create_bevel_proto<'gc>(
 }
 
 pub fn create_bevel_constructor<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
@@ -544,7 +544,7 @@ pub fn create_bevel_constructor<'gc>(
 }
 
 pub fn create_glow_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
@@ -554,7 +554,7 @@ pub fn create_glow_proto<'gc>(
 }
 
 pub fn create_glow_constructor<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

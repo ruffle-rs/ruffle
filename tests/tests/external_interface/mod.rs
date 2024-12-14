@@ -3,8 +3,8 @@
 #![allow(clippy::needless_pass_by_ref_mut)]
 
 use ruffle_core::context::UpdateContext;
-use ruffle_core::external::Value as ExternalValue;
-use ruffle_core::external::{ExternalInterfaceMethod, ExternalInterfaceProvider};
+use ruffle_core::external::ExternalInterfaceProvider;
+use ruffle_core::external::{Value as ExternalValue, Value};
 
 pub mod tests;
 
@@ -17,17 +17,17 @@ impl ExternalInterfaceTestProvider {
     }
 }
 
-fn do_trace(context: &mut UpdateContext<'_, '_>, args: &[ExternalValue]) -> ExternalValue {
+fn do_trace(context: &mut UpdateContext<'_>, args: &[ExternalValue]) -> ExternalValue {
     context.avm_trace(&format!("[ExternalInterface] trace: {args:?}"));
     "Traced!".into()
 }
 
-fn do_ping(context: &mut UpdateContext<'_, '_>, _args: &[ExternalValue]) -> ExternalValue {
+fn do_ping(context: &mut UpdateContext<'_>, _args: &[ExternalValue]) -> ExternalValue {
     context.avm_trace("[ExternalInterface] ping");
     "Pong!".into()
 }
 
-fn do_reentry(context: &mut UpdateContext<'_, '_>, _args: &[ExternalValue]) -> ExternalValue {
+fn do_reentry(context: &mut UpdateContext<'_>, _args: &[ExternalValue]) -> ExternalValue {
     context.avm_trace("[ExternalInterface] starting reentry");
     if let Some(callback) = context.external_interface.get_callback("callWith") {
         callback.call(
@@ -41,14 +41,23 @@ fn do_reentry(context: &mut UpdateContext<'_, '_>, _args: &[ExternalValue]) -> E
 }
 
 impl ExternalInterfaceProvider for ExternalInterfaceTestProvider {
-    fn get_method(&self, name: &str) -> Option<Box<dyn ExternalInterfaceMethod>> {
+    fn call_method(
+        &self,
+        context: &mut UpdateContext<'_>,
+        name: &str,
+        args: &[ExternalValue],
+    ) -> ExternalValue {
         match name {
-            "trace" => Some(Box::new(do_trace)),
-            "ping" => Some(Box::new(do_ping)),
-            "reentry" => Some(Box::new(do_reentry)),
-            _ => None,
+            "trace" => do_trace(context, args),
+            "ping" => do_ping(context, args),
+            "reentry" => do_reentry(context, args),
+            _ => Value::Null,
         }
     }
 
     fn on_callback_available(&self, _name: &str) {}
+
+    fn get_id(&self) -> Option<String> {
+        None
+    }
 }

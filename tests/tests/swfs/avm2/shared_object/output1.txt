@@ -15,4 +15,6 @@ otherObj.data.props:
 val.aPropertyThatIsNotANumber: strange property
 9 = (UTC)  Sun Jan 25 20:31:23 1970 UTC
 sizes: obj = 299, otherObj = 330
+obj status: flushed
+otherObj status: flushed
 sizes: obj = 299, otherObj = 330

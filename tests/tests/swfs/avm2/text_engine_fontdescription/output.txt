@@ -1,0 +1,27 @@
+// FontDescription::cffHinting
+TypeError: Error #2007: Parameter cffHinting must be non-null.
+ArgumentError: Error #2008: Parameter cffHinting must be one of the accepted values.
+// FontDescription::fontLookup
+TypeError: Error #2007: Parameter fontLookup must be non-null.
+ArgumentError: Error #2008: Parameter fontLookup must be one of the accepted values.
+// FontDescription::fontName
+TypeError: Error #2007: Parameter fontName must be non-null.
+// FontDescription::fontPosture
+TypeError: Error #2007: Parameter fontPosture must be non-null.
+ArgumentError: Error #2008: Parameter fontPosture must be one of the accepted values.
+// FontDescription::fontWeight
+TypeError: Error #2007: Parameter fontWeight must be non-null.
+ArgumentError: Error #2008: Parameter fontWeight must be one of the accepted values.
+// FontDescription::renderingMode
+TypeError: Error #2007: Parameter renderingMode must be non-null.
+ArgumentError: Error #2008: Parameter renderingMode must be one of the accepted values.
+// cffHinting: none
+// cffHinting: horizontalStem
+// fontLookup: device
+// fontLookup: embeddedCFF
+// fontPosture: normal
+// fontPosture: italic
+// fontWeight: normal
+// fontWeight: bold
+// renderingMode: normal
+// renderingMode: cff

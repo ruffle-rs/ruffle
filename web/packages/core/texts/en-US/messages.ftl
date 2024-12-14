@@ -10,10 +10,20 @@ update-ruffle = Update Ruffle
 ruffle-demo = Web Demo
 ruffle-desktop = Desktop Application
 ruffle-wiki = View Ruffle Wiki
-enable-hardware-acceleration = It looks like hardware acceleration is not enabled. While Ruffle may work, it could be unreasonably slow. You can find out how to enable hardware acceleration by following this link.
+enable-hardware-acceleration = It looks like hardware acceleration is disabled. While Ruffle may work, it could be very slow. You can find out how to enable hardware acceleration by following the link below:
+enable-hardware-acceleration-link = FAQ - Chrome Hardware Acceleration
 view-error-details = View Error Details
 open-in-new-tab = Open in a new tab
 click-to-unmute = Click to unmute
+clipboard-message-title = Copying and pasting in Ruffle
+clipboard-message-description =
+    { $variant ->
+        *[unsupported] Your browser does not support full clipboard access,
+        [access-denied] Access to the clipboard has been denied,
+    } but you can always use these shortcuts instead:
+clipboard-message-copy = { " " } for copy
+clipboard-message-cut = { " " } for cut
+clipboard-message-paste = { " " } for paste
 error-file-protocol =
     It appears you are running Ruffle on the "file:" protocol.
     This doesn't work as browsers block many features from working for security reasons.
@@ -30,6 +40,9 @@ error-wasm-mime-type =
     Ruffle has encountered a major issue whilst trying to initialize.
     This web server is not serving ".wasm" files with the correct MIME type.
     If you are the server administrator, please consult the Ruffle wiki for help.
+error-invalid-swf =
+    Ruffle cannot parse the requested file.
+    The most likely reason is that the requested file is not a valid SWF.
 error-swf-fetch =
     Ruffle failed to load the Flash SWF file.
     The most likely reason is that the file no longer exists, so there is nothing for Ruffle to load.

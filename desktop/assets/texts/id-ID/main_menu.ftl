@@ -17,6 +17,7 @@ file-menu-exit = Keluar
 controls-menu = Kontrol
 controls-menu-suspend = Tunda
 controls-menu-resume = Lanjut
+controls-menu-volume = Pengaturan Volume
 help-menu = Bantuan
 help-menu-join-discord = Gabung Discord
 help-menu-report-a-bug = Laporkan Bug...

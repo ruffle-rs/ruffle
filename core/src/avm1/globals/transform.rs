@@ -7,12 +7,12 @@ use crate::avm1::object::NativeObject;
 use crate::avm1::object_reference::MovieClipReference;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
-use crate::context::GcContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
+use crate::string::StringContext;
 use gc_arena::Collect;
 use swf::{Rectangle, Twips};
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub struct TransformObject<'gc> {
     clip: Option<MovieClipReference<'gc>>,
@@ -21,7 +21,7 @@ pub struct TransformObject<'gc> {
 impl<'gc> TransformObject<'gc> {
     fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Option<Self> {
         let clip = match args {
-            // `Tranform` constructor accepts exactly 1 argument.
+            // `Transform` constructor accepts exactly 1 argument.
             [Value::MovieClip(clip)] => Some(*clip),
             [Value::Object(clip)] => {
                 let stage_object = clip.as_stage_object()?;
@@ -175,7 +175,7 @@ fn method<'gc>(
 }
 
 pub fn create_constructor<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

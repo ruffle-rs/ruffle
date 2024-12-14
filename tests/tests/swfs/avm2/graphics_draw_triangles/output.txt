@@ -1,0 +1,74 @@
+===== drawTriangles
+0 coordinates
+  No error thrown
+1 coordinate
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+2 coordinates
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+3 coordinates
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+4 coordinates
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+5 coordinates
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+6 coordinates
+  No error thrown
+0 coordinates with indices
+  No error thrown
+1 coordinate with indices
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+2 coordinates with indices
+  No error thrown
+3 coordinates with indices
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+4 coordinates with indices
+  No error thrown
+5 coordinates with indices
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+6 coordinates with indices
+  No error thrown
+Unknown culling
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+Null culling
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+String coords
+  No error thrown
+Non-integer coords
+  No error thrown
+===== GraphicsTrianglePath
+0 coordinates
+  No error thrown
+1 coordinate
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+2 coordinates
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+3 coordinates
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+4 coordinates
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+5 coordinates
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+6 coordinates
+  No error thrown
+0 coordinates with indices
+  No error thrown
+1 coordinate with indices
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+2 coordinates with indices
+  No error thrown
+3 coordinates with indices
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+4 coordinates with indices
+  No error thrown
+5 coordinates with indices
+  Error thrown: ArgumentError: Error #2004: One of the parameters is invalid.
+6 coordinates with indices
+  No error thrown
+Unknown culling
+  Error thrown: ArgumentError: Error #2008: Parameter culling must be one of the accepted values.
+Null culling
+  Error thrown: ArgumentError: Error #2008: Parameter culling must be one of the accepted values.
+String coords
+  No error thrown
+Non-integer coords
+  No error thrown

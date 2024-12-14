@@ -21,6 +21,13 @@
 import * as utils from "./utils";
 import { isMessage } from "./messages";
 
+declare global {
+    interface Navigator {
+        // Only supported in Firefox, see https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Sharing_objects_with_page_scripts#accessing_page_script_objects_from_content_scripts
+        wrappedJSObject?: Navigator;
+    }
+}
+
 const pendingMessages: ({
     resolve(value: unknown): void;
     reject(reason?: unknown): void;
@@ -53,6 +60,7 @@ function injectScriptRaw(src: string) {
     const script = document.createElement("script");
     script.textContent = src;
     (document.head || document.documentElement).append(script);
+    script.remove();
 }
 
 /**
@@ -62,7 +70,10 @@ function injectScriptRaw(src: string) {
 function injectScriptURL(url: string): Promise<void> {
     const script = document.createElement("script");
     const promise = new Promise<void>((resolve, reject) => {
-        script.addEventListener("load", () => resolve());
+        script.addEventListener("load", function () {
+            resolve();
+            this.remove();
+        });
         script.addEventListener("error", (e) => reject(e));
     });
     script.charset = "utf-8";
@@ -108,6 +119,9 @@ function isXMLDocument(): boolean {
 }
 
 (async () => {
+    await utils.storage.sync.set({
+        ["showReloadButton"]: false,
+    });
     const options = await utils.getOptions();
     const explicitOptions = await utils.getExplicitOptions();
 
@@ -145,12 +159,14 @@ function isXMLDocument(): boolean {
     // We must run the plugin polyfill before any flash detection scripts.
     // Unfortunately, this might still be too late for some websites (issue #969).
     // NOTE: The script code injected here is the compiled form of
-    // plugin-polyfill.ts. It is injected by tools/inject_plugin_polyfill.js
+    // plugin-polyfill.ts. It is injected by tools/inject_plugin_polyfill.ts
     // which just search-and-replaces for this particular string.
-    const permissions = (chrome || browser).runtime.getManifest().permissions;
-    if (!permissions?.includes("scripting")) {
-        // Chrome does this differently, by injecting it straight into the main world.
-        // This isn't as fast, oh well.
+    // On browsers which support ExecutionWorld MAIN this will be done earlier.
+    if (
+        navigator.wrappedJSObject &&
+        navigator.wrappedJSObject.plugins.namedItem("Shockwave Flash")
+            ?.filename !== "ruffle.js"
+    ) {
         injectScriptRaw("%PLUGIN_POLYFILL_SOURCE%");
     }
 
@@ -158,7 +174,7 @@ function isXMLDocument(): boolean {
 
     window.addEventListener("message", (event) => {
         // We only accept messages from ourselves.
-        if (event.source !== window) {
+        if (event.source !== window || !event.data) {
             return;
         }
 

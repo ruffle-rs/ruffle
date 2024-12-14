@@ -1,0 +1,84 @@
+--- substrings ---
+abcd
+true
+bcd
+true
+cd
+true
+d
+false
+
+false
+--- pure concat ---
+aaaaa
+false
+aaaaaaaaaa
+false
+aaaaaaaaaaaaaaa
+true
+aaaaaaaaaaaaaaaaaaaa
+true
+aaaaaaaaaaaaaaaaaaaaaaaaa
+true
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+true
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+false
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+true
+--- pure concat, wide ---
+ąąaaaa
+false
+ąąaaaaąaaaa
+true
+ąąaaaaąaaaaąaaaa
+true
+ąąaaaaąaaaaąaaaaąaaaa
+true
+ąąaaaaąaaaaąaaaaąaaaaąaaaa
+true
+ąąaaaaąaaaaąaaaaąaaaaąaaaaąaaaa
+true
+ąąaaaaąaaaaąaaaaąaaaaąaaaaąaaaaąaaaa
+false
+ąąaaaaąaaaaąaaaaąaaaaąaaaaąaaaaąaaaaąaaaa
+true
+--- wide concat, then substring ---
+ą1234ęą
+true
+1234ęą
+true
+--- substring, then dependent concat ---
+12345
+false
+2345
+true
+23456
+true
+23457
+false
+--- substring, then non-dependent concat ---
+12345
+false
+12
+true
+126
+false
+--- wide substring, then dependent concat ---
+ąąąą5ą
+false
+ąąą5ą
+true
+ąąą5ą6
+false
+ąąą5ą6ą
+true
+ąąą5ą7ą
+false
+--- self-append ---
+12345
+false
+1234512345
+true
+1234512345
+false

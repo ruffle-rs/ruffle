@@ -7,7 +7,9 @@
 use crate::string::SwfStr;
 use bitflags::bitflags;
 use enum_map::Enum;
+use std::borrow::Cow;
 use std::fmt::{self, Display, Formatter};
+use std::num::NonZeroU8;
 use std::str::FromStr;
 
 mod bevel_filter;
@@ -86,7 +88,7 @@ impl Header {
 
 /// The extended metadata of an SWF file.
 ///
-/// This includes the SWF header data as well as metdata from the FileAttributes and
+/// This includes the SWF header data as well as metadata from the FileAttributes and
 /// SetBackgroundColor tags.
 ///
 /// This metadata may not reflect the actual data inside a malformed SWF; for example,
@@ -162,7 +164,7 @@ impl HeaderExt {
 
     /// Whether this SWF contains XMP metadata in a Metadata tag.
     #[inline]
-    pub fn has_metdata(&self) -> bool {
+    pub fn has_metadata(&self) -> bool {
         self.file_attributes.contains(FileAttributes::HAS_METADATA)
     }
 
@@ -274,7 +276,7 @@ bitflags! {
 
         /// Whether this SWF should be placed in the network sandbox when run locally.
         ///
-        /// SWFs in the network sandbox can only access network resources,  not local resources.
+        /// SWFs in the network sandbox can only access network resources, not local resources.
         /// SWFs in the local sandbox can only access local resources, not network resources.
         const USE_NETWORK_SANDBOX = 1 << 0;
     }
@@ -550,6 +552,7 @@ pub enum Tag<'a> {
     DefineSound(Box<Sound<'a>>),
     DefineSprite(Sprite<'a>),
     DefineText(Box<Text>),
+    DefineText2(Box<Text>),
     DefineVideoStream(DefineVideoStream),
     DoAbc(&'a [u8]),
     DoAbc2(DoAbc2<'a>),
@@ -760,7 +763,7 @@ pub enum FillStyle {
     },
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Gradient {
     pub matrix: Matrix,
     pub spread: GradientSpread,
@@ -768,7 +771,7 @@ pub struct Gradient {
     pub records: Vec<GradientRecord>,
 }
 
-#[derive(Clone, Copy, Debug, Eq, FromPrimitive, PartialEq, Enum)]
+#[derive(Clone, Copy, Debug, Eq, FromPrimitive, PartialEq, Enum, Hash)]
 pub enum GradientSpread {
     Pad = 0,
     Reflect = 1,
@@ -786,7 +789,7 @@ impl GradientSpread {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, FromPrimitive, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, FromPrimitive, PartialEq, Hash)]
 pub enum GradientInterpolation {
     Rgb = 0,
     LinearRgb = 1,
@@ -803,7 +806,7 @@ impl GradientInterpolation {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Hash)]
 pub struct GradientRecord {
     pub ratio: u8,
     pub color: Color,
@@ -1023,6 +1026,7 @@ pub enum AudioCompression {
     Nellymoser16Khz = 4,
     Nellymoser8Khz = 5,
     Nellymoser = 6,
+    Aac = 10,
     Speex = 11,
 }
 
@@ -1099,8 +1103,13 @@ pub type ButtonSound = (CharacterId, SoundInfo);
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ButtonAction<'a> {
     pub conditions: ButtonActionCondition,
-    pub key_code: Option<u8>,
     pub action_data: &'a [u8],
+}
+
+impl ButtonAction<'_> {
+    pub fn key_press(&self) -> Option<NonZeroU8> {
+        NonZeroU8::new(((self.conditions & ButtonActionCondition::KEY_PRESS).bits() >> 9) as u8)
+    }
 }
 
 bitflags! {
@@ -1115,7 +1124,26 @@ bitflags! {
         const OUT_DOWN_TO_IDLE      = 1 << 6;
         const IDLE_TO_OVER_DOWN     = 1 << 7;
         const OVER_DOWN_TO_IDLE     = 1 << 8;
-        const KEY_PRESS             = 1 << 9;
+        const KEY_PRESS             = 0b1111111 << 9;
+    }
+}
+
+impl ButtonActionCondition {
+    #[inline]
+    pub fn from_key_code(key_code: u8) -> Self {
+        Self::from_bits_retain((key_code as u16) << 9)
+    }
+
+    /// Checks if the given test condition matches any of the conditions defined in self
+    #[inline]
+    pub fn matches(self, test_condition: ButtonActionCondition) -> bool {
+        let self_key_press = (self & Self::KEY_PRESS).bits();
+        let test_key_press = (test_condition & Self::KEY_PRESS).bits();
+        let self_without_key = self & !Self::KEY_PRESS;
+        let test_without_key = test_condition & !Self::KEY_PRESS;
+
+        self_without_key.contains(test_without_key)
+            && (test_key_press == 0 || test_key_press == self_key_press)
     }
 }
 
@@ -1548,7 +1576,7 @@ impl<'a> EditText<'a> {
     }
 }
 
-impl<'a> Default for EditText<'a> {
+impl Default for EditText<'_> {
     fn default() -> Self {
         Self {
             id: Default::default(),
@@ -1670,7 +1698,7 @@ pub struct DefineBitsLossless<'a> {
     pub format: BitmapFormat,
     pub width: u16,
     pub height: u16,
-    pub data: &'a [u8],
+    pub data: Cow<'a, [u8]>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -1715,6 +1743,7 @@ pub enum VideoCodec {
     Vp6 = 4,
     Vp6WithAlpha = 5,
     ScreenVideoV2 = 6,
+    H264 = 7,
 }
 
 impl VideoCodec {
@@ -1757,7 +1786,8 @@ pub type DoAction<'a> = &'a [u8];
 
 pub type JpegTables<'a> = &'a [u8];
 
-/// `ProductInfo` contains information about the software used to generate the SWF.
+/// Contains information about the software used to generate the SWF.
+///
 /// Not documented in the SWF19 reference. Emitted by mxmlc.
 /// See <http://wahlers.com.br/claus/blog/undocumented-swf-tags-written-by-mxmlc/>
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -1780,4 +1810,34 @@ pub type DebugId = [u8; 16];
 pub struct NameCharacter<'a> {
     pub id: CharacterId,
     pub name: &'a SwfStr,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ButtonActionCondition;
+
+    #[test]
+    fn button_conditions_match() {
+        assert!(ButtonActionCondition::OVER_DOWN_TO_OVER_UP
+            .matches(ButtonActionCondition::OVER_DOWN_TO_OVER_UP));
+
+        assert!(!ButtonActionCondition::OVER_DOWN_TO_OVER_UP
+            .matches(ButtonActionCondition::IDLE_TO_OVER_UP));
+
+        assert!((ButtonActionCondition::OVER_DOWN_TO_OVER_UP
+            | ButtonActionCondition::IDLE_TO_OVER_UP)
+            .matches(ButtonActionCondition::IDLE_TO_OVER_UP));
+
+        assert!((ButtonActionCondition::OVER_DOWN_TO_OVER_UP
+            | ButtonActionCondition::from_key_code(3))
+        .matches(ButtonActionCondition::OVER_DOWN_TO_OVER_UP));
+
+        assert!((ButtonActionCondition::OVER_DOWN_TO_OVER_UP
+            | ButtonActionCondition::from_key_code(3))
+        .matches(ButtonActionCondition::from_key_code(3)));
+
+        assert!(!(ButtonActionCondition::OVER_DOWN_TO_OVER_UP
+            | ButtonActionCondition::from_key_code(3))
+        .matches(ButtonActionCondition::from_key_code(1)));
+    }
 }

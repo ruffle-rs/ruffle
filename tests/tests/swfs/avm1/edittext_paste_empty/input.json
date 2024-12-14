@@ -1,0 +1,9 @@
+[
+    { "type": "SetClipboardText", "text": "test" },
+    { "type": "TextControl", "code": "Paste" },
+    { "type": "KeyDown", "key_code": 27 },
+    { "type": "SetClipboardText", "text": "" },
+    { "type": "TextControl", "code": "SelectAll" },
+    { "type": "TextControl", "code": "Paste" },
+    { "type": "KeyDown", "key_code": 27 }
+]

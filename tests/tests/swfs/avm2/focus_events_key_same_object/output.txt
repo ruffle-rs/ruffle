@@ -1,0 +1,26 @@
+Tab pressed
+  null, null: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=9]
+  spriteA, spriteA: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0]
+  null, spriteA: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0]
+Tab pressed
+  spriteA, spriteA: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=9]
+  null, spriteA: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=9]
+Tab pressed
+  spriteA, spriteA: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=9]
+  null, spriteA: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=9]
+Escape pressed
+  spriteA, spriteA: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0]
+  null, spriteA: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0]
+Tab pressed
+  null, null: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=9]
+  spriteA, spriteA: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0]
+  null, spriteA: [FocusEvent type="focusIn" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0]
+Tab pressed
+  spriteA, spriteA: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=9]
+  null, spriteA: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=9]
+Tab pressed
+  spriteA, spriteA: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=2 relatedObject=[object Sprite] shiftKey=false keyCode=9]
+  null, spriteA: [FocusEvent type="keyFocusChange" bubbles=true cancelable=true eventPhase=3 relatedObject=[object Sprite] shiftKey=false keyCode=9]
+Escape pressed
+  spriteA, spriteA: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=2 relatedObject=null shiftKey=false keyCode=0]
+  null, spriteA: [FocusEvent type="focusOut" bubbles=true cancelable=false eventPhase=3 relatedObject=null shiftKey=false keyCode=0]

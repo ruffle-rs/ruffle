@@ -1,8 +1,9 @@
-// This is a new lint with false positives, see https://github.com/rust-lang/rust-clippy/issues/10318
-#![allow(clippy::extra_unused_type_parameters)]
 // This lint is helpful, but right now we have too many instances of it.
 // TODO: Remove this once all instances are fixed.
 #![allow(clippy::needless_pass_by_ref_mut)]
+// This lint is good in theory, but in AVMs we often need to do `let x = args.get(0); let y = args.get(1);` etc.
+// It'd make those much less readable and consistent.
+#![allow(clippy::get_first)]
 
 #[macro_use]
 mod display_object;
@@ -28,19 +29,22 @@ pub mod context;
 pub mod context_menu;
 mod drawing;
 mod ecma_conversions;
-pub(crate) mod either;
 pub mod events;
 pub mod focus_tracker;
 mod font;
 mod frame_lifecycle;
 mod html;
+mod input;
 mod library;
 pub mod limits;
 pub mod loader;
+mod local_connection;
 mod locale;
+mod net_connection;
 pub mod pixel_bender;
 mod player;
 mod prelude;
+pub mod sandbox;
 pub mod socket;
 mod streams;
 pub mod string;
@@ -59,13 +63,13 @@ pub mod external;
 pub mod i18n;
 pub mod stub;
 
-pub use avm1::globals::system::SandboxType;
 pub use context_menu::ContextMenuItem;
 pub use events::PlayerEvent;
 pub use font::DefaultFont;
 pub use indexmap;
 pub use loader::LoadBehavior;
-pub use player::{Player, PlayerBuilder, StaticCallstack};
+pub use player::{Player, PlayerBuilder, PlayerRuntime, StaticCallstack};
 pub use ruffle_render::backend::ViewportDimensions;
 pub use swf;
 pub use swf::Color;
+pub use ttf_parser;

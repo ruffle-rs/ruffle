@@ -2,33 +2,35 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, ObjectPtr, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
-use crate::display_object::TDisplayObject;
-use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
-use std::cell::{Ref, RefMut};
+use gc_arena::{Collect, Gc, GcWeak};
 use std::fmt::Debug;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct StageObject<'gc>(pub GcCell<'gc, StageObjectData<'gc>>);
+pub struct StageObject<'gc>(pub Gc<'gc, StageObjectData<'gc>>);
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
-pub struct StageObjectWeak<'gc>(pub GcWeakCell<'gc, StageObjectData<'gc>>);
+pub struct StageObjectWeak<'gc>(pub GcWeak<'gc, StageObjectData<'gc>>);
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct StageObjectData<'gc> {
     /// The base data common to all AVM2 objects.
     base: ScriptObjectData<'gc>,
 
-    /// The associated display object, if one exists.
-    display_object: Option<DisplayObject<'gc>>,
+    /// The associated display object.
+    display_object: DisplayObject<'gc>,
 }
+
+const _: () = assert!(std::mem::offset_of!(StageObjectData, base) == 0);
+const _: () =
+    assert!(std::mem::align_of::<StageObjectData>() == std::mem::align_of::<ScriptObjectData>());
 
 impl<'gc> StageObject<'gc> {
     /// Allocate the AVM2 side of a display object intended to be of a given
@@ -46,14 +48,13 @@ impl<'gc> StageObject<'gc> {
         display_object: DisplayObject<'gc>,
         class: ClassObject<'gc>,
     ) -> Result<Self, Error<'gc>> {
-        let instance = Self(GcCell::new(
+        let instance = Self(Gc::new(
             activation.context.gc_context,
             StageObjectData {
                 base: ScriptObjectData::new(class),
-                display_object: Some(display_object),
+                display_object,
             },
         ));
-        instance.install_instance_slots(activation.context.gc_context);
 
         Ok(instance)
     }
@@ -70,7 +71,7 @@ impl<'gc> StageObject<'gc> {
     ) -> Result<Self, Error<'gc>> {
         let this = Self::for_display_object(activation, display_object, class)?;
 
-        class.call_native_init(this.into(), &[], activation)?;
+        class.call_init(this.into(), &[], activation)?;
 
         Ok(this)
     }
@@ -85,7 +86,7 @@ impl<'gc> StageObject<'gc> {
     ) -> Result<Self, Error<'gc>> {
         let this = Self::for_display_object(activation, display_object, class)?;
 
-        class.call_native_init(this.into(), args, activation)?;
+        class.call_init(this.into(), args, activation)?;
 
         Ok(this)
     }
@@ -96,14 +97,13 @@ impl<'gc> StageObject<'gc> {
         display_object: DisplayObject<'gc>,
     ) -> Result<Self, Error<'gc>> {
         let class = activation.avm2().classes().graphics;
-        let this = Self(GcCell::new(
+        let this = Self(Gc::new(
             activation.context.gc_context,
             StageObjectData {
                 base: ScriptObjectData::new(class),
-                display_object: Some(display_object),
+                display_object,
             },
         ));
-        this.install_instance_slots(activation.context.gc_context);
 
         // note: for Graphics, there's no need to call init.
 
@@ -112,47 +112,29 @@ impl<'gc> StageObject<'gc> {
 }
 
 impl<'gc> TObject<'gc> for StageObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        Ref::map(self.0.read(), |read| &read.base)
-    }
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        // SAFETY: Object data is repr(C), and a compile-time assert ensures
+        // that the ScriptObjectData stays at offset 0 of the struct- so the
+        // layouts are compatible
 
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        RefMut::map(self.0.write(mc), |write| &mut write.base)
+        unsafe { Gc::cast(self.0) }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.as_ptr() as *const ObjectPtr
+        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 
     fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
-        self.0.read().display_object
-    }
-
-    fn init_display_object(&self, context: &mut UpdateContext<'_, 'gc>, obj: DisplayObject<'gc>) {
-        self.0.write(context.gc_context).display_object = Some(obj);
-        obj.set_object2(context, (*self).into());
-    }
-
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Object(Object::from(*self)))
+        Some(self.0.display_object)
     }
 }
 
-impl<'gc> Debug for StageObject<'gc> {
+impl Debug for StageObject<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self.0.try_read() {
-            Ok(obj) => f
-                .debug_struct("StageObject")
-                .field("name", &obj.base.debug_class_name())
-                // .field("display_object", &obj.display_object) TOOO(moulins)
-                .field("ptr", &self.0.as_ptr())
-                .finish(),
-            Err(err) => f
-                .debug_struct("StageObject")
-                .field("name", &err)
-                .field("display_object", &err)
-                .field("ptr", &self.0.as_ptr())
-                .finish(),
-        }
+        f.debug_struct("StageObject")
+            .field("name", &self.base().debug_class_name())
+            // .field("display_object", &self.0.display_object) TODO(moulins)
+            .field("ptr", &Gc::as_ptr(self.0))
+            .finish()
     }
 }

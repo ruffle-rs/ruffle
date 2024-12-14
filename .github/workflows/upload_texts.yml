@@ -3,10 +3,11 @@ name: Upload source texts to Crowdin
 on:
   push:
     branches: [ master ]
+  workflow_dispatch:
 
 jobs:
   crowdin:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     if: github.repository == 'ruffle-rs/ruffle'
 
@@ -16,8 +17,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install dependencies
+        run: |
+          sudo apt-get install -y itstool gettext appstream
+
+      - name: Generate desktop & metainfo sources
+        working-directory: desktop/packages/linux
+        run: |
+          make update
+
+      - name: Upload intermediate files
+        uses: actions/upload-artifact@v4
+        with:
+          path: desktop/packages/linux/locale
+
       - name: Crowdin push
-        uses: crowdin/github-action@v1
+        uses: crowdin/github-action@v2
         with:
           config: 'crowdin.yml'
           upload_sources: true

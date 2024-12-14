@@ -23,6 +23,7 @@ sleep_to_meet_frame_rate = false # If true, sleep in between ticks to run at rea
 ignore = false # If true, ignore this test. Please comment why, ideally link to an issue, so we know what's up
 known_failure = false # If true, this test is known to fail and the result will be inverted. When the test passes in the future, it'll fail and alert that it now passes.
 output_path = "output.txt" # Path (relative to the directory containing test.toml) to the expected output
+log_fetch = false # If true, all network requests will be included in the output.
 
 # Sometimes floating point math doesn't exactly 100% match between flash and rust.
 # If you encounter this in a test, the following section will change the output testing from "exact" to "approximate"
@@ -36,9 +37,10 @@ max_relative = 0.0 # The default relative tolerance for testing values that are 
 [player_options]
 max_execution_duration = { secs = 15, nanos = 0} # How long can actionscript execute for before being forcefully stopped
 viewport_dimensions = { width = 100, height = 100, scale_factor = 1 } # The size of the player. Defaults to the swfs stage size
-with_renderer = { optional = false, sample_count = 4, exclude_warp = false } # If this test requires a renderer to run. Optional will enable the renderer where available.
+with_renderer = { optional = false, sample_count = 4 } # If this test requires a renderer to run. Optional will enable the renderer where available.
 with_audio = false # If this test requires an audio backend to run.
 with_video = false # If this test requires a video decoder backend to run.
+runtime = "AIR" # The runtime to emulate ("FlashPlayer" or "AIR"). Defaults to "FlashPlayer"
 
 # A list of image comparisons to perform during the test. This block is repeatable infinitely, as long as each name is unique.
 # The comparison part of a test is optional and only runs when `imgtests` feature is enabled

@@ -6,6 +6,7 @@
 package flash.display3D
 {
 
+    [API("674")]
     public final class Context3DTriangleFace
     {
         public static const BACK:String = "back";

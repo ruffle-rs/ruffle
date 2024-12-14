@@ -4,7 +4,6 @@ use gc_arena::Collect;
 use std::cmp::min;
 use std::fmt::{Debug, Formatter, LowerHex, UpperHex};
 use std::io::{Error as IoError, ErrorKind as IoErrorKind, Read, Result as IoResult};
-use std::iter::Iterator;
 use std::ops::{Bound, Deref, RangeBounds};
 use std::sync::{Arc, RwLock, RwLockReadGuard};
 use thiserror::Error;

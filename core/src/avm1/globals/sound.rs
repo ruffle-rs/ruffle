@@ -1,16 +1,122 @@
 //! AVM1 Sound object
 //! TODO: Sound position, transform, loadSound
 
+use std::cell::Cell;
+use std::fmt;
+
+use gc_arena::{Collect, Gc, Mutation};
+
 use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, SoundObject, TObject, Value};
+use crate::avm1::{NativeObject, Object, ScriptObject, TObject, Value};
+use crate::backend::audio::{SoundHandle, SoundInstanceHandle};
 use crate::backend::navigator::Request;
 use crate::character::Character;
-use crate::context::GcContext;
-use crate::display_object::{SoundTransform, TDisplayObject};
+use crate::display_object::{DisplayObject, SoundTransform, TDisplayObject};
+use crate::string::StringContext;
 use crate::{avm1_stub, avm_warn};
+
+/// A `Sound` object that is tied to a sound from the `AudioBackend``.
+#[derive(Clone, Copy, Collect)]
+#[collect(no_drop)]
+pub struct Sound<'gc>(Gc<'gc, SoundData<'gc>>);
+
+#[derive(Collect)]
+#[collect(no_drop)]
+struct SoundData<'gc> {
+    /// The sound that is attached to this object.
+    sound: Cell<Option<SoundHandle>>,
+
+    /// The instance of the last played sound on this object.
+    sound_instance: Cell<Option<SoundInstanceHandle>>,
+
+    /// Sounds in AVM1 are tied to a specific movie clip.
+    owner: Option<DisplayObject<'gc>>,
+
+    /// Position of the last playing sound in milliseconds.
+    position: Cell<u32>,
+
+    /// Duration of the currently attached sound in milliseconds.
+    duration: Cell<Option<u32>>,
+
+    /// Whether this sound is an external streaming MP3.
+    /// This will be true if `Sound.loadSound` was called with `isStreaming` of `true`.
+    /// A streaming sound can only have a single active instance.
+    is_streaming: Cell<bool>,
+}
+
+impl fmt::Debug for Sound<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Sound")
+            .field("ptr", &Gc::as_ptr(self.0))
+            .field("sound", &self.0.sound.get())
+            .field("sound_instance", &self.0.sound_instance.get())
+            .field("owner", &self.0.owner)
+            .finish()
+    }
+}
+
+impl<'gc> Sound<'gc> {
+    pub fn empty(mc: &Mutation<'gc>, owner: Option<DisplayObject<'gc>>) -> Sound<'gc> {
+        Sound(Gc::new(
+            mc,
+            SoundData {
+                sound: Cell::new(None),
+                sound_instance: Cell::new(None),
+                owner,
+                position: Cell::new(0),
+                duration: Cell::new(None),
+                is_streaming: Cell::new(false),
+            },
+        ))
+    }
+
+    pub fn duration(self) -> Option<u32> {
+        self.0.duration.get()
+    }
+
+    pub fn set_duration(self, duration: Option<u32>) {
+        self.0.duration.set(duration);
+    }
+
+    pub fn sound(self) -> Option<SoundHandle> {
+        self.0.sound.get()
+    }
+
+    pub fn set_sound(self, sound: Option<SoundHandle>) {
+        self.0.sound.set(sound);
+    }
+
+    pub fn sound_instance(self) -> Option<SoundInstanceHandle> {
+        self.0.sound_instance.get()
+    }
+
+    pub fn set_sound_instance(self, sound_instance: Option<SoundInstanceHandle>) {
+        self.0.sound_instance.set(sound_instance);
+    }
+
+    pub fn owner(self) -> Option<DisplayObject<'gc>> {
+        self.0.owner
+    }
+
+    pub fn position(self) -> u32 {
+        self.0.position.get()
+    }
+
+    pub fn set_position(self, position: u32) {
+        self.0.position.set(position);
+    }
+
+    pub fn is_streaming(self) -> bool {
+        self.0.is_streaming.get()
+    }
+
+    pub fn set_is_streaming(self, is_streaming: bool) {
+        self.0.is_streaming.set(is_streaming);
+    }
+}
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "attachSound" => method(attach_sound; DONT_ENUM | DONT_DELETE | READ_ONLY);
@@ -47,24 +153,20 @@ pub fn constructor<'gc>(
         None
     };
 
-    if let Some(sound) = this.as_sound_object() {
-        sound.set_owner(activation.context.gc_context, owner);
-    } else {
-        tracing::error!("Tried to construct a Sound on a non-SoundObject");
-    }
+    let sound = Sound::empty(activation.gc(), owner);
+    this.set_native(activation.gc(), NativeObject::Sound(sound));
 
     Ok(this.into())
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let sound = SoundObject::empty_sound(context.gc_context, proto);
-    let object = sound.raw_script_object();
+    let object = ScriptObject::new(context.gc(), Some(proto));
     define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    sound.into()
+    object.into()
 }
 
 fn attach_sound<'gc>(
@@ -73,29 +175,28 @@ fn attach_sound<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name = args.get(0).unwrap_or(&Value::Undefined);
-    if let Some(sound_object) = this.as_sound_object() {
+    if let NativeObject::Sound(sound) = this.native() {
         let name = name.coerce_to_string(activation)?;
-        let movie = sound_object
+        let movie = sound
             .owner()
             .unwrap_or_else(|| activation.base_clip().avm1_root())
             .movie();
-        if let Some(Character::Sound(sound)) = activation
+        if let Some((_, Character::Sound(sound_handle))) = activation
             .context
             .library
             .library_for_movie_mut(movie)
             .character_by_export_name(name)
         {
-            sound_object.set_sound(activation.context.gc_context, Some(*sound));
-            sound_object.set_is_streaming(activation.context.gc_context, false);
-            sound_object.set_duration(
-                activation.context.gc_context,
+            sound.set_sound(Some(*sound_handle));
+            sound.set_is_streaming(false);
+            sound.set_duration(
                 activation
                     .context
                     .audio
-                    .get_sound_duration(*sound)
+                    .get_sound_duration(*sound_handle)
                     .map(|d| d.round() as u32),
             );
-            sound_object.set_position(activation.context.gc_context, 0);
+            sound.set_position(0);
         } else {
             avm_warn!(activation, "Sound.attachSound: Sound '{}' not found", name);
         }
@@ -112,10 +213,8 @@ fn duration<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     // TODO: Sound.duration was only added in SWFv6, but it is not version gated.
     // Return undefined for player <6 if we ever add player version emulation.
-    if let Some(sound_object) = this.as_sound_object() {
-        return Ok(sound_object
-            .duration()
-            .map_or(Value::Undefined, |d| d.into()));
+    if let NativeObject::Sound(sound) = this.native() {
+        return Ok(sound.duration().map_or(Value::Undefined, |d| d.into()));
     } else {
         avm_warn!(activation, "Sound.duration: this is not a Sound");
     }
@@ -161,14 +260,11 @@ fn get_pan<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let transform = this.as_sound_object().map(|sound| {
-        sound
+    if let NativeObject::Sound(sound) = this.native() {
+        let transform = sound
             .owner()
             .map(|owner| owner.base().sound_transform().clone())
-            .unwrap_or_else(|| activation.context.global_sound_transform().clone())
-    });
-
-    if let Some(transform) = transform {
+            .unwrap_or_else(|| activation.context.global_sound_transform().clone());
         Ok(transform.pan().into())
     } else {
         Ok(Value::Undefined)
@@ -180,14 +276,12 @@ fn get_transform<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let transform = this.as_sound_object().map(|sound| {
-        sound
+    if let NativeObject::Sound(sound) = this.native() {
+        let transform = sound
             .owner()
             .map(|owner| owner.base().sound_transform().clone())
-            .unwrap_or_else(|| activation.context.global_sound_transform().clone())
-    });
+            .unwrap_or_else(|| activation.context.global_sound_transform().clone());
 
-    if let Some(transform) = transform {
         let obj = ScriptObject::new(
             activation.context.gc_context,
             Some(activation.context.avm1.prototypes().object),
@@ -208,14 +302,11 @@ fn get_volume<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let transform = this.as_sound_object().map(|sound| {
-        sound
+    if let NativeObject::Sound(sound) = this.native() {
+        let transform = sound
             .owner()
             .map(|owner| owner.base().sound_transform().clone())
-            .unwrap_or_else(|| activation.context.global_sound_transform().clone())
-    });
-
-    if let Some(transform) = transform {
+            .unwrap_or_else(|| activation.context.global_sound_transform().clone());
         Ok(transform.volume.into())
     } else {
         Ok(Value::Undefined)
@@ -238,7 +329,7 @@ fn load_sound<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(sound) = this.as_sound_object() {
+    if let NativeObject::Sound(sound) = this.native() {
         if let Some(url) = args.get(0) {
             let url = url.coerce_to_string(activation)?;
             let is_streaming = args
@@ -252,10 +343,10 @@ fn load_sound<'gc>(
                     activation.context.stop_sound(sound_instance);
                 }
             }
-            sound.set_is_streaming(activation.context.gc_context, is_streaming);
+            sound.set_is_streaming(is_streaming);
             let future = activation.context.load_manager.load_sound_avm1(
                 activation.context.player.clone(),
-                sound,
+                this,
                 Request::get(url.to_utf8_lossy().into_owned()),
                 is_streaming,
             );
@@ -272,9 +363,9 @@ fn position<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     // TODO: Sound.position was only added in SWFv6, but it is not version gated.
     // Return undefined for player <6 if we ever add player version emulation.
-    if let Some(sound_object) = this.as_sound_object() {
-        if sound_object.sound().is_some() {
-            return Ok(sound_object.position().into());
+    if let NativeObject::Sound(sound) = this.native() {
+        if sound.sound().is_some() {
+            return Ok(sound.position().into());
         }
     } else {
         avm_warn!(activation, "Sound.position: this is not a Sound");
@@ -292,11 +383,11 @@ fn set_pan<'gc>(
         .unwrap_or(&0.into())
         .coerce_to_f64(activation)?
         .clamp_to_i32();
-    if let Some(sound) = this.as_sound_object() {
+    if let NativeObject::Sound(sound) = this.native() {
         if let Some(owner) = sound.owner() {
             let mut transform = owner.base().sound_transform().clone();
             transform.set_pan(pan);
-            owner.set_sound_transform(&mut activation.context, transform);
+            owner.set_sound_transform(activation.context, transform);
         } else {
             let mut transform = activation.context.global_sound_transform().clone();
             transform.set_pan(pan);
@@ -317,7 +408,7 @@ fn set_transform<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_object(activation);
 
-    if let Some(sound) = this.as_sound_object() {
+    if let NativeObject::Sound(sound) = this.native() {
         let mut transform = if let Some(owner) = sound.owner() {
             owner.base().sound_transform().clone()
         } else {
@@ -339,7 +430,7 @@ fn set_transform<'gc>(
         }
 
         if let Some(owner) = sound.owner() {
-            owner.set_sound_transform(&mut activation.context, transform);
+            owner.set_sound_transform(activation.context, transform);
         } else {
             activation.context.set_global_sound_transform(transform);
         };
@@ -357,13 +448,13 @@ fn set_volume<'gc>(
         .unwrap_or(&0.into())
         .coerce_to_f64(activation)?
         .clamp_to_i32();
-    if let Some(sound) = this.as_sound_object() {
+    if let NativeObject::Sound(sound) = this.native() {
         if let Some(owner) = sound.owner() {
             let transform = SoundTransform {
                 volume,
                 ..*owner.base().sound_transform()
             };
-            owner.set_sound_transform(&mut activation.context, transform);
+            owner.set_sound_transform(activation.context, transform);
         } else {
             let transform = SoundTransform {
                 volume,
@@ -388,16 +479,16 @@ pub fn start<'gc>(
     let loops = (loops as u16).max(1);
 
     use swf::{SoundEvent, SoundInfo};
-    if let Some(sound_object) = this.as_sound_object() {
-        if let Some(sound) = sound_object.sound() {
-            if sound_object.is_streaming() {
+    if let NativeObject::Sound(sound) = this.native() {
+        if let Some(sound_handle) = sound.sound() {
+            if sound.is_streaming() {
                 // Streaming MP3s can only have a single active instance.
-                if let Some(sound_instance) = sound_object.sound_instance() {
+                if let Some(sound_instance) = sound.sound_instance() {
                     activation.context.stop_sound(sound_instance);
                 }
             }
             let sound_instance = activation.context.start_sound(
-                sound,
+                sound_handle,
                 &SoundInfo {
                     event: SoundEvent::Start,
                     in_sample: if start_offset > 0.0 {
@@ -409,12 +500,11 @@ pub fn start<'gc>(
                     num_loops: loops,
                     envelope: None,
                 },
-                sound_object.owner(),
-                Some(sound_object),
+                sound.owner(),
+                Some(this),
             );
-            if let Some(sound_instance) = sound_instance {
-                sound_object
-                    .set_sound_instance(activation.context.gc_context, Some(sound_instance));
+            if sound_instance.is_some() {
+                sound.set_sound_instance(sound_instance);
             }
         } else {
             avm_warn!(activation, "Sound.start: No sound is attached");
@@ -431,7 +521,7 @@ fn stop<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(sound) = this.as_sound_object() {
+    if let NativeObject::Sound(sound) = this.native() {
         if let Some(name) = args.get(0) {
             // Usage 1: Stop all instances of a particular sound, using the name parameter.
             let name = name.coerce_to_string(activation)?;
@@ -439,7 +529,7 @@ fn stop<'gc>(
                 .owner()
                 .unwrap_or_else(|| activation.base_clip().avm1_root())
                 .movie();
-            if let Some(Character::Sound(sound)) = activation
+            if let Some((_, Character::Sound(sound))) = activation
                 .context
                 .library
                 .library_for_movie_mut(movie)
@@ -454,7 +544,7 @@ fn stop<'gc>(
         } else if let Some(owner) = sound.owner() {
             // Usage 2: Stop all sound running within a given clip.
             activation.context.stop_sounds_with_display_object(owner);
-            sound.set_sound_instance(activation.context.gc_context, None);
+            sound.set_sound_instance(None);
         } else {
             // Usage 3: If there is no owner and no name, this call acts like `stopAllSounds()`.
             activation.context.stop_all_sounds();

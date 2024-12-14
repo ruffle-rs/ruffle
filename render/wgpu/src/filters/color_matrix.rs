@@ -1,21 +1,27 @@
 use crate::backend::RenderTargetMode;
 use crate::buffer_pool::TexturePool;
 use crate::descriptors::Descriptors;
-use crate::filters::{FilterSource, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
+use crate::filters::{FilterSource, FilterVertex, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
 use crate::surface::target::CommandTarget;
 use crate::utils::SampleCountMap;
 use std::sync::OnceLock;
 use swf::ColorMatrixFilter as ColorMatrixFilterArgs;
-use wgpu::util::DeviceExt;
+use wgpu::util::StagingBelt;
 
 pub struct ColorMatrixFilter {
     bind_group_layout: wgpu::BindGroupLayout,
     pipeline_layout: wgpu::PipelineLayout,
+    vertex_buffer: wgpu::Buffer,
+    uniform_buffer: wgpu::Buffer,
+    vertices_size: wgpu::BufferSize,
+    uniform_size: wgpu::BufferSize,
     pipelines: SampleCountMap<OnceLock<wgpu::RenderPipeline>>,
 }
 
 impl ColorMatrixFilter {
     pub fn new(device: &wgpu::Device) -> Self {
+        let uniform_size = std::mem::size_of::<[f32; 20]>() as u64;
+
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[
                 wgpu::BindGroupLayoutEntry {
@@ -40,14 +46,20 @@ impl ColorMatrixFilter {
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new(
-                            std::mem::size_of::<[f32; 20]>() as u64
-                        ),
+                        min_binding_size: wgpu::BufferSize::new(uniform_size),
                     },
                     count: None,
                 },
             ],
             label: create_debug_label!("Color matrix filter binds").as_deref(),
+        });
+
+        let vertices_size = std::mem::size_of::<[FilterVertex; 4]>() as u64;
+        let vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: vertices_size,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
         });
 
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -56,10 +68,21 @@ impl ColorMatrixFilter {
             push_constant_ranges: &[],
         });
 
+        let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: uniform_size,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
         Self {
             pipelines: Default::default(),
             pipeline_layout,
+            vertex_buffer,
+            uniform_buffer,
             bind_group_layout,
+            vertices_size: wgpu::BufferSize::new(vertices_size).expect("Definitely not zero."),
+            uniform_size: wgpu::BufferSize::new(uniform_size).expect("Definitely not zero."),
         }
     }
 
@@ -73,8 +96,9 @@ impl ColorMatrixFilter {
                     layout: Some(&self.pipeline_layout),
                     vertex: wgpu::VertexState {
                         module: &descriptors.shaders.color_matrix_filter,
-                        entry_point: "main_vertex",
+                        entry_point: Some("main_vertex"),
                         buffers: &VERTEX_BUFFERS_DESCRIPTION_FILTERS,
+                        compilation_options: Default::default(),
                     },
                     primitive: wgpu::PrimitiveState {
                         topology: wgpu::PrimitiveTopology::TriangleList,
@@ -93,10 +117,12 @@ impl ColorMatrixFilter {
                     },
                     fragment: Some(wgpu::FragmentState {
                         module: &descriptors.shaders.color_matrix_filter,
-                        entry_point: "main_fragment",
+                        entry_point: Some("main_fragment"),
                         targets: &[Some(wgpu::TextureFormat::Rgba8Unorm.into())],
+                        compilation_options: Default::default(),
                     }),
                     multiview: None,
+                    cache: None,
                 })
         })
     }
@@ -106,6 +132,7 @@ impl ColorMatrixFilter {
         descriptors: &Descriptors,
         texture_pool: &mut TexturePool,
         draw_encoder: &mut wgpu::CommandEncoder,
+        staging_belt: &mut StagingBelt,
         source: &FilterSource,
         filter: &ColorMatrixFilterArgs,
     ) -> CommandTarget {
@@ -127,14 +154,24 @@ impl ColorMatrixFilter {
             draw_encoder,
         );
         let source_view = source.texture.create_view(&Default::default());
-        let buffer = descriptors
-            .device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: create_debug_label!("Filter arguments").as_deref(),
-                contents: bytemuck::cast_slice(&filter.matrix),
-                usage: wgpu::BufferUsages::UNIFORM,
-            });
-        let vertices = source.vertices(&descriptors.device);
+        staging_belt
+            .write_buffer(
+                draw_encoder,
+                &self.uniform_buffer,
+                0,
+                self.uniform_size,
+                &descriptors.device,
+            )
+            .copy_from_slice(bytemuck::cast_slice(&filter.matrix));
+        staging_belt
+            .write_buffer(
+                draw_encoder,
+                &self.vertex_buffer,
+                0,
+                self.vertices_size,
+                &descriptors.device,
+            )
+            .copy_from_slice(bytemuck::cast_slice(&[source.vertices()]));
         let filter_group = descriptors
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {
@@ -153,20 +190,20 @@ impl ColorMatrixFilter {
                     },
                     wgpu::BindGroupEntry {
                         binding: 2,
-                        resource: buffer.as_entire_binding(),
+                        resource: self.uniform_buffer.as_entire_binding(),
                     },
                 ],
             });
         let mut render_pass = draw_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: create_debug_label!("Color matrix filter").as_deref(),
             color_attachments: &[target.color_attachments()],
-            depth_stencil_attachment: None,
+            ..Default::default()
         });
         render_pass.set_pipeline(pipeline);
 
         render_pass.set_bind_group(0, &filter_group, &[]);
 
-        render_pass.set_vertex_buffer(0, vertices.slice(..));
+        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_index_buffer(
             descriptors.quad.indices.slice(..),
             wgpu::IndexFormat::Uint32,

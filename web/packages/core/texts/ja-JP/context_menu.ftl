@@ -9,4 +9,4 @@ context-menu-about-ruffle =
 context-menu-hide = メニューを隠す
 context-menu-exit-fullscreen = フルスクリーンを終了
 context-menu-enter-fullscreen = フルスクリーンにする
-context-menu-volume-controls = 音量調節
+context-menu-volume-controls = 音量

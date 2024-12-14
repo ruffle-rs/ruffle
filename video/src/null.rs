@@ -2,13 +2,13 @@ use crate::backend::VideoBackend;
 use crate::error::Error;
 use crate::frame::{EncodedFrame, FrameDependency};
 use crate::VideoStreamHandle;
-use generational_arena::Arena;
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapInfo;
+use slotmap::SlotMap;
 use swf::{VideoCodec, VideoDeblocking};
 
 pub struct NullVideoBackend {
-    streams: Arena<()>,
+    streams: SlotMap<VideoStreamHandle, ()>,
 }
 
 /// Implementation of video that does not decode any video.
@@ -22,7 +22,7 @@ pub struct NullVideoBackend {
 impl NullVideoBackend {
     pub fn new() -> Self {
         Self {
-            streams: Arena::new(),
+            streams: SlotMap::with_key(),
         }
     }
 }
@@ -42,6 +42,14 @@ impl VideoBackend for NullVideoBackend {
         _filter: VideoDeblocking,
     ) -> Result<VideoStreamHandle, Error> {
         Ok(self.streams.insert(()))
+    }
+
+    fn configure_video_stream_decoder(
+        &mut self,
+        _stream: VideoStreamHandle,
+        _configuration_data: &[u8],
+    ) -> Result<(), Error> {
+        Ok(())
     }
 
     fn preload_video_stream_frame(

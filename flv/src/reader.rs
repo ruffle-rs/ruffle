@@ -113,7 +113,7 @@ impl<'a> FlvReader<'a> {
     }
 }
 
-impl<'a> Seek for FlvReader<'a> {
+impl Seek for FlvReader<'_> {
     fn seek(&mut self, pos: SeekFrom) -> IoResult<u64> {
         let newpos = match pos {
             SeekFrom::Start(pos) => pos,

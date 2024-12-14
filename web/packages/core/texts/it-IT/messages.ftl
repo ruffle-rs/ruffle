@@ -10,6 +10,7 @@ update-ruffle = Aggiorna Ruffle
 ruffle-demo = Demo Web
 ruffle-desktop = Applicazione Desktop
 ruffle-wiki = Visualizza Ruffle Wiki
+enable-hardware-acceleration = Sembra che l'accelerazione hardware sia disabilitata. Sebbene Ruffle possa funzionare, potrebbe essere molto lento. Puoi scoprire come abilitare l'accelerazione hardware seguendo il link seguente:
 view-error-details = Visualizza Dettagli Errore
 open-in-new-tab = Apri in una nuova scheda
 click-to-unmute = Clicca per riattivare l'audio

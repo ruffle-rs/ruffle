@@ -22,7 +22,7 @@ pub struct VaryingRegister {
     output_struct_index: Option<usize>,
 }
 
-impl<'a> NagaBuilder<'a> {
+impl NagaBuilder<'_> {
     pub fn get_varying_pointer(&mut self, index: usize) -> Result<Handle<Expression>> {
         if index >= self.varying_registers.varying_pointers.len() {
             self.varying_registers
@@ -60,6 +60,7 @@ impl<'a> NagaBuilder<'a> {
                                     location: index as u32,
                                     interpolation: Some(naga::Interpolation::Perspective),
                                     sampling: None,
+                                    second_blend_source: false,
                                 }),
                                 offset: 0,
                             });
@@ -85,6 +86,7 @@ impl<'a> NagaBuilder<'a> {
                             location: index as u32,
                             interpolation: Some(Interpolation::Perspective),
                             sampling: None,
+                            second_blend_source: false,
                         }),
                     });
                     let arg_index = self.func.arguments.len() - 1;

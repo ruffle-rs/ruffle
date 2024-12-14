@@ -1,8 +1,11 @@
+use std::rc::Rc;
+
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::{Endian, ObjectEncoding};
 use crate::avm2::error::make_error_2008;
 pub use crate::avm2::object::byte_array_allocator;
 use crate::avm2::object::{Object, TObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::AvmString;
@@ -11,6 +14,7 @@ use encoding_rs::UTF_8;
 use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf3::read::AMF3Decoder;
 use flash_lso::types::{AMFVersion, Element};
+use ruffle_wstr::WString;
 
 /// Writes a single byte to the bytearray
 pub fn write_byte<'gc>(
@@ -18,7 +22,7 @@ pub fn write_byte<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+    if let Some(mut bytearray) = this.as_bytearray_mut() {
         let byte = args
             .get(0)
             .cloned()
@@ -38,25 +42,17 @@ pub fn write_bytes<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let bytearray = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation)?;
-    let offset = args
-        .get(1)
-        .unwrap_or(&Value::Integer(0))
-        .coerce_to_u32(activation)? as usize;
-    let length = args
-        .get(2)
-        .unwrap_or(&Value::Integer(0))
-        .coerce_to_u32(activation)? as usize;
+    let bytearray = args.get_object(activation, 0, "bytes")?;
+    let offset = args.get_u32(activation, 1)? as usize;
+    let length = args.get_u32(activation, 2)? as usize;
+
     if !Object::ptr_eq(this, bytearray) {
         // The ByteArray we are reading from is different than the ByteArray we are writing to,
         // so we are allowed to borrow both at the same time without worrying about a panic
 
         let ba_read = bytearray
             .as_bytearray()
-            .ok_or("ArgumentError: Parameter must be a bytearray")?;
+            .expect("Parameter must be a bytearray");
         let to_write = ba_read
             .read_at(
                 // If length is 0, lets read the remaining bytes of ByteArray from the supplied offset
@@ -69,12 +65,12 @@ pub fn write_bytes<'gc>(
             )
             .map_err(|e| e.to_avm(activation))?;
 
-        if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+        if let Some(mut bytearray) = this.as_bytearray_mut() {
             bytearray
                 .write_bytes(to_write)
                 .map_err(|e| e.to_avm(activation))?;
         }
-    } else if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+    } else if let Some(mut bytearray) = this.as_bytearray_mut() {
         // The ByteArray we are reading from is the same as the ByteArray we are writing to,
         // so we only need to borrow once, and we can use `write_bytes_within` to write bytes from our own ByteArray
         let amnt = if length != 0 {
@@ -96,18 +92,9 @@ pub fn read_bytes<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let bytearray = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation)?;
-    let offset = args
-        .get(1)
-        .unwrap_or(&Value::Integer(0))
-        .coerce_to_u32(activation)? as usize;
-    let length = args
-        .get(2)
-        .unwrap_or(&Value::Integer(0))
-        .coerce_to_u32(activation)? as usize;
+    let bytearray = args.get_object(activation, 0, "bytes")?;
+    let offset = args.get_u32(activation, 1)? as usize;
+    let length = args.get_u32(activation, 2)? as usize;
 
     if !Object::ptr_eq(this, bytearray) {
         if let Some(bytearray_read) = this.as_bytearray() {
@@ -123,14 +110,14 @@ pub fn read_bytes<'gc>(
                 .map_err(|e| e.to_avm(activation))?;
 
             let mut ba_write = bytearray
-                .as_bytearray_mut(activation.context.gc_context)
-                .ok_or("ArgumentError: Parameter must be a bytearray")?;
+                .as_bytearray_mut()
+                .expect("Parameter must be a bytearray");
 
             ba_write
                 .write_at(to_write, offset)
                 .map_err(|e| e.to_avm(activation))?;
         }
-    } else if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+    } else if let Some(mut bytearray) = this.as_bytearray_mut() {
         let amnt = if length != 0 {
             length
         } else {
@@ -149,7 +136,7 @@ pub fn write_utf<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+    if let Some(mut bytearray) = this.as_bytearray_mut() {
         if let Some(utf_string) = args.get(0) {
             let utf_string = utf_string.coerce_to_string(activation)?;
             // NOTE: there is a bug on old Flash Player (e.g. v11.3); if the string to
@@ -180,28 +167,54 @@ pub fn read_utf<'gc>(
 
     Ok(Value::Undefined)
 }
+
+pub fn strip_bom<'gc>(activation: &mut Activation<'_, 'gc>, mut bytes: &[u8]) -> AvmString<'gc> {
+    // UTF-8 BOM
+    if let Some(without_bom) = bytes.strip_prefix(&[0xEF, 0xBB, 0xBF]) {
+        bytes = without_bom;
+    // Little-endian UTF-16 BOM
+    } else if let Some(without_bom) = bytes.strip_prefix(&[0xFF, 0xFE]) {
+        let utf16_bytes: Vec<_> = without_bom
+            .chunks_exact(2)
+            .map(|pair| u16::from_le_bytes([pair[0], pair[1]]))
+            .collect();
+        return AvmString::new(
+            activation.context.gc_context,
+            WString::from_buf(utf16_bytes),
+        );
+    // Big-endian UTF-16 BOM
+    } else if let Some(without_bom) = bytes.strip_prefix(&[0xFE, 0xFF]) {
+        let utf16_bytes: Vec<_> = without_bom
+            .chunks_exact(2)
+            .map(|pair| u16::from_be_bytes([pair[0], pair[1]]))
+            .collect();
+        return AvmString::new(
+            activation.context.gc_context,
+            WString::from_buf(utf16_bytes),
+        );
+    }
+
+    AvmString::new_utf8_bytes(activation.context.gc_context, bytes)
+}
+
 pub fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bytearray) = this.as_bytearray() {
-        let mut bytes = bytearray.bytes();
-        if let Some(without_bom) = bytes.strip_prefix(&[0xEF, 0xBB, 0xBF]) {
-            bytes = without_bom;
-        }
-        return Ok(AvmString::new_utf8_bytes(activation.context.gc_context, bytes).into());
+        return Ok(strip_bom(activation, bytearray.bytes()).into());
     }
 
     Ok(Value::Undefined)
 }
 
 pub fn clear<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+    if let Some(mut bytearray) = this.as_bytearray_mut() {
         bytearray.clear();
         bytearray.shrink_to_fit();
     }
@@ -266,7 +279,7 @@ pub fn set_length<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+    if let Some(mut bytearray) = this.as_bytearray_mut() {
         let len = args
             .get(0)
             .unwrap_or(&Value::Integer(0))
@@ -297,7 +310,7 @@ pub fn set_endian<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+    if let Some(mut bytearray) = this.as_bytearray_mut() {
         let endian = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -478,7 +491,7 @@ pub fn write_float<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+    if let Some(mut bytearray) = this.as_bytearray_mut() {
         let num = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -496,7 +509,7 @@ pub fn write_double<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+    if let Some(mut bytearray) = this.as_bytearray_mut() {
         let num = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -514,7 +527,7 @@ pub fn write_boolean<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+    if let Some(mut bytearray) = this.as_bytearray_mut() {
         let num = args.get(0).unwrap_or(&Value::Undefined).coerce_to_boolean();
         bytearray
             .write_boolean(num)
@@ -529,7 +542,7 @@ pub fn write_int<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+    if let Some(mut bytearray) = this.as_bytearray_mut() {
         let num = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -545,7 +558,7 @@ pub fn write_unsigned_int<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+    if let Some(mut bytearray) = this.as_bytearray_mut() {
         let num = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -563,7 +576,7 @@ pub fn write_short<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+    if let Some(mut bytearray) = this.as_bytearray_mut() {
         let num = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -581,7 +594,7 @@ pub fn write_multi_byte<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+    if let Some(mut bytearray) = this.as_bytearray_mut() {
         let string = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -640,7 +653,7 @@ pub fn write_utf_bytes<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+    if let Some(mut bytearray) = this.as_bytearray_mut() {
         let string = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -658,7 +671,7 @@ pub fn compress<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+    if let Some(mut bytearray) = this.as_bytearray_mut() {
         let algorithm = args
             .get(0)
             .unwrap_or(&"zlib".into())
@@ -689,7 +702,7 @@ pub fn uncompress<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+    if let Some(mut bytearray) = this.as_bytearray_mut() {
         let algorithm = args
             .get(0)
             .unwrap_or(&"zlib".into())
@@ -733,6 +746,7 @@ pub fn read_object<'gc>(
         let bytes = bytearray
             .read_at(bytearray.bytes_available(), bytearray.position())
             .map_err(|e| e.to_avm(activation))?;
+
         let (bytes_left, value) = match bytearray.object_encoding() {
             ObjectEncoding::Amf0 => {
                 let mut decoder = AMF0Decoder::default();
@@ -768,30 +782,37 @@ pub fn write_object<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+    if let Some(mut bytearray) = this.as_bytearray_mut() {
         let obj = args.get(0).cloned().unwrap_or(Value::Undefined);
         let amf_version = match bytearray.object_encoding() {
             ObjectEncoding::Amf0 => AMFVersion::AMF0,
             ObjectEncoding::Amf3 => AMFVersion::AMF3,
         };
-        if let Some(amf) = crate::avm2::amf::serialize_value(activation, obj, amf_version) {
-            let element = Element::new("", amf);
-            let mut lso = flash_lso::types::Lso::new(vec![element], "", amf_version);
-            let bytes = flash_lso::write::write_to_bytes(&mut lso)
-                .map_err(|_| "Failed to serialize object")?;
-            // This is kind of hacky: We need to strip out the header and any padding so that we only write
-            // the value. In the future, there should be a method to do this in the flash_lso crate.
-            let element_padding = match amf_version {
-                AMFVersion::AMF0 => 8,
-                AMFVersion::AMF3 => 7,
-            };
-            bytearray
-                .write_bytes(
-                    &bytes[flash_lso::write::header_length(&lso.header) + element_padding
-                        ..bytes.len() - 1],
-                )
-                .map_err(|e| e.to_avm(activation))?;
-        }
+
+        let amf = crate::avm2::amf::serialize_value(
+            activation,
+            obj,
+            amf_version,
+            &mut Default::default(),
+        )
+        .unwrap_or(flash_lso::types::Value::Undefined);
+
+        let element = Element::new("", Rc::new(amf));
+        let mut lso = flash_lso::types::Lso::new(vec![element], "", amf_version);
+        let bytes =
+            flash_lso::write::write_to_bytes(&mut lso).map_err(|_| "Failed to serialize object")?;
+        // This is kind of hacky: We need to strip out the header and any padding so that we only write
+        // the value. In the future, there should be a method to do this in the flash_lso crate.
+        let element_padding = match amf_version {
+            AMFVersion::AMF0 => 8,
+            AMFVersion::AMF3 => 7,
+        };
+        bytearray
+            .write_bytes(
+                &bytes[flash_lso::write::header_length(&lso.header) + element_padding
+                    ..bytes.len() - 1],
+            )
+            .map_err(|e| e.to_avm(activation))?;
     }
 
     Ok(Value::Undefined)
@@ -814,7 +835,7 @@ pub fn set_object_encoding<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(mut bytearray) = this.as_bytearray_mut(activation.context.gc_context) {
+    if let Some(mut bytearray) = this.as_bytearray_mut() {
         let new_encoding = args
             .get(0)
             .unwrap_or(&Value::Undefined)

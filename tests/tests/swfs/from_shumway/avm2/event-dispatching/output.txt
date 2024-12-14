@@ -1,0 +1,5 @@
+listener for event foo called on root1 in phase 1
+listener for event foo called on clip in phase 1
+listener for event foo called on subclip in phase 2
+listener for event foo called on clip in phase 3
+listener for event foo called on root1 in phase 3

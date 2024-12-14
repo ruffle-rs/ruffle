@@ -1,10 +1,10 @@
-save-delete-prompt = هل أنت متأكد أنك تريد حذف ملف حفظ اللعبة هذا؟
+save-delete-prompt = هل أنت متأكد أنك تريد حذف ملف الحفظ هذا؟
 save-reload-prompt =
     الطريقة الوحيدة لـ { $action ->
         [delete] حذف
-       *[replace] استبدال
-    } هذا الملف الحفظ دون تضارب محتمل هي إعادة تحميل هذا المحتوى. هل ترغب في المتابعة على أي حال؟
-save-download = تحميل
-save-replace = استبدال
-save-delete = حذف
-save-backup-all = تحميل جميع الملفات المحفوظة
+       *[replace] إستبدال
+    } ملف الحفظ هذا دون تعارض محتمل هي إعادة تحميل هذه الصفحة. هل ترغب في المتابعة على أي حال؟
+save-download = حمّل
+save-replace = إستبدل
+save-delete = إحذف
+save-backup-all = حمّل جميع ملفات الحفظ

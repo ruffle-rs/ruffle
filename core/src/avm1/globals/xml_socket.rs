@@ -3,10 +3,10 @@ use crate::avm1::object::{NativeObject, Object};
 use crate::avm1::property_decl::define_properties_on;
 use crate::avm1::{property_decl::Declaration, ScriptObject};
 use crate::avm1::{Activation, Error, Executable, ExecutionReason, TObject, Value};
-use crate::context::{GcContext, UpdateContext};
+use crate::context::UpdateContext;
 use crate::display_object::TDisplayObject;
 use crate::socket::SocketHandle;
-use crate::string::AvmString;
+use crate::string::{AvmString, StringContext};
 use gc_arena::{Collect, Gc};
 use std::cell::{Cell, RefCell, RefMut};
 
@@ -19,7 +19,7 @@ struct XmlSocketData {
     read_buffer: RefCell<Vec<u8>>,
 }
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub struct XmlSocket<'gc>(Gc<'gc, XmlSocketData>);
 
@@ -142,7 +142,7 @@ pub fn connect<'gc>(
 
         let UpdateContext {
             sockets, navigator, ..
-        } = &mut activation.context;
+        } = activation.context;
 
         sockets.connect_avm1(*navigator, this, host.to_utf8_lossy().into_owned(), port);
 
@@ -247,7 +247,7 @@ pub fn constructor<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
@@ -257,7 +257,7 @@ pub fn create_proto<'gc>(
 }
 
 pub fn create_class<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     xml_socket_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

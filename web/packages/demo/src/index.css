@@ -1,0 +1,163 @@
+#root {
+    position: absolute;
+    inset: 0;
+    padding: 0;
+    margin: 0;
+    font-family: Lato, sans-serif;
+    font-size: 100%;
+    display: flex;
+    flex-direction: column;
+    background: black;
+}
+
+#nav {
+    width: 100%;
+    background: var(--ruffle-blue);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    color: white;
+    padding: 8px 16px;
+    box-sizing: border-box;
+}
+
+#nav > * {
+    display: flex;
+    gap: 20px;
+}
+
+.logo {
+    height: 32px;
+    flex: 0 0 content;
+}
+
+.select-container > div {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+#web-url {
+    width: min(40vw, 500px);
+}
+
+#local-file {
+    display: none;
+}
+
+#local-file-name,
+#sample-swfs-label,
+#local-file-static-label {
+    font-size: smaller;
+}
+
+#local-file-static-label {
+    display: none;
+}
+
+#toggle-info,
+#reload-swf {
+    cursor: pointer;
+}
+
+#author {
+    color: var(--ruffle-orange);
+}
+
+#main {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+}
+
+#author-container {
+    font-size: smaller;
+}
+
+#player-container {
+    overflow-y: hidden;
+    flex-grow: 1;
+}
+
+#player-container > * {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#overlay {
+    pointer-events: none;
+    border: 8px dashed var(--ruffle-orange);
+    border-radius: 30px;
+    opacity: 0;
+    transition: opacity 0.3s ease-in;
+    box-sizing: border-box;
+    z-index: 1;
+}
+
+#overlay.drag {
+    opacity: 1;
+    transition-timing-function: ease-out;
+}
+
+.info-container-shown #player {
+    width: calc(100% - 300px);
+}
+
+#overlay:not([hidden]) ~ #player {
+    bottom: 100%;
+}
+
+#info-container {
+    display: flex;
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 300px;
+    background-color: var(--ruffle-blue);
+    padding: 4px 16px;
+    flex-direction: column;
+    gap: 8px;
+    box-sizing: border-box;
+}
+
+#info-container span:first-child {
+    text-shadow: 0 0 1px white;
+}
+
+#info-container span:first-child::after {
+    content: ":";
+}
+
+#info-container span:last-child {
+    float: right;
+}
+
+/* TODO: Make metadata element IDs kebab-case, and convert back and forth
+         between that and the camelCase of metadata JS object keys. */
+/* stylelint-disable-next-line selector-id-pattern */
+#backgroundColor {
+    width: 1em;
+    height: 1em;
+    border: 2px solid var(--ruffle-dark-blue);
+    background-color: white;
+}
+
+@media only screen and (max-width: 1120px) {
+    #local-file-static-label {
+        display: block;
+    }
+
+    .select-container {
+        flex-flow: column;
+    }
+}
+
+@media only screen and (max-width: 600px) {
+    #logo-container {
+        display: none;
+    }
+}

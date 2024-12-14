@@ -12,7 +12,7 @@ pub enum FillRule {
     NonZero,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Enum)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Enum, Hash)]
 pub enum GradientType {
     Linear,
     Radial,
@@ -1435,8 +1435,6 @@ mod tests {
         }];
         assert_eq!(commands, expected);
     }
-
-    use swf::Twips;
 
     #[test]
     fn test_winding_number_line() {

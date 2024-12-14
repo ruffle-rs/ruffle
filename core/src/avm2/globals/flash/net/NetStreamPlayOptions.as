@@ -12,7 +12,7 @@ package flash.net
         // The duration of playback, in seconds, for the stream specified in streamName.
         public var len: Number = -1;
 
-        // The absoulte stream time at which the server switches between streams of different bitrates for Flash Media Server dynamic streaming.
+        // The absolute stream time at which the server switches between streams of different bitrates for Flash Media Server dynamic streaming.
         public var offset: Number = -1;
 
         // The name of the old stream or the stream to transition from.

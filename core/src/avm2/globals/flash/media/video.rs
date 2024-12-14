@@ -7,12 +7,12 @@ pub fn video_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let video_class = activation.avm2().classes().video;
+    let video_class = activation.avm2().classes().video.inner_class_definition();
 
-    let mut target_class = Some(class);
+    let mut target_class = Some(class.inner_class_definition());
     while let Some(target) = target_class {
         if target == video_class {
-            let movie = activation.context.swf.clone();
+            let movie = activation.caller_movie_or_root();
             let new_do = Video::new(activation.context.gc_context, movie, 0, 0, None);
             return initialize_for_allocator(activation, new_do.into(), class);
         }
@@ -32,7 +32,7 @@ pub fn video_allocator<'gc>(
             return initialize_for_allocator(activation, child, class);
         }
 
-        target_class = target.superclass_object();
+        target_class = target.super_class();
     }
 
     unreachable!("A Video subclass should have Video in superclass chain");
@@ -60,17 +60,14 @@ pub fn attach_net_stream<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(video) = this.as_display_object().and_then(|dobj| dobj.as_video()) {
-        let source = args.get(0).cloned().and_then(|v| v.as_object());
+        let source = args.get_value(0).as_object();
 
         if let Some(stream) = source.and_then(|o| o.as_netstream()) {
-            video.attach_netstream(&mut activation.context, stream);
+            video.attach_netstream(activation.context, stream);
         } else {
             return Err(format!(
                 "Cannot use value of type {:?} as video source",
-                source
-                    .and_then(|o| o.instance_of_class_definition())
-                    .map(|c| c.read().name().local_name())
-                    .unwrap_or_else(|| "Object".into())
+                source.map(|o| o.instance_class().name().local_name())
             )
             .into());
         }

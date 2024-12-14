@@ -1,8 +1,8 @@
-import { BaseLoadOptions } from "ruffle-core";
+import type { Config } from "ruffle-core";
 
 export interface LoadMessage {
     type: "load";
-    config: BaseLoadOptions;
+    config: Config.BaseLoadOptions;
 }
 
 export interface PingMessage {

@@ -1,0 +1,163 @@
+:root {
+    --ruffle-light-blue: #546da3;
+    --ruffle-blue: #37528c;
+    --ruffle-dark-blue: #184778;
+    --ruffle-orange: #ffad33;
+    --ruffle-dark-orange: #966214;
+}
+
+.notransition,
+.notransition *,
+.notransition::before,
+.notransition::after {
+    transition: none !important;
+}
+
+body {
+    background: var(--ruffle-blue);
+    font:
+        14px Arial,
+        sans-serif;
+    margin: auto;
+    color: white;
+}
+
+.header {
+    position: relative;
+    background: var(--ruffle-dark-blue);
+    text-align: center;
+    padding: 16px 16px 6px;
+    box-shadow: 0 0 12px #0008;
+}
+
+.header a {
+    display: inline-block;
+    line-height: 0;
+}
+
+#version-text {
+    text-align: center;
+    font-size: smaller;
+    opacity: 0.6;
+}
+
+.logo {
+    width: 100%;
+    transition: transform 0.2s;
+}
+
+.logo:hover {
+    transform: scale(104%);
+}
+
+/* Controls */
+
+input,
+select {
+    background: var(--ruffle-dark-blue);
+    color: white;
+    padding: 6px;
+    border: none;
+    border-radius: 4px;
+}
+
+input::placeholder {
+    opacity: 0.5;
+    color: white;
+}
+
+button {
+    padding: 6px 8px;
+    border: 2px solid var(--ruffle-blue);
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    background: var(--ruffle-light-blue);
+    color: white;
+
+    /* This gives the text a little more weight without outright bolding it */
+    text-shadow: 0 0 0.1px white;
+}
+
+.options {
+    display: flex;
+    flex-flow: column;
+    gap: 20px;
+}
+
+.option {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.option input,
+.option select {
+    padding: 4px;
+    position: absolute;
+    right: 0;
+}
+
+.option label {
+    display: inline-block;
+    padding-right: 60px;
+}
+
+/* Checkbox (Based on "Pure CSS Slider Checkboxes": https://codepen.io/Qvcool/pen/bdzVYW) */
+
+.option.checkbox input {
+    width: 40px;
+    height: 20px;
+    margin: auto;
+    cursor: pointer;
+    z-index: 1;
+    opacity: 0;
+}
+
+.option.checkbox label::before,
+.option.checkbox label::after {
+    content: "";
+    position: absolute;
+    border-radius: 10px;
+    top: 0;
+    bottom: 0;
+    margin: auto;
+    transition:
+        background 0.2s,
+        right 0.2s;
+}
+
+.option.checkbox label::before {
+    height: 20px;
+    width: 40px;
+    right: 0;
+    background: gray;
+}
+
+.option.checkbox label::after {
+    height: 18px;
+    width: 18px;
+    right: 21px;
+    background: silver;
+}
+
+.option.checkbox input:checked + label::before {
+    background: var(--ruffle-dark-orange);
+}
+
+.option.checkbox input:checked + label::after {
+    background: var(--ruffle-orange);
+    right: 1px;
+}
+
+/* Number input */
+
+.option.number-input input {
+    width: 60px;
+    height: 20px;
+    margin: auto;
+}
+
+.hidden {
+    display: none !important;
+}

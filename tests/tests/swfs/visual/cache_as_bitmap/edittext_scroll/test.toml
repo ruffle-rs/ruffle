@@ -1,0 +1,12 @@
+num_ticks = 2
+
+[image_comparisons."output.01"]
+trigger = 1
+max_outliers = 5
+
+[image_comparisons."output.02"]
+trigger = 2
+max_outliers = 5
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }

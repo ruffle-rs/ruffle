@@ -4,8 +4,9 @@ use crate::avm1::object::TObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::Object;
 use crate::avm1::{ScriptObject, Value};
-use crate::context::GcContext;
 use crate::context_menu;
+use crate::display_object::DisplayObject;
+use crate::string::StringContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "copy" => method(copy; DONT_ENUM | DONT_DELETE);
@@ -141,7 +142,7 @@ pub fn hide_builtin_items<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
@@ -152,9 +153,12 @@ pub fn create_proto<'gc>(
 
 pub fn make_context_menu_state<'gc>(
     menu: Option<Object<'gc>>,
+    object: Option<DisplayObject<'gc>>,
     activation: &mut Activation<'_, 'gc>,
 ) -> context_menu::ContextMenuState<'gc> {
     let mut result = context_menu::ContextMenuState::new();
+
+    result.set_display_object(object);
 
     let mut builtin_items = context_menu::BuiltInItemFlags::for_stage(activation.context.stage);
     if let Some(menu) = menu {
@@ -186,11 +190,7 @@ pub fn make_context_menu_state<'gc>(
         }
     }
 
-    result.build_builtin_items(
-        builtin_items,
-        activation.context.stage,
-        activation.context.ui.language(),
-    );
+    result.build_builtin_items(builtin_items, activation.context);
 
     if let Some(menu) = menu {
         if let Ok(Value::Object(custom_items)) = menu.get("customItems", activation) {
@@ -223,6 +223,14 @@ pub fn make_context_menu_state<'gc>(
                         );
 
                         if !visible {
+                            continue;
+                        }
+
+                        if result
+                            .info()
+                            .iter()
+                            .any(|menu_item| menu_item.caption == caption.to_string())
+                        {
                             continue;
                         }
 

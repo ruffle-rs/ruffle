@@ -359,7 +359,6 @@ Ruffle depends on third-party libraries with compatible licenses.
 | [fxhash](https://github.com/cbreeden/fxhash) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) cbreeden <github@u.breeden.cc> | 
 | [gc-arena](https://github.com/kyren/gc-arena) | [MIT](#MIT) | Copyright (c) kyren <kerriganw@gmail.com> | 
 | [gc-arena-derive](https://github.com/kyren/gc-arena) | [MIT](#MIT) | Copyright (c) kyren <kerriganw@gmail.com> | 
-| [generational-arena](https://github.com/fitzgen/generational-arena) | [MPL-2.0](#MPL-20) | Copyright (c) Nick Fitzgerald <fitzgen@gmail.com> | 
 | [getrandom](https://github.com/rust-random/getrandom) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright 2018 Developers of the Rand project Copyright (c) 2014 The Rust Project Developers  | 
 | [gfx-auxil](https://github.com/gfx-rs/gfx) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) The Gfx-rs Developers | 
 | [gfx-backend-dx11](https://github.com/gfx-rs/gfx) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) The Gfx-rs Developers | 
@@ -388,7 +387,6 @@ Ruffle depends on third-party libraries with compatible licenses.
 | [indexmap](https://github.com/bluss/indexmap) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2016--2017  | 
 | [indicatif](https://github.com/mitsuhiko/indicatif) | [MIT](#MIT) | Copyright (c) 2017 Armin Ronacher <armin.ronacher@active-4.com>  | 
 | [inplace_it](https://github.com/NotIntMan/inplace_it) | [MIT](#MIT) | Copyright (c) 2018 Dmitry Demin <shepardiwe@gmail.com>  | 
-| [instant](https://github.com/sebcrozet/instant) | [BSD-3-Clause](#BSD-3-Clause) | Copyright (c) 2019, Sébastien Crozet  | 
 | [iovec](https://github.com/carllerche/iovec) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2017 Carl Lerche  | 
 | [isahc](https://github.com/sagebind/isahc) | [MIT](#MIT) | Copyright (c) 2019 Stephen M. Coakley  | 
 | [itoa](https://github.com/dtolnay/itoa) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) David Tolnay <dtolnay@gmail.com> | 
@@ -403,8 +401,6 @@ Ruffle depends on third-party libraries with compatible licenses.
 | [lazy_static](https://github.com/rust-lang-nursery/lazy-static.rs) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2010 The Rust Project Developers  | 
 | [lazycell](https://github.com/indiv0/lazycell) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) Alex Crichton <alex@alexcrichton.com>, Nikita Pekin <contact@nikitapek.in> | 
 | [libc](https://github.com/rust-lang/libc) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2014-2020 The Rust Project Developers  | 
-| [libflate](https://github.com/sile/libflate) | [MIT](#MIT) | Copyright (c) 2016 Takeru Ohta <phjgt308@gmail.com>  | 
-| [libflate_lz77](https://github.com/sile/libflate) | [MIT](#MIT) | Copyright (c) 2016 Takeru Ohta <phjgt308@gmail.com>  | 
 | [libloading](https://github.com/nagisa/rust_libloading/) | [ISC](#ISC) | Copyright © 2015, Simonas Kazlauskas  | 
 | [libnghttp2-sys](https://github.com/alexcrichton/nghttp2-rs) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2014 Alex Crichton  | 
 | [libz-sys](https://github.com/rust-lang/libz-sys) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2014 Alex Crichton Copyright (c) 2020 Josh Triplett  | 
@@ -530,7 +526,7 @@ Ruffle depends on third-party libraries with compatible licenses.
 | [sid](https://github.com/nical/sid) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) Nicolas Silva <nical@fastmail.com> | 
 | [slab](https://github.com/carllerche/slab) | [MIT](#MIT) | Copyright (c) 2019 Carl Lerche  | 
 | [slice-deque](https://github.com/gnzlbg/slice_deque) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2017 Gonzalo Brito Gadeschi Copyright (c) 2017 The Rust Project Developers  | 
-| [slotmap](https://github.com/orlp/slotmap) | [Zlib](#Zlib) | Copyright (c) 2018 Orson Peters <orsonpeters@gmail.com>  | 
+| [slotmap](https://github.com/orlp/slotmap) | [Zlib](#Zlib) | Copyright (c) 2021 Orson Peters <orsonpeters@gmail.com>  | 
 | [sluice](https://github.com/sagebind/sluice) | [MIT](#MIT) | Copyright (c) 2017 Stephen M. Coakley  | 
 | [smallvec](https://github.com/servo/rust-smallvec) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2018 The Servo Project Developers  | 
 | [smithay-client-toolkit](https://github.com/smithay/client-toolkit) | [MIT](#MIT) | Copyright (c) 2018 Victor Berger  | 
@@ -609,6 +605,7 @@ Ruffle depends on third-party libraries with compatible licenses.
 | [wayland-sys](https://github.com/smithay/wayland-rs) | [MIT](#MIT) | Copyright (c) 2015 Victor Berger  | 
 | [weak-table](https://github.com/tov/weak-table-rs) | [MIT](#MIT) | Copyright (c) 2018 Jesse A. Tov  | 
 | [web-sys](https://github.com/rustwasm/wasm-bindgen/tree/master/crates/web-sys) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2014 Alex Crichton  | 
+| [web-time](https://github.com/daxpedda/web-time) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2023 dAxpeDDa <daxpedda@gmail.com>  | 
 | [webbrowser](https://github.com/amodm/webbrowser-rs) | [Apache-2.0](#Apache-20)/[MIT](#MIT) | Copyright (c) 2015 Amod Malviya  | 
 | [webpki](https://github.com/briansmith/webpki) | Custom ISC-style | Copyright 2015 Brian Smith.  | 
 | [webpki-roots](https://github.com/ctz/webpki-roots) | [MPL-2.0](#MPL-20) | Copyright (c) Joseph Birr-Pixton <jpixton@gmail.com> | 

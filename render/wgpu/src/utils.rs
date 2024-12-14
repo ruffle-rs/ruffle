@@ -1,12 +1,9 @@
 use crate::buffer_pool::BufferDescription;
 use crate::descriptors::Descriptors;
 use crate::globals::Globals;
-use crate::Transforms;
-use ruffle_render::quality::StageQuality;
 use std::borrow::Cow;
-use std::mem::size_of;
 use wgpu::util::DeviceExt;
-use wgpu::CommandEncoder;
+use wgpu::{CommandEncoder, TextureFormat};
 
 macro_rules! create_debug_label {
     ($($arg:tt)*) => (
@@ -63,9 +60,6 @@ pub fn get_backend_names(backends: wgpu::Backends) -> Vec<&'static str> {
     if backends.contains(wgpu::Backends::DX12) {
         names.push("DirectX 12");
     }
-    if backends.contains(wgpu::Backends::DX11) {
-        names.push("DirectX 11");
-    }
     if backends.contains(wgpu::Backends::METAL) {
         names.push("Metal");
     }
@@ -103,8 +97,8 @@ pub struct BufferDimensions {
 
 impl BufferDimensions {
     #[allow(dead_code)]
-    pub fn new(width: usize, height: usize) -> Self {
-        let bytes_per_pixel = size_of::<u32>();
+    pub fn new(width: usize, height: usize, format: TextureFormat) -> Self {
+        let bytes_per_pixel = format.block_copy_size(None).unwrap() as usize;
         let unpadded_bytes_per_row = width * bytes_per_pixel;
         let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as usize;
         let padded_bytes_per_row_padding = (align - unpadded_bytes_per_row % align) % align;
@@ -186,10 +180,9 @@ pub fn buffer_to_image(
 
 pub fn supported_sample_count(
     adapter: &wgpu::Adapter,
-    quality: StageQuality,
+    mut sample_count: u32,
     format: wgpu::TextureFormat,
 ) -> u32 {
-    let mut sample_count = quality.sample_count();
     let features = adapter.get_texture_format_features(format).flags;
 
     // Keep halving the sample count until we get one that's supported - or 1 (no multisampling)
@@ -206,7 +199,6 @@ pub fn run_copy_pipeline(
     descriptors: &Descriptors,
     format: wgpu::TextureFormat,
     actual_surface_format: wgpu::TextureFormat,
-    size: wgpu::Extent3d,
     frame_view: &wgpu::TextureView,
     input: &wgpu::TextureView,
     whole_frame_bind_group: &wgpu::BindGroup,
@@ -248,36 +240,23 @@ pub fn run_copy_pipeline(
     let load = wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT);
 
     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        label: create_debug_label!("Copy back to render target").as_deref(),
         color_attachments: &[Some(wgpu::RenderPassColorAttachment {
             view: frame_view,
-            ops: wgpu::Operations { load, store: true },
+            ops: wgpu::Operations {
+                load,
+                store: wgpu::StoreOp::Store,
+            },
             resolve_target: None,
         })],
-        depth_stencil_attachment: None,
-        label: create_debug_label!("Copy back to render target").as_deref(),
+        ..Default::default()
     });
 
     render_pass.set_pipeline(&pipeline);
     render_pass.set_bind_group(0, globals.bind_group(), &[]);
 
-    if descriptors.limits.max_push_constant_size > 0 {
-        render_pass.set_push_constants(
-            wgpu::ShaderStages::VERTEX,
-            0,
-            bytemuck::cast_slice(&[Transforms {
-                world_matrix: [
-                    [size.width as f32, 0.0, 0.0, 0.0],
-                    [0.0, size.height as f32, 0.0, 0.0],
-                    [0.0, 0.0, 1.0, 0.0],
-                    [0.0, 0.0, 0.0, 1.0],
-                ],
-            }]),
-        );
-        render_pass.set_bind_group(1, &copy_bind_group, &[]);
-    } else {
-        render_pass.set_bind_group(1, whole_frame_bind_group, &[0]);
-        render_pass.set_bind_group(2, &copy_bind_group, &[]);
-    }
+    render_pass.set_bind_group(1, whole_frame_bind_group, &[0]);
+    render_pass.set_bind_group(2, &copy_bind_group, &[]);
 
     render_pass.set_vertex_buffer(0, descriptors.quad.vertices_pos.slice(..));
     render_pass.set_index_buffer(

@@ -3,7 +3,7 @@
 	
 	public class OverButtonShape extends MovieClip {
 		public function OverButtonShape() {
-			trace("//Constructed OverButtonShape (", this.name, ")!");
+			trace("//Constructed OverButtonShape (", this.name, "): Main.INSTANCE.my_button = " + Main.INSTANCE.my_button);
 		}
 	}
 	

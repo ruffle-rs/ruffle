@@ -1,6 +1,7 @@
 package flash.events
 {
 
+    [API("676")] // the docs say 674, that's wrong
     public class ThrottleType
     {
         // This constant is used for the status property in the ThrottleEvent class.

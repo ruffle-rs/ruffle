@@ -32,8 +32,8 @@ impl GlowFilter {
     }
 
     pub fn scale(&mut self, x: f32, y: f32) {
-        self.blur_x *= Fixed16::from_f32(x);
-        self.blur_y *= Fixed16::from_f32(y);
+        self.blur_x = BlurFilter::scale_blur(self.blur_x, x);
+        self.blur_y = BlurFilter::scale_blur(self.blur_y, y);
     }
 
     pub fn calculate_dest_rect(&self, source_rect: Rectangle<Twips>) -> Rectangle<Twips> {

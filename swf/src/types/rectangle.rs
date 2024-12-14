@@ -1,5 +1,5 @@
 use crate::{types::point::Coordinate as PointCoordinate, Point, Twips};
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 
 pub trait Coordinate: PointCoordinate + Ord {
     const INVALID: Self;
@@ -10,7 +10,7 @@ impl Coordinate for Twips {
 }
 
 /// A rectangular region defined by minimum and maximum x- and y-coordinate positions.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct Rectangle<T> {
     /// The minimum x-position of the rectangle.
     pub x_min: T,
@@ -23,6 +23,16 @@ pub struct Rectangle<T> {
 
     /// The maximum y-position of the rectangle.
     pub y_max: T,
+}
+
+impl<T: Debug> Debug for Rectangle<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Rectangle(x={:?}..{:?}, y={:?}..{:?})",
+            self.x_min, self.x_max, self.y_min, self.y_max
+        )
+    }
 }
 
 impl<T: PointCoordinate + Ord> Rectangle<T> {
@@ -58,11 +68,18 @@ impl<T: PointCoordinate + Ord> Rectangle<T> {
 }
 
 impl<T: Coordinate> Rectangle<T> {
-    const INVALID: Self = Self {
+    pub const INVALID: Self = Self {
         x_min: T::INVALID,
         x_max: T::INVALID,
         y_min: T::INVALID,
         y_max: T::INVALID,
+    };
+
+    pub const ZERO: Self = Self {
+        x_min: T::ZERO,
+        x_max: T::ZERO,
+        y_min: T::ZERO,
+        y_max: T::ZERO,
     };
 
     #[inline]
@@ -122,6 +139,22 @@ impl<T: Coordinate> Rectangle<T> {
             && self.x_max >= other.x_min
             && self.y_min <= other.y_max
             && self.y_max >= other.y_min
+    }
+
+    #[must_use]
+    pub fn grow(mut self, amount: T) -> Self {
+        if self.is_valid() {
+            self.x_min -= amount;
+            self.x_max += amount;
+            self.y_min -= amount;
+            self.y_max += amount;
+        }
+        self
+    }
+
+    #[must_use]
+    pub fn is_point(&self) -> bool {
+        self.x_min == self.x_max && self.y_min == self.y_max
     }
 }
 

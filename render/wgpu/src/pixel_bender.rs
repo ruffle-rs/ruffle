@@ -1,6 +1,6 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::num::NonZeroU64;
-use std::sync::OnceLock;
 use std::{borrow::Cow, cell::Cell, sync::Arc};
 
 use indexmap::IndexMap;
@@ -13,17 +13,16 @@ use ruffle_render::{
     bitmap::BitmapHandle,
     pixel_bender::{PixelBenderParam, PixelBenderShader, PixelBenderShaderArgument},
 };
-use wgpu::util::StagingBelt;
+use wgpu::util::{DeviceExt, StagingBelt};
 use wgpu::{
     BindGroupEntry, BindingResource, BlendComponent, BufferDescriptor, BufferUsages,
-    ColorTargetState, ColorWrites, CommandEncoder, FrontFace, ImageCopyTexture, PipelineLayout,
+    ColorTargetState, ColorWrites, CommandEncoder, ImageCopyTexture, PipelineLayout,
     RenderPipeline, RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor,
     TextureDescriptor, TextureFormat, TextureView, VertexState,
 };
 
 use crate::filters::{FilterSource, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
 use crate::raw_texture_as_texture;
-use crate::utils::SampleCountMap;
 use crate::{
     as_texture, backend::WgpuRenderBackend, descriptors::Descriptors, target::RenderTarget, Texture,
 };
@@ -32,7 +31,7 @@ use crate::{
 pub struct PixelBenderWgpuShader {
     bind_group_layout: wgpu::BindGroupLayout,
     pipeline_layout: PipelineLayout,
-    pipelines: SampleCountMap<OnceLock<RenderPipeline>>,
+    pipelines: RefCell<HashMap<(u32, wgpu::TextureFormat), Arc<RenderPipeline>>>,
     vertex_shader: wgpu::ShaderModule,
     fragment_shader: wgpu::ShaderModule,
     shader: PixelBenderShader,
@@ -46,45 +45,55 @@ pub struct PixelBenderWgpuShader {
 
 impl PixelBenderWgpuShader {
     /// Gets a `RenderPipeline` for the specified sample count
-    fn get_pipeline(&self, descriptors: &Descriptors, samples: u32) -> &wgpu::RenderPipeline {
-        self.pipelines.get_or_init(samples, || {
-            descriptors
-                .device
-                .create_render_pipeline(&RenderPipelineDescriptor {
-                    label: create_debug_label!("PixelBender shader pipeline").as_deref(),
-                    layout: Some(&self.pipeline_layout),
-                    vertex: VertexState {
-                        module: &self.vertex_shader,
-                        entry_point: naga_pixelbender::VERTEX_SHADER_ENTRYPOINT,
-                        buffers: &VERTEX_BUFFERS_DESCRIPTION_FILTERS,
-                    },
-                    fragment: Some(wgpu::FragmentState {
-                        module: &self.fragment_shader,
-                        entry_point: naga_pixelbender::FRAGMENT_SHADER_ENTRYPOINT,
-                        targets: &[Some(ColorTargetState {
-                            format: TextureFormat::Rgba8Unorm,
-                            // FIXME - what should this be?
-                            blend: Some(wgpu::BlendState {
-                                color: BlendComponent::OVER,
-                                alpha: BlendComponent::OVER,
+    fn get_pipeline(
+        &self,
+        descriptors: &Descriptors,
+        samples: u32,
+        format: TextureFormat,
+    ) -> Arc<wgpu::RenderPipeline> {
+        self.pipelines
+            .borrow_mut()
+            .entry((samples, format))
+            .or_insert_with(|| {
+                Arc::new(
+                    descriptors
+                        .device
+                        .create_render_pipeline(&RenderPipelineDescriptor {
+                            label: create_debug_label!("PixelBender shader pipeline").as_deref(),
+                            layout: Some(&self.pipeline_layout),
+                            vertex: VertexState {
+                                module: &self.vertex_shader,
+                                entry_point: Some(naga_pixelbender::VERTEX_SHADER_ENTRYPOINT),
+                                buffers: &VERTEX_BUFFERS_DESCRIPTION_FILTERS,
+                                compilation_options: Default::default(),
+                            },
+                            fragment: Some(wgpu::FragmentState {
+                                module: &self.fragment_shader,
+                                entry_point: Some(naga_pixelbender::FRAGMENT_SHADER_ENTRYPOINT),
+                                targets: &[Some(ColorTargetState {
+                                    format,
+                                    // FIXME - what should this be?
+                                    blend: Some(wgpu::BlendState {
+                                        color: BlendComponent::OVER,
+                                        alpha: BlendComponent::OVER,
+                                    }),
+                                    write_mask: ColorWrites::all(),
+                                })],
+                                compilation_options: Default::default(),
                             }),
-                            write_mask: ColorWrites::all(),
-                        })],
-                    }),
-                    primitive: wgpu::PrimitiveState {
-                        front_face: FrontFace::Ccw,
-                        cull_mode: None,
-                        ..Default::default()
-                    },
-                    depth_stencil: None,
-                    multisample: wgpu::MultisampleState {
-                        count: samples,
-                        mask: !0,
-                        alpha_to_coverage_enabled: false,
-                    },
-                    multiview: Default::default(),
-                })
-        })
+                            primitive: Default::default(),
+                            depth_stencil: None,
+                            multisample: wgpu::MultisampleState {
+                                count: samples,
+                                mask: !0,
+                                alpha_to_coverage_enabled: false,
+                            },
+                            multiview: Default::default(),
+                            cache: None,
+                        }),
+                )
+            })
+            .clone()
     }
 }
 
@@ -254,10 +263,104 @@ impl PixelBenderWgpuShader {
     }
 }
 
-fn image_input_as_texture<'a>(input: &'a ImageInputTexture<'a>) -> &wgpu::Texture {
+enum BorrowedOrOwnedTexture<'a> {
+    Borrowed(&'a wgpu::Texture),
+    Owned(wgpu::Texture),
+}
+
+impl std::ops::Deref for BorrowedOrOwnedTexture<'_> {
+    type Target = wgpu::Texture;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            BorrowedOrOwnedTexture::Borrowed(t) => t,
+            BorrowedOrOwnedTexture::Owned(t) => t,
+        }
+    }
+}
+
+/// The texture format to use for the temporary texture we create when reading/writing
+/// from raw bytes (ByteArray to Vector.<Number>). We use a Float texture to be able to
+/// pass in floating-point values directly, without converting on the host side.
+/// In the special case with 3 channels, we use `Rgba32Float` since wgpu lacks a `Rgb32Float`
+/// texture. We handle this by manually inserting and removing padding to keep the pixels
+/// at the correct positions. This isn't ideal, but allows us to keep the naga code generation
+/// simple.
+pub(super) fn temporary_texture_format_for_channels(channels: u32) -> wgpu::TextureFormat {
+    match channels {
+        1 => wgpu::TextureFormat::R32Float,
+        2 => wgpu::TextureFormat::Rg32Float,
+        3 => wgpu::TextureFormat::Rgba32Float,
+        4 => wgpu::TextureFormat::Rgba32Float,
+        _ => panic!("Unsupported number of channels: {}", channels),
+    }
+}
+
+fn image_input_as_texture<'a>(
+    descriptors: &Descriptors,
+    input: &'a ImageInputTexture<'a>,
+) -> BorrowedOrOwnedTexture<'a> {
     match input {
-        ImageInputTexture::Bitmap(handle) => &as_texture(handle).texture,
-        ImageInputTexture::TextureRef(raw_texture) => raw_texture_as_texture(*raw_texture),
+        ImageInputTexture::Bitmap(handle) => {
+            BorrowedOrOwnedTexture::Borrowed(&as_texture(handle).texture)
+        }
+        ImageInputTexture::TextureRef(raw_texture) => {
+            BorrowedOrOwnedTexture::Borrowed(raw_texture_as_texture(*raw_texture))
+        }
+        ImageInputTexture::Bytes {
+            width,
+            height,
+            channels,
+            bytes,
+        } => {
+            let extent = wgpu::Extent3d {
+                width: *width,
+                height: *height,
+                depth_or_array_layers: 1,
+            };
+            let texture_format = temporary_texture_format_for_channels(*channels);
+            // We're going to be using an Rgba32Float texture, so we need to pad the bytes
+            // with zeros for the alpha channel. The PixelBender code will only ever try to
+            // use the first 3 channels (since it was compiled with a 3-channel input),
+            // so it doesn't matter what value we choose here.
+            let padded_bytes = if *channels == 3 {
+                let mut padded_bytes = Vec::with_capacity(bytes.len() * 4 / 3);
+                for chunk in bytes.chunks_exact(12) {
+                    padded_bytes.extend_from_slice(chunk);
+                    padded_bytes.extend_from_slice(&[0, 0, 0, 0]);
+                }
+                Cow::Owned(padded_bytes)
+            } else {
+                Cow::Borrowed(bytes)
+            };
+
+            let fresh_texture = descriptors.device.create_texture(&TextureDescriptor {
+                label: Some("Temporary PixelBender output texture"),
+                size: extent,
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: texture_format,
+                usage: wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::TEXTURE_BINDING,
+                view_formats: &[texture_format],
+            });
+            descriptors.queue.write_texture(
+                wgpu::ImageCopyTexture {
+                    texture: &fresh_texture,
+                    mip_level: 0,
+                    origin: wgpu::Origin3d::ZERO,
+                    aspect: wgpu::TextureAspect::All,
+                },
+                &padded_bytes,
+                wgpu::ImageDataLayout {
+                    offset: 0,
+                    bytes_per_row: Some(padded_bytes.len() as u32 / height),
+                    rows_per_image: None,
+                },
+                extent,
+            );
+            BorrowedOrOwnedTexture::Owned(fresh_texture)
+        }
     }
 }
 
@@ -366,8 +469,15 @@ pub(super) fn run_pixelbender_shader_impl(
     for input in &mut arguments {
         match input {
             PixelBenderShaderArgument::ImageInput { index, texture, .. } => {
-                let input_texture = &image_input_as_texture(texture.as_ref().unwrap());
-                if std::ptr::eq(*input_texture, target) {
+                let input_texture = &image_input_as_texture(descriptors, texture.as_ref().unwrap());
+                let same_source_dest =
+                    if let BorrowedOrOwnedTexture::Borrowed(input_texture) = input_texture {
+                        std::ptr::eq(*input_texture, target)
+                    } else {
+                        // When we create a fresh texture, it can never be equal to the pre-existing target
+                        false
+                    };
+                if same_source_dest {
                     // The input is the same as the output - we need to clone the input.
                     // We will write to the original output, and use a clone of the input as a texture input binding
                     let cached_fresh_handle = target_clone.get_or_insert_with(|| {
@@ -412,7 +522,7 @@ pub(super) fn run_pixelbender_shader_impl(
                     });
                     *texture = Some(cached_fresh_handle.clone().into());
                 }
-                let wgpu_texture = image_input_as_texture(texture.as_ref().unwrap());
+                let wgpu_texture = image_input_as_texture(descriptors, texture.as_ref().unwrap());
                 texture_views.insert(
                     *index,
                     wgpu_texture.create_view(&wgpu::TextureViewDescriptor::default()),
@@ -524,7 +634,7 @@ pub(super) fn run_pixelbender_shader_impl(
     for input in &arguments {
         match input {
             PixelBenderShaderArgument::ImageInput { index, texture, .. } => {
-                let wgpu_texture = image_input_as_texture(texture.as_ref().unwrap());
+                let wgpu_texture = image_input_as_texture(descriptors, texture.as_ref().unwrap());
 
                 if first_image.is_none() {
                     first_image = Some(wgpu_texture);
@@ -550,17 +660,24 @@ pub(super) fn run_pixelbender_shader_impl(
 
     staging_belt.finish();
 
-    let vertices = source.vertices(&descriptors.device);
+    let vertices = descriptors
+        .device
+        .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: create_debug_label!("Filter vertices").as_deref(),
+            contents: bytemuck::cast_slice(&[source.vertices()]),
+            usage: BufferUsages::VERTEX,
+        });
 
-    let pipeline = compiled_shader.get_pipeline(descriptors, sample_count);
+    let pipeline = compiled_shader.get_pipeline(descriptors, sample_count, target.format());
 
     let mut render_pass = render_command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
         label: Some("PixelBender render pass"),
         color_attachments: &[color_attachment],
         depth_stencil_attachment: None,
+        ..Default::default()
     });
     render_pass.set_bind_group(0, &bind_group, &[]);
-    render_pass.set_pipeline(pipeline);
+    render_pass.set_pipeline(&pipeline);
 
     render_pass.set_vertex_buffer(0, vertices.slice(..));
     render_pass.set_index_buffer(

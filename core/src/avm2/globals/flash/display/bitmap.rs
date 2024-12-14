@@ -19,16 +19,22 @@ pub fn bitmap_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let bitmap_cls = activation.avm2().classes().bitmap;
+    let bitmap_cls = activation.avm2().class_defs().bitmap;
     let bitmapdata_cls = activation.context.avm2.classes().bitmapdata;
 
-    let mut class_object = Some(class);
+    let mut class_def = Some(class.inner_class_definition());
     let orig_class = class;
-    while let Some(class) = class_object {
+    while let Some(class) = class_def {
         if class == bitmap_cls {
             let bitmap_data = BitmapDataWrapper::dummy(activation.context.gc_context);
-            let display_object =
-                Bitmap::new_with_bitmap_data(&mut activation.context, 0, bitmap_data, false).into();
+            let display_object = Bitmap::new_with_bitmap_data(
+                activation.context.gc_context,
+                0,
+                bitmap_data,
+                false,
+                &activation.caller_movie_or_root(),
+            )
+            .into();
             return initialize_for_allocator(activation, display_object, orig_class);
         }
 
@@ -38,36 +44,38 @@ pub fn bitmap_allocator<'gc>(
             .avm2_class_registry()
             .class_symbol(class)
         {
-            if let Some(Character::Bitmap(bitmap)) = activation
+            if let Some(Character::Bitmap {
+                compressed,
+                avm2_bitmapdata_class: _,
+                handle: _,
+            }) = activation
                 .context
                 .library
                 .library_for_movie_mut(movie)
                 .character_by_id(symbol)
                 .cloned()
             {
-                let new_bitmap_data = fill_bitmap_data_from_symbol(activation, &bitmap);
+                let new_bitmap_data = fill_bitmap_data_from_symbol(activation, &compressed);
                 let bitmap_data_obj = BitmapDataObject::from_bitmap_data_internal(
                     activation,
-                    BitmapDataWrapper::dummy(activation.context.gc_context),
+                    BitmapDataWrapper::dummy(activation.gc()),
                     bitmapdata_cls,
                 )?;
-                bitmap_data_obj.init_bitmap_data(activation.context.gc_context, new_bitmap_data);
-                new_bitmap_data.init_object2(activation.context.gc_context, bitmap_data_obj);
+                bitmap_data_obj.init_bitmap_data(activation.gc(), new_bitmap_data);
+                new_bitmap_data.init_object2(activation.gc(), bitmap_data_obj);
 
                 let child = Bitmap::new_with_bitmap_data(
-                    &mut activation.context,
+                    activation.context.gc_context,
                     0,
                     new_bitmap_data,
                     false,
-                )
-                .into();
+                    &activation.caller_movie_or_root(),
+                );
 
-                let obj = initialize_for_allocator(activation, child, orig_class)?;
-                obj.set_public_property("bitmapData", bitmap_data_obj.into(), activation)?;
-                return Ok(obj);
+                return initialize_for_allocator(activation, child.into(), orig_class);
             }
         }
-        class_object = class.superclass_object();
+        class_def = class.super_class();
     }
     unreachable!("A Bitmap subclass should have Bitmap in superclass chain");
 }
@@ -88,7 +96,7 @@ pub fn init<'gc>(
 
     if let Some(bitmap) = this.as_display_object().and_then(|dobj| dobj.as_bitmap()) {
         if let Some(bitmap_data) = bitmap_data {
-            bitmap.set_bitmap_data(&mut activation.context, bitmap_data);
+            bitmap.set_bitmap_data(activation.context, bitmap_data);
         }
         bitmap.set_smoothing(activation.context.gc_context, smoothing);
         bitmap.set_pixel_snapping(activation.context.gc_context, pixel_snapping);
@@ -125,16 +133,16 @@ pub fn set_bitmap_data<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(bitmap) = this.as_display_object().and_then(|dobj| dobj.as_bitmap()) {
-        let bitmap_data = args.get(0).unwrap_or(&Value::Null);
-        let bitmap_data = if matches!(bitmap_data, Value::Null) {
-            BitmapDataWrapper::dummy(activation.context.gc_context)
+        let bitmap_data = args.try_get_object(activation, 0);
+
+        let bitmap_data = if let Some(bitmap_data) = bitmap_data {
+            bitmap_data.as_bitmap_data().expect("Must be a BitmapData")
         } else {
-            bitmap_data
-                .coerce_to_object(activation)?
-                .as_bitmap_data()
-                .ok_or_else(|| Error::RustError("Argument was not a BitmapData".into()))?
+            // Passing null results in a dummy BitmapData being set.
+            BitmapDataWrapper::dummy(activation.gc())
         };
-        bitmap.set_bitmap_data(&mut activation.context, bitmap_data);
+
+        bitmap.set_bitmap_data(activation.context, bitmap_data);
     }
 
     Ok(Value::Undefined)

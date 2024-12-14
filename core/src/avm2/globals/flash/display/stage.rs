@@ -2,26 +2,17 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2008;
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{Object, TObject, VectorObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
+use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
-use crate::avm2::{ArrayObject, ArrayStorage};
-use crate::display_object::{StageDisplayState, TDisplayObject};
+use crate::avm2_stub_getter;
+use crate::display_object::{
+    StageDisplayState, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
+};
 use crate::string::{AvmString, WString};
-use crate::{avm2_stub_getter, avm2_stub_setter};
 use swf::Color;
-
-/// Implements `flash.display.Stage`'s native instance constructor.
-pub fn native_instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    activation.super_init(this, args)?;
-
-    Ok(Value::Undefined)
-}
 
 /// Implement `align`'s getter
 pub fn get_align<'gc>(
@@ -62,7 +53,7 @@ pub fn set_align<'gc>(
     activation
         .context
         .stage
-        .set_align(&mut activation.context, align);
+        .set_align(activation.context, align);
     Ok(Value::Undefined)
 }
 
@@ -166,7 +157,7 @@ pub fn set_display_state<'gc>(
         activation
             .context
             .stage
-            .set_display_state(&mut activation.context, display_state);
+            .set_display_state(activation.context, display_state);
     } else {
         return Err(make_error_2008(activation, "displayState"));
     }
@@ -183,6 +174,7 @@ pub fn get_focus<'gc>(
         .context
         .focus_tracker
         .get()
+        .map(|o| o.as_displayobject())
         .and_then(|focus_dobj| focus_dobj.object2().as_object())
         .map(|o| o.into())
         .unwrap_or(Value::Null))
@@ -196,10 +188,10 @@ pub fn set_focus<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let focus = activation.context.focus_tracker;
     match args.try_get_object(activation, 0) {
-        None => focus.set(None, &mut activation.context),
+        None => focus.set(None, activation.context),
         Some(obj) => {
-            if let Some(dobj) = obj.as_display_object() {
-                focus.set(Some(dobj), &mut activation.context);
+            if let Some(dobj) = obj.as_display_object().and_then(|o| o.as_interactive()) {
+                focus.set(Some(dobj), activation.context);
             } else {
                 return Err("Cannot set focus to non-DisplayObject".into());
             }
@@ -215,7 +207,12 @@ pub fn get_frame_rate<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok((*activation.context.frame_rate).into())
+    let mut frame_rate = *activation.context.frame_rate;
+    if frame_rate < 0.0 {
+        // Uncommon frame rate from the SWF header.
+        frame_rate = frame_rate.rem_euclid(256.0);
+    }
+    Ok(frame_rate.into())
 }
 
 /// Implement `frameRate`'s setter
@@ -225,7 +222,7 @@ pub fn set_frame_rate<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if !activation.context.forced_frame_rate {
-        let new_frame_rate = args.get_f64(activation, 0)?;
+        let new_frame_rate = args.get_f64(activation, 0)?.clamp(0.01, 1000.0);
         *activation.context.frame_rate = new_frame_rate;
     }
 
@@ -249,7 +246,7 @@ pub fn set_show_default_context_menu<'gc>(
     activation
         .context
         .stage
-        .set_show_menu(&mut activation.context, show_default_context_menu);
+        .set_show_menu(activation.context, show_default_context_menu);
     Ok(Value::Undefined)
 }
 
@@ -276,7 +273,7 @@ pub fn set_scale_mode<'gc>(
         activation
             .context
             .stage
-            .set_scale_mode(&mut activation.context, scale_mode);
+            .set_scale_mode(activation.context, scale_mode, true);
     } else {
         return Err(make_error_2008(activation, "scaleMode"));
     }
@@ -284,8 +281,6 @@ pub fn set_scale_mode<'gc>(
 }
 
 /// Implement `stageFocusRect`'s getter
-///
-/// This setting is currently ignored in Ruffle.
 pub fn get_stage_focus_rect<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -299,8 +294,6 @@ pub fn get_stage_focus_rect<'gc>(
 }
 
 /// Implement `stageFocusRect`'s setter
-///
-/// This setting is currently ignored in Ruffle.
 pub fn set_stage_focus_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -405,7 +398,7 @@ pub fn set_quality<'gc>(
         activation
             .context
             .stage
-            .set_quality(&mut activation.context, quality);
+            .set_quality(activation.context, quality);
     }
     Ok(Value::Undefined)
 }
@@ -417,15 +410,17 @@ pub fn get_stage3ds<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(stage) = this.as_display_object().and_then(|this| this.as_stage()) {
-        let storage = ArrayStorage::from_storage(
+        let storage = VectorStorage::from_values(
             stage
                 .stage3ds()
                 .iter()
-                .map(|obj| Some(Value::Object(*obj)))
+                .map(|obj| Value::Object(*obj))
                 .collect(),
+            false,
+            Some(activation.avm2().classes().stage3d.inner_class_definition()),
         );
-        let stage3ds_array = ArrayObject::from_storage(activation, storage)?;
-        return Ok(stage3ds_array.into());
+        let stage3ds = VectorObject::from_vector(storage, activation)?;
+        return Ok(stage3ds.into());
     }
     Ok(Value::Undefined)
 }
@@ -439,26 +434,6 @@ pub fn invalidate<'gc>(
     if let Some(stage) = this.as_display_object().and_then(|this| this.as_stage()) {
         stage.set_invalidated(activation.context.gc_context, true);
     }
-    Ok(Value::Undefined)
-}
-
-/// Stage.fullScreenSourceRect's getter
-pub fn get_full_screen_source_rect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.Stage", "fullScreenSourceRect");
-    Ok(Value::Undefined)
-}
-
-/// Stage.fullScreenSourceRect's setter
-pub fn set_full_screen_source_rect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.display.Stage", "fullScreenSourceRect");
     Ok(Value::Undefined)
 }
 
@@ -480,4 +455,26 @@ pub fn get_full_screen_width<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.display.Stage", "fullScreenWidth");
     Ok(1024.into())
+}
+
+pub fn set_tab_children<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(stage) = this.as_display_object().and_then(|this| this.as_stage()) {
+        // TODO FP actually refers here to the original root,
+        //      even if it has been removed.
+        //      See the test tab_ordering_stage_tab_children_remove_root.
+        if let Some(root) = stage.root_clip() {
+            if let Some(root) = root.as_container() {
+                // Stage's tabChildren setter just propagates the value to the AVM2 root.
+                // It does not affect the value of tabChildren of the stage, which is always true.
+                let value = args.get_bool(0);
+                root.set_tab_children(activation.context, value);
+            }
+        }
+    }
+
+    Ok(Value::Undefined)
 }

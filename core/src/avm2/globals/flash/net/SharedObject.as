@@ -4,9 +4,10 @@ package flash.net {
 
     namespace ruffle = "__ruffle__";
 
+    [Ruffle(InstanceAllocator)]
     public class SharedObject extends EventDispatcher {
         public function SharedObject() {
-           this.data = {};
+           // Unreachable; the allocator always throws
         }
 
         // NOTE: We currently always use AMF3 serialization.
@@ -17,6 +18,8 @@ package flash.net {
         public static native function getLocal(name:String, localPath:String = null, secure:Boolean = false): SharedObject;
 
         public native function get size() : uint;
+        public native function get objectEncoding() : uint;
+        public native function set objectEncoding(value:uint) : void;
 
         public native function flush(minDiskSpace:int = 0) : String;
         public native function close() : void;
@@ -28,9 +31,6 @@ package flash.net {
             // but we don't support them yet
         }
 
-        // note: this is supposed to be a read-only property
-        public var data: Object;
-
-        ruffle var _ruffleName: String;
+        public native function get data():Object;
     }
 }

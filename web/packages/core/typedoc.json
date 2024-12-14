@@ -2,5 +2,7 @@
    "entryPoints": ["./src/index.ts"],
    "excludePrivate": true,
    "excludeProtected": true,
-   "sort": "enum-member-source-order"
+   "excludeExternals": true,
+   "sort": "enum-member-source-order",
+   "plugin": ["typedoc-plugin-mdn-links"]
 }

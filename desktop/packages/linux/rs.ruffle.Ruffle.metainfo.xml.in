@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+    <id>rs.ruffle.Ruffle</id>
+    <metadata_license>CC0-1.0</metadata_license>
+    <project_license>MIT OR Apache-2.0</project_license>
+    <name>Ruffle</name>
+    <summary>Play Flash games &amp; movies</summary>
+    <developer id="rs.ruffle">
+        <name>The Ruffle Team</name>
+    </developer>
+    <update_contact>ruffle@ruffle.rs</update_contact>
+    <launchable type="desktop-id">rs.ruffle.Ruffle.desktop</launchable>
+    <description>
+        <p>
+            Ruffle is a Flash Player emulator written in Rust.
+            Leveraging the safety guarantees of Rust, we can confidently avoid all
+            the security pitfalls that Flash had a reputation for.
+            Ruffle puts Flash back on the web, where it belongs!
+        </p>
+        <p>
+            This application lets you run Flash content on your computer without a browser in-between,
+            and take full advantage of your GPU and system resources to get those extra frames when playing intense games.
+        </p>
+        <p>
+            Ruffle is an entirely open source project maintained by volunteers.
+            We're all passionate about the preservation of internet history, and we were drawn to working on this
+            project to help preserve the many websites and plethora of content that will no longer be accessible
+            when users can no longer run the official Flash Player.
+            If you would like to help support this project, we welcome all contributions of any kind –
+            even if it's just playing some old games and seeing how well they run.
+        </p>
+    </description>
+    <categories>
+        <category>AudioVideo</category>
+        <category>Player</category>
+        <category>Graphics</category>
+        <category>Viewer</category>
+        <category>VectorGraphics</category>
+        <category>Game</category>
+    </categories>
+    <keywords>
+        <keyword>flash</keyword>
+        <keyword>swf</keyword>
+        <keyword>player</keyword>
+        <keyword>emulator</keyword>
+        <keyword>rust</keyword>
+    </keywords>
+    <url type="homepage">https://ruffle.rs</url>
+    <url type="bugtracker">https://github.com/ruffle-rs/ruffle/issues</url>
+    <url type="faq">https://github.com/ruffle-rs/ruffle/wiki/Frequently-Asked-Questions-For-Users</url>
+    <url type="translate">https://crowdin.com/project/ruffle</url>
+    <url type="donation">https://opencollective.com/ruffle</url>
+    <url type="contact">https://discord.gg/ruffle</url>
+    <url type="vcs-browser">https://github.com/ruffle-rs/ruffle</url>
+    <url type="contribute">https://github.com/ruffle-rs/ruffle/blob/master/CONTRIBUTING.md</url>
+    <screenshots>
+        <screenshot environment="gnome:dark" type="default">
+            <image>https://raw.githubusercontent.com/ruffle-rs/ruffle/efe754cdcc57f0e1f2820e66983f6a5a91e5d2c8/desktop/packages/linux/screenshots/dark-launcher.png</image>
+        </screenshot>
+        <screenshot environment="gnome:dark">
+            <image>https://raw.githubusercontent.com/ruffle-rs/ruffle/efe754cdcc57f0e1f2820e66983f6a5a91e5d2c8/desktop/packages/linux/screenshots/dark-bloonstd.png</image>
+        </screenshot>
+        <screenshot environment="gnome:dark">
+            <image>https://raw.githubusercontent.com/ruffle-rs/ruffle/efe754cdcc57f0e1f2820e66983f6a5a91e5d2c8/desktop/packages/linux/screenshots/dark-learntofly.png</image>
+        </screenshot>
+        <screenshot environment="gnome">
+            <image>https://raw.githubusercontent.com/ruffle-rs/ruffle/efe754cdcc57f0e1f2820e66983f6a5a91e5d2c8/desktop/packages/linux/screenshots/light-launcher.png</image>
+        </screenshot>
+    </screenshots>
+    <provides>
+        <mediatype>application/x-shockwave-flash</mediatype>
+        <mediatype>application/vnd.adobe.flash.movie</mediatype>
+    </provides>
+    <supports>
+        <control>pointing</control>
+        <control>keyboard</control>
+        <control>gamepad</control>
+    </supports>
+    <content_rating type="oars-1.1"/>
+    <branding>
+        <color type="primary" scheme_preference="light">#4a6db8</color>
+        <color type="primary" scheme_preference="dark">#2c4270</color>
+    </branding>
+    <releases>
+    </releases>
+</component>

@@ -1,0 +1,4 @@
+# There's a CFF (definefont4) font embedded here, which should **not** show up in the list until referenced by something
+# (which it won't be)
+
+num_frames = 1

@@ -1,0 +1,10 @@
+QName with namespace
+uri
+localName
+foo
+http://someuri
+QName without namespace
+uri
+localName
+bar
+

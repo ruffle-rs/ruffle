@@ -1,4 +1,4 @@
 num_frames = 1
 
 [approximations]
-epsilon = 3.0
+epsilon = 1.0

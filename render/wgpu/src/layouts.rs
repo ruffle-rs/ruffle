@@ -1,11 +1,10 @@
 use crate::globals::GlobalsUniform;
-use crate::{ColorAdjustments, GradientUniforms, TextureTransforms, Transforms};
+use crate::{GradientUniforms, TextureTransforms, Transforms};
 
 #[derive(Debug)]
 pub struct BindLayouts {
     pub globals: wgpu::BindGroupLayout,
     pub transforms: wgpu::BindGroupLayout,
-    pub color_transforms: wgpu::BindGroupLayout,
     pub bitmap: wgpu::BindGroupLayout,
     pub gradient: wgpu::BindGroupLayout,
     pub blend: wgpu::BindGroupLayout,
@@ -28,22 +27,6 @@ impl BindLayouts {
                 count: None,
             }],
             label: uniform_buffer_layout_label.as_deref(),
-        });
-
-        let color_transforms = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: true,
-                    min_binding_size: wgpu::BufferSize::new(
-                        std::mem::size_of::<ColorAdjustments>() as u64,
-                    ),
-                },
-                count: None,
-            }],
-            label: create_debug_label!("Color transforms bind group layout").as_deref(),
         });
 
         let globals_layout_label = create_debug_label!("Globals bind group layout");
@@ -181,7 +164,6 @@ impl BindLayouts {
         Self {
             globals,
             transforms,
-            color_transforms,
             bitmap,
             gradient,
             blend,

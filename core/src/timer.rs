@@ -8,7 +8,6 @@ use crate::avm1::ExecutionReason;
 use crate::avm1::{
     Activation, ActivationIdentifier, Object as Avm1Object, TObject as _, Value as Avm1Value,
 };
-use crate::avm2::object::TObject;
 use crate::avm2::{Activation as Avm2Activation, Object as Avm2Object, Value as Avm2Value};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
@@ -30,46 +29,36 @@ pub struct Timers<'gc> {
 
 impl<'gc> Timers<'gc> {
     /// Ticks all timers and runs necessary callbacks.
-    pub fn update_timers(context: &mut UpdateContext<'_, 'gc>, dt: f64) -> Option<f64> {
+    pub fn update_timers(context: &mut UpdateContext<'gc>, dt: f64) -> Option<f64> {
         context.timers.cur_time = context
             .timers
             .cur_time
             .wrapping_add((dt * Self::TIMER_SCALE) as u64);
-        let num_timers = context.timers.num_timers();
 
-        if num_timers == 0 {
+        if context.timers.is_empty() {
             return None;
         }
 
         let level0 = context.stage.root_clip();
 
         let mut tick_count = 0;
-        let cur_time = context.timers.cur_time;
 
         // We have to be careful because the timer list can be mutated while updating;
-        // a timer callback could add more timers, clear timers, etc.
+        // a timer callback could add more timers, clear timers (including itself), etc.
         while context
             .timers
             .peek()
             .map(|timer| timer.tick_time)
-            .unwrap_or(cur_time)
-            < cur_time
+            .unwrap_or(context.timers.cur_time)
+            < context.timers.cur_time
         {
             let timer = context.timers.peek().unwrap();
 
-            // TODO: This is only really necessary because BinaryHeap lacks `remove` or `retain` on stable.
-            // We can remove the timers straight away in `clearInterval` once this is stable.
-            if !timer.is_alive.get() {
-                context.timers.pop();
-                continue;
-            }
-
             tick_count += 1;
-            // SANITY: Only allow so many ticks per timer per update.
+            // SANITY: Only allow so many ticks per update.
             if tick_count > Self::MAX_TICKS {
                 // Reset our time to a little bit before the nearest timer.
-                let next_time = context.timers.peek_mut().unwrap().tick_time;
-                context.timers.cur_time = next_time.wrapping_sub(100);
+                context.timers.cur_time = timer.tick_time.wrapping_sub(100);
                 break;
             }
 
@@ -81,7 +70,7 @@ impl<'gc> Timers<'gc> {
                 TimerCallback::Avm1Function { func, params } => {
                     if let Some(level0) = level0 {
                         let mut avm1_activation = Activation::from_nothing(
-                            context.reborrow(),
+                            context,
                             ActivationIdentifier::root("[Timer Callback]"),
                             level0,
                         );
@@ -126,7 +115,7 @@ impl<'gc> Timers<'gc> {
                     if !removed {
                         if let Some(level0) = level0 {
                             let mut avm1_activation = Activation::from_nothing(
-                                context.reborrow(),
+                                context,
                                 ActivationIdentifier::root("[Timer Callback]"),
                                 level0,
                             );
@@ -151,9 +140,12 @@ impl<'gc> Timers<'gc> {
                 }
                 TimerCallback::Avm2Callback { closure, params } => {
                     let domain = context.avm2.stage_domain();
-                    let mut avm2_activation =
-                        Avm2Activation::from_domain(context.reborrow(), domain);
-                    match closure.call(Avm2Value::Null, &params, &mut avm2_activation) {
+                    let mut avm2_activation = Avm2Activation::from_domain(context, domain);
+                    match Avm2Value::from(closure).call(
+                        &mut avm2_activation,
+                        Avm2Value::Null,
+                        &params,
+                    ) {
                         Ok(v) => v.coerce_to_boolean(),
                         Err(e) => {
                             tracing::error!("Unhandled AVM2 error in timer callback: {e:?}",);
@@ -165,32 +157,39 @@ impl<'gc> Timers<'gc> {
 
             crate::player::Player::run_actions(context);
 
+            if context.timers.is_empty() {
+                // Every last timer was cleared during the callback, including
+                // the one that just ticked, so there is nothing left to do.
+                break;
+            }
+
+            // We need a mutable reference to the timer for the rest.
+            // Just checked that there is still at least one timer active, so unwrap must succeed.
             let mut timer = context.timers.peek_mut().unwrap();
-            // Our timer should still be on the top of the heap.
-            // The only way that this could fail is the timer callback
-            // added a new callback with an *earlier* tick time than our
-            // current one. Our current timer has a 'tick_time' less than
-            // 'cur_time', so this could only happen if a new timer was
-            // added with a negative interval (which is not allowed).
-            assert_eq!(
-                timer.id, expected_id,
-                "Running timer callback created timer in the past!"
-            );
-            if timer.is_timeout || cancel_timer {
-                // Timeouts only fire once.
-                drop(timer);
-                context.timers.pop();
+
+            if timer.id == expected_id {
+                // The timer next in line is still the same, so we need to remove or reset it.
+                if timer.is_timeout || cancel_timer {
+                    // Timeouts only fire once, and a false return value from the callback cancels intervals.
+                    drop(timer);
+                    context.timers.pop();
+                } else {
+                    // Reset setInterval timers. `peek_mut` re-sorts the timer in the priority queue.
+                    timer.tick_time = timer.tick_time.wrapping_add(timer.interval);
+                }
             } else {
-                // Reset setInterval timers. `peek_mut` re-sorts the timer in the priority queue.
-                timer.tick_time = timer.tick_time.wrapping_add(timer.interval);
+                drop(timer);
+                // The timer is no longer the next in line, and this can only happen if
+                // it cancelled itself manually, or it set a new timer in the past.
+                // Let's make sure it's the former.
+                debug_assert!(!context.timers.timer_exists(expected_id));
             }
         }
 
         // Return estimated time until next timer tick.
-        context
-            .timers
-            .peek()
-            .map(|timer| (timer.tick_time.wrapping_sub(cur_time)) as f64 / Self::TIMER_SCALE)
+        context.timers.peek().map(|timer| {
+            (timer.tick_time.wrapping_sub(context.timers.cur_time)) as f64 / Self::TIMER_SCALE
+        })
     }
 
     /// The minimum interval we allow for timers.
@@ -216,6 +215,16 @@ impl<'gc> Timers<'gc> {
         self.timers.len()
     }
 
+    /// Whether there are no timers active.
+    pub fn is_empty(&self) -> bool {
+        self.timers.is_empty()
+    }
+
+    /// Whether a timer with the given ID exists.
+    pub fn timer_exists(&self, id: i32) -> bool {
+        self.timers.iter().any(|t| t.id == id)
+    }
+
     /// Registers a new timer and returns the timer ID.
     pub fn add_timer(
         &mut self,
@@ -226,6 +235,8 @@ impl<'gc> Timers<'gc> {
         // SANITY: Set a minimum interval so we don't spam too much.
         let interval = interval.max(Self::MIN_INTERVAL) as u64 * (Self::TIMER_SCALE as u64);
 
+        // The counter has to be incremented first, because Flash Player never assigns timer ID 0,
+        // and neither should we, as some content uses it as an initial "not yet set up" value.
         self.timer_counter = self.timer_counter.wrapping_add(1);
         let id = self.timer_counter;
         let timer = Timer {
@@ -234,7 +245,6 @@ impl<'gc> Timers<'gc> {
             tick_time: self.cur_time + interval,
             interval,
             is_timeout,
-            is_alive: std::cell::Cell::new(true),
         };
         self.timers.push(timer);
         id
@@ -242,12 +252,39 @@ impl<'gc> Timers<'gc> {
 
     /// Removes a timer.
     pub fn remove(&mut self, id: i32) -> bool {
-        // TODO: When `BinaryHeap::remove` is stable, we can remove it here directly.
-        if let Some(timer) = self.timers.iter().find(|timer| timer.id == id) {
-            timer.is_alive.set(false);
-            true
+        let old_len = self.timers.len();
+        self.timers.retain(|t| t.id != id);
+        let len = self.timers.len();
+        // Sanity check: Either we removed a single timer, or none.
+        debug_assert!(len == old_len || len == old_len - 1);
+        len < old_len
+    }
+
+    pub fn remove_all(&mut self) {
+        self.timers.clear()
+    }
+
+    /// Changes the delay of a timer.
+    pub fn set_delay(&mut self, id: i32, interval: i32) {
+        // SANITY: Set a minimum interval so we don't spam too much.
+        let interval = interval.max(Self::MIN_INTERVAL) as u64 * (Self::TIMER_SCALE as u64);
+
+        // Due to the limitations of `BinaryHeap`, we have to do this in a slightly roundabout way.
+        let mut timer = None;
+        for t in self.timers.iter() {
+            if t.id == id {
+                timer = Some(t.clone());
+                break;
+            }
+        }
+
+        if let Some(mut timer) = timer {
+            self.remove(id);
+            timer.interval = interval;
+            timer.tick_time = self.cur_time + interval;
+            self.timers.push(timer);
         } else {
-            false
+            panic!("Changing delay of non-existent timer");
         }
     }
 
@@ -270,7 +307,7 @@ impl Default for Timers<'_> {
     }
 }
 
-unsafe impl<'gc> Collect for Timers<'gc> {
+unsafe impl Collect for Timers<'_> {
     fn trace(&self, cc: &gc_arena::Collection) {
         for timer in &self.timers {
             timer.trace(cc);
@@ -279,7 +316,7 @@ unsafe impl<'gc> Collect for Timers<'gc> {
 }
 /// A timer created via `setInterval`/`setTimeout`.
 /// Runs a callback when it ticks.
-#[derive(Collect)]
+#[derive(Clone, Collect)]
 #[collect(no_drop)]
 pub struct Timer<'gc> {
     /// The ID of the timer.
@@ -297,9 +334,6 @@ pub struct Timer<'gc> {
 
     /// This timer only fires once if `is_timeout` is true.
     is_timeout: bool,
-
-    /// Whether this timer has been removed.
-    is_alive: std::cell::Cell<bool>,
 }
 
 // Implement `Ord` so that timers can be stored in the BinaryHeap (as a min-heap).

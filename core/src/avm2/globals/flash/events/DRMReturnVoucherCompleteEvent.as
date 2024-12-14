@@ -5,6 +5,7 @@
 package flash.events
 {
     
+    [API("690")]
     public class DRMReturnVoucherCompleteEvent extends Event
     {
         // The string constant to use for the return voucher complete event in the type parameter when adding and removing event listeners.

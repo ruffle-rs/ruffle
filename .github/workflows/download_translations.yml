@@ -3,10 +3,11 @@ name: Download translations from Crowdin
 on:
   schedule:
     - cron: '0 21 * * *'
+  workflow_dispatch:
 
 jobs:
   crowdin:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     if: github.repository == 'ruffle-rs/ruffle'
 
@@ -16,21 +17,78 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Crowdin push
-        uses: crowdin/github-action@v1
+      - name: Install dependencies
+        run: |
+          sudo apt-get install -y itstool gettext appstream
+
+      - name: Generate desktop & metainfo sources
+        working-directory: desktop/packages/linux
+        run: |
+          make update
+
+      # Crowdin action creates files and directories as root,
+      # however we need write access to them to apply changes,
+      # so just create them here instead of relying on Crowdin.
+      - name: Create locale directories
+        working-directory: desktop/packages/linux
+        run: |
+          mkdir -p locale/rs.ruffle.Ruffle.desktop
+          mkdir -p locale/rs.ruffle.Ruffle.metainfo.xml
+
+      - name: Crowdin download
+        uses: crowdin/github-action@v2
         with:
           config: 'crowdin.yml'
           upload_sources: false
           upload_translations: false
           download_translations: true
-          localization_branch_name: l10n_crowdin_translations
-
-          create_pull_request: true
-          pull_request_title: 'chore: Update translations'
-          pull_request_body: 'New Crowdin pull request with translations'
-          pull_request_labels: 'localization'
-          pull_request_base_branch_name: 'master'
-          commit_message: 'chore: Update translations from Crowdin'
+          push_translations: false
+          create_pull_request: false
         env:
           CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Apply desktop & metainfo sources
+        working-directory: desktop/packages/linux
+        run: |
+          make apply
+
+      - name: Upload intermediate files
+        uses: actions/upload-artifact@v4
+        with:
+          path: desktop/packages/linux/locale
+
+      - name: Commit
+        run: |
+          git config user.name "RuffleBuild"
+          git config user.email "ruffle@ruffle.rs"
+          git checkout -b l10n_crowdin_translations
+          git add -A
+          git commit -m 'chore: Update translations from Crowdin'
+
+      - name: Push
+        uses: ad-m/github-push-action@master
+        with:
+          branch: l10n_crowdin_translations
+          github_token: ${{ secrets.RUFFLE_BUILD_TOKEN }}
+          force: true
+
+      - name: Create a PR
+        run: |
+          prs=$(gh pr list --base master --head l10n_crowdin_translations --limit 1 --json id | jq length)
+          if [ "$prs" = 1 ]; then echo "PR already exists"; exit 0; fi
+
+          pr_url=$(gh pr create \
+            --title 'chore: Update translations' \
+            --body 'New Crowdin pull request with translations 🎉' \
+            --head l10n_crowdin_translations \
+            --base master)
+
+          # This has to be done separately from creating a PR, because
+          # GitHub currently has issues with creating a PR with labels.
+          # Basically creating a PR works, adding labels works, but creating
+          # a PR with labels doesn't ¯\_(ツ)_/¯
+          gh pr edit "$pr_url" --add-label T-chore --add-label A-i18n
+        env:
+          # Use a custom token rather than the automatic GITHUB_TOKEN, as the automatic one doesn't allow created PRs to trigger workflows
+          # By using our own token (and thus own user), workflows will run, and the PR will be able to be merged.
+          GITHUB_TOKEN: ${{ secrets.RUFFLE_BUILD_TOKEN }}

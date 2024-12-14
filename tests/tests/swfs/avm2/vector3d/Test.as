@@ -5,14 +5,22 @@
 
 import flash.geom.Vector3D;
 
+function r(x:Number):Number {
+    return Math.round(x * Math.pow(10, 12)) / Math.pow(10, 12);
+}
+
+function rv(v:Vector3D):Vector3D {
+    return new Vector3D(r(v.x), r(v.y), r(v.z), r(v.w));
+}
 
 // because toString() does not include w, but we are interested in it
 function trv(v:Vector3D) {
-    trace(v + " w=" + v.w);
+    trace(rv(v) + " w=" + r(v.w));
 }
 
 
 trace("/// Constructors");
+
 trace("// new Vector3D()");
 trv(new Vector3D());
 trace("");
@@ -64,44 +72,47 @@ trace("// Vector3D.Y_AXIS");
 trv(Vector3D.Y_AXIS);
 trace("// Vector3D.Z_AXIS");
 trv(Vector3D.Z_AXIS);
-trace("")
-trace("")
+trace("");
+trace("");
 
 
-trace("/// copyFrom")
+trace("/// copyFrom");
+
 trace("// new Vector3D(1, 2, 3, 4).copyFrom(new Vector3D())");
 var vector_cf = new Vector3D(1, 2, 3, 4);
 vector_cf.copyFrom(new Vector3D());
 trv(vector_cf);
-trace("")
+trace("");
 
 trace("// new Vector3D().copyFrom(new Vector3D(4, 5, 6, 7))");
 var vector_cf2 = new Vector3D();
 vector_cf2.copyFrom(new Vector3D(4, 5, 6, 7));
 trv(vector_cf2);
-trace("")
+trace("");
 
 trace("// new Vector3D(1, 2, 3, 4).copyFrom(new Vector3D(4, 5, 6, 7))");
 var vector_cf3 = new Vector3D(1, 2, 3, 4);
 vector_cf3.copyFrom(new Vector3D(4, 5, 6, 7));
 trv(vector_cf3);
-trace("")
-trace("")
+trace("");
+trace("");
 
 
-trace("/// setTo")
+trace("/// setTo");
+
 trace("// new Vector3D().setTo(6, 7, 8)");
 var vector_st = new Vector3D();
 vector_st.setTo(6, 7, 8);
 trv(vector_st);
-trace("")
+trace("");
 
 trace("// new Vector3D(1, 2, 3, 4).setTo(6, 7, 8)");
 var vector_st2 = new Vector3D(1, 2, 3, 4);
 vector_st2.setTo(6, 7, 8);
 trv(vector_st2);
-trace("")
-trace("")
+trace("");
+trace("");
+
 
 trace("/// Add");
 
@@ -123,6 +134,7 @@ trv(new Vector3D(6, -7, 8, -9).add(new Vector3D(-10, 20, -30, 40)));
 trace("");
 trace("");
 
+
 trace("/// Subtract");
 
 var vector3 = new Vector3D();
@@ -141,7 +153,7 @@ trace("");
 trace("// new Vector3D(6, -7, 8, -9).subtract(new Vector3D(-10, 20, -30, 40))");
 trv(new Vector3D(6, -7, 8, -9).subtract(new Vector3D(-10, 20, -30, 40)));
 trace("");
-trace("")
+trace("");
 
 
 trace("/// incrementBy");
@@ -149,20 +161,20 @@ trace("/// incrementBy");
 var vector_ib = new Vector3D();
 trace("// new Vector3D().incrementBy(new Vector3D())");
 vector_ib.incrementBy(new Vector3D());
-trv(vector_ib)
+trv(vector_ib);
 trace("");
 
 
 var vector_ib2 = new Vector3D();
 trace("// new Vector3D().incrementBy(new Vector3D(1, 2, -3, 4))");
 vector_ib2.incrementBy(new Vector3D(1, 2, -3, 4));
-trv(vector_ib2)
+trv(vector_ib2);
 trace("");
 
 var vector_ib3 = new Vector3D(3, -4, 5, 6);
 trace("// new Vector3D(3, -4, 5, 6).incrementBy(new Vector3D(1, 2, -3, 4))");
 vector_ib3.incrementBy(new Vector3D(1, 2, -3, 4));
-trv(vector_ib3)
+trv(vector_ib3);
 trace("");
 trace("");
 
@@ -172,20 +184,20 @@ trace("/// decrementBy");
 var vector_db = new Vector3D();
 trace("// new Vector3D().decrementBy(new Vector3D())");
 vector_db.decrementBy(new Vector3D());
-trv(vector_db)
+trv(vector_db);
 trace("");
 
 
 var vector_db2 = new Vector3D();
 trace("// new Vector3D().decrementBy(new Vector3D(1, 2, -3, 4))");
 vector_db2.decrementBy(new Vector3D(1, 2, -3, 4));
-trv(vector_db2)
+trv(vector_db2);
 trace("");
 
 var vector_db3 = new Vector3D(3, -4, 5, 6);
 trace("// new Vector3D(3, -4, 5, 6).decrementBy(new Vector3D(1, 2, -3, 4))");
 vector_db3.decrementBy(new Vector3D(1, 2, -3, 4));
-trv(vector_db3)
+trv(vector_db3);
 trace("");
 trace("");
 
@@ -221,7 +233,7 @@ var vector_sb5 = new Vector3D();
 vector_sb5.scaleBy(100);
 trv(vector_sb5);
 trace("");
-trace("")
+trace("");
 
 
 trace("/// negate");
@@ -243,7 +255,7 @@ var vector_n3 = new Vector3D();
 vector_n3.negate();
 trv(vector_n3);
 trace("");
-trace("")
+trace("");
 
 
 trace("/// Distance");
@@ -342,7 +354,7 @@ trace(new Vector3D(100, 200, 300, 400).nearEquals(new Vector3D(100, 200, 300, 45
 trace("");
 trace("");
 
-trace("// buggy case with allFour=true:")
+trace("// buggy case with allFour=true:");
 trace("// (100, 200, 300, 10).nearEquals((100, 200, 300, 20), 100, true)");
 trace(new Vector3D(100, 200, 300, 10).nearEquals(new Vector3D(100, 200, 300, 20), 100, true));
 trace("// (100, 200, 300, 210).nearEquals((100, 200, 300, 220), 100, true)");
@@ -451,7 +463,7 @@ trace("");
 trace("");
 
 
-trace("/// Project")
+trace("/// Project");
 trace("// new Vector3D().project()");
 var vector_p1 = new Vector3D();
 vector_p1.project();
@@ -496,87 +508,87 @@ trace("");
 trace("");
 
 
-trace("/// angleBetween")
+trace("/// angleBetween");
 
 trace("// Vector3D.angleBetween(new Vector3D(), new Vector3D())");
-trace(Vector3D.angleBetween(new Vector3D(), new Vector3D()));
+trace(r(Vector3D.angleBetween(new Vector3D(), new Vector3D())));
 trace("");
 
 trace("// Vector3D.angleBetween(new Vector3D(), new Vector3D(1, 0, 0))");
-trace(Vector3D.angleBetween(new Vector3D(), new Vector3D(1, 0, 0)));
+trace(r(Vector3D.angleBetween(new Vector3D(), new Vector3D(1, 0, 0))));
 trace("");
 
 trace("// Vector3D.angleBetween(new Vector3D(1, 0, 0), new Vector3D())");
-trace(Vector3D.angleBetween(new Vector3D(1, 0, 0), new Vector3D()));
+trace(r(Vector3D.angleBetween(new Vector3D(1, 0, 0), new Vector3D())));
 trace("");
 
 trace("// Vector3D.angleBetween(new Vector3D(1, 0, 0), new Vector3D(0, 1, 0))");
-trace(Vector3D.angleBetween(new Vector3D(1, 0, 0), new Vector3D(0, 1, 0)));
+trace(r(Vector3D.angleBetween(new Vector3D(1, 0, 0), new Vector3D(0, 1, 0))));
 trace("");
 
 trace("// Vector3D.angleBetween(new Vector3D(0, -1, 0), new Vector3D(0, 0, 1))");
-trace(Vector3D.angleBetween(new Vector3D(0, -1, 0), new Vector3D(0, 0, 1)));
+trace(r(Vector3D.angleBetween(new Vector3D(0, -1, 0), new Vector3D(0, 0, 1))));
 trace("");
 
 trace("// Vector3D.angleBetween(new Vector3D(0, -20, 0), new Vector3D(0, 0, 0.1))");
-trace(Vector3D.angleBetween(new Vector3D(0, -20, 0), new Vector3D(0, 0, 0.1)));
+trace(r(Vector3D.angleBetween(new Vector3D(0, -20, 0), new Vector3D(0, 0, 0.1))));
 trace("");
 
 trace("// Vector3D.angleBetween(new Vector3D(2, 4, 6), new Vector3D(0.6, 0.5, 0.1))");
-trace(Vector3D.angleBetween(new Vector3D(2, 4, 6), new Vector3D(0.6, 0.5, 0.1)));
+trace(r(Vector3D.angleBetween(new Vector3D(2, 4, 6), new Vector3D(0.6, 0.5, 0.1))));
 trace("");
 
 trace("// Vector3D.angleBetween(new Vector3D(0.6, 0.5, 0.1), new Vector3D(2, 4, 6))");
-trace(Vector3D.angleBetween(new Vector3D(0.6, 0.5, 0.1), new Vector3D(2, 4, 6)));
+trace(r(Vector3D.angleBetween(new Vector3D(0.6, 0.5, 0.1), new Vector3D(2, 4, 6))));
 trace("");
 
 trace("// Vector3D.angleBetween(new Vector3D(2, 4, 6, 8), new Vector3D(0.6, 0.5, 0.1, -0.2))");
-trace(Vector3D.angleBetween(new Vector3D(2, 4, 6, 8), new Vector3D(0.6, 0.5, 0.1, -0.2)));
+trace(r(Vector3D.angleBetween(new Vector3D(2, 4, 6, 8), new Vector3D(0.6, 0.5, 0.1, -0.2))));
 trace("");
 trace("");
 
 
-trace("/// dotProduct")
+trace("/// dotProduct");
 
 trace("// new Vector3D().dotProduct(new Vector3D())");
-trace(new Vector3D().dotProduct(new Vector3D()));
+trace(r(new Vector3D().dotProduct(new Vector3D())));
 trace("");
 
 trace("// new Vector3D().dotProduct(new Vector3D(1, 0, 0))");
-trace(new Vector3D().dotProduct(new Vector3D(1, 0, 0)));
+trace(r(new Vector3D().dotProduct(new Vector3D(1, 0, 0))));
 trace("");
 
 trace("// new Vector3D(1, 0, 0).dotProduct(new Vector3D())");
-trace(new Vector3D(1, 0, 0).dotProduct(new Vector3D()));
+trace(r(new Vector3D(1, 0, 0).dotProduct(new Vector3D())));
 trace("");
 
 trace("// new Vector3D(1, 0, 0).dotProduct(new Vector3D(0, 1, 0))");
-trace(new Vector3D(1, 0, 0).dotProduct(new Vector3D(0, 1, 0)));
+trace(r(new Vector3D(1, 0, 0).dotProduct(new Vector3D(0, 1, 0))));
 trace("");
 
 trace("// new Vector3D(0, -1, 0).dotProduct(new Vector3D(0, 0, 1))");
-trace(new Vector3D(0, -1, 0).dotProduct(new Vector3D(0, 0, 1)));
+trace(r(new Vector3D(0, -1, 0).dotProduct(new Vector3D(0, 0, 1))));
 trace("");
 
 trace("// new Vector3D(0, -20, 0).dotProduct(new Vector3D(0, 0, 0.1))");
-trace(new Vector3D(0, -20, 0).dotProduct(new Vector3D(0, 0, 0.1)));
+trace(r(new Vector3D(0, -20, 0).dotProduct(new Vector3D(0, 0, 0.1))));
 trace("");
 
 trace("// new Vector3D(2, 4, 6).dotProduct(new Vector3D(0.6, 0.5, 0.1))");
-trace(new Vector3D(2, 4, 6).dotProduct(new Vector3D(0.6, 0.5, 0.1)));
+trace(r(new Vector3D(2, 4, 6).dotProduct(new Vector3D(0.6, 0.5, 0.1))));
 trace("");
 
 trace("// new Vector3D(0.6, 0.5, 0.1).dotProduct(new Vector3D(2, 4, 6))");
-trace(new Vector3D(0.6, 0.5, 0.1).dotProduct(new Vector3D(2, 4, 6)));
+trace(r(new Vector3D(0.6, 0.5, 0.1).dotProduct(new Vector3D(2, 4, 6))));
 trace("");
 
 trace("// new Vector3D(2, 4, 6, 8).dotProduct(new Vector3D(0.6, 0.5, 0.1, -0.2))");
-trace(new Vector3D(2, 4, 6, 8).dotProduct(new Vector3D(0.6, 0.5, 0.1, -0.2)));
+trace(r(new Vector3D(2, 4, 6, 8).dotProduct(new Vector3D(0.6, 0.5, 0.1, -0.2))));
 trace("");
 trace("");
 
 
-trace("/// crossProduct")
+trace("/// crossProduct");
 
 trace("// new Vector3D().crossProduct(new Vector3D())");
 trv(new Vector3D().crossProduct(new Vector3D()));

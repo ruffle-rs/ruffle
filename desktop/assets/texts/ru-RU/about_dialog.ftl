@@ -1,7 +1,7 @@
 about-ruffle = О Ruffle
-about-ruffle-version = Версия:
-about-ruffle-channel = Каналы
-about-ruffle-build-time = Время сборки
+about-ruffle-version = Версия
+about-ruffle-channel = Канал
+about-ruffle-build-time = Дата сборки
 about-ruffle-build-features = Параметры сборки
 about-ruffle-commit-ref = Посл. коммит
 about-ruffle-commit-time = Дата коммита

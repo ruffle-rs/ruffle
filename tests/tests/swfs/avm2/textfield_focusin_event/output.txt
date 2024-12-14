@@ -1,0 +1,9 @@
+evt.type: focusIn
+evt.target: [object TextField]
+evt.target.text: Field 1
+evt.relatedObject: null
+evt.type: focusIn
+evt.target: [object TextField]
+evt.target.text: Field 2
+evt.relatedObject: [object TextField]
+related.text: Field 1

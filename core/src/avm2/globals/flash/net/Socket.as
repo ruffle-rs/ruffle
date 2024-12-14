@@ -26,6 +26,7 @@ package flash.net {
 
         public native function get bytesAvailable():uint;
 
+        [API("674")]
         public function get bytesPending():uint {
             stub_getter("flash.net.Socket", "bytesPending");
             return 0;

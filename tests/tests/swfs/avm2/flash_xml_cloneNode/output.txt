@@ -1,0 +1,22 @@
+child.toString(): <child1 foo="bar"><amy>Amy</amy>Blub<bob>Bob <sponge /></bob></child1>
+child.firstChild: <amy>Amy</amy>
+child.lastChild: <bob>Bob <sponge /></bob>
+child.previousSibling: null
+child.nextSibling: <child2 />
+child.parentNode: <parent><child1 foo="bar"><amy>Amy</amy>Blub<bob>Bob <sponge /></bob></child1><child2 /></parent>
+clone.toString(): <child1 foo="bar" />
+clone.firstChild: null
+clone.lastChild: null
+clone.previousSibling: null
+clone.nextSibling: null
+clone.parentNode: null
+deepClone.toString(): <child1 foo="bar"><amy>Amy</amy>Blub<bob>Bob <sponge /></bob></child1>
+deepClone.firstChild: <amy>Amy</amy>
+deepClone.firstChild.parentNode: <child1 foo="bar"><amy>Amy</amy>Blub<bob>Bob <sponge /></bob></child1>
+deepClone.firstChild.parentNode === deepClone: true
+deepClone.firstChild.previousSibling: null
+deepClone.firstChild.nextSibling: Blub
+deepClone.lastChild: <bob>Bob <sponge /></bob>
+deepClone.previousSibling: null
+deepClone.nextSibling: null
+deepClone.parentNode: null

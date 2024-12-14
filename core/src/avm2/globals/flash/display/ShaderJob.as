@@ -1,18 +1,27 @@
 package flash.display {
     import __ruffle__.stub_method;
     import __ruffle__.stub_getter;
-    import __ruffle__.stub_setter;
     import __ruffle__.stub_constructor;
     import flash.events.EventDispatcher;
 
     public class ShaderJob extends EventDispatcher {
-
+        [Ruffle(InternalSlot)]
         private var _shader:Shader;
+
+        [Ruffle(InternalSlot)]
         private var _target:Object;
+
+        [Ruffle(InternalSlot)]
+        private var _width:int;
+
+        [Ruffle(InternalSlot)]
+        private var _height:int;
         
         public function ShaderJob(shader:Shader = null, target:Object = null, width:int = 0, height:int = 0) {
             this._shader = shader;
             this._target = target;
+            this._width = width;
+            this._height = height;
             stub_constructor("flash.display.ShaderJob");
         }
 
@@ -23,12 +32,19 @@ package flash.display {
         public native function start(waitForCompletion:Boolean = false):void;
 
         public function get height():int {
-            stub_getter("flash.display.ShaderJob", "height");
-            return 0;
+            return this._height;
         }
 
         public function set height(value:int):void {
-            stub_setter("flash.display.ShaderJob", "height");
+            this._height = value;
+        }
+
+        public function get width():int {
+            return this._width;
+        }
+
+        public function set width(value:int):void {
+            this._width = value;
         }
 
         public function get progress():Number {

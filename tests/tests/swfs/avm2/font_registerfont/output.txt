@@ -1,0 +1,129 @@
+[test.swf] // var fonts = enumerateFonts(false)
+[test.swf] // fonts.length
+[test.swf] 0
+[test.swf]
+[test.swf]
+[fonts.swf] // var fonts = enumerateFonts(false)
+[fonts.swf] // fonts.length
+[fonts.swf] 1
+[fonts.swf]
+[fonts.swf] // [fonts.swf] fonts[0].fontName
+[fonts.swf] Noto Sans
+[fonts.swf]
+[fonts.swf] // [fonts.swf] fonts[0].fontStyle
+[fonts.swf] regular
+[fonts.swf]
+[fonts.swf] // [fonts.swf] fonts[0].fontType
+[fonts.swf] embedded
+[fonts.swf]
+[fonts.swf]
+[fonts.swf]
+[fonts.swf] // Font.registerFont(CustomFont)
+[fonts.swf] // var fonts = enumerateFonts(false)
+[fonts.swf] // fonts.length
+[fonts.swf] 2
+[fonts.swf]
+[fonts.swf] // [fonts.swf] fonts[0].fontName
+[fonts.swf] Noto Sans
+[fonts.swf]
+[fonts.swf] // [fonts.swf] fonts[0].fontStyle
+[fonts.swf] regular
+[fonts.swf]
+[fonts.swf] // [fonts.swf] fonts[0].fontType
+[fonts.swf] embedded
+[fonts.swf]
+[fonts.swf]
+[fonts.swf] // [fonts.swf] fonts[1].fontName
+[fonts.swf] Noto Sans
+[fonts.swf]
+[fonts.swf] // [fonts.swf] fonts[1].fontStyle
+[fonts.swf] regular
+[fonts.swf]
+[fonts.swf] // [fonts.swf] fonts[1].fontType
+[fonts.swf] embedded
+[fonts.swf]
+[fonts.swf]
+[fonts.swf]
+[test.swf] // onFontLoaded
+[test.swf] // var fonts = enumerateFonts(false)
+[test.swf] // fonts.length
+[test.swf] 1
+[test.swf]
+[test.swf] // [test.swf] fonts[0].fontName
+[test.swf] Noto Sans
+[test.swf]
+[test.swf] // [test.swf] fonts[0].fontStyle
+[test.swf] regular
+[test.swf]
+[test.swf] // [test.swf] fonts[0].fontType
+[test.swf] embedded
+[test.swf]
+[test.swf]
+[test.swf]
+[fonts.swf] // var fonts = enumerateFonts(false)
+[fonts.swf] // fonts.length
+[fonts.swf] 2
+[fonts.swf]
+[fonts.swf] // [fonts.swf] fonts[0].fontName
+[fonts.swf] Noto Sans
+[fonts.swf]
+[fonts.swf] // [fonts.swf] fonts[0].fontStyle
+[fonts.swf] regular
+[fonts.swf]
+[fonts.swf] // [fonts.swf] fonts[0].fontType
+[fonts.swf] embedded
+[fonts.swf]
+[fonts.swf]
+[fonts.swf] // [fonts.swf] fonts[1].fontName
+[fonts.swf] Noto Sans
+[fonts.swf]
+[fonts.swf] // [fonts.swf] fonts[1].fontStyle
+[fonts.swf] regular
+[fonts.swf]
+[fonts.swf] // [fonts.swf] fonts[1].fontType
+[fonts.swf] embedded
+[fonts.swf]
+[fonts.swf]
+[fonts.swf]
+[fonts.swf] // Font.registerFont(CustomFont)
+[fonts.swf] // var fonts = enumerateFonts(false)
+[fonts.swf] // fonts.length
+[fonts.swf] 2
+[fonts.swf]
+[fonts.swf] // [fonts.swf] fonts[0].fontName
+[fonts.swf] Noto Sans
+[fonts.swf]
+[fonts.swf] // [fonts.swf] fonts[0].fontStyle
+[fonts.swf] regular
+[fonts.swf]
+[fonts.swf] // [fonts.swf] fonts[0].fontType
+[fonts.swf] embedded
+[fonts.swf]
+[fonts.swf]
+[fonts.swf] // [fonts.swf] fonts[1].fontName
+[fonts.swf] Noto Sans
+[fonts.swf]
+[fonts.swf] // [fonts.swf] fonts[1].fontStyle
+[fonts.swf] regular
+[fonts.swf]
+[fonts.swf] // [fonts.swf] fonts[1].fontType
+[fonts.swf] embedded
+[fonts.swf]
+[fonts.swf]
+[fonts.swf]
+[test.swf] // onFontLoaded a second time
+[test.swf] // var fonts = enumerateFonts(false)
+[test.swf] // fonts.length
+[test.swf] 1
+[test.swf]
+[test.swf] // [test.swf] fonts[0].fontName
+[test.swf] Noto Sans
+[test.swf]
+[test.swf] // [test.swf] fonts[0].fontStyle
+[test.swf] regular
+[test.swf]
+[test.swf] // [test.swf] fonts[0].fontType
+[test.swf] embedded
+[test.swf]
+[test.swf]
+[test.swf]

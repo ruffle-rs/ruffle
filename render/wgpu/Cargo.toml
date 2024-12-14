@@ -7,39 +7,42 @@ license.workspace = true
 repository.workspace = true
 version.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
-wgpu = { workspace = true, features = ["naga"] }
+wgpu = { workspace = true, features = ["naga-ir"] }
 tracing = { workspace = true }
 ruffle_render = { path = "..", features = ["tessellator", "wgpu"] }
-bytemuck = { version = "1.14.0", features = ["derive"] }
-raw-window-handle = "0.5.2"
-clap = { version = "4.4.6", features = ["derive"], optional = true }
-enum-map = "2.7.0"
+bytemuck = { workspace = true, features = ["derive"] }
+clap = { workspace = true, optional = true }
+enum-map = { workspace = true }
 fnv = "1.0.7"
 swf = { path = "../../swf" }
-image = { version = "0.24.7", default-features = false }
-naga_oil = { workspace = true }
-ouroboros = "0.18.0"
-typed-arena = "2.0.2"
+image = { workspace = true }
 naga-agal = { path = "../naga-agal" }
 naga-pixelbender = { path = "../naga-pixelbender" }
-downcast-rs = "1.2.0"
 profiling = { version = "1.0", default-features = false, optional = true }
-lru = "0.12.0"
+lru = "0.12.5"
 naga = { workspace = true }
-indexmap = "2.0.2"
+indexmap = "2.7.0"
 
 # desktop
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
-version = "0.3.28"
+workspace = true
 
 # wasm
 [target.'cfg(target_family = "wasm")'.dependencies.web-sys]
-version = "0.3.64"
+workspace = true
 features = ["HtmlCanvasElement"]
 
 [features]
 render_debug_labels = []
-render_trace = ["wgpu/trace"]
 webgl = ["wgpu/webgl"]
 profile-with-tracy = ["profiling", "profiling/profile-with-tracy"]
+
+[package.metadata.cargo-machete]
+ignored = [
+    # Not used directly, declared only to enable its `profile-with-tracy` feature.
+    "profiling"
+]

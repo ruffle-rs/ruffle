@@ -6,20 +6,22 @@ use crate::string::{Integer, SwfStrExt as _, Units, WStr, WString};
 use crate::tag_utils::SwfMovie;
 use gc_arena::Collect;
 use quick_xml::{escape::escape, events::Event, Reader};
+use ruffle_wstr::utils::swf_is_newline;
 use std::borrow::Cow;
 use std::cmp::{min, Ordering};
 use std::collections::VecDeque;
 use std::fmt::Write;
 use std::sync::Arc;
 
+const HTML_NEWLINE: u16 = b'\r' as u16;
+const HTML_SPACE: u16 = b' ' as u16;
+
 /// Replace HTML entities with their equivalent characters.
 ///
 /// Unknown entities will be ignored.
 fn process_html_entity(src: &WStr) -> Option<WString> {
-    let amp_index = match src.find(b'&') {
-        Some(i) => i,
-        None => return None, // No entities.
-    };
+    // Returning right away if no entities are found.
+    let amp_index = src.find(b'&')?;
 
     // Contains entities; copy and replace.
     let mut result_str = WString::with_capacity(src.len(), src.is_wide());
@@ -98,6 +100,14 @@ fn process_html_entity(src: &WStr) -> Option<WString> {
     Some(result_str)
 }
 
+#[derive(Default, Clone, Copy, Debug, Eq, PartialEq)]
+pub enum TextDisplay {
+    #[default]
+    Block,
+    Inline,
+    None,
+}
+
 /// A set of text formatting options to be applied to some part, or the whole
 /// of, a given text field.
 ///
@@ -128,6 +138,7 @@ pub struct TextFormat {
     pub bullet: Option<bool>,
     pub url: Option<WString>,
     pub target: Option<WString>,
+    pub display: Option<TextDisplay>,
 }
 
 impl TextFormat {
@@ -138,7 +149,7 @@ impl TextFormat {
     pub fn from_swf_tag(
         et: swf::EditText<'_>,
         swf_movie: Arc<SwfMovie>,
-        context: &mut UpdateContext<'_, '_>,
+        context: &mut UpdateContext<'_>,
     ) -> Self {
         let encoding = swf_movie.encoding();
         let movie_library = context.library.library_for_movie_mut(swf_movie);
@@ -164,9 +175,18 @@ impl TextFormat {
                 .color()
                 .map(|color| swf::Color::from_rgb(color.to_rgb(), 0)),
             align,
-            bold: Some(font.map(|font| font.descriptor().bold()).unwrap_or(false)),
-            italic: Some(font.map(|font| font.descriptor().italic()).unwrap_or(false)),
+            bold: if et.is_html() {
+                Some(false)
+            } else {
+                Some(font.map(|font| font.descriptor().bold()).unwrap_or(false))
+            },
+            italic: if et.is_html() {
+                Some(false)
+            } else {
+                Some(font.map(|font| font.descriptor().italic()).unwrap_or(false))
+            },
             underline: Some(false),
+            display: Some(TextDisplay::Block),
             left_margin,
             right_margin,
             indent,
@@ -273,6 +293,11 @@ impl TextFormat {
             } else {
                 None
             },
+            display: if self.display == rhs.display {
+                self.display
+            } else {
+                None
+            },
         }
     }
 
@@ -282,7 +307,7 @@ impl TextFormat {
     /// Properties defined in both will resolve to the one defined in `self`.
     pub fn mix_with(self, rhs: TextFormat) -> Self {
         Self {
-            font: self.font.or(rhs.font),
+            font: self.font.filter(|f| !f.is_empty()).or(rhs.font),
             size: self.size.or(rhs.size),
             color: self.color.or(rhs.color),
             align: self.align.or(rhs.align),
@@ -300,6 +325,7 @@ impl TextFormat {
             bullet: self.bullet.or(rhs.bullet),
             url: self.url.or(rhs.url),
             target: self.target.or(rhs.target),
+            display: self.display.or(rhs.display),
         }
     }
 }
@@ -321,101 +347,85 @@ pub struct TextSpan {
     /// length of the underlying source string.
     pub span_length: usize,
 
-    pub font: WString,
-    pub size: f64,
-    pub color: swf::Color,
+    pub font: TextSpanFont,
+    pub style: TextSpanStyle,
     pub align: swf::TextAlign,
-    pub bold: bool,
-    pub italic: bool,
-    pub underline: bool,
     pub left_margin: f64,
     pub right_margin: f64,
     pub indent: f64,
     pub block_indent: f64,
-    pub kerning: bool,
     pub leading: f64,
-    pub letter_spacing: f64,
     pub tab_stops: Vec<f64>,
     pub bullet: bool,
     pub url: WString,
     pub target: WString,
+    pub display: TextDisplay,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct TextSpanFont {
+    pub face: WString,
+    pub size: f64,
+    pub color: swf::Color,
+    pub letter_spacing: f64,
+    pub kerning: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Default)]
+pub struct TextSpanStyle {
+    pub bold: bool,
+    pub italic: bool,
+    pub underline: bool,
 }
 
 impl Default for TextSpan {
     fn default() -> Self {
         Self {
             span_length: 0,
-            font: WString::new(),
+            font: TextSpanFont::default(),
+            style: TextSpanStyle::default(),
+            align: swf::TextAlign::Left,
+            left_margin: 0.0,
+            right_margin: 0.0,
+            indent: 0.0,
+            block_indent: 0.0,
+            leading: 0.0,
+            tab_stops: vec![],
+            bullet: false,
+            url: WString::new(),
+            target: WString::new(),
+            display: TextDisplay::default(),
+        }
+    }
+}
+
+impl Default for TextSpanFont {
+    fn default() -> Self {
+        Self {
+            face: WString::new(),
             size: 12.0,
             color: swf::Color {
                 r: 0,
                 g: 0,
                 b: 0,
-                a: 255,
+                a: 0,
             },
-            align: swf::TextAlign::Left,
-            bold: false,
-            italic: false,
-            underline: false,
-            left_margin: 0.0,
-            right_margin: 0.0,
-            indent: 0.0,
-            block_indent: 0.0,
             kerning: false,
-            leading: 0.0,
             letter_spacing: 0.0,
-            tab_stops: vec![],
-            bullet: false,
-            url: WString::new(),
-            target: WString::new(),
         }
     }
 }
 
-impl TextSpan {
-    pub fn with_length_and_format(length: usize, tf: TextFormat) -> Self {
-        let mut data = Self {
-            span_length: length,
-            ..Default::default()
-        };
-
-        data.set_text_format(&tf);
-
+impl TextSpanFont {
+    fn with_format(tf: &TextFormat) -> Self {
+        let mut data = Self::default();
+        data.set_text_format(tf);
         data
     }
 
-    /// Determine if this and another span have identical text formats.
-    ///
-    /// It is assumed that the two text spans being considered are adjacent;
-    /// and we have no way of checking, so this function doesn't check that.
-    #[allow(clippy::float_cmp)]
-    fn can_merge(&self, rhs: &Self) -> bool {
-        self.font == rhs.font
-            && self.size == rhs.size
-            && self.color == rhs.color
-            && self.align == rhs.align
-            && self.bold == rhs.bold
-            && self.italic == rhs.italic
-            && self.underline == rhs.underline
-            && self.left_margin == rhs.left_margin
-            && self.right_margin == rhs.right_margin
-            && self.indent == rhs.indent
-            && self.block_indent == rhs.block_indent
-            && self.kerning == rhs.kerning
-            && self.leading == rhs.leading
-            && self.letter_spacing == rhs.letter_spacing
-            && self.tab_stops == rhs.tab_stops
-            && self.bullet == rhs.bullet
-            && self.url == rhs.url
-            && self.target == rhs.target
-    }
-
-    /// Apply a text format to this text span.
-    ///
-    /// Properties marked `None` on the `TextFormat` will remain unchanged.
     fn set_text_format(&mut self, tf: &TextFormat) {
-        if let Some(font) = &tf.font {
-            self.font = font.clone();
+        if let Some(font) = tf.font.as_ref().filter(|f| !f.is_empty()) {
+            self.face = font.clone();
         }
 
         if let Some(size) = &tf.size {
@@ -426,20 +436,66 @@ impl TextSpan {
             self.color = color;
         }
 
+        if let Some(kerning) = &tf.kerning {
+            self.kerning = *kerning;
+        }
+
+        if let Some(letter_spacing) = &tf.letter_spacing {
+            self.letter_spacing = *letter_spacing;
+        }
+    }
+}
+
+impl TextSpan {
+    pub fn with_length_and_format(length: usize, tf: &TextFormat) -> Self {
+        let mut data = Self {
+            span_length: length,
+            ..Default::default()
+        };
+
+        data.set_text_format(tf);
+
+        data
+    }
+
+    /// Determine if this and another span have identical text formats.
+    ///
+    /// It is assumed that the two text spans being considered are adjacent;
+    /// and we have no way of checking, so this function doesn't check that.
+    fn can_merge(&self, rhs: &Self) -> bool {
+        self.font == rhs.font
+            && self.style == rhs.style
+            && self.align == rhs.align
+            && self.left_margin == rhs.left_margin
+            && self.right_margin == rhs.right_margin
+            && self.indent == rhs.indent
+            && self.block_indent == rhs.block_indent
+            && self.leading == rhs.leading
+            && self.tab_stops == rhs.tab_stops
+            && self.bullet == rhs.bullet
+            && self.url == rhs.url
+            && self.target == rhs.target
+            && self.display == rhs.display
+    }
+
+    /// Apply a text format to this text span.
+    ///
+    /// Properties marked `None` on the `TextFormat` will remain unchanged.
+    fn set_text_format(&mut self, tf: &TextFormat) {
         if let Some(align) = &tf.align {
             self.align = *align;
         }
 
         if let Some(bold) = &tf.bold {
-            self.bold = *bold;
+            self.style.bold = *bold;
         }
 
         if let Some(italic) = &tf.italic {
-            self.italic = *italic;
+            self.style.italic = *italic;
         }
 
         if let Some(underline) = &tf.underline {
-            self.underline = *underline;
+            self.style.underline = *underline;
         }
 
         if let Some(left_margin) = &tf.left_margin {
@@ -458,16 +514,8 @@ impl TextSpan {
             self.block_indent = *block_indent;
         }
 
-        if let Some(kerning) = &tf.kerning {
-            self.kerning = *kerning;
-        }
-
         if let Some(leading) = &tf.leading {
             self.leading = *leading;
-        }
-
-        if let Some(letter_spacing) = &tf.letter_spacing {
-            self.letter_spacing = *letter_spacing;
         }
 
         if let Some(tab_stops) = &tf.tab_stops {
@@ -485,6 +533,12 @@ impl TextSpan {
         if let Some(target) = &tf.target {
             self.target = target.clone();
         }
+
+        if let Some(display) = tf.display {
+            self.display = display;
+        }
+
+        self.font.set_text_format(tf);
     }
 
     /// Convert the text span into a format.
@@ -492,24 +546,25 @@ impl TextSpan {
     /// The text format returned will have all properties defined.
     pub fn get_text_format(&self) -> TextFormat {
         TextFormat {
-            font: Some(self.font.clone()),
-            size: Some(self.size),
-            color: Some(self.color),
+            font: Some(self.font.face.clone()),
+            size: Some(self.font.size),
+            color: Some(self.font.color),
             align: Some(self.align),
-            bold: Some(self.bold),
-            italic: Some(self.italic),
-            underline: Some(self.underline),
+            bold: Some(self.style.bold),
+            italic: Some(self.style.italic),
+            underline: Some(self.style.underline),
             left_margin: Some(self.left_margin),
             right_margin: Some(self.right_margin),
             indent: Some(self.indent),
             block_indent: Some(self.block_indent),
-            kerning: Some(self.kerning),
+            kerning: Some(self.font.kerning),
             leading: Some(self.leading),
-            letter_spacing: Some(self.letter_spacing),
+            letter_spacing: Some(self.font.letter_spacing),
             tab_stops: Some(self.tab_stops.clone()),
             bullet: Some(self.bullet),
             url: Some(self.url.clone()),
             target: Some(self.target.clone()),
+            display: Some(self.display),
         }
     }
 }
@@ -555,7 +610,7 @@ impl FormatSpans {
         Self {
             text,
             displayed_text: WString::new(),
-            spans: vec![TextSpan::with_length_and_format(len, format.clone())],
+            spans: vec![TextSpan::with_length_and_format(len, &format)],
             default_format: format,
         }
     }
@@ -566,7 +621,17 @@ impl FormatSpans {
     /// a handful of presentational attributes in the HTML tree to generate
     /// styling. There's also a `lower_from_css` that respects both
     /// presentational markup and CSS stylesheets.
-    pub fn from_html(html: &WStr, default_format: TextFormat, is_multiline: bool) -> Self {
+    pub fn from_html(
+        html: &WStr,
+        default_format: TextFormat,
+        is_multiline: bool,
+        condense_white: bool,
+        swf_version: u8,
+    ) -> Self {
+        // For SWF version 6, the multiline property exists and may be changed,
+        // but its value is ignored and fields always behave as multiline.
+        let is_multiline = is_multiline || swf_version <= 6;
+
         let mut format_stack = vec![default_format.clone()];
         let mut text = WString::new();
         let mut spans: Vec<TextSpan> = Vec::new();
@@ -599,17 +664,22 @@ impl FormatSpans {
         // encountering one. Thus, we disable `quick-xml`'s check and do it ourselves in a similar
         // manner, but in a recoverable way.
         let mut opened_buffer: Vec<u8> = Vec::new();
-        let mut opened_starts = Vec::new();
+        let mut opened_starts: Vec<usize> = Vec::new();
+
+        // For the weird behaviors of <p>
+        let mut p_open = false;
+        let mut last_closed_font: Option<TextSpanFont> = None;
 
         let mut reader = Reader::from_reader(&raw_bytes[..]);
-        reader.expand_empty_elements(true);
-        reader.check_end_names(false);
+        let reader_config = reader.config_mut();
+        reader_config.expand_empty_elements = true;
+        reader_config.check_end_names = false;
+        reader_config.allow_unmatched_ends = true;
+
         loop {
             match reader.read_event() {
                 Ok(Event::Start(ref e)) => {
-                    opened_starts.push(opened_buffer.len());
-                    opened_buffer.extend(e.name().into_inner());
-
+                    let tag_name = &e.name().into_inner().to_ascii_lowercase()[..];
                     let attributes: Result<Vec<_>, _> = e.attributes().with_checks(false).collect();
                     let attributes = match attributes {
                         Ok(attributes) => attributes,
@@ -628,13 +698,11 @@ impl FormatSpans {
                         })
                     };
                     let mut format = format_stack.last().unwrap().clone();
-                    match &e.name().into_inner().to_ascii_lowercase()[..] {
+                    match tag_name {
                         b"br" => {
                             if is_multiline {
-                                text.push_byte(b'\n');
-                                if let Some(span) = spans.last_mut() {
-                                    span.span_length += 1;
-                                }
+                                text.push(HTML_NEWLINE);
+                                spans.push(TextSpan::with_length_and_format(1, &format));
                             }
 
                             // Skip push to `format_stack`.
@@ -643,15 +711,14 @@ impl FormatSpans {
                         b"sbr" => {
                             // TODO: <sbr> tags do not add a newline, but rather only break
                             // the format span.
-                            text.push_byte(b'\n');
-                            if let Some(span) = spans.last_mut() {
-                                span.span_length += 1;
-                            }
+                            text.push(HTML_NEWLINE);
+                            spans.push(TextSpan::with_length_and_format(1, &format));
 
                             // Skip push to `format_stack`.
                             continue;
                         }
-                        b"p" if is_multiline => {
+                        b"p" => {
+                            p_open = true;
                             if let Some(align) = attribute(b"align") {
                                 if align == WStr::from_units(b"left") {
                                     format.align = Some(swf::TextAlign::Left)
@@ -659,6 +726,8 @@ impl FormatSpans {
                                     format.align = Some(swf::TextAlign::Center)
                                 } else if align == WStr::from_units(b"right") {
                                     format.align = Some(swf::TextAlign::Right)
+                                } else if align == WStr::from_units(b"justify") {
+                                    format.align = Some(swf::TextAlign::Justify)
                                 }
                             }
                         }
@@ -677,7 +746,40 @@ impl FormatSpans {
                             }
 
                             if let Some(size) = attribute(b"size") {
-                                format.size = size.parse().ok();
+                                // if the number starts with + or -, the size is relative
+                                let (prefix, size) = if size.starts_with(&[b'+', b'-'][..]) {
+                                    (Some(size.at(0) as u8), &size[1..])
+                                } else {
+                                    (None, &size[..])
+                                };
+
+                                // text is ignored from the first non-numeric character
+                                // (including the decimal separator)
+                                let first_foreign_char = size
+                                    .find(|c| c < '0' as u16 || c > '9' as u16)
+                                    .unwrap_or(size.len());
+                                let size = &size[0..first_foreign_char];
+
+                                let size: Option<f64> = size.parse().ok();
+
+                                if let Some(size) = size
+                                    .and_then(|size| match prefix {
+                                        Some(b'+') => format.size.map(|last_size| last_size + size),
+                                        Some(b'-') => format.size.map(|last_size| last_size - size),
+                                        _ => Some(size),
+                                    })
+                                    .map(|size| {
+                                        if swf_version < 13 {
+                                            size.clamp(1.0, 127.0)
+                                        } else {
+                                            size.max(1.0)
+                                        }
+                                    })
+                                {
+                                    format.size = Some(size);
+                                } else {
+                                    // malformed sizes are ignored
+                                }
                             }
 
                             if let Some(color) = attribute(b"color") {
@@ -704,15 +806,13 @@ impl FormatSpans {
                             }
 
                             if let Some(kerning) = attribute(b"kerning") {
-                                if kerning == WStr::from_units(b"1") {
+                                if kerning == WStr::from_units(b"1") && swf_version >= 8 {
+                                    // Enabling kerning works only for SWF >=8
                                     format.kerning = Some(true);
                                 } else if kerning == WStr::from_units(b"0") {
                                     format.kerning = Some(false);
                                 }
                             }
-
-                            format.bold = Some(false);
-                            format.italic = Some(false);
                         }
                         b"b" => {
                             format.bold = Some(true);
@@ -723,7 +823,18 @@ impl FormatSpans {
                         b"u" => {
                             format.underline = Some(true);
                         }
-                        b"li" if is_multiline => {
+                        b"li" => {
+                            let is_last_nl = text.iter().last() == Some(HTML_NEWLINE);
+                            if is_multiline && !is_last_nl && text.len() > 0 {
+                                // If the last paragraph was not closed and
+                                // there was some text since then,
+                                // we need to close it here.
+                                text.push(HTML_NEWLINE);
+                                spans.push(TextSpan::with_length_and_format(
+                                    1,
+                                    format_stack.last().unwrap(),
+                                ));
+                            }
                             format.bullet = Some(true);
                         }
                         b"textformat" => {
@@ -760,20 +871,34 @@ impl FormatSpans {
                         }
                         _ => {}
                     }
+                    opened_starts.push(opened_buffer.len());
+                    opened_buffer.extend(tag_name);
                     format_stack.push(format);
                 }
-                Ok(Event::Text(e)) if !e.is_empty() => {
+                Ok(Event::Text(e)) if !e.is_empty() => 'text: {
                     let e = decode_to_wstr(&e.into_inner());
                     let e = process_html_entity(&e).unwrap_or(e);
                     let format = format_stack.last().unwrap().clone();
+                    if swf_version <= 7 && e.trim().is_empty() {
+                        // SWFs version 6,7 ignore whitespace-only text.
+                        // But whitespace is preserved when there
+                        // is any non-whitespace character.
+                        break 'text;
+                    }
+                    let e = if condense_white {
+                        Self::condense_white_in_text(e)
+                    } else {
+                        e.replace(swf_is_newline, WStr::from_units(&[HTML_NEWLINE]))
+                    };
                     text.push_str(&e);
-                    spans.push(TextSpan::with_length_and_format(e.len(), format));
+                    spans.push(TextSpan::with_length_and_format(e.len(), &format));
                 }
                 Ok(Event::End(e)) => {
+                    let tag_name = &e.name().into_inner().to_ascii_lowercase()[..];
                     // Check for a mismatch.
                     match opened_starts.last() {
                         Some(start) => {
-                            if e.name().into_inner() != &opened_buffer[*start..] {
+                            if tag_name != &opened_buffer[*start..] {
                                 continue;
                             } else {
                                 opened_buffer.truncate(*start);
@@ -783,16 +908,48 @@ impl FormatSpans {
                         None => continue,
                     }
 
-                    match &e.name().into_inner().to_ascii_lowercase()[..] {
+                    match tag_name {
                         b"br" | b"sbr" => {
                             // Skip pop from `format_stack`.
                             continue;
                         }
-                        b"p" | b"li" if is_multiline => {
-                            text.push_byte(b'\n');
-                            if let Some(span) = spans.last_mut() {
-                                span.span_length += 1;
+                        b"li" if is_multiline => {
+                            text.push(HTML_NEWLINE);
+                            spans.push(TextSpan::with_length_and_format(
+                                1,
+                                format_stack.last().unwrap(),
+                            ));
+                        }
+                        b"p" if is_multiline => 'p: {
+                            if !p_open {
+                                // Skip multiple </p>'s without <p>
+                                break 'p;
                             }
+                            p_open = false;
+
+                            text.push(HTML_NEWLINE);
+                            let mut span =
+                                TextSpan::with_length_and_format(1, format_stack.last().unwrap());
+                            // </p> has some weird behaviors related to the format of its children (b,i,u,a),
+                            // sometimes it resets it, sometimes it uses the format from within <p>.
+                            // That's probably some relic from FP's internal implementation.
+                            // Not that it would matter -- it affects generating empty tags only
+                            // and it should not be problematic.
+                            span.style = TextSpanStyle::default();
+                            span.url = WString::new();
+                            span.target = WString::new();
+                            if let Some(last_closed_font) = last_closed_font.clone() {
+                                // </p> uses the font from the last </font> if available
+                                // does not make any sense but everything seems that's the case
+                                span.font = last_closed_font;
+                            } else {
+                                span.font = TextSpanFont::with_format(&default_format);
+                            }
+                            spans.push(span);
+                        }
+                        b"font" => {
+                            let tf = format_stack.last().unwrap();
+                            last_closed_font = Some(TextSpanFont::with_format(tf));
                         }
                         _ => {}
                     }
@@ -807,12 +964,34 @@ impl FormatSpans {
             }
         }
 
-        Self {
+        let mut ret = Self {
             text,
             displayed_text: WString::new(),
             spans,
             default_format,
+        };
+        if condense_white && swf_version >= 8 {
+            ret.condense_white_swf8();
         }
+        ret.normalize();
+        ret
+    }
+
+    fn condense_white_in_text(string: WString) -> WString {
+        let mut result = WString::with_capacity(string.len(), string.is_wide());
+        let mut last_white = false;
+        for ch in string.iter() {
+            if ruffle_wstr::utils::swf_is_whitespace(ch) {
+                if !last_white {
+                    result.push(HTML_SPACE);
+                    last_white = true;
+                }
+            } else {
+                result.push(ch);
+                last_white = false;
+            }
+        }
+        result
     }
 
     pub fn default_format(&self) -> &TextFormat {
@@ -930,7 +1109,7 @@ impl FormatSpans {
     /// exact text range, you must first call `ensure_span_break_at` for both
     /// `from` and `to`.
     ///
-    /// The indexes returned from this function is not valid across calls which
+    /// The indexes returned from this function are not valid across calls which
     /// mutate spans.
     pub fn get_span_boundaries(&self, from: usize, to: usize) -> (usize, usize) {
         let start_pos = self.resolve_position_as_span(from).unwrap_or((0, 0)).0;
@@ -943,6 +1122,39 @@ impl FormatSpans {
         );
 
         (start_pos, end_pos)
+    }
+
+    /// SWF8+ condenses whitespace not only in text, but across HTML elements too.
+    /// This method assumes that whitespace in text has already been condensed.
+    fn condense_white_swf8(&mut self) {
+        let mut removal_start = Some(0);
+        let mut to_remove = Vec::new();
+        for (i, ch) in self.text().iter().enumerate() {
+            let is_newline = ch == HTML_NEWLINE;
+            let is_space = ch == HTML_SPACE;
+
+            // We have to preserve newlines here, as newlines inputted in text
+            // are already condensed into space.
+            if is_newline || !is_space {
+                if let Some(space_start) = removal_start {
+                    to_remove.push((space_start, i));
+                }
+                removal_start = None;
+            }
+
+            // However, HTML newlines are also considered as space here.
+            if (is_newline || is_space) && removal_start.is_none() {
+                removal_start = Some(i + 1);
+            }
+        }
+        if let Some(space_start) = removal_start {
+            to_remove.push((space_start, self.text().len()));
+        }
+        for &(from, to) in to_remove.iter().rev() {
+            if from != to {
+                self.replace_text(from, to, WStr::empty());
+            }
+        }
     }
 
     /// Adjust the format spans in several ways to ensure that other function
@@ -971,7 +1183,7 @@ impl FormatSpans {
         match span_length.cmp(&self.text.len()) {
             Ordering::Less => self.spans.push(TextSpan::with_length_and_format(
                 self.text.len() - span_length,
-                self.default_format.clone(),
+                &self.default_format,
             )),
             Ordering::Greater => {
                 let mut deficiency = span_length - self.text.len();
@@ -1032,7 +1244,7 @@ impl FormatSpans {
         if self.spans.is_empty() {
             self.spans.push(TextSpan::with_length_and_format(
                 self.text.len(),
-                self.default_format.clone(),
+                &self.default_format,
             ));
         }
     }
@@ -1088,13 +1300,7 @@ impl FormatSpans {
     ///
     /// (The text formatting behavior has been confirmed by manual testing with
     /// Flash Player 8.)
-    pub fn replace_text(
-        &mut self,
-        from: usize,
-        to: usize,
-        with: &WStr,
-        new_tf: Option<&TextFormat>,
-    ) {
+    pub fn replace_text(&mut self, from: usize, to: usize, with: &WStr) {
         if to < from {
             return;
         }
@@ -1104,22 +1310,20 @@ impl FormatSpans {
             self.ensure_span_break_at(to);
 
             let (start_pos, end_pos) = self.get_span_boundaries(from, to);
-            let new_tf = new_tf
-                .cloned()
-                .or_else(|| self.spans.get(end_pos).map(|span| span.get_text_format()))
-                .unwrap_or_else(|| self.default_format.clone());
+            let new_tf = self.spans.get(end_pos).map(|span| span.get_text_format());
 
             self.spans.drain(start_pos..end_pos);
             self.spans.insert(
                 start_pos,
-                TextSpan::with_length_and_format(with.len(), new_tf),
+                TextSpan::with_length_and_format(
+                    with.len(),
+                    new_tf.as_ref().unwrap_or(&self.default_format),
+                ),
             );
         } else {
             self.spans.push(TextSpan::with_length_and_format(
                 with.len(),
-                new_tf
-                    .cloned()
-                    .unwrap_or_else(|| self.default_format.clone()),
+                &self.default_format,
             ));
         }
 
@@ -1158,284 +1362,357 @@ impl FormatSpans {
     }
 
     pub fn to_html(&self) -> WString {
-        let mut spans = self.iter_spans();
-        let mut state = if let Some((_start, _end, text, span)) = spans.next() {
-            let mut state = FormatState {
-                result: WString::new(),
-                font_stack: VecDeque::new(),
-                span,
-                is_open: false,
-            };
-            state.push_text(text);
-            state
-        } else {
+        if self.text.is_empty() {
             return WString::new();
+        }
+
+        let mut state = FormatState {
+            result: WString::new(),
+            font_stack: VecDeque::new(),
+            current_span: &TextSpan::default(),
+            open_tags: Vec::new(),
         };
+
+        let spans = self.iter_spans();
 
         for (_start, _end, text, span) in spans {
             state.set_span(span);
             state.push_text(text);
         }
 
-        state.close_tags();
+        state.close_all_tags();
         state.result
+    }
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
+enum HtmlTag {
+    Textformat,
+    P,
+    Li,
+    Font,
+    A,
+    B,
+    I,
+    U,
+
+    Br,
+    Sbr,
+}
+
+impl HtmlTag {
+    fn closeable(&self) -> bool {
+        self != &Self::Br && self != &Self::Sbr
     }
 }
 
 /// Holds required state for HTML formatting.
 struct FormatState<'a> {
     result: WString,
-    font_stack: VecDeque<&'a TextSpan>,
-    span: &'a TextSpan,
-    is_open: bool,
+    font_stack: VecDeque<&'a TextSpanFont>,
+    current_span: &'a TextSpan,
+    open_tags: Vec<HtmlTag>,
 }
 
 impl<'a> FormatState<'a> {
-    fn open_tags(&mut self) {
-        if self.is_open {
-            return;
-        }
-
-        if self.span.left_margin != 0.0
-            || self.span.right_margin != 0.0
-            || self.span.indent != 0.0
-            || self.span.leading != 0.0
-            || self.span.block_indent != 0.0
-            || !self.span.tab_stops.is_empty()
-        {
-            self.result.push_str(WStr::from_units(b"<TEXTFORMAT"));
-            if self.span.left_margin != 0.0 {
-                let _ = write!(self.result, " LEFTMARGIN=\"{}\"", self.span.left_margin);
-            }
-            if self.span.right_margin != 0.0 {
-                let _ = write!(self.result, " RIGHTMARGIN=\"{}\"", self.span.right_margin);
-            }
-            if self.span.indent != 0.0 {
-                let _ = write!(self.result, " INDENT=\"{}\"", self.span.indent);
-            }
-            if self.span.leading != 0.0 {
-                let _ = write!(self.result, " LEADING=\"{}\"", self.span.leading);
-            }
-            if self.span.block_indent != 0.0 {
-                let _ = write!(self.result, " BLOCKINDENT=\"{}\"", self.span.block_indent);
-            }
-            if !self.span.tab_stops.is_empty() {
-                let _ = write!(
-                    self.result,
-                    " TABSTOPS=\"{}\"",
-                    self.span
-                        .tab_stops
-                        .iter()
-                        .map(f64::to_string)
-                        .collect::<Vec<_>>()
-                        .join(",")
-                );
-            }
-            self.result.push_byte(b'>');
-        }
-
-        if self.span.bullet {
-            self.result.push_str(WStr::from_units(b"<LI>"));
-        } else {
-            let _ = write!(
-                self.result,
-                "<P ALIGN=\"{}\">",
-                match self.span.align {
-                    swf::TextAlign::Left => "LEFT",
-                    swf::TextAlign::Center => "CENTER",
-                    swf::TextAlign::Right => "RIGHT",
-                    swf::TextAlign::Justify => "JUSTIFY",
-                }
-            );
-        }
-
-        let _ = write!(
-            self.result,
-            "<FONT FACE=\"{}\" SIZE=\"{}\" COLOR=\"#{:0>2X}{:0>2X}{:0>2X}\" LETTERSPACING=\"{}\" KERNING=\"{}\">",
-            self.span.font,
-            self.span.size,
-            self.span.color.r,
-            self.span.color.g,
-            self.span.color.b,
-            self.span.letter_spacing,
-            if self.span.kerning { "1" } else { "0" },
-        );
-        self.font_stack.push_front(self.span);
-
-        if !self.span.url.is_empty() {
-            let _ = write!(
-                self.result,
-                "<A HREF=\"{}\" TARGET=\"{}\">",
-                self.span.url, self.span.target
-            );
-        }
-
-        if self.span.bold {
-            self.result.push_str(WStr::from_units(b"<B>"));
-        }
-
-        if self.span.italic {
-            self.result.push_str(WStr::from_units(b"<I>"));
-        }
-
-        if self.span.underline {
-            self.result.push_str(WStr::from_units(b"<U>"));
-        }
-
-        self.is_open = true;
-    }
-
-    fn close_tags(&mut self) {
-        if !self.is_open {
-            return;
-        }
-
-        if self.span.underline {
-            self.result.push_str(WStr::from_units(b"</U>"));
-        }
-
-        if self.span.italic {
-            self.result.push_str(WStr::from_units(b"</I>"));
-        }
-
-        if self.span.bold {
-            self.result.push_str(WStr::from_units(b"</B>"));
-        }
-
-        if !self.span.url.is_empty() {
-            self.result.push_str(WStr::from_units(b"</A>"));
-        }
-
-        self.result
-            .push_str(&WStr::from_units(b"</FONT>").repeat(self.font_stack.len()));
-        self.font_stack.clear();
-
-        if self.span.bullet {
-            self.result.push_str(WStr::from_units(b"</LI>"));
-        } else {
-            self.result.push_str(WStr::from_units(b"</P>"));
-        }
-
-        if self.span.left_margin != 0.0
-            || self.span.right_margin != 0.0
-            || self.span.indent != 0.0
-            || self.span.leading != 0.0
-            || self.span.block_indent != 0.0
-            || !self.span.tab_stops.is_empty()
-        {
-            self.result.push_str(WStr::from_units(b"</TEXTFORMAT>"));
-        }
-
-        self.is_open = false;
-    }
-
+    /// Set a new span. Tags are automatically adapted to the new span.
     fn set_span(&mut self, span: &'a TextSpan) {
-        if !span.underline && self.span.underline {
-            self.result.push_str(WStr::from_units(b"</U>"));
+        // When there's a difference in style, all style tags
+        // need to be closed and later reopened if necessary.
+        if span.style != self.current_span.style {
+            self.close_tags_till(HtmlTag::B);
         }
 
-        if !span.italic && self.span.italic {
-            self.result.push_str(WStr::from_units(b"</I>"));
+        if span.url != self.current_span.url {
+            self.close_tags_till(HtmlTag::A);
         }
 
-        if !span.bold && self.span.bold {
-            self.result.push_str(WStr::from_units(b"</B>"));
-        }
+        self.close_font_if_feasible(&span.font);
 
-        if span.url != self.span.url && !self.span.url.is_empty() {
-            self.result.push_str(WStr::from_units(b"</A>"));
-        }
+        self.current_span = span;
 
-        if span.font != self.span.font
-            || span.size != self.span.size
-            || span.color != self.span.color
-            || span.letter_spacing != self.span.letter_spacing
-            || span.kerning != self.span.kerning
+        if self.current_span.left_margin != 0.0
+            || self.current_span.right_margin != 0.0
+            || self.current_span.indent != 0.0
+            || self.current_span.leading != 0.0
+            || self.current_span.block_indent != 0.0
+            || !self.current_span.tab_stops.is_empty()
         {
-            let pos = self.font_stack.iter().position(|font| {
-                span.font == font.font
-                    && span.size == font.size
-                    && span.color == font.color
-                    && span.letter_spacing == font.letter_spacing
-                    && span.kerning == font.kerning
-            });
-            if let Some(pos) = pos {
-                self.result
-                    .push_str(&WStr::from_units(b"</FONT>").repeat(pos));
-                self.font_stack.drain(0..pos);
+            self.open_tag(HtmlTag::Textformat);
+        }
+
+        if !self.open_tags.contains(&HtmlTag::P) && !self.open_tags.contains(&HtmlTag::Li) {
+            if self.current_span.bullet {
+                self.open_tag(HtmlTag::Li);
             } else {
-                self.result.push_str(WStr::from_units(b"<FONT"));
-                if span.font != self.span.font {
-                    let _ = write!(self.result, " FACE=\"{}\"", span.font);
-                }
-                if span.size != self.span.size {
-                    let _ = write!(self.result, " SIZE=\"{}\"", span.size);
-                }
-                if span.color != self.span.color {
+                self.open_tag(HtmlTag::P);
+            }
+        }
+
+        self.set_font(&self.current_span.font);
+
+        if !self.current_span.url.is_empty() {
+            self.open_tag(HtmlTag::A);
+        }
+
+        if self.current_span.style.bold {
+            self.open_tag(HtmlTag::B);
+        }
+
+        if self.current_span.style.italic {
+            self.open_tag(HtmlTag::I);
+        }
+
+        if self.current_span.style.underline {
+            self.open_tag(HtmlTag::U);
+        }
+    }
+
+    fn open_tag(&mut self, tag: HtmlTag) {
+        if tag.closeable() {
+            if self.open_tags.contains(&tag) {
+                // Tag already opened.
+                return;
+            }
+            if self
+                .open_tags
+                .last()
+                .map(|last| *last > tag)
+                .unwrap_or(false)
+            {
+                // A child tag is already opened.
+                // Order of tags must be ensured.
+                return;
+            }
+
+            self.open_tags.push(tag);
+        }
+
+        match tag {
+            HtmlTag::Textformat => {
+                self.result.push_str(WStr::from_units(b"<TEXTFORMAT"));
+                if self.current_span.left_margin != 0.0 {
                     let _ = write!(
                         self.result,
-                        " COLOR=\"#{:0>2X}{:0>2X}{:0>2X}\"",
-                        span.color.r, span.color.g, span.color.b
+                        " LEFTMARGIN=\"{}\"",
+                        self.current_span.left_margin,
                     );
                 }
-                if span.letter_spacing != self.span.letter_spacing {
-                    let _ = write!(self.result, " LETTERSPACING=\"{}\"", span.letter_spacing);
-                }
-                if span.kerning != self.span.kerning {
+                if self.current_span.right_margin != 0.0 {
                     let _ = write!(
                         self.result,
-                        " KERNING=\"{}\"",
-                        if span.kerning { "1" } else { "0" }
+                        " RIGHTMARGIN=\"{}\"",
+                        self.current_span.right_margin,
+                    );
+                }
+                if self.current_span.indent != 0.0 {
+                    let _ = write!(self.result, " INDENT=\"{}\"", self.current_span.indent);
+                }
+                if self.current_span.leading != 0.0 {
+                    let _ = write!(self.result, " LEADING=\"{}\"", self.current_span.leading);
+                }
+                if self.current_span.block_indent != 0.0 {
+                    let _ = write!(
+                        self.result,
+                        " BLOCKINDENT=\"{}\"",
+                        self.current_span.block_indent
+                    );
+                }
+                if !self.current_span.tab_stops.is_empty() {
+                    let _ = write!(
+                        self.result,
+                        " TABSTOPS=\"{}\"",
+                        self.current_span
+                            .tab_stops
+                            .iter()
+                            .map(f64::to_string)
+                            .collect::<Vec<_>>()
+                            .join(",")
                     );
                 }
                 self.result.push_byte(b'>');
-                self.font_stack.push_front(span);
             }
+            HtmlTag::P => {
+                let _ = write!(
+                    self.result,
+                    "<P ALIGN=\"{}\">",
+                    match self.current_span.align {
+                        swf::TextAlign::Left => "LEFT",
+                        swf::TextAlign::Center => "CENTER",
+                        swf::TextAlign::Right => "RIGHT",
+                        swf::TextAlign::Justify => "JUSTIFY",
+                    }
+                );
+            }
+            HtmlTag::B => {
+                self.result.push_str(WStr::from_units(b"<B>"));
+            }
+            HtmlTag::I => {
+                self.result.push_str(WStr::from_units(b"<I>"));
+            }
+            HtmlTag::U => {
+                self.result.push_str(WStr::from_units(b"<U>"));
+            }
+            HtmlTag::Li => {
+                self.result.push_str(WStr::from_units(b"<LI>"));
+            }
+            HtmlTag::A => {
+                let _ = write!(
+                    self.result,
+                    "<A HREF=\"{}\" TARGET=\"{}\">",
+                    self.current_span.url, self.current_span.target
+                );
+            }
+            HtmlTag::Br => {
+                self.result.push_str(WStr::from_units(b"<BR>"));
+            }
+            HtmlTag::Sbr => {
+                self.result.push_str(WStr::from_units(b"<SBR>"));
+            }
+            // Opening <font> is slightly different. See set_font
+            HtmlTag::Font => unreachable!(),
         }
+    }
 
-        if span.url != self.span.url && !span.url.is_empty() {
+    fn set_font(&mut self, font: &'a TextSpanFont) {
+        if let Some(&last_font) = self.font_stack.back() {
+            if last_font == font {
+                return;
+            }
+
+            self.close_tags_till(HtmlTag::A);
+
+            self.result.push_str(WStr::from_units(b"<FONT"));
+            if font.face != last_font.face {
+                let _ = write!(self.result, " FACE=\"{}\"", font.face);
+            }
+            if font.size != last_font.size {
+                let _ = write!(self.result, " SIZE=\"{}\"", font.size);
+            }
+            if font.color != last_font.color {
+                let _ = write!(
+                    self.result,
+                    " COLOR=\"#{:0>2X}{:0>2X}{:0>2X}\"",
+                    font.color.r, font.color.g, font.color.b
+                );
+            }
+            if font.letter_spacing != last_font.letter_spacing {
+                let _ = write!(self.result, " LETTERSPACING=\"{}\"", font.letter_spacing);
+            }
+            if font.kerning != last_font.kerning {
+                let _ = write!(
+                    self.result,
+                    " KERNING=\"{}\"",
+                    if font.kerning { "1" } else { "0" }
+                );
+            }
+            self.result.push_byte(b'>');
+            self.font_stack.push_back(font);
+        } else {
+            self.close_tags_till(HtmlTag::A);
             let _ = write!(
                 self.result,
-                "<A HREF=\"{}\" TARGET=\"{}\">",
-                span.url, span.target
+                "<FONT FACE=\"{}\" SIZE=\"{}\" COLOR=\"#{:0>2X}{:0>2X}{:0>2X}\" LETTERSPACING=\"{}\" KERNING=\"{}\">",
+                font.face,
+                font.size,
+                font.color.r,
+                font.color.g,
+                font.color.b,
+                font.letter_spacing,
+                if font.kerning { "1" } else { "0" },
             );
+            self.font_stack.push_back(font);
+            self.open_tags.push(HtmlTag::Font);
+        }
+    }
+
+    fn close_font_if_feasible(&mut self, font: &'a TextSpanFont) {
+        let pos = self.font_stack.iter().position(|&f| f == font);
+        if let Some(pos) = pos {
+            if pos == self.font_stack.len() - 1 {
+                return;
+            }
+            self.close_tags_till(HtmlTag::A);
+            self.result
+                .push_str(&WStr::from_units(b"</FONT>").repeat(self.font_stack.len() - pos - 1));
+            self.font_stack.drain(pos + 1..);
+        }
+    }
+
+    fn close_all_tags(&mut self) {
+        self.close_tags_till(HtmlTag::Textformat);
+    }
+
+    /// Close the given tag and all its children if open.
+    fn close_tags_till(&mut self, tag: HtmlTag) {
+        while self.open_tags.last() >= Some(&tag) {
+            let tag = self.open_tags.pop().unwrap();
+            self.close_tag(tag);
+        }
+    }
+
+    fn close_tag(&mut self, tag: HtmlTag) {
+        if tag == HtmlTag::Font {
+            self.result
+                .push_str(&WStr::from_units(b"</FONT>").repeat(self.font_stack.len()));
+            self.font_stack.clear();
+            return;
         }
 
-        if span.bold && !self.span.bold {
-            self.result.push_str(WStr::from_units(b"<B>"));
-        }
-
-        if span.italic && !self.span.italic {
-            self.result.push_str(WStr::from_units(b"<I>"));
-        }
-
-        if span.underline && !self.span.underline {
-            self.result.push_str(WStr::from_units(b"<U>"));
-        }
-
-        self.span = span;
+        self.result.push_str(match tag {
+            HtmlTag::Textformat => WStr::from_units(b"</TEXTFORMAT>"),
+            HtmlTag::P => WStr::from_units(b"</P>"),
+            HtmlTag::Li => WStr::from_units(b"</LI>"),
+            HtmlTag::B => WStr::from_units(b"</B>"),
+            HtmlTag::I => WStr::from_units(b"</I>"),
+            HtmlTag::U => WStr::from_units(b"</U>"),
+            HtmlTag::A => WStr::from_units(b"</A>"),
+            _ => unreachable!(),
+        });
     }
 
     fn push_text(&mut self, text: &WStr) {
-        for (i, text) in text.split(&[b'\n', b'\r'][..]).enumerate() {
-            self.open_tags();
-            if i > 0 {
-                self.close_tags();
-            }
-            let encoded = text.to_utf8_lossy();
-            let escaped = escape(&encoded);
+        let (text, ends_with_nl) = if text.ends_with(swf_is_newline) {
+            (&text[0..text.len() - 1], true)
+        } else {
+            (text, false)
+        };
 
-            if let Cow::Borrowed(_) = &encoded {
-                // Optimization: if the utf8 conversion was a no-op, we know the text is ASCII;
-                // escaping special characters cannot insert new non-ASCII characters, so we can
-                // simply append the bytes directly without converting from UTF8.
-                self.result.push_str(WStr::from_units(escaped.as_bytes()));
+        let mut first = true;
+        for text in text.split(swf_is_newline) {
+            if !first {
+                self.close_all_tags();
+                // Ensure that tags are open after closing them.
+                self.set_span(self.current_span);
             } else {
-                // TODO: updating our quick_xml fork to upstream will allow removing this UTF8 check.
-                let escaped =
-                    std::str::from_utf8(escaped.as_bytes()).expect("escaped text should be utf8");
-                self.result.push_utf8(escaped);
+                first = false;
             }
+            self.push_line(text);
+        }
+
+        if ends_with_nl {
+            self.close_all_tags();
+        }
+    }
+
+    fn push_line(&mut self, line: &WStr) {
+        if line.is_empty() {
+            return;
+        }
+
+        let encoded = line.to_utf8_lossy();
+        let escaped = escape(&encoded);
+
+        if let Cow::Borrowed(_) = &encoded {
+            // Optimization: if the utf8 conversion was a no-op, we know the text is ASCII;
+            // escaping special characters cannot insert new non-ASCII characters, so we can
+            // simply append the bytes directly without converting from UTF8.
+            self.result.push_str(WStr::from_units(escaped.as_bytes()));
+        } else {
+            // TODO: updating our quick_xml fork to upstream will allow removing this UTF8 check.
+            let escaped =
+                std::str::from_utf8(escaped.as_bytes()).expect("escaped text should be utf8");
+            self.result.push_utf8(escaped);
         }
     }
 }

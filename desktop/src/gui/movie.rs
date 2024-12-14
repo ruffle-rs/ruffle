@@ -78,7 +78,7 @@ impl MovieViewRenderer {
             label: None,
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
                 module: &module,
                 buffers: &[wgpu::VertexBufferLayout {
                     array_stride: 4 * 4,
@@ -87,6 +87,7 @@ impl MovieViewRenderer {
                     // 1: vec2 texture coordinates
                     attributes: &wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x2],
                 }],
+                compilation_options: Default::default(),
             },
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
@@ -106,18 +107,20 @@ impl MovieViewRenderer {
 
             fragment: Some(wgpu::FragmentState {
                 module: &module,
-                entry_point: if surface_format.is_srgb() {
+                entry_point: Some(if surface_format.is_srgb() {
                     "fs_main_srgb_framebuffer"
                 } else {
                     "fs_main_linear_framebuffer"
-                },
+                }),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: surface_format,
                     blend: Some(wgpu::BlendState::REPLACE),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
+                compilation_options: Default::default(),
             }),
             multiview: None,
+            cache: None,
         });
         let vertices = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
@@ -200,10 +203,10 @@ impl MovieView {
         }
     }
 
-    pub fn render<'pass, 'global: 'pass>(
-        &'pass self,
-        renderer: &'global MovieViewRenderer,
-        render_pass: &mut wgpu::RenderPass<'pass>,
+    pub fn render(
+        &self,
+        renderer: &MovieViewRenderer,
+        render_pass: &mut wgpu::RenderPass<'static>,
     ) {
         render_pass.set_pipeline(&renderer.pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);

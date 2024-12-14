@@ -426,7 +426,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .read()
             .properties
             .get(name, activation.is_case_sensitive())
-            .map_or(false, |property| {
+            .is_some_and(|property| {
                 property.is_virtual() && property.allow_swf_version(activation.swf_version())
             })
     }
@@ -441,7 +441,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
             .read()
             .properties
             .get(name, activation.is_case_sensitive())
-            .map_or(false, |property| property.is_enumerable())
+            .is_some_and(|property| property.is_enumerable())
     }
 
     /// Enumerate the object.
@@ -485,17 +485,19 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 
     fn native(&self) -> NativeObject<'gc> {
-        self.0.read().native.clone()
+        self.0.read().native
     }
 
     fn set_native(&self, gc_context: &Mutation<'gc>, native: NativeObject<'gc>) {
-        // Native object should be introduced at most once.
-        debug_assert!(matches!(self.0.read().native, NativeObject::None));
+        assert!(!matches!(native, NativeObject::None));
 
-        // Native object must not be `None`.
-        debug_assert!(!matches!(native, NativeObject::None));
-
-        self.0.write(gc_context).native = native;
+        let old_native = self.0.read().native;
+        if matches!(old_native, NativeObject::None) {
+            self.0.write(gc_context).native = native;
+        } else {
+            // Trying to construct the same object twice (e.g. with `super()`) does nothing.
+            assert!(std::mem::discriminant(&old_native) == std::mem::discriminant(&native));
+        }
     }
 
     fn as_ptr(&self) -> *const ObjectPtr {
@@ -547,7 +549,6 @@ mod tests {
 
     use crate::avm1::function::Executable;
     use crate::avm1::function::FunctionObject;
-    use crate::avm1::property::Attribute;
 
     fn with_object<F>(swf_version: u8, test: F)
     where

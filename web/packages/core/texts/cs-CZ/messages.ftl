@@ -10,10 +10,20 @@ update-ruffle = Aktualizovat Ruffle
 ruffle-demo = Web Demo
 ruffle-desktop = Desktopová aplikace
 ruffle-wiki = Zobrazit Ruffle Wiki
-enable-hardware-acceleration = Zdá se, že hardwarová akcelerace není povolena. I když Ruffle funguje správně, může být nepřiměřeně pomalý. Jak povolit hardwarovou akceleraci zjistíte na tomto odkazu.
+enable-hardware-acceleration = Zdá se, že hardwarová akcelerace je vypnutá. I když Ruffle funguje správně, může být nepřiměřeně pomalý. Jak povolit hardwarovou akceleraci zjistíte na tomto odkazu:
+enable-hardware-acceleration-link = Časté dotazy - Hardwarová akcelerace Chrome
 view-error-details = Zobrazit podrobnosti o chybě
 open-in-new-tab = Otevřít na nové kartě
 click-to-unmute = Kliknutím zrušíte ztlumení
+clipboard-message-title = Kopírování a vkládání v Ruffle
+clipboard-message-description =
+    { $variant ->
+       *[unsupported] Váš prohlížeč nepodporuje plný přístup ke schránce,
+        [access-denied] Přístup ke schránce byl odepřen,
+    } ale místo toho můžete vždy použít tyto zkratky:
+clipboard-message-copy = { " " } pro kopírování
+clipboard-message-cut = { " " } pro vystřihování
+clipboard-message-paste = { " " } pro vkládání
 error-file-protocol =
     Zdá se, že používáte Ruffle na protokolu "file:".
     To není možné, protože prohlížeče blokují fungování mnoha funkcí z bezpečnostních důvodů.
@@ -30,6 +40,9 @@ error-wasm-mime-type =
     Ruffle narazil na problém při pokusu o inicializaci.
     Tento webový server neposkytuje soubory „.wasm“ se správným typem MIME.
     Pokud jste správcem serveru, nápovědu najdete na Ruffle wiki.
+error-invalid-swf =
+    Ruffle nemůže zpracovat požadovaný soubor.
+    Nejpravděpodobnějším důvodem je, že požadovaný soubor není platným souborem SWF.
 error-swf-fetch =
     Ruffle se nepodařilo načíst SWF soubor Flash.
     Nejpravděpodobnějším důvodem je, že soubor již neexistuje, takže Ruffle nemá co načíst.

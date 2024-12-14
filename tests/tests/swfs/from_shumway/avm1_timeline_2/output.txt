@@ -1,0 +1,6 @@
+initclip
+this=false
+frame1
+this.var1=test
+sym1
+this=true

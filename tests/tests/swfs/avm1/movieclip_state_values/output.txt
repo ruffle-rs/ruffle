@@ -4,7 +4,7 @@ Both targets have the same props.
 Frames loaded: -1 (1st time)
 Change: Prop _framesloaded is "1" on the first, but "-1" on the second target.
 Change: Prop _totalframes is "1" on the first, but "0" on the second target.
-Change: Prop _url is "movieclip_state_values/test.swf" on the first, but "movieclip_state_values/no existing file.swf" on the second target.
+Change: Prop _url is "test.swf" on the first, but "no existing file.swf" on the second target.
 Change: Prop getBytesTotal() is "0" on the first, but "-1" on the second target.
 Change: Prop getSWFVersion() is "10" on the first, but "-1" on the second target.
 Frames loaded: -1 (10th time)
@@ -12,7 +12,7 @@ Both targets have the same props.
 unloadMovie command issued.
 Both targets have the same props.
 Change: Prop _framesloaded is "-1" on the first, but "0" on the second target.
-Change: Prop _url is "movieclip_state_values/no existing file.swf" on the first, but "movieclip_state_values/test.swf" on the second target.
+Change: Prop _url is "no existing file.swf" on the first, but "test.swf" on the second target.
 Change: Prop getBytesTotal() is "-1" on the first, but "0" on the second target.
 Change: Prop getSWFVersion() is "-1" on the first, but "10" on the second target.
 
@@ -22,7 +22,7 @@ Both targets have the same props.
 Frames loaded: -1 (1st time)
 Change: Prop _framesloaded is "1" on the first, but "-1" on the second target.
 Change: Prop _totalframes is "1" on the first, but "0" on the second target.
-Change: Prop _url is "movieclip_state_values/test.swf" on the first, but "movieclip_state_values/no correct file (text).swf" on the second target.
+Change: Prop _url is "test.swf" on the first, but "no correct file (text).swf" on the second target.
 Change: Prop getBytesTotal() is "0" on the first, but "-1" on the second target.
 Change: Prop getSWFVersion() is "10" on the first, but "-1" on the second target.
 Frames loaded: -1 (10th time)
@@ -30,7 +30,7 @@ Both targets have the same props.
 unloadMovie command issued.
 Both targets have the same props.
 Change: Prop _framesloaded is "-1" on the first, but "0" on the second target.
-Change: Prop _url is "movieclip_state_values/no correct file (text).swf" on the first, but "movieclip_state_values/test.swf" on the second target.
+Change: Prop _url is "no correct file (text).swf" on the first, but "test.swf" on the second target.
 Change: Prop getBytesTotal() is "-1" on the first, but "0" on the second target.
 Change: Prop getSWFVersion() is "-1" on the first, but "10" on the second target.
 
@@ -42,7 +42,7 @@ Change: Prop _currentframe is "0" on the first, but "1" on the second target.
 Change: Prop _height is "0" on the first, but "985" on the second target.
 Change: Prop _width is "0" on the first, but "1280" on the second target.
 Change: Prop transform.pixelBounds is "(x=0, y=0, w=0, h=0)" on the first, but "(x=0, y=0, w=1280, h=985)" on the second target.
-Change: Prop _url is "movieclip_state_values/test.swf" on the first, but "movieclip_state_values/no correct file (image).swf" on the second target.
+Change: Prop _url is "test.swf" on the first, but "no correct file (image).swf" on the second target.
 Change: Prop getBounds(this).xMin is "6710886.4" on the first, but "0" on the second target.
 Change: Prop getBounds(this).xMax is "6710886.4" on the first, but "1280" on the second target.
 Change: Prop getBounds(this).yMin is "6710886.4" on the first, but "0" on the second target.
@@ -70,7 +70,7 @@ Change: Prop _height is "985" on the first, but "0" on the second target.
 Change: Prop _totalframes is "1" on the first, but "0" on the second target.
 Change: Prop _width is "1280" on the first, but "0" on the second target.
 Change: Prop transform.pixelBounds is "(x=0, y=0, w=1280, h=985)" on the first, but "(x=0, y=0, w=0, h=0)" on the second target.
-Change: Prop _url is "movieclip_state_values/no correct file (image).swf" on the first, but "movieclip_state_values/test.swf" on the second target.
+Change: Prop _url is "no correct file (image).swf" on the first, but "test.swf" on the second target.
 Change: Prop getBounds(this).xMin is "0" on the first, but "6710886.4" on the second target.
 Change: Prop getBounds(this).xMax is "1280" on the first, but "6710886.4" on the second target.
 Change: Prop getBounds(this).yMin is "0" on the first, but "6710886.4" on the second target.
@@ -97,7 +97,7 @@ Both targets have the same props.
 Child movie loaded!
 Frames loaded: 1
 Change: Prop _currentframe is "0" on the first, but "1" on the second target.
-Change: Prop _url is "movieclip_state_values/test.swf" on the first, but "movieclip_state_values/target.swf" on the second target.
+Change: Prop _url is "test.swf" on the first, but "target.swf" on the second target.
 Change: Prop getBytesLoaded() is "0" on the first, but "68" on the second target.
 Change: Prop getBytesTotal() is "0" on the first, but "68" on the second target.
 Change: Prop getSWFVersion() is "10" on the first, but "8" on the second target.
@@ -106,7 +106,7 @@ Both targets have the same props.
 Change: Prop _currentframe is "1" on the first, but "0" on the second target.
 Change: Prop _framesloaded is "1" on the first, but "0" on the second target.
 Change: Prop _totalframes is "1" on the first, but "0" on the second target.
-Change: Prop _url is "movieclip_state_values/target.swf" on the first, but "movieclip_state_values/test.swf" on the second target.
+Change: Prop _url is "target.swf" on the first, but "test.swf" on the second target.
 Change: Prop getBytesLoaded() is "68" on the first, but "0" on the second target.
 Change: Prop getBytesTotal() is "68" on the first, but "0" on the second target.
 Change: Prop getSWFVersion() is "8" on the first, but "10" on the second target.

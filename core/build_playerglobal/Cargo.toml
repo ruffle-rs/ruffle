@@ -7,14 +7,14 @@ license.workspace = true
 repository.workspace = true
 version.workspace = true
 
+[lints]
+workspace = true
+
 [dependencies]
 convert_case = "0.6.0"
-proc-macro2 = "1.0.69"
-quote = "1.0.33"
+proc-macro2 = "1.0.89"
+quote = "1.0.37"
 swf = { path = "../../swf" }
-clap = {version = "4.4.6", features = ["derive"]}
-serde = {version = "1.0.189", features = ["derive"]}
-serde-xml-rs = "0.6.0"
-colored = "2.0.4"
-regex = "1.10.2"
-walkdir = "2.4.0"
+clap = { workspace = true }
+regex = "1.11.1"
+walkdir = { workspace = true }

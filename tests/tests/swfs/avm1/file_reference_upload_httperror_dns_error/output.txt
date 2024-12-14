@@ -1,0 +1,18 @@
+// browse success
+true
+// onSelect
+C:undefined
+N:test.txt
+T:.txt
+-----
+// upload http failure (invalid url)
+// onOpen
+C:undefined
+N:test.txt
+T:.txt
+-----
+// onIoError
+C:undefined
+N:test.txt
+T:.txt
+-----

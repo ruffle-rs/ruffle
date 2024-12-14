@@ -1,11 +1,12 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2008;
 use crate::avm2::object::{ArrayObject, Object, TObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::ecma_conversions::round_to_even;
+use crate::html::TextDisplay;
 use crate::string::{AvmString, WStr};
-use crate::{avm2_stub_getter, avm2_stub_setter};
 
 pub use crate::avm2::object::textformat_allocator as text_format_allocator;
 
@@ -185,20 +186,51 @@ pub fn set_color<'gc>(
 }
 
 pub fn get_display<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.text.TextFormat", "display");
-    Ok("block".into())
+    if let Some(text_format) = this.as_text_format() {
+        return Ok(text_format
+            .display
+            .as_ref()
+            .map_or(Value::Null, |display| match display {
+                TextDisplay::Block => "block".into(),
+                TextDisplay::Inline => "inline".into(),
+                TextDisplay::None => "none".into(),
+            }));
+    }
+
+    Ok(Value::Undefined)
 }
 
 pub fn set_display<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_setter!(activation, "flash.text.TextFormat", "display");
+    if let Some(mut text_format) = this.as_text_format_mut() {
+        let value = args.get(0).unwrap_or(&Value::Undefined);
+        let value = match value {
+            Value::Undefined | Value::Null => {
+                text_format.display = None;
+                return Ok(Value::Undefined);
+            }
+            value => value.coerce_to_string(activation)?,
+        };
+
+        text_format.display = if &value == b"block" {
+            Some(TextDisplay::Block)
+        } else if &value == b"inline" {
+            Some(TextDisplay::Inline)
+        } else if &value == b"none" {
+            Some(TextDisplay::None)
+        } else {
+            // No error message for this, silently set it to None/null
+            None
+        };
+    }
+
     Ok(Value::Undefined)
 }
 
@@ -504,24 +536,22 @@ pub fn set_tab_stops<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(mut text_format) = this.as_text_format_mut() {
-        let value = args.get(0).unwrap_or(&Value::Undefined);
+        let value = args.try_get_object(activation, 0);
         text_format.tab_stops = match value {
-            Value::Undefined | Value::Null => None,
-            value => {
-                let object = value.coerce_to_object(activation)?;
-                let length = object.as_array_storage().map_or(0, |v| v.length());
+            Some(obj) => {
+                let array_storage = obj.as_array_storage().unwrap();
+                let length = array_storage.length();
 
                 let tab_stops: Result<Vec<_>, Error<'gc>> = (0..length)
                     .map(|i| {
-                        let element = object.get_public_property(
-                            AvmString::new_utf8(activation.context.gc_context, i.to_string()),
-                            activation,
-                        )?;
-                        Ok(round_to_even(element.coerce_to_number(activation)?).into())
+                        let value = array_storage.get(i).unwrap_or(Value::Number(0.0));
+
+                        Ok(round_to_even(value.coerce_to_number(activation)?).into())
                     })
                     .collect();
                 Some(tab_stops?)
             }
+            None => None,
         };
     }
 

@@ -6,8 +6,8 @@ use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Activation, Error, Object, ScriptObject, TObject, Value};
 use crate::bitmap::bitmap_data::BitmapDataWrapper;
-use crate::context::{GcContext, UpdateContext};
-use crate::string::{AvmString, FromWStr, WStr};
+use crate::context::UpdateContext;
+use crate::string::{AvmString, FromWStr, StringContext, WStr};
 use gc_arena::{Collect, GcCell, Mutation};
 use ruffle_render::filters::DisplacementMapFilterMode;
 use std::convert::Infallible;
@@ -39,11 +39,11 @@ impl FromWStr for Mode {
     type Err = Infallible;
 
     fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
-        if s.eq_ignore_case(WStr::from_units(b"clamp")) {
+        if s == WStr::from_units(b"clamp") {
             Ok(Self::Clamp)
-        } else if s.eq_ignore_case(WStr::from_units(b"ignore")) {
+        } else if s == WStr::from_units(b"ignore") {
             Ok(Self::Ignore)
-        } else if s.eq_ignore_case(WStr::from_units(b"color")) {
+        } else if s == WStr::from_units(b"color") {
             Ok(Self::Color)
         } else {
             Ok(Self::Wrap)
@@ -106,7 +106,7 @@ impl<'gc> From<ruffle_render::filters::DisplacementMapFilter> for DisplacementMa
     }
 }
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
 #[repr(transparent)]
 pub struct DisplacementMapFilter<'gc>(GcCell<'gc, DisplacementMapFilterData<'gc>>);
@@ -140,7 +140,7 @@ impl<'gc> DisplacementMapFilter<'gc> {
         Self(GcCell::new(gc_context, self.0.read().clone()))
     }
 
-    fn map_bitmap(&self, context: &mut UpdateContext<'_, 'gc>) -> Option<Object<'gc>> {
+    fn map_bitmap(&self, context: &mut UpdateContext<'gc>) -> Option<Object<'gc>> {
         if let Some(map_bitmap) = self.0.read().map_bitmap {
             let proto = context.avm1.prototypes().bitmap_data;
             let result = ScriptObject::new(context.gc_context, Some(proto));
@@ -176,15 +176,20 @@ impl<'gc> DisplacementMapFilter<'gc> {
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
-        if let Some(Value::Object(object)) = value {
+        let Some(value) = value else { return Ok(()) };
+
+        if let Value::Object(object) = value {
             if let Some(x) = object.get_local_stored("x", activation, false) {
                 let x = x.coerce_to_f64(activation)?.clamp_to_i32();
                 if let Some(y) = object.get_local_stored("y", activation, false) {
                     let y = y.coerce_to_f64(activation)?.clamp_to_i32();
                     self.0.write(activation.context.gc_context).map_point = Point::new(x, y);
+                    return Ok(());
                 }
             }
         }
+
+        self.0.write(activation.context.gc_context).map_point = Point::default();
         Ok(())
     }
 
@@ -282,8 +287,9 @@ impl<'gc> DisplacementMapFilter<'gc> {
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
-            let color = Color::from_rgb(value.coerce_to_u32(activation)?, u8::MAX);
-            self.0.write(activation.context.gc_context).color = color;
+            let value = value.coerce_to_u32(activation)?;
+            let mut write = self.0.write(activation.context.gc_context);
+            write.color = Color::from_rgb(value, write.color.a);
         }
         Ok(())
     }
@@ -302,7 +308,7 @@ impl<'gc> DisplacementMapFilter<'gc> {
 
     pub fn filter(
         &self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
     ) -> ruffle_render::filters::DisplacementMapFilter {
         let filter = self.0.read();
         ruffle_render::filters::DisplacementMapFilter {
@@ -382,7 +388,7 @@ fn method<'gc>(
 
     Ok(match index {
         GET_MAP_BITMAP => this
-            .map_bitmap(&mut activation.context)
+            .map_bitmap(activation.context)
             .map_or(Value::Undefined, Value::from),
         SET_MAP_BITMAP => {
             this.set_map_bitmap(activation, args.get(0))?;
@@ -436,7 +442,7 @@ fn method<'gc>(
 }
 
 pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {
@@ -451,7 +457,7 @@ pub fn create_proto<'gc>(
 }
 
 pub fn create_constructor<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

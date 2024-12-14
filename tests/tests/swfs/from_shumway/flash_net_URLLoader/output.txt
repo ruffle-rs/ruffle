@@ -1,0 +1,7 @@
+openHandler: 1
+progressHandler: 2 bytesLoaded=2674 bytesTotal=2674
+httpStatusHandler: 2
+completeHandler: 2
+2674
+PASS: flash.net::URLLoader/load ()
+PASS: flash.net::URLLoader/addEventListener ()

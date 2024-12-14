@@ -1,0 +1,5 @@
+<root xmlns="http://example.org/">
+  <hello>world</hello>
+</root>
+xml.hello: world
+xml["hello"]: world

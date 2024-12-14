@@ -1,0 +1,12 @@
+Initialized Newer with parent: null Event = undefined
+Caught error (truncated): ArgumentError: Error #2109:
+Calling childPublicMethod on [object Newer]
+Newer.childPublicMethod: Calling parentPublicMethod() on [object Test]
+Called Test.parentPublicMethod
+Newer.childPublicMethod: Called parentPublicMethod() on [object Test]
+Called childPublicMethod
+Calling childAS3Method on [object Newer]
+Newer.childAS3Method: Calling parentAS3Method() on [object Test]
+Called Test.parentAS3Method()
+Newer.childAS3Method: Called parentAS3Method() on [object Test]
+Called childAS3Method

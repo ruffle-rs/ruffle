@@ -43,6 +43,7 @@
 			trace("loader.contentLoaderInfo.bytes = " + loader.contentLoaderInfo.bytes); 
 			trace("loader.contentLoaderInfo.url = " + loader.contentLoaderInfo.url);
 			trace("loader.contentLoaderInfo.parameters = " + loader.contentLoaderInfo.parameters);
+			trace("loader.contentLoaderInfo.contentType = " + loader.contentLoaderInfo.contentType);
 			dumpParams(loader.contentLoaderInfo.parameters);			
 		}
 	
@@ -64,7 +65,8 @@
 					+ ", loader.contentLoaderInfo.bytesLoaded = " + loader.contentLoaderInfo.bytesLoaded
 					+ ", loader.contentLoaderInfo.bytesTotal = " + loader.contentLoaderInfo.bytesTotal
 					+ ", loader.contentLoaderInfo.bytes.length = " + loader.contentLoaderInfo.bytes.length
-					+ ", loader.contentLoaderInfo.url = " + url);
+					+ ", loader.contentLoaderInfo.url = " + url
+					+ ", loader.contentLoaderInfo.contentType = " + loader.contentLoaderInfo.contentType);
 				dumpParams(loader.contentLoaderInfo.parameters);
 			}
 

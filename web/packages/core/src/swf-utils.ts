@@ -16,7 +16,7 @@ function isSwfFilename(filename: string): boolean {
     try {
         // A base URL is required if `filename` is a relative URL, but we don't need to detect the real URL origin.
         pathname = new URL(filename, "https://example.com").pathname;
-    } catch (err) {
+    } catch (_err) {
         // Some invalid filenames, like `///`, could raise a TypeError. Let's fail silently in this situation.
     }
     if (pathname && pathname.length >= 4) {

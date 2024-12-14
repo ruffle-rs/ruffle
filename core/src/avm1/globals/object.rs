@@ -7,19 +7,18 @@ use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{define_properties_on, Declaration};
 use crate::avm1::{Object, ScriptObject, TObject, Value};
 use crate::avm_warn;
-use crate::context::GcContext;
 use crate::display_object::TDisplayObject;
-use crate::string::AvmString;
+use crate::string::{AvmString, StringContext};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "addProperty" => method(add_property; DONT_ENUM | DONT_DELETE);
-    "hasOwnProperty" => method(has_own_property; DONT_ENUM | DONT_DELETE);
-    "isPropertyEnumerable" => method(is_property_enumerable; DONT_DELETE | DONT_ENUM);
-    "isPrototypeOf" => method(is_prototype_of; DONT_ENUM | DONT_DELETE);
+    "addProperty" => method(add_property; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "hasOwnProperty" => method(has_own_property; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "isPropertyEnumerable" => method(is_property_enumerable; DONT_DELETE | DONT_ENUM | VERSION_6);
+    "isPrototypeOf" => method(is_prototype_of; DONT_ENUM | DONT_DELETE | VERSION_6);
     "toString" => method(to_string; DONT_ENUM | DONT_DELETE);
     "valueOf" => method(value_of; DONT_ENUM | DONT_DELETE);
-    "watch" => method(watch; DONT_ENUM | DONT_DELETE);
-    "unwatch" => method(unwatch; DONT_ENUM | DONT_DELETE);
+    "watch" => method(watch; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "unwatch" => method(unwatch; DONT_ENUM | DONT_DELETE | VERSION_6);
 };
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
@@ -240,7 +239,7 @@ fn unwatch<'gc>(
 /// not allocate an object to store either proto. Instead, you must allocate
 /// bare objects for both and let this function fill Object for you.
 pub fn fill_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     object_proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) {
@@ -317,7 +316,7 @@ pub fn as_set_prop_flags<'gc>(
 }
 
 pub fn create_object_object<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

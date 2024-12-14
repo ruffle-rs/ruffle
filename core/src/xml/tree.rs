@@ -3,13 +3,14 @@
 use crate::avm1::Attribute;
 use crate::avm1::{Activation, NativeObject};
 use crate::avm1::{ArrayObject, Error, Object, ScriptObject, TObject, Value};
-use crate::string::{AvmString, WStr, WString};
+use crate::string::{AvmString, StringContext, WStr, WString};
 use crate::xml;
 use gc_arena::{Collect, GcCell, Mutation};
 use quick_xml::escape::escape;
 use quick_xml::events::BytesStart;
 use regress::Regex;
 use std::fmt;
+use std::sync::OnceLock;
 
 pub const ELEMENT_NODE: u8 = 1;
 pub const TEXT_NODE: u8 = 3;
@@ -281,10 +282,10 @@ impl<'gc> XmlNode<'gc> {
         })
     }
 
-    pub fn prefix(self, gc_context: &Mutation<'gc>) -> Option<AvmString<'gc>> {
+    pub fn prefix(self, context: &mut StringContext<'gc>) -> Option<AvmString<'gc>> {
         self.node_name().map(|name| match name.find(b':') {
-            Some(i) if i + 1 < name.len() => AvmString::new(gc_context, &name[..i]),
-            _ => "".into(),
+            Some(i) if i + 1 < name.len() => AvmString::new(context.gc(), &name[..i]),
+            _ => context.empty(),
         })
     }
 
@@ -526,7 +527,7 @@ impl<'gc> XmlNode<'gc> {
     }
 }
 
-impl<'gc> fmt::Debug for XmlNode<'gc> {
+impl fmt::Debug for XmlNode<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("XmlNodeData")
             .field("ptr", &self.0.as_ptr())
@@ -555,6 +556,8 @@ impl<'gc> fmt::Debug for XmlNode<'gc> {
     }
 }
 
+static ENTITY_REGEX: OnceLock<Regex> = OnceLock::new();
+
 /// Handles flash-specific XML unescaping behavior.
 /// We accept all XML entities, and also accept standalone '&' without
 /// a corresponding ';'
@@ -564,7 +567,7 @@ pub fn custom_unescape(
 ) -> Result<String, quick_xml::Error> {
     let input = decoder.decode(data)?;
 
-    let re = Regex::new(r"&[^;]*;").unwrap();
+    let re = ENTITY_REGEX.get_or_init(|| Regex::new(r"&[^;]*;").unwrap());
     let mut result = String::new();
     let mut last_end = 0;
 

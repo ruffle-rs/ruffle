@@ -1,5 +1,6 @@
 package flash.security
 {
+    [API("674")]
     public final class X509Certificate
     {
         import flash.utils.ByteArray;

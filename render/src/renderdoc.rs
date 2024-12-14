@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use renderdoc::RenderDoc;
 
 thread_local! {
-    pub static RENDERDOC: RefCell<Option<Result<RenderDoc<renderdoc::V141>, renderdoc::Error>>> = RefCell::new(None);
+    pub static RENDERDOC: RefCell<Option<Result<RenderDoc<renderdoc::V141>, renderdoc::Error>>> = const { RefCell::new(None) };
 }
 
 pub fn start_frame_capture() {

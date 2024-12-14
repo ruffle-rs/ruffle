@@ -73,11 +73,6 @@ struct Opt {
     #[clap(long, short, default_value = "high")]
     power: PowerPreference,
 
-    /// Location to store a wgpu trace output
-    #[clap(long)]
-    #[cfg(feature = "render_trace")]
-    trace_path: Option<PathBuf>,
-
     /// Skip unsupported movie types (currently AVM 2)
     #[clap(long, action)]
     skip_unsupported: bool,
@@ -137,7 +132,7 @@ fn take_screenshot(
 
         player.lock().unwrap().run_frame();
         if i >= skipframes {
-            match catch_unwind(|| {
+            let image = || {
                 player.lock().unwrap().render();
                 let mut player = player.lock().unwrap();
                 let renderer = player
@@ -145,7 +140,8 @@ fn take_screenshot(
                     .downcast_mut::<WgpuRenderBackend<TextureTarget>>()
                     .unwrap();
                 renderer.capture_frame()
-            }) {
+            };
+            match catch_unwind(image) {
                 Ok(Some(image)) => result.push(image),
                 Ok(None) => return Err(anyhow!("Unable to capture frame {} of {:?}", i, swf_path)),
                 Err(e) => {
@@ -239,14 +235,11 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
     }
 
     if frames.len() == 1 {
-        let image = frames.get(0).unwrap();
+        let image = frames.first().unwrap();
         if opt.output_path == Some(PathBuf::from("-")) {
             let mut bytes: Vec<u8> = Vec::new();
             image
-                .write_to(
-                    &mut io::Cursor::new(&mut bytes),
-                    image::ImageOutputFormat::Png,
-                )
+                .write_to(&mut io::Cursor::new(&mut bytes), image::ImageFormat::Png)
                 .expect("Encoding failed");
             io::stdout()
                 .write_all(bytes.as_slice())
@@ -343,7 +336,7 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
                 if let Some(parent) = destination.parent() {
                     let _ = create_dir_all(parent);
                 }
-                frames.get(0).unwrap().save(&destination)?;
+                frames.first().unwrap().save(&destination)?;
             } else {
                 let mut parent: PathBuf = (&output).into();
                 relative_path.set_extension("");
@@ -384,17 +377,6 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
     Ok(())
 }
 
-#[cfg(feature = "render_trace")]
-fn trace_path(opt: &Opt) -> Option<&Path> {
-    if let Some(path) = &opt.trace_path {
-        let _ = std::fs::create_dir_all(path);
-        Some(path)
-    } else {
-        None
-    }
-}
-
-#[cfg(not(feature = "render_trace"))]
 fn trace_path(_opt: &Opt) -> Option<&Path> {
     None
 }
@@ -403,7 +385,7 @@ fn main() -> Result<()> {
     let opt: Opt = Opt::parse();
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
         backends: opt.graphics.into(),
-        dx12_shader_compiler: wgpu::Dx12Compiler::default(),
+        ..Default::default()
     });
     let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
         opt.graphics.into(),

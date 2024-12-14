@@ -1,5 +1,5 @@
 //! The map of property names to values used by the ActionScript VM.
-//! This allows for dynamically choosing case-sensitivty at runtime,
+//! This allows for dynamically choosing case-sensitivity at runtime,
 //! because SWFv6 and below is case-insensitive. This also maintains
 //! the insertion order of properties, which is necessary for accurate
 //! enumeration order.
@@ -25,7 +25,7 @@ impl<'gc, V> PropertyMap<'gc, V> {
         if case_sensitive {
             self.0.contains_key(&CaseSensitive(key.as_ref()))
         } else {
-            self.0.contains_key(&CaseInsentitive(key.as_ref()))
+            self.0.contains_key(&CaseInsensitive(key.as_ref()))
         }
     }
 
@@ -42,7 +42,7 @@ impl<'gc, V> PropertyMap<'gc, V> {
                 }),
             }
         } else {
-            match self.0.get_index_of(&CaseInsentitive(key.as_ref())) {
+            match self.0.get_index_of(&CaseInsensitive(key.as_ref())) {
                 Some(index) => Entry::Occupied(OccupiedEntry {
                     map: &mut self.0,
                     index,
@@ -60,7 +60,7 @@ impl<'gc, V> PropertyMap<'gc, V> {
         if case_sensitive {
             self.0.get(&CaseSensitive(key.as_ref()))
         } else {
-            self.0.get(&CaseInsentitive(key.as_ref()))
+            self.0.get(&CaseInsensitive(key.as_ref()))
         }
     }
 
@@ -69,7 +69,7 @@ impl<'gc, V> PropertyMap<'gc, V> {
         if case_sensitive {
             self.0.get_mut(&CaseSensitive(key.as_ref()))
         } else {
-            self.0.get_mut(&CaseInsentitive(key.as_ref()))
+            self.0.get_mut(&CaseInsensitive(key.as_ref()))
         }
     }
 
@@ -103,12 +103,12 @@ impl<'gc, V> PropertyMap<'gc, V> {
         if case_sensitive {
             self.0.shift_remove(&CaseSensitive(key.as_ref()))
         } else {
-            self.0.shift_remove(&CaseInsentitive(key.as_ref()))
+            self.0.shift_remove(&CaseInsensitive(key.as_ref()))
         }
     }
 }
 
-unsafe impl<'gc, V: Collect> Collect for PropertyMap<'gc, V> {
+unsafe impl<V: Collect> Collect for PropertyMap<'_, V> {
     fn trace(&self, cc: &gc_arena::Collection) {
         for (key, value) in &self.0 {
             key.0.trace(cc);
@@ -127,7 +127,7 @@ pub struct OccupiedEntry<'gc, 'a, V> {
     index: usize,
 }
 
-impl<'gc, 'a, V> OccupiedEntry<'gc, 'a, V> {
+impl<'gc, V> OccupiedEntry<'gc, '_, V> {
     pub fn remove_entry(&mut self) -> (AvmString<'gc>, V) {
         let (k, v) = self.map.shift_remove_index(self.index).unwrap();
         (k.0, v)
@@ -151,22 +151,22 @@ pub struct VacantEntry<'gc, 'a, V> {
     key: AvmString<'gc>,
 }
 
-impl<'gc, 'a, V> VacantEntry<'gc, 'a, V> {
+impl<V> VacantEntry<'_, '_, V> {
     pub fn insert(self, value: V) {
         self.map.insert(PropertyName(self.key), value);
     }
 }
 
 /// Wraps a str-like type, causing the hash map to use a case insensitive hash and equality.
-struct CaseInsentitive<T>(T);
+struct CaseInsensitive<T>(T);
 
-impl<'a> Hash for CaseInsentitive<&'a WStr> {
+impl Hash for CaseInsensitive<&WStr> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         swf_hash_string_ignore_case(self.0, state);
     }
 }
 
-impl<'gc, 'a> Equivalent<PropertyName<'gc>> for CaseInsentitive<&'a WStr> {
+impl<'gc> Equivalent<PropertyName<'gc>> for CaseInsensitive<&WStr> {
     fn equivalent(&self, key: &PropertyName<'gc>) -> bool {
         key.0.eq_ignore_case(self.0)
     }
@@ -176,13 +176,13 @@ impl<'gc, 'a> Equivalent<PropertyName<'gc>> for CaseInsentitive<&'a WStr> {
 /// but case sensitive equality.
 struct CaseSensitive<T>(T);
 
-impl<'a> Hash for CaseSensitive<&'a WStr> {
+impl Hash for CaseSensitive<&WStr> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         swf_hash_string_ignore_case(self.0, state);
     }
 }
 
-impl<'gc, 'a> Equivalent<PropertyName<'gc>> for CaseSensitive<&'a WStr> {
+impl<'gc> Equivalent<PropertyName<'gc>> for CaseSensitive<&WStr> {
     fn equivalent(&self, key: &PropertyName<'gc>) -> bool {
         key.0 == self.0
     }
@@ -198,7 +198,7 @@ impl<'gc, 'a> Equivalent<PropertyName<'gc>> for CaseSensitive<&'a WStr> {
 struct PropertyName<'gc>(AvmString<'gc>);
 
 #[allow(clippy::derive_hash_xor_eq)]
-impl<'gc> Hash for PropertyName<'gc> {
+impl Hash for PropertyName<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         swf_hash_string_ignore_case(self.0.as_ref(), state);
     }

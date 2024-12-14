@@ -1,0 +1,15 @@
+child hit: _level0.child
+point.x: 0; point.y: 0
+_lockroot: false
+hitTest (shapeFlag = false): false
+hitTest (shapeFlag = true): false
+_lockroot: true
+hitTest (shapeFlag = false): false
+hitTest (shapeFlag = true): false
+point.x: 275; point.y: 200
+_lockroot: false
+hitTest (shapeFlag = false): true
+hitTest (shapeFlag = true): true
+_lockroot: true
+hitTest (shapeFlag = false): true
+hitTest (shapeFlag = true): true

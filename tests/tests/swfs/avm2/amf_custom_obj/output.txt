@@ -1,0 +1,27 @@
+Original: [[object Object]] class: Object
+
+Serialized: 10,11,1,1
+Deserialized: [[object Object]] class: Object
+
+
+Original: [[object Object]] class: Object
+first=Hello,
+Serialized: 10,11,1,11,102,105,114,115,116,6,11,72,101,108,108,111,1
+Deserialized: [[object Object]] class: Object
+first=Hello,
+
+MyClass(firstProp= Hello privProp=Overwritten private prop
+Original: [undefined] class: Test.as$38::MyClass
+
+Serialized: 10,19,25,77,121,67,108,97,115,115,65,108,105,97,115,19,102,105,114,115,116,80,114,111,112,6,11,72,101,108,108,111
+MyClass(firstProp= Hello privProp=Constructor private prop
+Deserialized: [undefined] class: Test.as$38::MyClass
+
+
+Original: [GetterSetterClass(myAS3Var=Overwritten as3 str)] class: Test.as$38::GetterSetterClass
+
+Called getAndSet getter
+Serialized: 10,19,1,19,103,101,116,65,110,100,83,101,116,6,45,103,101,116,65,110,100,83,101,116,32,103,101,116,116,101,114,32,118,97,108,117,101
+Deserialized: [[object Object]] class: Object
+getAndSet=getAndSet getter value,
+

@@ -1,0 +1,191 @@
+<?xml version='1.0' encoding='utf-8'?>
+
+<!--
+    wix extension add -g WixToolset.UI.wixext
+    wix extension add -g WixToolset.Util.wixext 
+    RUFFLE_VERSION="xxxxxx" wix build ruffle.wxs -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext -arch x64
+    -->
+
+<Wix xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util"
+     xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xsi:schemaLocation="http://wixtoolset.org/schemas/v4/wxs https://raw.githubusercontent.com/wixtoolset/web/master/src/xsd4/wix.xsd
+     http://wixtoolset.org/schemas/v4/wxs/ui https://raw.githubusercontent.com/wixtoolset/web/master/src/xsd4/ui.xsd
+http://wixtoolset.org/schemas/v4/wxs/util https://raw.githubusercontent.com/wixtoolset/web/master/src/xsd4/util.xsd">
+    <?include dialog.wxi?>
+
+    <!-- Set this to something else to be able to install the msi as a *different* package (e.g. for local testing) -->
+    <?define UpgradeCode = "C6A4BA50-FA08-4B87-9B55-D81A1C730D25"?>
+
+    <?ifdef env.CARGO_BUILD_DIR?>
+    <?define CargoBuildDir = "$(env.CARGO_BUILD_DIR)"?>
+    <?else?>
+    <?define CargoBuildDir = "../../../../target/release"?>
+    <?endif?>
+
+    <Package
+            Name='Ruffle'
+            UpgradeCode='$(var.UpgradeCode)'
+            Manufacturer='Ruffle LLC'
+            Language='1033'
+            Codepage='65001'
+            Version='$(env.RUFFLE_VERSION)'
+            InstallerVersion='500'
+            Compressed='yes'>
+
+        <MajorUpgrade
+                Schedule='afterInstallInitialize'
+                DowngradeErrorMessage='A newer version of Ruffle is already installed. Setup will now exit.'
+                AllowSameVersionUpgrades="yes"/>
+
+        <Media Id='1' Cabinet='media1.cab' EmbedCab='yes' DiskPrompt='CD-ROM #1'/>
+        <Property Id='DiskPrompt' Value='Ruffle Installation'/>
+
+        <Property Id="INSTALLDESKTOPSHORTCUT" Secure="yes" Value="1"/>
+
+        <StandardDirectory Id="ProgramFiles6432Folder">
+            <Directory Id='INSTALLFOLDER' Name='ruffle'>
+                <Component Id='EnsureDirectoryWritable' Guid='372b3408-c431-4f8b-99a4-f5518cb87f9e'>
+                    <CreateFolder>
+                        <util:PermissionEx User="Users" GenericAll="yes"/>
+                    </CreateFolder>
+                </Component>
+
+                <Component Id='License' Guid='*'>
+                    <File Id='LicenseFile'
+                          DiskId='1'
+                          Source='../../../../LICENSE.md'
+                          KeyPath='yes'/>
+                </Component>
+
+                <Directory Id='Bin' Name='bin'>
+                    <Component Id='Path' Guid='ABEDD436-5D52-4C25-9FD1-D810A2B66AC1' KeyPath='yes'>
+                        <Environment
+                                Id='PATH'
+                                Name='PATH'
+                                Value='[Bin]'
+                                Permanent='no'
+                                Part='last'
+                                Action='set'
+                                System='yes'/>
+                    </Component>
+                    <Component Id='binary0' Guid='*'>
+                        <File
+                                Id='DesktopEXE'
+                                Name='ruffle.exe'
+                                DiskId='1'
+                                Source='$(CargoBuildDir)/ruffle_desktop.exe'
+                                KeyPath='yes'>
+                            <Shortcut Name="Ruffle" Directory="ProgramMenuFolder" Advertise="yes"
+                                      WorkingDirectory="INSTALLFOLDER" Icon="Icon.ico"/>
+                        </File>
+                    </Component>
+                    <Component Id='DesktopShortcut' Guid='*' Condition="INSTALLDESKTOPSHORTCUT">
+                        <!-- A useless registry key is needed to work as a keypath -->
+                        <CreateFolder/>
+                        <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]"
+                                       Value="1" Type="integer" KeyPath="yes"/>
+                        <Shortcut Name="Ruffle" Directory="DesktopFolder" Target="[#DesktopEXE]"
+                                  WorkingDirectory="INSTALLFOLDER" Icon="Icon.ico"/>
+                    </Component>
+                </Directory>
+            </Directory>
+        </StandardDirectory>
+
+        <Component Id='Associations' Guid='2216512a-9c76-412f-ba36-08e703a56f25'>
+            <!-- 
+                This creates the Ruffle progids and *hints* that Ruffle can be associated with them.
+                This may or may not cause Windows to make the association, but more likely makes it ask the user 
+                what they want the next time they open a swf.
+                -->
+
+            <ProgId Id='Ruffle.swf' Description='Flash Movie' Icon="DesktopEXE" IconIndex="1">
+                <Extension Id='swf' ContentType='application/x-shockwave-flash'>
+                    <Verb Id='open' Command='Open' TargetFile='DesktopEXE' Argument='"%1"'/>
+                </Extension>
+            </ProgId>
+            <ProgId Id='Ruffle.spl' Description='Flash Movie' Icon="DesktopEXE" IconIndex="1">
+                <Extension Id='spl' ContentType='application/x-shockwave-flash'>
+                    <Verb Id='open' Command='Open' TargetFile='DesktopEXE' Argument='"%1"'/>
+                </Extension>
+            </ProgId>
+            <ProgId Id='Ruffle.ruf' Description='Ruffle Bundle' Icon="DesktopEXE" IconIndex="1">
+                <Extension Id='ruf' ContentType='application/x.ruffle-bundle+zip'>
+                    <Verb Id='open' Command='Open' TargetFile='DesktopEXE' Argument='"%1"'/>
+                </Extension>
+            </ProgId>
+
+            <!-- This tells Windows to include Ruffle in the "Open With" dialog -->
+            <RegistryValue Root="HKCR" Key=".swf\OpenWithProgids" Name="Ruffle.swf" Value="" Type="string"/>
+            <RegistryValue Root="HKCR" Key=".spl\OpenWithProgids" Name="Ruffle.spl" Value="" Type="string"/>
+            <RegistryValue Root="HKCR" Key=".ruf\OpenWithProgids" Name="Ruffle.ruf" Value="" Type="string"/>
+        </Component>
+
+        <Component Id='ApplicationInfo' Guid='f7e7c5bb-729c-427e-b913-fd0d2e11a143'>
+            <!--
+                Tell windows a few properties about our application, so that it can handle it slightly better in "Open With"
+                
+                (wondering how Windows matches these to the ruffle.exe that we install at some arbitrary path the user picks?)
+                (well that's the fun part... it doesn't! Windows SOLELY goes by the filename. Isn't that convenient?!)
+                (rename an executable and suddenly windows can't associate these things with it anymore whoops)
+            -->
+
+            <RegistryKey Root="HKCR" Key="Applications\ruffle.exe">
+                <!-- Give Ruffle a better name in the "Open With" dialog, than just "ruffle.exe" -->
+                <RegistryValue Name="FriendlyAppName" Value="Ruffle" Type="string"/>
+
+                <!-- Hint that we can open certain files -->
+                <RegistryValue Key="SupportedTypes" Name=".swf" Value="" Type="string"/>
+                <RegistryValue Key="SupportedTypes" Name=".spl" Value="" Type="string"/>
+                <RegistryValue Key="SupportedTypes" Name=".ruf" Value="" Type="string"/>
+            </RegistryKey>
+        </Component>
+
+        <Feature
+                Id='Binaries'
+                Title='Application'
+                Description='Installs the Ruffle desktop application'
+                Level='1'
+                ConfigurableDirectory='INSTALLFOLDER'
+                AllowAdvertise='no'
+                Display='expand'>
+            <ComponentRef Id='EnsureDirectoryWritable'/>
+            <ComponentRef Id='License'/>
+            <ComponentRef Id='binary0'/>
+            <ComponentRef Id='Associations'/>
+            <ComponentRef Id='ApplicationInfo'/>
+            <ComponentRef Id="DesktopShortcut"/>
+
+            <Feature
+                    Id='Environment'
+                    Title='PATH Environment Variable'
+                    Description='Add the install location of the Ruffle executable to the PATH system environment variable. This allows Ruffle to be called from any location.'
+                    Level='1'>
+                <ComponentRef Id='Path'/>
+            </Feature>
+        </Feature>
+
+        <SetProperty Id='ARPINSTALLLOCATION' Value='[APPLICATIONFOLDER]' After='CostFinalize'/>
+
+
+        <Icon Id='Icon.ico' SourceFile='../../../assets/favicon.ico'/>
+        <Property Id='ARPPRODUCTICON' Value='Icon.ico'/>
+
+        <Property Id='ARPHELPLINK' Value='https://ruffle.rs'/>
+
+        <ui:WixUI
+                Id="WixUI_InstallDir_NoLicense"
+                InstallDirectory="INSTALLFOLDER"
+        >
+
+        </ui:WixUI>
+        <WixVariable
+                Id="WixUIBannerBmp"
+                Value="banner.png"
+        />
+        <WixVariable
+                Id="WixUIDialogBmp"
+                Value="dialog.png"
+        />
+    </Package>
+</Wix>

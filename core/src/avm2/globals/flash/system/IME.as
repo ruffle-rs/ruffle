@@ -13,10 +13,10 @@ package flash.system
     public final class IME extends EventDispatcher
     {
         // The conversion mode of the current IME.
-        public static var _conversionMode: String = "ALPHANUMERIC_HALF";
+        private static var _conversionMode: String = "ALPHANUMERIC_HALF";
 
         // Indicates whether the system IME is enabled (true) or disabled (false).
-        public static var _enabled: Boolean;
+        private static var _enabled: Boolean;
 
         // The isSupported property is set to true if the IME class is available on the current platform, otherwise it is set to false.
         private static var _isSupported: Boolean;

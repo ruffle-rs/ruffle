@@ -2,10 +2,12 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
+use crate::avm2::globals::slots::{
+    flash_display_sprite as sprite_slots, flash_geom_rectangle as rectangle_slots,
+};
 use crate::avm2::object::{Object, StageObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Multiname;
 use crate::avm2::{ClassObject, Error};
 use crate::display_object::{MovieClip, SoundTransform, TDisplayObject};
 use swf::{Rectangle, Twips};
@@ -14,13 +16,13 @@ pub fn sprite_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let sprite_cls = activation.avm2().classes().sprite;
+    let sprite_cls = activation.avm2().classes().sprite.inner_class_definition();
 
-    let mut class_object = Some(class);
+    let mut class_def = Some(class.inner_class_definition());
     let orig_class = class;
-    while let Some(class) = class_object {
+    while let Some(class) = class_def {
         if class == sprite_cls {
-            let movie = activation.context.swf.clone();
+            let movie = activation.caller_movie_or_root();
             let display_object = MovieClip::new(movie, activation.context.gc_context).into();
             return initialize_for_allocator(activation, display_object, orig_class);
         }
@@ -39,7 +41,7 @@ pub fn sprite_allocator<'gc>(
 
             return initialize_for_allocator(activation, child, orig_class);
         }
-        class_object = class.superclass_object();
+        class_def = class.super_class();
     }
     unreachable!("A Sprite subclass should have Sprite in superclass chain");
 }
@@ -69,17 +71,10 @@ pub fn get_graphics<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.as_display_object() {
         // Lazily initialize the `Graphics` object in a hidden property.
-        let graphics = match this.get_property(
-            &Multiname::new(activation.avm2().flash_display_internal, "_graphics"),
-            activation,
-        )? {
+        let graphics = match this.get_slot(sprite_slots::_GRAPHICS) {
             Value::Undefined | Value::Null => {
                 let graphics = Value::from(StageObject::graphics(activation, dobj)?);
-                this.set_property(
-                    &Multiname::new(activation.avm2().flash_display_internal, "_graphics"),
-                    graphics,
-                    activation,
-                )?;
+                this.set_slot(sprite_slots::_GRAPHICS, graphics, activation)?;
                 graphics
             }
             graphics => graphics,
@@ -112,10 +107,10 @@ pub fn set_sound_transform<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(dobj) = this.as_display_object() {
-        let as3_st = args.get_object(activation, 0, "value")?;
-        let dobj_st = SoundTransform::from_avm2_object(activation, as3_st)?;
+        let as3_st = args.get_object(activation, 0, "soundTransform")?;
+        let dobj_st = SoundTransform::from_avm2_object(as3_st);
 
-        dobj.set_sound_transform(&mut activation.context, dobj_st);
+        dobj.set_sound_transform(activation.context, dobj_st);
     }
 
     Ok(Value::Undefined)
@@ -143,7 +138,7 @@ pub fn set_button_mode<'gc>(
     if let Some(mc) = this.as_display_object().and_then(|o| o.as_movie_clip()) {
         let forced_button_mode = args.get_bool(0);
 
-        mc.set_forced_button_mode(&mut activation.context, forced_button_mode);
+        mc.set_forced_button_mode(activation.context, forced_button_mode);
     }
 
     Ok(Value::Undefined)
@@ -161,19 +156,19 @@ pub fn start_drag<'gc>(
         let rectangle = args.try_get_object(activation, 1);
         let constraint = if let Some(rectangle) = rectangle {
             let x = rectangle
-                .get_public_property("x", activation)?
+                .get_slot(rectangle_slots::X)
                 .coerce_to_number(activation)?;
 
             let y = rectangle
-                .get_public_property("y", activation)?
+                .get_slot(rectangle_slots::Y)
                 .coerce_to_number(activation)?;
 
             let width = rectangle
-                .get_public_property("width", activation)?
+                .get_slot(rectangle_slots::WIDTH)
                 .coerce_to_number(activation)?;
 
             let height = rectangle
-                .get_public_property("height", activation)?
+                .get_slot(rectangle_slots::HEIGHT)
                 .coerce_to_number(activation)?;
 
             // Normalize the bounds.
@@ -220,7 +215,7 @@ pub fn stop_drag<'gc>(
     // We might not have had an opportunity to call `update_drag`
     // if AS did `startDrag(mc); stopDrag();` in one go,
     // so let's do it here.
-    crate::player::Player::update_drag(&mut activation.context);
+    crate::player::Player::update_drag(activation.context);
 
     *activation.context.drag_object = None;
     Ok(Value::Undefined)
@@ -252,7 +247,7 @@ pub fn set_use_hand_cursor<'gc>(
         .as_display_object()
         .and_then(|this| this.as_movie_clip())
     {
-        mc.set_avm2_use_hand_cursor(&mut activation.context, args.get_bool(0));
+        mc.set_avm2_use_hand_cursor(activation.context, args.get_bool(0));
     }
 
     Ok(Value::Undefined)
@@ -288,7 +283,7 @@ pub fn set_hit_area<'gc>(
         let object = args
             .try_get_object(activation, 0)
             .and_then(|hit_area| hit_area.as_display_object());
-        mc.set_hit_area(&mut activation.context, object);
+        mc.set_hit_area(activation.context, object);
     }
 
     Ok(Value::Undefined)

@@ -1,0 +1,4 @@
+normal
+difference
+ArgumentError #2008
+difference

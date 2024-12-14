@@ -572,7 +572,7 @@ function getMcPropsArray(mc:MovieClip) {
 	var url = unescape(mc._url);
 	if (url.indexOf("file:///") == 0) {
 		var urlSplit = url.split("/");
-		mcProps.push(["_url", urlSplit[urlSplit.length - 2] + "/" + urlSplit[urlSplit.length - 1]]);
+		mcProps.push(["_url", urlSplit[urlSplit.length - 1]]);
 	} else {
 		mcProps.push(["_url", url]);
 	}

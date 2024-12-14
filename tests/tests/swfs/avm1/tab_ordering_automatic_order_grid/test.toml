@@ -1,0 +1,8 @@
+# This test verifies the basic behavior of automatic tab ordering using a grid of movie clips.
+# The grid is 5x4 and clips are placed randomly on it.
+# Each clip has a random depth and position in the SWF file.
+#
+# This test shows that the order is not dependent on the depth or position in the SWF file,
+# but is mainly dependent on the position on the screen.
+
+num_ticks = 1

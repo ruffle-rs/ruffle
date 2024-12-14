@@ -7,38 +7,36 @@ license.workspace = true
 repository.workspace = true
 version.workspace = true
 
-[dependencies]
-futures = "0.3.28"
-ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug", "avm_debug", "audio", "mp3", "default_font"] }
-ruffle_render_wgpu = { path = "../render/wgpu" }
-ruffle_render = { path = "../render" }
-ruffle_input_format = { path = "input-format" }
-ruffle_socket_format = { path = "socket-format" }
-ruffle_video_software = { path = "../video/software", optional = true }
-image = { version = "0.24.7", default-features = false, features = ["png"] }
-regex = "1.10.2"
-url = "2.4.1"
+[lints]
+workspace = true
 
 [features]
 # Enable running image comparison tests. This is off by default,
 # since the images we compare against are generated on CI, and may
 # not match your local machine's Vulkan version / image output.
-imgtests = ["ruffle_video_software"]
-jpegxr = ["ruffle_core/jpegxr"]
-lzma = ["ruffle_core/lzma"]
+imgtests = [
+    "ruffle_render_wgpu",
+    "ruffle_test_framework/ruffle_video_software",
+    "ruffle_test_framework/ruffle_video_external",
+]
+jpegxr = ["ruffle_test_framework/jpegxr"]
+lzma = ["ruffle_test_framework/lzma"]
+
+[dependencies]
+ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
+regex = "1.11.1"
 
 [dev-dependencies]
-approx = "0.5.1"
-pretty_assertions = "1.4.0"
-env_logger = "0.10.0"
-tracing = { workspace = true}
+ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug", "avm_debug", "audio", "mp3", "aac", "default_font", "test_only_as3"] }
+ruffle_test_framework = { path = "framework" }
+libtest-mimic = "0.8.1"
+walkdir = { workspace = true }
+anyhow = { workspace = true }
+image = { workspace = true, features  = ["png"] }
+futures = { workspace = true }
+env_logger = "0.11.5"
+tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-serde = "1.0.189"
-toml = "0.8.2"
-libtest-mimic = "0.6.1"
-walkdir = "2.4.0"
-anyhow = "1.0.75"
-async-channel = "1.9.0"
 
 [[test]]
 name = "tests"

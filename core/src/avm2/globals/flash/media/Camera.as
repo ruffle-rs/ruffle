@@ -5,14 +5,17 @@ package flash.media {
     import flash.display.BitmapData;
 
     public final class Camera extends EventDispatcher {
+        [API("682")]
         public function copyToByteArray(rect:Rectangle, destination:ByteArray) {
             __ruffle__.stub_method("flash.media.Camera", "copyToByteArray");
         }
 
+        [API("682")]
         public function copyToVector(rect:Rectangle, destination:Vector.<uint>) {
             __ruffle__.stub_method("flash.media.Camera", "copyToVector");
         }
 
+        [API("682")]
         public function drawToBitmapData(destination:BitmapData) {
             __ruffle__.stub_method("flash.media.Camera", "drawToBitmapData");
         }

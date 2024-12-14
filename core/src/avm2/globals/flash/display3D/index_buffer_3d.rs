@@ -20,7 +20,7 @@ pub fn upload_from_byte_array<'gc>(
         let byte_array = args.get_object(activation, 0, "byteArray")?;
         let byte_array = byte_array
             .as_bytearray()
-            .ok_or_else(|| Error::from("ArgumentError: Parameter must be a ByteArray"))?;
+            .expect("Parameter must be a ByteArray");
 
         let byte_offset = args.get_u32(activation, 1)?;
         let start_offset = args.get_u32(activation, 2)?;
@@ -47,14 +47,11 @@ pub fn upload_from_vector<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(index_buffer) = this.as_index_buffer() {
-        let vector = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)?;
+        let vector = args.get_object(activation, 0, "data")?;
 
         let vector = vector
             .as_vector_storage()
-            .ok_or_else(|| Error::from("ArgumentError: Parameter must be a Vector"))?;
+            .expect("Parameter must be a Vector");
 
         let start_offset = args.get_u32(activation, 1)?;
         let count = args.get_u32(activation, 2)?;

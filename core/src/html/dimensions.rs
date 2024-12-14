@@ -1,6 +1,6 @@
 //! CSS dimension types
-use std::cmp::{max, min, Ord};
-use std::ops::{Add, AddAssign, Sub};
+use std::cmp::{max, min};
+use std::ops::{Add, AddAssign, Sub, SubAssign};
 use swf::{Rectangle, Twips};
 
 /// A type which represents the top-left position of a layout box.
@@ -75,6 +75,30 @@ where
     fn add_assign(&mut self, rhs: Self) {
         self.x += rhs.x;
         self.y += rhs.y;
+    }
+}
+
+impl<T> Sub for Position<T>
+where
+    T: Sub<T, Output = T>,
+{
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+        }
+    }
+}
+
+impl<T> SubAssign for Position<T>
+where
+    T: SubAssign,
+{
+    fn sub_assign(&mut self, rhs: Self) {
+        self.x -= rhs.x;
+        self.y -= rhs.y;
     }
 }
 
@@ -272,6 +296,15 @@ where
             extent_x: self.offset_x + new_size.width,
             offset_y: self.offset_y,
             extent_y: self.offset_y + new_size.height,
+        }
+    }
+
+    pub fn with_width(self, new_width: T) -> Self {
+        Self {
+            offset_x: self.offset_x,
+            extent_x: self.offset_x + new_width,
+            offset_y: self.offset_y,
+            extent_y: self.extent_y,
         }
     }
 }

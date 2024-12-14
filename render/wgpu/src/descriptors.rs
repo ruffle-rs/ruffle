@@ -4,18 +4,19 @@ use crate::pipelines::VERTEX_BUFFERS_DESCRIPTION_POS;
 use crate::shaders::Shaders;
 use crate::{
     create_buffer_with_data, BitmapSamplers, Pipelines, PosColorVertex, PosVertex,
-    TextureTransforms, Transforms, DEFAULT_COLOR_ADJUSTMENTS,
+    TextureTransforms,
 };
 use fnv::FnvHashMap;
 use std::fmt::Debug;
-use std::mem;
 use std::sync::{Arc, Mutex};
+use wgpu::Backend;
 
 pub struct Descriptors {
     pub wgpu_instance: wgpu::Instance,
     pub adapter: wgpu::Adapter,
     pub device: wgpu::Device,
     pub limits: wgpu::Limits,
+    pub backend: Backend,
     pub queue: wgpu::Queue,
     pub bitmap_samplers: BitmapSamplers,
     pub bind_layouts: BindLayouts,
@@ -24,7 +25,6 @@ pub struct Descriptors {
     copy_srgb_pipeline: Mutex<FnvHashMap<(u32, wgpu::TextureFormat), Arc<wgpu::RenderPipeline>>>,
     pub shaders: Shaders,
     pipelines: Mutex<FnvHashMap<(u32, wgpu::TextureFormat), Arc<Pipelines>>>,
-    pub default_color_bind_group: wgpu::BindGroup,
     pub filters: Filters,
 }
 
@@ -46,27 +46,15 @@ impl Descriptors {
         let bitmap_samplers = BitmapSamplers::new(&device);
         let shaders = Shaders::new(&device);
         let quad = Quad::new(&device);
-        let default_color_transform = create_buffer_with_data(
-            &device,
-            bytemuck::cast_slice(&[DEFAULT_COLOR_ADJUSTMENTS]),
-            wgpu::BufferUsages::UNIFORM,
-            create_debug_label!("Default colors"),
-        );
-        let default_color_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: create_debug_label!("Default colors").as_deref(),
-            layout: &bind_layouts.color_transforms,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: default_color_transform.as_entire_binding(),
-            }],
-        });
         let filters = Filters::new(&device);
+        let backend = adapter.get_info().backend;
 
         Self {
             wgpu_instance: instance,
             adapter,
             device,
             limits,
+            backend,
             queue,
             bitmap_samplers,
             bind_layouts,
@@ -75,7 +63,6 @@ impl Descriptors {
             copy_srgb_pipeline: Default::default(),
             shaders,
             pipelines: Default::default(),
-            default_color_bind_group,
             filters,
         }
     }
@@ -97,24 +84,12 @@ impl Descriptors {
                         .device
                         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                             label: create_debug_label!("Copy sRGB pipeline layout").as_deref(),
-                            bind_group_layouts: &if self.limits.max_push_constant_size > 0 {
-                                vec![&self.bind_layouts.globals, &self.bind_layouts.bitmap]
-                            } else {
-                                vec![
-                                    &self.bind_layouts.globals,
-                                    &self.bind_layouts.transforms,
-                                    &self.bind_layouts.bitmap,
-                                ]
-                            },
-                            push_constant_ranges: if self.device.limits().max_push_constant_size > 0
-                            {
-                                &[wgpu::PushConstantRange {
-                                    stages: wgpu::ShaderStages::VERTEX,
-                                    range: 0..(mem::size_of::<Transforms>() as u32),
-                                }]
-                            } else {
-                                &[]
-                            },
+                            bind_group_layouts: &[
+                                &self.bind_layouts.globals,
+                                &self.bind_layouts.transforms,
+                                &self.bind_layouts.bitmap,
+                            ],
+                            push_constant_ranges: &[],
                         });
                 Arc::new(
                     self.device
@@ -123,12 +98,13 @@ impl Descriptors {
                             layout: Some(copy_texture_pipeline_layout),
                             vertex: wgpu::VertexState {
                                 module: &self.shaders.copy_srgb_shader,
-                                entry_point: "main_vertex",
+                                entry_point: Some("main_vertex"),
                                 buffers: &VERTEX_BUFFERS_DESCRIPTION_POS,
+                                compilation_options: Default::default(),
                             },
                             fragment: Some(wgpu::FragmentState {
                                 module: &self.shaders.copy_srgb_shader,
-                                entry_point: "main_fragment",
+                                entry_point: Some("main_fragment"),
                                 targets: &[Some(wgpu::ColorTargetState {
                                     format,
                                     // All of our blending has been done by now, so we want
@@ -136,6 +112,7 @@ impl Descriptors {
                                     blend: Some(wgpu::BlendState::REPLACE),
                                     write_mask: Default::default(),
                                 })],
+                                compilation_options: Default::default(),
                             }),
                             primitive: wgpu::PrimitiveState {
                                 topology: wgpu::PrimitiveTopology::TriangleList,
@@ -153,6 +130,7 @@ impl Descriptors {
                                 alpha_to_coverage_enabled: false,
                             },
                             multiview: None,
+                            cache: None,
                         }),
                 )
             })
@@ -176,24 +154,12 @@ impl Descriptors {
                         .device
                         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                             label: create_debug_label!("Copy pipeline layout").as_deref(),
-                            bind_group_layouts: &if self.limits.max_push_constant_size > 0 {
-                                vec![&self.bind_layouts.globals, &self.bind_layouts.bitmap]
-                            } else {
-                                vec![
-                                    &self.bind_layouts.globals,
-                                    &self.bind_layouts.transforms,
-                                    &self.bind_layouts.bitmap,
-                                ]
-                            },
-                            push_constant_ranges: if self.device.limits().max_push_constant_size > 0
-                            {
-                                &[wgpu::PushConstantRange {
-                                    stages: wgpu::ShaderStages::VERTEX,
-                                    range: 0..(mem::size_of::<Transforms>() as u32),
-                                }]
-                            } else {
-                                &[]
-                            },
+                            bind_group_layouts: &[
+                                &self.bind_layouts.globals,
+                                &self.bind_layouts.transforms,
+                                &self.bind_layouts.bitmap,
+                            ],
+                            push_constant_ranges: &[],
                         });
                 Arc::new(
                     self.device
@@ -202,12 +168,13 @@ impl Descriptors {
                             layout: Some(copy_texture_pipeline_layout),
                             vertex: wgpu::VertexState {
                                 module: &self.shaders.copy_shader,
-                                entry_point: "main_vertex",
+                                entry_point: Some("main_vertex"),
                                 buffers: &VERTEX_BUFFERS_DESCRIPTION_POS,
+                                compilation_options: Default::default(),
                             },
                             fragment: Some(wgpu::FragmentState {
                                 module: &self.shaders.copy_shader,
-                                entry_point: "main_fragment",
+                                entry_point: Some("main_fragment"),
                                 targets: &[Some(wgpu::ColorTargetState {
                                     format,
                                     // All of our blending has been done by now, so we want
@@ -215,6 +182,7 @@ impl Descriptors {
                                     blend: Some(wgpu::BlendState::REPLACE),
                                     write_mask: Default::default(),
                                 })],
+                                compilation_options: Default::default(),
                             }),
                             primitive: wgpu::PrimitiveState {
                                 topology: wgpu::PrimitiveTopology::TriangleList,
@@ -232,6 +200,7 @@ impl Descriptors {
                                 alpha_to_coverage_enabled: false,
                             },
                             multiview: None,
+                            cache: None,
                         }),
                 )
             })
@@ -263,6 +232,8 @@ pub struct Quad {
     pub vertices_pos_color: wgpu::Buffer,
     pub filter_vertices: wgpu::Buffer,
     pub indices: wgpu::Buffer,
+    pub indices_line: wgpu::Buffer,
+    pub indices_line_rect: wgpu::Buffer,
     pub texture_transforms: wgpu::Buffer,
 }
 
@@ -319,6 +290,8 @@ impl Quad {
             },
         ];
         let indices: [u32; 6] = [0, 1, 2, 0, 2, 3];
+        let indices_line: [u32; 2] = [0, 1];
+        let indices_line_rect: [u32; 5] = [0, 1, 2, 3, 0];
 
         let vbo_pos = create_buffer_with_data(
             device,
@@ -347,6 +320,18 @@ impl Quad {
             wgpu::BufferUsages::INDEX,
             create_debug_label!("Quad ibo"),
         );
+        let ibo_line = create_buffer_with_data(
+            device,
+            bytemuck::cast_slice(&indices_line),
+            wgpu::BufferUsages::INDEX,
+            create_debug_label!("Line ibo"),
+        );
+        let ibo_line_rect = create_buffer_with_data(
+            device,
+            bytemuck::cast_slice(&indices_line_rect),
+            wgpu::BufferUsages::INDEX,
+            create_debug_label!("Line rect ibo"),
+        );
 
         let tex_transforms = create_buffer_with_data(
             device,
@@ -367,6 +352,8 @@ impl Quad {
             vertices_pos_color: vbo_pos_color,
             filter_vertices: vbo_filter,
             indices: ibo,
+            indices_line: ibo_line,
+            indices_line_rect: ibo_line_rect,
             texture_transforms: tex_transforms,
         }
     }

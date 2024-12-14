@@ -1,0 +1,12 @@
+array[0]: 1
+array[1]: at 1
+array[2]: undefined
+array[10]: at 10
+vector[0]: 1
+vector[1]: 2
+vector[2]: RangeError: Error #1125: The index 2 is out of range 2.
+vector[10]: RangeError: Error #1125: The index 10 is out of range 2.
+byteArray[0]: 1
+byteArray[1]: 2
+byteArray[2]: undefined
+byteArray[10]: undefined

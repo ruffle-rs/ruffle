@@ -1,16 +1,21 @@
-import { PublicAPI } from "ruffle-core";
+import { Setup } from "ruffle-core";
 import { Message } from "./messages";
 
 function handleMessage(message: Message) {
     switch (message.type) {
         case "load": {
-            const api = window.RufflePlayer ?? {};
-            api.config = {
+            if (window.RufflePlayer === undefined) {
+                window.RufflePlayer = {};
+            }
+            if (window.RufflePlayer.config === undefined) {
+                window.RufflePlayer.config = {};
+            }
+            window.RufflePlayer.config = {
                 ...message.config,
-                ...api.config,
+                ...window.RufflePlayer.config,
                 openInNewTab,
             };
-            window.RufflePlayer = PublicAPI.negotiate(api, "extension");
+            Setup.installRuffle("extension");
             return {};
         }
         case "ping":
@@ -51,7 +56,7 @@ function openInNewTab(swf: URL): void {
 if (ID) {
     window.addEventListener("message", (event) => {
         // We only accept messages from ourselves.
-        if (event.source !== window) {
+        if (event.source !== window || !event.data) {
             return;
         }
 

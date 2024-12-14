@@ -4,8 +4,15 @@
 # Set *.as files as ActionScript, vs. GitHub's guess of AngelScript
 *.as   linguist-language=ActionScript
 
+# Properly detect files as GLSL on Github
+*.frag			linguist-language=GLSL
+*.vert			linguist-language=GLSL
+
 # Binary files
 *.png  binary
 *.fla  binary
 *.swf  binary
 *.swc  binary
+
+# Fix GH saying Ruffle is written in ActionScript 
+tests/tests/swfs/** linguist-vendored

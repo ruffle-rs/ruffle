@@ -36,7 +36,6 @@ pub use globals::sound::start as start_sound;
 pub use globals::system::SystemProperties;
 pub use object::array_object::ArrayObject;
 pub use object::script_object::ScriptObject;
-pub use object::sound_object::SoundObject;
 pub use object::stage_object::StageObject;
 pub use object::{NativeObject, Object, ObjectPtr, TObject};
 pub use property::Attribute;
@@ -68,6 +67,14 @@ macro_rules! avm_error {
 
 #[macro_export]
 macro_rules! avm1_stub {
+    ($activation: ident, $class: literal) => {
+        #[cfg_attr(
+            feature = "known_stubs",
+            linkme::distributed_slice($crate::stub::KNOWN_STUBS)
+        )]
+        static STUB: $crate::stub::Stub = $crate::stub::Stub::Avm1Constructor { class: $class };
+        $activation.context.stub_tracker.encounter(&STUB);
+    };
     ($activation: ident, $class: literal, $method: literal) => {
         #[cfg_attr(
             feature = "known_stubs",

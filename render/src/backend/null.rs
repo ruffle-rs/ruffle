@@ -5,7 +5,8 @@ use crate::backend::{
     BitmapCacheEntry, RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
 };
 use crate::bitmap::{
-    Bitmap, BitmapHandle, BitmapHandleImpl, BitmapSize, BitmapSource, PixelRegion, SyncHandle,
+    Bitmap, BitmapHandle, BitmapHandleImpl, BitmapSize, BitmapSource, PixelRegion, RgbaBufRead,
+    SyncHandle,
 };
 use crate::commands::CommandList;
 use crate::error::Error;
@@ -14,7 +15,7 @@ use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
 use swf::Color;
 
-use super::Context3D;
+use super::{Context3D, Context3DProfile, PixelBenderOutput, PixelBenderTarget};
 
 pub struct NullBitmapSource;
 
@@ -90,7 +91,10 @@ impl RenderBackend for NullRenderer {
         Ok(())
     }
 
-    fn create_context3d(&mut self) -> Result<Box<dyn super::Context3D>, Error> {
+    fn create_context3d(
+        &mut self,
+        _profile: Context3DProfile,
+    ) -> Result<Box<dyn super::Context3D>, Error> {
         Err(Error::Unimplemented("createContext3D".into()))
     }
 
@@ -112,9 +116,17 @@ impl RenderBackend for NullRenderer {
         &mut self,
         _shader: PixelBenderShaderHandle,
         _arguments: &[PixelBenderShaderArgument],
-        _target: BitmapHandle,
-    ) -> Result<Box<dyn SyncHandle>, Error> {
+        _target: &PixelBenderTarget,
+    ) -> Result<PixelBenderOutput, Error> {
         Err(Error::Unimplemented("Pixel bender shader".into()))
+    }
+
+    fn resolve_sync_handle(
+        &mut self,
+        _handle: Box<dyn SyncHandle>,
+        _with_rgba: RgbaBufRead,
+    ) -> Result<(), Error> {
+        Err(Error::Unimplemented("Sync handle resolution".into()))
     }
 
     fn compile_pixelbender_shader(

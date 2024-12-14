@@ -1,0 +1,56 @@
+/// connection.close()
+
+/// connection.connect(null)
+-- NetStatusEvent.NET_STATUS event start --
+event.type = netStatus
+event.bubbles = false
+event.cancelable = false
+event.info.code = NetConnection.Connect.Success (string)
+event.info.level = status (string)
+-- NetStatusEvent.NET_STATUS event end --
+
+/// connection.connect(null)
+-- NetStatusEvent.NET_STATUS event start --
+event.type = netStatus
+event.bubbles = false
+event.cancelable = false
+event.info.code = NetConnection.Connect.Closed (string)
+event.info.level = status (string)
+-- NetStatusEvent.NET_STATUS event end --
+-- NetStatusEvent.NET_STATUS event start --
+event.type = netStatus
+event.bubbles = false
+event.cancelable = false
+event.info.code = NetConnection.Connect.Success (string)
+event.info.level = status (string)
+-- NetStatusEvent.NET_STATUS event end --
+
+/// connection.close()
+-- NetStatusEvent.NET_STATUS event start --
+event.type = netStatus
+event.bubbles = false
+event.cancelable = false
+event.info.code = NetConnection.Connect.Closed (string)
+event.info.level = status (string)
+-- NetStatusEvent.NET_STATUS event end --
+
+/// connection.connect("http://example.org")
+
+/// connection.close()
+-- NetStatusEvent.NET_STATUS event start --
+event.type = netStatus
+event.bubbles = false
+event.cancelable = false
+event.info.code = NetConnection.Connect.Closed (string)
+event.info.level = status (string)
+-- NetStatusEvent.NET_STATUS event end --
+-- NetStatusEvent.NET_STATUS event start --
+event.type = netStatus
+event.bubbles = false
+event.cancelable = false
+event.info.code =  (string)
+event.info.description =  (string)
+event.info.details =  (string)
+event.info.level = status (string)
+-- NetStatusEvent.NET_STATUS event end --
+

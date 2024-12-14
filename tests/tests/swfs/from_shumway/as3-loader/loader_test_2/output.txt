@@ -1,0 +1,7 @@
+loader constructed
+loading started
+loadee: frame1
+loadee initialized
+loading complete
+testProperty: loadee
+testSymbol present: true

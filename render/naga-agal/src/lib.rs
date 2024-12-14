@@ -29,6 +29,11 @@ pub enum Error {
     ReadError(std::io::Error),
     InvalidOpcode(u32),
     InvalidVersion(u32),
+    SamplerConfigMismatch {
+        texture: usize,
+        old: SamplerConfig,
+        new: SamplerConfig,
+    },
 }
 
 impl From<std::io::Error> for Error {
@@ -43,7 +48,8 @@ pub enum ShaderType {
     Fragment,
 }
 
-pub use types::{Filter, Mipmap, SamplerOverride, Wrapping};
+pub use builder::{TEXTURE_SAMPLER_START_BIND_INDEX, TEXTURE_START_BIND_INDEX};
+pub use types::{Filter, Mipmap, SamplerConfig, Wrapping};
 
 /**
  * Compiles an Adobe AGAL shader to a Naga Module.
@@ -93,7 +99,13 @@ pub use types::{Filter, Mipmap, SamplerOverride, Wrapping};
 pub fn agal_to_naga(
     agal: &[u8],
     vertex_attributes: &[Option<VertexAttributeFormat>; MAX_VERTEX_ATTRIBUTES],
-    sampler_overrides: &[Option<SamplerOverride>; MAX_TEXTURES],
+    sampler_configs: &[SamplerConfig; MAX_TEXTURES],
 ) -> Result<Module, Error> {
-    NagaBuilder::process_agal(agal, vertex_attributes, sampler_overrides)
+    NagaBuilder::build_module(agal, vertex_attributes, sampler_configs)
+}
+
+pub fn extract_sampler_configs(
+    agal: &[u8],
+) -> Result<[Option<SamplerConfig>; MAX_TEXTURES], Error> {
+    NagaBuilder::extract_sampler_configs(agal)
 }

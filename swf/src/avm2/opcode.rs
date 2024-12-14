@@ -126,7 +126,6 @@ pub enum OpCode {
     Pop = 0x29,
     PopScope = 0x1d,
     PushByte = 0x24,
-    PushConstant = 0x22, // unused
     PushDouble = 0x2f,
     PushFalse = 0x27,
     PushInt = 0x2d,

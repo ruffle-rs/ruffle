@@ -7,10 +7,10 @@ use crate::avm1::{
 };
 use crate::avm_warn;
 use crate::backend::navigator::Request;
-use crate::context::GcContext;
-use crate::string::{AvmString, WStr, WString};
+use crate::string::{AvmString, StringContext, WStr, WString};
 use crate::xml::{custom_unescape, XmlNode, ELEMENT_NODE, TEXT_NODE};
 use gc_arena::{Collect, GcCell, Mutation};
+use quick_xml::errors::IllFormedError;
 use quick_xml::events::attributes::AttrError;
 use quick_xml::{events::Event, Reader};
 
@@ -141,13 +141,18 @@ impl<'gc> Xml<'gc> {
         loop {
             let event = parser.read_event().map_err(|error| {
                 self.0.write(activation.context.gc_context).status = match error {
-                    quick_xml::Error::UnexpectedEof(_)
+                    quick_xml::Error::Syntax(_)
                     | quick_xml::Error::InvalidAttr(AttrError::ExpectedEq(_))
                     | quick_xml::Error::InvalidAttr(AttrError::Duplicated(_, _)) => {
                         XmlStatus::ElementMalformed
                     }
-                    quick_xml::Error::EndEventMismatch { .. } => XmlStatus::MismatchedEnd,
-                    quick_xml::Error::XmlDeclWithoutVersion(_) => XmlStatus::DeclNotTerminated,
+                    quick_xml::Error::IllFormed(
+                        IllFormedError::MismatchedEndTag { .. }
+                        | IllFormedError::UnmatchedEndTag { .. },
+                    ) => XmlStatus::MismatchedEnd,
+                    quick_xml::Error::IllFormed(IllFormedError::MissingDeclVersion(_)) => {
+                        XmlStatus::DeclNotTerminated
+                    }
                     quick_xml::Error::InvalidAttr(AttrError::UnquotedValue(_)) => {
                         XmlStatus::AttributeNotTerminated
                     }
@@ -560,7 +565,7 @@ fn spawn_xml_fetch<'gc>(
 }
 
 pub fn create_constructor<'gc>(
-    context: &mut GcContext<'_, 'gc>,
+    context: &mut StringContext<'gc>,
     proto: Object<'gc>,
     fn_proto: Object<'gc>,
 ) -> Object<'gc> {

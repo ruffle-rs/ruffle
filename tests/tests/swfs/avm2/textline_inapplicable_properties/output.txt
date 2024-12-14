@@ -1,0 +1,10 @@
+Error: Error: Error #2181: The TextLine class does not implement this property or method.
+null
+Error: Error: Error #2181: The TextLine class does not implement this property or method.
+null
+Error: Error: Error #2181: The TextLine class does not implement this property or method.
+false
+Error: Error: Error #2181: The TextLine class does not implement this property or method.
+false
+Error: Error: Error #2181: The TextLine class does not implement this property or method.
+-1

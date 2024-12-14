@@ -1,3 +1,4 @@
+network-settings = Setări de rețea
 proxy = Proxy
 tcp-connections = Conexiuni TCP
 tcp-connections-allow = Permite
@@ -8,4 +9,3 @@ scale-mode-force = Forțează
 player-version = Versiunea playerului
 custom-framerate = Frecvență de cadre personalizată
 custom-framerate-suffix = { " " } fps
-dummy-external-interface-check = Activează

@@ -1,0 +1,18 @@
+masked object contains point: true
+masked object shape contains point: true
+visible object contains point: true
+invisible object contains point: true
+removed object contains point: true
+new object contains point: true
+
+one-layer button:
+hitTestState doesn't affect bounds: (x=200, y=100, w=10, h=10)
+hitTestState doesn't affect hit-testing: true
+hitTestState doesn't affect getObjectsUnderPoint: true
+hitTestState doesn't affect getObjectsUnderPoint: true
+
+two-layer button:
+hitTestState doesn't affect bounds: (x=200, y=200, w=10, h=10)
+hitTestState doesn't affect hit-testing: true
+hitTestState doesn't affect getObjectsUnderPoint: true
+hitTestState doesn't affect getObjectsUnderPoint: true

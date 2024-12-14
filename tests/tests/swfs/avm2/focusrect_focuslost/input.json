@@ -1,0 +1,7 @@
+[
+  { "type": "KeyDown", "key_code": 9 },
+  { "type": "KeyDown", "key_code": 9 },
+  { "type": "FocusLost" },
+  { "type": "FocusGained" },
+  { "type": "Wait" }
+]

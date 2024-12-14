@@ -1,5 +1,4 @@
 use crate::display_object::InteractiveObject;
-use serde::Deserialize;
 use swf::ClipEventFlag;
 
 #[derive(Debug, Clone, Copy)]
@@ -25,10 +24,17 @@ pub enum PlayerEvent {
         x: f64,
         y: f64,
         button: MouseButton,
+        index: Option<usize>,
     },
     MouseLeave,
     MouseWheel {
         delta: MouseWheelDelta,
+    },
+    GamepadButtonDown {
+        button: GamepadButton,
+    },
+    GamepadButtonUp {
+        button: GamepadButton,
     },
     TextInput {
         codepoint: char,
@@ -36,6 +42,8 @@ pub enum PlayerEvent {
     TextControl {
         code: TextControlCode,
     },
+    FocusGained,
+    FocusLost,
 }
 
 /// The distance scrolled by the mouse wheel.
@@ -84,6 +92,16 @@ impl Eq for MouseWheelDelta {}
 pub enum ClipEventResult {
     NotHandled,
     Handled,
+}
+
+impl From<bool> for ClipEventResult {
+    fn from(value: bool) -> Self {
+        if value {
+            Self::Handled
+        } else {
+            Self::NotHandled
+        }
+    }
 }
 
 /// An event type that can be handled by a movie clip instance.
@@ -138,22 +156,52 @@ pub enum ClipEvent<'gc> {
     },
     Load,
 
-    /// Mouse button was released.
+    /// Left mouse button was released.
     ///
     /// This is an anycast event.
     MouseUp,
 
-    /// Mouse button was released inside this current display object.
+    /// Right mouse button was released.
+    ///
+    /// Analogous to [`ClipEvent::MouseUp`], but for right mouse button.
+    RightMouseUp,
+
+    /// Middle mouse button was released.
+    ///
+    /// Analogous to [`ClipEvent::MouseUp`], but for middle mouse button.
+    MiddleMouseUp,
+
+    /// Left mouse button was released inside this current display object.
     ///
     /// This is a targeted equivalent to `MouseUp` and corresponds directly to
     /// the AVM2 `mouseUp` event, which has no AVM1 equivalent. The target of
     /// this event is determined by the position of the mouse cursor.
     MouseUpInside,
 
-    /// Mouse button was pressed.
+    /// Right mouse button was released inside this current display object.
+    ///
+    /// Analogous to [`ClipEvent::MouseUpInside`], but for right mouse button.
+    RightMouseUpInside,
+
+    /// Middle mouse button was released inside this current display object.
+    ///
+    /// Analogous to [`ClipEvent::MouseUpInside`], but for middle mouse button.
+    MiddleMouseUpInside,
+
+    /// Left mouse button was pressed.
     ///
     /// This is an anycast event.
     MouseDown,
+
+    /// Right mouse button was pressed.
+    ///
+    /// Analogous to [`ClipEvent::MouseDown`], but for right mouse button.
+    RightMouseDown,
+
+    /// Middle mouse button was pressed.
+    ///
+    /// Analogous to [`ClipEvent::MouseDown`], but for middle mouse button.
+    MiddleMouseDown,
 
     /// Mouse was moved.
     ///
@@ -166,12 +214,28 @@ pub enum ClipEvent<'gc> {
     /// `mouseMove` event, since AVM2 cannot consume anycast events.
     MouseMoveInside,
 
-    /// Mouse button was pressed inside this current display object.
+    /// Left mouse button was pressed inside this current display object.
     ///
     /// This is a targeted equivalent to `MouseDown` and is available in both
     /// AVM1 and AVM2. The target of this event is determined by the position
     /// of the mouse cursor.
-    Press,
+    Press {
+        /// The index of this click in a click sequence performed in a quick succession.
+        ///
+        /// For instance the value of 0 indicates it's a single click,
+        /// the number of 1 indicates it's a double click, etc.
+        index: usize,
+    },
+
+    /// Right mouse button was pressed inside this current display object.
+    ///
+    /// Analogous to [`ClipEvent::Press`], but for right mouse button.
+    RightPress,
+
+    /// Middle mouse button was pressed inside this current display object.
+    ///
+    /// Analogous to [`ClipEvent::Press`], but for middle mouse button.
+    MiddlePress,
 
     /// Mouse moved out of a display object.
     ///
@@ -198,19 +262,43 @@ pub enum ClipEvent<'gc> {
         from: Option<InteractiveObject<'gc>>,
     },
 
-    /// Mouse button was released inside a previously-pressed display object.
+    /// Left mouse button was released inside a previously-pressed display object.
     ///
     /// This is a targeted equivalent to `MouseUp` and is available in both
     /// AVM1 and AVM2. The target of this event is the last target of the
     /// `Press` event.
-    Release,
+    Release {
+        /// The index of this click, same as the index of the last [`ClipEvent::Press`] event.
+        index: usize,
+    },
 
-    /// Mouse button was released outside a previously-pressed display object.
+    /// Right mouse button was released inside a previously-pressed display object.
+    ///
+    /// Analogous to [`ClipEvent::Release`], but for right mouse button.
+    RightRelease,
+
+    /// Middle mouse button was released inside a previously-pressed display object.
+    ///
+    /// Analogous to [`ClipEvent::Release`], but for middle mouse button.
+    MiddleRelease,
+
+    /// Left mouse button was released outside a previously-pressed display object.
     ///
     /// This is a targeted equivalent to `MouseUp` and is available in both
     /// AVM1 and AVM2. The target of this event is the last target of the
     /// `Press` event.
     ReleaseOutside,
+
+    /// Right mouse button was released outside a previously-pressed display object.
+    ///
+    /// Analogous to [`ClipEvent::ReleaseOutside`], but for right mouse button.
+    RightReleaseOutside,
+
+    /// Middle mouse button was released outside a previously-pressed display object.
+    ///
+    /// Analogous to [`ClipEvent::ReleaseOutside`], but for middle mouse button.
+    MiddleReleaseOutside,
+
     Unload,
 
     /// Mouse wheel was turned over a particular display object.
@@ -223,7 +311,7 @@ pub enum ClipEvent<'gc> {
     },
 }
 
-impl<'gc> ClipEvent<'gc> {
+impl ClipEvent<'_> {
     /// Method names for button event handles.
     pub const BUTTON_EVENT_METHODS: [&'static str; 7] = [
         "onDragOver",
@@ -262,15 +350,13 @@ impl<'gc> ClipEvent<'gc> {
             ClipEvent::MouseDown => Some(ClipEventFlag::MOUSE_DOWN),
             ClipEvent::MouseMove => Some(ClipEventFlag::MOUSE_MOVE),
             ClipEvent::MouseUp => Some(ClipEventFlag::MOUSE_UP),
-            ClipEvent::Press => Some(ClipEventFlag::PRESS),
+            ClipEvent::Press { .. } => Some(ClipEventFlag::PRESS),
             ClipEvent::RollOut { .. } => Some(ClipEventFlag::ROLL_OUT),
             ClipEvent::RollOver { .. } => Some(ClipEventFlag::ROLL_OVER),
-            ClipEvent::Release => Some(ClipEventFlag::RELEASE),
+            ClipEvent::Release { .. } => Some(ClipEventFlag::RELEASE),
             ClipEvent::ReleaseOutside => Some(ClipEventFlag::RELEASE_OUTSIDE),
             ClipEvent::Unload => Some(ClipEventFlag::UNLOAD),
-            ClipEvent::MouseWheel { .. }
-            | ClipEvent::MouseMoveInside
-            | ClipEvent::MouseUpInside => None,
+            _ => None,
         }
     }
 
@@ -321,34 +407,46 @@ impl<'gc> ClipEvent<'gc> {
             ClipEvent::MouseDown => Some("onMouseDown"),
             ClipEvent::MouseMove => Some("onMouseMove"),
             ClipEvent::MouseUp => Some("onMouseUp"),
-            ClipEvent::Press => Some("onPress"),
+            ClipEvent::Press { .. } => Some("onPress"),
             ClipEvent::RollOut { .. } => Some("onRollOut"),
             ClipEvent::RollOver { .. } => Some("onRollOver"),
-            ClipEvent::Release => Some("onRelease"),
+            ClipEvent::Release { .. } => Some("onRelease"),
             ClipEvent::ReleaseOutside => Some("onReleaseOutside"),
             ClipEvent::Unload => Some("onUnload"),
-            ClipEvent::MouseWheel { .. }
-            | ClipEvent::MouseMoveInside
-            | ClipEvent::MouseUpInside => None,
+            _ => None,
         }
     }
 }
 
 /// Control inputs to a text field
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
 pub enum TextControlCode {
-    // TODO: Add control codes for Ctrl+Arrows and Home/End keys
     MoveLeft,
+    MoveLeftWord,
+    MoveLeftLine,
+    MoveLeftDocument,
     MoveRight,
+    MoveRightWord,
+    MoveRightLine,
+    MoveRightDocument,
     SelectLeft,
+    SelectLeftWord,
+    SelectLeftLine,
+    SelectLeftDocument,
     SelectRight,
+    SelectRightWord,
+    SelectRightLine,
+    SelectRightDocument,
     SelectAll,
     Copy,
     Paste,
     Cut,
     Backspace,
+    BackspaceWord,
     Enter,
     Delete,
+    DeleteWord,
 }
 
 impl TextControlCode {
@@ -356,153 +454,177 @@ impl TextControlCode {
     pub fn is_edit_input(self) -> bool {
         matches!(
             self,
-            Self::Paste | Self::Cut | Self::Backspace | Self::Enter | Self::Delete
+            Self::Paste
+                | Self::Cut
+                | Self::Enter
+                | Self::Backspace
+                | Self::BackspaceWord
+                | Self::Delete
+                | Self::DeleteWord
         )
     }
 }
 
 /// Flash virtual keycode.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, FromPrimitive)]
-pub enum KeyCode {
-    Unknown = 0,
-    MouseLeft = 1,
-    MouseRight = 2,
-    MouseMiddle = 4,
-    Backspace = 8,
-    Tab = 9,
-    Return = 13,
-    Command = 15,
-    Shift = 16,
-    Control = 17,
-    Alt = 18,
-    Pause = 19,
-    CapsLock = 20,
-    Numpad = 21,
-    Escape = 27,
-    Space = 32,
-    PgUp = 33,
-    PgDown = 34,
-    End = 35,
-    Home = 36,
-    Left = 37,
-    Up = 38,
-    Right = 39,
-    Down = 40,
-    Insert = 45,
-    Delete = 46,
-    Key0 = 48,
-    Key1 = 49,
-    Key2 = 50,
-    Key3 = 51,
-    Key4 = 52,
-    Key5 = 53,
-    Key6 = 54,
-    Key7 = 55,
-    Key8 = 56,
-    Key9 = 57,
-    A = 65,
-    B = 66,
-    C = 67,
-    D = 68,
-    E = 69,
-    F = 70,
-    G = 71,
-    H = 72,
-    I = 73,
-    J = 74,
-    K = 75,
-    L = 76,
-    M = 77,
-    N = 78,
-    O = 79,
-    P = 80,
-    Q = 81,
-    R = 82,
-    S = 83,
-    T = 84,
-    U = 85,
-    V = 86,
-    W = 87,
-    X = 88,
-    Y = 89,
-    Z = 90,
-    Numpad0 = 96,
-    Numpad1 = 97,
-    Numpad2 = 98,
-    Numpad3 = 99,
-    Numpad4 = 100,
-    Numpad5 = 101,
-    Numpad6 = 102,
-    Numpad7 = 103,
-    Numpad8 = 104,
-    Numpad9 = 105,
-    Multiply = 106,
-    Plus = 107,
-    NumpadEnter = 108,
-    NumpadMinus = 109,
-    NumpadPeriod = 110,
-    NumpadSlash = 111,
-    F1 = 112,
-    F2 = 113,
-    F3 = 114,
-    F4 = 115,
-    F5 = 116,
-    F6 = 117,
-    F7 = 118,
-    F8 = 119,
-    F9 = 120,
-    F10 = 121,
-    F11 = 122,
-    F12 = 123,
-    F13 = 124,
-    F14 = 125,
-    F15 = 126,
-    ScrollLock = 145,
-    Semicolon = 186,
-    Equals = 187,
-    Comma = 188,
-    Minus = 189,
-    Period = 190,
-    Slash = 191,
-    Grave = 192,
-    LBracket = 219,
-    Backslash = 220,
-    RBracket = 221,
-    Apostrophe = 222,
-}
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct KeyCode(u32);
 
 impl KeyCode {
-    pub fn from_u8(n: u8) -> Option<Self> {
-        num_traits::FromPrimitive::from_u8(n)
+    pub const UNKNOWN: KeyCode = KeyCode(0);
+    pub const MOUSE_LEFT: KeyCode = KeyCode(1);
+    pub const MOUSE_RIGHT: KeyCode = KeyCode(2);
+    pub const MOUSE_MIDDLE: KeyCode = KeyCode(4);
+    pub const BACKSPACE: KeyCode = KeyCode(8);
+    pub const TAB: KeyCode = KeyCode(9);
+    pub const RETURN: KeyCode = KeyCode(13);
+    pub const COMMAND: KeyCode = KeyCode(15);
+    pub const SHIFT: KeyCode = KeyCode(16);
+    pub const CONTROL: KeyCode = KeyCode(17);
+    pub const ALT: KeyCode = KeyCode(18);
+    pub const PAUSE: KeyCode = KeyCode(19);
+    pub const CAPS_LOCK: KeyCode = KeyCode(20);
+    pub const NUMPAD: KeyCode = KeyCode(21);
+    pub const ESCAPE: KeyCode = KeyCode(27);
+    pub const SPACE: KeyCode = KeyCode(32);
+    pub const PG_UP: KeyCode = KeyCode(33);
+    pub const PG_DOWN: KeyCode = KeyCode(34);
+    pub const END: KeyCode = KeyCode(35);
+    pub const HOME: KeyCode = KeyCode(36);
+    pub const LEFT: KeyCode = KeyCode(37);
+    pub const UP: KeyCode = KeyCode(38);
+    pub const RIGHT: KeyCode = KeyCode(39);
+    pub const DOWN: KeyCode = KeyCode(40);
+    pub const INSERT: KeyCode = KeyCode(45);
+    pub const DELETE: KeyCode = KeyCode(46);
+    pub const KEY0: KeyCode = KeyCode(48);
+    pub const KEY1: KeyCode = KeyCode(49);
+    pub const KEY2: KeyCode = KeyCode(50);
+    pub const KEY3: KeyCode = KeyCode(51);
+    pub const KEY4: KeyCode = KeyCode(52);
+    pub const KEY5: KeyCode = KeyCode(53);
+    pub const KEY6: KeyCode = KeyCode(54);
+    pub const KEY7: KeyCode = KeyCode(55);
+    pub const KEY8: KeyCode = KeyCode(56);
+    pub const KEY9: KeyCode = KeyCode(57);
+    pub const A: KeyCode = KeyCode(65);
+    pub const B: KeyCode = KeyCode(66);
+    pub const C: KeyCode = KeyCode(67);
+    pub const D: KeyCode = KeyCode(68);
+    pub const E: KeyCode = KeyCode(69);
+    pub const F: KeyCode = KeyCode(70);
+    pub const G: KeyCode = KeyCode(71);
+    pub const H: KeyCode = KeyCode(72);
+    pub const I: KeyCode = KeyCode(73);
+    pub const J: KeyCode = KeyCode(74);
+    pub const K: KeyCode = KeyCode(75);
+    pub const L: KeyCode = KeyCode(76);
+    pub const M: KeyCode = KeyCode(77);
+    pub const N: KeyCode = KeyCode(78);
+    pub const O: KeyCode = KeyCode(79);
+    pub const P: KeyCode = KeyCode(80);
+    pub const Q: KeyCode = KeyCode(81);
+    pub const R: KeyCode = KeyCode(82);
+    pub const S: KeyCode = KeyCode(83);
+    pub const T: KeyCode = KeyCode(84);
+    pub const U: KeyCode = KeyCode(85);
+    pub const V: KeyCode = KeyCode(86);
+    pub const W: KeyCode = KeyCode(87);
+    pub const X: KeyCode = KeyCode(88);
+    pub const Y: KeyCode = KeyCode(89);
+    pub const Z: KeyCode = KeyCode(90);
+    pub const NUMPAD0: KeyCode = KeyCode(96);
+    pub const NUMPAD1: KeyCode = KeyCode(97);
+    pub const NUMPAD2: KeyCode = KeyCode(98);
+    pub const NUMPAD3: KeyCode = KeyCode(99);
+    pub const NUMPAD4: KeyCode = KeyCode(100);
+    pub const NUMPAD5: KeyCode = KeyCode(101);
+    pub const NUMPAD6: KeyCode = KeyCode(102);
+    pub const NUMPAD7: KeyCode = KeyCode(103);
+    pub const NUMPAD8: KeyCode = KeyCode(104);
+    pub const NUMPAD9: KeyCode = KeyCode(105);
+    pub const MULTIPLY: KeyCode = KeyCode(106);
+    pub const PLUS: KeyCode = KeyCode(107);
+    pub const NUMPAD_ENTER: KeyCode = KeyCode(108);
+    pub const NUMPAD_MINUS: KeyCode = KeyCode(109);
+    pub const NUMPAD_PERIOD: KeyCode = KeyCode(110);
+    pub const NUMPAD_SLASH: KeyCode = KeyCode(111);
+    pub const F1: KeyCode = KeyCode(112);
+    pub const F2: KeyCode = KeyCode(113);
+    pub const F3: KeyCode = KeyCode(114);
+    pub const F4: KeyCode = KeyCode(115);
+    pub const F5: KeyCode = KeyCode(116);
+    pub const F6: KeyCode = KeyCode(117);
+    pub const F7: KeyCode = KeyCode(118);
+    pub const F8: KeyCode = KeyCode(119);
+    pub const F9: KeyCode = KeyCode(120);
+    pub const F10: KeyCode = KeyCode(121);
+    pub const F11: KeyCode = KeyCode(122);
+    pub const F12: KeyCode = KeyCode(123);
+    pub const F13: KeyCode = KeyCode(124);
+    pub const F14: KeyCode = KeyCode(125);
+    pub const F15: KeyCode = KeyCode(126);
+    pub const F16: KeyCode = KeyCode(127); // undocumented
+    pub const F17: KeyCode = KeyCode(128); // undocumented
+    pub const F18: KeyCode = KeyCode(129); // undocumented
+    pub const F19: KeyCode = KeyCode(130); // undocumented
+    pub const F20: KeyCode = KeyCode(131); // undocumented
+    pub const F21: KeyCode = KeyCode(132); // undocumented
+    pub const F22: KeyCode = KeyCode(133); // undocumented
+    pub const F23: KeyCode = KeyCode(134); // undocumented
+    pub const F24: KeyCode = KeyCode(135); // undocumented
+    pub const NUM_LOCK: KeyCode = KeyCode(144);
+    pub const SCROLL_LOCK: KeyCode = KeyCode(145);
+    pub const SEMICOLON: KeyCode = KeyCode(186);
+    pub const EQUALS: KeyCode = KeyCode(187);
+    pub const COMMA: KeyCode = KeyCode(188);
+    pub const MINUS: KeyCode = KeyCode(189);
+    pub const PERIOD: KeyCode = KeyCode(190);
+    pub const SLASH: KeyCode = KeyCode(191);
+    pub const GRAVE: KeyCode = KeyCode(192);
+    pub const LBRACKET: KeyCode = KeyCode(219);
+    pub const BACKSLASH: KeyCode = KeyCode(220);
+    pub const RBRACKET: KeyCode = KeyCode(221);
+    pub const APOSTROPHE: KeyCode = KeyCode(222);
+
+    #[inline]
+    pub const fn from_code(code: u32) -> Self {
+        Self(code)
+    }
+
+    #[inline]
+    pub const fn value(self) -> u32 {
+        self.0
     }
 }
 
 /// Subset of `KeyCode` that contains only mouse buttons.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum MouseButton {
-    Unknown = KeyCode::Unknown as isize,
-    Left = KeyCode::MouseLeft as isize,
-    Right = KeyCode::MouseRight as isize,
-    Middle = KeyCode::MouseMiddle as isize,
+    Unknown,
+    Left,
+    Right,
+    Middle,
 }
 
 impl From<MouseButton> for KeyCode {
     fn from(button: MouseButton) -> Self {
         match button {
-            MouseButton::Unknown => Self::Unknown,
-            MouseButton::Left => Self::MouseLeft,
-            MouseButton::Right => Self::MouseRight,
-            MouseButton::Middle => Self::MouseMiddle,
+            MouseButton::Unknown => Self::UNKNOWN,
+            MouseButton::Left => Self::MOUSE_LEFT,
+            MouseButton::Right => Self::MOUSE_RIGHT,
+            MouseButton::Middle => Self::MOUSE_MIDDLE,
         }
     }
 }
 
-/// Key codes for SWF4 keyPress button handlers. These are annoyingly different than
-/// `Key.isDown` key codes.
+/// Key codes for SWF4 keyPress button handlers.
+///
+/// These are annoyingly different than `Key.isDown` key codes.
+///
 /// TODO: After 18, these are mostly ASCII... should we just use u8? How are different
-/// keyboard layouts/languages handled?
-/// SWF19 pp. 198-199
-#[derive(Debug, PartialEq, Eq, Copy, Clone, FromPrimitive)]
+///   keyboard layouts/languages handled?
+///   SWF19 pp. 198-199
+#[derive(Debug, PartialEq, Eq, Copy, Clone, FromPrimitive, ToPrimitive)]
 pub enum ButtonKeyCode {
     Unknown = 0,
     Left = 1,
@@ -620,25 +742,62 @@ impl ButtonKeyCode {
     pub fn from_u8(n: u8) -> Option<Self> {
         num_traits::FromPrimitive::from_u8(n)
     }
+
+    pub fn from_key_code(key_code: KeyCode) -> Option<Self> {
+        Some(match key_code {
+            KeyCode::LEFT => ButtonKeyCode::Left,
+            KeyCode::RIGHT => ButtonKeyCode::Right,
+            KeyCode::HOME => ButtonKeyCode::Home,
+            KeyCode::END => ButtonKeyCode::End,
+            KeyCode::INSERT => ButtonKeyCode::Insert,
+            KeyCode::DELETE => ButtonKeyCode::Delete,
+            KeyCode::BACKSPACE => ButtonKeyCode::Backspace,
+            KeyCode::RETURN => ButtonKeyCode::Return,
+            KeyCode::UP => ButtonKeyCode::Up,
+            KeyCode::DOWN => ButtonKeyCode::Down,
+            KeyCode::PG_UP => ButtonKeyCode::PgUp,
+            KeyCode::PG_DOWN => ButtonKeyCode::PgDown,
+            KeyCode::ESCAPE => ButtonKeyCode::Escape,
+            KeyCode::TAB => ButtonKeyCode::Tab,
+            _ => return None,
+        })
+    }
+
+    pub fn from_player_event(event: PlayerEvent) -> Option<Self> {
+        match event {
+            // ASCII characters convert directly to keyPress button events.
+            PlayerEvent::TextInput { codepoint }
+                if codepoint as u32 >= 32 && codepoint as u32 <= 126 =>
+            {
+                Some(ButtonKeyCode::from_u8(codepoint as u8).unwrap())
+            }
+
+            // Special keys have custom values for keyPress.
+            PlayerEvent::KeyDown { key_code, .. } => Self::from_key_code(key_code),
+            _ => None,
+        }
+    }
+
+    pub fn to_u8(&self) -> u8 {
+        num_traits::ToPrimitive::to_u8(self).unwrap_or_default()
+    }
 }
 
-pub fn key_code_to_button_key_code(key_code: KeyCode) -> Option<ButtonKeyCode> {
-    let out = match key_code {
-        KeyCode::Left => ButtonKeyCode::Left,
-        KeyCode::Right => ButtonKeyCode::Right,
-        KeyCode::Home => ButtonKeyCode::Home,
-        KeyCode::End => ButtonKeyCode::End,
-        KeyCode::Insert => ButtonKeyCode::Insert,
-        KeyCode::Delete => ButtonKeyCode::Delete,
-        KeyCode::Backspace => ButtonKeyCode::Backspace,
-        KeyCode::Return => ButtonKeyCode::Return,
-        KeyCode::Up => ButtonKeyCode::Up,
-        KeyCode::Down => ButtonKeyCode::Down,
-        KeyCode::PgUp => ButtonKeyCode::PgUp,
-        KeyCode::PgDown => ButtonKeyCode::PgDown,
-        KeyCode::Escape => ButtonKeyCode::Escape,
-        KeyCode::Tab => ButtonKeyCode::Tab,
-        _ => return None,
-    };
-    Some(out)
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
+pub enum GamepadButton {
+    South,
+    East,
+    North,
+    West,
+    LeftTrigger,
+    LeftTrigger2,
+    RightTrigger,
+    RightTrigger2,
+    Select,
+    Start,
+    DPadUp,
+    DPadDown,
+    DPadLeft,
+    DPadRight,
 }

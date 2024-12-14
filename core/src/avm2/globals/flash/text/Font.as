@@ -1,4 +1,5 @@
 package flash.text {
+    [Ruffle(InstanceAllocator)]
     public class Font {
         public static native function enumerateFonts(enumerateDeviceFonts:Boolean = false):Array;
         public static native function registerFont(font:Class):void;

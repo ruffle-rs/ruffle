@@ -1,0 +1,37 @@
+input: <a>
+TypeError: Error #1085: The element type "a" must be terminated by the matching end-tag "</a>".
+input: <a><b>
+TypeError: Error #1085: The element type "b" must be terminated by the matching end-tag "</b>".
+input: <a></a>
+result: <a/>
+input: <a></a/>
+result: <a/>
+input: <a></a />
+result: <a/>
+input: <a></a >
+result: <a/>
+input: <a></a	>
+result: <a/>
+input: <a></a hello="world">
+result: <a/>
+input: <a></b>
+TypeError: Error #1085: The element type "a" must be terminated by the matching end-tag "</a>".
+input: <a></b/>
+TypeError: Error #1085: The element type "a" must be terminated by the matching end-tag "</a>".
+input: <a></b//>
+TypeError: Error #1085: The element type "a" must be terminated by the matching end-tag "</a>".
+input: <a></b >
+TypeError: Error #1085: The element type "a" must be terminated by the matching end-tag "</a>".
+input: <a></b	>
+TypeError: Error #1085: The element type "a" must be terminated by the matching end-tag "</a>".
+input: <a></b hello="world">
+TypeError: Error #1085: The element type "a" must be terminated by the matching end-tag "</a>".
+input: <a></A>
+TypeError: Error #1085: The element type "a" must be terminated by the matching end-tag "</a>".
+input: <a></abc>
+TypeError: Error #1085: The element type "a" must be terminated by the matching end-tag "</a>".
+input: <root><a></a/><test/></root>
+result: <root>
+  <a/>
+  <test/>
+</root>

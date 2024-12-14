@@ -1,0 +1,5 @@
+num_frames = 75
+
+[player_options]
+viewport_dimensions = { width = 550, height = 400, scale_factor = 1.0 }
+with_renderer = { optional = true, sample_count = 1 }

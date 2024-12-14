@@ -1,5 +1,5 @@
 use lru::LruCache;
-use naga_agal::{SamplerOverride, VertexAttributeFormat};
+use naga_agal::{SamplerConfig, VertexAttributeFormat};
 use ruffle_render::backend::ShaderModule;
 use std::{
     borrow::Cow,
@@ -8,21 +8,15 @@ use std::{
 };
 use wgpu::SamplerBindingType;
 
-use super::{
-    current_pipeline::{
-        BoundTextureData, SAMPLER_CLAMP_LINEAR, SAMPLER_CLAMP_NEAREST,
-        SAMPLER_CLAMP_U_REPEAT_V_LINEAR, SAMPLER_CLAMP_U_REPEAT_V_NEAREST, SAMPLER_REPEAT_LINEAR,
-        SAMPLER_REPEAT_NEAREST, SAMPLER_REPEAT_U_CLAMP_V_LINEAR, SAMPLER_REPEAT_U_CLAMP_V_NEAREST,
-        TEXTURE_START_BIND_INDEX,
-    },
-    MAX_VERTEX_ATTRIBUTES,
-};
+use super::MAX_VERTEX_ATTRIBUTES;
 
 use crate::descriptors::Descriptors;
 
 pub struct ShaderPairAgal {
     vertex_bytecode: Vec<u8>,
+
     fragment_bytecode: Vec<u8>,
+    fragment_sampler_configs: [Option<SamplerConfig>; 8],
     // Caches compiled wgpu shader modules. The cache key represents all of the data
     // that we need to pass to `naga_agal::agal_to_naga` to compile a shader.
     compiled: RefCell<LruCache<ShaderCompileData, CompiledShaderProgram>>,
@@ -38,12 +32,20 @@ pub struct CompiledShaderProgram {
 
 impl ShaderPairAgal {
     pub fn new(vertex_bytecode: Vec<u8>, fragment_bytecode: Vec<u8>) -> Self {
+        let fragment_sampler_configs =
+            naga_agal::extract_sampler_configs(&fragment_bytecode).unwrap();
+
         Self {
             vertex_bytecode,
             fragment_bytecode,
+            fragment_sampler_configs,
             // TODO - figure out a good size for this cache.
             compiled: RefCell::new(LruCache::new(NonZeroUsize::new(2).unwrap())),
         }
+    }
+
+    pub fn fragment_sampler_configs(&self) -> &[Option<SamplerConfig>; 8] {
+        &self.fragment_sampler_configs
     }
 
     pub fn compile(
@@ -58,7 +60,7 @@ impl ShaderPairAgal {
                 let vertex_naga_module = naga_agal::agal_to_naga(
                     &self.vertex_bytecode,
                     &data.vertex_attributes,
-                    &data.sampler_overrides,
+                    &data.sampler_configs,
                 )
                 .unwrap();
                 let vertex_module =
@@ -72,7 +74,7 @@ impl ShaderPairAgal {
                 let fragment_naga_module = naga_agal::agal_to_naga(
                     &self.fragment_bytecode,
                     &data.vertex_attributes,
-                    &data.sampler_overrides,
+                    &data.sampler_configs,
                 )
                 .unwrap();
                 let fragment_module =
@@ -106,74 +108,28 @@ impl ShaderPairAgal {
                         },
                         count: None,
                     },
-                    // One sampler per filter/wrapping combination - see BitmapFilters
-                    // An AGAL shader can use any of these samplers, so
-                    // we need to bind them all.
-                    wgpu::BindGroupLayoutEntry {
-                        binding: SAMPLER_REPEAT_LINEAR,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: SAMPLER_REPEAT_NEAREST,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: SAMPLER_CLAMP_LINEAR,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: SAMPLER_CLAMP_NEAREST,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: SAMPLER_CLAMP_U_REPEAT_V_LINEAR,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: SAMPLER_CLAMP_U_REPEAT_V_NEAREST,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: SAMPLER_REPEAT_U_CLAMP_V_LINEAR,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: SAMPLER_REPEAT_U_CLAMP_V_NEAREST,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
                 ];
 
-                for (i, bound_texture) in data.bound_textures.iter().enumerate() {
-                    if let Some(bound_texture) = bound_texture {
-                        let dimension = if bound_texture.cube {
-                            wgpu::TextureViewDimension::Cube
-                        } else {
-                            wgpu::TextureViewDimension::D2
+                for (i, texture_info) in data.texture_infos.iter().enumerate() {
+                    if let Some(texture_info) = texture_info {
+                        let dimension = match texture_info {
+                            ShaderTextureInfo::D2 => wgpu::TextureViewDimension::D2,
+                            ShaderTextureInfo::Cube => wgpu::TextureViewDimension::Cube,
                         };
                         layout_entries.push(wgpu::BindGroupLayoutEntry {
-                            binding: TEXTURE_START_BIND_INDEX + i as u32,
+                            binding: naga_agal::TEXTURE_START_BIND_INDEX + i as u32,
                             visibility: wgpu::ShaderStages::FRAGMENT,
                             ty: wgpu::BindingType::Texture {
                                 sample_type: wgpu::TextureSampleType::Float { filterable: true },
                                 view_dimension: dimension,
                                 multisampled: false,
                             },
+                            count: None,
+                        });
+                        layout_entries.push(wgpu::BindGroupLayoutEntry {
+                            binding: naga_agal::TEXTURE_SAMPLER_START_BIND_INDEX + i as u32,
+                            visibility: wgpu::ShaderStages::FRAGMENT,
+                            ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
                             count: None,
                         });
                     }
@@ -198,9 +154,15 @@ impl ShaderPairAgal {
     }
 }
 
+#[derive(Hash, PartialEq, Eq, Clone, Copy)]
+pub enum ShaderTextureInfo {
+    D2,
+    Cube,
+}
+
 #[derive(Hash, Eq, PartialEq, Clone)]
 pub struct ShaderCompileData {
-    pub sampler_overrides: [Option<SamplerOverride>; 8],
+    pub sampler_configs: [SamplerConfig; 8],
     pub vertex_attributes: [Option<VertexAttributeFormat>; MAX_VERTEX_ATTRIBUTES],
-    pub bound_textures: [Option<BoundTextureData>; 8],
+    pub texture_infos: [Option<ShaderTextureInfo>; 8],
 }

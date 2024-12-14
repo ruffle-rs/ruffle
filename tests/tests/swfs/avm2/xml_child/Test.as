@@ -7,12 +7,16 @@ var xml: XML = new XML("<x><foo>foo1</foo><bar>bar1</bar><foo>foo2</foo></x>")
 trace('child("foo") length: ' + xml.child("foo").length());
 trace('child("bar") length: ' + xml.child("bar").length());
 trace('child("XXXXX") length: ' + xml.child("XXX").length());
+trace('child("*") length: ' + xml.child("*").length());
 
 for each (var child in xml.child("foo")) {
   trace('child("foo") toString: '  + child.toString());
 }
 for each (var child in xml.child("bar")) {
   trace('child("bar") toString: '  + child.toString());
+}
+for each (var child in xml.child("*")) {
+  trace('child("*") toString: '  + child.toString());
 }
 
 var nested: XML = new XML("<x><a b='c'><b>bbb</b></a></x>")
@@ -45,3 +49,9 @@ trace('xml_list.child("unknown").length():', xml_list.child("unknown").length())
 trace('xml_list.child("b"):', xml_list.child("b"));
 trace('xml_list.child("c"):', xml_list.child("c"));
 trace('xml_list.child("unknown"):', xml_list.child("unknown"));
+
+var attrs: XML = <xml hello="world" foo="bar" />;
+trace('attrs.child("@unknown"):', attrs.child("@unknown"))
+trace('attrs.child("@hello"):', attrs.child("@hello"))
+trace('attrs.child("@foo"):', attrs.child("@foo"))
+trace('attrs.child("@*"):', attrs.child("@*"))

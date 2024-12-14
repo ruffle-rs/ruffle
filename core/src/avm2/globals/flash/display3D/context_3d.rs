@@ -1,16 +1,18 @@
 use crate::avm2::error::{argument_error, error, make_error_2008};
+use crate::avm2::globals::slots::flash_geom_matrix_3d as matrix3d_slots;
+use crate::avm2::globals::slots::flash_geom_rectangle as rectangle_slots;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Activation;
 use crate::avm2::TObject;
 use crate::avm2::Value;
 use crate::avm2::{Error, Object};
 use crate::avm2_stub_method;
-use ruffle_render::backend::Context3DTextureFilter;
 use ruffle_render::backend::Context3DWrapMode;
 use ruffle_render::backend::{
     BufferUsage, Context3DBlendFactor, Context3DCompareMode, Context3DTextureFormat,
     Context3DTriangleFace, Context3DVertexBufferFormat, ProgramType,
 };
+use ruffle_render::backend::{Context3DProfile, Context3DTextureFilter};
 use swf::{Rectangle, Twips};
 
 pub fn create_index_buffer<'gc>(
@@ -131,9 +133,9 @@ pub fn set_vertex_buffer_at<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(context) = this.as_context_3d() {
         let index = args.get_u32(activation, 0)?;
-        let buffer = if matches!(args[1], Value::Null) {
-            None
-        } else {
+        let buffer = args.try_get_object(activation, 1);
+
+        let buffer = if let Some(buffer) = buffer {
             // Note - we only check the format string if the buffer is non-null
             let format = args.get_string(activation, 3)?;
 
@@ -155,14 +157,9 @@ pub fn set_vertex_buffer_at<'gc>(
                 )?));
             };
 
-            Some((
-                args.get(1)
-                    .unwrap_or(&Value::Undefined)
-                    .coerce_to_object(activation)?
-                    .as_vertex_buffer()
-                    .unwrap(),
-                format,
-            ))
+            Some((buffer.as_vertex_buffer().unwrap(), format))
+        } else {
+            None
         };
 
         let buffer_offset = args.get_u32(activation, 2)?;
@@ -204,9 +201,7 @@ pub fn draw_triangles<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(context) = this.as_context_3d() {
         let index_buffer = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)?
+            .get_object(activation, 0, "indexBuffer")?
             .as_index_buffer()
             .unwrap();
 
@@ -225,6 +220,24 @@ pub fn present<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(context) = this.as_context_3d() {
         context.present(activation)?;
+    }
+    Ok(Value::Undefined)
+}
+
+pub fn get_profile<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    if let Some(context) = this.as_context_3d() {
+        return match context.with_context_3d(|context| context.profile()) {
+            Context3DProfile::Baseline => Ok("baseline".into()),
+            Context3DProfile::BaselineConstrained => Ok("baselineConstrained".into()),
+            Context3DProfile::BaselineExtended => Ok("baselineExtended".into()),
+            Context3DProfile::Standard => Ok("standard".into()),
+            Context3DProfile::StandardConstrained => Ok("standardConstrained".into()),
+            Context3DProfile::StandardExtended => Ok("standardExtended".into()),
+        };
     }
     Ok(Value::Undefined)
 }
@@ -273,12 +286,9 @@ pub fn set_program_constants_from_matrix<'gc>(
 
         let first_register = args.get_u32(activation, 1)?;
 
-        let mut matrix = args
-            .get(2)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)?;
+        let mut matrix = args.get_object(activation, 2, "matrix")?;
 
-        let user_transposedMatrix = args.get(3).unwrap_or(&Value::Undefined).coerce_to_boolean();
+        let user_transposed_matrix = args.get_bool(3);
 
         // Hack - we store in column-major form, but we need it in row-major form
         // So, do the *opposite* of what the user pasess in`
@@ -287,23 +297,26 @@ pub fn set_program_constants_from_matrix<'gc>(
         // It seems like the documentation is wrong - we really copy to the registers
         // in column-major order.
         // See https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/display3D/Context3D.hx#L1532-L1550
-        if user_transposedMatrix {
+        if user_transposed_matrix {
             matrix = matrix
                 .call_public_property("clone", &[], activation)?
-                .coerce_to_object(activation)?;
+                .as_object()
+                .expect("Matrix3D.clone returns Object");
 
             matrix.call_public_property("transpose", &[], activation)?;
         }
 
         let matrix_raw_data = matrix
-            .get_public_property("rawData", activation)?
-            .coerce_to_object(activation)?;
+            .get_slot(matrix3d_slots::_RAW_DATA)
+            .as_object()
+            .expect("rawData cannot be null");
+
         let matrix_raw_data = matrix_raw_data
             .as_vector_storage()
             .unwrap()
             .iter()
-            .map(|val| val.coerce_to_number(activation).map(|val| val as f32))
-            .collect::<Result<Vec<f32>, Error>>()?;
+            .map(|val| val.as_f64() as f32)
+            .collect::<Vec<f32>>();
 
         context.set_program_constants_from_matrix(is_vertex, first_register, matrix_raw_data);
     }
@@ -328,17 +341,13 @@ pub fn set_program_constants_from_vector<'gc>(
 
         let first_register = args.get_u32(activation, 1)?;
 
-        let vector = args
-            .get(2)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)?;
-
+        let vector = args.get_object(activation, 2, "vector")?;
         let vector = vector.as_vector_storage().unwrap();
 
         let num_registers = args.get_i32(activation, 3)?;
 
         let to_take = if num_registers != -1 {
-            // Each register requries 4 floating-point values
+            // Each register requires 4 floating-point values
             // FIXME - throw an error if 'vector' is too small
             num_registers as usize * 4
         } else {
@@ -347,12 +356,9 @@ pub fn set_program_constants_from_vector<'gc>(
 
         let raw_data = vector
             .iter()
-            .map(|val| {
-                val.as_number(activation.context.gc_context)
-                    .map(|val| val as f32)
-            })
+            .map(|val| val.as_f64() as f32)
             .take(to_take)
-            .collect::<Result<Vec<f32>, _>>()?;
+            .collect::<Vec<f32>>();
 
         context.set_program_constants_from_matrix(program_type, first_register, raw_data);
     }
@@ -360,19 +366,19 @@ pub fn set_program_constants_from_vector<'gc>(
 }
 
 pub fn clear<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
-        let red = args[0].as_number(activation.context.gc_context)?;
-        let green = args[1].as_number(activation.context.gc_context)?;
-        let blue = args[2].as_number(activation.context.gc_context)?;
-        let alpha = args[3].as_number(activation.context.gc_context)?;
-        let depth = args[4].as_number(activation.context.gc_context)?;
-        let stencil = args[5].as_integer(activation.context.gc_context)? as u32;
-        let mask = args[6].as_integer(activation.context.gc_context)? as u32;
+        let red = args[0].as_f64();
+        let green = args[1].as_f64();
+        let blue = args[2].as_f64();
+        let alpha = args[3].as_f64();
+        let depth = args[4].as_f64();
+        let stencil = args[5].as_i32() as u32;
+        let mask = args[6].as_i32() as u32;
         context.set_clear(red, green, blue, alpha, depth, stencil, mask);
     }
     Ok(Value::Undefined)
@@ -385,11 +391,11 @@ pub fn create_texture<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
-        let width = args[0].as_integer(activation.context.gc_context)? as u32;
-        let height = args[1].as_integer(activation.context.gc_context)? as u32;
+        let width = args[0].as_i32() as u32;
+        let height = args[1].as_i32() as u32;
         let format = args[2].coerce_to_string(activation)?;
         let optimize_for_render_to_texture = args[3].coerce_to_boolean();
-        let streaming_levels = args[4].as_integer(activation.context.gc_context)? as u32;
+        let streaming_levels = args[4].as_i32() as u32;
         let format = Context3DTextureFormat::from_wstr(&format).ok_or_else(|| {
             Error::RustError(
                 format!("Unsupported texture format in createTexture: {:?}", format).into(),
@@ -418,8 +424,8 @@ pub fn create_rectangle_texture<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
-        let width = args[0].as_integer(activation.context.gc_context)? as u32;
-        let height = args[1].as_integer(activation.context.gc_context)? as u32;
+        let width = args[0].as_i32() as u32;
+        let height = args[1].as_i32() as u32;
         let format = args[2].coerce_to_string(activation)?;
         let optimize_for_render_to_texture = args[3].coerce_to_boolean();
         let format = Context3DTextureFormat::from_wstr(&format).ok_or_else(|| {
@@ -454,10 +460,10 @@ pub fn create_cube_texture<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
-        let size = args[0].as_integer(activation.context.gc_context)? as u32;
+        let size = args[0].as_i32() as u32;
         let format = args[1].coerce_to_string(activation)?;
         let optimize_for_render_to_texture = args[2].coerce_to_boolean();
-        let streaming_levels = args[3].as_integer(activation.context.gc_context)? as u32;
+        let streaming_levels = args[3].as_i32() as u32;
         let format = Context3DTextureFormat::from_wstr(&format).ok_or_else(|| {
             Error::RustError(
                 format!(
@@ -486,22 +492,23 @@ pub fn set_texture_at<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
-        let sampler = args[0].as_integer(activation.context.gc_context)? as u32;
+        let sampler = args[0].as_i32() as u32;
         let mut cube = false;
-        let texture = if matches!(args[1], Value::Null) {
-            None
-        } else {
-            let obj = args[1].coerce_to_object(activation)?;
-            cube = obj.is_of_type(
+        let texture_object = args.try_get_object(activation, 1);
+        let texture = if let Some(texture_object) = texture_object {
+            cube = texture_object.is_of_type(
                 activation
                     .avm2()
                     .classes()
                     .cubetexture
                     .inner_class_definition(),
-                &mut activation.context,
             );
-            Some(obj.as_texture().unwrap().handle())
+
+            Some(texture_object.as_texture().unwrap().handle())
+        } else {
+            None
         };
+
         context.set_texture_at(sampler, texture, cube);
     }
     Ok(Value::Undefined)
@@ -585,21 +592,40 @@ pub fn set_render_to_texture<'gc>(
     let surface_selector = args.get_u32(activation, 3)?;
     let color_output_index = args.get_u32(activation, 4)?;
 
+    let mut error = None;
+    if texture.instance_class() == activation.avm2().class_defs().cubetexture {
+        if surface_selector > 5 {
+            error = Some((
+                3772,
+                "Error #3772: Cube textures need to have surfaceSelector [0..5].",
+            ));
+        }
+    } else if texture.instance_class() == activation.avm2().class_defs().rectangletexture {
+        if surface_selector != 0 {
+            error = Some((
+                3773,
+                "Error #3773: Rectangle textures need to have surfaceSelector = 0.",
+            ));
+        }
+    } else {
+        // normal Texture or video texture (but the latter should probably not be supported here anyway)
+        if surface_selector != 0 {
+            error = Some((
+                3771,
+                "Error #3771: 2D textures need to have surfaceSelector = 0.",
+            ));
+        }
+    }
+    if let Some((code, message)) = error {
+        return Err(Error::AvmError(argument_error(activation, message, code)?));
+    }
+
     if anti_alias != 0 {
         avm2_stub_method!(
             activation,
             "flash.display3D.Context3D",
             "setRenderToTexture",
             "antiAlias != 0"
-        );
-    }
-
-    if surface_selector != 0 {
-        avm2_stub_method!(
-            activation,
-            "flash.display3D.Context3D",
-            "setRenderToTexture",
-            "surfaceSelector != 0"
         );
     }
 
@@ -638,7 +664,7 @@ pub fn set_sampler_state_at<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(context) = this.as_context_3d() {
         // This is a native method, so all of the arguments have been checked and coerced for us
-        let sampler = args[0].as_integer(activation.context.gc_context)? as u32;
+        let sampler = args[0].as_i32() as u32;
         let wrap = args[1].coerce_to_string(activation)?;
         let filter = args[2].coerce_to_string(activation)?;
         let mip_filter = args[3].coerce_to_string(activation)?;
@@ -687,16 +713,16 @@ pub fn set_scissor_rectangle<'gc>(
     let rectangle = args.try_get_object(activation, 0);
     let rectangle = if let Some(rectangle) = rectangle {
         let x = rectangle
-            .get_public_property("x", activation)?
+            .get_slot(rectangle_slots::X)
             .coerce_to_number(activation)?;
         let y = rectangle
-            .get_public_property("y", activation)?
+            .get_slot(rectangle_slots::Y)
             .coerce_to_number(activation)?;
         let width = rectangle
-            .get_public_property("width", activation)?
+            .get_slot(rectangle_slots::WIDTH)
             .coerce_to_number(activation)?;
         let height = rectangle
-            .get_public_property("height", activation)?
+            .get_slot(rectangle_slots::HEIGHT)
             .coerce_to_number(activation)?;
         Some(Rectangle {
             x_min: Twips::from_pixels(x),
@@ -709,5 +735,18 @@ pub fn set_scissor_rectangle<'gc>(
     };
 
     context3d.set_scissor_rectangle(rectangle);
+    Ok(Value::Undefined)
+}
+
+pub fn dispose<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm2_stub_method!(activation, "flash.display3D.Context3D", "dispose");
+    this.as_context_3d()
+        .unwrap()
+        .stage3d()
+        .set_context3d(None, activation.context.gc_context);
     Ok(Value::Undefined)
 }

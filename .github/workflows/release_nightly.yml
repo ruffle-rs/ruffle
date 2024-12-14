@@ -11,7 +11,7 @@ on:
 jobs:
   create-nightly-release:
     name: Create Nightly Release
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       is_active: ${{ steps.activity.outputs.is_active }}
       date: ${{ steps.current_time_underscores.outputs.formattedTime }}
@@ -39,13 +39,13 @@ jobs:
           echo "is_active=$is_active" >> $GITHUB_OUTPUT
 
       - name: Get current time with dashes
-        uses: 1466587594/get-current-time@v2.1.1
+        uses: 1466587594/get-current-time@v2.1.2
         id: current_time_dashes
         with:
           format: YYYY-MM-DD
 
       - name: Get current time with underscores
-        uses: 1466587594/get-current-time@v2.1.1
+        uses: 1466587594/get-current-time@v2.1.2
         id: current_time_underscores
         with:
           format: YYYY_MM_DD
@@ -69,17 +69,17 @@ jobs:
       matrix:
         include:
           - build_name: linux-x86_64
-            os: ubuntu-22.04
+            os: ubuntu-24.04
 
           # Mac does two Rust builds to make a universal binary
           - build_name: macos-x86_64
-            os: macos-latest
+            os: macos-14
             target: x86_64-apple-darwin
             MACOSX_DEPLOYMENT_TARGET: 10.7
             DESKTOP_FEATURES: sandbox,jpegxr
 
           - build_name: macos-aarch64
-            os: macos-latest
+            os: macos-14
             target: aarch64-apple-darwin
             MACOSX_DEPLOYMENT_TARGET: 11.0
             DESKTOP_FEATURES: sandbox,jpegxr
@@ -89,12 +89,14 @@ jobs:
             target: i686-pc-windows-msvc
             RUSTFLAGS: -Ctarget-feature=+crt-static
             DESKTOP_FEATURES: jpegxr
+            MSI_ARCH: x86
 
           - build_name: windows-x86_64
             os: windows-latest
             target: x86_64-pc-windows-msvc
             RUSTFLAGS: -Ctarget-feature=+crt-static
             DESKTOP_FEATURES: jpegxr
+            MSI_ARCH: x64
 
     env:
       PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-${{ matrix.build_name }}.${{ startsWith(matrix.build_name, 'win') && 'zip' || 'tar.gz' }}
@@ -115,10 +117,17 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev libgtk-3-dev
+          sudo apt install -y libasound2-dev libxcb-shape0-dev libxcb-xfixes0-dev libgtk-3-dev libudev-dev
+
+      - name: Install WiX
+        run: |
+          dotnet tool install --global wix
+          wix extension add -g WixToolset.UI.wixext
+          wix extension add -g WixToolset.Util.wixext
+        if: runner.os == 'Windows'
 
       - name: Cargo build
-        run: cargo build --package ruffle_desktop --release ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
+        run: cargo build --locked --package ruffle_desktop --release ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
         env:
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MACOSX_DEPLOYMENT_TARGET }}
@@ -128,6 +137,15 @@ jobs:
           mkdir package
           cp README.md package/README.md
           cp LICENSE.md package/LICENSE.md
+
+      - name: Package MSI
+        run: |
+          cd desktop/packages/windows/wix
+          wix build ruffle.wxs -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext -arch ${{ matrix.MSI_ARCH }} -o ../../../../package/setup.msi -pdbtype none
+        env:
+          RUFFLE_VERSION: "0.1.0"
+          CARGO_BUILD_DIR: ../../../../target/${{ matrix.target }}/release
+        if: runner.os == 'Windows'
 
       - name: Package Windows
         if: runner.os == 'Windows'
@@ -139,6 +157,13 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           cp ${{ env.CARGO_BUILD_DIR }}/ruffle_desktop package/ruffle
+
+          # Package extras
+          mkdir -p package/extras
+          cp desktop/packages/linux/rs.ruffle.Ruffle.desktop package/extras
+          cp desktop/packages/linux/rs.ruffle.Ruffle.metainfo.xml package/extras
+          cp desktop/packages/linux/rs.ruffle.Ruffle.svg package/extras
+
           # We must enter the package/ directory in order to create a flat tarball (i.e. without a directory in it).
           cd package
           tar -czvf ../${{ env.PACKAGE_FILE }} *
@@ -151,14 +176,14 @@ jobs:
 
       - name: Build Safari Web Extension stub binary
         if: runner.os == 'macOS'
-        run: cargo build --package ruffle_web_safari --release ${{ matrix.target && '--target' }} ${{ matrix.target }}
+        run: cargo build --locked --package ruffle_web_safari --release ${{ matrix.target && '--target' }} ${{ matrix.target }}
         env:
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MACOSX_DEPLOYMENT_TARGET }}
 
       - name: Upload macOS build artifact
         if: runner.os == 'macOS'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.build_name }}
           path: |
@@ -169,7 +194,7 @@ jobs:
   build-mac-universal-binary:
     name: Build macOS universal binary
     needs: [create-nightly-release, build, build-web]
-    runs-on: macos-latest
+    runs-on: macos-14
     env:
       PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-macos-universal.tar.gz
     steps:
@@ -177,17 +202,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download aarch64 binary
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: macos-aarch64
 
       - name: Download x86_64 binary
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: macos-x86_64
 
       - name: Download Safari extension
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: macos-safari
 
@@ -264,14 +289,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build-web:
-    name: Build web${{ matrix.demo && ' demo' || '' }}
+  build-stub-report:
+    name: Build AVM2 stub repository
     needs: create-nightly-release
     if: needs.create-nightly-release.outputs.is_active == 'true'
-    runs-on: ubuntu-22.04
-    strategy:
-      matrix:
-        demo: [false, true]
+    runs-on: ubuntu-24.04
     steps:
       - name: Clone Ruffle repo
         uses: actions/checkout@v4
@@ -280,29 +302,61 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
+
+      - name: Generate report
+        run: ./stub-report/generate-report.sh
+
+      - name: Upload report
+        run: gh release upload "${{ needs.create-nightly-release.outputs.tag_name }}" avm2_report.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-web:
+    name: Build web${{ matrix.demo && ' demo' || '' }}
+    needs: create-nightly-release
+    if: needs.create-nightly-release.outputs.is_active == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      attestations: write
+      checks: read
+      contents: write
+      id-token: write
+      pull-requests: read
+      statuses: write
+    strategy:
+      matrix:
+        demo: [false, true]
+    steps:
+      - name: Clone Ruffle repo
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.81.0
           targets: wasm32-unknown-unknown
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           registry-url: https://registry.npmjs.org
 
       # wasm-bindgen-cli version must match wasm-bindgen crate version.
-      # Be sure to update in test_web.yml, web/Cargo.toml and web/README.md.
+      # Be sure to update in test_web.yml, Cargo.toml, web/docker/Dockerfile,
+      # and web/README.md as well.
       - name: Install wasm-bindgen
-        run: cargo install wasm-bindgen-cli --version 0.2.87
+        run: cargo install wasm-bindgen-cli --version 0.2.97
 
-      - name: Setup conda
-        uses: conda-incubator/setup-miniconda@v2
+      # Keep the version number in sync in all workflows,
+      # and in the extension builder Dockerfile!
+      - name: Install wasm-opt
+        uses: sigoden/install-binary@v1
         with:
-          activate-environment: binaryen
-
-      # conda is available only with "shell: bash -l {0}".
-      # See https://github.com/marketplace/actions/setup-miniconda.
-      - name: Install binaryen
-        shell: bash -l {0}
-        run: conda install -c conda-forge binaryen
+          repo: WebAssembly/binaryen
+          tag: version_120
+          name: wasm-opt
 
       - name: Install node packages
         working-directory: web
@@ -319,10 +373,23 @@ jobs:
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
         run: npm run version-seal
 
+      - name: Build web
+        env:
+          BUILD_ID: ${{ github.run_number }}
+          # Build web demo with WebGPU support for testing in Chrome origin trial on ruffle.rs
+          CARGO_FEATURES: jpegxr${{ matrix.demo && ',webgpu' || '' }}
+          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
+          WASM_SOURCE: cargo_and_store
+        working-directory: web
+        shell: bash -l {0}
+        run: npm run build:repro
+
       - name: Produce reproducible source archive
         if: ${{ !matrix.demo }}
         shell: bash -l {0}
-        run: zip -r reproducible-source.zip . -x /web/node_modules/**/* -x /web/**/node_modules/**/* && cp reproducible-source.zip "${{ needs.create-nightly-release.outputs.package_prefix }}-reproducible-source.zip"
+        run: |
+          zip -r reproducible-source.zip . -x '/web/node_modules/*' '/web/*/node_modules/*' '/web/packages/*/dist/*' '/web/docker/docker_builds/packages/*' '/target/*' '/.git/*' '/tests/tests/swfs/*'
+          cp reproducible-source.zip "${{ needs.create-nightly-release.outputs.package_prefix }}-reproducible-source.zip"
 
       - name: Upload reproducible source archive
         if: ${{ !matrix.demo }}
@@ -334,22 +401,14 @@ jobs:
           package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-reproducible-source.zip"
           gh release upload "$tag_name" "$package_file"
 
-      - name: Build web
-        env:
-          BUILD_ID: ${{ github.run_number }}
-          # Build web demo with WebGPU support for testing in Chrome origin trial on ruffle.rs
-          CARGO_FEATURES: jpegxr${{ matrix.demo && ',webgpu' || '' }}
-          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
+      - name: Build web docs
         working-directory: web
-        shell: bash -l {0}
-        run: |
-          npm run build:repro
-          npm run docs
+        run: npm run docs
 
       - name: Publish npm package
         if: ${{ !matrix.demo }}
         # npm scoped packages are private by default, explicitly make public
-        run: npm publish --access public
+        run: npm publish --access public --provenance
         continue-on-error: true
         working-directory: web/packages/selfhosted/dist
         env:
@@ -382,7 +441,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Safari build artifact
-        uses: actions/upload-artifact@v3
+        if: ${{ !matrix.demo }}
+        uses: actions/upload-artifact@v4
         with:
           name: macos-safari
           path: ./web/packages/extension/dist/ruffle_extension.zip
@@ -394,7 +454,7 @@ jobs:
           package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension-firefox-unsigned.xpi"
           cp "./web/packages/extension/dist/firefox_unsigned.xpi" "$package_file"
           gh release upload "$tag_name" "$package_file"
-          rm "$package_file" 
+          rm "$package_file"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -404,7 +464,7 @@ jobs:
         continue-on-error: true
         env:
           CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
-        uses: mnao305/chrome-extension-upload@v4.0.1
+        uses: mnao305/chrome-extension-upload@v5.0.0
         with:
           extension-id: ${{ secrets.CHROME_EXTENSION_ID }}
           client-id: ${{ secrets.CHROME_CLIENT_ID }}
@@ -418,13 +478,12 @@ jobs:
         continue-on-error: true
         env:
           EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
-        uses: wdzeng/edge-addon@v1
+        uses: wdzeng/edge-addon@v2
         with:
           product-id: ${{ secrets.EDGE_PRODUCT_ID }}
           zip-path: ./web/packages/extension/dist/ruffle_extension.zip
           client-id: ${{ secrets.EDGE_CLIENT_ID }}
-          client-secret: ${{ secrets.EDGE_CLIENT_SECRET }}
-          access-token-url: ${{ secrets.EDGE_ACCESS_TOKEN_URL }}
+          api-key: ${{ secrets.EDGE_API_KEY }}
 
       - name: Clone web demo
         if: matrix.demo
@@ -440,10 +499,13 @@ jobs:
         if: matrix.demo
         run: |
           # Delete the old build.
-          rm -f *.js *.wasm *.html
+          rm -fr *
 
           # Copy the fresh build into this folder.
-          cp -f ../web/packages/demo/dist/* .
+          cp -fr ../web/packages/demo/dist/* .
+
+          # Restore our custom swfs
+          git restore swfs swfs.json
 
           # Create git commit. Amend previous commit to avoid daily commit spam.
           git config user.name "RuffleBuild"
@@ -499,19 +561,19 @@ jobs:
   publish-aur-package:
     name: Publish AUR package
     needs: [create-nightly-release, build]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: github.repository == 'ruffle-rs/ruffle'
     steps:
       - uses: actions/checkout@v4
 
       - name: Get current time with dashes
-        uses: 1466587594/get-current-time@v2.1.1
+        uses: 1466587594/get-current-time@v2.1.2
         id: current_time_dashes
         with:
           format: YYYY-MM-DD
 
       - name: Get current time with dots
-        uses: 1466587594/get-current-time@v2.1.1
+        uses: 1466587594/get-current-time@v2.1.2
         id: current_time_dots
         with:
           format: YYYY.MM.DD
@@ -523,15 +585,15 @@ jobs:
 
       - name: Update PKGBUILD
         run: >
-          sed -i ./PKGBUILD
+          sed -i desktop/packages/linux/aur/ruffle-nightly-bin/PKGBUILD
           -e "s/@VERSION@/${{ steps.current_time_dots.outputs.formattedTime }}/"
           -e "s/@SHA512SUM@/$(sha512sum ${{ needs.create-nightly-release.outputs.package_prefix }}-linux-x86_64.tar.gz | cut -d' ' -f1)/"
 
       - name: Publish AUR package
-        uses: KSXGitHub/github-actions-deploy-aur@v2.7.0
+        uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
         with:
           pkgname: ruffle-nightly-bin
-          pkgbuild: ./PKGBUILD
+          pkgbuild: desktop/packages/linux/aur/ruffle-nightly-bin/PKGBUILD
           commit_username: RuffleBuild
           commit_email: ruffle@ruffle.rs
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}

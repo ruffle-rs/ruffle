@@ -1,0 +1,5 @@
+Main ctor begins
+A ctor begins
+A ctor ends
+B ctor called
+Main ctor ends

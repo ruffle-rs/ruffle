@@ -9,15 +9,10 @@ import {
     signExtensions,
     referenceTypes,
 } from "wasm-feature-detect";
-import type { Ruffle } from "../dist/ruffle_web";
+import type { RuffleInstanceBuilder, ZipWriter } from "../dist/ruffle_web";
 import { setPolyfillsOnLoad } from "./js-polyfills";
-import { publicPath } from "./public-path";
-import { BaseLoadOptions } from "./load-options";
-import { RufflePlayer } from "./ruffle-player";
 
-declare global {
-    let __webpack_public_path__: string;
-}
+import { internalSourceApi } from "./internal/internal-source-api";
 
 type ProgressCallback = (bytesLoaded: number, bytesTotal: number) => void;
 
@@ -28,15 +23,13 @@ type ProgressCallback = (bytesLoaded: number, bytesTotal: number) => void;
  * You should not use it directly; this module will memoize the resource
  * download.
  *
- * @param config The `window.RufflePlayer.config` object.
  * @param progressCallback The callback that will be run with Ruffle's download progress.
- * @returns A ruffle constructor that may be used to create new Ruffle
+ * @returns A ruffle-builder constructor that may be used to create new RuffleInstanceBuilder
  * instances.
  */
 async function fetchRuffle(
-    config: BaseLoadOptions,
     progressCallback?: ProgressCallback,
-): Promise<typeof Ruffle> {
+): Promise<[typeof RuffleInstanceBuilder, typeof ZipWriter]> {
     // Apply some pure JavaScript polyfills to prevent conflicts with external
     // libraries, if needed.
     setPolyfillsOnLoad();
@@ -58,11 +51,17 @@ async function fetchRuffle(
         );
     }
 
-    __webpack_public_path__ = publicPath(config);
+    // Easy "on first load": just set it to something else after the call.
+    internalSourceApi.options.onFirstLoad?.();
+    internalSourceApi.options.onFirstLoad = () => {};
 
     // Note: The argument passed to import() has to be a simple string literal,
     // otherwise some bundler will get confused and won't include the module?
-    const { default: init, Ruffle } = await (extensionsSupported
+    const {
+        default: init,
+        RuffleInstanceBuilder,
+        ZipWriter,
+    } = await (extensionsSupported
         ? import("../dist/ruffle_web-wasm_extensions")
         : import("../dist/ruffle_web"));
     let response;
@@ -70,11 +69,11 @@ async function fetchRuffle(
         ? new URL("../dist/ruffle_web-wasm_extensions_bg.wasm", import.meta.url)
         : new URL("../dist/ruffle_web_bg.wasm", import.meta.url);
     const wasmResponse = await fetch(wasmUrl);
-    // The Pale Moon browser currently lacks support for ReadableStream.
-    // Unfortunately, currently it also lacks a sufficient WASM runtime.
-    // If this becomes the last thing Pale Moon lacks, allow Ruffle to work.
-    const readableStreamDefined = typeof ReadableStream === "function";
-    if (progressCallback && readableStreamDefined) {
+    // The Pale Moon browser lacks full support for ReadableStream.
+    // However, ReadableStream itself is defined.
+    const readableStreamProperlyDefined =
+        typeof ReadableStreamDefaultController === "function";
+    if (progressCallback && readableStreamProperlyDefined) {
         const contentLength =
             wasmResponse?.headers?.get("content-length") || "";
         let bytesLoaded = 0;
@@ -110,32 +109,28 @@ async function fetchRuffle(
 
     await init(response);
 
-    return Ruffle;
+    return [RuffleInstanceBuilder, ZipWriter];
 }
 
-let nativeConstructor: Promise<typeof Ruffle> | null = null;
+let nativeConstructors: Promise<
+    [typeof RuffleInstanceBuilder, typeof ZipWriter]
+> | null = null;
 
 /**
  * Obtain an instance of `Ruffle`.
  *
- * This function returns a promise which yields `Ruffle` asynchronously.
+ * This function returns a promise which yields a new `RuffleInstanceBuilder` asynchronously.
  *
- * @param container The container that the resulting canvas will be added to.
- * @param player The `RufflePlayer` object responsible for this instance of Ruffle.
- * @param config The `window.RufflePlayer.config` object.
  * @param progressCallback The callback that will be run with Ruffle's download progress.
- * @returns A ruffle instance.
+ * @returns A ruffle instance builder.
  */
-export async function loadRuffle(
-    container: HTMLElement,
-    player: RufflePlayer,
-    config: BaseLoadOptions,
+export async function createRuffleBuilder(
     progressCallback?: ProgressCallback,
-): Promise<Ruffle> {
-    if (nativeConstructor === null) {
-        nativeConstructor = fetchRuffle(config, progressCallback);
+): Promise<[RuffleInstanceBuilder, () => ZipWriter]> {
+    if (nativeConstructors === null) {
+        nativeConstructors = fetchRuffle(progressCallback);
     }
 
-    const constructor = await nativeConstructor;
-    return new constructor(container, player, config);
+    const constructors = await nativeConstructors;
+    return [new constructors[0](), () => new constructors[1]()];
 }

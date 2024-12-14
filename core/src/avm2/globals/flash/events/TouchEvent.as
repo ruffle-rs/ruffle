@@ -68,12 +68,14 @@ public class TouchEvent extends Event {
     }
 
     // Updates the specified ByteArray object with the high-frequency data points for a multi-point touch event.
+    [API("675")]
     public function getSamples(buffer: ByteArray, append: Boolean = false): uint {
         stub_method("flash.events.TouchEvent", "getSamples");
         return 0;
     }
 
     // Reports that the hardware button at the specified index is pressed.
+    [API("675")]
     public function isToolButtonDown(index: int): Boolean {
         stub_method("flash.events.TouchEvent", "isToolButtonDown");
         return false;

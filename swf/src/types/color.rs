@@ -1,7 +1,9 @@
+use std::fmt::{Debug, Formatter};
+
 /// An RGBA (red, green, blue, alpha) color.
 ///
 /// All components are stored as [`u8`] and have a color range of 0-255.
-#[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Copy, Clone, Default, Eq, PartialEq, Hash)]
 pub struct Color {
     /// The red component value.
     pub r: u8,
@@ -16,20 +18,34 @@ pub struct Color {
     pub a: u8,
 }
 
+impl Debug for Color {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Color(0x{:02x}{:02x}{:02x}{:02x})",
+            self.r, self.g, self.b, self.a,
+        )
+    }
+}
+
 impl Color {
     pub const TRANSPARENT: Self = Self::from_rgb(0, 0);
     pub const BLACK: Self = Self::from_rgb(0, 255);
+    pub const GRAY: Self = Self::from_rgb(0x555555, 255);
     pub const WHITE: Self = Self::from_rgb(0xFFFFFF, 255);
     pub const RED: Self = Self::from_rgb(0xFF0000, 255);
     pub const GREEN: Self = Self::from_rgb(0x00FF00, 255);
     pub const BLUE: Self = Self::from_rgb(0x0000FF, 255);
+    pub const YELLOW: Self = Self::from_rgb(0xFFFF00, 255);
+    pub const CYAN: Self = Self::from_rgb(0x00FFFF, 255);
+    pub const MAGENTA: Self = Self::from_rgb(0xFF00FF, 255);
 
     /// Creates a `Color` from a 32-bit `rgb` value and an `alpha` value.
     ///
     /// The byte-ordering of the 32-bit `rgb` value is XXRRGGBB.
     /// The most significant byte, represented by XX, is ignored;
     /// the `alpha` value is provided separately.
-    /// This is followed by the the red (RR), green (GG), and blue (BB) components values,
+    /// This is followed by the red (RR), green (GG), and blue (BB) components values,
     /// respectively.
     ///
     /// # Examples

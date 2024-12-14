@@ -3,19 +3,22 @@
 use indexmap::IndexMap;
 
 use crate::avm2::activation::Activation;
+use crate::avm2::error::make_error_2007;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
+use crate::avm2::globals::slots::flash_display_loader as loader_slots;
+use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;
 use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::ClassObject;
-use crate::avm2::Multiname;
 use crate::avm2::{Error, Object};
 use crate::avm2_stub_method;
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::display_object::LoaderDisplay;
 use crate::display_object::MovieClip;
+use crate::loader::LoadManager;
 use crate::loader::MovieLoaderVMData;
 use crate::tag_utils::SwfMovie;
 use std::sync::Arc;
@@ -43,11 +46,8 @@ pub fn loader_allocator<'gc>(
         None,
         false,
     )?;
-    loader.set_property(
-        &Multiname::new(
-            activation.avm2().flash_display_internal,
-            "_contentLoaderInfo",
-        ),
+    loader.set_slot(
+        loader_slots::_CONTENT_LOADER_INFO,
         loader_info.into(),
         activation,
     )?;
@@ -62,35 +62,42 @@ pub fn load<'gc>(
     let url_request = args.get_object(activation, 0, "request")?;
     let context = args.try_get_object(activation, 1);
 
+    let loader_info = this
+        .get_slot(loader_slots::_CONTENT_LOADER_INFO)
+        .as_object()
+        .unwrap();
+
+    let loader_info = loader_info.as_loader_info_object().unwrap();
+
+    if loader_info.init_event_fired() {
+        // FIXME: When calling load/loadBytes, then calling load/loadBytes again
+        // before the `init` event is fired, the first load is cancelled.
+        avm2_stub_method!(
+            activation,
+            "flash.display.Loader",
+            "load",
+            "reusing a Loader"
+        );
+    }
+
+    // Unload the loader, in case something was already loaded.
+    loader_info.unload(activation);
+
     // This is a dummy MovieClip, which will get overwritten in `Loader`
     let content = MovieClip::new(
         Arc::new(SwfMovie::empty(activation.context.swf.version())),
         activation.context.gc_context,
     );
 
-    let loader_info = this
-        .get_property(
-            &Multiname::new(
-                activation.avm2().flash_display_internal,
-                "_contentLoaderInfo",
-            ),
-            activation,
-        )?
-        .as_object()
-        .unwrap();
-
     // Update the LoaderStream - we still have a fake SwfMovie, but we now have the real target clip.
-    loader_info
-        .as_loader_info_object()
-        .unwrap()
-        .set_loader_stream(
-            LoaderStream::NotYetLoaded(
-                Arc::new(SwfMovie::empty(activation.context.swf.version())),
-                Some(content.into()),
-                false,
-            ),
-            activation.context.gc_context,
-        );
+    loader_info.set_loader_stream(
+        LoaderStream::NotYetLoaded(
+            Arc::new(SwfMovie::empty(activation.context.swf.version())),
+            Some(content.into()),
+            false,
+        ),
+        activation.context.gc_context,
+    );
 
     let request = request_from_url_request(activation, url_request)?;
 
@@ -101,7 +108,7 @@ pub fn load<'gc>(
         request,
         Some(url),
         MovieLoaderVMData::Avm2 {
-            loader_info,
+            loader_info: *loader_info,
             context,
             default_domain: activation
                 .caller_domain()
@@ -120,47 +127,49 @@ pub fn request_from_url_request<'gc>(
     // FIXME: set `followRedirects`  and `userAgent`
     // from the `URLRequest`
 
-    let mut url = url_request
-        .get_public_property("url", activation)?
-        .coerce_to_string(activation)?
-        .to_string();
+    let mut url = match url_request.get_slot(url_request_slots::_URL) {
+        Value::Null => return Err(make_error_2007(activation, "url")),
+        url => url.coerce_to_string(activation)?.to_string(),
+    };
 
     let method = url_request
-        .get_public_property("method", activation)?
+        .get_slot(url_request_slots::_METHOD)
         .coerce_to_string(activation)?;
 
     let headers = url_request
-        .get_public_property("requestHeaders", activation)?
-        .coerce_to_object(activation)?
-        .as_array_object()
-        .unwrap();
+        .get_slot(url_request_slots::_REQUEST_HEADERS)
+        .as_object();
 
-    let headers = headers.as_array_storage().unwrap();
     let mut string_headers = IndexMap::default();
-    for i in 0..headers.length() {
-        let Some(header) = headers.get(i).and_then(|val| val.as_object()) else {
-            continue;
-        };
+    if let Some(headers) = headers {
+        let headers = headers.as_array_object().unwrap();
 
-        let name = header
-            .get_public_property("name", activation)?
-            .coerce_to_string(activation)?
-            .to_string();
-        let value = header
-            .get_public_property("value", activation)?
-            .coerce_to_string(activation)?
-            .to_string();
+        let headers = headers.as_array_storage().unwrap();
 
-        // Note - testing with Flash Player shows that later entries in the array
-        // overwrite earlier ones with the same name. Flash Player never sends an HTTP
-        // request with duplicate headers
-        string_headers.insert(name, value);
+        for i in 0..headers.length() {
+            let Some(header) = headers.get(i).and_then(|val| val.as_object()) else {
+                continue;
+            };
+
+            let name = header
+                .get_public_property("name", activation)?
+                .coerce_to_string(activation)?
+                .to_string();
+            let value = header
+                .get_public_property("value", activation)?
+                .coerce_to_string(activation)?
+                .to_string();
+
+            // Note - testing with Flash Player shows that later entries in the array
+            // overwrite earlier ones with the same name. Flash Player never sends an HTTP
+            // request with duplicate headers
+            string_headers.insert(name, value);
+        }
     }
 
-    // TODO: URLRequest.method should not be able to have invalid types.
-    // We should throw an error there on set.
-    let method = NavigationMethod::from_method_str(&method).unwrap_or(NavigationMethod::Get);
-    let data = url_request.get_public_property("data", activation)?;
+    let method =
+        NavigationMethod::from_method_str(&method).expect("URLRequest should have a valid method");
+    let data = url_request.get_slot(url_request_slots::_DATA);
     let body = match (method, data) {
         (_, Value::Null | Value::Undefined) => None,
         (NavigationMethod::Get, data) => {
@@ -177,7 +186,7 @@ pub fn request_from_url_request<'gc>(
         }
         (NavigationMethod::Post, data) => {
             let content_type = url_request
-                .get_public_property("contentType", activation)?
+                .get_slot(url_request_slots::_CONTENT_TYPE)
                 .coerce_to_string(activation)?
                 .to_string();
             if let Some(ba) = data.as_object().and_then(|o| o.as_bytearray_object()) {
@@ -207,8 +216,29 @@ pub fn load_bytes<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let arg0 = args.get_object(activation, 0, "data")?;
-    let bytearray = arg0.as_bytearray().unwrap();
+    let bytes = arg0.as_bytearray().unwrap().bytes().to_vec();
     let context = args.try_get_object(activation, 1);
+
+    let loader_info = this
+        .get_slot(loader_slots::_CONTENT_LOADER_INFO)
+        .as_object()
+        .unwrap();
+
+    let loader_info = loader_info.as_loader_info_object().unwrap();
+
+    if loader_info.init_event_fired() {
+        // FIXME: When calling load/loadBytes, then calling load/loadBytes again
+        // before the `init` event is fired, the first load is cancelled.
+        avm2_stub_method!(
+            activation,
+            "flash.display.Loader",
+            "loadBytes",
+            "reusing a Loader"
+        );
+    }
+
+    // Unload the loader, in case something was already loaded.
+    loader_info.unload(activation);
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
     let content = MovieClip::new(
@@ -216,30 +246,24 @@ pub fn load_bytes<'gc>(
         activation.context.gc_context,
     );
 
-    let loader_info = this
-        .get_property(
-            &Multiname::new(
-                activation.avm2().flash_display_internal,
-                "_contentLoaderInfo",
-            ),
-            activation,
-        )?
-        .as_object()
-        .unwrap();
+    let default_domain = activation
+        .caller_domain()
+        .expect("Missing caller domain in Loader.loadBytes");
 
-    let future = activation.context.load_manager.load_movie_into_clip_bytes(
-        activation.context.player.clone(),
+    if let Err(e) = LoadManager::load_movie_into_clip_bytes(
+        activation.context,
         content.into(),
-        bytearray.bytes().to_vec(),
+        bytes,
         MovieLoaderVMData::Avm2 {
-            loader_info,
+            loader_info: *loader_info,
             context,
-            default_domain: activation
-                .caller_domain()
-                .expect("Missing caller domain in Loader.loadBytes"),
+            default_domain,
         },
-    );
-    activation.context.navigator.spawn_future(future);
+    ) {
+        return Err(Error::RustError(
+            format!("Error in Loader.loadBytes: {e:?}").into(),
+        ));
+    }
 
     Ok(Value::Undefined)
 }
@@ -249,28 +273,17 @@ pub fn unload<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    // TODO: Broadcast an "unload" event on the LoaderInfo and reset LoaderInfo properties
+    // TODO: Broadcast an "unload" event on the LoaderInfo
     avm2_stub_method!(activation, "flash.display.Loader", "unload");
-    let _ = crate::avm2::globals::flash::display::display_object_container::remove_child_at(
-        activation,
-        this,
-        &[0.into()],
-    );
 
     let loader_info = this
-        .get_property(
-            &Multiname::new(
-                activation.avm2().flash_display_internal,
-                "_contentLoaderInfo",
-            ),
-            activation,
-        )?
+        .get_slot(loader_slots::_CONTENT_LOADER_INFO)
         .as_object()
         .unwrap();
 
-    let loader_info_object = loader_info.as_loader_info_object().unwrap();
+    let loader_info = loader_info.as_loader_info_object().unwrap();
 
-    loader_info_object.unload(activation);
+    loader_info.unload(activation);
 
     Ok(Value::Undefined)
 }

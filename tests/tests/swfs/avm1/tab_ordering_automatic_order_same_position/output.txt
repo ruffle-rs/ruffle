@@ -1,0 +1,12 @@
+Focus changed: null -> _level0.clip1a
+Focus changed: _level0.clip1a -> _level0.clip2
+Focus changed: _level0.clip2 -> _level0.clip3
+Focus changed: _level0.clip3 -> _level0.clip4
+Focus changed: _level0.clip4 -> _level0.clip4.clipInner1
+Focus changed: _level0.clip4.clipInner1 -> _level0.clip3.clipInner2
+Focus changed: _level0.clip3.clipInner2 -> _level0.clip4.clipInner2
+Focus changed: _level0.clip4.clipInner2 -> _level0.clip5b
+Focus changed: _level0.clip5b -> _level0.clip6a
+Focus changed: _level0.clip6a -> _level0.clip1a
+Focus changed: _level0.clip1a -> _level0.clip2
+Focus changed: _level0.clip2 -> _level0.clip3
