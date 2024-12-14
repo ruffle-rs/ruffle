@@ -1,5 +1,16 @@
 preferences-dialog = Ruffle Preferences
 
+preferences-panel-general = General
+preferences-panel-compatibility-flags = Compatibility Flags
+
+preferences-panel-flag-overridden = This flag has been overridden by the user
+preferences-panel-flag-id = ID
+preferences-panel-flag-name = Name
+preferences-panel-flag-description = Description
+preferences-panel-flag-enabled = Enabled
+preferences-panel-flag-fp = FP
+preferences-panel-flag-fp-tooltip = The value which imitates the behavior of Flash Player
+
 preference-locked-by-cli = Read-Only (Set by CLI)
 
 graphics-backend = Graphics Backend
