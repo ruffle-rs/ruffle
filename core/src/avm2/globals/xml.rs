@@ -458,7 +458,7 @@ pub fn in_scope_namespaces<'gc>(
     // 4. Let a be a new Array created as if by calling the constructor, new Array()
     // ...
     // 7. Return a
-    Ok(ArrayObject::from_storage(activation, ArrayStorage::from_iter(in_scope_ns))?.into())
+    Ok(ArrayObject::from_storage(activation, ArrayStorage::from_iter(in_scope_ns)).into())
 }
 
 pub fn namespace_declarations<'gc>(
@@ -472,7 +472,7 @@ pub fn namespace_declarations<'gc>(
     // 1. Let a be a new Array created as if by calling the constructor, new Array()
     // 2. If x.[[Class]] ∈ {"text", "comment", "processing-instruction", "attribute"}, return a
     if !node.is_element() {
-        return Ok(ArrayObject::empty(activation)?.into());
+        return Ok(ArrayObject::empty(activation).into());
     }
 
     // 3. Let y = x.[[Parent]]
@@ -502,7 +502,7 @@ pub fn namespace_declarations<'gc>(
     // 9.a. Call the [[Put]] method of a with arguments ToString(i) and ns
     // 9.b. Let i = i + 1
     // 10. Return a
-    Ok(ArrayObject::from_storage(activation, ArrayStorage::from_iter(declared_namespaces))?.into())
+    Ok(ArrayObject::from_storage(activation, ArrayStorage::from_iter(declared_namespaces)).into())
 }
 
 pub fn local_name<'gc>(

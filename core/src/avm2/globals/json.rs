@@ -60,7 +60,7 @@ fn deserialize_json_inner<'gc>(
                 arr.push(Some(mapped_val));
             }
             let storage = ArrayStorage::from_storage(arr);
-            let array = ArrayObject::from_storage(activation, storage)?;
+            let array = ArrayObject::from_storage(activation, storage);
             array.into()
         }
     })

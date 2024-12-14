@@ -312,9 +312,8 @@ fn match_s<'gc>(
             if old_last_index == regexp.last_index() {
                 regexp.set_last_index(1);
             }
-            return Ok(ArrayObject::from_storage(activation, storage)
-                .unwrap()
-                .into());
+
+            return Ok(ArrayObject::from_storage(activation, storage).into());
         } else {
             let old = regexp.last_index();
             regexp.set_last_index(0);
@@ -326,9 +325,8 @@ fn match_s<'gc>(
                     storage.push(AvmString::new(activation.context.gc_context, substring).into());
                 }
                 regexp.set_last_index(old);
-                return Ok(ArrayObject::from_storage(activation, storage)
-                    .unwrap()
-                    .into());
+
+                return Ok(ArrayObject::from_storage(activation, storage).into());
             } else {
                 regexp.set_last_index(old);
                 // If the pattern parameter is a String or a non-global regular expression
@@ -495,9 +493,7 @@ fn split<'gc>(
             .collect()
     };
 
-    Ok(ArrayObject::from_storage(activation, storage)
-        .unwrap()
-        .into())
+    Ok(ArrayObject::from_storage(activation, storage).into())
 }
 
 /// Implements `String.substr`

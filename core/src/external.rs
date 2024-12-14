@@ -7,9 +7,11 @@ use crate::avm1::{
 };
 use crate::avm2::activation::Activation as Avm2Activation;
 use crate::avm2::error::Error as Avm2Error;
-use crate::avm2::object::TObject as _;
+use crate::avm2::object::{
+    ArrayObject as Avm2ArrayObject, Object as Avm2Object, ScriptObject as Avm2ScriptObject,
+    TObject as _,
+};
 use crate::avm2::Value as Avm2Value;
-use crate::avm2::{ArrayObject as Avm2ArrayObject, Object as Avm2Object};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
 use gc_arena::Collect;
@@ -248,12 +250,8 @@ impl Value {
                 Avm2Value::String(AvmString::new_utf8(activation.context.gc_context, value))
             }
             Value::Object(values) => {
-                let obj = activation
-                    .avm2()
-                    .classes()
-                    .object
-                    .construct(activation, &[])
-                    .unwrap();
+                let obj = Avm2ScriptObject::new_object(activation);
+
                 for (key, value) in values.into_iter() {
                     let key = AvmString::new_utf8(activation.context.gc_context, key);
                     let value = value.into_avm2(activation);
@@ -268,7 +266,7 @@ impl Value {
                     .map(|value| value.to_owned().into_avm2(activation))
                     .collect();
 
-                Avm2Value::Object(Avm2ArrayObject::from_storage(activation, storage).unwrap())
+                Avm2ArrayObject::from_storage(activation, storage).into()
             }
         }
     }

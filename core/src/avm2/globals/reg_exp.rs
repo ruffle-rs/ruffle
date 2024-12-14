@@ -213,7 +213,7 @@ pub fn exec<'gc>(
             None => return Ok(Value::Null),
         };
 
-        let object = ArrayObject::from_storage(activation, storage)?;
+        let object = ArrayObject::from_storage(activation, storage);
 
         object.set_string_property_local("index", Value::Number(index as f64), activation)?;
 

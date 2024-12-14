@@ -157,6 +157,6 @@ impl PixelBenderTypeExt for PixelBenderType {
             }
         };
         let storage = ArrayStorage::from_args(&vals);
-        Ok(ArrayObject::from_storage(activation, storage)?.into())
+        Ok(ArrayObject::from_storage(activation, storage).into())
     }
 }

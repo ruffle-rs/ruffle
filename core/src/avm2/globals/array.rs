@@ -176,8 +176,8 @@ pub fn set_length<'gc>(
 pub fn build_array<'gc>(
     activation: &mut Activation<'_, 'gc>,
     array: ArrayStorage<'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(ArrayObject::from_storage(activation, array)?.into())
+) -> Value<'gc> {
+    ArrayObject::from_storage(activation, array).into()
 }
 
 /// Implements `Array.concat`
@@ -204,7 +204,7 @@ pub fn concat<'gc>(
         }
     }
 
-    build_array(activation, base_array)
+    Ok(build_array(activation, base_array))
 }
 
 /// Resolves array holes.
@@ -440,7 +440,7 @@ pub fn map<'gc>(
         new_array.push(new_item);
     }
 
-    build_array(activation, new_array)
+    Ok(build_array(activation, new_array))
 }
 
 /// Implements `Array.filter`
@@ -465,7 +465,7 @@ pub fn filter<'gc>(
         }
     }
 
-    build_array(activation, new_array)
+    Ok(build_array(activation, new_array))
 }
 
 /// Implements `Array.every`
@@ -713,7 +713,7 @@ pub fn slice<'gc>(
             )?);
         }
 
-        return build_array(activation, new_array);
+        return Ok(build_array(activation, new_array));
     }
 
     Ok(Value::Undefined)
@@ -764,7 +764,7 @@ pub fn splice<'gc>(
                 swap(&mut *array, &mut resolved_array)
             }
 
-            return build_array(activation, removed_array);
+            return Ok(build_array(activation, removed_array));
         }
     }
 
@@ -1017,12 +1017,12 @@ fn sort_postprocess<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if unique_satisfied {
         if options.contains(SortOptions::RETURN_INDEXED_ARRAY) {
-            return build_array(
+            return Ok(build_array(
                 activation,
                 ArrayStorage::from_storage(
                     values.iter().map(|(i, _v)| Some((*i).into())).collect(),
                 ),
-            );
+            ));
         } else {
             if let Some(mut old_array) = this.as_array_storage_mut(activation.context.gc_context) {
                 let new_vec = values

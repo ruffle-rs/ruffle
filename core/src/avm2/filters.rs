@@ -354,7 +354,7 @@ fn color_matrix_filter_to_avm2<'gc>(
     let matrix = ArrayObject::from_storage(
         activation,
         filter.matrix.iter().map(|v| Value::from(*v)).collect(),
-    )?;
+    );
     activation
         .avm2()
         .classes()
@@ -433,7 +433,7 @@ fn convolution_filter_to_avm2<'gc>(
             .iter()
             .map(|v| Value::from(f64::from(*v)))
             .collect(),
-    )?;
+    );
     activation.avm2().classes().convolutionfilter.construct(
         activation,
         &[
@@ -771,7 +771,7 @@ fn gradient_filter_to_avm2<'gc>(
             .iter()
             .map(|v| Value::from(v.color.to_rgb()))
             .collect(),
-    )?;
+    );
     let alphas = ArrayObject::from_storage(
         activation,
         filter
@@ -779,11 +779,11 @@ fn gradient_filter_to_avm2<'gc>(
             .iter()
             .map(|v| Value::from(f64::from(v.color.a) / 255.0))
             .collect(),
-    )?;
+    );
     let ratios = ArrayObject::from_storage(
         activation,
         filter.colors.iter().map(|v| Value::from(v.ratio)).collect(),
-    )?;
+    );
     class.construct(
         activation,
         &[
