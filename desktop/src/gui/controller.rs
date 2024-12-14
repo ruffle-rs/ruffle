@@ -193,7 +193,9 @@ impl GuiController {
     }
 
     pub fn render(&mut self, mut player: Option<MutexGuard<Player>>) {
-        let taking_screenshot = self.gui.is_taking_screenshot();
+        let taking_screenshot = self.gui.get_taking_screenshot();
+        self.gui.set_taking_screenshot(false);
+        
         let surface_texture = self
             .surface
             .get_current_texture()

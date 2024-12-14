@@ -195,11 +195,12 @@ impl RuffleGui {
         player.set_volume(self.volume_controls.get_volume());
     }
 
-    fn is_taking_screenshot(&mut self) -> bool {
-        let taking_screenshot = self.taking_screenshot;
-        self.taking_screenshot = false;
+    pub fn set_taking_screenshot(&mut self, bool state) {
+        self.taking_screenshot = state;
+    }
 
-        taking_screenshot
+    pub fn get_taking_screenshot(&mut self) -> bool {
+        self.taking_screenshot
     }
 
     /// Renders the main menu bar at the top of the window.
@@ -312,7 +313,7 @@ impl RuffleGui {
                         }
                         if Button::new(text(&self.locale, "debug-menu-take-screenshot")).ui(ui).clicked() {
                             ui.close_menu();
-                            self.taking_screenshot = true;
+                            self.set_taking_screenshot(true)
                         }
                     });
                 });
