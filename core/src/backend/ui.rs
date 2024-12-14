@@ -1,3 +1,4 @@
+use crate::flags::CompatibilityFlag;
 pub use crate::loader::Error as DialogLoaderError;
 use crate::{backend::navigator::OwnedFuture, font::FontQuery};
 use chrono::{DateTime, Utc};
@@ -130,6 +131,10 @@ pub trait UiBackend: Any {
 
     /// Mark that any previously open dialog has been closed
     fn close_file_dialog(&mut self);
+
+    fn flag_enabled(&self, flag: CompatibilityFlag) -> bool {
+        flag.definition().default_value
+    }
 }
 
 /// A mouse cursor icon displayed by the Flash Player.
