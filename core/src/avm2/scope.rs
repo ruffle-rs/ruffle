@@ -189,7 +189,8 @@ impl<'gc> ScopeChain<'gc> {
                 // Wasn't in the objects traits, let's try dynamic properties if this is a with scope.
                 if scope.with() && values.has_own_property(multiname) {
                     // NOTE: We return the QName as `None` to indicate that we should never cache this result.
-                    // We NEVER cache the result of dynamic properties.
+                    // We NEVER cache the result of dynamic properties (and can't anyway because of the check
+                    // in ScopeContainer::new).
                     return Ok(Some((None, values)));
                 }
             }
