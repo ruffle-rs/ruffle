@@ -188,7 +188,7 @@ pub fn color_transform_to_object<'gc>(
     ];
     let ct_class = activation.avm2().classes().colortransform;
     let object = ct_class.construct(activation, &args)?;
-    Ok(object.into())
+    Ok(object)
 }
 
 pub fn matrix_to_object<'gc>(
@@ -208,7 +208,7 @@ pub fn matrix_to_object<'gc>(
         .classes()
         .matrix
         .construct(activation, &args)?;
-    Ok(object.into())
+    Ok(object)
 }
 
 pub fn object_to_matrix<'gc>(
@@ -265,7 +265,7 @@ fn rectangle_to_object<'gc>(
             rectangle.height().to_pixels().into(),
         ],
     )?;
-    Ok(object.into())
+    Ok(object)
 }
 
 pub fn get_matrix_3d<'gc>(
@@ -284,7 +284,7 @@ pub fn get_matrix_3d<'gc>(
             .classes()
             .matrix3d
             .construct(activation, &[])?;
-        Ok(object.into())
+        Ok(object)
     } else {
         Ok(Value::Null)
     }
@@ -332,7 +332,8 @@ pub fn get_perspective_projection<'gc>(
             .classes()
             .perspectiveprojection
             .construct(activation, &[])?;
-        Ok(object.into())
+
+        Ok(object)
     } else {
         Ok(Value::Null)
     }

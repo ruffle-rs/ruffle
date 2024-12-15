@@ -12,7 +12,7 @@ use crate::avm2::Namespace;
 pub fn namespace_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
-) -> Result<Object<'gc>, Error<'gc>> {
+) -> Result<Value<'gc>, Error<'gc>> {
     let api_version = activation.avm2().root_api_version;
     let namespaces = activation.avm2().namespaces;
 
@@ -80,12 +80,11 @@ pub fn call_handler<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(activation
+    activation
         .avm2()
         .classes()
         .namespace
-        .construct(activation, args)?
-        .into())
+        .construct(activation, args)
 }
 
 /// Implements `Namespace.prefix`'s getter

@@ -400,7 +400,7 @@ fn define_fn_on_global<'gc>(
         .get_defined_value(activation, qname)
         .expect("Function being defined on global should be defined in domain!");
 
-    global
+    Value::from(global)
         .init_property(&qname.into(), func, activation)
         .expect("Should set property");
 }
@@ -418,7 +418,7 @@ fn dynamic_class<'gc>(
     let class = class_object.inner_class_definition();
     let name = class.name();
 
-    global
+    Value::from(global)
         .init_property(&name.into(), class_object.into(), activation)
         .expect("Should set property");
 
@@ -451,7 +451,7 @@ fn class<'gc>(
 
     let class_object = ClassObject::from_class(activation, class_def, super_class)?;
 
-    global
+    Value::from(global)
         .init_property(&class_name.into(), class_object.into(), activation)
         .expect("Should set property");
 
@@ -482,7 +482,7 @@ fn vector_class<'gc>(
 
     let legacy_name = QName::new(namespaces.vector_internal, legacy_name);
 
-    global
+    Value::from(global)
         .init_property(&legacy_name.into(), vector_cls.into(), activation)
         .expect("Should set property");
 
@@ -653,7 +653,7 @@ pub fn load_player_globals<'gc>(
     let globals = ScriptObject::custom_object(mc, global_classdef, None, global_classdef.vtable());
 
     let scope = ScopeChain::new(domain);
-    let gs = scope.chain(mc, &[Scope::new(globals)]);
+    let gs = scope.chain(mc, &[Scope::new(globals.into())]);
     activation.set_outer(gs);
 
     let object_class = ClassObject::from_class_partial(activation, object_i_class, None)?;
@@ -707,7 +707,7 @@ pub fn load_player_globals<'gc>(
     let fn_class = fn_class.into_finished_class(activation)?;
 
     // Function's prototype is an instance of itself
-    let fn_proto = fn_class.construct(activation, &[])?;
+    let fn_proto = fn_class.construct(activation, &[])?.as_object().unwrap();
     fn_class.link_prototype(activation, fn_proto)?;
 
     // Object prototype is enough

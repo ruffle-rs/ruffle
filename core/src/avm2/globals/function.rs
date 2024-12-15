@@ -13,11 +13,9 @@ use crate::avm2::QName;
 /// Implements `Function`'s instance initializer.
 pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
     if !args.is_empty() {
         return Err(Error::AvmError(eval_error(
             activation,
@@ -25,8 +23,6 @@ pub fn instance_init<'gc>(
             1066,
         )?));
     }
-
-    activation.super_init(this, &[])?;
 
     Ok(Value::Undefined)
 }
@@ -36,12 +32,11 @@ pub fn class_call<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(activation
+    activation
         .avm2()
         .classes()
         .function
-        .construct(activation, args)?
-        .into())
+        .construct(activation, args)
 }
 
 /// Implements `Function`'s class initializer.

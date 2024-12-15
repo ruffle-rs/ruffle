@@ -4,31 +4,33 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::error::make_error_1004;
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
+use crate::avm2::object::{FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::QName;
 
 /// Implements `Boolean`'s instance initializer.
+///
+/// Because of the presence of a custom constructor, this method is unreachable.
 fn instance_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    unreachable!()
+}
+
+fn boolean_constructor<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    let bool_value = args
+        .get(0)
+        .copied()
+        .unwrap_or(Value::Bool(false))
+        .coerce_to_boolean();
 
-    if let Some(mut prim) = this.as_primitive_mut(activation.context.gc_context) {
-        if matches!(*prim, Value::Undefined | Value::Null) {
-            *prim = args
-                .get(0)
-                .cloned()
-                .unwrap_or(Value::Bool(false))
-                .coerce_to_boolean()
-                .into();
-        }
-    }
-
-    Ok(Value::Undefined)
+    Ok(bool_value.into())
 }
 
 /// Implements `Boolean`'s class initializer.
@@ -95,19 +97,17 @@ fn to_string<'gc>(
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    if let Some(this) = this.as_primitive() {
-        match *this {
-            Value::Bool(true) => return Ok("true".into()),
-            Value::Bool(false) => return Ok("false".into()),
-            _ => {}
-        };
+    match this {
+        Value::Bool(true) => return Ok("true".into()),
+        Value::Bool(false) => return Ok("false".into()),
+        _ => {}
     }
 
-    let boolean_proto = activation.avm2().classes().boolean.prototype();
-    if Object::ptr_eq(boolean_proto, this) {
-        return Ok("false".into());
+    if let Some(this) = this.as_object() {
+        let boolean_proto = activation.avm2().classes().boolean.prototype();
+        if Object::ptr_eq(boolean_proto, this) {
+            return Ok("false".into());
+        }
     }
 
     Err(make_error_1004(activation, "Boolean.prototype.toString"))
@@ -119,13 +119,7 @@ fn value_of<'gc>(
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    if let Some(this) = this.as_primitive() {
-        return Ok(*this);
-    }
-
-    Ok(false.into())
+    Ok(this)
 }
 
 /// Construct `Boolean`'s class.
@@ -143,7 +137,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     );
 
     class.set_attributes(mc, ClassAttributes::FINAL | ClassAttributes::SEALED);
-    class.set_instance_allocator(mc, primitive_allocator);
+    class.set_custom_constructor(mc, boolean_constructor);
     class.set_call_handler(
         mc,
         Method::from_builtin(call_handler, "<Boolean call handler>", mc),
