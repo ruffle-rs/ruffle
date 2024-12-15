@@ -60,6 +60,7 @@ impl Test {
             socket_events,
             renderer,
             viewport_dimensions,
+            self.options.flags.clone(),
         )?;
         Ok(runner)
     }
