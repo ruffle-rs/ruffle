@@ -9,7 +9,7 @@ use crate::avm2::Namespace;
 
 pub fn call_handler<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() == 1 {
@@ -107,9 +107,11 @@ pub fn q_name_constructor<'gc>(
 /// Implements `QName.localName`'s getter
 pub fn get_local_name<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_qname_object() {
         return Ok(this.local_name().into());
     }
@@ -120,9 +122,11 @@ pub fn get_local_name<'gc>(
 /// Implements `QName.uri`'s getter
 pub fn get_uri<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_qname_object() {
         return Ok(this
             .uri(activation.strings())
@@ -135,9 +139,11 @@ pub fn get_uri<'gc>(
 /// Implements `QName.AS3::toString` and `QName.prototype.toString`
 pub fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_qname_object() {
         return Ok(this.name().as_uri(activation.strings()).into());
     }

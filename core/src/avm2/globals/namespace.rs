@@ -77,7 +77,7 @@ pub fn namespace_constructor<'gc>(
 
 pub fn call_handler<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(activation
@@ -91,9 +91,11 @@ pub fn call_handler<'gc>(
 /// Implements `Namespace.prefix`'s getter
 pub fn get_prefix<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this = this.as_namespace_object().unwrap();
 
     if let Some(prefix) = this.prefix() {
@@ -106,9 +108,11 @@ pub fn get_prefix<'gc>(
 /// Implements `Namespace.uri`'s getter
 pub fn get_uri<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this = this.as_namespace_object().unwrap();
 
     Ok(this.namespace().as_uri(activation.strings()).into())

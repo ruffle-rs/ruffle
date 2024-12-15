@@ -32,9 +32,11 @@ pub fn generic_vector_allocator<'gc>(
 /// Implements `Vector`'s instance constructor.
 pub fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     activation.super_init(this, &[])?;
 
     if let Some(mut vector) = this.as_vector_storage_mut(activation.context.gc_context) {
@@ -58,7 +60,7 @@ pub fn instance_init<'gc>(
 
 fn class_call<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() != 1 {
@@ -109,17 +111,21 @@ fn class_call<'gc>(
 
 pub fn generic_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     activation.super_init(this, args)
 }
 
 fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let proto = this.as_class_object().unwrap().prototype();
     let scope = activation.create_scopechain();
 
@@ -171,9 +177,11 @@ fn class_init<'gc>(
 /// `Vector.length` getter
 pub fn length<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(vector) = this.as_vector_storage() {
         return Ok(vector.length().into());
     }
@@ -184,9 +192,11 @@ pub fn length<'gc>(
 /// `Vector.length` setter
 pub fn set_length<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mut vector) = this.as_vector_storage_mut(activation.context.gc_context) {
         let new_length = args
             .get(0)
@@ -203,9 +213,11 @@ pub fn set_length<'gc>(
 /// `Vector.fixed` getter
 pub fn fixed<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(vector) = this.as_vector_storage() {
         return Ok(vector.is_fixed().into());
     }
@@ -216,9 +228,11 @@ pub fn fixed<'gc>(
 /// `Vector.fixed` setter
 pub fn set_fixed<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mut vector) = this.as_vector_storage_mut(activation.context.gc_context) {
         let new_fixed = args
             .get(0)
@@ -235,9 +249,11 @@ pub fn set_fixed<'gc>(
 /// `Vector.concat` impl
 pub fn concat<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let mut new_vector_storage = if let Some(vector) = this.as_vector_storage() {
         vector.clone()
     } else {
@@ -337,27 +353,33 @@ where
 /// Implements `Vector.join`
 pub fn join<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     join_inner(activation, this, args, |v, _act| Ok(v))
 }
 
 /// Implements `Vector.toString`
 pub fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     join_inner(activation, this, &[",".into()], |v, _act| Ok(v))
 }
 
 /// Implements `Vector.toLocaleString`
 pub fn to_locale_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     join_inner(activation, this, &[",".into()], |v, act| {
         if let Ok(o) = v.coerce_to_object(act) {
             o.call_public_property("toLocaleString", &[], act)
@@ -370,9 +392,11 @@ pub fn to_locale_string<'gc>(
 /// Implements `Vector.every`
 pub fn every<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
@@ -395,9 +419,11 @@ pub fn every<'gc>(
 /// Implements `Vector.some`
 pub fn some<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
@@ -420,9 +446,11 @@ pub fn some<'gc>(
 /// Implements `Vector.filter`
 pub fn filter<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
 
@@ -451,9 +479,11 @@ pub fn filter<'gc>(
 /// Implements `Vector.forEach`
 pub fn for_each<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
     let mut iter = ArrayIter::new(activation, this)?;
@@ -470,9 +500,11 @@ pub fn for_each<'gc>(
 /// Implements `Vector.indexOf`
 pub fn index_of<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let search_for = args.get(0).cloned().unwrap_or(Value::Undefined);
     let from_index = args
         .get(1)
@@ -504,9 +536,11 @@ pub fn index_of<'gc>(
 /// Implements `Vector.lastIndexOf`
 pub fn last_index_of<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let search_for = args.get(0).cloned().unwrap_or(Value::Undefined);
     let from_index = args
         .get(1)
@@ -538,9 +572,11 @@ pub fn last_index_of<'gc>(
 /// Implements `Vector.map`
 pub fn map<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let callback = args.get(0).cloned().unwrap_or(Value::Undefined);
     let receiver = args.get(1).cloned().unwrap_or(Value::Null);
 
@@ -567,9 +603,11 @@ pub fn map<'gc>(
 /// Implements `Vector.pop`
 pub fn pop<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
         return vs.pop(activation);
     }
@@ -580,9 +618,11 @@ pub fn pop<'gc>(
 /// Implements `Vector.push`
 pub fn push<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
         let value_type = vs.value_type_for_coercion(activation);
 
@@ -604,9 +644,11 @@ pub fn push<'gc>(
 /// Implements `Vector.shift`
 pub fn shift<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
         return vs.shift(activation);
     }
@@ -617,9 +659,11 @@ pub fn shift<'gc>(
 /// Implements `Vector.unshift`
 pub fn unshift<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
         let value_type = vs.value_type_for_coercion(activation);
 
@@ -638,9 +682,11 @@ pub fn unshift<'gc>(
 /// Implements `Vector.insertAt`
 pub fn insert_at<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
         let index = args
             .get(0)
@@ -665,9 +711,11 @@ pub fn insert_at<'gc>(
 /// Implements `Vector.removeAt`
 pub fn remove_at<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
         let index = args
             .get(0)
@@ -684,9 +732,11 @@ pub fn remove_at<'gc>(
 /// Implements `Vector.reverse`
 pub fn reverse<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
         vs.reverse();
 
@@ -699,9 +749,11 @@ pub fn reverse<'gc>(
 /// Implements `Vector.slice`
 pub fn slice<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(vs) = this.as_vector_storage_mut(activation.context.gc_context) {
         let from = args
             .get(0)
@@ -739,9 +791,11 @@ pub fn slice<'gc>(
 /// TODO: Consider sharing this code with `globals::array::sort`?
 pub fn sort<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(vs) = this.as_vector_storage_mut(activation.context.gc_context) {
         let fn_or_options = args.get(0).cloned().unwrap_or(Value::Undefined);
 
@@ -818,9 +872,11 @@ pub fn sort<'gc>(
 /// Implements `Vector.splice`
 pub fn splice<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mut vs) = this.as_vector_storage_mut(activation.context.gc_context) {
         let start_len = args
             .get(0)

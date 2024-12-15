@@ -34,7 +34,7 @@ fn new_lso<'gc>(
 
 pub fn get_local<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // TODO: It appears that Flash does some kind of escaping here:
@@ -179,9 +179,11 @@ pub fn get_local<'gc>(
 
 pub fn get_data<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let shared_object = this.as_shared_object().unwrap();
 
     Ok(shared_object.data().into())
@@ -189,9 +191,11 @@ pub fn get_data<'gc>(
 
 pub fn flush<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let shared_object = this.as_shared_object().unwrap();
 
     let data = shared_object.data();
@@ -218,9 +222,11 @@ pub fn flush<'gc>(
 
 pub fn get_size<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let shared_object = this.as_shared_object().unwrap();
 
     let data = shared_object.data();
@@ -238,7 +244,7 @@ pub fn get_size<'gc>(
 
 pub fn close<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.net.SharedObject", "close");
@@ -247,9 +253,11 @@ pub fn close<'gc>(
 
 pub fn clear<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let shared_object = this.as_shared_object().unwrap();
 
     // Clear the local data object.
@@ -264,7 +272,7 @@ pub fn clear<'gc>(
 
 pub fn get_object_encoding<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.net.SharedObject", "objectEncoding");
@@ -273,7 +281,7 @@ pub fn get_object_encoding<'gc>(
 
 pub fn set_object_encoding<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(activation, "flash.net.SharedObject", "objectEncoding");

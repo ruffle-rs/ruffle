@@ -1,14 +1,16 @@
 use crate::avm2::error::{make_error_2004, Error2004Type};
 use crate::avm2::parameters::ParametersExt;
-use crate::avm2::{Activation, Error, Object, TObject, Value};
+use crate::avm2::{Activation, Error, TObject, Value};
 
 pub use crate::avm2::object::netstream_allocator as net_stream_allocator;
 
 pub fn get_bytes_loaded<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(ns) = this.as_netstream() {
         return Ok(ns.bytes_loaded().into());
     }
@@ -18,9 +20,11 @@ pub fn get_bytes_loaded<'gc>(
 
 pub fn get_bytes_total<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(ns) = this.as_netstream() {
         return Ok(ns.bytes_total().into());
     }
@@ -30,9 +34,11 @@ pub fn get_bytes_total<'gc>(
 
 pub fn play<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(ns) = this.as_netstream() {
         let name = args
             .get(0)
@@ -49,9 +55,11 @@ pub fn play<'gc>(
 
 pub fn pause<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(ns) = this.as_netstream() {
         ns.pause(activation.context, true);
     }
@@ -61,9 +69,11 @@ pub fn pause<'gc>(
 
 pub fn resume<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(ns) = this.as_netstream() {
         ns.resume(activation.context);
     }
@@ -73,9 +83,11 @@ pub fn resume<'gc>(
 
 pub fn toggle_pause<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(ns) = this.as_netstream() {
         ns.toggle_paused(activation.context);
     }
@@ -85,9 +97,11 @@ pub fn toggle_pause<'gc>(
 
 pub fn get_client<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(ns) = this.as_netstream() {
         return Ok(ns.client().expect("NetStream client should be set").into());
     }
@@ -97,9 +111,11 @@ pub fn get_client<'gc>(
 
 pub fn set_client<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let client = args.get_value(0).as_object();
 
     if let Some(client) = client {
@@ -115,9 +131,11 @@ pub fn set_client<'gc>(
 
 pub fn seek<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(ns) = this.as_netstream() {
         let offset = args.get_f64(activation, 0)?;
         ns.seek(activation.context, offset * 1000.0, true);
@@ -128,9 +146,11 @@ pub fn seek<'gc>(
 
 pub fn get_time<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(ns) = this.as_netstream() {
         return Ok((ns.time() / 1000.0).into());
     }

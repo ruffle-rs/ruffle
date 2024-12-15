@@ -3,9 +3,7 @@ use ruffle_render::pixel_bender::{
 };
 
 use crate::{
-    avm2::{
-        parameters::ParametersExt, string::AvmString, Activation, Error, Object, TObject, Value,
-    },
+    avm2::{parameters::ParametersExt, string::AvmString, Activation, Error, TObject, Value},
     pixel_bender::PixelBenderTypeExt,
 };
 
@@ -16,9 +14,11 @@ pub use crate::avm2::object::shader_data_allocator;
 /// Implements `ShaderData.init`, which is called from the constructor
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let bytecode = args.get_object(activation, 0, "bytecode")?;
     let bytecode = bytecode.as_bytearray().unwrap();
     let shader = parse_shader(bytecode.bytes()).expect("Failed to parse PixelBender");

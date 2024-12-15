@@ -311,7 +311,7 @@ impl<'gc> Avm2<'gc> {
                     .context
                     .avm2
                     .push_global_init(init_activation.context.gc_context, script);
-                let r = (method.method)(&mut init_activation, scope, &[]);
+                let r = (method.method)(&mut init_activation, Value::Object(scope), &[]);
                 init_activation
                     .context
                     .avm2

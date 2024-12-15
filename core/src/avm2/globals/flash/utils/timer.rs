@@ -4,15 +4,17 @@ use crate::avm2::activation::Activation;
 use crate::avm2::globals::slots::flash_utils_timer as slots;
 use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
-use crate::avm2::{Error, Object};
+use crate::avm2::Error;
 use crate::timer::TimerCallback;
 
 /// Implements `Timer.stop`
 pub fn stop<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let id = this.get_slot(slots::_TIMER_ID).coerce_to_i32(activation)?;
 
     if id != -1 {
@@ -26,9 +28,11 @@ pub fn stop<'gc>(
 /// Implements `Timer.start`
 pub fn start<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let id = this.get_slot(slots::_TIMER_ID).coerce_to_i32(activation)?;
 
     let delay = this.get_slot(slots::_DELAY).coerce_to_i32(activation)?;
@@ -58,9 +62,11 @@ pub fn start<'gc>(
 /// Implements `Timer.updateDelay`
 pub fn update_delay<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let id = this.get_slot(slots::_TIMER_ID).coerce_to_i32(activation)?;
 
     let delay = this.get_slot(slots::_DELAY).coerce_to_i32(activation)?;

@@ -3,18 +3,20 @@ use ruffle_render::backend::Context3DTextureFormat;
 use crate::avm2::globals::flash::display3D::textures::atf_jpegxr::do_compressed_upload;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Activation;
+use crate::avm2::Error;
 use crate::avm2::TObject;
 use crate::avm2::Value;
-use crate::avm2::{Error, Object};
 use crate::avm2_stub_method;
 
 use super::texture::do_copy;
 
 pub fn upload_from_byte_array<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     // This should work, but it's currently untested
     avm2_stub_method!(
         activation,
@@ -40,9 +42,11 @@ pub fn upload_from_byte_array<'gc>(
 
 pub fn upload_compressed_texture_from_byte_array<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     // This should work, but it's currently untested
     avm2_stub_method!(
         activation,
@@ -79,9 +83,11 @@ pub fn upload_compressed_texture_from_byte_array<'gc>(
 
 pub fn upload_from_bitmap_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(texture) = this.as_texture() {
         let source_obj = args.get_object(activation, 0, "source")?;
 

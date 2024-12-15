@@ -1,6 +1,5 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::Error;
-use crate::avm2::object::Object;
 use crate::avm2::value::Value;
 use crate::string::WStr;
 use crate::stub::Stub;
@@ -8,7 +7,7 @@ use std::borrow::Cow;
 
 pub fn stub_method<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args {
@@ -45,7 +44,7 @@ pub fn stub_method<'gc>(
 
 pub fn stub_getter<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args {
@@ -68,7 +67,7 @@ pub fn stub_getter<'gc>(
 
 pub fn stub_setter<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args {
@@ -91,7 +90,7 @@ pub fn stub_setter<'gc>(
 
 pub fn stub_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args {
@@ -124,7 +123,7 @@ pub fn stub_constructor<'gc>(
 
 pub fn log_warn<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args {

@@ -1,12 +1,12 @@
 //! `flash.display.Capabilities` native methods
 
-use crate::avm2::{Activation, AvmString, Error, Object, Value};
+use crate::avm2::{Activation, AvmString, Error, Value};
 use crate::player::PlayerRuntime;
 
 /// Implements `flash.system.Capabilities.os`
 pub fn get_os<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let os = match activation.avm2().player_runtime {
@@ -29,7 +29,7 @@ pub fn get_os<'gc>(
 /// Implements `flash.system.Capabilities.version`
 pub fn get_version<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let os = match activation.avm2().player_runtime {
@@ -54,7 +54,7 @@ pub fn get_version<'gc>(
 /// Implements `flash.system.Capabilities.playerType`
 pub fn get_player_type<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // TODO: When should "External" be returned?
@@ -73,7 +73,7 @@ pub fn get_player_type<'gc>(
 /// Implements `flash.system.Capabilities.screenResolutionX`
 pub fn get_screen_resolution_x<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let viewport_dimensions = activation.context.renderer.viewport_dimensions();
@@ -85,7 +85,7 @@ pub fn get_screen_resolution_x<'gc>(
 /// Implements `flash.system.Capabilities.screenResolutionY`
 pub fn get_screen_resolution_y<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let viewport_dimensions = activation.context.renderer.viewport_dimensions();
@@ -97,7 +97,7 @@ pub fn get_screen_resolution_y<'gc>(
 /// Implements `flash.system.Capabilities.pixelAspectRatio`
 pub fn get_pixel_aspect_ratio<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // source: https://web.archive.org/web/20230611050355/https://flylib.com/books/en/4.13.1.272/1/
@@ -107,7 +107,7 @@ pub fn get_pixel_aspect_ratio<'gc>(
 /// Implements `flash.system.Capabilities.screenDPI`
 pub fn get_screen_dpi<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // source: https://tracker.adobe.com/#/view/FP-3949775

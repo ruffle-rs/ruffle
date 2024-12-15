@@ -1,14 +1,13 @@
 //! `flash.system.System` native methods
 
 use crate::avm2::activation::Activation;
-use crate::avm2::object::Object;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 
 /// Implements `flash.system.System.setClipboard` method
 pub fn set_clipboard<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // The following restrictions only apply to the plugin.

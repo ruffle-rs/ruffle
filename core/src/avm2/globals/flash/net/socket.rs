@@ -5,7 +5,7 @@ use crate::avm2::error::{io_error, make_error_2008, security_error};
 pub use crate::avm2::object::socket_allocator;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::string::AvmString;
-use crate::avm2::{Activation, Error, Object, TObject, Value};
+use crate::avm2::{Activation, Error, TObject, Value};
 use crate::context::UpdateContext;
 use encoding_rs::Encoding;
 use encoding_rs::UTF_8;
@@ -27,9 +27,11 @@ macro_rules! assert_socket_open {
 
 pub fn connect<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let socket = match this.as_socket() {
         Some(socket) => socket,
         None => return Ok(Value::Undefined),
@@ -52,9 +54,11 @@ pub fn connect<'gc>(
 
 pub fn get_timeout<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         return Ok(socket.timeout().into());
     }
@@ -64,9 +68,11 @@ pub fn get_timeout<'gc>(
 
 pub fn set_timeout<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         let new_timeout = args.get_u32(activation, 0)?;
         socket.set_timeout(new_timeout)
@@ -77,9 +83,11 @@ pub fn set_timeout<'gc>(
 
 pub fn close<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         // We throw an IOError when socket is not open.
         let handle = socket.handle().ok_or(invalid_socket_error(activation))?;
@@ -98,9 +106,11 @@ pub fn close<'gc>(
 
 pub fn get_bytes_available<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         return Ok(socket.read_buffer().len().into());
     }
@@ -110,9 +120,11 @@ pub fn get_bytes_available<'gc>(
 
 pub fn get_endian<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         return Ok(match socket.endian() {
             Endian::Big => "bigEndian".into(),
@@ -125,9 +137,11 @@ pub fn get_endian<'gc>(
 
 pub fn set_endian<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         let endian = args.get_string(activation, 0)?;
         if &endian == b"bigEndian" {
@@ -144,9 +158,11 @@ pub fn set_endian<'gc>(
 
 pub fn get_connected<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let socket = match this.as_socket() {
         Some(socket) => socket,
         None => return Ok(Value::Undefined),
@@ -164,9 +180,11 @@ pub fn get_connected<'gc>(
 
 pub fn get_object_encoding<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         return Ok((socket.object_encoding() as u8).into());
     }
@@ -176,9 +194,11 @@ pub fn get_object_encoding<'gc>(
 
 pub fn set_object_encoding<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         let new_encoding = args.get_u32(activation, 0)?;
         match new_encoding {
@@ -193,9 +213,11 @@ pub fn set_object_encoding<'gc>(
 
 pub fn flush<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         let handle = socket.handle().ok_or(invalid_socket_error(activation))?;
         if !activation.context.sockets.is_connected(handle) {
@@ -216,9 +238,11 @@ pub fn flush<'gc>(
 
 pub fn read_boolean<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -233,9 +257,11 @@ pub fn read_boolean<'gc>(
 
 pub fn read_byte<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -247,9 +273,11 @@ pub fn read_byte<'gc>(
 
 pub fn read_bytes<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -279,9 +307,11 @@ pub fn read_bytes<'gc>(
 
 pub fn read_double<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -296,9 +326,11 @@ pub fn read_double<'gc>(
 
 pub fn read_float<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -313,9 +345,11 @@ pub fn read_float<'gc>(
 
 pub fn read_int<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -327,9 +361,11 @@ pub fn read_int<'gc>(
 
 pub fn read_multi_byte<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -356,9 +392,11 @@ pub fn read_multi_byte<'gc>(
 
 pub fn read_object<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -397,9 +435,11 @@ pub fn read_object<'gc>(
 
 pub fn read_short<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -414,9 +454,11 @@ pub fn read_short<'gc>(
 
 pub fn read_unsigned_byte<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -431,9 +473,11 @@ pub fn read_unsigned_byte<'gc>(
 
 pub fn read_unsigned_int<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -448,9 +492,11 @@ pub fn read_unsigned_int<'gc>(
 
 pub fn read_unsigned_short<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -465,9 +511,11 @@ pub fn read_unsigned_short<'gc>(
 
 pub fn read_utf<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -483,9 +531,11 @@ pub fn read_utf<'gc>(
 
 pub fn read_utf_bytes<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -505,9 +555,11 @@ pub fn read_utf_bytes<'gc>(
 
 pub fn write_boolean<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -520,9 +572,11 @@ pub fn write_boolean<'gc>(
 
 pub fn write_byte<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -535,9 +589,11 @@ pub fn write_byte<'gc>(
 
 pub fn write_bytes<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -569,9 +625,11 @@ pub fn write_bytes<'gc>(
 
 pub fn write_double<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -584,9 +642,11 @@ pub fn write_double<'gc>(
 
 pub fn write_float<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -599,9 +659,11 @@ pub fn write_float<'gc>(
 
 pub fn write_int<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -614,9 +676,11 @@ pub fn write_int<'gc>(
 
 pub fn write_multi_byte<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -635,9 +699,11 @@ pub fn write_multi_byte<'gc>(
 
 pub fn write_object<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -675,9 +741,11 @@ pub fn write_object<'gc>(
 
 pub fn write_short<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -690,9 +758,11 @@ pub fn write_short<'gc>(
 
 pub fn write_unsigned_int<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -705,9 +775,11 @@ pub fn write_unsigned_int<'gc>(
 
 pub fn write_utf<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 
@@ -721,9 +793,11 @@ pub fn write_utf<'gc>(
 
 pub fn write_utf_bytes<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(socket) = this.as_socket() {
         assert_socket_open!(activation, socket);
 

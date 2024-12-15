@@ -13,9 +13,11 @@ pub fn vertex_buffer_3d_allocator<'gc>(
 
 pub fn upload_from_byte_array<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(vertex_buffer) = this.as_vertex_buffer() {
         let byte_array = args.get_object(activation, 0, "data")?;
 
@@ -47,9 +49,11 @@ pub fn upload_from_byte_array<'gc>(
 
 pub fn upload_from_vector<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(vertex_buffer) = this.as_vertex_buffer() {
         let vector = args.get_object(activation, 0, "data")?;
 

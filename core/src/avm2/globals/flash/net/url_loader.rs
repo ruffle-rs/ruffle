@@ -9,9 +9,11 @@ use crate::avm2::{Error, Object};
 /// Native function definition for `URLLoader.load`
 pub fn load<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let request = args.get_object(activation, 0, "request")?;
 
     spawn_fetch(activation, this, request)

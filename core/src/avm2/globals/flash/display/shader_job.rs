@@ -186,9 +186,11 @@ pub fn get_shader_args<'gc>(
 /// Implements `ShaderJob.start`.
 pub fn start<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let wait_for_completion = args.get_bool(0);
     if !wait_for_completion {
         avm2_stub_method!(

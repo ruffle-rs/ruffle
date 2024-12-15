@@ -20,9 +20,11 @@ pub fn shape_allocator<'gc>(
 /// Implements `graphics`.
 pub fn get_graphics<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         // Lazily initialize the `Graphics` object in a hidden property.
         let graphics = match this.get_slot(slots::_GRAPHICS) {

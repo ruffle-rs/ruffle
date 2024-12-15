@@ -4,7 +4,6 @@ use ruffle_wstr::Units;
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{uri_error, Error};
-use crate::avm2::object::Object;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::string::{AvmString, WStr, WString};
@@ -13,7 +12,7 @@ use std::fmt::Write;
 
 pub fn trace<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args {
@@ -37,7 +36,7 @@ pub fn trace<'gc>(
 
 pub fn is_finite<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let val = args.get_f64(activation, 0)?;
@@ -47,7 +46,7 @@ pub fn is_finite<'gc>(
 
 pub fn is_na_n<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let val = args.get_f64(activation, 0)?;
@@ -57,7 +56,7 @@ pub fn is_na_n<'gc>(
 
 pub fn parse_int<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let string = args.get_string(activation, 0)?;
@@ -69,7 +68,7 @@ pub fn parse_int<'gc>(
 
 pub fn parse_float<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let string = args.get_string(activation, 0)?;
@@ -84,7 +83,7 @@ pub fn parse_float<'gc>(
 
 pub fn is_xml_name<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name = args.get_value(0);
@@ -99,7 +98,7 @@ pub fn is_xml_name<'gc>(
 
 pub fn escape<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let value = args.get_string(activation, 0)?;
@@ -128,7 +127,7 @@ pub fn escape<'gc>(
 
 pub fn unescape<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let value = args.get_string(activation, 0)?;
@@ -171,7 +170,7 @@ pub fn unescape<'gc>(
 
 pub fn encode_uri<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     encode_utf8_with_exclusions(
@@ -184,7 +183,7 @@ pub fn encode_uri<'gc>(
 
 pub fn encode_uri_component<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     encode_utf8_with_exclusions(
@@ -230,7 +229,7 @@ fn encode_utf8_with_exclusions<'gc>(
 
 pub fn decode_uri<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     decode(
@@ -244,7 +243,7 @@ pub fn decode_uri<'gc>(
 
 pub fn decode_uri_component<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     decode(activation, args, "", "decodeURIComponent")

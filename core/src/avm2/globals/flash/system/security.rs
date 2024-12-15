@@ -1,7 +1,6 @@
 //! `flash.system.Security` native methods
 
 use crate::avm2::activation::Activation;
-use crate::avm2::object::Object;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2_stub_method;
@@ -11,7 +10,7 @@ use url::Url;
 
 pub fn get_page_domain<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(url) = activation
@@ -36,7 +35,7 @@ pub fn get_page_domain<'gc>(
 
 pub fn get_sandbox_type<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let movie = activation
@@ -54,7 +53,7 @@ pub fn get_sandbox_type<'gc>(
 
 pub fn allow_domain<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.system.Security", "allowDomain");
@@ -63,7 +62,7 @@ pub fn allow_domain<'gc>(
 
 pub fn allow_insecure_domain<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.system.Security", "allowInsecureDomain");
@@ -72,7 +71,7 @@ pub fn allow_insecure_domain<'gc>(
 
 pub fn load_policy_file<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.system.Security", "loadPolicyFile");
@@ -81,7 +80,7 @@ pub fn load_policy_file<'gc>(
 
 pub fn show_settings<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.system.Security", "showSettings");

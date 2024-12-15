@@ -14,9 +14,11 @@ use crate::string::{AvmString, WString};
 /// specify what methods of a clip's class run on which frames.
 pub fn add_frame_script<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
@@ -37,9 +39,11 @@ pub fn add_frame_script<'gc>(
 /// Implements `currentFrame`.
 pub fn get_current_frame<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
@@ -62,9 +66,11 @@ pub fn get_current_frame<'gc>(
 /// Implements `currentFrameLabel`.
 pub fn get_current_frame_label<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
@@ -87,9 +93,11 @@ pub fn get_current_frame_label<'gc>(
 /// Implements `currentLabel`.
 pub fn get_current_label<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
@@ -142,9 +150,11 @@ fn labels_for_scene<'gc>(
 /// Implements `currentLabels`.
 pub fn get_current_labels<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
@@ -163,9 +173,11 @@ pub fn get_current_labels<'gc>(
 /// Implements `currentScene`.
 pub fn get_current_scene<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
@@ -193,9 +205,11 @@ pub fn get_current_scene<'gc>(
 
 pub fn get_enabled<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
@@ -208,9 +222,11 @@ pub fn get_enabled<'gc>(
 
 pub fn set_enabled<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
@@ -226,9 +242,11 @@ pub fn set_enabled<'gc>(
 /// Implements `scenes`.
 pub fn get_scenes<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
@@ -271,9 +289,11 @@ pub fn get_scenes<'gc>(
 /// Implements `framesLoaded`.
 pub fn get_frames_loaded<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
@@ -287,9 +307,11 @@ pub fn get_frames_loaded<'gc>(
 /// Implements `isPlaying`.
 pub fn get_is_playing<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
@@ -303,9 +325,11 @@ pub fn get_is_playing<'gc>(
 /// Implements `totalFrames`.
 pub fn get_total_frames<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
@@ -319,9 +343,11 @@ pub fn get_total_frames<'gc>(
 /// Implements `gotoAndPlay`.
 pub fn goto_and_play<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
@@ -336,9 +362,11 @@ pub fn goto_and_play<'gc>(
 /// Implements `gotoAndStop`.
 pub fn goto_and_stop<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
@@ -417,9 +445,11 @@ pub fn goto_frame<'gc>(
 /// Implements `stop`.
 pub fn stop<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
@@ -433,9 +463,11 @@ pub fn stop<'gc>(
 /// Implements `play`.
 pub fn play<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
@@ -450,9 +482,11 @@ pub fn play<'gc>(
 /// Implements `prevFrame`.
 pub fn prev_frame<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
@@ -466,9 +500,11 @@ pub fn prev_frame<'gc>(
 /// Implements `nextFrame`.
 pub fn next_frame<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
@@ -482,9 +518,11 @@ pub fn next_frame<'gc>(
 /// Implements `prevScene`.
 pub fn prev_scene<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
@@ -505,9 +543,11 @@ pub fn prev_scene<'gc>(
 /// Implements `nextScene`.
 pub fn next_scene<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())

@@ -74,7 +74,7 @@ fn parse_data<'gc>(
 /// Implements `flash.net.navigateToURL`
 pub fn navigate_to_url<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let request = args.get_object(activation, 0, "request")?;
@@ -105,7 +105,7 @@ pub fn navigate_to_url<'gc>(
 
 pub fn register_class_alias<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name = args.get_string_non_null(activation, 0, "aliasName")?;
@@ -120,7 +120,7 @@ pub fn register_class_alias<'gc>(
 
 pub fn get_class_by_alias<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name = args.get_string_non_null(activation, 0, "aliasName")?;

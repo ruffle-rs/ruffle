@@ -2,10 +2,8 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{Object, ObjectPtr, StageObject, TObject};
-use crate::avm2::Avm2;
-use crate::avm2::Error;
-use crate::avm2::EventObject;
+use crate::avm2::object::{EventObject, Object, ObjectPtr, StageObject, TObject};
+use crate::avm2::{Avm2, Error, Value};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::loader::ContentType;
@@ -376,7 +374,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         // error if the loader hadn't loaded it.
         let _ = crate::avm2::globals::flash::display::display_object_container::remove_child_at(
             activation,
-            loader,
+            Value::Object(loader),
             &[0.into()],
         );
     }

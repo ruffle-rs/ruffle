@@ -37,9 +37,11 @@ fn color_from_args(rgb: u32, alpha: f64) -> Color {
 /// Implements `Graphics.beginFill`.
 pub fn begin_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_display_object() {
         let color = args.get_u32(activation, 0)?;
         let alpha = args.get_f64(activation, 1)?;
@@ -55,9 +57,11 @@ pub fn begin_fill<'gc>(
 /// Implements `Graphics.beginBitmapFill`.
 pub fn begin_bitmap_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_display_object() {
         let bitmap = args
             .get_object(activation, 0, "bitmap")?
@@ -101,9 +105,11 @@ pub fn begin_bitmap_fill<'gc>(
 /// Implements `Graphics.beginGradientFill`.
 pub fn begin_gradient_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_display_object() {
         let gradient_type = args.get_string(activation, 0)?;
         let gradient_type = parse_gradient_type(activation, gradient_type)?;
@@ -249,9 +255,11 @@ fn parse_spread_method(spread_method: AvmString) -> GradientSpread {
 /// Implements `Graphics.clear`
 pub fn clear<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_display_object() {
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
             draw.clear()
@@ -264,9 +272,11 @@ pub fn clear<'gc>(
 /// Implements `Graphics.curveTo`.
 pub fn curve_to<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_display_object() {
         let control_x = args.get_f64(activation, 0)?;
         let control_y = args.get_f64(activation, 1)?;
@@ -287,9 +297,11 @@ pub fn curve_to<'gc>(
 /// Implements `Graphics.endFill`.
 pub fn end_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_display_object() {
         if let Some(mut draw) = this.as_drawing(activation.context.gc_context) {
             draw.set_fill_style(None);
@@ -342,9 +354,11 @@ fn scale_mode_to_allow_scale_bits<'gc>(scale_mode: &WStr) -> Result<(bool, bool)
 /// Implements `Graphics.lineStyle`.
 pub fn line_style<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_display_object() {
         let thickness = args.get_f64(activation, 0)?;
 
@@ -389,9 +403,11 @@ pub fn line_style<'gc>(
 /// Implements `Graphics.lineTo`.
 pub fn line_to<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_display_object() {
         let x = Twips::from_pixels(args.get_f64(activation, 0)?);
         let y = Twips::from_pixels(args.get_f64(activation, 1)?);
@@ -407,9 +423,11 @@ pub fn line_to<'gc>(
 /// Implements `Graphics.moveTo`.
 pub fn move_to<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_display_object() {
         let x = Twips::from_pixels(args.get_f64(activation, 0)?);
         let y = Twips::from_pixels(args.get_f64(activation, 1)?);
@@ -425,9 +443,11 @@ pub fn move_to<'gc>(
 /// Implements `Graphics.drawRect`.
 pub fn draw_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_display_object() {
         let x = Twips::from_pixels(args.get_f64(activation, 0)?);
         let y = Twips::from_pixels(args.get_f64(activation, 1)?);
@@ -711,9 +731,11 @@ fn draw_round_rect_internal(
 /// Implements `Graphics.drawRoundRect`.
 pub fn draw_round_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_display_object() {
         let x = args.get_f64(activation, 0)?;
         let y = args.get_f64(activation, 1)?;
@@ -751,9 +773,11 @@ pub fn draw_round_rect<'gc>(
 /// Implements `Graphics.drawRoundRectComplex`
 pub fn draw_round_rect_complex<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_display_object() {
         let x = args.get_f64(activation, 0)?;
         let y = args.get_f64(activation, 1)?;
@@ -789,9 +813,11 @@ pub fn draw_round_rect_complex<'gc>(
 /// Implements `Graphics.drawCircle`.
 pub fn draw_circle<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_display_object() {
         let x = args.get_f64(activation, 0)?;
         let y = args.get_f64(activation, 1)?;
@@ -822,9 +848,11 @@ pub fn draw_circle<'gc>(
 /// Implements `Graphics.drawEllipse`.
 pub fn draw_ellipse<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_display_object() {
         let x = args.get_f64(activation, 0)?;
         let y = args.get_f64(activation, 1)?;
@@ -856,9 +884,11 @@ pub fn draw_ellipse<'gc>(
 /// Implements `Graphics.lineGradientStyle`
 pub fn line_gradient_style<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_display_object() {
         let gradient_type = args.get_string(activation, 0);
         let gradient_type = parse_gradient_type(activation, gradient_type?)?;
@@ -920,9 +950,11 @@ pub fn line_gradient_style<'gc>(
 /// Implements `Graphics.cubicCurveTo`
 pub fn cubic_curve_to<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_display_object() {
         let control_a_x = args.get_f64(activation, 0)?;
         let control_a_y = args.get_f64(activation, 1)?;
@@ -946,9 +978,11 @@ pub fn cubic_curve_to<'gc>(
 /// Implements `Graphics.copyFrom`
 pub fn copy_from<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_display_object() {
         let source = args
             .get_object(activation, 0, "sourceGraphics")?
@@ -971,9 +1005,11 @@ pub fn copy_from<'gc>(
 /// Implements `Graphics.drawPath`
 pub fn draw_path<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this = this.as_display_object().unwrap();
     let mut drawing = this.as_drawing(activation.context.gc_context).unwrap();
     let commands = args.get_object(activation, 0, "commands")?;
@@ -1010,9 +1046,11 @@ pub fn draw_path<'gc>(
 /// Implements `Graphics.drawTriangles`
 pub fn draw_triangles<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_display_object() {
         if let Some(mut drawing) = this.as_drawing(activation.context.gc_context) {
             let vertices = args.get_object(activation, 0, "vertices")?;
@@ -1237,9 +1275,11 @@ fn draw_triangle_internal((a, b, c): Triangle, drawing: &mut Drawing, culling: T
 /// Implements `Graphics.drawGraphicsData`
 pub fn draw_graphics_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(vector) = args
         .get_object(activation, 0, "graphicsData")?
         .as_vector_storage()
@@ -1261,9 +1301,11 @@ pub fn draw_graphics_data<'gc>(
 /// Implements `Graphics.lineBitmapStyle`
 pub fn line_bitmap_style<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_display_object() {
         let bitmap = args
             .get_object(activation, 0, "bitmap")?
@@ -1308,7 +1350,7 @@ pub fn line_bitmap_style<'gc>(
 /// Implements `Graphics.readGraphicsData`
 pub fn read_graphics_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.display.Graphics", "readGraphicsData");
