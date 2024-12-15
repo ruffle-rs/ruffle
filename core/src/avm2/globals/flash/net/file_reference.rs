@@ -2,7 +2,7 @@ use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::error::{argument_error, error, make_error_2037, make_error_2097};
 use crate::avm2::globals::slots::flash_net_file_filter as file_filter_slots;
 use crate::avm2::object::{ByteArrayObject, DateObject, FileReference};
-use crate::avm2::{Activation, Avm2, Error, EventObject, Object, TObject, Value};
+use crate::avm2::{Activation, Avm2, Error, EventObject, TObject, Value};
 use crate::backend::ui::FileFilter;
 use crate::string::AvmString;
 
@@ -10,9 +10,11 @@ pub use crate::avm2::object::file_reference_allocator;
 
 pub fn get_creation_date<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this = this.as_file_reference().unwrap();
 
     let creation_date = match *this.file_reference() {
@@ -31,9 +33,11 @@ pub fn get_creation_date<'gc>(
 
 pub fn get_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this = this.as_file_reference().unwrap();
 
     let bytearray = match *this.file_reference() {
@@ -51,9 +55,11 @@ pub fn get_data<'gc>(
 
 pub fn get_modification_date<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this = this.as_file_reference().unwrap();
 
     let modification_date = match *this.file_reference() {
@@ -72,9 +78,11 @@ pub fn get_modification_date<'gc>(
 
 pub fn get_name<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this = this.as_file_reference().unwrap();
 
     let name = match *this.file_reference() {
@@ -90,9 +98,11 @@ pub fn get_name<'gc>(
 
 pub fn get_size<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this = this.as_file_reference().unwrap();
 
     let size = match *this.file_reference() {
@@ -105,9 +115,11 @@ pub fn get_size<'gc>(
 
 pub fn get_type<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this = this.as_file_reference().unwrap();
 
     let type_ = match *this.file_reference() {
@@ -123,9 +135,11 @@ pub fn get_type<'gc>(
 
 pub fn browse<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this = this.as_file_reference().unwrap();
 
     let mut filters = Vec::new();
@@ -193,9 +207,11 @@ pub fn browse<'gc>(
 
 pub fn load<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this = this.as_file_reference().unwrap();
 
     // Somewhat unexpectedly, we don't need to load anything here, because
@@ -229,9 +245,11 @@ pub fn load<'gc>(
 
 pub fn save<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this = this.as_file_reference().unwrap();
     let data = args[0];
 

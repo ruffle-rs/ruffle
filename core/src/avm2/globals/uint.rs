@@ -12,9 +12,11 @@ use crate::avm2::{AvmString, Error, QName};
 /// Implements `uint`'s instance initializer.
 fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mut prim) = this.as_primitive_mut(activation.context.gc_context) {
         if matches!(*prim, Value::Undefined | Value::Null) {
             *prim = args
@@ -32,9 +34,11 @@ fn instance_init<'gc>(
 /// Implements `uint`'s class initializer.
 fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let scope = activation.create_scopechain();
     let gc_context = activation.context.gc_context;
     let this_class = this.as_class_object().unwrap();
@@ -131,7 +135,7 @@ fn class_init<'gc>(
 
 pub fn call_handler<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(args
@@ -154,9 +158,11 @@ use crate::avm2::globals::number::to_precision;
 /// Implements `uint.toString`
 fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let uint_proto = activation.avm2().classes().uint.prototype();
     if Object::ptr_eq(uint_proto, this) {
         return Ok("0".into());
@@ -188,15 +194,19 @@ fn to_string<'gc>(
 /// Implements `uint.valueOf`
 fn value_of<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let uint_proto = activation.avm2().classes().uint.prototype();
     if Object::ptr_eq(uint_proto, this) {
         return Ok(0.into());
     }
 
-    if let Some(this) = this.as_primitive() {
+    let primitive = this.as_primitive();
+
+    if let Some(this) = primitive {
         match *this {
             Value::Integer(_) => Ok(*this),
             _ => Err(make_error_1004(activation, "uint.prototype.valueOf")),

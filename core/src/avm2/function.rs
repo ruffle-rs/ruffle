@@ -200,7 +200,7 @@ pub fn exec<'gc>(
                 .context
                 .avm2
                 .push_call(activation.context.gc_context, method, bound_class);
-            (bm.method)(&mut activation, receiver, &arguments)
+            (bm.method)(&mut activation, Value::Object(receiver), &arguments)
         }
         Method::Bytecode(bm) => {
             if bm.is_unchecked() {

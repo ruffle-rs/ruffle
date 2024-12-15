@@ -49,9 +49,11 @@ pub fn sprite_allocator<'gc>(
 /// Implements `dropTarget`'s getter
 pub fn get_drop_target<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|o| o.as_movie_clip())
@@ -66,9 +68,11 @@ pub fn get_drop_target<'gc>(
 /// Implements `graphics`.
 pub fn get_graphics<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         // Lazily initialize the `Graphics` object in a hidden property.
         let graphics = match this.get_slot(sprite_slots::_GRAPHICS) {
@@ -88,9 +92,11 @@ pub fn get_graphics<'gc>(
 /// Implements `soundTransform`'s getter
 pub fn get_sound_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let dobj_st = dobj.base().sound_transform().clone();
 
@@ -103,9 +109,11 @@ pub fn get_sound_transform<'gc>(
 /// Implements `soundTransform`'s setter
 pub fn set_sound_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let as3_st = args.get_object(activation, 0, "soundTransform")?;
         let dobj_st = SoundTransform::from_avm2_object(as3_st);
@@ -119,9 +127,11 @@ pub fn set_sound_transform<'gc>(
 /// Implements `buttonMode`'s getter
 pub fn get_button_mode<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this.as_display_object().and_then(|o| o.as_movie_clip()) {
         return Ok(mc.forced_button_mode().into());
     }
@@ -132,9 +142,11 @@ pub fn get_button_mode<'gc>(
 /// Implements `buttonMode`'s setter
 pub fn set_button_mode<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this.as_display_object().and_then(|o| o.as_movie_clip()) {
         let forced_button_mode = args.get_bool(0);
 
@@ -147,9 +159,11 @@ pub fn set_button_mode<'gc>(
 /// Starts dragging this display object, making it follow the cursor.
 pub fn start_drag<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(display_object) = this.as_display_object() {
         let lock_center = args.get_bool(0);
 
@@ -207,7 +221,7 @@ pub fn start_drag<'gc>(
 
 pub fn stop_drag<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // It doesn't matter which clip we call this on; it simply stops any active drag.
@@ -224,9 +238,11 @@ pub fn stop_drag<'gc>(
 /// Implements `useHandCursor`'s getter
 pub fn get_use_hand_cursor<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|this| this.as_movie_clip())
@@ -240,9 +256,11 @@ pub fn get_use_hand_cursor<'gc>(
 /// Implements `useHandCursor`'s setter
 pub fn set_use_hand_cursor<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|this| this.as_movie_clip())
@@ -256,9 +274,11 @@ pub fn set_use_hand_cursor<'gc>(
 /// Implements `hitArea`'s getter
 pub fn get_hit_area<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|o| o.as_movie_clip())
@@ -273,9 +293,11 @@ pub fn get_hit_area<'gc>(
 /// Implements `hitArea`'s setter
 pub fn set_hit_area<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mc) = this
         .as_display_object()
         .and_then(|this| this.as_movie_clip())

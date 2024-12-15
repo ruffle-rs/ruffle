@@ -12,9 +12,11 @@ use crate::avm2::QName;
 /// Implements `Boolean`'s instance initializer.
 fn instance_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mut prim) = this.as_primitive_mut(activation.context.gc_context) {
         if matches!(*prim, Value::Undefined | Value::Null) {
             *prim = args
@@ -32,9 +34,11 @@ fn instance_init<'gc>(
 /// Implements `Boolean`'s class initializer.
 fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let scope = activation.create_scopechain();
     let gc_context = activation.context.gc_context;
     let this_class = this.as_class_object().unwrap();
@@ -74,7 +78,7 @@ fn class_init<'gc>(
 
 pub fn call_handler<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(args
@@ -88,9 +92,11 @@ pub fn call_handler<'gc>(
 /// Implements `Boolean.prototype.toString`
 fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_primitive() {
         match *this {
             Value::Bool(true) => return Ok("true".into()),
@@ -110,9 +116,11 @@ fn to_string<'gc>(
 /// Implements `Boolean.valueOf`
 fn value_of<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_primitive() {
         return Ok(*this);
     }

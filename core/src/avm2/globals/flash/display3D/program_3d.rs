@@ -2,13 +2,15 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::{Error, Object};
+use crate::avm2::Error;
 
 pub fn upload<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_program_3d() {
         let vertex_agal = args.get_object(activation, 0, "source_vertex")?;
         let vertex_agal = vertex_agal

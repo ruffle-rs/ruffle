@@ -16,7 +16,7 @@ pub fn static_text_allocator<'gc>(
 /// Implements `StaticText.text`
 pub fn get_text<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.text.StaticText", "text");

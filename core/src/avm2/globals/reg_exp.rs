@@ -13,9 +13,11 @@ pub use crate::avm2::object::reg_exp_allocator;
 /// Implements `RegExp`'s `init` method, which is called from the constructor
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mut regexp) = this.as_regexp_mut(activation.context.gc_context) {
         let source: AvmString<'gc> = match args.get(0) {
             Some(Value::Undefined) => activation.strings().empty(),
@@ -63,7 +65,7 @@ pub fn init<'gc>(
 
 pub fn call_handler<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_class = activation.avm2().classes().regexp;
@@ -80,9 +82,11 @@ pub fn call_handler<'gc>(
 /// Implements `RegExp.dotall`
 pub fn get_dotall<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(regexp) = this.as_regexp() {
         return Ok(regexp.flags().contains(RegExpFlags::DOTALL).into());
     }
@@ -93,9 +97,11 @@ pub fn get_dotall<'gc>(
 /// Implements `RegExp.extended`
 pub fn get_extended<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(regexp) = this.as_regexp() {
         return Ok(regexp.flags().contains(RegExpFlags::EXTENDED).into());
     }
@@ -106,9 +112,11 @@ pub fn get_extended<'gc>(
 /// Implements `RegExp.global`
 pub fn get_global<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(regexp) = this.as_regexp() {
         return Ok(regexp.flags().contains(RegExpFlags::GLOBAL).into());
     }
@@ -119,9 +127,11 @@ pub fn get_global<'gc>(
 /// Implements `RegExp.ignoreCase`
 pub fn get_ignore_case<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(regexp) = this.as_regexp() {
         return Ok(regexp.flags().contains(RegExpFlags::IGNORE_CASE).into());
     }
@@ -132,9 +142,11 @@ pub fn get_ignore_case<'gc>(
 /// Implements `RegExp.multiline`
 pub fn get_multiline<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(regexp) = this.as_regexp() {
         return Ok(regexp.flags().contains(RegExpFlags::MULTILINE).into());
     }
@@ -145,9 +157,11 @@ pub fn get_multiline<'gc>(
 /// Implements `RegExp.lastIndex`'s getter
 pub fn get_last_index<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(re) = this.as_regexp() {
         return Ok(re.last_index().into());
     }
@@ -158,9 +172,11 @@ pub fn get_last_index<'gc>(
 /// Implements `RegExp.lastIndex`'s setter
 pub fn set_last_index<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mut re) = this.as_regexp_mut(activation.context.gc_context) {
         let i = args
             .get(0)
@@ -175,9 +191,11 @@ pub fn set_last_index<'gc>(
 /// Implements `RegExp.source`
 pub fn get_source<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(re) = this.as_regexp() {
         return Ok(re.source().into());
     }
@@ -188,9 +206,11 @@ pub fn get_source<'gc>(
 /// Implements `RegExp.exec`
 pub fn exec<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mut re) = this.as_regexp_mut(activation.context.gc_context) {
         let text = args
             .get(0)
@@ -228,9 +248,11 @@ pub fn exec<'gc>(
 /// Implements `RegExp.test`
 pub fn test<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(mut re) = this.as_regexp_mut(activation.context.gc_context) {
         let text = args
             .get(0)

@@ -7,7 +7,6 @@ pub mod security;
 pub mod system;
 
 use crate::avm2::activation::Activation;
-use crate::avm2::object::Object;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -15,7 +14,7 @@ use crate::avm2::Error;
 /// Implements `flash.system.fscommand` method
 pub fn fscommand<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let command = args.get_string(activation, 0)?;

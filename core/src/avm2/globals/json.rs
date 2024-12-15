@@ -266,7 +266,7 @@ impl<'gc> AvmSerializer<'gc> {
 /// Implements `JSON.parse`.
 pub fn parse<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let input = args.get_string(activation, 0)?;
@@ -290,7 +290,7 @@ pub fn parse<'gc>(
 /// Implements `JSON.stringify`.
 pub fn stringify<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let val = args.get_value(0);

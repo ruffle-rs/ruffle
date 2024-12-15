@@ -27,9 +27,11 @@ fn dispatch_list<'gc>(
 /// Implements `EventDispatcher.addEventListener`.
 pub fn add_event_listener<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let dispatch_list = dispatch_list(activation, this)?;
     let event_type = args.get_string(activation, 0)?;
     let listener = args.get_object(activation, 1, "listener")?;
@@ -50,9 +52,11 @@ pub fn add_event_listener<'gc>(
 /// Implements `EventDispatcher.removeEventListener`.
 pub fn remove_event_listener<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let dispatch_list = dispatch_list(activation, this)?;
     let event_type = args.get_string(activation, 0)?;
     let listener = args.get_object(activation, 1, "listener")?;
@@ -69,9 +73,11 @@ pub fn remove_event_listener<'gc>(
 /// Implements `EventDispatcher.hasEventListener`.
 pub fn has_event_listener<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let dispatch_list = dispatch_list(activation, this)?;
     let event_type = args.get_string(activation, 0)?;
 
@@ -87,9 +93,11 @@ pub fn has_event_listener<'gc>(
 /// Implements `EventDispatcher.willTrigger`.
 pub fn will_trigger<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let dispatch_list = dispatch_list(activation, this)?;
     let event_type = args.get_string(activation, 0)?;
 
@@ -104,7 +112,7 @@ pub fn will_trigger<'gc>(
     let target = this.get_slot(slots::TARGET).as_object().unwrap_or(this);
 
     if let Some(parent) = parent_of(target) {
-        return will_trigger(activation, parent, args);
+        return will_trigger(activation, Value::Object(parent), args);
     }
 
     Ok(false.into())
@@ -113,9 +121,11 @@ pub fn will_trigger<'gc>(
 /// Implements `EventDispatcher.dispatchEvent`.
 pub fn dispatch_event<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let event = args.get_object(activation, 0, "event")?;
 
     if event.as_event().is_none() {

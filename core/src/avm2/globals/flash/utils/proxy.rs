@@ -7,7 +7,7 @@ pub use crate::avm2::object::proxy_allocator;
 
 pub fn is_attribute<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(Value::Object(Object::QNameObject(qname_object))) = args.get(0) {

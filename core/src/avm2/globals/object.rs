@@ -12,7 +12,7 @@ use crate::avm2::QName;
 /// Implements `Object`'s instance initializer.
 pub fn instance_init<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)
@@ -20,7 +20,7 @@ pub fn instance_init<'gc>(
 
 fn class_call<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let object_class = activation.avm2().classes().object;
@@ -38,9 +38,11 @@ fn class_call<'gc>(
 /// Implements `Object`'s class initializer
 pub fn class_init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let scope = activation.create_scopechain();
     let gc_context = activation.context.gc_context;
     let this_class = this.as_class_object().unwrap();
@@ -160,36 +162,44 @@ pub fn class_init<'gc>(
 /// Implements `Object.prototype.toString`
 fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     this.to_string(activation)
 }
 
 /// Implements `Object.prototype.toLocaleString`
 fn to_locale_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     this.to_locale_string(activation)
 }
 
 /// Implements `Object.prototype.valueOf`
 fn value_of<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     this.value_of(activation.strings())
 }
 
 /// `Object.prototype.hasOwnProperty`
 pub fn has_own_property<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let name: Result<&Value<'gc>, Error<'gc>> =
         args.get(0).ok_or_else(|| "No name specified".into());
     let name = name?.coerce_to_string(activation)?;
@@ -200,9 +210,11 @@ pub fn has_own_property<'gc>(
 /// `Object.prototype.isPrototypeOf`
 pub fn is_prototype_of<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let mut target_proto = args.get(0).cloned().unwrap_or(Value::Undefined);
 
     while let Value::Object(proto) = target_proto {
@@ -219,9 +231,11 @@ pub fn is_prototype_of<'gc>(
 /// `Object.prototype.propertyIsEnumerable`
 pub fn property_is_enumerable<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let name: Result<&Value<'gc>, Error<'gc>> =
         args.get(0).ok_or_else(|| "No name specified".into());
     let name = name?.coerce_to_string(activation)?;
@@ -232,9 +246,11 @@ pub fn property_is_enumerable<'gc>(
 /// `Object.prototype.setPropertyIsEnumerable`
 pub fn set_property_is_enumerable<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let name: Result<&Value<'gc>, Error<'gc>> =
         args.get(0).ok_or_else(|| "No name specified".into());
     let name = name?.coerce_to_string(activation)?;
@@ -249,7 +265,7 @@ pub fn set_property_is_enumerable<'gc>(
 /// Undocumented `Object.init`, which is a no-op
 pub fn init<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(Value::Undefined)

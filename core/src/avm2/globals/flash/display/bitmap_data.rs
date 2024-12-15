@@ -92,9 +92,11 @@ pub fn fill_bitmap_data_from_symbol<'gc>(
 /// Implements `flash.display.BitmapData`'s 'init' method (invoked from the AS3 constructor)
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     // We set the underlying BitmapData instance - we start out with a dummy BitmapDataWrapper,
     // which makes custom classes see a disposed BitmapData before they call super()
     let name = this.instance_class().name();
@@ -156,9 +158,11 @@ pub fn init<'gc>(
 /// Implements `BitmapData.width`'s getter.
 pub fn get_width<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
         return Ok((bitmap_data.width() as i32).into());
@@ -170,9 +174,11 @@ pub fn get_width<'gc>(
 /// Implements `BitmapData.height`'s getter.
 pub fn get_height<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
         return Ok((bitmap_data.height() as i32).into());
@@ -184,9 +190,11 @@ pub fn get_height<'gc>(
 /// Implements `BitmapData.transparent`'s getter.
 pub fn get_transparent<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
         return Ok(bitmap_data.transparency().into());
@@ -198,9 +206,11 @@ pub fn get_transparent<'gc>(
 /// Implements `BitmapData.scroll`.
 pub fn scroll<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
         let x = args.get_i32(activation, 0)?;
@@ -221,9 +231,11 @@ pub fn scroll<'gc>(
 /// Implements `BitmapData.copyPixels`.
 pub fn copy_pixels<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
         let source_bitmap = args.get_object(activation, 0, "sourceBitmapData")?;
@@ -303,9 +315,11 @@ pub fn copy_pixels<'gc>(
 /// Implements `BitmapData.getPixels`.
 pub fn get_pixels<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
         let rectangle = args.get_object(activation, 0, "rect")?;
@@ -332,9 +346,11 @@ pub fn get_pixels<'gc>(
 /// Implements `BitmapData.copyPixelsToByteArray`.
 pub fn copy_pixels_to_byte_array<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
         let rectangle = args.get_object(activation, 0, "rect")?;
@@ -357,9 +373,11 @@ pub fn copy_pixels_to_byte_array<'gc>(
 
 pub fn get_vector<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
         let rectangle = args.get_object(activation, 0, "rect")?;
@@ -386,9 +404,11 @@ pub fn get_vector<'gc>(
 /// Implements `BitmapData.getPixel`.
 pub fn get_pixel<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
         let x = args.get_u32(activation, 0)?;
@@ -403,9 +423,11 @@ pub fn get_pixel<'gc>(
 /// Implements `BitmapData.getPixel32`.
 pub fn get_pixel32<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
         let x = args.get_u32(activation, 0)?;
@@ -420,9 +442,11 @@ pub fn get_pixel32<'gc>(
 /// Implements `BitmapData.setPixel`.
 pub fn set_pixel<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         let x = args.get_u32(activation, 0)?;
         let y = args.get_u32(activation, 1)?;
@@ -443,9 +467,11 @@ pub fn set_pixel<'gc>(
 /// Implements `BitmapData.setPixel32`.
 pub fn set_pixel32<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
 
@@ -469,9 +495,11 @@ pub fn set_pixel32<'gc>(
 /// Implements `BitmapData.setPixels`.
 pub fn set_pixels<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let rectangle = args.get_object(activation, 0, "rect")?;
     let bytearray = args.get_object(activation, 1, "inputByteArray")?;
 
@@ -501,9 +529,11 @@ pub fn set_pixels<'gc>(
 /// Implements `BitmapData.setVector`.
 pub fn set_vector<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let rectangle = args.get_object(activation, 0, "rect")?;
     // Note - flash player misspells this as 'imputVector'.
     let vec = args.get_object(activation, 1, "imputVector")?;
@@ -555,9 +585,11 @@ pub fn set_vector<'gc>(
 /// Implements `BitmapData.copyChannel`.
 pub fn copy_channel<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
 
@@ -599,9 +631,11 @@ pub fn copy_channel<'gc>(
 
 pub fn flood_fill<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         if !bitmap_data.disposed() {
             let x = args.get_u32(activation, 0)?;
@@ -624,9 +658,11 @@ pub fn flood_fill<'gc>(
 
 pub fn noise<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let low = args.get_u32(activation, 1)? as u8;
 
     let high = args.get_u32(activation, 2)? as u8;
@@ -653,9 +689,11 @@ pub fn noise<'gc>(
 
 pub fn color_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         if !bitmap_data.disposed() {
             // TODO: Re-use `object_to_rectangle` in `movie_clip.rs`.
@@ -692,9 +730,11 @@ pub fn color_transform<'gc>(
 
 pub fn get_color_bounds_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         if !bitmap_data.disposed() {
             let find_color = args.get_bool(2);
@@ -725,7 +765,7 @@ pub fn get_color_bounds_rect<'gc>(
 
 pub fn lock<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // `BitmapData.lock` tells Flash Player to temporarily stop updating the player's
@@ -744,7 +784,7 @@ pub fn lock<'gc>(
 
 pub fn unlock<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // No effect (see comments for `lock`).
@@ -753,9 +793,11 @@ pub fn unlock<'gc>(
 
 pub fn hit_test<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         if !bitmap_data.disposed() {
             let first_point = args.get_object(activation, 0, "firstPoint")?;
@@ -885,9 +927,11 @@ pub fn hit_test<'gc>(
 /// Implements `BitmapData.draw`
 pub fn draw<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         let mut transform = Transform::default();
         let mut blend_mode = BlendMode::Normal;
@@ -964,9 +1008,11 @@ pub fn draw<'gc>(
 /// Implements `BitmapData.drawWithQuality`
 pub fn draw_with_quality<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         let mut transform = Transform::default();
         let mut blend_mode = BlendMode::Normal;
@@ -1046,9 +1092,11 @@ pub fn draw_with_quality<'gc>(
 /// Implement `BitmapData.fillRect`
 pub fn fill_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let rectangle = args.get_object(activation, 0, "rect")?;
 
     let color = args.get_u32(activation, 1)?;
@@ -1074,9 +1122,11 @@ pub fn fill_rect<'gc>(
 /// Implements `BitmapData.dispose`
 pub fn dispose<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         // Don't check if we've already disposed this BitmapData - 'BitmapData.dispose()' can be called
         // multiple times
@@ -1088,9 +1138,11 @@ pub fn dispose<'gc>(
 /// Implement `BitmapData.rect`
 pub fn get_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         return Ok(activation
             .avm2()
@@ -1113,9 +1165,11 @@ pub fn get_rect<'gc>(
 /// Implement `BitmapData.applyFilter`
 pub fn apply_filter<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dest_bitmap) = this.as_bitmap_data() {
         let source_bitmap = args
             .get_object(activation, 0, "sourceBitmapData")?
@@ -1190,9 +1244,11 @@ pub fn apply_filter<'gc>(
 /// Implement `BitmapData.clone`
 pub fn clone<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         if !bitmap_data.disposed() {
             let new_bitmap_data = bitmap_data.clone_data(activation.context.renderer);
@@ -1213,9 +1269,11 @@ pub fn clone<'gc>(
 /// Implement `BitmapData.paletteMap`
 pub fn palette_map<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
         let source_bitmap = args
@@ -1281,9 +1339,11 @@ pub fn palette_map<'gc>(
 /// Implement `BitmapData.perlinNoise`
 pub fn perlin_noise<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         if !bitmap_data.disposed() {
             let base_x = args.get_f64(activation, 0)?;
@@ -1350,9 +1410,11 @@ pub fn perlin_noise<'gc>(
 /// Implement `BitmapData.threshold`
 pub fn threshold<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         if !bitmap_data.disposed() {
             let src_bitmap = args.get_object(activation, 0, "sourceBitmapData")?;
@@ -1417,9 +1479,11 @@ pub fn threshold<'gc>(
 /// Implement `BitmapData.compare`
 pub fn compare<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     const EQUIVALENT: i32 = 0;
     const NOT_BITMAP: i32 = -1;
     const BITMAP_DISPOSED: i32 = -2;
@@ -1487,9 +1551,11 @@ pub fn compare<'gc>(
 /// Implements `BitmapData.pixelDissolve`.
 pub fn pixel_dissolve<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
 
@@ -1548,9 +1614,11 @@ pub fn pixel_dissolve<'gc>(
 // Implements `BitmapData.merge`.
 pub fn merge<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(bitmap_data) = this.as_bitmap_data() {
         if !bitmap_data.disposed() {
             let src_bitmap = args.get_object(activation, 0, "sourceBitmapData")?;

@@ -9,24 +9,28 @@ use swf::Point;
 /// Implements `stageX`'s getter.
 pub fn get_stage_x<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     local_to_stage_x(activation, this, slots::LOCAL_X, slots::LOCAL_Y)
 }
 
 /// Implements `stageY`'s getter.
 pub fn get_stage_y<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     local_to_stage_y(activation, this, slots::LOCAL_X, slots::LOCAL_Y)
 }
 
 pub fn update_after_event<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     *activation.context.needs_render = true;

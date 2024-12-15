@@ -19,18 +19,22 @@ fn get_display_object(this: Object<'_>) -> DisplayObject<'_> {
 
 pub fn get_color_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let color_transform = color_transform_from_transform_object(this);
     color_transform_to_object(&color_transform, activation)
 }
 
 pub fn set_color_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let ct = object_to_color_transform(
         args.get_object(activation, 0, "colorTransform")?,
         activation,
@@ -45,18 +49,22 @@ pub fn set_color_transform<'gc>(
 
 pub fn get_matrix<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let matrix = matrix_from_transform_object(this);
     matrix_to_object(matrix, activation)
 }
 
 pub fn set_matrix<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     // TODO: Despite what the docs say, FP accepts a null matrix here, and returns
     // null when trying to get the matrix- but the DO's actual transform matrix will
     // remain its previous non-null value.
@@ -73,9 +81,11 @@ pub fn set_matrix<'gc>(
 
 pub fn get_concatenated_matrix<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let dobj = get_display_object(this);
     let mut node = Some(dobj);
     while let Some(obj) = node {
@@ -233,9 +243,11 @@ pub fn object_to_matrix<'gc>(
 
 pub fn get_pixel_bounds<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let display_object = get_display_object(this);
     rectangle_to_object(display_object.world_bounds(), activation)
 }
@@ -258,9 +270,11 @@ fn rectangle_to_object<'gc>(
 
 pub fn get_matrix_3d<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     avm2_stub_getter!(activation, "flash.geom.Transform", "matrix3D");
 
     let display_object = get_display_object(this);
@@ -278,9 +292,11 @@ pub fn get_matrix_3d<'gc>(
 
 pub fn set_matrix_3d<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     avm2_stub_setter!(activation, "flash.geom.Transform", "matrix3D");
 
     let set = args
@@ -296,9 +312,11 @@ pub fn set_matrix_3d<'gc>(
 
 pub fn get_perspective_projection<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     avm2_stub_getter!(activation, "flash.geom.Transform", "perspectiveProjection");
 
     let display_object = get_display_object(this);
@@ -322,9 +340,11 @@ pub fn get_perspective_projection<'gc>(
 
 pub fn set_perspective_projection<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     avm2_stub_setter!(activation, "flash.geom.Transform", "perspectiveProjection");
 
     let set = args

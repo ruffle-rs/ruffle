@@ -55,9 +55,11 @@ pub fn initialize_for_allocator<'gc>(
 /// Implements `flash.display.DisplayObject`'s native instance constructor.
 pub fn display_object_initializer<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     activation.super_init(this, &[])?;
 
     if let Some(dobj) = this.as_display_object() {
@@ -82,9 +84,11 @@ pub fn display_object_initializer<'gc>(
 /// Implements `alpha`'s getter.
 pub fn get_alpha<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         return Ok(dobj.alpha().into());
     }
@@ -95,9 +99,11 @@ pub fn get_alpha<'gc>(
 /// Implements `alpha`'s setter.
 pub fn set_alpha<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let new_alpha = args.get_f64(activation, 0)?;
         dobj.set_alpha(activation.context.gc_context, new_alpha);
@@ -109,9 +115,11 @@ pub fn set_alpha<'gc>(
 /// Implements `height`'s getter.
 pub fn get_height<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         return Ok(dobj.height().into());
     }
@@ -122,9 +130,11 @@ pub fn get_height<'gc>(
 /// Implements `height`'s setter.
 pub fn set_height<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let new_height = args.get_f64(activation, 0)?;
         if new_height >= 0.0 {
@@ -138,9 +148,11 @@ pub fn set_height<'gc>(
 /// Implements `scale9Grid`'s getter.
 pub fn get_scale9grid<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     avm2_stub_getter!(activation, "flash.display.DisplayObject", "scale9Grid");
     if let Some(dobj) = this.as_display_object() {
         let rect = dobj.scaling_grid();
@@ -158,9 +170,11 @@ pub fn get_scale9grid<'gc>(
 /// Implements `scale9Grid`'s setter.
 pub fn set_scale9grid<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     avm2_stub_setter!(activation, "flash.display.DisplayObject", "scale9Grid");
     if let Some(dobj) = this.as_display_object() {
         let rect = match args.try_get_object(activation, 0) {
@@ -176,9 +190,11 @@ pub fn set_scale9grid<'gc>(
 /// Implements `scaleY`'s getter.
 pub fn get_scale_y<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         return Ok(dobj.scale_y(activation.context.gc_context).unit().into());
     }
@@ -189,9 +205,11 @@ pub fn get_scale_y<'gc>(
 /// Implements `scaleY`'s setter.
 pub fn set_scale_y<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let new_scale = args.get_f64(activation, 0)?;
         dobj.set_scale_y(activation.context.gc_context, Percent::from_unit(new_scale));
@@ -203,9 +221,11 @@ pub fn set_scale_y<'gc>(
 /// Implements `width`'s getter.
 pub fn get_width<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         return Ok(dobj.width().into());
     }
@@ -216,9 +236,11 @@ pub fn get_width<'gc>(
 /// Implements `width`'s setter.
 pub fn set_width<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let new_width = args.get_f64(activation, 0)?;
         if new_width >= 0.0 {
@@ -232,9 +254,11 @@ pub fn set_width<'gc>(
 /// Implements `scaleX`'s getter.
 pub fn get_scale_x<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         return Ok(dobj.scale_x(activation.context.gc_context).unit().into());
     }
@@ -245,9 +269,11 @@ pub fn get_scale_x<'gc>(
 /// Implements `scaleX`'s setter.
 pub fn set_scale_x<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let new_scale = args.get_f64(activation, 0)?;
         dobj.set_scale_x(activation.context.gc_context, Percent::from_unit(new_scale));
@@ -258,9 +284,11 @@ pub fn set_scale_x<'gc>(
 
 pub fn get_filters<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let array = dobj
             .filters()
@@ -284,9 +312,11 @@ fn build_argument_type_error<'gc>(
 
 pub fn set_filters<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let new_filters = args.try_get_object(activation, 0);
 
@@ -322,9 +352,11 @@ pub fn set_filters<'gc>(
 /// Implements `x`'s getter.
 pub fn get_x<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         return Ok(dobj.x().to_pixels().into());
     }
@@ -335,9 +367,11 @@ pub fn get_x<'gc>(
 /// Implements `x`'s setter.
 pub fn set_x<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let x = args.get_f64(activation, 0)?;
         dobj.set_x(activation.context.gc_context, Twips::from_pixels(x));
@@ -349,9 +383,11 @@ pub fn set_x<'gc>(
 /// Implements `y`'s getter.
 pub fn get_y<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         return Ok(dobj.y().to_pixels().into());
     }
@@ -362,9 +398,11 @@ pub fn get_y<'gc>(
 /// Implements `y`'s setter.
 pub fn set_y<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let y = args.get_f64(activation, 0)?;
         dobj.set_y(activation.context.gc_context, Twips::from_pixels(y));
@@ -375,7 +413,7 @@ pub fn set_y<'gc>(
 
 pub fn get_z<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.display.DisplayObject", "z");
@@ -384,7 +422,7 @@ pub fn get_z<'gc>(
 
 pub fn set_z<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(activation, "flash.display.DisplayObject", "z");
@@ -393,7 +431,7 @@ pub fn set_z<'gc>(
 
 pub fn get_rotation_x<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.display.DisplayObject", "rotationX");
@@ -402,7 +440,7 @@ pub fn get_rotation_x<'gc>(
 
 pub fn set_rotation_x<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(activation, "flash.display.DisplayObject", "rotationX");
@@ -411,7 +449,7 @@ pub fn set_rotation_x<'gc>(
 
 pub fn get_rotation_y<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.display.DisplayObject", "rotationY");
@@ -420,7 +458,7 @@ pub fn get_rotation_y<'gc>(
 
 pub fn set_rotation_y<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(activation, "flash.display.DisplayObject", "rotationY");
@@ -429,7 +467,7 @@ pub fn set_rotation_y<'gc>(
 
 pub fn get_rotation_z<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.display.DisplayObject", "rotationZ");
@@ -438,7 +476,7 @@ pub fn get_rotation_z<'gc>(
 
 pub fn set_rotation_z<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(activation, "flash.display.DisplayObject", "rotationZ");
@@ -447,7 +485,7 @@ pub fn set_rotation_z<'gc>(
 
 pub fn get_scale_z<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_getter!(activation, "flash.display.DisplayObject", "scaleZ");
@@ -456,7 +494,7 @@ pub fn get_scale_z<'gc>(
 
 pub fn set_scale_z<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(activation, "flash.display.DisplayObject", "scaleZ");
@@ -466,9 +504,11 @@ pub fn set_scale_z<'gc>(
 /// Implements `rotation`'s getter.
 pub fn get_rotation<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let rot: f64 = dobj.rotation(activation.context.gc_context).into();
         let rem = rot % 360.0;
@@ -486,9 +526,11 @@ pub fn get_rotation<'gc>(
 /// Implements `rotation`'s setter.
 pub fn set_rotation<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let new_rotation = args.get_f64(activation, 0)?;
 
@@ -501,9 +543,11 @@ pub fn set_rotation<'gc>(
 /// Implements `name`'s getter.
 pub fn get_name<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         return Ok(dobj.name().into());
     }
@@ -514,9 +558,11 @@ pub fn get_name<'gc>(
 /// Implements `name`'s setter.
 pub fn set_name<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let new_name = args.get_string(activation, 0)?;
 
@@ -537,9 +583,11 @@ pub fn set_name<'gc>(
 /// Implements `parent`.
 pub fn get_parent<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         return Ok(dobj
             .avm2_parent()
@@ -553,9 +601,11 @@ pub fn get_parent<'gc>(
 /// Implements `root`.
 pub fn get_root<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         return Ok(dobj
             .avm2_root()
@@ -569,9 +619,11 @@ pub fn get_root<'gc>(
 /// Implements `stage`.
 pub fn get_stage<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         return Ok(dobj
             .avm2_stage(activation.context)
@@ -585,9 +637,11 @@ pub fn get_stage<'gc>(
 /// Implements `visible`'s getter.
 pub fn get_visible<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         return Ok(dobj.visible().into());
     }
@@ -598,9 +652,11 @@ pub fn get_visible<'gc>(
 /// Implements `visible`'s setter.
 pub fn set_visible<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let new_visible = args.get_bool(0);
 
@@ -613,9 +669,11 @@ pub fn set_visible<'gc>(
 /// Implements `metaData`'s getter.
 pub fn get_meta_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     avm2_stub_getter!(activation, "flash.display.DisplayObject", "metaData");
     if let Some(dobj) = this.as_display_object() {
         return Ok(dobj.meta_data().map_or(Value::Null, Value::Object));
@@ -627,9 +685,11 @@ pub fn get_meta_data<'gc>(
 /// Implements `metaData`'s setter.
 pub fn set_meta_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let obj = args.get_object(activation, 0, "metaData")?;
         dobj.set_meta_data(activation.gc(), obj);
@@ -641,9 +701,11 @@ pub fn set_meta_data<'gc>(
 /// Implements `mouseX`.
 pub fn get_mouse_x<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let local_mouse = dobj.local_mouse_position(activation.context);
         return Ok(local_mouse.x.to_pixels().into());
@@ -655,9 +717,11 @@ pub fn get_mouse_x<'gc>(
 /// Implements `mouseY`.
 pub fn get_mouse_y<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let local_mouse = dobj.local_mouse_position(activation.context);
         return Ok(local_mouse.y.to_pixels().into());
@@ -669,9 +733,11 @@ pub fn get_mouse_y<'gc>(
 /// Implements `hitTestPoint`.
 pub fn hit_test_point<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let x = args.get_f64(activation, 0)?;
         let y = args.get_f64(activation, 1)?;
@@ -702,9 +768,11 @@ pub fn hit_test_point<'gc>(
 /// Implements `hitTestObject`.
 pub fn hit_test_object<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         if let Some(rhs_dobj) = args.get_object(activation, 0, "obj")?.as_display_object() {
             return Ok(dobj.hit_test_object(rhs_dobj).into());
@@ -717,9 +785,11 @@ pub fn hit_test_object<'gc>(
 /// Implements `loaderInfo` getter
 pub fn get_loader_info<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         // Contrary to the DisplayObject.loaderInfo documentation,
         // Flash Player defines 'loaderInfo' for non-root DisplayObjects.
@@ -737,9 +807,11 @@ pub fn get_loader_info<'gc>(
 
 pub fn get_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     Ok(activation
         .avm2()
         .classes()
@@ -750,9 +822,11 @@ pub fn get_transform<'gc>(
 
 pub fn set_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let transform = args.get_object(activation, 0, "transform")?;
 
     // FIXME - consider 3D matrix and pixel bounds
@@ -777,9 +851,11 @@ pub fn set_transform<'gc>(
 /// Implements `DisplayObject.blendMode`'s getter.
 pub fn get_blend_mode<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let mode =
             AvmString::new_utf8(activation.context.gc_context, dobj.blend_mode().to_string());
@@ -791,9 +867,11 @@ pub fn get_blend_mode<'gc>(
 /// Implements `DisplayObject.blendMode`'s setter.
 pub fn set_blend_mode<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let mode = args.get_string(activation, 0)?;
 
@@ -825,9 +903,11 @@ fn new_rectangle<'gc>(
 
 pub fn get_scroll_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         if dobj.has_scroll_rect() {
             return Ok(new_rectangle(activation, dobj.next_scroll_rect())?.into());
@@ -865,9 +945,11 @@ pub fn object_to_rectangle<'gc>(
 
 pub fn set_scroll_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         if let Some(rectangle) = args.try_get_object(activation, 0) {
             // Flash only updates the "internal" scrollRect used by `localToLocal` when the next
@@ -893,9 +975,11 @@ pub fn set_scroll_rect<'gc>(
 
 pub fn local_to_global<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let point = args.get_object(activation, 0, "point")?;
         let x = point
@@ -923,9 +1007,11 @@ pub fn local_to_global<'gc>(
 
 pub fn global_to_local<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let point = args.get_object(activation, 0, "point")?;
         let x = point
@@ -953,9 +1039,11 @@ pub fn global_to_local<'gc>(
 
 pub fn get_bounds<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let target = args
             .try_get_object(activation, 0)
@@ -985,7 +1073,7 @@ pub fn get_bounds<'gc>(
 
 pub fn get_rect<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // TODO: This should get the bounds ignoring strokes. Always equal to or smaller than getBounds.
@@ -995,9 +1083,11 @@ pub fn get_rect<'gc>(
 
 pub fn get_mask<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_display_object() {
         return Ok(this.masker().map_or(Value::Null, |m| m.object2()));
     }
@@ -1006,9 +1096,11 @@ pub fn get_mask<'gc>(
 
 pub fn set_mask<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_display_object() {
         let mask = args.try_get_object(activation, 0);
 
@@ -1028,9 +1120,11 @@ pub fn set_mask<'gc>(
 
 pub fn get_cache_as_bitmap<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_display_object() {
         return Ok(this.is_bitmap_cached().into());
     }
@@ -1039,9 +1133,11 @@ pub fn get_cache_as_bitmap<'gc>(
 
 pub fn set_cache_as_bitmap<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_display_object() {
         let cache = args.get(0).unwrap_or(&Value::Undefined).coerce_to_boolean();
         this.set_bitmap_cached_preference(activation.context.gc_context, cache);
@@ -1052,9 +1148,11 @@ pub fn set_cache_as_bitmap<'gc>(
 /// `opaqueBackground`'s getter.
 pub fn get_opaque_background<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(color) = this
         .as_display_object()
         .and_then(|this| this.opaque_background())
@@ -1068,9 +1166,11 @@ pub fn get_opaque_background<'gc>(
 /// `opaqueBackground`'s setter.
 pub fn set_opaque_background<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let value = args.get(0).unwrap_or(&Value::Undefined);
         let color = match value {
@@ -1085,9 +1185,11 @@ pub fn set_opaque_background<'gc>(
 
 pub fn set_blend_shader<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(dobj) = this.as_display_object() {
         let Some(shader_data) = args
             .get_object(activation, 0, "shader")?

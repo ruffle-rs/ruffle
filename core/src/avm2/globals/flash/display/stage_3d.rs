@@ -4,7 +4,7 @@ use crate::avm2::object::Context3DObject;
 use crate::avm2::object::TObject;
 
 use crate::avm2::parameters::ParametersExt;
-use crate::avm2::{Activation, Error, Object, Value};
+use crate::avm2::{Activation, Error, Value};
 
 pub use crate::avm2::object::stage_3d_allocator;
 
@@ -32,9 +32,11 @@ const PROFILES_HIGH_TO_LOW: &[(&[u8], Context3DProfile)] = [
 
 pub fn request_context3d_internal<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this_stage3d = this.as_stage_3d().unwrap();
     let profiles = args.get_object(activation, 1, "profiles")?;
     let profiles = profiles.as_vector_storage().unwrap();
@@ -76,9 +78,11 @@ pub fn request_context3d_internal<'gc>(
 
 pub fn get_context_3d<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_stage_3d() {
         return Ok(this.context3d().map_or(Value::Null, |obj| obj.into()));
     }
@@ -87,9 +91,11 @@ pub fn get_context_3d<'gc>(
 
 pub fn get_visible<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_stage_3d() {
         return Ok(this.visible().into());
     }
@@ -98,9 +104,11 @@ pub fn get_visible<'gc>(
 
 pub fn set_visible<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_stage_3d() {
         this.set_visible(args.get_bool(0));
     }

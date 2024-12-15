@@ -16,9 +16,11 @@ use crate::string::WStr;
 
 pub fn create_text_line<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     avm2_stub_method!(activation, "flash.text.TextBlock", "createTextLine");
 
     let previous_text_line = args.try_get_object(activation, 0);
