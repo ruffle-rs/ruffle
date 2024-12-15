@@ -106,11 +106,14 @@ impl<'gc> FunctionObject<'gc> {
     /// This associated constructor will also create and initialize an empty
     /// `Object` prototype for the function. The given `receiver`, if supplied,
     /// will override any user-specified `this` parameter.
+    ///
+    /// It is the caller's responsibility to ensure that the `receiver` passed
+    /// to this method is not Value::Null or Value::Undefined.
     pub fn from_method(
         activation: &mut Activation<'_, 'gc>,
         method: Method<'gc>,
         scope: ScopeChain<'gc>,
-        receiver: Option<Object<'gc>>,
+        receiver: Option<Value<'gc>>,
         bound_superclass_object: Option<ClassObject<'gc>>,
         bound_class: Option<Class<'gc>>,
     ) -> FunctionObject<'gc> {
@@ -198,13 +201,6 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn to_locale_string(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        self.to_string(activation)
     }
 
     fn as_executable(&self) -> Option<Ref<BoundMethod<'gc>>> {

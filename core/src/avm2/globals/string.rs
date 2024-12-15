@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
 use crate::avm2::error::make_error_1004;
 use crate::avm2::method::{Method, NativeMethodImpl};
-use crate::avm2::object::{primitive_allocator, FunctionObject, Object, TObject};
+use crate::avm2::object::{FunctionObject, Object, TObject};
 use crate::avm2::regexp::{RegExp, RegExpFlags};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -37,25 +37,26 @@ const PUBLIC_INSTANCE_AND_PROTO_METHODS: &[(&str, NativeMethodImpl)] = &[
 ];
 
 /// Implements `String`'s instance initializer.
-pub fn instance_init<'gc>(
+///
+/// Because of the presence of a custom constructor, this method is unreachable.
+fn instance_init<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    unreachable!()
+}
+
+fn string_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    let string_value = match args.get(0) {
+        Some(arg) => arg.coerce_to_string(activation)?,
+        None => activation.strings().empty(),
+    };
 
-    activation.super_init(this, &[])?;
-
-    if let Some(mut value) = this.as_primitive_mut(activation.gc()) {
-        if !matches!(*value, Value::String(_)) {
-            *value = match args.get(0) {
-                Some(arg) => arg.coerce_to_string(activation)?.into(),
-                None => activation.strings().empty().into(),
-            }
-        }
-    }
-
-    Ok(Value::Undefined)
+    Ok(string_value.into())
 }
 
 /// Implements `String`'s class initializer.
@@ -103,13 +104,11 @@ pub fn call_handler<'gc>(
 
 /// Implements `length` property's getter
 fn length<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    if let Value::String(s) = this.value_of(activation.strings())? {
+    if let Value::String(s) = this {
         return Ok(s.len().into());
     }
 
@@ -122,9 +121,7 @@ fn char_at<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    if let Value::String(s) = this.value_of(activation.strings())? {
+    if let Value::String(s) = this {
         // This function takes Number, so if we use coerce_to_i32 instead of coerce_to_number, the value may overflow.
         let n = args
             .get(0)
@@ -152,9 +149,7 @@ fn char_code_at<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    if let Value::String(s) = this.value_of(activation.strings())? {
+    if let Value::String(s) = this {
         // This function takes Number, so if we use coerce_to_i32 instead of coerce_to_number, the value may overflow.
         let n = args
             .get(0)
@@ -297,15 +292,14 @@ fn match_s<'gc>(
     let pattern = args.get(0).unwrap_or(&Value::Undefined);
 
     let regexp_class = activation.avm2().classes().regexp;
-    let pattern = if !pattern.is_of_type(activation, regexp_class.inner_class_definition()) {
+    let pattern = if pattern.is_of_type(activation, regexp_class.inner_class_definition()) {
+        *pattern
+    } else {
         let string = pattern.coerce_to_string(activation)?;
         regexp_class.construct(activation, &[Value::String(string)])?
-    } else {
-        pattern
-            .as_object()
-            .expect("Regexp objects must be Value::Object")
     };
 
+    let pattern = pattern.as_object().unwrap();
     if let Some(mut regexp) = pattern.as_regexp_mut(activation.gc()) {
         let mut storage = ArrayStorage::new(0);
         if regexp.flags().contains(RegExpFlags::GLOBAL) {
@@ -406,15 +400,14 @@ fn search<'gc>(
     let pattern = args.get(0).unwrap_or(&Value::Undefined);
 
     let regexp_class = activation.avm2().classes().regexp;
-    let pattern = if !pattern.is_of_type(activation, regexp_class.inner_class_definition()) {
+    let pattern = if pattern.is_of_type(activation, regexp_class.inner_class_definition()) {
+        *pattern
+    } else {
         let string = pattern.coerce_to_string(activation)?;
         regexp_class.construct(activation, &[Value::String(string)])?
-    } else {
-        pattern
-            .as_object()
-            .expect("Regexp objects must be Value::Object")
     };
 
+    let pattern = pattern.as_object().unwrap();
     if let Some(mut regexp) = pattern.as_regexp_mut(activation.gc()) {
         let old = regexp.last_index();
         regexp.set_last_index(0);
@@ -623,17 +616,15 @@ fn to_string<'gc>(
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    if let Some(this) = this.as_primitive() {
-        if let Value::String(v) = *this {
-            return Ok(v.into());
-        }
+    if let Value::String(v) = this {
+        return Ok(v.into());
     }
 
-    let string_proto = activation.avm2().classes().string.prototype();
-    if Object::ptr_eq(string_proto, this) {
-        return Ok(activation.strings().empty().into());
+    if let Some(this) = this.as_object() {
+        let string_proto = activation.avm2().classes().string.prototype();
+        if Object::ptr_eq(string_proto, this) {
+            return Ok(activation.strings().empty().into());
+        }
     }
 
     Err(make_error_1004(activation, "String.prototype.toString"))
@@ -641,13 +632,11 @@ fn to_string<'gc>(
 
 /// Implements `String.valueOf`
 fn value_of<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    this.value_of(activation.strings())
+    Ok(this)
 }
 
 /// Implements `String.toUpperCase`
@@ -673,13 +662,10 @@ fn is_dependent<'gc>(
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    if let Some(prim) = this.as_primitive() {
-        if let Value::String(s) = *prim {
-            return Ok(s.is_dependent().into());
-        }
+    if let Value::String(s) = this {
+        return Ok(s.is_dependent().into());
     }
+
     panic!();
 }
 
@@ -698,7 +684,7 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     );
 
     class.set_attributes(mc, ClassAttributes::FINAL | ClassAttributes::SEALED);
-    class.set_instance_allocator(mc, primitive_allocator);
+    class.set_custom_constructor(mc, string_constructor);
     class.set_call_handler(
         mc,
         Method::from_builtin(call_handler, "<String call handler>", mc),

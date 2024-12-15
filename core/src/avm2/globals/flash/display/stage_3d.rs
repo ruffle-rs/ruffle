@@ -35,9 +35,9 @@ pub fn request_context3d_internal<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    let this_object = this.as_object().unwrap();
 
-    let this_stage3d = this.as_stage_3d().unwrap();
+    let this_stage3d = this_object.as_stage_3d().unwrap();
     let profiles = args.get_object(activation, 1, "profiles")?;
     let profiles = profiles.as_vector_storage().unwrap();
 
@@ -68,9 +68,7 @@ pub fn request_context3d_internal<'gc>(
             .event
             .construct(activation, &["context3DCreate".into()])?;
 
-        // FIXME - fire this at least one frame later,
-        // since some seems to expect this (e.g. the adobe triangle example)
-        this.call_public_property("dispatchEvent", &[event.into()], activation)?;
+        this.call_public_property("dispatchEvent", &[event], activation)?;
     }
 
     Ok(Value::Undefined)

@@ -794,6 +794,8 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
                             .stage3d
                             .construct(&mut activation, &[])
                             .expect("Failed to construct Stage3D")
+                            .as_object()
+                            .expect("Stage3D is an Object")
                     })
                     .collect();
                 let mut write = self.0.write(activation.gc());

@@ -2039,8 +2039,8 @@ pub trait TDisplayObject<'gc>:
         //TODO: Don't report missing property errors.
         //TODO: Don't attempt to set properties if object was placed without a name.
         if self.has_explicit_name() {
-            if let Some(Avm2Value::Object(p)) = self.parent().map(|p| p.object2()) {
-                if let Avm2Value::Object(c) = self.object2() {
+            if let Some(parent @ Avm2Value::Object(_)) = self.parent().map(|p| p.object2()) {
+                if let Avm2Value::Object(child) = self.object2() {
                     let domain = context
                         .library
                         .library_for_movie(self.movie())
@@ -2049,7 +2049,7 @@ pub trait TDisplayObject<'gc>:
                     let mut activation = Avm2Activation::from_domain(context, domain);
                     let name =
                         Avm2Multiname::new(activation.avm2().find_public_namespace(), self.name());
-                    if let Err(e) = p.init_property(&name, c.into(), &mut activation) {
+                    if let Err(e) = parent.init_property(&name, child.into(), &mut activation) {
                         tracing::error!(
                             "Got error when setting AVM2 child named \"{}\": {}",
                             &self.name(),
@@ -2743,6 +2743,8 @@ impl SoundTransform {
             .classes()
             .soundtransform
             .construct(activation, &[])?
+            .as_object()
+            .unwrap()
             .as_sound_transform()
             .unwrap();
 

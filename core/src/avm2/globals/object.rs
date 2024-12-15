@@ -2,12 +2,13 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
+use crate::avm2::error;
 use crate::avm2::method::{Method, NativeMethodImpl, ParamConfig};
 use crate::avm2::object::{FunctionObject, Object, TObject};
 use crate::avm2::traits::Trait;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
-use crate::avm2::QName;
+use crate::avm2::{Error, Multiname, QName};
+use crate::string::AvmString;
 
 /// Implements `Object`'s instance initializer.
 pub fn instance_init<'gc>(
@@ -26,11 +27,11 @@ fn class_call<'gc>(
     let object_class = activation.avm2().classes().object;
 
     if args.is_empty() {
-        return object_class.construct(activation, args).map(|o| o.into());
+        return object_class.construct(activation, args);
     }
     let arg = args.get(0).cloned().unwrap();
     if matches!(arg, Value::Undefined) || matches!(arg, Value::Null) {
-        return object_class.construct(activation, args).map(|o| o.into());
+        return object_class.construct(activation, args);
     }
     Ok(arg)
 }
@@ -121,7 +122,7 @@ pub fn class_init<'gc>(
         "toLocaleString",
         FunctionObject::from_method(
             activation,
-            Method::from_builtin(to_locale_string, "toLocaleString", gc_context),
+            Method::from_builtin(to_string, "toLocaleString", gc_context),
             scope,
             None,
             None,
@@ -165,31 +166,22 @@ fn to_string<'gc>(
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    if let Some(this) = this.as_object() {
+        this.to_string(activation)
+    } else {
+        let class_name = this.instance_class(activation).name().local_name();
 
-    this.to_string(activation)
-}
-
-/// Implements `Object.prototype.toLocaleString`
-fn to_locale_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    this.to_locale_string(activation)
+        Ok(AvmString::new_utf8(activation.gc(), format!("[object {class_name}]")).into())
+    }
 }
 
 /// Implements `Object.prototype.valueOf`
 fn value_of<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    this.value_of(activation.strings())
+    Ok(this)
 }
 
 /// `Object.prototype.hasOwnProperty`
@@ -198,13 +190,16 @@ pub fn has_own_property<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    let name = args.get(0).expect("No name specified");
+    let name = name.coerce_to_string(activation)?;
 
-    let name: Result<&Value<'gc>, Error<'gc>> =
-        args.get(0).ok_or_else(|| "No name specified".into());
-    let name = name?.coerce_to_string(activation)?;
+    if let Some(this) = this.as_object() {
+        Ok(this.has_own_property_string(name, activation)?.into())
+    } else {
+        let name = Multiname::new(activation.avm2().find_public_namespace(), name);
 
-    Ok(this.has_own_property_string(name, activation)?.into())
+        Ok(this.has_trait(activation, &name).into())
+    }
 }
 
 /// `Object.prototype.isPrototypeOf`
@@ -213,16 +208,16 @@ pub fn is_prototype_of<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    if let Some(this) = this.as_object() {
+        let mut target_proto = args.get(0).cloned().unwrap_or(Value::Undefined);
 
-    let mut target_proto = args.get(0).cloned().unwrap_or(Value::Undefined);
+        while let Value::Object(proto) = target_proto {
+            if Object::ptr_eq(this, proto) {
+                return Ok(true.into());
+            }
 
-    while let Value::Object(proto) = target_proto {
-        if Object::ptr_eq(this, proto) {
-            return Ok(true.into());
+            target_proto = proto.proto().map(|o| o.into()).unwrap_or(Value::Undefined);
         }
-
-        target_proto = proto.proto().map(|o| o.into()).unwrap_or(Value::Undefined);
     }
 
     Ok(false.into())
@@ -234,13 +229,14 @@ pub fn property_is_enumerable<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    if let Some(this) = this.as_object() {
+        let name = args.get(0).expect("No name specified");
+        let name = name.coerce_to_string(activation)?;
 
-    let name: Result<&Value<'gc>, Error<'gc>> =
-        args.get(0).ok_or_else(|| "No name specified".into());
-    let name = name?.coerce_to_string(activation)?;
-
-    Ok(this.property_is_enumerable(name).into())
+        Ok(this.property_is_enumerable(name).into())
+    } else {
+        Ok(false.into())
+    }
 }
 
 /// `Object.prototype.setPropertyIsEnumerable`
@@ -249,14 +245,23 @@ pub fn set_property_is_enumerable<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
+    let name = args.get(0).expect("No name specified");
+    let name = name.coerce_to_string(activation)?;
 
-    let name: Result<&Value<'gc>, Error<'gc>> =
-        args.get(0).ok_or_else(|| "No name specified".into());
-    let name = name?.coerce_to_string(activation)?;
+    if let Some(this) = this.as_object() {
+        if let Some(Value::Bool(is_enum)) = args.get(1) {
+            this.set_local_property_is_enumerable(activation.gc(), name, *is_enum);
+        }
+    } else {
+        let instance_class = this.instance_class(activation);
+        let multiname = Multiname::new(activation.avm2().find_public_namespace(), name);
 
-    if let Some(Value::Bool(is_enum)) = args.get(1) {
-        this.set_local_property_is_enumerable(activation.gc(), name, *is_enum);
+        return Err(error::make_reference_error(
+            activation,
+            error::ReferenceErrorCode::InvalidWrite,
+            &multiname,
+            instance_class,
+        ));
     }
 
     Ok(Value::Undefined)

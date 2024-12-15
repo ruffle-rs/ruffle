@@ -164,6 +164,8 @@ pub fn set_name<'gc>(
         .classes()
         .qname
         .construct(activation, &[name])?
+        .as_object()
+        .unwrap()
         .as_qname_object()
         .unwrap();
 
@@ -276,6 +278,8 @@ pub fn add_namespace<'gc>(
         .classes()
         .namespace
         .construct(activation, &[value])?
+        .as_object()
+        .unwrap()
         .as_namespace_object()
         .unwrap();
 
@@ -321,8 +325,11 @@ pub fn set_namespace<'gc>(
         .classes()
         .namespace
         .construct(activation, &[value])?
+        .as_object()
+        .unwrap()
         .as_namespace_object()
         .unwrap();
+
     let ns = E4XNamespace {
         prefix: ns.prefix(),
         uri: ns.namespace().as_uri(activation.strings()),
@@ -372,6 +379,8 @@ pub fn remove_namespace<'gc>(
         .classes()
         .namespace
         .construct(activation, &[value])?
+        .as_object()
+        .unwrap()
         .as_namespace_object()
         .unwrap();
     let ns = E4XNamespace {
@@ -725,7 +734,7 @@ pub fn call_handler<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() == 1 {
-        if let Some(obj) = args.try_get_object(activation, 0) {
+        if let Some(obj) = args.get_value(0).as_object() {
             // We do *not* create a new object when AS does 'XML(someXML)'
             if let Some(xml) = obj.as_xml_object() {
                 return Ok(xml.into());
@@ -742,12 +751,7 @@ pub fn call_handler<'gc>(
         }
     }
 
-    Ok(activation
-        .avm2()
-        .classes()
-        .xml
-        .construct(activation, args)?
-        .into())
+    activation.avm2().classes().xml.construct(activation, args)
 }
 
 pub fn node_kind<'gc>(
@@ -1124,7 +1128,6 @@ pub fn replace<'gc>(
                 .classes()
                 .xml
                 .construct(activation, &[value])?
-                .into()
         } else {
             value
         }

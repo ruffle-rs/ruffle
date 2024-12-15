@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::events::Event;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, ObjectPtr, ScriptObject, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::context::UpdateContext;
@@ -61,7 +61,7 @@ impl<'gc> EventObject<'gc> {
     /// It's just slightly faster and doesn't require an Activation.
     /// This is equivalent to
     /// classes.event.construct(activation, &[event_type, false, false])
-    pub fn bare_default_event<S>(context: &mut UpdateContext<'gc>, event_type: S) -> Object<'gc>
+    pub fn bare_default_event<S>(context: &mut UpdateContext<'gc>, event_type: S) -> Value<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
@@ -76,7 +76,7 @@ impl<'gc> EventObject<'gc> {
         event_type: S,
         bubbles: bool,
         cancelable: bool,
-    ) -> Object<'gc>
+    ) -> Value<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
@@ -106,7 +106,7 @@ impl<'gc> EventObject<'gc> {
         delta: i32,
         bubbles: bool,
         button: MouseButton,
-    ) -> Object<'gc>
+    ) -> Value<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
@@ -155,7 +155,7 @@ impl<'gc> EventObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         target: DisplayObject<'gc>,
         button: MouseButton,
-    ) -> Object<'gc> {
+    ) -> Value<'gc> {
         Self::mouse_event(
             activation,
             match button {
@@ -176,7 +176,7 @@ impl<'gc> EventObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         target: DisplayObject<'gc>,
         button: MouseButton,
-    ) -> Object<'gc> {
+    ) -> Value<'gc> {
         Self::mouse_event(
             activation,
             match button {
@@ -197,7 +197,7 @@ impl<'gc> EventObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         target: DisplayObject<'gc>,
         button: MouseButton,
-    ) -> Object<'gc> {
+    ) -> Value<'gc> {
         Self::mouse_event(
             activation,
             match button {
@@ -220,7 +220,7 @@ impl<'gc> EventObject<'gc> {
         text: AvmString<'gc>,
         bubbles: bool,
         cancelable: bool,
-    ) -> Object<'gc>
+    ) -> Value<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
@@ -247,16 +247,11 @@ impl<'gc> EventObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         event_type: S,
         info: Vec<(impl Into<AvmString<'gc>>, impl Into<AvmString<'gc>>)>,
-    ) -> Object<'gc>
+    ) -> Value<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
-        let info_object = activation
-            .avm2()
-            .classes()
-            .object
-            .construct(activation, &[])
-            .unwrap();
+        let info_object = ScriptObject::new_object(activation);
         for (key, value) in info {
             info_object
                 .set_string_property_local(key.into(), Value::String(value.into()), activation)
@@ -288,7 +283,7 @@ impl<'gc> EventObject<'gc> {
         bytes_total: u64,
         bubbles: bool,
         cancelable: bool,
-    ) -> Object<'gc>
+    ) -> Value<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
@@ -319,7 +314,7 @@ impl<'gc> EventObject<'gc> {
         cancelable: bool,
         related_object: Option<InteractiveObject<'gc>>,
         key_code: u32,
-    ) -> Object<'gc>
+    ) -> Value<'gc>
     where
         S: Into<AvmString<'gc>>,
     {

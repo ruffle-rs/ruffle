@@ -1,9 +1,8 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
-use crate::avm2::value::{Hint, Value};
+use crate::avm2::value::Hint;
 use crate::avm2::Error;
-use crate::string::StringContext;
 use chrono::{DateTime, Utc};
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
@@ -95,14 +94,6 @@ impl<'gc> TObject<'gc> for DateObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn value_of(&self, _context: &mut StringContext<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        if let Some(date) = self.date_time() {
-            Ok((date.timestamp_millis() as f64).into())
-        } else {
-            Ok(f64::NAN.into())
-        }
     }
 
     fn default_hint(&self) -> Hint {

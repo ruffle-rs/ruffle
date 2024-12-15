@@ -3,10 +3,8 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
-use crate::avm2::regexp::{RegExp, RegExpFlags};
-use crate::avm2::value::Value;
+use crate::avm2::regexp::RegExp;
 use crate::avm2::Error;
-use crate::string::{AvmString, StringContext, WString};
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
@@ -93,34 +91,6 @@ impl<'gc> TObject<'gc> for RegExpObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn value_of(&self, context: &mut StringContext<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        let regexp = self.0.regexp.borrow();
-        let mut s = WString::new();
-        s.push_byte(b'/');
-        s.push_str(&regexp.source());
-        s.push_byte(b'/');
-
-        let flags = regexp.flags();
-
-        if flags.contains(RegExpFlags::GLOBAL) {
-            s.push_byte(b'g');
-        }
-        if flags.contains(RegExpFlags::IGNORE_CASE) {
-            s.push_byte(b'i');
-        }
-        if flags.contains(RegExpFlags::MULTILINE) {
-            s.push_byte(b'm');
-        }
-        if flags.contains(RegExpFlags::DOTALL) {
-            s.push_byte(b's');
-        }
-        if flags.contains(RegExpFlags::EXTENDED) {
-            s.push_byte(b'x');
-        }
-
-        Ok(AvmString::new(context.gc(), s).into())
     }
 
     /// Unwrap this object as a regexp.
