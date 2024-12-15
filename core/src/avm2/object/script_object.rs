@@ -75,7 +75,7 @@ impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     }
 }
 
-fn maybe_int_property(name: AvmString<'_>) -> DynamicKey<'_> {
+pub fn maybe_int_property(name: AvmString<'_>) -> DynamicKey<'_> {
     // TODO: this should use a custom implementation, not parse()
     // FP is much stricter here, only allowing pure natural numbers without sign or leading zeros
     if let Ok(val) = name.parse::<u32>() {
@@ -349,12 +349,6 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         self.bound_methods().get(id as usize).and_then(|v| *v)
     }
 
-    pub fn has_trait(&self, name: &Multiname<'gc>) -> bool {
-        // Class instances have instance traits from any class in the base
-        // class chain.
-        self.vtable().has_trait(name)
-    }
-
     pub fn has_own_dynamic_property(&self, name: &Multiname<'gc>) -> bool {
         if name.contains_public_namespace() {
             if let Some(name) = name.local_name() {
@@ -366,7 +360,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     }
 
     pub fn has_own_property(&self, name: &Multiname<'gc>) -> bool {
-        self.has_trait(name) || self.has_own_dynamic_property(name)
+        self.vtable().has_trait(name) || self.has_own_dynamic_property(name)
     }
 
     pub fn proto(&self) -> Option<Object<'gc>> {

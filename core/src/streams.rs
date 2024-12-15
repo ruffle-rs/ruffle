@@ -5,10 +5,9 @@ use crate::avm1::{
     ExecutionReason as Avm1ExecutionReason, FlvValueAvm1Ext, ScriptObject as Avm1ScriptObject,
     TObject as Avm1TObject, Value as Avm1Value,
 };
-use crate::avm2::object::TObject as Avm2TObject;
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, Error as Avm2Error, EventObject as Avm2EventObject,
-    FlvValueAvm2Ext, Object as Avm2Object,
+    FlvValueAvm2Ext, Object as Avm2Object, Value as Avm2Value,
 };
 use crate::backend::audio::{
     DecodeError, SoundInstanceHandle, SoundStreamInfo, SoundStreamWrapping,
@@ -1365,7 +1364,7 @@ impl<'gc> NetStream<'gc> {
 
                 let data_object = variable_data.to_avm2_value(&mut activation);
 
-                client_object.call_public_property(
+                Avm2Value::from(client_object).call_public_property(
                     AvmString::new_utf8_bytes(activation.gc(), variable_name),
                     &[data_object],
                     &mut activation,

@@ -754,8 +754,8 @@ pub fn get_color_bounds_rect<'gc>(
                 .avm2()
                 .classes()
                 .rectangle
-                .construct(activation, &[x.into(), y.into(), w.into(), h.into()])?
-                .into();
+                .construct(activation, &[x.into(), y.into(), w.into(), h.into()])?;
+
             return Ok(rect);
         }
     }
@@ -1144,20 +1144,15 @@ pub fn get_rect<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(bitmap_data) = this.as_bitmap_data() {
-        return Ok(activation
-            .avm2()
-            .classes()
-            .rectangle
-            .construct(
-                activation,
-                &[
-                    0.into(),
-                    0.into(),
-                    bitmap_data.width().into(),
-                    bitmap_data.height().into(),
-                ],
-            )?
-            .into());
+        return activation.avm2().classes().rectangle.construct(
+            activation,
+            &[
+                0.into(),
+                0.into(),
+                bitmap_data.width().into(),
+                bitmap_data.height().into(),
+            ],
+        );
     }
     Ok(Value::Undefined)
 }

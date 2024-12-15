@@ -132,7 +132,10 @@ impl<'gc> E4XNamespace<'gc> {
             .classes()
             .namespace
             .construct(activation, &args)?;
+
         Ok(obj
+            .as_object()
+            .unwrap()
             .as_namespace_object()
             .expect("just constructed a namespace"))
     }
@@ -758,7 +761,7 @@ impl<'gc> E4XNode<'gc> {
             val => {
                 if let Some(obj) = val.as_object() {
                     if obj.as_xml_object().is_some() || obj.as_xml_list_object().is_some() {
-                        value = obj.call_public_property("toXMLString", &[], activation)?;
+                        value = val.call_public_property("toXMLString", &[], activation)?;
                     }
                 }
                 value.coerce_to_string(activation)?
@@ -1754,7 +1757,7 @@ pub fn maybe_escape_child<'gc>(
                 .classes()
                 .xml
                 .construct(activation, &[string.into()])?;
-            return Ok(xml.into());
+            return Ok(xml);
         }
     }
 

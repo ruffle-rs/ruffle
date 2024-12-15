@@ -37,8 +37,6 @@ pub fn instance_init<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    activation.super_init(this, &[])?;
-
     if let Some(mut vector) = this.as_vector_storage_mut(activation.gc()) {
         let length = args
             .get(0)
@@ -83,15 +81,16 @@ fn class_call<'gc>(
         .expect("Cannot convert to unparametrized Vector"); // technically unreachable
 
     let arg = args.get(0).cloned().unwrap();
-    let arg = arg.as_object().ok_or("Cannot convert to Vector")?;
 
-    if arg.instance_class() == this_class {
-        return Ok(arg.into());
+    if arg.instance_class(activation) == this_class {
+        return Ok(arg);
     }
 
     let length = arg
         .get_public_property("length", activation)?
         .coerce_to_i32(activation)?;
+
+    let arg = arg.as_object().ok_or("Cannot convert to Vector")?;
 
     let mut new_storage = VectorStorage::new(0, false, value_type, activation);
     new_storage.reserve_exact(length as usize);
@@ -110,13 +109,11 @@ fn class_call<'gc>(
 }
 
 pub fn generic_init<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    args: &[Value<'gc>],
+    _activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    activation.super_init(this, args)
+    Ok(Value::Undefined)
 }
 
 fn class_init<'gc>(
@@ -263,7 +260,7 @@ pub fn concat<'gc>(
     let val_class = new_vector_storage.value_type_for_coercion(activation);
 
     for arg in args {
-        let arg_obj = arg.coerce_to_object_or_typeerror(activation, None)?;
+        let arg = arg.null_check(activation, None)?;
 
         // this is Vector.<int/uint/Number/*>
         let my_base_vector_class = activation
@@ -275,20 +272,24 @@ pub fn concat<'gc>(
                 .name()
                 .to_qualified_name_err_message(activation.gc());
 
+            let instance_of_class_name = arg.instance_of_class_name(activation);
+
             return Err(Error::AvmError(type_error(
                 activation,
                 &format!(
                     "Error #1034: Type Coercion failed: cannot convert {}@00000000000 to {}.",
-                    arg_obj.instance_of_class_name(activation.gc()),
-                    base_vector_name,
+                    instance_of_class_name, base_vector_name,
                 ),
                 1034,
             )?));
         }
 
-        let old_vec = arg_obj.as_vector_storage();
-        let old_vec: Vec<Value<'gc>> = if let Some(old_vec) = old_vec {
-            old_vec.iter().collect()
+        let old_vec: Vec<Value<'gc>> = if let Some(old_vec) = arg.as_object() {
+            if let Some(old_vec) = old_vec.as_vector_storage() {
+                old_vec.iter().collect()
+            } else {
+                continue;
+            }
         } else {
             continue;
         };
@@ -376,11 +377,11 @@ pub fn to_locale_string<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    join_inner(activation, this, &[",".into()], |v, act| {
-        if let Ok(o) = v.coerce_to_object(act) {
-            o.call_public_property("toLocaleString", &[], act)
-        } else {
+    join_inner(activation, this, &[",".into()], |v, activation| {
+        if matches!(v, Value::Null | Value::Undefined) {
             Ok(v)
+        } else {
+            v.call_public_property("toLocaleString", &[], activation)
         }
     })
 }

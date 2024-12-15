@@ -17,7 +17,6 @@ use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
 use ruffle_wstr::WString;
 
 use super::xml_list_object::{E4XOrXml, XmlOrXmlListObject};
-use super::PrimitiveObject;
 
 /// A class instance allocator that allocates XML objects.
 pub fn xml_allocator<'gc>(
@@ -357,9 +356,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         let this = self.as_xml_object().unwrap();
 
-        let method = self
-            .proto()
-            .expect("XMLList missing prototype")
+        let method = Value::from(self.proto().expect("XMLList missing prototype"))
             .get_property(multiname, activation)?;
 
         // If the method doesn't exist on the prototype, and we have simple content,
@@ -374,10 +371,8 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             let prop = self.get_property_local(multiname, activation)?;
             if let Some(list) = prop.as_object().and_then(|obj| obj.as_xml_list_object()) {
                 if list.length() == 0 && this.node().has_simple_content() {
-                    let receiver = PrimitiveObject::from_primitive(
-                        this.node().xml_to_string(activation).into(),
-                        activation,
-                    )?;
+                    let receiver = Value::String(this.node().xml_to_string(activation));
+
                     return receiver.call_property(multiname, arguments, activation);
                 }
             }

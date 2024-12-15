@@ -128,11 +128,10 @@ pub fn dispatch_event<'gc>(
 
     let event = args.get_object(activation, 0, "event")?;
 
-    if event.as_event().is_none() {
-        return Err("Dispatched Events must be subclasses of Event.".into());
-    }
+    // AS3-side typing guarantees that the event is actually an Event
 
-    dispatch_event_internal(activation, this, event, false)?;
+    dispatch_event_internal(activation, this, event.into(), false)?;
+
     let not_canceled = !event.as_event().unwrap().is_cancelled();
     Ok(not_canceled.into())
 }

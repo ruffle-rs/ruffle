@@ -31,7 +31,7 @@ pub fn create_text_line<'gc>(
     let content = if matches!(content, Value::Null) {
         return Ok(Value::Null);
     } else {
-        content.as_object().unwrap()
+        content
     };
 
     let text = match previous_text_line {
@@ -76,6 +76,7 @@ pub fn create_text_line<'gc>(
     // of the provided text, and set the width of the EditText to that.
     // Some games depend on this (e.g. Realm Grinder).
 
+    let content = content.as_object().unwrap();
     let element_format = content.get_slot(element_slots::_ELEMENT_FORMAT).as_object();
 
     apply_format(activation, display_object, text.as_wstr(), element_format)?;

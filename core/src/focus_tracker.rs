@@ -253,6 +253,7 @@ impl<'gc> FocusTracker<'gc> {
             EventObject::focus_event(&mut activation, event_type, true, related_object, key_code);
         Avm2::dispatch_event(activation.context, event, target);
 
+        let event = event.as_object().unwrap();
         let canceled = event.as_event().unwrap().is_cancelled();
         canceled
     }

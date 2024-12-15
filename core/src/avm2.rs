@@ -410,7 +410,7 @@ impl<'gc> Avm2<'gc> {
     /// Returns `true` if the event has been handled.
     pub fn dispatch_event(
         context: &mut UpdateContext<'gc>,
-        event: Object<'gc>,
+        event: Value<'gc>,
         target: Object<'gc>,
     ) -> bool {
         Self::dispatch_event_internal(context, event, target, false)
@@ -424,7 +424,7 @@ impl<'gc> Avm2<'gc> {
     /// Returns `true` when the event would have been handled if not simulated.
     pub fn simulate_event_dispatch(
         context: &mut UpdateContext<'gc>,
-        event: Object<'gc>,
+        event: Value<'gc>,
         target: Object<'gc>,
     ) -> bool {
         Self::dispatch_event_internal(context, event, target, true)
@@ -432,14 +432,16 @@ impl<'gc> Avm2<'gc> {
 
     fn dispatch_event_internal(
         context: &mut UpdateContext<'gc>,
-        event: Object<'gc>,
+        event: Value<'gc>,
         target: Object<'gc>,
         simulate_dispatch: bool,
     ) -> bool {
         let event_name = event
+            .as_object()
+            .unwrap()
             .as_event()
             .map(|e| e.event_type())
-            .unwrap_or_else(|| panic!("cannot dispatch non-event object: {:?}", event));
+            .expect("Cannot dispatch non-event object");
 
         let mut activation = Activation::from_nothing(context);
         match events::dispatch_event(&mut activation, target, event, simulate_dispatch) {
@@ -503,13 +505,15 @@ impl<'gc> Avm2<'gc> {
     /// Attempts to broadcast a non-event object will panic.
     pub fn broadcast_event(
         context: &mut UpdateContext<'gc>,
-        event: Object<'gc>,
+        event: Value<'gc>,
         on_type: ClassObject<'gc>,
     ) {
         let event_name = event
+            .as_object()
+            .unwrap()
             .as_event()
             .map(|e| e.event_type())
-            .unwrap_or_else(|| panic!("cannot broadcast non-event object: {:?}", event));
+            .expect("Cannot broadcast non-event object");
 
         if !BROADCAST_WHITELIST
             .iter()
@@ -753,25 +757,7 @@ impl<'gc> Avm2<'gc> {
 
     /// Push a value onto the operand stack.
     #[inline(always)]
-    fn push(&mut self, mut value: Value<'gc>) {
-        if let Value::Object(o) = value {
-            // this is hot, so let's avoid a non-inlined call here
-            if let Object::PrimitiveObject(_) = o {
-                if let Some(prim) = o.as_primitive() {
-                    value = *prim;
-                }
-            }
-        }
-
-        avm_debug!(self, "Stack push {}: {value:?}", self.stack.len());
-
-        self.push_internal(value);
-    }
-
-    /// Push a value onto the operand stack.
-    /// This is like `push`, but does not handle `PrimitiveObject`.
-    #[inline(always)]
-    fn push_raw(&mut self, value: Value<'gc>) {
+    fn push(&mut self, value: Value<'gc>) {
         avm_debug!(self, "Stack push {}: {value:?}", self.stack.len());
 
         self.push_internal(value);

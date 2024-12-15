@@ -149,7 +149,7 @@ pub fn request_from_url_request<'gc>(
         let headers = headers.as_array_storage().unwrap();
 
         for i in 0..headers.length() {
-            let Some(header) = headers.get(i).and_then(|val| val.as_object()) else {
+            let Some(header) = headers.get(i) else {
                 continue;
             };
 

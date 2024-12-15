@@ -1587,7 +1587,6 @@ impl<'gc> Loader<'gc> {
                                 .urlvariables
                                 .construct(activation, &[string_value.into()])
                                 .ok()
-                                .map(|o| o.into())
                         }
                     } else {
                         if &data_format != b"text" {
@@ -1638,7 +1637,7 @@ impl<'gc> Loader<'gc> {
                                     total_len.into(),
                                 ],
                             )
-                            .map_err(|e| Error::Avm2Error(e.to_string()))?;
+                            .unwrap();
 
                         Avm2::dispatch_event(activation.context, progress_evt, target);
 
@@ -1656,7 +1655,7 @@ impl<'gc> Loader<'gc> {
                                     redirected.into(),
                                 ],
                             )
-                            .map_err(|e| Error::Avm2Error(e.to_string()))?;
+                            .unwrap();
 
                         Avm2::dispatch_event(activation.context, http_status_evt, target);
 
@@ -1697,7 +1696,7 @@ impl<'gc> Loader<'gc> {
                                     redirected.into(),
                                 ],
                             )
-                            .map_err(|e| Error::Avm2Error(e.to_string()))?;
+                            .unwrap();
 
                         Avm2::dispatch_event(activation.context, http_status_evt, target);
 
@@ -1715,7 +1714,7 @@ impl<'gc> Loader<'gc> {
                                     2032.into(),
                                 ],
                             )
-                            .map_err(|e| Error::Avm2Error(e.to_string()))?;
+                            .unwrap();
 
                         Avm2::dispatch_event(uc, io_error_evt, target);
                     }
@@ -1858,7 +1857,7 @@ impl<'gc> Loader<'gc> {
                                     total_len.into(),
                                 ],
                             )
-                            .map_err(|e| Error::Avm2Error(e.to_string()))?;
+                            .unwrap();
 
                         Avm2::dispatch_event(activation.context, progress_evt, sound_object);
 
@@ -1886,7 +1885,7 @@ impl<'gc> Loader<'gc> {
                                     2032.into(),
                                 ],
                             )
-                            .map_err(|e| Error::Avm2Error(e.to_string()))?;
+                            .unwrap();
 
                         Avm2::dispatch_event(uc, io_error_evt, sound_object);
                     }
@@ -2227,7 +2226,10 @@ impl<'gc> Loader<'gc> {
                     .classes()
                     .bitmap
                     .construct(&mut activation, &[bitmapdata_avm2.into()])
+                    .unwrap()
+                    .as_object()
                     .unwrap();
+
                 let bitmap_dobj = bitmap_avm2.as_display_object().unwrap();
 
                 if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
@@ -2400,7 +2402,7 @@ impl<'gc> Loader<'gc> {
                             total_len.into(),
                         ],
                     )
-                    .map_err(|e| Error::Avm2Error(e.to_string()))?;
+                    .unwrap();
 
                 Avm2::dispatch_event(uc, progress_evt, loader_info.into());
             }
@@ -2624,7 +2626,7 @@ impl<'gc> Loader<'gc> {
                             redirected.into(),
                         ],
                     )
-                    .map_err(|e| Error::Avm2Error(e.to_string()))?;
+                    .unwrap();
 
                 Avm2::dispatch_event(activation.context, http_status_evt, loader_info.into());
 
@@ -2642,7 +2644,7 @@ impl<'gc> Loader<'gc> {
                             0.into(),
                         ],
                     )
-                    .map_err(|e| Error::Avm2Error(e.to_string()))?;
+                    .unwrap();
 
                 Avm2::dispatch_event(uc, io_error_evt, loader_info.into());
             }
