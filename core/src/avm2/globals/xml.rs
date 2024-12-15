@@ -102,6 +102,106 @@ pub fn init<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn get_ignore_comments<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(Value::Bool(activation.avm2().xml_settings.ignore_comments))
+}
+
+pub fn set_ignore_comments<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    activation.avm2().xml_settings.ignore_comments = args.get_bool(0);
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_ignore_processing_instructions<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(Value::Bool(
+        activation
+            .avm2()
+            .xml_settings
+            .ignore_processing_instructions,
+    ))
+}
+
+pub fn set_ignore_processing_instructions<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    activation
+        .avm2()
+        .xml_settings
+        .ignore_processing_instructions = args.get_bool(0);
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_ignore_whitespace<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(Value::Bool(
+        activation.avm2().xml_settings.ignore_whitespace,
+    ))
+}
+
+pub fn set_ignore_whitespace<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    activation.avm2().xml_settings.ignore_whitespace = args.get_bool(0);
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_pretty_printing<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(Value::Bool(activation.avm2().xml_settings.pretty_printing))
+}
+
+pub fn set_pretty_printing<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    activation.avm2().xml_settings.pretty_printing = args.get_bool(0);
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_pretty_indent<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(Value::Integer(activation.avm2().xml_settings.pretty_indent))
+}
+
+pub fn set_pretty_indent<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    activation.avm2().xml_settings.pretty_indent = args.get_i32(activation, 0)?;
+
+    Ok(Value::Undefined)
+}
+
 pub fn normalize<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
