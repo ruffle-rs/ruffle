@@ -1411,6 +1411,7 @@ impl<'gc> EditText<'gc> {
 
     pub fn set_hscroll(self, hscroll: f64, context: &mut UpdateContext<'gc>) {
         self.0.write(context.gc_context).hscroll = hscroll;
+        self.invalidate_cached_bitmap(context.gc());
     }
 
     pub fn scroll(self) -> usize {
