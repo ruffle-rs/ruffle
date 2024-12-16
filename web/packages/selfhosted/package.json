@@ -25,7 +25,7 @@
         "json5": "^2.2.3",
         "webpack": "^5.97.1",
         "webpack-cli": "^5.1.4",
-        "webpack-dev-server": "^5.1.0",
+        "webpack-dev-server": "^5.2.0",
         "ts-node": "^10.9.2",
         "@types/chai": "^5.0.1",
         "@types/chai-html": "^3.0.0"
