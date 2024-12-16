@@ -1791,6 +1791,10 @@ pub fn get_char_boundaries<'gc>(
         return Ok(Value::Null);
     };
 
+    if bounds.width() == swf::Twips::ZERO {
+        return Ok(Value::Null);
+    }
+
     let rect = activation
         .avm2()
         .classes()
