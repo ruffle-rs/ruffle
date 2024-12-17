@@ -491,7 +491,7 @@ impl<'gc> XmlNode<'gc> {
                 for (key, value) in self.attributes().own_properties() {
                     let value = value.coerce_to_string(activation)?;
                     let value = value.to_utf8_lossy();
-                    let value = escape(&value);
+                    let value = escape(&*value);
 
                     result.push_byte(b' ');
                     result.push_str(&key);
@@ -519,7 +519,7 @@ impl<'gc> XmlNode<'gc> {
         } else {
             let value = self.0.read().node_value.unwrap();
             let value = value.to_utf8_lossy();
-            let value = escape(&value);
+            let value = escape(&*value);
             result.push_utf8(&value);
         }
 
