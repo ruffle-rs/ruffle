@@ -11,9 +11,11 @@ use fontdb::{Database, Family, Query, Source};
 use ruffle_core::{Player, PlayerEvent};
 use ruffle_render_wgpu::backend::{request_adapter_and_device, WgpuRenderBackend};
 use ruffle_render_wgpu::descriptors::Descriptors;
-use ruffle_render_wgpu::utils::{format_list, get_backend_names};
+use ruffle_render_wgpu::target::RenderTarget;
+use ruffle_render_wgpu::utils::{format_list, get_backend_names, BufferDimensions};
+use std::rc::Rc;
 use std::sync::{Arc, MutexGuard};
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use unic_langid::LanguageIdentifier;
 use url::Url;
 use wgpu::SurfaceError;
@@ -256,6 +258,9 @@ impl GuiController {
     }
 
     pub fn render(&mut self, mut player: Option<MutexGuard<Player>>) {
+        let taking_screenshot = self.gui.get_taking_screenshot();
+        self.gui.set_taking_screenshot(false);
+      
         let surface_texture = match self.surface.get_current_texture() {
             Ok(surface_texture) => surface_texture,
             Err(e @ (SurfaceError::Lost | SurfaceError::Outdated)) => {
@@ -362,6 +367,53 @@ impl GuiController {
             None
         };
 
+        let screenshot = if let Some(movie_view) = movie_view {
+            if taking_screenshot {
+                let size = wgpu::Extent3d {
+                    width: movie_view.width(),
+                    height: movie_view.height(),
+                    depth_or_array_layers: 1,
+                };
+
+                // Calculate the right buffer size for a given texture, accounting for texture alignment / stride
+                let buffer_dimensions = BufferDimensions::new(
+                    movie_view.width() as usize,
+                    movie_view.height() as usize,
+                );
+
+                // The final buffer that will hold our screenshot. It needs to be copy_dst ("allowed to be copied into") and map_read ("the cpu can read the contents")
+                let buffer = self
+                    .descriptors
+                    .device
+                    .create_buffer(&wgpu::BufferDescriptor {
+                        label: Some("Screenshot buffer"),
+                        size: buffer_dimensions.size(),
+                        usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+                        mapped_at_creation: false,
+                    });
+
+                // Tell the gpu to copy our movie texture into this new buffer
+                encoder.copy_texture_to_buffer(
+                    movie_view.texture().as_image_copy(),
+                    wgpu::ImageCopyBuffer {
+                        buffer: &buffer,
+                        layout: wgpu::ImageDataLayout {
+                            offset: 0,
+                            bytes_per_row: Some(buffer_dimensions.padded_bytes_per_row),
+                            rows_per_image: None,
+                        },
+                    },
+                    size,
+                );
+
+                Some((buffer_dimensions, buffer, size))
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
         {
             let surface_view = surface_texture.texture.create_view(&Default::default());
 
@@ -394,6 +446,34 @@ impl GuiController {
 
         command_buffers.push(encoder.finish());
         self.descriptors.queue.submit(command_buffers);
+
+        if let Some((buffer_dimensions, buffer, size)) = screenshot {
+            // Read back the buffer from the gpu onto the cpu, and copies it to a png
+            let image = ruffle_render_wgpu::utils::buffer_to_image(
+                &self.descriptors.device,
+                &buffer,
+                &buffer_dimensions,
+                None,
+                size,
+            );
+
+            let start = SystemTime::now();
+            let unix_timestamp = start
+                .duration_since(UNIX_EPOCH)
+                .expect("Time went backwards");
+
+            match image.save(
+                "ruffle_screenshots/".to_owned() + &unix_timestamp.as_millis().to_string() + ".png",
+            ) {
+                Ok(()) => {
+                    tracing::info!("Screenshot saved to {:?}.png", unix_timestamp);
+                }
+                Err(err) => {
+                    tracing::error!("Couldn't capture screenshot: {err}");
+                }
+            }
+        }
+
         surface_texture.present();
     }
 
