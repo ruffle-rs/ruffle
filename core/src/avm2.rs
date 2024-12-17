@@ -3,9 +3,11 @@
 use std::rc::Rc;
 
 use crate::avm2::class::{AllocatorFn, CustomConstructorFn};
+use crate::avm2::e4x::XmlSettings;
 use crate::avm2::error::{make_error_1014, make_error_1107, type_error, Error1014Type};
 use crate::avm2::globals::{
-    init_builtin_system_classes, init_native_system_classes, SystemClassDefs, SystemClasses,
+    init_builtin_system_class_defs, init_builtin_system_classes, init_native_system_classes,
+    SystemClassDefs, SystemClasses,
 };
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::scope::ScopeChain;
@@ -175,6 +177,9 @@ pub struct Avm2<'gc> {
     alias_to_class_map: FnvHashMap<AvmString<'gc>, ClassObject<'gc>>,
     class_to_alias_map: FnvHashMap<Class<'gc>, AvmString<'gc>>,
 
+    #[collect(require_static)]
+    pub xml_settings: XmlSettings,
+
     /// The api version of our root movie clip. Note - this is used as the
     /// api version for swfs loaded via `Loader`, overriding the api version
     /// specified in the loaded SWF. This is only used for API versioning (hiding
@@ -229,6 +234,8 @@ impl<'gc> Avm2<'gc> {
 
             alias_to_class_map: Default::default(),
             class_to_alias_map: Default::default(),
+
+            xml_settings: XmlSettings::new_default(),
 
             // Set the lowest version for now - this will be overridden when we set our movie
             root_api_version: ApiVersion::AllVersions,
@@ -416,7 +423,7 @@ impl<'gc> Avm2<'gc> {
     /// Returns `true` if the event has been handled.
     pub fn dispatch_event(
         context: &mut UpdateContext<'gc>,
-        event: Object<'gc>,
+        event: Value<'gc>,
         target: Object<'gc>,
     ) -> bool {
         Self::dispatch_event_internal(context, event, target, false)
@@ -430,7 +437,7 @@ impl<'gc> Avm2<'gc> {
     /// Returns `true` when the event would have been handled if not simulated.
     pub fn simulate_event_dispatch(
         context: &mut UpdateContext<'gc>,
-        event: Object<'gc>,
+        event: Value<'gc>,
         target: Object<'gc>,
     ) -> bool {
         Self::dispatch_event_internal(context, event, target, true)
@@ -438,14 +445,16 @@ impl<'gc> Avm2<'gc> {
 
     fn dispatch_event_internal(
         context: &mut UpdateContext<'gc>,
-        event: Object<'gc>,
+        event: Value<'gc>,
         target: Object<'gc>,
         simulate_dispatch: bool,
     ) -> bool {
         let event_name = event
+            .as_object()
+            .unwrap()
             .as_event()
             .map(|e| e.event_type())
-            .unwrap_or_else(|| panic!("cannot dispatch non-event object: {:?}", event));
+            .expect("Cannot dispatch non-event object");
 
         let mut activation = Activation::from_nothing(context);
         match events::dispatch_event(&mut activation, target, event, simulate_dispatch) {
@@ -509,13 +518,15 @@ impl<'gc> Avm2<'gc> {
     /// Attempts to broadcast a non-event object will panic.
     pub fn broadcast_event(
         context: &mut UpdateContext<'gc>,
-        event: Object<'gc>,
+        event: Value<'gc>,
         on_type: ClassObject<'gc>,
     ) {
         let event_name = event
+            .as_object()
+            .unwrap()
             .as_event()
             .map(|e| e.event_type())
-            .unwrap_or_else(|| panic!("cannot broadcast non-event object: {:?}", event));
+            .expect("Cannot broadcast non-event object");
 
         if !BROADCAST_WHITELIST
             .iter()
@@ -703,6 +714,10 @@ impl<'gc> Avm2<'gc> {
             .load_classes(&mut activation)
             .expect("Classes should load");
 
+        // These Classes are absolutely critical to the runtime, so make sure
+        // we've registered them before anything else.
+        init_builtin_system_class_defs(&mut activation);
+
         // The second script (script #1) is Toplevel.as, and includes important
         // builtin classes such as Namespace, QName, and XML.
         tunit
@@ -759,25 +774,7 @@ impl<'gc> Avm2<'gc> {
 
     /// Push a value onto the operand stack.
     #[inline(always)]
-    fn push(&mut self, mut value: Value<'gc>) {
-        if let Value::Object(o) = value {
-            // this is hot, so let's avoid a non-inlined call here
-            if let Object::PrimitiveObject(_) = o {
-                if let Some(prim) = o.as_primitive() {
-                    value = *prim;
-                }
-            }
-        }
-
-        avm_debug!(self, "Stack push {}: {value:?}", self.stack.len());
-
-        self.push_internal(value);
-    }
-
-    /// Push a value onto the operand stack.
-    /// This is like `push`, but does not handle `PrimitiveObject`.
-    #[inline(always)]
-    fn push_raw(&mut self, value: Value<'gc>) {
+    fn push(&mut self, value: Value<'gc>) {
         avm_debug!(self, "Stack push {}: {value:?}", self.stack.len());
 
         self.push_internal(value);

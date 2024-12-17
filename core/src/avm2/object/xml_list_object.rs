@@ -572,9 +572,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let method = self
-            .proto()
-            .expect("XMLList missing prototype")
+        let method = Value::from(self.proto().expect("XMLList missing prototype"))
             .get_property(multiname, activation)?;
 
         // See https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/XMLListObject.cpp#L50
@@ -604,11 +602,10 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
             if let Some(list) = prop.as_object().and_then(|obj| obj.as_xml_list_object()) {
                 if list.length() == 0 && self.length() == 1 {
                     let mut children = self.children_mut(activation.gc());
-                    return children
-                        .first_mut()
-                        .unwrap()
-                        .get_or_create_xml(activation)
-                        .call_property(multiname, arguments, activation);
+
+                    let child = children.first_mut().unwrap().get_or_create_xml(activation);
+
+                    return Value::from(child).call_property(multiname, arguments, activation);
                 }
             }
         }
@@ -977,6 +974,8 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                                 .classes()
                                 .xml
                                 .construct(activation, &[value])?
+                                .as_object()
+                                .unwrap()
                                 .as_xml_object()
                                 .expect("Should be XML Object");
                             children[index] = E4XOrXml::Xml(xml);

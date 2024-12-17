@@ -1878,6 +1878,7 @@ impl<'gc> EditText<'gc> {
             );
             Avm2::dispatch_event(activation.context, text_evt, target);
 
+            let text_evt = text_evt.as_object().unwrap();
             if text_evt.as_event().unwrap().is_cancelled() {
                 return;
             }

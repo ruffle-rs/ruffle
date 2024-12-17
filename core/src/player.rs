@@ -1176,6 +1176,7 @@ impl Player {
                         ],
                     )
                     .expect("Failed to construct KeyboardEvent");
+
                 let target_object = activation
                     .context
                     .focus_tracker
@@ -1186,7 +1187,7 @@ impl Player {
                 if target_object.movie().is_action_script_3() {
                     let target = target_object
                         .object2()
-                        .coerce_to_object(&mut activation)
+                        .as_object()
                         .expect("DisplayObject is not an object!");
 
                     Avm2::dispatch_event(activation.context, keyboard_event, target);
@@ -1882,26 +1883,23 @@ impl Player {
                 if let Some(loader_info) = root.loader_info().filter(|_| !was_root_movie_loaded) {
                     let mut activation = Avm2Activation::from_nothing(context);
 
-                    let progress_evt = activation.avm2().classes().progressevent.construct(
-                        &mut activation,
-                        &[
-                            "progress".into(),
-                            false.into(),
-                            false.into(),
-                            root.compressed_loaded_bytes().into(),
-                            root.compressed_total_bytes().into(),
-                        ],
-                    );
+                    let progress_evt = activation
+                        .avm2()
+                        .classes()
+                        .progressevent
+                        .construct(
+                            &mut activation,
+                            &[
+                                "progress".into(),
+                                false.into(),
+                                false.into(),
+                                root.compressed_loaded_bytes().into(),
+                                root.compressed_total_bytes().into(),
+                            ],
+                        )
+                        .unwrap();
 
-                    match progress_evt {
-                        Err(e) => tracing::error!(
-                            "Encountered AVM2 error when constructing `progress` event: {}",
-                            e,
-                        ),
-                        Ok(progress_evt) => {
-                            Avm2::dispatch_event(context, progress_evt, loader_info);
-                        }
-                    }
+                    Avm2::dispatch_event(context, progress_evt, loader_info);
                 }
             }
 

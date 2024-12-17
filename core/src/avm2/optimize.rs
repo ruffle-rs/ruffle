@@ -1,7 +1,6 @@
 use crate::avm2::error::verify_error;
 use crate::avm2::method::{BytecodeMethod, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
-use crate::avm2::object::TObject;
 use crate::avm2::op::Op;
 use crate::avm2::property::Property;
 use crate::avm2::verify::{Exception, JumpSource};
@@ -1140,7 +1139,7 @@ pub fn optimize<'gc>(
                         .outer()
                         .get_unchecked(*index as usize)
                         .values()
-                        .instance_class();
+                        .instance_class(activation);
                     stack.push_class(activation, class)?;
                 }
                 Op::Pop => {
@@ -1190,7 +1189,9 @@ pub fn optimize<'gc>(
                         }
 
                         if !stack_push_done {
-                            if let Some(info) = outer_scope.get_entry_for_multiname(&multiname) {
+                            if let Some(info) =
+                                outer_scope.get_entry_for_multiname(activation, &multiname)
+                            {
                                 if let Some((class, index)) = info {
                                     *op = Op::GetOuterScope { index };
 
@@ -1686,8 +1687,9 @@ pub fn optimize<'gc>(
                     let outer_scope = activation.outer();
                     if !outer_scope.is_empty() {
                         let global_scope = outer_scope.get_unchecked(0);
+                        let global_class = global_scope.values().instance_class(activation);
 
-                        stack.push_class(activation, global_scope.values().instance_class())?;
+                        stack.push_class(activation, global_class)?;
                     } else if has_simple_scoping {
                         stack.push(activation, this_value)?;
                     } else {
@@ -1717,7 +1719,7 @@ pub fn optimize<'gc>(
                     if !outer_scope.is_empty() {
                         let global_scope = outer_scope.get_unchecked(0);
 
-                        let class = global_scope.values().instance_class();
+                        let class = global_scope.values().instance_class(activation);
                         let mut value_class = class.vtable().slot_classes()[*slot_id as usize];
                         let resolved_value_class = value_class.get_class(activation);
                         if let Ok(class) = resolved_value_class {

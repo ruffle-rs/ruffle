@@ -22,10 +22,8 @@ pub fn init<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this.as_object().unwrap();
-
-    if let Some(sound_object) = this.as_sound_object() {
-        let class_def = this.instance_class();
+    if let Some(sound_object) = this.as_object().and_then(|o| o.as_sound_object()) {
+        let class_def = this.instance_class(activation);
 
         if let Some((movie, symbol)) = activation
             .context
