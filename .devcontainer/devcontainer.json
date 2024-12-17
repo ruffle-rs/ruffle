@@ -1,0 +1,7 @@
+{
+    "name": "Ruffle Dev Container",
+    "image": "mcr.microsoft.com/vscode/devcontainers/rust:latest",
+    "settings": {
+        "terminal.integrated.shell.linux": "/bin/bash"
+    }
+}
