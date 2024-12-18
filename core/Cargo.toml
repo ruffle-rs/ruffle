@@ -74,7 +74,7 @@ tracy-client = { version = "0.17.6", optional = true, default-features = false }
 workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies.wasm-bindgen-futures]
-version = "0.4.47"
+version = "0.4.49"
 
 [features]
 default = []
