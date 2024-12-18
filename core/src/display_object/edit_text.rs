@@ -420,6 +420,16 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn set_html_text(self, text: &WStr, context: &mut UpdateContext<'gc>) {
+        if self.html_text() == text {
+            // Note: this check not only prevents text relayout,
+            // but it also has observable effects, because not
+            // every set of spans is representable as HTML.
+            //
+            // For instance, a paragraph may not end with a newline,
+            // but its HTML representation will always infer one.
+            return;
+        }
+
         if self.is_html() {
             let mut write = self.0.write(context.gc());
             let default_format = write.text_spans.default_format().clone();
