@@ -20,6 +20,7 @@ file-menu-exit = Ukončit
 controls-menu = Ovládání
 controls-menu-suspend = Pozastavit
 controls-menu-resume = Pokračovat
+controls-menu-step-once = Jeden krok dopředu
 controls-menu-volume = Ovládání hlasitosti
 help-menu = Pomoc
 help-menu-join-discord = Připojte se na Discord
