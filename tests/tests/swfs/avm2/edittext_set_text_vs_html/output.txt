@@ -1,0 +1,9 @@
+After setting HTML:
+  bold
+  <P ALIGN="LEFT"><FONT FACE="NonDefault Font" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0"><B>bold</B></FONT></P>
+After setting text:
+  text
+  <P ALIGN="LEFT"><FONT FACE="Default Font" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+After setting text with HTML entities:
+  <b>text</b>
+  <P ALIGN="LEFT"><FONT FACE="Default Font" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">&lt;b&gt;text&lt;/b&gt;</FONT></P>
