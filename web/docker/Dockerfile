@@ -6,9 +6,9 @@ FROM node:22
 
 # Installing wasm-opt from GitHub:
 # Keep the version number in sync with the ones in the Actions workflows!
-RUN wget --progress=:giga https://github.com/WebAssembly/binaryen/releases/download/version_120/binaryen-version_120-x86_64-linux.tar.gz
-RUN tar xzf binaryen-version_120-x86_64-linux.tar.gz binaryen-version_120/bin/wasm-opt
-RUN mv binaryen-version_120/bin/wasm-opt /usr/local/bin
+RUN wget --progress=:giga https://github.com/WebAssembly/binaryen/releases/download/version_121/binaryen-version_121-x86_64-linux.tar.gz
+RUN tar xzf binaryen-version_121-x86_64-linux.tar.gz binaryen-version_121/bin/wasm-opt
+RUN mv binaryen-version_121/bin/wasm-opt /usr/local/bin
 
 # Installing Rust using rustup:
 RUN wget 'https://sh.rustup.rs' --quiet -O- | sh -s -- -y --profile minimal --target wasm32-unknown-unknown
