@@ -559,7 +559,6 @@ pub fn set_text<'gc>(
     {
         let text = args.get_string_non_null(activation, 0, "text")?;
 
-        this.set_is_html(activation.context, false);
         this.set_text(&text, activation.context);
     }
 
