@@ -206,6 +206,10 @@ public class Test extends Sprite {
         runTest(text, '<p align="justify">text</p>');
         runTest(text, '<p align="center">text</p>');
         runTest(text, '<p align="unknown">text</p>');
+        runTest(text, '<p align="Left">text</p>');
+        runTest(text, '<p ALIGN="LEFT">text</p>');
+        runTest(text, '<p ALIGN="RiGHT">text</p>');
+        runTest(text, '<p ALIGN="CENtEr">text</p>');
         runTest(text, '<a href="http://example.com"><p align="right"></p></a>');
         runTest(text, '<a href="http://example.com"><p align="right">text</p></a>');
         runTest(text, '<textformat leading="1"><p align="right"></p></textformat>');
