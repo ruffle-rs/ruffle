@@ -1000,6 +1000,11 @@ impl FormatSpans {
 
     pub fn set_default_format(&mut self, tf: TextFormat) {
         self.default_format = tf.mix_with(self.default_format.clone());
+
+        // Empty text always gets the default format.
+        if self.text.is_empty() {
+            self.spans = vec![TextSpan::with_length_and_format(0, &self.default_format)];
+        }
     }
 
     pub fn hide_text(&mut self) {
