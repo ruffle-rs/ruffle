@@ -1,0 +1,7 @@
+Text: <font face='Unknown Font'>x y</font>
+  text.getCharBoundaries(-5) = null
+  text.getCharBoundaries(-1) = null
+  text.getCharBoundaries(0) = null
+  text.getCharBoundaries(1) = null
+  text.getCharBoundaries(2) = null
+  text.getCharBoundaries(3) = null

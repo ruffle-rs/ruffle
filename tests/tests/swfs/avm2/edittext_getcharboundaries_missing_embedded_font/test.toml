@@ -1,0 +1,4 @@
+num_ticks = 1
+
+# Currently Ruffle falls back to device font on missing embedded font.
+known_failure = true
