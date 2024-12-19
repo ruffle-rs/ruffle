@@ -105,18 +105,23 @@ impl<'gc> LocalConnectionObject<'gc> {
 
     pub fn send_status(&self, context: &mut UpdateContext<'gc>, status: &'static str) {
         let mut activation = Activation::from_nothing(context);
-        if let Ok(event) = activation.avm2().classes().statusevent.construct(
-            &mut activation,
-            &[
-                "status".into(),
-                false.into(),
-                false.into(),
-                Value::Null,
-                status.into(),
-            ],
-        ) {
-            Avm2::dispatch_event(activation.context, event, (*self).into());
-        }
+        let event = activation
+            .avm2()
+            .classes()
+            .statusevent
+            .construct(
+                &mut activation,
+                &[
+                    "status".into(),
+                    false.into(),
+                    false.into(),
+                    Value::Null,
+                    status.into(),
+                ],
+            )
+            .unwrap();
+
+        Avm2::dispatch_event(activation.context, event, (*self).into());
     }
 
     pub fn run_method(
@@ -134,22 +139,27 @@ impl<'gc> LocalConnectionObject<'gc> {
                 .push(deserialize_value(&mut activation, &argument).unwrap_or(Value::Undefined));
         }
 
-        let client = self.client();
+        let client = Value::from(self.client());
         if let Err(e) = client.call_public_property(method_name, &arguments, &mut activation) {
             match e {
                 Error::AvmError(error) => {
-                    if let Ok(event) = activation.avm2().classes().asyncerrorevent.construct(
-                        &mut activation,
-                        &[
-                            "asyncError".into(),
-                            false.into(),
-                            false.into(),
-                            error,
-                            error,
-                        ],
-                    ) {
-                        Avm2::dispatch_event(activation.context, event, (*self).into());
-                    }
+                    let event = activation
+                        .avm2()
+                        .classes()
+                        .asyncerrorevent
+                        .construct(
+                            &mut activation,
+                            &[
+                                "asyncError".into(),
+                                false.into(),
+                                false.into(),
+                                error,
+                                error,
+                            ],
+                        )
+                        .unwrap();
+
+                    Avm2::dispatch_event(activation.context, event, (*self).into());
                 }
                 _ => {
                     tracing::error!("Unhandled error dispatching AVM2 LocalConnection method call to '{method_name}': {e}");

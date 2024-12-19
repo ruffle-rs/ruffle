@@ -789,7 +789,9 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
             .classes()
             .stage3d
             .construct(&mut activation, &[])
-            .expect("Failed to construct Stage3D");
+            .expect("Failed to construct Stage3D")
+            .as_object()
+            .unwrap();
 
         match avm2_stage {
             Ok(avm2_stage) => {
