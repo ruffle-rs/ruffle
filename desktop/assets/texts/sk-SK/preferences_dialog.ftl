@@ -23,3 +23,10 @@ theme = Téma
 theme-system = Predvolené systémom
 theme-light = Svetlá
 theme-dark = Tmavá
+# See for context https://github.com/FeralInteractive/gamemode
+gamemode = GameMode
+gamemode-tooltip =
+    GameMode dočasne aplikuje sadu optimalizácií na váš počítač a/alebo Ruffle.
+    Ruffle požaduje GameMode iba pri prehrávaní filmu.
+gamemode-default = Predvolené
+gamemode-default-tooltip = GameMode bude povolený iba v prípade, že je predvoľba napájania nastavená na vysokú hodnotu.
