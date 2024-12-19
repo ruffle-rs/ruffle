@@ -402,6 +402,13 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn set_text(self, text: &WStr, context: &mut UpdateContext<'gc>) {
+        if self.text() == text {
+            // Note: this check not only prevents text relayout,
+            // but it also has observable effects, because text
+            // format is not being reset to the default format.
+            return;
+        }
+
         let mut edit_text = self.0.write(context.gc());
         let default_format = edit_text.text_spans.default_format().clone();
         edit_text.text_spans = FormatSpans::from_text(text.into(), default_format);
