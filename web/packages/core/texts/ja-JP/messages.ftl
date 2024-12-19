@@ -8,36 +8,43 @@ continue = 続行
 report-bug = バグを報告
 update-ruffle = Ruffleを更新
 ruffle-demo = Webデモ
-ruffle-desktop = デスクトップアプリケーション
-ruffle-wiki = Ruffle Wikiを表示
+ruffle-desktop = デスクトップアプリ
+ruffle-wiki = Ruffle Wikiを閲覧
 enable-hardware-acceleration = ハードウェア アクセラレーションが無効になっているようです。Ruffle は動作するかもしれませんが、非常に遅くなる可能性があります。ハードウェア アクセラレーションを有効にする方法については、以下のリンクを参照してください。
 enable-hardware-acceleration-link = よくある質問 - Chromeのハードウェア アクセラレーション
 view-error-details = エラーの詳細を表示
 open-in-new-tab = 新しいタブで開く
 click-to-unmute = クリックでミュートを解除
-clipboard-message-title = コピーしてRuffleに貼り付け
+clipboard-message-title = Ruffleでのコピーと貼り付け
+clipboard-message-description =
+    { $variant ->
+       *[unsupported] お使いのブラウザはクリップボードへのフルアクセスをサポートしていません。
+        [access-denied] クリップボードへのアクセスが拒否されました。
+    } 代わりに、以下のショートカットを利用できます:
+clipboard-message-copy = { " " } : コピー
+clipboard-message-cut = { " " } : 切り取り
+clipboard-message-paste = { " " } : 貼り付け
 error-file-protocol =
     Ruffleを"file:"プロトコルで使用しているようです。
-    ブラウザはセキュリティ上の理由から殆どの機能を制限しているため、正しく動作しません。
+    ブラウザはセキュリティ上の理由から多くの機能を制限しているため、正しく動作しません。
     ローカルサーバーをセットアップするか、ウェブデモまたはデスクトップアプリをご利用ください。
 error-javascript-config =
     JavaScriptの設定が正しくないため、Ruffleで問題が発生しました。
     サーバー管理者の方は、エラーの詳細から、どのパラメーターに問題があるのかを確認してください。
     Ruffleのwikiを参照することで、解決方法が見つかるかもしれません。
 error-wasm-not-found =
-    Ruffleの初期化時に重大な問題が発生しました。
-    このWebサーバーのコンテンツセキュリティポリシーが、実行に必要となる「.wasm」コンポーネントの実行を許可していません。サーバーの管理者の場合は、ファイルが正しくアップロードされているか確認をしてください。この問題が解決しない場合は、「publicPath」の設定を使用する必要があります。
-    サーバーの管理者は、Ruffleのwikiを参照してください。
+    Ruffleは、必要な「.wasm」ファイルコンポーネントの読み込みに失敗しました。
+    サーバーの管理者は、ファイルが正しくアップロードされているか確認をしてください。問題が解決しない場合は、「publicPath」の設定が必要かもしれません。Ruffleのwikiを参照してください。
 error-wasm-mime-type =
-    Ruffleの初期化に失敗する大きな問題が発生しました。
-    このWebサーバーは正しいMIMEタイプの「.wasm」ファイルを提供していません。
+    Ruffleの初期化中に大きな問題が発生しました。
+    このWebサーバーは「.wasm」ファイルを正しいMIMEタイプで提供していません。
     サーバーの管理者は、Ruffleのwikiを参照してください。
 error-invalid-swf =
-    Ruffle は要求されたファイルを解析できません。
-    最も考えられる原因は、要求されたファイルが有効な SWF でないことです。
+    Ruffle はリクエストされたファイルのパースに失敗しました。
+    最も考えられる原因は、ファイルが有効な SWF でないことです。
 error-swf-fetch =
     RuffleがFlash SWFファイルの読み込みに失敗しました。
-    最も考えられる原因は、SWFファイルが既に存在しない事でRuffleが読み込みに失敗するという問題です。
+    読み込むべきファイルが既に存在していないことが原因である可能性が高いです。
     Webサイトの管理者にお問い合わせください。
 error-swf-cors =
     RuffleはSWFファイルの読み込みに失敗しました。
@@ -53,12 +60,12 @@ error-wasm-invalid =
     サーバーの管理者は、Ruffleのwikiを参照してください。
 error-wasm-download =
     Ruffleの初期化時に重大な問題が発生しました。
-    この問題はページを再読み込みする事で大抵は解決するはずなので行なってみてください。
-    もしも解決しない場合は、Webサイトの管理者にお問い合わせください。
+    この問題は自然に解決する場合があるため、ページの再読み込みを試してください。
+    それでも解決しない場合は、Webサイトの管理者にお問い合わせください。
 error-wasm-disabled-on-edge =
     Ruffleに必要となる「.wasm」ファイルコンポーネントの読み込みに失敗しました。
-    この問題を解決するにはブラウザーの設定を開き、「プライバシー、検索、サービス」をクリックし、下にスクロールで「Web上のセキュリティを強化する」をオフにしてみてください。
-    これで必要となる「.wasm」ファイルが読み込まれるようになります。
+    問題解決のため、ブラウザーの設定画面から、「プライバシー、検索、サービス」をクリックし、下にスクロールして「Web上のセキュリティを強化する」をオフにしてみてください。
+    必要となる「.wasm」ファイルの読み込みが許可されます。
     それでも問題が解決しない場合、別のブラウザーを使用する必要があるかもしれません。
 error-javascript-conflict =
     Ruffleの初期化時に重大な問題が発生しました。
