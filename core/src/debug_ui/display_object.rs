@@ -23,6 +23,7 @@ use egui::{
 };
 use ruffle_wstr::{WStr, WString};
 use std::borrow::Cow;
+use std::ops::RangeInclusive;
 use swf::{Color, ColorTransform, Fixed8, Rectangle, Twips};
 
 const DEFAULT_DEBUG_COLORS: [[f32; 3]; 10] = [
@@ -420,6 +421,37 @@ impl DisplayObjectWindow {
                     ui.checkbox(&mut condense_white, "Enabled");
                     if condense_white != object.condense_white() {
                         object.set_condense_white(context, condense_white);
+                    }
+                });
+                ui.end_row();
+
+                ui.label("H Scroll");
+                ui.horizontal(|ui| {
+                    let max = object.maxhscroll();
+                    let mut hscroll = object.hscroll();
+                    DragValue::new(&mut hscroll)
+                        .suffix("px")
+                        .range(RangeInclusive::new(0.0, max))
+                        .ui(ui);
+                    ui.weak(format!("(max {}px)", max));
+
+                    if hscroll != object.hscroll() {
+                        object.set_hscroll(hscroll, context);
+                    }
+                });
+                ui.end_row();
+
+                ui.label("V Scroll");
+                ui.horizontal(|ui| {
+                    let max = object.maxscroll();
+                    let mut scroll = object.scroll();
+                    DragValue::new(&mut scroll)
+                        .range(RangeInclusive::new(1, max))
+                        .ui(ui);
+                    ui.weak(format!("(max {})", max));
+
+                    if scroll != object.scroll() {
+                        object.set_scroll(scroll as f64, context);
                     }
                 });
                 ui.end_row();
