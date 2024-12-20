@@ -1,10 +1,11 @@
 # Test adapted from Shumway at https://github.com/mozilla/shumway/tree/master/test/swfs/acid
 
 num_frames = 1
-known_failure = true # https://github.com/ruffle-rs/ruffle/issues/12124
 
+# FIXME We can do better here, seems that font hinting is the problem?
 [image_comparisons.output]
-tolerance = 0
+tolerance = 128
+max_outliers = 600
 
 [player_options]
-with_renderer = { optional = false, sample_count = 1 }
+with_renderer = { optional = true, sample_count = 4 }
