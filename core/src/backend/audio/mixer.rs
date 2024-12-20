@@ -1,4 +1,6 @@
-use super::decoders::{self, AdpcmDecoder, Decoder, PcmDecoder, SeekableDecoder};
+use super::decoders::{
+    self, AdpcmDecoder, Decoder, G711ALawDecoder, G711MuLawDecoder, PcmDecoder, SeekableDecoder,
+};
 use super::{SoundHandle, SoundInstanceHandle, SoundStreamInfo, SoundTransform};
 use crate::backend::audio::{DecodeError, RegisterError};
 use crate::buffer::Substream;
@@ -319,6 +321,8 @@ impl AudioMixer {
                 format.is_stereo,
                 format.sample_rate,
             )?),
+            AudioCompression::G711ALawPCM => Box::new(G711ALawDecoder::new(data)),
+            AudioCompression::G711MuLawPCM => Box::new(G711MuLawDecoder::new(data)),
             #[cfg(feature = "mp3")]
             AudioCompression::Mp3 => Box::new(decoders::Mp3Decoder::new_seekable(data)?),
             #[cfg(feature = "nellymoser")]
