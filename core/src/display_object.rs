@@ -2183,6 +2183,9 @@ pub trait TDisplayObject<'gc>:
     fn as_edit_text(&self) -> Option<EditText<'gc>> {
         None
     }
+    fn as_text(&self) -> Option<Text<'gc>> {
+        None
+    }
     fn as_morph_shape(&self) -> Option<MorphShape<'gc>> {
         None
     }
