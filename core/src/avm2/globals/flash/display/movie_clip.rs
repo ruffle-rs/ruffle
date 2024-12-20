@@ -137,7 +137,7 @@ fn labels_for_scene<'gc>(
         let args = [name, local_frame.into()];
         let frame_label = frame_label_class.construct(activation, &args)?;
 
-        frame_labels.push(Some(frame_label.into()));
+        frame_labels.push(Some(frame_label));
     }
 
     Ok((
@@ -197,7 +197,7 @@ pub fn get_current_scene<'gc>(
 
         let scene = scene_class.construct(activation, &args)?;
 
-        return Ok(scene.into());
+        return Ok(scene);
     }
 
     Ok(Value::Undefined)
@@ -273,7 +273,7 @@ pub fn get_scenes<'gc>(
 
             let scene = scene_class.construct(activation, &args)?;
 
-            scene_objects.push(Some(scene.into()));
+            scene_objects.push(Some(scene));
         }
 
         return Ok(ArrayObject::from_storage(

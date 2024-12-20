@@ -441,7 +441,7 @@ fn dispatch_event_to_target<'gc>(
 pub fn dispatch_event<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
-    event: Object<'gc>,
+    event: Value<'gc>,
     simulate_dispatch: bool,
 ) -> Result<bool, Error<'gc>> {
     let target = this.get_slot(slots::TARGET).as_object().unwrap_or(this);
@@ -459,7 +459,9 @@ pub fn dispatch_event<'gc>(
         parent = parent_dobj.parent();
     }
 
-    let dispatched = event.as_event().unwrap().dispatched;
+    let event_object = event.as_object().unwrap();
+
+    let dispatched = event_object.as_event().unwrap().dispatched;
 
     let event = if dispatched {
         event
@@ -467,7 +469,7 @@ pub fn dispatch_event<'gc>(
             .as_object()
             .ok_or_else(|| make_error_2007(activation, "event"))?
     } else {
-        event
+        event_object
     };
 
     let mut evtmut = event.as_event_mut(activation.context.gc_context).unwrap();

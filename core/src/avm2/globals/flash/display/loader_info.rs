@@ -418,13 +418,11 @@ pub fn get_bytes<'gc>(
     let (root, dobj) = match &*loader_stream {
         LoaderStream::NotYetLoaded(_, None, _) => {
             if loader_info.errored() {
-                return Ok(activation
-                    .context
-                    .avm2
+                return activation
+                    .avm2()
                     .classes()
                     .bytearray
-                    .construct(activation, &[])?
-                    .into());
+                    .construct(activation, &[]);
             }
             // If we haven't even started loading yet (we have no root clip),
             // then return null. FIXME - we should probably store the ByteArray
@@ -435,8 +433,13 @@ pub fn get_bytes<'gc>(
         LoaderStream::Swf(root, dobj) => (root, dobj),
     };
 
-    let ba_class = activation.context.avm2.classes().bytearray;
-    let ba = ba_class.construct(activation, &[])?;
+    let ba = activation
+        .avm2()
+        .classes()
+        .bytearray
+        .construct(activation, &[])?
+        .as_object()
+        .unwrap();
 
     if root.data().is_empty() {
         return Ok(ba.into());
