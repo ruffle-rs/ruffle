@@ -81,6 +81,10 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         Self(GcCell::new(gc_context, self.0.read().clone())).into()
     }
 
+    fn as_text(&self) -> Option<Text<'gc>> {
+        Some(*self)
+    }
+
     fn as_ptr(&self) -> *const DisplayObjectPtr {
         self.0.as_ptr() as *const DisplayObjectPtr
     }
