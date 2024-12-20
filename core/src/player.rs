@@ -1398,8 +1398,12 @@ impl Player {
                 };
                 if let Some(target) = target {
                     let event = ClipEvent::MouseWheel { delta: *delta };
-                    target.event_dispatch_to_avm2(context, event);
-                    target.handle_clip_event(context, event);
+                    if target.event_dispatch_to_avm2(context, event) == ClipEventResult::Handled {
+                        player_event_handled = true;
+                    }
+                    if target.handle_clip_event(context, event) == ClipEventResult::Handled {
+                        player_event_handled = true;
+                    }
                 }
             });
         }
