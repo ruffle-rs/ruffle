@@ -208,6 +208,7 @@ impl FontFace {
                             shape_handle: Default::default(),
                             shape: GlyphShape::Drawing(drawing),
                             advance,
+                            character,
                         })
                     } else {
                         let advance = Twips::new(face.glyph_hor_advance(glyph_id)? as i32);
@@ -216,6 +217,7 @@ impl FontFace {
                             shape_handle: Default::default(),
                             shape: GlyphShape::None,
                             advance,
+                            character,
                         })
                     }
                 })
@@ -409,12 +411,16 @@ impl<'gc> Font<'gc> {
             .enumerate()
             .map(|(index, swf_glyph)| {
                 let code = swf_glyph.code;
+                // TODO: Flash doesn't care whether it's a surrogate code point or not.
+                //   We should probably rethink using Rust's char for Flash characters.
+                let character = char::from_u32(code as u32).unwrap_or(char::REPLACEMENT_CHARACTER);
                 code_point_to_glyph.insert(code, index);
 
                 let glyph = Glyph {
                     shape_handle: None.into(),
                     advance: Twips::new(swf_glyph.advance.into()),
                     shape: GlyphShape::Swf(RefCell::new(SwfGlyphOrShape::Glyph(swf_glyph))),
+                    character,
                 };
 
                 // Eager-load ASCII characters.
@@ -806,6 +812,9 @@ pub struct Glyph {
 
     shape: GlyphShape,
     advance: Twips,
+
+    // The character this glyph represents.
+    character: char,
 }
 
 impl Glyph {
@@ -822,6 +831,10 @@ impl Glyph {
 
     pub fn advance(&self) -> Twips {
         self.advance
+    }
+
+    pub fn character(&self) -> char {
+        self.character
     }
 }
 
