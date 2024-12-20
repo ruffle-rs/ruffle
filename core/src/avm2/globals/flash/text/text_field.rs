@@ -1460,7 +1460,7 @@ pub fn set_scroll_h<'gc>(
             .cloned()
             .unwrap_or(Value::Undefined)
             .coerce_to_i32(activation)?;
-        let clamped = input.clamp(0, this.maxhscroll() as i32);
+        let clamped = input.abs().min(this.maxhscroll() as i32);
         this.set_hscroll(clamped as f64, activation.context);
     }
 
