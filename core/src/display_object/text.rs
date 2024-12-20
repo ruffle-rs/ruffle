@@ -11,6 +11,7 @@ use core::fmt;
 use gc_arena::{Collect, GcCell, Mutation};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::transform::Transform;
+use ruffle_wstr::WString;
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
@@ -65,6 +66,29 @@ impl<'gc> Text<'gc> {
     pub fn set_render_settings(self, gc_context: &Mutation<'gc>, settings: TextRenderSettings) {
         self.0.write(gc_context).render_settings = settings;
         self.invalidate_cached_bitmap(gc_context);
+    }
+
+    pub fn text(&self, context: &mut UpdateContext<'gc>) -> WString {
+        let data = self.0.read().static_data;
+        let mut ret = WString::new();
+
+        for block in &data.text_blocks {
+            let font_id = block.font_id.unwrap_or_default();
+            if let Some(font) = context
+                .library
+                .library_for_movie(self.movie())
+                .unwrap()
+                .get_font(font_id)
+            {
+                for glyph in &block.glyphs {
+                    if let Some(g) = font.get_glyph(glyph.index as usize) {
+                        ret.push_char(g.character());
+                    }
+                }
+            }
+        }
+
+        ret
     }
 }
 
