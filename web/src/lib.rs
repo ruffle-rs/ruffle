@@ -684,7 +684,9 @@ impl RuffleHandle {
                             _ => return,
                         };
                         let _ = instance.with_core_mut(|core| {
-                            core.handle_event(PlayerEvent::MouseWheel { delta });
+                            if core.handle_event(PlayerEvent::MouseWheel { delta }) {
+                                js_event.prevent_default();
+                            }
                             if core.should_prevent_scrolling() {
                                 js_event.prevent_default();
                             }
