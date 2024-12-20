@@ -1,6 +1,7 @@
 use crate::avm2::error::argument_error;
-use crate::avm2::{Activation, ClassObject, Error, Object, Value};
-use crate::avm2_stub_getter;
+use crate::avm2::{Activation, ClassObject, Error, Object, TObject, Value};
+use crate::prelude::TDisplayObject;
+use crate::string::AvmString;
 
 pub fn static_text_allocator<'gc>(
     _class: ClassObject<'gc>,
@@ -16,9 +17,17 @@ pub fn static_text_allocator<'gc>(
 /// Implements `StaticText.text`
 pub fn get_text<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.text.StaticText", "text");
-    Ok(activation.strings().empty().into())
+    if let Some(this) = this
+        .as_object()
+        .and_then(|this| this.as_display_object())
+        .and_then(|this| this.as_text())
+    {
+        let text = this.text(activation.context);
+        return Ok(AvmString::new(activation.context.gc(), text).into());
+    }
+
+    Ok(Value::Undefined)
 }
