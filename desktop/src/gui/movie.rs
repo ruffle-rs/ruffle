@@ -176,7 +176,9 @@ impl MovieView {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Rgba8Unorm,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                | wgpu::TextureUsages::TEXTURE_BINDING
+                | wgpu::TextureUsages::COPY_SRC,
             view_formats: &[],
         });
         let view = texture.create_view(&Default::default());
@@ -210,6 +212,10 @@ impl MovieView {
         render_pass.set_bind_group(0, &self.bind_group, &[]);
         render_pass.set_vertex_buffer(0, renderer.vertices.slice(..));
         render_pass.draw(0..6, 0..1);
+    }
+
+    pub fn texture(&self) -> &wgpu::Texture {
+        &self.texture
     }
 }
 
