@@ -119,6 +119,10 @@ impl<'gc> LocalConnectionObject<'gc> {
                     status.into(),
                 ],
             )
+            .unwrap()
+            .as_object()
+            .unwrap()
+            .as_event_object()
             .unwrap();
 
         Avm2::dispatch_event(activation.context, event, (*self).into());
@@ -157,6 +161,10 @@ impl<'gc> LocalConnectionObject<'gc> {
                                 error,
                             ],
                         )
+                        .unwrap()
+                        .as_object()
+                        .unwrap()
+                        .as_event_object()
                         .unwrap();
 
                     Avm2::dispatch_event(activation.context, event, (*self).into());

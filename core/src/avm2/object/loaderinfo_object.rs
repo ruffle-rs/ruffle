@@ -298,6 +298,10 @@ impl<'gc> LoaderInfoObject<'gc> {
                                 redirected.into(),
                             ],
                         )
+                        .unwrap()
+                        .as_object()
+                        .unwrap()
+                        .as_event_object()
                         .unwrap();
 
                     Avm2::dispatch_event(context, http_status_evt, (*self).into());

@@ -225,14 +225,21 @@ pub fn load<'gc>(
     let open_evt = EventObject::bare_default_event(activation.context, "open");
     Avm2::dispatch_event(activation.context, open_evt, this.into());
 
-    let progress_evt = EventObject::progress_event(activation, "progress", 0, size, false, false);
+    let progress_evt =
+        EventObject::progress_event(activation, "progress", 0, size as usize, false, false);
     Avm2::dispatch_event(activation.context, progress_evt, this.into());
 
     let open_evt2 = EventObject::bare_default_event(activation.context, "open");
     Avm2::dispatch_event(activation.context, open_evt2, this.into());
 
-    let progress_evt2 =
-        EventObject::progress_event(activation, "progress", size, size, false, false);
+    let progress_evt2 = EventObject::progress_event(
+        activation,
+        "progress",
+        size as usize,
+        size as usize,
+        false,
+        false,
+    );
     Avm2::dispatch_event(activation.context, progress_evt2, this.into());
 
     this.set_loaded(true);

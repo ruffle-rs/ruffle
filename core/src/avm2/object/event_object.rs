@@ -61,7 +61,10 @@ impl<'gc> EventObject<'gc> {
     /// It's just slightly faster and doesn't require an Activation.
     /// This is equivalent to
     /// classes.event.construct(activation, &[event_type, false, false])
-    pub fn bare_default_event<S>(context: &mut UpdateContext<'gc>, event_type: S) -> Value<'gc>
+    pub fn bare_default_event<S>(
+        context: &mut UpdateContext<'gc>,
+        event_type: S,
+    ) -> EventObject<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
@@ -76,7 +79,7 @@ impl<'gc> EventObject<'gc> {
         event_type: S,
         bubbles: bool,
         cancelable: bool,
-    ) -> Value<'gc>
+    ) -> EventObject<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
@@ -87,15 +90,13 @@ impl<'gc> EventObject<'gc> {
         event.set_bubbles(bubbles);
         event.set_cancelable(cancelable);
 
-        let event_object = EventObject(Gc::new(
+        EventObject(Gc::new(
             context.gc_context,
             EventObjectData {
                 base,
                 event: RefLock::new(event),
             },
-        ));
-
-        event_object.into()
+        ))
     }
 
     pub fn mouse_event<S>(
@@ -106,7 +107,7 @@ impl<'gc> EventObject<'gc> {
         delta: i32,
         bubbles: bool,
         button: MouseButton,
-    ) -> Value<'gc>
+    ) -> EventObject<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
@@ -148,6 +149,10 @@ impl<'gc> EventObject<'gc> {
                     delta.into(),
                 ],
             )
+            .unwrap()
+            .as_object()
+            .unwrap()
+            .as_event_object()
             .unwrap() // we don't expect to break here
     }
 
@@ -155,7 +160,7 @@ impl<'gc> EventObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         target: DisplayObject<'gc>,
         button: MouseButton,
-    ) -> Value<'gc> {
+    ) -> EventObject<'gc> {
         Self::mouse_event(
             activation,
             match button {
@@ -176,7 +181,7 @@ impl<'gc> EventObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         target: DisplayObject<'gc>,
         button: MouseButton,
-    ) -> Value<'gc> {
+    ) -> EventObject<'gc> {
         Self::mouse_event(
             activation,
             match button {
@@ -197,7 +202,7 @@ impl<'gc> EventObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         target: DisplayObject<'gc>,
         button: MouseButton,
-    ) -> Value<'gc> {
+    ) -> EventObject<'gc> {
         Self::mouse_event(
             activation,
             match button {
@@ -220,7 +225,7 @@ impl<'gc> EventObject<'gc> {
         text: AvmString<'gc>,
         bubbles: bool,
         cancelable: bool,
-    ) -> Value<'gc>
+    ) -> EventObject<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
@@ -240,6 +245,10 @@ impl<'gc> EventObject<'gc> {
                     text.into(),
                 ],
             )
+            .unwrap()
+            .as_object()
+            .unwrap()
+            .as_event_object()
             .unwrap() // we don't expect to break here
     }
 
@@ -247,7 +256,7 @@ impl<'gc> EventObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         event_type: S,
         info: Vec<(impl Into<AvmString<'gc>>, impl Into<AvmString<'gc>>)>,
-    ) -> Value<'gc>
+    ) -> EventObject<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
@@ -273,17 +282,21 @@ impl<'gc> EventObject<'gc> {
                     info_object.into(),
                 ],
             )
+            .unwrap()
+            .as_object()
+            .unwrap()
+            .as_event_object()
             .unwrap() // we don't expect to break here
     }
 
     pub fn progress_event<S>(
         activation: &mut Activation<'_, 'gc>,
         event_type: S,
-        bytes_loaded: u64,
-        bytes_total: u64,
+        bytes_loaded: usize,
+        bytes_total: usize,
         bubbles: bool,
         cancelable: bool,
-    ) -> Value<'gc>
+    ) -> EventObject<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
@@ -305,6 +318,10 @@ impl<'gc> EventObject<'gc> {
                     (bytes_total as f64).into(),
                 ],
             )
+            .unwrap()
+            .as_object()
+            .unwrap()
+            .as_event_object()
             .unwrap() // we don't expect to break here
     }
 
@@ -314,7 +331,7 @@ impl<'gc> EventObject<'gc> {
         cancelable: bool,
         related_object: Option<InteractiveObject<'gc>>,
         key_code: u32,
-    ) -> Value<'gc>
+    ) -> EventObject<'gc>
     where
         S: Into<AvmString<'gc>>,
     {
@@ -338,6 +355,18 @@ impl<'gc> EventObject<'gc> {
                 ],
             )
             .unwrap()
+            .as_object()
+            .unwrap()
+            .as_event_object()
+            .unwrap() // we don't expect to break here
+    }
+
+    pub fn event(&self) -> Ref<Event<'gc>> {
+        self.0.event.borrow()
+    }
+
+    pub fn event_mut(&self, mc: &Mutation<'gc>) -> RefMut<Event<'gc>> {
+        unlock!(Gc::write(mc, self.0), EventObjectData, event).borrow_mut()
     }
 }
 
@@ -352,6 +381,10 @@ impl<'gc> TObject<'gc> for EventObject<'gc> {
 
     fn as_ptr(&self) -> *const ObjectPtr {
         Gc::as_ptr(self.0) as *const ObjectPtr
+    }
+
+    fn as_event_object(self) -> Option<EventObject<'gc>> {
+        Some(self)
     }
 
     fn as_event(&self) -> Option<Ref<Event<'gc>>> {
