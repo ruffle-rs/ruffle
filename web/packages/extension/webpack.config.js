@@ -75,7 +75,7 @@ function transformManifest(content, env) {
 }
 
 /**
- * @type {import("webpack-cli").CallableOption}
+ * @type {import("webpack-cli").CallableWebpackConfiguration}
  */
 export default function (/** @type {Record<string, any>} */ env, _argv) {
     const mode =
