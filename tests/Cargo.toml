@@ -34,7 +34,7 @@ walkdir = { workspace = true }
 anyhow = { workspace = true }
 image = { workspace = true, features  = ["png"] }
 futures = { workspace = true }
-env_logger = "0.11.5"
+env_logger = "0.11.6"
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 

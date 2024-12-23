@@ -81,7 +81,7 @@ impl NetworkAccessDialog {
                 locale,
                 "network-access-dialog-port",
                 &HashMap::from([(
-                    "port",
+                    "port".into(),
                     FluentValue::String(self.config.port.to_string().into()),
                 )]),
             ));

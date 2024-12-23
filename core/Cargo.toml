@@ -53,10 +53,10 @@ clap = { workspace = true, optional=true }
 realfft = "3.4.0"
 hashbrown = { version = "0.14.5", features = ["raw"] }
 scopeguard = "1.2.0"
-fluent-templates = "0.11.0"
+fluent-templates = "0.12.0"
 egui = { workspace = true, optional = true }
 egui_extras = { version = "0.30.0", default-features = false, optional = true }
-png = { version = "0.17.15", optional = true }
+png = { version = "0.17.16", optional = true }
 flv-rs = { path = "../flv" }
 async-channel = { workspace = true }
 jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "2a429b0d71ab416e10b73d4dbdcf34cfe2900395", optional = true }
