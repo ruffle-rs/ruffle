@@ -64,11 +64,11 @@ pub fn available_languages() -> Vec<&'static LanguageIdentifier> {
 }
 
 #[allow(dead_code)]
-pub fn text_with_args<'a, T: AsRef<str>>(
+pub fn text_with_args(
     locale: &LanguageIdentifier,
-    id: &'a str,
-    args: &HashMap<T, FluentValue>,
-) -> Cow<'a, str> {
+    id: &'static str,
+    args: &HashMap<Cow<'static, str>, FluentValue>,
+) -> Cow<'static, str> {
     TEXTS
         .try_lookup_with_args(locale, id, args)
         .map(Cow::Owned)
