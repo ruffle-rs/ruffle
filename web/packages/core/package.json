@@ -31,7 +31,7 @@
         "mocha": "^11.0.1",
         "postcss": "^8.4.49",
         "postcss-nesting": "^13.0.1",
-        "replace-in-file": "^8.2.0",
+        "replace-in-file": "^8.3.0",
         "tsx": "^4.19.2",
         "tsx-dom": "^3.0.1",
         "typedoc": "^0.27.5",
