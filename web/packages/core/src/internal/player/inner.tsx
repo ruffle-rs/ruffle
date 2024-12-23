@@ -26,6 +26,7 @@ import { showPanicScreen } from "../ui/panic";
 import { createRuffleBuilder } from "../../load-ruffle";
 import { lookupElement } from "../register-element";
 import { configureBuilder } from "../builder";
+import { referenceTypes } from "wasm-feature-detect";
 
 const DIMENSION_REGEX = /^\s*(\d+(\.\d+)?(%)?)/;
 
@@ -853,6 +854,16 @@ export class InnerPlayer {
             ) {
                 this.container.style.backgroundColor =
                     this.loadedConfig.backgroundColor;
+            }
+
+            // We may theoretically need to check everything listed on https://github.com/rust-lang/rust/blob/master/src/doc/rustc/src/platform-support/wasm32-unknown-unknown.md#enabled-webassembly-features
+            // but this is the only extension I know completely breaks our WASM module if unsupported
+            const necessaryExtensionsSupported: boolean = await referenceTypes();
+            if (!necessaryExtensionsSupported) {
+                const baseError = new Error("Necessary WebAssembly extensions unsupported");
+                const loadError = new LoadRuffleWasmError(baseError);
+                this.panic(loadError);
+                return;
             }
 
             await this.ensureFreshInstance();
