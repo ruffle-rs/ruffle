@@ -50,18 +50,27 @@ scale-mode-noscale = 拡大しない(100%)
 scale-mode-noscale-tooltip =
     ムービーを拡大せず、オリジナルのサイズで表示する。
     
-    StageScaleMode.NO_SCALEに一致します。
-scale-mode-showall = ウィンドウに合わせる
+    StageScaleMode.NO_SCALEに対応します
+scale-mode-showall = ウィンドウに合わせて拡大
 scale-mode-showall-tooltip =
-    アスペクト比を維持したまま、見切れない範囲でウィンドウに合わせ拡大します。
+    アスペクト比を維持したまま、見切れない範囲でウィンドウに合わせ拡大する。
     
-    StageScaleMode.SHOW_ALLに対応しています。
+    StageScaleMode.SHOW_ALLに対応します
 scale-mode-exactfit = 引き伸ばす
+scale-mode-exactfit-tooltip =
+    アスペクト比を無視した拡大によって、ムービーでウィンドウ全体を埋める。
+    
+    StageScaleMode.EXACT_FITに対応します
+scale-mode-noborder = ウィンドウに合わせて切り抜き
+scale-mode-noborder-tooltip =
+    アスペクト比を維持したまま、ムービーがウィンドウ全体を埋めるよう拡大し、切り抜く。
+    
+    StageScaleMode.NO_BORDERに対応します
 scale-mode-force = 強制
-scale-mode-force-tooltip = ムービーによるスケールモードの変更を抑制し、現在の設定を保持する。
+scale-mode-force-tooltip = ムービーによるスケールモードの変更を抑制し、現在の設定に固定する。
 player-version = プレイヤーのバージョン
 player-runtime = プレイヤーのランタイム環境
-player-runtime-flash = Flashプレイヤー
+player-runtime-flash = Flash Player
 player-runtime-air = Adobe AIR
 custom-framerate = カスタムフレームレート
 custom-framerate-suffix = { " " } fps
