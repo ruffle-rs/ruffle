@@ -1,11 +1,11 @@
 use std::cell::RefCell;
 
 use crate::backend::audio::SoundHandle;
-use crate::binary_data::BinaryData;
 use crate::display_object::{
     Avm1Button, Avm2Button, BitmapClass, EditText, Graphic, MorphShape, MovieClip, Text, Video,
 };
 use crate::font::Font;
+use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, GcCell};
 use ruffle_render::bitmap::{BitmapHandle, BitmapSize};
 use swf::DefineBitsLossless;
@@ -33,7 +33,7 @@ pub enum Character<'gc> {
     Text(Text<'gc>),
     Sound(#[collect(require_static)] SoundHandle),
     Video(Video<'gc>),
-    BinaryData(BinaryData),
+    BinaryData(SwfSlice),
 }
 
 /// Holds a bitmap from an SWF tag, plus the decoded width/height.
@@ -43,12 +43,24 @@ pub enum Character<'gc> {
 #[derive(Clone, Debug)]
 pub enum CompressedBitmap {
     Jpeg {
-        data: Vec<u8>,
-        alpha: Option<Vec<u8>>,
+        data: SwfSlice,
+        alpha: Option<SwfSlice>,
         width: u16,
         height: u16,
     },
-    Lossless(DefineBitsLossless<'static>),
+    // Used when stored data don't exactly correspond to source SWF data
+    // (for example, when we prepend JpegTables)
+    OwnedJpeg {
+        data: Vec<u8>,
+        alpha: Option<SwfSlice>,
+        width: u16,
+        height: u16,
+    },
+    Lossless {
+        data: SwfSlice,
+        // note: the data inside the tag is ignored.
+        tag: DefineBitsLossless<'static>,
+    },
 }
 
 impl CompressedBitmap {
@@ -58,22 +70,26 @@ impl CompressedBitmap {
                 width: *width,
                 height: *height,
             },
-            CompressedBitmap::Lossless(define_bits_lossless) => BitmapSize {
-                width: define_bits_lossless.width,
-                height: define_bits_lossless.height,
+            CompressedBitmap::OwnedJpeg { width, height, .. } => BitmapSize {
+                width: *width,
+                height: *height,
+            },
+            CompressedBitmap::Lossless { tag, .. } => BitmapSize {
+                width: tag.width,
+                height: tag.height,
             },
         }
     }
     pub fn decode(&self) -> Result<ruffle_render::bitmap::Bitmap, ruffle_render::error::Error> {
         match self {
-            CompressedBitmap::Jpeg {
-                data,
-                alpha,
-                width: _,
-                height: _,
-            } => ruffle_render::utils::decode_define_bits_jpeg(data, alpha.as_deref()),
-            CompressedBitmap::Lossless(define_bits_lossless) => {
-                ruffle_render::utils::decode_define_bits_lossless(define_bits_lossless)
+            CompressedBitmap::Jpeg { data, alpha, .. } => {
+                ruffle_render::utils::decode_define_bits_jpeg(data.as_ref(), alpha.as_ref().map(|s| s.as_ref()))
+            }
+            CompressedBitmap::OwnedJpeg { data, alpha, .. } => {
+                ruffle_render::utils::decode_define_bits_jpeg(data, alpha.as_ref().map(|s| s.as_ref()))
+            }
+            CompressedBitmap::Lossless { data, tag } => {
+                ruffle_render::utils::decode_define_bits_lossless(data.as_ref(), tag)
             }
         }
     }
