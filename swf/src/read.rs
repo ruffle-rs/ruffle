@@ -2410,7 +2410,9 @@ impl<'a> Reader<'a> {
                     .ok_or_else(|| Error::invalid_data("Invalid edit text alignment"))?,
                 left_margin: Twips::new(self.read_u16()?.into()),
                 right_margin: Twips::new(self.read_u16()?.into()),
-                indent: Twips::new(self.read_u16()?.into()),
+                // Note: the documentation says that indent is UI16,
+                //       in reality it seems to be SI16.
+                indent: Twips::new(self.read_i16()?.into()),
                 leading: Twips::new(self.read_i16()?.into()),
             }
         } else {
