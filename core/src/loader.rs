@@ -1594,7 +1594,6 @@ impl<'gc> Loader<'gc> {
                                 .urlvariables
                                 .construct(activation, &[string_value.into()])
                                 .ok()
-                                .map(|o| o.into())
                         }
                     } else {
                         if &data_format != b"text" {
@@ -1631,21 +1630,14 @@ impl<'gc> Loader<'gc> {
 
                         // FIXME - we should fire "progress" events as we receive data, not
                         // just at the end
-                        let progress_evt = activation
-                            .avm2()
-                            .classes()
-                            .progressevent
-                            .construct(
-                                &mut activation,
-                                &[
-                                    "progress".into(),
-                                    false.into(),
-                                    false.into(),
-                                    total_len.into(),
-                                    total_len.into(),
-                                ],
-                            )
-                            .map_err(|e| Error::Avm2Error(e.to_string()))?;
+                        let progress_evt = Avm2EventObject::progress_event(
+                            &mut activation,
+                            "progress",
+                            total_len.into(),
+                            total_len.into(),
+                            false,
+                            false,
+                        );
 
                         Avm2::dispatch_event(activation.context, progress_evt, target);
 
@@ -1663,7 +1655,11 @@ impl<'gc> Loader<'gc> {
                                     redirected.into(),
                                 ],
                             )
-                            .map_err(|e| Error::Avm2Error(e.to_string()))?;
+                            .unwrap()
+                            .as_object()
+                            .unwrap()
+                            .as_event_object()
+                            .unwrap();
 
                         Avm2::dispatch_event(activation.context, http_status_evt, target);
 
@@ -1704,7 +1700,11 @@ impl<'gc> Loader<'gc> {
                                     redirected.into(),
                                 ],
                             )
-                            .map_err(|e| Error::Avm2Error(e.to_string()))?;
+                            .unwrap()
+                            .as_object()
+                            .unwrap()
+                            .as_event_object()
+                            .unwrap();
 
                         Avm2::dispatch_event(activation.context, http_status_evt, target);
 
@@ -1722,7 +1722,11 @@ impl<'gc> Loader<'gc> {
                                     2032.into(),
                                 ],
                             )
-                            .map_err(|e| Error::Avm2Error(e.to_string()))?;
+                            .unwrap()
+                            .as_object()
+                            .unwrap()
+                            .as_event_object()
+                            .unwrap();
 
                         Avm2::dispatch_event(uc, io_error_evt, target);
                     }
@@ -1851,21 +1855,14 @@ impl<'gc> Loader<'gc> {
 
                         // FIXME - As in load_url_loader, we should fire "progress" events as we receive data,
                         // not just at the end
-                        let progress_evt = activation
-                            .avm2()
-                            .classes()
-                            .progressevent
-                            .construct(
-                                &mut activation,
-                                &[
-                                    "progress".into(),
-                                    false.into(),
-                                    false.into(),
-                                    total_len.into(),
-                                    total_len.into(),
-                                ],
-                            )
-                            .map_err(|e| Error::Avm2Error(e.to_string()))?;
+                        let progress_evt = Avm2EventObject::progress_event(
+                            &mut activation,
+                            "progress",
+                            total_len.into(),
+                            total_len.into(),
+                            false,
+                            false,
+                        );
 
                         Avm2::dispatch_event(activation.context, progress_evt, sound_object);
 
@@ -1893,7 +1890,11 @@ impl<'gc> Loader<'gc> {
                                     2032.into(),
                                 ],
                             )
-                            .map_err(|e| Error::Avm2Error(e.to_string()))?;
+                            .unwrap()
+                            .as_object()
+                            .unwrap()
+                            .as_event_object()
+                            .unwrap();
 
                         Avm2::dispatch_event(uc, io_error_evt, sound_object);
                     }
@@ -2234,7 +2235,10 @@ impl<'gc> Loader<'gc> {
                     .classes()
                     .bitmap
                     .construct(&mut activation, &[bitmapdata_avm2.into()])
+                    .unwrap()
+                    .as_object()
                     .unwrap();
+
                 let bitmap_dobj = bitmap_avm2.as_display_object().unwrap();
 
                 if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
@@ -2393,21 +2397,14 @@ impl<'gc> Loader<'gc> {
             MovieLoaderVMData::Avm2 { loader_info, .. } => {
                 let mut activation = Avm2Activation::from_nothing(uc);
 
-                let progress_evt = activation
-                    .avm2()
-                    .classes()
-                    .progressevent
-                    .construct(
-                        &mut activation,
-                        &[
-                            "progress".into(),
-                            false.into(),
-                            false.into(),
-                            cur_len.into(),
-                            total_len.into(),
-                        ],
-                    )
-                    .map_err(|e| Error::Avm2Error(e.to_string()))?;
+                let progress_evt = Avm2EventObject::progress_event(
+                    &mut activation,
+                    "progress",
+                    cur_len.into(),
+                    total_len.into(),
+                    false,
+                    false,
+                );
 
                 Avm2::dispatch_event(uc, progress_evt, loader_info.into());
             }
@@ -2633,7 +2630,11 @@ impl<'gc> Loader<'gc> {
                             redirected.into(),
                         ],
                     )
-                    .map_err(|e| Error::Avm2Error(e.to_string()))?;
+                    .unwrap()
+                    .as_object()
+                    .unwrap()
+                    .as_event_object()
+                    .unwrap();
 
                 Avm2::dispatch_event(activation.context, http_status_evt, loader_info.into());
 
@@ -2651,7 +2652,11 @@ impl<'gc> Loader<'gc> {
                             0.into(),
                         ],
                     )
-                    .map_err(|e| Error::Avm2Error(e.to_string()))?;
+                    .unwrap()
+                    .as_object()
+                    .unwrap()
+                    .as_event_object()
+                    .unwrap();
 
                 Avm2::dispatch_event(uc, io_error_evt, loader_info.into());
             }
@@ -2941,7 +2946,7 @@ impl<'gc> Loader<'gc> {
                                 target_object.into(),
                             );
 
-                            let size = data.len() as u64;
+                            let size = data.len();
                             let progress_evt = Avm2EventObject::progress_event(
                                 &mut activation,
                                 "progress",

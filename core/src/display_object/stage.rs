@@ -730,6 +730,10 @@ impl<'gc> Stage<'gc> {
                         true.into(),
                     ],
                 )
+                .unwrap()
+                .as_object()
+                .unwrap()
+                .as_event_object()
                 .unwrap(); // we don't expect to break here
 
             Avm2::dispatch_event(context, full_screen_event, stage);
@@ -789,7 +793,9 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
             .classes()
             .stage3d
             .construct(&mut activation, &[])
-            .expect("Failed to construct Stage3D");
+            .expect("Failed to construct Stage3D")
+            .as_object()
+            .unwrap();
 
         match avm2_stage {
             Ok(avm2_stage) => {

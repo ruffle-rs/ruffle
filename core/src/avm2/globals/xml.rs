@@ -102,6 +102,106 @@ pub fn init<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn get_ignore_comments<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(Value::Bool(activation.avm2().xml_settings.ignore_comments))
+}
+
+pub fn set_ignore_comments<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    activation.avm2().xml_settings.ignore_comments = args.get_bool(0);
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_ignore_processing_instructions<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(Value::Bool(
+        activation
+            .avm2()
+            .xml_settings
+            .ignore_processing_instructions,
+    ))
+}
+
+pub fn set_ignore_processing_instructions<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    activation
+        .avm2()
+        .xml_settings
+        .ignore_processing_instructions = args.get_bool(0);
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_ignore_whitespace<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(Value::Bool(
+        activation.avm2().xml_settings.ignore_whitespace,
+    ))
+}
+
+pub fn set_ignore_whitespace<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    activation.avm2().xml_settings.ignore_whitespace = args.get_bool(0);
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_pretty_printing<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(Value::Bool(activation.avm2().xml_settings.pretty_printing))
+}
+
+pub fn set_pretty_printing<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    activation.avm2().xml_settings.pretty_printing = args.get_bool(0);
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_pretty_indent<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    Ok(Value::Integer(activation.avm2().xml_settings.pretty_indent))
+}
+
+pub fn set_pretty_indent<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    activation.avm2().xml_settings.pretty_indent = args.get_i32(activation, 0)?;
+
+    Ok(Value::Undefined)
+}
+
 pub fn normalize<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -164,6 +264,8 @@ pub fn set_name<'gc>(
         .classes()
         .qname
         .construct(activation, &[name])?
+        .as_object()
+        .unwrap()
         .as_qname_object()
         .unwrap();
 
@@ -276,6 +378,8 @@ pub fn add_namespace<'gc>(
         .classes()
         .namespace
         .construct(activation, &[value])?
+        .as_object()
+        .unwrap()
         .as_namespace_object()
         .unwrap();
 
@@ -321,8 +425,11 @@ pub fn set_namespace<'gc>(
         .classes()
         .namespace
         .construct(activation, &[value])?
+        .as_object()
+        .unwrap()
         .as_namespace_object()
         .unwrap();
+
     let ns = E4XNamespace {
         prefix: ns.prefix(),
         uri: ns.namespace().as_uri(activation.strings()),
@@ -372,6 +479,8 @@ pub fn remove_namespace<'gc>(
         .classes()
         .namespace
         .construct(activation, &[value])?
+        .as_object()
+        .unwrap()
         .as_namespace_object()
         .unwrap();
     let ns = E4XNamespace {
@@ -725,7 +834,7 @@ pub fn call_handler<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() == 1 {
-        if let Some(obj) = args.try_get_object(activation, 0) {
+        if let Some(obj) = args.get_value(0).as_object() {
             // We do *not* create a new object when AS does 'XML(someXML)'
             if let Some(xml) = obj.as_xml_object() {
                 return Ok(xml.into());
@@ -742,12 +851,7 @@ pub fn call_handler<'gc>(
         }
     }
 
-    Ok(activation
-        .avm2()
-        .classes()
-        .xml
-        .construct(activation, args)?
-        .into())
+    activation.avm2().classes().xml.construct(activation, args)
 }
 
 pub fn node_kind<'gc>(
@@ -1124,7 +1228,6 @@ pub fn replace<'gc>(
                 .classes()
                 .xml
                 .construct(activation, &[value])?
-                .into()
         } else {
             value
         }

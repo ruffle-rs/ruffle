@@ -247,24 +247,24 @@ pub fn call_handler<'gc>(
     _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(activation
-        .avm2()
-        .classes()
-        .date
-        .construct(activation, &[])?
-        .into())
+    activation.avm2().classes().date.construct(activation, &[])
 }
 
 /// Implements `getTime` method.
 pub fn get_time<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     let this = this.as_date_object().unwrap();
-    this.value_of(activation.strings())
+
+    if let Some(date) = this.date_time() {
+        Ok((date.timestamp_millis() as f64).into())
+    } else {
+        Ok(f64::NAN.into())
+    }
 }
 
 /// Implements `setTime` method.

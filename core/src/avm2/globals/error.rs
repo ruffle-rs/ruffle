@@ -10,12 +10,11 @@ pub fn call_handler<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(activation
+    activation
         .avm2()
         .classes()
         .error
-        .construct(activation, args)?
-        .into())
+        .construct(activation, args)
 }
 
 pub fn get_stack_trace<'gc>(

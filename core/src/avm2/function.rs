@@ -1,7 +1,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::method::{Method, ParamConfig};
-use crate::avm2::object::{ClassObject, Object};
+use crate::avm2::object::ClassObject;
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::TraitKind;
 use crate::avm2::value::Value;
@@ -24,7 +24,9 @@ pub struct BoundMethod<'gc> {
     ///
     /// If `None`, then the receiver provided by the caller is used. A
     /// `Some` value indicates a bound executable.
-    bound_receiver: Option<Object<'gc>>,
+    ///
+    /// This should never be `Value::Null` or `Value::Undefined`.
+    bound_receiver: Option<Value<'gc>>,
 
     /// The superclass of the bound class for this method.
     ///
@@ -40,7 +42,7 @@ impl<'gc> BoundMethod<'gc> {
     pub fn from_method(
         method: Method<'gc>,
         scope: ScopeChain<'gc>,
-        receiver: Option<Object<'gc>>,
+        receiver: Option<Value<'gc>>,
         superclass: Option<ClassObject<'gc>>,
         class: Option<Class<'gc>>,
     ) -> Self {
@@ -58,7 +60,7 @@ impl<'gc> BoundMethod<'gc> {
         unbound_receiver: Value<'gc>,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
-        callee: Object<'gc>,
+        callee: Value<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let receiver = if let Some(receiver) = self.bound_receiver {
             receiver
@@ -68,7 +70,7 @@ impl<'gc> BoundMethod<'gc> {
                 .expect("No global scope for function call")
                 .values()
         } else {
-            unbound_receiver.coerce_to_object(activation)?
+            unbound_receiver
         };
 
         exec(
@@ -137,16 +139,19 @@ impl<'gc> BoundMethod<'gc> {
 ///
 /// Passed-in arguments will be conformed to the set of method parameters
 /// declared on the function.
+///
+/// It is the caller's responsibility to ensure that the `receiver` passed
+/// to this method is not Value::Null or Value::Undefined.
 #[allow(clippy::too_many_arguments)]
 pub fn exec<'gc>(
     method: Method<'gc>,
     scope: ScopeChain<'gc>,
-    receiver: Object<'gc>,
+    receiver: Value<'gc>,
     bound_superclass: Option<ClassObject<'gc>>,
     bound_class: Option<Class<'gc>>,
     mut arguments: &[Value<'gc>],
     activation: &mut Activation<'_, 'gc>,
-    callee: Object<'gc>,
+    callee: Value<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let ret = match method {
         Method::Native(bm) => {
@@ -200,7 +205,7 @@ pub fn exec<'gc>(
                 .context
                 .avm2
                 .push_call(activation.context.gc_context, method, bound_class);
-            (bm.method)(&mut activation, Value::Object(receiver), &arguments)
+            (bm.method)(&mut activation, receiver, &arguments)
         }
         Method::Bytecode(bm) => {
             if bm.is_unchecked() {

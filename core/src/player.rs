@@ -5,7 +5,8 @@ use crate::avm1::SystemProperties;
 use crate::avm1::VariableDumper;
 use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm1::{TObject, Value};
-use crate::avm2::{Activation as Avm2Activation, Avm2, CallStack, Object as Avm2Object};
+use crate::avm2::object::{EventObject as Avm2EventObject, Object as Avm2Object, TObject as _};
+use crate::avm2::{Activation as Avm2Activation, Avm2, CallStack};
 use crate::backend::ui::FontDefinition;
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
@@ -669,7 +670,11 @@ impl Player {
                                 hit_obj.into(),
                             ],
                         )
-                        .expect("Context menu event should be constructed!");
+                        .expect("Context menu event should be constructed!")
+                        .as_object()
+                        .unwrap()
+                        .as_event_object()
+                        .unwrap();
 
                     Avm2::dispatch_event(activation.context, menu_evt, menu_object);
                 }
@@ -733,7 +738,11 @@ impl Player {
                                             display_obj.object2(),
                                         ],
                                     )
-                                    .expect("Context menu event should be constructed!");
+                                    .expect("Context menu event should be constructed!")
+                                    .as_object()
+                                    .unwrap()
+                                    .as_event_object()
+                                    .unwrap();
 
                                 Avm2::dispatch_event(context, menu_evt, menu_item);
                             }
@@ -1175,7 +1184,12 @@ impl Player {
                             ctrl_key.into(),                         /* controlKey */
                         ],
                     )
-                    .expect("Failed to construct KeyboardEvent");
+                    .expect("Failed to construct KeyboardEvent")
+                    .as_object()
+                    .unwrap()
+                    .as_event_object()
+                    .unwrap();
+
                 let target_object = activation
                     .context
                     .focus_tracker
@@ -1186,7 +1200,7 @@ impl Player {
                 if target_object.movie().is_action_script_3() {
                     let target = target_object
                         .object2()
-                        .coerce_to_object(&mut activation)
+                        .as_object()
                         .expect("DisplayObject is not an object!");
 
                     Avm2::dispatch_event(activation.context, keyboard_event, target);
@@ -1882,26 +1896,16 @@ impl Player {
                 if let Some(loader_info) = root.loader_info().filter(|_| !was_root_movie_loaded) {
                     let mut activation = Avm2Activation::from_nothing(context);
 
-                    let progress_evt = activation.avm2().classes().progressevent.construct(
+                    let progress_evt = Avm2EventObject::progress_event(
                         &mut activation,
-                        &[
-                            "progress".into(),
-                            false.into(),
-                            false.into(),
-                            root.compressed_loaded_bytes().into(),
-                            root.compressed_total_bytes().into(),
-                        ],
+                        "progress",
+                        root.compressed_loaded_bytes() as usize,
+                        root.compressed_total_bytes() as usize,
+                        false,
+                        false,
                     );
 
-                    match progress_evt {
-                        Err(e) => tracing::error!(
-                            "Encountered AVM2 error when constructing `progress` event: {}",
-                            e,
-                        ),
-                        Ok(progress_evt) => {
-                            Avm2::dispatch_event(context, progress_evt, loader_info);
-                        }
-                    }
+                    Avm2::dispatch_event(context, progress_evt, loader_info);
                 }
             }
 
