@@ -51,4 +51,5 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     defaultFonts: {},
     credentialAllowList: [],
     playerRuntime: PlayerRuntime.FlashPlayer,
+    urlRewriteRules: [],
 };
