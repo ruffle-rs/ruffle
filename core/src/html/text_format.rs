@@ -720,6 +720,7 @@ impl FormatSpans {
                         b"p" => {
                             p_open = true;
                             if let Some(align) = attribute(b"align") {
+                                let align = align.to_ascii_lowercase();
                                 if align == WStr::from_units(b"left") {
                                     format.align = Some(swf::TextAlign::Left)
                                 } else if align == WStr::from_units(b"center") {
