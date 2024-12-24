@@ -163,7 +163,7 @@ impl TextFormat {
         let align = et.layout().map(|l| l.align);
         let left_margin = et.layout().map(|l| l.left_margin.to_pixels());
         let right_margin = et.layout().map(|l| l.right_margin.to_pixels());
-        let indent = et.layout().map(|l| l.indent.to_pixels());
+        let indent = et.layout().map(|l| l.indent.to_pixels().round_ties_even());
         let leading = et.layout().map(|l| l.leading.to_pixels());
 
         // TODO: Text fields that don't specify a font are assumed to be 12px
