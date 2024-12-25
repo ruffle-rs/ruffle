@@ -682,7 +682,7 @@ impl<'gc> Font<'gc> {
         mut is_start_of_line: bool,
     ) -> Option<usize> {
         let mut remaining_width = width - offset;
-        if remaining_width < Twips::from_pixels(0.0) {
+        if remaining_width < Twips::ZERO {
             return Some(0);
         }
 
@@ -733,7 +733,7 @@ impl<'gc> Font<'gc> {
                 //If the additional space were to cause an overflow, then
                 //return now.
                 remaining_width -= measure;
-                if remaining_width < Twips::from_pixels(0.0) {
+                if remaining_width < Twips::ZERO {
                     return Some(word_end);
                 }
             }
@@ -1137,16 +1137,10 @@ mod tests {
     #[test]
     fn wrap_line_no_breakpoint() {
         with_device_font(|_mc, df| {
-            let params =
-                EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::from_pixels(0.0), true);
+            let params = EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
             let string = WStr::from_units(b"abcdefghijklmnopqrstuv");
-            let breakpoint = df.wrap_line(
-                string,
-                params,
-                Twips::from_pixels(200.0),
-                Twips::from_pixels(0.0),
-                true,
-            );
+            let breakpoint =
+                df.wrap_line(string, params, Twips::from_pixels(200.0), Twips::ZERO, true);
 
             assert_eq!(None, breakpoint);
         });
@@ -1155,17 +1149,11 @@ mod tests {
     #[test]
     fn wrap_line_breakpoint_every_word() {
         with_device_font(|_mc, df| {
-            let params =
-                EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::from_pixels(0.0), true);
+            let params = EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
             let string = WStr::from_units(b"abcd efgh ijkl mnop");
             let mut last_bp = 0;
-            let breakpoint = df.wrap_line(
-                string,
-                params,
-                Twips::from_pixels(35.0),
-                Twips::from_pixels(0.0),
-                true,
-            );
+            let breakpoint =
+                df.wrap_line(string, params, Twips::from_pixels(35.0), Twips::ZERO, true);
 
             assert_eq!(Some(4), breakpoint);
 
@@ -1175,7 +1163,7 @@ mod tests {
                 &string[last_bp..],
                 params,
                 Twips::from_pixels(35.0),
-                Twips::from_pixels(0.0),
+                Twips::ZERO,
                 true,
             );
 
@@ -1187,7 +1175,7 @@ mod tests {
                 &string[last_bp..],
                 params,
                 Twips::from_pixels(35.0),
-                Twips::from_pixels(0.0),
+                Twips::ZERO,
                 true,
             );
 
@@ -1199,7 +1187,7 @@ mod tests {
                 &string[last_bp..],
                 params,
                 Twips::from_pixels(35.0),
-                Twips::from_pixels(0.0),
+                Twips::ZERO,
                 true,
             );
 
@@ -1210,8 +1198,7 @@ mod tests {
     #[test]
     fn wrap_line_breakpoint_no_room() {
         with_device_font(|_mc, df| {
-            let params =
-                EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::from_pixels(0.0), true);
+            let params = EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
             let string = WStr::from_units(b"abcd efgh ijkl mnop");
             let breakpoint = df.wrap_line(
                 string,
@@ -1228,17 +1215,11 @@ mod tests {
     #[test]
     fn wrap_line_breakpoint_irregular_sized_words() {
         with_device_font(|_mc, df| {
-            let params =
-                EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::from_pixels(0.0), true);
+            let params = EvalParameters::from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
             let string = WStr::from_units(b"abcdi j kl mnop q rstuv");
             let mut last_bp = 0;
-            let breakpoint = df.wrap_line(
-                string,
-                params,
-                Twips::from_pixels(37.0),
-                Twips::from_pixels(0.0),
-                true,
-            );
+            let breakpoint =
+                df.wrap_line(string, params, Twips::from_pixels(37.0), Twips::ZERO, true);
 
             assert_eq!(Some(5), breakpoint);
 
@@ -1248,7 +1229,7 @@ mod tests {
                 &string[last_bp..],
                 params,
                 Twips::from_pixels(37.0),
-                Twips::from_pixels(0.0),
+                Twips::ZERO,
                 true,
             );
 
@@ -1260,7 +1241,7 @@ mod tests {
                 &string[last_bp..],
                 params,
                 Twips::from_pixels(37.0),
-                Twips::from_pixels(0.0),
+                Twips::ZERO,
                 true,
             );
 
@@ -1272,7 +1253,7 @@ mod tests {
                 &string[last_bp..],
                 params,
                 Twips::from_pixels(37.0),
-                Twips::from_pixels(0.0),
+                Twips::ZERO,
                 true,
             );
 
@@ -1284,7 +1265,7 @@ mod tests {
                 &string[last_bp..],
                 params,
                 Twips::from_pixels(37.0),
-                Twips::from_pixels(0.0),
+                Twips::ZERO,
                 true,
             );
 
